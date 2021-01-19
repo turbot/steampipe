@@ -32,8 +32,8 @@ jobs:
         with:
           go-version: 1.14
 
-#      - name: Hook private repo
-#        run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
+      - name: Hook private repo
+        run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
