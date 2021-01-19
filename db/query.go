@@ -11,7 +11,6 @@ import (
 
 // ExecuteQuery :: entry point for executing ad-hoc queries from outside the package
 func ExecuteQuery(queryString string) (*ResultStreamer, error) {
-	var didWeStartService bool
 	var err error
 
 	logging.LogTime("db.ExecuteQuery start")
@@ -26,7 +25,6 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 	if status == nil {
 		// the db service is not started - start it
 		StartService(QueryInvoker)
-		didWeStartService = true
 	}
 
 	client, err := GetClient(false)
@@ -35,7 +33,7 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 	// refresh connections
 	if err = refreshConnections(client); err != nil {
 		// shutdown the service if something went wrong!!!
-		shutdown(client, didWeStartService)
+		shutdown(client)
 		return nil, fmt.Errorf("failed to refresh connections: %v", err)
 	}
 
@@ -45,7 +43,7 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 		utils.FailOnErrorWithMessage(err, "interactive client failed to initialize")
 
 		// start the interactive prompt in a go routine
-		go interactiveClient.InteractiveQuery(resultsStreamer, didWeStartService)
+		go interactiveClient.InteractiveQuery(resultsStreamer)
 	} else {
 		result, err := client.executeQuery(queryString)
 		if err != nil {
@@ -53,7 +51,7 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 		}
 		// send a single result to the streamer - this will close the channel afterwards
 		// pass an onComplete callback function to shutdown the db
-		onComplete := func() { shutdown(client, didWeStartService) }
+		onComplete := func() { shutdown(client) }
 		go resultsStreamer.streamSingleResult(result, onComplete)
 	}
 
@@ -61,8 +59,8 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 	return resultsStreamer, nil
 }
 
-func shutdown(client *Client, stopService bool) {
-	log.Println("[TRACE] shutdown", stopService)
+func shutdown(client *Client) {
+	log.Println("[TRACE] shutdown")
 	if client != nil {
 		client.close()
 	}
@@ -70,7 +68,7 @@ func shutdown(client *Client, stopService bool) {
 	status, _ := GetStatus()
 
 	// force stop
-	if stopService || status.Invoker == QueryInvoker {
+	if status.Invoker == QueryInvoker {
 		_, err := StopDB(true)
 		if err != nil {
 			utils.ShowError(err)

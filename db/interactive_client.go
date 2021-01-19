@@ -41,10 +41,10 @@ func (c *InteractiveClient) close() {
 }
 
 // InteractiveQuery :: start an interactive prompt and return
-func (c *InteractiveClient) InteractiveQuery(resultsStreamer *ResultStreamer, stopServiceWhenDone bool) {
+func (c *InteractiveClient) InteractiveQuery(resultsStreamer *ResultStreamer) {
 	defer func() {
 
-		shutdown(c.client, stopServiceWhenDone)
+		shutdown(c.client)
 
 		r := recover()
 		switch r.(type) {
