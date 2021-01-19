@@ -3,13 +3,7 @@ package db
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
-	"path/filepath"
-	"strings"
-
-	"github.com/google/uuid"
 
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 
@@ -24,14 +18,14 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 	logging.LogTime("db.ExecuteQuery start")
 	log.Println("[TRACE] db.ExecuteQuery start")
 
-	if createAnInstanceFile() != nil {
-		return nil, errors.New("could not create lock")
-	}
-
 	EnsureDBInstalled()
 	status, err := GetStatus()
 	if err != nil {
 		return nil, errors.New("could not retrieve service status")
+	}
+
+	if status != nil && status.Invoker == InvokerQuery {
+		return nil, fmt.Errorf("You already have a %s session open. To run multiple sessions, first run %s", constants.ColorYellowBold("steampipe query"), constants.ColorYellowBold("steampipe service start"))
 	}
 
 	if status == nil {
@@ -77,7 +71,6 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 
 func shutdown(client *Client) {
 	log.Println("[TRACE] shutdown")
-	defer removeAnInstanceFile()
 	if client != nil {
 		client.close()
 	}
@@ -85,59 +78,10 @@ func shutdown(client *Client) {
 	status, _ := GetStatus()
 
 	// force stop if invoked by `query` and we are the last one
-	if status.Invoker == InvokerQuery && amITheLastQueryInstance() {
+	if status.Invoker == InvokerQuery {
 		_, err := StopDB(true)
 		if err != nil {
 			utils.ShowError(err)
 		}
 	}
-}
-
-func createAnInstanceFile() error {
-	// create a file called `query~uuidv4.lck` in internal
-	lockFile := filepath.Join(constants.InternalDir(), fmt.Sprintf("query~%s.lck", uuid.New().String()))
-	return ioutil.WriteFile(lockFile, []byte(""), 0644)
-}
-func amITheLastQueryInstance() bool {
-	// look for a file in `internal` with the name `query~uuidv4.lck` and return true if count is 1
-	lockCount := 0
-
-	files, err := ioutil.ReadDir(constants.InternalDir())
-	if err != nil {
-		return false
-	}
-
-	for _, file := range files {
-		if !file.IsDir() && strings.HasPrefix(file.Name(), "query~") && strings.HasSuffix(file.Name(), "lck") {
-			// this is a lock file
-			// increment and continue
-			lockCount++
-			if lockCount > 1 {
-				// if we encounter a second lockfile,
-				// then obviously we are not the last
-				// no point continuing
-				return false
-			}
-		}
-	}
-
-	return true
-}
-func removeAnInstanceFile() error {
-	// look for a file in `internal` with the name `query~uuidv4.lck` and remove it
-	// doesn't need to be the one we created
-	files, err := ioutil.ReadDir(constants.InternalDir())
-	if err != nil {
-		return err
-	}
-
-	for _, file := range files {
-		if !file.IsDir() && strings.HasPrefix(file.Name(), "query~") && strings.HasSuffix(file.Name(), "lck") {
-			// this is a lock file
-			// remove it and get out
-			return os.Remove(filepath.Join(constants.InternalDir(), file.Name()))
-		}
-	}
-
-	return nil
 }
