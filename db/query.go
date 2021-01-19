@@ -3,9 +3,17 @@ package db
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/google/uuid"
 
 	"github.com/turbot/steampipe-plugin-sdk/logging"
+
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -15,6 +23,11 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 
 	logging.LogTime("db.ExecuteQuery start")
 	log.Println("[TRACE] db.ExecuteQuery start")
+
+	if createAnInstanceFile() != nil {
+		return nil, errors.New("could not create lock")
+	}
+	defer removeAnInstanceFile()
 
 	EnsureDBInstalled()
 	status, err := GetStatus()
@@ -67,11 +80,63 @@ func shutdown(client *Client) {
 
 	status, _ := GetStatus()
 
-	// force stop
-	if status.Invoker == InvokerQuery {
+	// force stop if invoked by `query` and we are the last one
+	if status.Invoker == InvokerQuery && amITheLastQueryInstance() {
 		_, err := StopDB(true)
 		if err != nil {
 			utils.ShowError(err)
 		}
 	}
+}
+
+func createAnInstanceFile() error {
+	// create a file called `query~uuidv4.lck` in internal
+	file, err := os.Create(filepath.Join(constants.InternalDir(), fmt.Sprintf("query~%s.lck", uuid.New().String())))
+	if err != nil {
+		return err
+	}
+	return file.Close()
+}
+func amITheLastQueryInstance() bool {
+	// look for a file in `internal` with the name `query~uuidv4.lck` and return true if count is 1
+	lockCount := 0
+
+	files, err := ioutil.ReadDir(constants.InternalDir())
+	if err != nil {
+		return false
+	}
+
+	for _, file := range files {
+		if !file.IsDir() && strings.HasPrefix(file.Name(), "query~") && strings.HasSuffix(file.Name(), "lck") {
+			// this is a lock file
+			// increment and continue
+			lockCount++
+			if lockCount > 1 {
+				// if we encounter a second lockfile,
+				// then obviously we are not the last
+				// no point continuing
+				return false
+			}
+		}
+	}
+
+	return true
+}
+func removeAnInstanceFile() error {
+	// look for a file in `internal` with the name `query~uuidv4.lck` and remove it
+	// doesn't need to be the one we created
+	files, err := ioutil.ReadDir(constants.InternalDir())
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		if !file.IsDir() && strings.HasPrefix(file.Name(), "query~") && strings.HasSuffix(file.Name(), "lck") {
+			// this is a lock file
+			// remove it and get out
+			return os.Remove(filepath.Join(constants.InternalDir(), file.Name()))
+		}
+	}
+
+	return nil
 }
