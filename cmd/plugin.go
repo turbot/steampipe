@@ -227,7 +227,7 @@ func getPluginConnectionMap() (map[string][]string, error) {
 
 	if status == nil {
 		// the db service is not started - start it
-		db.StartService()
+		db.StartService(db.PluginInvoker)
 		didWeStartService = true
 	}
 
