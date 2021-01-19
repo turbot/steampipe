@@ -50,19 +50,23 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 	}
 
 	resultsStreamer := newQueryResults()
+
+	// this is a callback to close the db et-al. when things get done - no matter the mode
+	onComplete := func() { shutdown(client) }
+
 	if queryString == "" {
 		interactiveClient, err := newInteractiveClient(client)
 		utils.FailOnErrorWithMessage(err, "interactive client failed to initialize")
 
 		// start the interactive prompt in a go routine
-		go interactiveClient.InteractiveQuery(resultsStreamer)
+		go interactiveClient.InteractiveQuery(resultsStreamer, onComplete)
 	} else {
 		result, err := client.executeQuery(queryString)
 		if err != nil {
 			return nil, err
 		}
 		// send a single result to the streamer - this will close the channel afterwards
-		// pass an onComplete callback function to shutdown the db
+		// pass the onComplete callback function to shutdown the db
 		onComplete := func() { shutdown(client) }
 		go resultsStreamer.streamSingleResult(result, onComplete)
 	}
