@@ -27,7 +27,6 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 	if createAnInstanceFile() != nil {
 		return nil, errors.New("could not create lock")
 	}
-	defer removeAnInstanceFile()
 
 	EnsureDBInstalled()
 	status, err := GetStatus()
@@ -74,6 +73,7 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 
 func shutdown(client *Client) {
 	log.Println("[TRACE] shutdown")
+	defer removeAnInstanceFile()
 	if client != nil {
 		client.close()
 	}
@@ -91,11 +91,8 @@ func shutdown(client *Client) {
 
 func createAnInstanceFile() error {
 	// create a file called `query~uuidv4.lck` in internal
-	file, err := os.Create(filepath.Join(constants.InternalDir(), fmt.Sprintf("query~%s.lck", uuid.New().String())))
-	if err != nil {
-		return err
-	}
-	return file.Close()
+	lockFile := filepath.Join(constants.InternalDir(), fmt.Sprintf("query~%s.lck", uuid.New().String()))
+	return ioutil.WriteFile(lockFile, []byte(""), 0644)
 }
 func amITheLastQueryInstance() bool {
 	// look for a file in `internal` with the name `query~uuidv4.lck` and return true if count is 1
