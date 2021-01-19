@@ -25,7 +25,7 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 	}
 
 	if status != nil && status.Invoker == InvokerQuery {
-		return nil, fmt.Errorf("You already have a %s session open. To run multiple sessions, first run %s", constants.ColorYellowBold("steampipe query"), constants.ColorYellowBold("steampipe service start"))
+		return nil, fmt.Errorf("You already have a %s session open. To run multiple sessions, first run %s", constants.Bold("steampipe query"), constants.Bold("steampipe service start"))
 	}
 
 	if status == nil {
