@@ -1,3 +1,7 @@
+# Editor cache and lock files
+*.swp
+*.swo
+
 # Binaries for programs and plugins
 *.exe
 *.exe~

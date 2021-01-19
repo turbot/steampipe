@@ -1,0 +1,1 @@
+ncc build index.js

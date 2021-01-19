@@ -1,0 +1,56 @@
+package ociinstaller
+
+import (
+	"context"
+	"fmt"
+	"path/filepath"
+	"time"
+
+	versionfile "github.com/turbot/steampipe/ociinstaller/versionfile"
+)
+
+// InstallDB :: Install Postgres files fom OCI image
+func InstallDB(imageRef string, dest string) (string, error) {
+	tempDir := NewTempDir(imageRef)
+	defer tempDir.Delete()
+
+	imageDownloader := NewOciDownloader(context.Background())
+
+	// Download the blobs
+	fmt.Println("Downloading...")
+	image, err := imageDownloader.Download(imageRef, "db", tempDir.Path)
+	if err != nil {
+		return "", err
+	}
+
+	// install the files
+	fmt.Printf("\nInstalling...")
+	if err = extractDbFiles(image, tempDir.Path, dest); err != nil {
+		return "", err
+	}
+
+	if err := updateVersionFileDB(image); err != nil {
+		return string(image.OCIDescriptor.Digest), err
+	}
+	return string(image.OCIDescriptor.Digest), nil
+}
+
+func updateVersionFileDB(image *SteampipeImage) error {
+	timeNow := versionfile.FormatTime(time.Now())
+	v, err := versionfile.Load()
+	if err != nil {
+		return err
+	}
+	v.EmbeddedDB.Version = image.Config.Database.Version
+	v.EmbeddedDB.Name = "embeddedDB"
+	v.EmbeddedDB.ImageDigest = string(image.OCIDescriptor.Digest)
+	v.EmbeddedDB.InstalledFrom = image.ImageRef
+	v.EmbeddedDB.LastCheckedDate = timeNow
+	v.EmbeddedDB.InstallDate = timeNow
+	return v.Save()
+}
+
+func extractDbFiles(image *SteampipeImage, tempDir string, dest string) error {
+	source := filepath.Join(tempDir, image.Database.ArchiveDir)
+	return moveFolder(source, dest)
+}
