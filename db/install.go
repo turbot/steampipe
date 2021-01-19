@@ -78,7 +78,7 @@ func EnsureDBInstalled() {
 }
 
 func installSteampipeHub() error {
-	StartService(InstallerInvoker)
+	StartService(InvokerInstaller)
 	rawClient, err := createDbClient()
 	if err != nil {
 		return err

@@ -56,9 +56,9 @@ connection from any Postgres compatible database client.`,
 		OnCmd(cmd).
 		AddBoolFlag("background", "", true, "Run service in the background").
 		AddIntFlag("db-port", "", constants.DatabasePort, "Database service port.").
-		AddStringFlag("listen", "", string(db.NetworkListenType), "Accept connections from: local (localhost only) or network (open)").
+		AddStringFlag("listen", "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)").
 		// Hidden flags for internal use
-		AddStringFlag("invoker", "", string(db.ServiceInvoker), "Invoked by `service` or `query`", cmdconfig.FlagOptions.Hidden()).
+		AddStringFlag("invoker", "", string(db.InvokerService), "Invoked by `service` or `query`", cmdconfig.FlagOptions.Hidden()).
 		AddBoolFlag("refresh", "", true, "Refresh connections on startup", cmdconfig.FlagOptions.Hidden())
 
 	return cmd

@@ -24,7 +24,7 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 
 	if status == nil {
 		// the db service is not started - start it
-		StartService(QueryInvoker)
+		StartService(InvokerQuery)
 	}
 
 	client, err := GetClient(false)
@@ -68,7 +68,7 @@ func shutdown(client *Client) {
 	status, _ := GetStatus()
 
 	// force stop
-	if status.Invoker == QueryInvoker {
+	if status.Invoker == InvokerQuery {
 		_, err := StopDB(true)
 		if err != nil {
 			utils.ShowError(err)

@@ -219,7 +219,6 @@ func runPluginRemoveCmd(cmd *cobra.Command, args []string) {
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
 func getPluginConnectionMap() (map[string][]string, error) {
-	didWeStartService := false
 	status, err := db.GetStatus()
 	if err != nil {
 		return nil, fmt.Errorf("Could not start steampipe service")
@@ -227,13 +226,13 @@ func getPluginConnectionMap() (map[string][]string, error) {
 
 	if status == nil {
 		// the db service is not started - start it
-		db.StartService(db.PluginInvoker)
-		didWeStartService = true
-	}
-
-	if didWeStartService {
-		// stop the database if we started it!
-		defer db.StopDB(true)
+		db.StartService(db.InvokerPlugin)
+		defer func() {
+			status, _ := db.GetStatus()
+			if status.Invoker == db.InvokerPlugin {
+				db.StopDB(true)
+			}
+		}()
 	}
 
 	client, err := db.GetClient(true)

@@ -32,39 +32,39 @@ const (
 )
 
 const (
-	// NetworkListenType :: StartListenType - bind to all known interfaces
-	NetworkListenType StartListenType = "network"
-	// LocalListenType :: StartListenType - bind to localhost only
-	LocalListenType = "local"
+	// ListenTypeNetwork :: StartListenType - bind to all known interfaces
+	ListenTypeNetwork StartListenType = "network"
+	// ListenTypeLocal :: StartListenType - bind to localhost only
+	ListenTypeLocal = "local"
 )
 
 const (
-	// ServiceInvoker :: Invoker - when invoked by `service start`
-	ServiceInvoker Invoker = "service"
-	// QueryInvoker :: Invoker - when invoked by `query`
-	QueryInvoker = "query"
-	// InstallerInvoker :: Invoker - when invoked by the `installer`
-	InstallerInvoker = "installer"
-	// PluginInvoker :: Invoker - when invoked by the `pluginmanager`
-	PluginInvoker = "plugin"
+	// InvokerService :: Invoker - when invoked by `service start`
+	InvokerService Invoker = "service"
+	// InvokerQuery :: Invoker - when invoked by `query`
+	InvokerQuery = "query"
+	// InvokerInstaller :: Invoker - when invoked by the `installer`
+	InvokerInstaller = "installer"
+	// InvokerPlugin :: Invoker - when invoked by the `pluginmanager`
+	InvokerPlugin = "plugin"
 )
 
 // IsValid :: validator for StartListenType known values
 func (slt StartListenType) IsValid() error {
 	switch slt {
-	case NetworkListenType, LocalListenType:
+	case ListenTypeNetwork, ListenTypeLocal:
 		return nil
 	}
-	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", NetworkListenType, LocalListenType)
+	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
 }
 
 // IsValid :: validator for Invoker known values
 func (slt Invoker) IsValid() error {
 	switch slt {
-	case ServiceInvoker, QueryInvoker, InstallerInvoker, PluginInvoker:
+	case InvokerService, InvokerQuery, InvokerInstaller, InvokerPlugin:
 		return nil
 	}
-	return fmt.Errorf("Invalid invoker. Can be one of '%v', '%v', '%v' or '%v'", ServiceInvoker, QueryInvoker, InstallerInvoker, PluginInvoker)
+	return fmt.Errorf("Invalid invoker. Can be one of '%v', '%v', '%v' or '%v'", InvokerService, InvokerQuery, InvokerInstaller, InvokerPlugin)
 }
 
 // StartDB :: start the database is not already running
@@ -92,7 +92,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 
 	listenAddresses := "localhost"
 
-	if listen == NetworkListenType {
+	if listen == ListenTypeNetwork {
 		listenAddresses = "*"
 	}
 
@@ -159,7 +159,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	runningInfo.Invoker = invoker
 
 	runningInfo.Listen = []string{"localhost", "127.0.0.1"}
-	if listen == NetworkListenType {
+	if listen == ListenTypeNetwork {
 		addrs, _ := localAddresses()
 		runningInfo.Listen = append(addrs, runningInfo.Listen...)
 	}
