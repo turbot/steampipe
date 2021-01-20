@@ -125,12 +125,12 @@ func Handle(input *HandlerInput) error {
 	var s = strings.Fields(input.Query)
 
 	var handlerFunction handler
-	if metaQueryObj, found := metaQueryHandlers[s[0]]; !found {
+	metaQueryObj, found := metaQueryHandlers[s[0]]
+	if !found {
 		return fmt.Errorf("not sure how to handle '%s'", s[0])
-	} else {
-		handlerFunction = metaQueryObj.handler
 	}
 
+	handlerFunction = metaQueryObj.handler
 	return handlerFunction(input)
 }
 

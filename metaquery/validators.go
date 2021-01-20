@@ -7,7 +7,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 )
 
-// Validate :: validate a full metaquery along with arguments
+// ValidationResult :: response for Validate
 type ValidationResult struct {
 	Err       error
 	ShouldRun bool
@@ -16,7 +16,7 @@ type ValidationResult struct {
 
 type validator func(val string) ValidationResult
 
-// we can return err & validationResult
+// Validate :: validate a full metaquery along with arguments - we can return err & validationResult
 func Validate(query string) ValidationResult {
 	query = strings.TrimSuffix(query, ";")
 	// get the meta query
