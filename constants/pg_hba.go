@@ -98,8 +98,8 @@ const PgHbaContent = `
 # * Future - access via SSL only (remove host line)
 # * Future - access with a password only (change trust to scram-sha-256)
 #
-hostssl all root samehost scram-sha-256
-host all root samehost scram-sha-256
+hostssl all root samehost trust
+host all root samehost trust
 
 # All user queries (steampipe query or steampipe service) are run as the
 # steampipe user. The steampipe user is restricted in access to the steampipe
