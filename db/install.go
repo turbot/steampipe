@@ -68,6 +68,14 @@ func EnsureDBInstalled() {
 	}
 	utils.FailOnError(err)
 
+	fmt.Println("Initializing steampipe Database...")
+	steampipePassword := generatePassword(64, 8, 8, 8)
+	rootPassword := generatePassword(64, 8, 8, 8)
+
+	// write the passwords that were generated
+	err = writePasswordFile(steampipePassword, rootPassword)
+	utils.FailOnErrorWithMessage(err, "failed")
+
 	StartService(InvokerInstaller)
 
 	defer func() {
@@ -75,8 +83,7 @@ func EnsureDBInstalled() {
 		StopDB(true)
 	}()
 
-	fmt.Println("Initializing steampipe Database...")
-	err = installSteampipeDatabase()
+	err = installSteampipeDatabase(steampipePassword, rootPassword)
 	utils.FailOnErrorWithMessage(err, "failed")
 
 	fmt.Println("Installing SteampipeHub...")
@@ -85,10 +92,11 @@ func EnsureDBInstalled() {
 
 	// write a signature after everything gets done!
 	// so that we can check for this later on
-	writeDownloadedBinarySignature(dbImageDigest, fdwDigest)
+	err = writeDownloadedBinarySignature(dbImageDigest, fdwDigest)
+	utils.FailOnErrorWithMessage(err, "failed")
 }
 
-func installSteampipeDatabase() error {
+func installSteampipeDatabase(withSteampipePassword string, withRootPassword string) error {
 	rawClient, err := createPostgresDbClient()
 	if err != nil {
 		return err
@@ -119,6 +127,9 @@ func installSteampipeDatabase() error {
 		// configure and manage it properly.
 		`grant all on database steampipe to root`,
 
+		// The root user gets a password which will be used later on to connect
+		fmt.Sprintf(`alter user root with password '%s'`, withRootPassword),
+
 		//
 		// PERMISSIONS
 		//
@@ -141,7 +152,7 @@ func installSteampipeDatabase() error {
 		// Set a random, complex password for the steampipe user. Done as a separate
 		// step from the create for clarity and reuse.
 		// TODO: need a complex random password here, that is available for sharing with the user when the do steampipe service
-		`alter user steampipe with password 'password001'`,
+		fmt.Sprintf(`alter user steampipe with password '%s'`, withSteampipePassword),
 
 		// Allow steampipe the privileges of steampipe_users.
 		`grant steampipe_users to steampipe`,
@@ -274,9 +285,9 @@ func IsInstalled() bool {
 	return true
 }
 
-func writeDownloadedBinarySignature(dbDigest string, fdwDigest string) {
+func writeDownloadedBinarySignature(dbDigest string, fdwDigest string) error {
 	installedSignature := fmt.Sprintf("%s|%s", dbDigest, fdwDigest)
-	ioutil.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)
+	return ioutil.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)
 }
 
 func getInstalledBinarySignature() string {
@@ -304,5 +315,10 @@ func initDatabase() error {
 
 	log.Printf("[TRACE] %s", initDbProcess.String())
 
-	return initDbProcess.Run()
+	runError := initDbProcess.Run()
+	if runError != nil {
+		return runError
+	}
+
+	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(constants.PgHbaContent), 0600)
 }

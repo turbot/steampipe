@@ -159,10 +159,14 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		return ServiceFailedToStart, err
 	}
 
+	// get the password file
+	passwords, err := getPasswords()
+
 	runningInfo := new(RunningDBInstanceInfo)
 	runningInfo.Pid = postgresCmd.Process.Pid
 	runningInfo.Port = port
 	runningInfo.User = constants.DatabaseUser
+	runningInfo.Password = passwords.Steampipe
 	runningInfo.Database = constants.DatabaseName
 	runningInfo.ListenType = listen
 	runningInfo.Invoker = invoker
