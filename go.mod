@@ -14,6 +14,7 @@ require (
 	github.com/fatih/color v1.7.0
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/go-ole/go-ole v1.2.4 // indirect
+	github.com/google/uuid v1.1.2
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.3.0
 	github.com/hashicorp/go-version v1.2.1

@@ -78,7 +78,7 @@ func EnsureDBInstalled() {
 }
 
 func installSteampipeHub() error {
-	StartService()
+	StartService(InvokerInstaller)
 	rawClient, err := createDbClient()
 	if err != nil {
 		return err
@@ -105,11 +105,12 @@ func installSteampipeHub() error {
 	return nil
 }
 
-func StartService() {
+// StartService :: invokes `steampipe service start --listen local --refresh=false --invoker query`
+func StartService(invoker Invoker) {
 	log.Println("[TRACE] start service")
 	// spawn a process to start the service, passing refresh=false to ensure we DO NOT refresh connections
 	// (as we will do that ourselves)
-	cmd := exec.Command(os.Args[0], "service", "start", "--listen", "local", "--refresh=false")
+	cmd := exec.Command(os.Args[0], "service", "start", "--listen", "local", "--refresh=false", "--invoker", string(invoker))
 	cmd.Start()
 	startedAt := time.Now()
 	spinnerShown := false

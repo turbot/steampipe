@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/steampipe/cmdconfig"
-
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
+
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/utils"
@@ -55,11 +55,11 @@ connection from any Postgres compatible database client.`,
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag("background", "", true, "Run service in the background").
-		AddBoolFlag("refresh", "", true, "Refresh connections").
-		// TODO(nw) default to the configuration option?
-		AddIntFlag("db-port", "", constants.DatabasePort, "Database service port. Chooses a free port by default.").
-		// TODO(nw) should be validated to an enumerated list
-		AddStringFlag("listen", "", "network", "Accept connections from: local (localhost only) or network (open)")
+		AddIntFlag("db-port", "", constants.DatabasePort, "Database service port.").
+		AddStringFlag("listen", "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)").
+		// Hidden flags for internal use
+		AddStringFlag("invoker", "", string(db.InvokerService), "Invoked by `service` or `query`", cmdconfig.FlagOptions.Hidden()).
+		AddBoolFlag("refresh", "", true, "Refresh connections on startup", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
 }
@@ -124,15 +124,20 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	}
 
 	listen := db.StartListenType(cmdconfig.Viper().GetString("listen"))
-
 	if err := listen.IsValid(); err != nil {
+		utils.ShowError(err)
+		return
+	}
+
+	invoker := db.Invoker(cmdconfig.Viper().GetString("invoker"))
+	if err := invoker.IsValid(); err != nil {
 		utils.ShowError(err)
 		return
 	}
 
 	db.EnsureDBInstalled()
 
-	status, err := db.StartDB(cmdconfig.Viper().GetInt("db-port"), listen)
+	status, err := db.StartDB(cmdconfig.Viper().GetInt("db-port"), listen, invoker)
 	if err != nil {
 		utils.ShowError(err)
 		return
@@ -189,7 +194,7 @@ to force a restart.
 		return
 	}
 
-	status, err := db.StartDB(currentServiceStatus.Port, currentServiceStatus.ListenType)
+	status, err := db.StartDB(currentServiceStatus.Port, currentServiceStatus.ListenType, currentServiceStatus.Invoker)
 	if err != nil {
 		utils.ShowError(err)
 		return
