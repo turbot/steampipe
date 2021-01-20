@@ -34,3 +34,12 @@ func Complete(input *CompleterInput) []prompt.Suggest {
 	}
 	return metaQueryObj.completer(input)
 }
+
+func booleanCompleter(input *CompleterInput) []prompt.Suggest {
+	suggestions := make([]prompt.Suggest, 2)
+
+	suggestions[0] = prompt.Suggest{Text: "on", Description: "Turn on"}
+	suggestions[1] = prompt.Suggest{Text: "off", Description: "Turn off"}
+
+	return suggestions
+}
