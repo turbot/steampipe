@@ -68,3 +68,11 @@ func getFDWSQLAndControlLocation() (string, string) {
 	controlLocation := filepath.Join(base, "steampipe_postgres_fdw.control")
 	return sqlLocation, controlLocation
 }
+
+func getPgHbaConfLocation() string {
+	return filepath.Join(getDataLocation(), "pg_hba.conf")
+}
+
+func getPasswordFileLocation() string {
+	return filepath.Join(getDatabaseLocation(), ".passwd")
+}
