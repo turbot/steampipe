@@ -35,23 +35,15 @@ func Complete(input *CompleterInput) []prompt.Suggest {
 	return metaQueryObj.completer(input)
 }
 
-func booleanCompleter(input *CompleterInput) []prompt.Suggest {
-	suggestions := make([]prompt.Suggest, 2)
-
-	suggestions[0] = prompt.Suggest{Text: "on", Description: "Turn on"}
-	suggestions[1] = prompt.Suggest{Text: "off", Description: "Turn off"}
-
-	return suggestions
-}
-
-func outputCompleter(input *CompleterInput) []prompt.Suggest {
-	suggestions := make([]prompt.Suggest, 3)
-
-	suggestions[0] = prompt.Suggest{Text: "json", Description: "Set output to JSON"}
-	suggestions[1] = prompt.Suggest{Text: "csv", Description: "Set output to CSV"}
-	suggestions[1] = prompt.Suggest{Text: "table", Description: "Set output to TABLE (default)"}
-
-	return suggestions
+func completerFromArgsOf(cmd string) completer {
+	return func(input *CompleterInput) []prompt.Suggest {
+		metaQueryDefinition, _ := metaQueryDefinitions[cmd]
+		suggestions := make([]prompt.Suggest, len(metaQueryDefinition.args))
+		for idx, arg := range metaQueryDefinition.args {
+			suggestions[idx] = prompt.Suggest{Text: arg.value, Description: arg.description}
+		}
+		return suggestions
+	}
 }
 
 func inspectCompleter(input *CompleterInput) []prompt.Suggest {

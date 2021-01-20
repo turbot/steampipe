@@ -59,6 +59,19 @@ func composeValidator(validators ...validator) validator {
 	}
 }
 
+func validatorFromArgsOf(cmd string) validator {
+	return func(val string) ValidationResult {
+		metaQueryDefinition, _ := metaQueryDefinitions[cmd]
+		validArgs := []string{}
+
+		for _, validArg := range metaQueryDefinition.args {
+			validArgs = append(validArgs, validArg.value)
+		}
+
+		return allowedArgValues(false, validArgs...)(val)
+	}
+}
+
 var atMostNArgs = func(n int) validator {
 	return func(val string) ValidationResult {
 		args := strings.Fields(strings.TrimSpace(val))

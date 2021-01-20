@@ -2,10 +2,15 @@ package metaquery
 
 import "github.com/turbot/steampipe/constants"
 
+type metaQueryArg struct {
+	value       string
+	description string
+}
+
 type metaQueryDefinition struct {
 	title       string
 	description string
-	args        []string
+	args        []metaQueryArg
 	handler     handler
 	validator   validator
 	completer   completer
@@ -42,34 +47,47 @@ func init() {
 		cmdHeaders: {
 			title:       "headers",
 			handler:     setHeader,
-			validator:   booleanValidator(cmdHeaders, allowedArgValues(false, constants.ValOn, constants.ValOff)),
+			validator:   booleanValidator(cmdHeaders, validatorFromArgsOf(cmdHeaders)),
 			description: "Enable or disable column headers",
-			args:        []string{constants.ValOn, constants.ValOff},
-			completer:   booleanCompleter,
+			args: []metaQueryArg{
+				metaQueryArg{value: constants.ValOn, description: "Turn on headers in output"},
+				metaQueryArg{value: constants.ValOff, description: "Turn off headers in output"},
+			},
+			completer: completerFromArgsOf(cmdHeaders),
 		},
 		cmdMulti: {
 			title:       "multi-line",
 			handler:     setMultiLine,
-			validator:   booleanValidator(cmdMulti, allowedArgValues(false, constants.ValOn, constants.ValOff)),
+			validator:   booleanValidator(cmdMulti, validatorFromArgsOf(cmdMulti)),
 			description: "Enable or disable multiline mode",
-			args:        []string{constants.ValOn, constants.ValOff},
-			completer:   booleanCompleter,
+			args: []metaQueryArg{
+				metaQueryArg{value: constants.ValOn, description: "Turn on multiline mode"},
+				metaQueryArg{value: constants.ValOff, description: "Turn off multiline mode"},
+			},
+			completer: completerFromArgsOf(cmdMulti),
 		},
 		cmdTiming: {
 			title:       "timing",
 			handler:     setTiming,
-			validator:   booleanValidator(cmdTiming, allowedArgValues(false, constants.ValOn, constants.ValOff)),
+			validator:   booleanValidator(cmdTiming, validatorFromArgsOf(cmdTiming)),
 			description: "Enable or disable query execution timing",
-			args:        []string{constants.ValOn, constants.ValOff},
-			completer:   booleanCompleter,
+			args: []metaQueryArg{
+				metaQueryArg{value: constants.ValOn, description: "Display time elapsed after every query"},
+				metaQueryArg{value: constants.ValOff, description: "Turn off query timer"},
+			},
+			completer: completerFromArgsOf(cmdTiming),
 		},
 		cmdOutput: {
 			title:       cmdOutput,
 			handler:     setViperConfigFromArg(constants.ArgOutput),
-			validator:   composeValidator(exactlyNArgs(1), allowedArgValues(false, constants.ValJSON, constants.ValCSV, constants.ValTable)),
+			validator:   composeValidator(exactlyNArgs(1), validatorFromArgsOf(cmdOutput)),
 			description: "Set output format",
-			args:        []string{constants.ValJSON, constants.ValCSV, constants.ValTable},
-			completer:   outputCompleter,
+			args: []metaQueryArg{
+				metaQueryArg{value: constants.ValJSON, description: "Set output to JSON"},
+				metaQueryArg{value: constants.ValCSV, description: "Set output to CSV"},
+				metaQueryArg{value: constants.ValTable, description: "Set output to Table"},
+			},
+			completer: completerFromArgsOf(cmdOutput),
 		},
 		cmdInspect: {
 			title:       cmdInspect,
