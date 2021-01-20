@@ -61,42 +61,135 @@ func EnsureDBInstalled() {
 	fdwDigest, err := ociinstaller.InstallFdw(constants.DefaultFdwImage, getDatabaseLocation())
 	utils.FailOnErrorWithMessage(err, "Hub extension installation failed")
 
-	fmt.Println("Initialising SQL Support...")
+	fmt.Println("Initializing SQL Support...")
 	err = initDatabase()
 	if err != nil {
 		fmt.Printf("%v\n", err)
 	}
 	utils.FailOnError(err)
 
+	fmt.Println("Initializing steampipe Database...")
+	steampipePassword := generatePassword(64, 8, 8, 8)
+	rootPassword := generatePassword(64, 8, 8, 8)
+
+	// write the passwords that were generated
+	err = writePasswordFile(steampipePassword, rootPassword)
+	utils.FailOnErrorWithMessage(err, "failed")
+
+	StartService(InvokerInstaller)
+
+	defer func() {
+		// force stop
+		StopDB(true)
+	}()
+
+	err = installSteampipeDatabase(steampipePassword, rootPassword)
+	utils.FailOnErrorWithMessage(err, "failed")
+
 	fmt.Println("Installing SteampipeHub...")
 	err = installSteampipeHub()
-	utils.FailOnErrorWithMessage(err, "failed to setup SteampipeHub")
+	utils.FailOnErrorWithMessage(err, "failed")
 
 	// write a signature after everything gets done!
 	// so that we can check for this later on
-	writeDownloadedBinarySignature(dbImageDigest, fdwDigest)
+	err = writeDownloadedBinarySignature(dbImageDigest, fdwDigest)
+	utils.FailOnErrorWithMessage(err, "failed")
 }
 
-func installSteampipeHub() error {
-	StartService(InvokerInstaller)
-	rawClient, err := createDbClient()
+func installSteampipeDatabase(withSteampipePassword string, withRootPassword string) error {
+	rawClient, err := createPostgresDbClient()
 	if err != nil {
 		return err
 	}
 
 	defer func() {
 		rawClient.Close()
-		// force stop
-		StopDB(true)
 	}()
 
 	statements := []string{
-		`DROP EXTENSION IF EXISTS "steampipe_postgres_fdw" CASCADE`,
-		`CREATE EXTENSION IF NOT EXISTS "steampipe_postgres_fdw"`,
-		`CREATE SERVER "steampipe" FOREIGN DATA WRAPPER "steampipe_postgres_fdw"`,
+
+		// Lockdown all existing, and future, databases from use.
+		`revoke all on database postgres from public`,
+		`revoke all on database template1 from public`,
+
+		// Only the root user (who owns the postgres database) should be able to use
+		// or change it.
+		`revoke all privileges on schema public from public`,
+
+		// Create the steampipe database, used to hold all steampipe tables, views and data.
+		`create database steampipe`,
+
+		// Restrict permissions from general users to the steampipe database. We add them
+		// back progressively to allow appropriate read only access.
+		`revoke all on database steampipe from public`,
+
+		// The root user gets full rights to the steampipe database, ensuring we can actually
+		// configure and manage it properly.
+		`grant all on database steampipe to root`,
+
+		// The root user gets a password which will be used later on to connect
+		fmt.Sprintf(`alter user root with password '%s'`, withRootPassword),
+
+		//
+		// PERMISSIONS
+		//
+		// References:
+		// * https://dba.stackexchange.com/questions/117109/how-to-manage-default-privileges-for-users-on-a-database-vs-schema/117661#117661
+		//
+
+		// Create a role to represent all steampipe_users in the database.
+		// Grants and permissions can be managed on this role independent
+		// of the actual users in the system, giving us flexibility.
+		`create role steampipe_users`,
+
+		// Allow the steampipe user access to the steampipe database only
+		`grant connect on database steampipe to steampipe_users`,
+
+		// Create the steampipe user. By default they do not have superuser, createdb
+		// or createrole permissions.
+		`create user steampipe`,
+
+		// Set a random, complex password for the steampipe user. Done as a separate
+		// step from the create for clarity and reuse.
+		// TODO: need a complex random password here, that is available for sharing with the user when the do steampipe service
+		fmt.Sprintf(`alter user steampipe with password '%s'`, withSteampipePassword),
+
+		// Allow steampipe the privileges of steampipe_users.
+		`grant steampipe_users to steampipe`,
 	}
 
 	for _, statement := range statements {
+		// NOTE: This may print a password to the log file, but it doesn't matter
+		// since the password is stored in a config file anyway.
+		log.Println("[TRACE] Install steampipe database: ", statement)
+		if _, err := rawClient.Exec(statement); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func installSteampipeHub() error {
+	rawClient, err := createSteampipeRootDbClient()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		rawClient.Close()
+	}()
+
+	statements := []string{
+		// Install the FDW. The name must match the binary file.
+		`drop extension if exists "steampipe_postgres_fdw" cascade`,
+		`create extension if not exists "steampipe_postgres_fdw"`,
+		// Use steampipe for the server name, it's simplest
+		`create server "steampipe" foreign data wrapper "steampipe_postgres_fdw"`,
+	}
+
+	for _, statement := range statements {
+		log.Println("[TRACE] Install steampipe hub: ", statement)
 		if _, err := rawClient.Exec(statement); err != nil {
 			return err
 		}
@@ -192,9 +285,9 @@ func IsInstalled() bool {
 	return true
 }
 
-func writeDownloadedBinarySignature(dbDigest string, fdwDigest string) {
+func writeDownloadedBinarySignature(dbDigest string, fdwDigest string) error {
 	installedSignature := fmt.Sprintf("%s|%s", dbDigest, fdwDigest)
-	ioutil.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)
+	return ioutil.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)
 }
 
 func getInstalledBinarySignature() string {
@@ -222,5 +315,10 @@ func initDatabase() error {
 
 	log.Printf("[TRACE] %s", initDbProcess.String())
 
-	return initDbProcess.Run()
+	runError := initDbProcess.Run()
+	if runError != nil {
+		return runError
+	}
+
+	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(constants.PgHbaContent), 0600)
 }

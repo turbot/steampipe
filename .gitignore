@@ -1,6 +1,7 @@
 # Editor cache and lock files
 *.swp
 *.swo
+.idea/
 
 # Binaries for programs and plugins
 *.exe
