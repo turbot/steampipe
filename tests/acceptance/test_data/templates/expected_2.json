@@ -1,0 +1,15 @@
+[
+ {
+  "boolean_column": true,
+  "id": 0,
+  "json_column": {
+   "Id": 0,
+   "Name": "stringValuesomething-0",
+   "Statement": {
+    "Action": "iam:GetContextKeysForCustomPolicy",
+    "Effect": "Allow"
+   }
+  },
+  "string_column": "stringValuesomething-0"
+ }
+]

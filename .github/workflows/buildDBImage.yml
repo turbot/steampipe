@@ -2,9 +2,19 @@ name: Build and Publish DB Image
 
 # Controls when the action will run. 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: |
+          Version number for the OCI image for this release - usually the same as the
+          postgres version
+        required: true
+        default: 12.1.0
+
+      postgres_version:
+        description: 'Postgres Version to package (eg 12.1.0)'
+        required: true
+        default: 12.1.0-1
 
 env:
   PROJECT_ID: steampipe
@@ -12,7 +22,8 @@ env:
   CORE_REPO: us-docker.pkg.dev/steampipe/steampipe
   ORG: turbot
   CONFIG_SCHEMA_VERSION: "2020-11-18"
-  PG_VERSION: 12.1.0-1
+  VERSION:  ${{ github.event.inputs.version }}
+  PG_VERSION: ${{ github.event.inputs.postgres_version }}
   PATH_BASE: https://repo1.maven.org/maven2/io/zonky/test/postgres
   NAME_PREFIX: embedded-postgres-binaries
 
@@ -184,9 +195,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Set release version
-        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Validate Version String 
         run: |-
