@@ -2,13 +2,16 @@ package constants
 
 // dbClient constants
 // TODO these should be configuration settings
+
+// Arrays cannot be constants, so do the next most convenient thing
+var DatabaseListenAddresses = []string{"localhost", "127.0.0.1"}
+
 const (
-	DatabaseListenAddresses = "localhost" // a comma separated list
-	DatabaseHost            = "localhost"
-	DatabasePort            = 9193
-	DatabaseSuperUser       = "root"
-	DatabaseUser            = "steampipe"
-	DatabaseDbname          = "steampipe"
+	DatabaseHost      = "localhost"
+	DatabasePort      = 9193
+	DatabaseSuperUser = "root"
+	DatabaseUser      = "steampipe"
+	DatabaseName      = "steampipe"
 )
 
 // constants for installing db and fdw images

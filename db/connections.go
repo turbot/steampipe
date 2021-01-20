@@ -56,7 +56,7 @@ func refreshConnections(client *Client) error {
 		connectionQueries = append(connectionQueries, deleteConnectionQuery(c)...)
 	}
 	if len(connectionQueries) > 0 {
-		if err = executeConnectionQueries(client, connectionQueries, updates); err != nil {
+		if err = executeConnectionQueries(connectionQueries, updates); err != nil {
 			return err
 		}
 	} else {
@@ -80,9 +80,29 @@ func updateConnectionQuery(localSchema, remoteSchema string) []string {
 	// escape the name
 	localSchema = PgEscapeName(localSchema)
 	return []string{
-		fmt.Sprintf(`DROP SCHEMA IF EXISTS %s CASCADE;`, localSchema),
-		fmt.Sprintf(`CREATE SCHEMA %s;`, localSchema),
-		fmt.Sprintf(`IMPORT FOREIGN SCHEMA "%s" FROM SERVER steampipe INTO %s;`, remoteSchema, localSchema),
+
+		// Each connection has a unique schema. The schema, and all objects inside it,
+		// are owned by the root user.
+		fmt.Sprintf(`drop schema if exists %s cascade;`, localSchema),
+		fmt.Sprintf(`create schema %s;`, localSchema),
+		fmt.Sprintf(`comment on schema %s is 'steampipe plugin: %s';`, localSchema, remoteSchema),
+
+		// Steampipe users are allowed to use the new schema
+		fmt.Sprintf(`grant usage on schema %s to steampipe_users;`, localSchema),
+
+		// Permissions are limited to select only, and should be granted for all new
+		// objects. Steampipe users cannot create tables or modify data in the
+		// connection schema - they need to use the public schema for that.  These
+		// commands alter the defaults for any objects created in the future.
+		// See https://www.postgresql.org/docs/12/ddl-priv.html
+		fmt.Sprintf(`alter default privileges in schema %s grant select on tables to steampipe_users;`, localSchema),
+
+		// If there are any objects already then grant their permissions now. (This
+		// should not actually do anything at this point.)
+		fmt.Sprintf(`grant select on all tables in schema %s to steampipe_users;`, localSchema),
+
+		// Import the foreign schema into this connection.
+		fmt.Sprintf(`import foreign schema "%s" from server steampipe into %s;`, remoteSchema, localSchema),
 	}
 }
 
@@ -151,19 +171,30 @@ func deleteConnectionQuery(name string) []string {
 	}
 }
 
-func executeConnectionQueries(client *Client, schemaQueries []string, updates *connection_config.ConnectionUpdates) error {
+func executeConnectionQueries(schemaQueries []string, updates *connection_config.ConnectionUpdates) error {
+
+	client, err := createSteampipeRootDbClient()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		client.Close()
+	}()
+
 	// combine queries
 	schemaQueryString := strings.Join(schemaQueries, "\n")
 
 	log.Printf("[DEBUG] there are connections to update, query: \n%s\n", schemaQueryString)
-	schemaResult, err := client.ExecuteSync(schemaQueryString)
+	_, err = client.Exec(schemaQueryString)
 	if err != nil {
 		return err
 	}
+	/* TODO - Log results
 	log.Println("[TRACE] refresh connection results")
-	for row := range schemaResult.Rows {
+	for row := range schemaResult {
 		log.Printf("[TRACE] %v\n", row)
 	}
+	*/
 
 	// now update the state file
 	err = connection_config.SaveConnectionState(updates.RequiredConnections)

@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -108,8 +109,11 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		// by this time, we are sure that the port if free to listen to
 		"-p", fmt.Sprint(port),
 		"-c", fmt.Sprintf("listen_addresses=\"%s\"", listenAddresses),
-		"-c", fmt.Sprintf("application_name=\"%s\"", constants.APPNAME),
-		"-c", fmt.Sprintf("cluster_name=\"%s\"", constants.APPNAME),
+		// NOTE: If quoted, the application name includes the quotes. Worried about
+		// having spaces in the APPNAME, but leaving it unquoted since currently
+		// the APPNAME is hardcoded to be steampipe.
+		"-c", fmt.Sprintf("application_name=%s", constants.APPNAME),
+		"-c", fmt.Sprintf("cluster_name=%s", constants.APPNAME),
 		"-c", "autovacuum=off",
 		"-c", "bgwriter_lru_maxpages=0",
 		"-c", "effective-cache-size=64kB",
@@ -140,6 +144,8 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		// Data Directory
 		"-D", getDataLocation())
 
+	log.Println("[TRACE] postgres start command: ", postgresCmd)
+
 	postgresCmd.Env = os.Environ()
 
 	postgresCmd.SysProcAttr = &syscall.SysProcAttr{
@@ -156,15 +162,15 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	runningInfo := new(RunningDBInstanceInfo)
 	runningInfo.Pid = postgresCmd.Process.Pid
 	runningInfo.Port = port
-	runningInfo.User = constants.DatabaseSuperUser
-	runningInfo.Database = "postgres"
+	runningInfo.User = constants.DatabaseUser
+	runningInfo.Database = constants.DatabaseName
 	runningInfo.ListenType = listen
 	runningInfo.Invoker = invoker
 
-	runningInfo.Listen = []string{"localhost", "127.0.0.1"}
+	runningInfo.Listen = constants.DatabaseListenAddresses
 	if listen == ListenTypeNetwork {
 		addrs, _ := localAddresses()
-		runningInfo.Listen = append(addrs, runningInfo.Listen...)
+		runningInfo.Listen = append(runningInfo.Listen, addrs...)
 	}
 
 	if err := postgresCmd.Process.Release(); err != nil {

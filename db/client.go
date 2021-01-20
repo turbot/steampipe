@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/turbot/steampipe/connection_config"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/utils"
 )
@@ -40,9 +41,8 @@ func (c *Client) close() {
 func GetClient(autoRefreshConnections bool) (*Client, error) {
 	cMux.Lock()
 	defer cMux.Unlock()
-	log.Println("[TRACE] GetClient")
 	if clientSingleton == nil {
-		db, err := createDbClient()
+		db, err := createSteampipeDbClient()
 		if err != nil {
 			return nil, err
 		}
@@ -65,7 +65,19 @@ func GetClient(autoRefreshConnections bool) (*Client, error) {
 	return clientSingleton, nil
 }
 
-func createDbClient() (*sql.DB, error) {
+func createSteampipeDbClient() (*sql.DB, error) {
+	return createDbClient(constants.DatabaseName, constants.DatabaseUser)
+}
+
+func createSteampipeRootDbClient() (*sql.DB, error) {
+	return createDbClient(constants.DatabaseName, constants.DatabaseSuperUser)
+}
+
+func createPostgresDbClient() (*sql.DB, error) {
+	return createDbClient("postgres", constants.DatabaseSuperUser)
+}
+
+func createDbClient(dbname string, username string) (*sql.DB, error) {
 
 	log.Println("[TRACE] createDbClient")
 	info, err := GetStatus()
@@ -78,10 +90,13 @@ func createDbClient() (*sql.DB, error) {
 		return nil, fmt.Errorf("steampipe service is not running")
 	}
 
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable",
-		"127.0.0.1", info.Port, info.User, "postgres")
+	// Connect to the database using the first listen address, which is usually localhost
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", info.Listen[0], info.Port, username, dbname)
 
-	// connect to the database
+	log.Println("[TRACE] status: ", info)
+	log.Println("[TRACE] Connection string: ", psqlInfo)
+
+	// connect to the database using the postgres driver
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		return nil, err
