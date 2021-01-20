@@ -1,0 +1,9 @@
+
+* Set complex password for steampipe user and store it
+* Set complex password for root user and store it
+* Update pg_hba.conf to allow connections from other locations
+* plugin install > remove > query (FAILS!)
+* public schema should be first in search_path?
+
+* Tidy up install messages
+* Tidy up log messages we've dumped in

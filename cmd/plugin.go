@@ -39,12 +39,12 @@ Examples:
   steampipe plugin list
 
   # Uninstall a plugin
-  steampipe plugin remove dmi/paper`,
+  steampipe plugin uninstall aws`,
 	}
 
 	cmd.AddCommand(PluginInstallCmd())
 	cmd.AddCommand(PluginListCmd())
-	cmd.AddCommand(PluginRemoveCmd())
+	cmd.AddCommand(PluginUninstallCmd())
 
 	return cmd
 }
@@ -123,12 +123,12 @@ Examples:
 	return cmd
 }
 
-// PluginRemoveCmd :: Remove a plugin
-func PluginRemoveCmd() *cobra.Command {
+// PluginUninstallCmd :: Uninstall a plugin
+func PluginUninstallCmd() *cobra.Command {
 	var cmd = &cobra.Command{
-		Use:   "remove [flags] [registry/[org/]]name",
+		Use:   "uninstall [flags] [registry/[org/]]name",
 		Args:  cobra.ArbitraryArgs,
-		Run:   runPluginRemoveCmd,
+		Run:   runPluginUninstallCmd,
 		Short: "Uninstall a plugin",
 		Long: `Uninstall a plugin.
 
@@ -139,13 +139,13 @@ version of a plugin can be installed at a time.)
 Examples:
 
   # Uninstall a common plugin (turbot/aws)
-  steampipe plugin remove aws
+  steampipe plugin uninstall aws
 
   # Uninstall a plugin published by DMI to the public registry
-  steampipe plugin remove dmi/paper
+  steampipe plugin uninstall dmi/paper
 
   # Uninstall a plugin from a private registry
-  steampipe plugin remove my-registry.dmi.com/dmi/internal`,
+  steampipe plugin uninstall my-registry.dmi.com/dmi/internal`,
 	}
 
 	cmdconfig.OnCmd(cmd)
@@ -198,9 +198,9 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 	table.Render()
 }
 
-func runPluginRemoveCmd(cmd *cobra.Command, args []string) {
-	logging.LogTime("runPluginRemoveCmd uninstall")
-	defer logging.LogTime("runPluginRemoveCmd end")
+func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
+	logging.LogTime("runPluginUninstallCmd uninstall")
+	defer logging.LogTime("runPluginUninstallCmd end")
 
 	connectionMap, err := getPluginConnectionMap()
 	if err != nil {
@@ -210,9 +210,9 @@ func runPluginRemoveCmd(cmd *cobra.Command, args []string) {
 
 	for _, plugin := range args {
 		if err := pluginmanager.Remove(plugin, connectionMap); err != nil {
-			utils.ShowErrorWithMessage(err, fmt.Sprintf("Failed to remove plugin '%s'", plugin))
+			utils.ShowErrorWithMessage(err, fmt.Sprintf("Failed to uninstall plugin '%s'", plugin))
 		} else {
-			fmt.Println("Removed plugin", plugin)
+			fmt.Println("Uninstalled plugin", plugin)
 		}
 	}
 }
