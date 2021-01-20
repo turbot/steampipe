@@ -256,6 +256,14 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 		}
 		s = append(s, metaquery.PromptSuggestions()...)
 
+	} else if metaquery.IsMetaQuery(text) {
+		suggestions := metaquery.Complete(&metaquery.CompleterInput{
+			Query:       text,
+			Schema:      c.client.schemaMetadata,
+			Connections: c.client.connectionMap,
+		})
+
+		s = append(s, suggestions...)
 	} else {
 		queryInfo := getQueryInfo(text)
 
@@ -302,10 +310,6 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 			for _, table := range qualifiedTablesToAdd {
 				s = append(s, prompt.Suggest{Text: table, Description: "Table"})
 			}
-		} else {
-			// text: `.multi` | `.tables` etc
-			// auto-complete for meta-query args
-			s = append(s, metaquery.PromptArgsSuggestions(strings.TrimSpace(text))...)
 		}
 
 		// Not sure this is working. comment out for now!

@@ -7,7 +7,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 )
 
-// Validate :: validate a full metaquery along with arguments
+// ValidationResult :: response for Validate
 type ValidationResult struct {
 	Err       error
 	ShouldRun bool
@@ -16,13 +16,13 @@ type ValidationResult struct {
 
 type validator func(val string) ValidationResult
 
-// we can return err & validationResult
+// Validate :: validate a full metaquery along with arguments - we can return err & validationResult
 func Validate(query string) ValidationResult {
 	query = strings.TrimSuffix(query, ";")
 	// get the meta query
 	q := strings.Split(query, " ")
 
-	validatorFunction := metaQueryHandlers[q[0]].validator
+	validatorFunction := metaQueryDefinitions[q[0]].validator
 
 	if validatorFunction != nil {
 		return validatorFunction(strings.Join(getArguments(query), " "))
@@ -35,7 +35,7 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 		//	Error: argument required multi-line mode is off.  You can enable it with: .multi on
 		//	headers mode is off.  You can enable it with: .headers on
 		//	timing mode is off.  You can enable it with: .timing on
-		title := metaQueryHandlers[metaquery].title
+		title := metaQueryDefinitions[metaquery].title
 		args := strings.Fields(strings.TrimSpace(val))
 		numArgs := len(args)
 
@@ -56,6 +56,19 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 func composeValidator(validators ...validator) validator {
 	return func(val string) ValidationResult {
 		return buildValidationResult(val, validators)
+	}
+}
+
+func validatorFromArgsOf(cmd string) validator {
+	return func(val string) ValidationResult {
+		metaQueryDefinition, _ := metaQueryDefinitions[cmd]
+		validArgs := []string{}
+
+		for _, validArg := range metaQueryDefinition.args {
+			validArgs = append(validArgs, validArg.value)
+		}
+
+		return allowedArgValues(false, validArgs...)(val)
 	}
 }
 
