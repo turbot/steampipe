@@ -19,6 +19,9 @@ type StartResult int
 // StartListenType :: pseudoEnum of network binding for postgres
 type StartListenType string
 
+// Invoker :: pseudoEnum for what starts the service
+type Invoker string
+
 const (
 	// ServiceStarted :: StartResult - Service was started
 	ServiceStarted StartResult = iota
@@ -35,6 +38,17 @@ const (
 	LocalListenType = "local"
 )
 
+const (
+	// ServiceInvoker :: Invoker - when invoked by `service start`
+	ServiceInvoker Invoker = "service"
+	// QueryInvoker :: Invoker - when invoked by `query`
+	QueryInvoker = "query"
+	// InstallerInvoker :: Invoker - when invoked by the `installer`
+	InstallerInvoker = "installer"
+	// PluginInvoker :: Invoker - when invoked by the `pluginmanager`
+	PluginInvoker = "plugin"
+)
+
 // IsValid :: validator for StartListenType known values
 func (slt StartListenType) IsValid() error {
 	switch slt {
@@ -44,14 +58,17 @@ func (slt StartListenType) IsValid() error {
 	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", NetworkListenType, LocalListenType)
 }
 
-// StartDBWithDefaults :: start the database, if not already running
-// on `127.0.0.1:9193`
-func StartDBWithDefaults() (StartResult, error) {
-	return StartDB(constants.DatabasePort, "local")
+// IsValid :: validator for Invoker known values
+func (slt Invoker) IsValid() error {
+	switch slt {
+	case ServiceInvoker, QueryInvoker, InstallerInvoker, PluginInvoker:
+		return nil
+	}
+	return fmt.Errorf("Invalid invoker. Can be one of '%v', '%v', '%v' or '%v'", ServiceInvoker, QueryInvoker, InstallerInvoker, PluginInvoker)
 }
 
 // StartDB :: start the database is not already running
-func StartDB(port int, listen StartListenType) (StartResult, error) {
+func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, error) {
 	info, err := loadRunningInstanceInfo()
 
 	if err != nil {
@@ -139,6 +156,7 @@ func StartDB(port int, listen StartListenType) (StartResult, error) {
 	runningInfo.User = constants.DatabaseSuperUser
 	runningInfo.Database = "postgres"
 	runningInfo.ListenType = listen
+	runningInfo.Invoker = invoker
 
 	runningInfo.Listen = []string{"localhost", "127.0.0.1"}
 	if listen == NetworkListenType {
@@ -164,7 +182,7 @@ func StartDB(port int, listen StartListenType) (StartResult, error) {
 			// remove info file (if any)
 			_ = removeRunningInstanceInfo()
 			// try restarting
-			return StartDB(port, listen)
+			return StartDB(port, listen, invoker)
 		}
 
 		// there was nothing to kill.
