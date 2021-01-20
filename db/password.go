@@ -51,19 +51,19 @@ func generatePassword(passwordLength, minSpecialChar, minNum, minUpperCase int) 
 
 	var password strings.Builder
 
-	//Set special character
+	// set special character
 	for i := 0; i < minSpecialChar; i++ {
 		random := rand.Intn(len(specialCharSet))
 		password.WriteString(string(specialCharSet[random]))
 	}
 
-	//Set numeric
+	// set numeric
 	for i := 0; i < minNum; i++ {
 		random := rand.Intn(len(numberSet))
 		password.WriteString(string(numberSet[random]))
 	}
 
-	//Set uppercase
+	// set uppercase
 	for i := 0; i < minUpperCase; i++ {
 		random := rand.Intn(len(upperCharSet))
 		password.WriteString(string(upperCharSet[random]))
