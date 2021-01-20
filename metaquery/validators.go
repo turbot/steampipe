@@ -22,7 +22,7 @@ func Validate(query string) ValidationResult {
 	// get the meta query
 	q := strings.Split(query, " ")
 
-	validatorFunction := metaQueryHandlers[q[0]].validator
+	validatorFunction := metaQueryDefinitions[q[0]].validator
 
 	if validatorFunction != nil {
 		return validatorFunction(strings.Join(getArguments(query), " "))
@@ -35,7 +35,7 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 		//	Error: argument required multi-line mode is off.  You can enable it with: .multi on
 		//	headers mode is off.  You can enable it with: .headers on
 		//	timing mode is off.  You can enable it with: .timing on
-		title := metaQueryHandlers[metaquery].title
+		title := metaQueryDefinitions[metaquery].title
 		args := strings.Fields(strings.TrimSpace(val))
 		numArgs := len(args)
 

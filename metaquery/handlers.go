@@ -32,92 +32,7 @@ func (h *HandlerInput) args() []string {
 	return getArguments(h.Query)
 }
 
-type metaquery struct {
-	title       string
-	description string
-	args        []string
-	handler     handler
-	validator   validator
-}
-
 type handler func(input *HandlerInput) error
-
-var metaQueryHandlers map[string]metaquery
-
-func init() {
-	metaQueryHandlers = map[string]metaquery{
-		cmdExit: {
-			title:       cmdExit,
-			handler:     doExit,
-			validator:   noArgs,
-			description: "Exit from steampipe terminal",
-		},
-		cmdQuit: {
-			title:       cmdQuit,
-			handler:     doExit,
-			validator:   noArgs,
-			description: "Exit from steampipe terminal",
-		},
-		cmdTableList: {
-			title:       cmdTableList,
-			handler:     listTables,
-			validator:   atMostNArgs(1),
-			description: "List or describe tables",
-		},
-		cmdSeparator: {
-			title:       cmdSeparator,
-			handler:     setViperConfigFromArg(constants.ArgSeparator),
-			validator:   exactlyNArgs(1),
-			description: "Set csv output separator",
-		},
-		cmdHeaders: {
-			title:       "headers",
-			handler:     setHeader,
-			validator:   booleanValidator(cmdHeaders, allowedArgValues(false, constants.ValOn, constants.ValOff)),
-			description: "Enable or disable column headers",
-			args:        []string{constants.ValOn, constants.ValOff},
-		},
-		cmdMulti: {
-			title:       "multi-line",
-			handler:     setMultiLine,
-			validator:   booleanValidator(cmdMulti, allowedArgValues(false, constants.ValOn, constants.ValOff)),
-			description: "Enable or disable multiline mode",
-			args:        []string{constants.ValOn, constants.ValOff},
-		},
-		cmdTiming: {
-			title:       "timing",
-			handler:     setTiming,
-			validator:   booleanValidator(cmdTiming, allowedArgValues(false, constants.ValOn, constants.ValOff)),
-			description: "Enable or disable query execution timing",
-			args:        []string{constants.ValOn, constants.ValOff},
-		},
-		cmdOutput: {
-			title:       cmdOutput,
-			handler:     setViperConfigFromArg(constants.ArgOutput),
-			validator:   composeValidator(exactlyNArgs(1), allowedArgValues(false, constants.ValJSON, constants.ValCSV, constants.ValTable)),
-			description: "Set output format",
-			args:        []string{constants.ValJSON, constants.ValCSV, constants.ValTable},
-		},
-		cmdInspect: {
-			title:       cmdInspect,
-			handler:     inspect,
-			validator:   atMostNArgs(1),
-			description: "View connections, tables & column information",
-		},
-		cmdConnections: {
-			title:       cmdConnections,
-			handler:     listConnections,
-			validator:   noArgs,
-			description: "List active connections",
-		},
-		cmdClear: {
-			title:       cmdClear,
-			handler:     clearScreen,
-			validator:   noArgs,
-			description: "Clear the console",
-		},
-	}
-}
 
 // Handle :: handle metaquery.
 func Handle(input *HandlerInput) error {
@@ -125,7 +40,7 @@ func Handle(input *HandlerInput) error {
 	var s = strings.Fields(input.Query)
 
 	var handlerFunction handler
-	metaQueryObj, found := metaQueryHandlers[s[0]]
+	metaQueryObj, found := metaQueryDefinitions[s[0]]
 	if !found {
 		return fmt.Errorf("not sure how to handle '%s'", s[0])
 	}
