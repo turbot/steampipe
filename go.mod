@@ -15,6 +15,7 @@ require (
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/google/uuid v1.1.5
+	github.com/hashicorp/go-cleanhttp v0.5.1
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.3.0
 	github.com/hashicorp/go-version v1.2.1

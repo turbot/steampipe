@@ -4,6 +4,7 @@ import (
 
 	// need to attach this driver to the default sql package
 
+	"github.com/turbot/steampipe/task"
 	"log"
 	"os"
 
@@ -47,4 +48,10 @@ func createLogger() {
 	log.SetPrefix("")
 	log.SetFlags(0)
 
+}
+
+
+func init() {
+	// run periodic tasks - update check and log clearing
+	task.NewRunner().Run()
 }
