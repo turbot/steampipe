@@ -104,12 +104,10 @@ func displayUpdateNotification(info *versionCheckResponse, currentVersion *SemVe
 
 	var downloadURLColor = color.New(color.FgYellow)
 
-	diff := versionDiff(currentVersion, newVersion)
-
 	var notificationLines = [][]string{
 		[]string{""},
-		[]string{fmt.Sprintf("A new %s version of Steampipe is available! %s → %s", constants.Bold(diff), constants.Bold(currentVersion), constants.Bold(newVersion))},
-		[]string{fmt.Sprintf("You can update by downloading from %s", downloadURLColor.Sprint(info.DownloadURL))},
+		[]string{fmt.Sprintf("A new version of Steampipe is available! %s → %s", constants.Bold(currentVersion), constants.Bold(newVersion))},
+		[]string{fmt.Sprintf("You can update by downloading from %s", downloadURLColor.Sprint("https://steampipe.io/downloads"))},
 		[]string{""},
 	}
 
@@ -214,9 +212,9 @@ func decodeResult(body string) *versionCheckResponse {
 
 func versionCheckPOSTURL() url.URL {
 	var u url.URL
-	//https://hub-steampipe-io-git-development.turbot.vercel.app/api/cli/version/latest
+	//https://hub.steampipe.io/api/cli/version/latest
 	u.Scheme = "https"
-	u.Host = "hub-steampipe-io-git-development.turbot.vercel.app"
+	u.Host = "hub.steampipe.io"
 	u.Path = "api/cli/version/latest"
 	return u
 }

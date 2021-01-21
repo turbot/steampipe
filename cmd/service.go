@@ -144,12 +144,12 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if status == db.ServiceFailedToStart {
-		fmt.Println("Steampipe Service failed to start")
+		fmt.Println("Steampipe service failed to start")
 		return
 	}
 
 	if status == db.ServiceAlreadyRunning {
-		fmt.Println("Steampipe Service is already running")
+		fmt.Println("Steampipe service is already running")
 		return
 	}
 
@@ -201,7 +201,7 @@ to force a restart.
 	}
 
 	if status == db.ServiceFailedToStart {
-		fmt.Println("Steampipe Service was stopped, but failed to start")
+		fmt.Println("Steampipe service was stopped, but failed to start")
 		return
 	}
 
