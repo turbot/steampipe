@@ -54,9 +54,11 @@ type versionChecker struct {
 
 // check if there is a new version
 func checkVersion(id string) {
-	if v, ok := os.LookupEnv(disableUpdatesCheckEnvVar); ok && v == "true" {
+	// if SP_DISABLE_UPDATE_CHECK is set, do nothing
+	if v, ok := os.LookupEnv(disableUpdatesCheckEnvVar); ok && strings.ToLower(v) == "true" {
 		return
 	}
+
 	v := new(versionChecker)
 	v.signature = id
 	v.GetVersionResp()
