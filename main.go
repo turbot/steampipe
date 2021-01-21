@@ -15,12 +15,17 @@ import (
 var Logger hclog.Logger
 
 func main() {
+	/// setup logging
 	logging.LogTime("start")
 	createLogger()
 	log.Println("[TRACE] tracing enabled")
+	
 	// run periodic tasks - update check and log clearing
 	task.NewRunner().Run()
+	
+	// execute the command
 	cmd.Execute()
+	
 	logging.LogTime("end")
 	utils.DisplayProfileData()
 }
