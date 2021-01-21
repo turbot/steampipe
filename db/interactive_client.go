@@ -122,7 +122,26 @@ func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *ResultStreamer
 		prompt.OptionPrefixTextColor(prompt.DefaultColor),
 		prompt.OptionMaxSuggestion(20),
 		// Known Key Bindings
-		prompt.OptionAddKeyBind(prompt.KeyBind{Key: prompt.ControlC, Fn: func(b *prompt.Buffer) { c.breakMultilinePrompt(b) }}),
+		prompt.OptionAddKeyBind(prompt.KeyBind{
+			Key: prompt.ControlC,
+			Fn:  func(b *prompt.Buffer) { c.breakMultilinePrompt(b) },
+		}),
+		prompt.OptionAddKeyBind(prompt.KeyBind{
+			Key: prompt.ShiftLeft,
+			Fn:  prompt.GoLeftWord,
+		}),
+		prompt.OptionAddKeyBind(prompt.KeyBind{
+			Key: prompt.ShiftRight,
+			Fn:  prompt.GoRightWord,
+		}),
+		prompt.OptionAddKeyBind(prompt.KeyBind{
+			Key: prompt.ShiftUp,
+			Fn:  func(b *prompt.Buffer) { /*ignore*/ },
+		}),
+		prompt.OptionAddKeyBind(prompt.KeyBind{
+			Key: prompt.ShiftDown,
+			Fn:  func(b *prompt.Buffer) { /*ignore*/ },
+		}),
 		// Opt+LeftArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
 			ASCIICode: constants.OptLeftArrowASCIICode,
