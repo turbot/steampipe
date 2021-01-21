@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/go-cleanhttp"
 	SemVer "github.com/hashicorp/go-version"
 	"github.com/olekukonko/tablewriter"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/version"
 	"io/ioutil"
 	"log"
@@ -101,18 +102,14 @@ func (c *versionChecker) Notify() {
 
 func displayUpdateNotification(info *versionCheckResponse, currentVersion *SemVer.Version, newVersion *SemVer.Version) {
 
-	var oldVersionColor = color.New(color.FgHiRed)
-	var newVersionColor = color.New(color.FgHiGreen)
 	var downloadURLColor = color.New(color.FgYellow)
-	var versionDiffColor = color.New(color.FgHiYellow)
-	var appNameColor = color.New(color.FgHiCyan)
 
 	diff := versionDiff(currentVersion, newVersion)
 
 	var notificationLines = [][]string{
 		[]string{""},
-		[]string{fmt.Sprintf("New %s version of %s is available! %s → %s", versionDiffColor.Sprint(diff), appNameColor.Sprint("Steampipe"), oldVersionColor.Sprint(currentVersion), newVersionColor.Sprint(newVersion))},
-		[]string{fmt.Sprintf("You can update by downloading from- %s", downloadURLColor.Sprint(info.DownloadURL))},
+		[]string{fmt.Sprintf("A new %s version of Steampipe is available! %s → %s", constants.Bold(diff), constants.Bold(currentVersion), constants.Bold(newVersion))},
+		[]string{fmt.Sprintf("You can update by downloading from %s", downloadURLColor.Sprint(info.DownloadURL))},
 		[]string{""},
 	}
 
