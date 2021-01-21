@@ -447,6 +447,8 @@ github.com/tkrajina/go-reflector v0.5.4/go.mod h1:9PyLgEOzc78ey/JmQQHbW8cQJ1oucL
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/turbot/go-kit v0.0.0-20210119154454-db924443f736 h1:j/cfIwIBSX4Z23k50mgu7eLOGVcPi62ebV1Wm98OCyU=
 github.com/turbot/go-kit v0.0.0-20210119154454-db924443f736/go.mod h1:hO/mY90fJXLWAJnAoDkYMvi3LVZ/r+z1tiz3E1uPSNA=
+github.com/turbot/go-prompt v0.2.5-steampipe h1:SWQ0ZsHVtM1oJ+yGREm9xpzvjl6ZXQMEpJ1DNW7beDU=
+github.com/turbot/go-prompt v0.2.5-steampipe/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
 github.com/turbot/steampipe-plugin-sdk v0.0.0-20210119154656-52569ae6f10d h1:/h1X0W74GUatUoaNxoS951scw+DK60CIZ49brL+uzaY=
 github.com/turbot/steampipe-plugin-sdk v0.0.0-20210119154656-52569ae6f10d/go.mod h1:jhmUevBAJQhpxCtwP+pnpYI13/ODrZb7eCI8MKd8jZA=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=

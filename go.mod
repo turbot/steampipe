@@ -45,4 +45,4 @@ require (
 	gotest.tools/v3 v3.0.3 // indirect
 )
 
-replace github.com/c-bata/go-prompt => github.com/binaek89/go-prompt v0.2.7-multiline-clearscreen
+replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.5-steampipe
