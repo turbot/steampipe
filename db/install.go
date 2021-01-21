@@ -35,7 +35,12 @@ func EnsureDBInstalled() {
 	if IsInstalled() {
 		// check if FDW needs to be updated
 		if fdwNeedsUpdate() {
-			installFDW(false)
+			_, err := installFDW(false)
+			if err != nil {
+				utils.ShowError(fmt.Errorf("FDW could not be updated"))
+			} else {
+				fmt.Printf("FDW was updated. Run %s for change to take effect.\n", constants.Bold("steampipe service restart"))
+			}
 		}
 		return
 	}
@@ -266,14 +271,6 @@ func StartService(invoker Invoker) {
 	return
 }
 
-func restartService() error {
-	log.Println("[TRACE] restart service")
-	// spawn a process to start the service, passing refresh=false to ensure we DO NOT refresh connections
-	// (as we will do that ourselves)
-	cmd := exec.Command(os.Args[0], "service", "restart", "--force")
-	return cmd.Run()
-}
-
 func fdwNeedsUpdate() bool {
 	// check FDW version
 	versionInfo, err := versionfile.Load()
@@ -298,7 +295,6 @@ func installFDW(firstSetup bool) (newDigest string, err error) {
 				// update the signature
 				updateDownloadedBinarySignature()
 			}
-			restartService()
 		}()
 	}
 	fdwInstallSpinner := utils.ShowSpinner(fmt.Sprintf("Download & install Steampipe PostgreSQL FDW..."))
