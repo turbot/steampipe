@@ -5,8 +5,6 @@ import (
 	"log"
 	"os"
 	"time"
-
-	"github.com/turbot/steampipe/utils"
 )
 
 const logRetentionDays = 7
@@ -21,9 +19,10 @@ func TrimLogs() {
 		fileName := file.Name()
 		diff := time.Now().Sub(file.ModTime()).Hours()
 		if diff > logRetentionDays*24 {
-			err := os.Remove(fileLocation + "/" + fileName)
+			logPath := fileLocation + "/" + fileName
+			err := os.Remove(logPath)
 			if err != nil {
-				utils.ShowWarning("could not delete the log file")
+				log.Printf("[INFO] failed to delete log file %s\n", logPath)
 			}
 		}
 	}
