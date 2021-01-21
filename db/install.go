@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/ociinstaller"
+	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -32,6 +33,10 @@ func EnsureDBInstalled() {
 	}()
 
 	if IsInstalled() {
+		// check if FDW needs to be updated
+		if fdwNeedsUpdate() {
+			installFDW(false)
+		}
 		return
 	}
 
@@ -60,18 +65,14 @@ func EnsureDBInstalled() {
 	utils.StopSpinner(dbCleanupSpinner)
 
 	dbInstallSpinner := utils.ShowSpinner(fmt.Sprintf("Download & install embedded PostgreSQL database..."))
-	dbImageDigest, err := ociinstaller.InstallDB(constants.DefaultEmbeddedPostgresImage, getDatabaseLocation())
+	_, err = ociinstaller.InstallDB(constants.DefaultEmbeddedPostgresImage, getDatabaseLocation())
 	utils.StopSpinner(dbInstallSpinner)
 	if err != nil {
 		utils.FailOnErrorWithMessage(err, "x Download & install embedded PostgreSQL database... FAILED!")
 	}
 
-	fdwInstallSpinner := utils.ShowSpinner(fmt.Sprintf("Download & install Steampipe PostgreSQL FDW..."))
-	fdwDigest, err := ociinstaller.InstallFdw(constants.DefaultFdwImage, getDatabaseLocation())
-	utils.StopSpinner(fdwInstallSpinner)
-	if err != nil {
-		utils.FailOnErrorWithMessage(err, "x Download & install Steampipe Postgres FDW... FAILED!")
-	}
+	// installFDW takes care of the spinner, since it may need to run independently
+	_, err = installFDW(true)
 
 	dbInitSpinner := utils.ShowSpinner(fmt.Sprintf("Initializing database..."))
 	err = initDatabase()
@@ -113,7 +114,7 @@ func EnsureDBInstalled() {
 	// write a signature after everything gets done!
 	// so that we can check for this later on
 	writeSignaturesSpinner := utils.ShowSpinner(fmt.Sprintf("Updating install records..."))
-	err = writeDownloadedBinarySignature(dbImageDigest, fdwDigest)
+	err = updateDownloadedBinarySignature()
 	utils.StopSpinner(writeSignaturesSpinner)
 	if err != nil {
 		utils.FailOnErrorWithMessage(err, "x Updating install records... FAILED!")
@@ -265,6 +266,54 @@ func StartService(invoker Invoker) {
 	return
 }
 
+func restartService() error {
+	log.Println("[TRACE] restart service")
+	// spawn a process to start the service, passing refresh=false to ensure we DO NOT refresh connections
+	// (as we will do that ourselves)
+	cmd := exec.Command(os.Args[0], "service", "restart", "--force")
+	return cmd.Run()
+}
+
+func fdwNeedsUpdate() bool {
+	// check FDW version
+	versionInfo, err := versionfile.Load()
+	if err != nil {
+		utils.FailOnError(fmt.Errorf("could not verify required FDW version"))
+	}
+	if versionInfo.FdwExtension.Version != constants.FdwVersion {
+		return true
+	}
+	return false
+}
+
+func installFDW(firstSetup bool) (newDigest string, err error) {
+	status, err := GetStatus()
+	if err != nil {
+		newDigest = ""
+		return
+	}
+	if status != nil {
+		defer func() {
+			if !firstSetup {
+				// update the signature
+				updateDownloadedBinarySignature()
+			}
+			restartService()
+		}()
+	}
+	fdwInstallSpinner := utils.ShowSpinner(fmt.Sprintf("Download & install Steampipe PostgreSQL FDW..."))
+	newDigest, err = ociinstaller.InstallFdw(constants.DefaultFdwImage, getDatabaseLocation())
+	utils.StopSpinner(fdwInstallSpinner)
+	if err != nil {
+		if firstSetup {
+			utils.FailOnErrorWithMessage(err, "x Download & install Steampipe Postgres FDW... FAILED!")
+		} else {
+			utils.ShowError(fmt.Errorf("could not update FDW"))
+		}
+	}
+	return
+}
+
 // IsInstalled :: checks and reports whether the embedded database is installed and setup
 func IsInstalled() bool {
 	// check that both postgres binary and initdb binary exist
@@ -309,8 +358,12 @@ func IsInstalled() bool {
 	return true
 }
 
-func writeDownloadedBinarySignature(dbDigest string, fdwDigest string) error {
-	installedSignature := fmt.Sprintf("%s|%s", dbDigest, fdwDigest)
+func updateDownloadedBinarySignature() error {
+	versionInfo, err := versionfile.Load()
+	if err != nil {
+		return err
+	}
+	installedSignature := fmt.Sprintf("%s|%s", versionInfo.EmbeddedDB.ImageDigest, versionInfo.FdwExtension.ImageDigest)
 	return ioutil.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)
 }
 
