@@ -277,10 +277,7 @@ func fdwNeedsUpdate() bool {
 	if err != nil {
 		utils.FailOnError(fmt.Errorf("could not verify required FDW version"))
 	}
-	if versionInfo.FdwExtension.Version != constants.FdwVersion {
-		return true
-	}
-	return false
+	return versionInfo.FdwExtension.Version != constants.FdwVersion
 }
 
 func installFDW(firstSetup bool) (string, error) {
