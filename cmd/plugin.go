@@ -162,7 +162,11 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	for _, arg := range args {
 		if _, err := pluginmanager.Install(arg); err != nil {
-			utils.ShowErrorWithMessage(err, fmt.Sprintf("Plugin install failed for plugin '%s'", arg))
+			msg := fmt.Sprintf("plugin install failed for plugin '%s'", arg)
+			if strings.HasSuffix(err.Error(), "not found") {
+				msg += ": not found"
+			}
+			utils.ShowError(fmt.Errorf(msg))
 			return
 		} else {
 			fmt.Println("Installed plugin:", arg)
