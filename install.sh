@@ -40,9 +40,15 @@ zip_location="$tmp_dir/steampipe.zip"
 
 echo "Downloading from $steampipe_uri"
 if command -v wget >/dev/null; then
-	wget -q --show-progress -O "$zip_location" "$steampipe_uri"
+	if ! wget -q --show-progress -O "$zip_location" "$steampipe_uri"; then
+        echo "Could not find version $1"
+        exit 1
+    fi
 elif command -v curl >/dev/null; then
-    curl --fail --location --progress-bar --output "$zip_location" "$steampipe_uri"
+    if ! curl --silent --fail --location --progress-bar --output "$zip_location" "$steampipe_uri"; then
+        echo "Could not find version $1"
+        exit 1
+    fi
 else
     echo "Unable to find wget or curl. Cannot download."
     exit 1
@@ -53,6 +59,7 @@ unzip -d "$tmp_dir" -o "$zip_location"
 echo "Installing"
 install -d "$bin_dir"
 install "$tmp_dir/steampipe" "$bin_dir"
+chmod +x $exe
 echo "Removing downloaded archive"
 rm "$zip_location"
 
