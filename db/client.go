@@ -157,7 +157,10 @@ func (c *Client) setSearchPath() {
 	if len(schemas) > 0 {
 		// sort the schema names
 		sort.Strings(schemas)
-		schemas = append(schemas, "public")
+		// Add the public schema as the first schema in the search_path. This makes it
+		// easier for users to build and work with their own tables, and since it's normally
+		// empty, doesn't make using steampipe tables any more difficult.
+		schemas = append([]string{"public"}, schemas...)
 		log.Println("[TRACE] setting search path to", schemas)
 		sql := fmt.Sprintf("SET search_path TO %s;", strings.Join(schemas, ","))
 		c.ExecuteSync(sql)
