@@ -128,11 +128,11 @@ func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *ResultStreamer
 		}),
 		prompt.OptionAddKeyBind(prompt.KeyBind{
 			Key: prompt.ShiftLeft,
-			Fn:  prompt.GoLeftWord,
+			Fn:  prompt.GoLeftChar,
 		}),
 		prompt.OptionAddKeyBind(prompt.KeyBind{
 			Key: prompt.ShiftRight,
-			Fn:  prompt.GoRightWord,
+			Fn:  prompt.GoRightChar,
 		}),
 		prompt.OptionAddKeyBind(prompt.KeyBind{
 			Key: prompt.ShiftUp,
