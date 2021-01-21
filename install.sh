@@ -27,7 +27,7 @@ fi
 if [ $# -eq 0 ]; then
 	steampipe_uri="https://github.com/turbot/steampipe/releases/latest/download/steampipe_${target}.zip"
 else
-	steampipe_uri="https://github.com/denoland/deno/releases/download/${1}/steampipe_${target}.zip"
+	steampipe_uri="https://github.com/turbot/steampipe/releases/download/${1}/steampipe_${target}.zip"
 fi
 
 bin_dir="/usr/local/bin"
