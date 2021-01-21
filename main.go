@@ -50,7 +50,8 @@ func createLogger() {
 
 }
 
-// run period tasks - update check and log clearing
+
 func init() {
+	// run periodic tasks - update check and log clearing
 	task.NewRunner().Run()
 }
