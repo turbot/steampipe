@@ -83,7 +83,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		}
 		if processRunning {
 			if info.Invoker == InvokerQuery {
-				return ServiceAlreadyRunning, fmt.Errorf("You have a %s session open. Close this session before running %s", constants.Bold("steampipe query"), constants.Bold("steampipe service start"))
+				return ServiceAlreadyRunning, fmt.Errorf("You have a %s session open. Close this session before running %s. To kill existing sessions, run %s", constants.Bold("steampipe query"), constants.Bold("steampipe service stop"), constants.Bold("steampipe service stop --force"))
 			}
 			return ServiceAlreadyRunning, nil
 		}
