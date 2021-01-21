@@ -300,7 +300,7 @@ func installFDW(firstSetup bool) (string, error) {
 		if firstSetup {
 			utils.FailOnErrorWithMessage(err, "x Download & install Steampipe Postgres FDW... FAILED!")
 		} else {
-			utils.ShowError(fmt.Errorf("could not update FDW"))
+			utils.ShowErrorWithMessage(err, "could not update FDW")
 		}
 	}
 	return newDigest, err
