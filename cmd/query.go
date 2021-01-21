@@ -51,7 +51,6 @@ Examples:
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: csv, json or table").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.")
-	//AddStringSliceFlag("connection", "c", []string{}, "Connection(s) (comma separated) to use for this run")
 
 	return cmd
 }
