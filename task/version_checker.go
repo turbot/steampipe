@@ -21,8 +21,8 @@ import (
 
 const disableUpdatesCheckEnvVar = "SP_DISABLE_UPDATE_CHECK"
 
-// CurrentVersion :: is the Current Version of the Steampipe CLI application
-var CurrentVersion = version.Version
+// the current version of the Steampipe CLI application
+var currentVersion = version.Version
 
 type versionCheckResponse struct {
 	NewVersion   string    `json:"latest_version,omitempty"` // `json:"current_version"`
@@ -87,7 +87,7 @@ func (c *versionChecker) Notify() {
 	if err != nil {
 		return
 	}
-	currentVersion, err := SemVer.NewVersion(CurrentVersion)
+	currentVersion, err := SemVer.NewVersion(currentVersion)
 
 	if err != nil {
 		fmt.Println(fmt.Errorf("there's something wrong with the Current Version"))
@@ -197,7 +197,7 @@ func (c *versionChecker) doCheckRequest() {
 func (c *versionChecker) buildJSONPayload() *bytes.Buffer {
 	id := c.signature
 	body := &versionCheckRequest{
-		Version:    CurrentVersion,
+		Version:    currentVersion,
 		OsPlatform: runtime.GOOS,
 		OsArch:     runtime.GOARCH,
 		Signature:  id,
@@ -228,7 +228,7 @@ func (c *versionChecker) constructUserAgent() string {
 	const format = "TURBOT(STEAMPIPE/%s)(%s/%s)(%s/%s)(%s)"
 
 	return fmt.Sprintf(format,
-		CurrentVersion,
+		currentVersion,
 		runtime.GOOS,
 		"",
 		runtime.GOARCH,
