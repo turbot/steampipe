@@ -11,6 +11,9 @@ import (
 	"time"
 )
 
+const minimumMinutesBetweenChecks = 1440 // 1 day
+const updateStateFileName = "update-check.json"
+
 type Runner struct {
 	currentState state
 	shouldRun    bool
@@ -57,9 +60,6 @@ func (r *Runner) loadState() {
 }
 
 func (r *Runner) getShouldRun() bool {
-	if v, ok := os.LookupEnv(disableEnvVarName); ok && v == "true" {
-		return false
-	}
 	now := time.Now()
 	if r.currentState.LastCheck == "" {
 		return true

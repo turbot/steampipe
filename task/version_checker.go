@@ -18,9 +18,7 @@ import (
 	"time"
 )
 
-const minimumMinutesBetweenChecks = 1440 // 1 day
-const updateStateFileName = "update-check.json"
-const disableEnvVarName = "SP_DISABLE_UPDATE_CHECK"
+const disableUpdatesCheckEnvVar = "SP_DISABLE_UPDATE_CHECK"
 
 // CurrentVersion :: is the Current Version of the Steampipe CLI application
 var CurrentVersion = version.Version
@@ -56,6 +54,9 @@ type versionChecker struct {
 
 // check if there is a new version
 func checkVersion(id string) {
+	if v, ok := os.LookupEnv(disableUpdatesCheckEnvVar); ok && v == "true" {
+		return
+	}
 	v := new(versionChecker)
 	v.signature = id
 	v.GetVersionResp()
