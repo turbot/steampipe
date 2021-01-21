@@ -2,7 +2,6 @@ package ociinstaller
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"time"
 
@@ -17,14 +16,12 @@ func InstallDB(imageRef string, dest string) (string, error) {
 	imageDownloader := NewOciDownloader(context.Background())
 
 	// Download the blobs
-	fmt.Println("Downloading...")
 	image, err := imageDownloader.Download(imageRef, "db", tempDir.Path)
 	if err != nil {
 		return "", err
 	}
 
 	// install the files
-	fmt.Printf("\nInstalling...")
 	if err = extractDbFiles(image, tempDir.Path, dest); err != nil {
 		return "", err
 	}

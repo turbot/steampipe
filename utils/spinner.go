@@ -14,7 +14,7 @@ func ShowSpinner(msg string) *spinner.Spinner {
 		spinner.CharSets[14],
 		100*time.Millisecond,
 		spinner.WithWriter(os.Stdout),
-		spinner.WithSuffix(fmt.Sprintf("    %s", msg)),
+		spinner.WithSuffix(fmt.Sprintf(" %s", msg)),
 	)
 	s.Start()
 	return s

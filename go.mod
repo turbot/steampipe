@@ -14,7 +14,7 @@ require (
 	github.com/fatih/color v1.7.0
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/go-ole/go-ole v1.2.4 // indirect
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.1.5
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.3.0
 	github.com/hashicorp/go-version v1.2.1
@@ -39,7 +39,7 @@ require (
 	github.com/turbot/go-kit v0.0.0-20210119154454-db924443f736
 	github.com/turbot/steampipe-plugin-sdk v0.0.0-20210119154656-52569ae6f10d
 	github.com/ulikunitz/xz v0.5.8
-	github.com/zclconf/go-cty v1.7.0
+	github.com/zclconf/go-cty v1.7.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gotest.tools/v3 v3.0.3 // indirect
 )

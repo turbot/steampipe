@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
-	"math/rand"
-	"strings"
+
+	"github.com/google/uuid"
 )
 
 // Passwords :: structure for working with DB passwords
@@ -40,43 +40,15 @@ func getPasswords() (*Passwords, error) {
 	return passwords, nil
 }
 
-func generatePassword(passwordLength, minSpecialChar, minNum, minUpperCase int) string {
-	const (
-		lowerCharSet   = "abcdedfghijklmnopqrst"
-		upperCharSet   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		specialCharSet = "#$*"
-		numberSet      = "0123456789"
-		allCharSet     = lowerCharSet + upperCharSet + specialCharSet + numberSet
-	)
-
-	var password strings.Builder
-
-	// set special character
-	for i := 0; i < minSpecialChar; i++ {
-		random := rand.Intn(len(specialCharSet))
-		password.WriteString(string(specialCharSet[random]))
+func generatePassword() string {
+	// Create a simple, random password of the form f9fe-442f-90fb
+	// Simple to read / write, and has a strength rating of 4 per https://lowe.github.io/tryzxcvbn/
+	// Yes, this UUIDv4 does always include a 4, but good enough for our needs.
+	u, err := uuid.NewRandom()
+	if err != nil {
+		// Should never happen?
+		panic(err)
 	}
-
-	// set numeric
-	for i := 0; i < minNum; i++ {
-		random := rand.Intn(len(numberSet))
-		password.WriteString(string(numberSet[random]))
-	}
-
-	// set uppercase
-	for i := 0; i < minUpperCase; i++ {
-		random := rand.Intn(len(upperCharSet))
-		password.WriteString(string(upperCharSet[random]))
-	}
-
-	remainingLength := passwordLength - minSpecialChar - minNum - minUpperCase
-	for i := 0; i < remainingLength; i++ {
-		random := rand.Intn(len(allCharSet))
-		password.WriteString(string(allCharSet[random]))
-	}
-	inRune := []rune(password.String())
-	rand.Shuffle(len(inRune), func(i, j int) {
-		inRune[i], inRune[j] = inRune[j], inRune[i]
-	})
-	return string(inRune)
+	s := u.String()
+	return s[9:23]
 }

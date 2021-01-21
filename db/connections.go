@@ -39,7 +39,7 @@ func refreshConnections(client *Client) error {
 
 	numUpdates := len(updates.Update)
 	if numUpdates > 0 {
-		s := utils.ShowSpinner("Refreshing connections")
+		s := utils.ShowSpinner("Refreshing connections...")
 		defer utils.StopSpinner(s)
 		connectionQueries = getSchemaQueries(updates.Update)
 

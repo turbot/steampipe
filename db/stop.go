@@ -96,7 +96,7 @@ func StopDB(force bool) (StopStatus, error) {
 				break
 			}
 			if time.Since(signalSentAt) > constants.SpinnerShowTimeout && !spinnerShown {
-				s := utils.ShowSpinner("Shutting down service")
+				s := utils.ShowSpinner("Shutting down...")
 				defer utils.StopSpinner(s)
 				spinnerShown = true
 			}
