@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/ociinstaller"
+	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -32,6 +33,15 @@ func EnsureDBInstalled() {
 	}()
 
 	if IsInstalled() {
+		// check if FDW needs to be updated
+		if fdwNeedsUpdate() {
+			_, err := installFDW(false)
+			if err != nil {
+				utils.ShowError(fmt.Errorf("FDW could not be updated"))
+			} else {
+				fmt.Printf("FDW was updated. Run %s for change to take effect.\n", constants.Bold("steampipe service restart"))
+			}
+		}
 		return
 	}
 
@@ -60,18 +70,14 @@ func EnsureDBInstalled() {
 	utils.StopSpinner(dbCleanupSpinner)
 
 	dbInstallSpinner := utils.ShowSpinner(fmt.Sprintf("Download & install embedded PostgreSQL database..."))
-	dbImageDigest, err := ociinstaller.InstallDB(constants.DefaultEmbeddedPostgresImage, getDatabaseLocation())
+	_, err = ociinstaller.InstallDB(constants.DefaultEmbeddedPostgresImage, getDatabaseLocation())
 	utils.StopSpinner(dbInstallSpinner)
 	if err != nil {
 		utils.FailOnErrorWithMessage(err, "x Download & install embedded PostgreSQL database... FAILED!")
 	}
 
-	fdwInstallSpinner := utils.ShowSpinner(fmt.Sprintf("Download & install Steampipe PostgreSQL FDW..."))
-	fdwDigest, err := ociinstaller.InstallFdw(constants.DefaultFdwImage, getDatabaseLocation())
-	utils.StopSpinner(fdwInstallSpinner)
-	if err != nil {
-		utils.FailOnErrorWithMessage(err, "x Download & install Steampipe Postgres FDW... FAILED!")
-	}
+	// installFDW takes care of the spinner, since it may need to run independently
+	_, err = installFDW(true)
 
 	dbInitSpinner := utils.ShowSpinner(fmt.Sprintf("Initializing database..."))
 	err = initDatabase()
@@ -113,7 +119,7 @@ func EnsureDBInstalled() {
 	// write a signature after everything gets done!
 	// so that we can check for this later on
 	writeSignaturesSpinner := utils.ShowSpinner(fmt.Sprintf("Updating install records..."))
-	err = writeDownloadedBinarySignature(dbImageDigest, fdwDigest)
+	err = updateDownloadedBinarySignature()
 	utils.StopSpinner(writeSignaturesSpinner)
 	if err != nil {
 		utils.FailOnErrorWithMessage(err, "x Updating install records... FAILED!")
@@ -265,6 +271,41 @@ func StartService(invoker Invoker) {
 	return
 }
 
+func fdwNeedsUpdate() bool {
+	// check FDW version
+	versionInfo, err := versionfile.Load()
+	if err != nil {
+		utils.FailOnError(fmt.Errorf("could not verify required FDW version"))
+	}
+	return versionInfo.FdwExtension.Version != constants.FdwVersion
+}
+
+func installFDW(firstSetup bool) (string, error) {
+	status, err := GetStatus()
+	if err != nil {
+		return "", err
+	}
+	if status != nil {
+		defer func() {
+			if !firstSetup {
+				// update the signature
+				updateDownloadedBinarySignature()
+			}
+		}()
+	}
+	fdwInstallSpinner := utils.ShowSpinner(fmt.Sprintf("Download & install Steampipe PostgreSQL FDW..."))
+	newDigest, err := ociinstaller.InstallFdw(constants.DefaultFdwImage, getDatabaseLocation())
+	utils.StopSpinner(fdwInstallSpinner)
+	if err != nil {
+		if firstSetup {
+			utils.FailOnErrorWithMessage(err, "x Download & install Steampipe Postgres FDW... FAILED!")
+		} else {
+			utils.ShowErrorWithMessage(err, "could not update FDW")
+		}
+	}
+	return newDigest, err
+}
+
 // IsInstalled :: checks and reports whether the embedded database is installed and setup
 func IsInstalled() bool {
 	// check that both postgres binary and initdb binary exist
@@ -309,8 +350,12 @@ func IsInstalled() bool {
 	return true
 }
 
-func writeDownloadedBinarySignature(dbDigest string, fdwDigest string) error {
-	installedSignature := fmt.Sprintf("%s|%s", dbDigest, fdwDigest)
+func updateDownloadedBinarySignature() error {
+	versionInfo, err := versionfile.Load()
+	if err != nil {
+		return err
+	}
+	installedSignature := fmt.Sprintf("%s|%s", versionInfo.EmbeddedDB.ImageDigest, versionInfo.FdwExtension.ImageDigest)
 	return ioutil.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)
 }
 
