@@ -283,11 +283,10 @@ func fdwNeedsUpdate() bool {
 	return false
 }
 
-func installFDW(firstSetup bool) (newDigest string, err error) {
+func installFDW(firstSetup bool) (string, error) {
 	status, err := GetStatus()
 	if err != nil {
-		newDigest = ""
-		return
+		return "", err
 	}
 	if status != nil {
 		defer func() {
@@ -298,7 +297,7 @@ func installFDW(firstSetup bool) (newDigest string, err error) {
 		}()
 	}
 	fdwInstallSpinner := utils.ShowSpinner(fmt.Sprintf("Download & install Steampipe PostgreSQL FDW..."))
-	newDigest, err = ociinstaller.InstallFdw(constants.DefaultFdwImage, getDatabaseLocation())
+	newDigest, err := ociinstaller.InstallFdw(constants.DefaultFdwImage, getDatabaseLocation())
 	utils.StopSpinner(fdwInstallSpinner)
 	if err != nil {
 		if firstSetup {
@@ -307,7 +306,7 @@ func installFDW(firstSetup bool) (newDigest string, err error) {
 			utils.ShowError(fmt.Errorf("could not update FDW"))
 		}
 	}
-	return
+	return newDigest, err
 }
 
 // IsInstalled :: checks and reports whether the embedded database is installed and setup
