@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"syscall"
@@ -56,6 +57,10 @@ func StopDB(force bool) (StopStatus, error) {
 	if !doesPidExist {
 		// nothing to do here
 		return ServiceNotRunning, os.Remove(runningInfoFilePath())
+	}
+
+	if info.Invoker != InvokerService && !force {
+		return ServiceStopFailed, fmt.Errorf("You have a %s session open. The service will be stopped when the session ends.\nTo kill existing sessions, run %s", constants.Bold("steampipe query"), constants.Bold("steampipe service stop --force"))
 	}
 
 	process, err := os.FindProcess(info.Pid)

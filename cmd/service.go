@@ -178,7 +178,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 	stopStatus, err := db.StopDB(cmdconfig.Viper().GetBool(constants.ArgForce))
 
 	if err != nil {
-		utils.ShowError(errors.New("could not stop current instance"))
+		utils.ShowErrorWithMessage(err, "could not stop current instance")
 		return
 	}
 
@@ -277,7 +277,9 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	case db.ServiceStopped:
 		fmt.Println("Steampipe database service stopped")
 	case db.ServiceStopFailed:
-		fmt.Println("Could not stop service")
+		if err == nil {
+			fmt.Println("Could not stop service")
+		}
 	case db.ServiceNotRunning:
 		fmt.Println("Service is not running")
 	case db.ServiceStopTimedOut:
