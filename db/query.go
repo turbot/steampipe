@@ -78,7 +78,7 @@ func shutdown(client *Client) {
 	status, _ := GetStatus()
 
 	// force stop if invoked by `query` and we are the last one
-	if status.Invoker == InvokerQuery {
+	if status != nil && status.Invoker == InvokerQuery {
 		_, err := StopDB(true)
 		if err != nil {
 			utils.ShowError(err)
