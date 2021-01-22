@@ -22,27 +22,15 @@ func New() *QueryHistory {
 
 // Put :: add to the history queue; trim to maxHistorySize if necessary
 func (q *QueryHistory) Put(query string) {
-	// if !cmdconfig.Viper().GetBool(constants.ArgMultiLine) || metaquery.IsMetaQuery(query) {
-	// 	q.history = append(q.history, query)
-	// 	return
-	// }
 
-	// this is a multi line query
-
-	// do a strict compare to see if we have this same exact one
-	// somewhere in history
-	idx, found := q.find(query)
-	if found {
-		// helpers.RemoveFromStringSlice() is going to be slow, since it
-		// iterates over the array, this is probably going to
-		// be faster, especially since we know the index we want to remove
-		q.removeEntryAt(idx)
+	// do a strict compare to see if we have this same exact query as the most recent history item
+	if len(q.history) > 0 && q.history[len(q.history)-1] == query {
+		return
 	}
 
-	// check the current length
+	// limit the history length to HistorySize
 	historyLength := len(q.history)
 	if historyLength >= constants.HistorySize {
-		// trim out the last HistorySize elements
 		q.history = q.history[historyLength-constants.HistorySize+1:]
 	}
 
@@ -88,23 +76,4 @@ func (q *QueryHistory) load() error {
 
 	decoder := json.NewDecoder(file)
 	return decoder.Decode(&q.history)
-}
-
-func (q *QueryHistory) find(val string) (int, bool) {
-	for i, item := range q.history {
-		if item == val {
-			return i, true
-		}
-	}
-	return -1, false
-}
-
-func (q *QueryHistory) removeEntryAt(idx int) {
-	if idx == 0 {
-		q.history = q.history[1:]
-	}
-	q.history = append(
-		q.history[:idx],
-		q.history[idx+1:]...,
-	)
 }
