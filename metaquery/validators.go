@@ -2,6 +2,8 @@ package metaquery
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/constants"
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
@@ -40,8 +42,25 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 		numArgs := len(args)
 
 		if numArgs == 0 {
+			// get the current status of this mode (convert metaquery name into arg name)
+			// NOTE - request second arg from cast even though we donl;t use it - to avoid panic
+			currentStatus := cmdconfig.Viper().GetBool(constants.ArgFromMetaquery(metaquery))
+			// what is the new status (the opposite)
+			newStatus := !currentStatus
+
+			// convert current and new status to on/off
+			currentStatusString := constants.BoolToOnOff(currentStatus)
+			newStatusString := constants.BoolToOnOff(newStatus)
+
+			// what is the action to get to the new status
+			actionString := constants.BoolToEnableDisable(newStatus)
+
 			return ValidationResult{
-				Message: fmt.Sprintf(`%s mode is off. You can enable it with: %s on `, title, metaquery),
+				Message: fmt.Sprintf(`%s mode is %s. You can %s it with: %s `,
+					title,
+					constants.Bold(currentStatusString),
+					actionString,
+					constants.Bold(fmt.Sprintf("%s %s", metaquery, newStatusString))),
 			}
 		}
 		if numArgs > 1 {
