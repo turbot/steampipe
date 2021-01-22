@@ -20,90 +20,90 @@ var metaQueryDefinitions map[string]metaQueryDefinition
 
 func init() {
 	metaQueryDefinitions = map[string]metaQueryDefinition{
-		cmdExit: {
-			title:       cmdExit,
+		constants.CmdExit: {
+			title:       constants.CmdExit,
 			handler:     doExit,
 			validator:   noArgs,
 			description: "Exit from steampipe terminal",
 		},
-		cmdQuit: {
-			title:       cmdQuit,
+		constants.CmdQuit: {
+			title:       constants.CmdQuit,
 			handler:     doExit,
 			validator:   noArgs,
 			description: "Exit from steampipe terminal",
 		},
-		cmdTableList: {
-			title:       cmdTableList,
+		constants.CmdTableList: {
+			title:       constants.CmdTableList,
 			handler:     listTables,
 			validator:   atMostNArgs(1),
 			description: "List or describe tables",
 		},
-		cmdSeparator: {
-			title:       cmdSeparator,
+		constants.CmdSeparator: {
+			title:       constants.CmdSeparator,
 			handler:     setViperConfigFromArg(constants.ArgSeparator),
 			validator:   exactlyNArgs(1),
 			description: "Set csv output separator",
 		},
-		cmdHeaders: {
+		constants.CmdHeaders: {
 			title:       "headers",
 			handler:     setHeader,
-			validator:   booleanValidator(cmdHeaders, validatorFromArgsOf(cmdHeaders)),
+			validator:   booleanValidator(constants.CmdHeaders, validatorFromArgsOf(constants.CmdHeaders)),
 			description: "Enable or disable column headers",
 			args: []metaQueryArg{
-				metaQueryArg{value: constants.ValOn, description: "Turn on headers in output"},
-				metaQueryArg{value: constants.ValOff, description: "Turn off headers in output"},
+				{value: constants.ArgOn, description: "Turn on headers in output"},
+				{value: constants.ArgOff, description: "Turn off headers in output"},
 			},
-			completer: completerFromArgsOf(cmdHeaders),
+			completer: completerFromArgsOf(constants.CmdHeaders),
 		},
-		cmdMulti: {
+		constants.CmdMulti: {
 			title:       "multi-line",
 			handler:     setMultiLine,
-			validator:   booleanValidator(cmdMulti, validatorFromArgsOf(cmdMulti)),
+			validator:   booleanValidator(constants.CmdMulti, validatorFromArgsOf(constants.CmdMulti)),
 			description: "Enable or disable multiline mode",
 			args: []metaQueryArg{
-				metaQueryArg{value: constants.ValOn, description: "Turn on multiline mode"},
-				metaQueryArg{value: constants.ValOff, description: "Turn off multiline mode"},
+				{value: constants.ArgOn, description: "Turn on multiline mode"},
+				{value: constants.ArgOff, description: "Turn off multiline mode"},
 			},
-			completer: completerFromArgsOf(cmdMulti),
+			completer: completerFromArgsOf(constants.CmdMulti),
 		},
-		cmdTiming: {
+		constants.CmdTiming: {
 			title:       "timing",
 			handler:     setTiming,
-			validator:   booleanValidator(cmdTiming, validatorFromArgsOf(cmdTiming)),
+			validator:   booleanValidator(constants.CmdTiming, validatorFromArgsOf(constants.CmdTiming)),
 			description: "Enable or disable query execution timing",
 			args: []metaQueryArg{
-				metaQueryArg{value: constants.ValOn, description: "Display time elapsed after every query"},
-				metaQueryArg{value: constants.ValOff, description: "Turn off query timer"},
+				{value: constants.ArgOn, description: "Display time elapsed after every query"},
+				{value: constants.ArgOff, description: "Turn off query timer"},
 			},
-			completer: completerFromArgsOf(cmdTiming),
+			completer: completerFromArgsOf(constants.CmdTiming),
 		},
-		cmdOutput: {
-			title:       cmdOutput,
+		constants.CmdOutput: {
+			title:       constants.CmdOutput,
 			handler:     setViperConfigFromArg(constants.ArgOutput),
-			validator:   composeValidator(exactlyNArgs(1), validatorFromArgsOf(cmdOutput)),
+			validator:   composeValidator(exactlyNArgs(1), validatorFromArgsOf(constants.CmdOutput)),
 			description: "Set output format",
 			args: []metaQueryArg{
-				metaQueryArg{value: constants.ValJSON, description: "Set output to JSON"},
-				metaQueryArg{value: constants.ValCSV, description: "Set output to CSV"},
-				metaQueryArg{value: constants.ValTable, description: "Set output to Table"},
+				{value: constants.ArgJSON, description: "Set output to JSON"},
+				{value: constants.ArgCSV, description: "Set output to CSV"},
+				{value: constants.ArgTable, description: "Set output to Table"},
 			},
-			completer: completerFromArgsOf(cmdOutput),
+			completer: completerFromArgsOf(constants.CmdOutput),
 		},
-		cmdInspect: {
-			title:       cmdInspect,
+		constants.CmdInspect: {
+			title:       constants.CmdInspect,
 			handler:     inspect,
 			validator:   atMostNArgs(1),
 			description: "View connections, tables & column information",
 			completer:   inspectCompleter,
 		},
-		cmdConnections: {
-			title:       cmdConnections,
+		constants.CmdConnections: {
+			title:       constants.CmdConnections,
 			handler:     listConnections,
 			validator:   noArgs,
 			description: "List active connections",
 		},
-		cmdClear: {
-			title:       cmdClear,
+		constants.CmdClear: {
+			title:       constants.CmdClear,
 			handler:     clearScreen,
 			validator:   noArgs,
 			description: "Clear the console",

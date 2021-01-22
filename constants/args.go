@@ -5,16 +5,35 @@ const (
 	ArgConfig            = "config"
 	ArgNullString        = "null-string"
 	ArgJSON              = "json"
-	ArgPretty            = "pretty"
 	ArgCSV               = "csv"
-	ArgSeparator         = "separator"
-	ArgOutput            = "output"
-	ArgHeader            = "header"
-	ArgMultiLine         = "multi"
+	ArgTable             = "table"
 	ArgListAllTableNames = "L"
 	ArgSelectAll         = "A"
-	ArgModPath           = "mod-path"
-	ArgWatch             = "watch"
 	ArgForce             = "force"
 	ArgTimer             = "timing"
+	ArgOn                = "on"
+	ArgOff               = "off"
 )
+
+/// metaquery mode arguments
+var ArgOutput = ArgFromMetaquery(CmdOutput)
+var ArgSeparator = ArgFromMetaquery(CmdSeparator)
+var ArgHeader = ArgFromMetaquery(CmdHeaders)
+var ArgMultiLine = ArgFromMetaquery(CmdMulti)
+
+// BoolToOnOff :: convert a boolean value onto the string "on" or "off"
+func BoolToOnOff(val bool) string {
+	if val {
+		return ArgOn
+	}
+	return ArgOff
+}
+
+// BoolToEnableDisable :: convert a boolean value onto the string "enable" or "disable"
+func BoolToEnableDisable(val bool) string {
+	if val {
+		return "enable"
+	}
+	return "disable"
+
+}

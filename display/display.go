@@ -17,9 +17,9 @@ import (
 
 // ShowOutput :: displays the output using the proper formatter as applicable
 func ShowOutput(result *db.QueryResult) {
-	if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ValJSON {
+	if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgJSON {
 		displayJSON(result)
-	} else if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ValCSV {
+	} else if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgCSV {
 		displayCSV(result)
 	} else {
 		displayTable(result)
@@ -47,15 +47,16 @@ func displayCSV(result *db.QueryResult) {
 	csvWriter := csv.NewWriter(os.Stdout)
 	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
 
+	// TODO handle errors
+
 	if cmdconfig.Viper().GetBool(constants.ArgHeader) {
-		csvWriter.Write(ColumnNames(result.ColTypes))
+		_ = csvWriter.Write(ColumnNames(result.ColTypes))
 	}
 
 	// print the data as it comes
 	for row := range *result.RowChan {
-		// TODO how to handle error
 		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
-		csvWriter.Write(rowAsString)
+		_ = csvWriter.Write(rowAsString)
 	}
 	csvWriter.Flush()
 	if csvWriter.Error() != nil {
