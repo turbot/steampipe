@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -165,6 +166,8 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			msg := fmt.Sprintf("plugin install failed for plugin '%s'", arg)
 			if strings.HasSuffix(err.Error(), "not found") {
 				msg += ": not found"
+			} else {
+				log.Printf("[DEBUG] %s", err.Error())
 			}
 			utils.ShowError(fmt.Errorf(msg))
 			return
