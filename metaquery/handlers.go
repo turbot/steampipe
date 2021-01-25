@@ -90,23 +90,39 @@ func doExit(input *HandlerInput) error {
 
 // help
 func doHelp(intput *HandlerInput) error {
-	fmt.Printf(`Welcome to the steampipe shell.
-.clear           Clear the console
-.connections     List active connections
-.inspect         View connections, tables & column information
-.exit            Exit this program
-.headers ON|OFF  Enable or disable column headers
-.help            Show this message
-.multi ON|OFF    Enable or disable multiline mode
-.ouput MODE       Set output mode where MODE is one of:
-                   csv      Comma-separated values
-                   json   	values as JSON object 
-                   table    One value per line
-.separator       Set csv output separator
-.tables          List or describe tables
-.timing ON|OFF   Enable or disable query execution timing
-.quit            Exit this program
-`)
+	var helpString []string
+	for cmd, metaQuery := range metaQueryDefinitions {
+		var metaStr string
+		if len(metaQuery.args) > 2 {
+			var argsStr []string
+			for _, v := range metaQuery.args {
+				temp := fmt.Sprintf(`		%s	%s`, v.value, v.description)
+				argsStr = append(argsStr, temp)
+			}
+			metaStr = fmt.Sprintf(`%s	MODE	%s`, cmd, metaQuery.description)
+			fmt.Printf(metaStr + "\n")
+			fmt.Printf(strings.Join(argsStr, "\n") + "\n")
+		} else {
+			var argsStr []string
+			for _, v := range metaQuery.args {
+				argsStr = append(argsStr, v.value)
+			}
+
+			if len(argsStr) > 0 {
+				metaStr = fmt.Sprintf(`%s  %s	%s`, cmd, strings.Join(argsStr, "|"), metaQuery.description)
+			} else {
+				if len(cmd) > 5 {
+					metaStr = fmt.Sprintf(`%s 	%s`, cmd, metaQuery.description)
+				} else {
+					metaStr = fmt.Sprintf(`%s		%s`, cmd, metaQuery.description)
+				}
+
+			}
+			helpString = append(helpString, metaStr)
+		}
+	}
+	fmt.Printf(strings.Join(helpString, "\n"))
+	fmt.Printf("\n")
 	return nil
 }
 
