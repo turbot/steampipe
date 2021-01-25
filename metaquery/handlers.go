@@ -88,6 +88,28 @@ func doExit(input *HandlerInput) error {
 	panic(utils.InteractiveExitStatus{Restart: false})
 }
 
+// help
+func doHelp(intput *HandlerInput) error {
+	fmt.Printf(`Welcome to the steampipe shell.
+.clear           Clear the console
+.connections     List active connections
+.inspect         View connections, tables & column information
+.exit            Exit this program
+.headers ON|OFF  Enable or disable column headers
+.help            Show this message
+.multi ON|OFF    Enable or disable multiline mode
+.ouput MODE       Set output mode where MODE is one of:
+                   csv      Comma-separated values
+                   json   	values as JSON object 
+                   table    One value per line
+.separator       Set csv output separator
+.tables          List or describe tables
+.timing ON|OFF   Enable or disable query execution timing
+.quit            Exit this program
+`)
+	return nil
+}
+
 // list all the tables in the schema
 func listTables(input *HandlerInput) error {
 

@@ -15,6 +15,7 @@ const (
 	CmdConnections = ".connections" // list all connections
 	CmdMulti       = ".multi"       // toggle multi line query
 	CmdClear       = ".clear"       // clear the console
+	CmdHelp        = ".help"        // list all meta commands
 )
 
 // ArgFromMetaquery :: convert metaquery of form '.header' into the config argument used to set the mode, i.e. 'header'
