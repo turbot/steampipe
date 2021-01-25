@@ -1,9 +1,13 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
+	"github.com/briandowns/spinner"
+
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -29,10 +33,38 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 	}
 
 	start := time.Now()
-	rows, err := c.dbClient.Query(query)
+
+	var rows *sql.Rows
+	var err error
+	var s *spinner.Spinner
+
+	queryDone := false
+
+	go func() {
+		rows, err = c.dbClient.Query(query)
+		queryDone = true
+	}()
+
+	for {
+		if queryDone {
+			break
+		}
+		if time.Since(start) > constants.SpinnerShowTimeout && !s.Active() {
+			s = utils.ShowSpinner("Executing query...")
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 
 	if err != nil {
+		if s.Active() {
+			// in case the query takes a long time to fail
+			utils.StopSpinner(s)
+		}
 		return nil, err
+	}
+
+	if s.Active() {
+		utils.UpdateSpinnerMessage(s, "Waiting for results...")
 	}
 
 	colTypes, err := rows.ColumnTypes()
@@ -54,6 +86,7 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 			// close the rows object
 			rows.Close()
 		}()
+
 		for rows.Next() {
 			// slice of interfaces to receive the row data
 			columnValues := make([]interface{}, len(cols))
@@ -69,6 +102,11 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 			}
 			// populate row data - handle special case types
 			result := populateRow(columnValues, colTypes)
+
+			// we have started populating results
+			if s.Active() {
+				utils.StopSpinner(s)
+			}
 			rowChan <- result
 		}
 		// set the time that it took for this one to execute
