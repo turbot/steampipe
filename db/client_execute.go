@@ -1,13 +1,13 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/briandowns/spinner"
 
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -34,26 +34,14 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 
 	start := time.Now()
 
-	var rows *sql.Rows
-	var err error
-	var s *spinner.Spinner
+	var s = utils.CreateSpinner("Executing query...")
+	// channel to flag to spinner goroutine that the query has run
+	queryDone := make(chan bool, 1)
+	// start spinner after a short delay
+	go startSpinnerAfterDelay(s, queryDone)
 
-	queryDone := false
-
-	go func() {
-		rows, err = c.dbClient.Query(query)
-		queryDone = true
-	}()
-
-	for {
-		if queryDone {
-			break
-		}
-		if time.Since(start) > constants.SpinnerShowTimeout && !s.Active() {
-			s = utils.ShowSpinner("Executing query...")
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
+	rows, err := c.dbClient.Query(query)
+	queryDone <- true
 
 	if err != nil {
 		if s.Active() {
@@ -114,4 +102,18 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 	}()
 
 	return result, nil
+}
+
+func startSpinnerAfterDelay(s *spinner.Spinner, queryDone chan bool) {
+	{
+		for {
+			select {
+			case <-queryDone:
+				return
+			case <-time.After(constants.SpinnerShowTimeout):
+				s.Start()
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
 }

@@ -8,7 +8,19 @@ import (
 	"github.com/briandowns/spinner"
 )
 
-// ShowSpinner :: starts a spinner with a given message
+// CreateSpinner :: create a spinner with a given message but do not start
+func CreateSpinner(msg string) *spinner.Spinner {
+	s := spinner.New(
+		spinner.CharSets[14],
+		100*time.Millisecond,
+		spinner.WithWriter(os.Stdout),
+		spinner.WithSuffix(fmt.Sprintf(" %s", msg)),
+	)
+
+	return s
+}
+
+// ShowSpinner :: create a spinner with a given message and start
 func ShowSpinner(msg string) *spinner.Spinner {
 	s := spinner.New(
 		spinner.CharSets[14],
