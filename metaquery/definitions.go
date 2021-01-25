@@ -24,7 +24,7 @@ func init() {
 			title:       constants.CmdHelp,
 			handler:     doHelp,
 			validator:   noArgs,
-			description: "Exit from steampipe terminal",
+			description: "Show this message",
 		},
 		constants.CmdExit: {
 			title:       constants.CmdExit,
