@@ -30,3 +30,8 @@ func StopSpinnerWithMessage(spinner *spinner.Spinner, finalMsg string) {
 func StopSpinner(spinner *spinner.Spinner) {
 	spinner.Stop()
 }
+
+// UpdateSpinnerMessage :: updates the message on the right of the given spinner
+func UpdateSpinnerMessage(spinner *spinner.Spinner, newMessage string) {
+	spinner.Suffix = fmt.Sprintf(" %s", newMessage)
+}
