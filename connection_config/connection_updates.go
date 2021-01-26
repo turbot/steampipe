@@ -3,6 +3,7 @@ package connection_config
 import (
 	"fmt"
 	"log"
+	"reflect"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/utils"
@@ -25,18 +26,25 @@ func newConnectionUpdates() *ConnectionUpdates {
 	}
 }
 
-type installedPlugin struct {
+type connectionData struct {
 	// the fully qualified name of the plugin
 	Plugin string `yaml:"plugin"`
 	// the checksum of the plugin file
 	CheckSum string `yaml:"checkSum"`
+	// connection name
+	ConnectionName string
+	// connection data (unparsed)
+	ConnectionConfig string
 }
 
-func (p installedPlugin) equals(other *installedPlugin) bool {
-	return p.Plugin == other.Plugin && p.CheckSum == other.CheckSum
+func (p connectionData) equals(other *connectionData) bool {
+	return p.Plugin == other.Plugin &&
+		p.CheckSum == other.CheckSum &&
+		p.ConnectionName == other.ConnectionName &&
+		reflect.DeepEqual(p.ConnectionConfig, other.ConnectionConfig)
 }
 
-type ConnectionMap map[string]*installedPlugin
+type ConnectionMap map[string]*connectionData
 
 // GetConnectionsToUpdate :: returns updates to be made to the database to sync with connection config
 func GetConnectionsToUpdate(schemas []string) (*ConnectionUpdates, error) {
@@ -53,7 +61,6 @@ func GetConnectionsToUpdate(schemas []string) (*ConnectionUpdates, error) {
 	result := newConnectionUpdates()
 	result.MissingPlugins = missingPlugins
 	// assume we will end up with the required connections
-	// TODO is this valid?
 	result.RequiredConnections = requiredConnections
 
 	// connections to create/update
@@ -105,9 +112,11 @@ func getRequiredConnections() (ConnectionMap, []string, error) {
 			return nil, nil, err
 		}
 
-		requiredConnections[name] = &installedPlugin{
-			Plugin:   remoteSchema,
-			CheckSum: checksum,
+		requiredConnections[name] = &connectionData{
+			Plugin:           remoteSchema,
+			CheckSum:         checksum,
+			ConnectionConfig: config.Config,
+			ConnectionName:   config.Name,
 		}
 	}
 

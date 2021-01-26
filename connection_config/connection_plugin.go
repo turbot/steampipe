@@ -14,21 +14,23 @@ import (
 )
 
 type ConnectionPluginOptions struct {
-	PluginFQN      string
-	ConnectionName string
-	DisableLogger  bool
+	PluginFQN        string
+	ConnectionName   string
+	ConnectionConfig string
+	DisableLogger    bool
 }
 type ConnectionPlugin struct {
-	ConnectionName string
-	PluginName     string
-	Plugin         *grpc.PluginClient
-	Schema         *proto.Schema
+	ConnectionName   string
+	ConnectionConfig string
+	PluginName       string
+	Plugin           *grpc.PluginClient
+	Schema           *proto.Schema
 }
 
 func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin, error) {
-
 	remoteSchema := options.PluginFQN
 	connectionName := options.ConnectionName
+	connectionConfig := options.ConnectionConfig
 	disableLogger := options.DisableLogger
 
 	log.Printf("[DEBUG] createConnectionPlugin name %s, remoteSchema %s \n", connectionName, remoteSchema)
@@ -82,6 +84,18 @@ func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin
 		Client: client,
 		Stub:   p,
 	}
+	// set the connection config
+	req := proto.SetConnectionDataRequest{
+		ConnectionName:   connectionName,
+		ConnectionConfig: connectionConfig,
+	}
+	log.Printf("[WARN] SetConnectionConfig req: %v\n", req)
+	_, err = pluginClient.Stub.SetConnectionConfig(&req)
+	if err != nil {
+		pluginClient.Client.Kill()
+		return nil, err
+	}
+
 	schemaResponse, err := pluginClient.Stub.GetSchema(&proto.GetSchemaRequest{})
 	if err != nil {
 		pluginClient.Client.Kill()
@@ -90,6 +104,6 @@ func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin
 	schema := schemaResponse.Schema
 
 	// now create ConnectionPlugin object and add to map
-	c := &ConnectionPlugin{ConnectionName: connectionName, PluginName: remoteSchema, Plugin: pluginClient, Schema: schema}
+	c := &ConnectionPlugin{ConnectionName: connectionName, ConnectionConfig: connectionConfig, PluginName: remoteSchema, Plugin: pluginClient, Schema: schema}
 	return c, nil
 }

@@ -16,7 +16,7 @@ func refreshConnections(client *Client) error {
 	// first get a list of all existing schemas
 	schemas := client.schemaMetadata.GetSchemas()
 
-	//refresh the connection state file - the removes any connections which do not exist in the list of current schema
+	// refresh the connection state file - the removes any connections which do not exist in the list of current schema
 	log.Println("[TRACE] refreshConnections")
 	updates, err := connection_config.GetConnectionsToUpdate(schemas)
 	if err != nil {
@@ -115,7 +115,7 @@ func getCommentQueries(updates connection_config.ConnectionMap) ([]string, error
 		pluginFQN := plugin.Plugin
 
 		// instantiate the connection plugin, and retrieve schema
-		go getCommentsQueryAsync(pluginFQN, connectionName, queryChan, errorChan)
+		go getCommentsQueryAsync(pluginFQN, connectionName, plugin.ConnectionConfig, queryChan, errorChan)
 	}
 
 	for i := 0; i < numUpdates; i++ {
@@ -133,8 +133,13 @@ func getCommentQueries(updates connection_config.ConnectionMap) ([]string, error
 	return commentQueries, nil
 }
 
-func getCommentsQueryAsync(pluginFQN string, connectionName string, queryChan chan []string, errorChan chan error) {
-	opts := &connection_config.ConnectionPluginOptions{PluginFQN: pluginFQN, ConnectionName: connectionName, DisableLogger: true}
+func getCommentsQueryAsync(pluginFQN string, connectionName string, connectionConfig string, queryChan chan []string, errorChan chan error) {
+	opts := &connection_config.ConnectionPluginOptions{
+		PluginFQN:        pluginFQN,
+		ConnectionName:   connectionName,
+		ConnectionConfig: connectionConfig,
+		DisableLogger:    true,
+	}
 	p, err := connection_config.CreateConnectionPlugin(opts)
 	if err != nil {
 		errorChan <- err

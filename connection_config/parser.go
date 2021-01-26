@@ -33,7 +33,12 @@ func loadConfig(configFolder string) (*ConnectionConfig, error) {
 		return &ConnectionConfig{}, nil
 	}
 
-	body, diags := parseConfigs(configPaths)
+	fileData, diags := loadFileData(configPaths)
+	if diags.HasErrors() {
+		return nil, fmt.Errorf("failed to load all config files: %s", diags.Error())
+	}
+
+	body, diags := parseConfigs(fileData)
 	if diags.HasErrors() {
 		return nil, fmt.Errorf("failed to load all config files: %s", diags.Error())
 	}
@@ -48,7 +53,7 @@ func loadConfig(configFolder string) (*ConnectionConfig, error) {
 	for _, block := range content.Blocks {
 		switch block.Type {
 		case "connection":
-			connection, moreDiags := parseConnection(block)
+			connection, moreDiags := parseConnection(block, fileData)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				continue
@@ -70,10 +75,10 @@ func loadConfig(configFolder string) (*ConnectionConfig, error) {
 	return result, nil
 }
 
-func parseConfigs(configPaths []string) (hcl.Body, hcl.Diagnostics) {
-	var parsedConfigFiles []*hcl.File
-
+func loadFileData(configPaths []string) (map[string][]byte, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
+	var fileData = map[string][]byte{}
+
 	for _, configPath := range configPaths {
 		data, err := ioutil.ReadFile(configPath)
 		if err != nil {
@@ -83,7 +88,15 @@ func parseConfigs(configPaths []string) (hcl.Body, hcl.Diagnostics) {
 				Detail:   err.Error()})
 			continue
 		}
+		fileData[configPath] = data
+	}
+	return fileData, diags
+}
 
+func parseConfigs(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
+	var parsedConfigFiles []*hcl.File
+	var diags hcl.Diagnostics
+	for configPath, data := range fileData {
 		file, moreDiags := hclsyntax.ParseConfig(data, configPath, hcl.Pos{Byte: 0, Line: 1, Column: 1})
 		if moreDiags.HasErrors() {
 			diags = append(diags, moreDiags...)
@@ -95,36 +108,45 @@ func parseConfigs(configPaths []string) (hcl.Body, hcl.Diagnostics) {
 	return hcl.MergeFiles(parsedConfigFiles), diags
 }
 
-func parseConnection(block *hcl.Block) (*Connection, hcl.Diagnostics) {
+func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection, hcl.Diagnostics) {
 	connectionBlock, rest, diags := block.Body.PartialContent(connectionSchema)
 	if diags.HasErrors() {
 		return nil, diags
 	}
 
-	connection := NewConnection()
-	// convert this into a fully qualified name plugin name
-	connection.Name = block.Labels[0]
+	// get connection name
+	connectionName := block.Labels[0]
 
 	var plugin string
 	diags = gohcl.DecodeExpression(connectionBlock.Attributes["plugin"].Expr, nil, &plugin)
 	if diags.HasErrors() {
 		return nil, diags
 	}
-	connection.Plugin = ociinstaller.NewSteampipeImageRef(plugin).DisplayImageRef()
+	connectionPlugin := ociinstaller.NewSteampipeImageRef(plugin).DisplayImageRef()
 
-	// now populate the dynamic connection config
-	remainingAttributes, diags := rest.JustAttributes()
+	// now populate the dynamic connection config - just pass the rawq file data - the plugin will parse it
+	connectionConfigBody := rest.(*hclsyntax.Body)
+	bodyRange := connectionConfigBody.SrcRange
+	connectionConfigBytes := bodyRange.SliceBytes(fileData[bodyRange.Filename])
 
-	for name, attribute := range remainingAttributes {
-		if name != "connection" {
-			var val string
-			diags = gohcl.DecodeExpression(attribute.Expr, nil, &val)
-			if diags.HasErrors() {
-				return nil, diags
-			}
-			connection.Config[name] = val
-		}
+	connection := &Connection{
+		Name:   connectionName,
+		Plugin: connectionPlugin,
+		Config: string(connectionConfigBytes),
 	}
+
+	//remainingAttributes, diags := rest.JustAttributes()
+
+	//for name, attribute := range remainingAttributes {
+	//	if name != "connection" {
+	//		var val string
+	//		diags = gohcl.DecodeExpression(attribute.Expr, nil, &val)
+	//		if diags.HasErrors() {
+	//			return nil, diags
+	//		}
+	//		connection.Config[name] = val
+	//	}
+	//}
 
 	return connection, nil
 }

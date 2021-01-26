@@ -24,20 +24,20 @@ var testCasesParseConfig = map[string]getParseConfigTest{
 				"aws_dmi_001": {
 					Name:   "aws_dmi_001",
 					Plugin: "aws",
-					Config: map[string]string{
-						"regions":    "- us-east-1\n-us-west-",
-						"secret_key": "aws_dmi_001_secret_key",
-						"access_key": "aws_dmi_001_access_key",
-					},
+					//Config: map[string]string{
+					//	"regions":    "- us-east-1\n-us-west-",
+					//	"secret_key": "aws_dmi_001_secret_key",
+					//	"access_key": "aws_dmi_001_access_key",
+					//},
 				},
 				"aws_dmi_002": {
 					Name:   "aws_dmi_002",
 					Plugin: "aws",
-					Config: map[string]string{
-						"regions":    "- us-east-1\n-us-west-",
-						"secret_key": "aws_dmi_002_secret_key",
-						"access_key": "aws_dmi_002_access_key",
-					},
+					//Config: map[string]string{
+					//	"regions":    "- us-east-1\n-us-west-",
+					//	"secret_key": "aws_dmi_002_secret_key",
+					//	"access_key": "aws_dmi_002_access_key",
+					//},
 				},
 			}},
 	},
@@ -49,7 +49,7 @@ var testCasesParseConfig = map[string]getParseConfigTest{
 				"a": {
 					Name:   "a",
 					Plugin: "test_data/connection-test-1",
-					Config: map[string]string{},
+					//Config: map[string]string{},
 				},
 			}},
 	},
