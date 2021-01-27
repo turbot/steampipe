@@ -94,15 +94,15 @@ func doHelp(intput *HandlerInput) error {
 	for cmd, metaQuery := range metaQueryDefinitions {
 		var argsStr []string
 		if len(metaQuery.args) > 2 {
-			rows = append(rows, []string{cmd, "MODE", metaQuery.description})
+			rows = append(rows, []string{cmd + " " + "[MODE]", metaQuery.description})
 			for _, v := range metaQuery.args {
-				rows = append(rows, []string{"", v.value, v.description})
+				rows = append(rows, []string{"", v.value + " " + v.description})
 			}
 		} else {
 			for _, v := range metaQuery.args {
 				argsStr = append(argsStr, v.value)
 			}
-			rows = append(rows, []string{cmd, strings.Join(argsStr, "|"), metaQuery.description})
+			rows = append(rows, []string{cmd + " " + strings.Join(argsStr, "|"), metaQuery.description})
 		}
 	}
 	writeHelpTable(rows, false)
