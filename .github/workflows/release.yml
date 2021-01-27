@@ -33,7 +33,7 @@ jobs:
       - name: Move build artifacts
         run: |
           mkdir ~/artifacts
-          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.zip ~/artifacts/linux.zip
+          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
           mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
 
       - name: List Build Artifacts
@@ -43,7 +43,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: build-artifact-linux
-          path: ~/artifacts/linux.zip
+          path: ~/artifacts/linux.tar.gz
           if-no-files-found: error
 
       - name: Save MacOS Build Artifact
@@ -101,17 +101,25 @@ jobs:
 
       - name: Rename build artifact on Linux
         if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: mv ~/artifacts/linux.zip ~/artifacts/build.zip
+        run: mv ~/artifacts/linux.tar.gz ~/artifacts/build.tar.gz
 
       - name: Check that renaming is good
         run: |
           ls -l ~/artifacts
 
-      - name: Extract Artifacts and Install Binary
-        if: ${{ matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-latest' }}
+      - name: Extract Darwin Artifacts and Install Binary
+        if: ${{ matrix.platform == 'macos-latest' }}
         run: |
           mkdir ~/build
           unzip ~/artifacts/build.zip -d ~/build
+          ls -l ~/build
+          echo "~/build" >> $GITHUB_PATH
+
+      - name: Extract Darwin Artifacts and Install Binary
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: |
+          mkdir ~/build
+          tar -xf ~/artifacts/build.zip -C ~/build
           ls -l ~/build
           echo "~/build" >> $GITHUB_PATH
 
