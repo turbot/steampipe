@@ -20,6 +20,29 @@ func CreateSpinner(msg string) *spinner.Spinner {
 	return s
 }
 
+// StartSpinnerAfterDelay :: create a spinner with a given message and start
+func StartSpinnerAfterDelay(msg string, delay time.Duration, cancelStartIf chan bool) *spinner.Spinner {
+	s := spinner.New(
+		spinner.CharSets[14],
+		100*time.Millisecond,
+		spinner.WithWriter(os.Stdout),
+		spinner.WithSuffix(fmt.Sprintf(" %s", msg)),
+	)
+
+	go func() {
+		select {
+		case <-cancelStartIf:
+		case <-time.After(delay):
+			if !s.Active() {
+				s.Start()
+			}
+		}
+		time.Sleep(50 * time.Millisecond)
+	}()
+
+	return s
+}
+
 // ShowSpinner :: create a spinner with a given message and start
 func ShowSpinner(msg string) *spinner.Spinner {
 	s := spinner.New(
