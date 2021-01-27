@@ -7,7 +7,6 @@ const (
 	ArgJSON              = "json"
 	ArgCSV               = "csv"
 	ArgTable             = "table"
-	ArgSpinner           = "spinner"
 	ArgListAllTableNames = "L"
 	ArgSelectAll         = "A"
 	ArgForce             = "force"

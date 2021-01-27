@@ -40,7 +40,7 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 	// start spinner after a short delay
 	var spinner *spinner.Spinner
 
-	if cmdconfig.Viper().GetBool(constants.ArgSpinner) && cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgTable {
+	if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgTable {
 		spinner = utils.StartSpinnerAfterDelay("Executing query ...", constants.SpinnerShowTimeout, queryDone)
 	}
 
