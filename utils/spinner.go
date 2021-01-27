@@ -34,16 +34,22 @@ func ShowSpinner(msg string) *spinner.Spinner {
 
 // StopSpinnerWithMessage :: stops a spinner instance and clears it, after writing `finalMsg`
 func StopSpinnerWithMessage(spinner *spinner.Spinner, finalMsg string) {
-	spinner.FinalMSG = finalMsg
-	spinner.Stop()
+	if spinner.Active() {
+		spinner.FinalMSG = finalMsg
+		spinner.Stop()
+	}
 }
 
 // StopSpinner :: stops a spinner instance and clears it
 func StopSpinner(spinner *spinner.Spinner) {
-	spinner.Stop()
+	if spinner.Active() {
+		spinner.Stop()
+	}
 }
 
 // UpdateSpinnerMessage :: updates the message on the right of the given spinner
 func UpdateSpinnerMessage(spinner *spinner.Spinner, newMessage string) {
-	spinner.Suffix = fmt.Sprintf(" %s", newMessage)
+	if spinner.Active() {
+		spinner.Suffix = fmt.Sprintf(" %s", newMessage)
+	}
 }
