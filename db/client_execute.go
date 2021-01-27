@@ -34,25 +34,19 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 
 	start := time.Now()
 
-	var s = utils.CreateSpinner("Executing query...")
+	spinner := utils.CreateSpinner("Executing query...")
 	// channel to flag to spinner goroutine that the query has run
 	queryDone := make(chan bool, 1)
 	// start spinner after a short delay
-	go startSpinnerAfterDelay(s, queryDone)
+	go startSpinnerAfterDelay(spinner, queryDone)
 
 	rows, err := c.dbClient.Query(query)
 	queryDone <- true
 
 	if err != nil {
-		if s.Active() {
-			// in case the query takes a long time to fail
-			utils.StopSpinner(s)
-		}
+		// in case the query takes a long time to fail
+		utils.StopSpinner(spinner)
 		return nil, err
-	}
-
-	if s.Active() {
-		utils.UpdateSpinnerMessage(s, "Waiting for results...")
 	}
 
 	colTypes, err := rows.ColumnTypes()
@@ -64,6 +58,8 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 	rowChan := make(chan []interface{})
 
 	result := newQueryResult(&rowChan, colTypes)
+
+	rowCount := 0
 
 	// read the rows in a go routine
 	go func() {
@@ -92,11 +88,16 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 			result := populateRow(columnValues, colTypes)
 
 			// we have started populating results
-			if s.Active() {
-				utils.StopSpinner(s)
-			}
 			rowChan <- result
+
+			// update the spinner message with the count of rows that have already been fetched
+			utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Waiting for results... Fetched: %5d", rowCount))
+			rowCount++
 		}
+
+		// we are done fetching results. time for display. remove the spinner
+		utils.StopSpinner(spinner)
+
 		// set the time that it took for this one to execute
 		result.Duration <- time.Since(start)
 	}()
