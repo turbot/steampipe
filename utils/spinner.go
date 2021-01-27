@@ -22,7 +22,7 @@ func CreateSpinner(msg string) *spinner.Spinner {
 
 // StartSpinnerAfterDelay :: create a spinner with a given message and start
 func StartSpinnerAfterDelay(msg string, delay time.Duration, cancelStartIf chan bool) *spinner.Spinner {
-	s := spinner.New(
+	spinner := spinner.New(
 		spinner.CharSets[14],
 		100*time.Millisecond,
 		spinner.WithWriter(os.Stdout),
@@ -33,14 +33,14 @@ func StartSpinnerAfterDelay(msg string, delay time.Duration, cancelStartIf chan 
 		select {
 		case <-cancelStartIf:
 		case <-time.After(delay):
-			if !s.Active() {
-				s.Start()
+			if spinner != nil && !spinner.Active() {
+				spinner.Start()
 			}
 		}
 		time.Sleep(50 * time.Millisecond)
 	}()
 
-	return s
+	return spinner
 }
 
 // ShowSpinner :: create a spinner with a given message and start
@@ -57,7 +57,7 @@ func ShowSpinner(msg string) *spinner.Spinner {
 
 // StopSpinnerWithMessage :: stops a spinner instance and clears it, after writing `finalMsg`
 func StopSpinnerWithMessage(spinner *spinner.Spinner, finalMsg string) {
-	if spinner.Active() {
+	if spinner != nil && spinner.Active() {
 		spinner.FinalMSG = finalMsg
 		spinner.Stop()
 	}
@@ -65,14 +65,14 @@ func StopSpinnerWithMessage(spinner *spinner.Spinner, finalMsg string) {
 
 // StopSpinner :: stops a spinner instance and clears it
 func StopSpinner(spinner *spinner.Spinner) {
-	if spinner.Active() {
+	if spinner != nil && spinner.Active() {
 		spinner.Stop()
 	}
 }
 
 // UpdateSpinnerMessage :: updates the message on the right of the given spinner
 func UpdateSpinnerMessage(spinner *spinner.Spinner, newMessage string) {
-	if spinner.Active() {
+	if spinner != nil && spinner.Active() {
 		spinner.Suffix = fmt.Sprintf(" %s", newMessage)
 	}
 }
