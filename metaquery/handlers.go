@@ -90,39 +90,22 @@ func doExit(input *HandlerInput) error {
 
 // help
 func doHelp(intput *HandlerInput) error {
-	var helpString []string
+	var rows [][]string
 	for cmd, metaQuery := range metaQueryDefinitions {
-		var metaStr string
+		var argsStr []string
 		if len(metaQuery.args) > 2 {
-			var argsStr []string
+			rows = append(rows, []string{cmd, "MODE", metaQuery.description})
 			for _, v := range metaQuery.args {
-				temp := fmt.Sprintf(`		%s	%s`, v.value, v.description)
-				argsStr = append(argsStr, temp)
+				rows = append(rows, []string{"", v.value, v.description})
 			}
-			metaStr = fmt.Sprintf(`%s	MODE	%s`, cmd, metaQuery.description)
-			fmt.Printf(metaStr + "\n")
-			fmt.Printf(strings.Join(argsStr, "\n") + "\n")
 		} else {
-			var argsStr []string
 			for _, v := range metaQuery.args {
 				argsStr = append(argsStr, v.value)
 			}
-
-			if len(argsStr) > 0 {
-				metaStr = fmt.Sprintf(`%s  %s	%s`, cmd, strings.Join(argsStr, "|"), metaQuery.description)
-			} else {
-				if len(cmd) > 5 {
-					metaStr = fmt.Sprintf(`%s 	%s`, cmd, metaQuery.description)
-				} else {
-					metaStr = fmt.Sprintf(`%s		%s`, cmd, metaQuery.description)
-				}
-
-			}
-			helpString = append(helpString, metaStr)
+			rows = append(rows, []string{cmd, strings.Join(argsStr, "|"), metaQuery.description})
 		}
 	}
-	fmt.Printf(strings.Join(helpString, "\n"))
-	fmt.Printf("\n")
+	writeHelpTable(rows, false)
 	return nil
 }
 
@@ -350,4 +333,17 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 	colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
 
 	return colConfigs, headerRow
+}
+
+func writeHelpTable(rows [][]string, autoMerge bool) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetAutoFormatHeaders(false)
+	table.SetAutoMergeCells(autoMerge)
+	table.SetAutoWrapText(false)
+	table.SetBorder(false)
+	table.SetColumnSeparator("")
+	for _, row := range rows {
+		table.Append(row)
+	}
+	table.Render()
 }
