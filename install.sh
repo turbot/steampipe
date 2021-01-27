@@ -59,8 +59,6 @@ else
 fi
 
 echo "Deflating downloaded archive"
-echo "$zip_location"
-echo "$tmp_dir"
 tar -xf "$zip_location" -C "$tmp_dir"
 echo "Installing"
 install -d "$bin_dir"
