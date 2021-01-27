@@ -109,7 +109,7 @@ func parseConfigs(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 }
 
 func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection, hcl.Diagnostics) {
-	connectionBlock, rest, diags := block.Body.PartialContent(connectionSchema)
+	connectionBlock, _, diags := block.Body.PartialContent(connectionSchema)
 	if diags.HasErrors() {
 		return nil, diags
 	}
@@ -125,9 +125,10 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 	connectionPlugin := ociinstaller.NewSteampipeImageRef(plugin).DisplayImageRef()
 
 	// now populate the dynamic connection config - just pass the rawq file data - the plugin will parse it
-	connectionConfigBody := rest.(*hclsyntax.Body)
+	connectionConfigBody := block.Body.(*hclsyntax.Body)
 	bodyRange := connectionConfigBody.SrcRange
-	connectionConfigBytes := bodyRange.SliceBytes(fileData[bodyRange.Filename])
+
+	connectionConfigBytes := bodyRange.SliceBytes(fileData[block.DefRange.Filename])
 
 	connection := &Connection{
 		Name:   connectionName,
