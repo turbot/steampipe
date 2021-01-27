@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/briandowns/spinner"
+
+	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -29,9 +33,23 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 	}
 
 	start := time.Now()
+
+	// channel to flag to spinner that the query has run
+	queryDone := make(chan bool, 1)
+
+	// start spinner after a short delay
+	var spinner *spinner.Spinner
+
+	if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgTable {
+		spinner = utils.StartSpinnerAfterDelay("Executing query ...", constants.SpinnerShowTimeout, queryDone)
+	}
+
 	rows, err := c.dbClient.Query(query)
+	queryDone <- true
 
 	if err != nil {
+		// in case the query takes a long time to fail
+		utils.StopSpinner(spinner)
 		return nil, err
 	}
 
@@ -45,6 +63,8 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 
 	result := newQueryResult(&rowChan, colTypes)
 
+	rowCount := 0
+
 	// read the rows in a go routine
 	go func() {
 		// defer this, so that these get cleaned up even if there is an unforeseen error
@@ -54,6 +74,7 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 			// close the rows object
 			rows.Close()
 		}()
+
 		for rows.Next() {
 			// slice of interfaces to receive the row data
 			columnValues := make([]interface{}, len(cols))
@@ -69,8 +90,18 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 			}
 			// populate row data - handle special case types
 			result := populateRow(columnValues, colTypes)
+
+			// we have started populating results
 			rowChan <- result
+
+			// update the spinner message with the count of rows that have already been fetched
+			utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Waiting for results... Fetched: %5d", rowCount))
+			rowCount++
 		}
+
+		// we are done fetching results. time for display. remove the spinner
+		utils.StopSpinner(spinner)
+
 		// set the time that it took for this one to execute
 		result.Duration <- time.Since(start)
 	}()
