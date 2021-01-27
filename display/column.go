@@ -4,16 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-
-	typeHelpers "github.com/turbot/go-kit/types"
-
-	"log"
 	"time"
 
+	"github.com/ahmetb/go-linq"
+	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-
-	"github.com/ahmetb/go-linq"
 )
 
 // ColumnNames :: extract names from columns
@@ -47,7 +43,7 @@ func ColumnValueAsString(val interface{}, colType *sql.ColumnType) (result strin
 		return cmdconfig.Viper().GetString(constants.ArgNullString), nil
 	}
 
-	log.Printf("[TRACE] ColumnValueAsString type %s", colType.DatabaseTypeName())
+	//log.Printf("[TRACE] ColumnValueAsString type %s", colType.DatabaseTypeName())
 	// possible types for colType are defined in pq/oid/types.go
 	switch colType.DatabaseTypeName() {
 	case "JSON", "JSONB":
