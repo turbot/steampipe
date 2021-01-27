@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/turbot/steampipe/constants"
+	"github.com/briandowns/spinner"
 
+	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -36,7 +38,11 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 	queryDone := make(chan bool, 1)
 
 	// start spinner after a short delay
-	spinner := utils.StartSpinnerAfterDelay("Executing query . . . ", constants.SpinnerShowTimeout, queryDone)
+	var spinner *spinner.Spinner
+
+	if cmdconfig.Viper().GetBool(constants.ArgSpinner) && cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgTable {
+		spinner = utils.StartSpinnerAfterDelay("Executing query ...", constants.SpinnerShowTimeout, queryDone)
+	}
 
 	rows, err := c.dbClient.Query(query)
 	queryDone <- true
