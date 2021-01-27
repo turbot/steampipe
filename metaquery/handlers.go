@@ -96,16 +96,20 @@ func doHelp(intput *HandlerInput) error {
 		if len(metaQuery.args) > 2 {
 			rows = append(rows, []string{cmd + " " + "[MODE]", metaQuery.description})
 			for _, v := range metaQuery.args {
-				rows = append(rows, []string{"", v.value + " " + v.description})
+				var temp []string
+				temp = append(temp, v.value)
+				temp = append(temp, v.description)
+				ar := strings.Join(temp, "\t")
+				rows = append(rows, []string{"", ar})
 			}
 		} else {
 			for _, v := range metaQuery.args {
-				argsStr = append(argsStr, v.value)
+				argsStr = append(argsStr, strings.ToUpper(v.value))
 			}
 			rows = append(rows, []string{cmd + " " + strings.Join(argsStr, "|"), metaQuery.description})
 		}
 	}
-	writeHelpTable(rows, false)
+	writeHelpTable(rows, true)
 	return nil
 }
 
