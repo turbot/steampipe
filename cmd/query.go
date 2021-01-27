@@ -50,7 +50,8 @@ Examples:
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: csv, json or table").
-		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.")
+		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.").
+		AddBoolFlag(constants.ArgSpinner, "", true, "Indicate that a query is running", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
 }
