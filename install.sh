@@ -59,7 +59,9 @@ else
 fi
 
 echo "Deflating downloaded archive"
-tar -xf "$tmp_dir" -C "$zip_location"
+echo "$zip_location"
+echo "$tmp_dir"
+tar -xf "$zip_location" -C "$tmp_dir"
 echo "Installing"
 install -d "$bin_dir"
 install "$tmp_dir/steampipe" "$bin_dir"
