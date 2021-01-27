@@ -3,8 +3,8 @@
 
 set -e
 
-if ! command -v unzip >/dev/null; then
-	echo "Error: `unzip` is required to install Steampipe." 1>&2
+if ! command -v tar >/dev/null; then
+	echo "Error: `tar` is required to install Steampipe." 1>&2
 	exit 1
 fi
 
@@ -18,16 +18,16 @@ if [ "$OS" = "Windows_NT" ]; then
 	exit 1
 else
 	case $(uname -sm) in
-	"Darwin x86_64") target="darwin_amd64" ;;
+	"Darwin x86_64") target="darwin_amd64.zip" ;;
 	"Darwin arm64") echo "Error: ARM is not supported yet." 1>&2;exit 1 ;;
-	*) target="linux_amd64" ;;
+	*) target="linux_amd64.tar.gz" ;;
 	esac
 fi
 
 if [ $# -eq 0 ]; then
-	steampipe_uri="https://github.com/turbot/steampipe/releases/latest/download/steampipe_${target}.zip"
+	steampipe_uri="https://github.com/turbot/steampipe/releases/latest/download/steampipe_${target}"
 else
-	steampipe_uri="https://github.com/turbot/steampipe/releases/download/${1}/steampipe_${target}.zip"
+	steampipe_uri="https://github.com/turbot/steampipe/releases/download/${1}/steampipe_${target}"
 fi
 
 bin_dir="/usr/local/bin"
@@ -36,7 +36,11 @@ exe="$bin_dir/steampipe"
 test -z "$tmp_dir" && tmp_dir="$(mktemp -d)"
 mkdir -p "${tmp_dir}"
 tmp_dir="${tmp_dir%/}"
-zip_location="$tmp_dir/steampipe.zip"
+case $(uname -sm) in
+	"Darwin x86_64") zip_location="steampipe.zip" ;;
+	"Darwin arm64") echo "Error: ARM is not supported yet." 1>&2;exit 1 ;;
+	*) zip_location="steampipe.tar.gz" ;;
+esac
 
 echo "Downloading from $steampipe_uri"
 if command -v wget >/dev/null; then
@@ -55,7 +59,7 @@ else
 fi
 
 echo "Deflating downloaded archive"
-unzip -d "$tmp_dir" -o "$zip_location"
+tar -xf "$tmp_dir" -C "$zip_location"
 echo "Installing"
 install -d "$bin_dir"
 install "$tmp_dir/steampipe" "$bin_dir"

@@ -20,6 +20,10 @@ archives:
     - none*
     format: zip
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+    - goos: linux
+      format: tar.gz
+
 checksum:
   name_template: 'checksums.txt'
 release:
