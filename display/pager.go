@@ -31,6 +31,12 @@ func isPagerNeeded(content string) bool {
 
 	// let's scan through it instead of iterating over it fully
 	sc := bufio.NewScanner(strings.NewReader(content))
+
+	// explicitly allocate a large bugger for the scanner to use - otherwise we may fail for large rows
+	buffSize := 256 * 1024
+	buff := make([]byte, buffSize)
+	sc.Buffer(buff, buffSize)
+
 	lineCount := 0
 	for sc.Scan() {
 		line := sc.Text()
