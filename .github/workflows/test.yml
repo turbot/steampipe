@@ -35,7 +35,7 @@ jobs:
       - name: Move build artifacts
         run: |
           mkdir ~/artifacts
-          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.zip ~/artifacts/linux.zip
+          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
           mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
 
       - name: List Build Artifacts
@@ -45,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: build-artifact-linux
-          path: ~/artifacts/linux.zip
+          path: ~/artifacts/linux.tar.gz
           if-no-files-found: error
 
       - name: Save MacOS Build Artifact
