@@ -6,8 +6,6 @@ import (
 
 	"github.com/turbot/steampipe/constants"
 
-	"github.com/briandowns/spinner"
-
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -34,11 +32,11 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 
 	start := time.Now()
 
-	spinner := utils.CreateSpinner("Executing query...")
-	// channel to flag to spinner goroutine that the query has run
+	// channel to flag to spinner that the query has run
 	queryDone := make(chan bool, 1)
+
 	// start spinner after a short delay
-	go startSpinnerAfterDelay(spinner, queryDone)
+	spinner := utils.StartSpinnerAfterDelay("Executing query . . . ", constants.SpinnerShowTimeout, queryDone)
 
 	rows, err := c.dbClient.Query(query)
 	queryDone <- true
@@ -103,18 +101,4 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 	}()
 
 	return result, nil
-}
-
-func startSpinnerAfterDelay(s *spinner.Spinner, queryDone chan bool) {
-	{
-		for {
-			select {
-			case <-queryDone:
-				return
-			case <-time.After(constants.SpinnerShowTimeout):
-				s.Start()
-			}
-			time.Sleep(50 * time.Millisecond)
-		}
-	}
 }
