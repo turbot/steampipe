@@ -56,11 +56,12 @@ func Remove(image string, pluginConnections map[string][]string) error {
 }
 
 // Install :: install plugin in the local file system
-func Install(image string) (string, error) {
-	spinner := utils.ShowSpinner(fmt.Sprintf("Installing plugin %s...", image))
+func Install(plugin string) (*ociinstaller.SteampipeImage, error) {
+
+	spinner := utils.ShowSpinner(fmt.Sprintf("Installing plugin %s...", plugin))
 	defer utils.StopSpinner(spinner)
-	digest, err := ociinstaller.InstallPlugin(image)
-	return digest, err
+	image, err := ociinstaller.InstallPlugin(plugin)
+	return image, err
 }
 
 // PluginListItem :: an item in the list of plugins

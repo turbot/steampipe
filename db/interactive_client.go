@@ -64,8 +64,8 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *ResultStreamer, on
 		resultsStreamer.close()
 	}()
 
-	fmt.Printf("Welcome to Steampipe v%s. For help, type '.help'\n", version.String())
-	fmt.Println("Type \".inspect\" for more information.")
+	fmt.Printf("Welcome to Steampipe v%s\n", version.String())
+	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
 
 	for {
 		rerun := c.runInteractivePrompt(resultsStreamer)
