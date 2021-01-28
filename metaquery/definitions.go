@@ -24,7 +24,7 @@ func init() {
 			title:       constants.CmdHelp,
 			handler:     doHelp,
 			validator:   noArgs,
-			description: "Show this message",
+			description: "Show steampipe help",
 		},
 		constants.CmdExit: {
 			title:       constants.CmdExit,
