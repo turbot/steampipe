@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
@@ -172,10 +174,10 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			utils.ShowError(fmt.Errorf(msg))
 			return
 		} else {
-			fmt.Println("Installed plugin:", plugin)
+			fmt.Printf("Installed plugin: %s\n", constants.Bold(plugin))
 			org := image.Config.Plugin.Organization
 			if org == "turbot" {
-				fmt.Println(fmt.Sprintf("For documentation see https://hub.steampipe.io/plugins/%s/%s\n", org, plugin))
+				fmt.Println(fmt.Sprintf("Documentation:    https://hub.steampipe.io/plugins/%s/%s\n", org, plugin))
 			}
 		}
 	}
