@@ -20,7 +20,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-var CommonCmds = []string{constants.CmdExit, constants.CmdHelp, constants.CmdInspect}
+var CommonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.CmdExit}
 
 // HandlerInput :: input interface for the metaquery handler
 type HandlerInput struct {
@@ -93,22 +93,22 @@ func doExit(input *HandlerInput) error {
 
 // help
 func doHelp(input *HandlerInput) error {
-	commonCmdRows := getMetaQueryHelpRows(CommonCmds)
+	commonCmdRows := getMetaQueryHelpRows(CommonCmds, false)
 	var advanceCmds []string
 	for cmd, _ := range metaQueryDefinitions {
 		if !helpers.StringSliceContains(CommonCmds, cmd) {
 			advanceCmds = append(advanceCmds, cmd)
 		}
 	}
-	advanceCmdRows := getMetaQueryHelpRows(advanceCmds)
+	advanceCmdRows := getMetaQueryHelpRows(advanceCmds, true)
 	// print out
-	fmt.Printf("Welcome to Steampipe shell.\n\nTo start, simply enter your SQL query at the prompt:\n\nselect * from aws_iam_user\n\nCommon commands:\n\n%s\n\nAdvanced commands:\n\n%s\n",
+	fmt.Printf("Welcome to Steampipe shell.\n\nTo start, simply enter your SQL query at the prompt:\n\n select * from aws_iam_user\n\nCommon commands:\n\n%s\n\nAdvanced commands:\n\n%s\n",
 		buildTable(commonCmdRows, true),
 		buildTable(advanceCmdRows, true))
 	return nil
 }
 
-func getMetaQueryHelpRows(cmds []string) [][]string {
+func getMetaQueryHelpRows(cmds []string, arrange bool) [][]string {
 	var rows [][]string
 	var subRow [][]string
 	for _, cmd := range cmds {
@@ -128,9 +128,11 @@ func getMetaQueryHelpRows(cmds []string) [][]string {
 		}
 	}
 	// sort by metacmds name
-	sort.SliceStable(rows, func(i, j int) bool {
-		return rows[i][0] < rows[j][0]
-	})
+	if arrange {
+		sort.SliceStable(rows, func(i, j int) bool {
+			return rows[i][0] < rows[j][0]
+		})
+	}
 	return rows
 }
 
