@@ -88,6 +88,39 @@ func doExit(input *HandlerInput) error {
 	panic(utils.InteractiveExitStatus{Restart: false})
 }
 
+// help
+func doHelp(input *HandlerInput) error {
+	var rows [][]string
+	var subRow [][]string
+	for cmd, metaQuery := range metaQueryDefinitions {
+		var argsStr []string
+		if len(metaQuery.args) > 2 {
+			for _, v := range metaQuery.args {
+				subRow = append(subRow, []string{"", v.value, v.description})
+			}
+			var sectionArr []string
+			for _, v := range subRow {
+				sectionArr = append(sectionArr, strings.Join(v, "\t"))
+			}
+			temp := strings.Join(sectionArr, "\n")
+			rows = append(rows, []string{cmd + " " + "[mode]", metaQuery.description + "\n" + temp})
+		} else {
+			for _, v := range metaQuery.args {
+				argsStr = append(argsStr, v.value)
+			}
+			rows = append(rows, []string{cmd + " " + strings.Join(argsStr, "|"), metaQuery.description})
+		}
+	}
+	// sort by connection name
+	sort.SliceStable(rows, func(i, j int) bool {
+		return rows[i][0] < rows[j][0]
+	})
+
+	// print out
+	fmt.Printf("Welcome to Steampipe shell.\n\n%s\n", getHelpTable(rows, true))
+	return nil
+}
+
 // list all the tables in the schema
 func listTables(input *HandlerInput) error {
 
@@ -312,4 +345,28 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 	colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
 
 	return colConfigs, headerRow
+}
+
+func getHelpTable(rows [][]string, autoMerge bool) string {
+	t := table.NewWriter()
+	t.SetStyle(table.StyleDefault)
+	t.Style().Options = table.Options{
+		DrawBorder:      false,
+		SeparateColumns: false,
+		SeparateFooter:  false,
+		SeparateHeader:  false,
+		SeparateRows:    false,
+	}
+	t.Style().Box.PaddingLeft = ""
+
+	rowConfig := table.RowConfig{AutoMerge: autoMerge}
+
+	for _, row := range rows {
+		rowObj := table.Row{}
+		for _, col := range row {
+			rowObj = append(rowObj, col)
+		}
+		t.AppendRow(rowObj, rowConfig)
+	}
+	return t.Render()
 }
