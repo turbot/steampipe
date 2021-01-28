@@ -99,11 +99,11 @@ func doHelp(input *HandlerInput) error {
 		var argsStr []string
 		if len(metaQuery.args) > 2 {
 			for _, v := range metaQuery.args {
-				subRow = append(subRow, []string{"", v.value, v.description})
+				subRow = append(subRow, []string{v.value, v.description})
 			}
 			var sectionArr []string
 			for _, v := range subRow {
-				sectionArr = append(sectionArr, strings.Join(v, "\t"))
+				sectionArr = append(sectionArr, fmt.Sprintf("%10s  %s", v[0], v[1]))
 			}
 			temp := strings.Join(sectionArr, "\n")
 			rows = append(rows, []string{cmd + " " + "[mode]", metaQuery.description + "\n" + temp})
@@ -349,14 +349,24 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 }
 
 func writeHelpTable(rows [][]string, autoMerge bool) {
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAutoFormatHeaders(false)
-	table.SetAutoMergeCells(autoMerge)
-	table.SetAutoWrapText(false)
-	table.SetBorder(false)
-	table.SetColumnSeparator("")
-	for _, row := range rows {
-		table.Append(row)
+	t := table.NewWriter()
+	t.SetStyle(table.StyleLight)
+	t.Style().Options = table.Options{
+		DrawBorder:      false,
+		SeparateColumns: false,
+		SeparateFooter:  false,
+		SeparateHeader:  false,
+		SeparateRows:    false,
 	}
-	table.Render()
+
+	rowConfig := table.RowConfig{AutoMerge: autoMerge}
+
+	for _, row := range rows {
+		rowObj := table.Row{}
+		for _, col := range row {
+			rowObj = append(rowObj, col)
+		}
+		t.AppendRow(rowObj, rowConfig)
+	}
+	fmt.Println(t.Render())
 }
