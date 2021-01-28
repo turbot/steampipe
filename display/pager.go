@@ -11,7 +11,8 @@ import (
 	"github.com/karrick/gows"
 )
 
-func displayPaged(content string) {
+// ShowPaged :: displays the `content` in a system dependent pager
+func ShowPaged(content string) {
 	if isPagerNeeded(content) {
 		switch runtime.GOOS {
 		case "darwin", "linux":
