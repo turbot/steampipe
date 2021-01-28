@@ -90,9 +90,6 @@ func doExit(input *HandlerInput) error {
 
 // help
 func doHelp(input *HandlerInput) error {
-	fmt.Print(`Welcome to Steampipe shell.
-
-`)
 	var rows [][]string
 	var subRow [][]string
 	for cmd, metaQuery := range metaQueryDefinitions {
@@ -118,7 +115,9 @@ func doHelp(input *HandlerInput) error {
 	sort.SliceStable(rows, func(i, j int) bool {
 		return rows[i][0] < rows[j][0]
 	})
-	writeHelpTable(rows, true)
+
+	// print out
+	fmt.Printf("Welcome to Steampipe shell.\n\n%s\n\n", getHelpTable(rows, true))
 	return nil
 }
 
@@ -348,7 +347,7 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 	return colConfigs, headerRow
 }
 
-func writeHelpTable(rows [][]string, autoMerge bool) {
+func getHelpTable(rows [][]string, autoMerge bool) string {
 	t := table.NewWriter()
 	t.SetStyle(table.StyleLight)
 	t.Style().Options = table.Options{
@@ -368,5 +367,5 @@ func writeHelpTable(rows [][]string, autoMerge bool) {
 		}
 		t.AppendRow(rowObj, rowConfig)
 	}
-	fmt.Println(t.Render())
+	return t.Render()
 }
