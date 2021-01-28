@@ -20,6 +20,12 @@ var metaQueryDefinitions map[string]metaQueryDefinition
 
 func init() {
 	metaQueryDefinitions = map[string]metaQueryDefinition{
+		constants.CmdHelp: {
+			title:       constants.CmdHelp,
+			handler:     doHelp,
+			validator:   noArgs,
+			description: "Show steampipe help",
+		},
 		constants.CmdExit: {
 			title:       constants.CmdExit,
 			handler:     doExit,
