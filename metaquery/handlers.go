@@ -102,7 +102,7 @@ func doHelp(input *HandlerInput) error {
 	}
 	advanceCmdRows := getMetaQueryHelpRows(advanceCmds)
 	// print out
-	fmt.Printf("Welcome to Steampipe shell.\n\nTo start, simply enter your SQL query at the prompt:\n\nselect * from aws_iam_user\n\nCommon commands:\n\n%s\n\nAdvance commands:\n\n%s\n",
+	fmt.Printf("Welcome to Steampipe shell.\n\nTo start, simply enter your SQL query at the prompt:\n\nselect * from aws_iam_user\n\nCommon commands:\n\n%s\n\nAdvanced commands:\n\n%s\n",
 		buildTable(commonCmdRows, true),
 		buildTable(advanceCmdRows, true))
 	return nil
