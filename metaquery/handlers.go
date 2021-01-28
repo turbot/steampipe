@@ -8,13 +8,12 @@ import (
 	"strings"
 
 	"github.com/c-bata/go-prompt"
-
-	"github.com/olekukonko/tablewriter"
-	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/connection_config"
-
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/karrick/gows"
 	typeHelpers "github.com/turbot/go-kit/types"
 
+	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/connection_config"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/utils"
@@ -245,14 +244,72 @@ func inspectTable(connectionName string, tableName string, input *HandlerInput) 
 	return nil
 }
 
-func writeTable(header []string, rows [][]string, autoMerge bool) {
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAutoFormatHeaders(false)
-	table.SetHeader(header)
-	table.SetBorder(true)
-	table.SetAutoMergeCells(autoMerge)
+func writeTable(headers []string, rows [][]string, autoMerge bool) {
+	t := table.NewWriter()
+	t.SetStyle(table.StyleDefault)
+	t.SetOutputMirror(os.Stdout)
+
+	rowConfig := table.RowConfig{AutoMerge: autoMerge}
+	colConfigs, headerRow := getColumnSettings(headers, rows)
+
+	t.SetColumnConfigs(colConfigs)
+	t.AppendHeader(headerRow)
+
 	for _, row := range rows {
-		table.Append(row)
+		rowObj := table.Row{}
+		for _, col := range row {
+			rowObj = append(rowObj, col)
+		}
+		t.AppendRow(rowObj, rowConfig)
 	}
-	table.Render()
+	t.Render()
+}
+
+// calculate and returns column configuration based on header and row content
+func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig, table.Row) {
+	maxCols, _, _ := gows.GetWinSize()
+	colConfigs := make([]table.ColumnConfig, len(headers))
+	headerRow := make(table.Row, len(headers))
+
+	sumOfAllCols := 0
+
+	// account for the spaces around the value of a column and separators
+	spaceAccounting := ((len(headers) * 3) + 1)
+
+	for idx, colName := range headers {
+		headerRow[idx] = colName
+
+		// get the maximum len of strings in this column
+		maxLen := 0
+		for _, row := range rows {
+			colVal := row[idx]
+			if len(colVal) > maxLen {
+				maxLen = len(colVal)
+			}
+			if len(colName) > maxLen {
+				maxLen = len(colName)
+			}
+		}
+		colConfigs[idx] = table.ColumnConfig{
+			Name:     colName,
+			Number:   idx + 1,
+			WidthMax: maxLen,
+			WidthMin: maxLen,
+		}
+		sumOfAllCols += maxLen
+	}
+
+	// now that all columns are set to the widths that they need,
+	// set the last one to occupy as much as is available - no more - no less
+	sumOfRest := 0
+	for idx, c := range colConfigs {
+		if idx == len(colConfigs)-1 {
+			continue
+		}
+		sumOfRest += c.WidthMax
+	}
+	colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
+	colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
+
+	return colConfigs, headerRow
 }

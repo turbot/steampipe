@@ -7,12 +7,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/utils"
-
-	"github.com/olekukonko/tablewriter"
 )
 
 // ShowOutput :: displays the output using the proper formatter as applicable
@@ -68,13 +67,26 @@ func displayCSV(result *db.QueryResult) {
 func displayTable(result *db.QueryResult) {
 	// the buffer to put the output data in
 	outbuf := bytes.NewBufferString("")
-	table := tablewriter.NewWriter(outbuf)
-	table.SetAutoFormatHeaders(false)
-	table.SetAutoWrapText(false)
-	if cmdconfig.Viper().GetBool(constants.ArgHeader) {
-		table.SetHeader(ColumnNames(result.ColTypes))
+
+	// the table
+	t := table.NewWriter()
+	t.SetOutputMirror(outbuf)
+	t.SetStyle(table.StyleDefault)
+
+	colConfigs := []table.ColumnConfig{}
+	headers := table.Row{}
+
+	for idx, column := range result.ColTypes {
+		headers = append(headers, column.Name())
+		colConfigs = append(colConfigs, table.ColumnConfig{
+			Name:     column.Name(),
+			Number:   idx + 1,
+			WidthMax: constants.MaxColumnWidth,
+		})
 	}
-	table.SetBorder(true)
+
+	t.SetColumnConfigs(colConfigs)
+	t.AppendHeader(headers)
 
 	for {
 		row := <-(*result.RowChan)
@@ -83,20 +95,21 @@ func displayTable(result *db.QueryResult) {
 		}
 		// TODO how to handle error
 		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
-		table.Append(rowAsString)
+		rowObj := table.Row{}
+		for _, col := range rowAsString {
+			rowObj = append(rowObj, col)
+		}
+		t.AppendRow(rowObj)
 	}
 
-	table.SetAutoWrapText(false)
-
 	// write out the table to the buffer
-	table.Render()
-
+	t.Render()
 	// if timer is turned on
 	if cmdconfig.Viper().GetBool(constants.ArgTimer) {
 		// put in the time information in the buffer
 		outbuf.WriteString(fmt.Sprintf("\nTime: %v\n", <-result.Duration))
 	}
 
-	// spit it out!
-	displayPaged(outbuf.String())
+	// page out the table
+	ShowPaged(outbuf.String())
 }
