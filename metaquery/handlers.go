@@ -96,11 +96,11 @@ func doHelp(input *HandlerInput) error {
 		var argsStr []string
 		if len(metaQuery.args) > 2 {
 			for _, v := range metaQuery.args {
-				subRow = append(subRow, []string{v.value, v.description})
+				subRow = append(subRow, []string{"", v.value, v.description})
 			}
 			var sectionArr []string
 			for _, v := range subRow {
-				sectionArr = append(sectionArr, fmt.Sprintf("%10s  %s", v[0], v[1]))
+				sectionArr = append(sectionArr, strings.Join(v, "\t"))
 			}
 			temp := strings.Join(sectionArr, "\n")
 			rows = append(rows, []string{cmd + " " + "[mode]", metaQuery.description + "\n" + temp})
@@ -117,7 +117,7 @@ func doHelp(input *HandlerInput) error {
 	})
 
 	// print out
-	fmt.Printf("Welcome to Steampipe shell.\n\n%s\n\n", getHelpTable(rows, true))
+	fmt.Printf("Welcome to Steampipe shell.\n\n%s\n", getHelpTable(rows, true))
 	return nil
 }
 
@@ -349,7 +349,7 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 
 func getHelpTable(rows [][]string, autoMerge bool) string {
 	t := table.NewWriter()
-	t.SetStyle(table.StyleLight)
+	t.SetStyle(table.StyleDefault)
 	t.Style().Options = table.Options{
 		DrawBorder:      false,
 		SeparateColumns: false,
@@ -357,6 +357,7 @@ func getHelpTable(rows [][]string, autoMerge bool) string {
 		SeparateHeader:  false,
 		SeparateRows:    false,
 	}
+	t.Style().Box.PaddingLeft = ""
 
 	rowConfig := table.RowConfig{AutoMerge: autoMerge}
 
