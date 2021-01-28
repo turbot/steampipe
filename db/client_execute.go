@@ -98,7 +98,6 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 
 			// update the spinner message with the count of rows that have already been fetched
 			utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Waiting for results... Fetched: %3s", humanizeRowCount(rowCount)))
-			time.Sleep(25 * time.Millisecond)
 			rowCount++
 		}
 
