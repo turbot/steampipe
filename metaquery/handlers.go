@@ -91,6 +91,7 @@ func doExit(input *HandlerInput) error {
 // help
 func doHelp(input *HandlerInput) error {
 	fmt.Print(`Welcome to Steampipe shell.
+
 `)
 	var rows [][]string
 	var subRow [][]string
