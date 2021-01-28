@@ -2,6 +2,7 @@ package metaquery
 
 import (
 	"fmt"
+	"github.com/turbot/go-kit/helpers"
 	"os"
 	"regexp"
 	"sort"
@@ -18,6 +19,8 @@ import (
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/utils"
 )
+
+var CommonCmds = []string{constants.CmdExit, constants.CmdHelp, constants.CmdInspect}
 
 // HandlerInput :: input interface for the metaquery handler
 type HandlerInput struct {
@@ -90,20 +93,33 @@ func doExit(input *HandlerInput) error {
 
 // help
 func doHelp(input *HandlerInput) error {
+	commonCmdRows := getMetaQueryHelpRows(CommonCmds)
+	var advanceCmds []string
+	for cmd, _ := range metaQueryDefinitions {
+		if !helpers.StringSliceContains(CommonCmds, cmd) {
+			advanceCmds = append(advanceCmds, cmd)
+		}
+	}
+	advanceCmdRows := getMetaQueryHelpRows(advanceCmds)
+	// print out
+	fmt.Printf("Welcome to Steampipe shell.\n\nTo start, simply enter your SQL query at the prompt:\n\nselect * from aws_iam_user\n\nCommon commands:\n\n%s\n\nAdvance commands:\n\n%s\n",
+		buildTable(commonCmdRows, true),
+		buildTable(advanceCmdRows, true))
+	return nil
+}
+
+func getMetaQueryHelpRows(cmds []string) [][]string {
 	var rows [][]string
 	var subRow [][]string
-	for cmd, metaQuery := range metaQueryDefinitions {
+	for _, cmd := range cmds {
+		metaQuery := metaQueryDefinitions[cmd]
 		var argsStr []string
 		if len(metaQuery.args) > 2 {
 			for _, v := range metaQuery.args {
 				subRow = append(subRow, []string{"", v.value, v.description})
 			}
-			var sectionArr []string
-			for _, v := range subRow {
-				sectionArr = append(sectionArr, strings.Join(v, "\t"))
-			}
-			temp := strings.Join(sectionArr, "\n")
-			rows = append(rows, []string{cmd + " " + "[mode]", metaQuery.description + "\n" + temp})
+			renderSubTable := buildTable(subRow, true)
+			rows = append(rows, []string{cmd + " " + "[mode]", metaQuery.description + "\n" + renderSubTable})
 		} else {
 			for _, v := range metaQuery.args {
 				argsStr = append(argsStr, v.value)
@@ -111,14 +127,11 @@ func doHelp(input *HandlerInput) error {
 			rows = append(rows, []string{cmd + " " + strings.Join(argsStr, "|"), metaQuery.description})
 		}
 	}
-	// sort by connection name
+	// sort by metacmds name
 	sort.SliceStable(rows, func(i, j int) bool {
 		return rows[i][0] < rows[j][0]
 	})
-
-	// print out
-	fmt.Printf("Welcome to Steampipe shell.\n\n%s\n", getHelpTable(rows, true))
-	return nil
+	return rows
 }
 
 // list all the tables in the schema
@@ -347,7 +360,7 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 	return colConfigs, headerRow
 }
 
-func getHelpTable(rows [][]string, autoMerge bool) string {
+func buildTable(rows [][]string, autoMerge bool) string {
 	t := table.NewWriter()
 	t.SetStyle(table.StyleDefault)
 	t.Style().Options = table.Options{
