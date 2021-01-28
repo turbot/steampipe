@@ -43,7 +43,7 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 	var spinner *spinner.Spinner
 
 	if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgTable {
-		spinner = utils.StartSpinnerAfterDelay("Executing query ...", constants.SpinnerShowTimeout, queryDone)
+		spinner = utils.StartSpinnerAfterDelay("Executing query...", constants.SpinnerShowTimeout, queryDone)
 	}
 
 	rows, err := c.dbClient.Query(query)
