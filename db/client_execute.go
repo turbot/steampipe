@@ -43,7 +43,7 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 	var spinner *spinner.Spinner
 
 	if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgTable {
-		spinner = utils.StartSpinnerAfterDelay("Executing query...", constants.SpinnerShowTimeout, queryDone)
+		spinner = utils.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)
 	}
 
 	rows, err := c.dbClient.Query(query)
@@ -97,7 +97,7 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 			rowChan <- result
 
 			// update the spinner message with the count of rows that have already been fetched
-			utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Waiting for results... Fetched: %3s", humanizeRowCount(rowCount)))
+			utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
 			rowCount++
 		}
 
