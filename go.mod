@@ -42,6 +42,7 @@ require (
 	github.com/turbot/steampipe-plugin-sdk v0.0.0-20210119154656-52569ae6f10d
 	github.com/ulikunitz/xz v0.5.8
 	github.com/zclconf/go-cty v1.7.0 // indirect
+	golang.org/x/text v0.3.4
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gotest.tools/v3 v3.0.3 // indirect
 )

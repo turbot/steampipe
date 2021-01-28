@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -41,7 +43,7 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 	var spinner *spinner.Spinner
 
 	if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgTable {
-		spinner = utils.StartSpinnerAfterDelay("Executing query ...", constants.SpinnerShowTimeout, queryDone)
+		spinner = utils.StartSpinnerAfterDelay("Executing query...", constants.SpinnerShowTimeout, queryDone)
 	}
 
 	rows, err := c.dbClient.Query(query)
@@ -95,7 +97,7 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 			rowChan <- result
 
 			// update the spinner message with the count of rows that have already been fetched
-			utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Waiting for results... Fetched: %5d", rowCount))
+			utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Waiting for results... Fetched: %3s", humanizeRowCount(rowCount)))
 			rowCount++
 		}
 
@@ -107,4 +109,9 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 	}()
 
 	return result, nil
+}
+
+func humanizeRowCount(count int) string {
+	p := message.NewPrinter(language.English)
+	return p.Sprintf("%d", count)
 }
