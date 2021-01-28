@@ -13,7 +13,7 @@ import (
 )
 
 // InstallPlugin :: Install a plugin from an OCI Image
-func InstallPlugin(imageRef string) (string, error) {
+func InstallPlugin(imageRef string) (*SteampipeImage, error) {
 	tempDir := NewTempDir(imageRef)
 	defer tempDir.Delete()
 
@@ -22,23 +22,23 @@ func InstallPlugin(imageRef string) (string, error) {
 
 	image, err := imageDownloader.Download(ref.ActualImageRef(), "plugin", tempDir.Path)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if err = installPluginBinary(image, tempDir.Path); err != nil {
-		return "", fmt.Errorf("plugin installation failed: %s", err)
+		return nil, fmt.Errorf("plugin installation failed: %s", err)
 	}
 	if err = installPluginDocs(image, tempDir.Path); err != nil {
-		return "", fmt.Errorf("plugin installation failed: %s", err)
+		return nil, fmt.Errorf("plugin installation failed: %s", err)
 	}
 	if err = installPluginConfigFiles(image, tempDir.Path); err != nil {
-		return "", fmt.Errorf("plugin installation failed: %s", err)
+		return nil, fmt.Errorf("plugin installation failed: %s", err)
 	}
 
 	if err := updateVersionFilePlugin(image); err != nil {
-		return string(image.OCIDescriptor.Digest), err
+		return nil, err
 	}
-	return string(image.OCIDescriptor.Digest), nil
+	return image, nil
 }
 
 func updateVersionFilePlugin(image *SteampipeImage) error {
