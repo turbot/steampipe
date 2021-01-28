@@ -89,26 +89,34 @@ func doExit(input *HandlerInput) error {
 }
 
 // help
-func doHelp(intput *HandlerInput) error {
+func doHelp(input *HandlerInput) error {
+	fmt.Print(`Welcome to Steampipe shell.
+`)
 	var rows [][]string
+	var subRow [][]string
 	for cmd, metaQuery := range metaQueryDefinitions {
 		var argsStr []string
 		if len(metaQuery.args) > 2 {
-			rows = append(rows, []string{cmd + " " + "[MODE]", metaQuery.description})
 			for _, v := range metaQuery.args {
-				var temp []string
-				temp = append(temp, v.value)
-				temp = append(temp, v.description)
-				ar := strings.Join(temp, "\t")
-				rows = append(rows, []string{"", ar})
+				subRow = append(subRow, []string{"", v.value, v.description})
 			}
+			var sectionArr []string
+			for _, v := range subRow {
+				sectionArr = append(sectionArr, strings.Join(v, "\t"))
+			}
+			temp := strings.Join(sectionArr, "\n")
+			rows = append(rows, []string{cmd + " " + "[mode]", metaQuery.description + "\n" + temp})
 		} else {
 			for _, v := range metaQuery.args {
-				argsStr = append(argsStr, strings.ToUpper(v.value))
+				argsStr = append(argsStr, v.value)
 			}
 			rows = append(rows, []string{cmd + " " + strings.Join(argsStr, "|"), metaQuery.description})
 		}
 	}
+	// sort by connection name
+	sort.SliceStable(rows, func(i, j int) bool {
+		return rows[i][0] < rows[j][0]
+	})
 	writeHelpTable(rows, true)
 	return nil
 }
