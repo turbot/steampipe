@@ -273,7 +273,7 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 	sumOfAllCols := 0
 
 	// account for the spaces around the value of a column and separators
-	spaceAccounting := ((len(colConfigs) * 3) + 1)
+	spaceAccounting := ((len(headers) * 3) + 1)
 
 	for idx, colName := range headers {
 		headerRow[idx] = colName
@@ -284,6 +284,9 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 			colVal := row[idx]
 			if len(colVal) > maxLen {
 				maxLen = len(colVal)
+			}
+			if len(colName) > maxLen {
+				maxLen = len(colName)
 			}
 		}
 		colConfigs[idx] = table.ColumnConfig{
