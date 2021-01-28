@@ -265,6 +265,7 @@ func writeTable(headers []string, rows [][]string, autoMerge bool) {
 	t.Render()
 }
 
+// calculate and returns column configuration based on header and row content
 func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig, table.Row) {
 	maxCols, _, _ := gows.GetWinSize()
 	colConfigs := make([]table.ColumnConfig, len(headers))
