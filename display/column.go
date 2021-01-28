@@ -19,6 +19,7 @@ func ColumnNames(columns []*sql.ColumnType) []string {
 	return colNames
 }
 
+// ColumnValuesAsString :: converts a slice of columns into strings
 func ColumnValuesAsString(values []interface{}, columns []*sql.ColumnType) ([]string, error) {
 	rowAsString := make([]string, len(columns))
 	for idx, val := range values {
