@@ -81,7 +81,7 @@ func displayTable(result *db.QueryResult) {
 		colConfigs = append(colConfigs, table.ColumnConfig{
 			Name:     column.Name(),
 			Number:   idx + 1,
-			WidthMax: 1024,
+			WidthMax: constants.MaxColumnWidth,
 		})
 	}
 
