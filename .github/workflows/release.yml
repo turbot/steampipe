@@ -115,11 +115,11 @@ jobs:
           ls -l ~/build
           echo "~/build" >> $GITHUB_PATH
 
-      - name: Extract Darwin Artifacts and Install Binary
+      - name: Extract Ubuntu Artifacts and Install Binary
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: |
           mkdir ~/build
-          tar -xf ~/artifacts/build.zip -C ~/build
+          tar -xf ~/artifacts/build.tar.gz -C ~/build
           ls -l ~/build
           echo "~/build" >> $GITHUB_PATH
 
