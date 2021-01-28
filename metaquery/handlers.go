@@ -2,7 +2,6 @@ package metaquery
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/helpers"
 	"os"
 	"regexp"
 	"sort"
@@ -11,8 +10,8 @@ import (
 	"github.com/c-bata/go-prompt"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/karrick/gows"
+	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
-
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/connection_config"
 	"github.com/turbot/steampipe/constants"
@@ -102,7 +101,7 @@ func doHelp(input *HandlerInput) error {
 	}
 	advanceCmdRows := getMetaQueryHelpRows(advanceCmds, true)
 	// print out
-	fmt.Printf("Welcome to Steampipe shell.\n\nTo start, simply enter your SQL query at the prompt:\n\n select * from aws_iam_user\n\nCommon commands:\n\n%s\n\nAdvanced commands:\n\n%s\n",
+	fmt.Printf("Welcome to Steampipe shell.\n\nTo start, simply enter your SQL query at the prompt:\n\n  select * from aws_iam_user\n\nCommon commands:\n\n%s\n\nAdvanced commands:\n\n%s\n",
 		buildTable(commonCmdRows, true),
 		buildTable(advanceCmdRows, true))
 	return nil
@@ -110,16 +109,11 @@ func doHelp(input *HandlerInput) error {
 
 func getMetaQueryHelpRows(cmds []string, arrange bool) [][]string {
 	var rows [][]string
-	var subRow [][]string
 	for _, cmd := range cmds {
 		metaQuery := metaQueryDefinitions[cmd]
 		var argsStr []string
 		if len(metaQuery.args) > 2 {
-			for _, v := range metaQuery.args {
-				subRow = append(subRow, []string{"", v.value, v.description})
-			}
-			renderSubTable := buildTable(subRow, true)
-			rows = append(rows, []string{cmd + " " + "[mode]", metaQuery.description + "\n" + renderSubTable})
+			rows = append(rows, []string{cmd + " " + "[mode]", metaQuery.description})
 		} else {
 			for _, v := range metaQuery.args {
 				argsStr = append(argsStr, v.value)
