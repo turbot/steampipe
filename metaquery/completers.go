@@ -1,11 +1,10 @@
 package metaquery
 
 import (
-	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
+	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/connection_config"
 	"github.com/turbot/steampipe/schema"
 )
@@ -47,29 +46,5 @@ func completerFromArgsOf(cmd string) completer {
 }
 
 func inspectCompleter(input *CompleterInput) []prompt.Suggest {
-	suggestions := []prompt.Suggest{}
-
-	if len(input.args()) == 0 {
-		for _, schema := range input.Schema.GetSchemas() {
-			suggestions = append(suggestions, prompt.Suggest{Text: schema, Description: "Schema"})
-		}
-		return suggestions
-	}
-
-	// fully qualified table names
-	qualifiedTablesToAdd := []string{}
-
-	for schemaName, schemaDetails := range input.Schema.Schemas {
-		for tableName := range schemaDetails {
-			qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
-		}
-	}
-
-	sort.Strings(qualifiedTablesToAdd)
-
-	for _, table := range qualifiedTablesToAdd {
-		suggestions = append(suggestions, prompt.Suggest{Text: table, Description: "Table"})
-	}
-
-	return suggestions
+	return autocomplete.GetTableAutoCompleteSuggestions(input.Schema, input.Connections)
 }

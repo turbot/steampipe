@@ -188,11 +188,22 @@ func inspect(input *HandlerInput) error {
 	split := strings.Split(tableOrConnection, ".")
 
 	if len(split) == 1 {
-		// only a connection name
-		err := inspectConnection(tableOrConnection, input)
+		// only a connection name (or maybe unqualified table name)
+		schemaFound := inspectConnection(tableOrConnection, input)
 
-		if err != nil {
-			return err
+		// there was no schema
+		if !schemaFound {
+			searchPath := input.Schema.SearchPath
+
+			// go through the searchPath one by one and try to find the table by this name
+			for _, schema := range searchPath {
+				tablesInThisSchema := input.Schema.GetTablesInSchema(schema)
+				// we have a table by this name here
+				if helpers.StringSliceContains(tablesInThisSchema, tableOrConnection) {
+					return inspectTable(schema, tableOrConnection, input)
+				}
+			}
+			return fmt.Errorf("Could not find Connection or Table called %s", tableOrConnection)
 		}
 
 		fmt.Printf(`
@@ -202,6 +213,7 @@ To get information about the columns in a table, run '.inspect {connection}.{tab
 		return nil
 	}
 
+	// this is a fully qualified table name
 	return inspectTable(split[0], split[1], input)
 }
 
@@ -230,14 +242,14 @@ To get information about the columns in a table, run '.inspect {connection}.{tab
 	return nil
 }
 
-func inspectConnection(connectionName string, input *HandlerInput) error {
+func inspectConnection(connectionName string, input *HandlerInput) bool {
 	header := []string{"Table", "Description"}
 	rows := [][]string{}
 
 	schema, found := input.Schema.Schemas[connectionName]
 
 	if !found {
-		return fmt.Errorf("Could not find connection called '%s'", connectionName)
+		return false
 	}
 
 	for _, tableSchema := range schema {
@@ -251,7 +263,7 @@ func inspectConnection(connectionName string, input *HandlerInput) error {
 
 	writeTable(header, rows, false)
 
-	return nil
+	return true
 }
 
 func clearScreen(input *HandlerInput) error {
