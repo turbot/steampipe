@@ -8,6 +8,8 @@ import (
 	"os"
 
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
+
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
@@ -72,6 +74,7 @@ func displayTable(result *db.QueryResult) {
 	t := table.NewWriter()
 	t.SetOutputMirror(outbuf)
 	t.SetStyle(table.StyleDefault)
+	t.Style().Format.Header = text.FormatLower
 
 	colConfigs := []table.ColumnConfig{}
 	headers := table.Row{}
@@ -79,10 +82,9 @@ func displayTable(result *db.QueryResult) {
 	for idx, column := range result.ColTypes {
 		headers = append(headers, column.Name())
 		colConfigs = append(colConfigs, table.ColumnConfig{
-			Name:              column.Name(),
-			Number:            idx + 1,
-			TransformerHeader: func(val interface{}) string { return val.(string) }, // return as-is
-			WidthMax:          constants.MaxColumnWidth,
+			Name:     column.Name(),
+			Number:   idx + 1,
+			WidthMax: constants.MaxColumnWidth,
 		})
 	}
 
