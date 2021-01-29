@@ -2,10 +2,9 @@ package db
 
 import (
 	"fmt"
-	"log"
-	"sort"
 	"strings"
 
+	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
 
 	"github.com/turbot/steampipe/constants"
@@ -287,48 +286,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 		queryInfo := getQueryInfo(text)
 
 		if queryInfo.EditingTable {
-			// schema names
-			schemasToAdd := []string{}
-			// unqualified table names
-			unqualifiedTablesToAdd := []string{}
-			// fully qualified table names
-			qualifiedTablesToAdd := []string{}
-
-			unqualifiedTableMap := map[string]bool{}
-			connectionMap := *c.client.connectionMap
-
-			for schemaName, schemaDetails := range schemaMetadata.Schemas {
-				schemasToAdd = append(schemasToAdd, schemaName)
-
-				// decide whether we need to include this schema in unqualified table list as well
-				pluginOfThisSchema := stripVersionFromPluginName(connectionMap[schemaName].Plugin)
-				isIncluded := unqualifiedTableMap[pluginOfThisSchema]
-
-				for tableName := range schemaDetails {
-					qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
-					if !isIncluded {
-						unqualifiedTablesToAdd = append(unqualifiedTablesToAdd, tableName)
-						unqualifiedTableMap[pluginOfThisSchema] = true
-					}
-				}
-			}
-
-			sort.Strings(schemasToAdd)
-			sort.Strings(unqualifiedTablesToAdd)
-			sort.Strings(qualifiedTablesToAdd)
-
-			for _, schema := range schemasToAdd {
-				s = append(s, prompt.Suggest{Text: schema, Description: "Schema"})
-			}
-
-			for _, table := range unqualifiedTablesToAdd {
-				log.Println(fmt.Sprintf("%s %s", "[TRACE]", table))
-				s = append(s, prompt.Suggest{Text: table, Description: "Table"})
-			}
-
-			for _, table := range qualifiedTablesToAdd {
-				s = append(s, prompt.Suggest{Text: table, Description: "Table"})
-			}
+			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.client.schemaMetadata, c.client.connectionMap)...)
 		}
 
 		// Not sure this is working. comment out for now!
@@ -341,8 +299,4 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 
 	}
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
-}
-
-func stripVersionFromPluginName(pluginName string) string {
-	return strings.Split(pluginName, "@")[0]
 }
