@@ -157,6 +157,8 @@ func (c *Client) setSearchPath() {
 	if len(schemas) > 0 {
 		// sort the schema names
 		sort.Strings(schemas)
+		// set this before the `public` schema gets added
+		c.schemaMetadata.SearchPath = schemas
 		// Add the public schema as the first schema in the search_path. This makes it
 		// easier for users to build and work with their own tables, and since it's normally
 		// empty, doesn't make using steampipe tables any more difficult.
