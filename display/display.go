@@ -30,8 +30,8 @@ func displayJSON(result *db.QueryResult) {
 	for item := range *result.RowChan {
 		record := map[string]interface{}{}
 		for idx, colType := range result.ColTypes {
-			valueString, _ := ColumnValueAsString(item[idx], colType)
-			record[colType.Name()] = valueString
+			value, _ := ParseColumnValue(item[idx], colType)
+			record[colType.Name()] = value
 		}
 		jsonOutput = append(jsonOutput, record)
 	}
