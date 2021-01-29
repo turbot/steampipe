@@ -10,6 +10,8 @@ import (
 type Metadata struct {
 	// map {schemaname, {map tablename -> tableschema}}
 	Schemas map[string]map[string]TableSchema
+	// the search path that is set in the backend - except `public`
+	SearchPath []string
 }
 
 // TableSchema :: contains the details of a single table in the schema
