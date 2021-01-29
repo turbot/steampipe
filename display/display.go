@@ -79,9 +79,10 @@ func displayTable(result *db.QueryResult) {
 	for idx, column := range result.ColTypes {
 		headers = append(headers, column.Name())
 		colConfigs = append(colConfigs, table.ColumnConfig{
-			Name:     column.Name(),
-			Number:   idx + 1,
-			WidthMax: constants.MaxColumnWidth,
+			Name:              column.Name(),
+			Number:            idx + 1,
+			TransformerHeader: func(val interface{}) string { return val.(string) }, // return as-is
+			WidthMax:          constants.MaxColumnWidth,
 		})
 	}
 
