@@ -174,10 +174,14 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			utils.ShowError(fmt.Errorf(msg))
 			return
 		} else {
-			fmt.Printf("Installed plugin: %s\n", constants.Bold(plugin))
+			versionString := ""
+			if image.Config.Plugin.Version != "" {
+				versionString = "@" + image.Config.Plugin.Version
+			}
+			fmt.Printf("Installed plugin: %s%s\n", constants.Bold(plugin), versionString)
 			org := image.Config.Plugin.Organization
 			if org == "turbot" {
-				fmt.Println(fmt.Sprintf("Documentation:    https://hub.steampipe.io/plugins/%s/%s\n", org, plugin))
+				fmt.Println(fmt.Sprintf("Documentation:    https://hub.steampipe.io/plugins/%s/%s", org, plugin))
 			}
 		}
 	}
