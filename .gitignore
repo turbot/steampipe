@@ -2,6 +2,7 @@
 *.swp
 *.swo
 .idea/
+.vscode/
 
 # Binaries for programs and plugins
 *.exe
