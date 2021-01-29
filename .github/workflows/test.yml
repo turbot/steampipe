@@ -5,6 +5,9 @@ on:
       - main
   pull_request:
 
+env:
+  SP_DISABLE_UPDATE_CHECK: true
+
 jobs:
   goreleaser:
     name: Build

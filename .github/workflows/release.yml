@@ -3,6 +3,10 @@ on:
   push:
     tags:
       - 'v*'
+
+env:
+  SP_DISABLE_UPDATE_CHECK: true
+
 jobs:
   goreleaser:
     name: Build
