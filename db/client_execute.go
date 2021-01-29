@@ -8,16 +8,14 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
-	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
 // ExecuteSync :: execute a query against this client and wait for the result
 func (c *Client) ExecuteSync(query string) (*SyncQueryResult, error) {
-	start := time.Now()
 	// https://github.com/golang/go/wiki/CodeReviewComments#indent-error-flow
-	result, err := c.executeQuery(query)
+	result, err := c.executeQuery(query, false)
 	if err != nil {
 		return nil, err
 	}
@@ -25,11 +23,11 @@ func (c *Client) ExecuteSync(query string) (*SyncQueryResult, error) {
 	for row := range *result.RowChan {
 		syncResult.Rows = append(syncResult.Rows, row)
 	}
-	syncResult.Duration = time.Since(start)
+	syncResult.Duration = <-result.Duration
 	return syncResult, nil
 }
 
-func (c *Client) executeQuery(query string) (*QueryResult, error) {
+func (c *Client) executeQuery(query string, showSpinner bool) (*QueryResult, error) {
 	if query == "" {
 		return &QueryResult{}, nil
 	}
@@ -42,7 +40,9 @@ func (c *Client) executeQuery(query string) (*QueryResult, error) {
 	// start spinner after a short delay
 	var spinner *spinner.Spinner
 
-	if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgTable {
+	if showSpinner {
+		// if showspinner is false, the spinner gets created, but is never shown
+		// so the s.Active() will always come back false . . .
 		spinner = utils.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)
 	}
 

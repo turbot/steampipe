@@ -205,7 +205,7 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *ResultStreame
 		resultsStreamer.Done()
 	} else {
 		// otherwise execute query
-		if result, err := c.client.executeQuery(query); err != nil {
+		if result, err := c.client.executeQuery(query, true); err != nil {
 			utils.ShowError(err)
 			resultsStreamer.Done()
 		} else {
