@@ -76,7 +76,7 @@ func ParseJSONOutputColumnValue(val interface{}, colType *sql.ColumnType) (inter
 	}
 	switch colType.DatabaseTypeName() {
 	// we can revise/increment the list of DT's in future
-	case "JSON", "JSONB", "BOOL", "INT8":
+	case "JSON", "JSONB", "BOOL", "INT2", "INT4", "INT8", "FLOAT8", "FLOAT4":
 		return val, nil
 	default:
 		return ColumnValueAsString(val, colType)

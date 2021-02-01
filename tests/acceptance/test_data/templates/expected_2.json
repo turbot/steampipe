@@ -1,7 +1,7 @@
 [
  {
   "boolean_column": true,
-  "id": "0",
+  "id": 0,
   "json_column": {
    "Id": 0,
    "Name": "stringValuesomething-0",
