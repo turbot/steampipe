@@ -4,12 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/ahmetb/go-linq"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"time"
 )
 
 // ColumnNames :: extract names from columns
@@ -67,4 +66,19 @@ func ColumnValueAsString(val interface{}, colType *sql.ColumnType) (result strin
 		return typeHelpers.ToString(val), nil
 	}
 
+}
+
+// segregate data types, ignore string conversion for certain data types :
+// JSON, JSONB, BOOL and so on..
+func ParseJSONOutputColumnValue(val interface{}, colType *sql.ColumnType) (interface{}, error) {
+	if val == nil {
+		return cmdconfig.Viper().GetString(constants.ArgNullString), nil
+	}
+	switch colType.DatabaseTypeName() {
+	// we can revise/increment the list of DT's in future
+	case "JSON", "JSONB", "BOOL", "INT2", "INT4", "INT8", "FLOAT8", "FLOAT4":
+		return val, nil
+	default:
+		return ColumnValueAsString(val, colType)
+	}
 }

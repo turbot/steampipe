@@ -1,23 +1,35 @@
 [
  {
   "array1": "{(408)-589-5841}",
-  "booleancolumn": "true",
+  "booleancolumn": true,
   "cidrrange": "10.1.2.3/32",
   "currency": "$922,337,203,685,477.57",
   "date1": "1978-02-05 00:00:00",
-  "floatcolumn": "4.681642125488754",
-  "integercolumn1": "3278",
-  "integercolumn2": "21445454",
-  "integercolumn3": "2147483645",
-  "integercolumn4": "92233720368547758",
-  "integercolumn5": "922337203685477580",
+  "floatcolumn": 4.681642125488754,
+  "integercolumn1": 3278,
+  "integercolumn2": 21445454,
+  "integercolumn3": 2147483645,
+  "integercolumn4": 92233720368547758,
+  "integercolumn5": 922337203685477580,
   "interval1": "2016-06-23T02:10:25Z",
   "ipaddress": "192.168.0.0",
-  "jsondata": "{\"customer\":\"John Doe\",\"items\":{\"product\":\"Beer\",\"qty\":6}}",
-  "jsondata2": "{\"customer\":\"John Doe\",\"items\":{\"product\":\"Beer\",\"qty\":6}}",
+  "jsondata": {
+   "customer": "John Doe",
+   "items": {
+    "product": "Beer",
+    "qty": 6
+   }
+  },
+  "jsondata2": {
+   "customer": "John Doe",
+   "items": {
+    "product": "Beer",
+    "qty": 6
+   }
+  },
   "macaddress": "08:00:2b:01:02:03",
   "numericcolumn": "23.5142",
-  "realcolumn": "4660.338",
+  "realcolumn": 4660.338,
   "textcolumn1": "Yes                 ",
   "textcolumn2": "test for varchar",
   "textcolumn3": "This is a very long text for the PostgreSQL text column",
