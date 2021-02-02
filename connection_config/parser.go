@@ -5,11 +5,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/schema"
@@ -96,8 +97,10 @@ func loadFileData(configPaths []string) (map[string][]byte, hcl.Diagnostics) {
 func parseConfigs(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	var parsedConfigFiles []*hcl.File
 	var diags hcl.Diagnostics
+	parser := hclparse.NewParser()
 	for configPath, data := range fileData {
-		file, moreDiags := hclsyntax.ParseConfig(data, configPath, hcl.Pos{Byte: 0, Line: 1, Column: 1})
+		file, moreDiags := parser.ParseHCL(data, configPath)
+
 		if moreDiags.HasErrors() {
 			diags = append(diags, moreDiags...)
 			continue
@@ -109,7 +112,7 @@ func parseConfigs(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 }
 
 func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection, hcl.Diagnostics) {
-	connectionBlock, _, diags := block.Body.PartialContent(connectionSchema)
+	connectionBlock, rest, diags := block.Body.PartialContent(connectionSchema)
 	if diags.HasErrors() {
 		return nil, diags
 	}
@@ -124,30 +127,22 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 	}
 	connectionPlugin := ociinstaller.NewSteampipeImageRef(plugin).DisplayImageRef()
 
-	// now populate the dynamic connection config - just pass the rawq file data - the plugin will parse it
-	connectionConfigBody := block.Body.(*hclsyntax.Body)
-	bodyRange := connectionConfigBody.SrcRange
-
-	connectionConfigBytes := bodyRange.SliceBytes(fileData[block.DefRange.Filename])
+	// now build a string containing the hcl for all other conneciton config properties
+	restBody := rest.(*hclsyntax.Body)
+	var configProperties []string
+	for name, a := range restBody.Attributes {
+		// if this attribute does not appear in connectionBlock, load the hcl string
+		if _, ok := connectionBlock.Attributes[name]; !ok {
+			configProperties = append(configProperties, string(a.SrcRange.SliceBytes(fileData[a.SrcRange.Filename])))
+		}
+	}
+	connectionConfig := strings.Join(configProperties, "\n")
 
 	connection := &Connection{
 		Name:   connectionName,
 		Plugin: connectionPlugin,
-		Config: string(connectionConfigBytes),
+		Config: connectionConfig,
 	}
-
-	//remainingAttributes, diags := rest.JustAttributes()
-
-	//for name, attribute := range remainingAttributes {
-	//	if name != "connection" {
-	//		var val string
-	//		diags = gohcl.DecodeExpression(attribute.Expr, nil, &val)
-	//		if diags.HasErrors() {
-	//			return nil, diags
-	//		}
-	//		connection.Config[name] = val
-	//	}
-	//}
 
 	return connection, nil
 }

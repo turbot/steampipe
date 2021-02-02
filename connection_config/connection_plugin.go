@@ -84,15 +84,7 @@ func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin
 		Client: client,
 		Stub:   p,
 	}
-	// set the connection config
-	req := proto.SetConnectionDataRequest{
-		ConnectionName:   connectionName,
-		ConnectionConfig: connectionConfig,
-	}
-	log.Printf("[WARN] SetConnectionConfig req: %v\n", req)
-	_, err = pluginClient.Stub.SetConnectionConfig(&req)
-	if err != nil {
-		pluginClient.Client.Kill()
+	if err = setConnectionConfig(connectionName, connectionConfig, err, pluginClient); err != nil {
 		return nil, err
 	}
 
@@ -106,4 +98,18 @@ func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin
 	// now create ConnectionPlugin object and add to map
 	c := &ConnectionPlugin{ConnectionName: connectionName, ConnectionConfig: connectionConfig, PluginName: remoteSchema, Plugin: pluginClient, Schema: schema}
 	return c, nil
+}
+
+func setConnectionConfig(connectionName string, connectionConfig string, err error, pluginClient *grpc.PluginClient) error {
+	// set the connection config
+	req := proto.SetConnectionConfigRequest{
+		ConnectionName:   connectionName,
+		ConnectionConfig: connectionConfig,
+	}
+	_, err = pluginClient.Stub.SetConnectionConfig(&req)
+	if err != nil {
+		pluginClient.Client.Kill()
+		return nil
+	}
+	return err
 }
