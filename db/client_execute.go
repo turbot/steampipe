@@ -15,7 +15,7 @@ import (
 // ExecuteSync :: execute a query against this client and wait for the result
 func (c *Client) ExecuteSync(query string) (*SyncQueryResult, error) {
 	// https://github.com/golang/go/wiki/CodeReviewComments#indent-error-flow
-	result, err := c.executeQuery(query, false)
+	result, err := c.executeQuery(query, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func (c *Client) ExecuteSync(query string) (*SyncQueryResult, error) {
 	return syncResult, nil
 }
 
-func (c *Client) executeQuery(query string, showSpinner bool) (*QueryResult, error) {
+func (c *Client) executeQuery(query string, showSpinner bool, countStream bool) (*QueryResult, error) {
 	if query == "" {
 		return &QueryResult{}, nil
 	}
@@ -44,6 +44,9 @@ func (c *Client) executeQuery(query string, showSpinner bool) (*QueryResult, err
 		// if showspinner is false, the spinner gets created, but is never shown
 		// so the s.Active() will always come back false . . .
 		spinner = utils.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)
+	} else {
+		// no point in showing count if we don't have the spinner
+		countStream = false
 	}
 
 	rows, err := c.dbClient.Query(query)
@@ -92,6 +95,11 @@ func (c *Client) executeQuery(query string, showSpinner bool) (*QueryResult, err
 			}
 			// populate row data - handle special case types
 			result := populateRow(columnValues, colTypes)
+
+			if !countStream {
+				// stop the spinner if we don't want to show load count
+				utils.StopSpinner(spinner)
+			}
 
 			// we have started populating results
 			rowChan <- result

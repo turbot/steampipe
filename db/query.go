@@ -59,7 +59,7 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 		// start the interactive prompt in a go routine
 		go interactiveClient.InteractiveQuery(resultsStreamer, onComplete)
 	} else {
-		result, err := client.executeQuery(queryString, false)
+		result, err := client.executeQuery(queryString, false, false)
 		if err != nil {
 			onComplete()
 			return nil, err
