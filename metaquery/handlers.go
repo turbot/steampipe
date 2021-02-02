@@ -101,10 +101,10 @@ func doHelp(input *HandlerInput) error {
 	}
 	advanceCmdRows := getMetaQueryHelpRows(advanceCmds, true)
 	// print out
-	fmt.Printf("Welcome to Steampipe shell.\n\nTo start, simply enter your SQL query at the prompt:\n\n  select * from aws_iam_user\n\nCommon commands:\n\n%s\n\nAdvanced commands:\n\n%s\n\nFor more information, refer to %s\n",
+	fmt.Printf("Welcome to Steampipe shell.\n\nTo start, simply enter your SQL query at the prompt:\n\n  select * from aws_iam_user\n\nCommon commands:\n\n%s\n\nAdvanced commands:\n\n%s\n\nDocumentation available at %s\n",
 		buildTable(commonCmdRows, true),
 		buildTable(advanceCmdRows, true),
-		constants.Bold("https://www.steampipe.io"))
+		constants.Bold("https://steampipe.io/docs"))
 	fmt.Println()
 	return nil
 }

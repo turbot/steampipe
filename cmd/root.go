@@ -43,7 +43,7 @@ Getting started:
   # Get help for a command
   steampipe help query
 
-For more information, refer to https://www.steampipe.io
+  Documentation available at https://steampipe.io/docs
  `,
 }
 
