@@ -7,6 +7,7 @@ const (
 	ArgJSON              = "json"
 	ArgCSV               = "csv"
 	ArgTable             = "table"
+	ArgLine              = "line"
 	ArgListAllTableNames = "L"
 	ArgSelectAll         = "A"
 	ArgForce             = "force"
