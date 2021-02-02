@@ -268,7 +268,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 	if isFirstWord(text) {
 		// add all we know that can be the first words
 		s = []prompt.Suggest{
-			prompt.Suggest{
+			{
 				Text: "select",
 			},
 		}
