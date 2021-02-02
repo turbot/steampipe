@@ -9,6 +9,7 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/mattn/go-runewidth"
 
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -22,8 +23,34 @@ func ShowOutput(result *db.QueryResult) {
 		displayJSON(result)
 	} else if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgCSV {
 		displayCSV(result)
+	} else if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgLine {
+		displayLine(result)
 	} else {
+		// default
 		displayTable(result)
+	}
+}
+
+func displayLine(result *db.QueryResult) {
+	colNames := ColumnNames(result.ColTypes)
+	maxColLength := 0
+	for _, colName := range colNames {
+		thisLength := runewidth.StringWidth(colName)
+		if thisLength > maxColLength {
+			maxColLength = thisLength
+		}
+	}
+	lineFormat := fmt.Sprintf("%%%ds = %%s\n", maxColLength+2)
+	itemIdx := 0
+	for item := range *result.RowChan {
+		if itemIdx != 0 {
+			fmt.Println()
+		}
+		recordAsString, _ := ColumnValuesAsString(item, result.ColTypes)
+		for idx, column := range recordAsString {
+			fmt.Printf(lineFormat, colNames[idx], column)
+		}
+		itemIdx++
 	}
 }
 
