@@ -43,6 +43,7 @@ require (
 	github.com/ulikunitz/xz v0.5.8
 	github.com/zclconf/go-cty v1.7.0 // indirect
 	golang.org/x/text v0.3.4
+	google.golang.org/grpc v1.33.1
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gotest.tools/v3 v3.0.3 // indirect
 )

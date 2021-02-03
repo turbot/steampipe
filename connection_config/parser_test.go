@@ -18,7 +18,7 @@ type getParseConfigTest struct {
 var testCasesParseConfig = map[string]getParseConfigTest{
 	"multiple_connections": {
 		source: "test_Data/multiple_connections",
-		expected: &ConnectionConfig{
+		expected: &ConnectionConfigMap{
 			Connections: map[string]*Connection{
 				// todo normalise plugin names here?
 				"aws_dmi_001": {
@@ -43,7 +43,7 @@ var testCasesParseConfig = map[string]getParseConfigTest{
 	},
 	"single_connection": {
 		source: "test_Data/single_connection",
-		expected: &ConnectionConfig{
+		expected: &ConnectionConfigMap{
 			Connections: map[string]*Connection{
 				// todo normalise plugin names here?
 				"a": {

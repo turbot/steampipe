@@ -18,12 +18,12 @@ import (
 
 const configExtension = ".spc"
 
-func Load() (*ConnectionConfig, error) {
+func Load() (*ConnectionConfigMap, error) {
 	return loadConfig(constants.ConfigDir())
 }
 
-func loadConfig(configFolder string) (*ConnectionConfig, error) {
-	var result = newConfig()
+func loadConfig(configFolder string) (*ConnectionConfigMap, error) {
+	var result = newConfigMap()
 
 	// get all the config files in the directory
 	configPaths, err := getConfigFilePaths(configFolder)
@@ -31,7 +31,7 @@ func loadConfig(configFolder string) (*ConnectionConfig, error) {
 		return nil, err
 	}
 	if len(configPaths) == 0 {
-		return &ConnectionConfig{}, nil
+		return &ConnectionConfigMap{}, nil
 	}
 
 	fileData, diags := loadFileData(configPaths)

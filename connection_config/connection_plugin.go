@@ -1,9 +1,11 @@
 package connection_config
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"reflect"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -13,12 +15,8 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 )
 
-type ConnectionPluginOptions struct {
-	PluginFQN        string
-	ConnectionName   string
-	ConnectionConfig string
-	DisableLogger    bool
-}
+// ConnectionPlugin :: structure representing an instance of a plugin
+// NOTE: currently this corresponds to a single connection, i.e. we have 1 plugin instance per connection
 type ConnectionPlugin struct {
 	ConnectionName   string
 	ConnectionConfig string
@@ -27,6 +25,17 @@ type ConnectionPlugin struct {
 	Schema           *proto.Schema
 }
 
+// ConnectionPluginOptions :: struct used as input to CreateConnectionPlugin
+// - it contains all details necessary to instantiate a ConnectionPlugin
+type ConnectionPluginOptions struct {
+	PluginFQN        string
+	ConnectionName   string
+	ConnectionConfig string
+	DisableLogger    bool
+}
+
+// CreateConnectionPlugin :: instantiate a plugin for a connection, fetch schema and send connection config
+// called by hub when
 func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin, error) {
 	remoteSchema := options.PluginFQN
 	connectionName := options.ConnectionName
@@ -85,6 +94,7 @@ func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin
 		Stub:   p,
 	}
 	if err = setConnectionConfig(connectionName, connectionConfig, err, pluginClient); err != nil {
+		pluginClient.Client.Kill()
 		return nil, err
 	}
 
@@ -100,6 +110,7 @@ func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin
 	return c, nil
 }
 
+// send the connection config to the plugin
 func setConnectionConfig(connectionName string, connectionConfig string, err error, pluginClient *grpc.PluginClient) error {
 	// set the connection config
 	req := proto.SetConnectionConfigRequest{
@@ -108,8 +119,17 @@ func setConnectionConfig(connectionName string, connectionConfig string, err err
 	}
 	_, err = pluginClient.Stub.SetConnectionConfig(&req)
 	if err != nil {
-		pluginClient.Client.Kill()
-		return nil
+		// create a new cleaner error
+		fmt.Println(reflect.TypeOf(err))
+		return handleGrpcError(err)
+
 	}
+	return nil
+}
+
+func handleGrpcError(err error) error {
+	//if statusError, ok := err.(*status.Error); ok {
+	//	return errors.New(statusError.GRPCStatus().Message())
+	//}
 	return err
 }

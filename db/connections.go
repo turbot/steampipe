@@ -177,7 +177,6 @@ func deleteConnectionQuery(name string) []string {
 }
 
 func executeConnectionQueries(schemaQueries []string, updates *connection_config.ConnectionUpdates) error {
-
 	client, err := createSteampipeRootDbClient()
 	if err != nil {
 		return err
