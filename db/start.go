@@ -209,6 +209,9 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		if err = refreshConnections(client); err != nil {
 			return ServiceStarted, err
 		}
+		if err = refreshFunctions(client); err != nil {
+			return ServiceStarted, err
+		}
 	}
 
 	return ServiceStarted, nil
