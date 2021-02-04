@@ -1,0 +1,228 @@
+name: Build hub.steampipe.io (staging) docs cache
+on:
+  schedule:
+    # At minute 0 past every 2nd hour on every day-of-week from Monday through Friday.
+    # https://crontab.guru/#0_22_*_*_*
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  goreleaser:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Unshallow
+        run: git fetch
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.14
+
+      - name: Hook private repo
+        run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release --rm-dist --skip-publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Move build artifacts
+        run: |
+          mkdir ~/artifacts
+          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.zip ~/artifacts/linux.zip
+          mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
+
+      - name: List Build Artifacts
+        run: ls -l ~/artifacts
+
+      - name: Save Linux Build Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifact-linux
+          path: ~/artifacts/linux.zip
+          if-no-files-found: error
+
+      - name: Save MacOS Build Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifact-darwin
+          path: ~/artifacts/darwin.zip
+          if-no-files-found: error
+
+  platform_test:
+    name: Platform testing
+    needs: goreleaser
+    strategy:
+      matrix:
+        platform: [ ubuntu-latest, macos-latest ]
+
+    runs-on: ${{ matrix.platform }}
+    env:
+      GOFLAGS: "-mod=vendor"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.14
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Prepare for downloads
+        id: prepare-for-downloads
+        run: |
+          mkdir ~/artifacts
+
+      - name: Download Linux Build Artifacts
+        uses: actions/download-artifact@v2
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        with:
+          name: build-artifact-linux
+          path: ~/artifacts
+
+      - name: Download Darwin Build Artifacts
+        uses: actions/download-artifact@v2
+        if: ${{ matrix.platform == 'macos-latest' }}
+        with:
+          name: build-artifact-darwin
+          path: ~/artifacts
+
+      - name: Check that everything got downloaded
+        run: |
+          ls -l ~/artifacts
+
+      - name: Rename build artifact on Darwin
+        if: ${{ matrix.platform == 'macos-latest' }}
+        run: mv ~/artifacts/darwin.zip ~/artifacts/build.zip
+
+      - name: Rename build artifact on Linux
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: mv ~/artifacts/linux.zip ~/artifacts/build.zip
+
+      - name: Check that renaming is good
+        run: |
+          ls -l ~/artifacts
+
+      - name: Extract Artifacts and Install Binary
+        if: ${{ matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-latest' }}
+        run: |
+          mkdir ~/build
+          unzip ~/artifacts/build.zip -d ~/build
+          ls -l ~/build
+          echo "~/build" >> $GITHUB_PATH
+
+      - name: Run Tests
+        if: ${{ matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-latest' }}
+        run: |
+          echo $PATH
+          $HOME/build/steampipe query "select 1 as col"
+
+
+  tags_release:
+    name: Version checker
+    needs: [ goreleaser, platform_test ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get latest tag
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+
+      - id: keydb
+        uses: pozetroninc/github-action-get-latest-release@master
+        with:
+          owner: context.repo.owner
+          repo: context.repo.repo
+          excludes: prerelease, draft
+
+      - name: Delete last canary release
+        uses: dev-drprasad/delete-tag-and-release@v0.1.2
+        if: ${{ contains(steps.previoustag.outputs.tag, 'canary') }}
+        with:
+          delete_release: true
+          tag_name: ${{ steps.previoustag.outputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get next minor version
+        id: semvers
+        uses: "WyriHaximus/github-action-next-semvers@v1"
+        with:
+          version: ${{ steps.keydb.outputs.release }}
+    outputs:
+      version: ${{ steps.semvers.outputs.patch }}
+
+  create_release:
+    name: Release
+    needs: [goreleaser, platform_test, tags_release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Unshallow
+        run: git fetch --prune --unshallow
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.14
+
+      - name: Hook private repo
+        run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
+
+      - name: Get latest tag
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ needs.tags_release.outputs.version }}
+
+  clean_up:
+    # let's clean up the artifacts.
+    # incase this step isn't reached,
+    # artifacts automatically expire after 90 days anyway
+    # refer:
+    #   https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts#downloading-and-deleting-artifacts-after-a-workflow-run-is-complete
+    name: Clean Up Artifacts
+    needs: create_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clean up Windows Build
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: build-artifact-windows
+          failOnError: true
+
+      - name: Clean up Linux Build
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: build-artifact-linux
+          failOnError: true
+
+      - name: Clean up Darwin Build
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: build-artifact-darwin
+          failOnError: true
+
+      - name: Clean up Test Suite
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: test-artifact
+          failOnError: true
