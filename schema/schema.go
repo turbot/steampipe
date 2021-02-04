@@ -10,7 +10,7 @@ import (
 type Metadata struct {
 	// map {schemaname, {map tablename -> tableschema}}
 	Schemas map[string]map[string]TableSchema
-	// the search path that is set in the backend - except `public`
+	// the search path that is set in the backend
 	SearchPath []string
 }
 

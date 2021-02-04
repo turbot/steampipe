@@ -160,13 +160,16 @@ func (c *Client) setSearchPath() {
 		sort.Strings(schemas)
 		// set this before the `public` schema gets added
 		c.schemaMetadata.SearchPath = schemas
-		// Add the public schema as the first schema in the search_path. This makes it
+		// add the public schema as the first schema in the search_path. This makes it
 		// easier for users to build and work with their own tables, and since it's normally
 		// empty, doesn't make using steampipe tables any more difficult.
 		schemas = append([]string{"public"}, schemas...)
+		// add 'internal' schema as last schema in the search path
+		schemas = append(schemas, constants.FunctionSchema)
+
 		log.Println("[TRACE] setting search path to", schemas)
-		sql := fmt.Sprintf("SET search_path TO %s;", strings.Join(schemas, ","))
-		c.ExecuteSync(sql)
+		query := fmt.Sprintf("SET search_path TO %s;", strings.Join(schemas, ","))
+		c.ExecuteSync(query)
 	}
 }
 
