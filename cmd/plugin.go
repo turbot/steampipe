@@ -163,7 +163,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// args to 'plugin install' -- one or more plugins to install
 	// These can be simple names ('aws') for "standard" plugins, or
 	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
-	for _, plugin := range args {
+	for i, plugin := range args {
 		if image, err := pluginmanager.Install(plugin); err != nil {
 			msg := fmt.Sprintf("plugin install failed for plugin '%s'", plugin)
 			if strings.HasSuffix(err.Error(), "not found") {
@@ -174,10 +174,17 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			utils.ShowError(fmt.Errorf(msg))
 			return
 		} else {
-			fmt.Printf("Installed plugin: %s\n", constants.Bold(plugin))
+			versionString := ""
+			if image.Config.Plugin.Version != "" {
+				versionString = " v" + image.Config.Plugin.Version
+			}
+			fmt.Printf("Installed plugin: %s%s\n", constants.Bold(plugin), versionString)
 			org := image.Config.Plugin.Organization
 			if org == "turbot" {
-				fmt.Println(fmt.Sprintf("Documentation:    https://hub.steampipe.io/plugins/%s/%s\n", org, plugin))
+				fmt.Println(fmt.Sprintf("Documentation:    https://hub.steampipe.io/plugins/%s/%s", org, plugin))
+			}
+			if i+1 < len(args) {
+				fmt.Println("")
 			}
 		}
 	}
