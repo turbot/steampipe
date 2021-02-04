@@ -41,10 +41,11 @@ Getting started:
   steampipe plugin install azure
 
   # Get help for a command
-  steampipe help query`,
-}
+  steampipe help query
 
-//var viper *v.Viper
+  Documentation available at https://steampipe.io/docs
+ `,
+}
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
