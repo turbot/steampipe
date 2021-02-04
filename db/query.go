@@ -42,6 +42,11 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 		shutdown(client)
 		return nil, fmt.Errorf("failed to refresh connections: %v", err)
 	}
+	if err = refreshFunctions(client); err != nil {
+		// shutdown the service if something went wrong!!!
+		shutdown(client)
+		return nil, fmt.Errorf("failed to add functions: %v", err)
+	}
 
 	resultsStreamer := newQueryResults()
 

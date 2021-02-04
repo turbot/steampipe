@@ -52,6 +52,7 @@ func GetClient(autoRefreshConnections bool) (*Client, error) {
 
 		if autoRefreshConnections {
 			refreshConnections(clientSingleton)
+			refreshFunctions(clientSingleton)
 		}
 
 		// load the connection state and cache it!
