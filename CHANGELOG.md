@@ -1,3 +1,16 @@
+## v0.1.2 [2021-02-04]
+
+_What's new?_
+* The `.inspect` command no longer requires the fully qualified name for tables. ([#21](https://github.com/turbot/steampipe/issues/21))
+* The helper function `glob` has been added. ([#134](https://github.com/turbot/steampipe/issues/134))
+* The output of the `plugin install` command now shows the installed version.  ([#93](https://github.com/turbot/steampipe/issues/93))
+* The `.help` command now displays a link to the inline help docs.  ([#92](https://github.com/turbot/steampipe/issues/92))
+* The wait spinner is now only shown in interactive mode. ([#106](https://github.com/turbot/steampipe/issues/106))
+
+_Bug fixes_
+* Fix JSON and bool columns displaying as strings. ([#95](https://github.com/turbot/steampipe/issues/95))
+* Fix column headings displaying in upper case.  ([#94](https://github.com/turbot/steampipe/issues/94))
+
 ## v0.1.1 [2021-01-28]
 
 _What's new?_
