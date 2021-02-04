@@ -31,7 +31,7 @@ const (
 )
 
 // FunctionSchema :: schema container for all steampipe helper functions
-const FunctionSchema = "functions"
+const FunctionSchema = "internal"
 
 // Functions is a map of `SQLFunc`s that are synced to the db service during startup
 var Functions = []schema.SQLFunc{
