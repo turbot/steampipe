@@ -1,5 +1,7 @@
 package constants
 
+import "github.com/turbot/steampipe/schema"
+
 // dbClient constants
 // TODO these should be configuration settings
 
@@ -27,3 +29,25 @@ const (
 	DefaultEmbeddedPostgresImage = "us-docker.pkg.dev/steampipe/steampipe/db:12.1.0-v2"
 	DefaultFdwImage              = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
 )
+
+// FunctionSchema :: schema container for all steampipe helper functions
+const FunctionSchema = "functions"
+
+// Functions is a map of `SQLFunc`s that are synced to the db service during startup
+var Functions = []schema.SQLFunc{
+	{
+		Name:     "glob",
+		Params:   map[string]string{"input_glob": "text"},
+		Returns:  "text",
+		Language: "plpgsql",
+		Body: `
+declare
+	output_pattern text;
+begin
+	output_pattern = replace(input_glob, '*', '%');
+	output_pattern = replace(output_pattern, '?', '_');
+	return output_pattern;
+end;
+`,
+	},
+}
