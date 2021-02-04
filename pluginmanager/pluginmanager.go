@@ -57,7 +57,6 @@ func Remove(image string, pluginConnections map[string][]string) error {
 
 // Install :: install plugin in the local file system
 func Install(plugin string) (*ociinstaller.SteampipeImage, error) {
-
 	spinner := utils.ShowSpinner(fmt.Sprintf("Installing plugin %s...", plugin))
 	defer utils.StopSpinner(spinner)
 	image, err := ociinstaller.InstallPlugin(plugin)
