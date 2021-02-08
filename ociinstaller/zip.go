@@ -163,13 +163,6 @@ func fileExists(filePath string) bool {
 	return true
 }
 
-func moveFile(sourcePath, destPath string) error {
-	if err := os.Rename(sourcePath, destPath); err != nil {
-		return fmt.Errorf("error moving file: %s", err)
-	}
-	return nil
-}
-
 func copyFile(sourcePath, destPath string) error {
 	inputFile, err := os.Open(sourcePath)
 	if err != nil {
@@ -236,6 +229,33 @@ func copyFolder(source string, dest string) (err error) {
 	return nil
 }
 
+func moveFile(sourcePath, destPath string) error {
+	// if the source and destination files are in the same Volume
+	if filepath.VolumeName(sourcePath) == filepath.VolumeName(destPath) {
+		//do a os.Rename
+		return os.Rename(sourcePath, destPath)
+	}
+
+	// else, try opening the sourcefile for reading
+	f, err := os.OpenFile(sourcePath, os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+
+	// copy the contents of the source file to the destination file
+	err = copyFile(sourcePath, destPath)
+	if err != nil {
+		return err
+	}
+
+	// remove the old file
+	return os.Remove(sourcePath)
+}
+
 func moveFolder(source string, dest string) (err error) {
 	sourceinfo, err := os.Stat(source)
 	if err != nil {
@@ -261,7 +281,7 @@ func moveFolder(source string, dest string) (err error) {
 		sourceFile := filepath.Join(source, obj.Name())
 		destFile := filepath.Join(dest, obj.Name())
 
-		if err := os.Rename(sourceFile, destFile); err != nil {
+		if err := moveFile(sourceFile, destFile); err != nil {
 			return fmt.Errorf("error moving file: %s", err)
 		}
 	}
