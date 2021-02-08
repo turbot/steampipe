@@ -32,11 +32,9 @@ func refreshConnections(client *Client) error {
 			missingCount,
 			p.Pluralize("plugin", missingCount, false),
 			strings.Join(updates.MissingPlugins, "\n  "))
-
 	}
 
 	var connectionQueries []string
-
 	numUpdates := len(updates.Update)
 	if numUpdates > 0 {
 		s := utils.ShowSpinner("Refreshing connections...")

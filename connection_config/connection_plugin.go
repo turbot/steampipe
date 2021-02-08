@@ -1,11 +1,9 @@
 package connection_config
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
-	"reflect"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -101,7 +99,7 @@ func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin
 	schemaResponse, err := pluginClient.Stub.GetSchema(&proto.GetSchemaRequest{})
 	if err != nil {
 		pluginClient.Client.Kill()
-		return nil, err
+		return nil, HandleGrpcError(err, connectionName, "GetSchema")
 	}
 	schema := schemaResponse.Schema
 
@@ -119,17 +117,10 @@ func setConnectionConfig(connectionName string, connectionConfig string, err err
 	}
 	_, err = pluginClient.Stub.SetConnectionConfig(&req)
 	if err != nil {
+
 		// create a new cleaner error
-		fmt.Println(reflect.TypeOf(err))
-		return handleGrpcError(err)
+		return HandleGrpcError(err, connectionName, "SetConnectionConfig")
 
 	}
 	return nil
-}
-
-func handleGrpcError(err error) error {
-	//if statusError, ok := err.(*status.Error); ok {
-	//	return errors.New(statusError.GRPCStatus().Message())
-	//}
-	return err
 }
