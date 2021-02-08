@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
-	"github.com/mattn/go-runewidth"
 
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -33,20 +34,21 @@ func ShowOutput(result *db.QueryResult) {
 
 func displayLine(result *db.QueryResult) {
 	colNames := ColumnNames(result.ColTypes)
-	maxColLength := 0
+	maxColNameLength := 0
 	for _, colName := range colNames {
-		thisLength := runewidth.StringWidth(colName)
-		if thisLength > maxColLength {
-			maxColLength = thisLength
+		thisLength := utf8.RuneCountInString(colName)
+		if thisLength > maxColNameLength {
+			maxColNameLength = thisLength
 		}
 	}
-	lineFormat := fmt.Sprintf("%%%ds = %%s\n", maxColLength+2)
+	lineFormat := fmt.Sprintf("%%-%ds | %%s\n", maxColNameLength)
 	itemIdx := 0
 	for item := range *result.RowChan {
 		if itemIdx != 0 {
 			fmt.Println()
 		}
 		recordAsString, _ := ColumnValuesAsString(item, result.ColTypes)
+		fmt.Printf("-[ RECORD %-2d ]%s\n", (itemIdx + 1), strings.Repeat("-", 75))
 		for idx, column := range recordAsString {
 			fmt.Printf(lineFormat, colNames[idx], column)
 		}
