@@ -56,7 +56,7 @@ func displayLine(result *db.QueryResult) {
 
 		lineFormat := fmt.Sprintf("%%-%ds | %%-%ds", maxColNameLength, requiredTerminalColumnsForValuesOfRecord)
 
-		fmt.Printf("-[ RECORD %-2d ]%s\n", (itemIdx + 1), strings.Repeat("-", requiredTerminalColumnsForValuesOfRecord+1))
+		fmt.Printf("-[ RECORD %-2d ]%s\n", (itemIdx + 1), strings.Repeat("-", 75))
 		for idx, column := range recordAsString {
 			lines := strings.Split(column, "\n")
 			for lineIdx, line := range lines {
