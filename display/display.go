@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -22,9 +24,71 @@ func ShowOutput(result *db.QueryResult) {
 		displayJSON(result)
 	} else if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgCSV {
 		displayCSV(result)
+	} else if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgLine {
+		displayLine(result)
 	} else {
+		// default
 		displayTable(result)
 	}
+}
+
+func displayLine(result *db.QueryResult) {
+	colNames := ColumnNames(result.ColTypes)
+	maxColNameLength := 0
+	for _, colName := range colNames {
+		thisLength := utf8.RuneCountInString(colName)
+		if thisLength > maxColNameLength {
+			maxColNameLength = thisLength
+		}
+	}
+	itemIdx := 0
+	for item := range *result.RowChan {
+
+		recordAsString, _ := ColumnValuesAsString(item, result.ColTypes)
+
+		requiredTerminalColumnsForValuesOfRecord := 0
+		for _, colValue := range recordAsString {
+			colRequired := getTerminalColumnsRequiredForString(colValue)
+			if requiredTerminalColumnsForValuesOfRecord < colRequired {
+				requiredTerminalColumnsForValuesOfRecord = colRequired
+			}
+		}
+
+		lineFormat := fmt.Sprintf("%%-%ds | %%-%ds", maxColNameLength, requiredTerminalColumnsForValuesOfRecord)
+
+		fmt.Printf("-[ RECORD %-2d ]%s\n", (itemIdx + 1), strings.Repeat("-", 75))
+		for idx, column := range recordAsString {
+			lines := strings.Split(column, "\n")
+			for lineIdx, line := range lines {
+				if lineIdx == 0 {
+					// the first line
+					fmt.Printf(lineFormat, colNames[idx], line)
+				} else {
+					// next lines
+					fmt.Printf(lineFormat, "", line)
+				}
+
+				// is this not the last line of value?
+				if lineIdx < len(lines)-1 {
+					fmt.Printf(" +\n")
+				} else {
+					fmt.Printf("\n")
+				}
+
+			}
+		}
+		itemIdx++
+	}
+}
+
+func getTerminalColumnsRequiredForString(str string) int {
+	colsRequired := 0
+	for _, line := range strings.Split(str, "\n") {
+		if colsRequired < utf8.RuneCountInString(line) {
+			colsRequired = utf8.RuneCountInString(line)
+		}
+	}
+	return colsRequired
 }
 
 func displayJSON(result *db.QueryResult) {

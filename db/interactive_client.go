@@ -205,7 +205,7 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *ResultStreame
 		resultsStreamer.Done()
 	} else {
 		// otherwise execute query
-		if result, err := c.client.executeQuery(query, true); err != nil {
+		if result, err := c.client.executeQuery(query, true, cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgTable); err != nil {
 			utils.ShowError(err)
 			resultsStreamer.Done()
 		} else {
@@ -268,7 +268,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 	if isFirstWord(text) {
 		// add all we know that can be the first words
 		s = []prompt.Suggest{
-			prompt.Suggest{
+			{
 				Text: "select",
 			},
 		}
