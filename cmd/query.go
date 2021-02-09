@@ -49,7 +49,7 @@ Examples:
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
-		AddStringFlag(constants.ArgOutput, "", "table", "Output format: csv, json or table").
+		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.")
 
 	return cmd

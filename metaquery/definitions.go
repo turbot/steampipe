@@ -92,6 +92,7 @@ func init() {
 				{value: constants.ArgJSON, description: "Set output to JSON"},
 				{value: constants.ArgCSV, description: "Set output to CSV"},
 				{value: constants.ArgTable, description: "Set output to Table"},
+				{value: constants.ArgLine, description: "Set output to Line"},
 			},
 			completer: completerFromArgsOf(constants.CmdOutput),
 		},
