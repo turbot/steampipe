@@ -29,6 +29,7 @@ func NewRunner() *Runner {
 
 func (r *Runner) Run() {
 	if r.shouldRun {
+		// check whether an updated version is available
 		checkVersion(r.currentState.InstallationID)
 		// remove log files older than 7 days
 		db.TrimLogs()
