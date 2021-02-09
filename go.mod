@@ -1,4 +1,4 @@
-module github.com/turbot/steampipe
+	module github.com/turbot/steampipe
 
 go 1.14
 
