@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -28,7 +29,10 @@ func NewRunner() *Runner {
 
 func (r *Runner) Run() {
 	if r.shouldRun {
+		// check whether an updated version is available
 		checkVersion(r.currentState.InstallationID)
+		// remove log files older than 7 days
+		db.TrimLogs()
 		// update last check time
 		r.updateState()
 	}
