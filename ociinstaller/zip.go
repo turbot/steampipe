@@ -163,13 +163,6 @@ func fileExists(filePath string) bool {
 	return true
 }
 
-func moveFile(sourcePath, destPath string) error {
-	if err := os.Rename(sourcePath, destPath); err != nil {
-		return fmt.Errorf("error moving file: %s", err)
-	}
-	return nil
-}
-
 func copyFile(sourcePath, destPath string) error {
 	inputFile, err := os.Open(sourcePath)
 	if err != nil {
@@ -187,6 +180,10 @@ func copyFile(sourcePath, destPath string) error {
 		return fmt.Errorf("writing to output file failed: %s", err)
 	}
 
+	// copy over the permissions and modes
+	inputStat, _ := os.Stat(sourcePath)
+	outputFile.Chmod(inputStat.Mode())
+
 	return nil
 }
 
@@ -197,73 +194,43 @@ func copyFileUnlessExists(sourcePath string, destPath string) error {
 	return copyFile(sourcePath, destPath)
 }
 
-func copyFolder(source string, dest string) (err error) {
-	sourceinfo, err := os.Stat(source)
-	if err != nil {
-		return err
-	}
-
-	if err = os.MkdirAll(dest, sourceinfo.Mode()); err != nil {
-		return err
-	}
-
-	directory, err := os.Open(source)
-	if err != nil {
-		return fmt.Errorf("couldn't open source dir: %s", err)
-	}
-	defer directory.Close()
-
-	objects, err := directory.Readdir(-1)
-	if err != nil {
-		return err
-	}
-
-	for _, obj := range objects {
-		sourceFile := filepath.Join(source, obj.Name())
-		destFile := filepath.Join(dest, obj.Name())
-
-		if obj.IsDir() {
-			if err = copyFolder(sourceFile, destFile); err != nil {
-				return fmt.Errorf("couldn't copy %s to %s: %s", sourceFile, destFile, err)
-			}
-		} else {
-			if err = copyFile(sourceFile, destFile); err != nil {
-				return fmt.Errorf("couldn't copy %s to %s: %s", sourceFile, destFile, err)
-			}
-		}
-
+// moves a file within an fs partition. panics if movement is attempted between partitions
+// this is done separately to achieve performance benefits of os.Rename over reading and writing content
+func moveFileWithinPartition(sourcePath, destPath string) error {
+	if err := os.Rename(sourcePath, destPath); err != nil {
+		return fmt.Errorf("error moving file: %s", err)
 	}
 	return nil
 }
 
-func moveFolder(source string, dest string) (err error) {
-	sourceinfo, err := os.Stat(source)
+// moves a folder within an fs partition. panics if movement is attempted between partitions
+// this is done separately to achieve performance benefits of os.Rename over reading and writing content
+func moveFolderWithinPartition(sourcePath, destPath string) error {
+	sourceinfo, err := os.Stat(sourcePath)
 	if err != nil {
 		return err
 	}
 
-	if err = os.MkdirAll(dest, sourceinfo.Mode()); err != nil {
+	if err = os.MkdirAll(destPath, sourceinfo.Mode()); err != nil {
 		return err
 	}
 
-	directory, err := os.Open(source)
+	directory, err := os.Open(sourcePath)
 	if err != nil {
 		return fmt.Errorf("couldn't open source dir: %s", err)
 	}
-	defer directory.Close()
+	directory.Close()
 
-	objects, err := directory.Readdir(-1)
-	if err != nil {
-		return err
-	}
+	defer os.RemoveAll(sourcePath)
 
-	for _, obj := range objects {
-		sourceFile := filepath.Join(source, obj.Name())
-		destFile := filepath.Join(dest, obj.Name())
-
-		if err := os.Rename(sourceFile, destFile); err != nil {
-			return fmt.Errorf("error moving file: %s", err)
+	return filepath.Walk(sourcePath, func(path string, info os.FileInfo, err error) error {
+		relPath, _ := filepath.Rel(sourcePath, path)
+		if relPath == "" {
+			return nil
 		}
-	}
-	return nil
+		if info.IsDir() {
+			return os.MkdirAll(filepath.Join(destPath, relPath), info.Mode())
+		}
+		return moveFileWithinPartition(filepath.Join(sourcePath, relPath), filepath.Join(destPath, relPath))
+	})
 }

@@ -49,5 +49,5 @@ func updateVersionFileDB(image *SteampipeImage) error {
 
 func extractDbFiles(image *SteampipeImage, tempDir string, dest string) error {
 	source := filepath.Join(tempDir, image.Database.ArchiveDir)
-	return moveFolder(source, dest)
+	return moveFolderWithinPartition(source, dest)
 }
