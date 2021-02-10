@@ -62,13 +62,13 @@ func installFdwFiles(image *SteampipeImage, tempdir string, dest string) error {
 
 	fileName = image.Fdw.ControlFile
 	sourcePath = filepath.Join(tempdir, fileName)
-	if err := moveFile(sourcePath, filepath.Join(hubControlPath, fileName)); err != nil {
+	if err := moveFileWithinPartition(sourcePath, filepath.Join(hubControlPath, fileName)); err != nil {
 		return fmt.Errorf("could not install %s to %s", sourcePath, hubControlPath)
 	}
 
 	fileName = image.Fdw.SqlFile
 	sourcePath = filepath.Join(tempdir, fileName)
-	if err := moveFile(sourcePath, filepath.Join(hubSQLPath, fileName)); err != nil {
+	if err := moveFileWithinPartition(sourcePath, filepath.Join(hubSQLPath, fileName)); err != nil {
 		return fmt.Errorf("could not install %s to %s", sourcePath, hubSQLPath)
 	}
 	return nil

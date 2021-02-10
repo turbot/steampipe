@@ -70,3 +70,8 @@ func InternalDir() string {
 func DatabaseDir() string {
 	return steampipeSubDir("db")
 }
+
+// TempDir :: returns the path to the steampipe tmp directory (creates if missing)
+func TempDir() string {
+	return steampipeSubDir("tmp")
+}

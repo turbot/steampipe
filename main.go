@@ -2,14 +2,16 @@ package main
 
 import (
 	// need to attach this driver to the default sql package
+	"log"
+	"os"
+
 	"github.com/hashicorp/go-hclog"
 	_ "github.com/lib/pq"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmd"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/task"
 	"github.com/turbot/steampipe/utils"
-	"log"
-	"os"
 )
 
 var Logger hclog.Logger
@@ -19,13 +21,17 @@ func main() {
 	logging.LogTime("start")
 	createLogger()
 	log.Println("[TRACE] tracing enabled")
-	
+
 	// run periodic tasks - update check and log clearing
 	task.NewRunner().Run()
-	
+
 	// execute the command
 	cmd.Execute()
-	
+
+	// remove the temp directory
+	// don't care if it could not be removed
+	defer os.RemoveAll(constants.TempDir())
+
 	logging.LogTime("end")
 	utils.DisplayProfileData()
 }
