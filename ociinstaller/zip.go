@@ -268,3 +268,44 @@ func moveFolder(source string, dest string) (err error) {
 		return moveFile(filepath.Join(source, relPath), filepath.Join(dest, relPath))
 	})
 }
+
+// moves a file within an fs partition. panics if movement is attempted between partitions
+// this is done separately to achieve performance benefits of os.Rename over reading and writing content
+func moveFileWithinPartition(sourcePath, destPath string) error {
+	if err := os.Rename(sourcePath, destPath); err != nil {
+		return fmt.Errorf("error moving file: %s", err)
+	}
+	return nil
+}
+
+// moves a folder within an fs partition. panics if movement is attempted between partitions
+// this is done separately to achieve performance benefits of os.Rename over reading and writing content
+func moveFolderWithinPartition(sourcePath, destPath string) error {
+	sourceinfo, err := os.Stat(sourcePath)
+	if err != nil {
+		return err
+	}
+
+	if err = os.MkdirAll(destPath, sourceinfo.Mode()); err != nil {
+		return err
+	}
+
+	directory, err := os.Open(sourcePath)
+	if err != nil {
+		return fmt.Errorf("couldn't open source dir: %s", err)
+	}
+	directory.Close()
+
+	defer os.RemoveAll(sourcePath)
+
+	return filepath.Walk(sourcePath, func(path string, info os.FileInfo, err error) error {
+		relPath, _ := filepath.Rel(sourcePath, path)
+		if relPath == "" {
+			return nil
+		}
+		if info.IsDir() {
+			return os.MkdirAll(filepath.Join(destPath, relPath), info.Mode())
+		}
+		return moveFileWithinPartition(filepath.Join(sourcePath, relPath), filepath.Join(destPath, relPath))
+	})
+}
