@@ -123,7 +123,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		"-c", "password_encryption=scram-sha-256",
 		"-c", "random-page-cost=0.01",
 		"-c", "seq-page-cost=0.01",
-		"-c", "shared-buffers=128kB",
+		// "-c", "shared-buffers=128kB",
 		"-c", "synchronous_commit=off",
 		"-c", "temp-buffers=800kB",
 		"-c", "timezone=UTC",
