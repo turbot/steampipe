@@ -48,4 +48,4 @@ require (
 	gotest.tools/v3 v3.0.3 // indirect
 )
 
-replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.5-steampipe
+replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe
