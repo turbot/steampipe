@@ -234,7 +234,6 @@ func copyFolder(source string, dest string) (err error) {
 }
 
 func moveFile(sourcePath, destPath string) error {
-	// else, try opening the sourcefile for reading
 	f, err := os.OpenFile(sourcePath, os.O_RDWR, 0666)
 	if err != nil {
 		return err
