@@ -143,6 +143,64 @@ func TestCopyFolder(t *testing.T) {
 	}
 }
 
+func BenchmarkMoveFolder(b *testing.B) {
+	b.StopTimer()
+	srcFolder, dstFolder, err := setupForBenchmark(b)
+	defer func() {
+		os.RemoveAll(srcFolder)
+		os.RemoveAll(dstFolder)
+	}()
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.StartTimer()
+	if err := moveFolder(srcFolder, dstFolder); err != nil {
+		b.Fatal(err)
+	}
+}
+func BenchmarkMoveFolderWithinPartition(b *testing.B) {
+	b.StopTimer()
+	srcFolder, dstFolder, err := setupForBenchmark(b)
+	defer func() {
+		os.RemoveAll(srcFolder)
+		os.RemoveAll(dstFolder)
+	}()
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.StartTimer()
+	if err := moveFolderWithinPartition(srcFolder, dstFolder); err != nil {
+		b.Fatal(err)
+	}
+}
+
+func setupForBenchmark(b *testing.B) (string, string, error) {
+	srcDirectory, _ := ioutil.TempDir(os.TempDir(), "")
+	dstDirectory, _ := ioutil.TempDir(os.TempDir(), "")
+	fileName := "file"
+
+	if err := os.MkdirAll(srcDirectory, 0777); err != nil {
+		return "", "", err
+	}
+	if err := os.MkdirAll(dstDirectory, 0777); err != nil {
+		return "", "", err
+	}
+
+	// generate 1MB content
+	content := make([]byte, 1*1024*1024)
+	rand.Read(content)
+
+	for i := 0; i < b.N; i++ {
+		// create a file in source directory
+		f, _ := ioutil.TempFile(srcDirectory, fileName)
+		f.Write(content)
+		f.Close()
+	}
+
+	// create a file in source directory
+	return srcDirectory, dstDirectory, nil
+}
+
 // creates a temporary directory with a 100 1MB files within it!
 func setupForTest(t *testing.T) (string, error) {
 	srcDirectory, _ := ioutil.TempDir(os.TempDir(), "src")
