@@ -9,7 +9,7 @@
 
 <p align="center">
   <a aria-label="Steampipe version" href="https://steampipe.io/download">
-    <img alt="" src="https://img.shields.io/static/v1?label=cli&message=v0.1.2&style=for-the-badge&labelColor=777777&color=F3F1F0">
+    <img alt="" src="https://img.shields.io/static/v1?label=cli&message=v0.1.3&style=for-the-badge&labelColor=777777&color=F3F1F0">
   </a>
   &nbsp;
   <a aria-label="License" href="LICENSE">
