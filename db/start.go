@@ -119,7 +119,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		"-c", "effective-cache-size=64kB",
 		"-c", "fsync=off",
 		"-c", "full_page_writes=off",
-		// "-c", "maintenance-work-mem=1024kB",
+		"-c", "maintenance-work-mem=1024kB",
 		"-c", "password_encryption=scram-sha-256",
 		"-c", "random-page-cost=0.01",
 		"-c", "seq-page-cost=0.01",
@@ -130,7 +130,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		"-c", "track_activities=off",
 		"-c", "track_counts=off",
 		"-c", "wal-buffers=32kB",
-		// "-c", "work-mem=64kB",
+		"-c", "work-mem=64kB",
 		"-c", "jit=off",
 
 		// postgres log collection
