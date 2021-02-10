@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -20,7 +21,7 @@ func NewTempDir(path string) *tempDir {
 }
 
 func getOrCreateTempDir(ref string) string {
-	pluginCacheDir := filepath.Join(os.TempDir(), safeDirName(ref))
+	pluginCacheDir := filepath.Join(constants.TempDir(), safeDirName(ref))
 
 	if _, err := os.Stat(pluginCacheDir); os.IsNotExist(err) {
 		err = os.MkdirAll(pluginCacheDir, 0755)
