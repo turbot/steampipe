@@ -234,12 +234,6 @@ func copyFolder(source string, dest string) (err error) {
 }
 
 func moveFile(sourcePath, destPath string) error {
-	// if the source and destination files are in the same Volume
-	if filepath.VolumeName(sourcePath) == filepath.VolumeName(destPath) {
-		//do a os.Rename
-		return os.Rename(sourcePath, destPath)
-	}
-
 	// else, try opening the sourcefile for reading
 	f, err := os.OpenFile(sourcePath, os.O_RDWR, 0666)
 	if err != nil {
@@ -274,20 +268,20 @@ func moveFolder(source string, dest string) (err error) {
 	if err != nil {
 		return fmt.Errorf("couldn't open source dir: %s", err)
 	}
-	defer directory.Close()
+	directory.Close()
 
-	objects, err := directory.Readdir(-1)
-	if err != nil {
-		return err
-	}
+	defer func() {
+		os.RemoveAll(source)
+	}()
 
-	for _, obj := range objects {
-		sourceFile := filepath.Join(source, obj.Name())
-		destFile := filepath.Join(dest, obj.Name())
-
-		if err := moveFile(sourceFile, destFile); err != nil {
-			return fmt.Errorf("error moving file: %s", err)
+	return filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+		relPath, _ := filepath.Rel(source, path)
+		if relPath == "" {
+			return nil
 		}
-	}
-	return nil
+		if info.IsDir() {
+			return os.MkdirAll(filepath.Join(dest, relPath), info.Mode())
+		}
+		return copyFile(filepath.Join(source, relPath), filepath.Join(dest, relPath))
+	})
 }
