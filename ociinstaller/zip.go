@@ -180,6 +180,10 @@ func copyFile(sourcePath, destPath string) error {
 		return fmt.Errorf("writing to output file failed: %s", err)
 	}
 
+	// copy over the permissions and modes
+	inputStat, _ := os.Stat(sourcePath)
+	outputFile.Chmod(inputStat.Mode())
+
 	return nil
 }
 
