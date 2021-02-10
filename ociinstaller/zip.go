@@ -208,29 +208,18 @@ func copyFolder(source string, dest string) (err error) {
 	if err != nil {
 		return fmt.Errorf("couldn't open source dir: %s", err)
 	}
-	defer directory.Close()
+	directory.Close()
 
-	objects, err := directory.Readdir(-1)
-	if err != nil {
-		return err
-	}
-
-	for _, obj := range objects {
-		sourceFile := filepath.Join(source, obj.Name())
-		destFile := filepath.Join(dest, obj.Name())
-
-		if obj.IsDir() {
-			if err = copyFolder(sourceFile, destFile); err != nil {
-				return fmt.Errorf("couldn't copy %s to %s: %s", sourceFile, destFile, err)
-			}
-		} else {
-			if err = copyFile(sourceFile, destFile); err != nil {
-				return fmt.Errorf("couldn't copy %s to %s: %s", sourceFile, destFile, err)
-			}
+	return filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+		relPath, _ := filepath.Rel(source, path)
+		if relPath == "" {
+			return nil
 		}
-
-	}
-	return nil
+		if info.IsDir() {
+			return os.MkdirAll(filepath.Join(dest, relPath), info.Mode())
+		}
+		return copyFile(filepath.Join(source, relPath), filepath.Join(dest, relPath))
+	})
 }
 
 func moveFile(sourcePath, destPath string) error {
@@ -243,14 +232,11 @@ func moveFile(sourcePath, destPath string) error {
 		return err
 	}
 
-	// copy the contents of the source file to the destination file
-	err = copyFile(sourcePath, destPath)
-	if err != nil {
-		return err
-	}
+	// remove the source file when done
+	defer os.Remove(sourcePath)
 
-	// remove the old file
-	return os.Remove(sourcePath)
+	// copy the contents of the source file to the destination file
+	return copyFile(sourcePath, destPath)
 }
 
 func moveFolder(source string, dest string) (err error) {
@@ -269,9 +255,7 @@ func moveFolder(source string, dest string) (err error) {
 	}
 	directory.Close()
 
-	defer func() {
-		os.RemoveAll(source)
-	}()
+	defer os.RemoveAll(source)
 
 	return filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		relPath, _ := filepath.Rel(source, path)
@@ -281,6 +265,6 @@ func moveFolder(source string, dest string) (err error) {
 		if info.IsDir() {
 			return os.MkdirAll(filepath.Join(dest, relPath), info.Mode())
 		}
-		return copyFile(filepath.Join(source, relPath), filepath.Join(dest, relPath))
+		return moveFile(filepath.Join(source, relPath), filepath.Join(dest, relPath))
 	})
 }
