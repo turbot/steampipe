@@ -124,7 +124,7 @@ func getCommentQueries(updates connection_config.ConnectionMap) ([]string, error
 			log.Println("[TRACE] hydrate err chan select", "error", err)
 			return nil, err
 		case <-time.After(10 * time.Second):
-			return nil, fmt.Errorf("timed out retrieveing schema from plugins")
+			return nil, fmt.Errorf("timed out retrieving schema from plugins")
 		case a := <-queryChan:
 			commentQueries = append(commentQueries, a...)
 		}
