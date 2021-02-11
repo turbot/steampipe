@@ -44,12 +44,14 @@ esac
 
 echo "Downloading from $steampipe_uri"
 if command -v wget >/dev/null; then
-	if ! wget -q --show-progress -O "$zip_location" "$steampipe_uri"; then
+	# because --show-progress was introduced in 1.16.
+	wget --help | grep -q '\--showprogress' && _FORCE_PROGRESS_BAR="--no-verbose --show-progress" || _FORCE_PROGRESS_BAR=""
+	if ! wget --progress=bar:force:noscroll $_FORCE_PROGRESS_BAR -O "$zip_location" "$steampipe_uri"; then
         echo "Could not find version $1"
         exit 1
     fi
 elif command -v curl >/dev/null; then
-    if ! curl --silent --fail --location --progress-bar --output "$zip_location" "$steampipe_uri"; then
+    if ! curl --fail --location --progress-bar --output "$zip_location" "$steampipe_uri"; then
         echo "Could not find version $1"
         exit 1
     fi
