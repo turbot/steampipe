@@ -39,7 +39,7 @@ func EnsureDBInstalled() {
 			if err != nil {
 				utils.ShowError(fmt.Errorf("FDW could not be updated"))
 			} else {
-				fmt.Printf("FDW was updated. ")
+				fmt.Printf("FDW was updated to %s. ", constants.Bold(constants.FdwVersion))
 				currentStatus, err := GetStatus()
 				if err != nil || currentStatus != nil {
 					fmt.Printf("Run %s for change to take effect.", constants.Bold("steampipe service restart"))
