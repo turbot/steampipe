@@ -16,3 +16,5 @@ func constructUserAgent(installationID string) string {
 		"",
 		installationID)
 }
+
+const disableUpdatesCheckEnvVar = "SP_DISABLE_UPDATE_CHECK"
