@@ -16,3 +16,5 @@ func shouldDoUpdateCheck() bool {
 	}
 	return true
 }
+
+const disableUpdatesCheckEnvVar = "SP_DISABLE_UPDATE_CHECK"
