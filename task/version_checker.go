@@ -57,7 +57,8 @@ type versionChecker struct {
 }
 
 // check if there is a new version
-func checkVersion(id string) {
+func checkSteampipeVersion(id string) {
+	// if SP_DISABLE_UPDATE_CHECK is set, do nothing
 	if !shouldDoUpdateCheck() {
 		return
 	}
@@ -165,13 +166,14 @@ func (c *versionChecker) doCheckRequest() {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
 	timeout := 3000
 	payload := c.buildJSONPayload()
-	sendRequestTo := versionCheckPOSTURL()
+	sendRequestTo := c.versionCheckURL()
 
 	req, err := http.NewRequest("POST", sendRequestTo.String(), payload)
 	if err != nil {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", constructUserAgent(c.signature))
 
 	client := cleanhttp.DefaultClient()
 
@@ -199,7 +201,7 @@ func (c *versionChecker) doCheckRequest() {
 		return
 	}
 
-	c.checkResult = decodeResult(bodyString)
+	c.checkResult = c.decodeResult(bodyString)
 }
 
 func (c *versionChecker) buildJSONPayload() *bytes.Buffer {
@@ -214,7 +216,7 @@ func (c *versionChecker) buildJSONPayload() *bytes.Buffer {
 	return bytes.NewBuffer(jsonStr)
 }
 
-func decodeResult(body string) *versionCheckResponse {
+func (c *versionChecker) decodeResult(body string) *versionCheckResponse {
 	var result versionCheckResponse
 
 	if err := json.Unmarshal([]byte(body), &result); err != nil {
@@ -223,23 +225,11 @@ func decodeResult(body string) *versionCheckResponse {
 	return &result
 }
 
-func versionCheckPOSTURL() url.URL {
+func (c *versionChecker) versionCheckURL() url.URL {
 	var u url.URL
 	//https://hub.steampipe.io/api/cli/version/latest
 	u.Scheme = "https"
 	u.Host = "hub.steampipe.io"
 	u.Path = "api/cli/version/latest"
 	return u
-}
-
-func (c *versionChecker) constructUserAgent() string {
-	const format = "TURBOT(STEAMPIPE/%s)(%s/%s)(%s/%s)(%s)"
-
-	return fmt.Sprintf(format,
-		currentVersion,
-		runtime.GOOS,
-		"",
-		runtime.GOARCH,
-		"",
-		c.currentState.InstallationID)
 }
