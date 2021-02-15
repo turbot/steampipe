@@ -3,13 +3,15 @@ package task
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db"
 )
 
 const minimumMinutesBetweenChecks = 1440 // 1 day
@@ -29,15 +31,28 @@ func NewRunner() *Runner {
 
 func (r *Runner) Run() {
 	if r.shouldRun {
+		waitGroup := sync.WaitGroup{}
+		waitGroup.Add(3)
+
 		// check whether an updated version is available
-		checkVersion(r.currentState.InstallationID)
+		go r.runAsyncJob(func() { checkSteampipeVersion(r.currentState.InstallationID) }, &waitGroup)
+
+		// check whether an updated version is available
+		go r.runAsyncJob(func() { checkPluginVersions(r.currentState.InstallationID) }, &waitGroup)
+
 		// remove log files older than 7 days
-		db.TrimLogs()
+		go r.runAsyncJob(func() { db.TrimLogs() }, &waitGroup)
+
 		// update last check time
+		waitGroup.Wait()
 		r.updateState()
 	}
 }
 
+func (r *Runner) runAsyncJob(job func(), wg *sync.WaitGroup) {
+	job()
+	wg.Done()
+}
 func (r *Runner) loadState() {
 	stateFilePath := filepath.Join(constants.InternalDir(), updateStateFileName)
 	// get the state file
