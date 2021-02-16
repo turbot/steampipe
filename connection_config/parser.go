@@ -26,8 +26,6 @@ func Load() (*ConnectionConfigMap, error) {
 }
 
 func loadConfig(configFolder string) (result *ConnectionConfigMap, err error) {
-	log.Printf("[WARN] loadConfig\n")
-
 	defer func() {
 		if r := recover(); r != nil {
 			if e, ok := r.(error); ok {
