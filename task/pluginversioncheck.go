@@ -264,10 +264,3 @@ func (pvc *PluginVersionChecker) requestServerForLatest(payload []VersionCheckPa
 
 	return responseData
 }
-
-// func spitJSON(msg string, d interface{}) {
-// 	enc := json.NewEncoder(os.Stdout)
-// 	enc.SetIndent(" ", " ")
-// 	os.Stdout.WriteString(msg)
-// 	enc.Encode(d)
-// }
