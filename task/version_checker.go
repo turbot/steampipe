@@ -18,6 +18,7 @@ import (
 	SemVer "github.com/hashicorp/go-version"
 	"github.com/olekukonko/tablewriter"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
 )
 
@@ -38,19 +39,12 @@ type versionCheckRequest struct {
 	Signature  string `json:"signature"`
 }
 
-type state struct {
-	LastCheck      string `json:"lastChecked"`    // an RFC3339 encoded time stamp
-	InstallationID string `json:"installationId"` // a UUIDv4 string
-}
-
 // VersionChecker :: the version checker struct composition container.
 // This MUST not be instantiated manually. Use `CreateVersionChecker` instead
 type versionChecker struct {
-	stateFile    string                // the absolute path to the state file
-	currentState state                 // the current persisted state
-	checkResult  *versionCheckResponse // a channel to store the HTTP response
-	disabled     bool
-	signature    string // flags whether update check should be done
+	checkResult *versionCheckResponse // a channel to store the HTTP response
+	disabled    bool
+	signature   string // flags whether update check should be done
 }
 
 // check if there is a new version
@@ -158,7 +152,7 @@ func (c *versionChecker) doCheckRequest() {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", constructUserAgent(c.signature))
+	req.Header.Set("User-Agent", utils.ConstructUserAgent(c.signature))
 
 	client := cleanhttp.DefaultClient()
 
