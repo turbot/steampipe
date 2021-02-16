@@ -3,9 +3,12 @@ package connection_config
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/turbot/steampipe-plugin-sdk/plugin"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -22,33 +25,49 @@ func Load() (*ConnectionConfigMap, error) {
 	return loadConfig(constants.ConfigDir())
 }
 
-func loadConfig(configFolder string) (*ConnectionConfigMap, error) {
-	var result = newConfigMap()
+func loadConfig(configFolder string) (result *ConnectionConfigMap, err error) {
+	log.Printf("[WARN] loadConfig\n")
+
+	defer func() {
+		if r := recover(); r != nil {
+			if e, ok := r.(error); ok {
+				err = e
+			} else {
+				err = fmt.Errorf("%v", r)
+			}
+		}
+	}()
+
+	result = newConfigMap()
 
 	// get all the config files in the directory
 	configPaths, err := getConfigFilePaths(configFolder)
 	if err != nil {
+		log.Printf("[WARN] loadConfig: failed to get config file paths: %v\n", err)
 		return nil, err
 	}
 	if len(configPaths) == 0 {
+		log.Println("[DEBUG] loadConfig: 0 config file paths returned")
 		return &ConnectionConfigMap{}, nil
 	}
 
 	fileData, diags := loadFileData(configPaths)
 	if diags.HasErrors() {
-		return nil, fmt.Errorf("failed to load all config files: %s", diags.Error())
+		log.Printf("[WARN] loadConfig: failed to get config file paths: %v\n", err)
+
+		return nil, plugin.DiagsToError("failed to load all config files", diags)
 	}
 
 	body, diags := parseConfigs(fileData)
 	if diags.HasErrors() {
-		return nil, fmt.Errorf("failed to load all config files: %s", diags.Error())
+		return nil, plugin.DiagsToError("failed to load all config files", diags)
 	}
 
 	// do a partial decode
 	content, _, moreDiags := body.PartialContent(configSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
-		return nil, diags
+		return nil, plugin.DiagsToError("failed to decode config", diags)
 	}
 
 	for _, block := range content.Blocks {
@@ -71,6 +90,7 @@ func loadConfig(configFolder string) (*ConnectionConfigMap, error) {
 	}
 
 	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("failed to load config", diags)
 		return nil, fmt.Errorf(diags.Error())
 	}
 	return result, nil

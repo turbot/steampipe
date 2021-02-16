@@ -40,12 +40,12 @@ func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin
 	connectionConfig := options.ConnectionConfig
 	disableLogger := options.DisableLogger
 
-	log.Printf("[DEBUG] createConnectionPlugin name %s, remoteSchema %s \n", connectionName, remoteSchema)
+	log.Printf("[TRACE] createConnectionPlugin name %s, remoteSchema %s \n", connectionName, remoteSchema)
 	pluginPath, err := GetPluginPath(remoteSchema)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("[DEBUG] found pluginPath %s\n", pluginPath)
+	log.Printf("[TRACE] found pluginPath %s\n", pluginPath)
 
 	// launch the plugin process.
 	// create the plugin map
