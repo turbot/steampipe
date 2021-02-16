@@ -12,7 +12,8 @@ func IsWSL() (bool, error) {
 	if runtime.GOOS != "linux" {
 		return false, nil
 	}
-	osReleaseContent, err := ioutil.ReadFile("/proc/sys/kernel/osrelease")
+	// https://github.com/Microsoft/WSL/issues/2299#issuecomment-361366982
+	osReleaseContent, err := ioutil.ReadFile("/proc/version")
 	if err != nil {
 		return false, err
 	}
