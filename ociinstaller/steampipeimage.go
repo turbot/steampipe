@@ -59,12 +59,12 @@ func (o *ociDownloader) Download(ref string, imageType string, destDir string) (
 	mediaTypes = append(mediaTypes, ConfigMediaTypes()...)
 
 	// Download the files
-	imageDesc, configBytes, layers, err := o.Pull(ref, mediaTypes, destDir)
+	imageDesc, _, configBytes, layers, err := o.Pull(ref, mediaTypes, destDir)
 	if err != nil {
 		return nil, err
 	}
 
-	Image.OCIDescriptor = &imageDesc
+	Image.OCIDescriptor = imageDesc
 	Image.Config, err = newSteampipeImageConfig(configBytes)
 	if err != nil {
 		return nil, errors.New("Invalid image - missing $config")
