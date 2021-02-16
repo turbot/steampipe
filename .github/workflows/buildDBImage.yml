@@ -26,7 +26,7 @@ env:
   PG_VERSION: ${{ github.event.inputs.postgres_version }}
   PATH_BASE: https://repo1.maven.org/maven2/io/zonky/test/postgres
   NAME_PREFIX: embedded-postgres-binaries
-  SP_DISABLE_UPDATE_CHECK: true
+  STEAMPIPE_UPDATE_CHECK: false
 
 jobs:
   goreleaser:

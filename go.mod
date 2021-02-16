@@ -13,7 +13,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.7.0
 	github.com/gertd/go-pluralize v0.1.7
-	github.com/go-ole/go-ole v1.2.4 // indirect
+	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/google/uuid v1.1.5
 	github.com/hashicorp/go-cleanhttp v0.5.1
 	github.com/hashicorp/go-hclog v0.14.1
@@ -38,8 +38,8 @@ require (
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.1
-	github.com/turbot/go-kit v0.0.0-20210119154454-db924443f736
-	github.com/turbot/steampipe-plugin-sdk v0.0.0-20210119154656-52569ae6f10d
+	github.com/turbot/go-kit v0.1.1
+	github.com/turbot/steampipe-plugin-sdk v0.0.0-20210120214727-bb3e0ba7e84f
 	github.com/ulikunitz/xz v0.5.8
 	github.com/zclconf/go-cty v1.7.0 // indirect
 	golang.org/x/text v0.3.4
@@ -48,3 +48,5 @@ require (
 )
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe
+
+replace github.com/turbot/steampipe-plugin-sdk => github.com/turbot/steampipe-plugin-sdk v0.1.2-0.20210216103634-dc9924f5c950
