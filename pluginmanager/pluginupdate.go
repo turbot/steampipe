@@ -1,0 +1,203 @@
+package pluginmanager
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+
+	"github.com/hashicorp/go-cleanhttp"
+	"github.com/turbot/steampipe/ociinstaller"
+	"github.com/turbot/steampipe/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/utils"
+)
+
+// GetPluginUpdateReport :: looks up and reports the updated version of plugins which are listed in versions.json
+func GetPluginUpdateReport(installationID string) map[string]VersionCheckReport {
+	pvc := new(PluginVersionChecker)
+	pvc.installationID = installationID
+	return pvc.reportPluginUpdates()
+}
+
+// VersionCheckReport ::
+type VersionCheckReport struct {
+	Plugin        *versionfile.InstalledVersion
+	CheckResponse versionCheckPayload
+	CheckRequest  versionCheckPayload
+}
+
+// versionCheckPayload :: the payload that travels to-and-fro between steampipe and the server
+type versionCheckPayload struct {
+	Org     string `json:"org"`
+	Name    string `json:"name"`
+	Stream  string `json:"stream"`
+	Version string `json:"version"`
+	Digest  string `json:"digest"`
+}
+
+// PluginVersionChecker :: wrapper struct over the plugin version check utilities
+type PluginVersionChecker struct {
+	installationID string
+}
+
+// CheckAndReportPluginUpdates ::
+func (pvc *PluginVersionChecker) reportPluginUpdates() map[string]VersionCheckReport {
+	versionFileData, err := versionfile.Load()
+	if err != nil {
+		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not load versionfile")
+		return nil
+	}
+
+	if versionFileData.Plugins == nil {
+		versionFileData.Plugins = make(map[string](*versionfile.InstalledVersion))
+	}
+
+	pluginsToCheck := pvc.filterPluginsToCheck(versionFileData.Plugins)
+	if len(pluginsToCheck) == 0 {
+		// there's no plugin installed. no point continuing
+		return nil
+	}
+	reports := pvc.getLatestVersionsForPlugins(pluginsToCheck)
+
+	// update the version file
+	for _, plugin := range pluginsToCheck {
+		versionFileData.Plugins[plugin.Name].LastCheckedDate = versionfile.FormatTime(time.Now())
+	}
+	versionFileData.Save()
+
+	return reports
+}
+
+func (pvc *PluginVersionChecker) filterPluginsToCheck(plugins map[string]*versionfile.InstalledVersion) map[string]*versionfile.InstalledVersion {
+	pluginsToCheck := map[string]*versionfile.InstalledVersion{}
+	for k, v := range plugins {
+		if strings.HasPrefix(k, ociinstaller.DefaultImageRepoDisplayURL) {
+			pluginsToCheck[k] = v
+		}
+	}
+	return pluginsToCheck
+}
+
+func (pvc *PluginVersionChecker) getLatestVersionsForPlugins(plugins map[string]*versionfile.InstalledVersion) map[string]VersionCheckReport {
+
+	getMapKey := func(thisPayload versionCheckPayload) string {
+		return fmt.Sprintf("%s/%s/%s", thisPayload.Org, thisPayload.Name, thisPayload.Stream)
+	}
+
+	requestPayload := []versionCheckPayload{}
+	reports := map[string]VersionCheckReport{}
+
+	for _, ref := range plugins {
+		thisPayload := pvc.getPayloadFromInstalledData(ref)
+		requestPayload = append(requestPayload, thisPayload)
+
+		reports[getMapKey(thisPayload)] = VersionCheckReport{
+			Plugin:       ref,
+			CheckRequest: thisPayload,
+		}
+	}
+
+	serverResponse := pvc.requestServerForLatest(requestPayload)
+	if serverResponse == nil {
+		// return a blank map
+		return map[string]VersionCheckReport{}
+	}
+
+	for _, rD := range serverResponse {
+		r := reports[getMapKey(rD)]
+		r.CheckResponse = rD
+		reports[getMapKey(rD)] = r
+	}
+
+	return reports
+}
+
+func (pvc *PluginVersionChecker) getPayloadFromInstalledData(plugin *versionfile.InstalledVersion) versionCheckPayload {
+	org, name, stream := pvc.splitNameIntoOrgNameAndStream(plugin.Name)
+	payload := versionCheckPayload{
+		Org:     org,
+		Name:    name,
+		Stream:  stream,
+		Version: plugin.Version,
+		Digest:  plugin.ImageDigest,
+	}
+	return payload
+}
+
+func (pvc *PluginVersionChecker) splitNameIntoOrgNameAndStream(name string) (string, string, string) {
+	// plugin.Name looks like `hub.steampipe.io/plugins/turbot/aws@latest`
+	split := strings.Split(name, "/")
+
+	org := split[len(split)-2]
+	pluginNameAndStream := strings.Split(split[len(split)-1], "@")
+
+	return org, pluginNameAndStream[0], pluginNameAndStream[1]
+}
+
+func (pvc *PluginVersionChecker) getVersionCheckURL() url.URL {
+	var u url.URL
+	//https://hub-steampipe-io-git-development.turbot.vercel.app/api/plugin/version
+	u.Scheme = "https"
+	u.Host = "hub-steampipe-io-git-development.turbot.vercel.app"
+	u.Path = "api/plugin/version"
+	return u
+}
+
+func (pvc *PluginVersionChecker) requestServerForLatest(payload []versionCheckPayload) []versionCheckPayload {
+	// Set a default timeout of 3 sec for the check request (in milliseconds)
+	timeout := 3000
+	byteContent, err := json.Marshal(payload)
+	sendRequestTo := pvc.getVersionCheckURL()
+
+	req, err := http.NewRequest("POST", sendRequestTo.String(), bytes.NewBuffer(byteContent))
+	if err != nil {
+		log.Println("[DEBUG] Could not construct request")
+		return nil
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", utils.ConstructUserAgent(pvc.installationID))
+
+	client := cleanhttp.DefaultClient()
+
+	// Use a short timeout since checking for new versions is not critical
+	// enough to block on if the update server is broken/slow.
+	client.Timeout = time.Duration(timeout) * time.Millisecond
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("[DEBUG] Could not send request")
+		return nil
+	}
+
+	if resp.StatusCode == 204 {
+		log.Println("[DEBUG] Got 204")
+		return nil
+	}
+
+	if resp.StatusCode != 200 {
+		log.Printf("[DEBUG] Unknown response during version check: %d\n", resp.StatusCode)
+		return nil
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("[DEBUG] Error reading body stream")
+		return nil
+	}
+	defer resp.Body.Close()
+
+	responseData := []versionCheckPayload{}
+
+	err = json.Unmarshal(bodyBytes, &responseData)
+	if err != nil {
+		fmt.Println("[DEBUG] Error in unmarshalling response", err)
+		return nil
+	}
+
+	return responseData
+}
