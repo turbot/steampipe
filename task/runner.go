@@ -52,6 +52,9 @@ func (r *Runner) runAsyncJob(job func(), wg *sync.WaitGroup) {
 
 func (r *Runner) getShouldRun() bool {
 	now := time.Now()
+	if r.currentState == nil {
+		return false
+	}
 	if r.currentState.LastCheck == "" {
 		return true
 	}
