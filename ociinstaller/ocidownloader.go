@@ -28,7 +28,15 @@ func NewOciDownloader(ctx context.Context) *ociDownloader {
 	}
 }
 
-func (o *ociDownloader) Pull(ref string, mediaTypes []string, destDir string) (ocispec.Descriptor, []byte, []ocispec.Descriptor, error) {
+/**
+
+Pull :: downloads the image from the given `ref` to the supplied `destDir`
+
+Returns
+	imageDescription, configDescription, config, imageLayers, error
+
+**/
+func (o *ociDownloader) Pull(ref string, mediaTypes []string, destDir string) (*ocispec.Descriptor, *ocispec.Descriptor, []byte, []ocispec.Descriptor, error) {
 	fileStore := content.NewFileStore(destDir)
 	defer fileStore.Close()
 
@@ -39,9 +47,8 @@ func (o *ociDownloader) Pull(ref string, mediaTypes []string, destDir string) (o
 	}
 	desc, layers, err := oras.Pull(o.context, o.resolver, ref, hybridStore, pullOpts...)
 	if err != nil {
-		return desc, nil, layers, err
+		return &desc, nil, nil, layers, err
 	}
-
 	configDesc, configData, err := hybridStore.GetConfig()
-	return configDesc, configData, layers, err
+	return &desc, &configDesc, configData, layers, err
 }
