@@ -1,4 +1,4 @@
-	module github.com/turbot/steampipe
+module github.com/turbot/steampipe
 
 go 1.14
 
@@ -19,7 +19,7 @@ require (
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.3.0
 	github.com/hashicorp/go-version v1.2.1
-	github.com/hashicorp/hcl/v2 v2.6.0
+	github.com/hashicorp/hcl/v2 v2.8.2
 	github.com/jedib0t/go-pretty/v6 v6.0.6
 	github.com/karrick/gows v0.3.0
 	github.com/kr/text v0.2.0 // indirect
@@ -41,7 +41,6 @@ require (
 	github.com/turbot/go-kit v0.1.1
 	github.com/turbot/steampipe-plugin-sdk v0.0.0-20210120214727-bb3e0ba7e84f
 	github.com/ulikunitz/xz v0.5.8
-	github.com/zclconf/go-cty v1.7.0 // indirect
 	golang.org/x/text v0.3.4
 	google.golang.org/grpc v1.33.1
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
@@ -50,4 +49,5 @@ require (
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe
 
-replace github.com/turbot/steampipe-plugin-sdk => github.com/turbot/steampipe-plugin-sdk v0.1.2-0.20210216103634-dc9924f5c950
+// issue-21
+replace github.com/turbot/steampipe-plugin-sdk => github.com/turbot/steampipe-plugin-sdk v0.1.2-0.20210216110503-b3467c637d18
