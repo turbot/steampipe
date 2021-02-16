@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/statefile"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -163,7 +164,27 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// args to 'plugin install' -- one or more plugins to install
 	// These can be simple names ('aws') for "standard" plugins, or
 	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
-	for _, plugin := range args {
+	plugins := append([]string{}, args...)
+
+	// we can't allow update and install at the same time
+	if cmdconfig.Viper().GetBool("update-all") {
+		if len(plugins) > 0 {
+			utils.ShowError(fmt.Errorf("%s cannot be used when installing/updating specific plugins", constants.Bold("`--update-all`")))
+			return
+		}
+
+		// get the update report
+		plugins = []string{}
+		state, _ := statefile.LoadState()
+		reports := pluginmanager.GetPluginUpdateReport(state.InstallationID)
+		for _, report := range reports {
+			if report.Plugin.ImageDigest != report.CheckResponse.Digest {
+				plugins = append(plugins, fmt.Sprintf("%s/%s@%s", report.CheckResponse.Org, report.CheckResponse.Name, report.CheckResponse.Stream))
+			}
+		}
+	}
+
+	for _, plugin := range plugins {
 		if len(args) > 1 {
 			fmt.Println("")
 		}
