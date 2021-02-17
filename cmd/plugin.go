@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/statefile"
 
@@ -89,8 +90,7 @@ Examples:
 	}
 
 	cmdconfig.
-		OnCmd(cmd).
-		AddBoolFlag("update-all", "", false, fmt.Sprintf("Alias for %s", constants.Bold("steampipe plugin update --all")))
+		OnCmd(cmd)
 
 	return cmd
 }
@@ -204,24 +204,6 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// These can be simple names ('aws') for "standard" plugins, or
 	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
-
-	// we can't allow update and install at the same time
-	if cmdconfig.Viper().GetBool("update-all") {
-		if len(plugins) > 0 {
-			utils.ShowError(fmt.Errorf("%s cannot be used when installing/updating specific plugins", constants.Bold("`--update-all`")))
-			return
-		}
-
-		updateCmd := cmd.Root()
-		updateCmd.SetArgs([]string{
-			"plugin",
-			"update",
-			"--all",
-		})
-		updateCmd.Execute()
-		return
-	}
-
 	for _, plugin := range plugins {
 		if len(args) > 1 {
 			fmt.Println("")
@@ -231,14 +213,18 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		image, err := pluginmanager.Install(plugin)
 		utils.StopSpinner(spinner)
 		if err != nil {
-			msg := fmt.Sprintf("plugin install failed for plugin '%s'", plugin)
+			msg := fmt.Sprintf("install failed for plugin '%s'", plugin)
+
 			if strings.HasSuffix(err.Error(), "not found") {
 				msg += ": not found"
+			} else if err.Error() == "EEXISTS" {
+				col := color.New(color.Bold, color.FgHiYellow)
+				msg += fmt.Sprintf(": %s is already installed. If you want update it, please run %s", constants.Bold(plugin), col.Sprintf("steampipe plugin update "+plugin))
 			} else {
 				log.Printf("[DEBUG] %s", err.Error())
 			}
 			utils.ShowError(fmt.Errorf(msg))
-			return
+			continue
 		}
 		versionString := ""
 		if image.Config.Plugin.Version != "" {
@@ -290,7 +276,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if len(plugins) == 0 {
-		fmt.Println("Looks like you are running updated versions of all plugins. Kudos to you!!!")
+		fmt.Println("Looks like you are running updated versions of all plugins.")
 		return
 	}
 
@@ -300,17 +286,21 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		}
 
 		spinner := utils.ShowSpinner(fmt.Sprintf("Updating plugin %s...", plugin))
-		image, err := pluginmanager.Install(plugin)
+		image, err := pluginmanager.Update(plugin)
 		utils.StopSpinner(spinner)
 		if err != nil {
 			msg := fmt.Sprintf("update failed for plugin '%s'", plugin)
+
 			if strings.HasSuffix(err.Error(), "not found") {
 				msg += ": not found"
+			} else if err.Error() == "ENOTEXISTS" {
+				col := color.New(color.Bold, color.FgHiYellow)
+				msg += fmt.Sprintf(": %s is not installed. If you want install it, please run %s", constants.Bold(plugin), col.Sprintf("steampipe plugin install "+plugin))
 			} else {
 				log.Printf("[DEBUG] %s", err.Error())
 			}
 			utils.ShowError(fmt.Errorf(msg))
-			return
+			continue
 		}
 		versionString := ""
 		if image.Config.Plugin.Version != "" {
