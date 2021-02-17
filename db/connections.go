@@ -6,16 +6,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/steampipe/constants"
-
+	"github.com/gertd/go-pluralize"
 	"github.com/hashicorp/go-version"
 	sdkversion "github.com/turbot/steampipe-plugin-sdk/version"
-
-	"github.com/turbot/steampipe/utils"
-
-	"github.com/gertd/go-pluralize"
 	"github.com/turbot/steampipe/connection_config"
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 )
+
+type validationFailure struct {
+	plugin         string
+	connectionName string
+	message        string
+}
+
+func (v validationFailure) String() string {
+	return fmt.Sprintf("Connection %s, Plugin %s: %s", v.connectionName, v.plugin, v.message)
+}
 
 func refreshConnections(client *Client) error {
 	// first get a list of all existing schemas
@@ -59,11 +66,11 @@ func refreshConnections(client *Client) error {
 			return err
 		}
 		// find any plugins which use a newer sdk version than steampipe.
-		warnings, validatedUpdates, validatedPlugins := validatePlugins(updates.Update, connectionPlugins)
-		warningString = buildValidationWarningString(warnings)
+		validationFailures, validatedUpdates, validatedPlugins := validatePlugins(updates.Update, connectionPlugins)
+		warningString = buildValidationWarningString(validationFailures)
 
-		// get schema queries fgor validated updates
-		connectionQueries = getSchemaQueries(validatedUpdates)
+		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
+		connectionQueries = getSchemaQueries(validatedUpdates, validationFailures)
 		// add comments queries for validated connections
 		connectionQueries = append(connectionQueries, getCommentQueries(validatedPlugins)...)
 	}
@@ -113,10 +120,10 @@ func getConnectionPlugins(updates connection_config.ConnectionMap) ([]*connectio
 
 func getConnectionPluginsAsync(pluginFQN string, connectionName string, connectionConfig string, pluginChan chan *connection_config.ConnectionPlugin, errorChan chan error) {
 	opts := &connection_config.ConnectionPluginOptions{
-		PluginFQN: pluginFQN, 
-		ConnectionName: connectionName,
+		PluginFQN:        pluginFQN,
+		ConnectionName:   connectionName,
 		ConnectionConfig: connectionConfig,
-		DisableLogger: true}
+		DisableLogger:    true}
 	p, err := connection_config.CreateConnectionPlugin(opts)
 	if err != nil {
 		errorChan <- err
@@ -127,55 +134,76 @@ func getConnectionPluginsAsync(pluginFQN string, connectionName string, connecti
 	p.Plugin.Client.Kill()
 }
 
-func validatePlugins(updates connection_config.ConnectionMap, plugins []*connection_config.ConnectionPlugin) ([]string, connection_config.ConnectionMap, []*connection_config.ConnectionPlugin) {
+func validatePlugins(updates connection_config.ConnectionMap, plugins []*connection_config.ConnectionPlugin) ([]*validationFailure, connection_config.ConnectionMap, []*connection_config.ConnectionPlugin) {
 	var validatedPlugins []*connection_config.ConnectionPlugin
 	var validatedUpdates = connection_config.ConnectionMap{}
 
-	var warnings []string
+	var validationFailures []*validationFailure
 	for _, p := range plugins {
-		if ok, warning := validateSdkVersion(p); ok {
+		if validationFailure := validateSdkVersion(p); validationFailure != nil {
+			// validation failed
+			validationFailures = append(validationFailures, validationFailure)
+		} else {
+			// validation passed - add to liost of validated plugins
 			validatedPlugins = append(validatedPlugins, p)
 			validatedUpdates[p.ConnectionName] = updates[p.ConnectionName]
-		} else {
-			warnings = append(warnings, warning)
 		}
 	}
-	return warnings, validatedUpdates, validatedPlugins
+	return validationFailures, validatedUpdates, validatedPlugins
 
 }
 
-func validateSdkVersion(p *connection_config.ConnectionPlugin) (bool, string) {
+func validateSdkVersion(p *connection_config.ConnectionPlugin) *validationFailure {
 	pluginSdkVersionString := p.Schema.SdkVersion
 	if pluginSdkVersionString == "" {
 		// plugins compiled against 0.1.x of the sdk do not return the version
-		return true, ""
+		return nil
 	}
 	pluginSdkVersion, err := version.NewSemver(pluginSdkVersionString)
 	if err != nil {
-		return false, fmt.Sprintf("could not parse plugin sdk version %s", pluginSdkVersion)
+		return &validationFailure{
+			plugin:         p.PluginName,
+			connectionName: p.ConnectionName,
+			message:        fmt.Sprintf("could not parse plugin sdk version %s", pluginSdkVersion),
+		}
 	}
 	steampipeSdkVersion := sdkversion.SemVer
 	if pluginSdkVersion.GreaterThan(steampipeSdkVersion) {
-		return false, fmt.Sprintf("connection %s has not been imported - plugin %s uses a more recent version of the steampipe-plugin-sdk than Steampipe ", p.PluginName, p.ConnectionName)
+		return &validationFailure{
+			plugin:         p.PluginName,
+			connectionName: p.ConnectionName,
+			message:        "plugin uses a more recent version of the steampipe-plugin-sdk than Steampipe",
+		}
 	}
-	return true, ""
+	return nil
 }
 
-func buildValidationWarningString(warnings []string) string {
-	if len(warnings) == 0 {
+func buildValidationWarningString(failures []*validationFailure) string {
+	if len(failures) == 0 {
 		return ""
 	}
-	str := fmt.Sprintf("\nPlugin validation errors:\n   %s \nPlease update Steampipe or install an older plugin version.\n", strings.Join(warnings, "\n   "))
+	warningsStrings := []string{}
+	for _, failure := range failures {
+		warningsStrings = append(warningsStrings, failure.String())
+	}
+	p := pluralize.NewClient()
+	failureCount := len(failures)
+	str := fmt.Sprintf("\nPlugin validation errors - %d %s will not be imported:\n   %s \nPlease update Steampipe.\n", failureCount, p.Pluralize("connection", failureCount, false), strings.Join(warningsStrings, "\n   "))
 	return str
 }
 
-func getSchemaQueries(updates connection_config.ConnectionMap) []string {
+func getSchemaQueries(updates connection_config.ConnectionMap, failures []*validationFailure) []string {
 	var schemaQueries []string
 	for connectionName, plugin := range updates {
 		remoteSchema := connection_config.PluginFQNToSchemaName(plugin.Plugin)
 		log.Printf("[TRACE] update connection %s, plugin FQN %s, schema %s\n ", connectionName, plugin.Plugin, remoteSchema)
 		schemaQueries = append(schemaQueries, updateConnectionQuery(connectionName, remoteSchema)...)
 	}
+	for _, failure := range failures {
+		log.Printf("[TRACE] remove schema for conneciton failing validation connection %s, plugin FQN %s\n ", failure.connectionName, failure.plugin)
+		schemaQueries = append(schemaQueries, deleteConnectionQuery(failure.connectionName)...)
+	}
+
 	return schemaQueries
 }
 
