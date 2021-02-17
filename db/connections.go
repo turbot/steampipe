@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/gertd/go-pluralize"
 	"github.com/turbot/steampipe/connection_config"
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 )
 
 func refreshConnections(client *Client) error {
@@ -35,18 +35,32 @@ func refreshConnections(client *Client) error {
 	}
 
 	var connectionQueries []string
+	var warningString string
 	numUpdates := len(updates.Update)
 	if numUpdates > 0 {
 		s := utils.ShowSpinner("Refreshing connections...")
-		defer utils.StopSpinner(s)
-		connectionQueries = getSchemaQueries(updates.Update)
+		defer func() {
+			utils.StopSpinner(s)
+			// if any warnings were returned, display them on stderr
+			if len(warningString) > 0 {
+				// println writes to stderr
+				println(constants.Red(warningString))
+			}
+		}()
 
-		if commentQueries, err := getCommentQueries(updates.Update); err != nil {
+		// first instantiate connection plugins for all updates
+		connectionPlugins, err := getConnectionPlugins(updates.Update)
+		if err != nil {
 			return err
-		} else {
-			// add comments queries into the list
-			connectionQueries = append(connectionQueries, commentQueries...)
 		}
+		// find any plugins which use a newer sdk version than steampipe.
+		validationFailures, validatedUpdates, validatedPlugins := validatePlugins(updates.Update, connectionPlugins)
+		warningString = buildValidationWarningString(validationFailures)
+
+		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
+		connectionQueries = getSchemaQueries(validatedUpdates, validationFailures)
+		// add comments queries for validated connections
+		connectionQueries = append(connectionQueries, getCommentQueries(validatedPlugins)...)
 	}
 
 	for c := range updates.Delete {
@@ -64,14 +78,71 @@ func refreshConnections(client *Client) error {
 	return updateConnectionMapAndSchema(client)
 }
 
-func getSchemaQueries(updates connection_config.ConnectionMap) []string {
+func getConnectionPlugins(updates connection_config.ConnectionMap) ([]*connection_config.ConnectionPlugin, error) {
+	var connectionPlugins []*connection_config.ConnectionPlugin
+	numUpdates := len(updates)
+	var pluginChan = make(chan *connection_config.ConnectionPlugin, numUpdates)
+	var errorChan = make(chan error, numUpdates)
+	for connectionName, plugin := range updates {
+		pluginFQN := plugin.Plugin
+		connectionConfig := plugin.ConnectionConfig
+
+		// instantiate the connection plugin, and retrieve schema
+		go getConnectionPluginsAsync(pluginFQN, connectionName, connectionConfig, pluginChan, errorChan)
+	}
+
+	for i := 0; i < numUpdates; i++ {
+		select {
+		case err := <-errorChan:
+			log.Println("[TRACE] hydrate err chan select", "error", err)
+			return nil, err
+		case <-time.After(10 * time.Second):
+			return nil, fmt.Errorf("timed out retrieving schema from plugins")
+		case p := <-pluginChan:
+			connectionPlugins = append(connectionPlugins, p)
+		}
+	}
+
+	return connectionPlugins, nil
+}
+
+func getConnectionPluginsAsync(pluginFQN string, connectionName string, connectionConfig string, pluginChan chan *connection_config.ConnectionPlugin, errorChan chan error) {
+	opts := &connection_config.ConnectionPluginOptions{
+		PluginFQN:        pluginFQN,
+		ConnectionName:   connectionName,
+		ConnectionConfig: connectionConfig,
+		DisableLogger:    true}
+	p, err := connection_config.CreateConnectionPlugin(opts)
+	if err != nil {
+		errorChan <- err
+		return
+	}
+	pluginChan <- p
+
+	p.Plugin.Client.Kill()
+}
+
+func getSchemaQueries(updates connection_config.ConnectionMap, failures []*validationFailure) []string {
 	var schemaQueries []string
 	for connectionName, plugin := range updates {
 		remoteSchema := connection_config.PluginFQNToSchemaName(plugin.Plugin)
 		log.Printf("[TRACE] update connection %s, plugin FQN %s, schema %s\n ", connectionName, plugin.Plugin, remoteSchema)
 		schemaQueries = append(schemaQueries, updateConnectionQuery(connectionName, remoteSchema)...)
 	}
+	for _, failure := range failures {
+		log.Printf("[TRACE] remove schema for conneciton failing validation connection %s, plugin FQN %s\n ", failure.connectionName, failure.plugin)
+		schemaQueries = append(schemaQueries, deleteConnectionQuery(failure.connectionName)...)
+	}
+
 	return schemaQueries
+}
+
+func getCommentQueries(plugins []*connection_config.ConnectionPlugin) []string {
+	var commentQueries []string
+	for _, plugin := range plugins {
+		commentQueries = append(commentQueries, commentsQuery(plugin)...)
+	}
+	return commentQueries
 }
 
 func updateConnectionQuery(localSchema, remoteSchema string) []string {
@@ -102,50 +173,6 @@ func updateConnectionQuery(localSchema, remoteSchema string) []string {
 		// Import the foreign schema into this connection.
 		fmt.Sprintf(`import foreign schema "%s" from server steampipe into %s;`, remoteSchema, localSchema),
 	}
-}
-
-func getCommentQueries(updates connection_config.ConnectionMap) ([]string, error) {
-	var commentQueries []string
-	numUpdates := len(updates)
-	var queryChan = make(chan []string, numUpdates)
-	var errorChan = make(chan error, numUpdates)
-	for connectionName, plugin := range updates {
-		pluginFQN := plugin.Plugin
-
-		// instantiate the connection plugin, and retrieve schema
-		go getCommentsQueryAsync(pluginFQN, connectionName, plugin.ConnectionConfig, queryChan, errorChan)
-	}
-
-	for i := 0; i < numUpdates; i++ {
-		select {
-		case err := <-errorChan:
-			log.Println("[TRACE] hydrate err chan select", "error", err)
-			return nil, err
-		case <-time.After(10 * time.Second):
-			return nil, fmt.Errorf("timed out retrieving schema from plugins")
-		case a := <-queryChan:
-			commentQueries = append(commentQueries, a...)
-		}
-	}
-
-	return commentQueries, nil
-}
-
-func getCommentsQueryAsync(pluginFQN string, connectionName string, connectionConfig string, queryChan chan []string, errorChan chan error) {
-	opts := &connection_config.ConnectionPluginOptions{
-		PluginFQN:        pluginFQN,
-		ConnectionName:   connectionName,
-		ConnectionConfig: connectionConfig,
-		DisableLogger:    true,
-	}
-	p, err := connection_config.CreateConnectionPlugin(opts)
-	if err != nil {
-		errorChan <- err
-		return
-	}
-	queryChan <- commentsQuery(p)
-
-	p.Plugin.Client.Kill()
 }
 
 func commentsQuery(p *connection_config.ConnectionPlugin) []string {
