@@ -31,6 +31,9 @@ func Complete(input *CompleterInput) []prompt.Suggest {
 	if !found {
 		return []prompt.Suggest{}
 	}
+	if metaQueryObj.completer == nil {
+		return []prompt.Suggest{}
+	}
 	return metaQueryObj.completer(input)
 }
 
