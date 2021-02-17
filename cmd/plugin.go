@@ -275,6 +275,66 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			return
 		}
 
+		updateCmd := cmd.Root()
+		updateCmd.SetArgs([]string{
+			"plugin",
+			"update",
+			"--all",
+		})
+		updateCmd.Execute()
+		return
+	}
+
+	for _, plugin := range plugins {
+		if len(args) > 1 {
+			fmt.Println("")
+		}
+
+		spinner := utils.ShowSpinner(fmt.Sprintf("Installing plugin %s...", plugin))
+		image, err := pluginmanager.Install(plugin)
+		utils.StopSpinner(spinner)
+		if err != nil {
+			msg := fmt.Sprintf("plugin install failed for plugin '%s'", plugin)
+			if strings.HasSuffix(err.Error(), "not found") {
+				msg += ": not found"
+			} else {
+				log.Printf("[DEBUG] %s", err.Error())
+			}
+			utils.ShowError(fmt.Errorf(msg))
+			return
+		}
+		versionString := ""
+		if image.Config.Plugin.Version != "" {
+			versionString = " v" + image.Config.Plugin.Version
+		}
+		fmt.Printf("Installed plugin: %s%s\n", constants.Bold(plugin), versionString)
+		org := image.Config.Plugin.Organization
+		if org == "turbot" {
+			fmt.Println(fmt.Sprintf("Documentation:    https://hub.steampipe.io/plugins/%s/%s", org, plugin))
+		}
+	}
+	if len(args) > 1 {
+		fmt.Println("")
+	}
+
+}
+
+func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
+	logging.LogTime("runPluginUpdateCmd install")
+	defer logging.LogTime("runPluginUpdateCmd end")
+
+	// args to 'plugin update' -- one or more plugins to install
+	// These can be simple names ('aws') for "standard" plugins, or
+	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
+	plugins := append([]string{}, args...)
+
+	// we can't allow update and install at the same time
+	if cmdconfig.Viper().GetBool("all") {
+		if len(plugins) > 0 {
+			utils.ShowError(fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`")))
+			return
+		}
+
 		// get the update report
 		plugins = []string{}
 		state, _ := statefile.LoadState()
