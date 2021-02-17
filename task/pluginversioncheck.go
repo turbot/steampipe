@@ -64,7 +64,7 @@ func showPluginUpdateNotification(reports []pluginmanager.VersionCheckReport) {
 	}
 	notificationLines = append(notificationLines, []string{""})
 	notificationLines = append(notificationLines, []string{
-		fmt.Sprintf("You can update by running\n %60s", updateCmdColor.Sprintf("steampipe plugin install --update-all")),
+		fmt.Sprintf("You can update by running\n %60s", updateCmdColor.Sprintf("steampipe plugin update --all")),
 	})
 	notificationLines = append(notificationLines, []string{""})
 
