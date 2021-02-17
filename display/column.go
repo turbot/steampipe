@@ -4,11 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/ahmetb/go-linq"
 	typeHelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"time"
 )
 
 // ColumnNames :: extract names from columns
@@ -40,7 +40,7 @@ func ColumnValueAsString(val interface{}, colType *sql.ColumnType) (result strin
 	}()
 
 	if val == nil {
-		return cmdconfig.Viper().GetString(constants.ArgNullString), nil
+		return constants.NullString, nil
 	}
 
 	//log.Printf("[TRACE] ColumnValueAsString type %s", colType.DatabaseTypeName())
@@ -72,7 +72,7 @@ func ColumnValueAsString(val interface{}, colType *sql.ColumnType) (result strin
 // JSON, JSONB, BOOL and so on..
 func ParseJSONOutputColumnValue(val interface{}, colType *sql.ColumnType) (interface{}, error) {
 	if val == nil {
-		return cmdconfig.Viper().GetString(constants.ArgNullString), nil
+		return constants.NullString, nil
 	}
 	switch colType.DatabaseTypeName() {
 	// we can revise/increment the list of DT's in future

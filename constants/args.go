@@ -3,7 +3,6 @@ package constants
 // Argument name constants
 const (
 	ArgConfig            = "config"
-	ArgNullString        = "null-string"
 	ArgJSON              = "json"
 	ArgCSV               = "csv"
 	ArgTable             = "table"
