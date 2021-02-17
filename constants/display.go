@@ -9,4 +9,7 @@ const (
 
 	// Max Column Width
 	MaxColumnWidth = 1024
+
+	// what do we display for null column values
+	NullString = "<null>"
 )
