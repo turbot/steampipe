@@ -57,6 +57,45 @@ func Remove(image string, pluginConnections map[string][]string) error {
 
 // Install :: install plugin in the local file system
 func Install(plugin string) (*ociinstaller.SteampipeImage, error) {
+
+	versionData, err := versionfile.Load()
+	if err != nil {
+		return nil, err
+	}
+	if versionData.Plugins == nil {
+		versionData.Plugins = make(map[string]*versionfile.InstalledVersion)
+	}
+
+	imageRef := ociinstaller.NewSteampipeImageRef(plugin)
+
+	// lookup in the version data
+	_, found := versionData.Plugins[imageRef.DisplayImageRef()]
+	if found {
+		return nil, fmt.Errorf("EEXISTS")
+	}
+
+	image, err := ociinstaller.InstallPlugin(plugin)
+	return image, err
+}
+
+// Update :: updates a plugin in the local file system
+func Update(plugin string) (*ociinstaller.SteampipeImage, error) {
+	versionData, err := versionfile.Load()
+	if err != nil {
+		return nil, err
+	}
+	if versionData.Plugins == nil {
+		versionData.Plugins = make(map[string]*versionfile.InstalledVersion)
+	}
+
+	imageRef := ociinstaller.NewSteampipeImageRef(plugin)
+
+	// lookup in the version data
+	_, found := versionData.Plugins[imageRef.DisplayImageRef()]
+	if !found {
+		return nil, fmt.Errorf("ENOTEXISTS")
+	}
+
 	image, err := ociinstaller.InstallPlugin(plugin)
 	return image, err
 }
