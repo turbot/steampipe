@@ -1,15 +1,11 @@
 package connection_config
 
+// Connection :: structure representing the partially parsed connection.
 type Connection struct {
-	Name   string
+	// connection name
+	Name string
+	// FQN of plugin
 	Plugin string
-	Config map[string]string
-}
-
-func NewConnection() *Connection {
-	return &Connection{
-		Name:   "",
-		Plugin: "",
-		Config: make(map[string]string),
-	}
+	// unparsed HCL of plugin specific connection config
+	Config string
 }

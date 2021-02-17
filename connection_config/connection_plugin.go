@@ -13,30 +13,39 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 )
 
-type ConnectionPluginOptions struct {
-	PluginFQN      string
-	ConnectionName string
-	DisableLogger  bool
-}
+// ConnectionPlugin :: structure representing an instance of a plugin
+// NOTE: currently this corresponds to a single connection, i.e. we have 1 plugin instance per connection
 type ConnectionPlugin struct {
-	ConnectionName string
-	PluginName     string
-	Plugin         *grpc.PluginClient
-	Schema         *proto.Schema
+	ConnectionName   string
+	ConnectionConfig string
+	PluginName       string
+	Plugin           *grpc.PluginClient
+	Schema           *proto.Schema
 }
 
-func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin, error) {
+// ConnectionPluginOptions :: struct used as input to CreateConnectionPlugin
+// - it contains all details necessary to instantiate a ConnectionPlugin
+type ConnectionPluginOptions struct {
+	PluginFQN        string
+	ConnectionName   string
+	ConnectionConfig string
+	DisableLogger    bool
+}
 
+// CreateConnectionPlugin :: instantiate a plugin for a connection, fetch schema and send connection config
+// called by hub when
+func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin, error) {
 	remoteSchema := options.PluginFQN
 	connectionName := options.ConnectionName
+	connectionConfig := options.ConnectionConfig
 	disableLogger := options.DisableLogger
 
-	log.Printf("[DEBUG] createConnectionPlugin name %s, remoteSchema %s \n", connectionName, remoteSchema)
+	log.Printf("[TRACE] createConnectionPlugin name %s, remoteSchema %s \n", connectionName, remoteSchema)
 	pluginPath, err := GetPluginPath(remoteSchema)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("[DEBUG] found pluginPath %s\n", pluginPath)
+	log.Printf("[TRACE] found pluginPath %s\n", pluginPath)
 
 	// launch the plugin process.
 	// create the plugin map
@@ -82,14 +91,36 @@ func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin
 		Client: client,
 		Stub:   p,
 	}
+	if err = setConnectionConfig(connectionName, connectionConfig, err, pluginClient); err != nil {
+		pluginClient.Client.Kill()
+		return nil, err
+	}
+
 	schemaResponse, err := pluginClient.Stub.GetSchema(&proto.GetSchemaRequest{})
 	if err != nil {
 		pluginClient.Client.Kill()
-		return nil, err
+		return nil, HandleGrpcError(err, connectionName, "GetSchema")
 	}
 	schema := schemaResponse.Schema
 
 	// now create ConnectionPlugin object and add to map
-	c := &ConnectionPlugin{ConnectionName: connectionName, PluginName: remoteSchema, Plugin: pluginClient, Schema: schema}
+	c := &ConnectionPlugin{ConnectionName: connectionName, ConnectionConfig: connectionConfig, PluginName: remoteSchema, Plugin: pluginClient, Schema: schema}
 	return c, nil
+}
+
+// send the connection config to the plugin
+func setConnectionConfig(connectionName string, connectionConfig string, err error, pluginClient *grpc.PluginClient) error {
+	// set the connection config
+	req := proto.SetConnectionConfigRequest{
+		ConnectionName:   connectionName,
+		ConnectionConfig: connectionConfig,
+	}
+	_, err = pluginClient.Stub.SetConnectionConfig(&req)
+	if err != nil {
+
+		// create a new cleaner error
+		return HandleGrpcError(err, connectionName, "SetConnectionConfig")
+
+	}
+	return nil
 }

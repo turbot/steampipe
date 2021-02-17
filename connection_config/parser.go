@@ -3,13 +3,17 @@ package connection_config
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/turbot/steampipe-plugin-sdk/plugin"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/schema"
@@ -17,38 +21,57 @@ import (
 
 const configExtension = ".spc"
 
-func Load() (*ConnectionConfig, error) {
+func Load() (*ConnectionConfigMap, error) {
 	return loadConfig(constants.ConfigDir())
 }
 
-func loadConfig(configFolder string) (*ConnectionConfig, error) {
-	var result = newConfig()
+func loadConfig(configFolder string) (result *ConnectionConfigMap, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			if e, ok := r.(error); ok {
+				err = e
+			} else {
+				err = fmt.Errorf("%v", r)
+			}
+		}
+	}()
+
+	result = newConfigMap()
 
 	// get all the config files in the directory
 	configPaths, err := getConfigFilePaths(configFolder)
 	if err != nil {
+		log.Printf("[WARN] loadConfig: failed to get config file paths: %v\n", err)
 		return nil, err
 	}
 	if len(configPaths) == 0 {
-		return &ConnectionConfig{}, nil
+		log.Println("[DEBUG] loadConfig: 0 config file paths returned")
+		return &ConnectionConfigMap{}, nil
 	}
 
-	body, diags := parseConfigs(configPaths)
+	fileData, diags := loadFileData(configPaths)
 	if diags.HasErrors() {
-		return nil, fmt.Errorf("failed to load all config files: %s", diags.Error())
+		log.Printf("[WARN] loadConfig: failed to get config file paths: %v\n", err)
+
+		return nil, plugin.DiagsToError("failed to load all config files", diags)
+	}
+
+	body, diags := parseConfigs(fileData)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("failed to load all config files", diags)
 	}
 
 	// do a partial decode
 	content, _, moreDiags := body.PartialContent(configSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
-		return nil, diags
+		return nil, plugin.DiagsToError("failed to decode config", diags)
 	}
 
 	for _, block := range content.Blocks {
 		switch block.Type {
 		case "connection":
-			connection, moreDiags := parseConnection(block)
+			connection, moreDiags := parseConnection(block, fileData)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				continue
@@ -65,15 +88,16 @@ func loadConfig(configFolder string) (*ConnectionConfig, error) {
 	}
 
 	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("failed to load config", diags)
 		return nil, fmt.Errorf(diags.Error())
 	}
 	return result, nil
 }
 
-func parseConfigs(configPaths []string) (hcl.Body, hcl.Diagnostics) {
-	var parsedConfigFiles []*hcl.File
-
+func loadFileData(configPaths []string) (map[string][]byte, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
+	var fileData = map[string][]byte{}
+
 	for _, configPath := range configPaths {
 		data, err := ioutil.ReadFile(configPath)
 		if err != nil {
@@ -83,8 +107,18 @@ func parseConfigs(configPaths []string) (hcl.Body, hcl.Diagnostics) {
 				Detail:   err.Error()})
 			continue
 		}
+		fileData[configPath] = data
+	}
+	return fileData, diags
+}
 
-		file, moreDiags := hclsyntax.ParseConfig(data, configPath, hcl.Pos{Byte: 0, Line: 1, Column: 1})
+func parseConfigs(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
+	var parsedConfigFiles []*hcl.File
+	var diags hcl.Diagnostics
+	parser := hclparse.NewParser()
+	for configPath, data := range fileData {
+		file, moreDiags := parser.ParseHCL(data, configPath)
+
 		if moreDiags.HasErrors() {
 			diags = append(diags, moreDiags...)
 			continue
@@ -95,35 +129,37 @@ func parseConfigs(configPaths []string) (hcl.Body, hcl.Diagnostics) {
 	return hcl.MergeFiles(parsedConfigFiles), diags
 }
 
-func parseConnection(block *hcl.Block) (*Connection, hcl.Diagnostics) {
+func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection, hcl.Diagnostics) {
 	connectionBlock, rest, diags := block.Body.PartialContent(connectionSchema)
 	if diags.HasErrors() {
 		return nil, diags
 	}
 
-	connection := NewConnection()
-	// convert this into a fully qualified name plugin name
-	connection.Name = block.Labels[0]
+	// get connection name
+	connectionName := block.Labels[0]
 
 	var plugin string
 	diags = gohcl.DecodeExpression(connectionBlock.Attributes["plugin"].Expr, nil, &plugin)
 	if diags.HasErrors() {
 		return nil, diags
 	}
-	connection.Plugin = ociinstaller.NewSteampipeImageRef(plugin).DisplayImageRef()
+	connectionPlugin := ociinstaller.NewSteampipeImageRef(plugin).DisplayImageRef()
 
-	// now populate the dynamic connection config
-	remainingAttributes, diags := rest.JustAttributes()
-
-	for name, attribute := range remainingAttributes {
-		if name != "connection" {
-			var val string
-			diags = gohcl.DecodeExpression(attribute.Expr, nil, &val)
-			if diags.HasErrors() {
-				return nil, diags
-			}
-			connection.Config[name] = val
+	// now build a string containing the hcl for all other conneciton config properties
+	restBody := rest.(*hclsyntax.Body)
+	var configProperties []string
+	for name, a := range restBody.Attributes {
+		// if this attribute does not appear in connectionBlock, load the hcl string
+		if _, ok := connectionBlock.Attributes[name]; !ok {
+			configProperties = append(configProperties, string(a.SrcRange.SliceBytes(fileData[a.SrcRange.Filename])))
 		}
+	}
+	connectionConfig := strings.Join(configProperties, "\n")
+
+	connection := &Connection{
+		Name:   connectionName,
+		Plugin: connectionPlugin,
+		Config: connectionConfig,
 	}
 
 	return connection, nil

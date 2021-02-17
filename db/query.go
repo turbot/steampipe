@@ -40,7 +40,7 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 	if err = refreshConnections(client); err != nil {
 		// shutdown the service if something went wrong!!!
 		shutdown(client)
-		return nil, fmt.Errorf("failed to refresh connections: %v", err)
+		return nil, fmt.Errorf("failed to refresh connections: %v", err.Error())
 	}
 	if err = refreshFunctions(client); err != nil {
 		// shutdown the service if something went wrong!!!

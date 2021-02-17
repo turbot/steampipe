@@ -38,10 +38,8 @@ func main() {
 
 // CreateLogger :: create a hclog logger with the level specified by the SP_LOG env var
 func createLogger() {
-	level, ok := os.LookupEnv("SP_LOG")
-	if !ok {
-		level = "WARNING"
-	}
+	level := logging.LogLevel()
+
 	options := &hclog.LoggerOptions{Name: "steampipe", Level: hclog.LevelFromString(level)}
 	if options.Output == nil {
 		options.Output = os.Stderr

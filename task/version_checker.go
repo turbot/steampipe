@@ -4,12 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/fatih/color"
-	"github.com/hashicorp/go-cleanhttp"
-	SemVer "github.com/hashicorp/go-version"
-	"github.com/olekukonko/tablewriter"
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/version"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -18,9 +12,17 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
+	"github.com/hashicorp/go-cleanhttp"
+	SemVer "github.com/hashicorp/go-version"
+	"github.com/olekukonko/tablewriter"
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/version"
 )
 
-const disableUpdatesCheckEnvVar = "SP_DISABLE_UPDATE_CHECK"
+const legacyDisableUpdatesCheckEnvVar = "SP_DISABLE_UPDATE_CHECK"
+const updatesCheckEnvVar = "STEAMPIPE_UPDATE_CHECK"
 
 // the current version of the Steampipe CLI application
 var currentVersion = version.Version
@@ -56,8 +58,7 @@ type versionChecker struct {
 
 // check if there is a new version
 func checkVersion(id string) {
-	// if SP_DISABLE_UPDATE_CHECK is set, do nothing
-	if v, ok := os.LookupEnv(disableUpdatesCheckEnvVar); ok && strings.ToLower(v) == "true" {
+	if !shouldDoUpdateCheck() {
 		return
 	}
 
@@ -65,6 +66,18 @@ func checkVersion(id string) {
 	v.signature = id
 	v.GetVersionResp()
 	v.Notify()
+}
+
+func shouldDoUpdateCheck() bool {
+	// if legacy env var SP_DISABLE_UPDATE_CHECK is true, do nothing
+	if v, ok := os.LookupEnv(legacyDisableUpdatesCheckEnvVar); ok && strings.ToLower(v) == "true" {
+		return false
+	}
+	// if STEAMPIPE_UPDATE_CHECK is false, do nothing
+	if v, ok := os.LookupEnv(updatesCheckEnvVar); ok && strings.ToLower(v) == "false" {
+		return false
+	}
+	return true
 }
 
 // RunCheck :: Communicates with the Turbot Artifacts Server retrieves

@@ -6,7 +6,7 @@ on:
   pull_request:
 
 env:
-  SP_DISABLE_UPDATE_CHECK: true
+  STEAMPIPE_UPDATE_CHECK: false
 
 jobs:
   goreleaser:
