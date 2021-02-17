@@ -48,3 +48,7 @@ func completerFromArgsOf(cmd string) completer {
 func inspectCompleter(input *CompleterInput) []prompt.Suggest {
 	return autocomplete.GetTableAutoCompleteSuggestions(input.Schema, input.Connections)
 }
+
+func noopCompleter(input *CompleterInput) []prompt.Suggest {
+	return []prompt.Suggest{}
+}
