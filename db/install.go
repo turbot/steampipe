@@ -37,9 +37,14 @@ func EnsureDBInstalled() {
 		if fdwNeedsUpdate() {
 			_, err := installFDW(false)
 			if err != nil {
-				utils.ShowError(fmt.Errorf("FDW could not be updated"))
+				utils.ShowError(fmt.Errorf("%s could not be updated", constants.Bold("steampipe-postgres-fdw")))
 			} else {
-				fmt.Printf("FDW was updated. Run %s for change to take effect.\n", constants.Bold("steampipe service restart"))
+				fmt.Printf("%s was updated to %s. ", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
+				currentStatus, err := GetStatus()
+				if err != nil || currentStatus != nil {
+					fmt.Printf("Run %s for change to take effect.", constants.Bold("steampipe service restart"))
+				}
+				fmt.Println()
 			}
 		}
 		return
@@ -293,14 +298,14 @@ func installFDW(firstSetup bool) (string, error) {
 			}
 		}()
 	}
-	fdwInstallSpinner := utils.ShowSpinner(fmt.Sprintf("Download & install Steampipe PostgreSQL FDW..."))
+	fdwInstallSpinner := utils.ShowSpinner(fmt.Sprintf("Download & install %s...", constants.Bold("steampipe-postgres-fdw")))
 	newDigest, err := ociinstaller.InstallFdw(constants.DefaultFdwImage, getDatabaseLocation())
 	utils.StopSpinner(fdwInstallSpinner)
 	if err != nil {
 		if firstSetup {
-			utils.FailOnErrorWithMessage(err, "x Download & install Steampipe Postgres FDW... FAILED!")
+			utils.FailOnErrorWithMessage(err, "x Download & install steampipe-postgres-fdw... FAILED!")
 		} else {
-			utils.ShowErrorWithMessage(err, "could not update FDW")
+			utils.ShowErrorWithMessage(err, "could not update steampipe-postgres-fdw")
 		}
 	}
 	return newDigest, err
