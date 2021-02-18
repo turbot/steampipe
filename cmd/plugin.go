@@ -193,6 +193,10 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println("")
 	}
 
+	// refresh connections - we do this to validate the plugins
+	// ignore errors - if we get this far we have successfully installed
+	// reporting an error in the validation may be confusing
+	// - we will retry next time query is run and report any errors then
 	validatePlugins()
 
 }
