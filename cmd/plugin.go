@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fatih/color"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/statefile"
 
@@ -204,27 +203,25 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// These can be simple names ('aws') for "standard" plugins, or
 	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
-	for _, plugin := range plugins {
-		if len(args) > 1 {
-			fmt.Println("")
-		}
+	installSkipped := []string{}
 
+	for idx, plugin := range plugins {
+		isPluginExists, _ := pluginmanager.IsPluginExists(plugin)
+		if isPluginExists {
+			installSkipped = append(installSkipped, plugin)
+			continue
+		}
+		if idx > 0 {
+			fmt.Println()
+		}
 		spinner := utils.ShowSpinner(fmt.Sprintf("Installing plugin %s...", plugin))
 		image, err := pluginmanager.Install(plugin)
 		utils.StopSpinner(spinner)
 		if err != nil {
-			if err.Error() == constants.EEXISTS {
-				fmt.Printf("Skipping %s, since it is already installed. If you want update it, please run %s\n", constants.Bold(plugin), constants.BoldYellow("steampipe plugin update "+plugin))
-				continue
-			}
-
 			msg := fmt.Sprintf("install failed for plugin '%s'", plugin)
 
 			if strings.HasSuffix(err.Error(), "not found") {
 				msg += ": not found"
-			} else if err.Error() == constants.EEXISTS {
-				col := color.New(color.Bold, color.FgHiYellow)
-				msg += fmt.Sprintf(": %s is already installed. If you want update it, please run %s", constants.Bold(plugin), col.Sprintf("steampipe plugin update "+plugin))
 			} else {
 				log.Printf("[DEBUG] %s", err.Error())
 			}
@@ -238,9 +235,18 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Printf("Installed plugin: %s%s\n", constants.Bold(plugin), versionString)
 		org := image.Config.Plugin.Organization
 		if org == "turbot" {
-			fmt.Println(fmt.Sprintf("Documentation:    https://hub.steampipe.io/plugins/%s/%s", org, plugin))
+			fmt.Printf("Documentation:    https://hub.steampipe.io/plugins/%s/%s\n", org, plugin)
 		}
 	}
+
+	if len(installSkipped) > 0 {
+		fmt.Println("\nSkipped the following plugins, since they are already installed:")
+		for _, s := range installSkipped {
+			fmt.Printf("    > %s\n", constants.Bold(s))
+		}
+		fmt.Printf("\nTo update these plugins, please run: %s %s\n", constants.Bold("steampipe plugin update"), constants.Bold(strings.Join(installSkipped, " ")))
+	}
+
 	if len(args) > 1 {
 		fmt.Println("")
 	}
@@ -285,17 +291,24 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	updateSkipped := []string{}
+
 	for _, plugin := range plugins {
+		isPluginExists, _ := pluginmanager.IsPluginExists(plugin)
+		if !isPluginExists {
+			updateSkipped = append(updateSkipped, plugin)
+			continue
+		}
 		if len(args) > 1 {
-			fmt.Println("")
+			fmt.Println()
 		}
 
 		spinner := utils.ShowSpinner(fmt.Sprintf("Updating plugin %s...", plugin))
-		image, err := pluginmanager.Update(plugin)
+		image, err := pluginmanager.Install(plugin)
 		utils.StopSpinner(spinner)
 		if err != nil {
 			if err.Error() == constants.ENOTEXISTS {
-				fmt.Printf("Skipping %s, since it is not installed. If you want install it, please run %s\n", constants.Bold(plugin), constants.BoldYellow("steampipe plugin install "+plugin))
+				updateSkipped = append(updateSkipped, plugin)
 				continue
 			}
 
@@ -316,8 +329,16 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		fmt.Printf("Updated plugin: %s%s\n", constants.Bold(plugin), versionString)
 		org := image.Config.Plugin.Organization
 		if org == "turbot" {
-			fmt.Println(fmt.Sprintf("Documentation:    https://hub.steampipe.io/plugins/%s/%s", org, plugin))
+			fmt.Printf("Documentation:  https://hub.steampipe.io/plugins/%s/%s\n", org, plugin)
 		}
+	}
+
+	if len(updateSkipped) > 0 {
+		fmt.Println("\nSkipped the following plugins, since they are not installed:")
+		for _, s := range updateSkipped {
+			fmt.Printf("    > %s\n", constants.Bold(s))
+		}
+		fmt.Printf("\nTo install these plugins, please run: %s %s\n", constants.Bold("steampipe plugin install"), constants.Bold(strings.Join(updateSkipped, " ")))
 	}
 	if len(args) > 1 {
 		fmt.Println("")
