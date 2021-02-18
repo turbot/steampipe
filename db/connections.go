@@ -44,7 +44,7 @@ func RefreshConnections(client *Client) error {
 			// if any warnings were returned, display them on stderr
 			if len(warningString) > 0 {
 				// println writes to stderr
-				println(constants.Red(warningString))
+				println(constants.Bold(warningString))
 			}
 		}()
 

@@ -16,7 +16,7 @@ type ValidationFailure struct {
 }
 
 func (v ValidationFailure) String() string {
-	return fmt.Sprintf("  connection: %s\n  plugin: %s\n", v.ConnectionName, v.Plugin)
+	return fmt.Sprintf("connection: %s\nplugin:     %s\nerror:      %s", v.ConnectionName, v.Plugin, v.Message)
 }
 
 func ValidatePlugins(updates ConnectionMap, plugins []*ConnectionPlugin) ([]*ValidationFailure, ConnectionMap, []*ConnectionPlugin) {
@@ -54,12 +54,15 @@ func BuildValidationWarningString(failures []*ValidationFailure) string {
 	*/
 	p := pluralize.NewClient()
 	failureCount := len(failures)
-	p.AddPluralRule("this connection", "these connections")
-	str := fmt.Sprintf("\nPlugin validation errors - %d %s will not be imported, as they refer to plugins with a more recent version of the steampipe-plugin-sdk than Steampipe.\n\n%s \nPlease update Steampipe in order to use %s.\n",
+	str := fmt.Sprintf(`Validation Errors:
+
+%s
+
+%d %s will not be imported.
+`,
+		strings.Join(warningsStrings, "\n\n"),
 		failureCount,
-		p.Pluralize("connection", failureCount, false),
-		strings.Join(warningsStrings, "\n"),
-		p.Pluralize("this connection", failureCount, false))
+		p.Pluralize("connection", failureCount, false))
 	return str
 }
 
@@ -74,7 +77,7 @@ func validateSdkVersion(p *ConnectionPlugin) *ValidationFailure {
 		return &ValidationFailure{
 			Plugin:         p.PluginName,
 			ConnectionName: p.ConnectionName,
-			Message:        fmt.Sprintf("could not parse plugin sdk version %s", pluginSdkVersion),
+			Message:        fmt.Sprintf("Could not parse plugin sdk version %s.", pluginSdkVersion),
 		}
 	}
 	steampipeSdkVersion := sdkversion.SemVer
@@ -82,7 +85,7 @@ func validateSdkVersion(p *ConnectionPlugin) *ValidationFailure {
 		return &ValidationFailure{
 			Plugin:         p.PluginName,
 			ConnectionName: p.ConnectionName,
-			Message:        "plugin uses a more recent version of the steampipe-plugin-sdk than Steampipe",
+			Message:        "Incompatible steampipe-plugin-sdk version. Please upgrade Steampipe.",
 		}
 	}
 	return nil
