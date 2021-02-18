@@ -213,6 +213,11 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		image, err := pluginmanager.Install(plugin)
 		utils.StopSpinner(spinner)
 		if err != nil {
+			if err.Error() == constants.EEXISTS {
+				fmt.Printf("Skipping %s, since it is already installed. If you want update it, please run %s\n", constants.Bold(plugin), constants.BoldYellow("steampipe plugin update "+plugin))
+				continue
+			}
+
 			msg := fmt.Sprintf("install failed for plugin '%s'", plugin)
 
 			if strings.HasSuffix(err.Error(), "not found") {
@@ -289,13 +294,15 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		image, err := pluginmanager.Update(plugin)
 		utils.StopSpinner(spinner)
 		if err != nil {
+			if err.Error() == constants.ENOTEXISTS {
+				fmt.Printf("Skipping %s, since it is not installed. If you want install it, please run %s\n", constants.Bold(plugin), constants.BoldYellow("steampipe plugin install "+plugin))
+				continue
+			}
+
 			msg := fmt.Sprintf("update failed for plugin '%s'", plugin)
 
 			if strings.HasSuffix(err.Error(), "not found") {
 				msg += ": not found"
-			} else if err.Error() == constants.ENOTEXISTS {
-				col := color.New(color.Bold, color.FgHiYellow)
-				msg += fmt.Sprintf(": %s is not installed. If you want install it, please run %s", constants.Bold(plugin), col.Sprintf("steampipe plugin install "+plugin))
 			} else {
 				log.Printf("[DEBUG] %s", err.Error())
 			}
