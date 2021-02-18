@@ -115,7 +115,8 @@ func (pvc *PluginVersionChecker) getLatestVersionsForPlugins(plugins map[string]
 }
 
 func (pvc *PluginVersionChecker) getPayloadFromInstalledData(plugin *versionfile.InstalledVersion) versionCheckPayload {
-	org, name, stream := pvc.splitNameIntoOrgNameAndStream(plugin.Name)
+	ref := ociinstaller.NewSteampipeImageRef(plugin.Name)
+	org, name, stream := ref.GetOrgNameAndStream()
 	payload := versionCheckPayload{
 		Org:     org,
 		Name:    name,
@@ -124,16 +125,6 @@ func (pvc *PluginVersionChecker) getPayloadFromInstalledData(plugin *versionfile
 		Digest:  plugin.ImageDigest,
 	}
 	return payload
-}
-
-func (pvc *PluginVersionChecker) splitNameIntoOrgNameAndStream(name string) (string, string, string) {
-	// plugin.Name looks like `hub.steampipe.io/plugins/turbot/aws@latest`
-	split := strings.Split(name, "/")
-
-	org := split[len(split)-2]
-	pluginNameAndStream := strings.Split(split[len(split)-1], "@")
-
-	return org, pluginNameAndStream[0], pluginNameAndStream[1]
 }
 
 func (pvc *PluginVersionChecker) getVersionCheckURL() url.URL {
