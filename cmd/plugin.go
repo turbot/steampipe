@@ -202,10 +202,6 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 }
 
 func refreshConnections() error {
-	s := utils.ShowSpinner("Refreshing connections...")
-	defer func() {
-		utils.StopSpinner(s)
-	}()
 
 	db.EnsureDBInstalled()
 	status, err := db.GetStatus()
