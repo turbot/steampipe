@@ -30,8 +30,8 @@ func ConstructUserAgent(installationID string) string {
 
 	}
 
-	// TURBOT(STEAMPIPE/1.4.1+unknown)(linux/wsl-nil)(amd64)(wsl-test)
-	const format = "TURBOT(STEAMPIPE/%s)(%s/%s)(%s)(%s)"
+	// Turbot(Steampipe/1.4.1+unknown)(linux/wsl-nil)(amd64)(wsl-test)
+	const format = "Turbot(Steampipe/%s)(%s/%s)(%s)(%s)"
 
 	return fmt.Sprintf(format,
 		version.Version,
