@@ -52,7 +52,6 @@ type versionChecker struct {
 
 // check if there is a new version
 func checkSteampipeVersion(id string) {
-	// if SP_DISABLE_UPDATE_CHECK is set, do nothing
 	if !shouldDoUpdateCheck() {
 		return
 	}

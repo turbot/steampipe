@@ -3,7 +3,6 @@ package task
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
@@ -12,10 +11,10 @@ import (
 
 // check if there is a new version
 func checkPluginVersions(installationID string) {
-	// if SP_DISABLE_UPDATE_CHECK is set, do nothing
-	if v, ok := os.LookupEnv(disableUpdatesCheckEnvVar); ok && strings.ToLower(v) == "true" {
+	if !shouldDoUpdateCheck() {
 		return
 	}
+
 	updateReport := pluginmanager.GetPluginUpdateReport(installationID)
 
 	pluginsToUpdate := []pluginmanager.VersionCheckReport{}
