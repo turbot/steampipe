@@ -6,18 +6,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
 	"os"
 	"runtime"
-	"strings"
-	"time"
 
 	"github.com/fatih/color"
-	"github.com/hashicorp/go-cleanhttp"
 	SemVer "github.com/hashicorp/go-version"
 	"github.com/olekukonko/tablewriter"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
 )
 
@@ -41,23 +38,16 @@ type versionCheckRequest struct {
 	Signature  string `json:"signature"`
 }
 
-type state struct {
-	LastCheck      string `json:"lastChecked"`    // an RFC3339 encoded time stamp
-	InstallationID string `json:"installationId"` // a UUIDv4 string
-}
-
 // VersionChecker :: the version checker struct composition container.
 // This MUST not be instantiated manually. Use `CreateVersionChecker` instead
 type versionChecker struct {
-	stateFile    string                // the absolute path to the state file
-	currentState state                 // the current persisted state
-	checkResult  *versionCheckResponse // a channel to store the HTTP response
-	disabled     bool
-	signature    string // flags whether update check should be done
+	checkResult *versionCheckResponse // a channel to store the HTTP response
+	disabled    bool
+	signature   string // flags whether update check should be done
 }
 
 // check if there is a new version
-func checkVersion(id string) {
+func checkSteampipeVersion(id string) {
 	if !shouldDoUpdateCheck() {
 		return
 	}
@@ -66,18 +56,6 @@ func checkVersion(id string) {
 	v.signature = id
 	v.GetVersionResp()
 	v.Notify()
-}
-
-func shouldDoUpdateCheck() bool {
-	// if legacy env var SP_DISABLE_UPDATE_CHECK is true, do nothing
-	if v, ok := os.LookupEnv(legacyDisableUpdatesCheckEnvVar); ok && strings.ToLower(v) == "true" {
-		return false
-	}
-	// if STEAMPIPE_UPDATE_CHECK is false, do nothing
-	if v, ok := os.LookupEnv(updatesCheckEnvVar); ok && strings.ToLower(v) == "false" {
-		return false
-	}
-	return true
 }
 
 // RunCheck :: Communicates with the Turbot Artifacts Server retrieves
@@ -162,24 +140,10 @@ func versionDiff(oldVersion *SemVer.Version, newVersion *SemVer.Version) string 
 }
 
 func (c *versionChecker) doCheckRequest() {
-	// Set a default timeout of 3 sec for the check request (in milliseconds)
-	timeout := 3000
-	payload := c.buildJSONPayload()
-	sendRequestTo := versionCheckPOSTURL()
+	payload := utils.BuildRequestPayload(c.signature, map[string]interface{}{})
+	sendRequestTo := c.versionCheckURL()
 
-	req, err := http.NewRequest("POST", sendRequestTo.String(), payload)
-	if err != nil {
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := cleanhttp.DefaultClient()
-
-	// Use a short timeout since checking for new versions is not critical
-	// enough to block on if the update server is broken/slow.
-	client.Timeout = time.Duration(timeout) * time.Millisecond
-
-	resp, err := client.Do(req)
+	resp, err := utils.SendRequest(c.signature, "POST", sendRequestTo, payload)
 	if err != nil {
 		return
 	}
@@ -199,7 +163,7 @@ func (c *versionChecker) doCheckRequest() {
 		return
 	}
 
-	c.checkResult = decodeResult(bodyString)
+	c.checkResult = c.decodeResult(bodyString)
 }
 
 func (c *versionChecker) buildJSONPayload() *bytes.Buffer {
@@ -214,7 +178,7 @@ func (c *versionChecker) buildJSONPayload() *bytes.Buffer {
 	return bytes.NewBuffer(jsonStr)
 }
 
-func decodeResult(body string) *versionCheckResponse {
+func (c *versionChecker) decodeResult(body string) *versionCheckResponse {
 	var result versionCheckResponse
 
 	if err := json.Unmarshal([]byte(body), &result); err != nil {
@@ -223,23 +187,11 @@ func decodeResult(body string) *versionCheckResponse {
 	return &result
 }
 
-func versionCheckPOSTURL() url.URL {
+func (c *versionChecker) versionCheckURL() url.URL {
 	var u url.URL
 	//https://hub.steampipe.io/api/cli/version/latest
 	u.Scheme = "https"
 	u.Host = "hub.steampipe.io"
 	u.Path = "api/cli/version/latest"
 	return u
-}
-
-func (c *versionChecker) constructUserAgent() string {
-	const format = "TURBOT(STEAMPIPE/%s)(%s/%s)(%s/%s)(%s)"
-
-	return fmt.Sprintf(format,
-		currentVersion,
-		runtime.GOOS,
-		"",
-		runtime.GOARCH,
-		"",
-		c.currentState.InstallationID)
 }

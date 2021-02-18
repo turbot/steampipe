@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/statefile"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -49,6 +50,7 @@ Examples:
 	cmd.AddCommand(PluginInstallCmd())
 	cmd.AddCommand(PluginListCmd())
 	cmd.AddCommand(PluginUninstallCmd())
+	cmd.AddCommand(PluginUpdateCmd())
 
 	return cmd
 }
@@ -60,12 +62,12 @@ func PluginInstallCmd() *cobra.Command {
 		Use:   "install [flags] [registry/[org/]]name[:version]",
 		Args:  cobra.ArbitraryArgs,
 		Run:   runPluginInstallCmd,
-		Short: "Install or update a plugin",
-		Long: `Install or update a plugin.
+		Short: "Install one or more plugins",
+		Long: `Install one or more plugins.
 
 Install a Steampipe plugin, making it available for queries and configuration.
 The plugin name format is [registry/[org/]]name[:version]. The default
-registry is registry.steampipe.io, default org is turbot and default version
+registry is hub.steampipe.io, default org is turbot and default version
 is latest. The name is a required argument.
 
 Examples:
@@ -82,19 +84,55 @@ Examples:
   # Install a specific plugin version
   steampipe plugin install turbot/azure:0.1.0
 
-  # Update a plugin to the latest version (identical to installing it)
-  steampipe plugin install aws
-
-  # Update all plugins to their latest available version
-  steampipe plugin install --update-all
-
   # Install multiple plugins at once
   steampipe plugin install aws dmi/paper`,
 	}
 
 	cmdconfig.
+		OnCmd(cmd)
+
+	return cmd
+}
+
+// PluginUpdateCmd :: Update plugins
+func PluginUpdateCmd() *cobra.Command {
+
+	var cmd = &cobra.Command{
+		Use:   "update [flags] [registry/[org/]]name[:version]",
+		Args:  cobra.ArbitraryArgs,
+		Run:   runPluginUpdateCmd,
+		Short: "Update one or more plugins",
+		Long: `Update plugins.
+
+Update one or more Steampipe plugins, making it available for queries and configuration.
+The plugin name format is [registry/[org/]]name[:version]. The default
+registry is hub.steampipe.io, default org is turbot and default version
+is latest. The name is a required argument.
+
+Examples:
+
+  # Update a common plugin (turbot/aws)
+  steampipe plugin update aws
+
+  # Update a plugin published by DMI to the public registry
+  steampipe plugin update dmi/paper
+
+  # Update a plugin from a private registry
+  steampipe plugin update my-registry.dmi.com/dmi/internal
+
+  # Update a specific plugin version
+  steampipe plugin update turbot/azure:0.1.0
+
+  # Update all plugins to their latest available version (only works for plugins installed from hub.steampipe.io)
+  steampipe plugin update --all
+
+  # Update multiple plugins at once
+  steampipe plugin update aws dmi/paper`,
+	}
+
+	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag("update-all", "", false, "Update each plugin to its latest available version")
+		AddBoolFlag("all", "", false, "Update all plugins to its latest available version")
 
 	return cmd
 }
@@ -164,30 +202,143 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// args to 'plugin install' -- one or more plugins to install
 	// These can be simple names ('aws') for "standard" plugins, or
 	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
-	for _, plugin := range args {
-		if len(args) > 1 {
-			fmt.Println("")
+	plugins := append([]string{}, args...)
+	installSkipped := []string{}
+
+	for idx, plugin := range plugins {
+		isPluginExists, _ := pluginmanager.IsPluginExists(plugin)
+		if isPluginExists {
+			installSkipped = append(installSkipped, plugin)
+			continue
 		}
-		if image, err := pluginmanager.Install(plugin); err != nil {
-			msg := fmt.Sprintf("plugin install failed for plugin '%s'", plugin)
+		if idx > 0 {
+			fmt.Println()
+		}
+		spinner := utils.ShowSpinner(fmt.Sprintf("Installing plugin %s...", plugin))
+		image, err := pluginmanager.Install(plugin)
+		utils.StopSpinner(spinner)
+		if err != nil {
+			msg := fmt.Sprintf("install failed for plugin '%s'", plugin)
+
 			if strings.HasSuffix(err.Error(), "not found") {
 				msg += ": not found"
 			} else {
 				log.Printf("[DEBUG] %s", err.Error())
 			}
 			utils.ShowError(fmt.Errorf(msg))
+			continue
+		}
+		versionString := ""
+		if image.Config.Plugin.Version != "" {
+			versionString = " v" + image.Config.Plugin.Version
+		}
+		fmt.Printf("Installed plugin: %s%s\n", constants.Bold(plugin), versionString)
+		org := image.Config.Plugin.Organization
+		if org == "turbot" {
+			fmt.Printf("Documentation:    https://hub.steampipe.io/plugins/%s/%s\n", org, plugin)
+		}
+	}
+
+	if len(installSkipped) > 0 {
+		fmt.Println("\nSkipped the following plugins, since they are already installed:")
+		for _, s := range installSkipped {
+			fmt.Printf("    > %s\n", constants.Bold(s))
+		}
+		fmt.Printf("\nTo update these plugins, please run: %s %s\n", constants.Bold("steampipe plugin update"), constants.Bold(strings.Join(installSkipped, " ")))
+	}
+
+	if len(args) > 1 {
+		fmt.Println("")
+	}
+
+	// refresh connections - we do this to validate the plugins
+	// ignore errors - if we get this far we have successfully installed
+	// reporting an error in the validation may be confusing
+	// - we will retry next time query is run and report any errors then
+	refreshConnections()
+
+}
+
+func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
+	logging.LogTime("runPluginUpdateCmd install")
+	defer logging.LogTime("runPluginUpdateCmd end")
+
+	// args to 'plugin update' -- one or more plugins to install
+	// These can be simple names ('aws') for "standard" plugins, or
+	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
+	plugins := append([]string{}, args...)
+
+	// we can't allow update and install at the same time
+	if cmdconfig.Viper().GetBool("all") {
+		if len(plugins) > 0 {
+			utils.ShowError(fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`")))
 			return
-		} else {
-			versionString := ""
-			if image.Config.Plugin.Version != "" {
-				versionString = " v" + image.Config.Plugin.Version
-			}
-			fmt.Printf("Installed plugin: %s%s\n", constants.Bold(plugin), versionString)
-			org := image.Config.Plugin.Organization
-			if org == "turbot" {
-				fmt.Println(fmt.Sprintf("Documentation:    https://hub.steampipe.io/plugins/%s/%s", org, plugin))
+		}
+
+		// get the update report
+		plugins = []string{}
+		state, _ := statefile.LoadState()
+		reports := pluginmanager.GetPluginUpdateReport(state.InstallationID)
+		for _, report := range reports {
+			if report.Plugin.ImageDigest != report.CheckResponse.Digest {
+				plugins = append(plugins, fmt.Sprintf("%s/%s@%s", report.CheckResponse.Org, report.CheckResponse.Name, report.CheckResponse.Stream))
 			}
 		}
+	}
+
+	if len(plugins) == 0 {
+		fmt.Println("Looks like you are running updated versions of all plugins.")
+		return
+	}
+
+	updateSkipped := []string{}
+
+	for _, plugin := range plugins {
+		isPluginExists, _ := pluginmanager.IsPluginExists(plugin)
+		if !isPluginExists {
+			updateSkipped = append(updateSkipped, plugin)
+			continue
+		}
+		if len(args) > 1 {
+			fmt.Println()
+		}
+
+		spinner := utils.ShowSpinner(fmt.Sprintf("Updating plugin %s...", plugin))
+		image, err := pluginmanager.Install(plugin)
+		utils.StopSpinner(spinner)
+		if err != nil {
+			if err.Error() == constants.ENOTEXISTS {
+				updateSkipped = append(updateSkipped, plugin)
+				continue
+			}
+
+			msg := fmt.Sprintf("update failed for plugin '%s'", plugin)
+
+			if strings.HasSuffix(err.Error(), "not found") {
+				msg += ": not found"
+			} else {
+				log.Printf("[DEBUG] %s", err.Error())
+			}
+			utils.ShowError(fmt.Errorf(msg))
+			continue
+		}
+		versionString := ""
+		if image.Config.Plugin.Version != "" {
+			versionString = " v" + image.Config.Plugin.Version
+		}
+		fmt.Printf("Updated plugin: %s%s\n", constants.Bold(plugin), versionString)
+		org := image.Config.Plugin.Organization
+		if org == "turbot" {
+			fmt.Printf("Documentation:  https://hub.steampipe.io/plugins/%s/%s\n", org, plugin)
+		}
+	}
+
+	if len(updateSkipped) > 0 {
+		fmt.Println("\nSkipped the following plugins, since they are not installed:")
+		for _, s := range updateSkipped {
+			fmt.Printf("    > %s\n", constants.Bold(s))
+		}
+		fmt.Printf("\nTo install these plugins, please run: %s %s\n", constants.Bold("steampipe plugin install"), constants.Bold(strings.Join(updateSkipped, " ")))
 	}
 	if len(args) > 1 {
 		fmt.Println("")

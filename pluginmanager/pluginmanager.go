@@ -55,10 +55,25 @@ func Remove(image string, pluginConnections map[string][]string) error {
 	return v.Save()
 }
 
+// IsPluginExists :: looks up the version file and reports whether a plugin is already installed
+func IsPluginExists(plugin string) (bool, error) {
+	versionData, err := versionfile.Load()
+	if err != nil {
+		return false, err
+	}
+	if versionData.Plugins == nil {
+		versionData.Plugins = make(map[string]*versionfile.InstalledVersion)
+	}
+
+	imageRef := ociinstaller.NewSteampipeImageRef(plugin)
+
+	// lookup in the version data
+	_, found := versionData.Plugins[imageRef.DisplayImageRef()]
+	return found, nil
+}
+
 // Install :: install plugin in the local file system
 func Install(plugin string) (*ociinstaller.SteampipeImage, error) {
-	spinner := utils.ShowSpinner(fmt.Sprintf("Installing plugin %s...", plugin))
-	defer utils.StopSpinner(spinner)
 	image, err := ociinstaller.InstallPlugin(plugin)
 	return image, err
 }

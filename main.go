@@ -1,7 +1,6 @@
 package main
 
 import (
-	// need to attach this driver to the default sql package
 	"log"
 	"os"
 
