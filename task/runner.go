@@ -25,15 +25,17 @@ func NewRunner() *Runner {
 func (r *Runner) Run() {
 	if r.shouldRun {
 		waitGroup := sync.WaitGroup{}
-		waitGroup.Add(3)
 
 		// check whether an updated version is available
+		waitGroup.Add(1)
 		go r.runAsyncJob(func() { checkSteampipeVersion(r.currentState.InstallationID) }, &waitGroup)
 
 		// check whether an updated version is available
+		waitGroup.Add(1)
 		go r.runAsyncJob(func() { checkPluginVersions(r.currentState.InstallationID) }, &waitGroup)
 
 		// remove log files older than 7 days
+		waitGroup.Add(1)
 		go r.runAsyncJob(func() { db.TrimLogs() }, &waitGroup)
 
 		// update last check time
