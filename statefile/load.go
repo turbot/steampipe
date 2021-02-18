@@ -20,29 +20,29 @@ type State struct {
 	InstallationID string `json:"installationId"` // a UUIDv4 string
 }
 
-func LoadState() (*State, error) {
+func LoadState() (State, error) {
+	currentState := createState()
+
 	stateFilePath := filepath.Join(constants.InternalDir(), updateStateFileName)
 	// get the state file
 	_, err := os.Stat(stateFilePath)
 	if err != nil {
-		return nil, err
+		return currentState, err
 	}
 
 	stateFileContent, err := ioutil.ReadFile(stateFilePath)
 	if err != nil {
 		fmt.Println("Could not read update state file")
-		return nil, err
+		return currentState, err
 	}
-
-	currentState := State{}
 
 	err = json.Unmarshal(stateFileContent, &currentState)
 	if err != nil {
 		fmt.Println("Could not parse update state file")
-		return nil, err
+		return currentState, err
 	}
 
-	return &currentState, nil
+	return currentState, nil
 }
 
 func createState() State {

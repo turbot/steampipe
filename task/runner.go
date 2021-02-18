@@ -11,7 +11,7 @@ import (
 const minimumMinutesBetweenChecks = 1440 // 1 day
 
 type Runner struct {
-	currentState *statefile.State
+	currentState statefile.State
 	shouldRun    bool
 }
 
@@ -52,9 +52,6 @@ func (r *Runner) runAsyncJob(job func(), wg *sync.WaitGroup) {
 
 func (r *Runner) getShouldRun() bool {
 	now := time.Now()
-	if r.currentState == nil {
-		return true
-	}
 	if r.currentState.LastCheck == "" {
 		return true
 	}
