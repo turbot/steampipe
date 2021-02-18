@@ -197,12 +197,12 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// ignore errors - if we get this far we have successfully installed
 	// reporting an error in the validation may be confusing
 	// - we will retry next time query is run and report any errors then
-	validatePlugins()
+	refreshConnections()
 
 }
 
-func validatePlugins() error {
-	s := utils.ShowSpinner("Validating plugins...")
+func refreshConnections() error {
+	s := utils.ShowSpinner("Refreshing connections...")
 	defer func() {
 		utils.StopSpinner(s)
 	}()
