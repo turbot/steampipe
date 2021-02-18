@@ -6,15 +6,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
 	"os"
 	"runtime"
-	"strings"
-	"time"
 
 	"github.com/fatih/color"
-	"github.com/hashicorp/go-cleanhttp"
 	SemVer "github.com/hashicorp/go-version"
 	"github.com/olekukonko/tablewriter"
 	"github.com/turbot/steampipe/constants"
@@ -144,25 +140,10 @@ func versionDiff(oldVersion *SemVer.Version, newVersion *SemVer.Version) string 
 }
 
 func (c *versionChecker) doCheckRequest() {
-	// Set a default timeout of 3 sec for the check request (in milliseconds)
-	timeout := 3000
-	payload := c.buildJSONPayload()
+	payload := utils.BuildRequestPayload(c.signature, map[string]interface{}{})
 	sendRequestTo := c.versionCheckURL()
 
-	req, err := http.NewRequest("POST", sendRequestTo.String(), payload)
-	if err != nil {
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", utils.ConstructUserAgent(c.signature))
-
-	client := cleanhttp.DefaultClient()
-
-	// Use a short timeout since checking for new versions is not critical
-	// enough to block on if the update server is broken/slow.
-	client.Timeout = time.Duration(timeout) * time.Millisecond
-
-	resp, err := client.Do(req)
+	resp, err := utils.SendRequest(c.signature, "POST", sendRequestTo, payload)
 	if err != nil {
 		return
 	}
