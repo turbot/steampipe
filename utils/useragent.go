@@ -15,22 +15,23 @@ import (
 
 func ConstructUserAgent(installationID string) string {
 
-	wslString := ""
+	wslString := "wsl"
+	wslSuffix := ""
 	if runtime.GOOS != "linux" {
-		wslString = "wsl-na"
+		wslString = "na"
 	} else {
 		wsl, err := IsWSL()
 		if err != nil {
-			wslString = "wsl-unknown"
+			wslString = "unknown"
 		} else if wsl {
-			wslString = "wsl-win"
+			wslString = "win"
 		} else {
-			wslString = "wsl-nil"
+			wslString = "nil"
 		}
-
 	}
+	wslString = fmt.Sprintf("%s-%s", wslString, wslSuffix)
 
-	// Turbot(Steampipe/1.4.1+unknown)(linux/wsl-nil)(amd64)(wsl-test)
+	// Turbot(Steampipe/1.4.1+unknown)(linux/wsl-nil)(amd64)(95729b2c-5b59-4803-bfb1-1f5617ca1d35)
 	const format = "Turbot(Steampipe/%s)(%s/%s)(%s)(%s)"
 
 	return fmt.Sprintf(format,
