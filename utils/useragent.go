@@ -14,32 +14,7 @@ import (
 )
 
 func ConstructUserAgent(installationID string) string {
-
-	wslString := "wsl"
-	wslSuffix := ""
-	if runtime.GOOS != "linux" {
-		wslString = "na"
-	} else {
-		wsl, err := IsWSL()
-		if err != nil {
-			wslString = "unknown"
-		} else if wsl {
-			wslString = "win"
-		} else {
-			wslString = "nil"
-		}
-	}
-	wslString = fmt.Sprintf("%s-%s", wslString, wslSuffix)
-
-	// Turbot(Steampipe/1.4.1+unknown)(linux/wsl-nil)(amd64)(95729b2c-5b59-4803-bfb1-1f5617ca1d35)
-	const format = "Turbot(Steampipe/%s)(%s/%s)(%s)(%s)"
-
-	return fmt.Sprintf(format,
-		version.Version,
-		runtime.GOOS,
-		wslString,
-		runtime.GOARCH,
-		installationID)
+	return fmt.Sprintf("Turbot Steampipe/%s (+https://steampipe.io)", version.Version)
 }
 
 // BuildRequestPayload :: merges the provided payload with the standard payload that needs to be sent
