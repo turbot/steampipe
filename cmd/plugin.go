@@ -201,26 +201,32 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 }
 
+// start service if necessatry and refresh connections
 func refreshConnections() error {
-
+	// todo move this into db package
 	db.EnsureDBInstalled()
 	status, err := db.GetStatus()
 	if err != nil {
 		return errors.New("could not retrieve service status")
 	}
 
+	var client *db.Client
 	if status == nil {
 		// the db service is not started - start it
 		db.StartService(db.InvokerInstaller)
+		defer db.Shutdown(client, db.InvokerInstaller)
 	}
 
-	client, err := db.GetClient(false)
-	utils.FailOnErrorWithMessage(err, "client failed to initialize")
+	client, err = db.GetClient(false)
+	if err != nil {
+		return err
+	}
+
 	// refresh connections
 	if err = db.RefreshConnections(client); err != nil {
 		return err
 	}
-	db.Shutdown(client, db.InvokerInstaller)
+
 	return nil
 }
 
