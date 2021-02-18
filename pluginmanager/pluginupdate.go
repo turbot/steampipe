@@ -1,17 +1,14 @@
 package pluginmanager
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/hashicorp/go-cleanhttp"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/utils"
@@ -20,7 +17,7 @@ import (
 // GetPluginUpdateReport :: looks up and reports the updated version of plugins which are listed in versions.json
 func GetPluginUpdateReport(installationID string) map[string]VersionCheckReport {
 	pvc := new(PluginVersionChecker)
-	pvc.installationID = installationID
+	pvc.signature = installationID
 	return pvc.reportPluginUpdates()
 }
 
@@ -42,7 +39,7 @@ type versionCheckPayload struct {
 
 // PluginVersionChecker :: wrapper struct over the plugin version check utilities
 type PluginVersionChecker struct {
-	installationID string
+	signature string
 }
 
 // CheckAndReportPluginUpdates ::
@@ -150,25 +147,12 @@ func (pvc *PluginVersionChecker) getVersionCheckURL() url.URL {
 
 func (pvc *PluginVersionChecker) requestServerForLatest(payload []versionCheckPayload) []versionCheckPayload {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
-	timeout := 3000
-	byteContent, err := json.Marshal(payload)
 	sendRequestTo := pvc.getVersionCheckURL()
+	requestBody := utils.BuildRequestPayload(pvc.signature, map[string]interface{}{
+		"plugins": payload,
+	})
 
-	req, err := http.NewRequest("POST", sendRequestTo.String(), bytes.NewBuffer(byteContent))
-	if err != nil {
-		log.Println("[DEBUG] Could not construct request")
-		return nil
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", utils.ConstructUserAgent(pvc.installationID))
-
-	client := cleanhttp.DefaultClient()
-
-	// Use a short timeout since checking for new versions is not critical
-	// enough to block on if the update server is broken/slow.
-	client.Timeout = time.Duration(timeout) * time.Millisecond
-
-	resp, err := client.Do(req)
+	resp, err := utils.SendRequest(pvc.signature, "POST", sendRequestTo, requestBody)
 	if err != nil {
 		log.Printf("[DEBUG] Could not send request")
 		return nil
