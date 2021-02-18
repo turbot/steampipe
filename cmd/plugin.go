@@ -217,7 +217,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 			if strings.HasSuffix(err.Error(), "not found") {
 				msg += ": not found"
-			} else if err.Error() == "EEXISTS" {
+			} else if err.Error() == constants.EEXISTS {
 				col := color.New(color.Bold, color.FgHiYellow)
 				msg += fmt.Sprintf(": %s is already installed. If you want update it, please run %s", constants.Bold(plugin), col.Sprintf("steampipe plugin update "+plugin))
 			} else {
@@ -293,7 +293,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 			if strings.HasSuffix(err.Error(), "not found") {
 				msg += ": not found"
-			} else if err.Error() == "ENOTEXISTS" {
+			} else if err.Error() == constants.ENOTEXISTS {
 				col := color.New(color.Bold, color.FgHiYellow)
 				msg += fmt.Sprintf(": %s is not installed. If you want install it, please run %s", constants.Bold(plugin), col.Sprintf("steampipe plugin install "+plugin))
 			} else {

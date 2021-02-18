@@ -71,7 +71,7 @@ func Install(plugin string) (*ociinstaller.SteampipeImage, error) {
 	// lookup in the version data
 	_, found := versionData.Plugins[imageRef.DisplayImageRef()]
 	if found {
-		return nil, fmt.Errorf("EEXISTS")
+		return nil, fmt.Errorf(constants.EEXISTS)
 	}
 
 	image, err := ociinstaller.InstallPlugin(plugin)
@@ -93,7 +93,7 @@ func Update(plugin string) (*ociinstaller.SteampipeImage, error) {
 	// lookup in the version data
 	_, found := versionData.Plugins[imageRef.DisplayImageRef()]
 	if !found {
-		return nil, fmt.Errorf("ENOTEXISTS")
+		return nil, fmt.Errorf(constants.ENOTEXISTS)
 	}
 
 	image, err := ociinstaller.InstallPlugin(plugin)
