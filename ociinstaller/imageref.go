@@ -64,6 +64,18 @@ func isDigestRef(ref string) bool {
 	return strings.Contains(ref, "@sha256:")
 }
 
+// GetOrgNameAndStream :: splits the full image reference into
+// (org, name, stream)
+func (r *SteampipeImageRef) GetOrgNameAndStream() (string, string, string) {
+	// plugin.Name looks like `hub.steampipe.io/plugins/turbot/aws@latest`
+	split := strings.Split(r.DisplayImageRef(), "/")
+
+	org := split[len(split)-2]
+	pluginNameAndStream := strings.Split(split[len(split)-1], "@")
+
+	return org, pluginNameAndStream[0], pluginNameAndStream[1]
+}
+
 // possible formats include
 //		us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0
 //		us-docker.pkg.dev/steampipe/plugin/turbot/aws@sha256:766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1
