@@ -205,6 +205,10 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	plugins := append([]string{}, args...)
 	installSkipped := []string{}
 
+	if len(plugins) > 1 {
+		fmt.Println()
+	}
+
 	for idx, plugin := range plugins {
 		isPluginExists, _ := pluginmanager.IsPluginExists(plugin)
 		if isPluginExists {
@@ -240,7 +244,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if len(installSkipped) > 0 {
-		fmt.Println("\nSkipped the following plugins, since they are already installed:")
+		fmt.Println("Skipped the following plugins, since they are already installed:")
 		for _, s := range installSkipped {
 			fmt.Printf("    > %s\n", constants.Bold(s))
 		}
@@ -255,8 +259,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// ignore errors - if we get this far we have successfully installed
 	// reporting an error in the validation may be confusing
 	// - we will retry next time query is run and report any errors then
-	refreshConnections()
-
+	if len(plugins) > len(installSkipped) {
+		refreshConnections()
+	}
 }
 
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
@@ -287,7 +292,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if len(plugins) == 0 {
-		fmt.Println("Looks like you are running updated versions of all plugins.")
+		fmt.Println("All plugins are up to date.")
 		return
 	}
 
@@ -348,8 +353,9 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	// ignore errors - if we get this far we have successfully installed
 	// reporting an error in the validation may be confusing
 	// - we will retry next time query is run and report any errors then
-	refreshConnections()
-
+	if len(plugins) > len(updateSkipped) {
+		refreshConnections()
+	}
 }
 
 // start service if necessatry and refresh connections
