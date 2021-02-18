@@ -12,12 +12,12 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func refreshConnections(client *Client) error {
+func RefreshConnections(client *Client) error {
 	// first get a list of all existing schemas
 	schemas := client.schemaMetadata.GetSchemas()
 
 	// refresh the connection state file - the removes any connections which do not exist in the list of current schema
-	log.Println("[TRACE] refreshConnections")
+	log.Println("[TRACE] RefreshConnections")
 	updates, err := connection_config.GetConnectionsToUpdate(schemas)
 	if err != nil {
 		return err
@@ -44,7 +44,7 @@ func refreshConnections(client *Client) error {
 			// if any warnings were returned, display them on stderr
 			if len(warningString) > 0 {
 				// println writes to stderr
-				println(constants.Red(warningString))
+				println(constants.Bold(warningString))
 			}
 		}()
 
@@ -54,8 +54,8 @@ func refreshConnections(client *Client) error {
 			return err
 		}
 		// find any plugins which use a newer sdk version than steampipe.
-		validationFailures, validatedUpdates, validatedPlugins := validatePlugins(updates.Update, connectionPlugins)
-		warningString = buildValidationWarningString(validationFailures)
+		validationFailures, validatedUpdates, validatedPlugins := connection_config.ValidatePlugins(updates.Update, connectionPlugins)
+		warningString = connection_config.BuildValidationWarningString(validationFailures)
 
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
 		connectionQueries = getSchemaQueries(validatedUpdates, validationFailures)
@@ -122,7 +122,7 @@ func getConnectionPluginsAsync(pluginFQN string, connectionName string, connecti
 	p.Plugin.Client.Kill()
 }
 
-func getSchemaQueries(updates connection_config.ConnectionMap, failures []*validationFailure) []string {
+func getSchemaQueries(updates connection_config.ConnectionMap, failures []*connection_config.ValidationFailure) []string {
 	var schemaQueries []string
 	for connectionName, plugin := range updates {
 		remoteSchema := connection_config.PluginFQNToSchemaName(plugin.Plugin)
@@ -130,8 +130,8 @@ func getSchemaQueries(updates connection_config.ConnectionMap, failures []*valid
 		schemaQueries = append(schemaQueries, updateConnectionQuery(connectionName, remoteSchema)...)
 	}
 	for _, failure := range failures {
-		log.Printf("[TRACE] remove schema for conneciton failing validation connection %s, plugin FQN %s\n ", failure.connectionName, failure.plugin)
-		schemaQueries = append(schemaQueries, deleteConnectionQuery(failure.connectionName)...)
+		log.Printf("[TRACE] remove schema for conneciton failing validation connection %s, plugin FQN %s\n ", failure.ConnectionName, failure.Plugin)
+		schemaQueries = append(schemaQueries, deleteConnectionQuery(failure.ConnectionName)...)
 	}
 
 	return schemaQueries

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -192,6 +193,41 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println("")
 	}
 
+	// refresh connections - we do this to validate the plugins
+	// ignore errors - if we get this far we have successfully installed
+	// reporting an error in the validation may be confusing
+	// - we will retry next time query is run and report any errors then
+	refreshConnections()
+
+}
+
+// start service if necessatry and refresh connections
+func refreshConnections() error {
+	// todo move this into db package
+	db.EnsureDBInstalled()
+	status, err := db.GetStatus()
+	if err != nil {
+		return errors.New("could not retrieve service status")
+	}
+
+	var client *db.Client
+	if status == nil {
+		// the db service is not started - start it
+		db.StartService(db.InvokerInstaller)
+		defer db.Shutdown(client, db.InvokerInstaller)
+	}
+
+	client, err = db.GetClient(false)
+	if err != nil {
+		return err
+	}
+
+	// refresh connections
+	if err = db.RefreshConnections(client); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func runPluginListCmd(cmd *cobra.Command, args []string) {

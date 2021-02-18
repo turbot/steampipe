@@ -51,7 +51,7 @@ func GetClient(autoRefreshConnections bool) (*Client, error) {
 		clientSingleton.loadSchema()
 
 		if autoRefreshConnections {
-			refreshConnections(clientSingleton)
+			RefreshConnections(clientSingleton)
 			refreshFunctions(clientSingleton)
 		}
 

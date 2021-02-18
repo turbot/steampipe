@@ -17,7 +17,7 @@ func HandleGrpcError(err error, connection, call string) error {
 
 	// ignore unimplemented error
 	if status.Code() == codes.Unimplemented {
-		log.Printf("[INFO] connection '%s' returned 'Unimplemented' error for call '%s' - plugin version does not support this call", connection, call)
+		log.Printf("[DEBUG] connection '%s' returned 'Unimplemented' error for call '%s' - plugin version does not support this call", connection, call)
 		return nil
 	}
 
