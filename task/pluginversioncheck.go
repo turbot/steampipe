@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/pluginmanager"
 )
 
@@ -31,39 +31,44 @@ func checkPluginVersions(installationID string) {
 }
 
 func showPluginUpdateNotification(reports []pluginmanager.VersionCheckReport) {
-	var updateCmdColor = color.New(color.FgHiYellow, color.Bold)
-	var oldVersionColor = color.New(color.FgHiRed, color.Bold)
-	var newVersionColor = color.New(color.FgHiGreen, color.Bold)
-
 	var notificationLines = [][]string{
 		{""},
 		{"Updated versions of the following plugins are available:"},
 		{""},
 	}
+	longestNameLength := 0
+	for _, report := range reports {
+		thisName := fmt.Sprintf("%s/%s", report.CheckResponse.Org, report.CheckResponse.Name)
+		if len(thisName) > longestNameLength {
+			longestNameLength = len(thisName)
+		}
+	}
 	for _, report := range reports {
 		thisName := fmt.Sprintf("%s/%s", report.CheckResponse.Org, report.CheckResponse.Name)
 		line := ""
 		if len(report.Plugin.Version) == 0 {
+			format := fmt.Sprintf("  %%-%ds @ %%-10s       %%21s", longestNameLength)
 			line = fmt.Sprintf(
-				"%-20s @ %-10s %24s",
+				format,
 				thisName,
 				report.CheckResponse.Stream,
-				newVersionColor.Sprintf(report.CheckResponse.Version),
+				constants.Bold(report.CheckResponse.Version),
 			)
 		} else {
+			format := fmt.Sprintf("  %%-%ds @ %%-10s       %%10s → %%-10s", longestNameLength)
 			line = fmt.Sprintf(
-				"%-20s @ %-10s %10s → %-10s",
+				format,
 				thisName,
 				report.CheckResponse.Stream,
-				oldVersionColor.Sprintf(report.Plugin.Version),
-				newVersionColor.Sprintf(report.CheckResponse.Version),
+				constants.Bold(report.Plugin.Version),
+				constants.Bold(report.CheckResponse.Version),
 			)
 		}
 		notificationLines = append(notificationLines, []string{line})
 	}
 	notificationLines = append(notificationLines, []string{""})
 	notificationLines = append(notificationLines, []string{
-		fmt.Sprintf("You can update by running\n %60s", updateCmdColor.Sprintf("steampipe plugin update --all")),
+		fmt.Sprintf("You can update by running %s", constants.Bold("steampipe plugin update --all")),
 	})
 	notificationLines = append(notificationLines, []string{""})
 
