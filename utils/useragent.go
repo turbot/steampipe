@@ -26,6 +26,14 @@ func BuildRequestPayload(signature string, payload map[string]interface{}) *byte
 		"signature":   signature,
 	}
 
+	// change the platform to "windows_linux" if we are running in "Windows Subsystem for Linux"
+	if runtime.GOOS == "linux" {
+		wsl, err := IsWSL()
+		if err == nil && wsl {
+			requestPayload["os_platform"] = "windows_linux"
+		}
+	}
+
 	// now merge the given payload
 	for k, v := range payload {
 		_, alreadyThere := requestPayload[k]
