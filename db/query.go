@@ -37,21 +37,21 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 	utils.FailOnErrorWithMessage(err, "client failed to initialize")
 
 	// refresh connections
-	if err = refreshConnections(client); err != nil {
+	if err = RefreshConnections(client); err != nil {
 		// shutdown the service if something went wrong!!!
-		shutdown(client)
+		Shutdown(client, InvokerQuery)
 		return nil, fmt.Errorf("failed to refresh connections: %v", err.Error())
 	}
 	if err = refreshFunctions(client); err != nil {
 		// shutdown the service if something went wrong!!!
-		shutdown(client)
+		Shutdown(client, InvokerQuery)
 		return nil, fmt.Errorf("failed to add functions: %v", err)
 	}
 
 	resultsStreamer := newQueryResults()
 
 	// this is a callback to close the db et-al. when things get done - no matter the mode
-	onComplete := func() { shutdown(client) }
+	onComplete := func() { Shutdown(client, InvokerQuery) }
 
 	if queryString == "" {
 		interactiveClient, err := newInteractiveClient(client)
@@ -76,7 +76,7 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 	return resultsStreamer, nil
 }
 
-func shutdown(client *Client) {
+func Shutdown(client *Client, invoker Invoker) {
 	log.Println("[TRACE] shutdown")
 	if client != nil {
 		client.close()
@@ -84,8 +84,8 @@ func shutdown(client *Client) {
 
 	status, _ := GetStatus()
 
-	// force stop if invoked by `query` and we are the last one
-	if status != nil && status.Invoker == InvokerQuery {
+	// force stop if the service was invoked by the same invoker and we are the last one
+	if status != nil && status.Invoker == invoker {
 		_, err := StopDB(true)
 		if err != nil {
 			utils.ShowError(err)

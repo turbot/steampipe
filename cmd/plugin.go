@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -192,6 +193,35 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println("")
 	}
 
+	validatePlugins()
+
+}
+
+func validatePlugins() error {
+	s := utils.ShowSpinner("Validating plugins...")
+	defer func() {
+		utils.StopSpinner(s)
+	}()
+
+	db.EnsureDBInstalled()
+	status, err := db.GetStatus()
+	if err != nil {
+		return errors.New("could not retrieve service status")
+	}
+
+	if status == nil {
+		// the db service is not started - start it
+		db.StartService(db.InvokerInstaller)
+	}
+
+	client, err := db.GetClient(false)
+	utils.FailOnErrorWithMessage(err, "client failed to initialize")
+	// refresh connections
+	if err = db.RefreshConnections(client); err != nil {
+		return err
+	}
+	db.Shutdown(client, db.InvokerInstaller)
+	return nil
 }
 
 func runPluginListCmd(cmd *cobra.Command, args []string) {

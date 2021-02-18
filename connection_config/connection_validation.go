@@ -1,4 +1,4 @@
-package db
+package connection_config
 
 import (
 	"fmt"
@@ -7,24 +7,23 @@ import (
 	"github.com/gertd/go-pluralize"
 	"github.com/hashicorp/go-version"
 	sdkversion "github.com/turbot/steampipe-plugin-sdk/version"
-	"github.com/turbot/steampipe/connection_config"
 )
 
-type validationFailure struct {
-	plugin         string
-	connectionName string
-	message        string
+type ValidationFailure struct {
+	Plugin         string
+	ConnectionName string
+	Message        string
 }
 
-func (v validationFailure) String() string {
-	return fmt.Sprintf("  connection: %s\n  plugin: %s\n", v.connectionName, v.plugin)
+func (v ValidationFailure) String() string {
+	return fmt.Sprintf("  connection: %s\n  plugin: %s\n", v.ConnectionName, v.Plugin)
 }
 
-func validatePlugins(updates connection_config.ConnectionMap, plugins []*connection_config.ConnectionPlugin) ([]*validationFailure, connection_config.ConnectionMap, []*connection_config.ConnectionPlugin) {
-	var validatedPlugins []*connection_config.ConnectionPlugin
-	var validatedUpdates = connection_config.ConnectionMap{}
+func ValidatePlugins(updates ConnectionMap, plugins []*ConnectionPlugin) ([]*ValidationFailure, ConnectionMap, []*ConnectionPlugin) {
+	var validatedPlugins []*ConnectionPlugin
+	var validatedUpdates = ConnectionMap{}
 
-	var validationFailures []*validationFailure
+	var validationFailures []*ValidationFailure
 	for _, p := range plugins {
 		if validationFailure := validateSdkVersion(p); validationFailure != nil {
 			// validation failed
@@ -39,32 +38,7 @@ func validatePlugins(updates connection_config.ConnectionMap, plugins []*connect
 
 }
 
-func validateSdkVersion(p *connection_config.ConnectionPlugin) *validationFailure {
-	pluginSdkVersionString := p.Schema.SdkVersion
-	if pluginSdkVersionString == "" {
-		// plugins compiled against 0.1.x of the sdk do not return the version
-		return nil
-	}
-	pluginSdkVersion, err := version.NewSemver(pluginSdkVersionString)
-	if err != nil {
-		return &validationFailure{
-			plugin:         p.PluginName,
-			connectionName: p.ConnectionName,
-			message:        fmt.Sprintf("could not parse plugin sdk version %s", pluginSdkVersion),
-		}
-	}
-	steampipeSdkVersion := sdkversion.SemVer
-	if pluginSdkVersion.GreaterThan(steampipeSdkVersion) {
-		return &validationFailure{
-			plugin:         p.PluginName,
-			connectionName: p.ConnectionName,
-			message:        "plugin uses a more recent version of the steampipe-plugin-sdk than Steampipe",
-		}
-	}
-	return nil
-}
-
-func buildValidationWarningString(failures []*validationFailure) string {
+func BuildValidationWarningString(failures []*ValidationFailure) string {
 	if len(failures) == 0 {
 		return ""
 	}
@@ -87,4 +61,29 @@ func buildValidationWarningString(failures []*validationFailure) string {
 		strings.Join(warningsStrings, "\n"),
 		p.Pluralize("this connection", failureCount, false))
 	return str
+}
+
+func validateSdkVersion(p *ConnectionPlugin) *ValidationFailure {
+	pluginSdkVersionString := p.Schema.SdkVersion
+	if pluginSdkVersionString == "" {
+		// plugins compiled against 0.1.x of the sdk do not return the version
+		return nil
+	}
+	pluginSdkVersion, err := version.NewSemver(pluginSdkVersionString)
+	if err != nil {
+		return &ValidationFailure{
+			Plugin:         p.PluginName,
+			ConnectionName: p.ConnectionName,
+			Message:        fmt.Sprintf("could not parse plugin sdk version %s", pluginSdkVersion),
+		}
+	}
+	steampipeSdkVersion := sdkversion.SemVer
+	if pluginSdkVersion.GreaterThan(steampipeSdkVersion) {
+		return &ValidationFailure{
+			Plugin:         p.PluginName,
+			ConnectionName: p.ConnectionName,
+			Message:        "plugin uses a more recent version of the steampipe-plugin-sdk than Steampipe",
+		}
+	}
+	return nil
 }
