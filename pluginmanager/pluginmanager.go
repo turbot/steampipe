@@ -55,12 +55,11 @@ func Remove(image string, pluginConnections map[string][]string) error {
 	return v.Save()
 }
 
-// Install :: install plugin in the local file system
-func Install(plugin string) (*ociinstaller.SteampipeImage, error) {
-
+// IsPluginExists :: looks up the version file and reports whether a plugin is already installed
+func IsPluginExists(plugin string) (bool, error) {
 	versionData, err := versionfile.Load()
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 	if versionData.Plugins == nil {
 		versionData.Plugins = make(map[string]*versionfile.InstalledVersion)
@@ -70,32 +69,11 @@ func Install(plugin string) (*ociinstaller.SteampipeImage, error) {
 
 	// lookup in the version data
 	_, found := versionData.Plugins[imageRef.DisplayImageRef()]
-	if found {
-		return nil, fmt.Errorf(constants.EEXISTS)
-	}
-
-	image, err := ociinstaller.InstallPlugin(plugin)
-	return image, err
+	return found, nil
 }
 
-// Update :: updates a plugin in the local file system
-func Update(plugin string) (*ociinstaller.SteampipeImage, error) {
-	versionData, err := versionfile.Load()
-	if err != nil {
-		return nil, err
-	}
-	if versionData.Plugins == nil {
-		versionData.Plugins = make(map[string]*versionfile.InstalledVersion)
-	}
-
-	imageRef := ociinstaller.NewSteampipeImageRef(plugin)
-
-	// lookup in the version data
-	_, found := versionData.Plugins[imageRef.DisplayImageRef()]
-	if !found {
-		return nil, fmt.Errorf(constants.ENOTEXISTS)
-	}
-
+// Install :: install plugin in the local file system
+func Install(plugin string) (*ociinstaller.SteampipeImage, error) {
 	image, err := ociinstaller.InstallPlugin(plugin)
 	return image, err
 }
