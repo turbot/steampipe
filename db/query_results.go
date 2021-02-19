@@ -44,13 +44,37 @@ func (q *ResultStreamer) Wait() {
 }
 
 type QueryResult struct {
-	RowChan  *chan []interface{}
-	ColTypes []*sql.ColumnType
-	Duration chan time.Duration
+	RowChan   *chan []interface{}
+	ErrorChan *chan error
+	ColTypes  []*sql.ColumnType
+	Duration  chan time.Duration
 }
 
-func newQueryResult(rowChan *chan []interface{}, colTypes []*sql.ColumnType) *QueryResult {
-	return &QueryResult{rowChan, colTypes, make(chan time.Duration, 1)}
+// close the channels
+func (r QueryResult) Close() {
+	close(*r.RowChan)
+	close(*r.ErrorChan)
+
+}
+
+func (r QueryResult) StreamRow(rowResult []interface{}) {
+	*r.RowChan <- rowResult
+}
+
+func (r QueryResult) StreamError(err error) {
+	*r.ErrorChan <- err
+}
+
+func newQueryResult(colTypes []*sql.ColumnType) *QueryResult {
+	rowChan := make(chan []interface{})
+	errChan := make(chan error, 1)
+	return &QueryResult{
+
+		RowChan:   &rowChan,
+		ErrorChan: &errChan,
+		ColTypes:  colTypes,
+		Duration:  make(chan time.Duration, 1),
+	}
 }
 
 type SyncQueryResult struct {
