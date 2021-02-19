@@ -131,7 +131,7 @@ func (pvc *PluginVersionChecker) getVersionCheckURL() url.URL {
 	var u url.URL
 	//https://hub-steampipe-io-git-development.turbot.vercel.app/api/plugin/version
 	u.Scheme = "https"
-	u.Host = "hub-steampipe-io-git-development.turbot.vercel.app"
+	u.Host = "hub.steampipe.io"
 	u.Path = "api/plugin/version"
 	return u
 }
