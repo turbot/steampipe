@@ -138,7 +138,7 @@ func displayTable(result *db.QueryResult) {
 	t := table.NewWriter()
 	t.SetOutputMirror(outbuf)
 	t.SetStyle(table.StyleDefault)
-	t.Style().Format.Header = text.FormatLower
+	t.Style().Format.Header = text.FormatDefault
 
 	colConfigs := []table.ColumnConfig{}
 	headers := table.Row{}
