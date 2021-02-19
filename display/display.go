@@ -42,10 +42,10 @@ func displayLine(result *db.QueryResult) {
 		}
 	}
 	itemIdx := 0
-	for item := range *result.RowChan {
 
-		recordAsString, _ := ColumnValuesAsString(item, result.ColTypes)
-
+	// define a function to display each row
+	rowFunc := func(row []interface{}, result *db.QueryResult) {
+		recordAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		requiredTerminalColumnsForValuesOfRecord := 0
 		for _, colValue := range recordAsString {
 			colRequired := getTerminalColumnsRequiredForString(colValue)
@@ -78,6 +78,13 @@ func displayLine(result *db.QueryResult) {
 			}
 		}
 		itemIdx++
+
+	}
+
+	// call this function for each row
+	if err := iterateResults(result, rowFunc); err != nil {
+		utils.ShowError(err)
+		return
 	}
 }
 
@@ -93,14 +100,23 @@ func getTerminalColumnsRequiredForString(str string) int {
 
 func displayJSON(result *db.QueryResult) {
 	var jsonOutput []map[string]interface{}
-	for item := range *result.RowChan {
+
+	// define function to add each row to the JSON output
+	rowFunc := func(row []interface{}, result *db.QueryResult) {
 		record := map[string]interface{}{}
 		for idx, colType := range result.ColTypes {
-			value, _ := ParseJSONOutputColumnValue(item[idx], colType)
+			value, _ := ParseJSONOutputColumnValue(row[idx], colType)
 			record[colType.Name()] = value
 		}
 		jsonOutput = append(jsonOutput, record)
 	}
+
+	// call this function for each row
+	if err := iterateResults(result, rowFunc); err != nil {
+		utils.ShowError(err)
+		return
+	}
+	// display the JSON
 	data, err := json.MarshalIndent(jsonOutput, "", " ")
 	if err != nil {
 		fmt.Print("Error displaying result as JSON", err)
@@ -113,17 +129,23 @@ func displayCSV(result *db.QueryResult) {
 	csvWriter := csv.NewWriter(os.Stdout)
 	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
 
-	// TODO handle errors
-
 	if cmdconfig.Viper().GetBool(constants.ArgHeader) {
 		_ = csvWriter.Write(ColumnNames(result.ColTypes))
 	}
 
 	// print the data as it comes
-	for row := range *result.RowChan {
+	// define function display each csv row
+	rowFunc := func(row []interface{}, result *db.QueryResult) {
 		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		_ = csvWriter.Write(rowAsString)
 	}
+
+	// call this function for each row
+	if err := iterateResults(result, rowFunc); err != nil {
+		utils.ShowError(err)
+		return
+	}
+
 	csvWriter.Flush()
 	if csvWriter.Error() != nil {
 		utils.ShowErrorWithMessage(csvWriter.Error(), "unable to print csv")
@@ -155,18 +177,20 @@ func displayTable(result *db.QueryResult) {
 	t.SetColumnConfigs(colConfigs)
 	t.AppendHeader(headers)
 
-	for {
-		row := <-(*result.RowChan)
-		if row == nil {
-			break
-		}
-		// TODO how to handle error
+	// define a function to execute for each row
+	rowFunc := func(row []interface{}, result *db.QueryResult) {
 		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		rowObj := table.Row{}
 		for _, col := range rowAsString {
 			rowObj = append(rowObj, col)
 		}
 		t.AppendRow(rowObj)
+	}
+
+	// iterate each row, adding each to the table
+	if err := iterateResults(result, rowFunc); err != nil {
+		utils.ShowError(err)
+		return
 	}
 
 	// write out the table to the buffer
@@ -179,4 +203,22 @@ func displayTable(result *db.QueryResult) {
 
 	// page out the table
 	ShowPaged(outbuf.String())
+}
+
+type displayResultsFunc func(row []interface{}, result *db.QueryResult)
+
+// call func displayResult for each row of results
+func iterateResults(result *db.QueryResult, displayResult displayResultsFunc) error {
+	for {
+		select {
+		case err := <-(*result.ErrorChan):
+			// if there is an error, stop iterating and return it
+			return err
+		case row := <-(*result.RowChan):
+			if row == nil {
+				return nil
+			}
+			displayResult(row, result)
+		}
+	}
 }

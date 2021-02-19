@@ -78,7 +78,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
 		display.ShowOutput(r)
-		//signal to the resultstreamer that we are done with this chunk of the stream
+		//signal to the resultStreamer that we are done with this chunk of the stream
 		resultsStreamer.Done()
 	}
 	logging.LogTime("execute end")

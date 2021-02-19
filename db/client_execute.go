@@ -64,9 +64,7 @@ func (c *Client) executeQuery(query string, showSpinner bool, countStream bool) 
 	}
 	cols, err := rows.Columns()
 
-	rowChan := make(chan []interface{})
-
-	result := newQueryResult(&rowChan, colTypes)
+	result := newQueryResult(colTypes)
 
 	rowCount := 0
 
@@ -74,9 +72,9 @@ func (c *Client) executeQuery(query string, showSpinner bool, countStream bool) 
 	go func() {
 		// defer this, so that these get cleaned up even if there is an unforeseen error
 		defer func() {
-			// close the channel
-			close(rowChan)
-			// close the rows object
+			// close the channels in the result object
+			result.Close()
+			// close the sql rows object
 			rows.Close()
 		}()
 
@@ -94,7 +92,7 @@ func (c *Client) executeQuery(query string, showSpinner bool, countStream bool) 
 				return
 			}
 			// populate row data - handle special case types
-			result := populateRow(columnValues, colTypes)
+			rowResult := populateRow(columnValues, colTypes)
 
 			if !countStream {
 				// stop the spinner if we don't want to show load count
@@ -102,7 +100,7 @@ func (c *Client) executeQuery(query string, showSpinner bool, countStream bool) 
 			}
 
 			// we have started populating results
-			rowChan <- result
+			result.StreamRow(rowResult)
 
 			// update the spinner message with the count of rows that have already been fetched
 			utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
@@ -114,6 +112,12 @@ func (c *Client) executeQuery(query string, showSpinner bool, countStream bool) 
 
 		// set the time that it took for this one to execute
 		result.Duration <- time.Since(start)
+
+		// now check for errors
+		rows.Close()
+		if err = rows.Err(); err != nil {
+			result.StreamError(err)
+		}
 	}()
 
 	return result, nil
