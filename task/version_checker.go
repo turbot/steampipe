@@ -22,7 +22,7 @@ const legacyDisableUpdatesCheckEnvVar = "SP_DISABLE_UPDATE_CHECK"
 const updatesCheckEnvVar = "STEAMPIPE_UPDATE_CHECK"
 
 // the current version of the Steampipe CLI application
-var currentVersion = version.Version
+var currentVersion = version.String()
 
 type versionCheckResponse struct {
 	NewVersion   string    `json:"latest_version,omitempty"` // `json:"current_version"`

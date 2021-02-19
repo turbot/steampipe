@@ -9,18 +9,18 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/containerd/containerd/version"
 	"github.com/hashicorp/go-cleanhttp"
+	"github.com/turbot/steampipe/version"
 )
 
 func ConstructUserAgent(installationID string) string {
-	return fmt.Sprintf("Turbot Steampipe/%s (+https://steampipe.io)", version.Version)
+	return fmt.Sprintf("Turbot Steampipe/%s (+https://steampipe.io)", version.String())
 }
 
 // BuildRequestPayload :: merges the provided payload with the standard payload that needs to be sent
 func BuildRequestPayload(signature string, payload map[string]interface{}) *bytes.Buffer {
 	requestPayload := map[string]interface{}{
-		"version":     version.Version,
+		"version":     version.String(),
 		"os_platform": runtime.GOOS,
 		"arch":        runtime.GOARCH,
 		"signature":   signature,
