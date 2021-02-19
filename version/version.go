@@ -39,10 +39,6 @@ func init() {
 	semVer = goVersion.Must(goVersion.NewVersion(versionString))
 }
 
-// header is the header name used to send the current steampipe version
-// in http requests.
-const header = "Steampipe-Version"
-
 // String returns the complete version string, including prerelease
 func String() string {
 	return semVer.String()
