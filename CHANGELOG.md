@@ -1,3 +1,10 @@
+## v0.2.1 [2021-02-20]
+_Bug fixes_
+* Ensure all hydrate errors are reported. ([#206](https://github.com/turbot/steampipe/issues/206))
+* Change plugin update URL to hub.steampipe.io. ([#201](https://github.com/turbot/steampipe/issues/201))
+* Steampipe version string should include 'prerelease' suffix if it is set. ([#200](https://github.com/turbot/steampipe/issues/200))
+* Column headers in table output should respect casing of the column name. ([#181](https://github.com/turbot/steampipe/issues/181))
+
 ## v0.2.0 [2021-02-18]
 _What's new?_
 * Add support for multiregion queries. ([#197](https://github.com/turbot/steampipe/issues/197))
