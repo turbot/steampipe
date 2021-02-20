@@ -216,6 +216,13 @@ func iterateResults(result *db.QueryResult, displayResult displayResultsFunc) er
 			return err
 		case row := <-(*result.RowChan):
 			if row == nil {
+				// this happens when ther result channel; is closed - check whether there is an error left in the error channel
+				select {
+				case err := <-(*result.ErrorChan):
+					// if there is an error, stop iterating and return it
+					return err
+				default:
+				}
 				return nil
 			}
 			displayResult(row, result)
