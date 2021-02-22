@@ -5,7 +5,9 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-version"
+	"github.com/turbot/go-kit/helpers"
 	sdkversion "github.com/turbot/steampipe-plugin-sdk/version"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -26,6 +28,9 @@ func ValidatePlugins(updates ConnectionMap, plugins []*ConnectionPlugin) ([]*Val
 	var validationFailures []*ValidationFailure
 	for _, p := range plugins {
 		if validationFailure := validateSdkVersion(p); validationFailure != nil {
+			// validation failed
+			validationFailures = append(validationFailures, validationFailure)
+		} else if validationFailure := validateConnectionName(p); validationFailure != nil {
 			// validation failed
 			validationFailures = append(validationFailures, validationFailure)
 		} else {
@@ -63,6 +68,17 @@ func BuildValidationWarningString(failures []*ValidationFailure) string {
 		failureCount,
 		utils.Pluralize("connection", failureCount))
 	return str
+}
+
+func validateConnectionName(p *ConnectionPlugin) *ValidationFailure {
+	if helpers.StringSliceContains(constants.ReservedConnectionNames, p.ConnectionName) {
+		return &ValidationFailure{
+			Plugin:         p.PluginName,
+			ConnectionName: p.ConnectionName,
+			Message:        fmt.Sprintf("Connection name cannot be one of %s", strings.Join(constants.ReservedConnectionNames, ",")),
+		}
+	}
+	return nil
 }
 
 func validateSdkVersion(p *ConnectionPlugin) *ValidationFailure {
