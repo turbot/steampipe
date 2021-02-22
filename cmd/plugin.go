@@ -358,7 +358,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-// start service if necessatry and refresh connections
+// start service if necessary and refresh connections
 func refreshConnections() error {
 	// todo move this into db package
 	db.EnsureDBInstalled()
