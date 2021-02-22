@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gertd/go-pluralize"
 	"github.com/turbot/steampipe/connection_config"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
@@ -27,10 +26,9 @@ func RefreshConnections(client *Client) error {
 	missingCount := len(updates.MissingPlugins)
 	if missingCount > 0 {
 		// if any plugins are missing, error for now but we could prompt for an install
-		p := pluralize.NewClient()
 		return fmt.Errorf("%d %s referenced in the connection config not installed: \n  %v",
 			missingCount,
-			p.Pluralize("plugin", missingCount, false),
+			utils.Pluralize("plugin", missingCount),
 			strings.Join(updates.MissingPlugins, "\n  "))
 	}
 
