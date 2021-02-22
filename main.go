@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -16,6 +17,10 @@ import (
 var Logger hclog.Logger
 
 func main() {
+
+	// make sure that we are not running as root
+	checkRoot()
+
 	/// setup logging
 	logging.LogTime("start")
 	createLogger()
@@ -47,4 +52,32 @@ func createLogger() {
 	log.SetOutput(Logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
 	log.SetPrefix("")
 	log.SetFlags(0)
+}
+
+func checkRoot() {
+	// return (os.Getuid() == 0)
+	if os.Geteuid() == 0 {
+		utils.ShowError(fmt.Errorf(`"root" execution of %s is not permitted. 
+%s must be started under an unprivileged user ID to prevent possible system security compromise`,
+			constants.Bold("steampipe"),
+			constants.Bold("steampipe"),
+		))
+
+		os.Exit(-1)
+	}
+
+	/*
+	 * Also make sure that real and effective uids are the same. Executing as
+	 * a setuid program from a root shell is a security hole, since on many
+	 * platforms a nefarious subroutine could setuid back to root if real uid
+	 * is root.  (Since nobody actually uses postgres as a setuid program,
+	 * trying to actively fix this situation seems more trouble than it's
+	 * worth; we'll just expend the effort to check for it.)
+	 */
+
+	if os.Geteuid() != os.Getuid() {
+		utils.ShowError(fmt.Errorf(`%s: real and effective user IDs must match`, constants.Bold("steampipe")))
+
+		os.Exit(-1)
+	}
 }
