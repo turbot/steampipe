@@ -206,7 +206,17 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	installSkipped := []string{}
 
 	if len(plugins) == 0 {
-		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to install. Refer to %s for available plugins", constants.Bold("https://hub.steampipe.io")))
+		utils.ShowError(fmt.Errorf(`you need to provide at least one plugin to install.
+
+# Install a single plugin
+steampipe plugin install <plugin>
+
+# Install multiple plugins
+steampipe plugin install <plugin 1> <plugin 2>
+
+Refer to %s for available plugins`,
+			constants.Bold("https://hub.steampipe.io"),
+		))
 		return
 	}
 
@@ -279,7 +289,18 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	plugins := append([]string{}, args...)
 
 	if len(plugins) == 0 && !cmdconfig.Viper().GetBool("all") {
-		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to update or to update all plugins, use %s", constants.Bold("steampipe plugin update --all")))
+		utils.ShowError(fmt.Errorf(`you need to provide at least one plugin to update or use the %s flag.
+
+# Update a single plugin
+steampipe plugin update <plugin>
+
+# Update multiple plugins
+steampipe plugin update <plugin 1> <plugin 2>
+
+# Update all plugins
+steampipe plugin update --all
+`,
+			constants.Bold("--all")))
 		return
 	}
 
