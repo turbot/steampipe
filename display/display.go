@@ -209,23 +209,15 @@ type displayResultsFunc func(row []interface{}, result *db.QueryResult)
 
 // call func displayResult for each row of results
 func iterateResults(result *db.QueryResult, displayResult displayResultsFunc) error {
-	for {
-		select {
-		case err := <-(*result.ErrorChan):
-			// if there is an error, stop iterating and return it
-			return err
-		case row := <-(*result.RowChan):
-			if row == nil {
-				// this happens when ther result channel; is closed - check whether there is an error left in the error channel
-				select {
-				case err := <-(*result.ErrorChan):
-					// if there is an error, stop iterating and return it
-					return err
-				default:
-				}
-				return nil
-			}
-			displayResult(row, result)
+	for row := range *result.RowChan {
+		if row == nil {
+			return nil
 		}
+		if row.Error != nil {
+			return row.Error
+		}
+		displayResult(row.Data, result)
 	}
+	// we will not get here
+	return nil
 }
