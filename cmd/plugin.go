@@ -245,18 +245,16 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	if len(installSkipped) > 0 {
 		fmt.Printf(
-			"Skipped the following %s, since %s %s already installed:\n",
+			"Skipped the following %s, since %s already installed:\n",
 			utils.Pluralize("plugin", len(installSkipped)),
-			utils.Pluralize("it", len(installSkipped)),
-			utils.Pluralize("is", len(installSkipped)),
+			utils.Pluralize("it is", len(installSkipped)),
 		)
 		for _, s := range installSkipped {
 			fmt.Printf("    > %s\n", constants.Bold(s))
 		}
 		fmt.Printf(
-			"\nTo update %s %s, please run: %s\n",
-			utils.Pluralize("this", len(installSkipped)),
-			utils.Pluralize("plugin", len(installSkipped)),
+			"\nTo update %s, please run: %s\n",
+			utils.Pluralize("this plugin", len(installSkipped)),
 			constants.Bold(fmt.Sprintf(
 				"steampipe plugin update %s",
 				strings.Join(installSkipped, " "),
@@ -353,18 +351,16 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 	if len(updateSkipped) > 0 {
 		fmt.Printf(
-			"\nSkipped the following %s, since %s %s not installed:\n",
+			"\nSkipped the following %s, since %s not installed:\n",
 			utils.Pluralize("plugin", len(updateSkipped)),
-			utils.Pluralize("it", len(updateSkipped)),
-			utils.Pluralize("is", len(updateSkipped)),
+			utils.Pluralize("it is", len(updateSkipped)),
 		)
 		for _, s := range updateSkipped {
 			fmt.Printf("    > %s\n", constants.Bold(s))
 		}
 		fmt.Printf(
-			"\nTo install %s %s, please run: %s\n",
-			utils.Pluralize("this", len(updateSkipped)),
-			utils.Pluralize("plugin", len(updateSkipped)),
+			"\nTo install %s, please run: %s\n",
+			utils.Pluralize("this plugin", len(updateSkipped)),
 			constants.Bold(fmt.Sprintf(
 				"steampipe plugin install %s",
 				strings.Join(updateSkipped, " "),
