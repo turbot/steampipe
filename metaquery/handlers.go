@@ -19,7 +19,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-var CommonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.CmdExit}
+var commonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.CmdExit}
 
 // HandlerInput :: input interface for the metaquery handler
 type HandlerInput struct {
@@ -92,10 +92,9 @@ func doExit(input *HandlerInput) error {
 
 // help
 func doHelp(input *HandlerInput) error {
-	commonCmdRows := getMetaQueryHelpRows(CommonCmds, false)
+	commonCmdRows := getMetaQueryHelpRows(commonCmds, false)
 	var advanceCmds []string
-	for cmd, _ := range metaQueryDefinitions {
-		if !helpers.StringSliceContains(CommonCmds, cmd) {
+		if !helpers.StringSliceContains(commonCmds, cmd) {
 			advanceCmds = append(advanceCmds, cmd)
 		}
 	}
