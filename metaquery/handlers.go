@@ -19,7 +19,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-var CommonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.CmdExit}
+var commonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.CmdExit}
 
 // HandlerInput :: input interface for the metaquery handler
 type HandlerInput struct {
@@ -92,10 +92,10 @@ func doExit(input *HandlerInput) error {
 
 // help
 func doHelp(input *HandlerInput) error {
-	commonCmdRows := getMetaQueryHelpRows(CommonCmds, false)
+	commonCmdRows := getMetaQueryHelpRows(commonCmds, false)
 	var advanceCmds []string
-	for cmd, _ := range metaQueryDefinitions {
-		if !helpers.StringSliceContains(CommonCmds, cmd) {
+	for cmd := range metaQueryDefinitions {
+		if !helpers.StringSliceContains(commonCmds, cmd) {
 			advanceCmds = append(advanceCmds, cmd)
 		}
 	}
@@ -357,15 +357,12 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 
 	// now that all columns are set to the widths that they need,
 	// set the last one to occupy as much as is available - no more - no less
-	sumOfRest := 0
-	for idx, c := range colConfigs {
-		if idx == len(colConfigs)-1 {
-			continue
-		}
-		sumOfRest += c.WidthMax
+	sumOfRest := sumOfAllCols - colConfigs[len(colConfigs)-1].WidthMax
+
+	if sumOfAllCols > maxCols {
+		colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
+		colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
 	}
-	colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
-	colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
 
 	return colConfigs, headerRow
 }
