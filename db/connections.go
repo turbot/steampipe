@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/connection_config"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
@@ -36,9 +37,17 @@ func RefreshConnections(client *Client) error {
 	var warningString string
 	numUpdates := len(updates.Update)
 	if numUpdates > 0 {
-		s := utils.ShowSpinner("Refreshing connections...")
+		// in query, this can only start when in interactive
+		if cmdconfig.Viper().GetBool("query-cmd") {
+			if cmdconfig.Viper().GetBool("interactive") {
+				spin := utils.ShowSpinner("Refreshing connections...")
+				defer utils.StopSpinner(spin)
+			}
+		} else {
+			spin := utils.ShowSpinner("Refreshing connections...")
+			defer utils.StopSpinner(spin)
+		}
 		defer func() {
-			utils.StopSpinner(s)
 			// if any warnings were returned, display them on stderr
 			if len(warningString) > 0 {
 				// println writes to stderr
