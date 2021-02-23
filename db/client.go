@@ -168,7 +168,12 @@ func (c *Client) setSearchPath() {
 		schemas = append(schemas, constants.FunctionSchema)
 
 		log.Println("[TRACE] setting search path to", schemas)
-		query := fmt.Sprintf("SET search_path TO %s;", strings.Join(schemas, ","))
+		query := fmt.Sprintf(
+			"alter user %s set search_path='%s'; SET search_path TO %s;",
+			constants.DatabaseUser,
+			strings.Join(schemas, ","),
+			strings.Join(schemas, ","),
+		)
 		c.ExecuteSync(query)
 	}
 }
