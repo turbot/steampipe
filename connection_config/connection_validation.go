@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gertd/go-pluralize"
 	"github.com/hashicorp/go-version"
 	sdkversion "github.com/turbot/steampipe-plugin-sdk/version"
+	"github.com/turbot/steampipe/utils"
 )
 
 type ValidationFailure struct {
@@ -52,7 +52,6 @@ func BuildValidationWarningString(failures []*ValidationFailure) string {
 		   connection: aws, plugin: hub.steampipe.io/plugins/turbot/aws@latest
 		Please update Steampipe in order to use these plugins
 	*/
-	p := pluralize.NewClient()
 	failureCount := len(failures)
 	str := fmt.Sprintf(`Validation Errors:
 
@@ -62,7 +61,7 @@ func BuildValidationWarningString(failures []*ValidationFailure) string {
 `,
 		strings.Join(warningsStrings, "\n\n"),
 		failureCount,
-		p.Pluralize("connection", failureCount, false))
+		utils.Pluralize("connection", failureCount))
 	return str
 }
 
