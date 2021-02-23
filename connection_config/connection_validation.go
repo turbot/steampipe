@@ -81,7 +81,7 @@ func validateSdkVersion(p *ConnectionPlugin) *ValidationFailure {
 		}
 	}
 	steampipeSdkVersion := sdkversion.SemVer
-	if pluginSdkVersion.GreaterThan(steampipeSdkVersion) {
+	if !validateIgnoringPrerelease(pluginSdkVersion, steampipeSdkVersion) {
 		return &ValidationFailure{
 			Plugin:         p.PluginName,
 			ConnectionName: p.ConnectionName,
@@ -89,4 +89,12 @@ func validateSdkVersion(p *ConnectionPlugin) *ValidationFailure {
 		}
 	}
 	return nil
+}
+
+// return false if pluginSdkVersion is > steampipeSdkVersion, ignoring prerelease
+func validateIgnoringPrerelease(pluginSdkVersion *version.Version, steampipeSdkVersion *version.Version) bool {
+	pluginSegments := pluginSdkVersion.Segments()
+	steampipeSegments := steampipeSdkVersion.Segments()
+	return pluginSegments[0] <= steampipeSegments[0] && pluginSegments[1] <= steampipeSegments[1]
+
 }
