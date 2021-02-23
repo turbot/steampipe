@@ -7,6 +7,7 @@ import (
 // Pluralize :: pluralizes a word (if applicable) based on provided count
 func Pluralize(base string, count int) string {
 	pluralizer := pluralize.NewClient()
-	pluralizer.AddIrregularRule("it", "they")
+	pluralizer.AddIrregularRule("it is", "they are")
+	pluralizer.AddIrregularRule("this plugin", "these plugins")
 	return pluralizer.Pluralize(base, count, false)
 }
