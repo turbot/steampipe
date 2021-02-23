@@ -57,6 +57,8 @@ Examples:
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runQueryCmd start")
+	defer logging.LogTime("execute end")
+
 	log.Println("[TRACE] runQueryCmd")
 	defer func() {
 		if r := recover(); r != nil {
@@ -71,6 +73,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	queryString := getQuery(cmd, args)
 
+	// set a global viper config key so that we know where we are at
+	cmdconfig.Viper().Set("query-cmd", true)
+	if queryString == "" {
+		cmdconfig.Viper().Set("interactive", true)
+	}
+
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.ExecuteQuery(queryString)
 	utils.FailOnError(err)
@@ -81,8 +89,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		//signal to the resultStreamer that we are done with this chunk of the stream
 		resultsStreamer.Done()
 	}
-	logging.LogTime("execute end")
-
 }
 
 // retrieve query from args or determine whether to run the interactive shell
