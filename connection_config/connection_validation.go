@@ -5,7 +5,9 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-version"
+	"github.com/turbot/go-kit/helpers"
 	sdkversion "github.com/turbot/steampipe-plugin-sdk/version"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -16,7 +18,12 @@ type ValidationFailure struct {
 }
 
 func (v ValidationFailure) String() string {
-	return fmt.Sprintf("connection: %s\nplugin:     %s\nerror:      %s", v.ConnectionName, v.Plugin, v.Message)
+	return fmt.Sprintf(
+		"connection: %s\nplugin:     %s\nerror:      %s",
+		v.ConnectionName,
+		v.Plugin,
+		v.Message,
+	)
 }
 
 func ValidatePlugins(updates ConnectionMap, plugins []*ConnectionPlugin) ([]*ValidationFailure, ConnectionMap, []*ConnectionPlugin) {
@@ -26,6 +33,9 @@ func ValidatePlugins(updates ConnectionMap, plugins []*ConnectionPlugin) ([]*Val
 	var validationFailures []*ValidationFailure
 	for _, p := range plugins {
 		if validationFailure := validateSdkVersion(p); validationFailure != nil {
+			// validation failed
+			validationFailures = append(validationFailures, validationFailure)
+		} else if validationFailure := validateConnectionName(p); validationFailure != nil {
 			// validation failed
 			validationFailures = append(validationFailures, validationFailure)
 		} else {
@@ -53,16 +63,28 @@ func BuildValidationWarningString(failures []*ValidationFailure) string {
 		Please update Steampipe in order to use these plugins
 	*/
 	failureCount := len(failures)
-	str := fmt.Sprintf(`Validation Errors:
+	str := fmt.Sprintf(`%s:
 
 %s
 
-%d %s will not be imported.
+%d %s was not imported.
 `,
+		constants.Red("Validation Errors"),
 		strings.Join(warningsStrings, "\n\n"),
 		failureCount,
 		utils.Pluralize("connection", failureCount))
 	return str
+}
+
+func validateConnectionName(p *ConnectionPlugin) *ValidationFailure {
+	if helpers.StringSliceContains(constants.ReservedConnectionNames, p.ConnectionName) {
+		return &ValidationFailure{
+			Plugin:         p.PluginName,
+			ConnectionName: p.ConnectionName,
+			Message:        fmt.Sprintf("Connection name cannot be one of %s", strings.Join(constants.ReservedConnectionNames, ",")),
+		}
+	}
+	return nil
 }
 
 func validateSdkVersion(p *ConnectionPlugin) *ValidationFailure {
