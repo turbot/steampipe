@@ -57,10 +57,8 @@ func createLogger() {
 // postgresql engine.
 func checkRoot() {
 	if os.Geteuid() == 0 {
-		utils.ShowError(fmt.Errorf(`%s cannot be run as the "root" user.
-To reduce security risk, use an unprivileged user account instead.`,
-			constants.Bold("Steampipe"),
-		))
+		utils.ShowError(fmt.Errorf(`Steampipe cannot be run as the "root" user.
+To reduce security risk, use an unprivileged user account instead.`))
 
 		os.Exit(-1)
 	}
@@ -75,7 +73,7 @@ To reduce security risk, use an unprivileged user account instead.`,
 	 */
 
 	if os.Geteuid() != os.Getuid() {
-		utils.ShowError(fmt.Errorf(`%s: real and effective user IDs must match`, constants.Bold("steampipe")))
+		utils.ShowError(fmt.Errorf("real and effective user IDs must match"))
 		os.Exit(-1)
 	}
 }
