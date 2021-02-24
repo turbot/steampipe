@@ -67,7 +67,7 @@ func BuildValidationWarningString(failures []*ValidationFailure) string {
 
 %s
 
-%d %s was not be imported.
+%d %s was not imported.
 `,
 		constants.Red("Validation Errors"),
 		strings.Join(warningsStrings, "\n\n"),
