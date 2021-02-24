@@ -1,3 +1,17 @@
+## v0.2.2 [2021-02-25]
+_What's new?_
+* Set Inspect column width to no larger than required to display data. ([#155](https://github.com/turbot/steampipe/issues/155))
+* Plugin SDK version check should ignore patch and prerelease version. ([#217](https://github.com/turbot/steampipe/issues/217))
+* Enforce reserved connection name ('public', 'internal'). ([#168](https://github.com/turbot/steampipe/issues/168))
+* Do not allow Steampipe to run from Root. ([#167](https://github.com/turbot/steampipe/issues/167))
+* `plugin update`, `plugin install` and `plugin uninstall` commands display error if no plugins specified in args. ([#199](https://github.com/turbot/steampipe/issues/199))
+* Remove global `--config` flag. ([#215](https://github.com/turbot/steampipe/issues/215))
+
+_Bug fixes_
+* Fix cache retrieving incorrect data for multi-connection queries.([#223](https://github.com/turbot/steampipe/issues/223))
+* Ensure search path is set for clients other than Steampipe. ([#218](https://github.com/turbot/steampipe/issues/218))
+* Spinner should not be displayed in non-interactive query mode. ([#227](https://github.com/turbot/steampipe/issues/227))
+
 ## v0.2.1 [2021-02-20]
 _Bug fixes_
 * Ensure all hydrate errors are reported. ([#206](https://github.com/turbot/steampipe/issues/206))
