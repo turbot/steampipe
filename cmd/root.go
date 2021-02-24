@@ -2,19 +2,12 @@ package cmd
 
 import (
 	"log"
-	"path/filepath"
 
-	"github.com/turbot/steampipe/cmdconfig"
-
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/version"
-
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/version"
 )
-
-var requiredColor = color.New(color.Bold).SprintfFunc()
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -55,14 +48,6 @@ func Execute() error {
 }
 
 func init() {
-	var cfgFile string
-
-	defaultCfgFile := filepath.Join(constants.ConfigDir(), constants.DefaultConfigFileName)
-
-	// TODO(nw) replace --config with --config-dir, it's a directory of settings files
-	rootCmd.PersistentFlags().StringVar(&cfgFile, constants.ArgConfig, defaultCfgFile, "Name of the config file")
-	viper.BindPFlag(constants.ArgConfig, rootCmd.PersistentFlags().Lookup(constants.ArgConfig))
-
 	// TODO(nw) - Add color bool flag, default true, description "Use colors in output", persistent through levels
 	cobra.OnInitialize(initGlobalConfig)
 }

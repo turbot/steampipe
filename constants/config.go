@@ -12,7 +12,6 @@ import (
 const (
 	SteampipeDirName         = ".steampipe"
 	PluginExtension          = ".plugin"
-	DefaultConfigFileName    = "config.yml"
 	ConfigExtension          = ".spc"
 	ConnectionsStateFileName = "connection.json"
 )
