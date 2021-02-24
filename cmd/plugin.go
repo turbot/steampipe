@@ -205,6 +205,14 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	plugins := append([]string{}, args...)
 	installSkipped := []string{}
 
+	if len(plugins) == 0 {
+		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to install"))
+		fmt.Println()
+		cmd.Help()
+		fmt.Println()
+		return
+	}
+
 	if len(plugins) > 1 {
 		fmt.Println()
 	}
@@ -262,7 +270,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		)
 	}
 
-	if len(args) > 1 {
+	if len(plugins) > 1 {
 		fmt.Println("")
 	}
 
@@ -283,6 +291,14 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	// These can be simple names ('aws') for "standard" plugins, or
 	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
+
+	if len(plugins) == 0 && !cmdconfig.Viper().GetBool("all") {
+		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all")))
+		fmt.Println()
+		cmd.Help()
+		fmt.Println()
+		return
+	}
 
 	// we can't allow update and install at the same time
 	if cmdconfig.Viper().GetBool("all") {
@@ -367,7 +383,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			)),
 		)
 	}
-	if len(args) > 1 {
+	if len(plugins) > 1 {
 		fmt.Println("")
 	}
 
