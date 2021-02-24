@@ -30,7 +30,7 @@ func InitViper(v *viper.Viper) {
 	}
 
 	// set defaults
-	v.Set("show-spinner", true)
+	v.Set(constants.ShowInteractiveOutputConfigKey, true)
 }
 
 // sets a global viper instance
