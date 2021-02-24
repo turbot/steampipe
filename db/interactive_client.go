@@ -24,6 +24,7 @@ type InteractiveClient struct {
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
 	interactiveQueryHistory *queryhistory.QueryHistory
+	exitOnNextCtrlC         bool
 }
 
 func newInteractiveClient(client *Client) (*InteractiveClient, error) {
@@ -123,7 +124,7 @@ func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *ResultStreamer
 		// Known Key Bindings
 		prompt.OptionAddKeyBind(prompt.KeyBind{
 			Key: prompt.ControlC,
-			Fn:  func(b *prompt.Buffer) { c.breakMultilinePrompt(b) },
+			Fn:  func(b *prompt.Buffer) { c.breakMultilinePromptOrExit(b) },
 		}),
 		prompt.OptionAddKeyBind(prompt.KeyBind{
 			Key: prompt.ShiftLeft,
@@ -167,11 +168,23 @@ func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *ResultStreamer
 	return
 }
 
-func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
-	c.interactiveBuffer = []string{}
+func (c *InteractiveClient) breakMultilinePromptOrExit(buffer *prompt.Buffer) {
+	if len(c.interactiveBuffer) > 0 {
+		c.interactiveBuffer = []string{}
+		return
+	}
+	if c.exitOnNextCtrlC {
+		// exit the prompt
+		panic(utils.InteractiveExitStatus{Restart: false})
+	}
+	c.exitOnNextCtrlC = true
+	fmt.Printf("To exit, press %s again or use %s\n", constants.Bold("Ctrl+C"), constants.Bold(".exit"))
 }
 
 func (c *InteractiveClient) executor(line string, resultsStreamer *ResultStreamer) {
+	// reset the exitOnCtrlC flag
+	c.exitOnNextCtrlC = false
+
 	line = strings.TrimSpace(line)
 
 	// if it's an empty line, then we don't need to do anything
