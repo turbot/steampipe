@@ -102,13 +102,7 @@ func StopDB(force bool) (StopStatus, error) {
 				break
 			}
 			if time.Since(signalSentAt) > constants.SpinnerShowTimeout && !spinnerShown {
-				if cmdconfig.Viper().GetBool("query-cmd") {
-					if cmdconfig.Viper().GetBool("interactive") {
-						s := utils.ShowSpinner("Shutting down...")
-						defer utils.StopSpinner(s)
-						spinnerShown = true
-					}
-				} else {
+				if cmdconfig.ShouldShowSpinner() {
 					s := utils.ShowSpinner("Shutting down...")
 					defer utils.StopSpinner(s)
 					spinnerShown = true

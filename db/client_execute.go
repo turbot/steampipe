@@ -41,7 +41,7 @@ func (c *Client) executeQuery(query string, countStream bool) (*QueryResult, err
 	// start spinner after a short delay
 	var spinner *spinner.Spinner
 
-	if cmdconfig.Viper().GetBool("interactive") {
+	if cmdconfig.ShouldShowSpinner() {
 		// if showspinner is false, the spinner gets created, but is never shown
 		// so the s.Active() will always come back false . . .
 		spinner = utils.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)

@@ -38,12 +38,7 @@ func RefreshConnections(client *Client) error {
 	numUpdates := len(updates.Update)
 	if numUpdates > 0 {
 		// in query, this can only start when in interactive
-		if cmdconfig.Viper().GetBool("query-cmd") {
-			if cmdconfig.Viper().GetBool("interactive") {
-				spin := utils.ShowSpinner("Refreshing connections...")
-				defer utils.StopSpinner(spin)
-			}
-		} else {
+		if cmdconfig.ShouldShowSpinner() {
 			spin := utils.ShowSpinner("Refreshing connections...")
 			defer utils.StopSpinner(spin)
 		}
