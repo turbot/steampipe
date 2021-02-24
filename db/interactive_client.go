@@ -182,6 +182,9 @@ func (c *InteractiveClient) breakMultilinePromptOrExit(buffer *prompt.Buffer) {
 }
 
 func (c *InteractiveClient) executor(line string, resultsStreamer *ResultStreamer) {
+	// reset the exitOnCtrlC flag
+	c.exitOnNextCtrlC = false
+
 	line = strings.TrimSpace(line)
 
 	// if it's an empty line, then we don't need to do anything
