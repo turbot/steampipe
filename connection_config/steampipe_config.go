@@ -1,5 +1,9 @@
 package connection_config
 
+import (
+	"github.com/spf13/viper"
+)
+
 // SteampipeConfig :: Connection map and Steampipe settings
 type SteampipeConfig struct {
 	// map of connection name to partially parsed connection config
@@ -11,6 +15,12 @@ type SteampipeConfig struct {
 func newSteampipeConfig() *SteampipeConfig {
 	return &SteampipeConfig{
 		Connections: make(map[string]*Connection),
+	}
+}
+
+func (c SteampipeConfig) PopulateViper(v *viper.Viper) {
+	if c.Settings != nil {
+		c.Settings.PopulateViper(v)
 	}
 }
 
