@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -16,6 +17,9 @@ import (
 var Logger hclog.Logger
 
 func main() {
+
+	checkRoot()
+
 	/// setup logging
 	logging.LogTime("start")
 	createLogger()
@@ -47,4 +51,29 @@ func createLogger() {
 	log.SetOutput(Logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
 	log.SetPrefix("")
 	log.SetFlags(0)
+}
+
+// this is to replicate the user security mechanism of out underlying
+// postgresql engine.
+func checkRoot() {
+	if os.Geteuid() == 0 {
+		utils.ShowError(fmt.Errorf(`Steampipe cannot be run as the "root" user.
+To reduce security risk, use an unprivileged user account instead.`))
+
+		os.Exit(-1)
+	}
+
+	/*
+	 * Also make sure that real and effective uids are the same. Executing as
+	 * a setuid program from a root shell is a security hole, since on many
+	 * platforms a nefarious subroutine could setuid back to root if real uid
+	 * is root.  (Since nobody actually uses postgres as a setuid program,
+	 * trying to actively fix this situation seems more trouble than it's
+	 * worth; we'll just expend the effort to check for it.)
+	 */
+
+	if os.Geteuid() != os.Getuid() {
+		utils.ShowError(fmt.Errorf("real and effective user IDs must match."))
+		os.Exit(-1)
+	}
 }
