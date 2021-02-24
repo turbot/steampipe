@@ -28,6 +28,9 @@ func InitViper(v *viper.Viper) {
 			utils.FailOnError(err)
 		}
 	}
+
+	// set defaults
+	v.Set("show-spinner", true)
 }
 
 // sets a global viper instance

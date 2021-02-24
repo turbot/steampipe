@@ -73,10 +73,11 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	queryString := getQuery(cmd, args)
 
-	// set a global viper config key so that we know where we are at
-	cmdconfig.Viper().Set("query-cmd", true)
+	// set the flag to not show spinner
+	cmdconfig.Viper().Set("show-spinner", false)
 	if queryString == "" {
-		cmdconfig.Viper().Set("interactive", true)
+		// except in interactive mode
+		cmdconfig.Viper().Set("show-spinner", true)
 	}
 
 	// the db executor sends result data over resultsStreamer

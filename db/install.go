@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/turbot/steampipe-plugin-sdk/logging"
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
@@ -256,9 +257,12 @@ func StartService(invoker Invoker) {
 				break
 			}
 			if time.Since(startedAt) > constants.SpinnerShowTimeout && !spinnerShown {
-				s := utils.ShowSpinner("Waiting for database to start...")
+				if cmdconfig.Viper().GetBool("show-spinner") {
+					s := utils.ShowSpinner("Waiting for database to start...")
+					defer utils.StopSpinner(s)
+				}
+				// set this anyway, so that next time it doesn't come in
 				spinnerShown = true
-				defer utils.StopSpinner(s)
 			}
 			time.Sleep(50 * time.Millisecond)
 		}
