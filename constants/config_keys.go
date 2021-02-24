@@ -2,5 +2,5 @@ package constants
 
 const (
 	// ShowInteractiveOutputConfigKey :: viper key
-	ShowInteractiveOutputConfigKey = "show-spinner"
+	ShowInteractiveOutputConfigKey = "show-interactive-output"
 )
