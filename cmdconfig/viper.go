@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/connection_config"
+	"github.com/turbot/steampipe/constants"
 )
 
 // InitViper :: initializes and configures an instance of viper
