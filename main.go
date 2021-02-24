@@ -73,7 +73,7 @@ To reduce security risk, use an unprivileged user account instead.`))
 	 */
 
 	if os.Geteuid() != os.Getuid() {
-		utils.ShowError(fmt.Errorf("real and effective user IDs must match"))
+		utils.ShowError(fmt.Errorf("real and effective user IDs must match."))
 		os.Exit(-1)
 	}
 }
