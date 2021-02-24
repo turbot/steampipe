@@ -28,6 +28,9 @@ func InitViper(v *viper.Viper) {
 			utils.FailOnError(err)
 		}
 	}
+
+	// set defaults
+	v.Set(constants.ShowInteractiveOutputConfigKey, true)
 }
 
 // sets a global viper instance
@@ -35,7 +38,7 @@ func setConfig(v *viper.Viper) {
 	globalViperInstance = v
 }
 
-// Get :: fetches the global viper instance
+// Viper :: fetches the global viper instance
 func Viper() *viper.Viper {
 	return globalViperInstance
 }
