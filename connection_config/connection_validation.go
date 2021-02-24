@@ -18,7 +18,12 @@ type ValidationFailure struct {
 }
 
 func (v ValidationFailure) String() string {
-	return fmt.Sprintf("connection: %s\nplugin:     %s\nerror:      %s", v.ConnectionName, v.Plugin, v.Message)
+	return fmt.Sprintf(
+		"connection: %s\nplugin:     %s\nerror:      %s",
+		constants.Bold(v.ConnectionName),
+		constants.Bold(v.Plugin),
+		constants.Bold(v.Message),
+	)
 }
 
 func ValidatePlugins(updates ConnectionMap, plugins []*ConnectionPlugin) ([]*ValidationFailure, ConnectionMap, []*ConnectionPlugin) {
@@ -58,12 +63,13 @@ func BuildValidationWarningString(failures []*ValidationFailure) string {
 		Please update Steampipe in order to use these plugins
 	*/
 	failureCount := len(failures)
-	str := fmt.Sprintf(`Validation Errors:
+	str := fmt.Sprintf(`%s:
 
 %s
 
-%d %s will not be imported.
+%d %s was not be imported.
 `,
+		constants.Red("Validation Errors"),
 		strings.Join(warningsStrings, "\n\n"),
 		failureCount,
 		utils.Pluralize("connection", failureCount))

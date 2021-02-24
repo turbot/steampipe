@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/turbot/steampipe/connection_config"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -42,7 +41,7 @@ func RefreshConnections(client *Client) error {
 			// if any warnings were returned, display them on stderr
 			if len(warningString) > 0 {
 				// println writes to stderr
-				println(constants.Bold(warningString))
+				println(warningString)
 			}
 		}()
 
