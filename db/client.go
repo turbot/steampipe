@@ -167,12 +167,20 @@ func (c *Client) setSearchPath() {
 		// add 'internal' schema as last schema in the search path
 		schemas = append(schemas, constants.FunctionSchema)
 
+		schemas = append(schemas, "select")
+
+		// escape the schema names
+		escapedSchemas := []string{}
+
+		for _, schema := range schemas {
+			escapedSchemas = append(escapedSchemas, PgEscapeName(schema))
+		}
+
 		log.Println("[TRACE] setting search path to", schemas)
 		query := fmt.Sprintf(
-			"alter user %s set search_path='%s'; SET search_path TO %s;",
+			"alter user %s set search_path to %s;",
 			constants.DatabaseUser,
-			strings.Join(schemas, ","),
-			strings.Join(schemas, ","),
+			strings.Join(escapedSchemas, ","),
 		)
 		c.ExecuteSync(query)
 	}
