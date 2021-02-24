@@ -167,8 +167,6 @@ func (c *Client) setSearchPath() {
 		// add 'internal' schema as last schema in the search path
 		schemas = append(schemas, constants.FunctionSchema)
 
-		schemas = append(schemas, "select")
-
 		// escape the schema names
 		escapedSchemas := []string{}
 
