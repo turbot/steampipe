@@ -15,10 +15,6 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func init() {
-	rootCmd.AddCommand(ServiceCmd())
-}
-
 // ServiceCmd :: Service management commands
 func ServiceCmd() *cobra.Command {
 	var cmd = &cobra.Command{

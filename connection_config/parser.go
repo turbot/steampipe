@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/schema"
@@ -21,22 +21,18 @@ import (
 
 const configExtension = ".spc"
 
-func Load() (*ConnectionConfigMap, error) {
+func Load() (*SteampipeConfig, error) {
 	return loadConfig(constants.ConfigDir())
 }
 
-func loadConfig(configFolder string) (result *ConnectionConfigMap, err error) {
+func loadConfig(configFolder string) (result *SteampipeConfig, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			if e, ok := r.(error); ok {
-				err = e
-			} else {
-				err = fmt.Errorf("%v", r)
-			}
+			err = helpers.ToError(r)
 		}
 	}()
 
-	result = newConfigMap()
+	result = newSteampipeConfig()
 
 	// get all the config files in the directory
 	configPaths, err := getConfigFilePaths(configFolder)
@@ -46,7 +42,7 @@ func loadConfig(configFolder string) (result *ConnectionConfigMap, err error) {
 	}
 	if len(configPaths) == 0 {
 		log.Println("[DEBUG] loadConfig: 0 config file paths returned")
-		return &ConnectionConfigMap{}, nil
+		return &SteampipeConfig{}, nil
 	}
 
 	fileData, diags := loadFileData(configPaths)
@@ -84,13 +80,30 @@ func loadConfig(configFolder string) (result *ConnectionConfigMap, err error) {
 				return nil, fmt.Errorf("invalid connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename)
 			}
 			result.Connections[connection.Name] = connection
+
+		case "settings":
+			// if we already found settings, fail
+			if result.Settings != nil {
+				return nil, fmt.Errorf("More than one 'settings' block  found in config")
+			}
+			settings, moreDiags := parseSettings(block)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+				continue
+			}
+			result.Settings = settings
 		}
 	}
 
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("failed to load config", diags)
-		return nil, fmt.Errorf(diags.Error())
 	}
+
+	// ensure there is a settings struct
+	if result.Settings == nil {
+		result.Settings = &Settings{}
+	}
+
 	return result, nil
 }
 
@@ -136,16 +149,26 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 	}
 
 	// get connection name
-	connectionName := block.Labels[0]
+	connection := &Connection{Name: block.Labels[0]}
 
-	var plugin string
-	diags = gohcl.DecodeExpression(connectionBlock.Attributes["plugin"].Expr, nil, &plugin)
+	var pluginName string
+	diags = gohcl.DecodeExpression(connectionBlock.Attributes["plugin"].Expr, nil, &pluginName)
 	if diags.HasErrors() {
 		return nil, diags
 	}
-	connectionPlugin := ociinstaller.NewSteampipeImageRef(plugin).DisplayImageRef()
+	connection.Plugin = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
 
-	// now build a string containing the hcl for all other conneciton config properties
+	// now evaluate other optional connection config properties
+	diags = decodeAttribute(connectionBlock, "cache", &connection.Cache)
+	if diags.HasErrors() {
+		return nil, diags
+	}
+	diags = decodeAttribute(connectionBlock, "cache_ttl", &connection.CacheTTL)
+	if diags.HasErrors() {
+		return nil, diags
+	}
+
+	// now build a string containing the hcl for all other connection config properties
 	restBody := rest.(*hclsyntax.Body)
 	var configProperties []string
 	for name, a := range restBody.Attributes {
@@ -154,15 +177,27 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 			configProperties = append(configProperties, string(a.SrcRange.SliceBytes(fileData[a.SrcRange.Filename])))
 		}
 	}
-	connectionConfig := strings.Join(configProperties, "\n")
-
-	connection := &Connection{
-		Name:   connectionName,
-		Plugin: connectionPlugin,
-		Config: connectionConfig,
-	}
+	connection.Config = strings.Join(configProperties, "\n")
 
 	return connection, nil
+}
+
+func decodeAttribute(connectionBlock *hcl.BodyContent, property string, dest interface{}) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	if attr := connectionBlock.Attributes[property]; attr != nil {
+		diags = gohcl.DecodeExpression(attr.Expr, nil, dest)
+	}
+	return diags
+}
+
+func parseSettings(block *hcl.Block) (*Settings, hcl.Diagnostics) {
+	var s Settings
+	diags := gohcl.DecodeBody(block.Body, nil, &s)
+	if diags.HasErrors() {
+		return nil, diags
+	}
+
+	return &s, nil
 }
 
 func getConfigFilePaths(configFolder string) ([]string, error) {

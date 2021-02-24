@@ -1,7 +1,6 @@
 package connection_config
 
 import (
-	"fmt"
 	"log"
 	"reflect"
 
@@ -26,34 +25,54 @@ func newConnectionUpdates() *ConnectionUpdates {
 	}
 }
 
-type connectionData struct {
+type ConnectionData struct {
 	// the fully qualified name of the plugin
 	Plugin string `yaml:"plugin"`
 	// the checksum of the plugin file
 	CheckSum string `yaml:"checkSum"`
 	// connection name
 	ConnectionName string
+	// cache config
+	Cache    *bool
+	CacheTTL *int
 	// connection data (unparsed)
 	ConnectionConfig string
 }
 
-func (p connectionData) equals(other *connectionData) bool {
+func (p ConnectionData) equals(other *ConnectionData) bool {
+
+	var cache, otherCache bool
+	var cacheTTL, otherCacheTTL int
+	if p.Cache != nil {
+		cache = *p.Cache
+	}
+	if other.Cache != nil {
+		otherCache = *other.Cache
+	}
+	if p.CacheTTL != nil {
+		cacheTTL = *p.CacheTTL
+	}
+	if other.CacheTTL != nil {
+		otherCacheTTL = *other.CacheTTL
+	}
 	return p.Plugin == other.Plugin &&
 		p.CheckSum == other.CheckSum &&
 		p.ConnectionName == other.ConnectionName &&
+		cache == otherCache &&
+		cacheTTL == otherCacheTTL &&
 		reflect.DeepEqual(p.ConnectionConfig, other.ConnectionConfig)
 }
 
-type ConnectionMap map[string]*connectionData
+type ConnectionMap map[string]*ConnectionData
 
 // GetConnectionsToUpdate :: returns updates to be made to the database to sync with connection config
-func GetConnectionsToUpdate(schemas []string) (*ConnectionUpdates, error) {
+func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*Connection) (*ConnectionUpdates, error) {
 	log.Println("[TRACE] GetConnectionsToUpdate")
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
 	connectionState, err := GetConnectionState(schemas)
 
-	requiredConnections, missingPlugins, err := getRequiredConnections()
+	requiredConnections, missingPlugins, err := getRequiredConnections(connectionConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -83,17 +102,13 @@ func GetConnectionsToUpdate(schemas []string) (*ConnectionUpdates, error) {
 }
 
 // load and parse the connection config
-func getRequiredConnections() (ConnectionMap, []string, error) {
-	steampipeConfig, err := Load()
-	if err != nil {
-		return nil, nil, fmt.Errorf("error loading config: %v\n", err)
-	}
+func getRequiredConnections(connectionConfig map[string]*Connection) (ConnectionMap, []string, error) {
 
 	requiredConnections := ConnectionMap{}
 	var missingPlugins []string
 
 	// populate checksum for each referenced plugin
-	for name, config := range steampipeConfig.Connections {
+	for name, config := range connectionConfig {
 		remoteSchema := config.Plugin
 		pluginPath, err := GetPluginPath(remoteSchema)
 		if err != nil {
@@ -112,11 +127,13 @@ func getRequiredConnections() (ConnectionMap, []string, error) {
 			return nil, nil, err
 		}
 
-		requiredConnections[name] = &connectionData{
+		requiredConnections[name] = &ConnectionData{
 			Plugin:           remoteSchema,
 			CheckSum:         checksum,
 			ConnectionConfig: config.Config,
 			ConnectionName:   config.Name,
+			Cache:            config.Cache,
+			CacheTTL:         config.CacheTTL,
 		}
 	}
 

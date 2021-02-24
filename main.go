@@ -9,6 +9,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmd"
+	"github.com/turbot/steampipe/connection_config"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/task"
 	"github.com/turbot/steampipe/utils"
@@ -25,6 +26,15 @@ func main() {
 	createLogger()
 	log.Println("[TRACE] tracing enabled")
 
+	// load config
+	config, err := connection_config.Load()
+	if err != nil {
+		utils.ShowError(err)
+		return
+	}
+	connection_config.Config = config
+
+	initCommands()
 	// run periodic tasks - update check and log clearing
 	task.NewRunner().Run()
 
@@ -37,6 +47,13 @@ func main() {
 
 	logging.LogTime("end")
 	utils.DisplayProfileData()
+}
+
+func initCommands() {
+	// explcitly initialise commands here rather than in init functions to allow us to handle errors from the config load
+	cmd.RootCmd.AddCommand(cmd.PluginCmd())
+	cmd.RootCmd.AddCommand(cmd.QueryCmd())
+	cmd.RootCmd.AddCommand(cmd.ServiceCmd())
 }
 
 // CreateLogger :: create a hclog logger with the level specified by the SP_LOG env var

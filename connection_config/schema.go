@@ -9,6 +9,9 @@ var configSchema = &hcl.BodySchema{
 			Type:       "connection",
 			LabelNames: []string{"name"},
 		},
+		{
+			Type: "settings",
+		},
 	},
 }
 
@@ -17,6 +20,14 @@ var connectionSchema = &hcl.BodySchema{
 		{
 			Name:     "plugin",
 			Required: true,
+		},
+		{
+			Name:     "cache",
+			Required: false,
+		},
+		{
+			Name:     "cache_ttl",
+			Required: false,
 		},
 	},
 }

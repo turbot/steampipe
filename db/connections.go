@@ -15,10 +15,11 @@ import (
 func RefreshConnections(client *Client) error {
 	// first get a list of all existing schemas
 	schemas := client.schemaMetadata.GetSchemas()
-
+	// retrieve the parsed connection config
+	requiredConnections := connection_config.Config.Connections
 	// refresh the connection state file - the removes any connections which do not exist in the list of current schema
 	log.Println("[TRACE] RefreshConnections")
-	updates, err := connection_config.GetConnectionsToUpdate(schemas)
+	updates, err := connection_config.GetConnectionsToUpdate(schemas, requiredConnections)
 	if err != nil {
 		return err
 	}
@@ -85,12 +86,10 @@ func getConnectionPlugins(updates connection_config.ConnectionMap) ([]*connectio
 	numUpdates := len(updates)
 	var pluginChan = make(chan *connection_config.ConnectionPlugin, numUpdates)
 	var errorChan = make(chan error, numUpdates)
-	for connectionName, plugin := range updates {
-		pluginFQN := plugin.Plugin
-		connectionConfig := plugin.ConnectionConfig
+	for connectionName, connectionData := range updates {
 
 		// instantiate the connection plugin, and retrieve schema
-		go getConnectionPluginsAsync(pluginFQN, connectionName, connectionConfig, pluginChan, errorChan)
+		go getConnectionPluginsAsync(connectionName, connectionData, pluginChan, errorChan)
 	}
 
 	for i := 0; i < numUpdates; i++ {
@@ -108,12 +107,13 @@ func getConnectionPlugins(updates connection_config.ConnectionMap) ([]*connectio
 	return connectionPlugins, nil
 }
 
-func getConnectionPluginsAsync(pluginFQN string, connectionName string, connectionConfig string, pluginChan chan *connection_config.ConnectionPlugin, errorChan chan error) {
+func getConnectionPluginsAsync(connectionName string, connectionData *connection_config.ConnectionData, pluginChan chan *connection_config.ConnectionPlugin, errorChan chan error) {
 	opts := &connection_config.ConnectionPluginOptions{
-		PluginFQN:        pluginFQN,
-		ConnectionName:   connectionName,
-		ConnectionConfig: connectionConfig,
-		DisableLogger:    true}
+		ConnectionName: connectionName,
+		PluginFQN:      connectionData.Plugin,
+		Cache:          connectionData.Cache,
+		CacheTTL:       connectionData.CacheTTL,
+		DisableLogger:  true}
 	p, err := connection_config.CreateConnectionPlugin(opts)
 	if err != nil {
 		errorChan <- err

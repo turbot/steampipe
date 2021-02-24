@@ -3,6 +3,11 @@ package cmd
 import (
 	"log"
 
+	"github.com/turbot/steampipe/cmdconfig"
+
+	"github.com/turbot/steampipe/version"
+
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/cmdconfig"
@@ -10,8 +15,8 @@ import (
 	"github.com/turbot/steampipe/version"
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
+// RootCmd represents the base command when called without any subcommands
+var RootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
 	Version: version.String(),
 	Short:   "Query cloud resources using SQL",
@@ -42,10 +47,10 @@ Getting started:
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// This is called by main.main(). It only needs to happen once to the RootCmd.
 func Execute() error {
-	log.Println("[TRACE] rootCmd Execute")
-	return rootCmd.Execute()
+	log.Println("[TRACE] RootCmd Execute")
+	return RootCmd.Execute()
 }
 
 func init() {

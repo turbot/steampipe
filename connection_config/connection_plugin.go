@@ -19,6 +19,8 @@ type ConnectionPlugin struct {
 	ConnectionName   string
 	ConnectionConfig string
 	PluginName       string
+	Cache            *bool
+	CacheTTL         *int
 	Plugin           *grpc.PluginClient
 	Schema           *proto.Schema
 }
@@ -26,10 +28,12 @@ type ConnectionPlugin struct {
 // ConnectionPluginOptions :: struct used as input to CreateConnectionPlugin
 // - it contains all details necessary to instantiate a ConnectionPlugin
 type ConnectionPluginOptions struct {
-	PluginFQN        string
 	ConnectionName   string
+	PluginFQN        string
 	ConnectionConfig string
 	DisableLogger    bool
+	Cache            *bool
+	CacheTTL         *int
 }
 
 // CreateConnectionPlugin :: instantiate a plugin for a connection, fetch schema and send connection config
@@ -104,7 +108,14 @@ func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin
 	schema := schemaResponse.Schema
 
 	// now create ConnectionPlugin object and add to map
-	c := &ConnectionPlugin{ConnectionName: connectionName, ConnectionConfig: connectionConfig, PluginName: remoteSchema, Plugin: pluginClient, Schema: schema}
+	c := &ConnectionPlugin{
+		ConnectionName:   connectionName,
+		Cache:            options.Cache,
+		CacheTTL:         options.CacheTTL,
+		ConnectionConfig: connectionConfig,
+		PluginName:       remoteSchema,
+		Plugin:           pluginClient,
+		Schema:           schema}
 	return c, nil
 }
 

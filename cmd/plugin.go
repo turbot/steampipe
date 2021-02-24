@@ -20,10 +20,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 )
 
-func init() {
-	rootCmd.AddCommand(PluginCmd())
-}
-
 // PluginCmd :: Plugin management commands
 func PluginCmd() *cobra.Command {
 

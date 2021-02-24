@@ -16,10 +16,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	rootCmd.AddCommand(QueryCmd())
-}
-
 // QueryCmd :: represents the query command
 func QueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
