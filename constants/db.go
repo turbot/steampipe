@@ -51,3 +51,8 @@ end;
 `,
 	},
 }
+
+var ReservedConnectionNames = []string{
+	"public",
+	FunctionSchema,
+}
