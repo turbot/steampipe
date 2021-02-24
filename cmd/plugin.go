@@ -209,6 +209,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to install"))
 		fmt.Println()
 		cmd.Help()
+		fmt.Println()
 		return
 	}
 
@@ -284,6 +285,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all")))
 		fmt.Println()
 		cmd.Help()
+		fmt.Println()
 		return
 	}
 
