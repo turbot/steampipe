@@ -46,13 +46,6 @@ Getting started:
  `,
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the RootCmd.
-func Execute() error {
-	log.Println("[TRACE] RootCmd Execute")
-	return RootCmd.Execute()
-}
-
 func init() {
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))

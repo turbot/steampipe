@@ -39,7 +39,7 @@ func main() {
 	task.NewRunner().Run()
 
 	// execute the command
-	cmd.Execute()
+	cmd.RootCmd.Execute()
 
 	// remove the temp directory
 	// don't care if it could not be removed
