@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 
 	"github.com/turbot/steampipe/utils"
@@ -101,9 +102,11 @@ func StopDB(force bool) (StopStatus, error) {
 				break
 			}
 			if time.Since(signalSentAt) > constants.SpinnerShowTimeout && !spinnerShown {
-				s := utils.ShowSpinner("Shutting down...")
-				defer utils.StopSpinner(s)
-				spinnerShown = true
+				if cmdconfig.Viper().GetBool(constants.ShowInteractiveOutputConfigKey) {
+					s := utils.ShowSpinner("Shutting down...")
+					defer utils.StopSpinner(s)
+					spinnerShown = true
+				}
 			}
 			time.Sleep(50 * time.Millisecond)
 		}
