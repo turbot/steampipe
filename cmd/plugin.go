@@ -59,14 +59,14 @@ Examples:
 func PluginInstallCmd() *cobra.Command {
 
 	var cmd = &cobra.Command{
-		Use:   "install [flags] [registry/[org/]]name[:version]",
+		Use:   "install [flags] [registry/org/]name[@version]",
 		Args:  cobra.ArbitraryArgs,
 		Run:   runPluginInstallCmd,
 		Short: "Install one or more plugins",
 		Long: `Install one or more plugins.
 
 Install a Steampipe plugin, making it available for queries and configuration.
-The plugin name format is [registry/[org/]]name[:version]. The default
+The plugin name format is [registry/org/]name[@version]. The default
 registry is hub.steampipe.io, default org is turbot and default version
 is latest. The name is a required argument.
 
@@ -75,17 +75,8 @@ Examples:
   # Install a common plugin (turbot/aws)
   steampipe plugin install aws
 
-  # Install a plugin published by DMI to the public registry
-  steampipe plugin install dmi/paper
-
-  # Install a plugin from a private registry
-  steampipe plugin install my-registry.dmi.com/dmi/internal
-
   # Install a specific plugin version
-  steampipe plugin install turbot/azure:0.1.0
-
-  # Install multiple plugins at once
-  steampipe plugin install aws dmi/paper`,
+  steampipe plugin install turbot/azure@0.1.0`,
 	}
 
 	cmdconfig.
@@ -98,36 +89,24 @@ Examples:
 func PluginUpdateCmd() *cobra.Command {
 
 	var cmd = &cobra.Command{
-		Use:   "update [flags] [registry/[org/]]name[:version]",
+		Use:   "update [flags] [registry/org/]name[@version]",
 		Args:  cobra.ArbitraryArgs,
 		Run:   runPluginUpdateCmd,
 		Short: "Update one or more plugins",
 		Long: `Update plugins.
 
 Update one or more Steampipe plugins, making it available for queries and configuration.
-The plugin name format is [registry/[org/]]name[:version]. The default
+The plugin name format is [registry/org/]name[@version]. The default
 registry is hub.steampipe.io, default org is turbot and default version
 is latest. The name is a required argument.
 
 Examples:
 
-  # Update a common plugin (turbot/aws)
-  steampipe plugin update aws
-
-  # Update a plugin published by DMI to the public registry
-  steampipe plugin update dmi/paper
-
-  # Update a plugin from a private registry
-  steampipe plugin update my-registry.dmi.com/dmi/internal
-
-  # Update a specific plugin version
-  steampipe plugin update turbot/azure:0.1.0
-
-  # Update all plugins to their latest available version (only works for plugins installed from hub.steampipe.io)
+  # Update all plugins to their latest available version 
   steampipe plugin update --all
 
-  # Update multiple plugins at once
-  steampipe plugin update aws dmi/paper`,
+  # Update a common plugin (turbot/aws)
+  steampipe plugin update aws`,
 	}
 
 	cmdconfig.
@@ -168,26 +147,22 @@ Examples:
 // PluginUninstallCmd :: Uninstall a plugin
 func PluginUninstallCmd() *cobra.Command {
 	var cmd = &cobra.Command{
-		Use:   "uninstall [flags] [registry/[org/]]name",
+		Use:   "uninstall [flags] [registry/org/]name",
 		Args:  cobra.ArbitraryArgs,
 		Run:   runPluginUninstallCmd,
 		Short: "Uninstall a plugin",
 		Long: `Uninstall a plugin.
 
 Uninstall a Steampipe plugin, removing it from use. The plugin name format is
-[registry/[org/]]name. (Version is not relevant in uninstall, since only one
+[registry/org/]name. (Version is not relevant in uninstall, since only one
 version of a plugin can be installed at a time.)
 
-Examples:
+Example:
 
   # Uninstall a common plugin (turbot/aws)
   steampipe plugin uninstall aws
 
-  # Uninstall a plugin published by DMI to the public registry
-  steampipe plugin uninstall dmi/paper
-
-  # Uninstall a plugin from a private registry
-  steampipe plugin uninstall my-registry.dmi.com/dmi/internal`,
+`,
 	}
 
 	cmdconfig.OnCmd(cmd)
@@ -206,6 +181,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	installSkipped := []string{}
 
 	if len(plugins) == 0 {
+		fmt.Println()
 		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to install"))
 		fmt.Println()
 		cmd.Help()
@@ -293,6 +269,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	plugins := append([]string{}, args...)
 
 	if len(plugins) == 0 && !cmdconfig.Viper().GetBool("all") {
+		fmt.Println()
 		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all")))
 		fmt.Println()
 		cmd.Help()
@@ -454,6 +431,15 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runPluginUninstallCmd uninstall")
 	defer logging.LogTime("runPluginUninstallCmd end")
+
+	if len(args) == 0 {
+		fmt.Println()
+		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to uninstall"))
+		fmt.Println()
+		cmd.Help()
+		fmt.Println()
+		return
+	}
 
 	connectionMap, err := getPluginConnectionMap()
 	if err != nil {
