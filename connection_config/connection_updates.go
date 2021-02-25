@@ -32,34 +32,17 @@ type ConnectionData struct {
 	CheckSum string `yaml:"checkSum"`
 	// connection name
 	ConnectionName string
-	// cache config
-	Cache    *bool
-	CacheTTL *int
+	FdwOptions     *FdwOptions
+	PluginOptions  *PluginOptions
 	// connection data (unparsed)
 	ConnectionConfig string
 }
 
 func (p ConnectionData) equals(other *ConnectionData) bool {
-
-	var cache, otherCache bool
-	var cacheTTL, otherCacheTTL int
-	if p.Cache != nil {
-		cache = *p.Cache
-	}
-	if other.Cache != nil {
-		otherCache = *other.Cache
-	}
-	if p.CacheTTL != nil {
-		cacheTTL = *p.CacheTTL
-	}
-	if other.CacheTTL != nil {
-		otherCacheTTL = *other.CacheTTL
-	}
 	return p.Plugin == other.Plugin &&
 		p.CheckSum == other.CheckSum &&
 		p.ConnectionName == other.ConnectionName &&
-		cache == otherCache &&
-		cacheTTL == otherCacheTTL &&
+		p.FdwOptions.equals(other.FdwOptions) &&
 		reflect.DeepEqual(p.ConnectionConfig, other.ConnectionConfig)
 }
 
@@ -132,8 +115,8 @@ func getRequiredConnections(connectionConfig map[string]*Connection) (Connection
 			CheckSum:         checksum,
 			ConnectionConfig: config.Config,
 			ConnectionName:   config.Name,
-			Cache:            config.Cache,
-			CacheTTL:         config.CacheTTL,
+			FdwOptions:       config.FdwOptions,
+			PluginOptions:    config.PluginOptions,
 		}
 	}
 

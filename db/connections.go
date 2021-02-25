@@ -108,9 +108,9 @@ func getConnectionPlugins(updates connection_config.ConnectionMap) ([]*connectio
 }
 
 func getConnectionPluginsAsync(connectionName string, connectionData *connection_config.ConnectionData, pluginChan chan *connection_config.ConnectionPlugin, errorChan chan error) {
-	opts := &connection_config.ConnectionPluginOptions{
+	opts := &connection_config.ConnectionPluginInput{
 		ConnectionName: connectionName,
-		PluginFQN:      connectionData.Plugin,
+		PluginName:     connectionData.Plugin,
 		Cache:          connectionData.Cache,
 		CacheTTL:       connectionData.CacheTTL,
 		DisableLogger:  true}
