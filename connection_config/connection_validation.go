@@ -64,7 +64,8 @@ func BuildValidationWarningString(failures []*ValidationFailure) string {
 		Please update Steampipe in order to use these plugins
 	*/
 	failureCount := len(failures)
-	str := fmt.Sprintf(`%s:
+	str := fmt.Sprintf(`
+%s:
 
 %s
 
