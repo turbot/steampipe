@@ -111,8 +111,8 @@ func getConnectionPluginsAsync(connectionName string, connectionData *connection
 	opts := &connection_config.ConnectionPluginInput{
 		ConnectionName: connectionName,
 		PluginName:     connectionData.Plugin,
-		Cache:          connectionData.Cache,
-		CacheTTL:       connectionData.CacheTTL,
+		FdwOptions:     connectionData.FdwOptions,
+		PluginOptions:  connectionData.PluginOptions,
 		DisableLogger:  true}
 	p, err := connection_config.CreateConnectionPlugin(opts)
 	if err != nil {

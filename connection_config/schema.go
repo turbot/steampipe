@@ -10,12 +10,28 @@ var configSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
-			Type: "settings",
+			Type:       "options",
+			LabelNames: []string{"type"},
 		},
 	},
 }
 
 var connectionSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name:     "plugin",
+			Required: true,
+		},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "options",
+			LabelNames: []string{"type"},
+		},
+	},
+}
+
+var fdwOptionsSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name:     "plugin",
@@ -27,6 +43,15 @@ var connectionSchema = &hcl.BodySchema{
 		},
 		{
 			Name:     "cache_ttl",
+			Required: false,
+		},
+	},
+}
+
+var pluginOptionsSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name:     "ulimif_files",
 			Required: false,
 		},
 	},

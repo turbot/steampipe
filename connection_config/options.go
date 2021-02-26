@@ -1,11 +1,32 @@
 package connection_config
 
-type FdwOptions struct {
-	Cache    *bool
-	CacheTTL *int
+import (
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
+)
+
+// hcl options types
+const (
+	HclOptionsFdw     = "fdw"
+	HclOptionsPlugin  = "plugin"
+	HclOptionsConsole = "console"
+)
+
+type Options interface {
+	PopulateViper(v *viper.Viper)
 }
 
-func (p FdwOptions) equals(other *FdwOptions) bool {
+type FdwOptions struct {
+	Cache    *bool `hcl:"cache"`
+	CacheTTL *int  `hcl:"cache_ttl"`
+}
+
+func (f FdwOptions) PopulateViper(v *viper.Viper) {
+	v.Set(constants.OptionCache, f.Cache)
+	v.Set(constants.OptionCacheTTL, f.CacheTTL)
+
+}
+func (f FdwOptions) equals(other *FdwOptions) bool {
 	//todo
 	return false
 }
@@ -14,6 +35,16 @@ type PluginOptions struct {
 	RLimitFiles int
 }
 
+func (f PluginOptions) PopulateViper(v *viper.Viper) {
+	v.Set(constants.RLimitFiles, f.RLimitFiles)
+
+}
+
 type ConsoleOptions struct {
 	MultiLine bool
+}
+
+func (f ConsoleOptions) PopulateViper(v *viper.Viper) {
+	v.Set(constants.MultiLine, f.MultiLine)
+
 }

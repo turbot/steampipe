@@ -8,8 +8,10 @@ import (
 type SteampipeConfig struct {
 	// map of connection name to partially parsed connection config
 	Connections map[string]*Connection
-	// Steampipe settings
-	Settings *Settings
+	// Steampipe options
+	FdwOptions     *FdwOptions
+	PluginOptions  *PluginOptions
+	ConsoleOptions *ConsoleOptions
 }
 
 func newSteampipeConfig() *SteampipeConfig {
@@ -19,8 +21,25 @@ func newSteampipeConfig() *SteampipeConfig {
 }
 
 func (c SteampipeConfig) PopulateViper(v *viper.Viper) {
-	if c.Settings != nil {
-		c.Settings.PopulateViper(v)
+	if c.FdwOptions != nil {
+		c.FdwOptions.PopulateViper(v)
+	}
+	if c.PluginOptions != nil {
+		c.PluginOptions.PopulateViper(v)
+	}
+	if c.ConsoleOptions != nil {
+		c.ConsoleOptions.PopulateViper(v)
+	}
+}
+
+func (c SteampipeConfig) SetOptions(options Options) {
+	switch o := options.(type) {
+	case *FdwOptions:
+		c.FdwOptions = o
+	case *PluginOptions:
+		c.PluginOptions = o
+	case *ConsoleOptions:
+		c.ConsoleOptions = o
 	}
 }
 

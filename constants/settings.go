@@ -2,6 +2,9 @@ package constants
 
 // Setting name constants
 const (
-	SettingCache    = "cache"
-	SettingCacheTTL = "cache_ttl"
+	OptionCache    = "cache"
+	OptionCacheTTL = "cache_ttl"
+	RLimitFiles    = "rlimit_files"
+	// TODO harmonise with metacommand
+	MultiLine = "multi"
 )

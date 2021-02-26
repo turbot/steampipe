@@ -81,27 +81,19 @@ func loadConfig(configFolder string) (result *SteampipeConfig, err error) {
 			}
 			result.Connections[connection.Name] = connection
 
-		case "settings":
+		case "options":
 			// if we already found settings, fail
-			if result.Settings != nil {
-				return nil, fmt.Errorf("More than one 'settings' block  found in config")
-			}
-			settings, moreDiags := parseSettings(block)
+			options, moreDiags := parseOptions(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				continue
 			}
-			result.Settings = settings
+			result.SetOptions(options)
 		}
 	}
 
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("failed to load config", diags)
-	}
-
-	// ensure there is a settings struct
-	if result.Settings == nil {
-		result.Settings = &Settings{}
 	}
 
 	return result, nil
@@ -158,15 +150,15 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 	}
 	connection.Plugin = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
 
-	// now evaluate other optional connection config properties
-	diags = decodeAttribute(connectionBlock, "cache", &connection.Cache)
-	if diags.HasErrors() {
-		return nil, diags
-	}
-	diags = decodeAttribute(connectionBlock, "cache_ttl", &connection.CacheTTL)
-	if diags.HasErrors() {
-		return nil, diags
-	}
+	//// now evaluate other optional connection config properties
+	//diags = decodeAttribute(connectionBlock, "cache", &connection.Cache)
+	//if diags.HasErrors() {
+	//	return nil, diags
+	//}
+	//diags = decodeAttribute(connectionBlock, "cache_ttl", &connection.CacheTTL)
+	//if diags.HasErrors() {
+	//	return nil, diags
+	//}
 
 	// now build a string containing the hcl for all other connection config properties
 	restBody := rest.(*hclsyntax.Body)
@@ -190,14 +182,23 @@ func decodeAttribute(connectionBlock *hcl.BodyContent, property string, dest int
 	return diags
 }
 
-func parseSettings(block *hcl.Block) (*Settings, hcl.Diagnostics) {
-	var s Settings
-	diags := gohcl.DecodeBody(block.Body, nil, &s)
+func parseOptions(block *hcl.Block) (Options, hcl.Diagnostics) {
+	var dest Options
+	switch block.Labels[0] {
+	case HclOptionsFdw:
+		dest = &FdwOptions{}
+	case HclOptionsPlugin:
+		dest = &PluginOptions{}
+	case HclOptionsConsole:
+		dest = &ConsoleOptions{}
+	}
+
+	diags := gohcl.DecodeBody(block.Body, nil, dest)
 	if diags.HasErrors() {
 		return nil, diags
 	}
 
-	return &s, nil
+	return dest, nil
 }
 
 func getConfigFilePaths(configFolder string) ([]string, error) {
