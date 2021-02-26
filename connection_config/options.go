@@ -31,8 +31,14 @@ func (f FdwOptions) equals(other *FdwOptions) bool {
 	return false
 }
 
+// NOTE: this must be consistent with the protobuf PluginOptions type defined in the sdk
 type PluginOptions struct {
-	RLimitFiles int
+	RLimitFiles int `hcl:"rlimit_files"`
+}
+
+func (f PluginOptions) equals(other *PluginOptions) bool {
+	//todo
+	return false
 }
 
 func (f PluginOptions) PopulateViper(v *viper.Viper) {
@@ -41,7 +47,7 @@ func (f PluginOptions) PopulateViper(v *viper.Viper) {
 }
 
 type ConsoleOptions struct {
-	MultiLine bool
+	MultiLine bool `hcl:"multi"`
 }
 
 func (f ConsoleOptions) PopulateViper(v *viper.Viper) {

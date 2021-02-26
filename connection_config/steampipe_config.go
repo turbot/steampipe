@@ -32,7 +32,7 @@ func (c SteampipeConfig) PopulateViper(v *viper.Viper) {
 	}
 }
 
-func (c SteampipeConfig) SetOptions(options Options) {
+func (c *SteampipeConfig) SetOptions(options Options) {
 	switch o := options.(type) {
 	case *FdwOptions:
 		c.FdwOptions = o

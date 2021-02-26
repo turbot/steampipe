@@ -42,7 +42,8 @@ func (p ConnectionData) equals(other *ConnectionData) bool {
 	return p.Plugin == other.Plugin &&
 		p.CheckSum == other.CheckSum &&
 		p.ConnectionName == other.ConnectionName &&
-		p.FdwOptions.equals(other.FdwOptions) &&
+		(p.FdwOptions == nil && other.FdwOptions == nil) || p.FdwOptions.equals(other.FdwOptions) &&
+		(p.PluginOptions == nil && other.PluginOptions == nil) || p.PluginOptions.equals(other.PluginOptions) &&
 		reflect.DeepEqual(p.ConnectionConfig, other.ConnectionConfig)
 }
 
