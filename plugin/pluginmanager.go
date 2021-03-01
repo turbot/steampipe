@@ -1,4 +1,4 @@
-package pluginmanager
+package plugin
 
 import (
 	"fmt"
@@ -55,8 +55,8 @@ func Remove(image string, pluginConnections map[string][]string) error {
 	return v.Save()
 }
 
-// IsPluginExists :: looks up the version file and reports whether a plugin is already installed
-func IsPluginExists(plugin string) (bool, error) {
+// Exists :: looks up the version file and reports whether a plugin is already installed
+func Exists(plugin string) (bool, error) {
 	versionData, err := versionfile.Load()
 	if err != nil {
 		return false, err
@@ -78,17 +78,17 @@ func Install(plugin string) (*ociinstaller.SteampipeImage, error) {
 	return image, err
 }
 
-// PluginListItem :: an item in the list of plugins
-type PluginListItem struct {
+// ListItem :: an item in the list of plugins
+type ListItem struct {
 	Name        string
 	Version     string
 	Connections []string
 }
 
 // List :: lists all installed plugins
-func List(reverseConnectionMap map[string][]string) ([]PluginListItem, error) {
+func List(reverseConnectionMap map[string][]string) ([]ListItem, error) {
 
-	items := []PluginListItem{}
+	items := []ListItem{}
 
 	installedPlugins := []string{}
 
@@ -120,7 +120,7 @@ func List(reverseConnectionMap map[string][]string) ([]PluginListItem, error) {
 		if found {
 			version = pluginDetails.Version
 		}
-		items = append(items, PluginListItem{
+		items = append(items, ListItem{
 			Name:        plugin,
 			Version:     version,
 			Connections: reverseConnectionMap[plugin],
