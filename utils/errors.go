@@ -31,26 +31,23 @@ func FailOnErrorWithMessage(err error, message string) {
 }
 
 func ShowError(err error) {
-	errString := strings.TrimSpace(err.Error())
-	if strings.HasPrefix(errString, "pq:") {
-		errString = strings.TrimSpace(strings.TrimPrefix(errString, "pq:"))
-		// FDW RPC error will always be a subset of pq error
-		if strings.HasPrefix(errString, "rpc error") {
-			errString = errString[33:]
-		}
-	}
-	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, errString)
+	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, trimDriversFromErrMsg(err.Error()))
 }
 
 func ShowErrorWithMessage(err error, message string) {
-	errString := strings.TrimSpace(err.Error())
+	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, trimDriversFromErrMsg(err.Error()))
+}
+
+func trimDriversFromErrMsg(msg string) string {
+	errString := strings.TrimSpace(msg)
 	if strings.HasPrefix(errString, "pq:") {
 		errString = strings.TrimSpace(strings.TrimPrefix(errString, "pq:"))
 		if strings.HasPrefix(errString, "rpc error") {
-			errString = errString[33:]
+			// trim out "rpc error: code = Unknown desc ="
+			errString = strings.TrimSpace(errString[33:])
 		}
 	}
-	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, errString)
+	return errString
 }
 
 func ShowWarning(warning string) {
