@@ -30,11 +30,25 @@ func FailOnErrorWithMessage(err error, message string) {
 }
 
 func ShowError(err error) {
-	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, err)
+        errString := strings.TrimSpace(err.Error())
+	if strings.HasPrefix(errString, "pq:") {
+		errString = strings.TrimSpace(strings.TrimPrefix(errString, "pq:"))
+		if strings.HasPrefix(errString, "rpc error") {
+			errString = errString[33:]
+		}
+	}
+	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, errString)
 }
 
 func ShowErrorWithMessage(err error, message string) {
-	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, err)
+	errString := strings.TrimSpace(err.Error())
+	if strings.HasPrefix(errString, "pq:") {
+		errString = strings.TrimSpace(strings.TrimPrefix(errString, "pq:"))
+		if strings.HasPrefix(errString, "rpc error") {
+			errString = errString[33:]
+		}
+	}
+        fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, errString)
 }
 
 func ShowWarning(warning string) {
