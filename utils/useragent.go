@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
-	"time"
 
 	"github.com/hashicorp/go-cleanhttp"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/version"
 )
 
@@ -50,7 +50,6 @@ func BuildRequestPayload(signature string, payload map[string]interface{}) *byte
 // SendRequest ::
 func SendRequest(signature string, method string, sendRequestTo url.URL, payload *bytes.Buffer) (*http.Response, error) {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
-	timeout := 5 * time.Second
 	req, err := http.NewRequest(method, sendRequestTo.String(), payload)
 	if err != nil {
 		return nil, err
@@ -62,7 +61,7 @@ func SendRequest(signature string, method string, sendRequestTo url.URL, payload
 
 	// Use a short timeout since checking for new versions is not critical
 	// enough to block on if the update server is broken/slow.
-	client.Timeout = timeout
+	client.Timeout = constants.HTTPTimeout
 
 	return client.Do(req)
 }
