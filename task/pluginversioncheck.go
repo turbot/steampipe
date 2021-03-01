@@ -6,7 +6,7 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/pluginmanager"
+	"github.com/turbot/steampipe/plugin"
 )
 
 // check if there is a new version
@@ -15,9 +15,9 @@ func checkPluginVersions(installationID string) {
 		return
 	}
 
-	updateReport := pluginmanager.GetAllPluginUpdateReport(installationID)
+	updateReport := plugin.GetAllUpdateReport(installationID)
 
-	pluginsToUpdate := []pluginmanager.VersionCheckReport{}
+	var pluginsToUpdate []plugin.VersionCheckReport
 
 	for _, r := range updateReport {
 		if r.CheckResponse.Digest != r.Plugin.ImageDigest {
@@ -30,7 +30,7 @@ func checkPluginVersions(installationID string) {
 	}
 }
 
-func showPluginUpdateNotification(reports []pluginmanager.VersionCheckReport) {
+func showPluginUpdateNotification(reports []plugin.VersionCheckReport) {
 	var notificationLines = [][]string{
 		{""},
 		{"Updated versions of the following plugins are available:"},
