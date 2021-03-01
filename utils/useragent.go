@@ -50,7 +50,7 @@ func BuildRequestPayload(signature string, payload map[string]interface{}) *byte
 // SendRequest ::
 func SendRequest(signature string, method string, sendRequestTo url.URL, payload *bytes.Buffer) (*http.Response, error) {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
-	timeout := 3000 * time.Millisecond
+	timeout := 5 * time.Second
 	req, err := http.NewRequest(method, sendRequestTo.String(), payload)
 	if err != nil {
 		return nil, err
