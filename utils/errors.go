@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/shiena/ansicolor"
@@ -30,9 +31,10 @@ func FailOnErrorWithMessage(err error, message string) {
 }
 
 func ShowError(err error) {
-        errString := strings.TrimSpace(err.Error())
+	errString := strings.TrimSpace(err.Error())
 	if strings.HasPrefix(errString, "pq:") {
 		errString = strings.TrimSpace(strings.TrimPrefix(errString, "pq:"))
+		// FDW RPC error will always be a subset of pq error
 		if strings.HasPrefix(errString, "rpc error") {
 			errString = errString[33:]
 		}
@@ -48,7 +50,7 @@ func ShowErrorWithMessage(err error, message string) {
 			errString = errString[33:]
 		}
 	}
-        fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, errString)
+	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, errString)
 }
 
 func ShowWarning(warning string) {
