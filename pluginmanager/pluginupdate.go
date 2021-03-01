@@ -14,13 +14,6 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// GetPluginUpdateReport :: looks up and reports the updated version of plugins which are listed in versions.json
-func GetPluginUpdateReport(installationID string) map[string]VersionCheckReport {
-	pvc := new(PluginVersionChecker)
-	pvc.signature = installationID
-	return pvc.reportPluginUpdates()
-}
-
 // VersionCheckReport ::
 type VersionCheckReport struct {
 	Plugin        *versionfile.InstalledVersion
@@ -39,10 +32,49 @@ type versionCheckPayload struct {
 
 // PluginVersionChecker :: wrapper struct over the plugin version check utilities
 type PluginVersionChecker struct {
-	signature string
+	pluginsToCheck []*versionfile.InstalledVersion
+	signature      string
 }
 
-// CheckAndReportPluginUpdates ::
+// GetPluginUpdateReport :: looks up and reports the updated version of selective turbot plugins which are listed in versions.json
+func GetPluginUpdateReport(installationID string, check []*versionfile.InstalledVersion) map[string]VersionCheckReport {
+	pvc := new(PluginVersionChecker)
+	pvc.signature = installationID
+
+	for _, c := range check {
+		if strings.HasPrefix(c.Name, ociinstaller.DefaultImageRepoDisplayURL) {
+			pvc.pluginsToCheck = append(pvc.pluginsToCheck, c)
+		}
+	}
+
+	return pvc.reportPluginUpdates()
+}
+
+// GetAllPluginUpdateReport :: looks up and reports the updated version of all turbot plugins which are listed in versions.json
+func GetAllPluginUpdateReport(installationID string) map[string]VersionCheckReport {
+	pvc := new(PluginVersionChecker)
+	pvc.signature = installationID
+	pvc.pluginsToCheck = []*versionfile.InstalledVersion{}
+
+	versionFileData, err := versionfile.Load()
+	if err != nil {
+		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not load versionfile")
+		return nil
+	}
+
+	if versionFileData.Plugins == nil {
+		versionFileData.Plugins = make(map[string](*versionfile.InstalledVersion))
+	}
+
+	for _, p := range versionFileData.Plugins {
+		if strings.HasPrefix(p.Name, ociinstaller.DefaultImageRepoDisplayURL) {
+			pvc.pluginsToCheck = append(pvc.pluginsToCheck, p)
+		}
+	}
+
+	return pvc.reportPluginUpdates()
+}
+
 func (pvc *PluginVersionChecker) reportPluginUpdates() map[string]VersionCheckReport {
 	versionFileData, err := versionfile.Load()
 	if err != nil {
@@ -54,15 +86,14 @@ func (pvc *PluginVersionChecker) reportPluginUpdates() map[string]VersionCheckRe
 		versionFileData.Plugins = make(map[string](*versionfile.InstalledVersion))
 	}
 
-	pluginsToCheck := pvc.filterPluginsToCheck(versionFileData.Plugins)
-	if len(pluginsToCheck) == 0 {
+	if len(pvc.pluginsToCheck) == 0 {
 		// there's no plugin installed. no point continuing
 		return nil
 	}
-	reports := pvc.getLatestVersionsForPlugins(pluginsToCheck)
+	reports := pvc.getLatestVersionsForPlugins(pvc.pluginsToCheck)
 
 	// update the version file
-	for _, plugin := range pluginsToCheck {
+	for _, plugin := range pvc.pluginsToCheck {
 		versionFileData.Plugins[plugin.Name].LastCheckedDate = versionfile.FormatTime(time.Now())
 	}
 	versionFileData.Save()
@@ -70,17 +101,7 @@ func (pvc *PluginVersionChecker) reportPluginUpdates() map[string]VersionCheckRe
 	return reports
 }
 
-func (pvc *PluginVersionChecker) filterPluginsToCheck(plugins map[string]*versionfile.InstalledVersion) map[string]*versionfile.InstalledVersion {
-	pluginsToCheck := map[string]*versionfile.InstalledVersion{}
-	for k, v := range plugins {
-		if strings.HasPrefix(k, ociinstaller.DefaultImageRepoDisplayURL) {
-			pluginsToCheck[k] = v
-		}
-	}
-	return pluginsToCheck
-}
-
-func (pvc *PluginVersionChecker) getLatestVersionsForPlugins(plugins map[string]*versionfile.InstalledVersion) map[string]VersionCheckReport {
+func (pvc *PluginVersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.InstalledVersion) map[string]VersionCheckReport {
 
 	getMapKey := func(thisPayload versionCheckPayload) string {
 		return fmt.Sprintf("%s/%s/%s", thisPayload.Org, thisPayload.Name, thisPayload.Stream)
@@ -101,6 +122,7 @@ func (pvc *PluginVersionChecker) getLatestVersionsForPlugins(plugins map[string]
 
 	serverResponse := pvc.requestServerForLatest(requestPayload)
 	if serverResponse == nil {
+		log.Println("[TRACE]", "PluginVersionChecker", "getLatestVersionsForPlugins", "response nil")
 		// return a blank map
 		return map[string]VersionCheckReport{}
 	}

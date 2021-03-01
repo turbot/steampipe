@@ -15,7 +15,7 @@ func checkPluginVersions(installationID string) {
 		return
 	}
 
-	updateReport := pluginmanager.GetPluginUpdateReport(installationID)
+	updateReport := pluginmanager.GetAllPluginUpdateReport(installationID)
 
 	pluginsToUpdate := []pluginmanager.VersionCheckReport{}
 
