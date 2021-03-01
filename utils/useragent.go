@@ -13,7 +13,7 @@ import (
 	"github.com/turbot/steampipe/version"
 )
 
-func ConstructUserAgent(installationID string) string {
+func getUserAgent() string {
 	return fmt.Sprintf("Turbot Steampipe/%s (+https://steampipe.io)", version.String())
 }
 
@@ -56,7 +56,7 @@ func SendRequest(signature string, method string, sendRequestTo url.URL, payload
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", ConstructUserAgent(signature))
+	req.Header.Set("User-Agent", getUserAgent())
 
 	client := cleanhttp.DefaultClient()
 
