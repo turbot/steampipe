@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
+	"time"
 
 	"github.com/hashicorp/go-cleanhttp"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/version"
 )
+
+const httpTimeout = 5 * time.Second
 
 func getUserAgent() string {
 	return fmt.Sprintf("Turbot Steampipe/%s (+https://steampipe.io)", version.String())
@@ -61,7 +63,7 @@ func SendRequest(signature string, method string, sendRequestTo url.URL, payload
 
 	// Use a short timeout since checking for new versions is not critical
 	// enough to block on if the update server is broken/slow.
-	client.Timeout = constants.HTTPTimeout
+	client.Timeout = httpTimeout
 
 	return client.Do(req)
 }
