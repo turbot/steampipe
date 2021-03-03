@@ -19,7 +19,7 @@ const (
 	DefaultImageOrg     = "turbot"
 )
 
-// Remove ::
+// Remove :: removes an installed plugin
 func Remove(image string, pluginConnections map[string][]string) error {
 	spinner := utils.ShowSpinner(fmt.Sprintf("Removing plugin %s", image))
 	defer utils.StopSpinner(spinner)
