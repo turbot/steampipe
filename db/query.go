@@ -8,11 +8,12 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/dbdefinitions"
 	"github.com/turbot/steampipe/utils"
 )
 
 // ExecuteQuery :: entry point for executing ad-hoc queries from outside the package
-func ExecuteQuery(queryString string) (*ResultStreamer, error) {
+func ExecuteQuery(queryString string) (*dbdefinitions.ResultStreamer, error) {
 	var err error
 
 	logging.LogTime("db.ExecuteQuery start")
@@ -48,7 +49,7 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 		return nil, fmt.Errorf("failed to add functions: %v", err)
 	}
 
-	resultsStreamer := newQueryResults()
+	resultsStreamer := dbdefinitions.NewResultStreamer()
 
 	// this is a callback to close the db et-al. when things get done - no matter the mode
 	onComplete := func() { Shutdown(client, InvokerQuery) }
@@ -69,13 +70,15 @@ func ExecuteQuery(queryString string) (*ResultStreamer, error) {
 			onComplete()
 			return nil, err
 		}
-		go resultsStreamer.streamSingleResult(result, onComplete)
+		go resultsStreamer.StreamSingleResult(result, onComplete)
 	}
 
 	logging.LogTime("db.ExecuteQuery end")
 	return resultsStreamer, nil
 }
 
+// Shutdown :: closes the client connection and stops the
+// database instance if the given `invoker` matches
 func Shutdown(client *Client, invoker Invoker) {
 	log.Println("[TRACE] shutdown")
 	if client != nil {
