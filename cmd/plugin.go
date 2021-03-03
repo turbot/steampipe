@@ -6,16 +6,18 @@ import (
 	"log"
 	"strings"
 
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/ociinstaller"
+	"github.com/turbot/steampipe/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/plugin"
 	"github.com/turbot/steampipe/statefile"
+	"github.com/turbot/steampipe/utils"
 
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
-	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/db"
-	"github.com/turbot/steampipe/pluginmanager"
-	"github.com/turbot/steampipe/utils"
 )
 
 func init() {
@@ -192,20 +194,20 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 	}
 
-	for idx, plugin := range plugins {
-		isPluginExists, _ := pluginmanager.IsPluginExists(plugin)
+	for idx, p := range plugins {
+		isPluginExists, _ := plugin.Exists(p)
 		if isPluginExists {
-			installSkipped = append(installSkipped, plugin)
+			installSkipped = append(installSkipped, p)
 			continue
 		}
 		if idx > 0 {
 			fmt.Println()
 		}
-		spinner := utils.ShowSpinner(fmt.Sprintf("Installing plugin %s...", plugin))
-		image, err := pluginmanager.Install(plugin)
+		spinner := utils.ShowSpinner(fmt.Sprintf("Installing plugin %s...", p))
+		image, err := plugin.Install(p)
 		utils.StopSpinner(spinner)
 		if err != nil {
-			msg := fmt.Sprintf("install failed for plugin '%s'", plugin)
+			msg := fmt.Sprintf("install failed for plugin '%s'", p)
 
 			if strings.HasSuffix(err.Error(), "not found") {
 				msg += ": not found"
@@ -219,10 +221,10 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		if image.Config.Plugin.Version != "" {
 			versionString = " v" + image.Config.Plugin.Version
 		}
-		fmt.Printf("Installed plugin: %s%s\n", constants.Bold(plugin), versionString)
+		fmt.Printf("Installed plugin: %s%s\n", constants.Bold(p), versionString)
 		org := image.Config.Plugin.Organization
 		if org == "turbot" {
-			fmt.Printf("Documentation:    https://hub.steampipe.io/plugins/%s/%s\n", org, plugin)
+			fmt.Printf("Documentation:    https://hub.steampipe.io/plugins/%s/%s\n", org, p)
 		}
 	}
 
@@ -258,6 +260,15 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
+type updateSkip struct {
+	plugin string
+	reason string
+}
+
+func (u *updateSkip) String() string {
+	return fmt.Sprintf("Plugin:   %s\nReason:   %s", u.plugin, u.reason)
+}
+
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runPluginUpdateCmd install")
 	defer logging.LogTime("runPluginUpdateCmd end")
@@ -267,7 +278,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
 
-	if len(plugins) == 0 && !cmdconfig.Viper().GetBool("all") {
+	if len(plugins) == 0 && !(cmdconfig.Viper().GetBool("all")) {
 		fmt.Println()
 		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all")))
 		fmt.Println()
@@ -276,51 +287,88 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// we can't allow update and install at the same time
-	if cmdconfig.Viper().GetBool("all") {
-		if len(plugins) > 0 {
-			utils.ShowError(fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`")))
-			return
-		}
-
-		// get the update report
-		plugins = []string{}
-		state, _ := statefile.LoadState()
-		reports := pluginmanager.GetPluginUpdateReport(state.InstallationID)
-		for _, report := range reports {
-			if report.Plugin.ImageDigest != report.CheckResponse.Digest {
-				plugins = append(plugins, fmt.Sprintf("%s/%s@%s", report.CheckResponse.Org, report.CheckResponse.Name, report.CheckResponse.Stream))
-			}
-		}
-	}
-
-	if len(plugins) == 0 {
-		fmt.Println("All plugins are up to date.")
+	if len(plugins) > 0 && cmdconfig.Viper().GetBool("all") {
+		// we can't allow update and install at the same time
+		fmt.Println()
+		utils.ShowError(fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`")))
+		fmt.Println()
+		cmd.Help()
+		fmt.Println()
 		return
 	}
 
-	updateSkipped := []string{}
+	state, err := statefile.LoadState()
+	if err != nil {
+		utils.ShowError(fmt.Errorf("could not load state"))
+		return
+	}
 
-	for _, plugin := range plugins {
-		isPluginExists, _ := pluginmanager.IsPluginExists(plugin)
-		if !isPluginExists {
-			updateSkipped = append(updateSkipped, plugin)
+	// load up the version file data
+	versionData, err := versionfile.Load()
+	if err != nil {
+		utils.ShowError(fmt.Errorf("error loading current plugin data"))
+		return
+	}
+	if versionData.Plugins == nil {
+		versionData.Plugins = map[string]*versionfile.InstalledVersion{}
+	}
+
+	var runUpdatesFor []*versionfile.InstalledVersion
+	var updateSkipped []updateSkip
+
+	if cmdconfig.Viper().GetBool("all") {
+		for k, v := range versionData.Plugins {
+			ref := ociinstaller.NewSteampipeImageRef(k)
+			org, name, stream := ref.GetOrgNameAndStream()
+			key := fmt.Sprintf("%s/%s@%s", org, name, stream)
+
+			plugins = append(plugins, key)
+			runUpdatesFor = append(runUpdatesFor, v)
+		}
+	} else {
+		// get the args and retrieve the installed versions
+		for _, p := range plugins {
+			ref := ociinstaller.NewSteampipeImageRef(p)
+			isExists, _ := plugin.Exists(p)
+			if isExists {
+				runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
+			} else {
+				updateSkipped = append(updateSkipped, updateSkip{p, "Not Installed"})
+			}
+		}
+	}
+
+	if len(plugins) > 0 {
+		// add a blank line at the top since this is going to be
+		// a multi output
+		fmt.Println()
+	}
+
+	spinner := utils.ShowSpinner("Checking for available updates")
+	reports := plugin.GetUpdateReport(state.InstallationID, runUpdatesFor)
+	utils.StopSpinner(spinner)
+
+	if len(reports) < len(runUpdatesFor) {
+		// this happens if for some reason the update server could not be contacted,
+		// in which case we get back an empty map
+		utils.ShowError(fmt.Errorf("there was an issue contacting the update server. Please try later"))
+		return
+	}
+
+	for _, report := range reports {
+		if report.Plugin.ImageDigest == report.CheckResponse.Digest {
+			updateSkipped = append(updateSkipped, updateSkip{
+				fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
+				"Latest already installed",
+			})
 			continue
 		}
-		if len(args) > 1 {
-			fmt.Println()
-		}
 
-		spinner := utils.ShowSpinner(fmt.Sprintf("Updating plugin %s...", plugin))
-		image, err := pluginmanager.Install(plugin)
+		spinner := utils.ShowSpinner(fmt.Sprintf("Updating plugin %s...", report.CheckResponse.Name))
+		image, err := plugin.Install(report.Plugin.Name)
 		utils.StopSpinner(spinner)
 		if err != nil {
-			if err.Error() == constants.ENOTEXISTS {
-				updateSkipped = append(updateSkipped, plugin)
-				continue
-			}
-
-			msg := fmt.Sprintf("update failed for plugin '%s'", plugin)
+			msg := fmt.Sprintf("update failed for plugin '%s'", report.Plugin.Name)
 
 			if strings.HasSuffix(err.Error(), "not found") {
 				msg += ": not found"
@@ -334,33 +382,33 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		if image.Config.Plugin.Version != "" {
 			versionString = " v" + image.Config.Plugin.Version
 		}
-		fmt.Printf("Updated plugin: %s%s\n", constants.Bold(plugin), versionString)
+		fmt.Printf("Updated plugin: %s%s\n", constants.Bold(report.Plugin.Name), versionString)
 		org := image.Config.Plugin.Organization
+		name := image.Config.Plugin.Name
 		if org == "turbot" {
-			fmt.Printf("Documentation:  https://hub.steampipe.io/plugins/%s/%s\n", org, plugin)
+			fmt.Printf("Documentation:  https://hub.steampipe.io/plugins/%s/%s\n", org, name)
 		}
+		fmt.Println()
 	}
 
 	if len(updateSkipped) > 0 {
-		fmt.Printf(
-			"\nSkipped the following %s, since %s not installed:\n",
-			utils.Pluralize("plugin", len(updateSkipped)),
-			utils.Pluralize("it is", len(updateSkipped)),
-		)
+		skipReasons := []string{}
 		for _, s := range updateSkipped {
-			fmt.Printf("    > %s\n", constants.Bold(s))
+			skipReasons = append(skipReasons, s.String())
 		}
+
 		fmt.Printf(
-			"\nTo install %s, please run: %s\n",
-			utils.Pluralize("this plugin", len(updateSkipped)),
-			constants.Bold(fmt.Sprintf(
-				"steampipe plugin install %s",
-				strings.Join(updateSkipped, " "),
-			)),
+			"Skipped the following %s:\n\n%s",
+			utils.Pluralize("plugin", len(updateSkipped)),
+			strings.Join(skipReasons, "\n\n"),
 		)
+		if len(updateSkipped) > 1 {
+			fmt.Println()
+		}
 	}
+
 	if len(plugins) > 1 {
-		fmt.Println("")
+		fmt.Println()
 	}
 
 	// refresh connections - we do this to validate the plugins
@@ -412,7 +460,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	list, err := pluginmanager.List(connectionMap)
+	list, err := plugin.List(connectionMap)
 	if err != nil {
 		utils.ShowErrorWithMessage(err,
 			fmt.Sprintf("Plugin Listing failed"))
@@ -444,11 +492,11 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	for _, plugin := range args {
-		if err := pluginmanager.Remove(plugin, connectionMap); err != nil {
-			utils.ShowErrorWithMessage(err, fmt.Sprintf("Failed to uninstall plugin '%s'", plugin))
+	for _, p := range args {
+		if err := plugin.Remove(p, connectionMap); err != nil {
+			utils.ShowErrorWithMessage(err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
 		} else {
-			fmt.Println("Uninstalled plugin", plugin)
+			fmt.Println("Uninstalled plugin", p)
 		}
 	}
 }

@@ -13,7 +13,9 @@ import (
 	"github.com/turbot/steampipe/version"
 )
 
-func ConstructUserAgent(installationID string) string {
+const httpTimeout = 5 * time.Second
+
+func getUserAgent() string {
 	return fmt.Sprintf("Turbot Steampipe/%s (+https://steampipe.io)", version.String())
 }
 
@@ -50,19 +52,18 @@ func BuildRequestPayload(signature string, payload map[string]interface{}) *byte
 // SendRequest ::
 func SendRequest(signature string, method string, sendRequestTo url.URL, payload *bytes.Buffer) (*http.Response, error) {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
-	timeout := 3000 * time.Millisecond
 	req, err := http.NewRequest(method, sendRequestTo.String(), payload)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", ConstructUserAgent(signature))
+	req.Header.Set("User-Agent", getUserAgent())
 
 	client := cleanhttp.DefaultClient()
 
 	// Use a short timeout since checking for new versions is not critical
 	// enough to block on if the update server is broken/slow.
-	client.Timeout = timeout
+	client.Timeout = httpTimeout
 
 	return client.Do(req)
 }
