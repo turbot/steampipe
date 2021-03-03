@@ -11,6 +11,7 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/karrick/gows"
 
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -30,6 +31,73 @@ func ShowOutput(result *dbdefinitions.QueryResult) {
 		// default
 		displayTable(result)
 	}
+}
+
+func ShowWrappedTable(headers []string, rows [][]string, autoMerge bool) {
+	t := table.NewWriter()
+	t.SetStyle(table.StyleDefault)
+	t.SetOutputMirror(os.Stdout)
+
+	rowConfig := table.RowConfig{AutoMerge: autoMerge}
+	colConfigs, headerRow := getColumnSettings(headers, rows)
+
+	t.SetColumnConfigs(colConfigs)
+	t.AppendHeader(headerRow)
+
+	for _, row := range rows {
+		rowObj := table.Row{}
+		for _, col := range row {
+			rowObj = append(rowObj, col)
+		}
+		t.AppendRow(rowObj, rowConfig)
+	}
+	t.Render()
+}
+
+// calculate and returns column configuration based on header and row content
+func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig, table.Row) {
+	maxCols, _, _ := gows.GetWinSize()
+	colConfigs := make([]table.ColumnConfig, len(headers))
+	headerRow := make(table.Row, len(headers))
+
+	sumOfAllCols := 0
+
+	// account for the spaces around the value of a column and separators
+	spaceAccounting := ((len(headers) * 3) + 1)
+
+	for idx, colName := range headers {
+		headerRow[idx] = colName
+
+		// get the maximum len of strings in this column
+		maxLen := 0
+		for _, row := range rows {
+			colVal := row[idx]
+			if len(colVal) > maxLen {
+				maxLen = len(colVal)
+			}
+			if len(colName) > maxLen {
+				maxLen = len(colName)
+			}
+		}
+		colConfigs[idx] = table.ColumnConfig{
+			Name:     colName,
+			Number:   idx + 1,
+			WidthMax: maxLen,
+			WidthMin: maxLen,
+		}
+		sumOfAllCols += maxLen
+	}
+
+	// now that all columns are set to the widths that they need,
+	// set the last one to occupy as much as is available - no more - no less
+	sumOfRest := sumOfAllCols - colConfigs[len(colConfigs)-1].WidthMax
+
+	if sumOfAllCols > maxCols {
+		colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
+		colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
+	}
+
+	return colConfigs, headerRow
 }
 
 func displayLine(result *dbdefinitions.QueryResult) {
