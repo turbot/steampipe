@@ -266,7 +266,7 @@ type updateSkip struct {
 }
 
 func (u *updateSkip) String() string {
-	return fmt.Sprintf("->  Plugin:   %s\n    Reason:   %s", u.plugin, u.reason)
+	return fmt.Sprintf("Plugin:   %s\nReason:   %s", u.plugin, u.reason)
 }
 
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
