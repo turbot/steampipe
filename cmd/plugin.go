@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
@@ -58,7 +59,6 @@ Examples:
 
 // PluginInstallCmd :: Install a plugin
 func PluginInstallCmd() *cobra.Command {
-
 	var cmd = &cobra.Command{
 		Use:   "install [flags] [registry/org/]name[@version]",
 		Args:  cobra.ArbitraryArgs,
@@ -173,7 +173,12 @@ Example:
 
 func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runPluginInstallCmd install")
-	defer logging.LogTime("runPluginInstallCmd end")
+	defer func() {
+		logging.LogTime("runPluginInstallCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+		}
+	}()
 
 	// args to 'plugin install' -- one or more plugins to install
 	// These can be simple names ('aws') for "standard" plugins, or
@@ -271,7 +276,12 @@ func (u *updateSkip) String() string {
 
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runPluginUpdateCmd install")
-	defer logging.LogTime("runPluginUpdateCmd end")
+	defer func() {
+		logging.LogTime("runPluginUpdateCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+		}
+	}()
 
 	// args to 'plugin update' -- one or more plugins to install
 	// These can be simple names ('aws') for "standard" plugins, or
@@ -451,7 +461,12 @@ func refreshConnections() error {
 
 func runPluginListCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runPluginListCmd list")
-	defer logging.LogTime("runPluginListCmd end")
+	defer func() {
+		logging.LogTime("runPluginListCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+		}
+	}()
 
 	connectionMap, err := getPluginConnectionMap()
 	if err != nil {
@@ -475,7 +490,13 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runPluginUninstallCmd uninstall")
-	defer logging.LogTime("runPluginUninstallCmd end")
+
+	defer func() {
+		logging.LogTime("runPluginUninstallCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+		}
+	}()
 
 	if len(args) == 0 {
 		fmt.Println()

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 
 	"github.com/turbot/steampipe/cmdconfig"
@@ -117,6 +118,12 @@ func ServiceRestartCmd() *cobra.Command {
 
 func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runServiceStartCmd start")
+	defer func() {
+		logging.LogTime("runServiceStartCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+		}
+	}()
 	// 	// TODO(nw) - color me, replace hard-coding with variables / config
 
 	if cmdconfig.Viper().GetInt("db-port") < 1 || cmdconfig.Viper().GetInt("db-port") > 65535 {
@@ -157,11 +164,16 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	printStatus(info)
 
-	logging.LogTime("runServiceStartCmd end")
 }
 
 func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runServiceRestartCmd start")
+	defer func() {
+		logging.LogTime("runServiceRestartCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+		}
+	}()
 
 	currentServiceStatus, err := db.GetStatus()
 
@@ -211,11 +223,16 @@ to force a restart.
 		printStatus(info)
 	}
 
-	logging.LogTime("runServiceRestartCmd end")
 }
 
 func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runServiceStatusCmd status")
+	defer func() {
+		logging.LogTime("runServiceStatusCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+		}
+	}()
 
 	if !db.IsInstalled() {
 		fmt.Println("Steampipe database service is NOT installed")
@@ -229,7 +246,6 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	logging.LogTime("runServiceStatusCmd end")
 }
 
 func printStatus(info *db.RunningDBInstanceInfo) {
@@ -265,6 +281,12 @@ Steampipe service is running in the background.
 
 func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runServiceStopCmd stop")
+	defer func() {
+		logging.LogTime("runServiceStopCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+		}
+	}()
 
 	force := cmdconfig.Viper().GetBool(constants.ArgForce)
 	status, err := db.StopDB(force)
@@ -296,5 +318,4 @@ to force a shutdown
 
 	}
 
-	logging.LogTime("runServiceStopCmd end")
 }
