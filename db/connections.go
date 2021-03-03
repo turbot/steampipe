@@ -37,11 +37,6 @@ func RefreshConnections(client *Client) error {
 	var warningString string
 	numUpdates := len(updates.Update)
 	if numUpdates > 0 {
-		// in query, this can only start when in interactive
-		if cmdconfig.Viper().GetBool(constants.ShowInteractiveOutputConfigKey) {
-			spin := utils.ShowSpinner("Refreshing connections...")
-			defer utils.StopSpinner(spin)
-		}
 		defer func() {
 			// if any warnings were returned, display them on stderr
 			if len(warningString) > 0 {
@@ -49,6 +44,11 @@ func RefreshConnections(client *Client) error {
 				println(warningString)
 			}
 		}()
+		// in query, this can only start when in interactive
+		if cmdconfig.Viper().GetBool(constants.ShowInteractiveOutputConfigKey) {
+			spin := utils.ShowSpinner("Refreshing connections...")
+			defer utils.StopSpinner(spin)
+		}
 
 		// first instantiate connection plugins for all updates
 		connectionPlugins, err := getConnectionPlugins(updates.Update)
@@ -133,7 +133,9 @@ func getSchemaQueries(updates connection_config.ConnectionMap, failures []*conne
 	}
 	for _, failure := range failures {
 		log.Printf("[TRACE] remove schema for conneciton failing validation connection %s, plugin FQN %s\n ", failure.ConnectionName, failure.Plugin)
-		schemaQueries = append(schemaQueries, deleteConnectionQuery(failure.ConnectionName)...)
+		if failure.ShouldDropIfExists {
+			schemaQueries = append(schemaQueries, deleteConnectionQuery(failure.ConnectionName)...)
+		}
 	}
 
 	return schemaQueries

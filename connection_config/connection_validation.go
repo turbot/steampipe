@@ -12,9 +12,10 @@ import (
 )
 
 type ValidationFailure struct {
-	Plugin         string
-	ConnectionName string
-	Message        string
+	Plugin             string
+	ConnectionName     string
+	Message            string
+	ShouldDropIfExists bool
 }
 
 func (v ValidationFailure) String() string {
@@ -79,9 +80,10 @@ func BuildValidationWarningString(failures []*ValidationFailure) string {
 func validateConnectionName(p *ConnectionPlugin) *ValidationFailure {
 	if helpers.StringSliceContains(constants.ReservedConnectionNames, p.ConnectionName) {
 		return &ValidationFailure{
-			Plugin:         p.PluginName,
-			ConnectionName: p.ConnectionName,
-			Message:        fmt.Sprintf("Connection name cannot be one of %s", strings.Join(constants.ReservedConnectionNames, ",")),
+			Plugin:             p.PluginName,
+			ConnectionName:     p.ConnectionName,
+			Message:            fmt.Sprintf("Connection name cannot be one of %s", strings.Join(constants.ReservedConnectionNames, ",")),
+			ShouldDropIfExists: false,
 		}
 	}
 	return nil
@@ -96,17 +98,19 @@ func validateSdkVersion(p *ConnectionPlugin) *ValidationFailure {
 	pluginSdkVersion, err := version.NewSemver(pluginSdkVersionString)
 	if err != nil {
 		return &ValidationFailure{
-			Plugin:         p.PluginName,
-			ConnectionName: p.ConnectionName,
-			Message:        fmt.Sprintf("Could not parse plugin sdk version %s.", pluginSdkVersion),
+			Plugin:             p.PluginName,
+			ConnectionName:     p.ConnectionName,
+			Message:            fmt.Sprintf("Could not parse plugin sdk version %s.", pluginSdkVersion),
+			ShouldDropIfExists: true,
 		}
 	}
 	steampipeSdkVersion := sdkversion.SemVer
 	if !validateIgnoringPrerelease(pluginSdkVersion, steampipeSdkVersion) {
 		return &ValidationFailure{
-			Plugin:         p.PluginName,
-			ConnectionName: p.ConnectionName,
-			Message:        "Incompatible steampipe-plugin-sdk version. Please upgrade Steampipe.",
+			Plugin:             p.PluginName,
+			ConnectionName:     p.ConnectionName,
+			Message:            "Incompatible steampipe-plugin-sdk version. Please upgrade Steampipe.",
+			ShouldDropIfExists: true,
 		}
 	}
 	return nil
