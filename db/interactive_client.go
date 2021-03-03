@@ -6,6 +6,7 @@ import (
 
 	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/definitions/results"
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/metaquery"
@@ -40,7 +41,7 @@ func (c *InteractiveClient) close() {
 }
 
 // InteractiveQuery :: start an interactive prompt and return
-func (c *InteractiveClient) InteractiveQuery(resultsStreamer *ResultStreamer, onCompleteCallback func()) {
+func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStreamer, onCompleteCallback func()) {
 	defer func() {
 
 		onCompleteCallback()
@@ -60,7 +61,7 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *ResultStreamer, on
 		// this needs to be the last thing we do,
 		// as the runQueryCmd uses this as an indication
 		// to quit out of the application
-		resultsStreamer.close()
+		resultsStreamer.Close()
 	}()
 
 	fmt.Printf("Welcome to Steampipe v%s\n", version.String())
@@ -81,7 +82,7 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *ResultStreamer, on
 	}
 }
 
-func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *ResultStreamer) (ret utils.InteractiveExitStatus) {
+func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *results.ResultStreamer) (ret utils.InteractiveExitStatus) {
 	defer func() {
 		// this is to catch the PANIC that gets raised by
 		// the executor of go-prompt
@@ -171,7 +172,7 @@ func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 	c.interactiveBuffer = []string{}
 }
 
-func (c *InteractiveClient) executor(line string, resultsStreamer *ResultStreamer) {
+func (c *InteractiveClient) executor(line string, resultsStreamer *results.ResultStreamer) {
 	line = strings.TrimSpace(line)
 
 	// if it's an empty line, then we don't need to do anything
@@ -210,7 +211,7 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *ResultStreame
 			utils.ShowError(err)
 			resultsStreamer.Done()
 		} else {
-			resultsStreamer.streamResult(result)
+			resultsStreamer.StreamResult(result)
 		}
 	}
 

@@ -1,11 +1,11 @@
-package db
+package results
 
 type ResultStreamer struct {
 	Results      chan *QueryResult
 	displayReady chan string
 }
 
-func newQueryResults() *ResultStreamer {
+func NewResultStreamer() *ResultStreamer {
 	return &ResultStreamer{
 		// make buffered channel  so we can always stream a single result
 		Results:      make(chan *QueryResult, 1),
@@ -13,18 +13,18 @@ func newQueryResults() *ResultStreamer {
 	}
 }
 
-func (q *ResultStreamer) streamResult(result *QueryResult) {
+func (q *ResultStreamer) StreamResult(result *QueryResult) {
 	q.Results <- result
 }
 
-func (q *ResultStreamer) streamSingleResult(result *QueryResult, onComplete func()) {
+func (q *ResultStreamer) StreamSingleResult(result *QueryResult, onComplete func()) {
 	q.Results <- result
 	q.Wait()
 	onComplete()
 	close(q.Results)
 }
 
-func (q *ResultStreamer) close() {
+func (q *ResultStreamer) Close() {
 	close(q.Results)
 }
 

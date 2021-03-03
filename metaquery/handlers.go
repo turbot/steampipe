@@ -2,19 +2,18 @@ package metaquery
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/karrick/gows"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/connection_config"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/utils"
 )
@@ -174,7 +173,7 @@ To get information about the columns in a table, run '.inspect {connection}.{tab
 			})
 			rows = append(rows, tables...)
 		}
-		writeTable(header, rows, true)
+		display.ShowWrappedTable(header, rows, true)
 	}
 
 	return nil
@@ -233,7 +232,7 @@ func listConnections(input *HandlerInput) error {
 		return rows[i][0] < rows[j][0]
 	})
 
-	writeTable(header, rows, false)
+	display.ShowWrappedTable(header, rows, false)
 
 	fmt.Printf(`
 To get information about the tables in a connection, run '.inspect {connection}'
@@ -263,7 +262,7 @@ func inspectConnection(connectionName string, input *HandlerInput) bool {
 		return rows[i][0] < rows[j][0]
 	})
 
-	writeTable(header, rows, false)
+	display.ShowWrappedTable(header, rows, false)
 
 	return true
 }
@@ -295,76 +294,9 @@ func inspectTable(connectionName string, tableName string, input *HandlerInput) 
 		return rows[i][0] < rows[j][0]
 	})
 
-	writeTable(header, rows, false)
+	display.ShowWrappedTable(header, rows, false)
 
 	return nil
-}
-
-func writeTable(headers []string, rows [][]string, autoMerge bool) {
-	t := table.NewWriter()
-	t.SetStyle(table.StyleDefault)
-	t.SetOutputMirror(os.Stdout)
-
-	rowConfig := table.RowConfig{AutoMerge: autoMerge}
-	colConfigs, headerRow := getColumnSettings(headers, rows)
-
-	t.SetColumnConfigs(colConfigs)
-	t.AppendHeader(headerRow)
-
-	for _, row := range rows {
-		rowObj := table.Row{}
-		for _, col := range row {
-			rowObj = append(rowObj, col)
-		}
-		t.AppendRow(rowObj, rowConfig)
-	}
-	t.Render()
-}
-
-// calculate and returns column configuration based on header and row content
-func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig, table.Row) {
-	maxCols, _, _ := gows.GetWinSize()
-	colConfigs := make([]table.ColumnConfig, len(headers))
-	headerRow := make(table.Row, len(headers))
-
-	sumOfAllCols := 0
-
-	// account for the spaces around the value of a column and separators
-	spaceAccounting := ((len(headers) * 3) + 1)
-
-	for idx, colName := range headers {
-		headerRow[idx] = colName
-
-		// get the maximum len of strings in this column
-		maxLen := 0
-		for _, row := range rows {
-			colVal := row[idx]
-			if len(colVal) > maxLen {
-				maxLen = len(colVal)
-			}
-			if len(colName) > maxLen {
-				maxLen = len(colName)
-			}
-		}
-		colConfigs[idx] = table.ColumnConfig{
-			Name:     colName,
-			Number:   idx + 1,
-			WidthMax: maxLen,
-			WidthMin: maxLen,
-		}
-		sumOfAllCols += maxLen
-	}
-
-	// now that all columns are set to the widths that they need,
-	// set the last one to occupy as much as is available - no more - no less
-	sumOfRest := sumOfAllCols - colConfigs[len(colConfigs)-1].WidthMax
-
-	if sumOfAllCols > maxCols {
-		colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
-		colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
-	}
-
-	return colConfigs, headerRow
 }
 
 func buildTable(rows [][]string, autoMerge bool) string {

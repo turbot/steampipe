@@ -1,4 +1,10 @@
-package db
+/**
+	This package is for all interfaces that are imported in multiple packages in the
+	code base
+
+	This package MUST never import any other `steampipe` package
+**/
+package results
 
 import (
 	"database/sql"
@@ -29,7 +35,7 @@ func (r QueryResult) StreamError(err error) {
 	*r.RowChan <- &RowResult{Error: err}
 }
 
-func newQueryResult(colTypes []*sql.ColumnType) *QueryResult {
+func NewQueryResult(colTypes []*sql.ColumnType) *QueryResult {
 	rowChan := make(chan *RowResult)
 	return &QueryResult{
 		RowChan:  &rowChan,
