@@ -4,13 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/statefile"
 
-	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
@@ -418,14 +417,12 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		utils.ShowErrorWithMessage(err,
 			fmt.Sprintf("Plugin Listing failed"))
 	}
-	t := table.NewWriter()
-	t.SetStyle(table.StyleLight)
-	t.SetOutputMirror(os.Stdout)
-	t.AppendHeader(table.Row{"Name", "Version", "Connections"})
+	headers := []string{"Name", "Version", "Connections"}
+	rows := [][]string{}
 	for _, item := range list {
-		t.AppendRow(table.Row{item.Name, item.Version, strings.Join(item.Connections, ",")})
+		rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
 	}
-	t.Render()
+	display.ShowWrappedTable(headers, rows, false)
 }
 
 func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
