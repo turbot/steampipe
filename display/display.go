@@ -21,11 +21,12 @@ import (
 
 // ShowOutput :: displays the output using the proper formatter as applicable
 func ShowOutput(result *results.QueryResult) {
-	if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgJSON {
+	output := cmdconfig.Viper().GetString(constants.ArgOutput)
+	if output == constants.ArgJSON {
 		displayJSON(result)
-	} else if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgCSV {
+	} else if output == constants.ArgCSV {
 		displayCSV(result)
-	} else if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgLine {
+	} else if output == constants.ArgLine {
 		displayLine(result)
 	} else {
 		// default

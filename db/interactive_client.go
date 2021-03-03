@@ -206,7 +206,7 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 		resultsStreamer.Done()
 	} else {
 		// otherwise execute query
-		shouldShowCounter := cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgTable
+		shouldShowCounter := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.ArgTable
 		if result, err := c.client.executeQuery(query, shouldShowCounter); err != nil {
 			utils.ShowError(err)
 			resultsStreamer.Done()
