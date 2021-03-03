@@ -4,7 +4,7 @@
 
 	This package MUST never import any other `steampipe` package
 **/
-package dbdefinitions
+package results
 
 import (
 	"database/sql"

@@ -6,7 +6,7 @@ import (
 
 	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/dbdefinitions"
+	"github.com/turbot/steampipe/results"
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/metaquery"
@@ -41,7 +41,7 @@ func (c *InteractiveClient) close() {
 }
 
 // InteractiveQuery :: start an interactive prompt and return
-func (c *InteractiveClient) InteractiveQuery(resultsStreamer *dbdefinitions.ResultStreamer, onCompleteCallback func()) {
+func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStreamer, onCompleteCallback func()) {
 	defer func() {
 
 		onCompleteCallback()
@@ -82,7 +82,7 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *dbdefinitions.Resu
 	}
 }
 
-func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *dbdefinitions.ResultStreamer) (ret utils.InteractiveExitStatus) {
+func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *results.ResultStreamer) (ret utils.InteractiveExitStatus) {
 	defer func() {
 		// this is to catch the PANIC that gets raised by
 		// the executor of go-prompt
@@ -172,7 +172,7 @@ func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 	c.interactiveBuffer = []string{}
 }
 
-func (c *InteractiveClient) executor(line string, resultsStreamer *dbdefinitions.ResultStreamer) {
+func (c *InteractiveClient) executor(line string, resultsStreamer *results.ResultStreamer) {
 	line = strings.TrimSpace(line)
 
 	// if it's an empty line, then we don't need to do anything

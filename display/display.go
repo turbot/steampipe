@@ -15,12 +15,12 @@ import (
 
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/dbdefinitions"
+	"github.com/turbot/steampipe/results"
 	"github.com/turbot/steampipe/utils"
 )
 
 // ShowOutput :: displays the output using the proper formatter as applicable
-func ShowOutput(result *dbdefinitions.QueryResult) {
+func ShowOutput(result *results.QueryResult) {
 	if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgJSON {
 		displayJSON(result)
 	} else if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgCSV {
@@ -100,7 +100,7 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 	return colConfigs, headerRow
 }
 
-func displayLine(result *dbdefinitions.QueryResult) {
+func displayLine(result *results.QueryResult) {
 	colNames := ColumnNames(result.ColTypes)
 	maxColNameLength := 0
 	for _, colName := range colNames {
@@ -112,7 +112,7 @@ func displayLine(result *dbdefinitions.QueryResult) {
 	itemIdx := 0
 
 	// define a function to display each row
-	rowFunc := func(row []interface{}, result *dbdefinitions.QueryResult) {
+	rowFunc := func(row []interface{}, result *results.QueryResult) {
 		recordAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		requiredTerminalColumnsForValuesOfRecord := 0
 		for _, colValue := range recordAsString {
@@ -166,11 +166,11 @@ func getTerminalColumnsRequiredForString(str string) int {
 	return colsRequired
 }
 
-func displayJSON(result *dbdefinitions.QueryResult) {
+func displayJSON(result *results.QueryResult) {
 	var jsonOutput []map[string]interface{}
 
 	// define function to add each row to the JSON output
-	rowFunc := func(row []interface{}, result *dbdefinitions.QueryResult) {
+	rowFunc := func(row []interface{}, result *results.QueryResult) {
 		record := map[string]interface{}{}
 		for idx, colType := range result.ColTypes {
 			value, _ := ParseJSONOutputColumnValue(row[idx], colType)
@@ -193,7 +193,7 @@ func displayJSON(result *dbdefinitions.QueryResult) {
 	fmt.Printf("%s\n", string(data))
 }
 
-func displayCSV(result *dbdefinitions.QueryResult) {
+func displayCSV(result *results.QueryResult) {
 	csvWriter := csv.NewWriter(os.Stdout)
 	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
 
@@ -203,7 +203,7 @@ func displayCSV(result *dbdefinitions.QueryResult) {
 
 	// print the data as it comes
 	// define function display each csv row
-	rowFunc := func(row []interface{}, result *dbdefinitions.QueryResult) {
+	rowFunc := func(row []interface{}, result *results.QueryResult) {
 		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		_ = csvWriter.Write(rowAsString)
 	}
@@ -220,7 +220,7 @@ func displayCSV(result *dbdefinitions.QueryResult) {
 	}
 }
 
-func displayTable(result *dbdefinitions.QueryResult) {
+func displayTable(result *results.QueryResult) {
 	// the buffer to put the output data in
 	outbuf := bytes.NewBufferString("")
 
@@ -246,7 +246,7 @@ func displayTable(result *dbdefinitions.QueryResult) {
 	t.AppendHeader(headers)
 
 	// define a function to execute for each row
-	rowFunc := func(row []interface{}, result *dbdefinitions.QueryResult) {
+	rowFunc := func(row []interface{}, result *results.QueryResult) {
 		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		rowObj := table.Row{}
 		for _, col := range rowAsString {
@@ -273,10 +273,10 @@ func displayTable(result *dbdefinitions.QueryResult) {
 	ShowPaged(outbuf.String())
 }
 
-type displayResultsFunc func(row []interface{}, result *dbdefinitions.QueryResult)
+type displayResultsFunc func(row []interface{}, result *results.QueryResult)
 
 // call func displayResult for each row of results
-func iterateResults(result *dbdefinitions.QueryResult, displayResult displayResultsFunc) error {
+func iterateResults(result *results.QueryResult, displayResult displayResultsFunc) error {
 	for row := range *result.RowChan {
 		if row == nil {
 			return nil

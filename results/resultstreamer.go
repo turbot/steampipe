@@ -1,4 +1,4 @@
-package dbdefinitions
+package results
 
 type ResultStreamer struct {
 	Results      chan *QueryResult
