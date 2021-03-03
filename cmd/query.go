@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 	"log"
-	"os"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/display"
@@ -57,17 +57,11 @@ Examples:
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runQueryCmd start")
-	defer logging.LogTime("execute end")
 
-	log.Println("[TRACE] runQueryCmd")
 	defer func() {
+		logging.LogTime("runQueryCmd end")
 		if r := recover(); r != nil {
-			err, ok := r.(error)
-			if !ok {
-				err = fmt.Errorf("%v", r)
-			}
-			utils.ShowError(err)
-			os.Exit(1)
+			utils.ShowError(helpers.ToError(r))
 		}
 	}()
 

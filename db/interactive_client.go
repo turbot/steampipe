@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/definitions/results"
@@ -43,18 +44,9 @@ func (c *InteractiveClient) close() {
 // InteractiveQuery :: start an interactive prompt and return
 func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStreamer, onCompleteCallback func()) {
 	defer func() {
-
 		onCompleteCallback()
-
-		r := recover()
-		switch r.(type) {
-		case nil:
-			// nothing to do
-		case utils.ExitCode:
-			// nothing special yet!
-		default:
-			// print out whatever we got
-			fmt.Println(r)
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
 		}
 
 		// close the result stream

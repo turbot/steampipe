@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/shiena/ansicolor"
@@ -30,11 +31,26 @@ func FailOnErrorWithMessage(err error, message string) {
 }
 
 func ShowError(err error) {
-	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, err)
+	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, trimDriversFromErrMsg(err.Error()))
 }
 
 func ShowErrorWithMessage(err error, message string) {
-	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, err)
+	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, trimDriversFromErrMsg(err.Error()))
+}
+
+// remove the pq: and rpc error prefixes along
+// with all the unnecessary information that comes from the
+// drivers
+func trimDriversFromErrMsg(msg string) string {
+	errString := strings.TrimSpace(msg)
+	if strings.HasPrefix(errString, "pq:") {
+		errString = strings.TrimSpace(strings.TrimPrefix(errString, "pq:"))
+		if strings.HasPrefix(errString, "rpc error") {
+			// trim out "rpc error: code = Unknown desc ="
+			errString = strings.TrimSpace(errString[33:])
+		}
+	}
+	return errString
 }
 
 func ShowWarning(warning string) {
