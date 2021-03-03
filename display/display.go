@@ -15,7 +15,7 @@ import (
 
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/results"
+	"github.com/turbot/steampipe/definitions/results"
 	"github.com/turbot/steampipe/utils"
 )
 
