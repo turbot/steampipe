@@ -19,7 +19,7 @@ type ValidationFailure struct {
 
 func (v ValidationFailure) String() string {
 	return fmt.Sprintf(
-		"connection: %s\nplugin:     %s\nerror:      %s",
+		"Connection: %s\nPlugin:     %s\nError:      %s",
 		v.ConnectionName,
 		v.Plugin,
 		v.Message,
