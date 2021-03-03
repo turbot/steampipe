@@ -10,17 +10,18 @@ import (
 
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/definitions/results"
 	"github.com/turbot/steampipe/utils"
 )
 
 // ExecuteSync :: execute a query against this client and wait for the result
-func (c *Client) ExecuteSync(query string) (*SyncQueryResult, error) {
+func (c *Client) ExecuteSync(query string) (*results.SyncQueryResult, error) {
 	// https://github.com/golang/go/wiki/CodeReviewComments#indent-error-flow
 	result, err := c.executeQuery(query, false)
 	if err != nil {
 		return nil, err
 	}
-	syncResult := &SyncQueryResult{ColTypes: result.ColTypes}
+	syncResult := &results.SyncQueryResult{ColTypes: result.ColTypes}
 	for row := range *result.RowChan {
 		syncResult.Rows = append(syncResult.Rows, row)
 	}
@@ -28,9 +29,9 @@ func (c *Client) ExecuteSync(query string) (*SyncQueryResult, error) {
 	return syncResult, nil
 }
 
-func (c *Client) executeQuery(query string, countStream bool) (*QueryResult, error) {
+func (c *Client) executeQuery(query string, countStream bool) (*results.QueryResult, error) {
 	if query == "" {
-		return &QueryResult{}, nil
+		return &results.QueryResult{}, nil
 	}
 
 	start := time.Now()
@@ -65,7 +66,7 @@ func (c *Client) executeQuery(query string, countStream bool) (*QueryResult, err
 	}
 	cols, err := rows.Columns()
 
-	result := newQueryResult(colTypes)
+	result := results.NewQueryResult(colTypes)
 
 	rowCount := 0
 

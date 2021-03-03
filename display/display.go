@@ -11,15 +11,16 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/karrick/gows"
 
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/definitions/results"
 	"github.com/turbot/steampipe/utils"
 )
 
 // ShowOutput :: displays the output using the proper formatter as applicable
-func ShowOutput(result *db.QueryResult) {
+func ShowOutput(result *results.QueryResult) {
 	if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgJSON {
 		displayJSON(result)
 	} else if cmdconfig.Viper().Get(constants.ArgOutput) == constants.ArgCSV {
@@ -32,7 +33,74 @@ func ShowOutput(result *db.QueryResult) {
 	}
 }
 
-func displayLine(result *db.QueryResult) {
+func ShowWrappedTable(headers []string, rows [][]string, autoMerge bool) {
+	t := table.NewWriter()
+	t.SetStyle(table.StyleDefault)
+	t.SetOutputMirror(os.Stdout)
+
+	rowConfig := table.RowConfig{AutoMerge: autoMerge}
+	colConfigs, headerRow := getColumnSettings(headers, rows)
+
+	t.SetColumnConfigs(colConfigs)
+	t.AppendHeader(headerRow)
+
+	for _, row := range rows {
+		rowObj := table.Row{}
+		for _, col := range row {
+			rowObj = append(rowObj, col)
+		}
+		t.AppendRow(rowObj, rowConfig)
+	}
+	t.Render()
+}
+
+// calculate and returns column configuration based on header and row content
+func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig, table.Row) {
+	maxCols, _, _ := gows.GetWinSize()
+	colConfigs := make([]table.ColumnConfig, len(headers))
+	headerRow := make(table.Row, len(headers))
+
+	sumOfAllCols := 0
+
+	// account for the spaces around the value of a column and separators
+	spaceAccounting := ((len(headers) * 3) + 1)
+
+	for idx, colName := range headers {
+		headerRow[idx] = colName
+
+		// get the maximum len of strings in this column
+		maxLen := 0
+		for _, row := range rows {
+			colVal := row[idx]
+			if len(colVal) > maxLen {
+				maxLen = len(colVal)
+			}
+			if len(colName) > maxLen {
+				maxLen = len(colName)
+			}
+		}
+		colConfigs[idx] = table.ColumnConfig{
+			Name:     colName,
+			Number:   idx + 1,
+			WidthMax: maxLen,
+			WidthMin: maxLen,
+		}
+		sumOfAllCols += maxLen
+	}
+
+	// now that all columns are set to the widths that they need,
+	// set the last one to occupy as much as is available - no more - no less
+	sumOfRest := sumOfAllCols - colConfigs[len(colConfigs)-1].WidthMax
+
+	if sumOfAllCols > maxCols {
+		colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
+		colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
+	}
+
+	return colConfigs, headerRow
+}
+
+func displayLine(result *results.QueryResult) {
 	colNames := ColumnNames(result.ColTypes)
 	maxColNameLength := 0
 	for _, colName := range colNames {
@@ -44,7 +112,7 @@ func displayLine(result *db.QueryResult) {
 	itemIdx := 0
 
 	// define a function to display each row
-	rowFunc := func(row []interface{}, result *db.QueryResult) {
+	rowFunc := func(row []interface{}, result *results.QueryResult) {
 		recordAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		requiredTerminalColumnsForValuesOfRecord := 0
 		for _, colValue := range recordAsString {
@@ -98,11 +166,11 @@ func getTerminalColumnsRequiredForString(str string) int {
 	return colsRequired
 }
 
-func displayJSON(result *db.QueryResult) {
+func displayJSON(result *results.QueryResult) {
 	var jsonOutput []map[string]interface{}
 
 	// define function to add each row to the JSON output
-	rowFunc := func(row []interface{}, result *db.QueryResult) {
+	rowFunc := func(row []interface{}, result *results.QueryResult) {
 		record := map[string]interface{}{}
 		for idx, colType := range result.ColTypes {
 			value, _ := ParseJSONOutputColumnValue(row[idx], colType)
@@ -125,7 +193,7 @@ func displayJSON(result *db.QueryResult) {
 	fmt.Printf("%s\n", string(data))
 }
 
-func displayCSV(result *db.QueryResult) {
+func displayCSV(result *results.QueryResult) {
 	csvWriter := csv.NewWriter(os.Stdout)
 	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
 
@@ -135,7 +203,7 @@ func displayCSV(result *db.QueryResult) {
 
 	// print the data as it comes
 	// define function display each csv row
-	rowFunc := func(row []interface{}, result *db.QueryResult) {
+	rowFunc := func(row []interface{}, result *results.QueryResult) {
 		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		_ = csvWriter.Write(rowAsString)
 	}
@@ -152,7 +220,7 @@ func displayCSV(result *db.QueryResult) {
 	}
 }
 
-func displayTable(result *db.QueryResult) {
+func displayTable(result *results.QueryResult) {
 	// the buffer to put the output data in
 	outbuf := bytes.NewBufferString("")
 
@@ -178,7 +246,7 @@ func displayTable(result *db.QueryResult) {
 	t.AppendHeader(headers)
 
 	// define a function to execute for each row
-	rowFunc := func(row []interface{}, result *db.QueryResult) {
+	rowFunc := func(row []interface{}, result *results.QueryResult) {
 		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		rowObj := table.Row{}
 		for _, col := range rowAsString {
@@ -205,10 +273,10 @@ func displayTable(result *db.QueryResult) {
 	ShowPaged(outbuf.String())
 }
 
-type displayResultsFunc func(row []interface{}, result *db.QueryResult)
+type displayResultsFunc func(row []interface{}, result *results.QueryResult)
 
 // call func displayResult for each row of results
-func iterateResults(result *db.QueryResult, displayResult displayResultsFunc) error {
+func iterateResults(result *results.QueryResult, displayResult displayResultsFunc) error {
 	for row := range *result.RowChan {
 		if row == nil {
 			return nil
