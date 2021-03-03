@@ -38,6 +38,9 @@ func ShowErrorWithMessage(err error, message string) {
 	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, trimDriversFromErrMsg(err.Error()))
 }
 
+// remove the pq: and rpc error prefixes along
+// with all the unnecessary information that comes from the
+// drivers
 func trimDriversFromErrMsg(msg string) string {
 	errString := strings.TrimSpace(msg)
 	if strings.HasPrefix(errString, "pq:") {
