@@ -1,3 +1,15 @@
+## v0.2.3 [2021-03-03]
+_What's new?_
+* Increase timeout for plugin update HTTP call. ([#216](https://github.com/turbot/steampipe/issues/216))
+* `plugin update` now checks installed version of a plugin is out of date before updating. ([#234](https://github.com/turbot/steampipe/issues/234))
+* Improve the error messages for sql errors. ([#118](https://github.com/turbot/steampipe/issues/118))
+* Wrap `plugin list` output to window width. ([#235](https://github.com/turbot/steampipe/issues/235))
+
+_Bug fixes_
+* Fix timestamp quals not being passed to plugin. ([#247](https://github.com/turbot/steampipe/issues/247))
+* Fix `steampipe server not found` error after failed connection validation. ([#220](https://github.com/turbot/steampipe/issues/220))
+* Ensure all panics are recovered. ([#246](https://github.com/turbot/steampipe/issues/246))
+
 ## v0.2.2 [2021-02-25]
 _What's new?_
 * Set Inspect column width to no larger than required to display data. ([#155](https://github.com/turbot/steampipe/issues/155))
