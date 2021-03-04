@@ -73,5 +73,5 @@ echo "Steampipe was installed successfully to $exe"
 if command -v steampipe >/dev/null; then
 	echo "Run 'steampipe --help' to get started"
 else
-    echo "Steampipe was installed, but could not be located. Are you sure `/use/local/bin` is exported?"
+    echo "Steampipe was installed, but could not be located. Are you sure `/usr/local/bin` is exported?"
 fi
