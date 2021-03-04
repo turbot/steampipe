@@ -171,6 +171,17 @@ Example:
 	return cmd
 }
 
+type skipReason struct {
+	plugin string
+	reason string
+}
+
+func (u *skipReason) String() string {
+	ref := ociinstaller.NewSteampipeImageRef(u.plugin)
+	_, name, stream := ref.GetOrgNameAndStream()
+	return fmt.Sprintf("Plugin:   %s\nReason:   %s", fmt.Sprintf("%s@%s", name, stream), u.reason)
+}
+
 func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runPluginInstallCmd install")
 	defer func() {
@@ -184,7 +195,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// These can be simple names ('aws') for "standard" plugins, or
 	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
-	installSkipped := []string{}
+	installSkipped := []skipReason{}
 
 	if len(plugins) == 0 {
 		fmt.Println()
@@ -199,14 +210,11 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 	}
 
-	for idx, p := range plugins {
+	for _, p := range plugins {
 		isPluginExists, _ := plugin.Exists(p)
 		if isPluginExists {
-			installSkipped = append(installSkipped, p)
+			installSkipped = append(installSkipped, skipReason{p, "Already Installed"})
 			continue
-		}
-		if idx > 0 {
-			fmt.Println()
 		}
 		spinner := utils.ShowSpinner(fmt.Sprintf("Installing plugin %s...", p))
 		image, err := plugin.Install(p)
@@ -231,29 +239,38 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		if org == "turbot" {
 			fmt.Printf("Documentation:    https://hub.steampipe.io/plugins/%s/%s\n", org, p)
 		}
+		if len(plugins) > 1 {
+			fmt.Println()
+		}
 	}
 
 	if len(installSkipped) > 0 {
-		fmt.Printf(
-			"Skipped the following %s, since %s already installed:\n",
-			utils.Pluralize("plugin", len(installSkipped)),
-			utils.Pluralize("it is", len(installSkipped)),
-		)
+		skipReasons := []string{}
+		pluginsSkipped := []string{}
 		for _, s := range installSkipped {
-			fmt.Printf("    > %s\n", constants.Bold(s))
+			skipReasons = append(skipReasons, s.String())
+			pluginsSkipped = append(pluginsSkipped, s.plugin)
 		}
+		fmt.Printf(
+			"Skipped the following %s:\n\n%s",
+			utils.Pluralize("plugin", len(installSkipped)),
+			strings.Join(skipReasons, "\n\n"),
+		)
+		fmt.Println()
 		fmt.Printf(
 			"\nTo update %s, please run: %s\n",
 			utils.Pluralize("this plugin", len(installSkipped)),
 			constants.Bold(fmt.Sprintf(
 				"steampipe plugin update %s",
-				strings.Join(installSkipped, " "),
+				strings.Join(pluginsSkipped, " "),
 			)),
 		)
-	}
-
-	if len(plugins) > 1 {
-		fmt.Println("")
+		fmt.Println()
+	} else {
+		if len(plugins) > 1 {
+			// the last line
+			fmt.Println()
+		}
 	}
 
 	// refresh connections - we do this to validate the plugins
@@ -263,15 +280,6 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	if len(plugins) > len(installSkipped) {
 		refreshConnections()
 	}
-}
-
-type updateSkip struct {
-	plugin string
-	reason string
-}
-
-func (u *updateSkip) String() string {
-	return fmt.Sprintf("Plugin:   %s\nReason:   %s", u.plugin, u.reason)
 }
 
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
@@ -324,7 +332,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	var runUpdatesFor []*versionfile.InstalledVersion
-	var updateSkipped []updateSkip
+	var updateSkipped []skipReason
 
 	if cmdconfig.Viper().GetBool("all") {
 		for k, v := range versionData.Plugins {
@@ -343,7 +351,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			if isExists {
 				runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
 			} else {
-				updateSkipped = append(updateSkipped, updateSkip{p, "Not Installed"})
+				updateSkipped = append(updateSkipped, skipReason{p, "Not Installed"})
 			}
 		}
 	}
@@ -367,7 +375,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 	for _, report := range reports {
 		if report.Plugin.ImageDigest == report.CheckResponse.Digest {
-			updateSkipped = append(updateSkipped, updateSkip{
+			updateSkipped = append(updateSkipped, skipReason{
 				fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
 				"Latest already installed",
 			})
@@ -406,15 +414,12 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		for _, s := range updateSkipped {
 			skipReasons = append(skipReasons, s.String())
 		}
-
 		fmt.Printf(
 			"Skipped the following %s:\n\n%s",
 			utils.Pluralize("plugin", len(updateSkipped)),
 			strings.Join(skipReasons, "\n\n"),
 		)
-		if len(updateSkipped) > 1 {
-			fmt.Println()
-		}
+		fmt.Println()
 	}
 
 	if len(plugins) > 1 {
