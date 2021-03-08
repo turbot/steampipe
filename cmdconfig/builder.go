@@ -2,11 +2,13 @@ package cmdconfig
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
 type CmdBuilder struct {
 	cmd      *cobra.Command
-	vWrapper *ViperWrapper
+	bindings map[string]*pflag.Flag
 }
 
 // OnCmd :: starts a config builder wrapping over the provided *cobra.Command
@@ -18,15 +20,24 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 
 	cfg := new(CmdBuilder)
 	cfg.cmd = cmd
-	cfg.vWrapper = NewViperWrapper(cfg.cmd)
-
-	InitViper(cfg.vWrapper)
+	cfg.bindings = map[string]*pflag.Flag{}
 
 	originalRun := cfg.cmd.Run
+	originalPreRun := cfg.cmd.PreRun
 
 	cfg.cmd.Run = func(cmd *cobra.Command, args []string) {
-		setConfig(cfg.vWrapper)
 		originalRun(cmd, args)
+	}
+	cfg.cmd.PreRun = func(cmd *cobra.Command, args []string) {
+		InitViper()
+		// bind flags
+		for flagName, flag := range cfg.bindings {
+			viper.GetViper().BindPFlag(flagName, flag)
+		}
+		// run the original PreRun
+		if originalPreRun != nil {
+			originalPreRun(cmd, args)
+		}
 	}
 
 	return cfg
@@ -35,9 +46,9 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 // Helper function to add a string flag to a command
 func (c *CmdBuilder) AddStringFlag(name string, shorthand string, def string, desc string, opts ...flagOpt) *CmdBuilder {
 	c.cmd.Flags().StringP(name, shorthand, def, desc)
-	c.vWrapper.BindPFlag(name, c.cmd.Flags().Lookup(name))
+	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
-		o(c.cmd, name, name, c.vWrapper)
+		o(c.cmd, name, name)
 	}
 
 	return c
@@ -46,9 +57,9 @@ func (c *CmdBuilder) AddStringFlag(name string, shorthand string, def string, de
 // Helper function to add an integer flag to a command
 func (c *CmdBuilder) AddIntFlag(name, shorthand string, def int, desc string, opts ...flagOpt) *CmdBuilder {
 	c.cmd.Flags().IntP(name, shorthand, def, desc)
-	c.vWrapper.BindPFlag(name, c.cmd.Flags().Lookup(name))
+	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
-		o(c.cmd, name, name, c.vWrapper)
+		o(c.cmd, name, name)
 	}
 	return c
 }
@@ -56,9 +67,9 @@ func (c *CmdBuilder) AddIntFlag(name, shorthand string, def int, desc string, op
 // Helper function to add a boolean flag to a command
 func (c *CmdBuilder) AddBoolFlag(name, shorthand string, def bool, desc string, opts ...flagOpt) *CmdBuilder {
 	c.cmd.Flags().BoolP(name, shorthand, def, desc)
-	c.vWrapper.BindPFlag(name, c.cmd.Flags().Lookup(name))
+	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
-		o(c.cmd, name, name, c.vWrapper)
+		o(c.cmd, name, name)
 	}
 	return c
 }
@@ -66,9 +77,9 @@ func (c *CmdBuilder) AddBoolFlag(name, shorthand string, def bool, desc string, 
 // Helper function to add a flag that accepts an array of strings
 func (c *CmdBuilder) AddStringSliceFlag(name, shorthand string, def []string, desc string, opts ...flagOpt) *CmdBuilder {
 	c.cmd.Flags().StringSliceP(name, shorthand, def, desc)
-	c.vWrapper.BindPFlag(name, c.cmd.Flags().Lookup(name))
+	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
-		o(c.cmd, name, name, c.vWrapper)
+		o(c.cmd, name, name)
 	}
 	return c
 }
@@ -76,9 +87,9 @@ func (c *CmdBuilder) AddStringSliceFlag(name, shorthand string, def []string, de
 // Helper function to add a flag that accepts a map of strings
 func (c *CmdBuilder) AddStringMapStringFlag(name, shorthand string, def map[string]string, desc string, opts ...flagOpt) *CmdBuilder {
 	c.cmd.Flags().StringToStringP(name, shorthand, def, desc)
-	c.vWrapper.BindPFlag(name, c.cmd.Flags().Lookup(name))
+	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
-		o(c.cmd, name, name, c.vWrapper)
+		o(c.cmd, name, name)
 	}
 	return c
 }
