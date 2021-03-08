@@ -63,5 +63,5 @@ func init() {
 // initConfig reads in config file and ENV variables if set.
 func initGlobalConfig() {
 	log.Println("[TRACE] rootCmd initGlobalConfig")
-	cmdconfig.InitViper(cmdconfig.NewViperWrapper(rootCmd))
+	cmdconfig.InitViper()
 }
