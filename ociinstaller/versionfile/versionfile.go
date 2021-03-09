@@ -23,7 +23,7 @@ type VersionFile struct {
 }
 
 type InstalledVersion struct {
-	Name            string `json:"-"` // the fully qualified name of the plugin
+	Name            string `json:"-"` // the fully qualified name of the plugin - auto populated
 	Version         string `json:"version"`
 	ImageDigest     string `json:"imageDigest"`
 	InstalledFrom   string `json:"installedFrom"`
