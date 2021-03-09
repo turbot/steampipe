@@ -92,6 +92,16 @@ func (v *VersionChecker) reportPluginUpdates() map[string]VersionCheckReport {
 	}
 	reports := v.getLatestVersionsForPlugins(v.pluginsToCheck)
 
+	// remove elements from `reports` which have empty strings in CheckResponse
+	// this happens if we have sent a plugin to the API which doesn't exist
+	// in the registry
+	for key, value := range reports {
+		if value.CheckResponse.Name == "" {
+			// delete this key
+			delete(reports, key)
+		}
+	}
+
 	// update the version file
 	for _, plugin := range v.pluginsToCheck {
 		versionFileData.Plugins[plugin.Name].LastCheckedDate = versionfile.FormatTime(time.Now())
@@ -115,8 +125,9 @@ func (v *VersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.Inst
 		requestPayload = append(requestPayload, thisPayload)
 
 		reports[getMapKey(thisPayload)] = VersionCheckReport{
-			Plugin:       ref,
-			CheckRequest: thisPayload,
+			Plugin:        ref,
+			CheckRequest:  thisPayload,
+			CheckResponse: versionCheckPayload{},
 		}
 	}
 
@@ -151,7 +162,7 @@ func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.Install
 
 func (v *VersionChecker) getVersionCheckURL() url.URL {
 	var u url.URL
-	//https://hub-steampipe-io-git-development.turbot.vercel.app/api/plugin/version
+	// Staging URL: https://hub-steampipe-io-git-development.turbot.vercel.app/api/plugin/version
 	u.Scheme = "https"
 	u.Host = "hub.steampipe.io"
 	u.Path = "api/plugin/version"
@@ -192,7 +203,7 @@ func (v *VersionChecker) requestServerForLatest(payload []versionCheckPayload) [
 
 	err = json.Unmarshal(bodyBytes, &responseData)
 	if err != nil {
-		fmt.Println("[DEBUG] Error in unmarshalling response", err)
+		log.Println("[DEBUG] Error in unmarshalling plugin update response", err)
 		return nil
 	}
 
