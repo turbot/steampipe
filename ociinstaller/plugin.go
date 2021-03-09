@@ -48,10 +48,6 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 		return err
 	}
 
-	if v.Plugins == nil {
-		v.Plugins = make(map[string](*versionfile.InstalledVersion))
-	}
-
 	ref := NewSteampipeImageRef(image.ImageRef)
 
 	pluginFullName := ref.DisplayImageRef()

@@ -327,9 +327,6 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		utils.ShowError(fmt.Errorf("error loading current plugin data"))
 		return
 	}
-	if versionData.Plugins == nil {
-		versionData.Plugins = map[string]*versionfile.InstalledVersion{}
-	}
 
 	var runUpdatesFor []*versionfile.InstalledVersion
 	var updateSkipped []skipReason

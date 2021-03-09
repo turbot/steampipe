@@ -72,6 +72,10 @@ func read(path string) (*VersionFile, error) {
 		return nil, err
 	}
 
+	if data.Plugins == nil {
+		// create an empty Map with room for at least 10 plugins
+		data.Plugins = make(map[string]*InstalledVersion, 10)
+	}
 	return &data, nil
 }
 

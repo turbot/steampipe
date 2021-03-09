@@ -62,10 +62,6 @@ func GetAllUpdateReport(installationID string) map[string]VersionCheckReport {
 		return nil
 	}
 
-	if versionFileData.Plugins == nil {
-		versionFileData.Plugins = make(map[string](*versionfile.InstalledVersion))
-	}
-
 	for _, p := range versionFileData.Plugins {
 		if strings.HasPrefix(p.Name, ociinstaller.DefaultImageRepoDisplayURL) {
 			versionChecker.pluginsToCheck = append(versionChecker.pluginsToCheck, p)
@@ -80,10 +76,6 @@ func (v *VersionChecker) reportPluginUpdates() map[string]VersionCheckReport {
 	if err != nil {
 		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not load versionfile")
 		return nil
-	}
-
-	if versionFileData.Plugins == nil {
-		versionFileData.Plugins = make(map[string](*versionfile.InstalledVersion))
 	}
 
 	if len(v.pluginsToCheck) == 0 {
