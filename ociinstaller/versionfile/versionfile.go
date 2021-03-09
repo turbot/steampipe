@@ -2,7 +2,6 @@ package versionfile
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -23,7 +22,7 @@ type VersionFile struct {
 }
 
 type InstalledVersion struct {
-	Name            string `json:"-"` // the fully qualified name of the plugin - auto populated
+	Name            string `json:"-"`
 	Version         string `json:"version"`
 	ImageDigest     string `json:"imageDigest"`
 	InstalledFrom   string `json:"installedFrom"`
@@ -57,7 +56,7 @@ func fileExists(filename string) bool {
 func (f *VersionFile) write(path string) error {
 	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
 	if err != nil {
-		fmt.Println("---- error: ", err)
+		log.Println("[ERROR]", "Error while writing version file", err)
 		return err
 	}
 	return ioutil.WriteFile(path, versionFileJSON, 0644)
@@ -69,7 +68,7 @@ func read(path string) (*VersionFile, error) {
 	var data VersionFile
 
 	if err := json.Unmarshal([]byte(file), &data); err != nil {
-		log.Println("Error while reading version file", err)
+		log.Println("[ERROR]", "Error while reading version file", err)
 		return nil, err
 	}
 
