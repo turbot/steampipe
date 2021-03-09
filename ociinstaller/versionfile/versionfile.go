@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -68,7 +69,7 @@ func read(path string) (*VersionFile, error) {
 	var data VersionFile
 
 	if err := json.Unmarshal([]byte(file), &data); err != nil {
-		fmt.Println("---- error: ", err)
+		log.Println("Error while reading version file", err)
 		return nil, err
 	}
 
@@ -76,6 +77,14 @@ func read(path string) (*VersionFile, error) {
 		// create an empty Map with room for at least 10 plugins
 		data.Plugins = make(map[string]*InstalledVersion, 10)
 	}
+
+	for key, value := range data.Plugins {
+		if key != value.Name {
+			delete(data.Plugins, key)
+			log.Println("[WARN]", "versionfile", "read", fmt.Sprintf("Removed %s from versionfile.Plugins since it does not match the Name of the plugin", key))
+		}
+	}
+
 	return &data, nil
 }
 
