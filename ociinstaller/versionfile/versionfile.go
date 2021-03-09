@@ -81,6 +81,9 @@ func read(path string) (*VersionFile, error) {
 		data.Plugins[key].Name = key
 	}
 
+	data.EmbeddedDB.Name = "embeddedDB"
+	data.FdwExtension.Name = "fdwExtension"
+
 	return &data, nil
 }
 
