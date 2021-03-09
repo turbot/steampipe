@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	VersionFileName = "versions.json"
+	versionFileName = "versions.json"
 )
 
 type VersionFile struct {
@@ -23,7 +23,7 @@ type VersionFile struct {
 }
 
 type InstalledVersion struct {
-	Name            string `json:"name"`
+	Name            string `json:"-"` // the fully qualified name of the plugin
 	Version         string `json:"version"`
 	ImageDigest     string `json:"imageDigest"`
 	InstalledFrom   string `json:"installedFrom"`
@@ -74,23 +74,24 @@ func read(path string) (*VersionFile, error) {
 	}
 
 	if data.Plugins == nil {
-		// create an empty Map with room for at least 10 plugins
-		data.Plugins = make(map[string]*InstalledVersion, 10)
+		// create an empty Map with room for at least 2 plugins
+		data.Plugins = make(map[string]*InstalledVersion, 2)
 	}
 
-	for key, value := range data.Plugins {
-		if key != value.Name {
-			delete(data.Plugins, key)
-			log.Println("[WARN]", "versionfile", "read", fmt.Sprintf("Removed %s from versionfile.Plugins since it does not match the Name of the plugin", key))
-		}
+	for key := range data.Plugins {
+		// hard code the name to the key
+		data.Plugins[key].Name = key
 	}
+
+	data.EmbeddedDB.Name = "embeddedDB"
+	data.FdwExtension.Name = "fdwExtension"
 
 	return &data, nil
 }
 
 // ex: $CONFIG_DIR/plugins/registry.steampipe.io/turbot/aws/1.1.2/steampipe-plugin-aws
 func versionFileLocation() string {
-	path := filepath.Join(constants.InternalDir(), VersionFileName)
+	path := filepath.Join(constants.InternalDir(), versionFileName)
 	return path
 }
 
