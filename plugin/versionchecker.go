@@ -162,7 +162,6 @@ func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.Install
 
 func (v *VersionChecker) getVersionCheckURL() url.URL {
 	var u url.URL
-	// Staging URL: https://hub-steampipe-io-git-development.turbot.vercel.app/api/plugin/version
 	u.Scheme = "https"
 	u.Host = "hub.steampipe.io"
 	u.Path = "api/plugin/version"
