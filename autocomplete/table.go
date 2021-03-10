@@ -28,14 +28,21 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *con
 		schemasToAdd = append(schemasToAdd, schemaName)
 
 		// decide whether we need to include this schema in unqualified table list as well
-		pluginOfThisSchema := stripVersionFromPluginName((*connectionMap)[schemaName].Plugin)
-		isIncluded := unqualifiedTableMap[pluginOfThisSchema]
-
-		for tableName := range schemaDetails {
-			qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
-			if !isIncluded {
+		schemaConnection, found := (*connectionMap)[schemaName]
+		if found {
+			pluginOfThisSchema := stripVersionFromPluginName(schemaConnection.Plugin)
+			isIncluded := unqualifiedTableMap[pluginOfThisSchema]
+			for tableName := range schemaDetails {
+				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
+				if !isIncluded {
+					unqualifiedTablesToAdd = append(unqualifiedTablesToAdd, tableName)
+					unqualifiedTableMap[pluginOfThisSchema] = true
+				}
+			}
+		} else if schemaName == "public" {
+			for tableName := range schemaDetails {
+				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
 				unqualifiedTablesToAdd = append(unqualifiedTablesToAdd, tableName)
-				unqualifiedTableMap[pluginOfThisSchema] = true
 			}
 		}
 	}
