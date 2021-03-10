@@ -193,65 +193,25 @@ func (c *Client) getSchemaFromDB() (*sql.Rows, error) {
 			is_nullable,
 			data_type,
 			table_schema,
-			(
-				COALESCE(
-					-- coalesce to set to '' if NULL
-					(
-						SELECT 
-							pg_catalog.col_description(
-								c.oid, cols.ordinal_position :: int
-							) 
-						FROM 
-							pg_catalog.pg_class c 
-						WHERE 
-							c.relname = cols.table_name
-						AND 
-							c.relnamespace = (
-								SELECT 
-									oid 
-								FROM 
-									pg_catalog.pg_namespace 
-								WHERE 
-									nspname = cols.table_schema
-							)
-					),
-					''
-				)
-			) as column_comment, 
-			(
-				COALESCE(
-					-- coalesce to set to '' if NULL
-					(
-						SELECT 
-							pg_catalog.obj_description(c.oid) 
-						FROM 
-							pg_catalog.pg_class c 
-						WHERE 
-							c.relname = cols.table_name
-						AND 
-							c.relnamespace = (
-								SELECT 
-									oid 
-								FROM 
-									pg_catalog.pg_namespace 
-								WHERE 
-									nspname = cols.table_schema
-							)
-					),
-					''
-				)
-			) as table_comment 
-		FROM 
-			information_schema.columns cols 
-		WHERE 
+			(COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
+			(COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
+		FROM
+			information_schema.columns cols
+		LEFT JOIN
+			pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
+		LEFT JOIN
+			pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
+		WHERE
 			cols.table_name in (
 				SELECT 
 					foreign_table_name 
 				FROM 
 					information_schema.foreign_tables
 			) 
+			OR
+			cols.table_schema = 'public'
 		ORDER BY 
-			cols.table_name;
+			cols.table_schema, cols.table_name, cols.column_name;
 `
 
 	return c.dbClient.Query(query)
