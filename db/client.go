@@ -208,6 +208,8 @@ func (c *Client) getSchemaFromDB() (*sql.Rows, error) {
 				FROM 
 					information_schema.foreign_tables
 			) 
+			OR
+			cols.table_schema = 'public'
 		ORDER BY 
 			cols.table_schema, cols.table_name, cols.column_name;
 `
