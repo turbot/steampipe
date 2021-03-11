@@ -1,3 +1,14 @@
+## v0.2.4 [2021-03-11]
+_What's new?_
+* Autocomplete now includes public schema.  ([#123](https://github.com/turbot/steampipe/issues/123))
+* Add bug report and feature request issue templates.  ([#266](https://github.com/turbot/steampipe/issues/266))
+* Add `SECURITY.md`. ([#266](https://github.com/turbot/steampipe/issues/266))
+* Update spacing for plugin update and install messages. ([#264](https://github.com/turbot/steampipe/issues/264))
+
+_Bug fixes_
+* Remove invalid update notifications for plugins which cannot be found in the registry.  ([#265](https://github.com/turbot/steampipe/issues/265))
+* Fix typo in install.sh. 
+
 ## v0.2.3 [2021-03-03]
 _What's new?_
 * Increase timeout for plugin update HTTP call. ([#216](https://github.com/turbot/steampipe/issues/216))
