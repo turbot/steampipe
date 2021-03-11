@@ -2,8 +2,8 @@ package versionfile
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	VersionFileName = "versions.json"
+	versionFileName = "versions.json"
 )
 
 type VersionFile struct {
@@ -22,7 +22,7 @@ type VersionFile struct {
 }
 
 type InstalledVersion struct {
-	Name            string `json:"name"`
+	Name            string `json:"-"`
 	Version         string `json:"version"`
 	ImageDigest     string `json:"imageDigest"`
 	InstalledFrom   string `json:"installedFrom"`
@@ -56,7 +56,7 @@ func fileExists(filename string) bool {
 func (f *VersionFile) write(path string) error {
 	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
 	if err != nil {
-		fmt.Println("---- error: ", err)
+		log.Println("[ERROR]", "Error while writing version file", err)
 		return err
 	}
 	return ioutil.WriteFile(path, versionFileJSON, 0644)
@@ -68,16 +68,28 @@ func read(path string) (*VersionFile, error) {
 	var data VersionFile
 
 	if err := json.Unmarshal([]byte(file), &data); err != nil {
-		fmt.Println("---- error: ", err)
+		log.Println("[ERROR]", "Error while reading version file", err)
 		return nil, err
 	}
+
+	if data.Plugins == nil {
+		data.Plugins = map[string]*InstalledVersion{}
+	}
+
+	for key := range data.Plugins {
+		// hard code the name to the key
+		data.Plugins[key].Name = key
+	}
+
+	data.EmbeddedDB.Name = "embeddedDB"
+	data.FdwExtension.Name = "fdwExtension"
 
 	return &data, nil
 }
 
 // ex: $CONFIG_DIR/plugins/registry.steampipe.io/turbot/aws/1.1.2/steampipe-plugin-aws
 func versionFileLocation() string {
-	path := filepath.Join(constants.InternalDir(), VersionFileName)
+	path := filepath.Join(constants.InternalDir(), versionFileName)
 	return path
 }
 

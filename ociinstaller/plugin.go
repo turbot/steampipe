@@ -48,10 +48,6 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 		return err
 	}
 
-	if v.Plugins == nil {
-		v.Plugins = make(map[string](*versionfile.InstalledVersion))
-	}
-
 	ref := NewSteampipeImageRef(image.ImageRef)
 
 	pluginFullName := ref.DisplayImageRef()
@@ -62,7 +58,6 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 	}
 
 	//change this to the path????
-	plugin.Name = pluginFullName
 	plugin.Version = image.Config.Plugin.Version
 	plugin.ImageDigest = string(image.OCIDescriptor.Digest)
 	plugin.InstalledFrom = ref.ActualImageRef()
