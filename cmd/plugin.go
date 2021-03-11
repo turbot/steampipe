@@ -370,7 +370,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	reports := plugin.GetUpdateReport(state.InstallationID, runUpdatesFor)
 	utils.StopSpinner(spinner)
 
-	if len(reports) < len(runUpdatesFor) {
+	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
 		// in which case we get back an empty map
 		utils.ShowError(fmt.Errorf("there was an issue contacting the update server. Please try later"))

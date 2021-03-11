@@ -58,6 +58,7 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 	}
 
 	//change this to the path????
+	plugin.Name = pluginFullName
 	plugin.Version = image.Config.Plugin.Version
 	plugin.ImageDigest = string(image.OCIDescriptor.Digest)
 	plugin.InstalledFrom = ref.ActualImageRef()

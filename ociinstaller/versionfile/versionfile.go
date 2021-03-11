@@ -22,7 +22,7 @@ type VersionFile struct {
 }
 
 type InstalledVersion struct {
-	Name            string `json:"-"`
+	Name            string `json:"name"`
 	Version         string `json:"version"`
 	ImageDigest     string `json:"imageDigest"`
 	InstalledFrom   string `json:"installedFrom"`
@@ -80,9 +80,6 @@ func read(path string) (*VersionFile, error) {
 		// hard code the name to the key
 		data.Plugins[key].Name = key
 	}
-
-	data.EmbeddedDB.Name = "embeddedDB"
-	data.FdwExtension.Name = "fdwExtension"
 
 	return &data, nil
 }
