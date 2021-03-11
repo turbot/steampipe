@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
@@ -206,9 +205,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if len(plugins) > 1 {
-		fmt.Println()
-	}
+	// hack for printing out a new line at the top of the output
+	// this is temporary and will be fixed by a display refactor in the next release
+	printedLeadingBlankLine := false
 
 	for _, p := range plugins {
 		isPluginExists, _ := plugin.Exists(p)
@@ -216,18 +215,24 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			installSkipped = append(installSkipped, skipReason{p, "Already Installed"})
 			continue
 		}
+		if len(plugins) > 1 && !printedLeadingBlankLine {
+			fmt.Println()
+			printedLeadingBlankLine = true
+		}
 		spinner := utils.ShowSpinner(fmt.Sprintf("Installing plugin %s...", p))
 		image, err := plugin.Install(p)
 		utils.StopSpinner(spinner)
 		if err != nil {
-			msg := fmt.Sprintf("install failed for plugin '%s'", p)
-
+			msg := ""
 			if strings.HasSuffix(err.Error(), "not found") {
-				msg += ": not found"
+				msg = "Not found"
 			} else {
-				log.Printf("[DEBUG] %s", err.Error())
+				msg = err.Error()
 			}
-			utils.ShowError(fmt.Errorf(msg))
+			installSkipped = append(installSkipped, skipReason{
+				p,
+				msg,
+			})
 			continue
 		}
 		versionString := ""
@@ -239,32 +244,36 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		if org == "turbot" {
 			fmt.Printf("Documentation:    https://hub.steampipe.io/plugins/%s/%s\n", org, p)
 		}
-		if len(plugins) > 1 {
-			fmt.Println()
-		}
 	}
 
 	if len(installSkipped) > 0 {
 		skipReasons := []string{}
-		pluginsSkipped := []string{}
 		for _, s := range installSkipped {
 			skipReasons = append(skipReasons, s.String())
-			pluginsSkipped = append(pluginsSkipped, s.plugin)
 		}
 		fmt.Printf(
-			"Skipped the following %s:\n\n%s",
+			"\nSkipped the following %s:\n\n%s",
 			utils.Pluralize("plugin", len(installSkipped)),
 			strings.Join(skipReasons, "\n\n"),
 		)
 		fmt.Println()
-		fmt.Printf(
-			"\nTo update %s, please run: %s\n",
-			utils.Pluralize("this plugin", len(installSkipped)),
-			constants.Bold(fmt.Sprintf(
-				"steampipe plugin update %s",
-				strings.Join(pluginsSkipped, " "),
-			)),
-		)
+		installSkippedBecauseInstalled := []string{}
+		for _, r := range installSkipped {
+			if r.reason == "Already Installed" {
+				installSkippedBecauseInstalled = append(installSkippedBecauseInstalled, r.plugin)
+			}
+		}
+		if len(installSkippedBecauseInstalled) > 0 {
+			fmt.Printf(
+				"\nTo update %s which %s already installed, please run: %s\n",
+				utils.Pluralize("plugin", len(installSkippedBecauseInstalled)),
+				utils.Pluralize("is", len(installSkippedBecauseInstalled)),
+				constants.Bold(fmt.Sprintf(
+					"steampipe plugin update %s",
+					strings.Join(installSkippedBecauseInstalled, " "),
+				)),
+			)
+		}
 		fmt.Println()
 	} else {
 		if len(plugins) > 1 {
@@ -353,11 +362,9 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if len(plugins) > 0 {
-		// add a blank line at the top since this is going to be
-		// a multi output
-		fmt.Println()
-	}
+	// hack for printing out a new line at the top of the output
+	// this is temporary and will be fixed by a display refactor in the next release
+	printedLeadingBlankLine := false
 
 	spinner := utils.ShowSpinner("Checking for available updates")
 	reports := plugin.GetUpdateReport(state.InstallationID, runUpdatesFor)
@@ -379,20 +386,29 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			continue
 		}
 
+		if len(plugins) > 0 && !printedLeadingBlankLine {
+			// add a blank line at the top since this is going to be
+			// a multi output
+			fmt.Println()
+		}
+
 		spinner := utils.ShowSpinner(fmt.Sprintf("Updating plugin %s...", report.CheckResponse.Name))
 		image, err := plugin.Install(report.Plugin.Name)
 		utils.StopSpinner(spinner)
 		if err != nil {
-			msg := fmt.Sprintf("update failed for plugin '%s'", report.Plugin.Name)
-
+			msg := ""
 			if strings.HasSuffix(err.Error(), "not found") {
-				msg += ": not found"
+				msg = "Not found"
 			} else {
-				log.Printf("[DEBUG] %s", err.Error())
+				msg = err.Error()
 			}
-			utils.ShowError(fmt.Errorf(msg))
+			updateSkipped = append(updateSkipped, skipReason{
+				report.Plugin.Name,
+				msg,
+			})
 			continue
 		}
+
 		versionString := ""
 		if image.Config.Plugin.Version != "" {
 			versionString = " v" + image.Config.Plugin.Version
@@ -403,20 +419,35 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		if org == "turbot" {
 			fmt.Printf("Documentation:  https://hub.steampipe.io/plugins/%s/%s\n", org, name)
 		}
-		fmt.Println()
+		// fmt.Println()
 	}
 
 	if len(updateSkipped) > 0 {
 		skipReasons := []string{}
+		notUpdatedSinceNotInstalled := []string{}
 		for _, s := range updateSkipped {
 			skipReasons = append(skipReasons, s.String())
+			if s.reason == "Not Installed" {
+				notUpdatedSinceNotInstalled = append(notUpdatedSinceNotInstalled, s.plugin)
+			}
 		}
 		fmt.Printf(
-			"Skipped the following %s:\n\n%s",
+			"\nSkipped the following %s:\n\n%s\n",
 			utils.Pluralize("plugin", len(updateSkipped)),
 			strings.Join(skipReasons, "\n\n"),
 		)
-		fmt.Println()
+		if len(notUpdatedSinceNotInstalled) > 0 {
+			fmt.Println()
+			fmt.Printf(
+				"To install %s which %s not installed, please run: %s\n",
+				utils.Pluralize("plugin", len(notUpdatedSinceNotInstalled)),
+				utils.Pluralize("is", len(notUpdatedSinceNotInstalled)),
+				constants.Bold(fmt.Sprintf(
+					"steampipe plugin install %s",
+					strings.Join(notUpdatedSinceNotInstalled, " "),
+				)),
+			)
+		}
 	}
 
 	if len(plugins) > 1 {
