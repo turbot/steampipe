@@ -48,9 +48,6 @@ func Remove(image string, pluginConnections map[string][]string) error {
 	if err != nil {
 		return err
 	}
-	if v.Plugins == nil {
-		v.Plugins = make(map[string](*versionfile.InstalledVersion))
-	}
 	delete(v.Plugins, fullPluginName)
 	return v.Save()
 }
@@ -60,9 +57,6 @@ func Exists(plugin string) (bool, error) {
 	versionData, err := versionfile.Load()
 	if err != nil {
 		return false, err
-	}
-	if versionData.Plugins == nil {
-		versionData.Plugins = make(map[string]*versionfile.InstalledVersion)
 	}
 
 	imageRef := ociinstaller.NewSteampipeImageRef(plugin)
@@ -106,10 +100,6 @@ func List(reverseConnectionMap map[string][]string) ([]ListItem, error) {
 	v, err := versionfile.Load()
 	if err != nil {
 		return nil, err
-	}
-
-	if v.Plugins == nil {
-		v.Plugins = make(map[string](*versionfile.InstalledVersion))
 	}
 
 	pluginVersions := v.Plugins
