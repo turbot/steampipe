@@ -206,7 +206,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// hack for printing out a new line at the top of the output
-	// this is temporary and will be fixed by a diusplay refactor in the next release
+	// this is temporary and will be fixed by a display refactor in the next release
 	printedLeadingBlankLine := false
 
 	for _, p := range plugins {
@@ -365,10 +365,8 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// This is a hack for printing out a new line
-	// at the top of the output.
-	// this is temporary and we need to fix this
-	// asap - possibly by the next release
+	// hack for printing out a new line at the top of the output
+	// this is temporary and will be fixed by a display refactor in the next release
 	printedLeadingBlankLine := false
 
 	spinner := utils.ShowSpinner("Checking for available updates")
