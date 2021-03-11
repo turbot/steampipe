@@ -166,15 +166,20 @@ Example:
 	return cmd
 }
 
-type skipReason struct {
-	plugin string
-	reason string
+type installReport struct {
+	Skipped        bool
+	Plugin         string
+	SkipReason     string
+	DocURL         string
+	Version        string
+	IsUpdateReport bool
 }
 
-func (u *skipReason) String() string {
-	ref := ociinstaller.NewSteampipeImageRef(u.plugin)
+func (ir *installReport) SkipString() string {
+	ref := ociinstaller.NewSteampipeImageRef(ir.Plugin)
 	_, name, stream := ref.GetOrgNameAndStream()
-	return fmt.Sprintf("Plugin:   %s\nReason:   %s", fmt.Sprintf("%s@%s", name, stream), u.reason)
+
+	return fmt.Sprintf("Plugin:   %s\nReason:   %s", fmt.Sprintf("%s@%s", name, stream), ir.SkipReason)
 }
 
 func runPluginInstallCmd(cmd *cobra.Command, args []string) {
@@ -190,7 +195,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// These can be simple names ('aws') for "standard" plugins, or
 	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
-	installSkipped := []skipReason{}
+	installReports := make([]installReport, 0, len(plugins))
 
 	if len(plugins) == 0 {
 		fmt.Println()
@@ -201,23 +206,24 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// hack for printing out a new line at the top of the output
-	// this is temporary and will be fixed by a display refactor in the next release
-	printedLeadingBlankLine := false
+	if len(plugins) > 1 {
+		fmt.Println()
+	}
+
+	spinner := utils.ShowSpinner("")
 
 	for _, p := range plugins {
 		isPluginExists, _ := plugin.Exists(p)
 		if isPluginExists {
-			installSkipped = append(installSkipped, skipReason{p, "Already Installed"})
+			installReports = append(installReports, installReport{
+				Plugin:     p,
+				Skipped:    true,
+				SkipReason: "Already installed",
+			})
 			continue
 		}
-		if len(plugins) > 1 && !printedLeadingBlankLine {
-			fmt.Println()
-			printedLeadingBlankLine = true
-		}
-		spinner := utils.ShowSpinner(fmt.Sprintf("Installing plugin %s...", p))
+		utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Installing plugin: %s", p))
 		image, err := plugin.Install(p)
-		utils.StopSpinner(spinner)
 		if err != nil {
 			msg := ""
 			if strings.HasSuffix(err.Error(), "not found") {
@@ -225,9 +231,10 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			} else {
 				msg = err.Error()
 			}
-			installSkipped = append(installSkipped, skipReason{
-				p,
-				msg,
+			installReports = append(installReports, installReport{
+				Skipped:    true,
+				Plugin:     p,
+				SkipReason: msg,
 			})
 			continue
 		}
@@ -235,62 +242,27 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		if image.Config.Plugin.Version != "" {
 			versionString = " v" + image.Config.Plugin.Version
 		}
-		fmt.Printf("Installed plugin: %s%s\n", constants.Bold(p), versionString)
 		org := image.Config.Plugin.Organization
+		name := image.Config.Plugin.Name
+		docURL := ""
 		if org == "turbot" {
-			fmt.Printf("Documentation:    https://hub.steampipe.io/plugins/%s/%s\n", org, p)
+			docURL = fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
 		}
+		installReports = append(installReports, installReport{
+			Skipped: false,
+			Plugin:  p,
+			DocURL:  docURL,
+			Version: versionString,
+		})
 	}
 
-	if len(installSkipped) > 0 {
-		skipReasons := []string{}
-		for _, s := range installSkipped {
-			skipReasons = append(skipReasons, s.String())
-		}
-		fmt.Printf(
-			"\nSkipped the following %s:\n\n%s",
-			utils.Pluralize("plugin", len(installSkipped)),
-			strings.Join(skipReasons, "\n\n"),
-		)
-		fmt.Println()
-		installSkippedBecauseInstalled := []string{}
-		for _, r := range installSkipped {
-			if r.reason == "Already Installed" {
-				installSkippedBecauseInstalled = append(installSkippedBecauseInstalled, r.plugin)
-			}
-		}
-		if len(installSkippedBecauseInstalled) > 0 {
-			fmt.Printf(
-				"\nTo update %s which %s already installed, please run: %s\n",
-				utils.Pluralize("plugin", len(installSkippedBecauseInstalled)),
-				utils.Pluralize("is", len(installSkippedBecauseInstalled)),
-				constants.Bold(fmt.Sprintf(
-					"steampipe plugin update %s",
-					strings.Join(installSkippedBecauseInstalled, " "),
-				)),
-			)
-		}
-		fmt.Println()
-	} else {
-		if len(plugins) > 1 {
-			// the last line
-			fmt.Println()
-		}
-	}
+	utils.StopSpinner(spinner)
 
-	// refresh connections - we do this to validate the plugins
-	// ignore errors - if we get this far we have successfully installed
-	// reporting an error in the validation may be confusing
-	// - we will retry next time query is run and report any errors then
-	if len(plugins) > len(installSkipped) {
-		// reload the config, as the installation may have created a new connection config file
-		config, err := steampipeconfig.Load()
-		if err != nil {
-			utils.ShowError(err)
-			return
-		}
-		steampipeconfig.Config = config
-		refreshConnections()
+	refreshConnectionsIfNecessary(installReports, false)
+	printInstallReports(installReports, false)
+
+	if len(plugins) > 1 {
+		fmt.Println()
 	}
 }
 
@@ -341,7 +313,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	var runUpdatesFor []*versionfile.InstalledVersion
-	var updateSkipped []skipReason
+	updateReports := make([]installReport, 0, len(plugins))
 
 	if cmdconfig.Viper().GetBool("all") {
 		for k, v := range versionData.Plugins {
@@ -360,14 +332,21 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			if isExists {
 				runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
 			} else {
-				updateSkipped = append(updateSkipped, skipReason{p, "Not Installed"})
+				updateReports = append(updateReports, installReport{
+					Skipped:        true,
+					Plugin:         p,
+					SkipReason:     "Not installed",
+					IsUpdateReport: true,
+				})
 			}
 		}
 	}
 
-	// hack for printing out a new line at the top of the output
-	// this is temporary and will be fixed by a display refactor in the next release
-	printedLeadingBlankLine := false
+	if len(plugins) > 0 {
+		// add a blank line at the top since this is going to be
+		// a multi output
+		fmt.Println()
+	}
 
 	spinner := utils.ShowSpinner("Checking for available updates")
 	reports := plugin.GetUpdateReport(state.InstallationID, runUpdatesFor)
@@ -382,17 +361,13 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 	for _, report := range reports {
 		if report.Plugin.ImageDigest == report.CheckResponse.Digest {
-			updateSkipped = append(updateSkipped, skipReason{
-				fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
-				"Latest already installed",
+			updateReports = append(updateReports, installReport{
+				Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
+				Skipped:        true,
+				SkipReason:     "Latest already installed",
+				IsUpdateReport: true,
 			})
 			continue
-		}
-
-		if len(plugins) > 0 && !printedLeadingBlankLine {
-			// add a blank line at the top since this is going to be
-			// a multi output
-			fmt.Println()
 		}
 
 		spinner := utils.ShowSpinner(fmt.Sprintf("Updating plugin %s...", report.CheckResponse.Name))
@@ -405,9 +380,11 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			} else {
 				msg = err.Error()
 			}
-			updateSkipped = append(updateSkipped, skipReason{
-				report.Plugin.Name,
-				msg,
+			updateReports = append(updateReports, installReport{
+				Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
+				Skipped:        true,
+				SkipReason:     msg,
+				IsUpdateReport: true,
 			})
 			continue
 		}
@@ -416,58 +393,157 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		if image.Config.Plugin.Version != "" {
 			versionString = " v" + image.Config.Plugin.Version
 		}
-		fmt.Printf("Updated plugin: %s%s\n", constants.Bold(report.Plugin.Name), versionString)
 		org := image.Config.Plugin.Organization
 		name := image.Config.Plugin.Name
+		docURL := ""
 		if org == "turbot" {
-			fmt.Printf("Documentation:  https://hub.steampipe.io/plugins/%s/%s\n", org, name)
+			docURL = fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
 		}
-		// fmt.Println()
+		updateReports = append(updateReports, installReport{
+			Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
+			Skipped:        false,
+			Version:        versionString,
+			DocURL:         docURL,
+			IsUpdateReport: true,
+		})
 	}
 
-	if len(updateSkipped) > 0 {
-		skipReasons := []string{}
-		notUpdatedSinceNotInstalled := []string{}
-		for _, s := range updateSkipped {
-			skipReasons = append(skipReasons, s.String())
-			if s.reason == "Not Installed" {
-				notUpdatedSinceNotInstalled = append(notUpdatedSinceNotInstalled, s.plugin)
-			}
-		}
-		fmt.Printf(
-			"\nSkipped the following %s:\n\n%s\n",
-			utils.Pluralize("plugin", len(updateSkipped)),
-			strings.Join(skipReasons, "\n\n"),
-		)
-		if len(notUpdatedSinceNotInstalled) > 0 {
-			fmt.Println()
-			fmt.Printf(
-				"To install %s which %s not installed, please run: %s\n",
-				utils.Pluralize("plugin", len(notUpdatedSinceNotInstalled)),
-				utils.Pluralize("is", len(notUpdatedSinceNotInstalled)),
-				constants.Bold(fmt.Sprintf(
-					"steampipe plugin install %s",
-					strings.Join(notUpdatedSinceNotInstalled, " "),
-				)),
-			)
-		}
-	}
+	refreshConnectionsIfNecessary(updateReports, true)
+	printInstallReports(updateReports, true)
 
 	if len(plugins) > 1 {
 		fmt.Println()
 	}
+}
 
-	// refresh connections - we do this to validate the plugins
-	// ignore errors - if we get this far we have successfully installed
-	// reporting an error in the validation may be confusing
-	// - we will retry next time query is run and report any errors then
-	if len(plugins) > len(updateSkipped) {
-		refreshConnections()
+// Prints out the installation reports onto the console
+func printInstallReports(reports []installReport, isUpdateReport bool) {
+	installedOrUpdated := []installReport{}
+	canBeInstalled := []installReport{}
+	canBeUpdated := []installReport{}
+
+	for _, report := range reports {
+		if !report.Skipped {
+			installedOrUpdated = append(installedOrUpdated, report)
+		} else if report.SkipReason == "Not installed" {
+			canBeInstalled = append(canBeInstalled, report)
+		} else if report.SkipReason == "Already installed" {
+			canBeUpdated = append(canBeUpdated, report)
+		}
+	}
+
+	if len(installedOrUpdated) > 0 {
+		asString := []string{}
+		for _, report := range installedOrUpdated {
+			thisReport := []string{}
+			if isUpdateReport {
+				thisReport = append(
+					thisReport,
+					fmt.Sprintf("Updated plugin: %s%s", constants.Bold(report.Plugin), report.Version),
+				)
+
+				if len(report.DocURL) > 0 {
+					thisReport = append(
+						thisReport,
+						fmt.Sprintf("Documentation:  %s", report.DocURL),
+					)
+				}
+			} else {
+				thisReport = append(
+					thisReport,
+					fmt.Sprintf("Installed plugin: %s%s", constants.Bold(report.Plugin), report.Version),
+				)
+
+				if len(report.DocURL) > 0 {
+					thisReport = append(
+						thisReport,
+						fmt.Sprintf("Documentation:    %s", report.DocURL),
+					)
+				}
+			}
+			asString = append(asString, strings.Join(thisReport, "\n"))
+		}
+		fmt.Println(strings.Join(asString, "\n\n"))
+	}
+
+	if len(installedOrUpdated) < len(reports) {
+		skipCount := len(reports) - len(installedOrUpdated)
+		asString := []string{}
+		for _, report := range reports {
+			if report.Skipped {
+				asString = append(asString, report.SkipString())
+			}
+		}
+		// some have skipped
+		if len(installedOrUpdated) > 0 {
+			fmt.Println()
+		}
+		fmt.Printf(
+			"Skipped the following %s:\n\n%s\n",
+			utils.Pluralize("plugin", skipCount),
+			strings.Join(asString, "\n\n"),
+		)
+
+		if len(canBeInstalled) > 0 {
+			asString := []string{}
+			for _, r := range canBeInstalled {
+				asString = append(asString, r.Plugin)
+			}
+			fmt.Println()
+			fmt.Printf(
+				"To install %s which %s not installed, please run %s\n",
+				utils.Pluralize("plugin", len(canBeInstalled)),
+				utils.Pluralize("is", len(canBeInstalled)),
+				constants.Bold(fmt.Sprintf(
+					"steampipe plugin install %s",
+					strings.Join(asString, " "),
+				)),
+			)
+		}
+		if len(canBeUpdated) > 0 {
+			asString := []string{}
+			for _, r := range canBeUpdated {
+				asString = append(asString, r.Plugin)
+			}
+			fmt.Println()
+			fmt.Printf(
+				"To update %s which %s already installed, please run %s\n",
+				utils.Pluralize("plugin", len(canBeUpdated)),
+				utils.Pluralize("is", len(canBeUpdated)),
+				constants.Bold(fmt.Sprintf(
+					"steampipe plugin update %s",
+					strings.Join(asString, " "),
+				)),
+			)
+		}
 	}
 }
 
 // start service if necessary and refresh connections
-func refreshConnections() error {
+func refreshConnectionsIfNecessary(reports []installReport, isUpdate bool) error {
+	// get count of skipped reports
+	skipped := 0
+	for _, report := range reports {
+		if report.Skipped {
+			skipped++
+		}
+	}
+	if skipped == len(reports) {
+		// if all were skipped,
+		// no point continuing
+		return nil
+	}
+
+	// reload the config, since an installation MUST have created a new config file
+	if !isUpdate {
+		config, err := steampipeconfig.Load()
+		if err != nil {
+			return err
+		}
+		steampipeconfig.Config = config
+	}
+
+	// todo move this into db package
 	db.EnsureDBInstalled()
 	status, err := db.GetStatus()
 	if err != nil {
