@@ -5,9 +5,7 @@ type Connection struct {
 	// connection name
 	Name string
 	// FQN of plugin
-	Plugin        string
-	FdwOptions    *FdwOptions
-	PluginOptions *PluginOptions
+	Plugin string
 	// unparsed HCL of plugin specific connection config
 	Config string
 }

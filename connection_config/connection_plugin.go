@@ -21,8 +21,6 @@ type ConnectionPlugin struct {
 	PluginName       string
 	Plugin           *grpc.PluginClient
 	Schema           *proto.Schema
-	FdwOptions       *FdwOptions
-	PluginOptions    *PluginOptions
 }
 
 // ConnectionPluginInput :: struct used as input to CreateConnectionPlugin
@@ -32,12 +30,9 @@ type ConnectionPluginInput struct {
 	PluginName       string
 	ConnectionConfig string
 	DisableLogger    bool
-	PluginOptions    *PluginOptions
-	FdwOptions       *FdwOptions
 }
 
 // CreateConnectionPlugin :: instantiate a plugin for a connection, fetch schema and send connection config
-// called by hub when
 func CreateConnectionPlugin(options *ConnectionPluginInput) (*ConnectionPlugin, error) {
 	remoteSchema := options.PluginName
 	connectionName := options.ConnectionName
@@ -110,8 +105,6 @@ func CreateConnectionPlugin(options *ConnectionPluginInput) (*ConnectionPlugin, 
 	// now create ConnectionPlugin object and add to map
 	c := &ConnectionPlugin{
 		ConnectionName:   connectionName,
-		FdwOptions:       options.FdwOptions,
-		PluginOptions:    options.PluginOptions,
 		ConnectionConfig: connectionConfig,
 		PluginName:       remoteSchema,
 		Plugin:           pluginClient,

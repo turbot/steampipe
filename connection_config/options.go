@@ -1,56 +1,49 @@
 package connection_config
 
-import (
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/constants"
-)
-
 // hcl options types
 const (
-	HclOptionsFdw     = "fdw"
-	HclOptionsPlugin  = "plugin"
-	HclOptionsConsole = "console"
+	HclOptionsConnection = "connection"
+	HclOptionsDatabase   = "database"
+	HclOptionsGeneral    = "general"
+	HclOptionsConsole    = "console"
 )
 
 type Options interface {
-	PopulateViper(v *viper.Viper)
+	IsOptions()
 }
 
-type FdwOptions struct {
+// ConnectionOptions
+type ConnectionOptions struct {
 	Cache    *bool `hcl:"cache"`
 	CacheTTL *int  `hcl:"cache_ttl"`
+	MaxFiles int   `hcl:"rlimit_files"`
 }
 
-func (f FdwOptions) PopulateViper(v *viper.Viper) {
-	v.Set(constants.OptionCache, f.Cache)
-	v.Set(constants.OptionCacheTTL, f.CacheTTL)
+func (f ConnectionOptions) IsOptions() {}
 
-}
-func (f FdwOptions) equals(other *FdwOptions) bool {
-	//todo
-	return false
-}
-
-// NOTE: this must be consistent with the protobuf PluginOptions type defined in the sdk
-type PluginOptions struct {
-	RLimitFiles int `hcl:"rlimit_files"`
-}
-
-func (f PluginOptions) equals(other *PluginOptions) bool {
-	//todo
-	return false
-}
-
-func (f PluginOptions) PopulateViper(v *viper.Viper) {
-	v.Set(constants.RLimitFiles, f.RLimitFiles)
-
-}
-
+// ConsoleOptions
 type ConsoleOptions struct {
-	MultiLine bool `hcl:"multi"`
+	Header    bool   `hcl:"header"`
+	Multi     bool   `hcl:"multi"`
+	Output    string `hcl:"output"`
+	Separator string `hcl:"separator"`
+	Timing    string `hcl:"timing"`
 }
 
-func (f ConsoleOptions) PopulateViper(v *viper.Viper) {
-	v.Set(constants.MultiLine, f.MultiLine)
+func (f ConsoleOptions) IsOptions() {}
 
+// GeneralOptions
+type GeneralOptions struct {
+	LogLevel    string `hcl:"log_level"`
+	UpdateCheck bool   `hcl:"update_check"`
 }
+
+func (f GeneralOptions) IsOptions() {}
+
+// DatabaseOptions
+type DatabaseOptions struct {
+	Port   int    `hcl:"port"`
+	Listen string `hcl:"listen"`
+}
+
+func (f DatabaseOptions) IsOptions() {}

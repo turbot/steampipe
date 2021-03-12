@@ -185,12 +185,14 @@ func decodeAttribute(connectionBlock *hcl.BodyContent, property string, dest int
 func parseOptions(block *hcl.Block) (Options, hcl.Diagnostics) {
 	var dest Options
 	switch block.Labels[0] {
-	case HclOptionsFdw:
-		dest = &FdwOptions{}
-	case HclOptionsPlugin:
-		dest = &PluginOptions{}
+	case HclOptionsConnection:
+		dest = &ConnectionOptions{}
+	case HclOptionsDatabase:
+		dest = &DatabaseOptions{}
 	case HclOptionsConsole:
 		dest = &ConsoleOptions{}
+	case HclOptionsGeneral:
+		dest = &GeneralOptions{}
 	}
 
 	diags := gohcl.DecodeBody(block.Body, nil, dest)

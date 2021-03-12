@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/connection_config"
 	"github.com/turbot/steampipe/constants"
 )
 

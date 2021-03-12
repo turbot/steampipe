@@ -32,7 +32,7 @@ type ConnectionData struct {
 	CheckSum string `yaml:"checkSum"`
 	// connection name
 	ConnectionName string
-	FdwOptions     *FdwOptions
+	FdwOptions     *ConnectionOptions
 	PluginOptions  *PluginOptions
 	// connection data (unparsed)
 	ConnectionConfig string
