@@ -4,9 +4,7 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/version"
 )
 
@@ -49,14 +47,6 @@ func Execute() error {
 }
 
 func init() {
-	// TODO(nw) - Add color bool flag, default true, description "Use colors in output", persistent through levels
-
-	defaultCfgFile := "~/.steampipe"
-
-	// TODO(nw) replace --config with --config-dir, it's a directory of settings files
-	rootCmd.PersistentFlags().String(constants.ArgConfigDir, defaultCfgFile, "Path to the Config Directory")
-	viper.BindPFlag(constants.ArgConfigDir, rootCmd.PersistentFlags().Lookup(constants.ArgConfigDir))
-
 	cobra.OnInitialize(initGlobalConfig)
 }
 
