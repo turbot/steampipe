@@ -12,7 +12,6 @@ const (
 	ArgTimer             = "timing"
 	ArgOn                = "on"
 	ArgOff               = "off"
-	ArgConfigDir         = "config-dir"
 )
 
 /// metaquery mode arguments
