@@ -206,9 +206,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if len(plugins) > 1 {
-		fmt.Println()
-	}
+	// a leading blank line at the top, since we have multiple
+	// lines in the output - no matter the outcome
+	fmt.Println()
 
 	spinner := utils.ShowSpinner("")
 
@@ -261,9 +261,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	refreshConnectionsIfNecessary(installReports, false)
 	printInstallReports(installReports, false)
 
-	if len(plugins) > 1 {
-		fmt.Println()
-	}
+	// a concluding blank line at the bottom, since we have multiple
+	// lines in the output - no matter the outcome
+	fmt.Println()
 }
 
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
@@ -315,6 +315,10 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	var runUpdatesFor []*versionfile.InstalledVersion
 	updateReports := make([]installReport, 0, len(plugins))
 
+	// a leading blank line at the top, since we have multiple
+	// lines in the output - no matter the outcome
+	fmt.Println()
+
 	if cmdconfig.Viper().GetBool("all") {
 		for k, v := range versionData.Plugins {
 			ref := ociinstaller.NewSteampipeImageRef(k)
@@ -342,10 +346,13 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if len(plugins) > 0 {
-		// add a blank line at the top since this is going to be
-		// a multi output
+	if len(plugins) == len(updateReports) {
+		// we have report for all
+		// this may happen if all given plugins are
+		// not installed
+		printInstallReports(updateReports, true)
 		fmt.Println()
+		return
 	}
 
 	spinner := utils.ShowSpinner("Checking for available updates")
@@ -411,9 +418,9 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	refreshConnectionsIfNecessary(updateReports, true)
 	printInstallReports(updateReports, true)
 
-	if len(plugins) > 1 {
-		fmt.Println()
-	}
+	// a concluding blank line at the bottom, since we have multiple
+	// lines in the output - no matter the outcome
+	fmt.Println()
 }
 
 // Prints out the installation reports onto the console
