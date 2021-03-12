@@ -3,11 +3,6 @@ package cmd
 import (
 	"log"
 
-	"github.com/turbot/steampipe/cmdconfig"
-
-	"github.com/turbot/steampipe/version"
-
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/cmdconfig"
