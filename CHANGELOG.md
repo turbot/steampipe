@@ -1,3 +1,9 @@
+## v0.2.5 [2021-03-15]
+
+_Bug fixes_
+* Fix crash when installing a plugin after a fresh install. ([#283](https://github.com/turbot/steampipe/issues/283))
+* Fix `.inspect` meta-command failure if no arguments are provided. ([#282](https://github.com/turbot/steampipe/issues/282))
+
 ## v0.2.4 [2021-03-11]
 _What's new?_
 * Autocomplete now includes public schema.  ([#123](https://github.com/turbot/steampipe/issues/123))
