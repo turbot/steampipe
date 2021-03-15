@@ -49,9 +49,6 @@ func Execute() error {
 }
 
 func init() {
-	// TODO(nw) - Add color bool flag, default true, description "Use colors in output", persistent through levels
-
-	// TODO(nw) replace --config with --config-dir, it's a directory of settings files
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 

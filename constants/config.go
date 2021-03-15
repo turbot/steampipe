@@ -21,13 +21,10 @@ const (
 // SteampipeDir :: returns the top level ~/.steampipe folder (creates if it doesnt exist)
 func SteampipeDir() string {
 	installDir, err := helpers.Tildefy(viper.GetString(ArgInstallDir))
-	if err != nil {
-		// work with the original one
-		installDir = viper.GetString(ArgInstallDir)
-	}
+	utils.FailOnErrorWithMessage(err, fmt.Sprintf("failed to sanitize install directory"))
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
 		err = os.MkdirAll(installDir, 0755)
-		utils.FailOnErrorWithMessage(err, "could not create .steampipe directory")
+		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
 	}
 	return installDir
 }
