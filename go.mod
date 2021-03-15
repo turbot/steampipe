@@ -40,7 +40,7 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.7.1
-	github.com/turbot/go-kit v0.1.1
+	github.com/turbot/go-kit v0.1.2
 	github.com/turbot/steampipe-plugin-sdk v0.2.2
 	github.com/turbot/steampipe-postgres-fdw v0.0.26 // indirect
 	github.com/ulikunitz/xz v0.5.8
@@ -52,4 +52,3 @@ require (
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe
 
-replace github.com/turbot/go-kit => /Users/kai/Dev/github/turbot/go-kit

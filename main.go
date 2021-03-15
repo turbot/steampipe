@@ -50,7 +50,7 @@ func main() {
 }
 
 func initCommands() {
-	// explcitly initialise commands here rather than in init functions to allow us to handle errors from the config load
+	// explicitly initialise commands here rather than in init functions to allow us to handle errors from the config load
 	cmd.RootCmd.AddCommand(cmd.PluginCmd())
 	cmd.RootCmd.AddCommand(cmd.QueryCmd())
 	cmd.RootCmd.AddCommand(cmd.ServiceCmd())
