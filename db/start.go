@@ -11,6 +11,7 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/utils"
 
 	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/constants"
@@ -72,7 +73,7 @@ func (slt Invoker) IsValid() error {
 
 // StartDB :: start the database is not already running
 func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, error) {
-	info, err := loadRunningInstanceInfo()
+	info, err := GetStatus()
 
 	if err != nil {
 		return ServiceFailedToStart, err
@@ -104,6 +105,15 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 
 	if !isPortBindable(port) {
 		return ServiceFailedToStart, fmt.Errorf("Cannot listen on %d. Are you sure that the interface is free?", port)
+	}
+
+	checkedPreviousInstances := make(chan bool, 1)
+	s := utils.StartSpinnerAfterDelay("Checking for running instances", constants.SpinnerShowTimeout, checkedPreviousInstances)
+	previousProcess := findSteampipePostgresInstance()
+	checkedPreviousInstances <- true
+	utils.StopSpinner(s)
+	if previousProcess != nil {
+		return ServiceFailedToStart, fmt.Errorf("Another Steampipe service is already running. Use %s to kill all running instances before continuing.", constants.Bold("steampipe service stop --force"))
 	}
 
 	postgresCmd := exec.Command(
@@ -237,15 +247,23 @@ func isPortBindable(port int) bool {
 
 // kill all postgres processes that were started as part of steampipe (if any)
 func killPreviousInstanceIfAny() bool {
+	p := findSteampipePostgresInstance()
+	if p != nil {
+		killProcessTree(p)
+		return true
+	}
+	return false
+}
+
+func findSteampipePostgresInstance() *process.Process {
 	allProcesses, _ := process.Processes()
 	for _, p := range allProcesses {
 		cmdLine, _ := p.CmdlineSlice()
 		if isSteampipePostgresProcess(cmdLine) {
-			killProcessTree(p)
-			return true
+			return p
 		}
 	}
-	return false
+	return nil
 }
 
 func isSteampipePostgresProcess(cmdline []string) bool {
