@@ -7,8 +7,6 @@ import (
 	"github.com/turbot/steampipe/constants"
 )
 
-var viperWrapper *viper.Viper
-
 // InitViper :: initializes and configures an instance of viper
 func InitViper() {
 	v := viper.GetViper()
