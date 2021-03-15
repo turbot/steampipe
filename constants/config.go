@@ -5,12 +5,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/viper"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/utils"
 )
 
 // Constants for Config
 const (
-	SteampipeDirName         = ".steampipe"
 	PluginExtension          = ".plugin"
 	ConfigExtension          = ".spc"
 	ConnectionsStateFileName = "connection.json"
@@ -18,15 +19,16 @@ const (
 
 // SteampipeDir :: returns the top level ~/.steampipe folder (creates if it doesnt exist)
 func SteampipeDir() string {
-	homeDir, err := os.UserHomeDir()
-	utils.FailOnError(err)
-	ch := filepath.Join(homeDir, SteampipeDirName)
-	if _, err := os.Stat(ch); os.IsNotExist(err) {
-		err = os.MkdirAll(ch, 0755)
+	installDir, err := helpers.Tildefy(viper.GetString(ArgInstallDir))
+	if err != nil {
+		// work with the original one
+		installDir = viper.GetString(ArgInstallDir)
+	}
+	if _, err := os.Stat(installDir); os.IsNotExist(err) {
+		err = os.MkdirAll(installDir, 0755)
 		utils.FailOnErrorWithMessage(err, "could not create .steampipe directory")
 	}
-
-	return ch
+	return installDir
 }
 
 func steampipeSubDir(dirName string) string {
