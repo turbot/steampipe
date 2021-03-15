@@ -11,12 +11,13 @@ var viperWrapper *viper.Viper
 
 // InitViper :: initializes and configures an instance of viper
 func InitViper() {
-	viper.GetViper().SetEnvPrefix("STEAMPIPE")
-	viper.GetViper().AutomaticEnv()
-	viper.GetViper().SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	v := viper.GetViper()
+	v.SetEnvPrefix("STEAMPIPE")
+	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
 	// set defaults
-	viper.GetViper().Set(constants.ShowInteractiveOutputConfigKey, true)
+	v.Set(constants.ShowInteractiveOutputConfigKey, true)
 }
 
 // Viper :: fetches the global viper instance

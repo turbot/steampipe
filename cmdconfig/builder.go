@@ -13,21 +13,12 @@ type CmdBuilder struct {
 
 // OnCmd :: starts a config builder wrapping over the provided *cobra.Command
 func OnCmd(cmd *cobra.Command) *CmdBuilder {
-
-	if cmd.Run == nil {
-		panic("Run needs to be present for configuration")
-	}
-
 	cfg := new(CmdBuilder)
 	cfg.cmd = cmd
 	cfg.bindings = map[string]*pflag.Flag{}
 
-	originalRun := cfg.cmd.Run
 	originalPreRun := cfg.cmd.PreRun
 
-	cfg.cmd.Run = func(cmd *cobra.Command, args []string) {
-		originalRun(cmd, args)
-	}
 	cfg.cmd.PreRun = func(cmd *cobra.Command, args []string) {
 		InitViper()
 		// bind flags
