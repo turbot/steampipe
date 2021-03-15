@@ -42,8 +42,8 @@ Getting started:
 }
 
 func init() {
-	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
-	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
+	RootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
+	viper.BindPFlag(constants.ArgInstallDir, RootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 
 	cobra.OnInitialize(initGlobalConfig)
 }
