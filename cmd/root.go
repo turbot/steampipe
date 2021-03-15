@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/version"
 )
@@ -48,12 +47,11 @@ func Execute() error {
 }
 
 func init() {
-	// TODO(nw) - Add color bool flag, default true, description "Use colors in output", persistent through levels
 	cobra.OnInitialize(initGlobalConfig)
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initGlobalConfig() {
 	log.Println("[TRACE] rootCmd initGlobalConfig")
-	cmdconfig.InitViper(viper.GetViper())
+	cmdconfig.InitViper()
 }
