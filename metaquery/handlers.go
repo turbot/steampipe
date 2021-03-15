@@ -223,8 +223,12 @@ func listConnections(input *HandlerInput) error {
 	rows := [][]string{}
 
 	for _, schema := range input.Schema.GetSchemas() {
-		plugin := (*input.Connections)[schema]
-		rows = append(rows, []string{schema, plugin.Plugin})
+		plugin, found := (*input.Connections)[schema]
+		if found {
+			rows = append(rows, []string{schema, plugin.Plugin})
+		} else {
+			rows = append(rows, []string{schema, ""})
+		}
 	}
 
 	// sort by connection name
