@@ -18,7 +18,6 @@ func RefreshConnections(client *Client) error {
 	// retrieve the parsed connection config
 	requiredConnections := steampipeconfig.Config.Connections
 	// refresh the connection state file - the removes any connections which do not exist in the list of current schema
-	log.Println("[TRACE] RefreshConnections")
 	updates, err := steampipeconfig.GetConnectionsToUpdate(schemas, requiredConnections)
 	if err != nil {
 		return err

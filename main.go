@@ -10,7 +10,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/task"
 	"github.com/turbot/steampipe/utils"
 )
@@ -25,14 +24,6 @@ func main() {
 	logging.LogTime("start")
 	createLogger()
 	log.Println("[TRACE] tracing enabled")
-
-	// load config
-	config, err := steampipeconfig.Load()
-	if err != nil {
-		utils.ShowError(err)
-		return
-	}
-	steampipeconfig.Config = config
 
 	cmd.AddCommands()
 	// run periodic tasks - update check and log clearing

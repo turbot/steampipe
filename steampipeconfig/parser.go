@@ -83,7 +83,6 @@ func loadConfig(configFolder string) (result *SteampipeConfig, err error) {
 			result.Connections[connection.Name] = connection
 
 		case "options":
-			// if we already found settings, fail
 			options, moreDiags := parseOptions(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
@@ -97,22 +96,7 @@ func loadConfig(configFolder string) (result *SteampipeConfig, err error) {
 		return nil, plugin.DiagsToError("failed to load config", diags)
 	}
 
-	// now set default options on all connections without options set
-	setDefaultConnectionOptions(result)
-
 	return result, nil
-}
-
-// if default connection options have been set, assign them to any connection which do not define specific options
-func setDefaultConnectionOptions(config *SteampipeConfig) {
-	if config.DefaultConnectionOptions == nil {
-		return
-	}
-	for _, c := range config.Connections {
-		if c.Options == nil {
-			c.Options = config.DefaultConnectionOptions
-		}
-	}
 }
 
 func loadFileData(configPaths []string) (map[string][]byte, hcl.Diagnostics) {

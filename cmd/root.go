@@ -1,12 +1,17 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/steampipeconfig"
+	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
 )
 
@@ -52,6 +57,28 @@ func init() {
 func initGlobalConfig() {
 	log.Println("[TRACE] rootCmd initGlobalConfig")
 	cmdconfig.InitViper()
+	// set global containing install dir
+	SetInstallDir()
+
+	// TODO REFACTOR INTO A FXN
+	// load config
+	config, err := steampipeconfig.Load()
+	if err != nil {
+		utils.ShowError(err)
+		return
+	}
+	steampipeconfig.Config = config
+}
+
+// SteampipeDir :: set the top level ~/.steampipe folder (creates if it doesnt exist)
+func SetInstallDir() {
+	installDir, err := helpers.Tildefy(viper.GetString(constants.ArgInstallDir))
+	utils.FailOnErrorWithMessage(err, fmt.Sprintf("failed to sanitize install directory"))
+	if _, err := os.Stat(installDir); os.IsNotExist(err) {
+		err = os.MkdirAll(installDir, 0755)
+		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
+	}
+	constants.SteampipeDir = installDir
 }
 
 func AddCommands() {

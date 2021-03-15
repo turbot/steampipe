@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/viper"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -18,19 +16,10 @@ const (
 	ConnectionsStateFileName = "connection.json"
 )
 
-// SteampipeDir :: returns the top level ~/.steampipe folder (creates if it doesnt exist)
-func SteampipeDir() string {
-	installDir, err := helpers.Tildefy(viper.GetString(ArgInstallDir))
-	utils.FailOnErrorWithMessage(err, fmt.Sprintf("failed to sanitize install directory"))
-	if _, err := os.Stat(installDir); os.IsNotExist(err) {
-		err = os.MkdirAll(installDir, 0755)
-		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
-	}
-	return installDir
-}
+var SteampipeDir string
 
 func steampipeSubDir(dirName string) string {
-	subDir := filepath.Join(SteampipeDir(), dirName)
+	subDir := filepath.Join(SteampipeDir, dirName)
 
 	if _, err := os.Stat(subDir); os.IsNotExist(err) {
 		err = os.MkdirAll(subDir, 0755)

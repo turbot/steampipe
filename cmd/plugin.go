@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/plugin"
 	"github.com/turbot/steampipe/statefile"
+	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 
 	"github.com/spf13/cobra"
@@ -461,7 +462,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 // start service if necessary and refresh connections
 func refreshConnections() error {
-	// todo move this into db package
+
 	db.EnsureDBInstalled()
 	status, err := db.GetStatus()
 	if err != nil {
@@ -479,6 +480,14 @@ func refreshConnections() error {
 	if err != nil {
 		return err
 	}
+
+	// TODO PUT IN FXN
+	// reload config
+	config, err := steampipeconfig.Load()
+	if err != nil {
+		return err
+	}
+	steampipeconfig.Config = config
 
 	// refresh connections
 	if err = db.RefreshConnections(client); err != nil {
