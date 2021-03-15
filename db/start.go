@@ -138,7 +138,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		"-c", "log_min_duration_statement=2000",
 		"-c", "logging_collector=on",
 		"-c", "log_min_error_statement=error",
-		"-c", fmt.Sprintf("log_directory=%s", getDatabaseLogDirectory()),
+		"-c", fmt.Sprintf("log_directory=%s", constants.LogDir()),
 		"-c", fmt.Sprintf("log_filename=%s", "postgresql-%Y-%m-%d.log"),
 
 		// Data Directory

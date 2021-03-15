@@ -70,6 +70,11 @@ func DatabaseDir() string {
 	return steampipeSubDir("db")
 }
 
+// LogDir :: returns the path to the db log directory (creates if missing)
+func LogDir() string {
+	return steampipeSubDir("logs")
+}
+
 // TempDir :: returns the path to the steampipe tmp directory (creates if missing)
 func TempDir() string {
 	return steampipeSubDir("tmp")
