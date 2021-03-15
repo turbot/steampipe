@@ -30,29 +30,3 @@ var connectionSchema = &hcl.BodySchema{
 		},
 	},
 }
-
-var fdwOptionsSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name:     "plugin",
-			Required: true,
-		},
-		{
-			Name:     "cache",
-			Required: false,
-		},
-		{
-			Name:     "cache_ttl",
-			Required: false,
-		},
-	},
-}
-
-var pluginOptionsSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name:     "ulimif_files",
-			Required: false,
-		},
-	},
-}

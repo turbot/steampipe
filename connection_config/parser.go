@@ -96,7 +96,22 @@ func loadConfig(configFolder string) (result *SteampipeConfig, err error) {
 		return nil, plugin.DiagsToError("failed to load config", diags)
 	}
 
+	// now set default options on all connections without options set
+	setDefaultConnectionOptions(result)
+
 	return result, nil
+}
+
+// if default connection options have been set, assign them to any connection which do not define specific options
+func setDefaultConnectionOptions(config *SteampipeConfig) {
+	if config.DefaultConnectionOptions == nil {
+		return
+	}
+	for _, c := range config.Connections {
+		if c.Options == nil {
+			c.Options = config.DefaultConnectionOptions
+		}
+	}
 }
 
 func loadFileData(configPaths []string) (map[string][]byte, hcl.Diagnostics) {
@@ -135,7 +150,7 @@ func parseConfigs(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 }
 
 func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection, hcl.Diagnostics) {
-	connectionBlock, rest, diags := block.Body.PartialContent(connectionSchema)
+	connectionContent, rest, diags := block.Body.PartialContent(connectionSchema)
 	if diags.HasErrors() {
 		return nil, diags
 	}
@@ -144,42 +159,45 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 	connection := &Connection{Name: block.Labels[0]}
 
 	var pluginName string
-	diags = gohcl.DecodeExpression(connectionBlock.Attributes["plugin"].Expr, nil, &pluginName)
+	diags = gohcl.DecodeExpression(connectionContent.Attributes["plugin"].Expr, nil, &pluginName)
 	if diags.HasErrors() {
 		return nil, diags
 	}
 	connection.Plugin = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
 
-	//// now evaluate other optional connection config properties
-	//diags = decodeAttribute(connectionBlock, "cache", &connection.Cache)
-	//if diags.HasErrors() {
-	//	return nil, diags
-	//}
-	//diags = decodeAttribute(connectionBlock, "cache_ttl", &connection.CacheTTL)
-	//if diags.HasErrors() {
-	//	return nil, diags
-	//}
+	// check for nested options
+	for _, block := range connectionContent.Blocks {
+		switch block.Type {
+		case "options":
+			// if we already found settings, fail
+			options, moreDiags := parseOptions(block)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+				break
+			}
+			connection.setOptions(options, block)
 
+		default:
+			// this can probably never happen
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("invalid block type %s - only 'options' blocks are supported for Connections", block.Type),
+				Subject:  &block.DefRange,
+			})
+		}
+	}
 	// now build a string containing the hcl for all other connection config properties
 	restBody := rest.(*hclsyntax.Body)
 	var configProperties []string
 	for name, a := range restBody.Attributes {
-		// if this attribute does not appear in connectionBlock, load the hcl string
-		if _, ok := connectionBlock.Attributes[name]; !ok {
+		// if this attribute does not appear in connectionContent, load the hcl string
+		if _, ok := connectionContent.Attributes[name]; !ok {
 			configProperties = append(configProperties, string(a.SrcRange.SliceBytes(fileData[a.SrcRange.Filename])))
 		}
 	}
 	connection.Config = strings.Join(configProperties, "\n")
 
 	return connection, nil
-}
-
-func decodeAttribute(connectionBlock *hcl.BodyContent, property string, dest interface{}) hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	if attr := connectionBlock.Attributes[property]; attr != nil {
-		diags = gohcl.DecodeExpression(attr.Expr, nil, dest)
-	}
-	return diags
 }
 
 func parseOptions(block *hcl.Block) (Options, hcl.Diagnostics) {
