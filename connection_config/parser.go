@@ -197,7 +197,7 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 	}
 	connection.Config = strings.Join(configProperties, "\n")
 
-	return connection, nil
+	return connection, diags
 }
 
 func parseOptions(block *hcl.Block) (Options, hcl.Diagnostics) {

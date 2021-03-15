@@ -32,6 +32,7 @@ require (
 	github.com/otiai10/copy v1.2.0
 	github.com/radovskyb/watcher v1.0.7
 	github.com/sergi/go-diff v1.1.0 // indirect
+	github.com/sethvargo/go-retry v0.1.0 // indirect
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18
 	github.com/shirou/gopsutil v3.20.11+incompatible
 	github.com/sirupsen/logrus v1.4.2
@@ -50,3 +51,5 @@ require (
 )
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe
+
+replace github.com/turbot/go-kit => /Users/kai/Dev/github/turbot/go-kit
