@@ -8,7 +8,8 @@ import (
 )
 
 // InitViper :: initializes and configures an instance of viper
-func InitViper(v *viper.Viper) {
+func InitViper() {
+	v := viper.GetViper()
 	// set defaults
 	v.Set(constants.ShowInteractiveOutputConfigKey, true)
 
