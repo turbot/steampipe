@@ -21,6 +21,12 @@ type VersionFile struct {
 	EmbeddedDB   InstalledVersion             `json:"embeddedDB"`
 }
 
+func NewVersionFile() *VersionFile {
+	return &VersionFile{
+		Plugins: map[string]*InstalledVersion{},
+	}
+}
+
 type InstalledVersion struct {
 	Name            string `json:"name"`
 	Version         string `json:"version"`
@@ -36,7 +42,7 @@ func Load() (*VersionFile, error) {
 	if fileExists(versionFilePath) {
 		return read(versionFilePath)
 	}
-	return new(VersionFile), nil
+	return NewVersionFile(), nil
 }
 
 // Save :: Save the config file from the standard path, or return an empty one
