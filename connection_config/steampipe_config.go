@@ -5,10 +5,11 @@ type SteampipeConfig struct {
 	// map of connection name to partially parsed connection config
 	Connections map[string]*Connection
 	// Steampipe options
-	ConnectionOptions *ConnectionOptions
-	DatabaseOptions   *DatabaseOptions
-	ConsoleOptions    *ConsoleOptions
-	GeneralOptions    *GeneralOptions
+	// default conneciton options
+	DefaultConnectionOptions *ConnectionOptions
+	DatabaseOptions          *DatabaseOptions
+	ConsoleOptions           *ConsoleOptions
+	GeneralOptions           *GeneralOptions
 }
 
 func newSteampipeConfig() *SteampipeConfig {
@@ -20,7 +21,7 @@ func newSteampipeConfig() *SteampipeConfig {
 func (c *SteampipeConfig) SetOptions(options Options) {
 	switch o := options.(type) {
 	case *ConnectionOptions:
-		c.ConnectionOptions = o
+		c.DefaultConnectionOptions = o
 	case *DatabaseOptions:
 		c.DatabaseOptions = o
 	case *ConsoleOptions:

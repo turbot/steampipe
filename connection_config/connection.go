@@ -8,4 +8,7 @@ type Connection struct {
 	Plugin string
 	// unparsed HCL of plugin specific connection config
 	Config string
+
+	// options
+	Options *ConnectionOptions
 }

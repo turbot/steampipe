@@ -16,28 +16,31 @@ import (
 // ConnectionPlugin :: structure representing an instance of a plugin
 // NOTE: currently this corresponds to a single connection, i.e. we have 1 plugin instance per connection
 type ConnectionPlugin struct {
-	ConnectionName   string
-	ConnectionConfig string
-	PluginName       string
-	Plugin           *grpc.PluginClient
-	Schema           *proto.Schema
+	ConnectionName    string
+	ConnectionConfig  string
+	ConnectionOptions *ConnectionOptions
+	PluginName        string
+	Plugin            *grpc.PluginClient
+	Schema            *proto.Schema
 }
 
 // ConnectionPluginInput :: struct used as input to CreateConnectionPlugin
 // - it contains all details necessary to instantiate a ConnectionPlugin
 type ConnectionPluginInput struct {
-	ConnectionName   string
-	PluginName       string
-	ConnectionConfig string
-	DisableLogger    bool
+	ConnectionName    string
+	PluginName        string
+	ConnectionConfig  string
+	ConnectionOptions *ConnectionOptions
+	DisableLogger     bool
 }
 
 // CreateConnectionPlugin :: instantiate a plugin for a connection, fetch schema and send connection config
-func CreateConnectionPlugin(options *ConnectionPluginInput) (*ConnectionPlugin, error) {
-	remoteSchema := options.PluginName
-	connectionName := options.ConnectionName
-	connectionConfig := options.ConnectionConfig
-	disableLogger := options.DisableLogger
+func CreateConnectionPlugin(input *ConnectionPluginInput) (*ConnectionPlugin, error) {
+	remoteSchema := input.PluginName
+	connectionName := input.ConnectionName
+	connectionConfig := input.ConnectionConfig
+	disableLogger := input.DisableLogger
+	conectionOptions := input.ConnectionOptions
 
 	log.Printf("[TRACE] createConnectionPlugin name %s, remoteSchema %s \n", connectionName, remoteSchema)
 	pluginPath, err := GetPluginPath(remoteSchema)
@@ -104,11 +107,12 @@ func CreateConnectionPlugin(options *ConnectionPluginInput) (*ConnectionPlugin, 
 
 	// now create ConnectionPlugin object and add to map
 	c := &ConnectionPlugin{
-		ConnectionName:   connectionName,
-		ConnectionConfig: connectionConfig,
-		PluginName:       remoteSchema,
-		Plugin:           pluginClient,
-		Schema:           schema}
+		ConnectionName:    connectionName,
+		ConnectionConfig:  connectionConfig,
+		ConnectionOptions: conectionOptions,
+		PluginName:        remoteSchema,
+		Plugin:            pluginClient,
+		Schema:            schema}
 	return c, nil
 }
 

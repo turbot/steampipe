@@ -16,10 +16,16 @@ type Options interface {
 type ConnectionOptions struct {
 	Cache    *bool `hcl:"cache"`
 	CacheTTL *int  `hcl:"cache_ttl"`
-	MaxFiles int   `hcl:"rlimit_files"`
+	MaxFiles *int  `hcl:"max_files"`
 }
 
 func (f ConnectionOptions) IsOptions() {}
+
+func (p ConnectionOptions) equals(other *ConnectionOptions) bool {
+	return *p.Cache == *other.Cache &&
+		*p.CacheTTL == *other.CacheTTL &&
+		*p.MaxFiles == *other.MaxFiles
+}
 
 // ConsoleOptions
 type ConsoleOptions struct {

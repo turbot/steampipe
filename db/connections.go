@@ -109,11 +109,10 @@ func getConnectionPlugins(updates connection_config.ConnectionMap) ([]*connectio
 
 func getConnectionPluginsAsync(connectionName string, connectionData *connection_config.ConnectionData, pluginChan chan *connection_config.ConnectionPlugin, errorChan chan error) {
 	opts := &connection_config.ConnectionPluginInput{
-		ConnectionName: connectionName,
-		PluginName:     connectionData.Plugin,
-		FdwOptions:     connectionData.FdwOptions,
-		PluginOptions:  connectionData.PluginOptions,
-		DisableLogger:  true}
+		ConnectionName:    connectionName,
+		PluginName:        connectionData.Plugin,
+		ConnectionOptions: connectionData.ConnectionOptions,
+		DisableLogger:     true}
 	p, err := connection_config.CreateConnectionPlugin(opts)
 	if err != nil {
 		errorChan <- err

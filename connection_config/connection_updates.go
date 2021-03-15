@@ -25,6 +25,7 @@ func newConnectionUpdates() *ConnectionUpdates {
 	}
 }
 
+// struct containing all details for a connection - the plugin name and checksum, the connection config and options
 type ConnectionData struct {
 	// the fully qualified name of the plugin
 	Plugin string `yaml:"plugin"`
@@ -32,18 +33,17 @@ type ConnectionData struct {
 	CheckSum string `yaml:"checkSum"`
 	// connection name
 	ConnectionName string
-	FdwOptions     *ConnectionOptions
-	PluginOptions  *PluginOptions
 	// connection data (unparsed)
 	ConnectionConfig string
+	// steampipe connection options
+	ConnectionOptions *ConnectionOptions
 }
 
 func (p ConnectionData) equals(other *ConnectionData) bool {
 	return p.Plugin == other.Plugin &&
 		p.CheckSum == other.CheckSum &&
 		p.ConnectionName == other.ConnectionName &&
-		(p.FdwOptions == nil && other.FdwOptions == nil) || p.FdwOptions.equals(other.FdwOptions) &&
-		(p.PluginOptions == nil && other.PluginOptions == nil) || p.PluginOptions.equals(other.PluginOptions) &&
+		(p.ConnectionOptions == nil && other.ConnectionOptions == nil) || p.ConnectionOptions.equals(other.ConnectionOptions) &&
 		reflect.DeepEqual(p.ConnectionConfig, other.ConnectionConfig)
 }
 
@@ -116,8 +116,6 @@ func getRequiredConnections(connectionConfig map[string]*Connection) (Connection
 			CheckSum:         checksum,
 			ConnectionConfig: config.Config,
 			ConnectionName:   config.Name,
-			FdwOptions:       config.FdwOptions,
-			PluginOptions:    config.PluginOptions,
 		}
 	}
 
