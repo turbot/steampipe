@@ -46,6 +46,19 @@ func StopDB(force bool) (StopStatus, error) {
 
 	if info == nil {
 		// we do not have a info file
+		if force {
+			// check if we have a process from another install-dir
+			checkedPreviousInstances := make(chan bool, 1)
+			s := utils.StartSpinnerAfterDelay("Checking for running instances", constants.SpinnerShowTimeout, checkedPreviousInstances)
+			previousProcess := findSteampipePostgresInstance()
+			checkedPreviousInstances <- true
+			utils.StopSpinner(s)
+			if previousProcess != nil {
+				// we have an errant process
+				killPreviousInstanceIfAny()
+				return ServiceStopped, nil
+			}
+		}
 		return ServiceNotRunning, nil
 	}
 

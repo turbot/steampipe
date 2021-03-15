@@ -1,7 +1,7 @@
 package cmdconfig
 
 import (
-	"strings"
+	"os"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -10,12 +10,14 @@ import (
 // InitViper :: initializes and configures an instance of viper
 func InitViper() {
 	v := viper.GetViper()
-	v.SetEnvPrefix("STEAMPIPE")
-	v.AutomaticEnv()
-	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-
 	// set defaults
 	v.Set(constants.ShowInteractiveOutputConfigKey, true)
+
+	if installDir, isSet := os.LookupEnv("STEAMPIPE_INSTALL_DIR"); isSet {
+		v.SetDefault(constants.ArgInstallDir, installDir)
+	} else {
+		v.SetDefault(constants.ArgInstallDir, "~/.steampipe")
+	}
 }
 
 // Viper :: fetches the global viper instance

@@ -4,7 +4,9 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/version"
 )
 
@@ -47,6 +49,9 @@ func Execute() error {
 }
 
 func init() {
+	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
+	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
+
 	cobra.OnInitialize(initGlobalConfig)
 }
 
