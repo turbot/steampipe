@@ -12,6 +12,7 @@ const (
 	ArgTimer             = "timing"
 	ArgOn                = "on"
 	ArgOff               = "off"
+	ArgInstallDir        = "install-dir"
 )
 
 /// metaquery mode arguments
