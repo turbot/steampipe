@@ -6,8 +6,10 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 
 	"github.com/shirou/gopsutil/process"
@@ -238,16 +240,21 @@ func killPreviousInstanceIfAny() bool {
 	allProcesses, _ := process.Processes()
 	for _, p := range allProcesses {
 		cmdLine, _ := p.CmdlineSlice()
-		if len(cmdLine) < 1 {
-			continue
-		}
-		executable := cmdLine[0]
-
-		// this is a steampipe postgres, kill it along with it's children
-		if executable == getPostgresBinaryExecutablePath() {
+		if isSteampipePostgresProcess(cmdLine) {
 			killProcessTree(p)
 			return true
 		}
+	}
+	return false
+}
+
+func isSteampipePostgresProcess(cmdline []string) bool {
+	if len(cmdline) < 1 {
+		return false
+	}
+	if strings.Contains(cmdline[0], "postgres") {
+		// this is a postgres process
+		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", constants.APPNAME))
 	}
 	return false
 }
