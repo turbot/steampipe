@@ -51,12 +51,12 @@ connection from any Postgres compatible database client.`,
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag("background", "", true, "Run service in the background").
-		AddIntFlag("db-port", "", constants.DatabasePort, "Database service port.").
-		AddStringFlag("listen", "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)").
+		AddBoolFlag(constants.ArgBackground, "", true, "Run service in the background").
+		AddIntFlag(constants.ArgPort, "", constants.DatabasePort, "Database service port.").
+		AddStringFlag(constants.ArgListenAddress, "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)").
 		// Hidden flags for internal use
-		AddStringFlag("invoker", "", string(db.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden()).
-		AddBoolFlag("refresh", "", true, "Refresh connections on startup", cmdconfig.FlagOptions.Hidden())
+		AddStringFlag(constants.ArgInvoker, "", string(db.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden()).
+		AddBoolFlag(constants.ArgRefresh, "", true, "Refresh connections on startup", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
 }
@@ -122,17 +122,17 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	}()
 	// 	// TODO(nw) - color me, replace hard-coding with variables / config
 
-	if cmdconfig.Viper().GetInt("db-port") < 1 || cmdconfig.Viper().GetInt("db-port") > 65535 {
+	if cmdconfig.Viper().GetInt(constants.ArgPort) < 1 || cmdconfig.Viper().GetInt(constants.ArgPort) > 65535 {
 		fmt.Println("Invalid Port :: MUST be within range (1:65535)")
 	}
 
-	listen := db.StartListenType(cmdconfig.Viper().GetString("listen"))
+	listen := db.StartListenType(cmdconfig.Viper().GetString(constants.ArgListenAddress))
 	if err := listen.IsValid(); err != nil {
 		utils.ShowError(err)
 		return
 	}
 
-	invoker := db.Invoker(cmdconfig.Viper().GetString("invoker"))
+	invoker := db.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
 	if err := invoker.IsValid(); err != nil {
 		utils.ShowError(err)
 		return
@@ -140,7 +140,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	db.EnsureDBInstalled()
 
-	status, err := db.StartDB(cmdconfig.Viper().GetInt("db-port"), listen, invoker)
+	status, err := db.StartDB(cmdconfig.Viper().GetInt(constants.ArgPort), listen, invoker)
 	if err != nil {
 		utils.ShowError(err)
 		return

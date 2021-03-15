@@ -12,6 +12,13 @@ const (
 	ArgTimer             = "timing"
 	ArgOn                = "on"
 	ArgOff               = "off"
+	ArgBackground        = "background"
+	ArgPort              = "db-port"
+	ArgListenAddress     = "listen"
+	ArgInvoker           = "invoker"
+	ArgRefresh           = "refresh"
+	ArgLogLevel          = "log-level"
+	ArgUpdateCheck       = "update-check"
 	ArgInstallDir        = "install-dir"
 )
 

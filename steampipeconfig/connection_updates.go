@@ -1,10 +1,11 @@
-package connection_config
+package steampipeconfig
 
 import (
 	"log"
 	"reflect"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/steampipeconfig/options"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -36,14 +37,14 @@ type ConnectionData struct {
 	// connection data (unparsed)
 	ConnectionConfig string
 	// steampipe connection options
-	ConnectionOptions *ConnectionOptions
+	ConnectionOptions *options.Connection
 }
 
 func (p ConnectionData) equals(other *ConnectionData) bool {
 	return p.Plugin == other.Plugin &&
 		p.CheckSum == other.CheckSum &&
 		p.ConnectionName == other.ConnectionName &&
-		(p.ConnectionOptions == nil && other.ConnectionOptions == nil) || p.ConnectionOptions.equals(other.ConnectionOptions) &&
+		(p.ConnectionOptions == nil && other.ConnectionOptions == nil) || p.ConnectionOptions.Equals(other.ConnectionOptions) &&
 		reflect.DeepEqual(p.ConnectionConfig, other.ConnectionConfig)
 }
 

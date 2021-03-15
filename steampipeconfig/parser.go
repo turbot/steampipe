@@ -1,4 +1,4 @@
-package connection_config
+package steampipeconfig
 
 import (
 	"fmt"
@@ -17,6 +17,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/steampipeconfig/options"
 )
 
 const configExtension = ".spc"
@@ -170,12 +171,12 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 		switch block.Type {
 		case "options":
 			// if we already found settings, fail
-			options, moreDiags := parseOptions(block)
+			opts, moreDiags := parseOptions(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				break
 			}
-			connection.setOptions(options, block)
+			connection.setOptions(opts, block)
 
 		default:
 			// this can probably never happen
@@ -200,17 +201,17 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 	return connection, diags
 }
 
-func parseOptions(block *hcl.Block) (Options, hcl.Diagnostics) {
-	var dest Options
+func parseOptions(block *hcl.Block) (options.Options, hcl.Diagnostics) {
+	var dest options.Options
 	switch block.Labels[0] {
-	case HclOptionsConnection:
-		dest = &ConnectionOptions{}
-	case HclOptionsDatabase:
-		dest = &DatabaseOptions{}
-	case HclOptionsConsole:
-		dest = &ConsoleOptions{}
-	case HclOptionsGeneral:
-		dest = &GeneralOptions{}
+	case options.ConnectionBlock:
+		dest = &options.Connection{}
+	case options.DatabaseBlock:
+		dest = &options.Database{}
+	case options.ConsoleBlock:
+		dest = &options.Console{}
+	case options.GeneralBlock:
+		dest = &options.General{}
 	}
 
 	diags := gohcl.DecodeBody(block.Body, nil, dest)
@@ -218,6 +219,8 @@ func parseOptions(block *hcl.Block) (Options, hcl.Diagnostics) {
 		return nil, diags
 	}
 
+	// now call the options.Populate to convert bool string fields into actual bools
+	dest.Populate()
 	return dest, nil
 }
 

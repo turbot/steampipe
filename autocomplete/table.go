@@ -7,12 +7,12 @@ import (
 	"strings"
 
 	"github.com/c-bata/go-prompt"
-	"github.com/turbot/steampipe/connection_config"
 	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/steampipeconfig"
 )
 
 // GetTableAutoCompleteSuggestions :: derives and returns tables for typeahead
-func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *connection_config.ConnectionMap) []prompt.Suggest {
+func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *steampipeconfig.ConnectionMap) []prompt.Suggest {
 	s := []prompt.Suggest{}
 
 	// schema names

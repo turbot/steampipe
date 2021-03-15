@@ -1,10 +1,11 @@
-package connection_config
+package steampipeconfig
 
 import (
 	"fmt"
 	"reflect"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/steampipe/steampipeconfig/options"
 )
 
 // Connection :: structure representing the partially parsed connection.
@@ -17,20 +18,20 @@ type Connection struct {
 	Config string
 
 	// options
-	Options *ConnectionOptions
+	Options *options.Connection
 }
 
 // set the options on the connection
-// verify the options is a valid options type (only ConnectionOptions currently supported)
-func (c *Connection) setOptions(options Options, block *hcl.Block) hcl.Diagnostics {
+// verify the options is a valid options type (only options.Connection currently supported)
+func (c *Connection) setOptions(opts options.Options, block *hcl.Block) hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	switch o := options.(type) {
-	case *ConnectionOptions:
+	switch o := opts.(type) {
+	case *options.Connection:
 		c.Options = o
 	default:
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("invalid nested option type %s - only 'connection' options blocks are supported for Connections", reflect.TypeOf(options).Name()),
+			Summary:  fmt.Sprintf("invalid nested option type %s - only 'connection' options blocks are supported for Connections", reflect.TypeOf(o).Name()),
 			Subject:  &block.DefRange,
 		})
 	}

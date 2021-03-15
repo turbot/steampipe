@@ -53,3 +53,10 @@ func initGlobalConfig() {
 	log.Println("[TRACE] rootCmd initGlobalConfig")
 	cmdconfig.InitViper()
 }
+
+func AddCommands() {
+	// explicitly initialise commands here rather than in init functions to allow us to handle errors from the config load
+	RootCmd.AddCommand(PluginCmd())
+	RootCmd.AddCommand(QueryCmd())
+	RootCmd.AddCommand(ServiceCmd())
+}

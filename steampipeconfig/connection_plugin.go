@@ -1,4 +1,4 @@
-package connection_config
+package steampipeconfig
 
 import (
 	"log"
@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	pluginshared "github.com/turbot/steampipe-plugin-sdk/grpc/shared"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
+	"github.com/turbot/steampipe/steampipeconfig/options"
 )
 
 // ConnectionPlugin :: structure representing an instance of a plugin
@@ -18,7 +19,7 @@ import (
 type ConnectionPlugin struct {
 	ConnectionName    string
 	ConnectionConfig  string
-	ConnectionOptions *ConnectionOptions
+	ConnectionOptions *options.Connection
 	PluginName        string
 	Plugin            *grpc.PluginClient
 	Schema            *proto.Schema
@@ -30,7 +31,7 @@ type ConnectionPluginInput struct {
 	ConnectionName    string
 	PluginName        string
 	ConnectionConfig  string
-	ConnectionOptions *ConnectionOptions
+	ConnectionOptions *options.Connection
 	DisableLogger     bool
 }
 

@@ -1,4 +1,4 @@
-package connection_config
+package steampipeconfig
 
 import "github.com/hashicorp/hcl/v2"
 
