@@ -12,9 +12,7 @@ func InitViper(v *viper.Viper) {
 	// set defaults
 	v.Set(constants.ShowInteractiveOutputConfigKey, true)
 
-	installDir, isSet := os.LookupEnv("STEAMPIPE_INSTALL_DIR")
-
-	if isSet {
+	if installDir, isSet := os.LookupEnv("STEAMPIPE_INSTALL_DIR"); isSet {
 		v.SetDefault(constants.ArgInstallDir, installDir)
 	} else {
 		v.SetDefault(constants.ArgInstallDir, "~/.steampipe")
