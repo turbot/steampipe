@@ -1,4 +1,4 @@
-package connection_config
+package steampipeconfig
 
 import (
 	"log"
@@ -11,34 +11,37 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	pluginshared "github.com/turbot/steampipe-plugin-sdk/grpc/shared"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
+	"github.com/turbot/steampipe/steampipeconfig/options"
 )
 
 // ConnectionPlugin :: structure representing an instance of a plugin
 // NOTE: currently this corresponds to a single connection, i.e. we have 1 plugin instance per connection
 type ConnectionPlugin struct {
-	ConnectionName   string
-	ConnectionConfig string
-	PluginName       string
-	Plugin           *grpc.PluginClient
-	Schema           *proto.Schema
+	ConnectionName    string
+	ConnectionConfig  string
+	ConnectionOptions *options.Connection
+	PluginName        string
+	Plugin            *grpc.PluginClient
+	Schema            *proto.Schema
 }
 
-// ConnectionPluginOptions :: struct used as input to CreateConnectionPlugin
+// ConnectionPluginInput :: struct used as input to CreateConnectionPlugin
 // - it contains all details necessary to instantiate a ConnectionPlugin
-type ConnectionPluginOptions struct {
-	PluginFQN        string
-	ConnectionName   string
-	ConnectionConfig string
-	DisableLogger    bool
+type ConnectionPluginInput struct {
+	ConnectionName    string
+	PluginName        string
+	ConnectionConfig  string
+	ConnectionOptions *options.Connection
+	DisableLogger     bool
 }
 
 // CreateConnectionPlugin :: instantiate a plugin for a connection, fetch schema and send connection config
-// called by hub when
-func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin, error) {
-	remoteSchema := options.PluginFQN
-	connectionName := options.ConnectionName
-	connectionConfig := options.ConnectionConfig
-	disableLogger := options.DisableLogger
+func CreateConnectionPlugin(input *ConnectionPluginInput) (*ConnectionPlugin, error) {
+	remoteSchema := input.PluginName
+	connectionName := input.ConnectionName
+	connectionConfig := input.ConnectionConfig
+	disableLogger := input.DisableLogger
+	conectionOptions := input.ConnectionOptions
 
 	log.Printf("[TRACE] createConnectionPlugin name %s, remoteSchema %s \n", connectionName, remoteSchema)
 	pluginPath, err := GetPluginPath(remoteSchema)
@@ -104,7 +107,13 @@ func CreateConnectionPlugin(options *ConnectionPluginOptions) (*ConnectionPlugin
 	schema := schemaResponse.Schema
 
 	// now create ConnectionPlugin object and add to map
-	c := &ConnectionPlugin{ConnectionName: connectionName, ConnectionConfig: connectionConfig, PluginName: remoteSchema, Plugin: pluginClient, Schema: schema}
+	c := &ConnectionPlugin{
+		ConnectionName:    connectionName,
+		ConnectionConfig:  connectionConfig,
+		ConnectionOptions: conectionOptions,
+		PluginName:        remoteSchema,
+		Plugin:            pluginClient,
+		Schema:            schema}
 	return c, nil
 }
 

@@ -1,4 +1,4 @@
-package connection_config
+package steampipeconfig
 
 import (
 	"fmt"
@@ -253,7 +253,7 @@ func TestGetConnectionsToUpdate(t *testing.T) {
 	for name, test := range testCasesGetConnectionsToUpdate {
 		setup(test)
 
-		res, err := GetConnectionsToUpdate(nil)
+		res, err := GetConnectionsToUpdate(nil, nil)
 
 		if err != nil && test.expected != "ERROR" {
 			t.Errorf("GetConnectionsToUpdate failed with unexpected error: %v", err)

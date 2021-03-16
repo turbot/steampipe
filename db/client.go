@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/connection_config"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -19,7 +19,7 @@ import (
 type Client struct {
 	dbClient       *sql.DB
 	schemaMetadata *schema.Metadata
-	connectionMap  *connection_config.ConnectionMap
+	connectionMap  *steampipeconfig.ConnectionMap
 }
 
 var clientSingleton *Client
@@ -56,7 +56,7 @@ func GetClient(autoRefreshConnections bool) (*Client, error) {
 		}
 
 		// load the connection state and cache it!
-		connectionMap, err := connection_config.GetConnectionState(clientSingleton.schemaMetadata.GetSchemas())
+		connectionMap, err := steampipeconfig.GetConnectionState(clientSingleton.schemaMetadata.GetSchemas())
 		if err != nil {
 			return nil, err
 		}
@@ -135,7 +135,7 @@ func (c *Client) SchemaMetadata() *schema.Metadata {
 }
 
 // ConnectionMap :: returns the latest connection map
-func (c *Client) ConnectionMap() *connection_config.ConnectionMap {
+func (c *Client) ConnectionMap() *steampipeconfig.ConnectionMap {
 	return c.connectionMap
 }
 

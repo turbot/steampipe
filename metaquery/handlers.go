@@ -11,10 +11,10 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/connection_config"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -24,7 +24,7 @@ var commonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.Cmd
 type HandlerInput struct {
 	Query       string
 	Schema      *schema.Metadata
-	Connections *connection_config.ConnectionMap
+	Connections *steampipeconfig.ConnectionMap
 	Prompt      *prompt.Prompt
 }
 

@@ -5,15 +5,15 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/steampipe/autocomplete"
-	"github.com/turbot/steampipe/connection_config"
 	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/steampipeconfig"
 )
 
 // CompleterInput :: input interface for the metaquery completer
 type CompleterInput struct {
 	Query       string
 	Schema      *schema.Metadata
-	Connections *connection_config.ConnectionMap
+	Connections *steampipeconfig.ConnectionMap
 }
 
 func (h *CompleterInput) args() []string {

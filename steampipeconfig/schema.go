@@ -1,4 +1,4 @@
-package connection_config
+package steampipeconfig
 
 import "github.com/hashicorp/hcl/v2"
 
@@ -9,6 +9,10 @@ var configSchema = &hcl.BodySchema{
 			Type:       "connection",
 			LabelNames: []string{"name"},
 		},
+		{
+			Type:       "options",
+			LabelNames: []string{"type"},
+		},
 	},
 }
 
@@ -17,6 +21,12 @@ var connectionSchema = &hcl.BodySchema{
 		{
 			Name:     "plugin",
 			Required: true,
+		},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "options",
+			LabelNames: []string{"type"},
 		},
 	},
 }

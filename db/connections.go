@@ -7,18 +7,25 @@ import (
 	"time"
 
 	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/connection_config"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
+// RefreshConnections :: load required connections and refresh
 func RefreshConnections(client *Client) error {
+	// reload connection config
+	config, err := steampipeconfig.Load()
+	if err != nil {
+		return err
+	}
+	requiredConnections := config.Connections
+
 	// first get a list of all existing schemas
 	schemas := client.schemaMetadata.GetSchemas()
 
 	// refresh the connection state file - the removes any connections which do not exist in the list of current schema
-	log.Println("[TRACE] RefreshConnections")
-	updates, err := connection_config.GetConnectionsToUpdate(schemas)
+	updates, err := steampipeconfig.GetConnectionsToUpdate(schemas, requiredConnections)
 	if err != nil {
 		return err
 	}
@@ -56,8 +63,8 @@ func RefreshConnections(client *Client) error {
 			return err
 		}
 		// find any plugins which use a newer sdk version than steampipe.
-		validationFailures, validatedUpdates, validatedPlugins := connection_config.ValidatePlugins(updates.Update, connectionPlugins)
-		warningString = connection_config.BuildValidationWarningString(validationFailures)
+		validationFailures, validatedUpdates, validatedPlugins := steampipeconfig.ValidatePlugins(updates.Update, connectionPlugins)
+		warningString = steampipeconfig.BuildValidationWarningString(validationFailures)
 
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
 		connectionQueries = getSchemaQueries(validatedUpdates, validationFailures)
@@ -80,17 +87,15 @@ func RefreshConnections(client *Client) error {
 	return updateConnectionMapAndSchema(client)
 }
 
-func getConnectionPlugins(updates connection_config.ConnectionMap) ([]*connection_config.ConnectionPlugin, error) {
-	var connectionPlugins []*connection_config.ConnectionPlugin
+func getConnectionPlugins(updates steampipeconfig.ConnectionMap) ([]*steampipeconfig.ConnectionPlugin, error) {
+	var connectionPlugins []*steampipeconfig.ConnectionPlugin
 	numUpdates := len(updates)
-	var pluginChan = make(chan *connection_config.ConnectionPlugin, numUpdates)
+	var pluginChan = make(chan *steampipeconfig.ConnectionPlugin, numUpdates)
 	var errorChan = make(chan error, numUpdates)
-	for connectionName, plugin := range updates {
-		pluginFQN := plugin.Plugin
-		connectionConfig := plugin.ConnectionConfig
+	for connectionName, connectionData := range updates {
 
 		// instantiate the connection plugin, and retrieve schema
-		go getConnectionPluginsAsync(pluginFQN, connectionName, connectionConfig, pluginChan, errorChan)
+		go getConnectionPluginsAsync(connectionName, connectionData, pluginChan, errorChan)
 	}
 
 	for i := 0; i < numUpdates; i++ {
@@ -108,13 +113,13 @@ func getConnectionPlugins(updates connection_config.ConnectionMap) ([]*connectio
 	return connectionPlugins, nil
 }
 
-func getConnectionPluginsAsync(pluginFQN string, connectionName string, connectionConfig string, pluginChan chan *connection_config.ConnectionPlugin, errorChan chan error) {
-	opts := &connection_config.ConnectionPluginOptions{
-		PluginFQN:        pluginFQN,
-		ConnectionName:   connectionName,
-		ConnectionConfig: connectionConfig,
-		DisableLogger:    true}
-	p, err := connection_config.CreateConnectionPlugin(opts)
+func getConnectionPluginsAsync(connectionName string, connectionData *steampipeconfig.ConnectionData, pluginChan chan *steampipeconfig.ConnectionPlugin, errorChan chan error) {
+	opts := &steampipeconfig.ConnectionPluginInput{
+		ConnectionName:    connectionName,
+		PluginName:        connectionData.Plugin,
+		ConnectionOptions: connectionData.ConnectionOptions,
+		DisableLogger:     true}
+	p, err := steampipeconfig.CreateConnectionPlugin(opts)
 	if err != nil {
 		errorChan <- err
 		return
@@ -124,10 +129,10 @@ func getConnectionPluginsAsync(pluginFQN string, connectionName string, connecti
 	p.Plugin.Client.Kill()
 }
 
-func getSchemaQueries(updates connection_config.ConnectionMap, failures []*connection_config.ValidationFailure) []string {
+func getSchemaQueries(updates steampipeconfig.ConnectionMap, failures []*steampipeconfig.ValidationFailure) []string {
 	var schemaQueries []string
 	for connectionName, plugin := range updates {
-		remoteSchema := connection_config.PluginFQNToSchemaName(plugin.Plugin)
+		remoteSchema := steampipeconfig.PluginFQNToSchemaName(plugin.Plugin)
 		log.Printf("[TRACE] update connection %s, plugin FQN %s, schema %s\n ", connectionName, plugin.Plugin, remoteSchema)
 		schemaQueries = append(schemaQueries, updateConnectionQuery(connectionName, remoteSchema)...)
 	}
@@ -141,7 +146,7 @@ func getSchemaQueries(updates connection_config.ConnectionMap, failures []*conne
 	return schemaQueries
 }
 
-func getCommentQueries(plugins []*connection_config.ConnectionPlugin) []string {
+func getCommentQueries(plugins []*steampipeconfig.ConnectionPlugin) []string {
 	var commentQueries []string
 	for _, plugin := range plugins {
 		commentQueries = append(commentQueries, commentsQuery(plugin)...)
@@ -179,7 +184,7 @@ func updateConnectionQuery(localSchema, remoteSchema string) []string {
 	}
 }
 
-func commentsQuery(p *connection_config.ConnectionPlugin) []string {
+func commentsQuery(p *steampipeconfig.ConnectionPlugin) []string {
 	var statements []string
 	for t, schema := range p.Schema.Schema {
 		table := PgEscapeName(t)
@@ -205,7 +210,7 @@ func deleteConnectionQuery(name string) []string {
 	}
 }
 
-func executeConnectionQueries(schemaQueries []string, updates *connection_config.ConnectionUpdates) error {
+func executeConnectionQueries(schemaQueries []string, updates *steampipeconfig.ConnectionUpdates) error {
 	client, err := createSteampipeRootDbClient()
 	if err != nil {
 		return err
@@ -230,7 +235,7 @@ func executeConnectionQueries(schemaQueries []string, updates *connection_config
 	*/
 
 	// now update the state file
-	err = connection_config.SaveConnectionState(updates.RequiredConnections)
+	err = steampipeconfig.SaveConnectionState(updates.RequiredConnections)
 	if err != nil {
 		return err
 	}
@@ -249,7 +254,7 @@ func updateConnectionMapAndSchema(client *Client) error {
 
 	// load the connection state and cache it!
 	log.Println("[TRACE]", "retrieving connection map")
-	connectionMap, err := connection_config.GetConnectionState(clientSingleton.schemaMetadata.GetSchemas())
+	connectionMap, err := steampipeconfig.GetConnectionState(clientSingleton.schemaMetadata.GetSchemas())
 	if err != nil {
 		return err
 	}

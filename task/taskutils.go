@@ -6,6 +6,7 @@ import (
 )
 
 func shouldDoUpdateCheck() bool {
+	// TODO USE VIPER / OPTIONS
 	// if legacy env var SP_DISABLE_UPDATE_CHECK is true, do nothing
 	if v, ok := os.LookupEnv(legacyDisableUpdatesCheckEnvVar); ok && strings.ToLower(v) == "true" {
 		return false

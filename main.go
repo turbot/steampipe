@@ -10,7 +10,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/task"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -25,8 +24,7 @@ func main() {
 	createLogger()
 	log.Println("[TRACE] tracing enabled")
 
-	// run periodic tasks - update check and log clearing
-	task.NewRunner().Run()
+	cmd.InitCmd()
 
 	// execute the command
 	cmd.Execute()
@@ -41,6 +39,7 @@ func main() {
 
 // CreateLogger :: create a hclog logger with the level specified by the SP_LOG env var
 func createLogger() {
+	// TODO GET FROM VIPER
 	level := logging.LogLevel()
 
 	options := &hclog.LoggerOptions{Name: "steampipe", Level: hclog.LevelFromString(level)}

@@ -20,10 +20,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 )
 
-func init() {
-	rootCmd.AddCommand(PluginCmd())
-}
-
 // PluginCmd :: Plugin management commands
 func PluginCmd() *cobra.Command {
 
@@ -465,7 +461,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 // start service if necessary and refresh connections
 func refreshConnections() error {
-	// todo move this into db package
+
 	db.EnsureDBInstalled()
 	status, err := db.GetStatus()
 	if err != nil {

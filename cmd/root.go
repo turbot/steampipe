@@ -1,12 +1,18 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/steampipeconfig"
+	"github.com/turbot/steampipe/task"
+	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
 )
 
@@ -41,17 +47,11 @@ Getting started:
  `,
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() error {
-	log.Println("[TRACE] rootCmd Execute")
-	return rootCmd.Execute()
-}
-
-func init() {
+func InitCmd() {
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 
+	AddCommands()
 	cobra.OnInitialize(initGlobalConfig)
 }
 
@@ -59,4 +59,63 @@ func init() {
 func initGlobalConfig() {
 	log.Println("[TRACE] rootCmd initGlobalConfig")
 	cmdconfig.InitViper()
+	// set global containing install dir
+	SetInstallDir()
+
+	// load config
+	config, err := steampipeconfig.Load()
+	if err != nil {
+		utils.ShowError(err)
+		return
+	}
+	// todo set viper config from config
+	setViperDefaults(config)
+
+	// run periodic tasks - update check and log clearing
+	// NOTE we cannot do this until after the viper config is initialised
+	task.NewRunner().Run()
+}
+
+// SteampipeDir :: set the top level ~/.steampipe folder (creates if it doesnt exist)
+func SetInstallDir() {
+	installDir, err := helpers.Tildefy(viper.GetString(constants.ArgInstallDir))
+	utils.FailOnErrorWithMessage(err, fmt.Sprintf("failed to sanitize install directory"))
+	if _, err := os.Stat(installDir); os.IsNotExist(err) {
+		err = os.MkdirAll(installDir, 0755)
+		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
+	}
+	constants.SteampipeDir = installDir
+}
+
+func setViperDefaults(config *steampipeconfig.SteampipeConfig) {
+	setViperDefaultsFromConfig(config)
+	overrideViperDefaultsFromEnv()
+}
+
+func setViperDefaultsFromConfig(config *steampipeconfig.SteampipeConfig) {
+	for k, v := range config.ConfigMap() {
+		log.Println("[TRACE]", "root", "overrideViperDefaultWithConfig", fmt.Sprintf("Setting %s to %v", k, v))
+		viper.SetDefault(k, v)
+	}
+}
+
+func overrideViperDefaultsFromEnv() {
+	// a map of environment variables to Viper Config Key
+	ingest := map[string]string{}
+	for k, v := range ingest {
+		if val, ok := os.LookupEnv(k); ok {
+			viper.SetDefault(v, val)
+		}
+	}
+}
+
+func AddCommands() {
+	// explicitly initialise commands here rather than in init functions to allow us to handle errors from the config load
+	rootCmd.AddCommand(PluginCmd())
+	rootCmd.AddCommand(QueryCmd())
+	rootCmd.AddCommand(ServiceCmd())
+}
+
+func Execute() {
+	rootCmd.Execute()
 }
