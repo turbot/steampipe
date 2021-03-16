@@ -35,8 +35,8 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 }
 
 // Helper function to add a string flag to a command
-func (c *CmdBuilder) AddStringFlag(name string, shorthand string, def string, desc string, opts ...flagOpt) *CmdBuilder {
-	c.cmd.Flags().StringP(name, shorthand, def, desc)
+func (c *CmdBuilder) AddStringFlag(name string, shorthand string, defaultValue string, desc string, opts ...flagOpt) *CmdBuilder {
+	c.cmd.Flags().StringP(name, shorthand, defaultValue, desc)
 	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
 		o(c.cmd, name, name)
@@ -46,8 +46,8 @@ func (c *CmdBuilder) AddStringFlag(name string, shorthand string, def string, de
 }
 
 // Helper function to add an integer flag to a command
-func (c *CmdBuilder) AddIntFlag(name, shorthand string, def int, desc string, opts ...flagOpt) *CmdBuilder {
-	c.cmd.Flags().IntP(name, shorthand, def, desc)
+func (c *CmdBuilder) AddIntFlag(name, shorthand string, defaultValue int, desc string, opts ...flagOpt) *CmdBuilder {
+	c.cmd.Flags().IntP(name, shorthand, defaultValue, desc)
 	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
 		o(c.cmd, name, name)
@@ -56,8 +56,8 @@ func (c *CmdBuilder) AddIntFlag(name, shorthand string, def int, desc string, op
 }
 
 // Helper function to add a boolean flag to a command
-func (c *CmdBuilder) AddBoolFlag(name, shorthand string, def bool, desc string, opts ...flagOpt) *CmdBuilder {
-	c.cmd.Flags().BoolP(name, shorthand, def, desc)
+func (c *CmdBuilder) AddBoolFlag(name, shorthand string, defaultValue bool, desc string, opts ...flagOpt) *CmdBuilder {
+	c.cmd.Flags().BoolP(name, shorthand, defaultValue, desc)
 	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
 		o(c.cmd, name, name)
@@ -66,8 +66,8 @@ func (c *CmdBuilder) AddBoolFlag(name, shorthand string, def bool, desc string, 
 }
 
 // Helper function to add a flag that accepts an array of strings
-func (c *CmdBuilder) AddStringSliceFlag(name, shorthand string, def []string, desc string, opts ...flagOpt) *CmdBuilder {
-	c.cmd.Flags().StringSliceP(name, shorthand, def, desc)
+func (c *CmdBuilder) AddStringSliceFlag(name, shorthand string, defaultValue []string, desc string, opts ...flagOpt) *CmdBuilder {
+	c.cmd.Flags().StringSliceP(name, shorthand, defaultValue, desc)
 	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
 		o(c.cmd, name, name)
@@ -76,8 +76,8 @@ func (c *CmdBuilder) AddStringSliceFlag(name, shorthand string, def []string, de
 }
 
 // Helper function to add a flag that accepts a map of strings
-func (c *CmdBuilder) AddStringMapStringFlag(name, shorthand string, def map[string]string, desc string, opts ...flagOpt) *CmdBuilder {
-	c.cmd.Flags().StringToStringP(name, shorthand, def, desc)
+func (c *CmdBuilder) AddStringMapStringFlag(name, shorthand string, defaultValue map[string]string, desc string, opts ...flagOpt) *CmdBuilder {
+	c.cmd.Flags().StringToStringP(name, shorthand, defaultValue, desc)
 	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
 		o(c.cmd, name, name)
