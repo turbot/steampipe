@@ -31,8 +31,14 @@ func newSteampipeConfig() *SteampipeConfig {
 func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	res := map[string]interface{}{}
 	for _, o := range []options.Options{c.DatabaseOptions, c.ConsoleOptions, c.GeneralOptions} {
+		if o == nil {
+			continue
+		}
 		for k, v := range o.ConfigMap() {
-			res[k] = v
+			// ignore nil values
+			if v != nil {
+				res[k] = v
+			}
 		}
 	}
 	return res
@@ -82,19 +88,30 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 		}
 		c.DefaultConnectionOptions.CacheTTL = &ttlSecs
 	}
+}
 
-	// now find any connection with no options set and set the defaults
-	for _, connection := range c.Connections {
-		if connection.Options == nil {
-			connection.Options = c.DefaultConnectionOptions
-		} else {
-			// so there is a connection options - check all parameters are set and default missing ones
-			if connection.Options.Cache == nil {
-				connection.Options.Cache = c.DefaultConnectionOptions.Cache
-			}
-			if connection.Options.CacheTTL == nil {
-				connection.Options.CacheTTL = c.DefaultConnectionOptions.CacheTTL
-			}
-		}
+func (c *SteampipeConfig) GetConnectionOptions(connectionName string) *options.Connection {
+	connection, ok := c.Connections[connectionName]
+	if !ok {
+		// if we can't find connection, jsy return defaults
+		return c.DefaultConnectionOptions
 	}
+	// does the connection have connection options set - if not, return the default
+	if connection.Options == nil {
+		return c.DefaultConnectionOptions
+	}
+	// so there are connection options, ensure all fields are set
+
+	// create a copy of the options to return
+	result := &options.Connection{
+		Cache:    c.DefaultConnectionOptions.Cache,
+		CacheTTL: c.DefaultConnectionOptions.CacheTTL,
+	}
+	if connection.Options.Cache != nil {
+		result.Cache = connection.Options.Cache
+	}
+	if connection.Options.CacheTTL != nil {
+		result.CacheTTL = connection.Options.CacheTTL
+	}
+	return result
 }

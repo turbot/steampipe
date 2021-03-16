@@ -13,14 +13,10 @@ func (d Database) Populate() {}
 
 // ConfigMap :: create a config map to pass to viper
 func (c *Database) ConfigMap() map[string]interface{} {
-	// only add keys which are non null
-	res := map[string]interface{}{}
-	if c.Port != nil {
-		res[constants.ArgPort] = c.Port
-	}
-	if c.Listen != nil {
-		res[constants.ArgListenAddress] = c.Listen
+	// we can add null values as SteampipeConfig.ConfigMap() will ignore them
+	return map[string]interface{}{
+		constants.ArgPort:          c.Port,
+		constants.ArgListenAddress: c.Listen,
 	}
 
-	return res
 }
