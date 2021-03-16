@@ -41,10 +41,15 @@ type ConnectionData struct {
 }
 
 func (p ConnectionData) equals(other *ConnectionData) bool {
+	connectionOptionsEqual := (p.ConnectionOptions == nil) == (other.ConnectionOptions == nil)
+	if p.ConnectionOptions != nil {
+		connectionOptionsEqual = p.ConnectionOptions.Equals(other.ConnectionOptions)
+	}
+
 	return p.Plugin == other.Plugin &&
 		p.CheckSum == other.CheckSum &&
 		p.ConnectionName == other.ConnectionName &&
-		(p.ConnectionOptions == nil && other.ConnectionOptions == nil) || p.ConnectionOptions.Equals(other.ConnectionOptions) &&
+		connectionOptionsEqual &&
 		reflect.DeepEqual(p.ConnectionConfig, other.ConnectionConfig)
 }
 
