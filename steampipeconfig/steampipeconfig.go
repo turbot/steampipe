@@ -19,6 +19,8 @@ type SteampipeConfig struct {
 	DatabaseOptions          *options.Database
 	ConsoleOptions           *options.Console
 	GeneralOptions           *options.General
+	// array of options interfaces useful to build  ConfigMap
+	Options []options.Options
 }
 
 func newSteampipeConfig() *SteampipeConfig {
@@ -30,10 +32,7 @@ func newSteampipeConfig() *SteampipeConfig {
 // ConfigMap :: create a config map to pass to viper
 func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	res := map[string]interface{}{}
-	for _, o := range []options.Options{c.DatabaseOptions, c.ConsoleOptions, c.GeneralOptions} {
-		if o == nil {
-			continue
-		}
+	for _, o := range c.Options {
 		for k, v := range o.ConfigMap() {
 			// ignore nil values
 			if v != nil {
@@ -55,6 +54,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) {
 	case *options.General:
 		c.GeneralOptions = o
 	}
+	c.Options = append(c.Options, opts)
 }
 
 const CacheEnabledEnvVar = "STEAMPIPE_CACHE"
