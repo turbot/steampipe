@@ -14,7 +14,6 @@ import (
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/plugin"
 	"github.com/turbot/steampipe/statefile"
-	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 
 	"github.com/spf13/cobra"
@@ -480,14 +479,6 @@ func refreshConnections() error {
 	if err != nil {
 		return err
 	}
-
-	// TODO PUT IN FXN
-	// reload config
-	config, err := steampipeconfig.Load()
-	if err != nil {
-		return err
-	}
-	steampipeconfig.Config = config
 
 	// refresh connections
 	if err = db.RefreshConnections(client); err != nil {

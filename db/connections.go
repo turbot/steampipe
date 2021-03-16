@@ -12,11 +12,18 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
+// RefreshConnections :: load required connections and refresh
 func RefreshConnections(client *Client) error {
+	// reload connection config
+	config, err := steampipeconfig.Load()
+	if err != nil {
+		return err
+	}
+	requiredConnections := config.Connections
+
 	// first get a list of all existing schemas
 	schemas := client.schemaMetadata.GetSchemas()
-	// retrieve the parsed connection config
-	requiredConnections := steampipeconfig.Config.Connections
+
 	// refresh the connection state file - the removes any connections which do not exist in the list of current schema
 	updates, err := steampipeconfig.GetConnectionsToUpdate(schemas, requiredConnections)
 	if err != nil {

@@ -60,14 +60,13 @@ func initGlobalConfig() {
 	// set global containing install dir
 	SetInstallDir()
 
-	// TODO REFACTOR INTO A FXN
 	// load config
-	config, err := steampipeconfig.Load()
+	_, err := steampipeconfig.Load()
 	if err != nil {
 		utils.ShowError(err)
 		return
 	}
-	steampipeconfig.Config = config
+	// todo set viper config from config
 }
 
 // SteampipeDir :: set the top level ~/.steampipe folder (creates if it doesnt exist)
