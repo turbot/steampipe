@@ -23,17 +23,10 @@ func newSteampipeConfig() *SteampipeConfig {
 // ConfigMap :: create a config map to pass to viper
 func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	res := map[string]interface{}{}
-	for k, v := range c.DefaultConnectionOptions.ConfigMap() {
-		res[k] = v
-	}
-	for k, v := range c.DatabaseOptions.ConfigMap() {
-		res[k] = v
-	}
-	for k, v := range c.ConsoleOptions.ConfigMap() {
-		res[k] = v
-	}
-	for k, v := range c.GeneralOptions.ConfigMap() {
-		res[k] = v
+	for _, o := range []options.Options{c.DatabaseOptions, c.ConsoleOptions, c.GeneralOptions} {
+		for k, v := range o.ConfigMap() {
+			res[k] = v
+		}
 	}
 	return res
 }
