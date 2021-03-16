@@ -10,7 +10,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/task"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -26,9 +25,6 @@ func main() {
 	log.Println("[TRACE] tracing enabled")
 
 	cmd.InitCmd()
-
-	// run periodic tasks - update check and log clearing
-	task.NewRunner().Run()
 
 	// execute the command
 	cmd.Execute()

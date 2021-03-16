@@ -7,11 +7,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 
-	"sync"
-
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -240,7 +238,7 @@ func StartService(invoker Invoker) {
 	log.Println("[TRACE] start service")
 	// spawn a process to start the service, passing refresh=false to ensure we DO NOT refresh connections
 	// (as we will do that ourselves)
-	cmd := exec.Command(os.Args[0], "service", "start", "--listen", "local", "--refresh=false", "--invoker", string(invoker), "--install-dir", viper.GetString(constants.ArgInstallDir))
+	cmd := exec.Command(os.Args[0], "service", "start", "--listen", "local", "--refresh=false", "--invoker", string(invoker), "--install-dir", constants.SteampipeDir)
 	cmd.Start()
 	startedAt := time.Now()
 	spinnerShown := false

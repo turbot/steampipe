@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig"
+	"github.com/turbot/steampipe/task"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
 )
@@ -69,6 +70,10 @@ func initGlobalConfig() {
 	}
 	// todo set viper config from config
 	setViperDefaults(config)
+
+	// run periodic tasks - update check and log clearing
+	// NOTE we cannot do this until after the viper config is initialised
+	task.NewRunner().Run()
 }
 
 // SteampipeDir :: set the top level ~/.steampipe folder (creates if it doesnt exist)
