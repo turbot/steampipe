@@ -29,12 +29,22 @@ func (c *Console) Populate() {
 
 // ConfigMap :: create a config map to pass to viper
 func (c *Console) ConfigMap() map[string]interface{} {
-	// we can add null values as SteampipeConfig.ConfigMap() will ignore them
-	return map[string]interface{}{
-		constants.ArgOutput:    c.Output,
-		constants.ArgSeparator: c.Separator,
-		constants.ArgHeader:    c.Header,
-		constants.ArgOutput:    c.Output,
-		constants.ArgOutput:    c.Output,
+	// only add keys which are non null
+	res := map[string]interface{}{}
+	if c.Output != nil {
+		res[constants.ArgOutput] = c.Output
 	}
+	if c.Separator != nil {
+		res[constants.ArgSeparator] = c.Separator
+	}
+	if c.Header != nil {
+		res[constants.ArgHeader] = c.Header
+	}
+	if c.Output != nil {
+		res[constants.ArgOutput] = c.Output
+	}
+	if c.Output != nil {
+		res[constants.ArgOutput] = c.Output
+	}
+	return res
 }

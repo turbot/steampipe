@@ -34,10 +34,7 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	res := map[string]interface{}{}
 	for _, o := range c.Options {
 		for k, v := range o.ConfigMap() {
-			// ignore nil values
-			if v != nil {
-				res[k] = v
-			}
+			res[k] = v
 		}
 	}
 	return res

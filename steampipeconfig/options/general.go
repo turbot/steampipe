@@ -13,9 +13,14 @@ func (d General) Populate() {}
 
 // ConfigMap :: create a config map to pass to viper
 func (c General) ConfigMap() map[string]interface{} {
-	// we can add null values as SteampipeConfig.ConfigMap() will ignore them
-	return map[string]interface{}{
-		constants.ArgLogLevel:    c.LogLevel,
-		constants.ArgUpdateCheck: c.UpdateCheck,
+	// only add keys which are non null
+	res := map[string]interface{}{}
+	if c.LogLevel != nil {
+		res[constants.ArgLogLevel] = c.LogLevel
 	}
+	if c.UpdateCheck != nil {
+		res[constants.ArgUpdateCheck] = c.UpdateCheck
+	}
+
+	return res
 }
