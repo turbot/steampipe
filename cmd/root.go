@@ -15,8 +15,8 @@ import (
 	"github.com/turbot/steampipe/version"
 )
 
-// RootCmd represents the base command when called without any subcommands
-var RootCmd = &cobra.Command{
+// rootCmd represents the base command when called without any subcommands
+var rootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
 	Version: version.String(),
 	Short:   "Query cloud resources using SQL",
@@ -46,10 +46,11 @@ Getting started:
  `,
 }
 
-func init() {
-	RootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
-	viper.BindPFlag(constants.ArgInstallDir, RootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
+func InitCmd() {
+	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
+	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 
+	AddCommands()
 	cobra.OnInitialize(initGlobalConfig)
 }
 
@@ -61,12 +62,13 @@ func initGlobalConfig() {
 	SetInstallDir()
 
 	// load config
-	_, err := steampipeconfig.Load()
+	config, err := steampipeconfig.Load()
 	if err != nil {
 		utils.ShowError(err)
 		return
 	}
 	// todo set viper config from config
+	setViperDefaults(config)
 }
 
 // SteampipeDir :: set the top level ~/.steampipe folder (creates if it doesnt exist)
@@ -80,9 +82,35 @@ func SetInstallDir() {
 	constants.SteampipeDir = installDir
 }
 
+func setViperDefaults(config *steampipeconfig.SteampipeConfig) {
+	setViperDefaultsFromConfig(config)
+	overrideViperDefaultsFromEnv()
+}
+
+func setViperDefaultsFromConfig(config *steampipeconfig.SteampipeConfig) {
+	for k, v := range config.ConfigMap() {
+		log.Println("[TRACE]", "root", "overrideViperDefaultWithConfig", fmt.Sprintf("Setting %s to %v", k, v))
+		viper.SetDefault(k, v)
+	}
+}
+
+func overrideViperDefaultsFromEnv() {
+	// a map of environment variables to Viper Config Key
+	ingest := map[string]string{}
+	for k, v := range ingest {
+		if val, ok := os.LookupEnv(k); ok {
+			viper.SetDefault(v, val)
+		}
+	}
+}
+
 func AddCommands() {
 	// explicitly initialise commands here rather than in init functions to allow us to handle errors from the config load
-	RootCmd.AddCommand(PluginCmd())
-	RootCmd.AddCommand(QueryCmd())
-	RootCmd.AddCommand(ServiceCmd())
+	rootCmd.AddCommand(PluginCmd())
+	rootCmd.AddCommand(QueryCmd())
+	rootCmd.AddCommand(ServiceCmd())
+}
+
+func Execute() {
+	rootCmd.Execute()
 }

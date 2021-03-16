@@ -25,12 +25,13 @@ func main() {
 	createLogger()
 	log.Println("[TRACE] tracing enabled")
 
-	cmd.AddCommands()
+	cmd.InitCmd()
+
 	// run periodic tasks - update check and log clearing
 	task.NewRunner().Run()
 
 	// execute the command
-	cmd.RootCmd.Execute()
+	cmd.Execute()
 
 	// remove the temp directory
 	// don't care if it could not be removed
