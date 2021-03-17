@@ -89,12 +89,12 @@ func Shutdown(client *Client, invoker Invoker) {
 
 	// force stop if the service was invoked by the same invoker and we are the last one
 	if status != nil && status.Invoker == invoker {
-		status, err := StopDB(false, InvokerQuery)
+		status, err := StopDB(false, invoker)
 		if err != nil {
 			utils.ShowError(err)
 		}
 		if status != ServiceStopped {
-			StopDB(true, InvokerQuery)
+			StopDB(true, invoker)
 		}
 	}
 }
