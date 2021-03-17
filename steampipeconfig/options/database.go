@@ -4,8 +4,8 @@ import "github.com/turbot/steampipe/constants"
 
 // Database
 type Database struct {
-	Port   *int    `hcl:"database-port"`
-	Listen *string `hcl:"database-listen"`
+	Port   *int    `hcl:"port"`
+	Listen *string `hcl:"listen"`
 }
 
 // Populate :: nothing to do

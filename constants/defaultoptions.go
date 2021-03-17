@@ -9,8 +9,8 @@ const DefaultSPCContent = `
 #     port   = 9193
 #     listen = "local"
 # }
-# options "console" {
-#     header      = "off"      # on, off
+# options "terminal" {
+#     header      = "off"     # on, off
 #     multi       = "off"     # on, off
 #     output      = "table"   # json, csv, table, line
 #     separator   = ","       # any single char
