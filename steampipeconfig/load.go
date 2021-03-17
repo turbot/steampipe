@@ -45,6 +45,7 @@ func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err erro
 		}
 	}()
 
+	log.Printf("[WARN] 1")
 	steampipeConfig = newSteampipeConfig()
 
 	// get all the config files in the directory
@@ -57,17 +58,21 @@ func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err erro
 		return &SteampipeConfig{}, nil
 	}
 
+	log.Printf("[WARN] 2")
+
 	fileData, diags := loadFileData(configPaths)
 	if diags.HasErrors() {
 		log.Printf("[WARN] loadConfig: failed to load all config files: %v\n", err)
 		return nil, plugin.DiagsToError("failed to load all config files", diags)
 	}
+	log.Printf("[WARN] 3")
 
 	body, diags := parseConfigs(fileData)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("failed to load all config files", diags)
 	}
 
+	log.Printf("[WARN] 4")
 	// do a partial decode
 	content, _, moreDiags := body.PartialContent(configSchema)
 	if moreDiags.HasErrors() {
@@ -75,6 +80,7 @@ func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err erro
 		return nil, plugin.DiagsToError("failed to decode config", diags)
 	}
 
+	log.Printf("[WARN] 5")
 	for _, block := range content.Blocks {
 		switch block.Type {
 		case "connection":
@@ -102,6 +108,7 @@ func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err erro
 		}
 	}
 
+	log.Printf("[WARN] 6")
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("failed to load config", diags)
 	}
