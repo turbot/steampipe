@@ -104,10 +104,6 @@ func EnsureDBInstalled() {
 
 	startServiceSpinner := utils.ShowSpinner(fmt.Sprintf("Configuring database..."))
 	StartService(InvokerInstaller)
-	defer func() {
-		// force stop
-		StopDB(true)
-	}()
 	err = installSteampipeDatabase(steampipePassword, rootPassword)
 	utils.StopSpinner(startServiceSpinner)
 	if err != nil {
@@ -120,6 +116,8 @@ func EnsureDBInstalled() {
 	if err != nil {
 		utils.FailOnErrorWithMessage(err, "x Configuring Steampipe... FAILED!")
 	}
+	// force stop
+	StopDB(true, InvokerInstaller)
 
 	// write a signature after everything gets done!
 	// so that we can check for this later on
@@ -239,12 +237,19 @@ func StartService(invoker Invoker) {
 	// spawn a process to start the service, passing refresh=false to ensure we DO NOT refresh connections
 	// (as we will do that ourselves)
 	cmd := exec.Command(os.Args[0], "service", "start", "--listen", "local", "--refresh=false", "--invoker", string(invoker), "--install-dir", constants.SteampipeDir)
-	cmd.Start()
 	startedAt := time.Now()
 	spinnerShown := false
 	startedChannel := make(chan bool, 1)
+	errorChannel := make(chan error, 1)
 
 	go func() {
+		out, err := cmd.CombinedOutput()
+		// we need to ignore errors when the invoker is the Installer
+		// since when the installer starts the service, it will not be a stable state
+		if err != nil && invoker != InvokerInstaller {
+			errorChannel <- fmt.Errorf("Could not start steampipe service: %s", string(out))
+			return
+		}
 		for {
 			st, err := loadRunningInstanceInfo()
 			if err != nil {
@@ -272,11 +277,11 @@ func StartService(invoker Invoker) {
 	select {
 	case <-timeoutAfter:
 		utils.ShowError(fmt.Errorf("x Waiting for database to start... FAILED!"))
-		return
 	case <-startedChannel:
 		// do nothing
+	case x := <-errorChannel:
+		utils.FailOnError(handleStartFailure(x))
 	}
-	return
 }
 
 func fdwNeedsUpdate() bool {
