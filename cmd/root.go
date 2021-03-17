@@ -114,11 +114,7 @@ func setViperDefaultsFromConfig(config *steampipeconfig.SteampipeConfig) {
 }
 
 func overrideViperDefaultsFromEnv() {
-	// a map of environment variables to Viper Config Key
-	ingest := map[string]string{
-		"STEAMPIPE_UPDATE_CHECK": constants.ArgUpdateCheck,
-	}
-	for k, v := range ingest {
+	for k, v := range constants.EnvironmentKeyToViperKey {
 		if val, ok := os.LookupEnv(k); ok {
 			// if the env val is one of known acceptable booleans e.g : on/off - yes/no etc,
 			// then we take the boolean value

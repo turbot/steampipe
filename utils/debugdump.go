@@ -9,8 +9,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// These are functions specifically used for Debugging purposes.
-// These should never go into Released versions
+// functions specifically used for Debugging purposes.
 func DebugDumpJSON(msg string, d interface{}) {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent(" ", " ")
