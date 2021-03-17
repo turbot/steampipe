@@ -104,16 +104,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	}
 
 	if !isPortBindable(port) {
-		return ServiceFailedToStart, fmt.Errorf("Cannot listen on %d. Are you sure that the interface is free?", port)
-	}
-
-	checkedPreviousInstances := make(chan bool, 1)
-	s := utils.StartSpinnerAfterDelay("Checking for running instances", constants.SpinnerShowTimeout, checkedPreviousInstances)
-	previousProcess := findSteampipePostgresInstance()
-	checkedPreviousInstances <- true
-	utils.StopSpinner(s)
-	if previousProcess != nil {
-		return ServiceFailedToStart, fmt.Errorf("Another Steampipe service is already running. Use %s to kill all running instances before continuing.", constants.Bold("steampipe service stop --force"))
+		return ServiceFailedToStart, handleStartFailure(fmt.Errorf("Cannot listen on %d. Are you sure that the interface is free?", port))
 	}
 
 	postgresCmd := exec.Command(
@@ -201,19 +192,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	client, err := GetClient(false)
 
 	if err != nil {
-		// if we got an error here, then there probably was a problem
-		// starting up the process. this may be because of a stray
-		// steampipe postgres running that we don't know of. try killing it
-		if killPreviousInstanceIfAny() {
-			// remove info file (if any)
-			_ = removeRunningInstanceInfo()
-			// try restarting
-			return StartDB(port, listen, invoker)
-		}
-
-		// there was nothing to kill.
-		// this is some other problem that we are not accounting for
-		return ServiceFailedToStart, err
+		return ServiceFailedToStart, handleStartFailure(err)
 	}
 
 	// refresh plugin connections - ensure db schemas are in sync with connection config
@@ -228,6 +207,24 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	}
 
 	return ServiceStarted, nil
+}
+
+func handleStartFailure(err error) error {
+	// if we got an error here, then there probably was a problem
+	// starting up the process. this may be because of a stray
+	// steampipe postgres running or another one from a different installation.
+	checkedPreviousInstances := make(chan bool, 1)
+	s := utils.StartSpinnerAfterDelay("Checking for running instances", constants.SpinnerShowTimeout, checkedPreviousInstances)
+	otherProcess := findSteampipePostgresInstance()
+	checkedPreviousInstances <- true
+	utils.StopSpinner(s)
+	if otherProcess != nil {
+		return fmt.Errorf("Another Steampipe service is already running. Use %s to kill all running instances before continuing.", constants.Bold("steampipe service stop --force"))
+	}
+
+	// there was nothing to kill.
+	// this is some other problem that we are not accounting for
+	return err
 }
 
 func isPortBindable(port int) bool {
@@ -248,12 +245,16 @@ func isPortBindable(port int) bool {
 
 // kill all postgres processes that were started as part of steampipe (if any)
 func killPreviousInstanceIfAny() bool {
-	p := findSteampipePostgresInstance()
-	if p != nil {
+	wasKilled := false
+	for {
+		p := findSteampipePostgresInstance()
+		if p == nil {
+			break
+		}
 		killProcessTree(p)
-		return true
+		wasKilled = true
 	}
-	return false
+	return wasKilled
 }
 
 func findSteampipePostgresInstance() *process.Process {

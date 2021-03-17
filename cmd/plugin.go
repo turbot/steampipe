@@ -569,7 +569,7 @@ func getPluginConnectionMap() (map[string][]string, error) {
 		defer func() {
 			status, _ := db.GetStatus()
 			if status.Invoker == db.InvokerPlugin {
-				db.StopDB(true)
+				db.StopDB(true, db.InvokerPlugin)
 			}
 		}()
 	}

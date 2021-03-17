@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -118,9 +119,9 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		logging.LogTime("runServiceStartCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
+			os.Exit(-1)
 		}
 	}()
-	// 	// TODO(nw) - color me, replace hard-coding with variables / config
 
 	if cmdconfig.Viper().GetInt(constants.ArgPort) < 1 || cmdconfig.Viper().GetInt(constants.ArgPort) > 65535 {
 		fmt.Println("Invalid Port :: MUST be within range (1:65535)")
@@ -142,18 +143,15 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	status, err := db.StartDB(cmdconfig.Viper().GetInt(constants.ArgPort), listen, invoker)
 	if err != nil {
-		utils.ShowError(err)
-		return
+		panic(err)
 	}
 
 	if status == db.ServiceFailedToStart {
-		fmt.Println("Steampipe service failed to start")
-		return
+		panic(fmt.Errorf("Steampipe service failed to start"))
 	}
 
 	if status == db.ServiceAlreadyRunning {
-		fmt.Println("Steampipe service is already running")
-		return
+		panic(fmt.Errorf("Steampipe service is already running"))
 	}
 
 	info, _ := db.GetStatus()
@@ -183,7 +181,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	stopStatus, err := db.StopDB(cmdconfig.Viper().GetBool(constants.ArgForce))
+	stopStatus, err := db.StopDB(cmdconfig.Viper().GetBool(constants.ArgForce), db.InvokerService)
 
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "could not stop current instance")
@@ -285,7 +283,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	force := cmdconfig.Viper().GetBool(constants.ArgForce)
-	status, err := db.StopDB(force)
+	status, err := db.StopDB(force, db.InvokerService)
 
 	if err != nil {
 		utils.ShowError(err)
