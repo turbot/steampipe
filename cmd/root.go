@@ -62,7 +62,7 @@ func initGlobalConfig() {
 	// set global containing install dir
 	SetInstallDir()
 
-	// load config (this sets the global config steampipeconfig.Config
+	// load config (this sets the global config steampipeconfig.Config)
 	if err := steampipeconfig.Load(); err != nil {
 		utils.ShowError(err)
 		return
