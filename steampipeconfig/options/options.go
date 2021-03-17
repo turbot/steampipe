@@ -5,7 +5,7 @@ const (
 	ConnectionBlock = "connection"
 	DatabaseBlock   = "database"
 	GeneralBlock    = "general"
-	ConsoleBlock    = "console"
+	TerminalBlock   = "terminal"
 )
 
 type Options interface {

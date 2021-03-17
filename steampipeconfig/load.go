@@ -13,13 +13,13 @@ import (
 var Config *SteampipeConfig
 
 // Load :: load the HCL config and parse into the global Config variable
-func Load() error {
+func Load() (*SteampipeConfig, error) {
 	config, err := loadConfig(constants.ConfigDir())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	Config = config
-	return nil
+	return config, nil
 }
 
 func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err error) {

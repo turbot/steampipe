@@ -284,11 +284,12 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// - we will retry next time query is run and report any errors then
 	if len(plugins) > len(installSkipped) {
 		// reload the config, as the installation may have created a new connection config file
-		// (this sets the global config steampipeconfig.Config)
-		if err := steampipeconfig.Load(); err != nil {
+		config, err := steampipeconfig.Load()
+		if err != nil {
 			utils.ShowError(err)
 			return
 		}
+		steampipeconfig.Config = config
 		refreshConnections()
 	}
 }

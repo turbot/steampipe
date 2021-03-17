@@ -5,8 +5,8 @@ import (
 	"github.com/turbot/steampipe/constants"
 )
 
-// Console
-type Console struct {
+// Terminal
+type Terminal struct {
 	Output    *string `hcl:"output"`
 	Separator *string `hcl:"separator"`
 	// strings containing a bool - supports true/false/off/on etc
@@ -21,14 +21,14 @@ type Console struct {
 }
 
 // Populate :: convert strings representing bool values into bool pointers
-func (c *Console) Populate() {
+func (c *Terminal) Populate() {
 	c.Header = types.ToBoolPtr(c.HeaderBoolString)
 	c.Multi = types.ToBoolPtr(c.MultiBoolString)
 	c.Timing = types.ToBoolPtr(c.TimingBoolString)
 }
 
 // ConfigMap :: create a config map to pass to viper
-func (c *Console) ConfigMap() map[string]interface{} {
+func (c *Terminal) ConfigMap() map[string]interface{} {
 	// only add keys which are non null
 	res := map[string]interface{}{}
 	if c.Output != nil {

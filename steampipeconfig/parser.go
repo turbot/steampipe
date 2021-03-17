@@ -110,8 +110,8 @@ func parseOptions(block *hcl.Block) (options.Options, hcl.Diagnostics) {
 		dest = &options.Connection{}
 	case options.DatabaseBlock:
 		dest = &options.Database{}
-	case options.ConsoleBlock:
-		dest = &options.Console{}
+	case options.TerminalBlock:
+		dest = &options.Terminal{}
 	case options.GeneralBlock:
 		dest = &options.General{}
 	}

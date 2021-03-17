@@ -16,7 +16,7 @@ type SteampipeConfig struct {
 	// Steampipe options
 	DefaultConnectionOptions *options.Connection
 	DatabaseOptions          *options.Database
-	ConsoleOptions           *options.Console
+	ConsoleOptions           *options.Terminal
 	GeneralOptions           *options.General
 	// array of options interfaces useful to build  ConfigMap
 	Options []options.Options
@@ -45,7 +45,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) {
 		c.DefaultConnectionOptions = o
 	case *options.Database:
 		c.DatabaseOptions = o
-	case *options.Console:
+	case *options.Terminal:
 		c.ConsoleOptions = o
 	case *options.General:
 		c.GeneralOptions = o
