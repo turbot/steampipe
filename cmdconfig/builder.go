@@ -20,7 +20,6 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 	originalPreRun := cfg.cmd.PreRun
 
 	cfg.cmd.PreRun = func(cmd *cobra.Command, args []string) {
-		InitViper()
 		// bind flags
 		for flagName, flag := range cfg.bindings {
 			viper.GetViper().BindPFlag(flagName, flag)
