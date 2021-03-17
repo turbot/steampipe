@@ -28,7 +28,7 @@ const (
 )
 
 // StopDB :: search and stop the running instance. Does nothing if an instance was not found
-func StopDB(force bool) (StopStatus, error) {
+func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 	log.Println("[TRACE] StopDB", force)
 
 	if force {
@@ -44,21 +44,27 @@ func StopDB(force bool) (StopStatus, error) {
 		return ServiceStopFailed, err
 	}
 
-	if info == nil {
-		// we do not have a info file
-		if force {
-			// check if we have a process from another install-dir
-			checkedPreviousInstances := make(chan bool, 1)
-			s := utils.StartSpinnerAfterDelay("Checking for running instances", constants.SpinnerShowTimeout, checkedPreviousInstances)
+	if force {
+		// check if we have a process from another install-dir
+		checkedPreviousInstances := make(chan bool, 1)
+		s := utils.StartSpinnerAfterDelay("Checking for running instances", constants.SpinnerShowTimeout, checkedPreviousInstances)
+		for {
 			previousProcess := findSteampipePostgresInstance()
-			checkedPreviousInstances <- true
-			utils.StopSpinner(s)
 			if previousProcess != nil {
 				// we have an errant process
-				killPreviousInstanceIfAny()
-				return ServiceStopped, nil
+				killProcessTree(previousProcess)
+				continue
 			}
+			checkedPreviousInstances <- true
+			break
 		}
+		utils.StopSpinner(s)
+		os.Remove(runningInfoFilePath())
+		return ServiceStopped, nil
+	}
+
+	if info == nil {
+		// we do not have a info file
 		return ServiceNotRunning, nil
 	}
 
@@ -73,7 +79,7 @@ func StopDB(force bool) (StopStatus, error) {
 		return ServiceNotRunning, os.Remove(runningInfoFilePath())
 	}
 
-	if info.Invoker != InvokerService && !force {
+	if info.Invoker != invoker {
 		return ServiceStopFailed, fmt.Errorf("You have a %s session open. The service will be stopped when the session ends.\nTo kill existing sessions, run %s", constants.Bold("steampipe query"), constants.Bold("steampipe service stop --force"))
 	}
 
@@ -129,19 +135,6 @@ func StopDB(force bool) (StopStatus, error) {
 
 	select {
 	case <-timeoutAfter:
-		log.Println("[TRACE] timed out", force)
-		if force {
-			// timed out, we couldn't manage to stop it!
-			// do a SIGQUIT
-			log.Println("[TRACE] force killing")
-			err = process.Kill()
-			if err != nil {
-				log.Println("[TRACE] could not force kill", err)
-				utils.ShowError(err)
-			}
-			os.Remove(runningInfoFilePath())
-			return ServiceStopped, nil
-		}
 		return ServiceStopTimedOut, nil
 	case <-processKilledChannel:
 		os.Remove(runningInfoFilePath())
