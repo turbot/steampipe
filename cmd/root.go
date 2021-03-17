@@ -57,7 +57,7 @@ func InitCmd() {
 	AddCommands()
 
 	// the `OnInitialize` callbacks are called right before PreRun
-	cobra.OnInitialize(initGlobalConfig, createLogger, task.NewRunner().Run)
+	cobra.OnInitialize(initGlobalConfig, createLogger, task.RunTasks)
 }
 
 // initConfig reads in config file and ENV variables if set.

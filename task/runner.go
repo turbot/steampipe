@@ -15,6 +15,10 @@ type Runner struct {
 	shouldRun    bool
 }
 
+func RunTasks() {
+	NewRunner().Run()
+}
+
 func NewRunner() *Runner {
 	r := new(Runner)
 	r.currentState, _ = statefile.LoadState()
