@@ -53,8 +53,12 @@ connection from any Postgres compatible database client.`,
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgBackground, "", true, "Run service in the background").
-		AddIntFlag(constants.ArgPort, "", constants.DatabasePort, "Database service port.").
-		AddStringFlag(constants.ArgListenAddress, "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)").
+		// for now default port to -1 so we fall back to the default of the deprecated arg
+		AddIntFlag(constants.ArgPort, "", -1, "Database service port.").
+		AddIntFlag(constants.ArgPortDeprecated, "", constants.DatabasePort, "Database service port.", cmdconfig.FlagOptions.Deprecated(constants.ArgPort)).
+		// for now default listen address to empty so we fall back to the default of the deprecated arg
+		AddStringFlag(constants.ArgListenAddress, "", "", "Accept connections from: local (localhost only) or network (open)").
+		AddStringFlag(constants.ArgListenAddressDeprecated, "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)", cmdconfig.FlagOptions.Deprecated(constants.ArgListenAddress)).
 		// Hidden flags for internal use
 		AddStringFlag(constants.ArgInvoker, "", string(db.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden()).
 		AddBoolFlag(constants.ArgRefresh, "", true, "Refresh connections on startup", cmdconfig.FlagOptions.Hidden())
@@ -123,11 +127,12 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	if cmdconfig.Viper().GetInt(constants.ArgPort) < 1 || cmdconfig.Viper().GetInt(constants.ArgPort) > 65535 {
+	port := cmdconfig.DatabasePort()
+	if port < 1 || port > 65535 {
 		fmt.Println("Invalid Port :: MUST be within range (1:65535)")
 	}
 
-	listen := db.StartListenType(cmdconfig.Viper().GetString(constants.ArgListenAddress))
+	listen := db.StartListenType(cmdconfig.ListenAddress())
 	if err := listen.IsValid(); err != nil {
 		utils.ShowError(err)
 		return
@@ -141,7 +146,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	db.EnsureDBInstalled()
 
-	status, err := db.StartDB(cmdconfig.Viper().GetInt(constants.ArgPort), listen, invoker)
+	status, err := db.StartDB(cmdconfig.DatabasePort(), listen, invoker)
 	if err != nil {
 		panic(err)
 	}

@@ -1,7 +1,6 @@
 package steampipeconfig
 
 import (
-	"log"
 	"os"
 	"strings"
 
@@ -69,7 +68,6 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 		var cacheEnabled = true
 
 		if envStr, ok := os.LookupEnv(CacheEnabledEnvVar); ok {
-			log.Printf("[WARN] setDefaultConnectionOptions READING ENV")
 			cacheEnabled = strings.ToUpper(envStr) == "TRUE"
 		}
 		c.DefaultConnectionOptions.Cache = &cacheEnabled
