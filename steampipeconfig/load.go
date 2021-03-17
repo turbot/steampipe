@@ -2,7 +2,10 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
@@ -11,15 +14,28 @@ import (
 )
 
 var Config *SteampipeConfig
+var defaultConfigFileName = "default.spc"
 
 // Load :: load the HCL config and parse into the global Config variable
 func Load() (*SteampipeConfig, error) {
+	_ = ensureDefaultConfigFile(constants.ConfigDir())
 	config, err := loadConfig(constants.ConfigDir())
 	if err != nil {
 		return nil, err
 	}
 	Config = config
 	return config, nil
+}
+
+func ensureDefaultConfigFile(configFolder string) error {
+	defaultConfigFile := filepath.Join(configFolder, defaultConfigFileName)
+	if _, err := os.Stat(defaultConfigFile); os.IsNotExist(err) {
+		err = ioutil.WriteFile(defaultConfigFile, []byte(constants.DefaultSPCContent), 0755)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err error) {
