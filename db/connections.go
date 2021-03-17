@@ -14,12 +14,8 @@ import (
 
 // RefreshConnections :: load required connections and refresh
 func RefreshConnections(client *Client) error {
-	// reload connection config
-	config, err := steampipeconfig.Load()
-	if err != nil {
-		return err
-	}
-	requiredConnections := config.Connections
+	// load required connection from globab config
+	requiredConnections := steampipeconfig.Config.Connections
 
 	// first get a list of all existing schemas
 	schemas := client.schemaMetadata.GetSchemas()

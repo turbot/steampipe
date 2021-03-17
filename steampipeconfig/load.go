@@ -10,8 +10,16 @@ import (
 	"github.com/turbot/steampipe/schema"
 )
 
-func Load() (*SteampipeConfig, error) {
-	return loadConfig(constants.ConfigDir())
+var Config *SteampipeConfig
+
+// Load :: load the HCL config and parse into the global Config variable
+func Load() error {
+	config, err := loadConfig(constants.ConfigDir())
+	if err != nil {
+		return err
+	}
+	Config = config
+	return nil
 }
 
 func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err error) {
