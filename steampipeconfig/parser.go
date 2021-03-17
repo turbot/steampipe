@@ -69,23 +69,23 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 	connection.Plugin = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
 
 	// check for nested options
-	for _, block := range connectionContent.Blocks {
-		switch block.Type {
+	for _, connectionBlock := range connectionContent.Blocks {
+		switch connectionBlock.Type {
 		case "options":
 			// if we already found settings, fail
-			opts, moreDiags := parseOptions(block)
+			opts, moreDiags := parseOptions(connectionBlock)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				break
 			}
-			connection.setOptions(opts, block)
+			connection.setOptions(opts, connectionBlock)
 
 		default:
 			// this can probably never happen
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("invalid block type %s - only 'options' blocks are supported for Connections", block.Type),
-				Subject:  &block.DefRange,
+				Summary:  fmt.Sprintf("invalid block type %s - only 'options' blocks are supported for Connections", connectionBlock.Type),
+				Subject:  &connectionBlock.DefRange,
 			})
 		}
 	}
