@@ -38,7 +38,6 @@ func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err erro
 		return nil, err
 	}
 	if len(configPaths) == 0 {
-		log.Println("[DEBUG] loadConfig: 0 config file paths returned")
 		return &SteampipeConfig{}, nil
 	}
 

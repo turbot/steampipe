@@ -40,11 +40,11 @@ func (c *Console) ConfigMap() map[string]interface{} {
 	if c.Header != nil {
 		res[constants.ArgHeader] = c.Header
 	}
-	if c.Output != nil {
-		res[constants.ArgOutput] = c.Output
+	if c.Multi != nil {
+		res[constants.ArgMultiLine] = c.Multi
 	}
-	if c.Output != nil {
-		res[constants.ArgOutput] = c.Output
+	if c.Timing != nil {
+		res[constants.ArgTimer] = c.Timing
 	}
 	return res
 }
