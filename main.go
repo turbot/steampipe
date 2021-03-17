@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/hashicorp/go-hclog"
 	_ "github.com/lib/pq"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/constants"
@@ -16,14 +16,15 @@ import (
 var Logger hclog.Logger
 
 func main() {
+	logging.LogTime("main start")
+	defer func() {
+		logging.LogTime("main end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+		}
+	}()
 
 	checkRoot()
-
-	/// setup logging
-	logging.LogTime("start")
-	createLogger()
-	log.Println("[TRACE] tracing enabled")
-
 	cmd.InitCmd()
 
 	// execute the command
@@ -37,29 +38,12 @@ func main() {
 	utils.DisplayProfileData()
 }
 
-// CreateLogger :: create a hclog logger with the level specified by the SP_LOG env var
-func createLogger() {
-	// TODO GET FROM VIPER
-	level := logging.LogLevel()
-
-	options := &hclog.LoggerOptions{Name: "steampipe", Level: hclog.LevelFromString(level)}
-	if options.Output == nil {
-		options.Output = os.Stderr
-	}
-	Logger = hclog.New(options)
-	log.SetOutput(Logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
-	log.SetPrefix("")
-	log.SetFlags(0)
-}
-
 // this is to replicate the user security mechanism of out underlying
 // postgresql engine.
 func checkRoot() {
 	if os.Geteuid() == 0 {
-		utils.ShowError(fmt.Errorf(`Steampipe cannot be run as the "root" user.
+		panic(fmt.Errorf(`Steampipe cannot be run as the "root" user.
 To reduce security risk, use an unprivileged user account instead.`))
-
-		os.Exit(-1)
 	}
 
 	/*
@@ -72,7 +56,6 @@ To reduce security risk, use an unprivileged user account instead.`))
 	 */
 
 	if os.Geteuid() != os.Getuid() {
-		utils.ShowError(fmt.Errorf("real and effective user IDs must match."))
-		os.Exit(-1)
+		panic(fmt.Errorf("real and effective user IDs must match."))
 	}
 }

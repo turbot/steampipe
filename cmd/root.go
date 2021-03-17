@@ -5,9 +5,12 @@ import (
 	"log"
 	"os"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -52,15 +55,17 @@ func InitCmd() {
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 
 	AddCommands()
-	cobra.OnInitialize(initGlobalConfig)
+
+	// the `OnInitialize` callbacks are called right before PreRun
+	cobra.OnInitialize(initGlobalConfig, createLogger, task.NewRunner().Run)
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initGlobalConfig() {
-	log.Println("[TRACE] rootCmd initGlobalConfig")
 	cmdconfig.InitViper()
+
 	// set global containing install dir
-	SetInstallDir()
+	setInstallDir()
 
 	// load config (this sets the global config steampipeconfig.Config)
 	if err := steampipeconfig.Load(); err != nil {
@@ -69,14 +74,25 @@ func initGlobalConfig() {
 
 	// todo set viper config from config
 	setViperDefaults(steampipeconfig.Config)
+}
 
-	// run periodic tasks - update check and log clearing
-	// NOTE we cannot do this until after the viper config is initialised
-	task.NewRunner().Run()
+// CreateLogger :: create a hclog logger with the level specified by the SP_LOG env var
+func createLogger() {
+	// TODO GET FROM VIPER
+	level := logging.LogLevel()
+
+	options := &hclog.LoggerOptions{Name: "steampipe", Level: hclog.LevelFromString(level)}
+	if options.Output == nil {
+		options.Output = os.Stderr
+	}
+	logger := hclog.New(options)
+	log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
+	log.SetPrefix("")
+	log.SetFlags(0)
 }
 
 // SteampipeDir :: set the top level ~/.steampipe folder (creates if it doesnt exist)
-func SetInstallDir() {
+func setInstallDir() {
 	installDir, err := helpers.Tildefy(viper.GetString(constants.ArgInstallDir))
 	utils.FailOnErrorWithMessage(err, fmt.Sprintf("failed to sanitize install directory"))
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
@@ -93,17 +109,25 @@ func setViperDefaults(config *steampipeconfig.SteampipeConfig) {
 
 func setViperDefaultsFromConfig(config *steampipeconfig.SteampipeConfig) {
 	for k, v := range config.ConfigMap() {
-		log.Println("[TRACE]", "root", "overrideViperDefaultWithConfig", fmt.Sprintf("Setting %s to %v", k, v))
 		viper.SetDefault(k, v)
 	}
 }
 
 func overrideViperDefaultsFromEnv() {
-	// a map of environment variables to Viper Config Key
-	ingest := map[string]string{}
+	// a map of known environment variables to map to viper keys
+	ingest := map[string]string{
+		constants.ENV_UPDATE_CHECK: constants.ArgUpdateCheck,
+	}
 	for k, v := range ingest {
 		if val, ok := os.LookupEnv(k); ok {
-			viper.SetDefault(v, val)
+			// if the env val is one of known acceptable booleans e.g : on/off - yes/no etc,
+			// then we take the boolean value
+			if boolVal, err := types.ToBool(val); err != nil {
+				viper.SetDefault(v, val)
+			} else {
+				// otherwise, use it as is
+				viper.SetDefault(v, boolVal)
+			}
 		}
 	}
 }
