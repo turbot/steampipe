@@ -62,14 +62,13 @@ func initGlobalConfig() {
 	// set global containing install dir
 	SetInstallDir()
 
-	// load config
-	config, err := steampipeconfig.Load()
-	if err != nil {
-		utils.ShowError(err)
-		return
+	// load config (this sets the global config steampipeconfig.Config)
+	if err := steampipeconfig.Load(); err != nil {
+		utils.FailOnError(err)
 	}
+
 	// todo set viper config from config
-	setViperDefaults(config)
+	setViperDefaults(steampipeconfig.Config)
 
 	// run periodic tasks - update check and log clearing
 	// NOTE we cannot do this until after the viper config is initialised

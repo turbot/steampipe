@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/spf13/cobra"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
@@ -14,10 +16,8 @@ import (
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/plugin"
 	"github.com/turbot/steampipe/statefile"
+	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
-
-	"github.com/spf13/cobra"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
 )
 
 // PluginCmd :: Plugin management commands
@@ -283,6 +283,12 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// reporting an error in the validation may be confusing
 	// - we will retry next time query is run and report any errors then
 	if len(plugins) > len(installSkipped) {
+		// reload the config, as the installation may have created a new connection config file
+		// (this sets the global config steampipeconfig.Config)
+		if err := steampipeconfig.Load(); err != nil {
+			utils.ShowError(err)
+			return
+		}
 		refreshConnections()
 	}
 }
@@ -461,7 +467,6 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 // start service if necessary and refresh connections
 func refreshConnections() error {
-
 	db.EnsureDBInstalled()
 	status, err := db.GetStatus()
 	if err != nil {
