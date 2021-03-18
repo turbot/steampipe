@@ -478,6 +478,8 @@ github.com/turbot/steampipe-plugin-sdk v0.2.5-rc.0 h1:TnaHHv6TZm6vWF3eyfFv296jiI
 github.com/turbot/steampipe-plugin-sdk v0.2.5-rc.0/go.mod h1:3R868UGCRVR5ptSpYY+zGetiq2ZqjVDP8wlrapVh6rc=
 github.com/turbot/steampipe-plugin-sdk v0.2.5 h1:R4KM7kLXOcZKoporUoWkXVTySwG/AVqHgCpc/vAtgZM=
 github.com/turbot/steampipe-plugin-sdk v0.2.5/go.mod h1:3R868UGCRVR5ptSpYY+zGetiq2ZqjVDP8wlrapVh6rc=
+github.com/turbot/steampipe-plugin-sdk v0.2.6 h1:dzIZJknmb+AQkC3eUF5ayKdyK4/JCMNK/37+t6cz2bg=
+github.com/turbot/steampipe-plugin-sdk v0.2.6/go.mod h1:3R868UGCRVR5ptSpYY+zGetiq2ZqjVDP8wlrapVh6rc=
 github.com/turbot/steampipe-postgres-fdw v0.0.26 h1:A+XC/vJwVz/ZABP9Oxc0eACzhABMLMD7clUGFuMdTAk=
 github.com/turbot/steampipe-postgres-fdw v0.0.26/go.mod h1:P7acNANTa2Se4coNMWSSxB00VlMhTlA+F5PIlDQED2k=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
