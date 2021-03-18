@@ -1,3 +1,12 @@
+## v0.3.0 [2021-03-18]
+_What's new?_
+* Support setting Steampipe options using a config file. ([#230](https://github.com/turbot/steampipe/issues/230))
+* Add `install-dir` argument to specify location of the installation folder. ([#241](https://github.com/turbot/steampipe/issues/241))
+* Improve handling and reporting of config parsing failures. ([#307](https://github.com/turbot/steampipe/issues/307))
+* Move the log location to `~/.steampipe/logs` ([#278](https://github.com/turbot/steampipe/issues/278))
+* Change postgres log prefix to `database-` ([#310](https://github.com/turbot/steampipe/issues/310))
+* Deprecate `db-port` and `listener` arguments, replace with `database-port` and `database-listener`. ([#302](https://github.com/turbot/steampipe/issues/302)) 
+
 ## v0.2.5 [2021-03-15]
 
 _Bug fixes_
