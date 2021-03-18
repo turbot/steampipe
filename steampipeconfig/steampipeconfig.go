@@ -54,35 +54,43 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) {
 
 const CacheEnabledEnvVar = "STEAMPIPE_CACHE"
 const CacheTTLEnvVar = "STEAMPIPE_CACHE_TTL"
-const defaultTTL = 300
+
+var defaultCacheEnabled = true
+var defaultTTL = 300
 
 // if default connection options have been set, assign them to any connection which do not define specific options
 func (c *SteampipeConfig) setDefaultConnectionOptions() {
 	if c.DefaultConnectionOptions == nil {
 		c.DefaultConnectionOptions = &options.Connection{}
 	}
-	if c.DefaultConnectionOptions.Cache == nil {
-		// if not default is set in the connection config, try the env var
-		// default to 'enabled'
-		var cacheEnabled = true
 
-		if envStr, ok := os.LookupEnv(CacheEnabledEnvVar); ok {
-			if parsedEnv, err := types.ToBool(envStr); err == nil {
-				cacheEnabled = parsedEnv
-			}
+	// precedence for the default is (high to low):
+	// env var
+	// default connection config
+	// base default
+
+	// if CacheEnabledEnvVar is set, overwrite the value in DefaultConnectionOptions
+	if envStr, ok := os.LookupEnv(CacheEnabledEnvVar); ok {
+		if parsedEnv, err := types.ToBool(envStr); err == nil {
+			c.DefaultConnectionOptions.Cache = &parsedEnv
 		}
-		c.DefaultConnectionOptions.Cache = &cacheEnabled
 	}
-	if c.DefaultConnectionOptions.CacheTTL == nil {
-		// if not default is set in the connection config, try the env var
-		// default to 'enabled'
-		var ttlSecs = defaultTTL
-		if ttlString, ok := os.LookupEnv(CacheTTLEnvVar); ok {
-			if parsed, err := types.ToInt64(ttlString); err == nil {
-				ttlSecs = int(parsed)
-			}
+	if c.DefaultConnectionOptions.Cache == nil {
+		// if DefaultConnectionOptions.Cache value is NOT set, default it to true
+		c.DefaultConnectionOptions.Cache = &defaultCacheEnabled
+	}
+
+	// if CacheTTLEnvVar is set, overwrite the value in DefaultConnectionOptions
+	if ttlString, ok := os.LookupEnv(CacheTTLEnvVar); ok {
+		if parsed, err := types.ToInt64(ttlString); err == nil {
+			ttl := int(parsed)
+			c.DefaultConnectionOptions.CacheTTL = &ttl
 		}
-		c.DefaultConnectionOptions.CacheTTL = &ttlSecs
+	}
+
+	if c.DefaultConnectionOptions.CacheTTL == nil {
+		// if DefaultConnectionOptions.Cache value is NOT set, default it to true
+		c.DefaultConnectionOptions.CacheTTL = &defaultTTL
 	}
 }
 
