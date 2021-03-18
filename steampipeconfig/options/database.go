@@ -8,9 +8,6 @@ type Database struct {
 	Listen *string `hcl:"listen"`
 }
 
-// Populate :: nothing to do
-func (d Database) Populate() {}
-
 // ConfigMap :: create a config map to pass to viper
 func (c *Database) ConfigMap() map[string]interface{} {
 	// only add keys which are non null

@@ -129,8 +129,6 @@ func parseOptions(block *hcl.Block) (options.Options, hcl.Diagnostics) {
 		return nil, diags
 	}
 
-	// now call the options.Populate to convert bool string fields into actual bools
-	dest.Populate()
 	return dest, nil
 }
 

@@ -8,9 +8,6 @@ type General struct {
 	UpdateCheck *string `hcl:"update_check"`
 }
 
-// Populate :: nothing to do
-func (d General) Populate() {}
-
 // ConfigMap :: create a config map to pass to viper
 func (c General) ConfigMap() map[string]interface{} {
 	// only add keys which are non null

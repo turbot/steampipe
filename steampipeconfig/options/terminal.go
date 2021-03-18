@@ -1,7 +1,6 @@
 package options
 
 import (
-	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 )
 
@@ -9,22 +8,9 @@ import (
 type Terminal struct {
 	Output    *string `hcl:"output"`
 	Separator *string `hcl:"separator"`
-	// strings containing a bool - supports true/false/off/on etc
-	HeaderBoolString *string `hcl:"header"`
-	MultiBoolString  *string `hcl:"multi"`
-	TimingBoolString *string `hcl:"timing"`
-
-	// fields which we populate by converting the parsed values
-	Header *bool
-	Multi  *bool
-	Timing *bool
-}
-
-// Populate :: convert strings representing bool values into bool pointers
-func (c *Terminal) Populate() {
-	c.Header = types.ToBoolPtr(c.HeaderBoolString)
-	c.Multi = types.ToBoolPtr(c.MultiBoolString)
-	c.Timing = types.ToBoolPtr(c.TimingBoolString)
+	Header    *bool   `hcl:"header"`
+	Multi     *bool   `hcl:"multi"`
+	Timing    *bool   `hcl:"timing"`
 }
 
 // ConfigMap :: create a config map to pass to viper

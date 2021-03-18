@@ -12,7 +12,6 @@ const (
 	ArgTimer                   = "timing"
 	ArgOn                      = "on"
 	ArgOff                     = "off"
-	ArgBackground              = "background"
 	ArgPortDeprecated          = "db-port"
 	ArgPort                    = "database-port"
 	ArgListenAddressDeprecated = "listen"

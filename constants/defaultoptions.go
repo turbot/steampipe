@@ -2,22 +2,25 @@ package constants
 
 const DefaultSPCContent = `
 # options "connection" {
-#     cache           = "on"   # on, off
+#     cache           = true   # true, false
 #     cache_ttl       = 300    # int = time in seconds
 # }
+
 # options "database" {
 #     port   = 9193
 #     listen = "local"
 # }
+
 # options "terminal" {
-#     header      = "off"      # on, off
-#     multi       = "off"      # on, off
+#     multi       = false      # true, false
 #     output      = "table"    # json, csv, table, line
+#     header      = false      # true, false
 #     separator   = ","        # any single char
-#     timing      = "off"      # on, off
+#     timing      = false      # true, false
 # }
+
 # options "general" {
-#     update_check  = "on"     # on, off
+#     update_check  = true     # true, false
 # }
 
 `
