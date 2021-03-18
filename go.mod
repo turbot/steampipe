@@ -40,7 +40,7 @@ require (
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.7.1
 	github.com/turbot/go-kit v0.1.3
-	github.com/turbot/steampipe-plugin-sdk v0.2.2
+	github.com/turbot/steampipe-plugin-sdk v0.2.5-rc.0
 	github.com/ulikunitz/xz v0.5.8
 	golang.org/x/text v0.3.4
 	google.golang.org/grpc v1.33.1

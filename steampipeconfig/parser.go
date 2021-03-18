@@ -84,7 +84,7 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 			// this can probably never happen
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("invalid block type %s - only 'options' blocks are supported for Connections", connectionBlock.Type),
+				Summary:  fmt.Sprintf("invalid block type '%s' - only 'options' blocks are supported for Connections", connectionBlock.Type),
 				Subject:  &connectionBlock.DefRange,
 			})
 		}
@@ -104,6 +104,7 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 }
 
 func parseOptions(block *hcl.Block) (options.Options, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
 	var dest options.Options
 	switch block.Labels[0] {
 	case options.ConnectionBlock:
@@ -114,9 +115,16 @@ func parseOptions(block *hcl.Block) (options.Options, hcl.Diagnostics) {
 		dest = &options.Terminal{}
 	case options.GeneralBlock:
 		dest = &options.General{}
+	default:
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("Invalid options type '%s'", block.Labels[0]),
+			Subject:  &block.DefRange,
+		})
+		return nil, diags
 	}
 
-	diags := gohcl.DecodeBody(block.Body, nil, dest)
+	diags = gohcl.DecodeBody(block.Body, nil, dest)
 	if diags.HasErrors() {
 		return nil, diags
 	}

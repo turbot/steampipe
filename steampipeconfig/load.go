@@ -60,19 +60,19 @@ func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err erro
 	fileData, diags := loadFileData(configPaths)
 	if diags.HasErrors() {
 		log.Printf("[WARN] loadConfig: failed to load all config files: %v\n", err)
-		return nil, plugin.DiagsToError("failed to load all config files", diags)
+		return nil, plugin.DiagsToError("Failed to load all config files", diags)
 	}
 
 	body, diags := parseConfigs(fileData)
 	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("failed to load all config files", diags)
+		return nil, plugin.DiagsToError("Failed to load all config files", diags)
 	}
 
 	// do a partial decode
-	content, _, moreDiags := body.PartialContent(configSchema)
+	content, moreDiags := body.Content(configSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
-		return nil, plugin.DiagsToError("failed to decode config", diags)
+		return nil, plugin.DiagsToError("Failed to load config", diags)
 	}
 
 	for _, block := range content.Blocks {
@@ -103,7 +103,7 @@ func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err erro
 	}
 
 	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("failed to load config", diags)
+		return nil, plugin.DiagsToError("Failed to load config", diags)
 	}
 	// now set default options on all connections without options set
 	steampipeConfig.setDefaultConnectionOptions()
