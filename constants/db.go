@@ -9,11 +9,11 @@ import "github.com/turbot/steampipe/schema"
 var DatabaseListenAddresses = []string{"localhost", "127.0.0.1"}
 
 const (
-	DatabaseHost      = "localhost"
-	DatabasePort      = 9193
-	DatabaseSuperUser = "root"
-	DatabaseUser      = "steampipe"
-	DatabaseName      = "steampipe"
+	DatabaseHost        = "localhost"
+	DatabaseDefaultPort = 9193
+	DatabaseSuperUser   = "root"
+	DatabaseUser        = "steampipe"
+	DatabaseName        = "steampipe"
 )
 
 // constants for installing db and fdw images

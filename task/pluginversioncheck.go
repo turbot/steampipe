@@ -5,13 +5,14 @@ import (
 	"os"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/plugin"
 )
 
 // check if there is a new version
 func checkPluginVersions(installationID string) {
-	if !shouldDoUpdateCheck() {
+	if !viper.GetBool(constants.ArgUpdateCheck) {
 		return
 	}
 

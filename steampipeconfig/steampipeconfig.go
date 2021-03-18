@@ -2,7 +2,6 @@ package steampipeconfig
 
 import (
 	"os"
-	"strings"
 
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/steampipeconfig/options"
@@ -68,7 +67,9 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 		var cacheEnabled = true
 
 		if envStr, ok := os.LookupEnv(CacheEnabledEnvVar); ok {
-			cacheEnabled = strings.ToUpper(envStr) == "TRUE"
+			if parsedEnv, err := types.ToBool(envStr); err == nil {
+				cacheEnabled = parsedEnv
+			}
 		}
 		c.DefaultConnectionOptions.Cache = &cacheEnabled
 	}

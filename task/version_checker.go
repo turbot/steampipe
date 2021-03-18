@@ -13,6 +13,7 @@ import (
 	"github.com/fatih/color"
 	SemVer "github.com/hashicorp/go-version"
 	"github.com/olekukonko/tablewriter"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
@@ -48,7 +49,7 @@ type versionChecker struct {
 
 // check if there is a new version
 func checkSteampipeVersion(id string) {
-	if !shouldDoUpdateCheck() {
+	if !viper.GetBool(constants.ArgUpdateCheck) {
 		return
 	}
 

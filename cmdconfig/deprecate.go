@@ -1,22 +1,21 @@
 package cmdconfig
 
 import (
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 )
 
 // handle accessing deprecated options
 func DatabasePort() int {
-	port := Viper().GetInt(constants.ArgPort)
-	if port == -1 {
-		port = Viper().GetInt(constants.ArgPortDeprecated)
+	if viper.IsSet(constants.ArgPort) {
+		return Viper().GetInt(constants.ArgPort)
 	}
-	return port
+	return Viper().GetInt(constants.ArgPortDeprecated)
 }
 
 func ListenAddress() string {
-	listenAddress := Viper().GetString(constants.ArgListenAddress)
-	if listenAddress == "" {
-		listenAddress = Viper().GetString(constants.ArgListenAddressDeprecated)
+	if viper.IsSet(constants.ArgPort) {
+		return Viper().GetString(constants.ArgListenAddress)
 	}
-	return listenAddress
+	return Viper().GetString(constants.ArgListenAddressDeprecated)
 }

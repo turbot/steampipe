@@ -2,7 +2,7 @@ package constants
 
 const DefaultSPCContent = `
 # options "connection" {
-#     cache           = "on"   # true, false
+#     cache           = "on"   # on, off
 #     cache_ttl       = 300    # int = time in seconds
 # }
 # options "database" {
@@ -17,7 +17,7 @@ const DefaultSPCContent = `
 #     timing      = "off"      # on, off
 # }
 # options "general" {
-#     update_check  = "on"     # true, false
+#     update_check  = "on"     # on, off
 # }
 
 `

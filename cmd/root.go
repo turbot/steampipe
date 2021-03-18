@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -72,8 +71,8 @@ func initGlobalConfig() {
 	utils.FailOnError(err)
 	steampipeconfig.Config = config
 
-	// todo set viper config from config
-	setViperDefaults(steampipeconfig.Config)
+	// set viper config defaults from config and env vars
+	cmdconfig.SetViperDefaults(steampipeconfig.Config)
 }
 
 // CreateLogger :: create a hclog logger with the level specified by the SP_LOG env var
@@ -100,36 +99,6 @@ func setInstallDir() {
 		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
 	}
 	constants.SteampipeDir = installDir
-}
-
-func setViperDefaults(config *steampipeconfig.SteampipeConfig) {
-	setViperDefaultsFromConfig(config)
-	overrideViperDefaultsFromEnv()
-}
-
-func setViperDefaultsFromConfig(config *steampipeconfig.SteampipeConfig) {
-	for k, v := range config.ConfigMap() {
-		viper.SetDefault(k, v)
-	}
-}
-
-func overrideViperDefaultsFromEnv() {
-	// a map of known environment variables to map to viper keys
-	ingest := map[string]string{
-		constants.ENV_UPDATE_CHECK: constants.ArgUpdateCheck,
-	}
-	for k, v := range ingest {
-		if val, ok := os.LookupEnv(k); ok {
-			// if the env val is one of known acceptable booleans e.g : on/off - yes/no etc,
-			// then we take the boolean value
-			if boolVal, err := types.ToBool(val); err != nil {
-				viper.SetDefault(v, val)
-			} else {
-				// otherwise, use it as is
-				viper.SetDefault(v, boolVal)
-			}
-		}
-	}
 }
 
 func AddCommands() {
