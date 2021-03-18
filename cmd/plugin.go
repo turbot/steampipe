@@ -477,8 +477,8 @@ func refreshConnections() error {
 	var client *db.Client
 	if status == nil {
 		// the db service is not started - start it
-		db.StartService(db.InvokerInstaller)
-		defer db.Shutdown(client, db.InvokerInstaller)
+		db.StartService(db.InvokerPlugin)
+		defer func() { db.Shutdown(client, db.InvokerPlugin) }()
 	}
 
 	client, err = db.GetClient(false)
@@ -564,18 +564,14 @@ func getPluginConnectionMap() (map[string][]string, error) {
 		return nil, fmt.Errorf("Could not start steampipe service")
 	}
 
+	var client *db.Client
 	if status == nil {
 		// the db service is not started - start it
 		db.StartService(db.InvokerPlugin)
-		defer func() {
-			status, _ := db.GetStatus()
-			if status.Invoker == db.InvokerPlugin {
-				db.StopDB(true, db.InvokerPlugin)
-			}
-		}()
+		defer func() { db.Shutdown(client, db.InvokerPlugin) }()
 	}
 
-	client, err := db.GetClient(true)
+	client, err = db.GetClient(true)
 	if err != nil {
 		return nil, fmt.Errorf("Could not connect with steampipe service")
 	}
