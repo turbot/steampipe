@@ -12,6 +12,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/karrick/gows"
+	"github.com/spf13/viper"
 
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -232,10 +233,10 @@ func displayTable(result *results.QueryResult) {
 	t.Style().Format.Header = text.FormatDefault
 
 	colConfigs := []table.ColumnConfig{}
-	headers := table.Row{}
+	headers := make(table.Row, len(result.ColTypes))
 
 	for idx, column := range result.ColTypes {
-		headers = append(headers, column.Name())
+		headers[idx] = column.Name()
 		colConfigs = append(colConfigs, table.ColumnConfig{
 			Name:     column.Name(),
 			Number:   idx + 1,
@@ -244,7 +245,9 @@ func displayTable(result *results.QueryResult) {
 	}
 
 	t.SetColumnConfigs(colConfigs)
-	t.AppendHeader(headers)
+	if viper.GetBool(constants.ArgHeader) {
+		t.AppendHeader(headers)
+	}
 
 	// define a function to execute for each row
 	rowFunc := func(row []interface{}, result *results.QueryResult) {
