@@ -1,3 +1,7 @@
+## v0.3.1 [2021-03-19]
+_Bug fixes_
+* Fix crash when doing "is (not) null" checks on JSON fields. ([#38](https://github.com/turbot/steampipe-postgres-fdw/issues/38))
+
 ## v0.3.0 [2021-03-18]
 _What's new?_
 * Support setting Steampipe options using a config file. ([#230](https://github.com/turbot/steampipe/issues/230))
