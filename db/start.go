@@ -214,7 +214,7 @@ func handleStartFailure(err error) error {
 	// starting up the process. this may be because of a stray
 	// steampipe postgres running or another one from a different installation.
 	checkedPreviousInstances := make(chan bool, 1)
-	s := utils.StartSpinnerAfterDelay("Checking for running instances", constants.SpinnerShowTimeout, checkedPreviousInstances)
+	s := utils.StartSpinnerAfterDelay("Checking for running instances...", constants.SpinnerShowTimeout, checkedPreviousInstances)
 	otherProcess := findSteampipePostgresInstance()
 	checkedPreviousInstances <- true
 	utils.StopSpinner(s)

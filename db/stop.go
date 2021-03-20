@@ -47,7 +47,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 	if force {
 		// check if we have a process from another install-dir
 		checkedPreviousInstances := make(chan bool, 1)
-		s := utils.StartSpinnerAfterDelay("Checking for running instances", constants.SpinnerShowTimeout, checkedPreviousInstances)
+		s := utils.StartSpinnerAfterDelay("Checking for running instances...", constants.SpinnerShowTimeout, checkedPreviousInstances)
 		for {
 			previousProcess := findSteampipePostgresInstance()
 			if previousProcess != nil {
