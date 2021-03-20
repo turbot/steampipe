@@ -126,8 +126,14 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		"-c", "password_encryption=scram-sha-256",
 		"-c", "random-page-cost=0.01",
 		"-c", "seq-page-cost=0.01",
+		// If the shared buffers are too small then large tables in memory can create
+		// "no unpinned buffers available" errors.
 		// "-c", "shared-buffers=128kB",
-		"-c", "synchronous_commit=off",
+		// If synchronous_commit=off then the setup process can fail because the
+		// installation of the foreign server is not committed before the DB shutsdown.
+		// Steampipe does very few commits in general, so leaving this on will have
+		// very little impact on performance.
+		// "-c", "synchronous_commit=off",
 		"-c", "temp-buffers=800kB",
 		"-c", "timezone=UTC",
 		"-c", "track_activities=off",
