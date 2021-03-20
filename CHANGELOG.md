@@ -1,3 +1,8 @@
+## v0.3.2 [2021-03-20]
+_Bug fixes_
+* Remove Postgres synchronous_commit=off setting, which could cause FDW setup in Postgres to not be committed during setup (on Linux). ([#319](https://github.com/turbot/steampipe/issues/319))
+* .header terminal setting should also affect table output. ([#312](https://github.com/turbot/steampipe/issues/312))
+
 ## v0.3.1 [2021-03-19]
 _Bug fixes_
 * Fix crash when doing "is (not) null" checks on JSON fields. ([#38](https://github.com/turbot/steampipe-postgres-fdw/issues/38))
