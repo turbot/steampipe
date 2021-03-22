@@ -182,6 +182,35 @@ func (ir *installReport) SkipString() string {
 	return fmt.Sprintf("Plugin:   %s\nReason:   %s", fmt.Sprintf("%s@%s", name, stream), ir.SkipReason)
 }
 
+func (ir *installReport) InstallString(isUpdate bool) string {
+	thisReport := []string{}
+	if isUpdate {
+		thisReport = append(
+			thisReport,
+			fmt.Sprintf("Updated plugin: %s%s", constants.Bold(ir.Plugin), ir.Version),
+		)
+		if len(ir.DocURL) > 0 {
+			thisReport = append(
+				thisReport,
+				fmt.Sprintf("Documentation:  %s", ir.DocURL),
+			)
+		}
+	} else {
+		thisReport = append(
+			thisReport,
+			fmt.Sprintf("Installed plugin: %s%s", constants.Bold(ir.Plugin), ir.Version),
+		)
+		if len(ir.DocURL) > 0 {
+			thisReport = append(
+				thisReport,
+				fmt.Sprintf("Documentation:    %s", ir.DocURL),
+			)
+		}
+	}
+
+	return strings.Join(thisReport, "\n")
+}
+
 func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runPluginInstallCmd install")
 	defer func() {
@@ -430,6 +459,7 @@ func printInstallReports(reports []installReport, isUpdateReport bool) {
 	canBeUpdated := []installReport{}
 
 	for _, report := range reports {
+		report.IsUpdateReport = isUpdateReport
 		if !report.Skipped {
 			installedOrUpdated = append(installedOrUpdated, report)
 		} else if report.SkipReason == "Not installed" {
@@ -442,33 +472,7 @@ func printInstallReports(reports []installReport, isUpdateReport bool) {
 	if len(installedOrUpdated) > 0 {
 		asString := []string{}
 		for _, report := range installedOrUpdated {
-			thisReport := []string{}
-			if isUpdateReport {
-				thisReport = append(
-					thisReport,
-					fmt.Sprintf("Updated plugin: %s%s", constants.Bold(report.Plugin), report.Version),
-				)
-
-				if len(report.DocURL) > 0 {
-					thisReport = append(
-						thisReport,
-						fmt.Sprintf("Documentation:  %s", report.DocURL),
-					)
-				}
-			} else {
-				thisReport = append(
-					thisReport,
-					fmt.Sprintf("Installed plugin: %s%s", constants.Bold(report.Plugin), report.Version),
-				)
-
-				if len(report.DocURL) > 0 {
-					thisReport = append(
-						thisReport,
-						fmt.Sprintf("Documentation:    %s", report.DocURL),
-					)
-				}
-			}
-			asString = append(asString, strings.Join(thisReport, "\n"))
+			asString = append(asString, report.InstallString(isUpdateReport))
 		}
 		fmt.Println(strings.Join(asString, "\n\n"))
 	}
@@ -588,15 +592,13 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 	connectionMap, err := getPluginConnectionMap()
 	if err != nil {
-		utils.ShowErrorWithMessage(err,
-			fmt.Sprintf("Plugin Listing failed"))
+		utils.ShowErrorWithMessage(err, "Plugin Listing failed")
 		return
 	}
 
 	list, err := plugin.List(connectionMap)
 	if err != nil {
-		utils.ShowErrorWithMessage(err,
-			fmt.Sprintf("Plugin Listing failed"))
+		utils.ShowErrorWithMessage(err, "Plugin Listing failed")
 	}
 	headers := []string{"Name", "Version", "Connections"}
 	rows := [][]string{}
