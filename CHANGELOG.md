@@ -1,7 +1,11 @@
+## v0.3.3 [2021-03-22]
+_Bug fixes_
+* Verify the `steampipe` foreign server exists when starting the database service and if it does not, re-initialise the FDW and create the server. ([#324](https://github.com/turbot/steampipe/issues/324))
+
 ## v0.3.2 [2021-03-20]
 _Bug fixes_
 * Remove Postgres synchronous_commit=off setting, which could cause FDW setup in Postgres to not be committed during setup (on Linux). ([#319](https://github.com/turbot/steampipe/issues/319))
-* .header terminal setting should also affect table output. ([#312](https://github.com/turbot/steampipe/issues/312))
+* `.header` terminal setting should also affect table output. ([#312](https://github.com/turbot/steampipe/issues/312))
 
 ## v0.3.1 [2021-03-19]
 _Bug fixes_
