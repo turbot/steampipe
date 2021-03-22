@@ -196,9 +196,19 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	}
 
 	client, err := GetClient(false)
+	defer func() {
+		client.close()
+	}()
 
 	if err != nil {
 		return ServiceFailedToStart, handleStartFailure(err)
+	}
+
+	err = ensureSteampipeServer()
+	if err != nil {
+		// there was a problem with the installation
+		StopDB(true, invoker)
+		return ServiceFailedToStart, err
 	}
 
 	// refresh plugin connections - ensure db schemas are in sync with connection config
@@ -213,6 +223,23 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	}
 
 	return ServiceStarted, nil
+}
+
+// ensures that the `steampipe` fdw server exists
+// checks for it - (re)installs FDW and creates server if it doesn't
+func ensureSteampipeServer() error {
+	rawClient, err := createSteampipeRootDbClient()
+	if err != nil {
+		return err
+	}
+	out := rawClient.QueryRow("select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
+	var serverName string
+	err = out.Scan(&serverName)
+	rawClient.Close()
+	if err != nil {
+		return installSteampipeHub()
+	}
+	return nil
 }
 
 func handleStartFailure(err error) error {
