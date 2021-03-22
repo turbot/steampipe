@@ -196,9 +196,17 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	}
 
 	client, err := GetClient(false)
+	defer func() {
+		client.close()
+	}()
 
 	if err != nil {
 		return ServiceFailedToStart, handleStartFailure(err)
+	}
+
+	err = ensureSteampipeServer()
+	if err != nil {
+		return ServiceStarted, err
 	}
 
 	// refresh plugin connections - ensure db schemas are in sync with connection config
@@ -213,6 +221,21 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	}
 
 	return ServiceStarted, nil
+}
+
+func ensureSteampipeServer() error {
+	rawClient, err := createSteampipeRootDbClient()
+	if err != nil {
+		return err
+	}
+	out := rawClient.QueryRow("select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
+	var srvname string
+	err = out.Scan(&srvname)
+	rawClient.Close()
+	if err != nil {
+		return installSteampipeHub()
+	}
+	return nil
 }
 
 func handleStartFailure(err error) error {
