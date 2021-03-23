@@ -63,22 +63,19 @@ jobs:
     needs: goreleaser
     strategy:
       matrix:
-        platform: [ macos-latest ]
+        platform: [ ubuntu-latest ]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.16
-      - name: Setup BATS
-        uses: mig4/setup-bats@v1
-        with:
-          bats-version: 1.2.1
 
       - name: Checkout
         uses: actions/checkout@v2
         with:
           submodules: true
+    
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: 1.2.1
 
       - name: Prepare for downloads
         id: prepare-for-downloads
@@ -115,18 +112,10 @@ jobs:
           ls -l ~/build
           echo "~/build" >> $GITHUB_PATH
 
-      # - name: Extract Darwin Artifacts and Install Binary
-      #   if: ${{ matrix.platform == 'macos-latest' }}
-      #   run: |
-      #     mkdir ~/build
-      #     unzip ~/artifacts/build.zip -d ~/build
-      #     ls -l ~/build
-      #     echo "PATH=$PATH:$HOME/build:$GITHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
-
       - name: Install DB
         run: |
           echo $PATH
-          steampipe query "select 1 as col"
+          steampipe service start
 
       - name: Run Test Suite
         run: |
