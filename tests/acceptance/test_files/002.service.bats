@@ -15,3 +15,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run steampipe service stop
     assert_success
 }
+
+@test "steampipe service start --database-port 8765" {
+    run steampipe service start --database-port 8765
+    echo $output
+    echo "$(ps | grep steampipe | grep 8765 )"
+    assert_equal $(netstat -an tcp | grep LISTEN | grep 8765 | wc -l) 2
+    steampipe service stop --force
+}
