@@ -101,16 +101,16 @@ jobs:
         run: |
           mkdir ~/build
           unzip ~/artifacts/darwin.zip -d ~/build
-          ls -l ~/build
-          echo "~/build" >> $GITHUB_PATH
 
       - name: Extract Ubuntu Artifacts and Install Binary
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: |
           mkdir ~/build
           tar -xf ~/artifacts/linux.tar.gz -C ~/build
-          ls -l ~/build
-          echo "~/build" >> $GITHUB_PATH
+
+      - name: Set PATH
+        run: |
+          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
 
       - name: Install DB
         run: |
