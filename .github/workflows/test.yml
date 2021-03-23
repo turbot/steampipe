@@ -18,6 +18,20 @@ jobs:
 
       - name: Unshallow
         run: git fetch
+        
+      - name: Check
+        run: |
+          echo $GITHUB_WORKSPACE
+          ls -l $GITHUB_WORKSPACE
+          tree $GITHUB_WORKSPACE
+          pwd
+
+      - name: Save Linux Build Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifact-linux
+          path: ~/artifacts/linux.tar.gz
+          if-no-files-found: error
 
       - name: Set up Go
         uses: actions/setup-go@v2
@@ -34,10 +48,6 @@ jobs:
           args: release --rm-dist --skip-publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Check Directory tree
-        run: |
-          tree $GITHUB_WORKSPACE
 
       - name: Move build artifacts
         run: |
@@ -47,13 +57,6 @@ jobs:
 
       - name: List Build Artifacts
         run: ls -l ~/artifacts
-
-      - name: Save Linux Build Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: build-artifact-linux
-          path: ~/artifacts/linux.tar.gz
-          if-no-files-found: error
 
       - name: Save MacOS Build Artifact
         uses: actions/upload-artifact@v2
