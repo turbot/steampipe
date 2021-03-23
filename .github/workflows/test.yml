@@ -114,8 +114,8 @@ jobs:
 
       - name: Install DB
         run: |
-          echo $PATH
           steampipe service start
+          steampipe service stop --force
 
       - name: Run Test Suite
         run: |
