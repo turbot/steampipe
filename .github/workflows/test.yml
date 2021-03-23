@@ -18,20 +18,6 @@ jobs:
 
       - name: Unshallow
         run: git fetch
-        
-      - name: Check
-        run: |
-          echo $GITHUB_WORKSPACE
-          ls -l $GITHUB_WORKSPACE
-          tree $GITHUB_WORKSPACE
-          pwd
-
-      - name: Save Linux Build Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: build-artifact-linux
-          path: ~/artifacts/linux.tar.gz
-          if-no-files-found: error
 
       - name: Set up Go
         uses: actions/setup-go@v2
@@ -58,18 +44,18 @@ jobs:
       - name: List Build Artifacts
         run: ls -l ~/artifacts
 
+      - name: Save Linux Build Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifact-linux
+          path: ~/artifacts/linux.tar.gz
+          if-no-files-found: error
+
       - name: Save MacOS Build Artifact
         uses: actions/upload-artifact@v2
         with:
           name: build-artifact-darwin
           path: ~/artifacts/darwin.zip
-          if-no-files-found: error
-
-      - name: Save Test Artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: test-artifacts
-          path: $GITHUB_WORKSPACE/tests/acceptance
           if-no-files-found: error
 
   acceptance_testing:
@@ -99,12 +85,6 @@ jobs:
         run: |
           mkdir ~/artifacts
 
-      - name: Download Test Artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: test-artifacts
-          path: ~/artifacts
-
       - name: Download Linux Build Artifacts
         uses: actions/download-artifact@v2
         if: ${{ matrix.platform == 'ubuntu-latest' }}
@@ -118,10 +98,6 @@ jobs:
         with:
           name: build-artifact-darwin
           path: ~/artifacts
-
-      - name: Check that everything got downloaded
-        run: |
-          tree ~/artifacts
 
       - name: Extract Darwin Artifacts and Install Binary
         if: ${{ matrix.platform == 'macos-latest' }}
