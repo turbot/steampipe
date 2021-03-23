@@ -63,7 +63,7 @@ jobs:
     needs: goreleaser
     strategy:
       matrix:
-        platform: [ ubuntu-latest, macos-latest ]
+        platform: [ ubuntu-latest ]
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Set up Go
@@ -126,11 +126,7 @@ jobs:
       - name: Install DB
         run: |
           echo $PATH
-          steampipe service start
-
-      - name: Stop steampipe service
-        run: |
-          steampipe service stop --force
+          steampipe query "select 1 as col"
 
       - name: Run Test Suite
         run: |
