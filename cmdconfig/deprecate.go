@@ -14,7 +14,7 @@ func DatabasePort() int {
 }
 
 func ListenAddress() string {
-	if viper.IsSet(constants.ArgPort) {
+	if viper.IsSet(constants.ArgListenAddress) {
 		return Viper().GetString(constants.ArgListenAddress)
 	}
 	return Viper().GetString(constants.ArgListenAddressDeprecated)
