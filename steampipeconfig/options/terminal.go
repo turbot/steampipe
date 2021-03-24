@@ -1,6 +1,9 @@
 package options
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/turbot/steampipe/constants"
 )
 
@@ -33,4 +36,37 @@ func (c *Terminal) ConfigMap() map[string]interface{} {
 		res[constants.ArgTimer] = c.Timing
 	}
 	return res
+}
+
+func (c *Terminal) String() string {
+	if c == nil {
+		return ""
+	}
+	var str []string
+	if c.Output == nil {
+		str = append(str, "LogLevel: nil")
+	} else {
+		str = append(str, fmt.Sprintf("Output: %s", *c.Output))
+	}
+	if c.Separator == nil {
+		str = append(str, "Separator: nil")
+	} else {
+		str = append(str, fmt.Sprintf("Separator: %s", *c.Separator))
+	}
+	if c.Header == nil {
+		str = append(str, "Header: nil")
+	} else {
+		str = append(str, fmt.Sprintf("Header: %v", *c.Header))
+	}
+	if c.Multi == nil {
+		str = append(str, "Multi: nil")
+	} else {
+		str = append(str, fmt.Sprintf("Multi: %v", *c.Multi))
+	}
+	if c.Timing == nil {
+		str = append(str, "Timing: nil")
+	} else {
+		str = append(str, fmt.Sprintf("Timing: %v", *c.Timing))
+	}
+	return strings.Join(str, "\n")
 }

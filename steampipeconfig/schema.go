@@ -30,3 +30,45 @@ var connectionSchema = &hcl.BodySchema{
 		},
 	},
 }
+
+var modFileSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "variable",
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       "mod",
+			LabelNames: []string{"name"},
+		},
+	},
+}
+
+var modSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: "title",
+		},
+		{
+			Name: "description",
+		},
+		{
+			Name:     "version",
+			Required: true,
+		},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+
+		{
+			Type: "mod_depends",
+		},
+		{
+			Type: "plugin_depends",
+		},
+		{
+			Type:       "query",
+			LabelNames: []string{"name"},
+		},
+	},
+}

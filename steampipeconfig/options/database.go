@@ -1,6 +1,11 @@
 package options
 
-import "github.com/turbot/steampipe/constants"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/turbot/steampipe/constants"
+)
 
 // Database
 type Database struct {
@@ -19,4 +24,22 @@ func (c *Database) ConfigMap() map[string]interface{} {
 		res[constants.ArgListenAddress] = c.Listen
 	}
 	return res
+}
+
+func (c *Database) String() string {
+	if c == nil {
+		return ""
+	}
+	var str []string
+	if c.Port == nil {
+		str = append(str, "Port: nil")
+	} else {
+		str = append(str, fmt.Sprintf("Port: %d", *c.Port))
+	}
+	if c.Listen == nil {
+		str = append(str, "Listen: nil")
+	} else {
+		str = append(str, fmt.Sprintf("Listen: %d", *c.Listen))
+	}
+	return strings.Join(str, "\n")
 }

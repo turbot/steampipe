@@ -48,7 +48,7 @@ func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err erro
 	steampipeConfig = newSteampipeConfig()
 
 	// get all the config files in the directory
-	configPaths, err := getConfigFilePaths(configFolder)
+	configPaths, err := getFilePaths(configFolder, configExtension)
 	if err != nil {
 		log.Printf("[WARN] loadConfig: failed to get config file paths: %v\n", err)
 		return nil, err
@@ -63,7 +63,7 @@ func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err erro
 		return nil, plugin.DiagsToError("Failed to load all config files", diags)
 	}
 
-	body, diags := parseConfigs(fileData)
+	body, diags := parseHclFiles(fileData)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to load all config files", diags)
 	}

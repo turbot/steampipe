@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -17,6 +18,7 @@ import (
 
 const configExtension = ".spc"
 
+// built a map of filepath to file data
 func loadFileData(configPaths []string) (map[string][]byte, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var fileData = map[string][]byte{}
@@ -35,7 +37,7 @@ func loadFileData(configPaths []string) (map[string][]byte, hcl.Diagnostics) {
 	return fileData, diags
 }
 
-func parseConfigs(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
+func parseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	var parsedConfigFiles []*hcl.File
 	var diags hcl.Diagnostics
 	parser := hclparse.NewParser()
@@ -98,6 +100,7 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 			configProperties = append(configProperties, string(a.SrcRange.SliceBytes(fileData[a.SrcRange.Filename])))
 		}
 	}
+	sort.Strings(configProperties)
 	connection.Config = strings.Join(configProperties, "\n")
 
 	return connection, diags
@@ -132,7 +135,8 @@ func parseOptions(block *hcl.Block) (options.Options, hcl.Diagnostics) {
 	return dest, nil
 }
 
-func getConfigFilePaths(configFolder string) ([]string, error) {
+// return a list of file paths of all files in given folder with given extension
+func getFilePaths(configFolder, extension string) ([]string, error) {
 	// check folder exists - if not just return empty config
 	if _, err := os.Stat(configFolder); os.IsNotExist(err) {
 		return nil, nil
@@ -145,7 +149,7 @@ func getConfigFilePaths(configFolder string) ([]string, error) {
 
 	matches := []string{}
 	for _, entry := range entries {
-		if filepath.Ext(entry.Name()) == configExtension {
+		if filepath.Ext(entry.Name()) == extension {
 			matches = append(matches, filepath.Join(configFolder, entry.Name()))
 		}
 	}

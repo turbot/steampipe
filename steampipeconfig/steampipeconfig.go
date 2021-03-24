@@ -1,7 +1,9 @@
 package steampipeconfig
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/steampipeconfig/options"
@@ -15,7 +17,7 @@ type SteampipeConfig struct {
 	// Steampipe options
 	DefaultConnectionOptions *options.Connection
 	DatabaseOptions          *options.Database
-	ConsoleOptions           *options.Terminal
+	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
 	// array of options interfaces useful to build  ConfigMap
 	Options []options.Options
@@ -45,7 +47,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) {
 	case *options.Database:
 		c.DatabaseOptions = o
 	case *options.Terminal:
-		c.ConsoleOptions = o
+		c.TerminalOptions = o
 	case *options.General:
 		c.GeneralOptions = o
 	}
@@ -118,4 +120,25 @@ func (c *SteampipeConfig) GetConnectionOptions(connectionName string) *options.C
 		result.CacheTTL = connection.Options.CacheTTL
 	}
 	return result
+}
+
+func (c *SteampipeConfig) String() string {
+	var connectionStrings []string
+	for _, c := range c.Connections {
+		connectionStrings = append(connectionStrings, c.String())
+	}
+
+	return fmt.Sprintf(`
+Connections: 
+%s
+----
+DefaultConnectionOptions:
+%s
+DatabaseOptions:
+%s
+TerminalOptions:
+%s
+GeneralOptions:
+%s
+`, strings.Join(connectionStrings, "\n"), c.DefaultConnectionOptions.String(), c.DatabaseOptions.String(), c.TerminalOptions.String(), c.GeneralOptions.String())
 }
