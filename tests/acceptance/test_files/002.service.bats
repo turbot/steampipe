@@ -16,14 +16,14 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
 }
 
-@test "steampipe service start --database-port 8765" {
-    run steampipe service start --database-port 8765
-    assert_equal "$(netstat -an tcp | grep LISTEN | grep tcp | grep 8765)" "$(cat $TEST_DATA_DIR/expected_service_start_port.txt)"
-    steampipe service stop --force
-}
+# @test "steampipe service start --database-port 8765" {
+#     run steampipe service start --database-port 8765
+#     assert_equal $(netstat -an tcp | grep LISTEN | grep tcp | grep 8765 | wc -l) 2
+#     steampipe service stop --force
+# }
 
-@test "steampipe service start --database-listen local --database-port 8765" {
-    run steampipe service start --database-listen local --database-port 8765
-    assert_equal "$(netstat -an tcp | grep LISTEN | grep tcp | grep 8765)" "$(cat $TEST_DATA_DIR/expected_service_start_listen_local.txt)" # for tcp4 and tcp6
-    steampipe service stop --force
-}
+# @test "steampipe service start --database-listen local --database-port 8765" {
+#     run steampipe service start --database-listen local --database-port 8765
+#     assert_equal $(netstat -an tcp | grep LISTEN | grep tcp | grep 8765 | wc -l) 2
+#     steampipe service stop --force
+# }
