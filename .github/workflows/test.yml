@@ -117,6 +117,7 @@ jobs:
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          steampipe service stop --force
 
   clean_up:
     # let's clean up the artifacts.
