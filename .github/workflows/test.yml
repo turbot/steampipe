@@ -113,6 +113,7 @@ jobs:
           steampipe service stop --force
 
       - name: Run Test Suite
+        timeout-minutes: 5
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh
