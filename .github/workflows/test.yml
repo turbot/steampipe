@@ -71,11 +71,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true
-    
-      - name: Setup BATS
-        uses: mig4/setup-bats@v1
-        with:
-          bats-version: 1.2.1
 
       - name: Prepare for downloads
         id: prepare-for-downloads
