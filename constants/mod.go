@@ -2,5 +2,6 @@ package constants
 
 // mod related constants
 const (
-	ModDataExtension = "sp"
+	ModDataExtension = ".sp"
+	ModDir           = "mods"
 )

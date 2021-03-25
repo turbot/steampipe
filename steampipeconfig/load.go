@@ -48,7 +48,7 @@ func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err erro
 	steampipeConfig = newSteampipeConfig()
 
 	// get all the config files in the directory
-	configPaths, err := getFilePaths(configFolder, configExtension)
+	configPaths, err := getFilePaths(configFolder, constants.ConfigExtension)
 	if err != nil {
 		log.Printf("[WARN] loadConfig: failed to get config file paths: %v\n", err)
 		return nil, err

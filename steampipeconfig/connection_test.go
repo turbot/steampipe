@@ -17,7 +17,7 @@ import (
 type getConnectionsToUpdateTest struct {
 	// hcl connection config(s)
 	required []string
-	// current conneciton state
+	// current connection state
 	current  ConnectionMap
 	expected interface{}
 }

@@ -16,8 +16,6 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/options"
 )
 
-const configExtension = ".spc"
-
 // built a map of filepath to file data
 func loadFileData(configPaths []string) (map[string][]byte, hcl.Diagnostics) {
 	var diags hcl.Diagnostics

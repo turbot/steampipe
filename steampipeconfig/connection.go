@@ -12,7 +12,7 @@ import (
 type Connection struct {
 	// connection name
 	Name string
-	// FQN of plugin
+	// Name of plugin
 	Plugin string
 	// unparsed HCL of plugin specific connection config
 	Config string

@@ -4,9 +4,9 @@ mod "m1"{
   version= "0.0.0"
 
   mod_depends{
-    name = "github.com/turbot/m2"
+    name = "github.com/turbot/m3"
     version = "0.0.0"
-    alias = "_m2"
+    alias = "m3"
   }
 
   query "q1" {

@@ -22,7 +22,7 @@ var testCasesLoadMod = map[string]loadModTest{
 			Description: "THIS IS M1",
 			Version:     "0.0.0",
 			ModDepends: []*modconfig.ModVersion{
-				{"github.com/turbot/m2", "0.0.0"},
+				{"github.com/turbot/m2", "0.0.0", "_m2"},
 			},
 			Queries: []*modconfig.Query{
 				{
@@ -40,7 +40,7 @@ func TestLoadMod(t *testing.T) {
 			t.Errorf("failed to build absolute config filepath from %s", test.source)
 		}
 
-		mod, err := loadMod(modPath)
+		mod, err := LoadMod(modPath)
 
 		if err != nil && test.expected != "ERROR" {
 			t.Errorf("TestLoadMod failed with unexpected error: %v", err)

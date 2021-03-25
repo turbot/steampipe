@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/turbot/go-kit/helpers"
@@ -11,14 +13,14 @@ import (
 )
 
 // parse all mod files in modPath and return an array of mods
-func loadMod(modPath string) (mod *modconfig.Mod, err error) {
+func LoadMod(modPath string) (mod *modconfig.Mod, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
 		}
 	}()
 	// get all the config files in the directory
-	configPaths, err := getFilePaths(modPath, modExtension)
+	configPaths, err := getFilePaths(modPath, constants.ModDataExtension)
 	if err != nil {
 		log.Printf("[WARN] loadConfig: failed to get mod file paths: %v\n", err)
 		return nil, err

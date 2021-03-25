@@ -164,11 +164,11 @@ func getSchemaQueries(updates steampipeconfig.ConnectionMap, failures []*steampi
 	var schemaQueries []string
 	for connectionName, plugin := range updates {
 		remoteSchema := steampipeconfig.PluginFQNToSchemaName(plugin.Plugin)
-		log.Printf("[TRACE] update connection %s, plugin FQN %s, schema %s\n ", connectionName, plugin.Plugin, remoteSchema)
+		log.Printf("[TRACE] update connection %s, plugin Name %s, schema %s\n ", connectionName, plugin.Plugin, remoteSchema)
 		schemaQueries = append(schemaQueries, updateConnectionQuery(connectionName, remoteSchema)...)
 	}
 	for _, failure := range failures {
-		log.Printf("[TRACE] remove schema for conneciton failing validation connection %s, plugin FQN %s\n ", failure.ConnectionName, failure.Plugin)
+		log.Printf("[TRACE] remove schema for conneciton failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
 		if failure.ShouldDropIfExists {
 			schemaQueries = append(schemaQueries, deleteConnectionQuery(failure.ConnectionName)...)
 		}

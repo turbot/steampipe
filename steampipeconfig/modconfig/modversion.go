@@ -8,15 +8,17 @@ import (
 
 type ModVersion struct {
 	// the fully qualified mod name, e.g. github.com/turbot/mod1
-	FQN     string `hcl:"name"`
-	Version string `hcl:"version"`
+	Name    string  `hcl:"name"`
+	Version string  `hcl:"version"`
+	Alias   *string `hcl:"alias"`
 }
 
+// FullName :: return Name@Version
 func (m *ModVersion) FullName() string {
 	if m.Version == "" {
-		return m.FQN
+		return m.Name
 	}
-	return fmt.Sprintf("%s@%s", m.FQN, m.Version)
+	return fmt.Sprintf("%s@%s", m.Name, m.Version)
 }
 
 // HasVersion :: if no version is specified, or the version is "latest", this is the latest version

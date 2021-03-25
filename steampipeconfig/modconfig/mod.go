@@ -15,6 +15,13 @@ type Mod struct {
 	Queries       []*Query
 }
 
+func (m *Mod) FullName() string {
+	if m.Version == "" {
+		return m.Name
+	}
+	return fmt.Sprintf("%s@%s", m.Name, m.Version)
+}
+
 func (m *Mod) String() string {
 	if m == nil {
 		return ""
