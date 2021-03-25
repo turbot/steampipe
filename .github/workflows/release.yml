@@ -153,6 +153,13 @@ jobs:
       - name: Hook private repo
         run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
 
+      - name: Tag Release
+        run: |
+          git config user.name "Steampipe GitHub Actions Bot"
+          git config user.email noreply@github.com
+          git tag ${{ github.event.inputs.tag }}
+          git push origin ${{ github.event.inputs.tag }}
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
@@ -160,13 +167,6 @@ jobs:
           args: release --snapshot --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Tag Release
-        run: |
-          git config user.name "Steampipe GitHub Actions Bot"
-          git config user.email noreply@github.com
-          git tag ${{ github.event.inputs.tag }}
-          git push origin ${{ github.event.inputs.tag }}
 
   clean_up:
     # let's clean up the artifacts.
