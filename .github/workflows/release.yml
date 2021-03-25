@@ -16,9 +16,26 @@ env:
   STEAMPIPE_UPDATE_CHECK: false
 
 jobs:
+  check: 
+    name: Check Inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check given Tag
+        id: checkTag
+        uses: mukunku/tag-exists-action@v1.0.0
+        with: 
+          tag: ${{ github.event.inputs.tag }}
+
+      - name: Fail if tag exists 
+        run: |
+          if [[ "${{ steps.checkTag.outputs.exists }}" -eq "true" ]]; then
+            exit 1
+          fi
+
   goreleaser:
     name: Build
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v2
