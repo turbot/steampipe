@@ -115,7 +115,7 @@ jobs:
 
       - name: Set PATH
         run: |
-          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
+          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
       - name: Install DB
         run: |
