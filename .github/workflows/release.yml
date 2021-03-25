@@ -72,7 +72,7 @@ jobs:
     needs: goreleaser
     strategy:
       matrix:
-        platform: [ macos-latest, ubuntu-latest ]
+        platform: [ ubuntu-latest ]
     runs-on: ${{ matrix.platform }}
     steps:
 
