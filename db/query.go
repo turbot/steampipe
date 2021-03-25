@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/turbot/steampipe/workspace"
+
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 
 	"github.com/turbot/steampipe/constants"
@@ -13,7 +15,7 @@ import (
 )
 
 // ExecuteQuery :: entry point for executing ad-hoc queries from outside the package
-func ExecuteQuery(queryString string) (*results.ResultStreamer, error) {
+func ExecuteQuery(queryString string, workspace *workspace.Workspace) (*results.ResultStreamer, error) {
 	var err error
 
 	logging.LogTime("db.ExecuteQuery start")
@@ -43,7 +45,7 @@ func ExecuteQuery(queryString string) (*results.ResultStreamer, error) {
 	onComplete := func() { Shutdown(client, InvokerQuery) }
 
 	if queryString == "" {
-		interactiveClient, err := newInteractiveClient(client)
+		interactiveClient, err := newInteractiveClient(client, workspace)
 		if err != nil {
 			utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
 			onComplete()

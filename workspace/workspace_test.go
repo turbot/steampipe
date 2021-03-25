@@ -56,7 +56,7 @@ func TestLoadMod(t *testing.T) {
 			t.Errorf("failed to build absolute config filepath from %s", test.source)
 		}
 
-		workspace, err := LoadWorkspace(workspacePath)
+		workspace, err := Load(workspacePath)
 
 		if err != nil && test.expected != "ERROR" {
 			t.Errorf("TestLoadMod failed with unexpected error: %v", err)

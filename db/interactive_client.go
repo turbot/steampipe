@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/steampipe/workspace"
+
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
@@ -23,15 +25,17 @@ import (
 // to facilitate interactive query prompt
 type InteractiveClient struct {
 	client                  *Client
+	workspace               *workspace.Workspace
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
 	interactiveQueryHistory *queryhistory.QueryHistory
 	autocompleteOnEmpty     bool
 }
 
-func newInteractiveClient(client *Client) (*InteractiveClient, error) {
+func newInteractiveClient(client *Client, workspace *workspace.Workspace) (*InteractiveClient, error) {
 	return &InteractiveClient{
 		client:                  client,
+		workspace:               workspace,
 		interactiveQueryHistory: queryhistory.New(),
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
@@ -199,9 +203,14 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 	// expand the buffer out into 'query'
 	query := strings.Join(c.interactiveBuffer, "\n")
 
-	// should we execute?
-	if !c.shouldExecute(query) {
-		return
+	// if it is a multiline query, execute even without `;`
+	if namedQuery, ok := c.workspace.GetNamedQuery(query); ok {
+		query = namedQuery.SQL
+	} else {
+		// should we execute?
+		if !c.shouldExecute(query) {
+			return
+		}
 	}
 
 	// so we need to execute - what are we executing
@@ -282,11 +291,13 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 
 	if isFirstWord(text) {
 		// add all we know that can be the first words
-		s = []prompt.Suggest{
-			{
-				Text: "select",
-			},
-		}
+
+		//named queries
+		s = append(s, c.nameQuerySuggestions()...)
+		// "select"
+		s = append(s, prompt.Suggest{Text: "select"})
+
+		// metaqueries
 		s = append(s, metaquery.PromptSuggestions()...)
 
 	} else if metaquery.IsMetaQuery(text) {
@@ -314,4 +325,18 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 
 	}
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
+}
+
+func (c *InteractiveClient) nameQuerySuggestions() []prompt.Suggest {
+	var res []prompt.Suggest
+	// add all the queries in the workspace
+	for name, q := range c.workspace.NamedQueryMap {
+		description := "named query"
+		if q.Description != "" {
+			description += fmt.Sprintf(": %s", q.Description)
+		}
+		res = append(res, prompt.Suggest{Text: name, Description: description})
+	}
+	// TODO SORTING - it keeps changing
+	return res
 }

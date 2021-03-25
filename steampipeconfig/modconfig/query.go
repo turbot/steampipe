@@ -3,7 +3,7 @@ package modconfig
 import "fmt"
 
 type Query struct {
-	Name        string `hcl:"name,label"`
+	Name        string
 	Title       string `hcl:"title"`
 	Description string `hcl:"description"`
 	SQL         string `hcl:"sql"`

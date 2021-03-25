@@ -11,24 +11,31 @@ import (
 )
 
 type Workspace struct {
-	Path        string
-	ModManifest *modconfig.Mod
-	Mods        mod.ModMap
+	Path          string
+	ModManifest   *modconfig.Mod
+	Mods          mod.ModMap
+	NamedQueryMap map[string]*modconfig.Query
 }
 
-func LoadWorkspace(workspacePath string) (*Workspace, error) {
+func Load(workspacePath string) (*Workspace, error) {
 	// verify workspacePath exists
 	if _, err := os.Stat(workspacePath); err != nil {
 		return nil, err
 	}
 
+	workspace := &Workspace{Path: workspacePath}
 	// now load the manifest mod
 	manifest, err := steampipeconfig.LoadMod(workspacePath)
 	if err != nil {
 		return nil, err
 	}
 
-	workspace := &Workspace{Path: workspacePath, ModManifest: manifest}
+	if manifest == nil {
+		// this is not a workspace folder
+		workspace.NamedQueryMap = make(map[string]*modconfig.Query)
+		return workspace, nil
+	}
+	workspace.ModManifest = manifest
 
 	// now load all mods in the workspace
 	modPath := workspace.ModPath()
@@ -38,9 +45,19 @@ func LoadWorkspace(workspacePath string) (*Workspace, error) {
 	}
 	workspace.Mods = modMap
 
+	workspace.NamedQueryMap = workspace.Mods.BuildNamedQueryMap()
+	// TODO validate unique aliases
+
 	// TODO LOAD CONFIG
 	return workspace, nil
 
+}
+
+func (w *Workspace) GetNamedQuery(input string) (*modconfig.Query, bool) {
+	if namedQuery, ok := w.NamedQueryMap[input]; ok {
+		return namedQuery, true
+	}
+	return nil, false
 }
 
 func (w *Workspace) ModPath() string {
