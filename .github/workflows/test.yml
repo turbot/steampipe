@@ -58,8 +58,8 @@ jobs:
           path: ~/artifacts/darwin.zip
           if-no-files-found: error
 
-  acceptance_testing:
-    name: Acceptance testing
+  acceptance_test:
+    name: Acceptance tests
     needs: goreleaser
     strategy:
       matrix:
