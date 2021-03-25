@@ -122,6 +122,7 @@ jobs:
       - name: Install DB
         run: |
           steampipe service start
+          steampipe plugin install chaos
           steampipe service stop --force
 
       - name: Run Test Suite
