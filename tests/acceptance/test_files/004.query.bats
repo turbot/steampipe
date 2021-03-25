@@ -13,3 +13,28 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_6.json)"
   run steampipe query "drop table all_columns"
 }
+
+@test "query json" {
+  run steampipe query "select 1 as val, 2 as col" --output json
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_query_json.json)"
+}
+
+@test "query csv" {
+  run steampipe query "select 1 as val, 2 as col" --output csv
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_query_csv.csv)"
+}
+
+@test "query line" {
+  run steampipe query "select 1 as val, 2 as col" --output line
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_query_line.txt)"
+}
+
+@test "query csv header off" {
+  run steampipe query "select 1 as val, 2 as col" --output csv --header=false
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_query_csv_header_off.csv)"
+}
+
+@test "query table header off" {
+  run steampipe query "select 1 as val, 2 as col" --header=false
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_query_table_header_off.txt)"
+}
