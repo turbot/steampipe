@@ -1,4 +1,4 @@
-name: steampipe-tests
+name: Steampipe Acceptance Tests
 on:
   push:
     branches:
@@ -58,23 +58,14 @@ jobs:
           path: ~/artifacts/darwin.zip
           if-no-files-found: error
 
-  acceptance_testing:
-    name: Acceptance testing
+  acceptance_test:
+    name: Acceptance tests
     needs: goreleaser
     strategy:
       matrix:
-        platform: [ macos-latest ]
+        platform: [ ubuntu-latest ]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.14
-        # if we don't do this, Git will convert all line endings to CRLF when cloning on windows
-      - name: Setup BATS
-        uses: mig4/setup-bats@v1
-        with:
-          bats-version: 1.2.1
 
       - name: Checkout
         uses: actions/checkout@v2
@@ -86,6 +77,13 @@ jobs:
         run: |
           mkdir ~/artifacts
 
+      - name: Download Linux Build Artifacts
+        uses: actions/download-artifact@v2
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        with:
+          name: build-artifact-linux
+          path: ~/artifacts
+
       - name: Download Darwin Build Artifacts
         uses: actions/download-artifact@v2
         if: ${{ matrix.platform == 'macos-latest' }}
@@ -93,49 +91,33 @@ jobs:
           name: build-artifact-darwin
           path: ~/artifacts
 
-      - name: Check that everything got downloaded
-        run: |
-          ls -l ~/artifacts
-
-      - name: Rename build artifact on Darwin
-        if: ${{ matrix.platform == 'macos-latest' }}
-        run: mv ~/artifacts/darwin.zip ~/artifacts/build.zip
-
-      - name: Check that renaming is good
-        run: |
-          ls -l ~/artifacts
-
-      - name: Extract Artifacts and Install Binary
+      - name: Extract Darwin Artifacts and Install Binary
         if: ${{ matrix.platform == 'macos-latest' }}
         run: |
           mkdir ~/build
-          unzip ~/artifacts/build.zip -d ~/build
-          ls -l ~/build
+          unzip ~/artifacts/darwin.zip -d ~/build
+
+      - name: Extract Ubuntu Artifacts and Install Binary
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: |
+          mkdir ~/build
+          tar -xf ~/artifacts/linux.tar.gz -C ~/build
+
+      - name: Set PATH
+        run: |
           echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
 
       - name: Install DB
-        if: ${{ matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-latest' }}
-        run: |
-          echo $PATH
-          steampipe query "select 1 as col"
-
-      - name: Install chaos plugin
-        if: ${{ matrix.platform == 'macos-latest' }}
-        run: |
-          steampipe plugin install chaos
-
-      - name: Stop steampipe service
-        run: |
-          steampipe service stop --force
-
-      - name: Start steampipe service
         run: |
           steampipe service start
+          steampipe service stop --force
 
       - name: Run Test Suite
+        timeout-minutes: 5
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          steampipe service stop --force
 
   clean_up:
     # let's clean up the artifacts.
@@ -147,12 +129,6 @@ jobs:
     needs: acceptance_testing
     runs-on: ubuntu-latest
     steps:
-      - name: Clean up Windows Build
-        uses: geekyeggo/delete-artifact@v1
-        with:
-          name: build-artifact-windows
-          failOnError: true
-
       - name: Clean up Linux Build
         uses: geekyeggo/delete-artifact@v1
         with:
