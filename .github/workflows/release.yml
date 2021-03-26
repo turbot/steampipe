@@ -1,8 +1,5 @@
 name: Steampipe Release
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       branch:
@@ -19,9 +16,12 @@ jobs:
   goreleaser:
     name: Build
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.branch }}
 
       - name: Unshallow
         run: git fetch
@@ -38,7 +38,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
-          args: release --rm-dist --skip-publish
+          args: release --snapshot --rm-dist --skip-publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -65,24 +65,25 @@ jobs:
           path: ~/artifacts/darwin.zip
           if-no-files-found: error
 
-  platform_test:
-    name: Platform testing
+  acceptance_test:
+    name: Acceptance tests
     needs: goreleaser
     strategy:
       matrix:
-        platform: [ ubuntu-latest, macos-latest ]
-
+        platform: [ ubuntu-latest ]
     runs-on: ${{ matrix.platform }}
-    env:
-      GOFLAGS: "-mod=vendor"
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.14
+
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          submodules: true
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: 1.2.1
 
       - name: Prepare for downloads
         id: prepare-for-downloads
@@ -103,131 +104,44 @@ jobs:
           name: build-artifact-darwin
           path: ~/artifacts
 
-      - name: Check that everything got downloaded
-        run: |
-          ls -l ~/artifacts
-
-      - name: Rename build artifact on Darwin
-        if: ${{ matrix.platform == 'macos-latest' }}
-        run: mv ~/artifacts/darwin.zip ~/artifacts/build.zip
-
-      - name: Rename build artifact on Linux
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: mv ~/artifacts/linux.tar.gz ~/artifacts/build.tar.gz
-
-      - name: Check that renaming is good
-        run: |
-          ls -l ~/artifacts
-
       - name: Extract Darwin Artifacts and Install Binary
         if: ${{ matrix.platform == 'macos-latest' }}
         run: |
           mkdir ~/build
-          unzip ~/artifacts/build.zip -d ~/build
-          ls -l ~/build
-          echo "~/build" >> $GITHUB_PATH
+          unzip ~/artifacts/darwin.zip -d ~/build
 
       - name: Extract Ubuntu Artifacts and Install Binary
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: |
           mkdir ~/build
-          tar -xf ~/artifacts/build.tar.gz -C ~/build
-          ls -l ~/build
-          echo "~/build" >> $GITHUB_PATH
+          tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
-      - name: Run Tests
-        if: ${{ matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-latest' }}
+      - name: Set PATH
         run: |
-          echo $PATH
-          $HOME/build/steampipe query "select 1 as col"
-
-
-  acceptance_testing:
-    name: Acceptance testing
-    needs: goreleaser
-    strategy:
-      matrix:
-        platform: [ macos-latest ]
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.14
-        # if we don't do this, Git will convert all line endings to CRLF when cloning on windows
-      - name: Setup BATS
-        uses: mig4/setup-bats@v1
-        with:
-          bats-version: 1.2.1
-
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          submodules: true
-
-      - name: Prepare for downloads
-        id: prepare-for-downloads
-        run: |
-          mkdir ~/artifacts
-
-      - name: Download Darwin Build Artifacts
-        uses: actions/download-artifact@v2
-        if: ${{ matrix.platform == 'macos-latest' }}
-        with:
-          name: build-artifact-darwin
-          path: ~/artifacts
-
-      - name: Check that everything got downloaded
-        run: |
-          ls -l ~/artifacts
-
-      - name: Rename build artifact on Darwin
-        if: ${{ matrix.platform == 'macos-latest' }}
-        run: mv ~/artifacts/darwin.zip ~/artifacts/build.zip
-
-      - name: Check that renaming is good
-        run: |
-          ls -l ~/artifacts
-
-      - name: Extract Artifacts and Install Binary
-        if: ${{ matrix.platform == 'macos-latest' }}
-        run: |
-          mkdir ~/build
-          unzip ~/artifacts/build.zip -d ~/build
-          ls -l ~/build
-          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
+          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
       - name: Install DB
-        if: ${{ matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-latest' }}
-        run: |
-          echo $PATH
-          steampipe query "select 1 as col"
-
-      - name: Install chaos plugin
-        if: ${{ matrix.platform == 'macos-latest' }}
-        run: |
-          steampipe plugin install chaos
-
-      - name: Stop steampipe service
-        run: |
-          steampipe service stop --force
-
-      - name: Start steampipe service
         run: |
           steampipe service start
+          steampipe plugin install chaos
+          steampipe service stop --force
 
       - name: Run Test Suite
+        timeout-minutes: 5
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          steampipe service stop --force
 
   create_release:
     name: Release
-    needs: [goreleaser, platform_test, acceptance_testing]
+    needs: [goreleaser, acceptance_test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.branch }}
 
       - name: Unshallow
         run: git fetch --prune --unshallow
@@ -239,6 +153,13 @@ jobs:
 
       - name: Hook private repo
         run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
+
+      - name: Tag Release
+        run: |
+          git config user.name "Steampipe GitHub Actions Bot"
+          git config user.email noreply@github.com
+          git tag ${{ github.event.inputs.tag }}
+          git push origin ${{ github.event.inputs.tag }}
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
@@ -258,26 +179,12 @@ jobs:
     needs: create_release
     runs-on: ubuntu-latest
     steps:
-      - name: Clean up Windows Build
-        uses: geekyeggo/delete-artifact@v1
-        with:
-          name: build-artifact-windows
-          failOnError: true
-
       - name: Clean up Linux Build
         uses: geekyeggo/delete-artifact@v1
         with:
           name: build-artifact-linux
-          failOnError: true
 
       - name: Clean up Darwin Build
         uses: geekyeggo/delete-artifact@v1
         with:
           name: build-artifact-darwin
-          failOnError: true
-
-      - name: Clean up Test Suite
-        uses: geekyeggo/delete-artifact@v1
-        with:
-          name: test-artifact
-          failOnError: true
