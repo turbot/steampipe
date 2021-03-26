@@ -42,6 +42,10 @@ var modFileSchema = &hcl.BodySchema{
 			Type:       "mod",
 			LabelNames: []string{"name"},
 		},
+		{
+			Type:       "query",
+			LabelNames: []string{"name"},
+		},
 	},
 }
 
@@ -53,10 +57,6 @@ var modSchema = &hcl.BodySchema{
 		{
 			Name: "description",
 		},
-		{
-			Name:     "version",
-			Required: true,
-		},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 
@@ -65,10 +65,6 @@ var modSchema = &hcl.BodySchema{
 		},
 		{
 			Type: "plugin_depends",
-		},
-		{
-			Type:       "query",
-			LabelNames: []string{"name"},
 		},
 	},
 }

@@ -1,5 +1,5 @@
 mod "w_1"{
-  version= "0.0.0"
+  title="workspace 1"
 
   mod_depends{
     name = "github.com/turbot/m1"

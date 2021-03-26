@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -12,8 +13,7 @@ import (
 
 type Workspace struct {
 	Path          string
-	ModManifest   *modconfig.Mod
-	Mods          mod.ModMap
+	Mod           *modconfig.Mod
 	NamedQueryMap map[string]*modconfig.Query
 }
 
@@ -35,7 +35,7 @@ func Load(workspacePath string) (*Workspace, error) {
 		workspace.NamedQueryMap = make(map[string]*modconfig.Query)
 		return workspace, nil
 	}
-	workspace.ModManifest = manifest
+	workspace.Mod = manifest
 
 	// now load all mods in the workspace
 	modPath := workspace.ModPath()
@@ -43,12 +43,13 @@ func Load(workspacePath string) (*Workspace, error) {
 	if err != nil {
 		return nil, err
 	}
-	workspace.Mods = modMap
 
-	workspace.NamedQueryMap = workspace.Mods.BuildNamedQueryMap()
+	workspace.NamedQueryMap = workspace.buildNamedQueryMap(modMap)
+
 	// TODO validate unique aliases
 
 	// TODO LOAD CONFIG
+
 	return workspace, nil
 
 }
@@ -62,4 +63,26 @@ func (w *Workspace) GetNamedQuery(input string) (*modconfig.Query, bool) {
 
 func (w *Workspace) ModPath() string {
 	return path.Join(w.Path, constants.ModDir)
+}
+
+func (w *Workspace) buildNamedQueryMap(modMap mod.ModMap) map[string]*modconfig.Query {
+	//  build a list of long and short names for these queries
+	var res = make(map[string]*modconfig.Query)
+
+	// add local queries by short name: query.xxxx and long name: <workspace>.query.xxxx
+	for _, q := range w.Mod.Queries {
+		shortName := fmt.Sprintf("query.%s", q.Name)
+		longName := fmt.Sprintf("%s.query.%s", w.Mod.Name, q.Name)
+
+		res[shortName] = q
+		res[longName] = q
+	}
+	// ad queries from mode dependencies by FQN
+	for _, mod := range modMap {
+		for _, q := range mod.Queries {
+			longName := fmt.Sprintf("%s.query.%s", mod.Name, q.Name)
+			res[longName] = q
+		}
+	}
+	return res
 }

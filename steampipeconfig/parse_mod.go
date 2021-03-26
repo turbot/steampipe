@@ -40,13 +40,6 @@ func parseMod(block *hcl.Block) (*modconfig.Mod, hcl.Diagnostics) {
 				break
 			}
 			mod.PluginDepends = append(mod.PluginDepends, pluginDependency)
-		case "query":
-			query, moreDiags := parseQuery(block)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-				break
-			}
-			mod.Queries = append(mod.Queries, query)
 		}
 	}
 

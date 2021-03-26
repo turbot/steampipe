@@ -68,8 +68,15 @@ func TestLoadConfig(t *testing.T) {
 
 		config, err := loadConfig(configPath)
 
-		if err != nil && test.expected != "ERROR" {
-			t.Errorf("TestLoadConfig failed with unexpected error: %v", err)
+		if err != nil {
+			if test.expected != "ERROR" {
+				t.Errorf("Test: '%s'' FAILED with unexpected error: %v", name, err)
+			}
+			return
+		}
+
+		if test.expected == "ERROR" {
+			t.Errorf("Test: '%s'' FAILED - expected error", name)
 		}
 
 		expectedString := test.expected.(*SteampipeConfig).String()
