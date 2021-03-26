@@ -1,8 +1,5 @@
 name: Steampipe Release
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       branch:
