@@ -3,7 +3,6 @@ package workspace
 import (
 	"fmt"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -106,7 +105,7 @@ func WorkspacesEqual(expected, actual *Workspace) (bool, string) {
 	}
 	for name, _ := range actual.NamedQueryMap {
 		if _, ok := expected.NamedQueryMap[name]; ok {
-			errors = append(errors, fmt.Sprintf("unexpected query %s in query map")
+			errors = append(errors, fmt.Sprintf("unexpected query %s in query map", name))
 		}
 	}
 	return len(errors) > 0, strings.Join(errors, "\n")

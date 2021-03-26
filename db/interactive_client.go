@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/turbot/steampipe/workspace"
@@ -337,6 +338,8 @@ func (c *InteractiveClient) nameQuerySuggestions() []prompt.Suggest {
 		}
 		res = append(res, prompt.Suggest{Text: name, Description: description})
 	}
-	// TODO SORTING - it keeps changing
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].Text < res[j].Text
+	})
 	return res
 }
