@@ -28,6 +28,7 @@
    }
   },
   "macaddress": "08:00:2b:01:02:03",
+  "nullcolumn": null,
   "numericcolumn": "23.5142",
   "realcolumn": 4660.338,
   "textcolumn1": "Yes                 ",
@@ -37,6 +38,7 @@
   "timestamp1": "2016-06-22 19:10:25",
   "timestamp2": "1 year 2 mons 3 days",
   "uuidcolumn": "6948df80-14bd-4e04-8842-7668d9c001f5",
-  "xmldata": "\u003cbook\u003e\u003ctitle\u003eManual\u003c/title\u003e\u003cchapter\u003e...\u003c/chapter\u003e\u003c/book\u003e"
+  "xmldata": "<book><title>Manual</title><chapter>...</chapter></book>"
  }
 ]
+
