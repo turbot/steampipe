@@ -166,51 +166,6 @@ Example:
 	return cmd
 }
 
-type installReport struct {
-	Skipped        bool
-	Plugin         string
-	SkipReason     string
-	DocURL         string
-	Version        string
-	IsUpdateReport bool
-}
-
-func (ir *installReport) SkipString() string {
-	ref := ociinstaller.NewSteampipeImageRef(ir.Plugin)
-	_, name, stream := ref.GetOrgNameAndStream()
-
-	return fmt.Sprintf("Plugin:   %s\nReason:   %s", fmt.Sprintf("%s@%s", name, stream), ir.SkipReason)
-}
-
-func (ir *installReport) InstallString(isUpdate bool) string {
-	thisReport := []string{}
-	if isUpdate {
-		thisReport = append(
-			thisReport,
-			fmt.Sprintf("Updated plugin: %s%s", constants.Bold(ir.Plugin), ir.Version),
-		)
-		if len(ir.DocURL) > 0 {
-			thisReport = append(
-				thisReport,
-				fmt.Sprintf("Documentation:  %s", ir.DocURL),
-			)
-		}
-	} else {
-		thisReport = append(
-			thisReport,
-			fmt.Sprintf("Installed plugin: %s%s", constants.Bold(ir.Plugin), ir.Version),
-		)
-		if len(ir.DocURL) > 0 {
-			thisReport = append(
-				thisReport,
-				fmt.Sprintf("Documentation:    %s", ir.DocURL),
-			)
-		}
-	}
-
-	return strings.Join(thisReport, "\n")
-}
-
 func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runPluginInstallCmd install")
 	defer func() {
@@ -224,7 +179,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// These can be simple names ('aws') for "standard" plugins, or
 	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
-	installReports := make([]installReport, 0, len(plugins))
+	installReports := make([]display.InstallReport, 0, len(plugins))
 
 	if len(plugins) == 0 {
 		fmt.Println()
@@ -244,10 +199,11 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	for _, p := range plugins {
 		isPluginExists, _ := plugin.Exists(p)
 		if isPluginExists {
-			installReports = append(installReports, installReport{
-				Plugin:     p,
-				Skipped:    true,
-				SkipReason: "Already installed",
+			installReports = append(installReports, display.InstallReport{
+				Plugin:         p,
+				Skipped:        true,
+				SkipReason:     display.ALREADY_INSTALLED,
+				IsUpdateReport: false,
 			})
 			continue
 		}
@@ -260,10 +216,11 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			} else {
 				msg = err.Error()
 			}
-			installReports = append(installReports, installReport{
-				Skipped:    true,
-				Plugin:     p,
-				SkipReason: msg,
+			installReports = append(installReports, display.InstallReport{
+				Skipped:        true,
+				Plugin:         p,
+				SkipReason:     msg,
+				IsUpdateReport: false,
 			})
 			continue
 		}
@@ -277,18 +234,19 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		if org == "turbot" {
 			docURL = fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
 		}
-		installReports = append(installReports, installReport{
-			Skipped: false,
-			Plugin:  p,
-			DocURL:  docURL,
-			Version: versionString,
+		installReports = append(installReports, display.InstallReport{
+			Skipped:        false,
+			Plugin:         p,
+			DocURL:         docURL,
+			Version:        versionString,
+			IsUpdateReport: false,
 		})
 	}
 
 	utils.StopSpinner(spinner)
 
 	refreshConnectionsIfNecessary(installReports, false)
-	printInstallReports(installReports, false)
+	display.PrintInstallReports(installReports, false)
 
 	// a concluding blank line at the bottom, since we have multiple
 	// lines in the output - no matter the outcome
@@ -342,7 +300,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	var runUpdatesFor []*versionfile.InstalledVersion
-	updateReports := make([]installReport, 0, len(plugins))
+	updateReports := make([]display.InstallReport, 0, len(plugins))
 
 	// a leading blank line at the top, since we have multiple
 	// lines in the output - no matter the outcome
@@ -365,10 +323,10 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			if isExists {
 				runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
 			} else {
-				updateReports = append(updateReports, installReport{
+				updateReports = append(updateReports, display.InstallReport{
 					Skipped:        true,
 					Plugin:         p,
-					SkipReason:     "Not installed",
+					SkipReason:     display.NOT_INSTALLED,
 					IsUpdateReport: true,
 				})
 			}
@@ -379,7 +337,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		// we have report for all
 		// this may happen if all given plugins are
 		// not installed
-		printInstallReports(updateReports, true)
+		display.PrintInstallReports(updateReports, true)
 		fmt.Println()
 		return
 	}
@@ -397,10 +355,10 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 	for _, report := range reports {
 		if report.Plugin.ImageDigest == report.CheckResponse.Digest {
-			updateReports = append(updateReports, installReport{
+			updateReports = append(updateReports, display.InstallReport{
 				Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
 				Skipped:        true,
-				SkipReason:     "Latest already installed",
+				SkipReason:     display.LATEST_ALREADY_INSTALLED,
 				IsUpdateReport: true,
 			})
 			continue
@@ -416,7 +374,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			} else {
 				msg = err.Error()
 			}
-			updateReports = append(updateReports, installReport{
+			updateReports = append(updateReports, display.InstallReport{
 				Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
 				Skipped:        true,
 				SkipReason:     msg,
@@ -435,7 +393,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		if org == "turbot" {
 			docURL = fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
 		}
-		updateReports = append(updateReports, installReport{
+		updateReports = append(updateReports, display.InstallReport{
 			Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
 			Skipped:        false,
 			Version:        versionString,
@@ -445,93 +403,15 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	refreshConnectionsIfNecessary(updateReports, true)
-	printInstallReports(updateReports, true)
+	display.PrintInstallReports(updateReports, true)
 
 	// a concluding blank line at the bottom, since we have multiple
 	// lines in the output - no matter the outcome
 	fmt.Println()
 }
 
-// Prints out the installation reports onto the console
-func printInstallReports(reports []installReport, isUpdateReport bool) {
-	installedOrUpdated := []installReport{}
-	canBeInstalled := []installReport{}
-	canBeUpdated := []installReport{}
-
-	for _, report := range reports {
-		report.IsUpdateReport = isUpdateReport
-		if !report.Skipped {
-			installedOrUpdated = append(installedOrUpdated, report)
-		} else if report.SkipReason == "Not installed" {
-			canBeInstalled = append(canBeInstalled, report)
-		} else if report.SkipReason == "Already installed" {
-			canBeUpdated = append(canBeUpdated, report)
-		}
-	}
-
-	if len(installedOrUpdated) > 0 {
-		asString := []string{}
-		for _, report := range installedOrUpdated {
-			asString = append(asString, report.InstallString(isUpdateReport))
-		}
-		fmt.Println(strings.Join(asString, "\n\n"))
-	}
-
-	if len(installedOrUpdated) < len(reports) {
-		skipCount := len(reports) - len(installedOrUpdated)
-		asString := []string{}
-		for _, report := range reports {
-			if report.Skipped {
-				asString = append(asString, report.SkipString())
-			}
-		}
-		// some have skipped
-		if len(installedOrUpdated) > 0 {
-			fmt.Println()
-		}
-		fmt.Printf(
-			"Skipped the following %s:\n\n%s\n",
-			utils.Pluralize("plugin", skipCount),
-			strings.Join(asString, "\n\n"),
-		)
-
-		if len(canBeInstalled) > 0 {
-			asString := []string{}
-			for _, r := range canBeInstalled {
-				asString = append(asString, r.Plugin)
-			}
-			fmt.Println()
-			fmt.Printf(
-				"To install %s which %s not installed, please run %s\n",
-				utils.Pluralize("plugin", len(canBeInstalled)),
-				utils.Pluralize("is", len(canBeInstalled)),
-				constants.Bold(fmt.Sprintf(
-					"steampipe plugin install %s",
-					strings.Join(asString, " "),
-				)),
-			)
-		}
-		if len(canBeUpdated) > 0 {
-			asString := []string{}
-			for _, r := range canBeUpdated {
-				asString = append(asString, r.Plugin)
-			}
-			fmt.Println()
-			fmt.Printf(
-				"To update %s which %s already installed, please run %s\n",
-				utils.Pluralize("plugin", len(canBeUpdated)),
-				utils.Pluralize("is", len(canBeUpdated)),
-				constants.Bold(fmt.Sprintf(
-					"steampipe plugin update %s",
-					strings.Join(asString, " "),
-				)),
-			)
-		}
-	}
-}
-
 // start service if necessary and refresh connections
-func refreshConnectionsIfNecessary(reports []installReport, isUpdate bool) error {
+func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate bool) error {
 	// get count of skipped reports
 	skipped := 0
 	for _, report := range reports {
