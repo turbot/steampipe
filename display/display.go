@@ -124,27 +124,32 @@ func displayLine(result *results.QueryResult) {
 			}
 		}
 
-		lineFormat := fmt.Sprintf("%%-%ds | %%-%ds", maxColNameLength, requiredTerminalColumnsForValuesOfRecord)
+		lineFormat := fmt.Sprintf("%%-%ds | %%s\n", maxColNameLength)
+		multiLineFormat := fmt.Sprintf("%%-%ds | %%-%ds", maxColNameLength, requiredTerminalColumnsForValuesOfRecord)
 
 		fmt.Printf("-[ RECORD %-2d ]%s\n", (itemIdx + 1), strings.Repeat("-", 75))
 		for idx, column := range recordAsString {
 			lines := strings.Split(column, "\n")
-			for lineIdx, line := range lines {
-				if lineIdx == 0 {
-					// the first line
-					fmt.Printf(lineFormat, colNames[idx], line)
-				} else {
-					// next lines
-					fmt.Printf(lineFormat, "", line)
-				}
+			if len(lines) == 1 {
+				fmt.Printf(lineFormat, colNames[idx], lines[0])
+			} else {
+				for lineIdx, line := range lines {
+					if lineIdx == 0 {
+						// the first line
+						fmt.Printf(multiLineFormat, colNames[idx], line)
+					} else {
+						// next lines
+						fmt.Printf(multiLineFormat, "", line)
+					}
 
-				// is this not the last line of value?
-				if lineIdx < len(lines)-1 {
-					fmt.Printf(" +\n")
-				} else {
-					fmt.Printf("\n")
-				}
+					// is this not the last line of value?
+					if lineIdx < len(lines)-1 {
+						fmt.Printf(" +\n")
+					} else {
+						fmt.Printf("\n")
+					}
 
+				}
 			}
 		}
 		itemIdx++
