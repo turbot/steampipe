@@ -72,7 +72,7 @@ func ColumnValueAsString(val interface{}, colType *sql.ColumnType) (result strin
 // JSON, JSONB, BOOL and so on..
 func ParseJSONOutputColumnValue(val interface{}, colType *sql.ColumnType) (interface{}, error) {
 	if val == nil {
-		return constants.NullString, nil
+		return nil, nil
 	}
 	switch colType.DatabaseTypeName() {
 	// we can revise/increment the list of DT's in future
