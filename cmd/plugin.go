@@ -176,8 +176,8 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// args to 'plugin install' -- one or more plugins to install
-	// These can be simple names ('aws') for "standard" plugins, or
-	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
+	// plugin names can be simple names ('aws') for "standard" plugins,
+	// or full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
 	installReports := make([]display.InstallReport, 0, len(plugins))
 
@@ -190,8 +190,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// a leading blank line at the top, since we have multiple
-	// lines in the output - no matter the outcome
+	// a leading blank line - since we always output multiple lines
 	fmt.Println()
 
 	spinner := utils.ShowSpinner("")
@@ -248,8 +247,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	refreshConnectionsIfNecessary(installReports, false)
 	display.PrintInstallReports(installReports, false)
 
-	// a concluding blank line at the bottom, since we have multiple
-	// lines in the output - no matter the outcome
+	// a concluding blank line - since we always output multiple lines
 	fmt.Println()
 }
 
@@ -302,8 +300,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	var runUpdatesFor []*versionfile.InstalledVersion
 	updateReports := make([]display.InstallReport, 0, len(plugins))
 
-	// a leading blank line at the top, since we have multiple
-	// lines in the output - no matter the outcome
+	// a leading blank line - since we always output multiple lines
 	fmt.Println()
 
 	if cmdconfig.Viper().GetBool("all") {
@@ -405,8 +402,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	refreshConnectionsIfNecessary(updateReports, true)
 	display.PrintInstallReports(updateReports, true)
 
-	// a concluding blank line at the bottom, since we have multiple
-	// lines in the output - no matter the outcome
+	// a concluding blank line - since we always output multiple lines
 	fmt.Println()
 }
 
