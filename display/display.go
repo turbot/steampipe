@@ -187,12 +187,14 @@ func displayJSON(result *results.QueryResult) {
 		return
 	}
 	// display the JSON
-	data, err := json.MarshalIndent(jsonOutput, "", " ")
-	if err != nil {
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", " ")
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(jsonOutput); err != nil {
 		fmt.Print("Error displaying result as JSON", err)
 		return
 	}
-	fmt.Printf("%s\n", string(data))
+	fmt.Println()
 }
 
 func displayCSV(result *results.QueryResult) {
