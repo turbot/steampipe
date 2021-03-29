@@ -3,7 +3,6 @@ package workspace
 import (
 	"fmt"
 	"os"
-	"path"
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/mod"
@@ -19,27 +18,27 @@ type Workspace struct {
 
 func Load(workspacePath string) (*Workspace, error) {
 	// verify workspacePath exists
-	if _, err := os.Stat(workspacePath); err != nil {
-		return nil, err
-	}
-
-	workspace := &Workspace{Path: workspacePath}
-	// now load the manifest mod
-	manifest, err := steampipeconfig.LoadMod(workspacePath)
+	_, err := os.Stat(workspacePath)
 	if err != nil {
 		return nil, err
 	}
 
-	if manifest == nil {
-		// this is not a workspace folder
-		workspace.NamedQueryMap = make(map[string]*modconfig.Query)
-		return workspace, nil
+	// create shell workspace
+	workspace := &Workspace{Path: workspacePath}
+
+	// parse all hcl files under the workspace and either parse or create a mod
+	// it is valid for 0 or 1 mod to be defined (if no mod is defined, create a default one)
+	// populate mod with all hcl resources we parse
+	workspace.Mod, err = steampipeconfig.LoadMod(workspacePath)
+	if err != nil {
+		return nil, err
 	}
-	workspace.Mod = manifest
+
+	// now
 
 	// now load all mods in the workspace
-	modPath := workspace.ModPath()
-	modMap, err := mod.LoadModDependencies(manifest, modPath)
+	modsPath := constants.WorkspaceModPath(workspacePath)
+	modMap, err := mod.LoadModDependencies(workspace.Mod, modsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -59,10 +58,6 @@ func (w *Workspace) GetNamedQuery(input string) (*modconfig.Query, bool) {
 		return namedQuery, true
 	}
 	return nil, false
-}
-
-func (w *Workspace) ModPath() string {
-	return path.Join(w.Path, constants.ModDir)
 }
 
 func (w *Workspace) buildNamedQueryMap(modMap mod.ModMap) map[string]*modconfig.Query {

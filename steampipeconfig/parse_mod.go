@@ -1,13 +1,10 @@
 package steampipeconfig
 
 import (
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
-
-const modExtension = ".sp"
 
 func parseMod(block *hcl.Block) (*modconfig.Mod, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
@@ -97,13 +94,14 @@ func parsePluginDependency(block *hcl.Block) (*modconfig.PluginDependency, hcl.D
 
 func parseQuery(block *hcl.Block) (*modconfig.Query, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
-	var dest = &modconfig.Query{}
+	var q = &modconfig.Query{}
 
-	diags = gohcl.DecodeBody(block.Body, nil, dest)
+	diags = gohcl.DecodeBody(block.Body, nil, q)
 	if diags.HasErrors() {
 		return nil, diags
 	}
 
-	dest.Name = block.Labels[0]
-	return dest, nil
+	q.Name = block.Labels[0]
+
+	return q, nil
 }

@@ -87,7 +87,7 @@ var testCasesLoadMod = map[string]loadModTest{
 	},
 	"no_mod": {
 		source:   "test_data/no_mod",
-		expected: "ERROR",
+		expected: &modconfig.Mod{Name: "local"},
 	},
 	"two_mods": {
 		source:   "test_data/two_mods",

@@ -13,7 +13,7 @@ func databaseInstanceDir() string {
 	loc := filepath.Join(constants.DatabaseDir(), constants.DatabaseVersion)
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
-		utils.FailOnErrorWithMessage(err, "could not ensure db version directory")
+		utils.FailOnErrorWithMessage(err, "could not create db version directory")
 	}
 	return loc
 }
@@ -22,7 +22,7 @@ func getDatabaseLocation() string {
 	loc := filepath.Join(databaseInstanceDir(), "postgres")
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
-		utils.FailOnErrorWithMessage(err, "could not ensure postgres installation directory")
+		utils.FailOnErrorWithMessage(err, "could not create postgres installation directory")
 	}
 	return loc
 }
@@ -31,7 +31,7 @@ func getDatabaseLogDirectory() string {
 	loc := constants.LogDir()
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
-		utils.FailOnErrorWithMessage(err, "could not ensure postgres logging directory")
+		utils.FailOnErrorWithMessage(err, "could not create postgres logging directory")
 	}
 	return loc
 }
@@ -40,7 +40,7 @@ func getDataLocation() string {
 	loc := filepath.Join(databaseInstanceDir(), "data")
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
-		utils.FailOnErrorWithMessage(err, "could not ensure data directory")
+		utils.FailOnErrorWithMessage(err, "could not create data directory")
 	}
 	return loc
 }

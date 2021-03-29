@@ -3,10 +3,11 @@ package steampipeconfig
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/turbot/steampipe/constants"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -17,11 +18,15 @@ import (
 )
 
 // built a map of filepath to file data
-func loadFileData(configPaths []string) (map[string][]byte, hcl.Diagnostics) {
+func loadFileData(paths []string) (map[string][]byte, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var fileData = map[string][]byte{}
 
-	for _, configPath := range configPaths {
+	for _, configPath := range paths {
+		// if this is not a .sp file, ignore
+		if filepath.Ext(configPath) != constants.ModDataExtension {
+			continue
+		}
 		data, err := ioutil.ReadFile(configPath)
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
@@ -131,25 +136,4 @@ func parseOptions(block *hcl.Block) (options.Options, hcl.Diagnostics) {
 	}
 
 	return dest, nil
-}
-
-// return a list of file paths of all files in given folder with given extension
-func getFilePaths(configFolder, extension string) ([]string, error) {
-	// check folder exists - if not just return empty config
-	if _, err := os.Stat(configFolder); os.IsNotExist(err) {
-		return nil, nil
-	}
-
-	entries, err := ioutil.ReadDir(configFolder)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config folder %s: %v", configFolder, err)
-	}
-
-	matches := []string{}
-	for _, entry := range entries {
-		if filepath.Ext(entry.Name()) == extension {
-			matches = append(matches, filepath.Join(configFolder, entry.Name()))
-		}
-	}
-	return matches, nil
 }

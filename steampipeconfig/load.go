@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	filehelpers "github.com/turbot/go-kit/files"
+
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
@@ -48,7 +50,12 @@ func loadConfig(configFolder string) (steampipeConfig *SteampipeConfig, err erro
 	steampipeConfig = newSteampipeConfig()
 
 	// get all the config files in the directory
-	configPaths, err := getFilePaths(configFolder, constants.ConfigExtension)
+	configPaths, err := filehelpers.ListFiles(configFolder, &filehelpers.ListFilesOptions{
+		// todo recursive?
+		Options: filehelpers.FilesFlat,
+		Include: []string{fmt.Sprintf("**/*%s", constants.ConfigExtension)},
+	})
+
 	if err != nil {
 		log.Printf("[WARN] loadConfig: failed to get config file paths: %v\n", err)
 		return nil, err
