@@ -73,7 +73,7 @@ func TestLoadWorkspace(t *testing.T) {
 			if test.expected != "ERROR" {
 				t.Errorf("Test: '%s'' FAILED with unexpected error: %v", name, err)
 			}
-			return
+			continue
 		}
 
 		if test.expected == "ERROR" {

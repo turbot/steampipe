@@ -14,9 +14,9 @@ import (
 
 // RefreshConnections :: load required connections from config
 // and update the database schema and search path to reflect the required connections
-// return whether any changes have been mde
+// return whether any changes have been made
 func (c *Client) RefreshConnections() (bool, error) {
-	// load required connection from globab config
+	// load required connection from global config
 	requiredConnections := steampipeconfig.Config.Connections
 
 	// first get a list of all existing schemas

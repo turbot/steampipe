@@ -17,7 +17,7 @@ var alias = "_m2"
 
 var testCasesLoadMod = map[string]loadModTest{
 	"single_mod_no_query": {
-		source: "test_data/single_mod_no_query",
+		source: "test_data/mods/single_mod_no_query",
 		expected: &modconfig.Mod{
 			Name:        "m1",
 			Title:       "M1",
@@ -28,7 +28,7 @@ var testCasesLoadMod = map[string]loadModTest{
 		},
 	},
 	"single_mod_one_query": {
-		source: "test_data/single_mod_one_query",
+		source: "test_data/mods/single_mod_one_query",
 		expected: &modconfig.Mod{
 			Name:        "m1",
 			Title:       "M1",
@@ -43,8 +43,17 @@ var testCasesLoadMod = map[string]loadModTest{
 			},
 		},
 	},
+	"single_mod_one_sql_file": {
+		source: "test_data/mods/single_mod_one_sql_file",
+		expected: &modconfig.Mod{
+			Name:        "m1",
+			Title:       "M1",
+			Description: "THIS IS M1",
+			Queries:     []*modconfig.Query{{SQL: "select 1"}},
+		},
+	},
 	"single_mod_two_queries_diff_files": {
-		source: "test_data/single_mod_two_queries_diff_files",
+		source: "test_data/mods/single_mod_two_queries_diff_files",
 		expected: &modconfig.Mod{
 			Name:        "m1",
 			Title:       "M1",
@@ -63,7 +72,7 @@ var testCasesLoadMod = map[string]loadModTest{
 		},
 	},
 	"single_mod_two_queries_same_file": {
-		source: "test_data/single_mod_two_queries_same_file",
+		source: "test_data/mods/single_mod_two_queries_same_file",
 		expected: &modconfig.Mod{
 			Name:        "m1",
 			Title:       "M1",
@@ -82,15 +91,33 @@ var testCasesLoadMod = map[string]loadModTest{
 		},
 	},
 	"single_mod_duplicate_query": {
-		source:   "test_data/single_mod_duplicate_query",
+		source:   "test_data/mods/single_mod_duplicate_query",
 		expected: "ERROR",
 	},
-	"no_mod": {
-		source:   "test_data/no_mod",
-		expected: &modconfig.Mod{Name: "local"},
+	"no_mod_hcl_queries": {
+		source: "test_data/mods/no_mod_hcl_queries",
+		expected: &modconfig.Mod{Name: "local", Queries: []*modconfig.Query{
+			{
+				"q1", "Q1", "THIS IS QUERY 1", "select 1",
+			},
+			{
+				"q2", "Q2", "THIS IS QUERY 2", "select 2",
+			},
+		}},
+	},
+	"no_mod_sql_files": {
+		source: "test_data/mods/no_mod_sql_files",
+		expected: &modconfig.Mod{Name: "local", Queries: []*modconfig.Query{
+			{
+				Name: "q1", SQL: "select 1",
+			},
+			{
+				Name: "q2", SQL: "select 2",
+			},
+		}},
 	},
 	"two_mods": {
-		source:   "test_data/two_mods",
+		source:   "test_data/mods/two_mods",
 		expected: "ERROR",
 	},
 }
@@ -103,12 +130,12 @@ func TestLoadMod(t *testing.T) {
 		}
 
 		mod, err := LoadMod(modPath)
-
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf("Test: '%s'' FAILED with unexpected error: %v", name, err)
 			}
-			return
+
+			continue
 		}
 
 		if test.expected == "ERROR" {

@@ -35,7 +35,7 @@ var testCasesGetConnectionsToUpdate = map[string]getConnectionsToUpdateTest{
 				CheckSum: getTestFileCheckSum("test_data/connection-test-1"),
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{}},
 	},
 	"no changes multiple in same file same plugin": {
 		required: []string{
@@ -57,7 +57,7 @@ connection "b" {
 				CheckSum: getTestFileCheckSum("test_data/connection-test-1"),
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{}},
 	},
 	"no changes multiple in same file": {
 		required: []string{
@@ -79,7 +79,7 @@ connection "b" {
 				CheckSum: getTestFileCheckSum("test_data/connection-test-2"),
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{}},
 	},
 	"no changes multiple in different files same plugin": {
 		required: []string{
@@ -100,7 +100,7 @@ connection "b" {
 				CheckSum: getTestFileCheckSum("test_data/connection-test-1"),
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{}},
 	},
 	"no changes multiple in different files": {
 		required: []string{
@@ -121,7 +121,7 @@ connection "b" {
 				CheckSum: getTestFileCheckSum("test_data/connection-test-2"),
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{}},
 	},
 	"update": {
 		required: []string{
@@ -136,14 +136,14 @@ connection "b" {
 			},
 		},
 		expected: &ConnectionUpdates{
-
 			Update: ConnectionMap{
 				"a": {
 					Plugin:   "test_data/connection-test-1",
 					CheckSum: getTestFileCheckSum("test_data/connection-test-1"),
 				},
 			},
-			Delete: ConnectionMap{},
+			Delete:              ConnectionMap{},
+			RequiredConnections: ConnectionMap{},
 		},
 	},
 
@@ -167,7 +167,7 @@ connection "b" {
 				CheckSum: "xxxxxx",
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{}},
 	},
 	"update multiple in same file": {
 		required: []string{
@@ -189,7 +189,7 @@ connection "b" {
 				CheckSum: "xxxxxx",
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{}},
 	},
 	"update multiple in different files same plugin": {
 		required: []string{
@@ -210,7 +210,7 @@ connection "b" {
 				CheckSum: "xxxxxx",
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{}},
 	},
 	"update multiple in different files": {
 		required: []string{
@@ -231,7 +231,7 @@ connection "b" {
 				CheckSum: "xxxxxx",
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{}},
 	},
 
 	"not installed": {
@@ -242,9 +242,10 @@ connection "b" {
 `},
 		current: ConnectionMap{},
 		expected: &ConnectionUpdates{
-			MissingPlugins: []string{"test_data/not-installed"},
-			Update:         ConnectionMap{},
-			Delete:         ConnectionMap{},
+			MissingPlugins:      []string{"test_data/not-installed"},
+			Update:              ConnectionMap{},
+			Delete:              ConnectionMap{},
+			RequiredConnections: ConnectionMap{},
 		},
 	},
 }

@@ -57,7 +57,6 @@ type ConnectionMap map[string]*ConnectionData
 
 // GetConnectionsToUpdate :: returns updates to be made to the database to sync with connection config
 func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*Connection) (*ConnectionUpdates, error) {
-	log.Println("[TRACE] GetConnectionsToUpdate")
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
 	connectionState, err := GetConnectionState(schemas)

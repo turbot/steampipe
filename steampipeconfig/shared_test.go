@@ -44,8 +44,9 @@ func TestFindPluginFolderTest(t *testing.T) {
 			if test.expected != "ERROR" {
 				t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)
 			}
-			return
+			continue
 		}
+
 		if path != test.expected {
 			t.Errorf(`Test: '%s'' FAILED : expected %s, got %s`, name, test.expected, path)
 		}
