@@ -3,6 +3,7 @@ module github.com/turbot/steampipe
 go 1.16
 
 require (
+	github.com/Machiel/slugify v1.0.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/ahmetb/go-linq v3.0.0+incompatible

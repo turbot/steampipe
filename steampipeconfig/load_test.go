@@ -77,6 +77,7 @@ func TestLoadConfig(t *testing.T) {
 
 		if test.expected == "ERROR" {
 			t.Errorf("Test: '%s'' FAILED - expected error", name)
+			continue
 		}
 
 		expectedString := test.expected.(*SteampipeConfig).String()

@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -16,6 +17,75 @@ type loadModTest struct {
 var alias = "_m2"
 
 var testCasesLoadMod = map[string]loadModTest{
+	"no_mod_hcl_queries": {
+		source: "test_data/mods/no_mod_hcl_queries",
+		expected: &modconfig.Mod{
+			Name: "local",
+			Queries: []*modconfig.Query{
+				{
+					"q1", "Q1", "THIS IS QUERY 1", "select 1",
+				},
+				{
+					"q2", "Q2", "THIS IS QUERY 2", "select 2",
+				},
+			},
+		},
+	},
+	"no_mod_nested_sql_files": {
+		source: "test_data/mods/no_mod_nested_sql_files",
+		expected: &modconfig.Mod{
+			Name: "local",
+			Queries: []*modconfig.Query{
+				{
+					Name: "queries_a_aa_q1", SQL: "select 1",
+				},
+				{
+					Name: "queries_a_q1", SQL: "select 1",
+				},
+				{
+					Name: "queries_b_bb_q2", SQL: "select 2",
+				},
+				{
+					Name: "queries_b_q2", SQL: "select 2",
+				},
+			},
+		},
+	},
+	"no_mod_sql_files": {
+		source: "test_data/mods/no_mod_sql_files",
+		expected: &modconfig.Mod{
+			Name: "local",
+			Queries: []*modconfig.Query{
+				{
+					Name: "q1", SQL: "select 1",
+				},
+				{
+					Name: "q2", SQL: "select 2",
+				},
+			}},
+	},
+	"single_mod_nested_sql_files": {
+		source: "test_data/mods/single_mod_nested_sql_files",
+		expected: &modconfig.Mod{
+			Name:        "m1",
+			Title:       "M1",
+			Description: "THIS IS M1",
+			Queries: []*modconfig.Query{
+				{
+					Name: "queries_a_aa_q1", SQL: "select 1",
+				},
+				{
+					Name: "queries_a_q1", SQL: "select 1",
+				},
+				{
+					Name: "queries_b_bb_q2", SQL: "select 2",
+				},
+				{
+					Name: "queries_b_q2", SQL: "select 2",
+				},
+			},
+		},
+	},
 	"single_mod_no_query": {
 		source: "test_data/mods/single_mod_no_query",
 		expected: &modconfig.Mod{
@@ -49,7 +119,23 @@ var testCasesLoadMod = map[string]loadModTest{
 			Name:        "m1",
 			Title:       "M1",
 			Description: "THIS IS M1",
-			Queries:     []*modconfig.Query{{SQL: "select 1"}},
+			Queries:     []*modconfig.Query{{Name: "q1", SQL: "select 1"}},
+		},
+	},
+	"single_mod_sql_file_and_hcl_query": {
+		source: "test_data/mods/single_mod_sql_file_and_hcl_query",
+		expected: &modconfig.Mod{
+			Name:        "m1",
+			Title:       "M1",
+			Description: "THIS IS M1",
+			Queries: []*modconfig.Query{
+				{
+					"q1", "Q1", "THIS IS QUERY 1", "select 1",
+				},
+				{
+					Name: "q2", SQL: "select 2",
+				},
+			},
 		},
 	},
 	"single_mod_two_queries_diff_files": {
@@ -94,28 +180,6 @@ var testCasesLoadMod = map[string]loadModTest{
 		source:   "test_data/mods/single_mod_duplicate_query",
 		expected: "ERROR",
 	},
-	"no_mod_hcl_queries": {
-		source: "test_data/mods/no_mod_hcl_queries",
-		expected: &modconfig.Mod{Name: "local", Queries: []*modconfig.Query{
-			{
-				"q1", "Q1", "THIS IS QUERY 1", "select 1",
-			},
-			{
-				"q2", "Q2", "THIS IS QUERY 2", "select 2",
-			},
-		}},
-	},
-	"no_mod_sql_files": {
-		source: "test_data/mods/no_mod_sql_files",
-		expected: &modconfig.Mod{Name: "local", Queries: []*modconfig.Query{
-			{
-				Name: "q1", SQL: "select 1",
-			},
-			{
-				Name: "q2", SQL: "select 2",
-			},
-		}},
-	},
 	"two_mods": {
 		source:   "test_data/mods/two_mods",
 		expected: "ERROR",
@@ -123,31 +187,44 @@ var testCasesLoadMod = map[string]loadModTest{
 }
 
 func TestLoadMod(t *testing.T) {
-	for name, test := range testCasesLoadMod {
-		modPath, err := filepath.Abs(test.source)
-		if err != nil {
-			t.Errorf("failed to build absolute config filepath from %s", test.source)
-		}
-
-		mod, err := LoadMod(modPath)
-		if err != nil {
-			if test.expected != "ERROR" {
-				t.Errorf("Test: '%s'' FAILED with unexpected error: %v", name, err)
-			}
-
-			continue
-		}
-
-		if test.expected == "ERROR" {
-			t.Errorf("Test: '%s'' FAILED - expected error", name)
-		}
-
-		expectedStr := test.expected.(*modconfig.Mod).String()
-		actualString := mod.String()
-
-		if expectedStr != actualString {
-			fmt.Printf("")
-			t.Errorf("Test: '%s'' FAILED : expected:\n\n%s\n\ngot:\n\n%s", name, expectedStr, actualString)
-		}
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("%v", err)
+		return
 	}
+	for name, test := range testCasesLoadMod {
+		executeLoadTest(t, name, test, wd)
+	}
+}
+
+func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
+	modPath, err := filepath.Abs(test.source)
+	if err != nil {
+		t.Errorf("failed to build absolute config filepath from %s", test.source)
+	}
+
+	// set working directory to the mod path
+	os.Chdir(modPath)
+	// change back to original directory
+	defer os.Chdir(wd)
+	mod, err := LoadMod(modPath)
+	if err != nil {
+		if test.expected != "ERROR" {
+			t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)
+		}
+		return
+	}
+	if test.expected == "ERROR" {
+		t.Errorf(`Test: '%s'' FAILED : expected error but did not get one`, name)
+		return
+	}
+
+	expectedStr := test.expected.(*modconfig.Mod).String()
+	actualString := mod.String()
+
+	if expectedStr != actualString {
+		fmt.Printf("")
+		t.Errorf("Test: '%s'' FAILED : expected:\n\n%s\n\ngot:\n\n%s", name, expectedStr, actualString)
+	}
+
 }

@@ -72,10 +72,10 @@ type modParseResult struct {
 	mod      *modconfig.Mod
 }
 
-// build list of all filepaths we need to parse/load
-// this will include hcl files (with .sp extension) as well as any other files
-// with extensions that have been registered for implicit resource creation
-// (see steampipeconfig/modconfig/mappable_resource.go)
+// build list of all filepaths we need to parse/load the mod
+// this will include hcl files (with .sp extension)
+// as well as any other files with extensions that have been registered for psuedo resource creation
+// (see steampipeconfig/modconfig/resource_type_map.go)
 func getSourcePaths(modPath string, err error) []string {
 	// build list of file extensions we care about
 	// this will be the mod data extension, plus any registered extensions registered in fileToResourceMap
@@ -100,7 +100,7 @@ func getSourcePaths(modPath string, err error) []string {
 	return sourcePaths
 }
 
-// parse all source hck files for th emod and associated resources
+// parse all source hcl files for the mod and associated resources
 func parseModHcl(modPath string, fileData map[string][]byte) (*modParseResult, error) {
 	var mod *modconfig.Mod
 
@@ -158,6 +158,10 @@ func parseModHcl(modPath string, fileData map[string][]byte) (*modParseResult, e
 // create pseudo-resources for any files whose extensions are registered
 // NOTE: this mutates parseResults
 func createPseudoResources(parseResults *modParseResult, sourcePaths []string) error {
+
+	// TODO currentrl we just add in unique results and ignore non-unique results - event if
+	// there is a
+
 	// for every source path:
 	// - if it is NOT a registered type, skip
 	// [- if an existing resource has already referred directly to this file, skip] *not yet*
@@ -175,16 +179,18 @@ func createPseudoResources(parseResults *modParseResult, sourcePaths []string) e
 	return nil
 }
 
-func addResourceIfUnique(resource modconfig.MappableResource, parseResults *modParseResult) {
+// add resource to parse results, if there is no resource of same name
+func addResourceIfUnique(resource modconfig.MappableResource, parseResults *modParseResult) bool {
 	switch r := resource.(type) {
 	case *modconfig.Query:
 		// check there is not already a query with the same name
 		if _, ok := parseResults.queryMap[r.Name]; ok {
 			// we have already created a query with this name - skip!
-			return
+			return false
 		}
 		parseResults.queryMap[r.Name] = r
 	}
+	return true
 }
 
 func defaultWorkspaceMod() *modconfig.Mod {

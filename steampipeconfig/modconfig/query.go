@@ -3,8 +3,9 @@ package modconfig
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
+
+	"github.com/turbot/steampipe/constants"
 )
 
 type Query struct {
@@ -38,7 +39,7 @@ func QueryFromFile(path string) (MappableResource, error) {
 // implementation of MappableResource
 func (q *Query) InitialiseFromFile(path string) (MappableResource, error) {
 	// only valid for sql files
-	if filepath.Ext(path) != ".sql" {
+	if filepath.Ext(path) != constants.ExtensionSql {
 		return nil, fmt.Errorf("Query.InitialiseFromFile must be called with .sql file only - got %s", path)
 	}
 
@@ -48,13 +49,12 @@ func (q *Query) InitialiseFromFile(path string) (MappableResource, error) {
 	}
 
 	// get a sluggified version of the filename
-	wd, err := os.Getwd()
+
+	name, err := PseudoResourceNameFromPath(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get working directory when converting sql files to query resources: %v", err)
+		return nil, err
 	}
-	// get relative path of file
-	relativePath := filepath.Rel(wd, path)
-	// now slugify this
+	q.Name = name
 	q.SQL = string(sql)
 	return q, nil
 }
