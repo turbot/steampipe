@@ -22,7 +22,6 @@ func LoadModDependencies(parentMod *modconfig.Mod, modsFolder string) (ModMap, e
 
 // if deep is false only load single level of dependencies - if true load full tree (tbd if this is needed)
 func loadModDependencies(parentMod *modconfig.Mod, modsFolder string, modMap ModMap, deep bool) error {
-
 	for _, dep := range parentMod.ModDepends {
 
 		dependencyName := dep.FullName()
@@ -37,7 +36,8 @@ func loadModDependencies(parentMod *modconfig.Mod, modsFolder string, modMap Mod
 		}
 
 		// now try to parse the mod
-		mod, err := steampipeconfig.LoadMod(modPath)
+		// pass empty flags
+		mod, err := steampipeconfig.LoadMod(modPath, nil)
 		if err != nil {
 			return err
 		}

@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -36,7 +37,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 					},
 				},
 			},
-			NamedQueryMap: map[string]*modconfig.Query{
+			namedQueryMap: map[string]*modconfig.Query{
 				"w_1.query.localq1": {
 					"localq1", "LocalQ1", "THIS IS LOCAL QUERY 1", ".tables",
 				},
@@ -63,11 +64,12 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 func TestLoadWorkspace(t *testing.T) {
 	for name, test := range testCasesLoadWorkspace {
 		workspacePath, err := filepath.Abs(test.source)
+		os.Chdir(workspacePath)
 		if err != nil {
 			t.Errorf("failed to build absolute config filepath from %s", test.source)
 		}
 
-		workspace, err := Load(workspacePath)
+		workspace, err := Load()
 
 		if err != nil {
 			if test.expected != "ERROR" {
@@ -94,8 +96,8 @@ func WorkspacesEqual(expected, actual *Workspace) (bool, string) {
 		errors = append(errors, fmt.Sprintf("workspace mods do not match - expected \n\n%s\n\nbut got\n\n%s\n", expected.Mod.String(), actual.Mod.String()))
 	}
 
-	for name, expectedQuery := range expected.NamedQueryMap {
-		actualQuery, ok := actual.NamedQueryMap[name]
+	for name, expectedQuery := range expected.GetNamedQueryMap() {
+		actualQuery, ok := actual.GetNamedQueryMap()[name]
 		if ok {
 			if expectedQuery.String() != actualQuery.String() {
 				errors = append(errors, fmt.Sprintf("query %s expected\n\n%s\n\n, got\na\n%s\n\n", name, expectedQuery.String(), actualQuery.String()))
@@ -104,8 +106,8 @@ func WorkspacesEqual(expected, actual *Workspace) (bool, string) {
 			errors = append(errors, fmt.Sprintf("mod map missing expected key %s", name))
 		}
 	}
-	for name, _ := range actual.NamedQueryMap {
-		if _, ok := expected.NamedQueryMap[name]; ok {
+	for name, _ := range actual.GetNamedQueryMap() {
+		if _, ok := expected.GetNamedQueryMap()[name]; ok {
 			errors = append(errors, fmt.Sprintf("unexpected query %s in query map", name))
 		}
 	}

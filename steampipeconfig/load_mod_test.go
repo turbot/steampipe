@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -15,6 +17,12 @@ type loadModTest struct {
 }
 
 var alias = "_m2"
+
+// TODO these are really workspace loading tests - maybe movve there and have simpler mod loading tests here?
+var loadWorkspaceOptions = &LoadModOptions{
+	Exclude: []string{fmt.Sprintf("**/%s*", constants.WorkspaceDataDir)},
+	Flags:   CreatePseudoResources | CreateDefaultMod,
+}
 
 var testCasesLoadMod = map[string]loadModTest{
 	"no_mod_hcl_queries": {
@@ -207,7 +215,7 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	os.Chdir(modPath)
 	// change back to original directory
 	defer os.Chdir(wd)
-	mod, err := LoadMod(modPath)
+	mod, err := LoadMod(modPath, loadWorkspaceOptions)
 	if err != nil {
 		if test.expected != "ERROR" {
 			t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)

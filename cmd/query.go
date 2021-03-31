@@ -66,13 +66,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// load the workspace
-	workingDirectory, err := os.Getwd()
+	workspace, err := workspace.Load()
 	utils.FailOnError(err)
-	workspace, err := workspace.Load(workingDirectory)
-	utils.FailOnError(err)
+	defer workspace.Close()
 
-	
-	// gety query or queries from the args
+
+	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	queries, err := getQueries(args, workspace)
 	utils.FailOnError(err)
 

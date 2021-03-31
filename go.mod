@@ -15,6 +15,7 @@ require (
 	github.com/denormal/go-gitignore v0.0.0-20180930084346-ae8ad1d07817 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.7.0
+	github.com/fsnotify/fsnotify v1.4.7
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/google/uuid v1.1.5
@@ -52,3 +53,4 @@ require (
 )
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe
+replace github.com/turbot/go-kit => /Users/kai/Dev/github/turbot/go-kit

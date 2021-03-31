@@ -331,7 +331,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 func (c *InteractiveClient) nameQuerySuggestions() []prompt.Suggest {
 	var res []prompt.Suggest
 	// add all the queries in the workspace
-	for name, q := range c.workspace.NamedQueryMap {
+	for name, q := range c.workspace.GetNamedQueryMap() {
 		description := "named query"
 		if q.Description != "" {
 			description += fmt.Sprintf(": %s", q.Description)

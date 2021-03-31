@@ -16,11 +16,13 @@ type Query struct {
 }
 
 func (q *Query) String() string {
-	return fmt.Sprintf(`  -----
+	return fmt.Sprintf(`
+  -----
   Name: %s
   Title: %s
   Description: %s
-  SQL: %s`, q.Name, q.Title, q.Description, q.SQL)
+  SQL: %s
+`, q.Name, q.Title, q.Description, q.SQL)
 }
 
 func (q *Query) Equals(other *Query) bool {
@@ -43,18 +45,21 @@ func (q *Query) InitialiseFromFile(path string) (MappableResource, error) {
 		return nil, fmt.Errorf("Query.InitialiseFromFile must be called with .sql file only - got %s", path)
 	}
 
-	sql, err := ioutil.ReadFile(path)
+	sqlBytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
+	sql := string(sqlBytes)
+	if sql == "" {
+		return nil, fmt.Errorf("SQL file %s contains no query", path)
+	}
 	// get a sluggified version of the filename
-
 	name, err := PseudoResourceNameFromPath(path)
 	if err != nil {
 		return nil, err
 	}
 	q.Name = name
-	q.SQL = string(sql)
+	q.SQL = sql
 	return q, nil
 }
