@@ -1,3 +1,11 @@
+## v0.3.4 [2021-03-22]
+_Bug fixes_
+* Ensure that after adding a connection, search path changes are reflected in the current query session. ([#340](https://github.com/turbot/steampipe/issues/340))
+* Fix extra trailing white-space issue in `line` output. ([#332](https://github.com/turbot/steampipe/issues/332))
+* Remove HTML escaping from JSON output. ([#336](https://github.com/turbot/steampipe/issues/336))
+* Fix issue where service is always listening on network listener. ([#330](https://github.com/turbot/steampipe/issues/330))
+* Fix incorrect error message when trying to update a non-installed plugin ([#343](https://github.com/turbot/steampipe/issues/343))
+
 ## v0.3.3 [2021-03-22]
 _Bug fixes_
 * Verify the `steampipe` foreign server exists when starting the database service and if it does not, re-initialise the FDW and create the server. ([#324](https://github.com/turbot/steampipe/issues/324))
