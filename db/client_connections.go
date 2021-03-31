@@ -12,25 +12,27 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// RefreshConnections :: load required connections and refresh
-func RefreshConnections(client *Client) error {
+// RefreshConnections :: load required connections from config
+// and update the database schema and search path to reflect the required connections
+// return whether any changes have been mde
+func (c *Client) RefreshConnections() (bool, error) {
 	// load required connection from globab config
 	requiredConnections := steampipeconfig.Config.Connections
 
 	// first get a list of all existing schemas
-	schemas := client.schemaMetadata.GetSchemas()
+	schemas := c.schemaMetadata.GetSchemas()
 
 	// refresh the connection state file - the removes any connections which do not exist in the list of current schema
 	updates, err := steampipeconfig.GetConnectionsToUpdate(schemas, requiredConnections)
 	if err != nil {
-		return err
+		return false, err
 	}
 	log.Printf("[TRACE] updates: %+v\n", updates)
 
 	missingCount := len(updates.MissingPlugins)
 	if missingCount > 0 {
 		// if any plugins are missing, error for now but we could prompt for an install
-		return fmt.Errorf("%d %s referenced in the connection config not installed: \n  %v",
+		return false, fmt.Errorf("%d %s referenced in the connection config not installed: \n  %v",
 			missingCount,
 			utils.Pluralize("plugin", missingCount),
 			strings.Join(updates.MissingPlugins, "\n  "))
@@ -56,7 +58,7 @@ func RefreshConnections(client *Client) error {
 		// first instantiate connection plugins for all updates
 		connectionPlugins, err := getConnectionPlugins(updates.Update)
 		if err != nil {
-			return err
+			return false, err
 		}
 		// find any plugins which use a newer sdk version than steampipe.
 		validationFailures, validatedUpdates, validatedPlugins := steampipeconfig.ValidatePlugins(updates.Update, connectionPlugins)
@@ -72,15 +74,44 @@ func RefreshConnections(client *Client) error {
 		log.Printf("[TRACE] delete %s\n ", c)
 		connectionQueries = append(connectionQueries, deleteConnectionQuery(c)...)
 	}
-	if len(connectionQueries) > 0 {
-		if err = executeConnectionQueries(connectionQueries, updates); err != nil {
-			return err
-		}
-	} else {
+	if len(connectionQueries) == 0 {
 		log.Println("[DEBUG] no connections to update")
+		return false, nil
 	}
 
-	return updateConnectionMapAndSchema(client)
+	// execute the connection queries
+	if err = executeConnectionQueries(connectionQueries, updates); err != nil {
+		return false, err
+	}
+	// tell client to refresh schemas, connection map and set the search path
+	if err = c.updateConnectionMapAndSchema(); err != nil {
+		return false, err
+	}
+
+	// indicate we HAVE updated connections
+	return true, nil
+}
+
+func (c *Client) updateConnectionMapAndSchema() error {
+	// reload the database schemas, since they have changed
+	// otherwise we wouldn't be here
+	log.Println("[TRACE] reloading schema")
+	c.loadSchema()
+
+	// set the search path with the updates
+	log.Println("[TRACE] setting search path")
+	c.setSearchPath()
+
+	// load the connection state and cache it!
+	log.Println("[TRACE]", "retrieving connection map")
+	connectionMap, err := steampipeconfig.GetConnectionState(clientSingleton.schemaMetadata.GetSchemas())
+	if err != nil {
+		return err
+	}
+	log.Println("[TRACE]", "setting connection map")
+	c.connectionMap = &connectionMap
+
+	return nil
 }
 
 func getConnectionPlugins(updates steampipeconfig.ConnectionMap) ([]*steampipeconfig.ConnectionPlugin, error) {
@@ -235,27 +266,5 @@ func executeConnectionQueries(schemaQueries []string, updates *steampipeconfig.C
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func updateConnectionMapAndSchema(client *Client) error {
-	// reload the database schemas, since they have changed
-	// otherwise we wouldn't be here
-	log.Println("[TRACE] reloading schema")
-	client.loadSchema()
-
-	// set the search path with the updates
-	log.Println("[TRACE] setting search path")
-	client.setSearchPath()
-
-	// load the connection state and cache it!
-	log.Println("[TRACE]", "retrieving connection map")
-	connectionMap, err := steampipeconfig.GetConnectionState(clientSingleton.schemaMetadata.GetSchemas())
-	if err != nil {
-		return err
-	}
-	log.Println("[TRACE]", "setting connection map")
-	client.connectionMap = &connectionMap
-
 	return nil
 }

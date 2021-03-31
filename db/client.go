@@ -51,8 +51,8 @@ func GetClient(autoRefreshConnections bool) (*Client, error) {
 		clientSingleton.loadSchema()
 
 		if autoRefreshConnections {
-			RefreshConnections(clientSingleton)
-			refreshFunctions(clientSingleton)
+			clientSingleton.RefreshConnections()
+			refreshFunctions()
 		}
 
 		// load the connection state and cache it!
@@ -180,6 +180,7 @@ func (c *Client) setSearchPath() {
 			constants.DatabaseUser,
 			strings.Join(escapedSchemas, ","),
 		)
+		// TODO should we report error
 		c.ExecuteSync(query)
 	}
 }
