@@ -16,7 +16,6 @@ import (
 
 // ExecuteSync :: execute a query against this client and wait for the result
 func (c *Client) ExecuteSync(query string) (*results.SyncQueryResult, error) {
-	// https://github.com/golang/go/wiki/CodeReviewComments#indent-error-flow
 	result, err := c.executeQuery(query, false)
 	if err != nil {
 		return nil, err

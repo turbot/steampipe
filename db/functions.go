@@ -24,7 +24,7 @@ ORDER BY
 
 **/
 
-func refreshFunctions(client *Client) error {
+func refreshFunctions() error {
 	sql := []string{
 		fmt.Sprintf(`create schema if not exists %s;`, constants.FunctionSchema),
 		fmt.Sprintf(`grant usage on schema %s to steampipe_users;`, constants.FunctionSchema),

@@ -214,10 +214,10 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	// refresh plugin connections - ensure db schemas are in sync with connection config
 	// NOTE: refresh defaults to true but will be set to false if this service start command has been invoked by a query command
 	if cmdconfig.Viper().GetBool(constants.ArgRefresh) {
-		if err = RefreshConnections(client); err != nil {
+		if _, err = client.RefreshConnections(); err != nil {
 			return ServiceStarted, err
 		}
-		if err = refreshFunctions(client); err != nil {
+		if err = refreshFunctions(); err != nil {
 			return ServiceStarted, err
 		}
 	}
