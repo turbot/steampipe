@@ -231,12 +231,12 @@ func installSteampipeHub() error {
 	return nil
 }
 
-// StartService :: invokes `steampipe service start --listen local --refresh=false --invoker query`
+// StartService :: invokes `steampipe service start --database-listen local --refresh=false --invoker query`
 func StartService(invoker Invoker) {
 	log.Println("[TRACE] start service")
 	// spawn a process to start the service, passing refresh=false to ensure we DO NOT refresh connections
 	// (as we will do that ourselves)
-	cmd := exec.Command(os.Args[0], "service", "start", "--listen", "local", "--refresh=false", "--invoker", string(invoker), "--install-dir", constants.SteampipeDir)
+	cmd := exec.Command(os.Args[0], "service", "start", "--database-listen", "local", "--refresh=false", "--invoker", string(invoker), "--install-dir", constants.SteampipeDir)
 	startedAt := time.Now()
 	spinnerShown := false
 	startedChannel := make(chan bool, 1)
