@@ -147,9 +147,9 @@ func (w *Workspace) setupWatcher() error {
 		FileInclusions: filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		OnFileChange: func(ev fsnotify.Event) {
 			// ignore rename and chmod
-			if ev.Op == fsnotify.Create || ev.Op == fsnotify.Remove || ev.Op == fsnotify.Write {
-				w.loadMod()
-			}
+			//if ev.Op == fsnotify.Create || ev.Op == fsnotify.Remove || ev.Op == fsnotify.Write {
+			w.loadMod()
+			//}
 		},
 		//OnError:          nil,
 	})
