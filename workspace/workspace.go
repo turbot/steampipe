@@ -145,7 +145,12 @@ func (w *Workspace) setupWatcher() error {
 		Path:           w.Path,
 		DirExclusions:  workspaceDataDirExclusion,
 		FileInclusions: filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
-		OnFileChange:   func(fsnotify.Event) { w.loadMod() },
+		OnFileChange: func(ev fsnotify.Event) {
+			// ignore rename and chmod
+			if ev.Op == fsnotify.Create || ev.Op == fsnotify.Remove || ev.Op == fsnotify.Write {
+				w.loadMod()
+			}
+		},
 		//OnError:          nil,
 	})
 	if err != nil {

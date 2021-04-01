@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sync"
-	"time"
 
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -24,12 +22,14 @@ type FileWatcher struct {
 	OnError      func(error)
 
 	// maintain a map of last change time to allow us to debounce
-	eventTimeMap     map[string]time.Time
-	eventTimeMapLock sync.Mutex
-	minEventInterval time.Duration
+	//	eventTimeMap     map[string]time.Time
+	//	eventTimeMapLock sync.Mutex
+	//	minEventInterval time.Duration
 }
 
 type WatcherOptions struct {
+	// TODO add recursive
+
 	Path           string
 	DirInclusions  []string
 	DirExclusions  []string
@@ -48,8 +48,8 @@ func NewWatcher(opts *WatcherOptions) (*FileWatcher, error) {
 	}
 	// build list of folders to watch
 	listOpts := &filehelpers.ListFilesOptions{
-		Options: filehelpers.Directories,
-		Exclude: opts.FileExclusions,
+		Options: filehelpers.DirectoriesRecursive,
+		Exclude: opts.DirExclusions,
 		Include: opts.DirInclusions,
 	}
 	childFolders, err := filehelpers.ListFiles(opts.Path, listOpts)
@@ -74,9 +74,6 @@ func NewWatcher(opts *WatcherOptions) (*FileWatcher, error) {
 		OnDirChange:    opts.OnFolderChange,
 		OnFileChange:   opts.OnFileChange,
 		OnError:        opts.OnError,
-		eventTimeMap:   make(map[string]time.Time),
-		// ignore events for same file within this interval
-		minEventInterval: 750 * time.Millisecond,
 	}
 
 	// add all child folders
@@ -141,27 +138,6 @@ func (w *FileWatcher) handleEvent(ev fsnotify.Event) error {
 
 	// TODO for now we do not care about the event type, just pass everything on to the handler
 
-	// first check whether an event for this item happened within the debouncing period
-	w.eventTimeMapLock.Lock()
-
-	lastEventTime, foundEvent := w.eventTimeMap[ev.Name]
-	if !foundEvent {
-		log.Printf("[TRACE] first event %v ", ev)
-		// we have never had an event for this item before - store the time
-		w.eventTimeMap[ev.Name] = time.Now()
-		w.eventTimeMapLock.Unlock()
-
-	} else {
-		w.eventTimeMapLock.Unlock()
-		timeSinceLast := time.Since(lastEventTime)
-		log.Printf("[TRACE] time since last %v is %s", ev, timeSinceLast.String())
-		if timeSinceLast < w.minEventInterval {
-			log.Printf("[TRACE] ignore multiple events for %v", ev)
-			// we had some other event for this item within minEventInterval - ignore this event
-			return nil
-		}
-	}
-
 	// is this an event for a folder
 	if w.isFolder(ev) {
 		err := w.handleFolderEvent(ev)
@@ -175,21 +151,29 @@ func (w *FileWatcher) handleEvent(ev fsnotify.Event) error {
 }
 
 func (w *FileWatcher) handleFolderEvent(ev fsnotify.Event) error {
-	// check whether dirname meets dirinclusion/exclusions
+	// check whether dirname meets directory inclusions/exclusions
 	if filehelpers.ShouldIncludePath(ev.Name, w.DirInclusions, w.DirExclusions) {
 		// if it a create event, add watch
 		if ev.Op == fsnotify.Create {
 			log.Printf("[TRACE] new directory created: '%s' - add watch", ev.Name)
-			if err := w.addWatchDirs([]string{ev.Name}); err != nil {
+			if err := w.watch.Add(ev.Name); err != nil {
 				return err
 			}
 		}
+		// it is a deletion, remove watch
+		if ev.Op == fsnotify.Remove {
+			log.Printf("[TRACE] new directory deleted: '%s' - remove watch", ev.Name)
+			if err := w.watch.Remove(ev.Name); err != nil {
+				return err
+			}
+		}
+		// TODO remove watch for delete
 		if w.OnDirChange != nil {
-			log.Printf("[TRACE] notify dirchange")
+			log.Printf("[TRACE] notify directory change")
 			w.OnDirChange(ev)
 		}
 	} else {
-		log.Printf("[TRACE] ignore file change %v", ev)
+		log.Printf("[TRACE] ignore directory change %v", ev)
 	}
 	return nil
 }
@@ -200,7 +184,7 @@ func (w *FileWatcher) handleFileEvent(ev fsnotify.Event) {
 		log.Printf("[TRACE] notify file change")
 		w.OnFileChange(ev)
 	} else {
-		log.Printf("[TRACE] ignore dirchange %v", ev)
+		log.Printf("[TRACE] ignore file change %v", ev)
 	}
 }
 
