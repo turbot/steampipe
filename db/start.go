@@ -196,13 +196,12 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	}
 
 	client, err := GetClient(false)
-	defer func() {
-		client.close()
-	}()
-
 	if err != nil {
 		return ServiceFailedToStart, handleStartFailure(err)
 	}
+	defer func() {
+		client.close()
+	}()
 
 	err = ensureSteampipeServer()
 	if err != nil {
