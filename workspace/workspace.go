@@ -47,6 +47,33 @@ func Load() (*Workspace, error) {
 	return workspace, nil
 }
 
+func (w *Workspace) Close() {
+	if w.watcher != nil {
+		w.watcher.Close()
+	}
+}
+
+func (w *Workspace) GetNamedQueryMap() map[string]*modconfig.Query {
+	w.loadLock.Lock()
+	defer w.loadLock.Unlock()
+
+	return w.namedQueryMap
+}
+
+func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
+	w.loadLock.Lock()
+	defer w.loadLock.Unlock()
+
+	// if the name starts with 'local', remove the prefix and try to resolve the short name
+	queryName = strings.TrimPrefix(queryName, "local.")
+
+	if namedQuery, ok := w.namedQueryMap[queryName]; ok {
+		return namedQuery, true
+	}
+
+	return nil, false
+}
+
 func (w *Workspace) loadMod() error {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
@@ -54,8 +81,14 @@ func (w *Workspace) loadMod() error {
 	// parse all hcl files under the workspace and either parse or create a mod
 	// it is valid for 0 or 1 mod to be defined (if no mod is defined, create a default one)
 	// populate mod with all hcl resources we parse
-	// pass flag to create pseudo resources and default mod
-	opts := w.getWorkspaceLoadOptions()
+	// build options used to load workspace
+	// ignore .steampipe folder
+	// TODO load .gitignore
+	// set flags to create pseudo resources and a default mod if needed
+	opts := &steampipeconfig.LoadModOptions{
+		Exclude: workspaceDataDirExclusion,
+		Flags:   steampipeconfig.CreatePseudoResources | steampipeconfig.CreateDefaultMod,
+	}
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
 	if err != nil {
 		return err
@@ -79,10 +112,6 @@ func (w *Workspace) loadMod() error {
 
 }
 
-// build options used to load workspace
-// ignore .steampipe folder
-// TODO load .gitignore
-// set flags to create pseudo resources and a default mod if needed
 func (w *Workspace) getWorkspaceLoadOptions() *steampipeconfig.LoadModOptions {
 	return &steampipeconfig.LoadModOptions{
 		Exclude: workspaceDataDirExclusion,
@@ -98,27 +127,6 @@ func (w *Workspace) loadModDependencies(modsFolder string) (modconfig.ModMap, er
 		return nil, err
 	}
 	return res, nil
-}
-
-func (w *Workspace) GetNamedQueryMap() map[string]*modconfig.Query {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	return w.namedQueryMap
-}
-
-func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	// if the name starts with 'local', remove the prefix and try to resolve the short name
-	queryName = strings.TrimPrefix(queryName, "local.")
-
-	if namedQuery, ok := w.namedQueryMap[queryName]; ok {
-		return namedQuery, true
-	}
-
-	return nil, false
 }
 
 func (w *Workspace) buildNamedQueryMap(modMap modconfig.ModMap) map[string]*modconfig.Query {
@@ -159,10 +167,4 @@ func (w *Workspace) setupWatcher() error {
 	w.watcher = watcher
 
 	return nil
-}
-
-func (w *Workspace) Close() {
-	if w.watcher != nil {
-		w.watcher.Close()
-	}
 }
