@@ -294,7 +294,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 		// add all we know that can be the first words
 
 		//named queries
-		s = append(s, c.nameQuerySuggestions()...)
+		s = append(s, c.namedQuerySuggestions()...)
 		// "select"
 		s = append(s, prompt.Suggest{Text: "select"})
 
@@ -328,7 +328,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }
 
-func (c *InteractiveClient) nameQuerySuggestions() []prompt.Suggest {
+func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 	var res []prompt.Suggest
 	// add all the queries in the workspace
 	for name, q := range c.workspace.GetNamedQueryMap() {

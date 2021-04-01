@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/turbot/steampipe/workspace"
-
 	"github.com/turbot/steampipe-plugin-sdk/logging"
-
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/definitions/results"
 	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/workspace"
 )
 
 // ExecuteQuery :: entry point for executing ad-hoc queries from outside the package

@@ -46,6 +46,7 @@ var testCasesWatcher = []watcherTest{
 			"query.queries_q1": {Name: "queries_q1", SQL: "select 1"},
 		},
 	},
+	// TODO no event received
 	{name: "update nested sql file",
 		operation: update,
 		path:      "queries/q1.sql",
@@ -61,9 +62,9 @@ var testCasesWatcher = []watcherTest{
 		path:      "queries/a/b/c/q10.sql",
 		data:      "select 10",
 		expected: map[string]*modconfig.Query{
-			"query.q1":                 {Name: "q1", SQL: "select 1"},
-			"query.queries_q1":         {Name: "queries_q1", SQL: "select 2"},
-			"query.queries_a_b_c_q110": {Name: "queries_a_b_c_q110", SQL: "select 10"},
+			"query.q1":                {Name: "q1", SQL: "select 1"},
+			"query.queries_q1":        {Name: "queries_q1", SQL: "select 2"},
+			"query.queries_a_b_c_q10": {Name: "queries_a_b_c_q10", SQL: "select 10"},
 		},
 	},
 }
@@ -123,7 +124,7 @@ func writeFile(path, content string) {
 		_, err = f.WriteString(content)
 
 		// wait for watcher to get event
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(1250 * time.Millisecond)
 
 		f.Close()
 		wg.Done()

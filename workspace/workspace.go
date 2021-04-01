@@ -12,7 +12,6 @@ import (
 	"github.com/turbot/steampipe/utils"
 
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/mod"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
@@ -65,7 +64,7 @@ func (w *Workspace) loadMod() error {
 
 	// now load all mods in the workspace
 	modsPath := constants.WorkspaceModPath(w.Path)
-	modMap, err := mod.LoadModDependencies(w.Mod, modsPath)
+	modMap, err := w.loadModDependencies(modsPath)
 	if err != nil {
 		return err
 	}
@@ -91,6 +90,16 @@ func (w *Workspace) getWorkspaceLoadOptions() *steampipeconfig.LoadModOptions {
 	}
 }
 
+// load all dependencies of workspace mod
+// used to load all mods in a workspace, using the workspace manifest mod
+func (w *Workspace) loadModDependencies(modsFolder string) (modconfig.ModMap, error) {
+	var res = modconfig.ModMap{}
+	if err := steampipeconfig.LoadModDependencies(w.Mod, modsFolder, res, false); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func (w *Workspace) GetNamedQueryMap() map[string]*modconfig.Query {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
@@ -112,7 +121,7 @@ func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
 	return nil, false
 }
 
-func (w *Workspace) buildNamedQueryMap(modMap mod.ModMap) map[string]*modconfig.Query {
+func (w *Workspace) buildNamedQueryMap(modMap modconfig.ModMap) map[string]*modconfig.Query {
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Query)
 
@@ -133,10 +142,10 @@ func (w *Workspace) buildNamedQueryMap(modMap mod.ModMap) map[string]*modconfig.
 
 func (w *Workspace) setupWatcher() error {
 	watcher, err := utils.NewWatcher(&utils.WatcherOptions{
-		Path:             w.Path,
-		FolderExclusions: workspaceDataDirExclusion,
-		FileInclusions:   filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
-		OnChange:         func(fsnotify.Event) { w.loadMod() },
+		Path:           w.Path,
+		DirExclusions:  workspaceDataDirExclusion,
+		FileInclusions: filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
+		OnFileChange:   func(fsnotify.Event) { w.loadMod() },
 		//OnError:          nil,
 	})
 	if err != nil {
