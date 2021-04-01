@@ -246,9 +246,6 @@ func StartService(invoker Invoker) {
 		out, err := cmd.CombinedOutput()
 		// we need to ignore errors when the invoker is the Installer
 		// since when the installer starts the service, it will not be a stable state
-		if err != nil {
-			utils.ShowErrorWithMessage(err, string(out))
-		}
 		if err != nil && invoker != InvokerInstaller {
 			errorChannel <- fmt.Errorf("Could not start steampipe service: %s", string(out))
 			return
