@@ -155,34 +155,32 @@ func (c *Client) setSearchPath() {
 	// we need to do this here, since postgres resets the search_path on every load.
 	schemas := c.schemaMetadata.GetSchemas()
 
-	if len(schemas) > 0 {
-		// sort the schema names
-		sort.Strings(schemas)
-		// set this before the `public` schema gets added
-		c.schemaMetadata.SearchPath = schemas
-		// add the public schema as the first schema in the search_path. This makes it
-		// easier for users to build and work with their own tables, and since it's normally
-		// empty, doesn't make using steampipe tables any more difficult.
-		schemas = append([]string{"public"}, schemas...)
-		// add 'internal' schema as last schema in the search path
-		schemas = append(schemas, constants.FunctionSchema)
+	// sort the schema names
+	sort.Strings(schemas)
+	// set this before the `public` schema gets added
+	c.schemaMetadata.SearchPath = schemas
+	// add the public schema as the first schema in the search_path. This makes it
+	// easier for users to build and work with their own tables, and since it's normally
+	// empty, doesn't make using steampipe tables any more difficult.
+	schemas = append([]string{"public"}, schemas...)
+	// add 'internal' schema as last schema in the search path
+	schemas = append(schemas, constants.FunctionSchema)
 
-		// escape the schema names
-		escapedSchemas := []string{}
+	// escape the schema names
+	escapedSchemas := []string{}
 
-		for _, schema := range schemas {
-			escapedSchemas = append(escapedSchemas, PgEscapeName(schema))
-		}
-
-		log.Println("[TRACE] setting search path to", schemas)
-		query := fmt.Sprintf(
-			"alter user %s set search_path to %s;",
-			constants.DatabaseUser,
-			strings.Join(escapedSchemas, ","),
-		)
-		// TODO should we report error
-		c.ExecuteSync(query)
+	for _, schema := range schemas {
+		escapedSchemas = append(escapedSchemas, PgEscapeName(schema))
 	}
+
+	log.Println("[TRACE] setting search path to", schemas)
+	query := fmt.Sprintf(
+		"alter user %s set search_path to %s;",
+		constants.DatabaseUser,
+		strings.Join(escapedSchemas, ","),
+	)
+	// TODO should we report error
+	c.ExecuteSync(query)
 }
 
 func (c *Client) getSchemaFromDB() (*sql.Rows, error) {
