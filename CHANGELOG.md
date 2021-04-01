@@ -5,6 +5,7 @@ _Bug fixes_
 * Remove HTML escaping from JSON output. ([#336](https://github.com/turbot/steampipe/issues/336))
 * Fix issue where service is always listening on network listener. ([#330](https://github.com/turbot/steampipe/issues/330))
 * Fix incorrect error message when trying to update a non-installed plugin ([#343](https://github.com/turbot/steampipe/issues/343))
+* Fix the search path not being updated when removing the last connection. ([#345](https://github.com/turbot/steampipe/issues/345))
 
 ## v0.3.3 [2021-03-22]
 _Bug fixes_
