@@ -1,3 +1,7 @@
+## v0.3.5 [2021-04-02]
+_Bug fixes_
+* Fix `.inspect` not working with unqualified table names. ([#346](https://github.com/turbot/steampipe/issues/346))
+
 ## v0.3.4 [2021-04-01]
 _Bug fixes_
 * Ensure that after adding a connection, search path changes are reflected in the current query session. ([#340](https://github.com/turbot/steampipe/issues/340))
