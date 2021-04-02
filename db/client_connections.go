@@ -74,22 +74,24 @@ func (c *Client) RefreshConnections() (bool, error) {
 		log.Printf("[TRACE] delete %s\n ", c)
 		connectionQueries = append(connectionQueries, deleteConnectionQuery(c)...)
 	}
-	if len(connectionQueries) == 0 {
+
+	connectionsToUpdate := len(connectionQueries) > 0
+	if connectionsToUpdate {
+		// execute the connection queries
+		if err = executeConnectionQueries(connectionQueries, updates); err != nil {
+			return false, err
+		}
+	} else {
 		log.Println("[DEBUG] no connections to update")
-		return false, nil
 	}
 
-	// execute the connection queries
-	if err = executeConnectionQueries(connectionQueries, updates); err != nil {
-		return false, err
-	}
 	// tell client to refresh schemas, connection map and set the search path
 	if err = c.updateConnectionMapAndSchema(); err != nil {
 		return false, err
 	}
 
-	// indicate we HAVE updated connections
-	return true, nil
+	// indicate whether we have updated connections
+	return connectionsToUpdate, nil
 }
 
 func (c *Client) updateConnectionMapAndSchema() error {
