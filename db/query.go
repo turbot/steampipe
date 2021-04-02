@@ -54,6 +54,7 @@ func ExecuteQuery(queryString string) (*results.ResultStreamer, error) {
 	if connectionsUpdated {
 		clientSingleton.close()
 		client, err = GetClient(false)
+		client.setSearchPath()
 		utils.FailOnErrorWithMessage(err, "client failed to reinitialize")
 	}
 	resultsStreamer := results.NewResultStreamer()
