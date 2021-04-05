@@ -3,6 +3,7 @@ package task
 import (
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/viper"
@@ -39,13 +40,21 @@ func showPluginUpdateNotification(reports []plugin.VersionCheckReport) {
 	}
 	longestNameLength := 0
 	for _, report := range reports {
-		thisName := fmt.Sprintf("%s/%s", report.CheckResponse.Org, report.CheckResponse.Name)
+		thisName := getNameFromReport(report)
 		if len(thisName) > longestNameLength {
 			longestNameLength = len(thisName)
 		}
 	}
+
+	// sort alphabetically
+	sort.Slice(reports, func(i, j int) bool {
+		iName := getNameFromReport(reports[i])
+		jName := getNameFromReport(reports[j])
+		return iName < jName
+	})
+
 	for _, report := range reports {
-		thisName := fmt.Sprintf("%s/%s", report.CheckResponse.Org, report.CheckResponse.Name)
+		thisName := getNameFromReport(report)
 		line := ""
 		if len(report.Plugin.Version) == 0 {
 			format := fmt.Sprintf("  %%-%ds @ %%-10s       %%21s", longestNameLength)
@@ -74,13 +83,17 @@ func showPluginUpdateNotification(reports []plugin.VersionCheckReport) {
 	notificationLines = append(notificationLines, []string{""})
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{})                // no headers please
-	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
-	table.SetAutoWrapText(false)               // let's not wrap the text
+	table.SetHeader([]string{})                // no headers
+	table.SetAlignment(tablewriter.ALIGN_LEFT) // align to the left
+	table.SetAutoWrapText(false)               // do not wrap the text
 	table.SetBorder(true)                      // there needs to be a border to give the dialog feel
 	table.AppendBulk(notificationLines)        // Add Bulk Data
 
 	fmt.Println()
 	table.Render()
 	fmt.Println()
+}
+
+func getNameFromReport(report plugin.VersionCheckReport) string {
+	return fmt.Sprintf("%s/%s", report.CheckResponse.Org, report.CheckResponse.Name)
 }
