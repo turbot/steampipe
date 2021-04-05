@@ -46,7 +46,7 @@ func checkSteampipeVersion(id string) {
 	v.Notify()
 }
 
-// RunCheck :: Communicates with the Turbot Artifacts Server retrieves
+// GetVersionResp :: Communicates with the Turbot Artifacts Server retrieves
 // the latest released version
 func (c *versionChecker) GetVersionResp() {
 	c.doCheckRequest()
@@ -84,10 +84,10 @@ func displayUpdateNotification(info *versionCheckResponse, currentVersion *SemVe
 	var downloadURLColor = color.New(color.FgYellow)
 
 	var notificationLines = [][]string{
-		[]string{""},
-		[]string{fmt.Sprintf("A new version of Steampipe is available! %s → %s", constants.Bold(currentVersion), constants.Bold(newVersion))},
-		[]string{fmt.Sprintf("You can update by downloading from %s", downloadURLColor.Sprint("https://steampipe.io/downloads"))},
-		[]string{""},
+		{""},
+		{fmt.Sprintf("A new version of Steampipe is available! %s → %s", constants.Bold(currentVersion), constants.Bold(newVersion))},
+		{fmt.Sprintf("You can update by downloading from %s", downloadURLColor.Sprint("https://steampipe.io/downloads"))},
+		{""},
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
