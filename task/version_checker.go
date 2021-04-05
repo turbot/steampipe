@@ -1,14 +1,12 @@
 package task
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
-	"runtime"
 
 	"github.com/fatih/color"
 	SemVer "github.com/hashicorp/go-version"
@@ -18,9 +16,6 @@ import (
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
 )
-
-const legacyDisableUpdatesCheckEnvVar = "SP_DISABLE_UPDATE_CHECK"
-const updatesCheckEnvVar = "STEAMPIPE_UPDATE_CHECK"
 
 // the current version of the Steampipe CLI application
 var currentVersion = version.String()
@@ -32,19 +27,11 @@ type versionCheckResponse struct {
 	Alerts       []*string `json:"alerts,omitempty"`
 }
 
-type versionCheckRequest struct {
-	Version    string `json:"version,omitempty"`
-	OsPlatform string `json:"os_platform,omitempty"`
-	OsArch     string `json:"arch,omitempty"`
-	Signature  string `json:"signature"`
-}
-
 // VersionChecker :: the version checker struct composition container.
 // This MUST not be instantiated manually. Use `CreateVersionChecker` instead
 type versionChecker struct {
 	checkResult *versionCheckResponse // a channel to store the HTTP response
-	disabled    bool
-	signature   string // flags whether update check should be done
+	signature   string                // flags whether update check should be done
 }
 
 // check if there is a new version
@@ -115,31 +102,6 @@ func displayUpdateNotification(info *versionCheckResponse, currentVersion *SemVe
 	fmt.Println()
 }
 
-func versionDiff(oldVersion *SemVer.Version, newVersion *SemVer.Version) string {
-	// find out the difference between the two
-	nSegments := newVersion.Segments()
-	cSegments := oldVersion.Segments()
-	var diff = ""
-
-	if len(nSegments) > 0 && len(cSegments) > 0 && nSegments[0] != cSegments[0] {
-		diff = "major"
-	} else if len(nSegments) > 1 && len(cSegments) > 1 && nSegments[1] != cSegments[1] {
-		diff = "minor"
-	} else if len(nSegments) > 2 && len(cSegments) > 2 && nSegments[2] != cSegments[2] {
-		diff = "patch"
-	}
-
-	if diff == "" && newVersion.Prerelease() == "" && oldVersion.Prerelease() != "" {
-		diff = "stable"
-	}
-
-	if newVersion.Prerelease() != "" {
-		diff = "pre-" + diff
-	}
-
-	return diff
-}
-
 func (c *versionChecker) doCheckRequest() {
 	payload := utils.BuildRequestPayload(c.signature, map[string]interface{}{})
 	sendRequestTo := c.versionCheckURL()
@@ -165,18 +127,6 @@ func (c *versionChecker) doCheckRequest() {
 	}
 
 	c.checkResult = c.decodeResult(bodyString)
-}
-
-func (c *versionChecker) buildJSONPayload() *bytes.Buffer {
-	id := c.signature
-	body := &versionCheckRequest{
-		Version:    currentVersion,
-		OsPlatform: runtime.GOOS,
-		OsArch:     runtime.GOARCH,
-		Signature:  id,
-	}
-	jsonStr, _ := json.Marshal(body)
-	return bytes.NewBuffer(jsonStr)
 }
 
 func (c *versionChecker) decodeResult(body string) *versionCheckResponse {
