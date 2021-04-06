@@ -33,9 +33,15 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	// the value from terminal options will have precedence
 	// however, we also store all values scoped by their options type, so we will store:
 	// 'database.search-path', 'terminal.search-path' AND 'search-path' (which will be equal to 'terminal.search-path')
-	c.populateConfigMapForOptions(c.GeneralOptions, res)
-	c.populateConfigMapForOptions(c.DatabaseOptions, res)
-	c.populateConfigMapForOptions(c.TerminalOptions, res)
+	if c.GeneralOptions != nil {
+		c.populateConfigMapForOptions(c.GeneralOptions, res)
+	}
+	if c.DatabaseOptions != nil {
+		c.populateConfigMapForOptions(c.DatabaseOptions, res)
+	}
+	if c.TerminalOptions != nil {
+		c.populateConfigMapForOptions(c.TerminalOptions, res)
+	}
 
 	return res
 }

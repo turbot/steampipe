@@ -40,7 +40,7 @@ type ConnectionData struct {
 	ConnectionOptions *options.Connection
 }
 
-func (p ConnectionData) equals(other *ConnectionData) bool {
+func (p ConnectionData) Equals(other *ConnectionData) bool {
 	connectionOptionsEqual := (p.ConnectionOptions == nil) == (other.ConnectionOptions == nil)
 	if p.ConnectionOptions != nil {
 		connectionOptionsEqual = p.ConnectionOptions.Equals(other.ConnectionOptions)
@@ -54,6 +54,27 @@ func (p ConnectionData) equals(other *ConnectionData) bool {
 }
 
 type ConnectionMap map[string]*ConnectionData
+
+func (m ConnectionMap) Equals(other ConnectionMap) bool {
+	if m != nil && other == nil {
+		return false
+	}
+	for k, lVal := range m {
+		rVal, ok := other[k]
+		if !ok {
+			return false
+		}
+		if !lVal.Equals(rVal) {
+			return false
+		}
+	}
+	for k := range other {
+		if _, ok := m[k]; !ok {
+			return false
+		}
+	}
+	return true
+}
 
 // GetConnectionsToUpdate :: returns updates to be made to the database to sync with connection config
 func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*Connection) (*ConnectionUpdates, error) {
@@ -74,7 +95,7 @@ func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*Conne
 	// connections to create/update
 	for connection, requiredPlugin := range requiredConnections {
 		current, ok := connectionState[connection]
-		if !ok || !current.equals(requiredPlugin) {
+		if !ok || !current.Equals(requiredPlugin) {
 			log.Printf("[TRACE] connection %s is out of date or missing\n", connection)
 			result.Update[connection] = requiredPlugin
 		}
@@ -92,7 +113,6 @@ func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*Conne
 
 // load and parse the connection config
 func getRequiredConnections(connectionConfig map[string]*Connection) (ConnectionMap, []string, error) {
-
 	requiredConnections := ConnectionMap{}
 	var missingPlugins []string
 

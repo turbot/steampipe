@@ -25,7 +25,6 @@ func LoadConfig(workspacePath string) (*SteampipeConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	Config = config
 	return config, nil
 }
 
