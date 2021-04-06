@@ -3,11 +3,8 @@ package steampipeconfig
 import (
 	"fmt"
 	"io/ioutil"
-	"path/filepath"
 	"sort"
 	"strings"
-
-	"github.com/turbot/steampipe/constants"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -23,10 +20,6 @@ func loadFileData(paths []string) (map[string][]byte, hcl.Diagnostics) {
 	var fileData = map[string][]byte{}
 
 	for _, configPath := range paths {
-		// if this is not a .sp file, ignore
-		if filepath.Ext(configPath) != constants.ModDataExtension {
-			continue
-		}
 		data, err := ioutil.ReadFile(configPath)
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{

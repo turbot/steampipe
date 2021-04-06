@@ -66,7 +66,7 @@ func TestLoadConfig(t *testing.T) {
 			t.Errorf("failed to build absolute config filepath from %s", test.source)
 		}
 
-		config, err := loadConfig(configPath)
+		config, err := newSteampipeConfig(configPath)
 
 		if err != nil {
 			if test.expected != "ERROR" {

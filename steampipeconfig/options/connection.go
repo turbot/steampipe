@@ -16,6 +16,20 @@ func (c *Connection) ConfigMap() map[string]interface{} {
 	return map[string]interface{}{}
 }
 
+// merge other options over the the top of this options object
+// i.e. if a property is set in otherOptions, it takes precedence
+func (c *Connection) Merge(otherOptions Options) {
+	switch o := otherOptions.(type) {
+	case *Connection:
+		if o.Cache != nil {
+			c.Cache = o.Cache
+		}
+		if o.CacheTTL != nil {
+			c.CacheTTL = o.CacheTTL
+		}
+	}
+}
+
 func (c *Connection) Equals(other *Connection) bool {
 	return c.Cache == other.Cache &&
 		*c.CacheTTL == *other.CacheTTL

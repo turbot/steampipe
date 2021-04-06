@@ -58,22 +58,18 @@ func LoadMod(modPath string, opts *LoadModOptions) (mod *modconfig.Mod, err erro
 		return nil, fmt.Errorf("mod folder %s does not exist", modPath)
 	}
 	// build list of all filepaths we need to parse/load
-	sourcePaths, err := getSourcePaths(modPath, opts.Exclude)
+	// build include string from extensions
+	var include = filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension})
+	sourcePaths, err := getSourcePaths(modPath, include, opts.Exclude)
 	if err != nil {
-		log.Printf("[WARN] loadConfig: failed to get mod file paths: %v\n", err)
+		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
 		return nil, err
 	}
-	if len(sourcePaths) == 0 {
-		// so there are no mod resources in the folder - check flag for our response
-		if opts.CreateDefaultMod() {
-			return defaultWorkspaceMod(), nil
-		}
-		return nil, fmt.Errorf("mod folder %s does not contain any mod resources", modPath)
-	}
+
 	// load the raw data
 	fileData, diags := loadFileData(sourcePaths)
 	if diags.HasErrors() {
-		log.Printf("[WARN] loadConfig: failed to load all mod files: %v\n", err)
+		log.Printf("[WARN] LoadMod: failed to load all mod files: %v\n", err)
 		return nil, plugin.DiagsToError("Failed to load all mod files", diags)
 	}
 
@@ -99,7 +95,8 @@ func LoadMod(modPath string, opts *LoadModOptions) (mod *modconfig.Mod, err erro
 	// if flag is set, create pseudo resources by mapping files
 	if opts.CreatePseudoResources() {
 		// now execute any pseudo-resource creations based on file mappings
-		if err := createPseudoResources(parseResult, sourcePaths); err != nil {
+		err = createPseudoResources(modPath, parseResult, opts)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -114,19 +111,17 @@ type modParseResult struct {
 	mod      *modconfig.Mod
 }
 
+// GetModFileExtensions :: return list of all file extensions we care about
+// this will be the mod data extension, plus any registered extensions registered in fileToResourceMap
 func GetModFileExtensions() []string {
-	// build list of file extensions we care about
-	// this will be the mod data extension, plus any registered extensions registered in fileToResourceMap
 	return append(modconfig.RegisteredFileExtensions(), constants.ModDataExtension)
 }
 
 // build list of all filepaths we need to parse/load the mod
 // this will include hcl files (with .sp extension)
-// as well as any other files with extensions that have been registered for psuedo resource creation
+// as well as any other files with extensions that have been registered for pseudo resource creation
 // (see steampipeconfig/modconfig/resource_type_map.go)
-func getSourcePaths(modPath string, exclude []string) ([]string, error) {
-	// build include string from extensions
-	var includeStrings = filehelpers.InclusionsFromExtensions(GetModFileExtensions())
+func getSourcePaths(modPath string, include, exclude []string) ([]string, error) {
 
 	// build list options:
 	// - search recursively
@@ -135,7 +130,7 @@ func getSourcePaths(modPath string, exclude []string) ([]string, error) {
 	opts := &filehelpers.ListFilesOptions{
 		Options: filehelpers.FilesRecursive,
 		Exclude: exclude,
-		Include: includeStrings,
+		Include: include,
 	}
 	sourcePaths, err := filehelpers.ListFiles(modPath, opts)
 	if err != nil {
@@ -201,10 +196,17 @@ func parseModHcl(modPath string, fileData map[string][]byte) (*modParseResult, e
 
 // create pseudo-resources for any files whose extensions are registered
 // NOTE: this mutates parseResults
-func createPseudoResources(parseResults *modParseResult, sourcePaths []string) error {
+func createPseudoResources(modPath string, parseResults *modParseResult, opts *LoadModOptions) error {
 
-	// TODO currentrl we just add in unique results and ignore non-unique results - event if
-	// there is a
+	// list all registered files
+	var include = filehelpers.InclusionsFromExtensions(modconfig.RegisteredFileExtensions())
+	sourcePaths, err := getSourcePaths(modPath, include, opts.Exclude)
+	if err != nil {
+		return err
+	}
+
+	// TODO currently we just add in unique results and ignore non-unique results
+	// TODO ADD WARNING
 
 	var errors []error
 	// for every source path:
@@ -215,7 +217,7 @@ func createPseudoResources(parseResults *modParseResult, sourcePaths []string) e
 		if !ok {
 			continue
 		}
-		resource, err := factory(path)
+		resource, err := factory(modPath, path)
 		if err != nil {
 			errors = append(errors, err)
 		}

@@ -6,8 +6,6 @@ const (
 	ArgCSV                     = "csv"
 	ArgTable                   = "table"
 	ArgLine                    = "line"
-	ArgListAllTableNames       = "L"
-	ArgSelectAll               = "A"
 	ArgForce                   = "force"
 	ArgTimer                   = "timing"
 	ArgOn                      = "on"
@@ -24,6 +22,7 @@ const (
 	ArgUpdateCheck             = "update-check"
 	ArgInstallDir              = "install-dir"
 	ArgSqlFile                 = "sql-file"
+	ArgWorkspace               = "workspace"
 )
 
 /// metaquery mode arguments

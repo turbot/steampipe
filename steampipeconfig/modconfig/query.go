@@ -33,29 +33,29 @@ func (q *Query) Equals(other *Query) bool {
 }
 
 // factory function
-func QueryFromFile(path string) (MappableResource, error) {
+func QueryFromFile(modPath, filePath string) (MappableResource, error) {
 	q := &Query{}
-	return q.InitialiseFromFile(path)
+	return q.InitialiseFromFile(modPath, filePath)
 }
 
 // implementation of MappableResource
-func (q *Query) InitialiseFromFile(path string) (MappableResource, error) {
+func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, error) {
 	// only valid for sql files
-	if filepath.Ext(path) != constants.ExtensionSql {
-		return nil, fmt.Errorf("Query.InitialiseFromFile must be called with .sql file only - got %s", path)
+	if filepath.Ext(filePath) != constants.SqlExtension {
+		return nil, fmt.Errorf("Query.InitialiseFromFile must be called with .sql file only - got %s", filePath)
 	}
 
-	sqlBytes, err := ioutil.ReadFile(path)
+	sqlBytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 
 	sql := string(sqlBytes)
 	if sql == "" {
-		return nil, fmt.Errorf("SQL file %s contains no query", path)
+		return nil, fmt.Errorf("SQL file %s contains no query", filePath)
 	}
 	// get a sluggified version of the filename
-	name, err := PseudoResourceNameFromPath(path)
+	name, err := PseudoResourceNameFromPath(modPath, filePath)
 	if err != nil {
 		return nil, err
 	}

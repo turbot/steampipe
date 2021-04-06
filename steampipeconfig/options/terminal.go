@@ -9,64 +9,111 @@ import (
 
 // Terminal
 type Terminal struct {
-	Output    *string `hcl:"output"`
-	Separator *string `hcl:"separator"`
-	Header    *bool   `hcl:"header"`
-	Multi     *bool   `hcl:"multi"`
-	Timing    *bool   `hcl:"timing"`
+	Output           *string `hcl:"output"`
+	Separator        *string `hcl:"separator"`
+	Header           *bool   `hcl:"header"`
+	Multi            *bool   `hcl:"multi"`
+	Timing           *bool   `hcl:"timing"`
+	SearchPath       *string `hcl:"search_path"`
+	SearchPathPrefix *string `hcl:"search_path_prefix"`
 }
 
 // ConfigMap :: create a config map to pass to viper
-func (c *Terminal) ConfigMap() map[string]interface{} {
+func (t *Terminal) ConfigMap() map[string]interface{} {
 	// only add keys which are non null
 	res := map[string]interface{}{}
-	if c.Output != nil {
-		res[constants.ArgOutput] = c.Output
+	if t.Output != nil {
+		res[constants.ArgOutput] = t.Output
 	}
-	if c.Separator != nil {
-		res[constants.ArgSeparator] = c.Separator
+	if t.Separator != nil {
+		res[constants.ArgSeparator] = t.Separator
 	}
-	if c.Header != nil {
-		res[constants.ArgHeader] = c.Header
+	if t.Header != nil {
+		res[constants.ArgHeader] = t.Header
 	}
-	if c.Multi != nil {
-		res[constants.ArgMultiLine] = c.Multi
+	if t.Multi != nil {
+		res[constants.ArgMultiLine] = t.Multi
 	}
-	if c.Timing != nil {
-		res[constants.ArgTimer] = c.Timing
+	if t.Timing != nil {
+		res[constants.ArgTimer] = t.Timing
+	}
+	if t.SearchPath != nil {
+		res[constants.ArgSearchPath] = t.SearchPath
+	}
+	if t.SearchPathPrefix != nil {
+		res[constants.ArgSearchPathPrefix] = t.SearchPathPrefix
 	}
 	return res
 }
 
-func (c *Terminal) String() string {
-	if c == nil {
+// merge other options over the the top of this options object
+// i.e. if a property is set in otherOptions, it takes precedence
+func (t *Terminal) Merge(otherOptions Options) {
+	switch o := otherOptions.(type) {
+	case *Terminal:
+		if o.Output != nil {
+			t.Output = o.Output
+		}
+		if o.Separator != nil {
+			t.Separator = o.Separator
+		}
+		if o.Header != nil {
+			t.Header = o.Header
+		}
+		if o.Multi != nil {
+			t.Multi = o.Multi
+		}
+		if o.Timing != nil {
+			t.Timing = o.Timing
+		}
+		if o.SearchPath != nil {
+			t.SearchPath = o.SearchPath
+		}
+		if o.SearchPathPrefix != nil {
+			t.SearchPathPrefix = o.SearchPathPrefix
+		}
+	}
+}
+
+func (t *Terminal) String() string {
+	if t == nil {
 		return ""
 	}
 	var str []string
-	if c.Output == nil {
+	if t.Output == nil {
 		str = append(str, "LogLevel: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Output: %s", *c.Output))
+		str = append(str, fmt.Sprintf("Output: %s", *t.Output))
 	}
-	if c.Separator == nil {
+	if t.Separator == nil {
 		str = append(str, "Separator: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Separator: %s", *c.Separator))
+		str = append(str, fmt.Sprintf("Separator: %s", *t.Separator))
 	}
-	if c.Header == nil {
+	if t.Header == nil {
 		str = append(str, "Header: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Header: %v", *c.Header))
+		str = append(str, fmt.Sprintf("Header: %v", *t.Header))
 	}
-	if c.Multi == nil {
+	if t.Multi == nil {
 		str = append(str, "Multi: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Multi: %v", *c.Multi))
+		str = append(str, fmt.Sprintf("Multi: %v", *t.Multi))
 	}
-	if c.Timing == nil {
+	if t.Timing == nil {
 		str = append(str, "Timing: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Timing: %v", *c.Timing))
+		str = append(str, fmt.Sprintf("Timing: %v", *t.Timing))
+	}
+	if t.SearchPath == nil {
+		str = append(str, "SearchPath: nil")
+	} else {
+		str = append(str, fmt.Sprintf("SearchPath: %v", *t.SearchPath))
+	}
+	if t.SearchPathPrefix == nil {
+		str = append(str, "SearchPathPrefix: nil")
+	} else {
+		str = append(str, fmt.Sprintf("SearchPathPrefix: %v", *t.SearchPathPrefix))
 	}
 	return strings.Join(str, "\n")
 }

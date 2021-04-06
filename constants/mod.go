@@ -9,9 +9,9 @@ import (
 
 // mod related constants
 const (
-	ModDataExtension = ".sp"
-	WorkspaceModDir  = "mods"
-	WorkspaceDataDir = ".steampipe"
+	WorkspaceModDir         = "mods"
+	WorkspaceDataDir        = ".steampipe"
+	WorkspaceConfigFileName = "workspace.spc"
 )
 
 func WorkspaceModPath(workspacePath string) string {

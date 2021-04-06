@@ -9,37 +9,58 @@ import (
 
 // Database
 type Database struct {
-	Port   *int    `hcl:"port"`
-	Listen *string `hcl:"listen"`
+	Port       *int    `hcl:"port"`
+	Listen     *string `hcl:"listen"`
+	SearchPath *string `hcl:"search_path"`
 }
 
 // ConfigMap :: create a config map to pass to viper
-func (c *Database) ConfigMap() map[string]interface{} {
+func (d *Database) ConfigMap() map[string]interface{} {
 	// only add keys which are non null
 	res := map[string]interface{}{}
-	if c.Port != nil {
-		res[constants.ArgPort] = c.Port
+	if d.Port != nil {
+		res[constants.ArgPort] = d.Port
 	}
-	if c.Listen != nil {
-		res[constants.ArgListenAddress] = c.Listen
+	if d.Listen != nil {
+		res[constants.ArgListenAddress] = d.Listen
+	}
+	if d.SearchPath != nil {
+		res[constants.ArgSearchPath] = d.SearchPath
 	}
 	return res
 }
 
-func (c *Database) String() string {
-	if c == nil {
+// merge other options over the the top of this options object
+// i.e. if a property is set in otherOptions, it takes precedence
+func (d *Database) Merge(otherOptions Options) {
+	switch o := otherOptions.(type) {
+	case *Database:
+		if o.Port != nil {
+			d.Port = o.Port
+		}
+		if o.Listen != nil {
+			d.Listen = o.Listen
+		}
+		if o.SearchPath != nil {
+			d.SearchPath = o.SearchPath
+		}
+	}
+}
+
+func (d *Database) String() string {
+	if d == nil {
 		return ""
 	}
 	var str []string
-	if c.Port == nil {
+	if d.Port == nil {
 		str = append(str, "Port: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Port: %d", *c.Port))
+		str = append(str, fmt.Sprintf("Port: %d", *d.Port))
 	}
-	if c.Listen == nil {
+	if d.Listen == nil {
 		str = append(str, "Listen: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Listen: %d", *c.Listen))
+		str = append(str, fmt.Sprintf("Listen: %d", *d.Listen))
 	}
 	return strings.Join(str, "\n")
 }

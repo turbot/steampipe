@@ -1,5 +1,8 @@
 package constants
 
 const (
-	ExtensionSql = ".sql"
+	PluginExtension  = ".plugin"
+	ConfigExtension  = ".spc"
+	SqlExtension     = ".sql"
+	ModDataExtension = ".sp"
 )
