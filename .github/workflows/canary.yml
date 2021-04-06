@@ -4,15 +4,20 @@ on:
     # At minute 0 past every 2nd hour on every day-of-week from Monday through Friday.
     # https://crontab.guru/#0_22_*_*_*
     - cron: '0 22 * * *'
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  goreleaser:
+  build:
     name: Build
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.branch }}
 
       - name: Unshallow
         run: git fetch
@@ -20,7 +25,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.14
+          go-version: 1.16
 
       - name: Hook private repo
         run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
@@ -29,14 +34,14 @@ jobs:
         uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
-          args: release --rm-dist --skip-publish
+          args: release --snapshot --rm-dist --skip-publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Move build artifacts
         run: |
           mkdir ~/artifacts
-          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.zip ~/artifacts/linux.zip
+          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
           mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
 
       - name: List Build Artifacts
@@ -46,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: build-artifact-linux
-          path: ~/artifacts/linux.zip
+          path: ~/artifacts/linux.tar.gz
           if-no-files-found: error
 
       - name: Save MacOS Build Artifact
@@ -56,24 +61,25 @@ jobs:
           path: ~/artifacts/darwin.zip
           if-no-files-found: error
 
-  platform_test:
-    name: Platform testing
-    needs: goreleaser
+  acceptance_test:
+    name: Acceptance tests
+    needs: build
     strategy:
       matrix:
-        platform: [ ubuntu-latest, macos-latest ]
-
+        platform: [ ubuntu-latest ]
     runs-on: ${{ matrix.platform }}
-    env:
-      GOFLAGS: "-mod=vendor"
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.14
+
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          submodules: true
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: 1.2.1
 
       - name: Prepare for downloads
         id: prepare-for-downloads
@@ -94,40 +100,38 @@ jobs:
           name: build-artifact-darwin
           path: ~/artifacts
 
-      - name: Check that everything got downloaded
-        run: |
-          ls -l ~/artifacts
-
-      - name: Rename build artifact on Darwin
+      - name: Extract Darwin Artifacts and Install Binary
         if: ${{ matrix.platform == 'macos-latest' }}
-        run: mv ~/artifacts/darwin.zip ~/artifacts/build.zip
-
-      - name: Rename build artifact on Linux
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: mv ~/artifacts/linux.zip ~/artifacts/build.zip
-
-      - name: Check that renaming is good
-        run: |
-          ls -l ~/artifacts
-
-      - name: Extract Artifacts and Install Binary
-        if: ${{ matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-latest' }}
         run: |
           mkdir ~/build
-          unzip ~/artifacts/build.zip -d ~/build
-          ls -l ~/build
-          echo "~/build" >> $GITHUB_PATH
+          unzip ~/artifacts/darwin.zip -d ~/build
 
-      - name: Run Tests
-        if: ${{ matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-latest' }}
+      - name: Extract Ubuntu Artifacts and Install Binary
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: |
-          echo $PATH
-          $HOME/build/steampipe query "select 1 as col"
+          mkdir ~/build
+          tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
+      - name: Set PATH
+        run: |
+          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+
+      - name: Install DB
+        run: |
+          steampipe service start
+          steampipe plugin install chaos
+          steampipe service stop --force
+
+      - name: Run Test Suite
+        timeout-minutes: 5
+        run: |
+          chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          steampipe service stop --force
 
   tags_release:
     name: Version checker
-    needs: [ goreleaser, platform_test ]
+    needs: acceptance_test 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -163,7 +167,7 @@ jobs:
 
   create_release:
     name: Release
-    needs: [goreleaser, platform_test, tags_release]
+    needs: tags_release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -175,7 +179,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.14
+          go-version: 1.16
 
       - name: Hook private repo
         run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
