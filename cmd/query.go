@@ -87,11 +87,13 @@ func getQueries(args []string) ([]string, error) {
 
 	// otherwise either the query was passed as an argument, or no query was passed (interactive mode)
 	// just return the first arg (if there is one)
-	var res []string
+
+	// if no query is specified in the args, we must pass a single empty query to trigger interactive mode
+	var query = ""
 	if len(args) > 0 {
-		res = append(res, args[0])
+		query = args[0]
 	}
-	return res, nil
+	return []string{query}, nil
 }
 
 func runQuery(queryString string) {
