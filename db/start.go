@@ -246,12 +246,14 @@ func ensureSteampipeServer() error {
 }
 
 func (c *Client) setServiceSearchPath() {
-	// set the search_path to the available foreign schemas or the one set by the user
-	// we need to do this here, since postgres resets the search_path on every load.
+	// set the search_path to the available foreign schemas
+	// or the one set by the user in config
 	var schemas []string
 
+	// since this is the service starting up,
+	// we use the scoped value from the config - as specified by the user
+	// this IS the value that needs to get set
 	if viper.IsSet("database.search-path") {
-		fmt.Println("got key")
 		schemas = viper.GetStringSlice("database.search-path")
 	} else {
 		schemas = c.schemaMetadata.GetSchemas()

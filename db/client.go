@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/turbot/go-kit/helpers"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
@@ -80,7 +82,13 @@ func (c *Client) setClientSearchPath() error {
 		sort.Strings(searchPath)
 	}
 	if viper.IsSet("search-path-prefix") {
-		searchPath = append(viper.GetStringSlice("search-path-prefix"), searchPath...)
+		prefixes := viper.GetStringSlice("search-path-prefix")
+		for _, p := range searchPath {
+			if !helpers.StringSliceContains(prefixes, p) {
+				prefixes = append(prefixes, p)
+			}
+		}
+		searchPath = prefixes
 	}
 
 	// add the public schema as the first schema in the search_path. This makes it

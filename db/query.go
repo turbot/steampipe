@@ -38,7 +38,7 @@ func ExecuteQuery(queryString string) (*results.ResultStreamer, error) {
 	utils.FailOnErrorWithMessage(err, "client failed to initialize")
 
 	// refresh connections
-	connectionsUpdated, err := client.RefreshConnections()
+	_, err = client.RefreshConnections()
 	if err != nil {
 		// shutdown the service if something went wrong!!!
 		Shutdown(client, InvokerQuery)
@@ -48,15 +48,6 @@ func ExecuteQuery(queryString string) (*results.ResultStreamer, error) {
 		// shutdown the service if something went wrong!!!
 		Shutdown(client, InvokerQuery)
 		return nil, fmt.Errorf("failed to add functions: %v", err)
-	}
-
-	// workaround: if connections were updated, create a new client so that any change in the search patch is reflected
-	if connectionsUpdated {
-		if client != nil {
-			client.close()
-		}
-		client, err = GetClient(false)
-		utils.FailOnErrorWithMessage(err, "client failed to reinitialize")
 	}
 	resultsStreamer := results.NewResultStreamer()
 
