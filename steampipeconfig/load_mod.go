@@ -57,8 +57,9 @@ func LoadMod(modPath string, opts *LoadModOptions) (mod *modconfig.Mod, err erro
 	if _, err := os.Stat(modPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("mod folder %s does not exist", modPath)
 	}
+
 	// build list of all filepaths we need to parse/load
-	// build include string from extensions
+	// NOTE: pseudo resource creation is handled separately below
 	var include = filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension})
 	sourcePaths, err := getSourcePaths(modPath, include, opts.Exclude)
 	if err != nil {

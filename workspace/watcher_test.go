@@ -83,7 +83,7 @@ func TestWorkspaceFileWatcher(t *testing.T) {
 
 	os.Chdir(workspacePath)
 
-	workspace, err := Load()
+	workspace, err := Load("")
 	if err != nil {
 		t.Fatalf("failed to load workspace: %v", err)
 	}

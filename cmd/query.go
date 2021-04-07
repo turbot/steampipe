@@ -5,9 +5,9 @@ import (
 	"log"
 	"path/filepath"
 	"os"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/workspace"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
@@ -66,7 +66,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// load the workspace
-	workspace, err := workspace.Load()
+	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
 	utils.FailOnError(err)
 	defer workspace.Close()
 

@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -95,13 +94,9 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 
 func TestLoadWorkspace(t *testing.T) {
 	for name, test := range testCasesLoadWorkspace {
-		workspacePath, err := filepath.Abs(test.source)
-		os.Chdir(workspacePath)
-		if err != nil {
-			t.Errorf("failed to build absolute config filepath from %s", test.source)
-		}
 
-		workspace, err := Load()
+		workspacePath, err := filepath.Abs(test.source)
+		workspace, err := Load(workspacePath)
 
 		if err != nil {
 			if test.expected != "ERROR" {

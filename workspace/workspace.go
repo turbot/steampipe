@@ -27,13 +27,7 @@ type Workspace struct {
 	exclusions    []string
 }
 
-func Load() (*Workspace, error) {
-	// workspace is always the working directory
-	workspacePath, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
+func Load(workspacePath string) (*Workspace, error) {
 	// create shell workspace
 	workspace := &Workspace{Path: workspacePath}
 
@@ -179,12 +173,12 @@ func (w *Workspace) LoadExclusions() error {
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		return err
 	}
 
 	// add in a hard coded exclusion to the data directory (.steampipe)
-	exclusions = append(exclusions, fmt.Sprintf("**/%s*", constants.WorkspaceDataDir))
+	exclusions = append(exclusions, fmt.Sprintf("**/%s/*", constants.WorkspaceDataDir))
 	w.exclusions = exclusions
 	return nil
 }
