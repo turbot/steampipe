@@ -506,7 +506,6 @@ func copyPlugin(plugin string) {
 }
 
 func getTestFileCheckSum(file string) string {
-
 	p, err := filepath.Abs(file)
 	if err != nil {
 		log.Fatal(err)
@@ -516,9 +515,4 @@ func getTestFileCheckSum(file string) string {
 		log.Fatal(err)
 	}
 	return sha
-}
-
-func TestGetPluginCheckSum(t *testing.T) {
-	sha := getTestFileCheckSum("connection-test-1")
-	fmt.Println(sha)
 }

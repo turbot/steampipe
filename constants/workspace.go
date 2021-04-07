@@ -12,6 +12,7 @@ const (
 	WorkspaceModDir         = "mods"
 	WorkspaceDataDir        = ".steampipe"
 	WorkspaceConfigFileName = "workspace.spc"
+	WorkspaceIgnoreFile     = ".steampipeignore"
 )
 
 func WorkspaceModPath(workspacePath string) string {

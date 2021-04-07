@@ -1,8 +1,10 @@
 package workspace
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -16,15 +18,13 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// .gitignore format exclusion string for workspace .steampipe directory
-var workspaceDataDirExclusion = []string{fmt.Sprintf("**/%s*", constants.WorkspaceDataDir)}
-
 type Workspace struct {
 	Path          string
 	Mod           *modconfig.Mod
 	namedQueryMap map[string]*modconfig.Query
 	watcher       *utils.FileWatcher
 	loadLock      sync.Mutex
+	exclusions    []string
 }
 
 func Load() (*Workspace, error) {
@@ -36,6 +36,12 @@ func Load() (*Workspace, error) {
 
 	// create shell workspace
 	workspace := &Workspace{Path: workspacePath}
+
+	// load the .steampipe ignore file
+	if err := workspace.LoadExclusions(); err != nil {
+		return nil, err
+	}
+
 	if err := workspace.loadMod(); err != nil {
 		return nil, err
 	}
@@ -81,12 +87,11 @@ func (w *Workspace) loadMod() error {
 	// parse all hcl files under the workspace and either parse or create a mod
 	// it is valid for 0 or 1 mod to be defined (if no mod is defined, create a default one)
 	// populate mod with all hcl resources we parse
+
 	// build options used to load workspace
-	// ignore .steampipe folder
-	// TODO load .gitignore
 	// set flags to create pseudo resources and a default mod if needed
 	opts := &steampipeconfig.LoadModOptions{
-		Exclude: workspaceDataDirExclusion,
+		Exclude: w.exclusions,
 		Flags:   steampipeconfig.CreatePseudoResources | steampipeconfig.CreateDefaultMod,
 	}
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
@@ -104,19 +109,7 @@ func (w *Workspace) loadMod() error {
 
 	w.namedQueryMap = w.buildNamedQueryMap(modMap)
 
-	// TODO validate unique aliases
-
-	// TODO load workspace config
-
 	return nil
-
-}
-
-func (w *Workspace) getWorkspaceLoadOptions() *steampipeconfig.LoadModOptions {
-	return &steampipeconfig.LoadModOptions{
-		Exclude: workspaceDataDirExclusion,
-		Flags:   steampipeconfig.CreatePseudoResources | steampipeconfig.CreateDefaultMod,
-	}
 }
 
 // load all dependencies of workspace mod
@@ -151,8 +144,9 @@ func (w *Workspace) buildNamedQueryMap(modMap modconfig.ModMap) map[string]*modc
 func (w *Workspace) setupWatcher() error {
 	watcher, err := utils.NewWatcher(&utils.WatcherOptions{
 		Path:           w.Path,
-		DirExclusions:  workspaceDataDirExclusion,
+		DirExclusions:  []string{},
 		FileInclusions: filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
+		FileExclusions: w.exclusions,
 		OnFileChange: func(ev fsnotify.Event) {
 			// ignore rename and chmod
 			//if ev.Op == fsnotify.Create || ev.Op == fsnotify.Remove || ev.Op == fsnotify.Write {
@@ -166,5 +160,31 @@ func (w *Workspace) setupWatcher() error {
 	}
 	w.watcher = watcher
 
+	return nil
+}
+
+func (w *Workspace) LoadExclusions() error {
+	file, err := os.Open(filepath.Join(w.Path, constants.WorkspaceIgnoreFile))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	var exclusions []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if len(strings.TrimSpace(line)) != 0 && !strings.HasPrefix(line, "#") {
+			exclusions = append(exclusions, line)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	// add in a hard coded exclusion to the data directory (.steampipe)
+	exclusions = append(exclusions, fmt.Sprintf("**/%s*", constants.WorkspaceDataDir))
+	w.exclusions = exclusions
 	return nil
 }
