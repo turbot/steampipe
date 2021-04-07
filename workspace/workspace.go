@@ -158,18 +158,28 @@ func (w *Workspace) setupWatcher() error {
 }
 
 func (w *Workspace) LoadExclusions() error {
-	file, err := os.Open(filepath.Join(w.Path, constants.WorkspaceIgnoreFile))
+	// add in a hard coded exclusion to the data directory (.steampipe)
+	w.exclusions = []string{fmt.Sprintf("**/%s/*", constants.WorkspaceDataDir)}
+
+	ignorePath := filepath.Join(w.Path, constants.WorkspaceIgnoreFile)
+	file, err := os.Open(ignorePath)
 	if err != nil {
+		// if file does not exist, just return
+		if os.IsNotExist(err) {
+			return nil
+		}
 		return err
 	}
 	defer file.Close()
 
-	var exclusions []string
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if len(strings.TrimSpace(line)) != 0 && !strings.HasPrefix(line, "#") {
-			exclusions = append(exclusions, line)
+			// add exclusion to the workspace path (to ensure relative pattenrs work)
+			absoluteExclusion := filepath.Join(w.Path, line)
+			w.exclusions = append(w.exclusions, absoluteExclusion)
+
 		}
 	}
 
@@ -177,8 +187,5 @@ func (w *Workspace) LoadExclusions() error {
 		return err
 	}
 
-	// add in a hard coded exclusion to the data directory (.steampipe)
-	exclusions = append(exclusions, fmt.Sprintf("**/%s/*", constants.WorkspaceDataDir))
-	w.exclusions = exclusions
 	return nil
 }
