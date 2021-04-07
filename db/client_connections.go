@@ -85,16 +85,6 @@ func (c *Client) RefreshConnections() (bool, error) {
 		log.Println("[DEBUG] no connections to update")
 	}
 
-	// tell client to refresh schemas, connection map and set the search path
-	if err = c.updateConnectionMapAndSchema(); err != nil {
-		return false, err
-	}
-
-	// indicate whether we have updated connections
-	return connectionsToUpdate, nil
-}
-
-func (c *Client) updateConnectionMapAndSchema() error {
 	// reload the database schemas, since they have changed
 	// otherwise we wouldn't be here
 	log.Println("[TRACE] reloading schema")
@@ -102,11 +92,22 @@ func (c *Client) updateConnectionMapAndSchema() error {
 
 	// set the search path with the updates
 	log.Println("[TRACE] setting search path")
-	c.setSearchPath()
+	c.setServiceSearchPath()
+	c.setClientSearchPath()
 
+	// tell client to refresh schemas, connection map and set the search path
+	if err = c.updateConnectionMap(); err != nil {
+		return false, err
+	}
+
+	// indicate whether we have updated connections
+	return connectionsToUpdate, nil
+}
+
+func (c *Client) updateConnectionMap() error {
 	// load the connection state and cache it!
 	log.Println("[TRACE]", "retrieving connection map")
-	connectionMap, err := steampipeconfig.GetConnectionState(clientSingleton.schemaMetadata.GetSchemas())
+	connectionMap, err := steampipeconfig.GetConnectionState(c.schemaMetadata.GetSchemas())
 	if err != nil {
 		return err
 	}

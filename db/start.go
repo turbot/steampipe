@@ -6,9 +6,11 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"syscall"
 
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/utils"
@@ -221,6 +223,8 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		}
 	}
 
+	client.setServiceSearchPath()
+
 	return ServiceStarted, nil
 }
 
@@ -239,6 +243,46 @@ func ensureSteampipeServer() error {
 		return installSteampipeHub()
 	}
 	return nil
+}
+
+func (c *Client) setServiceSearchPath() {
+	// set the search_path to the available foreign schemas or the one set by the user
+	// we need to do this here, since postgres resets the search_path on every load.
+	var schemas []string
+
+	if viper.IsSet("database.search-path") {
+		fmt.Println("got key")
+		schemas = viper.GetStringSlice("database.search-path")
+	} else {
+		schemas = c.schemaMetadata.GetSchemas()
+		// sort the schema names
+		sort.Strings(schemas)
+	}
+
+	// set this before the `public` schema gets added
+	c.schemaMetadata.SearchPath = schemas
+	// add the public schema as the first schema in the search_path. This makes it
+	// easier for users to build and work with their own tables, and since it's normally
+	// empty, doesn't make using steampipe tables any more difficult.
+	schemas = append([]string{"public"}, schemas...)
+	// add 'internal' schema as last schema in the search path
+	schemas = append(schemas, constants.FunctionSchema)
+
+	// escape the schema names
+	escapedSchemas := []string{}
+
+	for _, schema := range schemas {
+		escapedSchemas = append(escapedSchemas, PgEscapeName(schema))
+	}
+
+	log.Println("[TRACE] setting search path to", schemas)
+	query := fmt.Sprintf(
+		"alter user %s set search_path to %s;",
+		constants.DatabaseUser,
+		strings.Join(escapedSchemas, ","),
+	)
+	// TODO should we report error
+	c.ExecuteSync(query)
 }
 
 func handleStartFailure(err error) error {
