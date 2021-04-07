@@ -24,6 +24,7 @@ func main() {
 		}
 	}()
 
+	// ensure steampipe is not being run as root
 	checkRoot()
 	cmd.InitCmd()
 
