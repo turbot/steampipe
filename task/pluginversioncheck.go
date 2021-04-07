@@ -40,7 +40,7 @@ func showPluginUpdateNotification(reports []plugin.VersionCheckReport) {
 	}
 	longestNameLength := 0
 	for _, report := range reports {
-		thisName := getNameFromReport(report)
+		thisName := report.ShortName()
 		if len(thisName) > longestNameLength {
 			longestNameLength = len(thisName)
 		}
@@ -48,13 +48,11 @@ func showPluginUpdateNotification(reports []plugin.VersionCheckReport) {
 
 	// sort alphabetically
 	sort.Slice(reports, func(i, j int) bool {
-		iName := getNameFromReport(reports[i])
-		jName := getNameFromReport(reports[j])
-		return iName < jName
+		return reports[i].ShortName() < reports[j].ShortName()
 	})
 
 	for _, report := range reports {
-		thisName := getNameFromReport(report)
+		thisName := report.ShortName()
 		line := ""
 		if len(report.Plugin.Version) == 0 {
 			format := fmt.Sprintf("  %%-%ds @ %%-10s       %%21s", longestNameLength)
@@ -94,6 +92,6 @@ func showPluginUpdateNotification(reports []plugin.VersionCheckReport) {
 	fmt.Println()
 }
 
-func getNameFromReport(report plugin.VersionCheckReport) string {
-	return fmt.Sprintf("%s/%s", report.CheckResponse.Org, report.CheckResponse.Name)
-}
+// func getNameFromReport(report plugin.VersionCheckReport) string {
+// 	return fmt.Sprintf("%s/%s", report.CheckResponse.Org, report.CheckResponse.Name)
+// }
