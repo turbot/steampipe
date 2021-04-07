@@ -74,7 +74,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 // retrieve queries from args or determine whether to run the interactive shell
 func getQueries(args []string) ([]string, error) {
-
 	// was the sql-file flag used?
 	if sqlFiles := viper.GetStringSlice(constants.ArgSqlFile); len(sqlFiles) > 0 {
 		// cobra only takes the first string after a flag as the flag value, so if more than one file is specified,
