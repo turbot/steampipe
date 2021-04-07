@@ -18,17 +18,203 @@ type loadModTest struct {
 
 var alias = "_m2"
 
-// TODO these are really workspace loading tests - maybe movve there and have simpler mod loading tests here?
 var loadWorkspaceOptions = &LoadModOptions{
 	Exclude: []string{fmt.Sprintf("**/%s*", constants.WorkspaceDataDir)},
 	Flags:   CreatePseudoResources | CreateDefaultMod,
 }
 
 var testCasesLoadMod = map[string]loadModTest{
-	"no_mod_hcl_queries": {
-		source: "test_data/mods/no_mod_hcl_queries",
+	//"no_mod_hcl_queries": {
+	//	source: "test_data/mods/no_mod_hcl_queries",
+	//	expected: &modconfig.Mod{
+	//		Name: "local",
+	//		Queries: []*modconfig.Query{
+	//			{
+	//				"q1", "Q1", "THIS IS QUERY 1", "select 1",
+	//			},
+	//			{
+	//				"q2", "Q2", "THIS IS QUERY 2", "select 2",
+	//			},
+	//		},
+	//	},
+	//},
+	//"no_mod_nested_sql_files": {
+	//	source: "test_data/mods/no_mod_nested_sql_files",
+	//	expected: &modconfig.Mod{
+	//		Name: "local",
+	//		Queries: []*modconfig.Query{
+	//			{
+	//				Name: "queries_a_aa_q1", SQL: "select 1",
+	//			},
+	//			{
+	//				Name: "queries_a_q1", SQL: "select 1",
+	//			},
+	//			{
+	//				Name: "queries_b_bb_q2", SQL: "select 2",
+	//			},
+	//			{
+	//				Name: "queries_b_q2", SQL: "select 2",
+	//			},
+	//		},
+	//	},
+	//},
+	//"no_mod_sql_files": {
+	//	source: "test_data/mods/no_mod_sql_files",
+	//	expected: &modconfig.Mod{
+	//		Name: "local",
+	//		Queries: []*modconfig.Query{
+	//			{
+	//				Name: "q1", SQL: "select 1",
+	//			},
+	//			{
+	//				Name: "q2", SQL: "select 2",
+	//			},
+	//		}},
+	//},
+	//"single_mod_duplicate_query": {
+	//	source:   "test_data/mods/single_mod_duplicate_query",
+	//	expected: "ERROR",
+	//},
+	//"single_mod_nested_sql_files": {
+	//	source: "test_data/mods/single_mod_nested_sql_files",
+	//	expected: &modconfig.Mod{
+	//		Name:        "m1",
+	//		Title:       "M1",
+	//		Description: "THIS IS M1",
+	//		Queries: []*modconfig.Query{
+	//			{
+	//				Name: "queries_a_aa_q1", SQL: "select 1",
+	//			},
+	//			{
+	//				Name: "queries_a_q1", SQL: "select 1",
+	//			},
+	//			{
+	//				Name: "queries_b_bb_q2", SQL: "select 2",
+	//			},
+	//			{
+	//				Name: "queries_b_q2", SQL: "select 2",
+	//			},
+	//		},
+	//	},
+	//},
+	//"single_mod_no_query": {
+	//	source: "test_data/mods/single_mod_no_query",
+	//	expected: &modconfig.Mod{
+	//		Name:        "m1",
+	//		Title:       "M1",
+	//		Description: "THIS IS M1",
+	//		ModDepends: []*modconfig.ModVersion{
+	//			{"github.com/turbot/m2", "0.0.0", &alias},
+	//		},
+	//	},
+	//},
+	//"single_mod_one_query": {
+	//	source: "test_data/mods/single_mod_one_query",
+	//	expected: &modconfig.Mod{
+	//		Name:        "m1",
+	//		Title:       "M1",
+	//		Description: "THIS IS M1",
+	//		ModDepends: []*modconfig.ModVersion{
+	//			{"github.com/turbot/m2", "0.0.0", &alias},
+	//		},
+	//		Queries: []*modconfig.Query{
+	//			{
+	//				"q1", "Q1", "THIS IS QUERY 1", "select 1",
+	//			},
+	//		},
+	//	},
+	//},
+	//"single_mod_one_sql_file": {
+	//	source: "test_data/mods/single_mod_one_sql_file",
+	//	expected: &modconfig.Mod{
+	//		Name:        "m1",
+	//		Title:       "M1",
+	//		Description: "THIS IS M1",
+	//		Queries:     []*modconfig.Query{{Name: "q1", SQL: "select 1"}},
+	//	},
+	//},
+	//"single_mod_sql_file_and_hcl_query": {
+	//	source: "test_data/mods/single_mod_sql_file_and_hcl_query",
+	//	expected: &modconfig.Mod{
+	//		Name:        "m1",
+	//		Title:       "M1",
+	//		Description: "THIS IS M1",
+	//		Queries: []*modconfig.Query{
+	//			{
+	//				"q1", "Q1", "THIS IS QUERY 1", "select 1",
+	//			},
+	//			{
+	//				Name: "q2", SQL: "select 2",
+	//			},
+	//		},
+	//	},
+	//},
+	//"single_mod_two_queries_diff_files": {
+	//	source: "test_data/mods/single_mod_two_queries_diff_files",
+	//	expected: &modconfig.Mod{
+	//		Name:        "m1",
+	//		Title:       "M1",
+	//		Description: "THIS IS M1",
+	//		ModDepends: []*modconfig.ModVersion{
+	//			{"github.com/turbot/m2", "0.0.0", &alias},
+	//		},
+	//		Queries: []*modconfig.Query{
+	//			{
+	//				"q1", "Q1", "THIS IS QUERY 1", "select 1",
+	//			},
+	//			{
+	//				"q2", "Q2", "THIS IS QUERY 2", "select 2",
+	//			},
+	//		},
+	//	},
+	//},
+	//"single_mod_two_queries_same_file": {
+	//	source: "test_data/mods/single_mod_two_queries_same_file",
+	//	expected: &modconfig.Mod{
+	//		Name:        "m1",
+	//		Title:       "M1",
+	//		Description: "THIS IS M1",
+	//		ModDepends: []*modconfig.ModVersion{
+	//			{"github.com/turbot/m2", "0.0.0", &alias},
+	//		},
+	//		Queries: []*modconfig.Query{
+	//			{
+	//				"q1", "Q1", "THIS IS QUERY 1", "select 1",
+	//			},
+	//			{
+	//				"q2", "Q2", "THIS IS QUERY 2", "select 2",
+	//			},
+	//		},
+	//	},
+	//},
+	//"single_mod_two_sql_files": {
+	//	source: "test_data/mods/single_mod_two_sql_files",
+	//	expected: &modconfig.Mod{
+	//		Name:        "m1",
+	//		Title:       "M1",
+	//		Description: "THIS IS M1",
+	//		ModDepends: []*modconfig.ModVersion{
+	//			{"github.com/turbot/m2", "0.0.0", &alias},
+	//		},
+	//		Queries: []*modconfig.Query{
+	//			{
+	//				"q1", "Q1", "THIS IS QUERY 1", "select 1",
+	//			},
+	//			{
+	//				"q2", "Q2", "THIS IS QUERY 2", "select 2",
+	//			},
+	//		},
+	//	},
+	//},
+	"single_mod_with_ignored_directory": {
+		source: "test_data/mods/single_mod_with_ignored_directory",
 		expected: &modconfig.Mod{
-			Name: "local",
+			Name:        "m1",
+			Title:       "M1",
+			Description: "THIS IS M1",
+			ModDepends: []*modconfig.ModVersion{
+				{"github.com/turbot/m2", "0.0.0", &alias},
+			},
 			Queries: []*modconfig.Query{
 				{
 					"q1", "Q1", "THIS IS QUERY 1", "select 1",
@@ -39,115 +225,8 @@ var testCasesLoadMod = map[string]loadModTest{
 			},
 		},
 	},
-	"no_mod_nested_sql_files": {
-		source: "test_data/mods/no_mod_nested_sql_files",
-		expected: &modconfig.Mod{
-			Name: "local",
-			Queries: []*modconfig.Query{
-				{
-					Name: "queries_a_aa_q1", SQL: "select 1",
-				},
-				{
-					Name: "queries_a_q1", SQL: "select 1",
-				},
-				{
-					Name: "queries_b_bb_q2", SQL: "select 2",
-				},
-				{
-					Name: "queries_b_q2", SQL: "select 2",
-				},
-			},
-		},
-	},
-	"no_mod_sql_files": {
-		source: "test_data/mods/no_mod_sql_files",
-		expected: &modconfig.Mod{
-			Name: "local",
-			Queries: []*modconfig.Query{
-				{
-					Name: "q1", SQL: "select 1",
-				},
-				{
-					Name: "q2", SQL: "select 2",
-				},
-			}},
-	},
-	"single_mod_nested_sql_files": {
-		source: "test_data/mods/single_mod_nested_sql_files",
-		expected: &modconfig.Mod{
-			Name:        "m1",
-			Title:       "M1",
-			Description: "THIS IS M1",
-			Queries: []*modconfig.Query{
-				{
-					Name: "queries_a_aa_q1", SQL: "select 1",
-				},
-				{
-					Name: "queries_a_q1", SQL: "select 1",
-				},
-				{
-					Name: "queries_b_bb_q2", SQL: "select 2",
-				},
-				{
-					Name: "queries_b_q2", SQL: "select 2",
-				},
-			},
-		},
-	},
-	"single_mod_no_query": {
-		source: "test_data/mods/single_mod_no_query",
-		expected: &modconfig.Mod{
-			Name:        "m1",
-			Title:       "M1",
-			Description: "THIS IS M1",
-			ModDepends: []*modconfig.ModVersion{
-				{"github.com/turbot/m2", "0.0.0", &alias},
-			},
-		},
-	},
-	"single_mod_one_query": {
-		source: "test_data/mods/single_mod_one_query",
-		expected: &modconfig.Mod{
-			Name:        "m1",
-			Title:       "M1",
-			Description: "THIS IS M1",
-			ModDepends: []*modconfig.ModVersion{
-				{"github.com/turbot/m2", "0.0.0", &alias},
-			},
-			Queries: []*modconfig.Query{
-				{
-					"q1", "Q1", "THIS IS QUERY 1", "select 1",
-				},
-			},
-		},
-	},
-	"single_mod_one_sql_file": {
-		source: "test_data/mods/single_mod_one_sql_file",
-		expected: &modconfig.Mod{
-			Name:        "m1",
-			Title:       "M1",
-			Description: "THIS IS M1",
-			Queries:     []*modconfig.Query{{Name: "q1", SQL: "select 1"}},
-		},
-	},
-	"single_mod_sql_file_and_hcl_query": {
-		source: "test_data/mods/single_mod_sql_file_and_hcl_query",
-		expected: &modconfig.Mod{
-			Name:        "m1",
-			Title:       "M1",
-			Description: "THIS IS M1",
-			Queries: []*modconfig.Query{
-				{
-					"q1", "Q1", "THIS IS QUERY 1", "select 1",
-				},
-				{
-					Name: "q2", SQL: "select 2",
-				},
-			},
-		},
-	},
-	"single_mod_two_queries_diff_files": {
-		source: "test_data/mods/single_mod_two_queries_diff_files",
+	"single_mod_with_ignored_sql_files": {
+		source: "test_data/mods/single_mod_with_ignored_sql_files",
 		expected: &modconfig.Mod{
 			Name:        "m1",
 			Title:       "M1",
@@ -165,33 +244,10 @@ var testCasesLoadMod = map[string]loadModTest{
 			},
 		},
 	},
-	"single_mod_two_queries_same_file": {
-		source: "test_data/mods/single_mod_two_queries_same_file",
-		expected: &modconfig.Mod{
-			Name:        "m1",
-			Title:       "M1",
-			Description: "THIS IS M1",
-			ModDepends: []*modconfig.ModVersion{
-				{"github.com/turbot/m2", "0.0.0", &alias},
-			},
-			Queries: []*modconfig.Query{
-				{
-					"q1", "Q1", "THIS IS QUERY 1", "select 1",
-				},
-				{
-					"q2", "Q2", "THIS IS QUERY 2", "select 2",
-				},
-			},
-		},
-	},
-	"single_mod_duplicate_query": {
-		source:   "test_data/mods/single_mod_duplicate_query",
-		expected: "ERROR",
-	},
-	"two_mods": {
-		source:   "test_data/mods/two_mods",
-		expected: "ERROR",
-	},
+	//"two_mods": {
+	//	source:   "test_data/mods/two_mods",
+	//	expected: "ERROR",
+	//},
 }
 
 func TestLoadMod(t *testing.T) {

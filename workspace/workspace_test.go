@@ -17,6 +17,8 @@ type loadWorkspaceTest struct {
 
 var m3alias = "m3"
 
+// the actual mod loading logic is tested more thoroughly in TestLoadMod (steampipeconfig/load_mod_test.go)
+// this test is primarily to verify the namedQueryMap building
 var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 	"single mod": {
 		source: "test_data/w_1",
@@ -58,6 +60,36 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 				},
 			},
 		},
+	},
+	"single_mod_with_ignored_directory": {
+		source: "test_data/single_mod_with_ignored_directory",
+		expected: &Workspace{Mod: &modconfig.Mod{
+			Name:        "m1",
+			Title:       "M1",
+			Description: "THIS IS M1",
+			Queries: []*modconfig.Query{
+				{
+					"q1", "Q1", "THIS IS QUERY 1", "select 1",
+				},
+				{
+					"q2", "Q2", "THIS IS QUERY 2", "select 2",
+				},
+			},
+		},
+		},
+	},
+	"single_mod_with_ignored_sql_files": {
+		source: "test_data/single_mod_with_ignored_sql_files",
+		expected: &Workspace{Mod: &modconfig.Mod{
+			Name:        "m1",
+			Title:       "M1",
+			Description: "THIS IS M1",
+			Queries: []*modconfig.Query{
+				{
+					"q1", "Q1", "THIS IS QUERY 1", "select 1",
+				},
+			},
+		}},
 	},
 }
 
