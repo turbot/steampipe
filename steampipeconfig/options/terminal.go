@@ -9,13 +9,13 @@ import (
 
 // Terminal
 type Terminal struct {
-	Output           *string  `hcl:"output"`
-	Separator        *string  `hcl:"separator"`
-	Header           *bool    `hcl:"header"`
-	Multi            *bool    `hcl:"multi"`
-	Timing           *bool    `hcl:"timing"`
-	SearchPath       []string `hcl:"search_path"`
-	SearchPathPrefix []string `hcl:"search_path_prefix"`
+	Output           *string   `hcl:"output"`
+	Separator        *string   `hcl:"separator"`
+	Header           *bool     `hcl:"header"`
+	Multi            *bool     `hcl:"multi"`
+	Timing           *bool     `hcl:"timing"`
+	SearchPath       *[]string `hcl:"search_path"`
+	SearchPathPrefix *[]string `hcl:"search_path_prefix"`
 }
 
 // ConfigMap :: create a config map to pass to viper
@@ -81,39 +81,39 @@ func (t *Terminal) String() string {
 	}
 	var str []string
 	if t.Output == nil {
-		str = append(str, "LogLevel: nil")
+		str = append(str, "  LogLevel: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Output: %s", *t.Output))
+		str = append(str, fmt.Sprintf("  Output: %s", *t.Output))
 	}
 	if t.Separator == nil {
-		str = append(str, "Separator: nil")
+		str = append(str, "  Separator: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Separator: %s", *t.Separator))
+		str = append(str, fmt.Sprintf("  Separator: %s", *t.Separator))
 	}
 	if t.Header == nil {
-		str = append(str, "Header: nil")
+		str = append(str, "  Header: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Header: %v", *t.Header))
+		str = append(str, fmt.Sprintf("  Header: %v", *t.Header))
 	}
 	if t.Multi == nil {
-		str = append(str, "Multi: nil")
+		str = append(str, "  Multi: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Multi: %v", *t.Multi))
+		str = append(str, fmt.Sprintf("  Multi: %v", *t.Multi))
 	}
 	if t.Timing == nil {
-		str = append(str, "Timing: nil")
+		str = append(str, "  Timing: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Timing: %v", *t.Timing))
+		str = append(str, fmt.Sprintf("  Timing: %v", *t.Timing))
 	}
 	if t.SearchPath == nil {
-		str = append(str, "SearchPath: nil")
+		str = append(str, "  SearchPath: nil")
 	} else {
-		str = append(str, fmt.Sprintf("SearchPath: %v", t.SearchPath))
+		str = append(str, fmt.Sprintf("  SearchPath: %v", t.SearchPath))
 	}
 	if t.SearchPathPrefix == nil {
-		str = append(str, "SearchPathPrefix: nil")
+		str = append(str, "  SearchPathPrefix: nil")
 	} else {
-		str = append(str, fmt.Sprintf("SearchPathPrefix: %v", t.SearchPathPrefix))
+		str = append(str, fmt.Sprintf("  SearchPathPrefix: %v", t.SearchPathPrefix))
 	}
 	return strings.Join(str, "\n")
 }

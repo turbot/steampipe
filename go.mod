@@ -10,9 +10,7 @@ require (
 	github.com/briandowns/spinner v1.11.1
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/containerd/containerd v1.4.1
-	github.com/danwakefield/fnmatch v0.0.0-20160403171240-cbb64ac3d964
 	github.com/deislabs/oras v0.8.1
-	github.com/denormal/go-gitignore v0.0.0-20180930084346-ae8ad1d07817 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.7.0
 	github.com/fsnotify/fsnotify v1.4.7
@@ -43,7 +41,7 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.7.1
-	github.com/turbot/go-kit v0.1.4-0.20210329102045-6299a090eba5
+	github.com/turbot/go-kit v0.1.4-rc.0
 	github.com/turbot/steampipe-plugin-sdk v0.2.6
 	github.com/ulikunitz/xz v0.5.8
 	golang.org/x/text v0.3.4
@@ -53,4 +51,3 @@ require (
 )
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe
-replace github.com/turbot/go-kit => /Users/kai/Dev/github/turbot/go-kit

@@ -41,14 +41,14 @@ func (c *Connection) String() string {
 	}
 	var str []string
 	if c.Cache == nil {
-		str = append(str, "Cache: nil")
+		str = append(str, "  Cache: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Cache: %v", *c.Cache))
+		str = append(str, fmt.Sprintf("  Cache: %v", *c.Cache))
 	}
 	if c.CacheTTL == nil {
-		str = append(str, "CacheTTL: nil")
+		str = append(str, "  CacheTTL: nil")
 	} else {
-		str = append(str, fmt.Sprintf("CacheTTL: %d", *c.CacheTTL))
+		str = append(str, fmt.Sprintf("  CacheTTL: %d", *c.CacheTTL))
 	}
 	return strings.Join(str, "\n")
 }

@@ -9,7 +9,6 @@ import (
 
 // General
 type General struct {
-	LogLevel    *string `hcl:"log_level"`
 	UpdateCheck *string `hcl:"update_check"`
 }
 
@@ -17,9 +16,6 @@ type General struct {
 func (g *General) ConfigMap() map[string]interface{} {
 	// only add keys which are non null
 	res := map[string]interface{}{}
-	if g.LogLevel != nil {
-		res[constants.ArgLogLevel] = g.LogLevel
-	}
 	if g.UpdateCheck != nil {
 		res[constants.ArgUpdateCheck] = g.UpdateCheck
 	}
@@ -32,9 +28,6 @@ func (g *General) ConfigMap() map[string]interface{} {
 func (g *General) Merge(otherOptions Options) {
 	switch o := otherOptions.(type) {
 	case *General:
-		if o.LogLevel != nil {
-			g.LogLevel = o.LogLevel
-		}
 		if o.UpdateCheck != nil {
 			g.UpdateCheck = o.UpdateCheck
 		}
@@ -46,15 +39,10 @@ func (g *General) String() string {
 		return ""
 	}
 	var str []string
-	if g.LogLevel == nil {
-		str = append(str, "LogLevel: nil")
-	} else {
-		str = append(str, fmt.Sprintf("LogLevel: %s", *g.LogLevel))
-	}
 	if g.UpdateCheck == nil {
-		str = append(str, "UpdateCheck: nil")
+		str = append(str, "  UpdateCheck: nil")
 	} else {
-		str = append(str, fmt.Sprintf("UpdateCheck: %s", *g.UpdateCheck))
+		str = append(str, fmt.Sprintf("  UpdateCheck: %s", *g.UpdateCheck))
 	}
 	return strings.Join(str, "\n")
 }

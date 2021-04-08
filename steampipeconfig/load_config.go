@@ -7,12 +7,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
-
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/steampipeconfig/options"
 )
 
 var Config *SteampipeConfig
@@ -45,6 +46,10 @@ func newSteampipeConfig(workspacePath string) (steampipeConfig *SteampipeConfig,
 			err = helpers.ToError(r)
 		}
 	}()
+	// check workspace  folder exists
+	if _, err := os.Stat(workspacePath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("workspace folder '%s' does not exist", workspacePath)
+	}
 
 	steampipeConfig = &SteampipeConfig{
 		Connections: make(map[string]*Connection),
@@ -53,15 +58,18 @@ func newSteampipeConfig(workspacePath string) (steampipeConfig *SteampipeConfig,
 	// load config from the installation folder
 	// load all spc files from config directory
 	include := filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension})
-	if err := loadConfig(constants.ConfigDir(), steampipeConfig, include); err != nil {
+	loadOptions := &loadConfigOptions{include: include}
+	if err := loadConfig(constants.ConfigDir(), steampipeConfig, loadOptions); err != nil {
 		return nil, err
 	}
 
 	// now load config from the workspace folder
-	//- this has precedence and so will overwrite any config which has already been set
+	// this has precedence and so will overwrite any config which has already been set
 	// only include workspace.spc from workspace directory
 	include = filehelpers.InclusionsFromFiles([]string{constants.WorkspaceConfigFileName})
-	if err := loadConfig(workspacePath, steampipeConfig, include); err != nil {
+	// update load options to ONLY allow terminal options
+	loadOptions = &loadConfigOptions{include: include, allowedOptions: []string{options.TerminalBlock}}
+	if err := loadConfig(workspacePath, steampipeConfig, &loadConfigOptions{include: include}); err != nil {
 		return nil, err
 	}
 
@@ -73,12 +81,16 @@ func newSteampipeConfig(workspacePath string) (steampipeConfig *SteampipeConfig,
 
 // load config from the given folder and update steampipeConfig
 // NOTE: this mutates steampipe config
+type loadConfigOptions struct {
+	include        []string
+	allowedOptions []string
+}
 
-func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, include []string) error {
+func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loadConfigOptions) error {
 	// get all the config files in the directory
 	configPaths, err := filehelpers.ListFiles(configFolder, &filehelpers.ListFilesOptions{
 		Options: filehelpers.FilesRecursive,
-		Include: include,
+		Include: opts.include,
 	})
 
 	if err != nil {
@@ -107,6 +119,11 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, include [
 		return plugin.DiagsToError("Failed to load config", diags)
 	}
 
+	// store block types which we have found in this folder - each is only allowed once
+	// NOTE this is different to merging options with options already populated in the passed-in steampipe config
+	// this is valid because the same block may be defined in the config folder and the workspace
+	optionBlockMap := map[string]bool{}
+
 	for _, block := range content.Blocks {
 		switch block.Type {
 		case "connection":
@@ -125,15 +142,22 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, include [
 			steampipeConfig.Connections[connection.Name] = connection
 
 		case "options":
-			options, moreDiags := parseOptions(block)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-				continue
+			// check this options type is permitted based on the options passed in
+			blockPermitted, err := optionsBlockPermitted(block, optionBlockMap, opts)
+			if blockPermitted {
+				options, moreDiags := parseOptions(block)
+				if moreDiags.HasErrors() {
+					diags = append(diags, moreDiags...)
+					continue
+				}
+				// set options on steampipe config
+				// if options are already set, this will merge the new options over the top of the existing options
+				// i.e. new options have precedence
+				steampipeConfig.SetOptions(options)
+			} else if err != nil {
+				return err
 			}
-			// set options on steampipe config
-			// if options are already set, this will merge the new options over the top of the existing options
-			// i.e. new options have precedence
-			steampipeConfig.SetOptions(options)
+			// TODO else raise error if not permitted???
 		}
 	}
 
@@ -141,4 +165,16 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, include [
 		return plugin.DiagsToError("Failed to load config", diags)
 	}
 	return nil
+}
+
+func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loadConfigOptions) (bool, error) {
+	blockType := block.Labels[0]
+	if _, ok := blockMap[blockType]; ok {
+		return false, fmt.Errorf("multiple instances of '%s' options block", blockType)
+	}
+	blockMap[blockType] = true
+	permitted := len(opts.allowedOptions) == 0 ||
+		helpers.StringSliceContains(opts.allowedOptions, blockType)
+
+	return permitted, nil
 }

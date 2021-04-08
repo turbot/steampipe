@@ -166,17 +166,31 @@ func (c *SteampipeConfig) String() string {
 		connectionStrings = append(connectionStrings, c.String())
 	}
 
-	return fmt.Sprintf(`
+	str := fmt.Sprintf(`
 Connections: 
 %s
 ----
 DefaultConnectionOptions:
-%s
+%s`, strings.Join(connectionStrings, "\n"), c.DefaultConnectionOptions.String())
+
+	if c.DatabaseOptions != nil {
+		str += fmt.Sprintf(`
+
 DatabaseOptions:
-%s
+%s`, c.DatabaseOptions.String())
+	}
+	if c.TerminalOptions != nil {
+		str += fmt.Sprintf(`
+
 TerminalOptions:
-%s
+%s`, c.TerminalOptions.String())
+	}
+	if c.GeneralOptions != nil {
+		str += fmt.Sprintf(`
+
 GeneralOptions:
-%s
-`, strings.Join(connectionStrings, "\n"), c.DefaultConnectionOptions.String(), c.DatabaseOptions.String(), c.TerminalOptions.String(), c.GeneralOptions.String())
+%s`, c.GeneralOptions.String())
+	}
+
+	return str
 }

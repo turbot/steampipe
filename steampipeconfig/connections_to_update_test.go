@@ -21,8 +21,8 @@ type getConnectionsToUpdateTest struct {
 	expected interface{}
 }
 
-var connectionTest1Checksum = getTestFileCheckSum("test_data/connection_config/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-1@latest/connection-test-1.plugin")
-var connectionTest2Checksum = getTestFileCheckSum("test_data/connection_config/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-2@latest/connection-test-2.plugin")
+var connectionTest1Checksum = getTestFileCheckSum("test_data/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-1@latest/connection-test-1.plugin")
+var connectionTest2Checksum = getTestFileCheckSum("test_data/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-2@latest/connection-test-2.plugin")
 
 var testCasesGetConnectionsToUpdate = map[string]getConnectionsToUpdateTest{
 	"no changes": {
@@ -416,7 +416,7 @@ connection "b" {
 
 func TestGetConnectionsToUpdate(t *testing.T) {
 	// set steampipe dir
-	os.Chdir("./test_data/connection_config/connections_to_update")
+	os.Chdir("./test_data/connections_to_update")
 	wd, _ := os.Getwd()
 	constants.SteampipeDir = wd
 

@@ -9,9 +9,9 @@ import (
 
 // Database
 type Database struct {
-	Port       *int    `hcl:"port"`
-	Listen     *string `hcl:"listen"`
-	SearchPath *string `hcl:"search_path"`
+	Port       *int      `hcl:"port"`
+	Listen     *string   `hcl:"listen"`
+	SearchPath *[]string `hcl:"search_path"`
 }
 
 // ConfigMap :: create a config map to pass to viper
@@ -53,14 +53,14 @@ func (d *Database) String() string {
 	}
 	var str []string
 	if d.Port == nil {
-		str = append(str, "Port: nil")
+		str = append(str, "  Port: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Port: %d", *d.Port))
+		str = append(str, fmt.Sprintf("  Port: %d", *d.Port))
 	}
 	if d.Listen == nil {
-		str = append(str, "Listen: nil")
+		str = append(str, "  Listen: nil")
 	} else {
-		str = append(str, fmt.Sprintf("Listen: %d", *d.Listen))
+		str = append(str, fmt.Sprintf("  Listen: %s", *d.Listen))
 	}
 	return strings.Join(str, "\n")
 }
