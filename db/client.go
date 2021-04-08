@@ -82,13 +82,13 @@ func (c *Client) setClientSearchPath() error {
 		sort.Strings(searchPath)
 	}
 	if viper.IsSet("search-path-prefix") {
-		prefixes := viper.GetStringSlice("search-path-prefix")
+		prefixedSearchPath := viper.GetStringSlice("search-path-prefix")
 		for _, p := range searchPath {
-			if !helpers.StringSliceContains(prefixes, p) {
-				prefixes = append(prefixes, p)
+			if !helpers.StringSliceContains(prefixedSearchPath, p) {
+				prefixedSearchPath = append(prefixedSearchPath, p)
 			}
 		}
-		searchPath = prefixes
+		searchPath = prefixedSearchPath
 	}
 
 	// add the public schema as the first schema in the search_path. This makes it
