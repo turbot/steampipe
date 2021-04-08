@@ -450,7 +450,7 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 	}
 
 	// refresh connections
-	if _, err = client.RefreshConnections(); err != nil {
+	if err = client.RefreshConnections(); err != nil {
 		return err
 	}
 

@@ -38,7 +38,7 @@ func ExecuteQuery(queryString string) (*results.ResultStreamer, error) {
 	utils.FailOnErrorWithMessage(err, "client failed to initialize")
 
 	// refresh connections
-	_, err = client.RefreshConnections()
+	err = client.RefreshConnections()
 	if err != nil {
 		// shutdown the service if something went wrong!!!
 		Shutdown(client, InvokerQuery)
