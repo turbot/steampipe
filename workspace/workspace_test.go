@@ -60,36 +60,36 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 			},
 		},
 	},
-	//"single_mod_with_ignored_directory": {
-	//	source: "test_data/single_mod_with_ignored_directory",
-	//	expected: &Workspace{Mod: &modconfig.Mod{
-	//		Name:        "m1",
-	//		Title:       "M1",
-	//		Description: "THIS IS M1",
-	//		Queries: []*modconfig.Query{
-	//			{
-	//				"q1", "Q1", "THIS IS QUERY 1", "select 1",
-	//			},
-	//			{
-	//				"q2", "Q2", "THIS IS QUERY 2", "select 2",
-	//			},
-	//		},
-	//	},
-	//	},
-	//},
-	//"single_mod_with_ignored_sql_files": {
-	//	source: "test_data/single_mod_with_ignored_sql_files",
-	//	expected: &Workspace{Mod: &modconfig.Mod{
-	//		Name:        "m1",
-	//		Title:       "M1",
-	//		Description: "THIS IS M1",
-	//		Queries: []*modconfig.Query{
-	//			{
-	//				"q1", "Q1", "THIS IS QUERY 1", "select 1",
-	//			},
-	//		},
-	//	}},
-	//},
+	"single_mod_with_ignored_directory": {
+		source: "test_data/single_mod_with_ignored_directory",
+		expected: &Workspace{Mod: &modconfig.Mod{
+			Name:        "m1",
+			Title:       "M1",
+			Description: "THIS IS M1",
+			Queries: []*modconfig.Query{
+				{
+					"q1", "Q1", "THIS IS QUERY 1", "select 1",
+				},
+				{
+					"q2", "Q2", "THIS IS QUERY 2", "select 2",
+				},
+			},
+		},
+		},
+	},
+	"single_mod_with_ignored_sql_files": {
+		source: "test_data/single_mod_with_ignored_sql_files",
+		expected: &Workspace{Mod: &modconfig.Mod{
+			Name:        "m1",
+			Title:       "M1",
+			Description: "THIS IS M1",
+			Queries: []*modconfig.Query{
+				{
+					"q1", "Q1", "THIS IS QUERY 1", "select 1",
+				},
+			},
+		}},
+	},
 }
 
 func TestLoadWorkspace(t *testing.T) {

@@ -87,9 +87,10 @@ type loadConfigOptions struct {
 }
 
 func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loadConfigOptions) error {
+	// TODO recursive?
 	// get all the config files in the directory
 	configPaths, err := filehelpers.ListFiles(configFolder, &filehelpers.ListFilesOptions{
-		Options: filehelpers.FilesRecursive,
+		Options: filehelpers.FilesFlat,
 		Include: opts.include,
 	})
 

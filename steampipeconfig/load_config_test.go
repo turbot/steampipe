@@ -22,38 +22,39 @@ var ttlVal = 300
 var cache_ttl = 300
 var databasePort = 9193
 var databaseListen = "local"
-var databaseSearchPath = []string{"aws", "gcp", "foo"}
+var databaseSearchPath = "aws,gcp,foo"
 
 var terminalMulti = false
 var terminalOutput = "table"
 var terminalHeader = true
 var terminalSeparator = ","
 var terminalTiming = false
-var terminalSearchPath = []string{"aws", "gcp"}
+var terminalSearchPath = "aws,gcp"
 var generalUpdateCheck = "true"
 
-var workspaceSearchPath = []string{"bar", "aws", "gcp"}
-var workspaceSearchPathPrefix = []string{"aws"}
+var workspaceMulti = true
+var workspaceOutput = "json"
+var workspaceSearchPath = "bar,aws,gcp"
+var workspaceSearchPathPrefix = "foobar"
 
 var testCasesLoadConfig = map[string]loadConfigTest{
 	"multiple_connections": {
 		steampipeDir: "test_data/connection_config/multiple_connections",
-		workspaceDir: "test_data/workspaces/empty",
 		expected: &SteampipeConfig{
 			Connections: map[string]*Connection{
 				"aws_dmi_001": {
 					Name:   "aws_dmi_001",
 					Plugin: "hub.steampipe.io/plugins/turbot/aws@latest",
 					Config: `access_key            = "aws_dmi_001_access_key"
-	regions               = "- us-east-1\n-us-west-"
-	secret_key            = "aws_dmi_001_secret_key"`,
+regions               = "- us-east-1\n-us-west-"
+secret_key            = "aws_dmi_001_secret_key"`,
 				},
 				"aws_dmi_002": {
 					Name:   "aws_dmi_002",
 					Plugin: "hub.steampipe.io/plugins/turbot/aws@latest",
 					Config: `access_key            = "aws_dmi_002_access_key"
-	regions               = "- us-east-1\n-us-west-"
-	secret_key            = "aws_dmi_002_secret_key"`,
+regions               = "- us-east-1\n-us-west-"
+secret_key            = "aws_dmi_002_secret_key"`,
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
@@ -103,6 +104,107 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				Multi:      &terminalMulti,
 				Timing:     &terminalTiming,
 				SearchPath: &terminalSearchPath,
+			},
+			GeneralOptions: &options.General{
+				UpdateCheck: &generalUpdateCheck,
+			},
+		},
+	},
+	"single_connection_with_default_options_and_workspace_invalid_options_block": {
+		steampipeDir: "test_data/connection_config/single_connection_with_default_options",
+		workspaceDir: "test_data/workspaces/invalid_options_block",
+		expected: &SteampipeConfig{
+			Connections: map[string]*Connection{
+				// todo normalise plugin names here?
+				"a": {
+					Name:   "a",
+					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+				},
+			},
+			DefaultConnectionOptions: &options.Connection{
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
+			},
+			DatabaseOptions: &options.Database{
+				Port:       &databasePort,
+				Listen:     &databaseListen,
+				SearchPath: &databaseSearchPath,
+			},
+			TerminalOptions: &options.Terminal{
+				Output:     &terminalOutput,
+				Separator:  &terminalSeparator,
+				Header:     &terminalHeader,
+				Multi:      &terminalMulti,
+				Timing:     &terminalTiming,
+				SearchPath: &terminalSearchPath,
+			},
+			GeneralOptions: &options.General{
+				UpdateCheck: &generalUpdateCheck,
+			},
+		},
+	},
+	"single_connection_with_default_options_and_workspace_search_path_prefix": {
+		steampipeDir: "test_data/connection_config/single_connection_with_default_options",
+		workspaceDir: "test_data/workspaces/search_path_prefix",
+		expected: &SteampipeConfig{
+			Connections: map[string]*Connection{
+				// todo normalise plugin names here?
+				"a": {
+					Name:   "a",
+					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+				},
+			},
+			DefaultConnectionOptions: &options.Connection{
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
+			},
+			DatabaseOptions: &options.Database{
+				Port:       &databasePort,
+				Listen:     &databaseListen,
+				SearchPath: &databaseSearchPath,
+			},
+			TerminalOptions: &options.Terminal{
+				Output:           &terminalOutput,
+				Separator:        &terminalSeparator,
+				Header:           &terminalHeader,
+				Multi:            &terminalMulti,
+				Timing:           &terminalTiming,
+				SearchPath:       &terminalSearchPath,
+				SearchPathPrefix: &workspaceSearchPathPrefix,
+			},
+			GeneralOptions: &options.General{
+				UpdateCheck: &generalUpdateCheck,
+			},
+		},
+	},
+	"single_connection_with_default_options_and_workspace_override_terminal_config": {
+		steampipeDir: "test_data/connection_config/single_connection_with_default_options",
+		workspaceDir: "test_data/workspaces/override_terminal_config",
+		expected: &SteampipeConfig{
+			Connections: map[string]*Connection{
+				// todo normalise plugin names here?
+				"a": {
+					Name:   "a",
+					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+				},
+			},
+			DefaultConnectionOptions: &options.Connection{
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
+			},
+			DatabaseOptions: &options.Database{
+				Port:       &databasePort,
+				Listen:     &databaseListen,
+				SearchPath: &databaseSearchPath,
+			},
+			TerminalOptions: &options.Terminal{
+				Output:           &workspaceOutput,
+				Separator:        &terminalSeparator,
+				Header:           &terminalHeader,
+				Multi:            &workspaceMulti,
+				Timing:           &terminalTiming,
+				SearchPath:       &workspaceSearchPath,
+				SearchPathPrefix: &workspaceSearchPathPrefix,
 			},
 			GeneralOptions: &options.General{
 				UpdateCheck: &generalUpdateCheck,
@@ -177,8 +279,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 
 func TestLoadConfig(t *testing.T) {
 	for name, test := range testCasesLoadConfig {
+		// default workspoace to empty dir
+		workspaceDir := test.workspaceDir
+		if workspaceDir == "" {
+			workspaceDir = "test_data/workspaces/empty"
+		}
 		steampipeDir, err := filepath.Abs(test.steampipeDir)
-		workspaceDir, err := filepath.Abs(test.workspaceDir)
+		workspaceDir, err = filepath.Abs(workspaceDir)
+
 		if err != nil {
 			t.Errorf("failed to build absolute config filepath from %s", test.steampipeDir)
 		}

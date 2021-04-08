@@ -7,6 +7,7 @@ options "connection" {
 options "database" {
   port   = 9193    # any valid, open port number
   listen = "local" # local, network
+  search_path    = "aws,gcp,foo"
 }
 
 options "terminal" {
@@ -15,7 +16,7 @@ options "terminal" {
   header    = true    # true, false
   separator = ","     # any single char
   timing    = false   # true, false
-  search_path    = ["aws","gcp"]
+  search_path    = "aws,gcp"
 }
 
 options "general" {

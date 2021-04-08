@@ -9,9 +9,9 @@ import (
 
 // Database
 type Database struct {
-	Port       *int      `hcl:"port"`
-	Listen     *string   `hcl:"listen"`
-	SearchPath *[]string `hcl:"search_path"`
+	Port       *int    `hcl:"port"`
+	Listen     *string `hcl:"listen"`
+	SearchPath *string `hcl:"search_path"`
 }
 
 // ConfigMap :: create a config map to pass to viper
@@ -25,7 +25,8 @@ func (d *Database) ConfigMap() map[string]interface{} {
 		res[constants.ArgListenAddress] = d.Listen
 	}
 	if d.SearchPath != nil {
-		res[constants.ArgSearchPath] = d.SearchPath
+		// convert from string to array
+		res[constants.ArgSearchPath] = searchPathToArray(*d.SearchPath)
 	}
 	return res
 }
@@ -61,6 +62,11 @@ func (d *Database) String() string {
 		str = append(str, "  Listen: nil")
 	} else {
 		str = append(str, fmt.Sprintf("  Listen: %s", *d.Listen))
+	}
+	if d.SearchPath == nil {
+		str = append(str, "  SearchPath: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  SearchPath: %s", *d.SearchPath))
 	}
 	return strings.Join(str, "\n")
 }

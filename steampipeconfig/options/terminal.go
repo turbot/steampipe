@@ -9,13 +9,13 @@ import (
 
 // Terminal
 type Terminal struct {
-	Output           *string   `hcl:"output"`
-	Separator        *string   `hcl:"separator"`
-	Header           *bool     `hcl:"header"`
-	Multi            *bool     `hcl:"multi"`
-	Timing           *bool     `hcl:"timing"`
-	SearchPath       *[]string `hcl:"search_path"`
-	SearchPathPrefix *[]string `hcl:"search_path_prefix"`
+	Output           *string `hcl:"output"`
+	Separator        *string `hcl:"separator"`
+	Header           *bool   `hcl:"header"`
+	Multi            *bool   `hcl:"multi"`
+	Timing           *bool   `hcl:"timing"`
+	SearchPath       *string `hcl:"search_path"`
+	SearchPathPrefix *string `hcl:"search_path_prefix"`
 }
 
 // ConfigMap :: create a config map to pass to viper
@@ -38,10 +38,12 @@ func (t *Terminal) ConfigMap() map[string]interface{} {
 		res[constants.ArgTimer] = t.Timing
 	}
 	if t.SearchPath != nil {
-		res[constants.ArgSearchPath] = t.SearchPath
+		// convert from string to array
+		res[constants.ArgSearchPath] = searchPathToArray(*t.SearchPath)
 	}
 	if t.SearchPathPrefix != nil {
-		res[constants.ArgSearchPathPrefix] = t.SearchPathPrefix
+		// convert from string to array
+		res[constants.ArgSearchPathPrefix] = searchPathToArray(*t.SearchPathPrefix)
 	}
 	return res
 }
@@ -108,12 +110,22 @@ func (t *Terminal) String() string {
 	if t.SearchPath == nil {
 		str = append(str, "  SearchPath: nil")
 	} else {
-		str = append(str, fmt.Sprintf("  SearchPath: %v", t.SearchPath))
+		str = append(str, fmt.Sprintf("  SearchPath: %s", *t.SearchPath))
 	}
 	if t.SearchPathPrefix == nil {
 		str = append(str, "  SearchPathPrefix: nil")
 	} else {
-		str = append(str, fmt.Sprintf("  SearchPathPrefix: %v", t.SearchPathPrefix))
+		str = append(str, fmt.Sprintf("  SearchPathPrefix: %s", *t.SearchPathPrefix))
 	}
 	return strings.Join(str, "\n")
+}
+
+func searchPathToArray(searchPathString string) []string {
+	// convert comma separated list to array
+	searchPath := strings.Split(searchPathString, ",")
+	// strip whitespace
+	for i, s := range searchPath {
+		searchPath[i] = strings.TrimSpace(s)
+	}
+	return searchPath
 }
