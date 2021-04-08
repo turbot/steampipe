@@ -1,3 +1,10 @@
+## v0.3.6 [2021-04-08]
+_What's new?_
+* Plugin updates are now listed alphabetically. ([#339](https://github.com/turbot/steampipe/issues/339))
+
+_Bug fixes_
+* Fix log trimming, which was broken by the change of log location. ([#344](https://github.com/turbot/steampipe/issues/344))
+
 ## v0.3.5 [2021-04-02]
 _Bug fixes_
 * Fix `.inspect` not working with unqualified table names. ([#346](https://github.com/turbot/steampipe/issues/346))
