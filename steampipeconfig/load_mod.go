@@ -125,11 +125,11 @@ func GetModFileExtensions() []string {
 func getSourcePaths(modPath string, include, exclude []string) ([]string, error) {
 
 	// build list options:
-	// - search recursively
+	// - search the current folder only
 	// - include extensions we have identifed
 	// - ignore the .steampipe folder
 	opts := &filehelpers.ListFilesOptions{
-		Options: filehelpers.FilesRecursive,
+		Options: filehelpers.FilesFlat,
 		Exclude: exclude,
 		Include: include,
 	}
