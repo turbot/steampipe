@@ -21,6 +21,10 @@ type VersionCheckReport struct {
 	CheckRequest  versionCheckPayload
 }
 
+func (vr *VersionCheckReport) ShortName() string {
+	return fmt.Sprintf("%s/%s", vr.CheckResponse.Org, vr.CheckResponse.Name)
+}
+
 // versionCheckPayload :: the payload that travels to-and-fro between steampipe and the server
 type versionCheckPayload struct {
 	Org     string `json:"org"`
