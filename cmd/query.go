@@ -3,11 +3,11 @@ package cmd
 import (
 	"fmt"
 	"log"
-	"path/filepath"
 	"os"
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/workspace"
+	"path/filepath"
+
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/workspace"
 )
 
 // QueryCmd :: represents the query command
@@ -70,13 +71,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnError(err)
 	defer workspace.Close()
 
-
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	queries, err := getQueries(args, workspace)
 	utils.FailOnError(err)
 
 	for _, q := range queries {
-		runQuery(q)
+		runQuery(q, workspace)
 	}
 }
 
@@ -108,7 +108,7 @@ func getQueries(args []string, workspace *workspace.Workspace) ([]string, error)
 	return []string{query}, nil
 }
 
-func runQuery(queryString string) {
+func runQuery(queryString string, workspace *workspace.Workspace) {
 	// set the flag to not show spinner
 	showSpinner := queryString == ""
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, showSpinner)
