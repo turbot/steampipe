@@ -223,7 +223,8 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		}
 	}
 
-	return ServiceStarted, client.setServiceSearchPath()
+	err = client.setServiceSearchPath()
+	return ServiceStarted, err
 }
 
 // ensures that the `steampipe` fdw server exists
@@ -279,7 +280,6 @@ func (c *Client) setServiceSearchPath() error {
 		constants.DatabaseUser,
 		strings.Join(escapedSchemas, ","),
 	)
-	// TODO should we report error
 	_, err := c.ExecuteSync(query)
 	return err
 }
