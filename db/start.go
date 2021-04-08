@@ -223,9 +223,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		}
 	}
 
-	client.setServiceSearchPath()
-
-	return ServiceStarted, nil
+	return ServiceStarted, client.setServiceSearchPath()
 }
 
 // ensures that the `steampipe` fdw server exists
@@ -245,7 +243,7 @@ func ensureSteampipeServer() error {
 	return nil
 }
 
-func (c *Client) setServiceSearchPath() {
+func (c *Client) setServiceSearchPath() error {
 	// set the search_path to the available foreign schemas
 	// or the one set by the user in config
 	var schemas []string
@@ -261,8 +259,6 @@ func (c *Client) setServiceSearchPath() {
 		sort.Strings(schemas)
 	}
 
-	// set this before the `public` schema gets added
-	c.schemaMetadata.SearchPath = schemas
 	// add the public schema as the first schema in the search_path. This makes it
 	// easier for users to build and work with their own tables, and since it's normally
 	// empty, doesn't make using steampipe tables any more difficult.
@@ -284,7 +280,8 @@ func (c *Client) setServiceSearchPath() {
 		strings.Join(escapedSchemas, ","),
 	)
 	// TODO should we report error
-	c.ExecuteSync(query)
+	_, err := c.ExecuteSync(query)
+	return err
 }
 
 func handleStartFailure(err error) error {
