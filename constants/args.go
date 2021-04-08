@@ -21,6 +21,7 @@ const (
 	ArgLogLevel                = "log-level"
 	ArgUpdateCheck             = "update-check"
 	ArgInstallDir              = "install-dir"
+	ArgSqlFile                 = "sql-file"
 )
 
 /// metaquery mode arguments

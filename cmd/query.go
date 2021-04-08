@@ -3,17 +3,18 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/display"
-
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
-
-	"github.com/spf13/cobra"
 )
 
 // QueryCmd :: represents the query command
@@ -46,7 +47,8 @@ Examples:
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").
-		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.")
+		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.").
+		AddStringSliceFlag(constants.ArgSqlFile, "", nil, "Specifies one or more sql files to execute.")
 
 	return cmd
 }
@@ -61,10 +63,42 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	queryString := getQuery(cmd, args)
+	// gety query or queries from the args
+	queries, err := getQueries(args)
+	utils.FailOnError(err)
 
+	for _, q := range queries {
+		runQuery(q)
+	}
+}
+
+// retrieve queries from args or determine whether to run the interactive shell
+func getQueries(args []string) ([]string, error) {
+	// was the sql-file flag used?
+	if sqlFiles := viper.GetStringSlice(constants.ArgSqlFile); len(sqlFiles) > 0 {
+		// cobra only takes the first string after a flag as the flag value, so if more than one file is specified,
+		// and they are NOT comma separated, all but the first file will appear in 'args'
+		// instead of being assigned to the sql-file flag - so append args to the list of files
+		// NOTE: this does mean if there are any other unclaimed args, they will be treated as a file
+		// (and probably cause a not-exists error)
+		sqlFiles = append(sqlFiles, args...)
+		return getQueriesFromFiles(sqlFiles)
+	}
+
+	// otherwise either the query was passed as an argument, or no query was passed (interactive mode)
+	// just return the first arg (if there is one)
+
+	// if no query is specified in the args, we must pass a single empty query to trigger interactive mode
+	var query = ""
+	if len(args) > 0 {
+		query = args[0]
+	}
+	return []string{query}, nil
+}
+
+func runQuery(queryString string) {
 	// set the flag to not show spinner
-	showSpinner := (queryString == "")
+	showSpinner := queryString == ""
 	cmdconfig.Viper().Set(constants.ShowInteractiveOutputConfigKey, showSpinner)
 
 	// the db executor sends result data over resultsStreamer
@@ -79,17 +113,33 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-// retrieve query from args or determine whether to run the interactive shell
-func getQuery(cmd *cobra.Command, args []string) (query string) {
-	log.Println("[TRACE] getQuery")
-	if len(args) == 0 {
-		if cmdconfig.Viper().GetBool(constants.ArgListAllTableNames) {
-			query = ".tables"
-		} else if table := cmdconfig.Viper().GetString(constants.ArgSelectAll); table != "" {
-			query = fmt.Sprintf("select * from %s", table)
+func getQueriesFromFiles(files []string) ([]string, error) {
+	log.Println("[TRACE] getQueriesFromFiles: ", files)
+	// build list of queries
+	var result []string
+	for _, filename := range files {
+		// get absolute filename
+		path, err := filepath.Abs(filename)
+		if err != nil {
+			return nil, err
 		}
-	} else {
-		query = args[0]
+		// does it exist?
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			return nil, fmt.Errorf("file '%s' does not exist", path)
+		}
+
+		// read file
+		fileBytes, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		if len(fileBytes) == 0 {
+			// empty file - ignore
+			continue
+		}
+
+		// add to list of queries
+		result = append(result, string(fileBytes))
 	}
-	return
+	return result, nil
 }
