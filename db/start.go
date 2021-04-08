@@ -6,9 +6,11 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"syscall"
 
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/utils"
@@ -213,7 +215,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	// refresh plugin connections - ensure db schemas are in sync with connection config
 	// NOTE: refresh defaults to true but will be set to false if this service start command has been invoked by a query command
 	if cmdconfig.Viper().GetBool(constants.ArgRefresh) {
-		if _, err = client.RefreshConnections(); err != nil {
+		if err = client.RefreshConnections(); err != nil {
 			return ServiceStarted, err
 		}
 		if err = refreshFunctions(); err != nil {
@@ -221,7 +223,8 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		}
 	}
 
-	return ServiceStarted, nil
+	err = client.setServiceSearchPath()
+	return ServiceStarted, err
 }
 
 // ensures that the `steampipe` fdw server exists
@@ -239,6 +242,46 @@ func ensureSteampipeServer() error {
 		return installSteampipeHub()
 	}
 	return nil
+}
+
+func (c *Client) setServiceSearchPath() error {
+	// set the search_path to the available foreign schemas
+	// or the one set by the user in config
+	var schemas []string
+
+	// since this is the service starting up,
+	// we use the scoped value from the config - as specified by the user
+	// this IS the value that needs to get set
+	if viper.IsSet("database.search-path") {
+		schemas = viper.GetStringSlice("database.search-path")
+	} else {
+		schemas = c.schemaMetadata.GetSchemas()
+		// sort the schema names
+		sort.Strings(schemas)
+	}
+
+	// add the public schema as the first schema in the search_path. This makes it
+	// easier for users to build and work with their own tables, and since it's normally
+	// empty, doesn't make using steampipe tables any more difficult.
+	schemas = append([]string{"public"}, schemas...)
+	// add 'internal' schema as last schema in the search path
+	schemas = append(schemas, constants.FunctionSchema)
+
+	// escape the schema names
+	escapedSchemas := []string{}
+
+	for _, schema := range schemas {
+		escapedSchemas = append(escapedSchemas, PgEscapeName(schema))
+	}
+
+	log.Println("[TRACE] setting search path to", schemas)
+	query := fmt.Sprintf(
+		"alter user %s set search_path to %s;",
+		constants.DatabaseUser,
+		strings.Join(escapedSchemas, ","),
+	)
+	_, err := c.ExecuteSync(query)
+	return err
 }
 
 func handleStartFailure(err error) error {

@@ -6,9 +6,10 @@ import (
 	"log"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/spf13/viper"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -22,48 +23,40 @@ type Client struct {
 	connectionMap  *steampipeconfig.ConnectionMap
 }
 
-var clientSingleton *Client
-var cMux sync.Mutex
-
 // Close closes the connection to the database and shuts down the backend
 func (c *Client) close() {
 	if c.dbClient != nil {
 		c.dbClient.Close()
 	}
-
-	// set this to nil, so that we recreate stuff the
-	// next time GetClient is called
-	clientSingleton = nil
 }
 
 // GetClient ensures that the database instance is running
 // and returns a `Client` to interact with it
 func GetClient(autoRefreshConnections bool) (*Client, error) {
-	cMux.Lock()
-	defer cMux.Unlock()
-	if clientSingleton == nil {
-		db, err := createSteampipeDbClient()
-		if err != nil {
-			return nil, err
-		}
-		clientSingleton = new(Client)
-		clientSingleton.dbClient = db
-		clientSingleton.loadSchema()
+	db, err := createSteampipeDbClient()
+	if err != nil {
+		return nil, err
+	}
+	client := new(Client)
+	client.dbClient = db
+	client.loadSchema()
 
-		if autoRefreshConnections {
-			clientSingleton.RefreshConnections()
-			refreshFunctions()
-		}
-
-		// load the connection state and cache it!
-		connectionMap, err := steampipeconfig.GetConnectionState(clientSingleton.schemaMetadata.GetSchemas())
-		if err != nil {
-			return nil, err
-		}
-		clientSingleton.connectionMap = &connectionMap
+	if autoRefreshConnections {
+		client.RefreshConnections()
+		refreshFunctions()
 	}
 
-	return clientSingleton, nil
+	// load the connection state and cache it!
+	connectionMap, err := steampipeconfig.GetConnectionState(client.schemaMetadata.GetSchemas())
+	if err != nil {
+		return nil, err
+	}
+	client.connectionMap = &connectionMap
+	if err := client.setClientSearchPath(); err != nil {
+		utils.ShowError(err)
+	}
+
+	return client, nil
 }
 
 func createSteampipeDbClient() (*sql.DB, error) {
@@ -76,6 +69,47 @@ func createSteampipeRootDbClient() (*sql.DB, error) {
 
 func createPostgresDbClient() (*sql.DB, error) {
 	return createDbClient("postgres", constants.DatabaseSuperUser)
+}
+
+func (c *Client) setClientSearchPath() error {
+	var searchPath []string
+
+	if viper.IsSet("search-path") {
+		searchPath = viper.GetStringSlice("search-path")
+	} else {
+		searchPath = c.schemaMetadata.GetSchemas()
+		sort.Strings(searchPath)
+	}
+	if viper.IsSet("search-path-prefix") {
+		prefixedSearchPath := viper.GetStringSlice("search-path-prefix")
+		for _, p := range searchPath {
+			if !helpers.StringSliceContains(prefixedSearchPath, p) {
+				prefixedSearchPath = append(prefixedSearchPath, p)
+			}
+		}
+		searchPath = prefixedSearchPath
+	}
+
+	// add the public schema as the first schema in the search_path. This makes it
+	// easier for users to build and work with their own tables, and since it's normally
+	// empty, doesn't make using steampipe tables any more difficult.
+	searchPath = append([]string{"public"}, searchPath...)
+	// add 'internal' schema as last schema in the search path
+	searchPath = append(searchPath, constants.FunctionSchema)
+
+	// escape the names
+	for idx, path := range searchPath {
+		searchPath[idx] = PgEscapeName(path)
+	}
+	q := fmt.Sprintf("set search_path to %s", strings.Join(searchPath, ","))
+	_, err := c.ExecuteSync(q)
+
+	if err != nil {
+		return err
+	}
+
+	c.schemaMetadata.SearchPath = searchPath
+	return nil
 }
 
 func createDbClient(dbname string, username string) (*sql.DB, error) {
@@ -148,39 +182,6 @@ func (c *Client) loadSchema() {
 
 	c.schemaMetadata, err = buildSchemaMetadata(tablesResult)
 	utils.FailOnError(err)
-}
-
-func (c *Client) setSearchPath() {
-	// set the search_path to the available foreign schemas
-	// we need to do this here, since postgres resets the search_path on every load.
-	schemas := c.schemaMetadata.GetSchemas()
-
-	// sort the schema names
-	sort.Strings(schemas)
-	// set this before the `public` schema gets added
-	c.schemaMetadata.SearchPath = schemas
-	// add the public schema as the first schema in the search_path. This makes it
-	// easier for users to build and work with their own tables, and since it's normally
-	// empty, doesn't make using steampipe tables any more difficult.
-	schemas = append([]string{"public"}, schemas...)
-	// add 'internal' schema as last schema in the search path
-	schemas = append(schemas, constants.FunctionSchema)
-
-	// escape the schema names
-	escapedSchemas := []string{}
-
-	for _, schema := range schemas {
-		escapedSchemas = append(escapedSchemas, PgEscapeName(schema))
-	}
-
-	log.Println("[TRACE] setting search path to", schemas)
-	query := fmt.Sprintf(
-		"alter user %s set search_path to %s;",
-		constants.DatabaseUser,
-		strings.Join(escapedSchemas, ","),
-	)
-	// TODO should we report error
-	c.ExecuteSync(query)
 }
 
 func (c *Client) getSchemaFromDB() (*sql.Rows, error) {
