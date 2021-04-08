@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -17,9 +18,12 @@ func TrimLogs() {
 	}
 	for _, file := range files {
 		fileName := file.Name()
-		diff := time.Now().Sub(file.ModTime()).Hours()
-		if diff > logRetentionDays*24 {
-			logPath := fileLocation + "/" + fileName
+		if filepath.Ext(fileName) != ".log" {
+			continue
+		}
+		age := time.Now().Sub(file.ModTime()).Hours()
+		if age > logRetentionDays*24 {
+			logPath := filepath.Join(fileLocation, fileName)
 			err := os.Remove(logPath)
 			if err != nil {
 				log.Printf("[DEBUG] failed to delete log file %s\n", logPath)
