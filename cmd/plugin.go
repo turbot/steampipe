@@ -30,7 +30,7 @@ func PluginCmd() *cobra.Command {
 		Long: `Steampipe plugin management.
 
 Plugins extend Steampipe to work with many different services and providers.
-Find plugins using the public registry at https://registry.steampipe.io.
+Find plugins using the public registry at https://hub.steampipe.io.
 
 Examples:
 
