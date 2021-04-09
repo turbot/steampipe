@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"sort"
 	"strings"
 	"time"
 
@@ -80,8 +79,8 @@ func (c *Client) setClientSearchPath() error {
 		// add 'internal' schema as last schema in the search path
 		searchPath = append(searchPath, constants.FunctionSchema)
 	} else {
-		// so no search path was set in config - build a search path from the connection schemas
-		searchPath = c.getDefaultSearchPath(searchPath)
+		searchPath, _ = c.getCurrentSearchPath()
+		ADD PUBLIC
 	}
 
 	// if a prefix was specified, add it
@@ -97,7 +96,9 @@ func (c *Client) setClientSearchPath() error {
 
 	// escape the schema
 	for idx, path := range searchPath {
-		searchPath[idx] = PgEscapeName(path)
+		searchPath[idx] = path
+		searchPath[idx] = strings.TrimSpace(searchPath[idx])
+		searchPath[idx] = PgEscapeName(searchPath[idx])
 	}
 	q := fmt.Sprintf("set search_path to %s", strings.Join(searchPath, ","))
 	_, err := c.ExecuteSync(q)
@@ -108,6 +109,26 @@ func (c *Client) setClientSearchPath() error {
 
 	c.schemaMetadata.SearchPath = searchPath
 	return nil
+}
+
+func (c *Client) getCurrentSearchPath() ([]string, error) {
+	var currentSearchPath []string
+	var pathAsString string
+	row := c.dbClient.QueryRow("show search_path")
+	if row.Err() != nil {
+		return nil, row.Err()
+	}
+	err := row.Scan(&pathAsString)
+	if err != nil {
+		return nil, err
+	}
+	currentSearchPath = strings.Split(pathAsString, ",")
+	for idx, p := range currentSearchPath {
+		p = strings.Join(strings.Split(p, "\""), "")
+		p = strings.TrimSpace(p)
+		currentSearchPath[idx] = p
+	}
+	return currentSearchPath, nil
 }
 
 // set the search path for the db service (by setting it on the steampipe user)

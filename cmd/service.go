@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 
@@ -58,6 +59,8 @@ connection from any Postgres compatible database client.`,
 		// for now default listen address to empty so we fall back to the default of the deprecated arg
 		AddStringFlag(constants.ArgListenAddress, "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)").
 		AddStringFlag(constants.ArgListenAddressDeprecated, "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)", cmdconfig.FlagOptions.Deprecated(constants.ArgListenAddress)).
+		// search path
+		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user in the underlying service (comma-separated)").
 		// Hidden flags for internal use
 		AddStringFlag(constants.ArgInvoker, "", string(db.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden()).
 		AddBoolFlag(constants.ArgRefresh, "", true, "Refresh connections on startup", cmdconfig.FlagOptions.Hidden())
@@ -111,6 +114,8 @@ func ServiceRestartCmd() *cobra.Command {
 
 	cmdconfig.
 		OnCmd(cmd).
+		// search path
+		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user in the underlying service (comma-separated)").
 		AddBoolFlag(constants.ArgForce, "", false, "Forces the service to restart, releasing all open connections and ports")
 
 	return cmd
@@ -125,6 +130,12 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 			os.Exit(-1)
 		}
 	}()
+
+	// read in the value of the `search-path` flag and set it to `database.search-path`
+	if viper.IsSet(constants.ArgSearchPath) && len(viper.GetStringSlice(constants.ArgSearchPath)) > 0 {
+		viper.Set(constants.DatabaseSearchPathConfigKey, viper.GetStringSlice(constants.ArgSearchPath))
+		viper.Set(constants.ArgSearchPath, nil)
+	}
 
 	port := cmdconfig.DatabasePort()
 	if port < 1 || port > 65535 {
@@ -172,6 +183,11 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// read in the value of the `search-path` flag and set it to `database.search-path`
+	if viper.IsSet(constants.ArgSearchPath) && len(viper.GetStringSlice(constants.ArgSearchPath)) > 0 {
+		viper.Set(constants.DatabaseSearchPathConfigKey, viper.GetStringSlice(constants.ArgSearchPath))
+	}
+
 	currentServiceStatus, err := db.GetStatus()
 
 	if err != nil {
@@ -184,7 +200,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	stopStatus, err := db.StopDB(cmdconfig.Viper().GetBool(constants.ArgForce), db.InvokerService)
+	stopStatus, err := db.StopDB(viper.GetBool(constants.ArgForce), db.InvokerService)
 
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "could not stop current instance")
