@@ -23,6 +23,8 @@ const (
 	ArgInstallDir              = "install-dir"
 	ArgSqlFile                 = "sql-file"
 	ArgWorkspace               = "workspace"
+	ArgSearchPath              = "search-path"
+	ArgSearchPathPrefix        = "search-path-prefix"
 )
 
 /// metaquery mode arguments
