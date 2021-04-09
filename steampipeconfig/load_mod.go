@@ -207,7 +207,6 @@ func parseModHcl(modPath string, fileData map[string][]byte) (*modParseResult, e
 // create pseudo-resources for any files whose extensions are registered
 // NOTE: this mutates parseResults
 func createPseudoResources(modPath string, parseResults *modParseResult, opts *LoadModOptions) error {
-
 	// list all registered files
 	var include = filehelpers.InclusionsFromExtensions(modconfig.RegisteredFileExtensions())
 	sourcePaths, err := getSourcePaths(modPath, include, opts.Exclude)

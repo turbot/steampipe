@@ -74,7 +74,7 @@ func initGlobalConfig() {
 	setInstallDir()
 
 	// load config (this sets the global config steampipeconfig.Config)
-	config, err := steampipeconfig.LoadConfig(viper.GetString(constants.ArgWorkspace))
+	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgWorkspace))
 	utils.FailOnError(err)
 	steampipeconfig.Config = config
 

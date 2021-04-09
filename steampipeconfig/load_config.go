@@ -19,8 +19,8 @@ import (
 var Config *SteampipeConfig
 var defaultConfigFileName = "default.spc"
 
-// LoadConfig :: load the HCL config and parse into the global Config variable
-func LoadConfig(workspacePath string) (*SteampipeConfig, error) {
+// LoadSteampipeConfig :: load the HCL config and parse into the global Config variable
+func LoadSteampipeConfig(workspacePath string) (*SteampipeConfig, error) {
 	_ = ensureDefaultConfigFile(constants.ConfigDir())
 	config, err := newSteampipeConfig(workspacePath)
 	if err != nil {
@@ -55,8 +55,7 @@ func newSteampipeConfig(workspacePath string) (steampipeConfig *SteampipeConfig,
 		Connections: make(map[string]*Connection),
 	}
 
-	// load config from the installation folder
-	// load all spc files from config directory
+	// load config from the installation folder -  load all spc files from config directory
 	include := filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension})
 	loadOptions := &loadConfigOptions{include: include}
 	if err := loadConfig(constants.ConfigDir(), steampipeConfig, loadOptions); err != nil {
@@ -69,8 +68,8 @@ func newSteampipeConfig(workspacePath string) (steampipeConfig *SteampipeConfig,
 	include = filehelpers.InclusionsFromFiles([]string{constants.WorkspaceConfigFileName})
 	// update load options to ONLY allow terminal options
 	loadOptions = &loadConfigOptions{include: include, allowedOptions: []string{options.TerminalBlock}}
-	if err := loadConfig(workspacePath, steampipeConfig, &loadConfigOptions{include: include}); err != nil {
-		return nil, err
+	if err := loadConfig(workspacePath, steampipeConfig, loadOptions); err != nil {
+		return nil, fmt.Errorf("failed to load workspace config: %v", err)
 	}
 
 	// now set default options on all connections without options set
@@ -87,7 +86,6 @@ type loadConfigOptions struct {
 }
 
 func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loadConfigOptions) error {
-	// TODO recursive?
 	// get all the config files in the directory
 	configPaths, err := filehelpers.ListFiles(configFolder, &filehelpers.ListFilesOptions{
 		Options: filehelpers.FilesFlat,
@@ -144,21 +142,18 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 
 		case "options":
 			// check this options type is permitted based on the options passed in
-			blockPermitted, err := optionsBlockPermitted(block, optionBlockMap, opts)
-			if blockPermitted {
-				options, moreDiags := parseOptions(block)
-				if moreDiags.HasErrors() {
-					diags = append(diags, moreDiags...)
-					continue
-				}
-				// set options on steampipe config
-				// if options are already set, this will merge the new options over the top of the existing options
-				// i.e. new options have precedence
-				steampipeConfig.SetOptions(options)
-			} else if err != nil {
+			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
 				return err
 			}
-			// TODO else raise error if not permitted???
+			options, moreDiags := parseOptions(block)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+				continue
+			}
+			// set options on steampipe config
+			// if options are already set, this will merge the new options over the top of the existing options
+			// i.e. new options have precedence
+			steampipeConfig.SetOptions(options)
 		}
 	}
 
@@ -168,14 +163,18 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 	return nil
 }
 
-func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loadConfigOptions) (bool, error) {
+func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loadConfigOptions) error {
+	// keep track of duplicate block types
 	blockType := block.Labels[0]
 	if _, ok := blockMap[blockType]; ok {
-		return false, fmt.Errorf("multiple instances of '%s' options block", blockType)
+		return fmt.Errorf("multiple instances of '%s' options block", blockType)
 	}
 	blockMap[blockType] = true
 	permitted := len(opts.allowedOptions) == 0 ||
 		helpers.StringSliceContains(opts.allowedOptions, blockType)
 
-	return permitted, nil
+	if !permitted {
+		return fmt.Errorf("'%s' options block is not permitted", blockType)
+	}
+	return nil
 }

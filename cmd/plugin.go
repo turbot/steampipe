@@ -424,7 +424,7 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 
 	// reload the config, since an installation MUST have created a new config file
 	if !isUpdate {
-		config, err := steampipeconfig.LoadConfig(viper.GetString(constants.ArgWorkspace))
+		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgWorkspace))
 		if err != nil {
 			return err
 		}

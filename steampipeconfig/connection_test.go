@@ -424,7 +424,7 @@ func TestGetConnectionsToUpdate(t *testing.T) {
 		// setup connection config
 		setup(test)
 
-		config, err := LoadConfig(wd)
+		config, err := LoadSteampipeConfig(wd)
 		if config == nil {
 			t.Fatalf("Could not load config")
 		}
