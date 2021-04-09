@@ -71,17 +71,22 @@ func createPostgresDbClient() (*sql.DB, error) {
 	return createDbClient("postgres", constants.DatabaseSuperUser)
 }
 
+// set the search path for this client
 func (c *Client) setClientSearchPath() error {
 	var searchPath []string
 
-	if viper.IsSet("search-path") {
-		searchPath = viper.GetStringSlice("search-path")
+	if viper.IsSet(constants.ArgSearchPath) {
+		searchPath = viper.GetStringSlice(constants.ArgSearchPath)
+		// add 'internal' schema as last schema in the search path
+		searchPath = append(searchPath, constants.FunctionSchema)
 	} else {
-		searchPath = c.schemaMetadata.GetSchemas()
-		sort.Strings(searchPath)
+		// so no search path was set in config - build a search path from the connection schemas
+		searchPath = c.getDefaultSearchPath(searchPath)
 	}
-	if viper.IsSet("search-path-prefix") {
-		prefixedSearchPath := viper.GetStringSlice("search-path-prefix")
+
+	// if a prefix was specified, add it
+	if viper.IsSet(constants.ArgSearchPathPrefix) {
+		prefixedSearchPath := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 		for _, p := range searchPath {
 			if !helpers.StringSliceContains(prefixedSearchPath, p) {
 				prefixedSearchPath = append(prefixedSearchPath, p)
@@ -90,18 +95,11 @@ func (c *Client) setClientSearchPath() error {
 		searchPath = prefixedSearchPath
 	}
 
-	// add the public schema as the first schema in the search_path. This makes it
-	// easier for users to build and work with their own tables, and since it's normally
-	// empty, doesn't make using steampipe tables any more difficult.
-	searchPath = append([]string{"public"}, searchPath...)
-	// add 'internal' schema as last schema in the search path
-	searchPath = append(searchPath, constants.FunctionSchema)
-
-	// escape the names
+	// escape the schema
 	for idx, path := range searchPath {
 		searchPath[idx] = PgEscapeName(path)
 	}
-	q := fmt.Sprintf("set search_path to %s", strings.Join(searchPath, ","))
+	q := fmt.Sprintf("set client search_path to %s", strings.Join(searchPath, ","))
 	_, err := c.ExecuteSync(q)
 
 	if err != nil {
@@ -110,6 +108,50 @@ func (c *Client) setClientSearchPath() error {
 
 	c.schemaMetadata.SearchPath = searchPath
 	return nil
+}
+
+// set the search path for the db service (by setting it on the steampipe user)
+func (c *Client) setServiceSearchPath() error {
+	// set the search_path to the available foreign schemas
+	// or the one set by the user in config
+	var searchPath []string
+
+	// since this is the service starting up, use the ArgServiceSearchPath config
+	// (this is the value specified in the database config)
+	if viper.IsSet(constants.ArgServiceSearchPath) {
+		searchPath = viper.GetStringSlice(constants.ArgServiceSearchPath)
+	} else {
+		// so no search path was set in config - build a search path from the connection schemas
+		searchPath = c.getDefaultSearchPath(searchPath)
+	}
+
+	// escape the schema names
+	for idx, path := range searchPath {
+		searchPath[idx] = PgEscapeName(path)
+	}
+
+	log.Println("[TRACE] setting service search path to", searchPath)
+	query := fmt.Sprintf(
+		"alter user %s set search_path to %s;",
+		constants.DatabaseUser,
+		strings.Join(searchPath, ","),
+	)
+	_, err := c.ExecuteSync(query)
+	return err
+}
+
+// build default search path from the connection schemas, bookended with public and internal
+func (c *Client) getDefaultSearchPath(searchPath []string) []string {
+	searchPath = c.schemaMetadata.GetSchemas()
+	sort.Strings(searchPath)
+	// add the 'public' schema as the first schema in the search_path. This makes it
+	// easier for users to build and work with their own tables, and since it's normally
+	// empty, doesn't make using steampipe tables any more difficult.
+	searchPath = append([]string{"public"}, searchPath...)
+	// add 'internal' schema as last schema in the search path
+	searchPath = append(searchPath, constants.FunctionSchema)
+
+	return searchPath
 }
 
 func createDbClient(dbname string, username string) (*sql.DB, error) {

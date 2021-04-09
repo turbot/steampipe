@@ -161,7 +161,6 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	info, _ := db.GetStatus()
 
 	printStatus(info)
-
 }
 
 func runServiceRestartCmd(cmd *cobra.Command, args []string) {

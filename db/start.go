@@ -6,17 +6,14 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"sort"
 	"strings"
 	"syscall"
 
-	"github.com/spf13/viper"
+	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/utils"
-
-	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 )
 
 // StartResult :: pseudoEnum for outcomes of Start
@@ -244,46 +241,6 @@ func ensureSteampipeServer() error {
 	return nil
 }
 
-func (c *Client) setServiceSearchPath() error {
-	// set the search_path to the available foreign schemas
-	// or the one set by the user in config
-	var schemas []string
-
-	// since this is the service starting up,
-	// we use the scoped value from the config - as specified by the user
-	// this IS the value that needs to get set
-	if viper.IsSet("database.search-path") {
-		schemas = viper.GetStringSlice("database.search-path")
-	} else {
-		schemas = c.schemaMetadata.GetSchemas()
-		// sort the schema names
-		sort.Strings(schemas)
-	}
-
-	// add the public schema as the first schema in the search_path. This makes it
-	// easier for users to build and work with their own tables, and since it's normally
-	// empty, doesn't make using steampipe tables any more difficult.
-	schemas = append([]string{"public"}, schemas...)
-	// add 'internal' schema as last schema in the search path
-	schemas = append(schemas, constants.FunctionSchema)
-
-	// escape the schema names
-	escapedSchemas := []string{}
-
-	for _, schema := range schemas {
-		escapedSchemas = append(escapedSchemas, PgEscapeName(schema))
-	}
-
-	log.Println("[TRACE] setting search path to", schemas)
-	query := fmt.Sprintf(
-		"alter user %s set search_path to %s;",
-		constants.DatabaseUser,
-		strings.Join(escapedSchemas, ","),
-	)
-	_, err := c.ExecuteSync(query)
-	return err
-}
-
 func handleStartFailure(err error) error {
 	// if we got an error here, then there probably was a problem
 	// starting up the process. this may be because of a stray
@@ -297,7 +254,7 @@ func handleStartFailure(err error) error {
 		return fmt.Errorf("Another Steampipe service is already running. Use %s to kill all running instances before continuing.", constants.Bold("steampipe service stop --force"))
 	}
 
-	// there was nothing to kill.
+	// there was nothing to kill.9
 	// this is some other problem that we are not accounting for
 	return err
 }
