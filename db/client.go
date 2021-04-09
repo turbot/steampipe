@@ -20,7 +20,7 @@ type Client struct {
 }
 
 // Close closes the connection to the database and shuts down the backend
-func (c *Client) close() {
+func (c *Client) Close() {
 	if c.dbClient != nil {
 		c.dbClient.Close()
 	}

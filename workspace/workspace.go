@@ -136,7 +136,7 @@ func (w *Workspace) buildNamedQueryMap(modMap modconfig.ModMap) map[string]*modc
 }
 
 func (w *Workspace) setupWatcher() error {
-	watcher, err := utils.NewWatcher(&utils.WatcherOptions{
+	watcherOptions := &utils.WatcherOptions{
 		Path:           w.Path,
 		DirExclusions:  []string{},
 		FileInclusions: filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
@@ -148,7 +148,8 @@ func (w *Workspace) setupWatcher() error {
 			//}
 		},
 		//OnError:          nil,
-	})
+	}
+	watcher, err := utils.NewWatcher(watcherOptions)
 	if err != nil {
 		return err
 	}

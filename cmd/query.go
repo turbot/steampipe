@@ -66,13 +66,17 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	//log.Printf("[WARN] start service")
 	// start db if necessary
 	err := db.StartServiceForQuery()
-	utils.FailOnError(err)
+	utils.FailOnErrorWithMessage(err, "failed to start service")
+	defer db.Shutdown(db.InvokerQuery)
 
+	//log.Printf("[WARN] load workspace")
 	// load the workspace (do not do this until after service start as watcher interferes with service start)
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-	utils.FailOnError(err)
+
+	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
 
 	//log.Printf("[WARN] get queries")
@@ -140,7 +144,7 @@ func executeQueries(queries []string) {
 	// first get a client - do this once for all queries
 	client, err := db.GetClientForQuery()
 	utils.FailOnError(err)
-	defer db.Shutdown(client, db.InvokerQuery)
+	defer client.Close()
 
 	// run all queries
 	for _, q := range queries {

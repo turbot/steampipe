@@ -20,23 +20,18 @@ type FileWatcher struct {
 	OnDirChange  func(fsnotify.Event)
 	OnFileChange func(fsnotify.Event)
 	OnError      func(error)
-
-	// maintain a map of last change time to allow us to debounce
-	//	eventTimeMap     map[string]time.Time
-	//	eventTimeMapLock sync.Mutex
-	//	minEventInterval time.Duration
 }
 
 type WatcherOptions struct {
-	// TODO add recursive
-
+	// TODO use a mode instead?
+	Recursive      bool
 	Path           string
 	DirInclusions  []string
 	DirExclusions  []string
 	FileInclusions []string
 	FileExclusions []string
 	// for now provide a single change callback
-	// todo suport a map of callbacks, with a bitmask of operation as the key
+	// todo support a map of callbacks, with a bitmask of operation as the key
 	OnFolderChange func(fsnotify.Event)
 	OnFileChange   func(fsnotify.Event)
 	OnError        func(error)
@@ -47,9 +42,17 @@ func NewWatcher(opts *WatcherOptions) (*FileWatcher, error) {
 		return nil, fmt.Errorf("WatcherOptions must include path")
 	}
 	// build list of folders to watch
+	folderListFlags := filehelpers.DirectoriesFlat
+	if opts.Recursive {
+		folderListFlags = filehelpers.DirectoriesRecursive
+	}
+
+	// ignore hidden folders
+	exclude := append(opts.DirExclusions, "**/.*")
+
 	listOpts := &filehelpers.ListFilesOptions{
-		Options: filehelpers.DirectoriesRecursive,
-		Exclude: opts.DirExclusions,
+		Options: folderListFlags,
+		Exclude: exclude,
 		Include: opts.DirInclusions,
 	}
 	childFolders, err := filehelpers.ListFiles(opts.Path, listOpts)

@@ -40,16 +40,11 @@ func newInteractiveClient(client *Client, workspace *workspace.Workspace) (*Inte
 	}, nil
 }
 
-func (c *InteractiveClient) close() {
-	// close the underlying client
-	c.client.close()
-}
-
 // InteractiveQuery :: start an interactive prompt and return
 func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStreamer) {
 	defer func() {
-		// shutdown the database
-		Shutdown(c.client, InvokerQuery)
+		// close the underlying client
+		c.client.Close()
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
@@ -256,7 +251,6 @@ func (c *InteractiveClient) executeMetaquery(query string) error {
 	// validation passed, now we will run
 	return metaquery.Handle(&metaquery.HandlerInput{
 		Query:       query,
-		Executor:    c.client,
 		Schema:      c.client.schemaMetadata,
 		Connections: c.client.connectionMap,
 		Prompt:      c.interactivePrompt,

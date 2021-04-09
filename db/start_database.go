@@ -200,7 +200,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		return ServiceFailedToStart, handleStartFailure(err)
 	}
 	defer func() {
-		client.close()
+		client.Close()
 	}()
 
 	err = ensureSteampipeServer()
