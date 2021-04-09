@@ -32,17 +32,17 @@ func (q *Query) Equals(other *Query) bool {
 		q.SQL == other.SQL
 }
 
-// factory function
+// QueryFromFile :: factory function
 func QueryFromFile(modPath, filePath string) (MappableResource, error) {
 	q := &Query{}
 	return q.InitialiseFromFile(modPath, filePath)
 }
 
-// implementation of MappableResource
+// InitialiseFromFile :: implementation of MappableResource
 func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, error) {
 	// only valid for sql files
 	if filepath.Ext(filePath) != constants.SqlExtension {
-		return nil, fmt.Errorf("Query.InitialiseFromFile must be called with .sql file only - got %s", filePath)
+		return nil, fmt.Errorf("Query.InitialiseFromFile must be called with .sql files only - filepath: '%s'", filePath)
 	}
 
 	sqlBytes, err := ioutil.ReadFile(filePath)

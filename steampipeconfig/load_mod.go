@@ -6,16 +6,13 @@ import (
 	"os"
 	"path/filepath"
 
-	filehelpers "github.com/turbot/go-kit/files"
-
 	"github.com/hashicorp/hcl/v2"
-
-	"github.com/turbot/steampipe/constants"
-
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 // Op describes a set of file operations.
@@ -233,26 +230,37 @@ func createPseudoResources(modPath string, parseResults *modParseResult, opts *L
 		resource, err := factory(modPath, path)
 		if err != nil {
 			errors = append(errors, err)
+			continue
 		}
-		addResourceIfUnique(resource, parseResults)
+		if err := addResourceIfUnique(resource, parseResults, path); err != nil {
+			errors = append(errors, err)
+		}
 	}
 
-	// TODO handle errors - show warning??
+	// show errors as warnings
+	if len(errors) > 0 {
+		fmt.Println()
+		for _, err := range errors {
+			utils.ShowWarning(fmt.Sprintf("failed to convert local file into resource: %v", err))
+		}
+		fmt.Println()
+	}
+
 	return nil
 }
 
 // add resource to parse results, if there is no resource of same name
-func addResourceIfUnique(resource modconfig.MappableResource, parseResults *modParseResult) bool {
+func addResourceIfUnique(resource modconfig.MappableResource, parseResults *modParseResult, path string) error {
 	switch r := resource.(type) {
 	case *modconfig.Query:
 		// check there is not already a query with the same name
 		if _, ok := parseResults.queryMap[r.Name]; ok {
 			// we have already created a query with this name - skip!
-			return false
+			return fmt.Errorf("not creating resource for '%s' as there is already a query '%s' defined", path, r.Name)
 		}
 		parseResults.queryMap[r.Name] = r
 	}
-	return true
+	return nil
 }
 
 func defaultWorkspaceMod() *modconfig.Mod {

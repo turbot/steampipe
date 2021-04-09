@@ -24,7 +24,7 @@ func RegisteredFileExtensions() []string {
 	return res
 }
 
-// ResourceNameFromPath :: convert a filepath into a resource name:
+// PseudoResourceNameFromPath :: convert a filepath into a resource name:
 // 1) convert into a relative path from the working folder
 // 2) remove extension
 // 3) sluggify, with '_' as the divider
