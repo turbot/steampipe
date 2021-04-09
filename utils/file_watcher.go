@@ -11,7 +11,7 @@ import (
 
 type FileWatcher struct {
 	watch *fsnotify.Watcher
-	// fnmatch format file and dirinclusions/exclusions
+	// fnmatch format file and dir inclusions/exclusions
 	FileInclusions []string
 	FileExclusions []string
 	DirInclusions  []string
@@ -23,8 +23,6 @@ type FileWatcher struct {
 }
 
 type WatcherOptions struct {
-	// TODO use a mode instead?
-	Recursive      bool
 	Path           string
 	DirInclusions  []string
 	DirExclusions  []string
@@ -41,25 +39,6 @@ func NewWatcher(opts *WatcherOptions) (*FileWatcher, error) {
 	if opts.Path == "" {
 		return nil, fmt.Errorf("WatcherOptions must include path")
 	}
-	// build list of folders to watch
-	folderListFlags := filehelpers.DirectoriesFlat
-	if opts.Recursive {
-		folderListFlags = filehelpers.DirectoriesRecursive
-	}
-
-	// ignore hidden folders
-	exclude := append(opts.DirExclusions, "**/.*")
-
-	listOpts := &filehelpers.ListFilesOptions{
-		Options: folderListFlags,
-		Exclude: exclude,
-		Include: opts.DirInclusions,
-	}
-	childFolders, err := filehelpers.ListFiles(opts.Path, listOpts)
-	if err != nil {
-		return nil, err
-	}
-	watchFolders := append(childFolders, opts.Path)
 
 	// Create an fsnotify watcher object
 	watch, err := fsnotify.NewWatcher()
@@ -80,26 +59,16 @@ func NewWatcher(opts *WatcherOptions) (*FileWatcher, error) {
 	}
 
 	// add all child folders
-	if err = watcher.addWatchDirs(watchFolders); err != nil {
+	if err = watcher.watch.Add(opts.Path); err != nil {
 		if err != nil {
 			watcher.Close()
-			return nil, err
+			ShowWarning(fmt.Sprintf("failed to set watch on folder '%s': %v", opts.Path, err))
+			return nil, nil
 		}
 	}
-
 	// start the watcher
 	watcher.start()
 	return watcher, nil
-}
-
-func (w *FileWatcher) addWatchDirs(folders []string) error {
-	for _, f := range folders {
-		// Add objects, files or folders to be monitored
-		if err := w.watch.Add(f); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (w *FileWatcher) Close() {
@@ -123,7 +92,10 @@ func (w *FileWatcher) start() {
 
 			case err := <-w.watch.Errors:
 				{
-					log.Printf("[WARN] file watcher error %v", err)
+					if err == nil {
+						continue
+					}
+					log.Printf("[TRACE] file watcher error %v", err)
 					if w.OnError != nil {
 						// leave it to the client to decide what to do after an error - it can close us if it wants
 						w.OnError(err)

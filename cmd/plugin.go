@@ -442,7 +442,7 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 	if status == nil {
 		// the db service is not started - start it
 		db.StartService(db.InvokerPlugin)
-		defer func() { db.ShutdownClient(client, db.InvokerPlugin) }()
+		defer func() { db.Shutdown(client, db.InvokerPlugin) }()
 	}
 
 	// TODO i think we can pass true here and not refresh below
@@ -531,7 +531,7 @@ func getPluginConnectionMap() (map[string][]string, error) {
 	if status == nil {
 		// the db service is not started - start it
 		db.StartService(db.InvokerPlugin)
-		defer func() { db.ShutdownClient(client, db.InvokerPlugin) }()
+		defer func() { db.Shutdown(client, db.InvokerPlugin) }()
 	}
 
 	client, err = db.NewClient(true)

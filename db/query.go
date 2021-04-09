@@ -53,7 +53,7 @@ func RunInteractivePrompt(workspace *workspace.Workspace) (*results.ResultStream
 	interactiveClient, err := newInteractiveClient(client, workspace)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
-		ShutdownClient(client, InvokerQuery)
+		Shutdown(client, InvokerQuery)
 		return nil, err
 	}
 

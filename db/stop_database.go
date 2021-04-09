@@ -27,31 +27,14 @@ const (
 	ServiceStopTimedOut
 )
 
-// ShutdownClient :: closes the client connection and stops the
+// Shutdown :: closes the client connection and stops the
 // database instance if the given `invoker` matches
-func ShutdownClient(client *Client, invoker Invoker) {
+func Shutdown(client *Client, invoker Invoker) {
 	log.Println("[TRACE] shutdown")
 	if client != nil {
 		client.Close()
 	}
 
-	status, _ := GetStatus()
-
-	// force stop if the service was invoked by the same invoker and we are the last one
-	if status != nil && status.Invoker == invoker {
-		status, err := StopDB(false, invoker)
-		if err != nil {
-			utils.ShowError(err)
-		}
-		if status != ServiceStopped {
-			StopDB(true, invoker)
-		}
-	}
-}
-
-// Shutdown :: stop the database instance if the given `invoker` matches
-func Shutdown(invoker Invoker) {
-	log.Println("[TRACE] shutdown")
 	status, _ := GetStatus()
 
 	// force stop if the service was invoked by the same invoker and we are the last one

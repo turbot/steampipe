@@ -8,14 +8,12 @@ import (
 	"strings"
 	"sync"
 
-	filehelpers "github.com/turbot/go-kit/files"
-
 	"github.com/fsnotify/fsnotify"
-	"github.com/turbot/steampipe/utils"
-
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 type Workspace struct {
@@ -78,7 +76,7 @@ func (w *Workspace) loadMod() error {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	// parse all hcl files under the workspace and either parse or create a mod
+	// parse all hcl files in the workspace folder (non recursively) and either parse or create a mod
 	// it is valid for 0 or 1 mod to be defined (if no mod is defined, create a default one)
 	// populate mod with all hcl resources we parse
 
@@ -138,14 +136,11 @@ func (w *Workspace) buildNamedQueryMap(modMap modconfig.ModMap) map[string]*modc
 func (w *Workspace) setupWatcher() error {
 	watcherOptions := &utils.WatcherOptions{
 		Path:           w.Path,
-		DirExclusions:  []string{},
+		DirExclusions:  []string{"*"},
 		FileInclusions: filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		FileExclusions: w.exclusions,
 		OnFileChange: func(ev fsnotify.Event) {
-			// ignore rename and chmod
-			//if ev.Op == fsnotify.Create || ev.Op == fsnotify.Remove || ev.Op == fsnotify.Write {
 			w.loadMod()
-			//}
 		},
 		//OnError:          nil,
 	}
@@ -159,8 +154,7 @@ func (w *Workspace) setupWatcher() error {
 }
 
 func (w *Workspace) LoadExclusions() error {
-	// add in a hard coded exclusion to the data directory (.steampipe)
-	w.exclusions = []string{fmt.Sprintf("**/%s/*", constants.WorkspaceDataDir)}
+	w.exclusions = []string{}
 
 	ignorePath := filepath.Join(w.Path, constants.WorkspaceIgnoreFile)
 	file, err := os.Open(ignorePath)
@@ -180,7 +174,6 @@ func (w *Workspace) LoadExclusions() error {
 			// add exclusion to the workspace path (to ensure relative pattenrs work)
 			absoluteExclusion := filepath.Join(w.Path, line)
 			w.exclusions = append(w.exclusions, absoluteExclusion)
-
 		}
 	}
 

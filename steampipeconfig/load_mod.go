@@ -39,7 +39,7 @@ func (o *LoadModOptions) CreatePseudoResources() bool {
 	return o.Flags&CreatePseudoResources == CreatePseudoResources
 }
 
-// parse all hcl files in modPath and return a single mod
+// LoadMod :: parse all hcl files in modPath and return a single mod
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
@@ -50,34 +50,40 @@ func LoadMod(modPath string, opts *LoadModOptions) (mod *modconfig.Mod, err erro
 		}
 	}()
 
-	if opts == nil {
-		opts = &LoadModOptions{}
-	}
-	// verify the mod folder exists
-	if _, err := os.Stat(modPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("mod folder %s does not exist", modPath)
-	}
+	var parseResult = newModParseResult()
 
-	// build list of all filepaths we need to parse/load
-	// NOTE: pseudo resource creation is handled separately below
-	var include = filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension})
-	sourcePaths, err := getSourcePaths(modPath, include, opts.Exclude)
-	if err != nil {
-		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
-		return nil, err
-	}
+	// NOTE: for now sp file loading is disabled
+	enableModLoading := false
+	if enableModLoading {
+		if opts == nil {
+			opts = &LoadModOptions{}
+		}
+		// verify the mod folder exists
+		if _, err := os.Stat(modPath); os.IsNotExist(err) {
+			return nil, fmt.Errorf("mod folder %s does not exist", modPath)
+		}
 
-	// load the raw data
-	fileData, diags := loadFileData(sourcePaths)
-	if diags.HasErrors() {
-		log.Printf("[WARN] LoadMod: failed to load all mod files: %v\n", err)
-		return nil, plugin.DiagsToError("Failed to load all mod files", diags)
-	}
+		// build list of all filepaths we need to parse/load
+		// NOTE: pseudo resource creation is handled separately below
+		var include = filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension})
+		sourcePaths, err := getSourcePaths(modPath, include, opts.Exclude)
+		if err != nil {
+			log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
+			return nil, err
+		}
 
-	// parse all hcl files
-	parseResult, err := parseModHcl(modPath, fileData)
-	if err != nil {
-		return nil, err
+		// load the raw data
+		fileData, diags := loadFileData(sourcePaths)
+		if diags.HasErrors() {
+			log.Printf("[WARN] LoadMod: failed to load all mod files: %v\n", err)
+			return nil, plugin.DiagsToError("Failed to load all mod files", diags)
+		}
+
+		// parse all hcl files
+		parseResult, err = parseModHcl(modPath, fileData)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// is there a mod resource definition?
@@ -110,6 +116,12 @@ func LoadMod(modPath string, opts *LoadModOptions) (mod *modconfig.Mod, err erro
 type modParseResult struct {
 	queryMap map[string]*modconfig.Query
 	mod      *modconfig.Mod
+}
+
+func newModParseResult() *modParseResult {
+	return &modParseResult{
+		queryMap: make(map[string]*modconfig.Query),
+	}
 }
 
 // GetModFileExtensions :: return list of all file extensions we care about
