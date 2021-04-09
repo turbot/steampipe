@@ -94,7 +94,7 @@ func (c *Client) RefreshConnections() (bool, error) {
 	// update the service and client search paths (as long as they have NOT been explicitly set)
 	log.Println("[TRACE] setting search path")
 	c.setServiceSearchPath()
-	c.setClientSearchPath()
+	c.SetClientSearchPath()
 
 	// finally update the connection map
 	if err = c.updateConnectionMap(); err != nil {
