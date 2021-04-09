@@ -90,7 +90,7 @@ func read(path string) (*VersionFile, error) {
 	return &data, nil
 }
 
-// ex: $CONFIG_DIR/plugins/registry.steampipe.io/turbot/aws/1.1.2/steampipe-plugin-aws
+// ex: $CONFIG_DIR/plugins/hub.steampipe.io/turbot/aws/1.1.2/steampipe-plugin-aws
 func versionFileLocation() string {
 	path := filepath.Join(constants.InternalDir(), versionFileName)
 	return path

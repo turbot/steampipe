@@ -90,7 +90,7 @@ func (r *SteampipeImageRef) GetOrgNameAndStream() (string, string, string) {
 //		turbot/aws@1.0.0
 //      dockerhub.org/myimage@mytag
 //		aws@1.0.0
-//		registry.steampipe.io/plugin/turbot/aws@1.0.0
+//		hub.steampipe.io/plugin/turbot/aws@1.0.0
 
 func getFullImageRef(imagePath string) string {
 
