@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"sort"
 	"strings"
 	"time"
 
@@ -74,11 +73,10 @@ func createPostgresDbClient() (*sql.DB, error) {
 func (c *Client) setClientSearchPath() error {
 	var searchPath []string
 
-	if viper.IsSet("search-path") {
+	if viper.IsSet("search-path") && viper.Get("search-path") != nil {
 		searchPath = viper.GetStringSlice("search-path")
 	} else {
-		searchPath = c.schemaMetadata.GetSchemas()
-		sort.Strings(searchPath)
+		searchPath, _ = c.getCurrentSearchPath()
 	}
 	if viper.IsSet("search-path-prefix") {
 		prefixedSearchPath := viper.GetStringSlice("search-path-prefix")
@@ -93,15 +91,20 @@ func (c *Client) setClientSearchPath() error {
 	// add the public schema as the first schema in the search_path. This makes it
 	// easier for users to build and work with their own tables, and since it's normally
 	// empty, doesn't make using steampipe tables any more difficult.
+	searchPath = helpers.RemoveFromStringSlice(searchPath, "public")
 	searchPath = append([]string{"public"}, searchPath...)
 	// add 'internal' schema as last schema in the search path
+	searchPath = helpers.RemoveFromStringSlice(searchPath, constants.FunctionSchema)
 	searchPath = append(searchPath, constants.FunctionSchema)
 
 	// escape the names
 	for idx, path := range searchPath {
-		searchPath[idx] = PgEscapeName(path)
+		searchPath[idx] = path
+		searchPath[idx] = strings.TrimSpace(searchPath[idx])
+		searchPath[idx] = PgEscapeName(searchPath[idx])
 	}
 	q := fmt.Sprintf("set search_path to %s", strings.Join(searchPath, ","))
+	fmt.Println("C:", q)
 	_, err := c.ExecuteSync(q)
 
 	if err != nil {
@@ -110,6 +113,26 @@ func (c *Client) setClientSearchPath() error {
 
 	c.schemaMetadata.SearchPath = searchPath
 	return nil
+}
+
+func (c *Client) getCurrentSearchPath() ([]string, error) {
+	var currentSearchPath []string
+	var pathAsString string
+	row := c.dbClient.QueryRow("show search_path")
+	if row.Err() != nil {
+		return nil, row.Err()
+	}
+	err := row.Scan(&pathAsString)
+	if err != nil {
+		return nil, err
+	}
+	currentSearchPath = strings.Split(pathAsString, ",")
+	for idx, p := range currentSearchPath {
+		p = strings.Join(strings.Split(p, "\""), "")
+		p = strings.TrimSpace(p)
+		currentSearchPath[idx] = p
+	}
+	return currentSearchPath, nil
 }
 
 func createDbClient(dbname string, username string) (*sql.DB, error) {

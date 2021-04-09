@@ -252,8 +252,8 @@ func (c *Client) setServiceSearchPath() error {
 	// since this is the service starting up,
 	// we use the scoped value from the config - as specified by the user
 	// this IS the value that needs to get set
-	if viper.IsSet("database.search-path") {
-		schemas = viper.GetStringSlice("database.search-path")
+	if viper.IsSet(constants.DatabaseSearchPathConfigKey) {
+		schemas = viper.GetStringSlice(constants.DatabaseSearchPathConfigKey)
 	} else {
 		schemas = c.schemaMetadata.GetSchemas()
 		// sort the schema names
@@ -271,7 +271,9 @@ func (c *Client) setServiceSearchPath() error {
 	escapedSchemas := []string{}
 
 	for _, schema := range schemas {
-		escapedSchemas = append(escapedSchemas, PgEscapeName(schema))
+		schema = strings.TrimSpace(schema)
+		schema = PgEscapeName(schema)
+		escapedSchemas = append(escapedSchemas, schema)
 	}
 
 	log.Println("[TRACE] setting search path to", schemas)
@@ -280,6 +282,7 @@ func (c *Client) setServiceSearchPath() error {
 		constants.DatabaseUser,
 		strings.Join(escapedSchemas, ","),
 	)
+	fmt.Println("S:", query)
 	_, err := c.ExecuteSync(query)
 	return err
 }

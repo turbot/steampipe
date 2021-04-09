@@ -22,6 +22,8 @@ const (
 	ArgUpdateCheck             = "update-check"
 	ArgInstallDir              = "install-dir"
 	ArgSqlFile                 = "sql-file"
+	ArgSearchPath              = "search-path"
+	ArgSearchPathPrefix        = "search-path-prefix"
 )
 
 /// metaquery mode arguments
