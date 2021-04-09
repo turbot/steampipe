@@ -11,7 +11,6 @@ import (
 // if deep is false only load single level of dependencies - if true load full tree (tbd if this is needed)
 func LoadModDependencies(m *modconfig.Mod, modsFolder string, modMap modconfig.ModMap, deep bool) error {
 	for _, dep := range m.ModDepends {
-
 		dependencyName := dep.FullName()
 		// have we already loaded this dependency?
 		if _, ok := modMap[dependencyName]; ok {
