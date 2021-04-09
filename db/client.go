@@ -96,13 +96,15 @@ func (c *Client) setClientSearchPath() error {
 
 	// escape the schema
 	escapeSearchPath(searchPath)
+
+	// now construct and execute the query
 	q := fmt.Sprintf("set search_path to %s", strings.Join(searchPath, ","))
 	_, err := c.ExecuteSync(q)
-
 	if err != nil {
 		return err
 	}
 
+	// store search path on the client
 	c.schemaMetadata.SearchPath = searchPath
 	return nil
 }
@@ -129,6 +131,8 @@ func (c *Client) setServiceSearchPath() error {
 	escapeSearchPath(searchPath)
 
 	log.Println("[TRACE] setting service search path to", searchPath)
+
+	// now construct and execute the query
 	query := fmt.Sprintf(
 		"alter user %s set search_path to %s;",
 		constants.DatabaseUser,
