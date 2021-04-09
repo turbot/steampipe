@@ -1,8 +1,7 @@
 package constants
 
+// viper config keys
 const (
-	// ShowInteractiveOutputConfigKey :: viper key
-	ShowInteractiveOutputConfigKey = "show-interactive-output"
-	// DatabaseSearchPath :: viper key
-	DatabaseSearchPathConfigKey = "database.search-path"
+	ConfigKeyShowInteractiveOutput = "show-interactive-output"
+	ConfigKeyDatabaseSearchPath    = "database.search-path"
 )

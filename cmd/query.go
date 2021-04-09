@@ -101,7 +101,7 @@ func getQueries(args []string) ([]string, error) {
 func runQuery(queryString string) {
 	// set the flag to not show spinner
 	showSpinner := queryString == ""
-	cmdconfig.Viper().Set(constants.ShowInteractiveOutputConfigKey, showSpinner)
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, showSpinner)
 
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.ExecuteQuery(queryString)

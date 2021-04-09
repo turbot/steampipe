@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
@@ -73,14 +74,13 @@ func createPostgresDbClient() (*sql.DB, error) {
 // set the search path for this client
 func (c *Client) setClientSearchPath() error {
 	var searchPath []string
-
 	if viper.IsSet(constants.ArgSearchPath) {
-		searchPath = viper.GetStringSlice(constants.ArgSearchPath)
 		// add 'internal' schema as last schema in the search path
-		searchPath = append(searchPath, constants.FunctionSchema)
+		searchPath = append(viper.GetStringSlice(constants.ArgSearchPath), constants.FunctionSchema)
 	} else {
-		searchPath, _ = c.getCurrentSearchPath()
-		ADD PUBLIC
+		// so no search path was set in config - build a search path from the connection schemas,
+		// and add in public and internal
+		searchPath = c.getDefaultSearchPath(searchPath)
 	}
 
 	// if a prefix was specified, add it
@@ -95,11 +95,7 @@ func (c *Client) setClientSearchPath() error {
 	}
 
 	// escape the schema
-	for idx, path := range searchPath {
-		searchPath[idx] = path
-		searchPath[idx] = strings.TrimSpace(searchPath[idx])
-		searchPath[idx] = PgEscapeName(searchPath[idx])
-	}
+	escapeSearchPath(searchPath)
 	q := fmt.Sprintf("set search_path to %s", strings.Join(searchPath, ","))
 	_, err := c.ExecuteSync(q)
 
@@ -111,45 +107,26 @@ func (c *Client) setClientSearchPath() error {
 	return nil
 }
 
-func (c *Client) getCurrentSearchPath() ([]string, error) {
-	var currentSearchPath []string
-	var pathAsString string
-	row := c.dbClient.QueryRow("show search_path")
-	if row.Err() != nil {
-		return nil, row.Err()
-	}
-	err := row.Scan(&pathAsString)
-	if err != nil {
-		return nil, err
-	}
-	currentSearchPath = strings.Split(pathAsString, ",")
-	for idx, p := range currentSearchPath {
-		p = strings.Join(strings.Split(p, "\""), "")
-		p = strings.TrimSpace(p)
-		currentSearchPath[idx] = p
-	}
-	return currentSearchPath, nil
-}
-
 // set the search path for the db service (by setting it on the steampipe user)
 func (c *Client) setServiceSearchPath() error {
 	// set the search_path to the available foreign schemas
 	// or the one set by the user in config
 	var searchPath []string
 
-	// since this is the service starting up, use the ArgServiceSearchPath config
+	// since this is the service starting up, use the ConfigKeyDatabaseSearchPath config
 	// (this is the value specified in the database config)
-	if viper.IsSet(constants.ArgServiceSearchPath) {
-		searchPath = viper.GetStringSlice(constants.ArgServiceSearchPath)
+	if viper.IsSet(constants.ConfigKeyDatabaseSearchPath) {
+		searchPath = viper.GetStringSlice(constants.ConfigKeyDatabaseSearchPath)
+		// add 'internal' schema as last schema in the search path
+		searchPath = append(searchPath, constants.FunctionSchema)
 	} else {
-		// so no search path was set in config - build a search path from the connection schemas
+		// so no search path was set in config - build a search path from the connection schemas,
+		// and add in public and internal
 		searchPath = c.getDefaultSearchPath(searchPath)
 	}
 
 	// escape the schema names
-	for idx, path := range searchPath {
-		searchPath[idx] = PgEscapeName(path)
-	}
+	escapeSearchPath(searchPath)
 
 	log.Println("[TRACE] setting service search path to", searchPath)
 	query := fmt.Sprintf(
@@ -173,6 +150,13 @@ func (c *Client) getDefaultSearchPath(searchPath []string) []string {
 	searchPath = append(searchPath, constants.FunctionSchema)
 
 	return searchPath
+}
+
+// escape search path and remove whitespace
+func escapeSearchPath(searchPath []string) {
+	for idx, path := range searchPath {
+		searchPath[idx] = strings.TrimSpace(PgEscapeName(path))
+	}
 }
 
 func createDbClient(dbname string, username string) (*sql.DB, error) {

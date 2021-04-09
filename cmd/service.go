@@ -132,9 +132,10 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// read in the value of the `search-path` flag and set it to `database.search-path`
+	// - this is the key used to set the service search path
+	// (as it corresponds to the search-path property in the database config)
 	if viper.IsSet(constants.ArgSearchPath) && len(viper.GetStringSlice(constants.ArgSearchPath)) > 0 {
-		viper.Set(constants.DatabaseSearchPathConfigKey, viper.GetStringSlice(constants.ArgSearchPath))
-		viper.Set(constants.ArgSearchPath, nil)
+		viper.Set(constants.ConfigKeyDatabaseSearchPath, viper.GetStringSlice(constants.ArgSearchPath))
 	}
 
 	port := cmdconfig.DatabasePort()
@@ -185,7 +186,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 
 	// read in the value of the `search-path` flag and set it to `database.search-path`
 	if viper.IsSet(constants.ArgSearchPath) && len(viper.GetStringSlice(constants.ArgSearchPath)) > 0 {
-		viper.Set(constants.DatabaseSearchPathConfigKey, viper.GetStringSlice(constants.ArgSearchPath))
+		viper.Set(constants.ConfigKeyDatabaseSearchPath, viper.GetStringSlice(constants.ArgSearchPath))
 	}
 
 	currentServiceStatus, err := db.GetStatus()

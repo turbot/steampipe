@@ -50,7 +50,7 @@ func (c *Client) RefreshConnections() error {
 			}
 		}()
 		// in query, this can only start when in interactive
-		if cmdconfig.Viper().GetBool(constants.ShowInteractiveOutputConfigKey) {
+		if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
 			spin := utils.ShowSpinner("Refreshing connections...")
 			defer utils.StopSpinner(spin)
 		}
