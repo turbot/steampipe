@@ -5,21 +5,18 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/steampipe/workspace"
-
+	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/definitions/results"
-
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/definitions/results"
 	"github.com/turbot/steampipe/metaquery"
 	"github.com/turbot/steampipe/queryhistory"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
-
-	"github.com/c-bata/go-prompt"
+	"github.com/turbot/steampipe/workspace"
 )
 
 // InteractiveClient :: wrapper over *Client and *prompt.Prompt along
@@ -49,9 +46,10 @@ func (c *InteractiveClient) close() {
 }
 
 // InteractiveQuery :: start an interactive prompt and return
-func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStreamer, onCompleteCallback func()) {
+func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStreamer) {
 	defer func() {
-		onCompleteCallback()
+		// shutdown the database
+		Shutdown(c.client, InvokerQuery)
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
@@ -258,6 +256,7 @@ func (c *InteractiveClient) executeMetaquery(query string) error {
 	// validation passed, now we will run
 	return metaquery.Handle(&metaquery.HandlerInput{
 		Query:       query,
+		Executor:    c.client,
 		Schema:      c.client.schemaMetadata,
 		Connections: c.client.connectionMap,
 		Prompt:      c.interactivePrompt,

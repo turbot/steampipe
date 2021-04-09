@@ -66,17 +66,27 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	// load the workspace
+	// start db if necessary
+	err := db.StartServiceForQuery()
+	utils.FailOnError(err)
+
+	// load the workspace (do not do this until after service start as watcher interferes with service start)
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
 	utils.FailOnError(err)
 	defer workspace.Close()
+
+	//log.Printf("[WARN] get queries")
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	queries, err := getQueries(args, workspace)
 	utils.FailOnError(err)
 
-	for _, q := range queries {
-		runQuery(q, workspace)
+	// if no query is specified, run interactive prompt
+	if len(queries) == 0 {
+		// interactive session creates its own client
+		runInteractiveSession(workspace)
+	} else {
+		executeQueries(queries)
 	}
 }
 
@@ -97,24 +107,59 @@ func getQueries(args []string, workspace *workspace.Workspace) ([]string, error)
 	// just return the first arg (if there is one)
 
 	// if no query is specified in the args, we must pass a single empty query to trigger interactive mode
-	var query = ""
+	var queries []string
 	if len(args) > 0 {
 		if namedQuery, ok := workspace.GetNamedQuery(args[0]); ok {
-			query = namedQuery.SQL
+			queries = []string{namedQuery.SQL}
 		} else {
-			query = args[0]
+			queries = []string{args[0]}
 		}
 	}
-	return []string{query}, nil
+	return queries, nil
 }
 
-func runQuery(queryString string, workspace *workspace.Workspace) {
+func runInteractiveSession(workspace *workspace.Workspace) {
 	// set the flag to not show spinner
-	showSpinner := queryString == ""
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, showSpinner)
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.ExecuteQuery(queryString, workspace)
+	resultsStreamer, err := db.RunInteractivePrompt(workspace)
+	utils.FailOnError(err)
+
+	// print the data as it comes
+	for r := range resultsStreamer.Results {
+		display.ShowOutput(r)
+		// signal to the resultStreamer that we are done with this chunk of the stream
+		resultsStreamer.Done()
+	}
+}
+
+func executeQueries(queries []string) {
+	//log.Printf("[WARN] get client for query")
+
+	// first get a client - do this once for all queries
+	client, err := db.GetClientForQuery()
+	utils.FailOnError(err)
+	defer db.Shutdown(client, db.InvokerQuery)
+
+	// run all queries
+	for _, q := range queries {
+		//log.Printf("[WARN] run query '%s'", q)
+
+		runQuery(q, client)
+
+		//log.Printf("[WARN] run query returned")
+	}
+	//log.Printf("[WARN] shutdown")
+
+}
+
+func runQuery(queryString string, client *db.Client) {
+	// set the flag to show spinner
+	cmdconfig.Viper().Set(constants.ShowInteractiveOutputConfigKey, true)
+
+	// the db executor sends result data over resultsStreamer
+	resultsStreamer, err := db.ExecuteQuery(queryString, client)
 	utils.FailOnError(err)
 
 	// print the data as it comes

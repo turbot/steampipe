@@ -27,6 +27,28 @@ const (
 	ServiceStopTimedOut
 )
 
+// Shutdown :: closes the client connection and stops the
+// database instance if the given `invoker` matches
+func Shutdown(client *Client, invoker Invoker) {
+	log.Println("[TRACE] shutdown")
+	if client != nil {
+		client.close()
+	}
+
+	status, _ := GetStatus()
+
+	// force stop if the service was invoked by the same invoker and we are the last one
+	if status != nil && status.Invoker == invoker {
+		status, err := StopDB(false, invoker)
+		if err != nil {
+			utils.ShowError(err)
+		}
+		if status != ServiceStopped {
+			StopDB(true, invoker)
+		}
+	}
+}
+
 // StopDB :: search and stop the running instance. Does nothing if an instance was not found
 func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 	log.Println("[TRACE] StopDB", force)
