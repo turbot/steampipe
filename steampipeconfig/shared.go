@@ -14,7 +14,7 @@ import (
 
 const maxSchemaNameLength = 63
 
-// schemas in postgres are limited to 63 chars - the Name may be longer than this, in which case trim the length
+// schemas in postgres are limited to 63 chars - the name may be longer than this, in which case trim the length
 // and add a hash to the end to make unique
 func PluginFQNToSchemaName(pluginFQN string) string {
 	if len(pluginFQN) < maxSchemaNameLength {

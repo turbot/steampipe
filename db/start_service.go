@@ -43,7 +43,7 @@ func StartService(invoker Invoker) {
 				break
 			}
 			if time.Since(startedAt) > constants.SpinnerShowTimeout && !spinnerShown {
-				if cmdconfig.Viper().GetBool(constants.ShowInteractiveOutputConfigKey) {
+				if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
 					s := utils.ShowSpinner("Waiting for database to start...")
 					defer utils.StopSpinner(s)
 				}

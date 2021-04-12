@@ -34,17 +34,9 @@ func StartServiceForQuery() error {
 	return nil
 }
 
-// GetClientForQuery :: create a client, refresh connections and functions
-func GetClientForQuery() (*Client, error) {
-	client, err := NewClient(true)
-	utils.FailOnErrorWithMessage(err, "client failed to initialize")
-
-	return client, nil
-}
-
 // RunInteractivePrompt :: start the interactive query prompt
 func RunInteractivePrompt(workspace *workspace.Workspace) (*results.ResultStreamer, error) {
-	client, err := GetClientForQuery()
+	client, err := NewClient(true)
 	if err != nil {
 		return nil, err
 	}

@@ -214,9 +214,6 @@ func createPseudoResources(modPath string, parseResults *modParseResult, opts *L
 		return err
 	}
 
-	// TODO currently we just add in unique results and ignore non-unique results
-	// TODO ADD WARNING
-
 	var errors []error
 	// for every source path:
 	// - if it is NOT a registered type, skip

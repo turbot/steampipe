@@ -139,28 +139,20 @@ func runInteractiveSession(workspace *workspace.Workspace) {
 }
 
 func executeQueries(queries []string) {
-	//log.Printf("[WARN] get client for query")
-
 	// first get a client - do this once for all queries
-	client, err := db.GetClientForQuery()
+	client, err := db.NewClient(true)
 	utils.FailOnError(err)
 	defer client.Close()
 
 	// run all queries
 	for _, q := range queries {
-		//log.Printf("[WARN] run query '%s'", q)
-
 		runQuery(q, client)
-
-		//log.Printf("[WARN] run query returned")
 	}
-	//log.Printf("[WARN] shutdown")
-
 }
 
 func runQuery(queryString string, client *db.Client) {
 	// set the flag to show spinner
-	cmdconfig.Viper().Set(constants.ShowInteractiveOutputConfigKey, true)
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, true)
 
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.ExecuteQuery(queryString, client)

@@ -31,7 +31,7 @@ func (d *Database) ConfigMap() map[string]interface{} {
 	return res
 }
 
-// merge other options over the the top of this options object
+// Merge ::  merge other options over the the top of this options object
 // i.e. if a property is set in otherOptions, it takes precedence
 func (d *Database) Merge(otherOptions Options) {
 	switch o := otherOptions.(type) {

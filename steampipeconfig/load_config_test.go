@@ -113,35 +113,7 @@ secret_key            = "aws_dmi_002_secret_key"`,
 	"single_connection_with_default_options_and_workspace_invalid_options_block": {
 		steampipeDir: "test_data/connection_config/single_connection_with_default_options",
 		workspaceDir: "test_data/workspaces/invalid_options_block",
-		expected: &SteampipeConfig{
-			Connections: map[string]*Connection{
-				// todo normalise plugin names here?
-				"a": {
-					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
-				},
-			},
-			DefaultConnectionOptions: &options.Connection{
-				Cache:    &trueVal,
-				CacheTTL: &ttlVal,
-			},
-			DatabaseOptions: &options.Database{
-				Port:       &databasePort,
-				Listen:     &databaseListen,
-				SearchPath: &databaseSearchPath,
-			},
-			TerminalOptions: &options.Terminal{
-				Output:     &terminalOutput,
-				Separator:  &terminalSeparator,
-				Header:     &terminalHeader,
-				Multi:      &terminalMulti,
-				Timing:     &terminalTiming,
-				SearchPath: &terminalSearchPath,
-			},
-			GeneralOptions: &options.General{
-				UpdateCheck: &generalUpdateCheck,
-			},
-		},
+		expected:     "ERROR",
 	},
 	"single_connection_with_default_options_and_workspace_search_path_prefix": {
 		steampipeDir: "test_data/connection_config/single_connection_with_default_options",

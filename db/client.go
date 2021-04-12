@@ -40,11 +40,11 @@ func NewClient(autoRefreshConnections bool) (*Client, error) {
 	var updatedConnections bool
 	if autoRefreshConnections {
 		if updatedConnections, err = client.RefreshConnections(); err != nil {
-			client.close()
+			client.Close()
 			return nil, err
 		}
 		if err := refreshFunctions(); err != nil {
-			client.close()
+			client.Close()
 			return nil, err
 		}
 	}
