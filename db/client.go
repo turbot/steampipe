@@ -57,7 +57,7 @@ func NewClient(autoRefreshConnections bool) (*Client, error) {
 			return nil, err
 		}
 		client.connectionMap = &connectionMap
-		if err := client.setClientSearchPath(); err != nil {
+		if err := client.SetClientSearchPath(); err != nil {
 			utils.ShowError(err)
 		}
 	}

@@ -14,8 +14,6 @@ const (
 	ArgPort                    = "database-port"
 	ArgListenAddressDeprecated = "listen"
 	ArgListenAddress           = "database-listen"
-	ArgSearchPath              = "search-path"
-	ArgSearchPathPrefix        = "search-path-prefix"
 	ArgInvoker                 = "invoker"
 	ArgRefresh                 = "refresh"
 	ArgLogLevel                = "log-level"
