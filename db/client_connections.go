@@ -27,7 +27,7 @@ func (c *Client) RefreshConnections() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("[TRACE] updates: %+v\n", updates)
+	log.Printf("[TRACE] RefreshConnections, updates: %+v\n", updates)
 
 	missingCount := len(updates.MissingPlugins)
 	if missingCount > 0 {
@@ -71,39 +71,36 @@ func (c *Client) RefreshConnections() error {
 	}
 
 	for c := range updates.Delete {
-		log.Printf("[TRACE] delete %s\n ", c)
+		log.Printf("[TRACE] delete connection %s\n ", c)
 		connectionQueries = append(connectionQueries, deleteConnectionQuery(c)...)
 	}
 
-	connectionsToUpdate := len(connectionQueries) > 0
-	if connectionsToUpdate {
-		// execute the connection queries
-		if err = executeConnectionQueries(connectionQueries, updates); err != nil {
-			return err
-		}
-	} else {
-		log.Println("[DEBUG] no connections to update")
+	if len(connectionQueries) == 0 {
+		log.Println("[TRACE] no connections to update")
+		return nil
 	}
 
-	// reload the database schemas, since they have changed
-	// otherwise we wouldn't be here
-	log.Println("[TRACE] reloading schema")
-	c.loadSchema()
-
-	// set the search path with the updates
-	log.Println("[TRACE] setting search path")
-	if connectionsToUpdate {
-		c.setServiceSearchPath()
-		c.setClientSearchPath()
-	}
-
-	// tell client to refresh schemas, connection map and set the search path
-	if err = c.updateConnectionMap(); err != nil {
+	// execute the connection queries
+	if err = executeConnectionQueries(connectionQueries, updates); err != nil {
 		return err
 	}
 
-	// indicate whether we have updated connections
-	return nil
+	// so there ARE connections to update
+
+	// store default search path before updating schema
+	// (so we can deduce whether the service is currently using the default search path)
+	prevDefaultSearchPath := c.getDefaultSearchPath()
+	// reload the database schemas, since they have changed - otherwise we wouldn't be here
+	log.Println("[TRACE] reloading schema")
+	c.loadSchema()
+
+	// update the service and cl;ient search paths (as long as they have NOT been explicitly set)
+	log.Println("[TRACE] setting search path")
+	c.setServiceSearchPath(prevDefaultSearchPath)
+	c.setClientSearchPath()
+
+	// finally update the connection map
+	return c.updateConnectionMap()
 }
 
 func (c *Client) updateConnectionMap() error {

@@ -220,7 +220,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		}
 	}
 
-	err = client.setServiceSearchPath()
+	err = client.setServiceSearchPath(nil)
 	return ServiceStarted, err
 }
 
