@@ -3,6 +3,7 @@ module github.com/turbot/steampipe
 go 1.16
 
 require (
+	github.com/Machiel/slugify v1.0.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/ahmetb/go-linq v3.0.0+incompatible
@@ -12,6 +13,7 @@ require (
 	github.com/deislabs/oras v0.8.1
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.7.0
+	github.com/fsnotify/fsnotify v1.4.7
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/google/uuid v1.1.5
@@ -39,9 +41,8 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.7.1
-	github.com/turbot/go-kit v0.1.3
+	github.com/turbot/go-kit v0.1.4-rc.0
 	github.com/turbot/steampipe-plugin-sdk v0.2.6
-	github.com/turbot/steampipe-postgres-fdw v0.0.26 // indirect
 	github.com/ulikunitz/xz v0.5.8
 	golang.org/x/text v0.3.4
 	google.golang.org/grpc v1.33.1
@@ -50,3 +51,5 @@ require (
 )
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe
+
+replace github.com/turbot/steampipe-plugin-sdk => github.com/turbot/steampipe-plugin-sdk v0.2.0-rc.1.0.20210408161244-0324ad4d0ab0

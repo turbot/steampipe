@@ -25,7 +25,7 @@ func getOrCreateTempDir(ref string) string {
 
 	if _, err := os.Stat(pluginCacheDir); os.IsNotExist(err) {
 		err = os.MkdirAll(pluginCacheDir, 0755)
-		utils.FailOnErrorWithMessage(err, "could not ensure cache directory")
+		utils.FailOnErrorWithMessage(err, "could not create cache directory")
 	}
 
 	return pluginCacheDir

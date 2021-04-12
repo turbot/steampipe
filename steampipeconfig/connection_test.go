@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/otiai10/copy"
@@ -17,257 +16,449 @@ import (
 type getConnectionsToUpdateTest struct {
 	// hcl connection config(s)
 	required []string
-	// current conneciton state
+	// current connection state
 	current  ConnectionMap
 	expected interface{}
 }
+
+var connectionTest1Checksum = getTestFileCheckSum("test_data/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-1@latest/connection-test-1.plugin")
+var connectionTest2Checksum = getTestFileCheckSum("test_data/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-2@latest/connection-test-2.plugin")
 
 var testCasesGetConnectionsToUpdate = map[string]getConnectionsToUpdateTest{
 	"no changes": {
 		required: []string{
 			`connection "a" {
-  plugin = "test_data/connection-test-1"
+  plugin = "connection-test-1"
 }
 `},
 		current: ConnectionMap{
 			"a": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: getTestFileCheckSum("test_data/connection-test-1"),
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{
+			"a": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
+			},
+		}},
 	},
 	"no changes multiple in same file same plugin": {
 		required: []string{
 			`connection "a" {
-  plugin = "test_data/connection-test-1"
+  plugin = "connection-test-1"
 }
 
 connection "b" {
-  plugin = "test_data/connection-test-1"
+  plugin = "connection-test-1"
 }
 `},
 		current: ConnectionMap{
 			"a": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: getTestFileCheckSum("test_data/connection-test-1"),
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
 			},
 			"b": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: getTestFileCheckSum("test_data/connection-test-1"),
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "b",
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{
+			"a": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
+			},
+			"b": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "b",
+			},
+		}},
 	},
 	"no changes multiple in same file": {
 		required: []string{
 			`connection "a" {
-  plugin = "test_data/connection-test-1"
-}
-
-connection "b" {
-  plugin = "test_data/connection-test-2"
-}
-`},
+	 plugin = "connection-test-1"
+	}
+	
+	connection "b" {
+	 plugin = "connection-test-2"
+	}
+	`},
 		current: ConnectionMap{
 			"a": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: getTestFileCheckSum("test_data/connection-test-1"),
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
 			},
 			"b": {
-				Plugin:   "test_data/connection-test-2",
-				CheckSum: getTestFileCheckSum("test_data/connection-test-2"),
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:       connectionTest2Checksum,
+				ConnectionName: "b",
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{
+			"a": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
+			},
+			"b": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:       connectionTest2Checksum,
+				ConnectionName: "b",
+			},
+		}},
 	},
 	"no changes multiple in different files same plugin": {
 		required: []string{
 			`connection "a" {
-  plugin = "test_data/connection-test-1"
-}`,
+	 plugin = "connection-test-1"
+	}`,
 			`connection "b" {
-  plugin = "test_data/connection-test-1"
-}
-`},
+	 plugin = "connection-test-1"
+	}
+	`},
 		current: ConnectionMap{
 			"a": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: getTestFileCheckSum("test_data/connection-test-1"),
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
 			},
 			"b": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: getTestFileCheckSum("test_data/connection-test-1"),
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "b",
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{
+			"a": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
+			},
+			"b": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "b",
+			},
+		}},
 	},
 	"no changes multiple in different files": {
 		required: []string{
 			`connection "a" {
-  plugin = "test_data/connection-test-1"
-}`,
+	 plugin = "connection-test-1"
+	}`,
 			`connection "b" {
-  plugin = "test_data/connection-test-2"
-}
-`},
+	 plugin = "connection-test-2"
+	}
+	`},
 		current: ConnectionMap{
 			"a": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: getTestFileCheckSum("test_data/connection-test-1"),
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
 			},
 			"b": {
-				Plugin:   "test_data/connection-test-2",
-				CheckSum: getTestFileCheckSum("test_data/connection-test-2"),
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:       connectionTest2Checksum,
+				ConnectionName: "b",
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{
+			"a": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
+			},
+			"b": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:       connectionTest2Checksum,
+				ConnectionName: "b",
+			},
+		}},
 	},
 	"update": {
 		required: []string{
 			`connection "a" {
-  plugin = "test_data/connection-test-1"
-}
-`},
+	 plugin = "connection-test-1"
+	}
+	`},
 		current: ConnectionMap{
 			"a": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: "xxxxxx",
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       "xxxxxx",
+				ConnectionName: "a",
 			},
 		},
-		expected: &ConnectionUpdates{
-
-			Update: ConnectionMap{
-				"a": {
-					Plugin:   "test_data/connection-test-1",
-					CheckSum: getTestFileCheckSum("test_data/connection-test-1"),
-				},
+		expected: &ConnectionUpdates{Update: ConnectionMap{
+			"a": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
 			},
-			Delete: ConnectionMap{},
-		},
+		}, Delete: ConnectionMap{}, RequiredConnections: ConnectionMap{
+			"a": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
+			},
+		}},
 	},
 
 	"update multiple in same file same plugin": {
 		required: []string{
 			`connection "a" {
-  plugin = "test_data/connection-test-1"
-}
-
-connection "b" {
-  plugin = "test_data/connection-test-1"
-}
-`},
+	 plugin = "connection-test-1"
+	}
+	
+	connection "b" {
+	 plugin = "connection-test-1"
+	}
+	`},
 		current: ConnectionMap{
 			"a": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: "xxxxxx",
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       "xxxxxx",
+				ConnectionName: "a",
 			},
 			"b": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: "xxxxxx",
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       "xxxxxx",
+				ConnectionName: "a",
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{
+			"a": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
+			},
+			"b": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "b",
+			},
+		},
+			Delete: ConnectionMap{},
+			RequiredConnections: ConnectionMap{
+				"a": {
+					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:       connectionTest1Checksum,
+					ConnectionName: "a",
+				},
+				"b": {
+					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:       connectionTest1Checksum,
+					ConnectionName: "b",
+				},
+			}},
 	},
 	"update multiple in same file": {
 		required: []string{
 			`connection "a" {
-  plugin = "test_data/connection-test-1"
-}
-
-connection "b" {
-  plugin = "test_data/connection-test-2"
-}
-`},
+	 plugin = "connection-test-1"
+	}
+	
+	connection "b" {
+	 plugin = "connection-test-2"
+	}
+	`},
 		current: ConnectionMap{
 			"a": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: "xxxxxx",
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       "xxxxxx",
+				ConnectionName: "a",
 			},
 			"b": {
-				Plugin:   "test_data/connection-test-2",
-				CheckSum: "xxxxxx",
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:       "xxxxxx",
+				ConnectionName: "a",
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{
+			"a": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
+			},
+			"b": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:       connectionTest2Checksum,
+				ConnectionName: "b",
+			},
+		}, Delete: ConnectionMap{},
+			RequiredConnections: ConnectionMap{
+				"a": {
+					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:       connectionTest1Checksum,
+					ConnectionName: "a",
+				},
+				"b": {
+					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+					CheckSum:       connectionTest2Checksum,
+					ConnectionName: "b",
+				},
+			}},
 	},
 	"update multiple in different files same plugin": {
 		required: []string{
 			`connection "a" {
-  plugin = "test_data/connection-test-1"
-}`,
+	 plugin = "connection-test-1"
+	}`,
 			`connection "b" {
-  plugin = "test_data/connection-test-1"
-}
-`},
+	 plugin = "connection-test-1"
+	}
+	`},
 		current: ConnectionMap{
 			"a": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: "xxxxxx",
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       "xxxxxx",
+				ConnectionName: "a",
 			},
 			"b": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: "xxxxxx",
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       "xxxxxx",
+				ConnectionName: "a",
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{Update: ConnectionMap{
+			"a": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "a",
+			},
+			"b": {
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       connectionTest1Checksum,
+				ConnectionName: "b",
+			},
+		},
+			Delete: ConnectionMap{},
+			RequiredConnections: ConnectionMap{
+				"a": {
+					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:       connectionTest1Checksum,
+					ConnectionName: "a",
+				},
+				"b": {
+					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:       connectionTest1Checksum,
+					ConnectionName: "b",
+				},
+			}},
 	},
 	"update multiple in different files": {
 		required: []string{
 			`connection "a" {
-  plugin = "test_data/connection-test-1"
-}`,
+	 plugin = "connection-test-1"
+	}`,
 			`connection "b" {
-  plugin = "test_data/connection-test-2"
-}
-`},
+	 plugin = "connection-test-2"
+	}
+	`},
 		current: ConnectionMap{
 			"a": {
-				Plugin:   "test_data/connection-test-1",
-				CheckSum: "xxxxxx",
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:       "xxxxxx",
+				ConnectionName: "a",
 			},
 			"b": {
-				Plugin:   "test_data/connection-test-2",
-				CheckSum: "xxxxxx",
+				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:       "xxxxxx",
+				ConnectionName: "a",
 			},
 		},
-		expected: &ConnectionUpdates{Update: ConnectionMap{}, Delete: ConnectionMap{}},
+		expected: &ConnectionUpdates{
+			Update: ConnectionMap{
+				"a": {
+					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:       connectionTest1Checksum,
+					ConnectionName: "a",
+				},
+				"b": {
+					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+					CheckSum:       connectionTest2Checksum,
+					ConnectionName: "b",
+				},
+			},
+			Delete: ConnectionMap{},
+			RequiredConnections: ConnectionMap{
+				"a": {
+					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:       connectionTest1Checksum,
+					ConnectionName: "a",
+				},
+				"b": {
+					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+					CheckSum:       connectionTest2Checksum,
+					ConnectionName: "b",
+				},
+			}},
 	},
 
 	"not installed": {
 		required: []string{
 			`connection "a" {
-  plugin = "test_data/not-installed"
-}
-`},
-		current: ConnectionMap{},
-		expected: &ConnectionUpdates{
-			MissingPlugins: []string{"test_data/not-installed"},
-			Update:         ConnectionMap{},
-			Delete:         ConnectionMap{},
-		},
+	 plugin = "not-installed"
+	}
+	`},
+		current:  ConnectionMap{},
+		expected: "SHOULD NOT BE ERROR?",
 	},
 }
 
 func TestGetConnectionsToUpdate(t *testing.T) {
+	// set steampipe dir
+	os.Chdir("./test_data/connections_to_update")
+	wd, _ := os.Getwd()
+	constants.SteampipeDir = wd
+
 	for name, test := range testCasesGetConnectionsToUpdate {
+		// setup connection config
 		setup(test)
 
-		res, err := GetConnectionsToUpdate(nil, nil)
+		config, err := LoadSteampipeConfig(wd)
+		if config == nil {
+			t.Fatalf("Could not load config")
+		}
+		requiredConnections := config.Connections
+		// all tests assume connections a, b
+		res, err := GetConnectionsToUpdate([]string{"a", "b"}, requiredConnections)
 
 		if err != nil && test.expected != "ERROR" {
-			t.Errorf("GetConnectionsToUpdate failed with unexpected error: %v", err)
+			continue
+			t.Fatalf("GetConnectionsToUpdate failed with unexpected error: %v", err)
 		}
 
-		if !reflect.DeepEqual(res, test.expected) {
-			t.Errorf(`Test: '%s'' FAILED : expected %v, got %v`, name, test.expected, res)
+		expectedUpdates := test.expected.(*ConnectionUpdates)
+		if !res.RequiredConnections.Equals(expectedUpdates.RequiredConnections) ||
+			!res.Update.Equals(expectedUpdates.Update) ||
+			!res.Delete.Equals(expectedUpdates.Delete) {
+			t.Errorf(`Test: '%s'' FAILED`, name)
+
 		}
+
+		fmt.Printf("\n\n'Test: %s' PASSED\n\n", name)
 		resetConfig(test)
 	}
 }
 
 func setup(test getConnectionsToUpdateTest) {
-	clearPluginFolder()
+
+	os.RemoveAll(constants.PluginDir())
+	os.RemoveAll(constants.ConfigDir())
+	os.RemoveAll(constants.InternalDir())
+
+	os.MkdirAll(constants.PluginDir(), os.ModePerm)
+	os.MkdirAll(constants.ConfigDir(), os.ModePerm)
+	os.MkdirAll(constants.InternalDir(), os.ModePerm)
 
 	for _, plugin := range test.current {
 		copyPlugin(plugin.Plugin)
@@ -275,24 +466,11 @@ func setup(test getConnectionsToUpdateTest) {
 	setupTestConfig(test)
 }
 
-func clearPluginFolder() {
-	// all plugins are put into the test_data plugin directory
-	targetFolder, err := filepath.Abs(filepath.Join(constants.PluginDir(), "test_data"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	os.RemoveAll(targetFolder)
-	os.MkdirAll(targetFolder, 0777)
-}
-
 func setupTestConfig(test getConnectionsToUpdateTest) {
-	// move real config
-	connectionStatePath := constants.ConnectionStatePath()
-
 	for i, config := range test.required {
 		ioutil.WriteFile(connectionConfigPath(i), []byte(config), 0644)
 	}
-	os.Rename(connectionStatePath, connectionStatePath+"___")
+	os.MkdirAll(constants.InternalDir(), os.ModePerm)
 	writeJson(test.current, constants.ConnectionStatePath())
 }
 
@@ -303,8 +481,6 @@ func resetConfig(test getConnectionsToUpdateTest) {
 	for i, _ := range test.required {
 		os.Remove(connectionConfigPath(i))
 	}
-
-	os.Rename(connectionStatePath+"___", connectionStatePath)
 }
 
 func connectionConfigPath(i int) string {
@@ -314,8 +490,7 @@ func connectionConfigPath(i int) string {
 }
 
 func copyPlugin(plugin string) {
-
-	source, err := filepath.Abs(plugin)
+	source, err := filepath.Abs(filepath.Join("plugins_src", plugin))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -331,8 +506,7 @@ func copyPlugin(plugin string) {
 }
 
 func getTestFileCheckSum(file string) string {
-	path := filepath.Join(file, filepath.Base(file)+constants.PluginExtension)
-	p, err := filepath.Abs(path)
+	p, err := filepath.Abs(file)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -341,9 +515,4 @@ func getTestFileCheckSum(file string) string {
 		log.Fatal(err)
 	}
 	return sha
-}
-
-func TestGetPluginCheckSum(t *testing.T) {
-	sha := getTestFileCheckSum("connection-test-1")
-	fmt.Println(sha)
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
@@ -23,7 +22,6 @@ func GetConnectionState(schemas []string) (ConnectionMap, error) {
 // load and parse the connection config
 func loadConnectionStateFile() (ConnectionMap, error) {
 	var connectionState ConnectionMap
-	log.Println("[TRACE] LoadConnectionState")
 	connectionStatePath := constants.ConnectionStatePath()
 
 	if !helpers.FileExists(connectionStatePath) {

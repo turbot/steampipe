@@ -1,7 +1,12 @@
 package steampipeconfig
 
 import (
+	"fmt"
 	"os"
+	"reflect"
+	"strings"
+
+	"github.com/turbot/go-kit/helpers"
 
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/steampipeconfig/options"
@@ -15,41 +20,76 @@ type SteampipeConfig struct {
 	// Steampipe options
 	DefaultConnectionOptions *options.Connection
 	DatabaseOptions          *options.Database
-	ConsoleOptions           *options.Terminal
+	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
-	// array of options interfaces useful to build  ConfigMap
-	Options []options.Options
-}
-
-func newSteampipeConfig() *SteampipeConfig {
-	return &SteampipeConfig{
-		Connections: make(map[string]*Connection),
-	}
 }
 
 // ConfigMap :: create a config map to pass to viper
 func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	res := map[string]interface{}{}
-	for _, o := range c.Options {
-		for k, v := range o.ConfigMap() {
-			res[k] = v
-		}
+
+	// build flat config map with order or precedence (low to high): general, database, terminal
+	// this means if (for example) 'search-path' is set in both database and terminal options,
+	// the value from terminal options will have precedence
+	// however, we also store all values scoped by their options type, so we will store:
+	// 'database.search-path', 'terminal.search-path' AND 'search-path' (which will be equal to 'terminal.search-path')
+	if c.GeneralOptions != nil {
+		c.populateConfigMapForOptions(c.GeneralOptions, res)
 	}
+	if c.DatabaseOptions != nil {
+		c.populateConfigMapForOptions(c.DatabaseOptions, res)
+	}
+	if c.TerminalOptions != nil {
+		c.populateConfigMapForOptions(c.TerminalOptions, res)
+	}
+
 	return res
+}
+
+// populate the config map for a given options object
+// NOTE: this mutates configMap
+func (c *SteampipeConfig) populateConfigMapForOptions(o options.Options, configMap map[string]interface{}) {
+	for k, v := range o.ConfigMap() {
+		configMap[k] = v
+		// also store a scoped version of the config property
+		configMap[getScopedKey(o, k)] = v
+	}
+}
+
+// generated a scoped key for the config property. For example if o is a database options object and k is 'search-path'
+// the scoped key will be 'database.search-path'
+func getScopedKey(o options.Options, k string) string {
+	t := reflect.TypeOf(helpers.DereferencePointer(o)).Name()
+	return fmt.Sprintf("%s.%s", strings.ToLower(t), k)
 }
 
 func (c *SteampipeConfig) SetOptions(opts options.Options) {
 	switch o := opts.(type) {
 	case *options.Connection:
-		c.DefaultConnectionOptions = o
+		if c.DefaultConnectionOptions == nil {
+			c.DefaultConnectionOptions = o
+		} else {
+			c.DefaultConnectionOptions.Merge(o)
+		}
 	case *options.Database:
-		c.DatabaseOptions = o
+		if c.DatabaseOptions == nil {
+			c.DatabaseOptions = o
+		} else {
+			c.DatabaseOptions.Merge(o)
+		}
 	case *options.Terminal:
-		c.ConsoleOptions = o
+		if c.TerminalOptions == nil {
+			c.TerminalOptions = o
+		} else {
+			c.TerminalOptions.Merge(o)
+		}
 	case *options.General:
-		c.GeneralOptions = o
+		if c.GeneralOptions == nil {
+			c.GeneralOptions = o
+		} else {
+			c.GeneralOptions.Merge(o)
+		}
 	}
-	c.Options = append(c.Options, opts)
 }
 
 const CacheEnabledEnvVar = "STEAMPIPE_CACHE"
@@ -118,4 +158,39 @@ func (c *SteampipeConfig) GetConnectionOptions(connectionName string) *options.C
 		result.CacheTTL = connection.Options.CacheTTL
 	}
 	return result
+}
+
+func (c *SteampipeConfig) String() string {
+	var connectionStrings []string
+	for _, c := range c.Connections {
+		connectionStrings = append(connectionStrings, c.String())
+	}
+
+	str := fmt.Sprintf(`
+Connections: 
+%s
+----
+DefaultConnectionOptions:
+%s`, strings.Join(connectionStrings, "\n"), c.DefaultConnectionOptions.String())
+
+	if c.DatabaseOptions != nil {
+		str += fmt.Sprintf(`
+
+DatabaseOptions:
+%s`, c.DatabaseOptions.String())
+	}
+	if c.TerminalOptions != nil {
+		str += fmt.Sprintf(`
+
+TerminalOptions:
+%s`, c.TerminalOptions.String())
+	}
+	if c.GeneralOptions != nil {
+		str += fmt.Sprintf(`
+
+GeneralOptions:
+%s`, c.GeneralOptions.String())
+	}
+
+	return str
 }

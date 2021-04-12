@@ -14,9 +14,9 @@ import (
 
 // RefreshConnections :: load required connections from config
 // and update the database schema and search path to reflect the required connections
-// return whether any changes have been mde
+// return whether any changes have been made
 func (c *Client) RefreshConnections() (bool, error) {
-	// load required connection from globab config
+	// load required connection from global config
 	requiredConnections := steampipeconfig.Config.Connections
 
 	// first get a list of all existing schemas
@@ -164,11 +164,11 @@ func getSchemaQueries(updates steampipeconfig.ConnectionMap, failures []*steampi
 	var schemaQueries []string
 	for connectionName, plugin := range updates {
 		remoteSchema := steampipeconfig.PluginFQNToSchemaName(plugin.Plugin)
-		log.Printf("[TRACE] update connection %s, plugin FQN %s, schema %s\n ", connectionName, plugin.Plugin, remoteSchema)
+		log.Printf("[TRACE] update connection %s, plugin Name %s, schema %s\n ", connectionName, plugin.Plugin, remoteSchema)
 		schemaQueries = append(schemaQueries, updateConnectionQuery(connectionName, remoteSchema)...)
 	}
 	for _, failure := range failures {
-		log.Printf("[TRACE] remove schema for conneciton failing validation connection %s, plugin FQN %s\n ", failure.ConnectionName, failure.Plugin)
+		log.Printf("[TRACE] remove schema for conneciton failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
 		if failure.ShouldDropIfExists {
 			schemaQueries = append(schemaQueries, deleteConnectionQuery(failure.ConnectionName)...)
 		}

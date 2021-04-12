@@ -3,8 +3,7 @@ package steampipeconfig
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
-	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -15,13 +14,12 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/options"
 )
 
-const configExtension = ".spc"
-
-func loadFileData(configPaths []string) (map[string][]byte, hcl.Diagnostics) {
+// built a map of filepath to file data
+func loadFileData(paths []string) (map[string][]byte, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var fileData = map[string][]byte{}
 
-	for _, configPath := range configPaths {
+	for _, configPath := range paths {
 		data, err := ioutil.ReadFile(configPath)
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
@@ -35,7 +33,7 @@ func loadFileData(configPaths []string) (map[string][]byte, hcl.Diagnostics) {
 	return fileData, diags
 }
 
-func parseConfigs(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
+func parseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	var parsedConfigFiles []*hcl.File
 	var diags hcl.Diagnostics
 	parser := hclparse.NewParser()
@@ -98,6 +96,7 @@ func parseConnection(block *hcl.Block, fileData map[string][]byte) (*Connection,
 			configProperties = append(configProperties, string(a.SrcRange.SliceBytes(fileData[a.SrcRange.Filename])))
 		}
 	}
+	sort.Strings(configProperties)
 	connection.Config = strings.Join(configProperties, "\n")
 
 	return connection, diags
@@ -130,24 +129,4 @@ func parseOptions(block *hcl.Block) (options.Options, hcl.Diagnostics) {
 	}
 
 	return dest, nil
-}
-
-func getConfigFilePaths(configFolder string) ([]string, error) {
-	// check folder exists - if not just return empty config
-	if _, err := os.Stat(configFolder); os.IsNotExist(err) {
-		return nil, nil
-	}
-
-	entries, err := ioutil.ReadDir(configFolder)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config folder %s: %v", configFolder, err)
-	}
-
-	matches := []string{}
-	for _, entry := range entries {
-		if filepath.Ext(entry.Name()) == configExtension {
-			matches = append(matches, filepath.Join(configFolder, entry.Name()))
-		}
-	}
-	return matches, nil
 }

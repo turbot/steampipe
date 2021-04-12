@@ -11,8 +11,6 @@ import (
 // Constants for Config
 const (
 	DefaultInstallDir        = "~/.steampipe"
-	PluginExtension          = ".plugin"
-	ConfigExtension          = ".spc"
 	ConnectionsStateFileName = "connection.json"
 )
 

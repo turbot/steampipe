@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
@@ -423,7 +424,7 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 
 	// reload the config, since an installation MUST have created a new config file
 	if !isUpdate {
-		config, err := steampipeconfig.Load()
+		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgWorkspace))
 		if err != nil {
 			return err
 		}

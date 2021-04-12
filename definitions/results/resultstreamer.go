@@ -17,10 +17,9 @@ func (q *ResultStreamer) StreamResult(result *QueryResult) {
 	q.Results <- result
 }
 
-func (q *ResultStreamer) StreamSingleResult(result *QueryResult, onComplete func()) {
+func (q *ResultStreamer) StreamSingleResult(result *QueryResult) {
 	q.Results <- result
 	q.Wait()
-	onComplete()
 	close(q.Results)
 }
 

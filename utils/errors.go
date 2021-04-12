@@ -26,7 +26,7 @@ func FailOnError(err error) {
 }
 func FailOnErrorWithMessage(err error, message string) {
 	if err != nil {
-		panic(fmt.Sprintf("%s %s", message, err.Error()))
+		panic(fmt.Sprintf("%s: %s", message, err.Error()))
 	}
 }
 

@@ -2,51 +2,49 @@ package db
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
+	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/definitions/results"
-
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/definitions/results"
 	"github.com/turbot/steampipe/metaquery"
 	"github.com/turbot/steampipe/queryhistory"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
-
-	"github.com/c-bata/go-prompt"
+	"github.com/turbot/steampipe/workspace"
 )
 
 // InteractiveClient :: wrapper over *Client and *prompt.Prompt along
 // to facilitate interactive query prompt
 type InteractiveClient struct {
 	client                  *Client
+	workspace               *workspace.Workspace
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
 	interactiveQueryHistory *queryhistory.QueryHistory
 	autocompleteOnEmpty     bool
 }
 
-func newInteractiveClient(client *Client) (*InteractiveClient, error) {
+func newInteractiveClient(client *Client, workspace *workspace.Workspace) (*InteractiveClient, error) {
 	return &InteractiveClient{
 		client:                  client,
+		workspace:               workspace,
 		interactiveQueryHistory: queryhistory.New(),
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
 	}, nil
 }
 
-func (c *InteractiveClient) close() {
-	// close the underlying client
-	c.client.close()
-}
-
 // InteractiveQuery :: start an interactive prompt and return
-func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStreamer, onCompleteCallback func()) {
+func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStreamer) {
 	defer func() {
-		onCompleteCallback()
+		// close the underlying client
+		c.client.Close()
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
@@ -199,9 +197,14 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 	// expand the buffer out into 'query'
 	query := strings.Join(c.interactiveBuffer, "\n")
 
-	// should we execute?
-	if !c.shouldExecute(query) {
-		return
+	// if it is a multiline query, execute even without `;`
+	if namedQuery, ok := c.workspace.GetNamedQuery(query); ok {
+		query = namedQuery.SQL
+	} else {
+		// should we execute?
+		if !c.shouldExecute(query) {
+			return
+		}
 	}
 
 	// so we need to execute - what are we executing
@@ -282,11 +285,13 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 
 	if isFirstWord(text) {
 		// add all we know that can be the first words
-		s = []prompt.Suggest{
-			{
-				Text: "select",
-			},
-		}
+
+		//named queries
+		s = append(s, c.namedQuerySuggestions()...)
+		// "select"
+		s = append(s, prompt.Suggest{Text: "select"})
+
+		// metaqueries
 		s = append(s, metaquery.PromptSuggestions()...)
 
 	} else if metaquery.IsMetaQuery(text) {
@@ -314,4 +319,20 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 
 	}
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
+}
+
+func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
+	var res []prompt.Suggest
+	// add all the queries in the workspace
+	for name, q := range c.workspace.GetNamedQueryMap() {
+		description := "named query"
+		if q.Description != "" {
+			description += fmt.Sprintf(": %s", q.Description)
+		}
+		res = append(res, prompt.Suggest{Text: name, Description: description})
+	}
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].Text < res[j].Text
+	})
+	return res
 }

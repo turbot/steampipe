@@ -50,8 +50,15 @@ Getting started:
 }
 
 func InitCmd() {
+	// get working directory
+	workingDir, err := os.Getwd()
+	utils.FailOnErrorWithMessage(err, "could not read current directory")
+
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
+	rootCmd.PersistentFlags().String(constants.ArgWorkspace, workingDir, "Path to the workspace ")
+
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
+	viper.BindPFlag(constants.ArgWorkspace, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspace))
 
 	AddCommands()
 
@@ -67,7 +74,7 @@ func initGlobalConfig() {
 	setInstallDir()
 
 	// load config (this sets the global config steampipeconfig.Config)
-	config, err := steampipeconfig.Load()
+	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgWorkspace))
 	utils.FailOnError(err)
 	steampipeconfig.Config = config
 

@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/workspace"
 )
 
 // QueryCmd :: represents the query command
@@ -65,17 +66,32 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	// gety query or queries from the args
-	queries, err := getQueries(args)
+	// start db if necessary
+	err := db.StartServiceForQuery()
+	utils.FailOnErrorWithMessage(err, "failed to start service")
+	defer db.Shutdown(nil, db.InvokerQuery)
+
+	// load the workspace (do not do this until after service start as watcher interferes with service start)
+	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+
+	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+	defer workspace.Close()
+
+	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
+	queries, err := getQueries(args, workspace)
 	utils.FailOnError(err)
 
-	for _, q := range queries {
-		runQuery(q)
+	// if no query is specified, run interactive prompt
+	if len(queries) == 0 {
+		// interactive session creates its own client
+		runInteractiveSession(workspace)
+	} else {
+		executeQueries(queries)
 	}
 }
 
 // retrieve queries from args or determine whether to run the interactive shell
-func getQueries(args []string) ([]string, error) {
+func getQueries(args []string, workspace *workspace.Workspace) ([]string, error) {
 	// was the sql-file flag used?
 	if sqlFiles := viper.GetStringSlice(constants.ArgSqlFile); len(sqlFiles) > 0 {
 		// cobra only takes the first string after a flag as the flag value, so if more than one file is specified,
@@ -91,20 +107,51 @@ func getQueries(args []string) ([]string, error) {
 	// just return the first arg (if there is one)
 
 	// if no query is specified in the args, we must pass a single empty query to trigger interactive mode
-	var query = ""
+	var queries []string
 	if len(args) > 0 {
-		query = args[0]
+		if namedQuery, ok := workspace.GetNamedQuery(args[0]); ok {
+			queries = []string{namedQuery.SQL}
+		} else {
+			queries = []string{args[0]}
+		}
 	}
-	return []string{query}, nil
+	return queries, nil
 }
 
-func runQuery(queryString string) {
+func runInteractiveSession(workspace *workspace.Workspace) {
 	// set the flag to not show spinner
-	showSpinner := queryString == ""
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, showSpinner)
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.ExecuteQuery(queryString)
+	resultsStreamer, err := db.RunInteractivePrompt(workspace)
+	utils.FailOnError(err)
+
+	// print the data as it comes
+	for r := range resultsStreamer.Results {
+		display.ShowOutput(r)
+		// signal to the resultStreamer that we are done with this chunk of the stream
+		resultsStreamer.Done()
+	}
+}
+
+func executeQueries(queries []string) {
+	// first get a client - do this once for all queries
+	client, err := db.NewClient(true)
+	utils.FailOnError(err)
+	defer client.Close()
+
+	// run all queries
+	for _, q := range queries {
+		runQuery(q, client)
+	}
+}
+
+func runQuery(queryString string, client *db.Client) {
+	// set the flag to show spinner
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, true)
+
+	// the db executor sends result data over resultsStreamer
+	resultsStreamer, err := db.ExecuteQuery(queryString, client)
 	utils.FailOnError(err)
 
 	// print the data as it comes
