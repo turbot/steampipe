@@ -15,7 +15,7 @@ import (
 // RefreshConnections :: load required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been mde
-func (c *Client) RefreshConnections() error {
+func (c *Client) RefreshConnections() (bool, error) {
 	// load required connection from globab config
 	requiredConnections := steampipeconfig.Config.Connections
 
@@ -25,14 +25,14 @@ func (c *Client) RefreshConnections() error {
 	// refresh the connection state file - the removes any connections which do not exist in the list of current schema
 	updates, err := steampipeconfig.GetConnectionsToUpdate(schemas, requiredConnections)
 	if err != nil {
-		return err
+		return false, err
 	}
 	log.Printf("[TRACE] RefreshConnections, updates: %+v\n", updates)
 
 	missingCount := len(updates.MissingPlugins)
 	if missingCount > 0 {
 		// if any plugins are missing, error for now but we could prompt for an install
-		return fmt.Errorf("%d %s referenced in the connection config not installed: \n  %v",
+		return false, fmt.Errorf("%d %s referenced in the connection config not installed: \n  %v",
 			missingCount,
 			utils.Pluralize("plugin", missingCount),
 			strings.Join(updates.MissingPlugins, "\n  "))
@@ -58,7 +58,7 @@ func (c *Client) RefreshConnections() error {
 		// first instantiate connection plugins for all updates
 		connectionPlugins, err := getConnectionPlugins(updates.Update)
 		if err != nil {
-			return err
+			return false, err
 		}
 		// find any plugins which use a newer sdk version than steampipe.
 		validationFailures, validatedUpdates, validatedPlugins := steampipeconfig.ValidatePlugins(updates.Update, connectionPlugins)
@@ -77,12 +77,12 @@ func (c *Client) RefreshConnections() error {
 
 	if len(connectionQueries) == 0 {
 		log.Println("[TRACE] no connections to update")
-		return nil
+		return false, nil
 	}
 
 	// execute the connection queries
 	if err = executeConnectionQueries(connectionQueries, updates); err != nil {
-		return err
+		return false, err
 	}
 
 	// so there ARE connections to update
@@ -94,13 +94,18 @@ func (c *Client) RefreshConnections() error {
 	log.Println("[TRACE] reloading schema")
 	c.loadSchema()
 
-	// update the service and cl;ient search paths (as long as they have NOT been explicitly set)
+	// update the service and client search paths (as long as they have NOT been explicitly set)
 	log.Println("[TRACE] setting search path")
 	c.setServiceSearchPath(prevDefaultSearchPath)
-	c.setClientSearchPath()
+	c.setClientSearchPath(prevDefaultSearchPath)
 
 	// finally update the connection map
-	return c.updateConnectionMap()
+	if err = c.updateConnectionMap(); err != nil {
+		return false, err
+	}
+
+	return true, nil
+
 }
 
 func (c *Client) updateConnectionMap() error {

@@ -26,9 +26,9 @@ func (c *Client) close() {
 	}
 }
 
-// GetClient ensures that the database instance is running
+// NewClient ensures that the database instance is running
 // and returns a `Client` to interact with it
-func GetClient(autoRefreshConnections bool) (*Client, error) {
+func NewClient(autoRefreshConnections bool) (*Client, error) {
 	db, err := createSteampipeDbClient()
 	if err != nil {
 		return nil, err
@@ -37,19 +37,29 @@ func GetClient(autoRefreshConnections bool) (*Client, error) {
 	client.dbClient = db
 	client.loadSchema()
 
+	var updatedConnections bool
 	if autoRefreshConnections {
-		client.RefreshConnections()
-		refreshFunctions()
+		if updatedConnections, err = client.RefreshConnections(); err != nil {
+			client.close()
+			return nil, err
+		}
+		if err := refreshFunctions(); err != nil {
+			client.close()
+			return nil, err
+		}
 	}
 
-	// load the connection state and cache it!
-	connectionMap, err := steampipeconfig.GetConnectionState(client.schemaMetadata.GetSchemas())
-	if err != nil {
-		return nil, err
-	}
-	client.connectionMap = &connectionMap
-	if err := client.setClientSearchPath(); err != nil {
-		utils.ShowError(err)
+	// if we did NOT update connections, initialise the connection map and search path
+	if !updatedConnections {
+		// load the connection state and cache it!
+		connectionMap, err := steampipeconfig.GetConnectionState(client.schemaMetadata.GetSchemas())
+		if err != nil {
+			return nil, err
+		}
+		client.connectionMap = &connectionMap
+		if err := client.setClientSearchPath(nil); err != nil {
+			utils.ShowError(err)
+		}
 	}
 
 	return client, nil
@@ -57,6 +67,17 @@ func GetClient(autoRefreshConnections bool) (*Client, error) {
 
 func createSteampipeDbClient() (*sql.DB, error) {
 	return createDbClient(constants.DatabaseName, constants.DatabaseUser)
+}
+
+// close and reopen db client
+func (c *Client) refreshDbClient() error {
+	c.dbClient.Close()
+	db, err := createSteampipeDbClient()
+	if err != nil {
+		return err
+	}
+	c.dbClient = db
+	return nil
 }
 
 func createSteampipeRootDbClient() (*sql.DB, error) {

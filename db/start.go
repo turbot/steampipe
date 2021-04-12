@@ -194,7 +194,8 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		return ServiceStarted, err
 	}
 
-	client, err := GetClient(false)
+	// TODO ADD COMMENT EXPLAINING WHY WE ARE NOT AUTO-REFRESHING
+	client, err := NewClient(false)
 	if err != nil {
 		return ServiceFailedToStart, handleStartFailure(err)
 	}
@@ -212,7 +213,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	// refresh plugin connections - ensure db schemas are in sync with connection config
 	// NOTE: refresh defaults to true but will be set to false if this service start command has been invoked by a query command
 	if cmdconfig.Viper().GetBool(constants.ArgRefresh) {
-		if err = client.RefreshConnections(); err != nil {
+		if _, err = client.RefreshConnections(); err != nil {
 			return ServiceStarted, err
 		}
 		if err = refreshFunctions(); err != nil {

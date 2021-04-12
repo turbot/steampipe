@@ -444,13 +444,14 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 		defer func() { db.Shutdown(client, db.InvokerPlugin) }()
 	}
 
-	client, err = db.GetClient(false)
+	// TODO i think we can pass true here and not refresh below
+	client, err = db.NewClient(false)
 	if err != nil {
 		return err
 	}
 
 	// refresh connections
-	if err = client.RefreshConnections(); err != nil {
+	if _, err = client.RefreshConnections(); err != nil {
 		return err
 	}
 
@@ -532,7 +533,7 @@ func getPluginConnectionMap() (map[string][]string, error) {
 		defer func() { db.Shutdown(client, db.InvokerPlugin) }()
 	}
 
-	client, err = db.GetClient(true)
+	client, err = db.NewClient(true)
 	if err != nil {
 		return nil, fmt.Errorf("Could not connect with steampipe service")
 	}
