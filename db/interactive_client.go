@@ -26,6 +26,7 @@ type InteractiveClient struct {
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
 	interactiveQueryHistory *queryhistory.QueryHistory
+	autocompleteOnEmpty     bool
 }
 
 func newInteractiveClient(client *Client) (*InteractiveClient, error) {
@@ -33,6 +34,7 @@ func newInteractiveClient(client *Client) (*InteractiveClient, error) {
 		client:                  client,
 		interactiveQueryHistory: queryhistory.New(),
 		interactiveBuffer:       []string{},
+		autocompleteOnEmpty:     false,
 	}, nil
 }
 
@@ -119,6 +121,24 @@ func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *results.Result
 			Fn:  func(b *prompt.Buffer) { c.breakMultilinePrompt(b) },
 		}),
 		prompt.OptionAddKeyBind(prompt.KeyBind{
+			Key: prompt.Tab,
+			Fn: func(b *prompt.Buffer) {
+				if len(b.Text()) == 0 {
+					c.autocompleteOnEmpty = true
+				} else {
+					c.autocompleteOnEmpty = false
+				}
+			},
+		}),
+		prompt.OptionAddKeyBind(prompt.KeyBind{
+			Key: prompt.Escape,
+			Fn: func(b *prompt.Buffer) {
+				if len(b.Text()) == 0 {
+					c.autocompleteOnEmpty = false
+				}
+			},
+		}),
+		prompt.OptionAddKeyBind(prompt.KeyBind{
 			Key: prompt.ShiftLeft,
 			Fn:  prompt.GoLeftChar,
 		}),
@@ -155,7 +175,8 @@ func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *results.Result
 			Fn:        prompt.GoRightWord,
 		}),
 	)
-
+	// set this to a default
+	c.autocompleteOnEmpty = false
 	c.interactivePrompt.Run()
 	return
 }
@@ -253,7 +274,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 
 	var s []prompt.Suggest
 
-	if len(d.CurrentLine()) == 0 {
+	if len(d.CurrentLine()) == 0 && !c.autocompleteOnEmpty {
 		// if nothing has been typed yet, no point
 		// giving suggestions
 		return s
