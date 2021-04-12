@@ -99,7 +99,7 @@ func (c *Client) setClientSearchPath() error {
 	for idx, path := range searchPath {
 		searchPath[idx] = PgEscapeName(path)
 	}
-	q := fmt.Sprintf("set client search_path to %s", strings.Join(searchPath, ","))
+	q := fmt.Sprintf("set search_path to %s", strings.Join(searchPath, ","))
 	_, err := c.ExecuteSync(q)
 
 	if err != nil {
