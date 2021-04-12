@@ -120,7 +120,7 @@ func getQueries(args []string, workspace *workspace.Workspace) ([]string, error)
 
 func runInteractiveSession(workspace *workspace.Workspace) {
 	// set the flag to not show spinner
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, true)
 
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.RunInteractivePrompt(workspace)
@@ -135,6 +135,9 @@ func runInteractiveSession(workspace *workspace.Workspace) {
 }
 
 func executeQueries(queries []string) {
+	// set the flag to show spinner
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
+
 	// first get a client - do this once for all queries
 	client, err := db.NewClient(true)
 	utils.FailOnError(err)
@@ -147,9 +150,6 @@ func executeQueries(queries []string) {
 }
 
 func runQuery(queryString string, client *db.Client) {
-	// set the flag to show spinner
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, true)
-
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.ExecuteQuery(queryString, client)
 	utils.FailOnError(err)
