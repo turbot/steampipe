@@ -14,8 +14,6 @@ const (
 	ArgPort                    = "database-port"
 	ArgListenAddressDeprecated = "listen"
 	ArgListenAddress           = "database-listen"
-	ArgSearchPath              = "search-path"
-	ArgSearchPathPrefix        = "search-path-prefix"
 	ArgInvoker                 = "invoker"
 	ArgRefresh                 = "refresh"
 	ArgLogLevel                = "log-level"
@@ -23,6 +21,8 @@ const (
 	ArgInstallDir              = "install-dir"
 	ArgSqlFile                 = "sql-file"
 	ArgWorkspace               = "workspace"
+	ArgSearchPath              = "search-path"
+	ArgSearchPathPrefix        = "search-path-prefix"
 )
 
 /// metaquery mode arguments

@@ -251,6 +251,7 @@ func (c *InteractiveClient) executeMetaquery(query string) error {
 	// validation passed, now we will run
 	return metaquery.Handle(&metaquery.HandlerInput{
 		Query:       query,
+		Executor:    c.client,
 		Schema:      c.client.schemaMetadata,
 		Connections: c.client.connectionMap,
 		Prompt:      c.interactivePrompt,

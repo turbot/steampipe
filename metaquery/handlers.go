@@ -8,6 +8,7 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/cmdconfig"
@@ -20,9 +21,16 @@ import (
 
 var commonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.CmdExit}
 
+// QueryExecutor :: this is a container interface which allows us to call into the db/Client object
+type QueryExecutor interface {
+	SetClientSearchPath() error
+	GetCurrentSearchPath() ([]string, error)
+}
+
 // HandlerInput :: input interface for the metaquery handler
 type HandlerInput struct {
 	Query       string
+	Executor    QueryExecutor
 	Schema      *schema.Metadata
 	Connections *steampipeconfig.ConnectionMap
 	Prompt      *prompt.Prompt
@@ -47,6 +55,53 @@ func Handle(input *HandlerInput) error {
 
 	handlerFunction = metaQueryObj.handler
 	return handlerFunction(input)
+}
+
+func setOrGetSearchPath(input *HandlerInput) error {
+	if len(input.args()) == 0 {
+		currentPath, err := input.Executor.GetCurrentSearchPath()
+		if err != nil {
+			return err
+		}
+		currentPath = helpers.RemoveFromStringSlice(currentPath, constants.FunctionSchema)
+
+		display.ShowWrappedTable(
+			[]string{"search_path"},
+			[][]string{
+				{strings.Join(currentPath, ",")},
+			},
+			false,
+		)
+	} else {
+		arg := input.args()[0]
+		paths := []string{}
+		split := strings.Split(arg, ",")
+		for _, s := range split {
+			s = strings.TrimSpace(s)
+			paths = append(paths, s)
+		}
+		viper.Set(constants.ArgSearchPath, paths)
+
+		// now that the viper is set, call back into the client (exposed via QueryExecutor) which
+		// already knows how to setup the search_paths with the viper values
+		return input.Executor.SetClientSearchPath()
+	}
+	return nil
+}
+
+func setSearchPathPrefix(input *HandlerInput) error {
+	arg := input.args()[0]
+	paths := []string{}
+	split := strings.Split(arg, ",")
+	for _, s := range split {
+		s = strings.TrimSpace(s)
+		paths = append(paths, s)
+	}
+	viper.Set(constants.ArgSearchPathPrefix, paths)
+
+	// now that the viper is set, call back into the client (exposed via QueryExecutor) which
+	// already knows how to setup the search_paths with the viper values
+	return input.Executor.SetClientSearchPath()
 }
 
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]

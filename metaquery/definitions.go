@@ -115,5 +115,17 @@ func init() {
 			validator:   noArgs,
 			description: "Clear the console",
 		},
+		constants.CmdSearchPath: {
+			title:       constants.CmdSearchPath,
+			handler:     setOrGetSearchPath,
+			validator:   atMostNArgs(1),
+			description: "Display the current search path, or set the search-path by passing in a comma-separated list",
+		},
+		constants.CmdSearchPathPrefix: {
+			title:       constants.CmdSearchPathPrefix,
+			handler:     setSearchPathPrefix,
+			validator:   exactlyNArgs(1),
+			description: "Set a prefix to the current search-path",
+		},
 	}
 }

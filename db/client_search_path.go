@@ -13,7 +13,7 @@ import (
 
 // set the search path for this client
 // if either a search-path or search-path-prefix is set in config, set the search path
-func (c *Client) setClientSearchPath() error {
+func (c *Client) SetClientSearchPath() error {
 	searchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 
@@ -34,7 +34,7 @@ func (c *Client) setClientSearchPath() error {
 	} else {
 		// so no search path was set in config
 		// in this case we need to load the existing service search path
-		searchPath, _ = c.getCurrentSearchPath()
+		searchPath, _ = c.GetCurrentSearchPath()
 	}
 
 	// add in the prefix if present
@@ -49,7 +49,6 @@ func (c *Client) setClientSearchPath() error {
 	if err != nil {
 		return err
 	}
-
 	// store search path on the client
 	c.schemaMetadata.SearchPath = searchPath
 	return nil
@@ -113,7 +112,7 @@ func (c *Client) getDefaultSearchPath() []string {
 }
 
 // query the database to get the current search path
-func (c *Client) getCurrentSearchPath() ([]string, error) {
+func (c *Client) GetCurrentSearchPath() ([]string, error) {
 	var currentSearchPath []string
 	var pathAsString string
 	row := c.dbClient.QueryRow("show search_path")
