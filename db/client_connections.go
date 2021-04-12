@@ -87,17 +87,14 @@ func (c *Client) RefreshConnections() (bool, error) {
 
 	// so there ARE connections to update
 
-	// store default search path before updating schema
-	// (so we can deduce whether the service is currently using the default search path)
-	prevDefaultSearchPath := c.getDefaultSearchPath()
 	// reload the database schemas, since they have changed - otherwise we wouldn't be here
 	log.Println("[TRACE] reloading schema")
 	c.loadSchema()
 
 	// update the service and client search paths (as long as they have NOT been explicitly set)
 	log.Println("[TRACE] setting search path")
-	c.setServiceSearchPath(prevDefaultSearchPath)
-	c.setClientSearchPath(prevDefaultSearchPath)
+	c.setServiceSearchPath()
+	c.setClientSearchPath()
 
 	// finally update the connection map
 	if err = c.updateConnectionMap(); err != nil {

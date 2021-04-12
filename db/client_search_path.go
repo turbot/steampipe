@@ -3,7 +3,6 @@ package db
 import (
 	"fmt"
 	"log"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -22,15 +21,11 @@ func (c *Client) setClientSearchPath() error {
 	if err := c.refreshDbClient(); err != nil {
 		return err
 	}
+	// if neither search-path or search-path-prefix are set in config, we do not need to do anything
+	// - just fall back to the service search path
 	if len(searchPath) == 0 && len(searchPathPrefix) == 0 {
 		return nil
 	}
-
-	// if neither search-path or search-path-prefix are set in config,
-	// we _could_ just fall back to using the service search path
-	// however changes to the service searhc path will not be reflected until we create a new DB client
-	// also - we need to update the search path stored on the client
-	// so instead, always explicitly set the client search path
 
 	// if a search path was passed, add 'internal' to the end
 	if len(searchPath) > 0 {
@@ -38,22 +33,8 @@ func (c *Client) setClientSearchPath() error {
 		searchPath = append(searchPath, constants.FunctionSchema)
 	} else {
 		// so no search path was set in config
-		// in this case we need to either load the existing service search path, or build the default search path from connections
-
-		// if the service search path is the (previous) default, then set our search path to the (new) default
-
-		// if the current search path is the same as the previous default,
-		// then we assume no search path has been explicitly set on the service
-		// - in that case, just update the client search path to the NEW default
-		// (this handles the case where there are new connections)
-		// TODO getCurrentSearchPath does not reflect changes to service search path since the client was created
-		// if this worked, we would not need to check prevDefaultSearchPath here
-
+		// in this case we need to load the existing service search path
 		searchPath, _ = c.getCurrentSearchPath()
-		//// TODO add searchPathEqual function
-		//if prevDefaultSearchPath != nil && reflect.DeepEqual(searchPath, prevDefaultSearchPath) {
-		//	searchPath = c.getDefaultSearchPath()
-		//}
 	}
 
 	// add in the prefix if present
@@ -75,10 +56,7 @@ func (c *Client) setClientSearchPath() error {
 }
 
 // set the search path for the db service (by setting it on the steampipe user)
-// DO NOT set the search path the default if the existing search path is not the same as the previous default
-// (as this indicates the service search path has been set either via config,
-// or on the command line (which we cannot detect as it would have been in a different steampipe session)
-func (c *Client) setServiceSearchPath(prevDefaultSearchPath []string) error {
+func (c *Client) setServiceSearchPath() error {
 	var searchPath []string
 
 	// is there a service search path in the config?
@@ -89,16 +67,6 @@ func (c *Client) setServiceSearchPath(prevDefaultSearchPath []string) error {
 		searchPath = append(searchPath, constants.FunctionSchema)
 	} else {
 		// no config set - set service search path to default
-
-		// if the current service search path is NOT the previous default search path,
-		// it means is has been explicitly set via a command line arg so we DO NOT want to update it
-		searchPath, _ = c.getCurrentSearchPath()
-		if prevDefaultSearchPath != nil && !reflect.DeepEqual(searchPath, prevDefaultSearchPath) {
-			return nil
-		}
-
-		// so current service search path IS the same as the previous default
-		// update it to the new default
 		searchPath = c.getDefaultSearchPath()
 	}
 

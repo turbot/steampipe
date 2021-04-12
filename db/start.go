@@ -221,7 +221,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		}
 	}
 
-	err = client.setServiceSearchPath(nil)
+	err = client.setServiceSearchPath()
 	return ServiceStarted, err
 }
 
@@ -255,7 +255,7 @@ func handleStartFailure(err error) error {
 		return fmt.Errorf("Another Steampipe service is already running. Use %s to kill all running instances before continuing.", constants.Bold("steampipe service stop --force"))
 	}
 
-	// there was nothing to kill.9
+	// there was nothing to kill.
 	// this is some other problem that we are not accounting for
 	return err
 }
