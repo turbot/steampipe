@@ -92,8 +92,10 @@ func (c *Client) RefreshConnections() error {
 
 	// set the search path with the updates
 	log.Println("[TRACE] setting search path")
-	c.setServiceSearchPath()
-	c.setClientSearchPath()
+	if connectionsToUpdate {
+		c.setServiceSearchPath()
+		c.setClientSearchPath()
+	}
 
 	// tell client to refresh schemas, connection map and set the search path
 	if err = c.updateConnectionMap(); err != nil {
