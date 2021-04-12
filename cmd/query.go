@@ -66,20 +66,16 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	//log.Printf("[WARN] start service")
 	// start db if necessary
 	err := db.StartServiceForQuery()
 	utils.FailOnErrorWithMessage(err, "failed to start service")
 	defer db.Shutdown(nil, db.InvokerQuery)
 
-	//log.Printf("[WARN] load workspace")
 	// load the workspace (do not do this until after service start as watcher interferes with service start)
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
 
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
-
-	//log.Printf("[WARN] get queries")
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	queries, err := getQueries(args, workspace)
