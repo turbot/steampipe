@@ -34,21 +34,9 @@ func ExecuteQuery(queryString string) (*results.ResultStreamer, error) {
 		StartService(InvokerQuery)
 	}
 
-	client, err := GetClient(false)
+	client, err := NewClient(true)
 	utils.FailOnErrorWithMessage(err, "client failed to initialize")
 
-	// refresh connections
-	err = client.RefreshConnections()
-	if err != nil {
-		// shutdown the service if something went wrong!!!
-		Shutdown(client, InvokerQuery)
-		return nil, fmt.Errorf("failed to refresh connections: %v", err.Error())
-	}
-	if err = refreshFunctions(); err != nil {
-		// shutdown the service if something went wrong!!!
-		Shutdown(client, InvokerQuery)
-		return nil, fmt.Errorf("failed to add functions: %v", err)
-	}
 	resultsStreamer := results.NewResultStreamer()
 
 	// this is a callback to close the db et-al. when things get done - no matter the mode

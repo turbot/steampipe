@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
-
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
@@ -184,7 +184,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	stopStatus, err := db.StopDB(cmdconfig.Viper().GetBool(constants.ArgForce), db.InvokerService)
+	stopStatus, err := db.StopDB(viper.GetBool(constants.ArgForce), db.InvokerService)
 
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "could not stop current instance")

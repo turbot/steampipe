@@ -48,7 +48,9 @@ Examples:
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.").
-		AddStringSliceFlag(constants.ArgSqlFile, "", nil, "Specifies one or more sql files to execute.")
+		AddStringSliceFlag(constants.ArgSqlFile, "", nil, "Specifies one or more sql files to execute.").
+		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
+		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a query session (comma-separated)")
 
 	return cmd
 }
@@ -99,7 +101,7 @@ func getQueries(args []string) ([]string, error) {
 func runQuery(queryString string) {
 	// set the flag to not show spinner
 	showSpinner := queryString == ""
-	cmdconfig.Viper().Set(constants.ShowInteractiveOutputConfigKey, showSpinner)
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, showSpinner)
 
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.ExecuteQuery(queryString)

@@ -121,7 +121,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 				break
 			}
 			if time.Since(signalSentAt) > constants.SpinnerShowTimeout && !spinnerShown {
-				if cmdconfig.Viper().GetBool(constants.ShowInteractiveOutputConfigKey) {
+				if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
 					s := utils.ShowSpinner("Shutting down...")
 					defer utils.StopSpinner(s)
 					spinnerShown = true

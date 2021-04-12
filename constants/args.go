@@ -18,16 +18,12 @@ const (
 	ArgListenAddress           = "database-listen"
 	ArgSearchPath              = "search-path"
 	ArgSearchPathPrefix        = "search-path-prefix"
-	// search path set in the database config
-	ArgServiceSearchPath = "database.search-path"
-	// search path set in the terminal config
-	ArgSearchPathTerminal = "terminal.search-path"
-	ArgInvoker            = "invoker"
-	ArgRefresh            = "refresh"
-	ArgLogLevel           = "log-level"
-	ArgUpdateCheck        = "update-check"
-	ArgInstallDir         = "install-dir"
-	ArgSqlFile            = "sql-file"
+	ArgInvoker                 = "invoker"
+	ArgRefresh                 = "refresh"
+	ArgLogLevel                = "log-level"
+	ArgUpdateCheck             = "update-check"
+	ArgInstallDir              = "install-dir"
+	ArgSqlFile                 = "sql-file"
 )
 
 /// metaquery mode arguments
