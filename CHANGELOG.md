@@ -1,3 +1,10 @@
+## v0.4.0 [tbd]
+_What's new?_
+* Queries may be executed directly from SQL files using the `--sql-file` argument. ([#289](https://github.com/turbot/steampipe/issues/289)) 
+* Name query support - all sql file in current folder (or the folder specified by the `workspace` argument) will be loaded and available to run as `named queries`. ([#369](https://github.com/turbot/steampipe/issues/369)) 
+* Search path for the steampipe database service may be specified using the `database` config. ([#353](https://github.com/turbot/steampipe/issues/353))
+* Search path and search path prefix for terminal sessions may be specified using `terminal` config, command line argument or meta-commands. ([#353](https://github.com/turbot/steampipe/issues/353),  [#357](https://github.com/turbot/steampipe/issues/358), [#358](https://github.com/turbot/steampipe/issues/358)) 
+
 ## v0.3.6 [2021-04-08]
 _What's new?_
 * Plugin updates are now listed alphabetically. ([#339](https://github.com/turbot/steampipe/issues/339))
