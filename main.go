@@ -9,7 +9,6 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmd"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -30,10 +29,6 @@ func main() {
 
 	// execute the command
 	cmd.Execute()
-
-	// remove the temp directory
-	// don't care if it could not be removed
-	defer os.RemoveAll(constants.TempDir())
 
 	logging.LogTime("end")
 	utils.DisplayProfileData()
