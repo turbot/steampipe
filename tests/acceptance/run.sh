@@ -1,18 +1,29 @@
 #!/bin/bash -e
 
+banner()
+{
+  echo "+------------------------------------------+"
+  printf "| %-40s |\n" "`date`"
+  echo "|                                          |"
+  printf "|`tput bold` %-40s `tput sgr0`|\n" "$@"
+  echo "+------------------------------------------+"
+}
+
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
-# trap "code=$?;rm -rf $MY_PATH/test_data/templates; exit $code" EXIT
+export STEAMPIPE_INSTALL_DIR=$(mktemp -d)
+trap "code=$?;rm -rf $STEAMPIPE_INSTALL_DIR; exit $code" EXIT
 
 # set this to the source file for development
 export BATS_PATH=$MY_PATH/lib/bats/bin/bats
 export LIB_BATS_ASSERT=$MY_PATH/lib/bats-assert
 export LIB_BATS_SUPPORT=$MY_PATH/lib/bats-support
 export TEST_DATA_DIR=$MY_PATH/test_data/templates
+export SRC_DATA_DIR=$MY_PATH/test_data/source_files
 
 # Must have these commands for the test suite to run
-declare -a required_commands=("sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname")
+declare -a required_commands=("psql" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname")
 
 for required_command in "${required_commands[@]}"
 do
@@ -22,13 +33,6 @@ do
   fi
 done
 
-# create a copy of the test data templates
-# mkdir $MY_PATH/test_data/templates
-# export TEST_DATA_DIR=$MY_PATH/test_data/templates
-# cp -R $MY_PATH/test_data/templates/* $TEST_DATA_DIR/
-
-# cd $TEST_DATA_DIR
-
 echo " ____  _             _   _               _____         _       "
 echo "/ ___|| |_ __ _ _ __| |_(_)_ __   __ _  |_   _|__  ___| |_ ___ "
 echo "\___ \| __/ _\` | '__| __| | '_ \ / _\` |   | |/ _ \/ __| __/ __|"
@@ -37,5 +41,7 @@ echo "|____/ \__\__,_|_|   \__|_|_| |_|\__, |   |_|\___||___/\__|___/"
 echo "                                 |___/                         "
 
 export PATH=$PATH:$MY_PATH/lib/bats/bin
+
+banner "Running in $STEAMPIPE_INSTALL_DIR"
 
 bats --tap $MY_PATH/test_files
