@@ -145,7 +145,6 @@ func executeQueries(queries []string) int {
 	defer client.Close()
 
 	// run all queries
-	fmt.Println()
 	failures := 0
 	for _, q := range queries {
 		if err := runQuery(q, client); err != nil {
