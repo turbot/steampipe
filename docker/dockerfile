@@ -1,0 +1,15 @@
+FROM ubuntu:20.04
+
+RUN apt-get update && \
+    apt-get install -y curl && \
+    useradd -ms /bin/bash steampipe
+
+COPY ./steampipe /usr/local/bin
+
+USER steampipe
+WORKDIR /home/steampipe
+
+RUN steampipe plugin install steampipe aws gcp azure github
+
+ENTRYPOINT [ "/usr/local/bin/steampipe" ]
+

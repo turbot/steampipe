@@ -1,0 +1,14 @@
+ GOARCH=amd64 GOOS=linux go build -o ./docker/steampipe
+
+
+docker run --interactive --tty --read-only --tmpfs "/run" --tmpfs "/tmp" centos /bin/bash
+
+docker run -t -i  --read-only--tmpfs "/run" -v /Users/kai/sp/:/run/kai ubuntu /bin/bash
+
+docker run -v /Users/kai/:/run/kai
+
+docker build . --tag steampipe:latest
+
+
+docker run -it --read-only --tmpfs "/home/steampipe/" --tmpfs "/home/steampipe/config"  steampipe:latest plugin install aws --install-dir "/home/steampipe"
+    docker run -it   steampipe:latest query
