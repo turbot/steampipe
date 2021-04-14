@@ -119,6 +119,12 @@ func getQueries(args []string, workspace *workspace.Workspace) ([]string, error)
 }
 
 func runInteractiveSession(workspace *workspace.Workspace) {
+	// start the workspace file watcher
+	if viper.GetBool(constants.ArgWatch) {
+		err := workspace.SetupWatcher()
+		utils.FailOnError(err)
+	}
+
 	// set the flag to not show spinner
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, true)
 

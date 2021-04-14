@@ -16,6 +16,7 @@ type Terminal struct {
 	Timing           *bool   `hcl:"timing"`
 	SearchPath       *string `hcl:"search_path"`
 	SearchPathPrefix *string `hcl:"search_path_prefix"`
+	Watch            *bool   `hcl:"watch"`
 }
 
 // ConfigMap :: create a config map to pass to viper
@@ -45,6 +46,9 @@ func (t *Terminal) ConfigMap() map[string]interface{} {
 		// convert from string to array
 		res[constants.ArgSearchPathPrefix] = searchPathToArray(*t.SearchPathPrefix)
 	}
+	if t.Watch != nil {
+		res[constants.ArgWatch] = t.Watch
+	}
 	return res
 }
 
@@ -73,6 +77,9 @@ func (t *Terminal) Merge(otherOptions Options) {
 		}
 		if o.SearchPathPrefix != nil {
 			t.SearchPathPrefix = o.SearchPathPrefix
+		}
+		if o.Watch != nil {
+			t.Watch = o.Watch
 		}
 	}
 }
@@ -116,6 +123,11 @@ func (t *Terminal) String() string {
 		str = append(str, "  SearchPathPrefix: nil")
 	} else {
 		str = append(str, fmt.Sprintf("  SearchPathPrefix: %s", *t.SearchPathPrefix))
+	}
+	if t.Watch == nil {
+		str = append(str, "  Watch: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  Watch: %v", *t.Watch))
 	}
 	return strings.Join(str, "\n")
 }
