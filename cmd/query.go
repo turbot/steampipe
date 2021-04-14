@@ -72,7 +72,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// load the workspace (do not do this until after service start as watcher interferes with service start)
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
 
@@ -84,7 +83,9 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		// interactive session creates its own client
 		runInteractiveSession(workspace)
 	} else {
-		executeQueries(queries)
+		failures := executeQueries(queries)
+		// set global exit code
+		exitCode = failures
 	}
 }
 
@@ -134,7 +135,7 @@ func runInteractiveSession(workspace *workspace.Workspace) {
 	}
 }
 
-func executeQueries(queries []string) {
+func executeQueries(queries []string) int {
 	// set the flag to show spinner
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
@@ -154,7 +155,7 @@ func executeQueries(queries []string) {
 		fmt.Println()
 	}
 
-	os.Exit(failures)
+	return failures
 }
 
 func runQuery(queryString string, client *db.Client) error {
