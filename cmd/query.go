@@ -141,8 +141,10 @@ func executeQueries(queries []string) {
 	defer client.Close()
 
 	// run all queries
+	fmt.Println()
 	for _, q := range queries {
 		runQuery(q, client)
+		fmt.Println()
 	}
 }
 
@@ -154,7 +156,7 @@ func runQuery(queryString string, client *db.Client) {
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
 		display.ShowOutput(r)
-		//signal to the resultStreamer that we are done with this chunk of the stream
+		//signal to the resultStreamer that we are done with this chunk of the stream		terminal
 		resultsStreamer.Done()
 	}
 }
