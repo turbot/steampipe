@@ -23,7 +23,7 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 	// fully qualified table names
 	qualifiedTablesToAdd := []string{}
 
-	// keeps a record whether the first table of a plugin has been added in the unqualified list
+	// keep track of which plugins we have added unqualified tables for
 	pluginSchemaMap := map[string]bool{}
 
 	for schemaName, schemaDetails := range schema.Schemas {
