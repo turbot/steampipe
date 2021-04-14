@@ -168,7 +168,7 @@ func runQuery(queryString string, client *db.Client) error {
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
 		display.ShowOutput(r)
-		//signal to the resultStreamer that we are done with this chunk of the stream		terminal
+		// signal to the resultStreamer that we are done with this chunk of the stream
 		resultsStreamer.Done()
 	}
 	return nil
