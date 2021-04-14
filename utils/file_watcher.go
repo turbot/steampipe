@@ -67,6 +67,7 @@ func (w *FileWatcher) Close() {
 	if w.watch != nil {
 		w.watch.Close()
 	}
+	w.closeChan <- true
 }
 
 func (w *FileWatcher) start() {
@@ -85,7 +86,6 @@ func (w *FileWatcher) start() {
 				w.handleEvent(ev)
 
 			case err := <-w.watch.Errors:
-
 				if err == nil {
 					continue
 				}

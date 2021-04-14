@@ -56,7 +56,7 @@ func InitCmd() {
 
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspace, workingDir, "Path to the workspace")
-	rootCmd.PersistentFlags().String(constants.ArgWatch, workingDir, "Watch SQL files in the current workspace")
+	rootCmd.PersistentFlags().Bool(constants.ArgWatch, false, "Watch SQL files in the current workspace")
 
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 	viper.BindPFlag(constants.ArgWorkspace, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspace))
