@@ -99,9 +99,12 @@ func getQueries(args []string, workspace *workspace.Workspace) []string {
 		}
 		fileQuery, err := getQueryFromFile(arg)
 		if err == nil {
-			queries = append(queries, fileQuery)
+			if len(fileQuery) > 0 {
+				queries = append(queries, fileQuery)
+			}
 			continue
 		}
+		log.Printf("[TRACE] getQueryFromFile returned error for %s: %v. Falling back to executing as raw sql", arg, err)
 
 		queries = append(queries, arg)
 	}
@@ -142,16 +145,24 @@ func executeQueries(queries []string) {
 
 	// run all queries
 	fmt.Println()
+	failures := 0
 	for _, q := range queries {
-		runQuery(q, client)
+		if err := runQuery(q, client); err != nil {
+			failures++
+			utils.ShowWarning(fmt.Sprintf("query '%s' failed: %v", q, err))
+		}
 		fmt.Println()
 	}
+
+	os.Exit(failures)
 }
 
-func runQuery(queryString string, client *db.Client) {
+func runQuery(queryString string, client *db.Client) error {
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.ExecuteQuery(queryString, client)
-	utils.FailOnError(err)
+	if err != nil {
+		return err
+	}
 
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
@@ -159,6 +170,7 @@ func runQuery(queryString string, client *db.Client) {
 		//signal to the resultStreamer that we are done with this chunk of the stream		terminal
 		resultsStreamer.Done()
 	}
+	return nil
 }
 
 func getQueryFromFile(filename string) (string, error) {
