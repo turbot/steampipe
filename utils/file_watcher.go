@@ -132,7 +132,7 @@ func (w *FileWatcher) AddWatches() {
 			errors = append(errors, err)
 			continue
 		}
-		// add watches for all files we find - rely on fsnotify to ignore files it is already watching
+		// add watches for all files we find (if we are not already watching)
 		for _, p := range sourcePaths {
 			if !w.watches[p] {
 				if err := w.addWatch(p); err != nil {
@@ -142,6 +142,7 @@ func (w *FileWatcher) AddWatches() {
 		}
 	}
 
+	// just log errors
 	if len(errors) > 0 {
 		for _, err := range errors {
 			log.Printf("[TRACE] error occurred setting watches: %v", err)
