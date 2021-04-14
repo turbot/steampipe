@@ -49,7 +49,6 @@ Examples:
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.").
-		AddStringSliceFlag(constants.ArgSqlFile, "", nil, "Specifies one or more sql files to execute.").
 		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a query session (comma-separated)")
 
@@ -78,8 +77,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	defer workspace.Close()
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-	queries, err := getQueries(args, workspace)
-	utils.FailOnError(err)
+	queries := getQueries(args, workspace)
 
 	// if no query is specified, run interactive prompt
 	if len(queries) == 0 {
@@ -90,32 +88,25 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-// retrieve queries from args or determine whether to run the interactive shell
-func getQueries(args []string, workspace *workspace.Workspace) ([]string, error) {
-	// was the sql-file flag used?
-	if sqlFiles := viper.GetStringSlice(constants.ArgSqlFile); len(sqlFiles) > 0 {
-		// cobra only takes the first string after a flag as the flag value, so if more than one file is specified,
-		// and they are NOT comma separated, all but the first file will appear in 'args'
-		// instead of being assigned to the sql-file flag - so append args to the list of files
-		// NOTE: this does mean if there are any other unclaimed args, they will be treated as a file
-		// (and probably cause a not-exists error)
-		sqlFiles = append(sqlFiles, args...)
-		return getQueriesFromFiles(sqlFiles)
-	}
-
-	// otherwise either the query was passed as an argument, or no query was passed (interactive mode)
-	// just return the first arg (if there is one)
-
-	// if no query is specified in the args, we must pass a single empty query to trigger interactive mode
+// retrieve queries from args - for each arg check if it is a named query or a file,
+// before falling back to treating it as sql
+func getQueries(args []string, workspace *workspace.Workspace) []string {
 	var queries []string
-	if len(args) > 0 {
-		if namedQuery, ok := workspace.GetNamedQuery(args[0]); ok {
-			queries = []string{namedQuery.SQL}
-		} else {
-			queries = []string{args[0]}
+	for _, arg := range args {
+		if namedQuery, ok := workspace.GetNamedQuery(arg); ok {
+			queries = append(queries, namedQuery.SQL)
+			continue
 		}
+		fileQuery, err := getQueryFromFile(arg)
+		if err == nil {
+			queries = append(queries, fileQuery)
+			continue
+		}
+
+		queries = append(queries, arg)
 	}
-	return queries, nil
+
+	return queries
 }
 
 func runInteractiveSession(workspace *workspace.Workspace) {
@@ -168,33 +159,24 @@ func runQuery(queryString string, client *db.Client) {
 	}
 }
 
-func getQueriesFromFiles(files []string) ([]string, error) {
-	log.Println("[TRACE] getQueriesFromFiles: ", files)
-	// build list of queries
-	var result []string
-	for _, filename := range files {
-		// get absolute filename
-		path, err := filepath.Abs(filename)
-		if err != nil {
-			return nil, err
-		}
-		// does it exist?
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			return nil, fmt.Errorf("file '%s' does not exist", path)
-		}
+func getQueryFromFile(filename string) (string, error) {
+	log.Println("[TRACE] getQueryFromFiles: ", filename)
 
-		// read file
-		fileBytes, err := os.ReadFile(path)
-		if err != nil {
-			return nil, err
-		}
-		if len(fileBytes) == 0 {
-			// empty file - ignore
-			continue
-		}
-
-		// add to list of queries
-		result = append(result, string(fileBytes))
+	// get absolute filename
+	path, err := filepath.Abs(filename)
+	if err != nil {
+		return "", err
 	}
-	return result, nil
+	// does it exist?
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return "", fmt.Errorf("file '%s' does not exist", path)
+	}
+
+	// read file
+	fileBytes, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	return string(fileBytes), nil
 }
