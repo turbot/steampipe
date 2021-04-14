@@ -47,7 +47,6 @@ func (t *Terminal) ConfigMap() map[string]interface{} {
 		res[constants.ArgSearchPathPrefix] = searchPathToArray(*t.SearchPathPrefix)
 	}
 	if t.Watch != nil {
-		// convert from string to array
 		res[constants.ArgWatch] = t.Watch
 	}
 	return res
