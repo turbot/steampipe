@@ -21,11 +21,6 @@ func (c *Client) SetClientSearchPath() error {
 	if err := c.refreshDbClient(); err != nil {
 		return err
 	}
-	// if neither search-path or search-path-prefix are set in config, we do not need to do anything
-	// - just fall back to the service search path
-	if len(searchPath) == 0 && len(searchPathPrefix) == 0 {
-		return nil
-	}
 
 	// if a search path was passed, add 'internal' to the end
 	if len(searchPath) > 0 {
@@ -40,6 +35,9 @@ func (c *Client) SetClientSearchPath() error {
 	// add in the prefix if present
 	searchPath = c.addSearchPathPrefix(searchPathPrefix, searchPath)
 
+	// store search path on the client before escaping
+	c.schemaMetadata.SearchPath = searchPath
+
 	// escape the schema
 	searchPath = escapeSearchPath(searchPath)
 
@@ -49,8 +47,6 @@ func (c *Client) SetClientSearchPath() error {
 	if err != nil {
 		return err
 	}
-	// store search path on the client
-	c.schemaMetadata.SearchPath = searchPath
 	return nil
 }
 
