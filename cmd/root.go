@@ -55,10 +55,12 @@ func InitCmd() {
 	utils.FailOnErrorWithMessage(err, "could not read current directory")
 
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
-	rootCmd.PersistentFlags().String(constants.ArgWorkspace, workingDir, "Path to the workspace ")
+	rootCmd.PersistentFlags().String(constants.ArgWorkspace, workingDir, "Path to the workspace")
+	rootCmd.PersistentFlags().Bool(constants.ArgWatch, false, "Watch SQL files in the current workspace")
 
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 	viper.BindPFlag(constants.ArgWorkspace, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspace))
+	viper.BindPFlag(constants.ArgWatch, rootCmd.PersistentFlags().Lookup(constants.ArgWatch))
 
 	AddCommands()
 

@@ -12,7 +12,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/utils"
 )
 
 // Op describes a set of file operations.
@@ -233,13 +232,11 @@ func createPseudoResources(modPath string, parseResults *modParseResult, opts *L
 		}
 	}
 
-	// show errors as warnings
+	// show errors as trace logging
 	if len(errors) > 0 {
-		fmt.Println()
 		for _, err := range errors {
-			utils.ShowWarning(fmt.Sprintf("failed to convert local file into resource: %v", err))
+			log.Printf("[TRACE] failed to convert local file into resource: %v", err)
 		}
-		fmt.Println()
 	}
 
 	return nil
