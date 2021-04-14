@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 	"log"
-	"os"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -11,33 +11,32 @@ import (
 
 type FileWatcher struct {
 	watch *fsnotify.Watcher
-	// fnmatch format file and dir inclusions/exclusions
-	FileInclusions []string
-	FileExclusions []string
-	DirInclusions  []string
-	DirExclusions  []string
+	// directories to watch
+	directories []string
 
-	OnDirChange  func(fsnotify.Event)
-	OnFileChange func(fsnotify.Event)
-	OnError      func(error)
+	// fnmatch format inclusions/exclusions
+	include []string
+	exclude []string
+
+	onChange func(fsnotify.Event)
+	onError  func(error)
+
+	closeChan    chan bool
+	pollInterval time.Duration
+	watches      map[string]bool
 }
 
 type WatcherOptions struct {
-	Path           string
-	DirInclusions  []string
-	DirExclusions  []string
-	FileInclusions []string
-	FileExclusions []string
-	// for now provide a single change callback
-	// todo support a map of callbacks, with a bitmask of operation as the key
-	OnFolderChange func(fsnotify.Event)
-	OnFileChange   func(fsnotify.Event)
-	OnError        func(error)
+	Directories []string
+	Include     []string
+	Exclude     []string
+	OnChange    func(fsnotify.Event)
+	OnError     func(error)
 }
 
 func NewWatcher(opts *WatcherOptions) (*FileWatcher, error) {
-	if opts.Path == "" {
-		return nil, fmt.Errorf("WatcherOptions must include path")
+	if len(opts.Directories) == 0 {
+		return nil, fmt.Errorf("WatcherOptions must include at least one directory")
 	}
 
 	// Create an fsnotify watcher object
@@ -48,24 +47,17 @@ func NewWatcher(opts *WatcherOptions) (*FileWatcher, error) {
 
 	// create the watcher
 	watcher := &FileWatcher{
-		watch:          watch,
-		FileInclusions: opts.FileInclusions,
-		FileExclusions: opts.FileExclusions,
-		DirExclusions:  opts.DirExclusions,
-		DirInclusions:  opts.DirInclusions,
-		OnDirChange:    opts.OnFolderChange,
-		OnFileChange:   opts.OnFileChange,
-		OnError:        opts.OnError,
+		watch:        watch,
+		directories:  opts.Directories,
+		include:      opts.Include,
+		exclude:      opts.Exclude,
+		onChange:     opts.OnChange,
+		onError:      opts.OnError,
+		closeChan:    make(chan bool),
+		pollInterval: 4 * time.Second,
+		watches:      make(map[string]bool),
 	}
 
-	// add all child folders
-	if err = watcher.watch.Add(opts.Path); err != nil {
-		if err != nil {
-			watcher.Close()
-			ShowWarning(fmt.Sprintf("failed to set watch on folder '%s': %v", opts.Path, err))
-			return nil, nil
-		}
-	}
 	// start the watcher
 	watcher.start()
 	return watcher, nil
@@ -78,97 +70,98 @@ func (w *FileWatcher) Close() {
 }
 
 func (w *FileWatcher) start() {
-	// start a goroutine to handle file events
+	// make an initial call to AddWatches to add watches on existing files matching our criteria
+	w.AddWatches()
+
+	// start a goroutine to poll for file changes, and handle file events
 	go func() {
 		for {
 			select {
+			case <-time.After(w.pollInterval):
+				// every poll interval, enumerate files to watch in all watched folders and add watches for any new files
+				w.AddWatches()
+
 			case ev := <-w.watch.Events:
-				if err := w.handleEvent(ev); err != nil {
-					if w.OnError != nil {
-						// leave it to the client to decide what to do after an error - it can close us if it wants
-						w.OnError(err)
-					}
-				}
+				w.handleEvent(ev)
 
 			case err := <-w.watch.Errors:
-				{
-					if err == nil {
-						continue
-					}
-					log.Printf("[TRACE] file watcher error %v", err)
-					if w.OnError != nil {
-						// leave it to the client to decide what to do after an error - it can close us if it wants
-						w.OnError(err)
 
-					}
+				if err == nil {
+					continue
 				}
+				log.Printf("[TRACE] file watcher error %v", err)
+				if w.onError != nil {
+					// leave it to the client to decide what to do after an error - it can close us if it wants
+					w.onError(err)
+				}
+			case <-w.closeChan:
+				return
 			}
 		}
 	}()
 
 }
 
-func (w *FileWatcher) handleEvent(ev fsnotify.Event) error {
+func (w *FileWatcher) handleEvent(ev fsnotify.Event) {
 	log.Printf("[TRACE] file watcher event %v", ev)
 
-	// TODO for now we do not care about the event type, just pass everything on to the handler
-
-	// is this an event for a folder
-	if w.isFolder(ev) {
-		err := w.handleFolderEvent(ev)
-		if err != nil {
-			return err
-		}
-	} else {
-		w.handleFileEvent(ev)
-	}
-	return nil
-}
-
-func (w *FileWatcher) handleFolderEvent(ev fsnotify.Event) error {
-	// check whether dirname meets directory inclusions/exclusions
-	if filehelpers.ShouldIncludePath(ev.Name, w.DirInclusions, w.DirExclusions) {
-		// if it a create event, add watch
-		if ev.Op == fsnotify.Create {
-			log.Printf("[TRACE] new directory created: '%s' - add watch", ev.Name)
-			if err := w.watch.Add(ev.Name); err != nil {
-				return err
-			}
-		}
-		// it is a deletion, remove watch
-		if ev.Op == fsnotify.Remove {
-			log.Printf("[TRACE] new directory deleted: '%s' - remove watch", ev.Name)
-			if err := w.watch.Remove(ev.Name); err != nil {
-				return err
-			}
-		}
-		// TODO remove watch for delete
-		if w.OnDirChange != nil {
-			log.Printf("[TRACE] notify directory change")
-			w.OnDirChange(ev)
-		}
-	} else {
-		log.Printf("[TRACE] ignore directory change %v", ev)
-	}
-	return nil
-}
-
-func (w *FileWatcher) handleFileEvent(ev fsnotify.Event) {
 	// check whether file name meets file inclusion/exclusions
-	if filehelpers.ShouldIncludePath(ev.Name, w.FileInclusions, w.FileExclusions) {
+	if filehelpers.ShouldIncludePath(ev.Name, w.include, w.exclude) {
 		log.Printf("[TRACE] notify file change")
-		w.OnFileChange(ev)
+		w.onChange(ev)
+		// if this was a deletion or rename event, remove our local watch flag
+		if ev.Op == fsnotify.Remove || ev.Op == fsnotify.Rename {
+			w.watches[ev.Name] = false
+		}
 	} else {
 		log.Printf("[TRACE] ignore file change %v", ev)
 	}
 }
 
-func (w *FileWatcher) isFolder(ev fsnotify.Event) bool {
-	info, err := os.Stat(ev.Name)
-	if err != nil {
-		return false
+func (w *FileWatcher) AddWatches() {
+	// enumerate all files meeting inclusions and exclusions in each watched directory and add a watch
+	opts := &filehelpers.ListFilesOptions{
+		Options: filehelpers.FilesFlat,
+		Exclude: w.exclude,
+		Include: w.include,
+	}
+	// what to do with errors?
+	var errors []error
+	for _, directory := range w.directories {
+		sourcePaths, err := filehelpers.ListFiles(directory, opts)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		// add watches for all files we find - rely on fsnotify to ignore files it is already watching
+		for _, p := range sourcePaths {
+			if !w.watches[p] {
+				if err := w.addWatch(p); err != nil {
+					errors = append(errors, err)
+				}
+			}
+		}
 	}
 
-	// see whether this directory matches inclusion and exclusion
-	return info.IsDir()
+	if len(errors) > 0 {
+		for _, err := range errors {
+			log.Printf("[TRACE] error occurred setting watches: %v", err)
+		}
+	}
+}
+
+func (w *FileWatcher) addWatch(path string) error {
+	// raise a create event for this file
+	w.onChange(fsnotify.Event{
+		Name: path,
+		Op:   fsnotify.Create,
+	})
+
+	// add the watch
+	if err := w.watch.Add(path); err != nil {
+		return err
+	}
+	// successfully added watch - mark in our map
+	w.watches[path] = true
+	return nil
 }

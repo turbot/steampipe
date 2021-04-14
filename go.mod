@@ -13,6 +13,7 @@ require (
 	github.com/deislabs/oras v0.8.1
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.7.0
+	github.com/fsnotify/fsnotify v1.4.7
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/google/uuid v1.1.5

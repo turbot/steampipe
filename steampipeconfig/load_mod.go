@@ -234,11 +234,9 @@ func createPseudoResources(modPath string, parseResults *modParseResult, opts *L
 
 	// show errors as trace logging
 	if len(errors) > 0 {
-		fmt.Println()
 		for _, err := range errors {
 			log.Printf("[TRACE] failed to convert local file into resource: %v", err)
 		}
-		fmt.Println()
 	}
 
 	return nil
