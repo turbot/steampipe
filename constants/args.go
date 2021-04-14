@@ -19,7 +19,6 @@ const (
 	ArgLogLevel                = "log-level"
 	ArgUpdateCheck             = "update-check"
 	ArgInstallDir              = "install-dir"
-	ArgSqlFile                 = "sql-file"
 	ArgWorkspace               = "workspace"
 	ArgSearchPath              = "search-path"
 	ArgSearchPathPrefix        = "search-path-prefix"

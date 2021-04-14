@@ -49,7 +49,6 @@ Examples:
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.").
-		AddStringSliceFlag(constants.ArgSqlFile, "", nil, "Specifies one or more sql files to execute.").
 		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a query session (comma-separated)")
 
@@ -73,49 +72,45 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// load the workspace (do not do this until after service start as watcher interferes with service start)
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-	queries, err := getQueries(args, workspace)
-	utils.FailOnError(err)
+	queries := getQueries(args, workspace)
 
 	// if no query is specified, run interactive prompt
 	if len(queries) == 0 {
 		// interactive session creates its own client
 		runInteractiveSession(workspace)
 	} else {
-		executeQueries(queries)
+		failures := executeQueries(queries)
+		// set global exit code
+		exitCode = failures
 	}
 }
 
-// retrieve queries from args or determine whether to run the interactive shell
-func getQueries(args []string, workspace *workspace.Workspace) ([]string, error) {
-	// was the sql-file flag used?
-	if sqlFiles := viper.GetStringSlice(constants.ArgSqlFile); len(sqlFiles) > 0 {
-		// cobra only takes the first string after a flag as the flag value, so if more than one file is specified,
-		// and they are NOT comma separated, all but the first file will appear in 'args'
-		// instead of being assigned to the sql-file flag - so append args to the list of files
-		// NOTE: this does mean if there are any other unclaimed args, they will be treated as a file
-		// (and probably cause a not-exists error)
-		sqlFiles = append(sqlFiles, args...)
-		return getQueriesFromFiles(sqlFiles)
-	}
-
-	// otherwise either the query was passed as an argument, or no query was passed (interactive mode)
-	// just return the first arg (if there is one)
-
-	// if no query is specified in the args, we must pass a single empty query to trigger interactive mode
+// retrieve queries from args - for each arg check if it is a named query or a file,
+// before falling back to treating it as sql
+func getQueries(args []string, workspace *workspace.Workspace) []string {
 	var queries []string
-	if len(args) > 0 {
-		if namedQuery, ok := workspace.GetNamedQuery(args[0]); ok {
-			queries = []string{namedQuery.SQL}
-		} else {
-			queries = []string{args[0]}
+	for _, arg := range args {
+		if namedQuery, ok := workspace.GetNamedQuery(arg); ok {
+			queries = append(queries, namedQuery.SQL)
+			continue
 		}
+		fileQuery, err := getQueryFromFile(arg)
+		if err == nil {
+			if len(fileQuery) > 0 {
+				queries = append(queries, fileQuery)
+			}
+			continue
+		}
+		log.Printf("[TRACE] getQueryFromFile returned error for %s: %v. Falling back to executing as raw sql", arg, err)
+
+		queries = append(queries, arg)
 	}
-	return queries, nil
+
+	return queries
 }
 
 func runInteractiveSession(workspace *workspace.Workspace) {
@@ -140,7 +135,7 @@ func runInteractiveSession(workspace *workspace.Workspace) {
 	}
 }
 
-func executeQueries(queries []string) {
+func executeQueries(queries []string) int {
 	// set the flag to show spinner
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
@@ -150,51 +145,52 @@ func executeQueries(queries []string) {
 	defer client.Close()
 
 	// run all queries
+	failures := 0
 	for _, q := range queries {
-		runQuery(q, client)
+		if err := runQuery(q, client); err != nil {
+			failures++
+			utils.ShowWarning(fmt.Sprintf("query '%s' failed: %v", q, err))
+		}
+		fmt.Println()
 	}
+
+	return failures
 }
 
-func runQuery(queryString string, client *db.Client) {
+func runQuery(queryString string, client *db.Client) error {
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.ExecuteQuery(queryString, client)
-	utils.FailOnError(err)
+	if err != nil {
+		return err
+	}
 
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
 		display.ShowOutput(r)
-		//signal to the resultStreamer that we are done with this chunk of the stream
+		// signal to the resultStreamer that we are done with this chunk of the stream
 		resultsStreamer.Done()
 	}
+	return nil
 }
 
-func getQueriesFromFiles(files []string) ([]string, error) {
-	log.Println("[TRACE] getQueriesFromFiles: ", files)
-	// build list of queries
-	var result []string
-	for _, filename := range files {
-		// get absolute filename
-		path, err := filepath.Abs(filename)
-		if err != nil {
-			return nil, err
-		}
-		// does it exist?
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			return nil, fmt.Errorf("file '%s' does not exist", path)
-		}
+func getQueryFromFile(filename string) (string, error) {
+	log.Println("[TRACE] getQueryFromFiles: ", filename)
 
-		// read file
-		fileBytes, err := os.ReadFile(path)
-		if err != nil {
-			return nil, err
-		}
-		if len(fileBytes) == 0 {
-			// empty file - ignore
-			continue
-		}
-
-		// add to list of queries
-		result = append(result, string(fileBytes))
+	// get absolute filename
+	path, err := filepath.Abs(filename)
+	if err != nil {
+		return "", err
 	}
-	return result, nil
+	// does it exist?
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return "", fmt.Errorf("file '%s' does not exist", path)
+	}
+
+	// read file
+	fileBytes, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	return string(fileBytes), nil
 }
