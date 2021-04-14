@@ -18,6 +18,8 @@ import (
 	"github.com/turbot/steampipe/version"
 )
 
+var exitCode int
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
@@ -119,4 +121,5 @@ func AddCommands() {
 
 func Execute() {
 	rootCmd.Execute()
+	os.Exit(exitCode)
 }
