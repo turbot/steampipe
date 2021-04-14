@@ -125,7 +125,6 @@ func (w *FileWatcher) AddWatches() {
 		Exclude: w.exclude,
 		Include: w.include,
 	}
-	// what to do with errors?
 	var errors []error
 	for _, directory := range w.directories {
 		sourcePaths, err := filehelpers.ListFiles(directory, opts)
