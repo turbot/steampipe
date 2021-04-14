@@ -23,29 +23,38 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 	// fully qualified table names
 	qualifiedTablesToAdd := []string{}
 
-	// keeps a record whether the first table of a connection has been added in the unqualified list
-	unqualifiedTableMap := map[string]bool{}
+	// keeps a record whether the first table of a plugin has been added in the unqualified list
+	pluginSchemaMap := map[string]bool{}
 
 	for schemaName, schemaDetails := range schema.Schemas {
+
+		// when the `schema.Schemas` map is built, it is built from the configured connections and `public`
+		// all other schema are ignored. Refer to Client.loadSchema()
+		// therefore, the only schema which will not have a connection is `public`
+
+		var pluginOfThisSchema string
+		schemaConnection, hasConnectionForSchema := (*connectionMap)[schemaName]
+		if hasConnectionForSchema {
+			pluginOfThisSchema = stripVersionFromPluginName(schemaConnection.Plugin)
+		}
+
+		// add the schema into the list of schema
 		schemasToAdd = append(schemasToAdd, schemaName)
 
-		// decide whether we need to include this schema in unqualified table list as well
-		schemaConnection := (*connectionMap)[schemaName]
-		pluginOfThisSchema := stripVersionFromPluginName(schemaConnection.Plugin)
-		anotherSchemaOfSamePluginIncluded := unqualifiedTableMap[pluginOfThisSchema]
-
+		// add qualified names of all tables
 		for tableName := range schemaDetails {
 			qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
 		}
 
+		// only add unqualified table name if the schema is in the search_path
+		// and we have not added tables for another connection using the same plugin as this one
+		schemaOfSamePluginIncluded := hasConnectionForSchema && pluginSchemaMap[pluginOfThisSchema]
 		foundInSearchPath := helpers.StringSliceContains(schema.SearchPath, schemaName)
 
-		if foundInSearchPath {
+		if foundInSearchPath && !schemaOfSamePluginIncluded {
 			for tableName := range schemaDetails {
-				if !anotherSchemaOfSamePluginIncluded {
-					unqualifiedTablesToAdd = append(unqualifiedTablesToAdd, tableName)
-					unqualifiedTableMap[pluginOfThisSchema] = true
-				}
+				unqualifiedTablesToAdd = append(unqualifiedTablesToAdd, tableName)
+				pluginSchemaMap[pluginOfThisSchema] = true
 			}
 		}
 	}
