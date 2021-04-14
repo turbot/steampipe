@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/c-bata/go-prompt"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
 )
@@ -22,27 +23,29 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 	// fully qualified table names
 	qualifiedTablesToAdd := []string{}
 
+	// keeps a record whether the first table of a connection has been added in the unqualified list
 	unqualifiedTableMap := map[string]bool{}
 
 	for schemaName, schemaDetails := range schema.Schemas {
 		schemasToAdd = append(schemasToAdd, schemaName)
 
 		// decide whether we need to include this schema in unqualified table list as well
-		schemaConnection, found := (*connectionMap)[schemaName]
-		if found {
-			pluginOfThisSchema := stripVersionFromPluginName(schemaConnection.Plugin)
-			isIncluded := unqualifiedTableMap[pluginOfThisSchema]
+		schemaConnection := (*connectionMap)[schemaName]
+		pluginOfThisSchema := stripVersionFromPluginName(schemaConnection.Plugin)
+		anotherSchemaOfSamePluginIncluded := unqualifiedTableMap[pluginOfThisSchema]
+
+		for tableName := range schemaDetails {
+			qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
+		}
+
+		foundInSearchPath := helpers.StringSliceContains(schema.SearchPath, schemaName)
+
+		if foundInSearchPath {
 			for tableName := range schemaDetails {
-				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
-				if !isIncluded {
+				if !anotherSchemaOfSamePluginIncluded {
 					unqualifiedTablesToAdd = append(unqualifiedTablesToAdd, tableName)
 					unqualifiedTableMap[pluginOfThisSchema] = true
 				}
-			}
-		} else if schemaName == "public" {
-			for tableName := range schemaDetails {
-				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
-				unqualifiedTablesToAdd = append(unqualifiedTablesToAdd, tableName)
 			}
 		}
 	}
