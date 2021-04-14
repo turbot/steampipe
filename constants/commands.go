@@ -16,8 +16,8 @@ const (
 	CmdMulti            = ".multi"              // toggle multi line query
 	CmdClear            = ".clear"              // clear the console
 	CmdHelp             = ".help"               // list all meta commands
-	CmdSearchPath       = ".search-path"        // Set or show search-path
-	CmdSearchPathPrefix = ".search-path-prefix" // set search path prefix
+	CmdSearchPath       = ".search_path"        // Set or show search-path
+	CmdSearchPathPrefix = ".search_path_prefix" // set search path prefix
 )
 
 // ArgFromMetaquery :: convert metaquery of form '.header' into the config argument used to set the mode, i.e. 'header'
