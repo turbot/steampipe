@@ -32,7 +32,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/otiai10/copy v1.2.0
-	github.com/radovskyb/watcher v1.0.7
+	github.com/rjeczalik/notify v0.9.2
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18
 	github.com/shirou/gopsutil v3.20.11+incompatible

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/fsnotify/fsnotify"
+	"github.com/rjeczalik/notify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -139,10 +139,9 @@ func (w *Workspace) setupWatcher() error {
 		DirExclusions:  []string{"*"},
 		FileInclusions: filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		FileExclusions: w.exclusions,
-		OnFileChange: func(ev fsnotify.Event) {
+		OnFileChange: func(ev notify.EventInfo) {
 			w.loadMod()
 		},
-		//OnError:          nil,
 	}
 	watcher, err := utils.NewWatcher(watcherOptions)
 	if err != nil {
