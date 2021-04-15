@@ -125,7 +125,7 @@ func runInteractiveSession(workspace *workspace.Workspace) {
 		utils.FailOnError(err)
 	}
 
-	// indicate we are running an iteractive query
+	// indicate we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, true)
 
 	// set the flag to not show spinner
