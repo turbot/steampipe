@@ -1,4 +1,4 @@
-## v0.4.0 [tbd]
+## v0.4.0 [2021-04-15]
 _What's new?_
 * Named query support - all SQL file in current folder (or the folder specified by the `workspace` argument) will be loaded and available to run as `named queries`. ([#369](https://github.com/turbot/steampipe/issues/369)) 
 * When running in interactive mode, a file watcher is enabled for the current workspace (can be disabled using the `watch` argument or `terminal` config property). When enabled, any new or updated SQL files in the workspace will be reflected in the available named queries. ([#380](https://github.com/turbot/steampipe/issues/380)) 
