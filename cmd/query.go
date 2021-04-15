@@ -49,7 +49,7 @@ Examples:
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.").
-		AddBoolFlag(constants.ArgWatch, "", false, "Watch SQL files in the current workspace (works only in interactive mode)").
+		AddBoolFlag(constants.ArgWatch, "", true, "Watch SQL files in the current workspace (works only in interactive mode)").
 		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a query session (comma-separated)")
 
@@ -124,6 +124,9 @@ func runInteractiveSession(workspace *workspace.Workspace) {
 		err := workspace.SetupWatcher()
 		utils.FailOnError(err)
 	}
+
+	// indicate we are running an interactive query
+	viper.Set(constants.ConfigKeyInteractive, true)
 
 	// set the flag to not show spinner
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, true)
