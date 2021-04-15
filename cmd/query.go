@@ -159,10 +159,17 @@ func executeQueries(queries []string) int {
 			failures++
 			utils.ShowWarning(fmt.Sprintf("query '%s' failed: %v", q, err))
 		}
-		fmt.Println()
+		if showBlankLineBetweenResults() {
+			fmt.Println()
+		}
 	}
 
 	return failures
+}
+
+// if we are displaying csv with no header, do not include lines between the query results
+func showBlankLineBetweenResults() bool {
+	return !(viper.GetString(constants.ArgOutput) == "csv" && !viper.GetBool(constants.ArgHeader))
 }
 
 func runQuery(queryString string, client *db.Client) error {
