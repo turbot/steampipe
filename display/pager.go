@@ -8,10 +8,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/karrick/gows"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
-
-	"github.com/karrick/gows"
 )
 
 // ShowPaged :: displays the `content` in a system dependent pager
