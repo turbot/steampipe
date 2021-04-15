@@ -3,6 +3,7 @@ package modconfig
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"path/filepath"
 
 	"github.com/turbot/steampipe/constants"
@@ -52,7 +53,8 @@ func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 
 	sql := string(sqlBytes)
 	if sql == "" {
-		return nil, fmt.Errorf("SQL file %s contains no query", filePath)
+		log.Printf("[TRACE] SQL file %s contains no query", filePath)
+		return nil, nil
 	}
 	// get a sluggified version of the filename
 	name, err := PseudoResourceNameFromPath(modPath, filePath)
