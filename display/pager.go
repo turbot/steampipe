@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/karrick/gows"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 )
 
 // ShowPaged :: displays the `content` in a system dependent pager
@@ -28,6 +30,11 @@ func ShowPaged(content string) {
 }
 
 func isPagerNeeded(content string) bool {
+	// only show pager in interactive mode
+	if !viper.GetBool(constants.ConfigKeyInteractive) {
+		return false
+	}
+
 	maxCols, maxRow, _ := gows.GetWinSize()
 
 	// let's scan through it instead of iterating over it fully
