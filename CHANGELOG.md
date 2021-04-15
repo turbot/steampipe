@@ -1,7 +1,7 @@
 ## v0.4.0 [tbd]
 _What's new?_
 * Named query support - all SQL file in current folder (or the folder specified by the `workspace` argument) will be loaded and available to run as `named queries`. ([#369](https://github.com/turbot/steampipe/issues/369)) 
-* When running in interactive mode, a file watcher can be enabled for the current workspace by setting `watch` argument (or `terminal` config property). If enabled, any new or updated SQL files in the workspace will be reflected in the available named queries. ([#380](https://github.com/turbot/steampipe/issues/380)) 
+* When running in interactive mode, a file watcher is enabled for the current workspace (can be disabled using the `watch` argument or `terminal` config property). When enabled, any new or updated SQL files in the workspace will be reflected in the available named queries. ([#380](https://github.com/turbot/steampipe/issues/380)) 
 * The `query` command now accepts multiple unnamed arguments, each of which may be either a filepath to a SQL file, a named query or the raw SQL of the query. ([#388](https://github.com/turbot/steampipe/issues/388)) 
 * The search path for the steampipe database service may be specified using the `database` config. ([#353](https://github.com/turbot/steampipe/issues/353))
 * The search path and search path prefix terminal sessions may be specified using `terminal` config, command line argument or meta-commands. ([#353](https://github.com/turbot/steampipe/issues/353),  [#357](https://github.com/turbot/steampipe/issues/358), [#358](https://github.com/turbot/steampipe/issues/358)) 
