@@ -187,7 +187,8 @@ func getQueryFromFile(filename string) (string, bool, error) {
 		return "", false, nil
 	}
 	// does it exist?
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	if _, err := os.Stat(path); err != nil {
+		// if this gives any error, return not exist. we may get a not found or a path too long for example
 		return "", false, nil
 	}
 
