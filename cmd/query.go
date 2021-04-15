@@ -154,10 +154,10 @@ func executeQueries(queries []string) int {
 
 	// run all queries
 	failures := 0
-	for _, q := range queries {
+	for i, q := range queries {
 		if err := runQuery(q, client); err != nil {
 			failures++
-			utils.ShowWarning(fmt.Sprintf("query '%s' failed: %v", q, err))
+			utils.ShowWarning(fmt.Sprintf("query #%d failed: %v", i+1, err))
 		}
 		if showBlankLineBetweenResults() {
 			fmt.Println()
