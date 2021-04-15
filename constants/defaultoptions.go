@@ -20,6 +20,7 @@ const DefaultSPCContent = `
 #   timing      	    = false   # true, false
 #   search_path         =  ""     # comma-separated string; an exact search_path
 #   search_path_prefix  =  ""     # comma-separated string; a search_path_prefix to prepend to the search_path
+#   watch  			    =  true   # true, false; watch SQL files in the current workspace (works only in interactive mode)
 # }
 
 # options "general" {
