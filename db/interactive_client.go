@@ -197,8 +197,10 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 	// expand the buffer out into 'query'
 	query := strings.Join(c.interactiveBuffer, "\n")
 
+	namedQuery, isANamedQuery := c.workspace.GetNamedQuery(query)
+
 	// if it is a multiline query, execute even without `;`
-	if namedQuery, ok := c.workspace.GetNamedQuery(query); ok {
+	if isANamedQuery {
 		query = namedQuery.SQL
 	} else {
 		// should we execute?
@@ -232,7 +234,11 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 	}
 
 	// store the history
-	c.interactiveQueryHistory.Put(query)
+	if isANamedQuery {
+		c.interactiveQueryHistory.Put(fmt.Sprintf("query.%s", namedQuery.Name))
+	} else {
+		c.interactiveQueryHistory.Put(query)
+	}
 	c.restartInteractiveSession()
 }
 
