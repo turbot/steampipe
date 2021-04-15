@@ -80,10 +80,11 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	queries := getQueries(args, workspace)
 
 	// if no query is specified, run interactive prompt
-	if len(queries) == 0 {
+	if len(args) == 0 {
 		// interactive session creates its own client
 		runInteractiveSession(workspace)
-	} else {
+	} else if len(queries) > 0 {
+		// otherwsie if we have resolvced any queries, run them
 		failures := executeQueries(queries)
 		// set global exit code
 		exitCode = failures
@@ -99,14 +100,17 @@ func getQueries(args []string, workspace *workspace.Workspace) []string {
 			queries = append(queries, namedQuery.SQL)
 			continue
 		}
-		fileQuery, err := getQueryFromFile(arg)
-		if err == nil {
-			if len(fileQuery) > 0 {
+		fileQuery, fileExists, err := getQueryFromFile(arg)
+		if fileExists {
+			if err != nil {
+				utils.ShowWarning(fmt.Sprintf("error opening file '%s': %v", arg, err))
+			} else if len(fileQuery) == 0 {
+				utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", arg))
+			} else {
 				queries = append(queries, fileQuery)
 			}
 			continue
 		}
-		log.Printf("[TRACE] getQueryFromFile returned error for %s: %v. Falling back to executing as raw sql", arg, err)
 
 		queries = append(queries, arg)
 	}
@@ -174,24 +178,24 @@ func runQuery(queryString string, client *db.Client) error {
 	return nil
 }
 
-func getQueryFromFile(filename string) (string, error) {
+func getQueryFromFile(filename string) (string, bool, error) {
 	log.Println("[TRACE] getQueryFromFiles: ", filename)
 
 	// get absolute filename
 	path, err := filepath.Abs(filename)
 	if err != nil {
-		return "", err
+		return "", false, nil
 	}
 	// does it exist?
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return "", fmt.Errorf("file '%s' does not exist", path)
+		return "", false, nil
 	}
 
 	// read file
 	fileBytes, err := os.ReadFile(path)
 	if err != nil {
-		return "", err
+		return "", true, err
 	}
 
-	return string(fileBytes), nil
+	return string(fileBytes), true, nil
 }
