@@ -55,7 +55,6 @@ func InitCmd() {
 
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace (default to current working directory) ")
-	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "workingDir", "Path to the workspace")
 
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 	viper.BindPFlag(constants.ArgWorkspace, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspace))
@@ -73,9 +72,9 @@ func initGlobalConfig() {
 	// set global containing install dir
 	setInstallDir()
 
-	// get working directory
 	workspace := viper.GetString(constants.ArgWorkspace)
 	if workspace == "" {
+		// default to working directory
 		workingDir, err := os.Getwd()
 		utils.FailOnErrorWithMessage(err, "could not read current directory")
 		workspace = workingDir
