@@ -227,8 +227,10 @@ func createPseudoResources(modPath string, parseResults *modParseResult, opts *L
 			errors = append(errors, err)
 			continue
 		}
-		if err := addResourceIfUnique(resource, parseResults, path); err != nil {
-			errors = append(errors, err)
+		if resource != nil {
+			if err := addResourceIfUnique(resource, parseResults, path); err != nil {
+				errors = append(errors, err)
+			}
 		}
 	}
 
