@@ -32,7 +32,6 @@ require (
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/otiai10/copy v1.2.0
-	github.com/radovskyb/watcher v1.0.7
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18
 	github.com/shirou/gopsutil v3.20.11+incompatible
@@ -42,7 +41,7 @@ require (
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.7.1
 	github.com/turbot/go-kit v0.1.4-rc.0
-	github.com/turbot/steampipe-plugin-sdk v0.2.6
+	github.com/turbot/steampipe-plugin-sdk v0.3.0-rc.0
 	github.com/ulikunitz/xz v0.5.8
 	golang.org/x/text v0.3.4
 	google.golang.org/grpc v1.33.1
@@ -51,5 +50,3 @@ require (
 )
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe
-
-replace github.com/turbot/steampipe-plugin-sdk => github.com/turbot/steampipe-plugin-sdk v0.2.0-rc.1.0.20210408161244-0324ad4d0ab0
