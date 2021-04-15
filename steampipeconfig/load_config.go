@@ -46,10 +46,6 @@ func newSteampipeConfig(workspacePath string) (steampipeConfig *SteampipeConfig,
 			err = helpers.ToError(r)
 		}
 	}()
-	// check workspace  folder exists
-	if _, err := os.Stat(workspacePath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("workspace folder '%s' does not exist", workspacePath)
-	}
 
 	steampipeConfig = &SteampipeConfig{
 		Connections: make(map[string]*Connection),
@@ -62,14 +58,26 @@ func newSteampipeConfig(workspacePath string) (steampipeConfig *SteampipeConfig,
 		return nil, err
 	}
 
+	// At present, this function is used both by steampipe to load connection config AND options,
+	// and by the fdw to load just the conneciton config
+	// when the fdw calls itr, it will NOT pass a workspace path
+	// TODO refactor this to enable loading connection config only for FDW
+
 	// now load config from the workspace folder
 	// this has precedence and so will overwrite any config which has already been set
-	// only include workspace.spc from workspace directory
-	include = filehelpers.InclusionsFromFiles([]string{constants.WorkspaceConfigFileName})
-	// update load options to ONLY allow terminal options
-	loadOptions = &loadConfigOptions{include: include, allowedOptions: []string{options.TerminalBlock}}
-	if err := loadConfig(workspacePath, steampipeConfig, loadOptions); err != nil {
-		return nil, fmt.Errorf("failed to load workspace config: %v", err)
+	// check workspace folder exists
+	if workspacePath != "" {
+		if _, err := os.Stat(workspacePath); os.IsNotExist(err) {
+			return nil, fmt.Errorf("workspace folder '%s' does not exist", workspacePath)
+		}
+
+		// only include workspace.spc from workspace directory
+		include = filehelpers.InclusionsFromFiles([]string{constants.WorkspaceConfigFileName})
+		// update load options to ONLY allow terminal options
+		loadOptions = &loadConfigOptions{include: include, allowedOptions: []string{options.TerminalBlock}}
+		if err := loadConfig(workspacePath, steampipeConfig, loadOptions); err != nil {
+			return nil, fmt.Errorf("failed to load workspace config: %v", err)
+		}
 	}
 
 	// now set default options on all connections without options set
