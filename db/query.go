@@ -12,8 +12,8 @@ import (
 	"github.com/turbot/steampipe/workspace"
 )
 
-// StartServiceForQuery :: ensure db is installed and start service if necessary
-func StartServiceForQuery() error {
+// EnsureDbAndStartService :: ensure db is installed and start service if necessary
+func EnsureDbAndStartService(invoker Invoker) error {
 	logging.LogTime("db.ExecuteQuery start")
 	log.Println("[TRACE] db.ExecuteQuery start")
 
@@ -23,13 +23,13 @@ func StartServiceForQuery() error {
 		return errors.New("could not retrieve service status")
 	}
 
-	if status != nil && status.Invoker == InvokerQuery {
+	if status != nil && status.Invoker == invoker {
 		return fmt.Errorf("You already have a %s session open. To run multiple sessions, first run %s.\nTo kill existing sessions run %s", constants.Bold("steampipe query"), constants.Bold("steampipe service start"), constants.Bold("steampipe service stop --force"))
 	}
 
 	if status == nil {
 		// the db service is not started - start it
-		StartService(InvokerQuery)
+		StartService(invoker)
 	}
 	return nil
 }
