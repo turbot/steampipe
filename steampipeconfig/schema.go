@@ -46,10 +46,6 @@ var modFileSchema = &hcl.BodySchema{
 			Type:       "query",
 			LabelNames: []string{"name"},
 		},
-		{
-			Type:       "control",
-			LabelNames: []string{"name"},
-		},
 	},
 }
 
