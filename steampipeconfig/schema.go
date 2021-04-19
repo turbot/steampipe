@@ -1,6 +1,9 @@
 package steampipeconfig
 
-import "github.com/hashicorp/hcl/v2"
+import (
+	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+)
 
 var configSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
@@ -39,15 +42,19 @@ var modFileSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       "mod",
+			Type:       string(modconfig.BlockTypeMod),
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       "query",
+			Type:       string(modconfig.BlockTypeQuery),
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       "control",
+			Type:       string(modconfig.BlockTypeControl),
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       string(modconfig.BlockTypeControlGroup),
 			LabelNames: []string{"name"},
 		},
 	},

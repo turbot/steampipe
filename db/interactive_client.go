@@ -201,7 +201,7 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 
 	// if it is a multiline query, execute even without `;`
 	if isNamedQuery {
-		query = namedQuery.SQL
+		query = *namedQuery.SQL
 	} else {
 		// should we execute?
 		if !c.shouldExecute(query) {
@@ -235,7 +235,7 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 
 	// store the history
 	if isNamedQuery {
-		c.interactiveQueryHistory.Put(fmt.Sprintf("query.%s", namedQuery.Name))
+		c.interactiveQueryHistory.Put(fmt.Sprintf("query.%s", namedQuery.ShortName))
 	} else {
 		c.interactiveQueryHistory.Put(query)
 	}
@@ -333,8 +333,8 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 	// add all the queries in the workspace
 	for name, q := range c.workspace.GetNamedQueryMap() {
 		description := "named query"
-		if q.Description != "" {
-			description += fmt.Sprintf(": %s", q.Description)
+		if q.Description != nil {
+			description += fmt.Sprintf(": %s", *q.Description)
 		}
 		res = append(res, prompt.Suggest{Text: name, Description: description})
 	}

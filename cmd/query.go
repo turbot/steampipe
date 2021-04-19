@@ -67,11 +67,11 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// start db if necessary
-	err := db.StartServiceForQuery()
+	err := db.EnsureDbAndStartService(db.InvokerQuery)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
 	defer db.Shutdown(nil, db.InvokerQuery)
 
-	// load the workspace (do not do this until after service start as watcher interferes with service start)
+	// load the workspace
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
@@ -97,7 +97,7 @@ func getQueries(args []string, workspace *workspace.Workspace) []string {
 	var queries []string
 	for _, arg := range args {
 		if namedQuery, ok := workspace.GetNamedQuery(arg); ok {
-			queries = append(queries, namedQuery.SQL)
+			queries = append(queries, *namedQuery.SQL)
 			continue
 		}
 		fileQuery, fileExists, err := getQueryFromFile(arg)
@@ -128,7 +128,7 @@ func runInteractiveSession(workspace *workspace.Workspace) {
 	// indicate we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, true)
 
-	// set the flag to not show spinner
+	// set the flag to show spinner
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, true)
 
 	// the db executor sends result data over resultsStreamer
@@ -144,7 +144,7 @@ func runInteractiveSession(workspace *workspace.Workspace) {
 }
 
 func executeQueries(queries []string) int {
-	// set the flag to show spinner
+	// set the flag to hide spinner
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	// first get a client - do this once for all queries
@@ -155,7 +155,7 @@ func executeQueries(queries []string) int {
 	// run all queries
 	failures := 0
 	for i, q := range queries {
-		if err := runQuery(q, client); err != nil {
+		if err := executeQuery(q, client); err != nil {
 			failures++
 			utils.ShowWarning(fmt.Sprintf("query #%d failed: %v", i+1, err))
 		}
@@ -167,18 +167,14 @@ func executeQueries(queries []string) int {
 	return failures
 }
 
-// if we are displaying csv with no header, do not include lines between the query results
-func showBlankLineBetweenResults() bool {
-	return !(viper.GetString(constants.ArgOutput) == "csv" && !viper.GetBool(constants.ArgHeader))
-}
-
-func runQuery(queryString string, client *db.Client) error {
+func executeQuery(queryString string, client *db.Client) error {
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.ExecuteQuery(queryString, client)
 	if err != nil {
 		return err
 	}
 
+	// TODO encapsulate this in display object
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
 		display.ShowOutput(r)
@@ -186,6 +182,11 @@ func runQuery(queryString string, client *db.Client) error {
 		resultsStreamer.Done()
 	}
 	return nil
+}
+
+// if we are displaying csv with no header, do not include lines between the query results
+func showBlankLineBetweenResults() bool {
+	return !(viper.GetString(constants.ArgOutput) == "csv" && !viper.GetBool(constants.ArgHeader))
 }
 
 func getQueryFromFile(filename string) (string, bool, error) {
