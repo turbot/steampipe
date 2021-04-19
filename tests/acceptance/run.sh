@@ -33,4 +33,10 @@ echo "                                 |___/                         "
 
 export PATH=$PATH:$MY_PATH/lib/bats/bin
 
+if [[ ! ${STEAMPIPE_INSTALL_DIR} ]];
+then
+  # set this to the default
+  STEAMPIPE_INSTALL_DIR=~/.steampipe
+fi
+
 bats --tap $MY_PATH/test_files
