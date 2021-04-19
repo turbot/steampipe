@@ -103,7 +103,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	}
 
 	if !isPortBindable(port) {
-		return ServiceFailedToStart, handleStartFailure(fmt.Errorf("Cannot listen on %d. Are you sure that the interface is free?", port))
+		return ServiceFailedToStart, fmt.Errorf("Cannot listen on port %d. Are you sure that the interface is free?", constants.Bold(port))
 	}
 
 	postgresCmd := exec.Command(
@@ -261,14 +261,7 @@ func handleStartFailure(err error) error {
 }
 
 func isPortBindable(port int) bool {
-	// resolve an address to 127.0.0.1 for the given port
-	addrString := fmt.Sprintf("127.0.0.1:%d", port)
-	addr, err := net.ResolveTCPAddr("tcp", addrString)
-	if err != nil {
-		return false
-	}
-	// check that the given port can be used
-	l, err := net.ListenTCP("tcp", addr)
+	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		return false
 	}
