@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/turbot/go-kit/types"
+
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
@@ -17,12 +19,13 @@ import (
 )
 
 type Workspace struct {
-	Path          string
-	Mod           *modconfig.Mod
-	namedQueryMap map[string]*modconfig.Query
-	watcher       *utils.FileWatcher
-	loadLock      sync.Mutex
-	exclusions    []string
+	Path       string
+	Mod        *modconfig.Mod
+	queryMap   map[string]*modconfig.Query
+	controlMap map[string]*modconfig.Control
+	watcher    *utils.FileWatcher
+	loadLock   sync.Mutex
+	exclusions []string
 }
 
 func Load(workspacePath string) (*Workspace, error) {
@@ -51,7 +54,7 @@ func (w *Workspace) GetNamedQueryMap() map[string]*modconfig.Query {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	return w.namedQueryMap
+	return w.queryMap
 }
 
 func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
@@ -61,8 +64,22 @@ func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
 	// if the name starts with 'local', remove the prefix and try to resolve the short name
 	queryName = strings.TrimPrefix(queryName, "local.")
 
-	if namedQuery, ok := w.namedQueryMap[queryName]; ok {
-		return namedQuery, true
+	if query, ok := w.queryMap[queryName]; ok {
+		return query, true
+	}
+
+	return nil, false
+}
+
+func (w *Workspace) GetControl(controlName string) (*modconfig.Control, bool) {
+	w.loadLock.Lock()
+	defer w.loadLock.Unlock()
+
+	// if the name starts with 'local', remove the prefix and try to resolve the short name
+	controlName = strings.TrimPrefix(controlName, "local.")
+
+	if control, ok := w.controlMap[controlName]; ok {
+		return control, true
 	}
 
 	return nil, false
@@ -95,7 +112,8 @@ func (w *Workspace) loadMod() error {
 		return err
 	}
 
-	w.namedQueryMap = w.buildNamedQueryMap(modMap)
+	w.queryMap = w.buildQueryMap(modMap)
+	w.controlMap = w.buildControlMap(modMap)
 
 	return nil
 }
@@ -110,21 +128,41 @@ func (w *Workspace) loadModDependencies(modsFolder string) (modconfig.ModMap, er
 	return res, nil
 }
 
-func (w *Workspace) buildNamedQueryMap(modMap modconfig.ModMap) map[string]*modconfig.Query {
+func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig.Query {
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Query)
 
 	// for LOCAL queries, add map entries keyed by both short name: query.xxxx and  long name: <workspace>.query.xxxx
 	for _, q := range w.Mod.Queries {
-		shortName := fmt.Sprintf("query.%s", q.Name)
+		shortName := fmt.Sprintf("query.%s", types.SafeString(q.Name))
 		res[shortName] = q
 	}
 
 	// for mode dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
-			longName := fmt.Sprintf("%s.query.%s", mod.Name, q.Name)
+			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.Name), types.SafeString(q.Name))
 			res[longName] = q
+		}
+	}
+	return res
+}
+
+func (w *Workspace) buildControlMap(modMap modconfig.ModMap) map[string]*modconfig.Control {
+	//  build a list of long and short names for these queries
+	var res = make(map[string]*modconfig.Control)
+
+	// for LOCAL controls, add map entries keyed by both short name: query.xxxx and  long name: <workspace>.query.xxxx
+	for _, c := range w.Mod.Controls {
+		shortName := fmt.Sprintf("control.%s", types.SafeString(c.Name))
+		res[shortName] = c
+	}
+
+	// for mode dependencies, add queries keyed by long name only
+	for _, mod := range modMap {
+		for _, c := range mod.Controls {
+			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.Name), types.SafeString(c.Name))
+			res[longName] = c
 		}
 	}
 	return res

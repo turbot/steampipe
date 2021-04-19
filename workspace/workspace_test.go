@@ -17,7 +17,7 @@ type loadWorkspaceTest struct {
 var m3alias = "m3"
 
 // the actual mod loading logic is tested more thoroughly in TestLoadMod (steampipeconfig/load_mod_test.go)
-// this test is primarily to verify the namedQueryMap building
+// this test is primarily to verify the queryMap building
 var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 	"single mod": {
 		source: "test_data/w_1",
@@ -38,7 +38,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 					},
 				},
 			},
-			namedQueryMap: map[string]*modconfig.Query{
+			queryMap: map[string]*modconfig.Query{
 				"w_1.query.localq1": {
 					"localq1", "LocalQ1", "THIS IS LOCAL QUERY 1", ".tables",
 				},

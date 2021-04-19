@@ -125,6 +125,7 @@ func AddCommands() {
 	// explicitly initialise commands here rather than in init functions to allow us to handle errors from the config load
 	rootCmd.AddCommand(PluginCmd())
 	rootCmd.AddCommand(QueryCmd())
+	rootCmd.AddCommand(CheckCmd())
 	rootCmd.AddCommand(ServiceCmd())
 }
 
