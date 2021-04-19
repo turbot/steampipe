@@ -30,10 +30,9 @@ func Load(workspacePath string) (*Workspace, error) {
 	workspace := &Workspace{Path: workspacePath}
 
 	// load the .steampipe ignore file
-	// NOTE DISABLED FOR NOW
-	//if err := workspace.LoadExclusions(); err != nil {
-	//	return nil, err
-	//}
+	if err := workspace.LoadExclusions(); err != nil {
+		return nil, err
+	}
 
 	if err := workspace.loadMod(); err != nil {
 		return nil, err
@@ -115,12 +114,13 @@ func (w *Workspace) buildNamedQueryMap(modMap modconfig.ModMap) map[string]*modc
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Query)
 
-	// add local queries by short name: query.xxxx and long name: <workspace>.query.xxxx
+	// for LOCAL queries, add map entries keyed by both short name: query.xxxx and  long name: <workspace>.query.xxxx
 	for _, q := range w.Mod.Queries {
 		shortName := fmt.Sprintf("query.%s", q.Name)
 		res[shortName] = q
 	}
-	// add queries from mod dependencies by FQN
+
+	// for mode dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
 			longName := fmt.Sprintf("%s.query.%s", mod.Name, q.Name)
