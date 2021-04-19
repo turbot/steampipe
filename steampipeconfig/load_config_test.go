@@ -66,7 +66,6 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		steampipeDir: "test_data/connection_config/single_connection",
 		expected: &SteampipeConfig{
 			Connections: map[string]*Connection{
-				// todo normalise plugin names here?
 				"a": {
 					Name:   "a",
 					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
@@ -82,7 +81,6 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		steampipeDir: "test_data/connection_config/single_connection_with_default_options",
 		expected: &SteampipeConfig{
 			Connections: map[string]*Connection{
-				// todo normalise plugin names here?
 				"a": {
 					Name:   "a",
 					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
@@ -120,7 +118,6 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		workspaceDir: "test_data/workspaces/search_path_prefix",
 		expected: &SteampipeConfig{
 			Connections: map[string]*Connection{
-				// todo normalise plugin names here?
 				"a": {
 					Name:   "a",
 					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
@@ -154,7 +151,6 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		workspaceDir: "test_data/workspaces/override_terminal_config",
 		expected: &SteampipeConfig{
 			Connections: map[string]*Connection{
-				// todo normalise plugin names here?
 				"a": {
 					Name:   "a",
 					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
