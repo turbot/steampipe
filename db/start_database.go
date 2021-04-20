@@ -103,7 +103,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	}
 
 	if !isPortBindable(port) {
-		return ServiceFailedToStart, fmt.Errorf("Cannot listen on port %d. Are you sure that the interface is free?", constants.Bold(port))
+		return ServiceFailedToStart, fmt.Errorf("Cannot listen on port %s. To start the service with a different port, use %s", constants.Bold(port), constants.Bold("--database-port <number>"))
 	}
 
 	postgresCmd := exec.Command(
