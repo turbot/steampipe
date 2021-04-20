@@ -16,7 +16,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   checkFileContent=$(cat ${STEAMPIPE_INSTALL_DIR}/internal/update-check.json)
   
   # put in the config file with update disabled
-  cp ${TEST_SRC_DIR}/update_check_disabled.spc ${STEAMPIPE_INSTALL_DIR}/config/default.spc
+  cp ${SRC_DATA_DIR}/update_check_disabled.spc ${STEAMPIPE_INSTALL_DIR}/config/default.spc
   
   # put a dummy file for log - which should get deleted
   touch ${STEAMPIPE_INSTALL_DIR}/logs/database-2021-03-16.log
