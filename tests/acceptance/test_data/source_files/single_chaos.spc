@@ -1,0 +1,3 @@
+connection "chaos" {
+    plugin = "chaos"
+}

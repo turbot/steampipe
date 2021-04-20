@@ -1,0 +1,1 @@
+select id, string_column, json_column from chaos.chaos_all_column_types where id='7'
