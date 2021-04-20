@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/c-bata/go-prompt"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
 )
@@ -22,27 +23,38 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 	// fully qualified table names
 	qualifiedTablesToAdd := []string{}
 
-	unqualifiedTableMap := map[string]bool{}
+	// keep track of which plugins we have added unqualified tables for
+	pluginSchemaMap := map[string]bool{}
 
 	for schemaName, schemaDetails := range schema.Schemas {
+
+		// when the `schema.Schemas` map is built, it is built from the configured connections and `public`
+		// all other schema are ignored. Refer to Client.loadSchema()
+		// therefore, the only schema which will not have a connection is `public`
+
+		var pluginOfThisSchema string
+		schemaConnection, hasConnectionForSchema := (*connectionMap)[schemaName]
+		if hasConnectionForSchema {
+			pluginOfThisSchema = stripVersionFromPluginName(schemaConnection.Plugin)
+		}
+
+		// add the schema into the list of schema
 		schemasToAdd = append(schemasToAdd, schemaName)
 
-		// decide whether we need to include this schema in unqualified table list as well
-		schemaConnection, found := (*connectionMap)[schemaName]
-		if found {
-			pluginOfThisSchema := stripVersionFromPluginName(schemaConnection.Plugin)
-			isIncluded := unqualifiedTableMap[pluginOfThisSchema]
+		// add qualified names of all tables
+		for tableName := range schemaDetails {
+			qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
+		}
+
+		// only add unqualified table name if the schema is in the search_path
+		// and we have not added tables for another connection using the same plugin as this one
+		schemaOfSamePluginIncluded := hasConnectionForSchema && pluginSchemaMap[pluginOfThisSchema]
+		foundInSearchPath := helpers.StringSliceContains(schema.SearchPath, schemaName)
+
+		if foundInSearchPath && !schemaOfSamePluginIncluded {
 			for tableName := range schemaDetails {
-				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
-				if !isIncluded {
-					unqualifiedTablesToAdd = append(unqualifiedTablesToAdd, tableName)
-					unqualifiedTableMap[pluginOfThisSchema] = true
-				}
-			}
-		} else if schemaName == "public" {
-			for tableName := range schemaDetails {
-				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
 				unqualifiedTablesToAdd = append(unqualifiedTablesToAdd, tableName)
+				pluginSchemaMap[pluginOfThisSchema] = true
 			}
 		}
 	}

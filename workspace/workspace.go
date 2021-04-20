@@ -30,15 +30,12 @@ func Load(workspacePath string) (*Workspace, error) {
 	workspace := &Workspace{Path: workspacePath}
 
 	// load the .steampipe ignore file
-	if err := workspace.LoadExclusions(); err != nil {
-		return nil, err
-	}
+	// NOTE DISABLED FOR NOW
+	//if err := workspace.LoadExclusions(); err != nil {
+	//	return nil, err
+	//}
 
 	if err := workspace.loadMod(); err != nil {
-		return nil, err
-	}
-
-	if err := workspace.setupWatcher(); err != nil {
 		return nil, err
 	}
 
@@ -133,16 +130,15 @@ func (w *Workspace) buildNamedQueryMap(modMap modconfig.ModMap) map[string]*modc
 	return res
 }
 
-func (w *Workspace) setupWatcher() error {
+func (w *Workspace) SetupWatcher() error {
 	watcherOptions := &utils.WatcherOptions{
-		Path:           w.Path,
-		DirExclusions:  []string{"*"},
-		FileInclusions: filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
-		FileExclusions: w.exclusions,
-		OnFileChange: func(ev fsnotify.Event) {
+		Directories: []string{w.Path},
+		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
+		Exclude:     w.exclusions,
+		OnChange: func(ev fsnotify.Event) {
 			w.loadMod()
 		},
-		//OnError:          nil,
+		//onError:          nil,
 	}
 	watcher, err := utils.NewWatcher(watcherOptions)
 	if err != nil {
@@ -171,7 +167,7 @@ func (w *Workspace) LoadExclusions() error {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if len(strings.TrimSpace(line)) != 0 && !strings.HasPrefix(line, "#") {
-			// add exclusion to the workspace path (to ensure relative pattenrs work)
+			// add exclusion to the workspace path (to ensure relative patterns work)
 			absoluteExclusion := filepath.Join(w.Path, line)
 			w.exclusions = append(w.exclusions, absoluteExclusion)
 		}

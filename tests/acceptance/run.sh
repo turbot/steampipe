@@ -1,17 +1,10 @@
 #!/bin/bash -e
 
-banner()
-{
-  echo "+------------------------------------------+"
-  printf "| %-40s |\n" "`date`"
-  echo "|                                          |"
-  printf "|`tput bold` %-40s `tput sgr0`|\n" "$@"
-  echo "+------------------------------------------+"
-}
-
-MY_PATH="`dirname \"$0\"`"              # relative
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-
+if [[ ! ${MY_PATH} ]];
+then
+  MY_PATH="`dirname \"$0\"`"              # relative
+  MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized  
+fi
 
 # set this to the source file for development
 export BATS_PATH=$MY_PATH/lib/bats/bin/bats
@@ -21,7 +14,7 @@ export TEST_DATA_DIR=$MY_PATH/test_data/templates
 export SRC_DATA_DIR=$MY_PATH/test_data/source_files
 
 # Must have these commands for the test suite to run
-declare -a required_commands=("psql" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname")
+declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch")
 
 for required_command in "${required_commands[@]}"
 do
@@ -40,5 +33,11 @@ echo "                                 |___/                         "
 
 export PATH=$PATH:$MY_PATH/lib/bats/bin
 
+if [[ ! ${STEAMPIPE_INSTALL_DIR} ]];
+then
+  export STEAMPIPE_INSTALL_DIR="$HOME/.steampipe"
+fi
+
+echo "Running with STEAMPIPE_INSTALL_DIR set to $STEAMPIPE_INSTALL_DIR"
 
 bats --tap $MY_PATH/test_files

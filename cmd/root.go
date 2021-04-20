@@ -18,6 +18,8 @@ import (
 	"github.com/turbot/steampipe/version"
 )
 
+var exitCode int
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
@@ -50,12 +52,9 @@ Getting started:
 }
 
 func InitCmd() {
-	// get working directory
-	workingDir, err := os.Getwd()
-	utils.FailOnErrorWithMessage(err, "could not read current directory")
 
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
-	rootCmd.PersistentFlags().String(constants.ArgWorkspace, workingDir, "Path to the workspace ")
+	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace (default to current working directory) ")
 
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 	viper.BindPFlag(constants.ArgWorkspace, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspace))
@@ -73,8 +72,17 @@ func initGlobalConfig() {
 	// set global containing install dir
 	setInstallDir()
 
+	workspace := viper.GetString(constants.ArgWorkspace)
+	if workspace == "" {
+		// default to working directory
+		workingDir, err := os.Getwd()
+		utils.FailOnErrorWithMessage(err, "could not read current directory")
+		workspace = workingDir
+		viper.Set(constants.ArgWorkspace, workspace)
+	}
+
 	// load config (this sets the global config steampipeconfig.Config)
-	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgWorkspace))
+	config, err := steampipeconfig.LoadSteampipeConfig(workspace)
 	utils.FailOnError(err)
 	steampipeconfig.Config = config
 
@@ -117,4 +125,5 @@ func AddCommands() {
 
 func Execute() {
 	rootCmd.Execute()
+	os.Exit(exitCode)
 }
