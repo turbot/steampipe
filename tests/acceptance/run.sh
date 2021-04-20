@@ -35,7 +35,7 @@ export PATH=$PATH:$MY_PATH/lib/bats/bin
 
 if [[ ! ${STEAMPIPE_INSTALL_DIR} ]];
 then
-  export STEAMPIPE_INSTALL_DIR="~/.steampipe"
+  export STEAMPIPE_INSTALL_DIR="$HOME/.steampipe"
 fi
 
 echo "Running with STEAMPIPE_INSTALL_DIR set to $STEAMPIPE_INSTALL_DIR"
