@@ -148,8 +148,7 @@ jobs:
       - id: last_release
         uses: pozetroninc/github-action-get-latest-release@master
         with:
-          owner: context.repo.owner
-          repo: context.repo.repo
+          repository: turbot/steampipe
           excludes: prerelease, draft
 
       - name: Get next minor version
