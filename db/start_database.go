@@ -98,7 +98,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 	// remove the stale info file, ignoring errors - will overwrite anyway
 	_ = removeRunningInstanceInfo()
 
-	listenAddresses := "localhost"
+	listenAddresses := "localhost_"
 
 	if listen == ListenTypeNetwork {
 		listenAddresses = "*"
