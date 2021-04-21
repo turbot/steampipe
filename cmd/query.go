@@ -155,7 +155,7 @@ func executeQueries(queries []string) int {
 	// run all queries
 	failures := 0
 	for i, q := range queries {
-		if err := runQuery(q, client); err != nil {
+		if err := executeQuery(q, client); err != nil {
 			failures++
 			utils.ShowWarning(fmt.Sprintf("query #%d failed: %v", i+1, err))
 		}
@@ -167,12 +167,7 @@ func executeQueries(queries []string) int {
 	return failures
 }
 
-// if we are displaying csv with no header, do not include lines between the query results
-func showBlankLineBetweenResults() bool {
-	return !(viper.GetString(constants.ArgOutput) == "csv" && !viper.GetBool(constants.ArgHeader))
-}
-
-func runQuery(queryString string, client *db.Client) error {
+func executeQuery(queryString string, client *db.Client) error {
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.ExecuteQuery(queryString, client)
 	if err != nil {
@@ -187,6 +182,11 @@ func runQuery(queryString string, client *db.Client) error {
 		resultsStreamer.Done()
 	}
 	return nil
+}
+
+// if we are displaying csv with no header, do not include lines between the query results
+func showBlankLineBetweenResults() bool {
+	return !(viper.GetString(constants.ArgOutput) == "csv" && !viper.GetBool(constants.ArgHeader))
 }
 
 func getQueryFromFile(filename string) (string, bool, error) {
