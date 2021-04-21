@@ -159,9 +159,8 @@ jobs:
 
       - name: Get current time
         id: current-date
-        uses: 1466587594/get-current-time@v2
-        with:
-          format: YYYYMMDD
+        run: |
+          echo "::set-output formattedTime=$(date +%Y%m%d)"
 
       - name: Check Next version
         run: |
