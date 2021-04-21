@@ -165,8 +165,8 @@ jobs:
       - name: Check Next version
         run: |
           echo "${{steps.next-semver.outputs.patch}}"
-          echo "${{steps.current-time.outputs.formattedTime}}"
-          echo "${{ format('v{0}-canary-{1}', steps.next-semver.outputs.patch, steps.current-date.outputs.formattedTime) }}"
+          echo "${{steps.current-date.outputs.formattedTime}}"
+          echo "${{format('v{0}-canary-{1}', steps.next-semver.outputs.patch, steps.current-date.outputs.formattedTime)}}"
 
   create_release:
     name: Release
