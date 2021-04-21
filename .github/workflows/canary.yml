@@ -136,49 +136,20 @@ jobs:
       #     chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
       #     $GITHUB_WORKSPACE/tests/acceptance/run.sh
       #     steampipe service stop --force
-
-  tags_release:
-    name: Version checker
-    needs: acceptance_test 
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - id: last_release
-        uses: pozetroninc/github-action-get-latest-release@master
-        with:
-          repository: turbot/steampipe
-          excludes: prerelease, draft
-
-      - name: Get next minor version
-        id: next-semver
-        uses: "WyriHaximus/github-action-next-semvers@v1"
-        with:
-          version: ${{ steps.last_release.outputs.release }}
-
-      - name: Get current Date
-        id: current-date
-        run: |
-          echo '::set-output name=formatted_date::$(date +%Y%m%d)'
-
-      - name: Check Next version
-        run: |
-          echo "${{steps.next-semver.outputs.patch}}"
-          echo "${{steps.current-date.outputs.formatted_date}}"
-          echo "${{format('v{0}-canary-{1}', steps.next-semver.outputs.patch, steps.current-date.outputs.formatted_date)}}"
-
+        
   create_release:
     name: Release
-    needs: tags_release
+    needs: acceptance_test
     runs-on: ubuntu-latest
     steps:
       - name: Stub
         run: |
           echo "nothing"
-    
+      
       # - name: Checkout
       #   uses: actions/checkout@v2
+      #   with:
+      #     ref: ${{ github.event.inputs.branch }}
 
       # - name: Unshallow
       #   run: git fetch --prune --unshallow
@@ -191,9 +162,39 @@ jobs:
       # - name: Hook private repo
       #   run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
 
-      # - name: Get latest tag
-      #   id: previoustag
-      #   uses: "WyriHaximus/github-action-get-previous-tag@v1"
+      - name: Getting Last Release
+        id: last_release
+        uses: pozetroninc/github-action-get-latest-release@master
+        with:
+          repository: turbot/steampipe
+          excludes: prerelease, draft
+
+      - name: Get next patch version
+        id: next-semver
+        uses: "WyriHaximus/github-action-next-semvers@v1"
+        with:
+          version: ${{ steps.last_release.outputs.release }}
+
+      - name: Get current formatted date
+        id: current-date
+        run: |
+          echo '::set-output name=formatted_date::$(date +%Y%m%d)'
+
+      - name: Calculating Next version
+        id: next_version
+        run: |
+          echo '::set-output name=next_version::${{format('v{0}-canary-{1}', steps.next-semver.outputs.patch, steps.current-date.outputs.formatted_date)}}'
+
+      - name: Full version string
+        run: |
+          echo ${{ steps.next_version.outputs.next_version }}
+
+      # - name: Tag Release
+      #   run: |
+      #     git config user.name "Steampipe GitHub Actions Bot (Canary)"
+      #     git config user.email noreply@github.com
+      #     git tag ${{ github.event.inputs.tag }}
+      #     git push origin ${{ github.event.inputs.tag }}
 
       # - name: Run GoReleaser
       #   uses: goreleaser/goreleaser-action@v2
@@ -202,7 +203,6 @@ jobs:
       #     args: release --rm-dist
       #   env:
       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     GORELEASER_CURRENT_TAG: ${{ needs.tags_release.outputs.version }}
 
   clean_up:
     # let's clean up the artifacts.
