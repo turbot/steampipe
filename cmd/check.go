@@ -66,7 +66,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnError(err)
 
 	if len(controls) > 0 {
-		// otherwsie if we have resolvced any queries, run them
+		// otherwise if we have resolvced any queries, run them
 		failures := executeControls(controls)
 		// set global exit code
 		exitCode = failures
@@ -76,18 +76,17 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 // retrieve queries from args - for each arg check if it is a named check or a file,
 // before falling back to treating it as sql
 func getControls(args []string, workspace *workspace.Workspace) ([]*modconfig.Control, error) {
-	var controls []*modconfig.Control
+	var res []*modconfig.Control
 	for _, arg := range args {
-
-		if control, ok := workspace.GetControl(arg); ok {
-			controls = append(controls, control)
+		if controls, ok := workspace.GetControls(arg); ok {
+			res = append(res, controls...)
 			continue
 		} else {
 			return nil, fmt.Errorf("control %s was not found in the workspace", arg)
 		}
 	}
 
-	return controls, nil
+	return res, nil
 }
 
 func executeControls(controls []*modconfig.Control) int {
@@ -102,7 +101,7 @@ func executeControls(controls []*modconfig.Control) int {
 	// run all queries
 	failures := 0
 	for i, c := range controls {
-		if err := runControl(c, client); err != nil {
+		if err := executeControl(c, client); err != nil {
 			failures++
 			utils.ShowWarning(fmt.Sprintf("check #%d failed: %v", i+1, err))
 		}
@@ -114,13 +113,14 @@ func executeControls(controls []*modconfig.Control) int {
 	return failures
 }
 
-func runControl(control *modconfig.Control, client *db.Client) error {
+func executeControl(control *modconfig.Control, client *db.Client) error {
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.ExecuteQuery(*control.SQL, client)
+	resultsStreamer, err := db.ExecuteQuery(*control.Query, client)
 	if err != nil {
 		return err
 	}
 
+	// TODO validate the result has all the required columns
 	// TODO encapsulate this in display object
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
