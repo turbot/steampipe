@@ -13,12 +13,12 @@ import (
 
 type Query struct {
 	ShortName   *string
-	Title       *string `hcl:"title"`
-	Description *string `hcl:"description"`
-	SQL         *string `hcl:"sql"`
+	Title       *string `hcl:"title" column:"title" column_type:"varchar(40)"`
+	Description *string `hcl:"description" column:"description" column_type:"text"`
+	SQL         *string `hcl:"sql" column:"sql" column_type:"text"`
 
-	// reflection data
-	ReflectionData *ReflectionData
+	// resource metadata
+	Metadata *ResourceMetadata
 }
 
 func (q *Query) String() string {
@@ -30,14 +30,6 @@ func (q *Query) String() string {
   SQL: %s
 `, types.SafeString(q.ShortName), types.SafeString(q.Title), types.SafeString(q.Description), types.SafeString(q.SQL))
 }
-
-//
-//func (q *Query) Equals(other *Query) bool {
-//	return types.SafeString(q.Name) == types.SafeString(other.Name) &&
-//		types.SafeString(q.Title) == types.SafeString(other.Title) &&
-//		types.SafeString(q.Description) == types.SafeString(other.Description) &&
-//		types.SafeString(q.SQL) == types.SafeString(other.SQL)
-//}
 
 // QueryFromFile :: factory function
 func QueryFromFile(modPath, filePath string) (MappableResource, []byte, error) {
@@ -77,7 +69,17 @@ func (q *Query) Name() string {
 	return fmt.Sprintf("query.%s", types.SafeString(q.ShortName))
 }
 
-// SetReflectionData :: implementation of MappableResource
-func (q *Query) SetReflectionData(reflectionData *ReflectionData) {
-	q.ReflectionData = reflectionData
+// LongName :: name in format: '<modName>.control.<shortName>'
+func (q *Query) LongName() string {
+	return fmt.Sprintf("%s.%s", q.Metadata.ModShortName, q.Name())
+}
+
+// SetMetadata :: implementation of MappableResource
+func (q *Query) SetMetadata(metadata *ResourceMetadata) {
+	q.Metadata = metadata
+}
+
+// GetMetadata :: implementation of ResourceWithMetadata
+func (q *Query) GetMetadata() *ResourceMetadata {
+	return q.Metadata
 }

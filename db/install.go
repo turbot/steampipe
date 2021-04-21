@@ -180,6 +180,8 @@ func installSteampipeDatabase(withSteampipePassword string, withRootPassword str
 		// or createrole permissions.
 		`create user steampipe`,
 
+		`grant temporary on database steampipe to steampipe_users`,
+
 		// Set a random, complex password for the steampipe user. Done as a separate
 		// step from the create for clarity and reuse.
 		// TODO: need a complex random password here, that is available for sharing with the user when the do steampipe service
@@ -202,15 +204,6 @@ func installSteampipeDatabase(withSteampipePassword string, withRootPassword str
 }
 
 func installSteampipeHub() error {
-	rawClient, err := createSteampipeRootDbClient()
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		rawClient.Close()
-	}()
-
 	statements := []string{
 		// Install the FDW. The name must match the binary file.
 		`drop extension if exists "steampipe_postgres_fdw" cascade`,
@@ -218,15 +211,8 @@ func installSteampipeHub() error {
 		// Use steampipe for the server name, it's simplest
 		`create server "steampipe" foreign data wrapper "steampipe_postgres_fdw"`,
 	}
-
-	for _, statement := range statements {
-		log.Println("[TRACE] Install steampipe hub: ", statement)
-		if _, err := rawClient.Exec(statement); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	_, err := executeSqlAsRoot(statements)
+	return err
 }
 
 func fdwNeedsUpdate() bool {

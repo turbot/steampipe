@@ -11,8 +11,39 @@ import (
 	"github.com/turbot/steampipe/constants"
 )
 
-// set the search path for this client
+// SetServiceSearchPath :: set the search path for the db service (by setting it on the steampipe user)
+func (c *Client) SetServiceSearchPath() error {
+	var searchPath []string
+
+	// is there a service search path in the config?
+	// check ConfigKeyDatabaseSearchPath config (this is the value specified in the database config)
+	if viper.IsSet(constants.ConfigKeyDatabaseSearchPath) {
+		searchPath = viper.GetStringSlice(constants.ConfigKeyDatabaseSearchPath)
+		// add 'internal' schema as last schema in the search path
+		searchPath = append(searchPath, constants.FunctionSchema)
+	} else {
+		// no config set - set service search path to default
+		searchPath = c.getDefaultSearchPath()
+	}
+
+	// escape the schema names
+	searchPath = escapeSearchPath(searchPath)
+
+	log.Println("[TRACE] setting service search path to", searchPath)
+
+	// now construct and execute the query
+	query := fmt.Sprintf(
+		"alter user %s set search_path to %s;",
+		constants.DatabaseUser,
+		strings.Join(searchPath, ","),
+	)
+	_, err := c.ExecuteSync(query)
+	return err
+}
+
+// SetClientSearchPath :: set the search path for this client
 // if either a search-path or search-path-prefix is set in config, set the search path
+// (otherwise fall back to service search path)
 func (c *Client) SetClientSearchPath() error {
 	searchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
@@ -48,36 +79,6 @@ func (c *Client) SetClientSearchPath() error {
 		return err
 	}
 	return nil
-}
-
-// set the search path for the db service (by setting it on the steampipe user)
-func (c *Client) setServiceSearchPath() error {
-	var searchPath []string
-
-	// is there a service search path in the config?
-	// check ConfigKeyDatabaseSearchPath config (this is the value specified in the database config)
-	if viper.IsSet(constants.ConfigKeyDatabaseSearchPath) {
-		searchPath = viper.GetStringSlice(constants.ConfigKeyDatabaseSearchPath)
-		// add 'internal' schema as last schema in the search path
-		searchPath = append(searchPath, constants.FunctionSchema)
-	} else {
-		// no config set - set service search path to default
-		searchPath = c.getDefaultSearchPath()
-	}
-
-	// escape the schema names
-	searchPath = escapeSearchPath(searchPath)
-
-	log.Println("[TRACE] setting service search path to", searchPath)
-
-	// now construct and execute the query
-	query := fmt.Sprintf(
-		"alter user %s set search_path to %s;",
-		constants.DatabaseUser,
-		strings.Join(searchPath, ","),
-	)
-	_, err := c.ExecuteSync(query)
-	return err
 }
 
 func (c *Client) addSearchPathPrefix(searchPathPrefix []string, searchPath []string) []string {

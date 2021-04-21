@@ -77,9 +77,9 @@ package workspace
 //	if err != nil {
 //		t.Fatalf("failed to load workspace: %v", err)
 //	}
-//	queryMap := workspace.GetNamedQueryMap()
-//	if len(queryMap) != 0 {
-//		t.Fatalf("expected initial map to be empty but got %+v", queryMap)
+//	QueryMap := workspace.GetNamedQueryMap()
+//	if len(QueryMap) != 0 {
+//		t.Fatalf("expected initial map to be empty but got %+v", QueryMap)
 //	}
 //
 //	for _, test := range testCasesWatcher {
@@ -92,11 +92,11 @@ package workspace
 //
 //		}
 //		// now check the result
-//		queryMap = workspace.GetNamedQueryMap()
-//		if queryMapsEqual(queryMap, test.expected) {
+//		QueryMap = workspace.GetNamedQueryMap()
+//		if queryMapsEqual(QueryMap, test.expected) {
 //			fmt.Printf("'%s' passed\n", test.name)
 //		} else {
-//			t.Fatalf("test '%s' failed: expected \n\n%+v\n\n got: \n\n%+v\n\n", test.name, test.expected, queryMap)
+//			t.Fatalf("test '%s' failed: expected \n\n%+v\n\n got: \n\n%+v\n\n", test.name, test.expected, QueryMap)
 //		}
 //	}
 //}
@@ -151,4 +151,31 @@ package workspace
 //		}
 //	}
 //	return true
+//}
+
+//func (c *Control) Equals(other *Control) bool {
+//	return types.SafeString(c.Name) == types.SafeString(other.Name) &&
+//		types.SafeString(c.Title) == types.SafeString(other.Title) &&
+//		types.SafeString(c.Description) == types.SafeString(other.Description) &&
+//		types.SafeString(c.SQL) == types.SafeString(other.SQL) &&
+//		types.SafeString(c.Links) == types.SafeString(other.Links) &&
+//		reflect.DeepEqual(c.Tags, other.Tags)
+//}
+
+//func (c *ControlGroup) Equals(other *Control) bool {
+//	return types.SafeString(c.Name) == types.SafeString(other.Name) &&
+//		types.SafeString(c.Title) == types.SafeString(other.Title) &&
+//		types.SafeString(c.Description) == types.SafeString(other.Description) &&
+//		reflect.DeepEqual(c.Labels, other.Labels) &&
+//		c.Parent == other.Parent z
+//
+//
+//}
+
+//
+//func (q *Query) Equals(other *Query) bool {
+//	return types.SafeString(q.Name) == types.SafeString(other.Name) &&
+//		types.SafeString(q.Title) == types.SafeString(other.Title) &&
+//		types.SafeString(q.Description) == types.SafeString(other.Description) &&
+//		types.SafeString(q.SQL) == types.SafeString(other.SQL)
 //}

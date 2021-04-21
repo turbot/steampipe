@@ -9,7 +9,6 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/definitions/results"
 	"github.com/turbot/steampipe/utils"
-	"github.com/turbot/steampipe/workspace"
 )
 
 // EnsureDbAndStartService :: ensure db is installed and start service if necessary
@@ -35,11 +34,7 @@ func EnsureDbAndStartService(invoker Invoker) error {
 }
 
 // RunInteractivePrompt :: start the interactive query prompt
-func RunInteractivePrompt(workspace *workspace.Workspace) (*results.ResultStreamer, error) {
-	client, err := NewClient(true)
-	if err != nil {
-		return nil, err
-	}
+func RunInteractivePrompt(workspace NamedQueryProvider, client *Client) (*results.ResultStreamer, error) {
 	resultsStreamer := results.NewResultStreamer()
 
 	interactiveClient, err := newInteractiveClient(client, workspace)

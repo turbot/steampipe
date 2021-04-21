@@ -8,5 +8,5 @@ type MappableResource interface {
 
 	Name() string
 
-	SetReflectionData(*ReflectionData)
+	SetMetadata(*ResourceMetadata)
 }

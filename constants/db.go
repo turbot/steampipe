@@ -6,7 +6,7 @@ import "github.com/turbot/steampipe/schema"
 // TODO these should be configuration settings
 
 // Arrays cannot be constants, so do the next most convenient thing
-var DatabaseListenAddresses = []string{"host.docker.internal", "localhost", "127.0.0.1"}
+var DatabaseListenAddresses = []string{"localhost", "127.0.0.1"}
 
 const (
 	DatabaseHost        = "localhost"
@@ -21,7 +21,7 @@ const (
 	DatabaseVersion = "12.1.0"
 	FdwVersion      = "0.0.33"
 
-	// The 12.1.0 image uses the older jar format 12.1.0-v2 is the same version of postgres,
+	// DefaultEmbeddedPostgresImage :: The 12.1.0 image uses the older jar format 12.1.0-v2 is the same version of postgres,
 	// just packaged as gzipped tar files (consistent with oras, faster to unzip).  Once everyone is
 	// on a newer build, we can delete the old image move the 12.1.0 tag to the new image, and
 	// change this back for consistency
@@ -30,8 +30,11 @@ const (
 	DefaultFdwImage              = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
 )
 
-// FunctionSchema :: schema container for all steampipe helper functions
-const FunctionSchema = "internal"
+// schema names
+const (
+	// FunctionSchema :: schema container for all steampipe helper functions
+	FunctionSchema = "internal"
+)
 
 // Functions :: a list of SQLFunc objects that are installed in the db 'internal' schema startup
 var Functions = []schema.SQLFunc{

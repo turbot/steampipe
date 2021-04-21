@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -58,7 +59,7 @@ Examples:
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runQueryCmd start")
-
+	var client *db.Client
 	defer func() {
 		logging.LogTime("runQueryCmd end")
 		if r := recover(); r != nil {
@@ -69,7 +70,9 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// start db if necessary
 	err := db.EnsureDbAndStartService(db.InvokerQuery)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
-	defer db.Shutdown(nil, db.InvokerQuery)
+	defer func() {
+		db.Shutdown(client, db.InvokerQuery)
+	}()
 
 	// load the workspace
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
@@ -79,13 +82,24 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	queries := getQueries(args, workspace)
 
+	// get a db client
+	client, err = db.NewClient(true)
+	utils.FailOnError(err)
+
+	// populate the reflection tables
+	err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)
+	utils.FailOnError(err)
+
 	// if no query is specified, run interactive prompt
 	if len(args) == 0 {
 		// interactive session creates its own client
-		runInteractiveSession(workspace)
+		runInteractiveSession(workspace, client)
 	} else if len(queries) > 0 {
-		// otherwsie if we have resolvced any queries, run them
-		failures := executeQueries(queries)
+		// ensure client is closed
+		defer client.Close()
+
+		// otherwise if we have resolved any queries, run them
+		failures := executeQueries(queries, client)
 		// set global exit code
 		exitCode = failures
 	}
@@ -96,32 +110,43 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 func getQueries(args []string, workspace *workspace.Workspace) []string {
 	var queries []string
 	for _, arg := range args {
-		if namedQuery, ok := workspace.GetNamedQuery(arg); ok {
-			queries = append(queries, *namedQuery.SQL)
-			continue
+		query := getQueryFromArg(arg, workspace)
+		if len(query) > 0 {
+			queries = append(queries, query)
 		}
-		fileQuery, fileExists, err := getQueryFromFile(arg)
-		if fileExists {
-			if err != nil {
-				utils.ShowWarning(fmt.Sprintf("error opening file '%s': %v", arg, err))
-			} else if len(fileQuery) == 0 {
-				utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", arg))
-			} else {
-				queries = append(queries, fileQuery)
-			}
-			continue
-		}
-
-		queries = append(queries, arg)
 	}
-
 	return queries
 }
 
-func runInteractiveSession(workspace *workspace.Workspace) {
+// attempt to resolve 'arg' to a query
+func getQueryFromArg(arg string, workspace *workspace.Workspace) string {
+	// 1) is this a named query
+	if namedQuery, ok := workspace.GetNamedQuery(arg); ok {
+		return typeHelpers.SafeString(namedQuery.SQL)
+	}
+
+	// 	2) is this a file
+	fileQuery, fileExists, err := getQueryFromFile(arg)
+	if fileExists {
+		if err != nil {
+			utils.ShowWarning(fmt.Sprintf("error opening file '%s': %v", arg, err))
+			return ""
+		}
+		if len(fileQuery) == 0 {
+			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", arg))
+			// (just return the empty string - it wil be filtered above)
+		}
+		return fileQuery
+	}
+
+	// 3) just use the arg string as is
+	return arg
+}
+
+func runInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
-		err := workspace.SetupWatcher()
+		err := workspace.SetupWatcher(client)
 		utils.FailOnError(err)
 	}
 
@@ -132,7 +157,7 @@ func runInteractiveSession(workspace *workspace.Workspace) {
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, true)
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.RunInteractivePrompt(workspace)
+	resultsStreamer, err := db.RunInteractivePrompt(workspace, client)
 	utils.FailOnError(err)
 
 	// print the data as it comes
@@ -143,14 +168,9 @@ func runInteractiveSession(workspace *workspace.Workspace) {
 	}
 }
 
-func executeQueries(queries []string) int {
+func executeQueries(queries []string, client *db.Client) int {
 	// set the flag to hide spinner
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
-
-	// first get a client - do this once for all queries
-	client, err := db.NewClient(true)
-	utils.FailOnError(err)
-	defer client.Close()
 
 	// run all queries
 	failures := 0

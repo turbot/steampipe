@@ -10,17 +10,18 @@ import (
 
 type ControlGroup struct {
 	ShortName   *string
-	Title       *string   `hcl:"title"`
-	Description *string   `hcl:"description"`
-	Labels      *[]string `hcl:"labels"`
-	ParentName  *string   `hcl:"parent"`
+	Title       *string   `hcl:"title" column:"title" column_type:"varchar(40)"`
+	Description *string   `hcl:"description" column:"description" column_type:"text"`
+	Query       *string   `hcl:"query" column:"query" column_type:"text"`
+	Labels      *[]string `hcl:"labels" column:"labels" column_type:"varchar(40)[]"`
+	ParentName  *string   `hcl:"parent" column:"parent" column_type:"varchar(40)"`
 
 	// populated when we build tree
 	Parent   ControlTreeItem
 	Children []ControlTreeItem
 
-	// reflection data
-	ReflectionData *ReflectionData
+	// resource metadata
+	Metadata *ResourceMetadata
 }
 
 func (c *ControlGroup) String() string {
@@ -51,16 +52,6 @@ func (c *ControlGroup) String() string {
 		labels, strings.Join(children, "\n    "))
 }
 
-//func (c *ControlGroup) Equals(other *Control) bool {
-//	return types.SafeString(c.Name) == types.SafeString(other.Name) &&
-//		types.SafeString(c.Title) == types.SafeString(other.Title) &&
-//		types.SafeString(c.Description) == types.SafeString(other.Description) &&
-//		reflect.DeepEqual(c.Labels, other.Labels) &&
-//		c.Parent == other.Parent z
-//
-//
-//}
-
 // GetChildControls :: return a flat list of controls underneath us in the tree
 func (c *ControlGroup) GetChildControls() []*Control {
 	var res []*Control
@@ -72,6 +63,11 @@ func (c *ControlGroup) GetChildControls() []*Control {
 		}
 	}
 	return res
+}
+
+// LongName :: name in format: '<modName>.control.<shortName>'
+func (c *ControlGroup) LongName() string {
+	return fmt.Sprintf("%s.%s", c.Metadata.ModShortName, c.Name())
 }
 
 // AddChild :: implementation of ControlTreeItem
@@ -99,7 +95,7 @@ func (c *ControlGroup) SetParent(parent ControlTreeItem) error {
 // Name :: implementation of ControlTreeItem
 // return name in format: 'control.<shortName>'
 func (c *ControlGroup) Name() string {
-	return fmt.Sprintf("control.%s", types.SafeString(c.ShortName))
+	return fmt.Sprintf("control_group.%s", types.SafeString(c.ShortName))
 }
 
 // Path :: implementation of ControlTreeItem
@@ -109,4 +105,9 @@ func (c *ControlGroup) Path() []string {
 		path = append(c.Parent.Path(), path...)
 	}
 	return path
+}
+
+// GetMetadata :: implementation of ResourceWithMetadata
+func (c *ControlGroup) GetMetadata() *ResourceMetadata {
+	return c.Metadata
 }

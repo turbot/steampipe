@@ -12,6 +12,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -22,9 +23,9 @@ type Workspace struct {
 	Mod  *modconfig.Mod
 
 	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
-	queryMap        map[string]*modconfig.Query
-	controlMap      map[string]*modconfig.Control
-	controlGroupMap map[string]*modconfig.ControlGroup
+	QueryMap        map[string]*modconfig.Query
+	ControlMap      map[string]*modconfig.Control
+	ControlGroupMap map[string]*modconfig.ControlGroup
 
 	watcher    *utils.FileWatcher
 	loadLock   sync.Mutex
@@ -57,7 +58,7 @@ func (w *Workspace) GetNamedQueryMap() map[string]*modconfig.Query {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	return w.queryMap
+	return w.QueryMap
 }
 
 func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
@@ -67,7 +68,7 @@ func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
 	// if the name starts with 'local', remove the prefix and try to resolve the short name
 	queryName = strings.TrimPrefix(queryName, "local.")
 
-	if query, ok := w.queryMap[queryName]; ok {
+	if query, ok := w.QueryMap[queryName]; ok {
 		return query, true
 	}
 
@@ -90,12 +91,12 @@ func (w *Workspace) GetControls(controlName string) ([]*modconfig.Control, bool)
 	switch name.ItemType {
 	case modconfig.BlockTypeControl:
 		// look in the workspace control map for this control
-		if control, ok := w.controlMap[controlName]; ok {
+		if control, ok := w.ControlMap[controlName]; ok {
 			return []*modconfig.Control{control}, true
 		}
 	case modconfig.BlockTypeControlGroup:
 		// look in the workspace control group map for this control group
-		if controlGroup, ok := w.controlGroupMap[controlName]; ok {
+		if controlGroup, ok := w.ControlGroupMap[controlName]; ok {
 			return controlGroup.GetChildControls(), true
 		}
 	}
@@ -129,9 +130,9 @@ func (w *Workspace) loadMod() error {
 		return err
 	}
 
-	w.queryMap = w.buildQueryMap(modMap)
-	w.controlMap = w.buildControlMap(modMap)
-	w.controlGroupMap = w.buildControlGroupMap(modMap)
+	w.QueryMap = w.buildQueryMap(modMap)
+	w.ControlMap = w.buildControlMap(modMap)
+	w.ControlGroupMap = w.buildControlGroupMap(modMap)
 
 	return nil
 }
@@ -150,16 +151,17 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Query)
 
-	// for LOCAL queries, add map entries keyed by both short name: query.xxxx and  long name: <workspace>.query.xxxx
+	// for LOCAL queries, add map entries keyed by both short name: query.<shortName> and  long name: <modName>.query.<shortName?
 	for _, q := range w.Mod.Queries {
-		shortName := fmt.Sprintf("query.%s", types.SafeString(q.ShortName))
-		res[shortName] = q
+		res[q.Name()] = q
+		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.ShortName), types.SafeString(q.ShortName))
+		res[longName] = q
 	}
 
 	// for mode dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
-			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.Name), types.SafeString(q.ShortName))
+			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.ShortName), types.SafeString(q.ShortName))
 			res[longName] = q
 		}
 	}
@@ -170,17 +172,16 @@ func (w *Workspace) buildControlMap(modMap modconfig.ModMap) map[string]*modconf
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Control)
 
-	// for LOCAL controls, add map entries keyed by both short name: query.xxxx and  long name: <workspace>.query.xxxx
+	// for LOCAL controls, add map entries keyed by both short name: control.<shortName> and  long name: <modName>.control.<shortName?
 	for _, c := range w.Mod.Controls {
-		shortName := fmt.Sprintf("control.%s", types.SafeString(c.ShortName))
-		res[shortName] = c
+		res[c.Name()] = c
+		res[c.LongName()] = c
 	}
 
 	// for mode dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, c := range mod.Controls {
-			longName := fmt.Sprintf("%s.control.%s", types.SafeString(mod.Name), types.SafeString(c.ShortName))
-			res[longName] = c
+			res[c.LongName()] = c
 		}
 	}
 	return res
@@ -190,29 +191,30 @@ func (w *Workspace) buildControlGroupMap(modMap modconfig.ModMap) map[string]*mo
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.ControlGroup)
 
-	// for LOCAL controls, add map entries keyed by both short name: query.xxxx and  long name: <workspace>.query.xxxx
+	// for LOCAL controls, add map entries keyed by both short name: control_group.<shortName> and  long name: <modName>.control_group.<shortName?
 	for _, c := range w.Mod.ControlGroups {
-		shortName := fmt.Sprintf("control_group.%s", types.SafeString(c.Name))
-		res[shortName] = c
+		res[c.Name()] = c
+		res[c.LongName()] = c
 	}
 
-	// for mode dependencies, add queries keyed by long name only
+	// for mod dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, c := range mod.ControlGroups {
-			longName := fmt.Sprintf("%s.control_group.%s", types.SafeString(mod.Name), types.SafeString(c.Name))
-			res[longName] = c
+			res[c.LongName()] = c
 		}
 	}
 	return res
 }
 
-func (w *Workspace) SetupWatcher() error {
+func (w *Workspace) SetupWatcher(client *db.Client) error {
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
 		OnChange: func(ev fsnotify.Event) {
 			w.loadMod()
+			// todo detect differences and only refresh if necessary
+			db.UpdateMetadataTables(w.GetResourceMaps(), client)
 		},
 		//onError:          nil,
 	}
@@ -254,4 +256,12 @@ func (w *Workspace) LoadExclusions() error {
 	}
 
 	return nil
+}
+
+func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
+	return &modconfig.WorkspaceResourceMaps{
+		QueryMap:        w.QueryMap,
+		ControlMap:      w.ControlMap,
+		ControlGroupMap: w.ControlGroupMap,
+	}
 }

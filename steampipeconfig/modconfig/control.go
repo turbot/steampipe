@@ -9,18 +9,18 @@ import (
 
 type Control struct {
 	ShortName   *string
-	Title       *string   `hcl:"title"`
-	Description *string   `hcl:"description"`
-	Query       *string   `hcl:"query"`
-	Labels      *[]string `hcl:"labels"`
-	Links       *[]string `hcl:"links"`
-	ParentName  *string   `hcl:"parent"`
+	Title       *string   `hcl:"title" column:"title" column_type:"varchar(40)"`
+	Description *string   `hcl:"description" column:"description" column_type:"text"`
+	Query       *string   `hcl:"query" column:"query" column_type:"text"`
+	Labels      *[]string `hcl:"labels" column:"labels" column_type:"varchar(40)[]"`
+	Links       *[]string `hcl:"links" column:"links" column_type:"varchar(40)[]"`
+	ParentName  *string   `hcl:"parent" column:"parent" column_type:"varchar(40)"`
 
 	// populated when we build tree
 	Parent ControlTreeItem
 
-	// reflection data
-	ReflectionData *ReflectionData
+	// resource metadata
+	Metadata *ResourceMetadata
 }
 
 func (c *Control) String() string {
@@ -50,14 +50,10 @@ func (c *Control) String() string {
 		labels, links)
 }
 
-//func (c *Control) Equals(other *Control) bool {
-//	return types.SafeString(c.Name) == types.SafeString(other.Name) &&
-//		types.SafeString(c.Title) == types.SafeString(other.Title) &&
-//		types.SafeString(c.Description) == types.SafeString(other.Description) &&
-//		types.SafeString(c.SQL) == types.SafeString(other.SQL) &&
-//		types.SafeString(c.Links) == types.SafeString(other.Links) &&
-//		reflect.DeepEqual(c.Tags, other.Tags)
-//}
+//LongName :: name in format: '<modName>.control.<shortName>'
+func (c *Control) LongName() string {
+	return fmt.Sprintf("%s.%s", c.Metadata.ModShortName, c.Name())
+}
 
 // AddChild  :: implementation of ControlTreeItem - controls cannot have children so just return error
 func (c *Control) AddChild(child ControlTreeItem) error {
@@ -88,4 +84,9 @@ func (c *Control) Path() []string {
 		path = append(c.Parent.Path(), path...)
 	}
 	return path
+}
+
+// GetMetadata :: implementation of ResourceWithMetadata
+func (c *Control) GetMetadata() *ResourceMetadata {
+	return c.Metadata
 }

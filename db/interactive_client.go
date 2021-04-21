@@ -16,21 +16,20 @@ import (
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
-	"github.com/turbot/steampipe/workspace"
 )
 
 // InteractiveClient :: wrapper over *Client and *prompt.Prompt along
 // to facilitate interactive query prompt
 type InteractiveClient struct {
 	client                  *Client
-	workspace               *workspace.Workspace
+	workspace               NamedQueryProvider
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
 	interactiveQueryHistory *queryhistory.QueryHistory
 	autocompleteOnEmpty     bool
 }
 
-func newInteractiveClient(client *Client, workspace *workspace.Workspace) (*InteractiveClient, error) {
+func newInteractiveClient(client *Client, workspace NamedQueryProvider) (*InteractiveClient, error) {
 	return &InteractiveClient{
 		client:                  client,
 		workspace:               workspace,
@@ -190,6 +189,8 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 	if line == "" {
 		return
 	}
+	// store history item before doing named query translation
+	historyItem := line
 
 	// push the current line into the buffer
 	c.interactiveBuffer = append(c.interactiveBuffer, line)
@@ -234,11 +235,7 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 	}
 
 	// store the history
-	if isNamedQuery {
-		c.interactiveQueryHistory.Put(fmt.Sprintf("query.%s", namedQuery.ShortName))
-	} else {
-		c.interactiveQueryHistory.Put(query)
-	}
+	c.interactiveQueryHistory.Put(historyItem)
 	c.restartInteractiveSession()
 }
 
