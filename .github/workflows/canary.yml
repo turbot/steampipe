@@ -14,52 +14,56 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.inputs.branch }}
-
-      - name: Unshallow
-        run: git fetch
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.16
-
-      - name: Hook private repo
-        run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          version: latest
-          args: release --snapshot --rm-dist --skip-publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Move build artifacts
+      - name: Stub
         run: |
-          mkdir ~/artifacts
-          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
-          mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
+          echo "do nothing"
 
-      - name: List Build Artifacts
-        run: ls -l ~/artifacts
+      # - name: Checkout
+      #   uses: actions/checkout@v2
+      #   with:
+      #     ref: ${{ github.event.inputs.branch }}
 
-      - name: Save Linux Build Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: build-artifact-linux
-          path: ~/artifacts/linux.tar.gz
-          if-no-files-found: error
+      # - name: Unshallow
+      #   run: git fetch
 
-      - name: Save MacOS Build Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: build-artifact-darwin
-          path: ~/artifacts/darwin.zip
-          if-no-files-found: error
+      # - name: Set up Go
+      #   uses: actions/setup-go@v2
+      #   with:
+      #     go-version: 1.16
+
+      # - name: Hook private repo
+      #   run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
+
+      # - name: Run GoReleaser
+      #   uses: goreleaser/goreleaser-action@v2
+      #   with:
+      #     version: latest
+      #     args: release --snapshot --rm-dist --skip-publish
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Move build artifacts
+      #   run: |
+      #     mkdir ~/artifacts
+      #     mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
+      #     mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
+
+      # - name: List Build Artifacts
+      #   run: ls -l ~/artifacts
+
+      # - name: Save Linux Build Artifact
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: build-artifact-linux
+      #     path: ~/artifacts/linux.tar.gz
+      #     if-no-files-found: error
+
+      # - name: Save MacOS Build Artifact
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: build-artifact-darwin
+      #     path: ~/artifacts/darwin.zip
+      #     if-no-files-found: error
 
   acceptance_test:
     name: Acceptance tests
@@ -69,65 +73,69 @@ jobs:
         platform: [ ubuntu-latest ]
     runs-on: ${{ matrix.platform }}
     steps:
-
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          submodules: true
-          ref: ${{ github.event.inputs.branch }}
-
-      - name: Setup BATS
-        uses: mig4/setup-bats@v1
-        with:
-          bats-version: 1.2.1
-
-      - name: Prepare for downloads
-        id: prepare-for-downloads
+    
+      - name: Stub
         run: |
-          mkdir ~/artifacts
+          echo "nothing"
 
-      - name: Download Linux Build Artifacts
-        uses: actions/download-artifact@v2
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        with:
-          name: build-artifact-linux
-          path: ~/artifacts
+      # - name: Checkout
+      #   uses: actions/checkout@v2
+      #   with:
+      #     submodules: true
+      #     ref: ${{ github.event.inputs.branch }}
 
-      - name: Download Darwin Build Artifacts
-        uses: actions/download-artifact@v2
-        if: ${{ matrix.platform == 'macos-latest' }}
-        with:
-          name: build-artifact-darwin
-          path: ~/artifacts
+      # - name: Setup BATS
+      #   uses: mig4/setup-bats@v1
+      #   with:
+      #     bats-version: 1.2.1
 
-      - name: Extract Darwin Artifacts and Install Binary
-        if: ${{ matrix.platform == 'macos-latest' }}
-        run: |
-          mkdir ~/build
-          unzip ~/artifacts/darwin.zip -d ~/build
+      # - name: Prepare for downloads
+      #   id: prepare-for-downloads
+      #   run: |
+      #     mkdir ~/artifacts
 
-      - name: Extract Ubuntu Artifacts and Install Binary
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: |
-          mkdir ~/build
-          tar -xf ~/artifacts/linux.tar.gz -C ~/build
+      # - name: Download Linux Build Artifacts
+      #   uses: actions/download-artifact@v2
+      #   if: ${{ matrix.platform == 'ubuntu-latest' }}
+      #   with:
+      #     name: build-artifact-linux
+      #     path: ~/artifacts
 
-      - name: Set PATH
-        run: |
-          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+      # - name: Download Darwin Build Artifacts
+      #   uses: actions/download-artifact@v2
+      #   if: ${{ matrix.platform == 'macos-latest' }}
+      #   with:
+      #     name: build-artifact-darwin
+      #     path: ~/artifacts
 
-      - name: Install DB
-        run: |
-          steampipe service start
-          steampipe plugin install chaos
-          steampipe service stop --force
+      # - name: Extract Darwin Artifacts and Install Binary
+      #   if: ${{ matrix.platform == 'macos-latest' }}
+      #   run: |
+      #     mkdir ~/build
+      #     unzip ~/artifacts/darwin.zip -d ~/build
 
-      - name: Run Test Suite
-        timeout-minutes: 5
-        run: |
-          chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          steampipe service stop --force
+      # - name: Extract Ubuntu Artifacts and Install Binary
+      #   if: ${{ matrix.platform == 'ubuntu-latest' }}
+      #   run: |
+      #     mkdir ~/build
+      #     tar -xf ~/artifacts/linux.tar.gz -C ~/build
+
+      # - name: Set PATH
+      #   run: |
+      #     echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+
+      # - name: Install DB
+      #   run: |
+      #     steampipe service start
+      #     steampipe plugin install chaos
+      #     steampipe service stop --force
+
+      # - name: Run Test Suite
+      #   timeout-minutes: 5
+      #   run: |
+      #     chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
+      #     $GITHUB_WORKSPACE/tests/acceptance/run.sh
+      #     steampipe service stop --force
 
   tags_release:
     name: Version checker
@@ -210,22 +218,22 @@ jobs:
         uses: geekyeggo/delete-artifact@v1
         with:
           name: build-artifact-windows
-          failOnError: true
+          failOnError: false
 
       - name: Clean up Linux Build
         uses: geekyeggo/delete-artifact@v1
         with:
           name: build-artifact-linux
-          failOnError: true
+          failOnError: false
 
       - name: Clean up Darwin Build
         uses: geekyeggo/delete-artifact@v1
         with:
           name: build-artifact-darwin
-          failOnError: true
+          failOnError: false
 
       - name: Clean up Test Suite
         uses: geekyeggo/delete-artifact@v1
         with:
           name: test-artifact
-          failOnError: true
+          failOnError: false
