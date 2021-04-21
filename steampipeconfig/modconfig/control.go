@@ -17,10 +17,10 @@ type Control struct {
 	ParentName  *string   `hcl:"parent"`
 
 	// populated when we build tree
-	Mod    *Mod
 	Parent ControlTreeItem
 
 	// reflection data
+	ReflectionData *ReflectionData
 }
 
 func (c *Control) String() string {
