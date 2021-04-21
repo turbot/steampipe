@@ -13,6 +13,8 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
+// TODO add tests for reflection data
+
 var toStringPointer = utils.ToStringPointer
 
 type loadModTest struct {
@@ -45,10 +47,10 @@ var testCasesLoadMod = map[string]loadModTest{
 			ShortName: toStringPointer("local"),
 			Queries: map[string]*modconfig.Query{
 				"q1": {
-					toStringPointer("q1"), toStringPointer("Q1"), toStringPointer("THIS IS QUERY 1"), toStringPointer("select 1"),
+					ShortName: toStringPointer("q1"), Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
 				},
 				"q2": {
-					toStringPointer("q2"), toStringPointer("Q2"), toStringPointer("THIS IS QUERY 2"), toStringPointer("select 2"),
+					ShortName: toStringPointer("q2"), Title: toStringPointer("Q2"), Description: toStringPointer("THIS IS QUERY 2"), SQL: toStringPointer("select 2"),
 				},
 			},
 		},

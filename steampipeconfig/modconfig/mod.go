@@ -192,7 +192,7 @@ func (m *Mod) GetParentName() string {
 	return ""
 }
 
-// SetParent  :: implementation of ControlTreeItem
+// SetParent :: implementation of ControlTreeItem
 func (m *Mod) SetParent(ControlTreeItem) error {
 	return errors.New("cannot set a parent on a mod")
 }
@@ -200,10 +200,38 @@ func (m *Mod) SetParent(ControlTreeItem) error {
 // Name :: implementation of ControlTreeItem
 // note - for mod, long name and short name are the same
 func (m *Mod) Name() string {
-	return fmt.Sprintf("mod.%s", types.SafeString(m.Name))
+	name := types.SafeString(m.ShortName)
+	if m.Version == nil {
+		return fmt.Sprintf("mod.%s", name)
+	}
+	return fmt.Sprintf("mod.%s@%s", name, types.SafeString(m.Version))
 }
 
 // Path :: implementation of ControlTreeItem
 func (m *Mod) Path() []string {
 	return []string{m.Name()}
+}
+
+func (m *Mod) SetQueries(queries map[string]*Query) {
+	// add mod into the reflection data of each query
+	for _, q := range queries {
+		q.ReflectionData.ModName = m.Name()
+	}
+	m.Queries = queries
+}
+
+func (m *Mod) SetControls(controls map[string]*Control) {
+	// add mod into the reflection data of each query
+	for _, c := range controls {
+		c.ReflectionData.ModName = m.Name()
+	}
+	m.Controls = controls
+}
+
+func (m *Mod) SetControlGroups(controlGroups map[string]*ControlGroup) {
+	// add mod into the reflection data of each query
+	for _, c := range controlGroups {
+		c.ReflectionData.ModName = m.Name()
+	}
+	m.ControlGroups = controlGroups
 }

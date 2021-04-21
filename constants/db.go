@@ -6,7 +6,7 @@ import "github.com/turbot/steampipe/schema"
 // TODO these should be configuration settings
 
 // Arrays cannot be constants, so do the next most convenient thing
-var DatabaseListenAddresses = []string{"localhost", "127.0.0.1"}
+var DatabaseListenAddresses = []string{"host.docker.internal", "localhost", "127.0.0.1"}
 
 const (
 	DatabaseHost        = "localhost"

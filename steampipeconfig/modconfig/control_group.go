@@ -18,6 +18,9 @@ type ControlGroup struct {
 	// populated when we build tree
 	Parent   ControlTreeItem
 	Children []ControlTreeItem
+
+	// reflection data
+	ReflectionData *ReflectionData
 }
 
 func (c *ControlGroup) String() string {
