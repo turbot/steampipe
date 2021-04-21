@@ -235,7 +235,7 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 
 	// store the history
 	if isNamedQuery {
-		c.interactiveQueryHistory.Put(fmt.Sprintf("query.%s", namedQuery.Name))
+		c.interactiveQueryHistory.Put(fmt.Sprintf("query.%s", namedQuery.ShortName))
 	} else {
 		c.interactiveQueryHistory.Put(query)
 	}

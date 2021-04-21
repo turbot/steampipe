@@ -14,7 +14,7 @@ func parseMod(block *hcl.Block) (*modconfig.Mod, hcl.Diagnostics) {
 		return nil, diags
 	}
 	mod := &modconfig.Mod{
-		Name: &block.Labels[0],
+		ShortName: &block.Labels[0],
 	}
 	moreDiags := parseModAttributes(content, mod)
 	if moreDiags.HasErrors() {
@@ -101,10 +101,11 @@ func parseQuery(block *hcl.Block) (*modconfig.Query, hcl.Diagnostics) {
 		return nil, diags
 	}
 
-	q.Name = &block.Labels[0]
+	q.ShortName = &block.Labels[0]
 
 	return q, nil
 }
+
 func parseControl(block *hcl.Block) (*modconfig.Control, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var c = &modconfig.Control{}
@@ -114,7 +115,21 @@ func parseControl(block *hcl.Block) (*modconfig.Control, hcl.Diagnostics) {
 		return nil, diags
 	}
 
-	c.Name = &block.Labels[0]
+	c.ShortName = &block.Labels[0]
+
+	return c, nil
+}
+
+func parseControlGroup(block *hcl.Block) (*modconfig.ControlGroup, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	var c = &modconfig.ControlGroup{}
+
+	diags = gohcl.DecodeBody(block.Body, nil, c)
+	if diags.HasErrors() {
+		return nil, diags
+	}
+
+	c.ShortName = &block.Labels[0]
 
 	return c, nil
 }

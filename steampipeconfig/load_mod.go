@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -133,11 +134,13 @@ func parseModHcl(modPath string, fileData map[string][]byte, opts *LoadModOption
 
 	var queries = make(map[string]*modconfig.Query)
 	var controls = make(map[string]*modconfig.Control)
+	var controlGroups = make(map[string]*modconfig.ControlGroup)
 	for _, block := range content.Blocks {
-		switch block.Type {
-		case "variable":
-			// TODO
-		case "mod":
+		blockType := modconfig.ModBlockType(block.Type)
+		switch blockType {
+		//case "variable":
+		//	// TODO
+		case modconfig.BlockTypeMod:
 			// if there is more than one mod, fail
 			if mod != nil {
 				return nil, fmt.Errorf("more than 1 mod definition found in %s", modPath)
@@ -147,37 +150,57 @@ func parseModHcl(modPath string, fileData map[string][]byte, opts *LoadModOption
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
-		case "query":
+
+		case modconfig.BlockTypeQuery:
 			query, moreDiags := parseQuery(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				break
 			}
-			if _, ok := queries[*query.Name]; ok {
+			name := *query.ShortName
+			if _, ok := queries[name]; ok {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("mod defines more that one query named %s", *query.Name),
+					Summary:  fmt.Sprintf("mod defines more that one query named %s", name),
 					Subject:  &block.DefRange,
 				})
 				continue
 			}
-			queries[*query.Name] = query
+			queries[name] = query
 
-		case "control":
+		case modconfig.BlockTypeControl:
 			control, moreDiags := parseControl(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				break
 			}
-			if _, ok := controls[*control.Name]; ok {
+			name := *control.ShortName
+			if _, ok := controls[name]; ok {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("mod defines more that one control named %s", *control.Name),
+					Summary:  fmt.Sprintf("mod defines more that one control named %s", name),
 					Subject:  &block.DefRange,
 				})
 				continue
 			}
-			controls[*control.Name] = control
+			controls[name] = control
+
+		case modconfig.BlockTypeControlGroup:
+			controlGroup, moreDiags := parseControlGroup(block)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+				break
+			}
+			name := types.SafeString(controlGroup.ShortName)
+			if _, ok := controlGroups[name]; ok {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  fmt.Sprintf("mod defines more that one control group named %s", name),
+					Subject:  &block.DefRange,
+				})
+				continue
+			}
+			controlGroups[name] = controlGroup
 		}
 	}
 
@@ -187,7 +210,6 @@ func parseModHcl(modPath string, fileData map[string][]byte, opts *LoadModOption
 
 	// is there a mod resource definition?
 	if mod == nil {
-
 		// should we creaste a default mod?
 		if !opts.CreateDefaultMod() {
 			// CreateDefaultMod flag NOT set - fail
@@ -198,6 +220,12 @@ func parseModHcl(modPath string, fileData map[string][]byte, opts *LoadModOption
 	}
 	mod.Queries = queries
 	mod.Controls = controls
+	mod.ControlGroups = controlGroups
+
+	// no tell mod to build tree of controls
+	if err := mod.BuildControlTree(); err != nil {
+		return nil, err
+	}
 
 	return mod, nil
 }
@@ -248,16 +276,16 @@ func addResourceIfUnique(resource modconfig.MappableResource, mod *modconfig.Mod
 	switch r := resource.(type) {
 	case *modconfig.Query:
 		// check there is not already a query with the same name
-		if _, ok := mod.Queries[*r.Name]; ok {
+		if _, ok := mod.Queries[*r.ShortName]; ok {
 			// we have already created a query with this name - skip!
-			return fmt.Errorf("not creating resource for '%s' as there is already a query '%s' defined", path, *r.Name)
+			return fmt.Errorf("not creating resource for '%s' as there is already a query '%s' defined", path, *r.ShortName)
 		}
-		mod.Queries[*r.Name] = r
+		mod.Queries[*r.ShortName] = r
 	}
 	return nil
 }
 
 func defaultWorkspaceMod() *modconfig.Mod {
 	defaultName := "local"
-	return &modconfig.Mod{Name: &defaultName}
+	return &modconfig.Mod{ShortName: &defaultName}
 }
