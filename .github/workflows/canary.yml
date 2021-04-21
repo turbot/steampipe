@@ -157,7 +157,7 @@ jobs:
         with:
           version: ${{ steps.last_release.outputs.release }}
 
-      - name: Get current time
+      - name: Get current Date
         id: current-date
         run: |
           echo "::set-output formattedTime=$(date +%Y%m%d)"
@@ -166,7 +166,7 @@ jobs:
         run: |
           echo "${{steps.next-semver.outputs.patch}}"
           echo "${{steps.current-time.outputs.formattedTime}}"
-          echo "${{ format('v{0}-canary-{1}', steps.next-semver.outputs.patch, steps.current-time.outputs.formattedTime) }}"
+          echo "${{ format('v{0}-canary-{1}', steps.next-semver.outputs.patch, steps.current-date.outputs.formattedTime) }}"
 
   create_release:
     name: Release
