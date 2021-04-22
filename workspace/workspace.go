@@ -22,9 +22,9 @@ type Workspace struct {
 	Mod  *modconfig.Mod
 
 	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
-	queryMap        map[string]*modconfig.Query
-	controlMap      map[string]*modconfig.Control
-	controlGroupMap map[string]*modconfig.ControlGroup
+	QueryMap        map[string]*modconfig.Query
+	ControlMap      map[string]*modconfig.Control
+	ControlGroupMap map[string]*modconfig.ControlGroup
 
 	watcher    *utils.FileWatcher
 	loadLock   sync.Mutex
@@ -57,7 +57,7 @@ func (w *Workspace) GetNamedQueryMap() map[string]*modconfig.Query {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	return w.queryMap
+	return w.QueryMap
 }
 
 func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
@@ -67,7 +67,7 @@ func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
 	// if the name starts with 'local', remove the prefix and try to resolve the short name
 	queryName = strings.TrimPrefix(queryName, "local.")
 
-	if query, ok := w.queryMap[queryName]; ok {
+	if query, ok := w.QueryMap[queryName]; ok {
 		return query, true
 	}
 
@@ -90,12 +90,12 @@ func (w *Workspace) GetControls(controlName string) ([]*modconfig.Control, bool)
 	switch name.ItemType {
 	case modconfig.BlockTypeControl:
 		// look in the workspace control map for this control
-		if control, ok := w.controlMap[controlName]; ok {
+		if control, ok := w.ControlMap[controlName]; ok {
 			return []*modconfig.Control{control}, true
 		}
 	case modconfig.BlockTypeControlGroup:
 		// look in the workspace control group map for this control group
-		if controlGroup, ok := w.controlGroupMap[controlName]; ok {
+		if controlGroup, ok := w.ControlGroupMap[controlName]; ok {
 			return controlGroup.GetChildControls(), true
 		}
 	}
@@ -129,9 +129,9 @@ func (w *Workspace) loadMod() error {
 		return err
 	}
 
-	w.queryMap = w.buildQueryMap(modMap)
-	w.controlMap = w.buildControlMap(modMap)
-	w.controlGroupMap = w.buildControlGroupMap(modMap)
+	w.QueryMap = w.buildQueryMap(modMap)
+	w.ControlMap = w.buildControlMap(modMap)
+	w.ControlGroupMap = w.buildControlGroupMap(modMap)
 
 	return nil
 }

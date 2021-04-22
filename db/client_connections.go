@@ -91,9 +91,9 @@ func (c *Client) RefreshConnections() (bool, error) {
 	log.Println("[TRACE] reloading schema")
 	c.loadSchema()
 
-	// update the service and client search paths (as long as they have NOT been explicitly set)
+	// update the service and client search paths
 	log.Println("[TRACE] setting search path")
-	c.setServiceSearchPath()
+	c.SetServiceSearchPath()
 	c.SetClientSearchPath()
 
 	// finally update the connection map
@@ -242,28 +242,11 @@ func deleteConnectionQuery(name string) []string {
 }
 
 func executeConnectionQueries(schemaQueries []string, updates *steampipeconfig.ConnectionUpdates) error {
-	client, err := createSteampipeRootDbClient()
+	log.Printf("[DEBUG] there are connections to update, queries: \n%s\n", schemaQueries)
+	_, err := executeSqlAsRoot(schemaQueries)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		client.Close()
-	}()
-
-	// combine queries
-	schemaQueryString := strings.Join(schemaQueries, "\n")
-
-	log.Printf("[DEBUG] there are connections to update, query: \n%s\n", schemaQueryString)
-	_, err = client.Exec(schemaQueryString)
-	if err != nil {
-		return err
-	}
-	/* TODO - Log results
-	log.Println("[TRACE] refresh connection results")
-	for row := range schemaResult {
-		log.Printf("[TRACE] %v\n", row)
-	}
-	*/
 
 	// now update the state file
 	err = steampipeconfig.SaveConnectionState(updates.RequiredConnections)
