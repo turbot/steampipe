@@ -193,8 +193,8 @@ jobs:
       #   run: |
       #     git config user.name "Steampipe GitHub Actions Bot (Canary)"
       #     git config user.email noreply@github.com
-      #     git tag ${{ github.event.inputs.tag }}
-      #     git push origin ${{ github.event.inputs.tag }}
+      #     git tag ${{ steps.next_version.outputs.next_version }}
+      #     git push origin ${{ steps.next_version.outputs.next_version }}
 
       # - name: Run GoReleaser
       #   uses: goreleaser/goreleaser-action@v2
