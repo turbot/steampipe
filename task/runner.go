@@ -31,15 +31,13 @@ func (r *Runner) Run() {
 	if r.shouldRun() {
 		waitGroup := sync.WaitGroup{}
 
-		if r.shouldRunUpdateChecks() {
-			// check whether an updated version is available
-			waitGroup.Add(1)
-			go r.runAsyncJob(func() { checkSteampipeVersion(r.currentState.InstallationID) }, &waitGroup)
+		// check whether an updated version is available
+		waitGroup.Add(1)
+		go r.runAsyncJob(func() { checkSteampipeVersion(r.currentState.InstallationID) }, &waitGroup)
 
-			// check whether an updated version is available
-			waitGroup.Add(1)
-			go r.runAsyncJob(func() { checkPluginVersions(r.currentState.InstallationID) }, &waitGroup)
-		}
+		// check whether an updated version is available
+		waitGroup.Add(1)
+		go r.runAsyncJob(func() { checkPluginVersions(r.currentState.InstallationID) }, &waitGroup)
 
 		// remove log files older than 7 days
 		waitGroup.Add(1)
@@ -59,6 +57,7 @@ func (r *Runner) runAsyncJob(job func(), wg *sync.WaitGroup) {
 
 // determines whether the task runner should run at all
 // tasks are to be run at most once every 24 hours
+// also, this is not to run in batch query mode
 func (r *Runner) shouldRun() bool {
 	now := time.Now()
 	if r.currentState.LastCheck == "" {
@@ -69,19 +68,16 @@ func (r *Runner) shouldRun() bool {
 		return true
 	}
 	minutesElapsed := now.Sub(lastCheckedAt).Minutes()
-	return minutesElapsed > minimumMinutesBetweenChecks
-}
 
-// returns whether to run update checks for the CLI
-// and its installed plugins
-// update-checks are to be disabled for batch query mode
-func (r *Runner) shouldRunUpdateChecks() bool {
-	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-	cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
-	if cmd.Name() == "query" && len(cmdArgs) > 0 {
-		// this is query batch mode
-		// we will not run update checks in this mode
-		return false
+	if minutesElapsed > minimumMinutesBetweenChecks {
+		cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+		cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
+		if cmd.Name() == "query" && len(cmdArgs) > 0 {
+			// this is query batch mode
+			// we will not run update checks in this mode
+			return false
+		}
+		return true
 	}
-	return true
+	return false
 }
