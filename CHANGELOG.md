@@ -1,9 +1,8 @@
 ## v0.4.1 [2021-04-22]
-_What's new?_
-* Do not run update checks when running `query` command non-interactively. ([#301](https://github.com/turbot/steampipe/issues/301))
 
 _Bug fixes_
 * Ensure we report an error and do not start database service if `port` is already in use. ([#399](https://github.com/turbot/steampipe/issues/399))
+* Update check should not run when executing `query` command non-interactively. ([#301](https://github.com/turbot/steampipe/issues/301))
 
 ## v0.4.0 [2021-04-15]
 _What's new?_
@@ -14,11 +13,9 @@ _What's new?_
 * The search path and search path prefix terminal sessions may be specified using `terminal` config, command line argument or meta-commands. ([#353](https://github.com/turbot/steampipe/issues/353),  [#357](https://github.com/turbot/steampipe/issues/358), [#358](https://github.com/turbot/steampipe/issues/358)) 
 
 ## v0.3.6 [2021-04-08]
-_What's new?_
-* Plugin updates are now listed alphabetically. ([#339](https://github.com/turbot/steampipe/issues/339))
-
 _Bug fixes_
 * Fix log trimming, which was broken by the change of log location. ([#344](https://github.com/turbot/steampipe/issues/344))
+* Plugin updates should be  listed alphabetically. ([#339](https://github.com/turbot/steampipe/issues/339))
 
 ## v0.3.5 [2021-04-02]
 _Bug fixes_
@@ -57,7 +54,6 @@ _What's new?_
 * Deprecate `db-port` and `listener` arguments, replace with `database-port` and `database-listener`. ([#302](https://github.com/turbot/steampipe/issues/302)) 
 
 ## v0.2.5 [2021-03-15]
-
 _Bug fixes_
 * Fix crash when installing a plugin after a fresh install. ([#283](https://github.com/turbot/steampipe/issues/283))
 * Fix `.inspect` meta-command failure if no arguments are provided. ([#282](https://github.com/turbot/steampipe/issues/282))
