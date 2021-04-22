@@ -74,7 +74,7 @@ func (r *Runner) shouldRun() bool {
 		cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
 		if cmd.Name() == "query" && len(cmdArgs) > 0 {
 			// this is query batch mode
-			// we will not run update checks in this mode
+			// we will not run scheduled tasks in this mode
 			return false
 		}
 		return true
