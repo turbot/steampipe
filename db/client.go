@@ -120,6 +120,26 @@ func createDbClient(dbname string, username string) (*sql.DB, error) {
 	return nil, fmt.Errorf("could not establish connection with database")
 }
 
+func executeSqlAsRoot(statements []string) ([]sql.Result, error) {
+	var results []sql.Result
+	rootClient, err := createSteampipeRootDbClient()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		rootClient.Close()
+	}()
+
+	for _, statement := range statements {
+		result, err := rootClient.Exec(statement)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+	return results, nil
+}
+
 // waits for the db to start accepting connections and returns true
 // returns false if the dbClient does not start within a stipulated time,
 func waitForConnection(conn *sql.DB) bool {

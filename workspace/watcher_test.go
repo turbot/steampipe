@@ -77,9 +77,9 @@ package workspace
 //	if err != nil {
 //		t.Fatalf("failed to load workspace: %v", err)
 //	}
-//	queryMap := workspace.GetNamedQueryMap()
-//	if len(queryMap) != 0 {
-//		t.Fatalf("expected initial map to be empty but got %+v", queryMap)
+//	QueryMap := workspace.GetNamedQueryMap()
+//	if len(QueryMap) != 0 {
+//		t.Fatalf("expected initial map to be empty but got %+v", QueryMap)
 //	}
 //
 //	for _, test := range testCasesWatcher {
@@ -92,11 +92,11 @@ package workspace
 //
 //		}
 //		// now check the result
-//		queryMap = workspace.GetNamedQueryMap()
-//		if queryMapsEqual(queryMap, test.expected) {
+//		QueryMap = workspace.GetNamedQueryMap()
+//		if queryMapsEqual(QueryMap, test.expected) {
 //			fmt.Printf("'%s' passed\n", test.name)
 //		} else {
-//			t.Fatalf("test '%s' failed: expected \n\n%+v\n\n got: \n\n%+v\n\n", test.name, test.expected, queryMap)
+//			t.Fatalf("test '%s' failed: expected \n\n%+v\n\n got: \n\n%+v\n\n", test.name, test.expected, QueryMap)
 //		}
 //	}
 //}

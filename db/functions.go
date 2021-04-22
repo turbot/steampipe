@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/turbot/steampipe/constants"
@@ -30,11 +29,8 @@ func refreshFunctions() error {
 		fmt.Sprintf(`grant usage on schema %s to steampipe_users;`, constants.FunctionSchema),
 	}
 	sql = append(sql, getFunctionAddStrings(constants.Functions)...)
-	if err := executeAddFunctionQuery(strings.Join(sql, ";")); err != nil {
-		// panic - this should never happen,
-		// since the function definitions are
-		// tightly bound to development
-		panic(err)
+	if _, err := executeSqlAsRoot(sql); err != nil {
+		return err
 	}
 	return nil
 }
@@ -78,21 +74,5 @@ $$;
 }
 
 func validateFunction(f schema.SQLFunc) error {
-	return nil
-}
-
-func executeAddFunctionQuery(functionQueryString string) error {
-	log.Println("[TRACE]", "executeAddFunctionQuery", "executing", functionQueryString)
-	client, err := createSteampipeRootDbClient()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		client.Close()
-	}()
-	_, err = client.Exec(functionQueryString)
-	if err != nil {
-		return err
-	}
 	return nil
 }

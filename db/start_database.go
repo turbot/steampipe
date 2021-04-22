@@ -73,7 +73,15 @@ func (slt Invoker) IsValid() error {
 }
 
 // StartDB :: start the database is not already running
-func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, error) {
+func StartDB(port int, listen StartListenType, invoker Invoker) (startResult StartResult, err error) {
+	defer func() {
+		// if there was an error and we started the service, stop it again
+		if err != nil {
+			if startResult == ServiceStarted {
+				StopDB(false, invoker)
+			}
+		}
+	}()
 	info, err := GetStatus()
 
 	if err != nil {
@@ -196,7 +204,9 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		return ServiceStarted, err
 	}
 
-	// TODO ADD COMMENT EXPLAINING WHY WE ARE NOT AUTO-REFRESHING
+	// create a client
+	// pass 'false' to disable auto refreshing connections
+	//- we will explicitly refresh connections after ensuring the steampipe server exists
 	client, err := NewClient(false)
 	if err != nil {
 		return ServiceFailedToStart, handleStartFailure(err)
@@ -223,21 +233,22 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (StartResult, er
 		}
 	}
 
-	err = client.setServiceSearchPath()
+	err = client.SetServiceSearchPath()
 	return ServiceStarted, err
 }
 
 // ensures that the `steampipe` fdw server exists
 // checks for it - (re)installs FDW and creates server if it doesn't
 func ensureSteampipeServer() error {
-	rawClient, err := createSteampipeRootDbClient()
+	rootClient, err := createSteampipeRootDbClient()
 	if err != nil {
 		return err
 	}
-	out := rawClient.QueryRow("select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
+	defer rootClient.Close()
+	out := rootClient.QueryRow("select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
 	var serverName string
 	err = out.Scan(&serverName)
-	rawClient.Close()
+
 	if err != nil {
 		return installSteampipeHub()
 	}
