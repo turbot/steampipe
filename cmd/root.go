@@ -25,11 +25,8 @@ var rootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
 	Version: version.String(),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if cmd.Name() == "query" && len(args) > 0 {
-			// this is the query batch mode.
-			// we do not want the checks to run here
-			return
-		}
+		viper.Set(constants.ConfigKeyActiveCommand, cmd)
+		viper.Set(constants.ConfigKeyActiveCommandArgs, args)
 		task.RunTasks()
 	},
 	Short: "Query cloud resources using SQL",
