@@ -1,3 +1,10 @@
+## v0.4.1 [2021-04-22]
+_What's new?_
+* Do not run update checks when running `query` command non-interactively. ([#301](https://github.com/turbot/steampipe/issues/301))
+
+_Bug fixes_
+* Ensure we report an error and do not start database service if `port` is already in use. ([#399](https://github.com/turbot/steampipe/issues/399))
+
 ## v0.4.0 [2021-04-15]
 _What's new?_
 * Named query support - all SQL file in current folder (or the folder specified by the `workspace` argument) will be loaded and available to run as `named queries`. ([#369](https://github.com/turbot/steampipe/issues/369)) 
