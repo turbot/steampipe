@@ -24,7 +24,12 @@ var exitCode int
 var rootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
 	Version: version.String(),
-	Short:   "Query cloud resources using SQL",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		viper.Set(constants.ConfigKeyActiveCommand, cmd)
+		viper.Set(constants.ConfigKeyActiveCommandArgs, args)
+		task.RunTasks()
+	},
+	Short: "Query cloud resources using SQL",
 	Long: `Query cloud resources using SQL.
 
 The available commands for execution are listed below.
@@ -62,7 +67,7 @@ func InitCmd() {
 	AddCommands()
 
 	// the `OnInitialize` callbacks are called right before PreRun
-	cobra.OnInitialize(initGlobalConfig, createLogger, task.RunTasks)
+	cobra.OnInitialize(initGlobalConfig, createLogger)
 }
 
 // initConfig reads in config file and ENV variables if set.
