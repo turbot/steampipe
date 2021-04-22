@@ -79,13 +79,23 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	queries := getQueries(args, workspace)
 
+	// get a db client
+	client, err := db.NewClient(true)
+	utils.FailOnError(err)
+
+	// populate the reflection tables
+	db.CreateReflectionTables(workspace, client)
+
 	// if no query is specified, run interactive prompt
 	if len(args) == 0 {
 		// interactive session creates its own client
-		runInteractiveSession(workspace)
+		runInteractiveSession(workspace, client)
 	} else if len(queries) > 0 {
-		// otherwsie if we have resolvced any queries, run them
-		failures := executeQueries(queries)
+		// ensure client is closed
+		defer client.Close()
+
+		// otherwise if we have resolved any queries, run them
+		failures := executeQueries(queries, client)
 		// set global exit code
 		exitCode = failures
 	}
@@ -118,7 +128,7 @@ func getQueries(args []string, workspace *workspace.Workspace) []string {
 	return queries
 }
 
-func runInteractiveSession(workspace *workspace.Workspace) {
+func runInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
 		err := workspace.SetupWatcher()
@@ -132,7 +142,7 @@ func runInteractiveSession(workspace *workspace.Workspace) {
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, true)
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.RunInteractivePrompt(workspace)
+	resultsStreamer, err := db.RunInteractivePrompt(workspace, client)
 	utils.FailOnError(err)
 
 	// print the data as it comes
@@ -143,14 +153,9 @@ func runInteractiveSession(workspace *workspace.Workspace) {
 	}
 }
 
-func executeQueries(queries []string) int {
+func executeQueries(queries []string, client *db.Client) int {
 	// set the flag to hide spinner
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
-
-	// first get a client - do this once for all queries
-	client, err := db.NewClient(true)
-	utils.FailOnError(err)
-	defer client.Close()
 
 	// run all queries
 	failures := 0

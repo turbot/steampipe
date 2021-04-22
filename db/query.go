@@ -35,11 +35,7 @@ func EnsureDbAndStartService(invoker Invoker) error {
 }
 
 // RunInteractivePrompt :: start the interactive query prompt
-func RunInteractivePrompt(workspace *workspace.Workspace) (*results.ResultStreamer, error) {
-	client, err := NewClient(true)
-	if err != nil {
-		return nil, err
-	}
+func RunInteractivePrompt(workspace *workspace.Workspace, client *Client) (*results.ResultStreamer, error) {
 	resultsStreamer := results.NewResultStreamer()
 
 	interactiveClient, err := newInteractiveClient(client, workspace)

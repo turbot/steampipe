@@ -21,7 +21,7 @@ var toStringPointer = utils.ToStringPointer
 var m3alias = "m3"
 
 // the actual mod loading logic is tested more thoroughly in TestLoadMod (steampipeconfig/load_mod_test.go)
-// this test is primarily to verify the queryMap building
+// this test is primarily to verify the QueryMap building
 var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 	"single mod": {
 		source: "test_data/w_1",
@@ -42,7 +42,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 					},
 				},
 			},
-			queryMap: map[string]*modconfig.Query{
+			QueryMap: map[string]*modconfig.Query{
 				"w_1.query.localq1": {
 					ShortName: toStringPointer("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
 				},
