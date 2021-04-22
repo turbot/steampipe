@@ -4,6 +4,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/statefile"
 )
@@ -12,7 +15,6 @@ const minimumMinutesBetweenChecks = 1440 // 1 day
 
 type Runner struct {
 	currentState statefile.State
-	shouldRun    bool
 }
 
 func RunTasks() {
@@ -22,21 +24,22 @@ func RunTasks() {
 func NewRunner() *Runner {
 	r := new(Runner)
 	r.currentState, _ = statefile.LoadState()
-	r.shouldRun = r.getShouldRun()
 	return r
 }
 
 func (r *Runner) Run() {
-	if r.shouldRun {
+	if r.getShouldRun() {
 		waitGroup := sync.WaitGroup{}
 
-		// check whether an updated version is available
-		waitGroup.Add(1)
-		go r.runAsyncJob(func() { checkSteampipeVersion(r.currentState.InstallationID) }, &waitGroup)
+		if r.shouldRunUpdateChecks() {
+			// check whether an updated version is available
+			waitGroup.Add(1)
+			go r.runAsyncJob(func() { checkSteampipeVersion(r.currentState.InstallationID) }, &waitGroup)
 
-		// check whether an updated version is available
-		waitGroup.Add(1)
-		go r.runAsyncJob(func() { checkPluginVersions(r.currentState.InstallationID) }, &waitGroup)
+			// check whether an updated version is available
+			waitGroup.Add(1)
+			go r.runAsyncJob(func() { checkPluginVersions(r.currentState.InstallationID) }, &waitGroup)
+		}
 
 		// remove log files older than 7 days
 		waitGroup.Add(1)
@@ -65,4 +68,15 @@ func (r *Runner) getShouldRun() bool {
 	}
 	minutesElapsed := now.Sub(lastCheckedAt).Minutes()
 	return minutesElapsed > minimumMinutesBetweenChecks
+}
+
+func (r *Runner) shouldRunUpdateChecks() bool {
+	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+	cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
+	if cmd.Name() == "query" && len(cmdArgs) > 0 {
+		// this is query batch mode
+		// we will not run update checks in this mode
+		return false
+	}
+	return true
 }
