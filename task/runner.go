@@ -28,7 +28,7 @@ func NewRunner() *Runner {
 }
 
 func (r *Runner) Run() {
-	if r.getShouldRun() {
+	if r.shouldRun() {
 		waitGroup := sync.WaitGroup{}
 
 		if r.shouldRunUpdateChecks() {
@@ -57,7 +57,9 @@ func (r *Runner) runAsyncJob(job func(), wg *sync.WaitGroup) {
 	wg.Done()
 }
 
-func (r *Runner) getShouldRun() bool {
+// determines whether the task runner should run at all
+// tasks are to be run at most once every 24 hours
+func (r *Runner) shouldRun() bool {
 	now := time.Now()
 	if r.currentState.LastCheck == "" {
 		return true
@@ -70,6 +72,9 @@ func (r *Runner) getShouldRun() bool {
 	return minutesElapsed > minimumMinutesBetweenChecks
 }
 
+// returns whether to run update checks for the CLI
+// and its installed plugins
+// update-checks are to be disabled for batch query mode
 func (r *Runner) shouldRunUpdateChecks() bool {
 	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
