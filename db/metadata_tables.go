@@ -13,47 +13,90 @@ import (
 const TagColumn = "column"
 const TagColumnType = "column_type"
 
-func UpdateMetadataTables(workspaceResource *modconfig.WorkspaceResourceMaps, client *Client) error {
-	// in transaction, delete current tables
-	return CreateMetadataTables(workspaceResource, client)
-}
-
-func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps,
-	client *Client) error {
-
-	// get the sql for columns which every table has
-	commonColumnSql := getColumnDefinitions(modconfig.ResourceMetadata{})
-
+func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client *Client) error {
 	// get the create sql for each table type
-	var createSql []string
-	createSql = append(createSql, getTableCreateSql(modconfig.Control{}, "steampipe_controls", commonColumnSql))
-	createSql = append(createSql, getTableCreateSql(modconfig.Query{}, "steampipe_queries", commonColumnSql))
-	createSql = append(createSql, getTableCreateSql(modconfig.ControlGroup{}, "steampipe_control_groups", commonColumnSql))
+	clearSql := getClearTablesSql()
 
-	_, err := client.ExecuteSync(strings.Join(createSql, "\n"))
-	if err != nil {
-		return err
-	}
+	// now get sql to populate the tables
+	insertSql := getTableInsertSql(workspaceResources)
 
-	// now populate the tables
-	var insertSql []string
-	for _, control := range workspaceResources.ControlMap {
-		insertSql = append(insertSql, getTableInsertSql(control, "steampipe_controls"))
+	sql := []string{
+		"begin;",
+		clearSql,
+		insertSql,
+		"commit;",
 	}
-	for _, query := range workspaceResources.QueryMap {
-		insertSql = append(insertSql, getTableInsertSql(query, "steampipe_queries"))
-	}
-	for _, controlGroup := range workspaceResources.ControlGroupMap {
-		insertSql = append(insertSql, getTableInsertSql(controlGroup, "steampipe_control_groups"))
-	}
-	if len(insertSql) > 0 {
-		_, err = client.ExecuteSync(strings.Join(insertSql, ";\n"))
-	}
+	_, err := client.ExecuteSync(strings.Join(sql, "\n"))
 
 	return err
 }
 
-func getTableCreateSql(s interface{}, tableName string, commonColumnSql []string) string {
+func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client *Client) error {
+	// get the sql for columns which every table has
+	commonColumnSql := getColumnDefinitions(modconfig.ResourceMetadata{})
+
+	// get the create sql for each table type
+	createSql := getCreateTablesSql(commonColumnSql)
+
+	// now get sql to populate the tables
+	insertSql := getTableInsertSql(workspaceResources)
+
+	sql := []string{
+		"begin;",
+		createSql,
+		insertSql,
+		"commit;",
+	}
+	_, err := client.ExecuteSync(strings.Join(sql, "\n"))
+
+	return err
+}
+
+func getCreateTablesSql(commonColumnSql []string) string {
+	var createSql []string
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, "steampipe_controls", commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, "steampipe_queries", commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ControlGroup{}, "steampipe_control_groups", commonColumnSql))
+	return strings.Join(createSql, "\n")
+}
+
+func getClearTablesSql() string {
+	var clearSql = []string{
+		"delete from steampipe_controls;",
+		"delete from steampipe_queries;",
+		"delete from steampipe_control_groups;",
+	}
+	return strings.Join(clearSql, "\n")
+}
+
+func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) string {
+	var insertSql []string
+
+	// the maps will have the same resource keyed by long and short name - avoid dupes
+	resourcesAdded := make(map[string]bool)
+
+	for _, control := range workspaceResources.ControlMap {
+		if _, added := resourcesAdded[control.Name()]; !added {
+			resourcesAdded[control.Name()] = true
+			insertSql = append(insertSql, getTableInsertSqlForResource(control, "steampipe_controls"))
+		}
+	}
+	for _, query := range workspaceResources.QueryMap {
+		if _, added := resourcesAdded[query.Name()]; !added {
+			resourcesAdded[query.Name()] = true
+			insertSql = append(insertSql, getTableInsertSqlForResource(query, "steampipe_queries"))
+		}
+	}
+	for _, controlGroup := range workspaceResources.ControlGroupMap {
+		if _, added := resourcesAdded[controlGroup.Name()]; !added {
+			resourcesAdded[controlGroup.Name()] = true
+			insertSql = append(insertSql, getTableInsertSqlForResource(controlGroup, "steampipe_control_groups"))
+		}
+	}
+	return strings.Join(insertSql, "\n")
+}
+
+func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnSql []string) string {
 	columnDefinitions := append(commonColumnSql, getColumnDefinitions(s)...)
 
 	tableSql := fmt.Sprintf(`create temp table %s (
@@ -62,7 +105,7 @@ func getTableCreateSql(s interface{}, tableName string, commonColumnSql []string
 	return tableSql
 }
 
-// get the sql column definitions for tagged properties if the item
+// get the sql column definitions for tagged properties of the item
 func getColumnDefinitions(item interface{}) []string {
 	t := reflect.TypeOf(item)
 
@@ -86,7 +129,7 @@ func getColumnDefinitions(item interface{}) []string {
 	return columnDef
 }
 
-func getTableInsertSql(item modconfig.ResourceWithMetadata, tableName string) string {
+func getTableInsertSqlForResource(item modconfig.ResourceWithMetadata, tableName string) string {
 
 	// for each item there is core reflection data (i.e. reflection resource all items have)
 	// and item specific reflection data
@@ -97,7 +140,7 @@ func getTableInsertSql(item modconfig.ResourceWithMetadata, tableName string) st
 
 	columns := append(columnsCore, columnsItem...)
 	values := append(valuesCore, valuesItem...)
-	insertSql := fmt.Sprintf(`insert into %s (%s) values(%s)`, tableName, strings.Join(columns, ","), strings.Join(values, ","))
+	insertSql := fmt.Sprintf(`insert into %s (%s) values(%s);`, tableName, strings.Join(columns, ","), strings.Join(values, ","))
 	return insertSql
 }
 
