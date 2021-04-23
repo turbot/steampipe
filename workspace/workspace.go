@@ -212,6 +212,7 @@ func (w *Workspace) SetupWatcher() error {
 		Exclude:     w.exclusions,
 		OnChange: func(ev fsnotify.Event) {
 			w.loadMod()
+			//db.UpdateMetadataTables(w, client)
 		},
 		//onError:          nil,
 	}

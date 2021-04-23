@@ -19,8 +19,8 @@ type Control struct {
 	// populated when we build tree
 	Parent ControlTreeItem
 
-	// reflection data
-	ReflectionData *CoreReflectionData
+	// resource metadata
+	Metadata *ResourceMetadata
 }
 
 func (c *Control) String() string {
@@ -52,7 +52,7 @@ func (c *Control) String() string {
 
 //LongName :: name in format: '<modName>.control.<shortName>'
 func (c *Control) LongName() string {
-	return fmt.Sprintf("%s.%s", types.SafeString(c.ReflectionData.Mod.ShortName), c.Name())
+	return fmt.Sprintf("%s.%s", c.Metadata.ModShortName, c.Name())
 }
 
 // AddChild  :: implementation of ControlTreeItem - controls cannot have children so just return error
@@ -86,7 +86,7 @@ func (c *Control) Path() []string {
 	return path
 }
 
-// GetCoreReflectionData :: implementation of ReflectionDataItem
-func (c *Control) GetCoreReflectionData() *CoreReflectionData {
-	return c.ReflectionData
+// GetMetadata :: implementation of ResourceWithMetadata
+func (c *Control) GetMetadata() *ResourceMetadata {
+	return c.Metadata
 }
