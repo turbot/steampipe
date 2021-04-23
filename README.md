@@ -50,13 +50,13 @@ steampipe query
 > select * from steampipe_registry_plugin;
 ```
 
-Further reading:
-* [Writing plugins](https://steampipe.io/docs/develop/writing-plugins)
-* [Writing your first table](https://steampipe.io/docs/develop/writing-your-first-table)
-
 ## Contributing
 
 Please see the [contribution guidelines](https://github.com/turbot/steampipe/blob/main/CONTRIBUTING.md) and our [code of conduct](https://github.com/turbot/steampipe/blob/main/CODE_OF_CONDUCT.md). All contributions are subject to the [MPL-2.0 open source license](https://github.com/turbot/steampipe-plugin-shodan/blob/main/LICENSE).
+
+Guides:
+* [Writing plugins](https://steampipe.io/docs/develop/writing-plugins)
+* [Writing your first table](https://steampipe.io/docs/develop/writing-your-first-table)
 
 `help wanted` issues:
 - [Steampipe](https://github.com/turbot/steampipe/labels/help%20wanted)
