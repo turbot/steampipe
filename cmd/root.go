@@ -60,9 +60,11 @@ func InitCmd() {
 
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace (default to current working directory) ")
+	rootCmd.PersistentFlags().Bool(constants.ArgCI, false, fmt.Sprintf("Set %s to run in CI mode", constants.Bold("steampipe")))
 
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 	viper.BindPFlag(constants.ArgWorkspace, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspace))
+	viper.BindPFlag(constants.ArgCI, rootCmd.PersistentFlags().Lookup(constants.ArgCI))
 
 	AddCommands()
 
