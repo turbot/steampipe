@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 )
 
 // StartSpinnerAfterDelay :: create a spinner with a given message and start
@@ -21,7 +23,7 @@ func StartSpinnerAfterDelay(msg string, delay time.Duration, cancelStartIf chan 
 		select {
 		case <-cancelStartIf:
 		case <-time.After(delay):
-			if spinner != nil && !spinner.Active() {
+			if spinner != nil && !spinner.Active() && !viper.GetBool(constants.ArgCI) {
 				spinner.Start()
 			}
 		}
@@ -39,7 +41,9 @@ func ShowSpinner(msg string) *spinner.Spinner {
 		spinner.WithWriter(os.Stdout),
 		spinner.WithSuffix(fmt.Sprintf(" %s", msg)),
 	)
-	s.Start()
+	if !viper.GetBool(constants.ArgCI) {
+		s.Start()
+	}
 	return s
 }
 
