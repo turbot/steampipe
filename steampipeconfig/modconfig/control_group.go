@@ -95,7 +95,7 @@ func (c *ControlGroup) SetParent(parent ControlTreeItem) error {
 // Name :: implementation of ControlTreeItem
 // return name in format: 'control.<shortName>'
 func (c *ControlGroup) Name() string {
-	return fmt.Sprintf("control.%s", types.SafeString(c.ShortName))
+	return fmt.Sprintf("control_group.%s", types.SafeString(c.ShortName))
 }
 
 // Path :: implementation of ControlTreeItem
