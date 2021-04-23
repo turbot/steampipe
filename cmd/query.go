@@ -58,7 +58,7 @@ Examples:
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runQueryCmd start")
-
+	var client *db.Client
 	defer func() {
 		logging.LogTime("runQueryCmd end")
 		if r := recover(); r != nil {
@@ -69,7 +69,9 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// start db if necessary
 	err := db.EnsureDbAndStartService(db.InvokerQuery)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
-	defer db.Shutdown(nil, db.InvokerQuery)
+	defer func() {
+		db.Shutdown(client, db.InvokerQuery)
+	}()
 
 	// load the workspace
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
@@ -80,11 +82,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	queries := getQueries(args, workspace)
 
 	// get a db client
-	client, err := db.NewClient(true)
+	client, err = db.NewClient(true)
 	utils.FailOnError(err)
 
 	// populate the reflection tables
-	db.CreateMetadataTables(workspace.GetResourceMaps(), client)
+	err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)
+	utils.FailOnError(err)
 
 	// if no query is specified, run interactive prompt
 	if len(args) == 0 {
@@ -131,7 +134,7 @@ func getQueries(args []string, workspace *workspace.Workspace) []string {
 func runInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
-		err := workspace.SetupWatcher()
+		err := workspace.SetupWatcher(client)
 		utils.FailOnError(err)
 	}
 

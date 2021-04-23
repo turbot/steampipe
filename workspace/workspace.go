@@ -12,6 +12,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -205,14 +206,15 @@ func (w *Workspace) buildControlGroupMap(modMap modconfig.ModMap) map[string]*mo
 	return res
 }
 
-func (w *Workspace) SetupWatcher() error {
+func (w *Workspace) SetupWatcher(client *db.Client) error {
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
 		OnChange: func(ev fsnotify.Event) {
 			w.loadMod()
-			//db.UpdateMetadataTables(w, client)
+			// todo detect differences and only refresh if necessary
+			db.UpdateMetadataTables(w.GetResourceMaps(), client)
 		},
 		//onError:          nil,
 	}
