@@ -8,18 +8,18 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/workspace"
 )
 
 const TagColumn = "column"
 const TagColumnType = "column_type"
 
-func UpdateMetadataTables(workspace *workspace.Workspace, client *Client) error {
+func UpdateMetadataTables(workspaceResource *modconfig.WorkspaceResourceMaps, client *Client) error {
 	// in transaction, delete current tables
-	return CreateMetadataTables(workspace, client)
+	return CreateMetadataTables(workspaceResource, client)
 }
 
-func CreateMetadataTables(workspace *workspace.Workspace, client *Client) error {
+func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps,
+	client *Client) error {
 
 	// get the sql for columns which every table has
 	commonColumnSql := getColumnDefinitions(modconfig.ResourceMetadata{})
@@ -37,13 +37,13 @@ func CreateMetadataTables(workspace *workspace.Workspace, client *Client) error 
 
 	// now populate the tables
 	var insertSql []string
-	for _, control := range workspace.ControlMap {
+	for _, control := range workspaceResources.ControlMap {
 		insertSql = append(insertSql, getTableInsertSql(control, "steampipe_controls"))
 	}
-	for _, query := range workspace.QueryMap {
+	for _, query := range workspaceResources.QueryMap {
 		insertSql = append(insertSql, getTableInsertSql(query, "steampipe_queries"))
 	}
-	for _, controlGroup := range workspace.ControlGroupMap {
+	for _, controlGroup := range workspaceResources.ControlGroupMap {
 		insertSql = append(insertSql, getTableInsertSql(controlGroup, "steampipe_control_groups"))
 	}
 	if len(insertSql) > 0 {

@@ -83,9 +83,8 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	client, err := db.NewClient(true)
 	utils.FailOnError(err)
 
-	// TODO ALSO CALL FROM WATCHER???
 	// populate the reflection tables
-	db.CreateMetadataTables(workspace, client)
+	db.CreateMetadataTables(workspace.GetResourceMaps(), client)
 
 	// if no query is specified, run interactive prompt
 	if len(args) == 0 {

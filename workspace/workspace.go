@@ -255,3 +255,11 @@ func (w *Workspace) LoadExclusions() error {
 
 	return nil
 }
+
+func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
+	return &modconfig.WorkspaceResourceMaps{
+		QueryMap:        w.QueryMap,
+		ControlMap:      w.ControlMap,
+		ControlGroupMap: w.ControlGroupMap,
+	}
+}
