@@ -17,8 +17,8 @@ type Query struct {
 	Description *string `hcl:"description" column:"description" column_type:"text"`
 	SQL         *string `hcl:"sql" column:"sql" column_type:"text"`
 
-	// reflection data
-	ReflectionData *CoreReflectionData
+	// resource metadata
+	Metadata *ResourceMetadata
 }
 
 func (q *Query) String() string {
@@ -71,15 +71,15 @@ func (q *Query) Name() string {
 
 // LongName :: name in format: '<modName>.control.<shortName>'
 func (q *Query) LongName() string {
-	return fmt.Sprintf("%s.%s", types.SafeString(q.ReflectionData.Mod.ShortName), q.Name())
+	return fmt.Sprintf("%s.%s", q.Metadata.ModShortName, q.Name())
 }
 
-// SetReflectionData :: implementation of MappableResource
-func (q *Query) SetReflectionData(reflectionData *CoreReflectionData) {
-	q.ReflectionData = reflectionData
+// SetMetadata :: implementation of MappableResource
+func (q *Query) SetMetadata(reflectionData *ResourceMetadata) {
+	q.Metadata = reflectionData
 }
 
-// GetCoreReflectionData :: implementation of ReflectionDataItem
-func (q *Query) GetCoreReflectionData() *CoreReflectionData {
-	return q.ReflectionData
+// GetMetadata :: implementation of ResourceWithMetadata
+func (q *Query) GetMetadata() *ResourceMetadata {
+	return q.Metadata
 }
