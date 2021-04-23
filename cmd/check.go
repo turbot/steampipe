@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	typeHelpers "github.com/turbot/go-kit/types"
+
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/spf13/cobra"
@@ -67,7 +69,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	if len(controls) > 0 {
 		// otherwise if we have resolvced any queries, run them
-		failures := executeControls(controls)
+		failures := executeControls(controls, workspace)
 		// set global exit code
 		exitCode = failures
 	}
@@ -89,7 +91,7 @@ func getControls(args []string, workspace *workspace.Workspace) ([]*modconfig.Co
 	return res, nil
 }
 
-func executeControls(controls []*modconfig.Control) int {
+func executeControls(controls []*modconfig.Control, workspace *workspace.Workspace) int {
 	// set the flag to hide spinner
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
@@ -101,7 +103,7 @@ func executeControls(controls []*modconfig.Control) int {
 	// run all queries
 	failures := 0
 	for i, c := range controls {
-		if err := executeControl(c, client); err != nil {
+		if err := executeControl(c, client, workspace); err != nil {
 			failures++
 			utils.ShowWarning(fmt.Sprintf("check #%d failed: %v", i+1, err))
 		}
@@ -113,9 +115,16 @@ func executeControls(controls []*modconfig.Control) int {
 	return failures
 }
 
-func executeControl(control *modconfig.Control, client *db.Client) error {
+func executeControl(control *modconfig.Control, client *db.Client, workspace *workspace.Workspace) error {
+	// resolve the query patameter of the control
+	query := getQueryFromArg(typeHelpers.SafeString(control.Query), workspace)
+	if query == "" {
+		// TODO is this an error  - for now just do nothing
+		return nil
+	}
+
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.ExecuteQuery(*control.Query, client)
+	resultsStreamer, err := db.ExecuteQuery(query, client)
 	if err != nil {
 		return err
 	}
