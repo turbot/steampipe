@@ -20,8 +20,8 @@ type ControlGroup struct {
 	Parent   ControlTreeItem
 	Children []ControlTreeItem
 
-	// reflection data
-	ReflectionData *CoreReflectionData
+	// resource metadata
+	Metadata *ResourceMetadata
 }
 
 func (c *ControlGroup) String() string {
@@ -67,7 +67,7 @@ func (c *ControlGroup) GetChildControls() []*Control {
 
 // LongName :: name in format: '<modName>.control.<shortName>'
 func (c *ControlGroup) LongName() string {
-	return fmt.Sprintf("%s.%s", types.SafeString(c.ReflectionData.Mod.ShortName), c.Name())
+	return fmt.Sprintf("%s.%s", c.Metadata.ModShortName, c.Name())
 }
 
 // AddChild :: implementation of ControlTreeItem
@@ -107,7 +107,7 @@ func (c *ControlGroup) Path() []string {
 	return path
 }
 
-// GetCommonReflectionData :: implementaiton of ReflectionDataItem
-func (c *ControlGroup) GetCoreReflectionData() *CoreReflectionData {
-	return c.ReflectionData
+// GetMetadata :: implementation of ResourceWithMetadata
+func (c *ControlGroup) GetMetadata() *ResourceMetadata {
+	return c.Metadata
 }

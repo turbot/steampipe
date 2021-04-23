@@ -215,29 +215,26 @@ func (m *Mod) Path() []string {
 	return []string{m.Name()}
 }
 
-func (m *Mod) SetQueries(queries map[string]*Query) {
+func (m *Mod) AddQueries(queries map[string]*Query) {
 	// add mod into the reflection data of each query
 	for _, q := range queries {
-		q.ReflectionData.Mod = m
-		q.ReflectionData.ModName = m.Name()
+		q.Metadata.SetMod(m)
 	}
 	m.Queries = queries
 }
 
-func (m *Mod) SetControls(controls map[string]*Control) {
+func (m *Mod) AddControls(controls map[string]*Control) {
 	// add mod into the reflection data of each query
 	for _, c := range controls {
-		c.ReflectionData.Mod = m
-		c.ReflectionData.ModName = m.Name()
+		c.Metadata.SetMod(m)
 	}
 	m.Controls = controls
 }
 
-func (m *Mod) SetControlGroups(controlGroups map[string]*ControlGroup) {
+func (m *Mod) AddControlGroups(controlGroups map[string]*ControlGroup) {
 	// add mod into the reflection data of each query
 	for _, c := range controlGroups {
-		c.ReflectionData.Mod = m
-		c.ReflectionData.ModName = m.Name()
+		c.Metadata.SetMod(m)
 	}
 	m.ControlGroups = controlGroups
 }

@@ -134,10 +134,10 @@ func parseControlGroup(block *hcl.Block) (*modconfig.ControlGroup, hcl.Diagnosti
 	return c, nil
 }
 
-func getReflectionDataForParsedResource(name string, block *hcl.Block, fileData map[string][]byte) *modconfig.CoreReflectionData {
+func getReflectionDataForParsedResource(name string, block *hcl.Block, fileData map[string][]byte) *modconfig.ResourceMetadata {
 	body := block.Body.(*hclsyntax.Body)
 
-	return &modconfig.CoreReflectionData{
+	return &modconfig.ResourceMetadata{
 		ResourceName:     name,
 		FileName:         body.SrcRange.Filename,
 		StartLineNumber:  body.SrcRange.Start.Line,
