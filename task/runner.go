@@ -57,7 +57,7 @@ func (r *Runner) runAsyncJob(job func(), wg *sync.WaitGroup) {
 
 // determines whether the task runner should run at all
 // tasks are to be run at most once every 24 hours
-// also, this is not to run in batch query mode
+// also, this is not to run in batch query mode and in CI mode (`--ci`)
 func (r *Runner) shouldRun() bool {
 	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
@@ -67,6 +67,9 @@ func (r *Runner) shouldRun() bool {
 		return false
 	}
 
+	if viper.GetBool(constants.ArgCI) {
+		return false
+	}
 	now := time.Now()
 	if r.currentState.LastCheck == "" {
 		return true
