@@ -201,10 +201,13 @@ func (m *Mod) SetParent(ControlTreeItem) error {
 // note - for mod, long name and short name are the same
 func (m *Mod) Name() string {
 	name := types.SafeString(m.ShortName)
+	// TODO think about name formats
 	if m.Version == nil {
-		return fmt.Sprintf("mod.%s", name)
+		//return fmt.Sprintf("mod.%s", name)
+		return name
 	}
-	return fmt.Sprintf("mod.%s@%s", name, types.SafeString(m.Version))
+	return fmt.Sprintf("%s@%s", name, types.SafeString(m.Version))
+	//return fmt.Sprintf("mod.%s@%s", name, types.SafeString(m.Version))
 }
 
 // Path :: implementation of ControlTreeItem
@@ -215,6 +218,7 @@ func (m *Mod) Path() []string {
 func (m *Mod) SetQueries(queries map[string]*Query) {
 	// add mod into the reflection data of each query
 	for _, q := range queries {
+		q.ReflectionData.Mod = m
 		q.ReflectionData.ModName = m.Name()
 	}
 	m.Queries = queries
@@ -223,6 +227,7 @@ func (m *Mod) SetQueries(queries map[string]*Query) {
 func (m *Mod) SetControls(controls map[string]*Control) {
 	// add mod into the reflection data of each query
 	for _, c := range controls {
+		c.ReflectionData.Mod = m
 		c.ReflectionData.ModName = m.Name()
 	}
 	m.Controls = controls
@@ -231,6 +236,7 @@ func (m *Mod) SetControls(controls map[string]*Control) {
 func (m *Mod) SetControlGroups(controlGroups map[string]*ControlGroup) {
 	// add mod into the reflection data of each query
 	for _, c := range controlGroups {
+		c.ReflectionData.Mod = m
 		c.ReflectionData.ModName = m.Name()
 	}
 	m.ControlGroups = controlGroups
