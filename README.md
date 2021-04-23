@@ -1,4 +1,4 @@
-![image](https://steampipe.io/images/steampipe-social-preview-2.png)
+![image](https://steampipe.io/images/steampipe-social-preview-4.png)
 
 # Steampipe CLI quick start
 
