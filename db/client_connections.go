@@ -8,6 +8,7 @@ import (
 
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -51,8 +52,8 @@ func (c *Client) RefreshConnections() (bool, error) {
 		}()
 		// in query, this can only start when in interactive
 		if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
-			spin := utils.ShowSpinner("Refreshing connections...")
-			defer utils.StopSpinner(spin)
+			spin := display.ShowSpinner("Refreshing connections...")
+			defer display.StopSpinner(spin)
 		}
 
 		// first instantiate connection plugins for all updates

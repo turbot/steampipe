@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/definitions/results"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -44,7 +45,7 @@ func (c *Client) executeQuery(query string, countStream bool) (*results.QueryRes
 	if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
 		// if showspinner is false, the spinner gets created, but is never shown
 		// so the s.Active() will always come back false . . .
-		spinner = utils.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)
+		spinner = display.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)
 	} else {
 		// no point in showing count if we don't have the spinner
 		countStream = false
@@ -55,7 +56,7 @@ func (c *Client) executeQuery(query string, countStream bool) (*results.QueryRes
 
 	if err != nil {
 		// in case the query takes a long time to fail
-		utils.StopSpinner(spinner)
+		display.StopSpinner(spinner)
 		return nil, err
 	}
 
@@ -97,19 +98,19 @@ func (c *Client) executeQuery(query string, countStream bool) (*results.QueryRes
 
 			if !countStream {
 				// stop the spinner if we don't want to show load count
-				utils.StopSpinner(spinner)
+				display.StopSpinner(spinner)
 			}
 
 			// we have started populating results
 			result.StreamRow(rowResult)
 
 			// update the spinner message with the count of rows that have already been fetched
-			utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
+			display.UpdateSpinnerMessage(spinner, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
 			rowCount++
 		}
 
 		// we are done fetching results. time for display. remove the spinner
-		utils.StopSpinner(spinner)
+		display.StopSpinner(spinner)
 
 		// set the time that it took for this one to execute
 		result.Duration <- time.Since(start)
