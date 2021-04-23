@@ -1,45 +1,63 @@
-<p align="center">
-  <a href="https://steampipe.io">
-    <img src="https://steampipe.io/images/steampipe_logo_wordmark_color.svg" height="48">
-  </a>
-  <h2 align="center">
-    The extensible SQL interface to your favorite cloud APIs.<br />&nbsp;
-  </h2>
-</p>
+![image](https://steampipe.io/images/steampipe-social-preview-4.png)
 
-<p align="center">
-  <a aria-label="Steampipe version" href="https://steampipe.io/download">
-    <img alt="" src="https://img.shields.io/static/v1?label=cli&message=v0.4.1&style=for-the-badge&labelColor=777777&color=F3F1F0">
-  </a>
-  &nbsp;
-  <a aria-label="License" href="LICENSE">
-    <img alt="" src="https://img.shields.io/static/v1?label=license&message=MPL-2.0&style=for-the-badge&labelColor=777777&color=F3F1F0">
-  </a>
-  &nbsp;
-  <a aria-label="Join the community on GitHub" href="https://github.com/turbot/steampipe/discussions">
-    <img alt="" src="https://img.shields.io/badge/Join%20the%20community-F3F1F0.svg?style=for-the-badge&logo=GitHub&labelColor=777777&logoWidth=20">
-  </a>
-</p>
-<p align="center">&nbsp;</p>
+# Steampipe CLI quick start
 
-## Getting Started
+* **[Get started →](https://steampipe.io/downloads)**
+* Install your favorite [plugins](https://hub.steampipe.io/plugins)
+* Documentation: [Table definitions & examples](https://steampipe.io/docs)
+* Community: [Slack Channel](https://join.slack.com/t/steampipe/shared_invite/zt-oij778tv-lYyRTWOTMQYBVAbtPSWs3g)
+* Get involved: [Issues](https://github.com/turbot/steampipe/issues)
 
-Visit https://steampipe.io/downloads to download Steampipe.
+# Developing
 
-## Documentation
+Prerequisites:
+- [Golang](https://golang.org/doc/install) Version 1.16 or higher.
 
-Visit https://steampipe.io/docs for full documentation on everything Steampipe.
+Clone:
 
-## Plugins
+```sh
+git clone git@github.com:turbot/steampipe
+cd steampipe
+```
 
-Looking for plugins? Checkout [The Steampipe Hub](https://hub.steampipe.io/) to browse available plugins and schema docs.
+Build, which automatically installs the new version to your `/usr/local/bin/steampipe` directory:
+```
+make
+```
 
-## Community
+Check the verison
+```
+$ steampipe -v
+steampipe version 0.4.0
+```
 
-The Steampipe community can be found on [GitHub Discussions](https://github.com/turbot/steampipe/discussions), where you can ask questions, voice ideas, and share your projects.
+Install a plugin
+```
+$ steampipe plugin install steampipe
+```
 
-Our [Code of Conduct](/CODE_OF_CONDUCT.md) applies to all Steampipe community channels.
+Try it!
+```
+steampipe query
+> .inspect steampipe
++-----------------------------------+-----------------------------------+
+| TABLE                             | DESCRIPTION                       |
++-----------------------------------+-----------------------------------+
+| steampipe_registry_plugin         | Steampipe Registry Plugins        |
+| steampipe_registry_plugin_version | Steampipe Registry Plugin Version |
++-----------------------------------+-----------------------------------+
+
+> select * from steampipe_registry_plugin;
+```
 
 ## Contributing
 
-Please see our [CONTRIBUTING.md](/CONTRIBUTING.md)
+Please see the [contribution guidelines](https://github.com/turbot/steampipe/blob/main/CONTRIBUTING.md) and our [code of conduct](https://github.com/turbot/steampipe/blob/main/CODE_OF_CONDUCT.md). All contributions are subject to the [MPL-2.0 open source license](https://github.com/turbot/steampipe-plugin-shodan/blob/main/LICENSE).
+
+Guides:
+* [Writing plugins](https://steampipe.io/docs/develop/writing-plugins)
+* [Writing your first table](https://steampipe.io/docs/develop/writing-your-first-table)
+
+`help wanted` issues:
+- [Steampipe](https://github.com/turbot/steampipe/labels/help%20wanted)
+- [Plugin Repos](https://github.com/topics/steampipe-plugin)
