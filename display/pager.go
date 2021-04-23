@@ -35,6 +35,11 @@ func isPagerNeeded(content string) bool {
 		return false
 	}
 
+	// do not show pager if in CI mode (even for interactive)
+	if viper.GetBool(constants.ArgCI) {
+		return false
+	}
+
 	maxCols, maxRow, _ := gows.GetWinSize()
 
 	// let's scan through it instead of iterating over it fully
