@@ -9,6 +9,10 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 )
 
+type DirectoryWatchOptions struct {
+	Name      string
+	Recursive bool
+}
 type FileWatcher struct {
 	watch *fsnotify.Watcher
 	// directories to watch

@@ -152,3 +152,30 @@ package workspace
 //	}
 //	return true
 //}
+
+//func (c *Control) Equals(other *Control) bool {
+//	return types.SafeString(c.Name) == types.SafeString(other.Name) &&
+//		types.SafeString(c.Title) == types.SafeString(other.Title) &&
+//		types.SafeString(c.Description) == types.SafeString(other.Description) &&
+//		types.SafeString(c.SQL) == types.SafeString(other.SQL) &&
+//		types.SafeString(c.Links) == types.SafeString(other.Links) &&
+//		reflect.DeepEqual(c.Tags, other.Tags)
+//}
+
+//func (c *ControlGroup) Equals(other *Control) bool {
+//	return types.SafeString(c.Name) == types.SafeString(other.Name) &&
+//		types.SafeString(c.Title) == types.SafeString(other.Title) &&
+//		types.SafeString(c.Description) == types.SafeString(other.Description) &&
+//		reflect.DeepEqual(c.Labels, other.Labels) &&
+//		c.Parent == other.Parent z
+//
+//
+//}
+
+//
+//func (q *Query) Equals(other *Query) bool {
+//	return types.SafeString(q.Name) == types.SafeString(other.Name) &&
+//		types.SafeString(q.Title) == types.SafeString(other.Title) &&
+//		types.SafeString(q.Description) == types.SafeString(other.Description) &&
+//		types.SafeString(q.SQL) == types.SafeString(other.SQL)
+//}

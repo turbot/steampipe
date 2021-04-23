@@ -150,16 +150,17 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Query)
 
-	// for LOCAL queries, add map entries keyed by both short name: query.xxxx and  long name: <workspace>.query.xxxx
+	// for LOCAL queries, add map entries keyed by both short name: query.<shortName> and  long name: <modName>.query.<shortName?
 	for _, q := range w.Mod.Queries {
-		shortName := fmt.Sprintf("query.%s", types.SafeString(q.ShortName))
-		res[shortName] = q
+		res[q.Name()] = q
+		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.ShortName), types.SafeString(q.ShortName))
+		res[longName] = q
 	}
 
 	// for mode dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
-			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.Name), types.SafeString(q.ShortName))
+			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.ShortName), types.SafeString(q.ShortName))
 			res[longName] = q
 		}
 	}
@@ -170,17 +171,16 @@ func (w *Workspace) buildControlMap(modMap modconfig.ModMap) map[string]*modconf
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Control)
 
-	// for LOCAL controls, add map entries keyed by both short name: query.xxxx and  long name: <workspace>.query.xxxx
+	// for LOCAL controls, add map entries keyed by both short name: control.<shortName> and  long name: <modName>.control.<shortName?
 	for _, c := range w.Mod.Controls {
-		shortName := fmt.Sprintf("control.%s", types.SafeString(c.ShortName))
-		res[shortName] = c
+		res[c.Name()] = c
+		res[c.LongName()] = c
 	}
 
 	// for mode dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, c := range mod.Controls {
-			longName := fmt.Sprintf("%s.control.%s", types.SafeString(mod.Name), types.SafeString(c.ShortName))
-			res[longName] = c
+			res[c.LongName()] = c
 		}
 	}
 	return res
@@ -190,17 +190,16 @@ func (w *Workspace) buildControlGroupMap(modMap modconfig.ModMap) map[string]*mo
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.ControlGroup)
 
-	// for LOCAL controls, add map entries keyed by both short name: query.xxxx and  long name: <workspace>.query.xxxx
+	// for LOCAL controls, add map entries keyed by both short name: control_group.<shortName> and  long name: <modName>.control_group.<shortName?
 	for _, c := range w.Mod.ControlGroups {
-		shortName := fmt.Sprintf("control_group.%s", types.SafeString(c.Name))
-		res[shortName] = c
+		res[c.Name()] = c
+		res[c.LongName()] = c
 	}
 
-	// for mode dependencies, add queries keyed by long name only
+	// for mod dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, c := range mod.ControlGroups {
-			longName := fmt.Sprintf("%s.control_group.%s", types.SafeString(mod.Name), types.SafeString(c.Name))
-			res[longName] = c
+			res[c.LongName()] = c
 		}
 	}
 	return res
