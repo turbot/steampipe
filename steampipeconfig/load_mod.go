@@ -167,7 +167,7 @@ func parseModHcl(modPath string, fileData map[string][]byte, opts *LoadModOption
 				})
 				continue
 			}
-			query.Metadata = getReflectionDataForParsedResource(types.SafeString(query.ShortName), block, fileData)
+			query.Metadata = getMetadataForParsedResource(query.Name(), block, fileData)
 			queries[name] = query
 
 		case modconfig.BlockTypeControl:
@@ -185,7 +185,7 @@ func parseModHcl(modPath string, fileData map[string][]byte, opts *LoadModOption
 				})
 				continue
 			}
-			control.Metadata = getReflectionDataForParsedResource(control.Name(), block, fileData)
+			control.Metadata = getMetadataForParsedResource(control.Name(), block, fileData)
 			controls[name] = control
 
 		case modconfig.BlockTypeControlGroup:
@@ -203,7 +203,7 @@ func parseModHcl(modPath string, fileData map[string][]byte, opts *LoadModOption
 				})
 				continue
 			}
-			controlGroup.Metadata = getReflectionDataForParsedResource(controlGroup.Name(), block, fileData)
+			controlGroup.Metadata = getMetadataForParsedResource(controlGroup.Name(), block, fileData)
 			controlGroups[name] = controlGroup
 		}
 	}
