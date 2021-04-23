@@ -75,8 +75,8 @@ func (q *Query) LongName() string {
 }
 
 // SetMetadata :: implementation of MappableResource
-func (q *Query) SetMetadata(reflectionData *ResourceMetadata) {
-	q.Metadata = reflectionData
+func (q *Query) SetMetadata(metadata *ResourceMetadata) {
+	q.Metadata = metadata
 }
 
 // GetMetadata :: implementation of ResourceWithMetadata
