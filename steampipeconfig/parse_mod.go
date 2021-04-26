@@ -26,20 +26,29 @@ func parseMod(block *hcl.Block) (*modconfig.Mod, hcl.Diagnostics) {
 
 	for _, block := range content.Blocks {
 		switch block.Type {
-		case "mod_depends":
-			modDependency, moreDiags := parseModVersion(block)
+		// TODO add parsing of requires block
+		//case "mod_depends":
+		//	modDependency, moreDiags := parseModVersion(block)
+		//	if moreDiags.HasErrors() {
+		//		diags = append(diags, moreDiags...)
+		//		break
+		//	}
+		//	mod.ModDepends = append(mod.ModDepends, modDependency)
+		//case "plugin_depends":
+		//	pluginDependency, moreDiags := parsePluginDependency(block)
+		//	if moreDiags.HasErrors() {
+		//		diags = append(diags, moreDiags...)
+		//		break
+		//	}
+		//	mod.PluginDepends = append(mod.PluginDepends, pluginDependency)
+
+		case "opengraph":
+			opengraph, moreDiags := parseOpenGraph(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				break
 			}
-			mod.ModDepends = append(mod.ModDepends, modDependency)
-		case "plugin_depends":
-			pluginDependency, moreDiags := parsePluginDependency(block)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-				break
-			}
-			mod.PluginDepends = append(mod.PluginDepends, pluginDependency)
+			mod.OpenGraph = opengraph
 		}
 	}
 
@@ -47,27 +56,25 @@ func parseMod(block *hcl.Block) (*modconfig.Mod, hcl.Diagnostics) {
 }
 
 func parseModAttributes(content *hcl.BodyContent, mod *modconfig.Mod) hcl.Diagnostics {
-
 	var diags hcl.Diagnostics
-	if content.Attributes["title"] != nil {
-		moreDiags := gohcl.DecodeExpression(content.Attributes["title"].Expr, nil, &mod.Title)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
-	}
-	if content.Attributes["description"] != nil {
-		moreDiags := gohcl.DecodeExpression(content.Attributes["description"].Expr, nil, &mod.Description)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
-	}
-	if content.Attributes["version"] != nil {
-		moreDiags := gohcl.DecodeExpression(content.Attributes["version"].Expr, nil, &mod.Version)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
-	}
+	diags = append(diags, parseAttribute("color", &mod.Color, content)...)
+	diags = append(diags, parseAttribute("description", &mod.Description, content)...)
+	diags = append(diags, parseAttribute("documentation", &mod.Documentation, content)...)
+	diags = append(diags, parseAttribute("icon", &mod.Icon, content)...)
+	diags = append(diags, parseAttribute("labels", &mod.Labels, content)...)
+	diags = append(diags, parseAttribute("title", &mod.Title, content)...)
 
+	return diags
+}
+
+func parseAttribute(name string, dest interface{}, content *hcl.BodyContent) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	if content.Attributes[name] != nil {
+		moreDiags := gohcl.DecodeExpression(content.Attributes[name].Expr, nil, dest)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+		}
+	}
 	return diags
 }
 
@@ -86,6 +93,18 @@ func parseModVersion(block *hcl.Block) (*modconfig.ModVersion, hcl.Diagnostics) 
 func parsePluginDependency(block *hcl.Block) (*modconfig.PluginDependency, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var dest = &modconfig.PluginDependency{}
+
+	diags = gohcl.DecodeBody(block.Body, nil, dest)
+	if diags.HasErrors() {
+		return nil, diags
+	}
+
+	return dest, nil
+}
+
+func parseOpenGraph(block *hcl.Block) (*modconfig.OpenGraph, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	var dest = &modconfig.OpenGraph{}
 
 	diags = gohcl.DecodeBody(block.Body, nil, dest)
 	if diags.HasErrors() {

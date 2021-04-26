@@ -179,13 +179,14 @@ func executeControls(controls []*modconfig.Control, workspace *workspace.Workspa
 }
 
 func executeControl(control *modconfig.Control, workspace *workspace.Workspace, client *db.Client) error {
-	// resolve the query patameter of the control
-	query, _ := getQueryFromArg(typeHelpers.SafeString(control.Query), workspace)
+	var query string
+	// resolve the query parameter of the control
+	query, _ = getQueryFromArg(typeHelpers.SafeString(control.Query), workspace)
 	if query == "" {
-		// TODO is this an error  - for now just do nothing
+		utils.ShowWarning(fmt.Sprintf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typeHelpers.SafeString(control.Query)))
+		// TODO is this an error
 		return nil
 	}
-
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.ExecuteQuery(query, client)
 	if err != nil {

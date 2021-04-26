@@ -61,21 +61,39 @@ var modFileSchema = &hcl.BodySchema{
 }
 
 var modSchema = &hcl.BodySchema{
+	// NOTE: these must be consistent with the properties of the Mod struct steampipeconfig/modconfig/mod.go
 	Attributes: []hcl.AttributeSchema{
 		{
-			Name: "title",
+			Name: "color",
 		},
 		{
 			Name: "description",
 		},
-	},
-	Blocks: []hcl.BlockHeaderSchema{
-
 		{
-			Type: "mod_depends",
+			Name: "documentation",
 		},
 		{
-			Type: "plugin_depends",
+			Name: "description",
+		},
+		{
+			Name: "icon",
+		},
+		{
+			Name: "description",
+		},
+		{
+			Name: "labels",
+		},
+		{
+			Name: "title",
+		},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type: "requires",
+		},
+		{
+			Type: "opengraph",
 		},
 	},
 }
