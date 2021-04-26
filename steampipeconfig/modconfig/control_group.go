@@ -9,12 +9,13 @@ import (
 )
 
 type ControlGroup struct {
-	ShortName   *string
-	Title       *string   `hcl:"title" column:"title" column_type:"varchar(40)"`
+	ShortName *string
+
 	Description *string   `hcl:"description" column:"description" column_type:"text"`
+	Labels      *[]string `hcl:"labels" column:"labels" column_type:"text[]"`
+	ParentName  *string   `hcl:"parent" column:"parent" column_type:"text"`
 	Query       *string   `hcl:"query" column:"query" column_type:"text"`
-	Labels      *[]string `hcl:"labels" column:"labels" column_type:"varchar(40)[]"`
-	ParentName  *string   `hcl:"parent" column:"parent" column_type:"varchar(40)"`
+	Title       *string   `hcl:"title" column:"title" column_type:"text"`
 
 	// populated when we build tree
 	Parent   ControlTreeItem

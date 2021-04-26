@@ -140,7 +140,7 @@ func getQueryFromArg(arg string, workspace *workspace.Workspace) (string, bool) 
 		return fileQuery, true
 	}
 
-	// 3) just use the arg string as is
+	// 3) just use the arg string as is and assume it is valid SQL
 	return arg, false
 }
 
