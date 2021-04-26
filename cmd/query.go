@@ -110,7 +110,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 func getQueries(args []string, workspace *workspace.Workspace) []string {
 	var queries []string
 	for _, arg := range args {
-		query := getQueryFromArg(arg, workspace)
+		query, _ := getQueryFromArg(arg, workspace)
 		if len(query) > 0 {
 			queries = append(queries, query)
 		}
@@ -119,10 +119,11 @@ func getQueries(args []string, workspace *workspace.Workspace) []string {
 }
 
 // attempt to resolve 'arg' to a query
-func getQueryFromArg(arg string, workspace *workspace.Workspace) string {
+// if the arg was a named query or a sql file, return 'true for the second return value
+func getQueryFromArg(arg string, workspace *workspace.Workspace) (string, bool) {
 	// 1) is this a named query
 	if namedQuery, ok := workspace.GetNamedQuery(arg); ok {
-		return typeHelpers.SafeString(namedQuery.SQL)
+		return typeHelpers.SafeString(namedQuery.SQL), true
 	}
 
 	// 	2) is this a file
@@ -130,17 +131,17 @@ func getQueryFromArg(arg string, workspace *workspace.Workspace) string {
 	if fileExists {
 		if err != nil {
 			utils.ShowWarning(fmt.Sprintf("error opening file '%s': %v", arg, err))
-			return ""
+			return "", false
 		}
 		if len(fileQuery) == 0 {
 			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", arg))
-			// (just return the empty string - it wil be filtered above)
+			// (just return the empty string - it will be filtered above)
 		}
-		return fileQuery
+		return fileQuery, true
 	}
 
 	// 3) just use the arg string as is
-	return arg
+	return arg, false
 }
 
 func runInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
