@@ -14,56 +14,52 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Stub
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Unshallow
+        run: git fetch
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Hook private repo
+        run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release --snapshot --rm-dist --skip-publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Move build artifacts
         run: |
-          echo "do nothing"
+          mkdir ~/artifacts
+          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
+          mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
 
-      # - name: Checkout
-      #   uses: actions/checkout@v2
-      #   with:
-      #     ref: ${{ github.event.inputs.branch }}
+      - name: List Build Artifacts
+        run: ls -l ~/artifacts
 
-      # - name: Unshallow
-      #   run: git fetch
+      - name: Save Linux Build Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifact-linux
+          path: ~/artifacts/linux.tar.gz
+          if-no-files-found: error
 
-      # - name: Set up Go
-      #   uses: actions/setup-go@v2
-      #   with:
-      #     go-version: 1.16
-
-      # - name: Hook private repo
-      #   run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
-
-      # - name: Run GoReleaser
-      #   uses: goreleaser/goreleaser-action@v2
-      #   with:
-      #     version: latest
-      #     args: release --snapshot --rm-dist --skip-publish
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # - name: Move build artifacts
-      #   run: |
-      #     mkdir ~/artifacts
-      #     mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
-      #     mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
-
-      # - name: List Build Artifacts
-      #   run: ls -l ~/artifacts
-
-      # - name: Save Linux Build Artifact
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: build-artifact-linux
-      #     path: ~/artifacts/linux.tar.gz
-      #     if-no-files-found: error
-
-      # - name: Save MacOS Build Artifact
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: build-artifact-darwin
-      #     path: ~/artifacts/darwin.zip
-      #     if-no-files-found: error
+      - name: Save MacOS Build Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifact-darwin
+          path: ~/artifacts/darwin.zip
+          if-no-files-found: error
 
   acceptance_test:
     name: Acceptance tests
@@ -78,90 +74,70 @@ jobs:
         run: |
           echo "nothing"
 
-      # - name: Checkout
-      #   uses: actions/checkout@v2
-      #   with:
-      #     submodules: true
-      #     ref: ${{ github.event.inputs.branch }}
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+          ref: ${{ github.event.inputs.branch }}
 
-      # - name: Setup BATS
-      #   uses: mig4/setup-bats@v1
-      #   with:
-      #     bats-version: 1.2.1
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: 1.2.1
 
-      # - name: Prepare for downloads
-      #   id: prepare-for-downloads
-      #   run: |
-      #     mkdir ~/artifacts
+      - name: Prepare for downloads
+        id: prepare-for-downloads
+        run: |
+          mkdir ~/artifacts
 
-      # - name: Download Linux Build Artifacts
-      #   uses: actions/download-artifact@v2
-      #   if: ${{ matrix.platform == 'ubuntu-latest' }}
-      #   with:
-      #     name: build-artifact-linux
-      #     path: ~/artifacts
+      - name: Download Linux Build Artifacts
+        uses: actions/download-artifact@v2
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        with:
+          name: build-artifact-linux
+          path: ~/artifacts
 
-      # - name: Download Darwin Build Artifacts
-      #   uses: actions/download-artifact@v2
-      #   if: ${{ matrix.platform == 'macos-latest' }}
-      #   with:
-      #     name: build-artifact-darwin
-      #     path: ~/artifacts
+      - name: Download Darwin Build Artifacts
+        uses: actions/download-artifact@v2
+        if: ${{ matrix.platform == 'macos-latest' }}
+        with:
+          name: build-artifact-darwin
+          path: ~/artifacts
 
-      # - name: Extract Darwin Artifacts and Install Binary
-      #   if: ${{ matrix.platform == 'macos-latest' }}
-      #   run: |
-      #     mkdir ~/build
-      #     unzip ~/artifacts/darwin.zip -d ~/build
+      - name: Extract Darwin Artifacts and Install Binary
+        if: ${{ matrix.platform == 'macos-latest' }}
+        run: |
+          mkdir ~/build
+          unzip ~/artifacts/darwin.zip -d ~/build
 
-      # - name: Extract Ubuntu Artifacts and Install Binary
-      #   if: ${{ matrix.platform == 'ubuntu-latest' }}
-      #   run: |
-      #     mkdir ~/build
-      #     tar -xf ~/artifacts/linux.tar.gz -C ~/build
+      - name: Extract Ubuntu Artifacts and Install Binary
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: |
+          mkdir ~/build
+          tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
-      # - name: Set PATH
-      #   run: |
-      #     echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+      - name: Set PATH
+        run: |
+          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
-      # - name: Install DB
-      #   run: |
-      #     steampipe service start
-      #     steampipe plugin install chaos
-      #     steampipe service stop --force
+      - name: Install DB
+        run: |
+          steampipe service start
+          steampipe plugin install chaos
+          steampipe service stop --force
 
-      # - name: Run Test Suite
-      #   timeout-minutes: 5
-      #   run: |
-      #     chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-      #     $GITHUB_WORKSPACE/tests/acceptance/run.sh
-      #     steampipe service stop --force
+      - name: Run Test Suite
+        timeout-minutes: 5
+        run: |
+          chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          steampipe service stop --force
         
   create_release:
     name: Release
     needs: acceptance_test
     runs-on: ubuntu-latest
     steps:
-      - name: Stub
-        run: |
-          echo "nothing"
-      
-      # - name: Checkout
-      #   uses: actions/checkout@v2
-      #   with:
-      #     ref: ${{ github.event.inputs.branch }}
-
-      # - name: Unshallow
-      #   run: git fetch --prune --unshallow
-
-      # - name: Set up Go
-      #   uses: actions/setup-go@v2
-      #   with:
-      #     go-version: 1.16
-
-      # - name: Hook private repo
-      #   run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
-
       - name: Getting Last Release
         id: last_release
         uses: pozetroninc/github-action-get-latest-release@master
@@ -189,20 +165,27 @@ jobs:
         run: |
           echo ${{ steps.next_version.outputs.next_version }}
 
-      # - name: Tag Release
-      #   run: |
-      #     git config user.name "Steampipe GitHub Actions Bot (Canary)"
-      #     git config user.email noreply@github.com
-      #     git tag ${{ steps.next_version.outputs.next_version }}
-      #     git push origin ${{ steps.next_version.outputs.next_version }}
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
 
-      # - name: Run GoReleaser
-      #   uses: goreleaser/goreleaser-action@v2
-      #   with:
-      #     version: latest
-      #     args: release --rm-dist
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Hook private repo
+        run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release --snapshot --rm-dist --skip-publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Release
+        run: |
+          gh release create ${{ steps.next_version.outputs.next_version }} $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip --title ${{ steps.next_version.outputs.next_version }} --prerelease --draft
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   clean_up:
     # let's clean up the artifacts.
