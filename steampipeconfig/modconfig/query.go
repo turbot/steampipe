@@ -12,10 +12,15 @@ import (
 )
 
 type Query struct {
-	ShortName   *string
-	Title       *string `hcl:"title" column:"title" column_type:"varchar(40)"`
-	Description *string `hcl:"description" column:"description" column_type:"text"`
-	SQL         *string `hcl:"sql" column:"sql" column_type:"text"`
+	ShortName *string
+
+	Description      *string   `hcl:"description" column:"description" column_type:"text"`
+	Documentation    *string   `hcl:"documentation" column:"documentation" column_type:"text"`
+	Labels           *[]string `hcl:"labels" column:"labels" column_type:"text[]"`
+	SQL              *string   `hcl:"sql" column:"sql" column_type:"text"`
+	SearchPath       *string   `hcl:"search_path" column:"search_path" column_type:"text"`
+	SearchPathPrefix *string   `hcl:"search_path_prefix" column:"search_path_prefix" column_type:"text"`
+	Title            *string   `hcl:"title" column:"title" column_type:"text"`
 
 	// resource metadata
 	Metadata *ResourceMetadata

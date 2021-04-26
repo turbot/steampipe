@@ -8,20 +8,21 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
 )
 
 // GetTableAutoCompleteSuggestions :: derives and returns tables for typeahead
 func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *steampipeconfig.ConnectionMap) []prompt.Suggest {
-	s := []prompt.Suggest{}
+	var s []prompt.Suggest
 
 	// schema names
-	schemasToAdd := []string{}
-	// unqualified table names
-	unqualifiedTablesToAdd := []string{}
+	var schemasToAdd []string
+	// unqualified table names - initialise to the reflection table names
+	unqualifiedTablesToAdd := constants.ReflectionTableNames()
 	// fully qualified table names
-	qualifiedTablesToAdd := []string{}
+	var qualifiedTablesToAdd []string
 
 	// keep track of which plugins we have added unqualified tables for
 	pluginSchemaMap := map[string]bool{}

@@ -59,3 +59,14 @@ var ReservedConnectionNames = []string{
 	"public",
 	FunctionSchema,
 }
+
+// reflection table names
+const (
+	ReflectionTableQuery        = "steampipe_query"
+	ReflectionTableControl      = "steampipe_control"
+	ReflectionTableControlGroup = "steampipe_control_group"
+)
+
+func ReflectionTableNames() []string {
+	return []string{ReflectionTableControl, ReflectionTableControlGroup, ReflectionTableQuery}
+}

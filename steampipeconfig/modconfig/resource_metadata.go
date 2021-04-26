@@ -9,9 +9,9 @@ type ResourceWithMetadata interface {
 
 // ResourceMetadata :: additional data we collect about each resource to populate the reflection tables
 type ResourceMetadata struct {
-	ResourceName string `column:"resource_name" column_type:"varchar(40)"`
+	ResourceName string `column:"resource_name" column_type:"text"`
 	// mod name in the format mod.<modName>@<version?
-	ModName          string `column:"mod_name" column_type:"varchar(40)"`
+	ModName          string `column:"mod_name" column_type:"text"`
 	FileName         string `column:"file_name" column_type:"text"`
 	StartLineNumber  int    `column:"start_line_number" column_type:"integer"`
 	EndLineNumber    int    `column:"end_line_number" column_type:"integer"`

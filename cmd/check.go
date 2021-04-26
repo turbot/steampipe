@@ -122,14 +122,14 @@ func getControls(args []string, workspace *workspace.Workspace, client *db.Clien
 	return res, nil
 }
 
-// query the steampipe_controls table, using the given query
+// query the steampipe_control table, using the given query
 func getControlsFromMetadataQuery(whereArg string, workspace *workspace.Workspace, client *db.Client) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
 	query, isNamedQuery := getQueryFromArg(whereArg, workspace)
 
 	// if the query is NOT a named query, we need to construct a full query by adding a select
 	if !isNamedQuery {
-		query = fmt.Sprintf("select resource_name from steampipe_controls where %s", whereArg)
+		query = fmt.Sprintf("select resource_name from %s where %s", constants.ReflectionTableControl, whereArg)
 	}
 
 	res, err := client.ExecuteSync(query)
@@ -179,13 +179,14 @@ func executeControls(controls []*modconfig.Control, workspace *workspace.Workspa
 }
 
 func executeControl(control *modconfig.Control, workspace *workspace.Workspace, client *db.Client) error {
-	// resolve the query patameter of the control
-	query, _ := getQueryFromArg(typeHelpers.SafeString(control.Query), workspace)
+	var query string
+	// resolve the query parameter of the control
+	query, _ = getQueryFromArg(typeHelpers.SafeString(control.Query), workspace)
 	if query == "" {
-		// TODO is this an error  - for now just do nothing
+		utils.ShowWarning(fmt.Sprintf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typeHelpers.SafeString(control.Query)))
+		// TODO is this an error
 		return nil
 	}
-
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.ExecuteQuery(query, client)
 	if err != nil {
