@@ -48,8 +48,11 @@ func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 		"commit;",
 	}
 	_, err := client.ExecuteSync(strings.Join(sql, "\n"))
+	if err != nil {
+		return fmt.Errorf("failed to create reflection tables: %v", err)
+	}
 
-	return err
+	return nil
 }
 
 func getCreateTablesSql(commonColumnSql []string) string {

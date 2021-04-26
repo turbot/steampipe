@@ -12,15 +12,25 @@ import (
 )
 
 type Mod struct {
-	ShortName     *string
-	Title         *string `hcl:"title"`
-	Description   *string `hcl:"description"`
-	Version       *string
+	ShortName *string
+
+	// note these must be consistent with the attributes defined in 'modSchema'
+	Color         *string   `column:"color" column_type:"text"`
+	Description   *string   `column:"description" column_type:"text"`
+	Documentation *string   `column:"documentation" column_type:"text"`
+	Icon          *string   `column:"icon" column_type:"text"`
+	Labels        *[]string `column:"labels" column_type:"text[]"`
+	Title         *string   `column:"title" column_type:"text"`
+
+	// TODO do we need this?
+	Version *string
+
 	ModDepends    []*ModVersion
 	PluginDepends []*PluginDependency
 	Queries       map[string]*Query
 	Controls      map[string]*Control
 	ControlGroups map[string]*ControlGroup
+	OpenGraph     *OpenGraph
 
 	// direct children in the control tree
 	Children []ControlTreeItem
