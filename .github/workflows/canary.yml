@@ -165,6 +165,14 @@ jobs:
         run: |
           echo ${{ steps.next_version.outputs.next_version }}
 
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Unshallow
+        run: git fetch
+        
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
