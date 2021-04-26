@@ -75,32 +75,45 @@ func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
 	return nil, false
 }
 
-func (w *Workspace) GetControls(controlName string) ([]*modconfig.Control, bool) {
+// GetControlsForArg :: resolve the arg into one or more controls
+func (w *Workspace) GetControlsForArg(arg string) []*modconfig.Control {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	// if the name starts with 'local', remove the prefix and try to resolve the short name
-	controlName = strings.TrimPrefix(controlName, "local.")
-
-	// if controlName is in fact a controlgroup,  get all controls underneath thje control group
-	name, err := modconfig.ParseModResourceName(controlName)
+	// if arg is in fact a controlGroup,  get all controls underneath the control group
+	name, err := modconfig.ParseModResourceName(arg)
 	if err != nil {
-		return nil, false
+		return nil
+	}
+	if name.ItemType == modconfig.BlockTypeControlGroup {
+		// look in the workspace control group map for this control group
+		if controlGroup, ok := w.ControlGroupMap[arg]; ok {
+			return controlGroup.GetChildControls()
+		}
+		return nil
 	}
 
-	switch name.ItemType {
-	case modconfig.BlockTypeControl:
-		// look in the workspace control map for this control
-		if control, ok := w.ControlMap[controlName]; ok {
-			return []*modconfig.Control{control}, true
-		}
-	case modconfig.BlockTypeControlGroup:
-		// look in the workspace control group map for this control group
-		if controlGroup, ok := w.ControlGroupMap[controlName]; ok {
-			return controlGroup.GetChildControls(), true
+	// check whether the arg is a control name (removing a 'local' prefix if there is one)
+	if control, ok := w.ControlMap[strings.TrimPrefix(arg, "local.")]; ok {
+		return []*modconfig.Control{control}
+	}
+
+	// so arg is not a control group or a control name - check the following possible scopes:
+	// 1) 'all' - all controls from all mods
+	// 2) '<modName>' - all controls from mod <modName>
+	var result []*modconfig.Control
+	// the workspace resource maps have duplicate entries, keyed by long and short name.
+	// keep track of which controls we have identified in order to avoid dupes
+	controlsMatched := make(map[string]bool)
+	for _, c := range w.ControlMap {
+		if _, alreadyMatched := controlsMatched[c.Name()]; !alreadyMatched {
+			if arg == "all" || arg == c.Metadata.ModShortName {
+				controlsMatched[c.Name()] = true
+				result = append(result, c)
+			}
 		}
 	}
-	return nil, false
+	return result
 }
 
 func (w *Workspace) loadMod() error {

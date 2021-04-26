@@ -29,7 +29,7 @@ type InteractiveClient struct {
 	autocompleteOnEmpty     bool
 }
 
-func newInteractiveClient(client *Client, workspace NamedQueryProvider) (*InteractiveClient, error) {
+func newInteractiveClient(workspace NamedQueryProvider, client *Client) (*InteractiveClient, error) {
 	return &InteractiveClient{
 		client:                  client,
 		workspace:               workspace,
