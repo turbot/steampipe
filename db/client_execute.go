@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -50,7 +51,8 @@ func (c *Client) executeQuery(query string, countStream bool) (*results.QueryRes
 		countStream = false
 	}
 
-	rows, err := c.dbClient.Query(query)
+	ctx := context.Background()
+	rows, err := c.dbClient.QueryContext(ctx, query)
 	queryDone <- true
 
 	if err != nil {
@@ -65,7 +67,7 @@ func (c *Client) executeQuery(query string, countStream bool) (*results.QueryRes
 	}
 	cols, err := rows.Columns()
 
-	result := results.NewQueryResult(colTypes)
+	result := results.NewQueryResult(colTypes, &ctx)
 
 	rowCount := 0
 
