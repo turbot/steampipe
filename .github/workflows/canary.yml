@@ -175,8 +175,10 @@ jobs:
       - name: Hook private repo
         run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
 
-      - name: Installing yq
-        uses: mikefarah/yq@v4.7.1
+      - name: Install yq
+        run: |
+          sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.6.3/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
 
       - name: Setting up goreleaser to build with canary version string
         run: |
