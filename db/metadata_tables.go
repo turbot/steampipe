@@ -1,6 +1,7 @@
 package db
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -198,7 +199,13 @@ func pgValue(item interface{}) string {
 			items = append(items, elementString)
 		}
 
-		res := PgEscapeString(fmt.Sprintf(`["%s"]`, strings.Join(items, ",")))
+		jsonBytes, err := json.Marshal(items)
+		if err != nil {
+			// TODO handler errors up the chain
+			return ""
+		}
+
+		res := PgEscapeString(fmt.Sprintf(`%s`, string(jsonBytes)))
 		return res
 	default:
 		return PgEscapeString(typeHelpers.ToString(item))
