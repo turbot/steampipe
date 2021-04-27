@@ -1,12 +1,9 @@
 name: Canary Release
 on:
   schedule:
-    # At minute 0 past every 2nd hour on every day-of-week from Monday through Friday.
+    # At 2300 hour on every day-of-week from Monday through Friday.
     # https://crontab.guru/#0_22_*_*_*
-    - cron: '0 22 * * 1,2,3,4,5'
-  pull_request:
-    branches:
-      - main
+    - cron: '0 23 * * 1,2,3,4,5'
 
 jobs:
   build:
