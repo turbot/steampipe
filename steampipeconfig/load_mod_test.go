@@ -6,11 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/turbot/steampipe/utils"
-
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
-
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 // TODO add tests for reflection data
@@ -23,8 +22,10 @@ type loadModTest struct {
 }
 
 var loadWorkspaceOptions = &LoadModOptions{
-	Exclude: []string{fmt.Sprintf("**/%s*", constants.WorkspaceDataDir)},
-	Flags:   CreatePseudoResources | CreateDefaultMod,
+	Flags: CreatePseudoResources | CreateDefaultMod,
+	ListOptions: &filehelpers.ListOptions{
+		Exclude: []string{fmt.Sprintf("**/%s*", constants.WorkspaceDataDir)},
+	},
 }
 
 var testCasesLoadMod = map[string]loadModTest{
@@ -103,7 +104,7 @@ var testCasesLoadMod = map[string]loadModTest{
 					ShortName:   toStringPointer("c1"),
 					Title:       toStringPointer("C1"),
 					Description: toStringPointer("THIS IS CONTROL 1"),
-					Query:       toStringPointer("select 'pass' as result"),
+					SQL:         toStringPointer("select 'pass' as result"),
 					Labels:      &[]string{"demo", "prod", "steampipe"},
 				},
 			},
