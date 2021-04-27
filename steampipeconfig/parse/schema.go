@@ -1,11 +1,11 @@
-package steampipeconfig
+package parse
 
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-var configSchema = &hcl.BodySchema{
+var ConfigSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
@@ -19,7 +19,7 @@ var configSchema = &hcl.BodySchema{
 	},
 }
 
-var connectionSchema = &hcl.BodySchema{
+var ConnectionSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name:     "plugin",
@@ -34,7 +34,7 @@ var connectionSchema = &hcl.BodySchema{
 	},
 }
 
-var modFileSchema = &hcl.BodySchema{
+var ModFileSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
 	Blocks: []hcl.BlockHeaderSchema{
 		{

@@ -84,7 +84,7 @@ func (q *Query) SetMetadata(metadata *ResourceMetadata) {
 	q.Metadata = metadata
 }
 
-// GetMetadata :: implementation of ResourceWithMetadata
+// GetMetadata :: implementation of ResourceWithMetadata and MappableResource
 func (q *Query) GetMetadata() *ResourceMetadata {
 	return q.Metadata
 }

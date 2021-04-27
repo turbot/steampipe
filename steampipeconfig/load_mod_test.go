@@ -7,9 +7,13 @@ import (
 	"testing"
 
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
+
+	"github.com/turbot/steampipe/utils"
+
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/utils"
+
 )
 
 // TODO add tests for reflection data

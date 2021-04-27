@@ -7,13 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
 )
 
 // Op describes a set of file operations.
@@ -41,7 +40,7 @@ func (o *LoadModOptions) CreatePseudoResources() bool {
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, opts *LoadModOptions) (mod *modconfig.Mod, err error) {
+func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
@@ -49,13 +48,34 @@ func LoadMod(modPath string, opts *LoadModOptions) (mod *modconfig.Mod, err erro
 	}()
 
 	if opts == nil {
-		opts = &LoadModOptions{}
+		opts = &parse.ParseModOptions{}
 	}
 	// verify the mod folder exists
 	if _, err := os.Stat(modPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("mod folder %s does not exist", modPath)
 	}
 
+	var pseudoResources []modconfig.MappableResource
+	// if flag is set, create pseudo resources by mapping files
+	if opts.CreatePseudoResources() {
+		// now execute any pseudo-resource creations based on file mappings
+		pseudoResources, err = createPseudoResources(modPath, opts)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// now parse the mod, passing the pseudo resources
+	// load the raw data
+	mod, err = parseMod(modPath, pseudoResources, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return
+}
+
+func parseMod(modPath string, pseudoResources []modconfig.MappableResource, opts *parse.ParseModOptions) (*modconfig.Mod, error) {
 	// build list of all filepaths we need to parse/load
 	// NOTE: pseudo resource creation is handled separately below
 	opts.ListOptions.Include = filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension})
@@ -65,29 +85,13 @@ func LoadMod(modPath string, opts *LoadModOptions) (mod *modconfig.Mod, err erro
 		return nil, err
 	}
 
-	// load the raw data
-	fileData, diags := loadFileData(sourcePaths)
+	fileData, diags := parse.LoadFileData(sourcePaths)
 	if diags.HasErrors() {
-		log.Printf("[WARN] LoadMod: failed to load all mod files: %v\n", err)
 		return nil, plugin.DiagsToError("Failed to load all mod files", diags)
 	}
 
 	// parse all hcl files.
-	mod, err = parseModHcl(modPath, fileData, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// if flag is set, create pseudo resources by mapping files
-	if opts.CreatePseudoResources() {
-		// now execute any pseudo-resource creations based on file mappings
-		err = createPseudoResources(modPath, mod, opts)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return
+	return parse.ParseModHcl(modPath, fileData, pseudoResources, opts)
 }
 
 // GetModFileExtensions :: return list of all file extensions we care about
@@ -108,135 +112,19 @@ func getSourcePaths(modPath string, opts *LoadModOptions) ([]string, error) {
 	return sourcePaths, nil
 }
 
-// parse all source hcl files for the mod and associated resources
-func parseModHcl(modPath string, fileData map[string][]byte, opts *LoadModOptions) (*modconfig.Mod, error) {
-	var mod *modconfig.Mod
-
-	body, diags := parseHclFiles(fileData)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
-	}
-
-	content, moreDiags := body.Content(modFileSchema)
-	if moreDiags.HasErrors() {
-		diags = append(diags, moreDiags...)
-		return nil, plugin.DiagsToError("Failed to load mod", diags)
-	}
-
-	var queries = make(map[string]*modconfig.Query)
-	var controls = make(map[string]*modconfig.Control)
-	var controlGroups = make(map[string]*modconfig.ControlGroup)
-	for _, block := range content.Blocks {
-		blockType := modconfig.ModBlockType(block.Type)
-		switch blockType {
-		//case "variable":
-		//	// TODO
-		case modconfig.BlockTypeMod:
-			// if there is more than one mod, fail
-			if mod != nil {
-				return nil, fmt.Errorf("more than 1 mod definition found in %s", modPath)
-			}
-
-			mod, moreDiags = parseMod(block)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-
-		case modconfig.BlockTypeQuery:
-			query, moreDiags := parseQuery(block)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-				break
-			}
-			name := *query.ShortName
-			if _, ok := queries[name]; ok {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("mod defines more that one query named %s", name),
-					Subject:  &block.DefRange,
-				})
-				continue
-			}
-			query.Metadata = getMetadataForParsedResource(query.Name(), block, fileData)
-			queries[name] = query
-
-		case modconfig.BlockTypeControl:
-			control, moreDiags := parseControl(block)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-				break
-			}
-			name := *control.ShortName
-			if _, ok := controls[name]; ok {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("mod defines more that one control named %s", name),
-					Subject:  &block.DefRange,
-				})
-				continue
-			}
-			control.Metadata = getMetadataForParsedResource(control.Name(), block, fileData)
-			controls[name] = control
-
-		case modconfig.BlockTypeControlGroup:
-			controlGroup, moreDiags := parseControlGroup(block)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-				break
-			}
-			name := types.SafeString(controlGroup.ShortName)
-			if _, ok := controlGroups[name]; ok {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("mod defines more that one control group named %s", name),
-					Subject:  &block.DefRange,
-				})
-				continue
-			}
-			controlGroup.Metadata = getMetadataForParsedResource(controlGroup.Name(), block, fileData)
-			controlGroups[name] = controlGroup
-		}
-	}
-
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to parse all mod hcl files", diags)
-	}
-
-	// is there a mod resource definition?
-	if mod == nil {
-		// should we creaste a default mod?
-		if !opts.CreateDefaultMod() {
-			// CreateDefaultMod flag NOT set - fail
-			return nil, fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
-		}
-		// just create a default mod
-		mod = defaultWorkspaceMod()
-	}
-	// assign queries, controls and control groups to mod.
-	// NOTE: This updates the 'ModName' and 'ModShortName' fields in the metadata of each resource
-	mod.AddQueries(queries)
-	mod.AddControls(controls)
-	mod.AddControlGroups(controlGroups)
-
-	// no tell mod to build tree of controls
-	if err := mod.BuildControlTree(); err != nil {
-		return nil, err
-	}
-
-	return mod, nil
-}
-
 // create pseudo-resources for any files whose extensions are registered
 // NOTE: this mutates parseResults
-func createPseudoResources(modPath string, mod *modconfig.Mod, opts *LoadModOptions) error {
+func createPseudoResources(modPath string, opts *parse.ParseModOptions) ([]modconfig.MappableResource, error) {
 	// list all registered files
 	opts.ListOptions.Include = filehelpers.InclusionsFromExtensions(modconfig.RegisteredFileExtensions())
 	sourcePaths, err := getSourcePaths(modPath, opts)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var errors []error
+	var res []modconfig.MappableResource
+
 	// for every source path:
 	// - if it is NOT a registered type, skip
 	// [- if an existing resource has already referred directly to this file, skip] *not yet*
@@ -251,11 +139,9 @@ func createPseudoResources(modPath string, mod *modconfig.Mod, opts *LoadModOpti
 			continue
 		}
 		if resource != nil {
-			metadata := getPseudoResourceMetadata(resource.Name(), mod, path, fileData)
+			metadata := getPseudoResourceMetadata(resource.Name(), path, fileData)
 			resource.SetMetadata(metadata)
-			if err := addResourceIfUnique(resource, mod, path); err != nil {
-				errors = append(errors, err)
-			}
+			res = append(res, resource)
 		}
 	}
 
@@ -266,10 +152,10 @@ func createPseudoResources(modPath string, mod *modconfig.Mod, opts *LoadModOpti
 		}
 	}
 
-	return nil
+	return res, nil
 }
 
-func getPseudoResourceMetadata(name string, mod *modconfig.Mod, path string, fileData []byte) *modconfig.ResourceMetadata {
+func getPseudoResourceMetadata(name string, path string, fileData []byte) *modconfig.ResourceMetadata {
 	sourceDefinition := string(fileData)
 	split := strings.Split(sourceDefinition, "\n")
 	lineCount := len(split)
@@ -282,7 +168,7 @@ func getPseudoResourceMetadata(name string, mod *modconfig.Mod, path string, fil
 		IsAutoGenerated:  true,
 		SourceDefinition: sourceDefinition,
 	}
-	m.SetMod(mod)
+
 	return m
 }
 

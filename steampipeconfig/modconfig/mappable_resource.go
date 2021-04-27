@@ -8,5 +8,6 @@ type MappableResource interface {
 
 	Name() string
 
+	GetMetadata() *ResourceMetadata
 	SetMetadata(*ResourceMetadata)
 }

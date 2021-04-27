@@ -7,6 +7,8 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/ahmetb/go-linq v3.0.0+incompatible
+	github.com/apparentlymart/go-cidr v1.1.0
+	github.com/bmatcuk/doublestar v1.3.4
 	github.com/briandowns/spinner v1.11.1
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/containerd/containerd v1.4.1
@@ -20,6 +22,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.1
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.3.0
+	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/go-version v1.2.1
 	github.com/hashicorp/hcl/v2 v2.8.2
 	github.com/jedib0t/go-pretty/v6 v6.0.6
@@ -27,6 +30,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lib/pq v1.8.0
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/olekukonko/tablewriter v0.0.4
@@ -41,8 +45,13 @@ require (
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.7.1
 	github.com/turbot/go-kit v0.1.4-rc.1
+	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b // indirect
+	github.com/turbot/go-kit v0.1.4-rc.0
 	github.com/turbot/steampipe-plugin-sdk v0.3.0-rc.0
 	github.com/ulikunitz/xz v0.5.8
+	github.com/zclconf/go-cty v1.7.1
+	github.com/zclconf/go-cty-yaml v1.0.2
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/text v0.3.4
 	google.golang.org/grpc v1.33.1
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
-
 	"github.com/turbot/go-kit/types"
 )
 
@@ -34,8 +33,20 @@ type Mod struct {
 
 	// direct children in the control tree
 	Children []ControlTreeItem
+
+	// mod directory
+	ModPath string
 }
 
+func NewMod(shortName, modPath string) *Mod {
+	return &Mod{
+		ShortName:     &shortName,
+		Queries:       make(map[string]*Query),
+		Controls:      make(map[string]*Control),
+		ControlGroups: make(map[string]*ControlGroup),
+		ModPath:       modPath,
+	}
+}
 func (m *Mod) FullName() string {
 	if m.Version == nil {
 		return types.SafeString(m.Name)
@@ -225,26 +236,40 @@ func (m *Mod) Path() []string {
 	return []string{m.Name()}
 }
 
-func (m *Mod) AddQueries(queries map[string]*Query) {
-	// add mod into the reflection data of each query
-	for _, q := range queries {
-		q.Metadata.SetMod(m)
-	}
-	m.Queries = queries
-}
+//
+//func (m *Mod) AddQueries(queries map[string]*Query) {
+//	// add mod into the reflection data of each query
+//	for _, q := range queries {
+//		q.Metadata.SetMod(m)
+//	}
+//	m.Queries = queries
+//}
+//
+//func (m *Mod) AddControls(controls map[string]*Control) {
+//	// add mod into the reflection data of each query
+//	for _, c := range controls {
+//		c.Metadata.SetMod(m)
+//	}
+//	m.Controls = controls
+//}
+//
+//func (m *Mod) AddControlGroups(controlGroups map[string]*ControlGroup) {
+//	// add mod into the reflection data of each query
+//	for _, c := range controlGroups {
+//		c.Metadata.SetMod(m)
+//	}
+//	m.ControlGroups = controlGroups
+//}
 
-func (m *Mod) AddControls(controls map[string]*Control) {
-	// add mod into the reflection data of each query
-	for _, c := range controls {
-		c.Metadata.SetMod(m)
+// AddPseudoResource :: add resource to parse results, if there is no resource of same name
+func (m *Mod) AddPseudoResource(resource MappableResource) {
+	switch r := resource.(type) {
+	case *Query:
+		// check there is not already a query with the same name
+		if _, ok := m.Queries[r.Name()]; !ok {
+			m.Queries[r.Name()] = r
+			// set the mod on the query metadata
+			r.Metadata.SetMod(m)
+		}
 	}
-	m.Controls = controls
-}
-
-func (m *Mod) AddControlGroups(controlGroups map[string]*ControlGroup) {
-	// add mod into the reflection data of each query
-	for _, c := range controlGroups {
-		c.Metadata.SetMod(m)
-	}
-	m.ControlGroups = controlGroups
 }

@@ -1,4 +1,4 @@
-package steampipeconfig
+package modconfig
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ type Connection struct {
 
 // set the options on the connection
 // verify the options is a valid options type (only options.Connection currently supported)
-func (c *Connection) setOptions(opts options.Options, block *hcl.Block) hcl.Diagnostics {
+func (c *Connection) SetOptions(opts options.Options, block *hcl.Block) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	switch o := opts.(type) {
 	case *options.Connection:

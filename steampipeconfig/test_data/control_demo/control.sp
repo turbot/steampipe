@@ -32,6 +32,8 @@ control "c3"{
 control "c4"{
     description = "control 4"
     sql = "select 'control 4' as control, 'pass' as result"
+    severity = "terrible"
+    query = "select 'control 4' as control, 'pass' as result"
     parent = "control_group.cg_1_1_2"
 }
 control "c5"{

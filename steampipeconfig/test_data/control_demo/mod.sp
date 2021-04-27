@@ -1,7 +1,7 @@
 mod "m1" {
   # hub metadata
-  title = "AWS CIS"
-  description = "AWS CIS Reporting and remediation"
+  title = upper("aws cis")
+  description = control.c1.description
   color = "#FF9900"
   icon = "/images/plugins/turbot/aws.svg"
   labels = [
