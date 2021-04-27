@@ -2,9 +2,10 @@ package metaquery
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"strings"
 
 	"github.com/turbot/go-kit/helpers"
 )
@@ -110,7 +111,7 @@ var exactlyNArgs = func(n int) validator {
 		numArgs := len(args)
 		if numArgs != n {
 			return ValidationResult{
-				Err: fmt.Errorf("command needs %d argument(s) - got %d", n, numArgs),
+				Err: fmt.Errorf("command needs %d argument(s) - got %d, please pass valid argument(s) with the command.", n, numArgs),
 			}
 		}
 		return ValidationResult{
