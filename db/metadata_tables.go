@@ -7,6 +7,7 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -57,17 +58,16 @@ func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 
 func getCreateTablesSql(commonColumnSql []string) string {
 	var createSql []string
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, "steampipe_controls", commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, "steampipe_queries", commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ControlGroup{}, "steampipe_control_groups", commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.ReflectionTableControl, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.ReflectionTableQuery, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ControlGroup{}, constants.ReflectionTableControlGroup, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
 
 func getClearTablesSql() string {
-	var clearSql = []string{
-		"delete from steampipe_controls;",
-		"delete from steampipe_queries;",
-		"delete from steampipe_control_groups;",
+	var clearSql []string
+	for _, t := range constants.ReflectionTableNames() {
+		clearSql = append(clearSql, fmt.Sprintf("delete from %s;", t))
 	}
 	return strings.Join(clearSql, "\n")
 }
@@ -81,19 +81,19 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	for _, control := range workspaceResources.ControlMap {
 		if _, added := resourcesAdded[control.Name()]; !added {
 			resourcesAdded[control.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(control, "steampipe_controls"))
+			insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.ReflectionTableControl))
 		}
 	}
 	for _, query := range workspaceResources.QueryMap {
 		if _, added := resourcesAdded[query.Name()]; !added {
 			resourcesAdded[query.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(query, "steampipe_queries"))
+			insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.ReflectionTableQuery))
 		}
 	}
 	for _, controlGroup := range workspaceResources.ControlGroupMap {
 		if _, added := resourcesAdded[controlGroup.Name()]; !added {
 			resourcesAdded[controlGroup.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(controlGroup, "steampipe_control_groups"))
+			insertSql = append(insertSql, getTableInsertSqlForResource(controlGroup, constants.ReflectionTableControlGroup))
 		}
 	}
 	return strings.Join(insertSql, "\n")
