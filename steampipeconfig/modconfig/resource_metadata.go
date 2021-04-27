@@ -1,12 +1,5 @@
 package modconfig
 
-import "github.com/turbot/go-kit/types"
-
-// ResourceWithMetadata :: a mod resource which supports metadata
-type ResourceWithMetadata interface {
-	GetMetadata() *ResourceMetadata
-}
-
 // ResourceMetadata :: additional data we collect about each resource to populate the reflection tables
 type ResourceMetadata struct {
 	ResourceName string `column:"resource_name" column_type:"text"`
@@ -24,8 +17,8 @@ type ResourceMetadata struct {
 
 // SetMod set the mod name and mod short name
 func (m *ResourceMetadata) SetMod(mod *Mod) {
-	m.ModShortName = types.SafeString(mod.ShortName)
-	m.ModName = mod.Name()
+	m.ModShortName = mod.ShortName
+	m.ModName = mod.FullName
 }
 
 // TODO ADD PATH ltree

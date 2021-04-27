@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
 	"github.com/turbot/steampipe/utils"
 )
@@ -77,7 +78,7 @@ func (m ConnectionMap) Equals(other ConnectionMap) bool {
 }
 
 // GetConnectionsToUpdate :: returns updates to be made to the database to sync with connection config
-func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*Connection) (*ConnectionUpdates, error) {
+func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*modconfig.Connection) (*ConnectionUpdates, error) {
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
 	connectionState, err := GetConnectionState(schemas)
@@ -112,7 +113,7 @@ func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*Conne
 }
 
 // load and parse the connection config
-func getRequiredConnections(connectionConfig map[string]*Connection) (ConnectionMap, []string, error) {
+func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (ConnectionMap, []string, error) {
 	requiredConnections := ConnectionMap{}
 	var missingPlugins []string
 

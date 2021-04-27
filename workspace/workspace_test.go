@@ -29,10 +29,10 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 			Mod: &modconfig.Mod{
 				ShortName: toStringPointer("w_1"),
 				Title:     toStringPointer("workspace 1"),
-				ModDepends: []*modconfig.ModVersion{
-					{Name: "github.com/turbot/m1", Version: "0.0.0"},
-					{Name: "github.com/turbot/m2", Version: "0.0.0"},
-				},
+				//ModDepends: []*modconfig.ModVersion{
+				//	{ShortName: "github.com/turbot/m1", Version: "0.0.0"},
+				//	{ShortName: "github.com/turbot/m2", Version: "0.0.0"},
+				//},
 				Queries: map[string]*modconfig.Query{
 					"localq1": {
 						ShortName: toStringPointer("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),

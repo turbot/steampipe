@@ -1,6 +1,7 @@
 package db
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -178,14 +179,17 @@ func getColumnValues(item interface{}) ([]string, []string) {
 			continue
 		}
 
-		values = append(values, pgValue(value))
+		// pgValue ascapes values, and for arrays, converts them into escaped JSON
+		// ignore JSON conversion errors - trust that array values read from hcl will be convertable
+		formattedValue, _ := pgValue(value)
+		values = append(values, formattedValue)
 		columns = append(columns, column)
 	}
 	return values, columns
 }
 
 // convert the value into a postgres format value which can used in an insert statement
-func pgValue(item interface{}) string {
+func pgValue(item interface{}) (string, error) {
 	rt := reflect.TypeOf(item)
 	switch rt.Kind() {
 	case reflect.Slice, reflect.Array:
@@ -197,9 +201,15 @@ func pgValue(item interface{}) string {
 			elementString := typeHelpers.ToString(element)
 			items = append(items, elementString)
 		}
-		res := PgEscapeString(fmt.Sprintf(`{%s}`, strings.Join(items, ",")))
-		return res
+
+		jsonBytes, err := json.Marshal(items)
+		if err != nil {
+			return "", err
+		}
+
+		res := PgEscapeString(fmt.Sprintf(`%s`, string(jsonBytes)))
+		return res, nil
 	default:
-		return PgEscapeString(typeHelpers.ToString(item))
+		return PgEscapeString(typeHelpers.ToString(item)), nil
 	}
 }

@@ -2,9 +2,10 @@ package metaquery
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"strings"
 
 	"github.com/turbot/go-kit/helpers"
 )

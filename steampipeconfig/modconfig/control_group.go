@@ -5,24 +5,44 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
+	"github.com/zclconf/go-cty/cty"
 )
 
+// ControlGroup :: struct representing the control group mod resource
 type ControlGroup struct {
-	ShortName *string
+	ShortName string
+	FullName  string `cty:"name"`
 
-	Description *string   `hcl:"description" column:"description" column_type:"text"`
-	Labels      *[]string `hcl:"labels" column:"labels" column_type:"text[]"`
-	ParentName  *string   `hcl:"parent" column:"parent" column_type:"text"`
-	Query       *string   `hcl:"query" column:"query" column_type:"text"`
-	Title       *string   `hcl:"title" column:"title" column_type:"text"`
+	Description   *string   `cty:"description" column:"description" column_type:"text"`
+	Documentation *string   `cty:"documentation" column:"documentation" column_type:"text"`
+	Labels        *[]string `cty:"labels" column:"labels" column_type:"jsonb"`
+	ParentName    *string   `cty:"parent" column:"parent" column_type:"text"`
+	Title         *string   `cty:"title" column:"title" column_type:"text"`
 
-	// populated when we build tree
-	Parent   ControlTreeItem
-	Children []ControlTreeItem
+	DeclRange hcl.Range
 
-	// resource metadata
-	Metadata *ResourceMetadata
+	parent   ControlTreeItem
+	children []ControlTreeItem
+	metadata *ResourceMetadata
+}
+
+func NewControlGroup(block *hcl.Block) *ControlGroup {
+	return &ControlGroup{
+		ShortName: block.Labels[0],
+		FullName:  fmt.Sprintf("control_group.%s", block.Labels[0]),
+		DeclRange: block.DefRange,
+	}
+}
+
+// Schema :: hcl schema for control
+func (c *ControlGroup) Schema() *hcl.BodySchema {
+	return buildAttributeSchema(c)
+}
+
+func (c *ControlGroup) CtyValue() (cty.Value, error) {
+	return getCtyValue(c)
 }
 
 func (c *ControlGroup) String() string {
@@ -32,7 +52,7 @@ func (c *ControlGroup) String() string {
 	}
 	// build list of childrens long names
 	var children []string
-	for _, child := range c.Children {
+	for _, child := range c.children {
 		children = append(children, child.Name())
 	}
 	sort.Strings(children)
@@ -46,7 +66,7 @@ func (c *ControlGroup) String() string {
   Children: 
     %s
 `,
-		types.SafeString(c.Name),
+		c.FullName,
 		types.SafeString(c.Title),
 		types.SafeString(c.Description),
 		types.SafeString(c.ParentName),
@@ -56,7 +76,7 @@ func (c *ControlGroup) String() string {
 // GetChildControls :: return a flat list of controls underneath us in the tree
 func (c *ControlGroup) GetChildControls() []*Control {
 	var res []*Control
-	for _, child := range c.Children {
+	for _, child := range c.children {
 		if control, ok := child.(*Control); ok {
 			res = append(res, control)
 		} else if controlGroup, ok := child.(*ControlGroup); ok {
@@ -66,11 +86,6 @@ func (c *ControlGroup) GetChildControls() []*Control {
 	return res
 }
 
-// LongName :: name in format: '<modName>.control.<shortName>'
-func (c *ControlGroup) LongName() string {
-	return fmt.Sprintf("%s.%s", c.Metadata.ModShortName, c.Name())
-}
-
 // AddChild :: implementation of ControlTreeItem
 func (c *ControlGroup) AddChild(child ControlTreeItem) error {
 	// mod cannot be added as a child
@@ -78,7 +93,7 @@ func (c *ControlGroup) AddChild(child ControlTreeItem) error {
 		return fmt.Errorf("mod cannot be added as a child")
 	}
 
-	c.Children = append(c.Children, child)
+	c.children = append(c.children, child)
 	return nil
 }
 
@@ -89,26 +104,36 @@ func (c *ControlGroup) GetParentName() string {
 
 // SetParent :: implementation of ControlTreeItem
 func (c *ControlGroup) SetParent(parent ControlTreeItem) error {
-	c.Parent = parent
+	c.parent = parent
 	return nil
 }
 
-// Name :: implementation of ControlTreeItem
+// Name :: implementation of ControlTreeItem, HclResource
 // return name in format: 'control.<shortName>'
 func (c *ControlGroup) Name() string {
-	return fmt.Sprintf("control_group.%s", types.SafeString(c.ShortName))
+	return c.FullName
+}
+
+// QualifiedName :: name in format: '<modName>.control.<shortName>'
+func (c *ControlGroup) QualifiedName() string {
+	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName)
 }
 
 // Path :: implementation of ControlTreeItem
 func (c *ControlGroup) Path() []string {
-	path := []string{c.Name()}
-	if c.Parent != nil {
-		path = append(c.Parent.Path(), path...)
+	path := []string{c.FullName}
+	if c.parent != nil {
+		path = append(c.parent.Path(), path...)
 	}
 	return path
 }
 
-// GetMetadata :: implementation of ResourceWithMetadata
+// GetMetadata :: implementation of HclResource
 func (c *ControlGroup) GetMetadata() *ResourceMetadata {
-	return c.Metadata
+	return c.metadata
+}
+
+// SetMetadata :: implementation of HclResource
+func (c *ControlGroup) SetMetadata(metadata *ResourceMetadata) {
+	c.metadata = metadata
 }

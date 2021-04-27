@@ -4,26 +4,47 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
+	"github.com/zclconf/go-cty/cty"
 )
 
+// Control :: struct representing the control mod resource
 type Control struct {
-	ShortName *string
+	ShortName string
+	FullName  string `cty:"name"`
 
-	Description   *string   `hcl:"description" column:"description" column_type:"text"`
-	Documentation *string   `hcl:"documentation" column:"documentation" column_type:"text"`
-	Labels        *[]string `hcl:"labels" column:"labels" column_type:"text[]"`
-	Links         *[]string `hcl:"links" column:"links" column_type:"text[]"`
-	ParentName    *string   `hcl:"parent" column:"parent" column_type:"text"`
-	Query         *string   `hcl:"query" column:"query" column_type:"text"`
-	Severity      *string   `hcl:"severity" column:"severity" column_type:"text"`
-	Title         *string   `hcl:"title" column:"title" column_type:"text"`
+	Description   *string   `cty:"description" column:"description" column_type:"text"`
+	Documentation *string   `cty:"documentation" column:"documentation" column_type:"text"`
+	Labels        *[]string `cty:"labels" column:"labels" column_type:"jsonb"`
+	Links         *[]string `cty:"links" column:"links" column_type:"jsonb"`
+	ParentName    *string   `cty:"parent" column:"parent" column_type:"text"`
+	SQL           *string   `cty:"sql" column:"sql" column_type:"text"`
+	Severity      *string   `cty:"severity" column:"severity" column_type:"text"`
+	Title         *string   `cty:"title" column:"title" column_type:"text"`
 
-	// populated when we build tree
-	Parent ControlTreeItem
+	DeclRange hcl.Range
 
-	// resource metadata
-	Metadata *ResourceMetadata
+	parent   ControlTreeItem
+	metadata *ResourceMetadata
+}
+
+func NewControl(block *hcl.Block) *Control {
+	control := &Control{
+		ShortName: block.Labels[0],
+		FullName:  fmt.Sprintf("control.%s", block.Labels[0]),
+		DeclRange: block.DefRange,
+	}
+	return control
+}
+
+// Schema :: hcl schema for control
+func (c *Control) Schema() *hcl.BodySchema {
+	return buildAttributeSchema(c)
+}
+
+func (c *Control) CtyValue() (cty.Value, error) {
+	return getCtyValue(c)
 }
 
 func (c *Control) String() string {
@@ -40,22 +61,17 @@ func (c *Control) String() string {
   Name: %s
   Title: %s
   Description: %s
-  Query: %s
+  SQL: %s
   Parent: %s
   Labels: %v
   Links: %v
 `,
-		types.SafeString(c.ShortName),
+		c.FullName,
 		types.SafeString(c.Title),
 		types.SafeString(c.Description),
-		types.SafeString(c.Query),
+		types.SafeString(c.SQL),
 		types.SafeString(c.ParentName),
 		labels, links)
-}
-
-//LongName :: name in format: '<modName>.control.<shortName>'
-func (c *Control) LongName() string {
-	return fmt.Sprintf("%s.%s", c.Metadata.ModShortName, c.Name())
 }
 
 // AddChild  :: implementation of ControlTreeItem - controls cannot have children so just return error
@@ -70,26 +86,36 @@ func (c *Control) GetParentName() string {
 
 // SetParent :: implementation of ControlTreeItem
 func (c *Control) SetParent(parent ControlTreeItem) error {
-	c.Parent = parent
+	c.parent = parent
 	return nil
 }
 
-// Name :: implementation of ControlTreeItem
+// Name :: implementation of ControlTreeItem, HclResource
 // return name in format: 'control.<shortName>'
 func (c *Control) Name() string {
-	return fmt.Sprintf("control.%s", types.SafeString(c.ShortName))
+	return c.FullName
+}
+
+// QualifiedName :: name in format: '<modName>.control.<shortName>'
+func (c *Control) QualifiedName() string {
+	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName)
 }
 
 // Path :: implementation of ControlTreeItem
 func (c *Control) Path() []string {
-	path := []string{c.Name()}
-	if c.Parent != nil {
-		path = append(c.Parent.Path(), path...)
+	path := []string{c.FullName}
+	if c.parent != nil {
+		path = append(c.parent.Path(), path...)
 	}
 	return path
 }
 
-// GetMetadata :: implementation of ResourceWithMetadata
+// GetMetadata :: implementation of HclResource
 func (c *Control) GetMetadata() *ResourceMetadata {
-	return c.Metadata
+	return c.metadata
+}
+
+// SetMetadata :: implementation of HclResource
+func (c *Control) SetMetadata(metadata *ResourceMetadata) {
+	c.metadata = metadata
 }

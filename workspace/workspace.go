@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/turbot/steampipe/steampipeconfig/parse"
+
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
@@ -30,11 +32,17 @@ type Workspace struct {
 	watcher    *utils.FileWatcher
 	loadLock   sync.Mutex
 	exclusions []string
+	// should we load/watch files recursively
+	listFlag     filehelpers.ListFlag
+	watcherError error
 }
 
 func Load(workspacePath string) (*Workspace, error) {
 	// create shell workspace
 	workspace := &Workspace{Path: workspacePath}
+
+	// determine whether to load files recursively or just from the top level folder
+	workspace.setListFlag()
 
 	// load the .steampipe ignore file
 	if err := workspace.LoadExclusions(); err != nil {
@@ -46,6 +54,21 @@ func Load(workspacePath string) (*Workspace, error) {
 	}
 
 	return workspace, nil
+}
+
+// determine whether to load files recursively or just from the top level folder
+// if there is a mod file in the workspace folder, load recursively
+func (w *Workspace) setListFlag() {
+
+	modFilePath := filepath.Join(w.Path, "mod.sp")
+	_, err := os.Stat(modFilePath)
+	modFileExists := err == nil
+	if modFileExists {
+		// only load/watch recursively if a mod sp file exists in the workspace folder
+		w.listFlag = filehelpers.FilesRecursive
+	} else {
+		w.listFlag = filehelpers.Files
+	}
 }
 
 func (w *Workspace) Close() {
@@ -81,7 +104,7 @@ func (w *Workspace) GetControlsForArg(arg string) []*modconfig.Control {
 	defer w.loadLock.Unlock()
 
 	// if arg is in fact a controlGroup,  get all controls underneath the control group
-	name, err := modconfig.ParseModResourceName(arg)
+	name, err := modconfig.ParseResourceName(arg)
 	if err != nil {
 		return nil
 	}
@@ -107,7 +130,7 @@ func (w *Workspace) GetControlsForArg(arg string) []*modconfig.Control {
 	controlsMatched := make(map[string]bool)
 	for _, c := range w.ControlMap {
 		if _, alreadyMatched := controlsMatched[c.Name()]; !alreadyMatched {
-			if arg == "all" || arg == c.Metadata.ModShortName {
+			if arg == "all" || arg == c.GetMetadata().ModShortName {
 				controlsMatched[c.Name()] = true
 				result = append(result, c)
 			}
@@ -126,10 +149,20 @@ func (w *Workspace) loadMod() error {
 
 	// build options used to load workspace
 	// set flags to create pseudo resources and a default mod if needed
-	opts := &steampipeconfig.LoadModOptions{
-		Exclude: w.exclusions,
-		Flags:   steampipeconfig.CreatePseudoResources | steampipeconfig.CreateDefaultMod,
+	opts := &parse.ParseModOptions{
+		Flags: parse.CreatePseudoResources | parse.CreateDefaultMod,
+		ListOptions: &filehelpers.ListOptions{
+			// listFlag specifies whether to load files recursively
+			Flags:   w.listFlag,
+			Exclude: w.exclusions,
+		},
 	}
+
+	// clear all our maps
+	w.QueryMap = make(map[string]*modconfig.Query)
+	w.ControlMap = make(map[string]*modconfig.Control)
+	w.ControlGroupMap = make(map[string]*modconfig.ControlGroup)
+
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
 	if err != nil {
 		return err
@@ -167,14 +200,14 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 	// for LOCAL queries, add map entries keyed by both short name: query.<shortName> and  long name: <modName>.query.<shortName?
 	for _, q := range w.Mod.Queries {
 		res[q.Name()] = q
-		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.ShortName), types.SafeString(q.ShortName))
+		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.ShortName), q.ShortName)
 		res[longName] = q
 	}
 
 	// for mode dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
-			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.ShortName), types.SafeString(q.ShortName))
+			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.ShortName), q.ShortName)
 			res[longName] = q
 		}
 	}
@@ -188,13 +221,13 @@ func (w *Workspace) buildControlMap(modMap modconfig.ModMap) map[string]*modconf
 	// for LOCAL controls, add map entries keyed by both short name: control.<shortName> and  long name: <modName>.control.<shortName?
 	for _, c := range w.Mod.Controls {
 		res[c.Name()] = c
-		res[c.LongName()] = c
+		res[c.QualifiedName()] = c
 	}
 
 	// for mode dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, c := range mod.Controls {
-			res[c.LongName()] = c
+			res[c.QualifiedName()] = c
 		}
 	}
 	return res
@@ -207,28 +240,39 @@ func (w *Workspace) buildControlGroupMap(modMap modconfig.ModMap) map[string]*mo
 	// for LOCAL controls, add map entries keyed by both short name: control_group.<shortName> and  long name: <modName>.control_group.<shortName?
 	for _, c := range w.Mod.ControlGroups {
 		res[c.Name()] = c
-		res[c.LongName()] = c
+		res[c.QualifiedName()] = c
 	}
 
 	// for mod dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, c := range mod.ControlGroups {
-			res[c.LongName()] = c
+			res[c.QualifiedName()] = c
 		}
 	}
 	return res
 }
 
 func (w *Workspace) SetupWatcher(client *db.Client) error {
+
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
 		OnChange: func(ev fsnotify.Event) {
-			w.loadMod()
+			err := w.loadMod()
+			if err != nil {
+				// if we are already in an error state, do not show error
+				if w.watcherError == nil {
+					fmt.Println()
+					utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
+				}
+			}
+			// now store/clear watcher error so we only show message once
+			w.watcherError = err
 			// todo detect differences and only refresh if necessary
 			db.UpdateMetadataTables(w.GetResourceMaps(), client)
 		},
+		ListFlag: w.listFlag,
 		//onError:          nil,
 	}
 	watcher, err := utils.NewWatcher(watcherOptions)
