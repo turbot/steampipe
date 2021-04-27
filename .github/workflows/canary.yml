@@ -178,7 +178,7 @@ jobs:
       # Hack till we can get the ldflags with goreleaser sorted
       - name: Update Version in SOurces
         run: |
-          sed -i 's/^var steampipeVersion.*/var steampipeVersion = "${{ steps.next_version.outputs.canary_version }}"/' $GITHUB_WORKSPACE/version/version.go
+          sed "s/^var steampipeVersion.*/var steampipeVersion = \"${{ steps.next_version.outputs.canary_version }}\"/" $GITHUB_WORKSPACE/version/version.go > $GITHUB_WORKSPACE/tmp.go && mv $GITHUB_WORKSPACE/tmp.go $GITHUB_WORKSPACE/version/version.go
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
