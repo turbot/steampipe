@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -23,8 +24,13 @@ func LoadModDependencies(m *modconfig.Mod, modsFolder string, modMap modconfig.M
 		}
 
 		// now try to parse the mod
-		// pass empty flags - we
-		mod, err := LoadMod(modPath, nil)
+		opts := &LoadModOptions{
+			ListOptions: &filehelpers.ListOptions{
+				// recursively load mod files
+				Flags: filehelpers.FilesRecursive,
+			},
+		}
+		mod, err := LoadMod(modPath, opts)
 		if err != nil {
 			return err
 		}

@@ -1,7 +1,6 @@
 package modconfig
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -27,21 +26,18 @@ func RegisteredFileExtensions() []string {
 }
 
 // PseudoResourceNameFromPath :: convert a filepath into a resource name:
-// 1) convert into a relative path from the working folder
+// 1) get filename
 // 2) remove extension
 // 3) sluggify, with '_' as the divider
 func PseudoResourceNameFromPath(modPath, filePath string) (string, error) {
-	relativePath, err := filepath.Rel(modPath, filePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to get relative path of sql file '%s' with base folder '%s': %v", filePath, modPath, err)
-	}
+	filename := filepath.Base(filePath)
 	// remove the extension
-	relativePath = strings.TrimSuffix(relativePath, filepath.Ext(filePath))
+	filename = strings.TrimSuffix(filename, filepath.Ext(filePath))
 
 	// now slugify this
 	slugifier := slugify.New(slugify.Configuration{
 		ReplaceCharacter: '_',
 	})
 
-	return slugifier.Slugify(relativePath), nil
+	return slugifier.Slugify(filename), nil
 }

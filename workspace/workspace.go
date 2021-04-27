@@ -30,11 +30,15 @@ type Workspace struct {
 	watcher    *utils.FileWatcher
 	loadLock   sync.Mutex
 	exclusions []string
+	// should we load/watch files recursively
+	listFlag filehelpers.ListFlag
 }
 
 func Load(workspacePath string) (*Workspace, error) {
 	// create shell workspace
 	workspace := &Workspace{Path: workspacePath}
+
+	workspace.setListFlag()
 
 	// load the .steampipe ignore file
 	if err := workspace.LoadExclusions(); err != nil {
@@ -46,6 +50,21 @@ func Load(workspacePath string) (*Workspace, error) {
 	}
 
 	return workspace, nil
+}
+
+// determine whether to load files recursively or just from the top level folder
+// if there is a mod file in the workspace folder, load recursively
+func (w *Workspace) setListFlag() {
+
+	modFilePath := filepath.Join(w.Path, "mod.sp")
+	_, err := os.Stat(modFilePath)
+	modFileExists := err == nil
+	if modFileExists {
+		// only load/watch recursively if a mod sp file exists in the workspace folder
+		w.listFlag = filehelpers.FilesRecursive
+	} else {
+		w.listFlag = filehelpers.Files
+	}
 }
 
 func (w *Workspace) Close() {
@@ -127,9 +146,14 @@ func (w *Workspace) loadMod() error {
 	// build options used to load workspace
 	// set flags to create pseudo resources and a default mod if needed
 	opts := &steampipeconfig.LoadModOptions{
-		Exclude: w.exclusions,
-		Flags:   steampipeconfig.CreatePseudoResources | steampipeconfig.CreateDefaultMod,
+		Flags: steampipeconfig.CreatePseudoResources | steampipeconfig.CreateDefaultMod,
+		ListOptions: &filehelpers.ListOptions{
+			// listFlag specifies whether to load files recursively
+			Flags:   w.listFlag,
+			Exclude: w.exclusions,
+		},
 	}
+
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
 	if err != nil {
 		return err
@@ -220,6 +244,7 @@ func (w *Workspace) buildControlGroupMap(modMap modconfig.ModMap) map[string]*mo
 }
 
 func (w *Workspace) SetupWatcher(client *db.Client) error {
+
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
@@ -229,6 +254,7 @@ func (w *Workspace) SetupWatcher(client *db.Client) error {
 			// todo detect differences and only refresh if necessary
 			db.UpdateMetadataTables(w.GetResourceMaps(), client)
 		},
+		ListFlag: w.listFlag,
 		//onError:          nil,
 	}
 	watcher, err := utils.NewWatcher(watcherOptions)

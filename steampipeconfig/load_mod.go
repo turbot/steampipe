@@ -25,8 +25,8 @@ const (
 )
 
 type LoadModOptions struct {
-	Flags   LoadModFlag
-	Exclude []string
+	Flags       LoadModFlag
+	ListOptions *filehelpers.ListOptions
 }
 
 func (o *LoadModOptions) CreateDefaultMod() bool {
@@ -58,8 +58,8 @@ func LoadMod(modPath string, opts *LoadModOptions) (mod *modconfig.Mod, err erro
 
 	// build list of all filepaths we need to parse/load
 	// NOTE: pseudo resource creation is handled separately below
-	var include = filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension})
-	sourcePaths, err := getSourcePaths(modPath, include, opts.Exclude)
+	opts.ListOptions.Include = filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension})
+	sourcePaths, err := getSourcePaths(modPath, opts)
 	if err != nil {
 		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
 		return nil, err
@@ -100,18 +100,8 @@ func GetModFileExtensions() []string {
 // this will include hcl files (with .sp extension)
 // as well as any other files with extensions that have been registered for pseudo resource creation
 // (see steampipeconfig/modconfig/resource_type_map.go)
-func getSourcePaths(modPath string, include, exclude []string) ([]string, error) {
-
-	// build list options:
-	// - search the current folder only
-	// - include extensions we have identifed
-	// - ignore the .steampipe folder
-	opts := &filehelpers.ListFilesOptions{
-		Options: filehelpers.FilesFlat,
-		Exclude: exclude,
-		Include: include,
-	}
-	sourcePaths, err := filehelpers.ListFiles(modPath, opts)
+func getSourcePaths(modPath string, opts *LoadModOptions) ([]string, error) {
+	sourcePaths, err := filehelpers.ListFiles(modPath, opts.ListOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -240,8 +230,8 @@ func parseModHcl(modPath string, fileData map[string][]byte, opts *LoadModOption
 // NOTE: this mutates parseResults
 func createPseudoResources(modPath string, mod *modconfig.Mod, opts *LoadModOptions) error {
 	// list all registered files
-	var include = filehelpers.InclusionsFromExtensions(modconfig.RegisteredFileExtensions())
-	sourcePaths, err := getSourcePaths(modPath, include, opts.Exclude)
+	opts.ListOptions.Include = filehelpers.InclusionsFromExtensions(modconfig.RegisteredFileExtensions())
+	sourcePaths, err := getSourcePaths(modPath, opts)
 	if err != nil {
 		return err
 	}
@@ -311,6 +301,6 @@ func addResourceIfUnique(resource modconfig.MappableResource, mod *modconfig.Mod
 }
 
 func defaultWorkspaceMod() *modconfig.Mod {
-	defaultName := "local"
-	return &modconfig.Mod{ShortName: &defaultName}
+	name := constants.WorkspaceDefaultModName
+	return &modconfig.Mod{ShortName: &name}
 }
