@@ -182,7 +182,7 @@ jobs:
 
       - name: Setting up goreleaser to build with canary version string
         run: |
-          cat $GITHUB_WORKSPACE/.goreleaser.yml | yq e '.builds.0.ldflags[0]="-s -w -X main.steampipeVersion=${{ steps.next_version.outputs.canary_version }}"' - > $GITHUB_WORKSPACE/tmp_releaser.yml
+          cat $GITHUB_WORKSPACE/.goreleaser.yml | yq e '.builds[0].ldflags[0]="-s -w -X github.com/turbot/steampipe/version.steampipeVersion=${{ steps.next_version.outputs.canary_version }}"' - > $GITHUB_WORKSPACE/tmp_releaser.yml
           mv $GITHUB_WORKSPACE/tmp_releaser.yml $GITHUB_WORKSPACE/.goreleaser.yml
         
       - name: Run GoReleaser
