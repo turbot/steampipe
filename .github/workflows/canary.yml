@@ -175,16 +175,11 @@ jobs:
       - name: Hook private repo
         run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
 
-      - name: Install yq
+      # Hack till we can get the ldflags with goreleaser sorted
+      - name: Update Version in SOurces
         run: |
-          sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.6.3/yq_linux_amd64
-          sudo chmod +x /usr/local/bin/yq
+          sed -i 's/^var steampipeVersion.*/var steampipeVersion = "${{ steps.next_version.outputs.canary_version }}"/' $GITHUB_WORKSPACE/version/version.go
 
-      - name: Setting up goreleaser to build with canary version string
-        run: |
-          cat $GITHUB_WORKSPACE/.goreleaser.yml | yq e '.builds[0].ldflags[0]="-s -w -X github.com/turbot/steampipe/version.steampipeVersion=${{ steps.next_version.outputs.canary_version }}"' - > $GITHUB_WORKSPACE/tmp_releaser.yml
-          mv $GITHUB_WORKSPACE/tmp_releaser.yml $GITHUB_WORKSPACE/.goreleaser.yml
-        
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
