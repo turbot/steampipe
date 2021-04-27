@@ -191,7 +191,7 @@ jobs:
 
       - name: Publish Release
         run: |
-          gh release create ${{ steps.next_version.outputs.canary_version }} $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip $GITHUB_WORKSPACE/dist/checksums.txt --title ${{ steps.next_version.outputs.canary_version }} --prerelease --draft
+          gh release create ${{ steps.next_version.outputs.canary_version }} $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip $GITHUB_WORKSPACE/dist/checksums.txt --title ${{ steps.next_version.outputs.canary_version }} --prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
