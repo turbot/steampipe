@@ -122,14 +122,14 @@ func getControls(args []string, workspace *workspace.Workspace, client *db.Clien
 	return res, nil
 }
 
-// query the steampipe_controls table, using the given query
+// query the steampipe_control table, using the given query
 func getControlsFromMetadataQuery(whereArg string, workspace *workspace.Workspace, client *db.Client) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
 	query, isNamedQuery := getQueryFromArg(whereArg, workspace)
 
 	// if the query is NOT a named query, we need to construct a full query by adding a select
 	if !isNamedQuery {
-		query = fmt.Sprintf("select resource_name from steampipe_controls where %s", whereArg)
+		query = fmt.Sprintf("select resource_name from %s where %s", constants.ReflectionTableControl, whereArg)
 	}
 
 	res, err := client.ExecuteSync(query)
