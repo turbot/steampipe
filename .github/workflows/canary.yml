@@ -175,8 +175,10 @@ jobs:
       - name: Hook private repo
         run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
 
-      - name: Setting up goreleaser to build with canary version string
+      - name: Installing yq
         uses: mikefarah/yq@v4.7.1
+
+      - name: Setting up goreleaser to build with canary version string
         run: |
           cat $GITHUB_WORKSPACE/.goreleaser.yml | yq e '.builds.0.ldflags[0]="-s -w -X main.steampipeVersion=${{ steps.next_version.outputs.canary_version }}"' - > $GITHUB_WORKSPACE/tmp_releaser.yml
           mv $GITHUB_WORKSPACE/tmp_releaser.yml $GITHUB_WORKSPACE/.goreleaser.yml
