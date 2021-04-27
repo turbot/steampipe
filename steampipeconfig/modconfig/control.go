@@ -15,7 +15,7 @@ type Control struct {
 	Labels        *[]string `hcl:"labels" column:"labels" column_type:"text[]"`
 	Links         *[]string `hcl:"links" column:"links" column_type:"text[]"`
 	ParentName    *string   `hcl:"parent" column:"parent" column_type:"text"`
-	Query         *string   `hcl:"query" column:"query" column_type:"text"`
+	SQL           *string   `hcl:"sql" column:"sql" column_type:"text"`
 	Severity      *string   `hcl:"severity" column:"severity" column_type:"text"`
 	Title         *string   `hcl:"title" column:"title" column_type:"text"`
 
@@ -40,7 +40,7 @@ func (c *Control) String() string {
   Name: %s
   Title: %s
   Description: %s
-  Query: %s
+  SQL: %s
   Parent: %s
   Labels: %v
   Links: %v
@@ -48,7 +48,7 @@ func (c *Control) String() string {
 		types.SafeString(c.ShortName),
 		types.SafeString(c.Title),
 		types.SafeString(c.Description),
-		types.SafeString(c.Query),
+		types.SafeString(c.SQL),
 		types.SafeString(c.ParentName),
 		labels, links)
 }
