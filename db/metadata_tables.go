@@ -197,7 +197,8 @@ func pgValue(item interface{}) string {
 			elementString := typeHelpers.ToString(element)
 			items = append(items, elementString)
 		}
-		res := PgEscapeString(fmt.Sprintf(`{%s}`, strings.Join(items, ",")))
+
+		res := PgEscapeString(fmt.Sprintf(`["%s"]`, strings.Join(items, ",")))
 		return res
 	default:
 		return PgEscapeString(typeHelpers.ToString(item))

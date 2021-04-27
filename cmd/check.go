@@ -168,7 +168,7 @@ func executeControls(controls []*modconfig.Control, workspace *workspace.Workspa
 	for i, c := range controls {
 		if err := executeControl(c, workspace, client); err != nil {
 			failures++
-			utils.ShowWarning(fmt.Sprintf("check #%d failed: %v", i+1, err))
+			utils.ShowWarning(fmt.Sprintf("executeControls: control %d of %d failed: %v", i+1, len(controls), err))
 		}
 		if showBlankLineBetweenResults() {
 			fmt.Println()

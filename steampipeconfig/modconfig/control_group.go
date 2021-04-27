@@ -13,7 +13,7 @@ type ControlGroup struct {
 
 	Description   *string   `hcl:"description" column:"description" column_type:"text"`
 	Documentation *string   `hcl:"documentation" column:"documentation" column_type:"text"`
-	Labels        *[]string `hcl:"labels" column:"labels" column_type:"text[]"`
+	Labels        *[]string `hcl:"labels" column:"labels" column_type:"jsonb"`
 	ParentName    *string   `hcl:"parent" column:"parent" column_type:"text"`
 	Title         *string   `hcl:"title" column:"title" column_type:"text"`
 

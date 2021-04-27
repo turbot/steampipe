@@ -12,8 +12,8 @@ type Control struct {
 
 	Description   *string   `hcl:"description" column:"description" column_type:"text"`
 	Documentation *string   `hcl:"documentation" column:"documentation" column_type:"text"`
-	Labels        *[]string `hcl:"labels" column:"labels" column_type:"text[]"`
-	Links         *[]string `hcl:"links" column:"links" column_type:"text[]"`
+	Labels        *[]string `hcl:"labels" column:"labels" column_type:"jsonb"`
+	Links         *[]string `hcl:"links" column:"links" column_type:"jsonb"`
 	ParentName    *string   `hcl:"parent" column:"parent" column_type:"text"`
 	SQL           *string   `hcl:"sql" column:"sql" column_type:"text"`
 	Severity      *string   `hcl:"severity" column:"severity" column_type:"text"`

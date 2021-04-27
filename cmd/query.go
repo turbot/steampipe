@@ -178,7 +178,7 @@ func executeQueries(queries []string, client *db.Client) int {
 	for i, q := range queries {
 		if err := executeQuery(q, client); err != nil {
 			failures++
-			utils.ShowWarning(fmt.Sprintf("query #%d failed: %v", i+1, err))
+			utils.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), err))
 		}
 		if showBlankLineBetweenResults() {
 			fmt.Println()
