@@ -159,11 +159,11 @@ jobs:
       - name: Calculating Next version
         id: next_version
         run: |
-          echo '::set-output name=next_version::${{format('v{0}-canary-{1}', steps.next-semver.outputs.patch, steps.current-date.outputs.formatted_date)}}'
+          echo '::set-output name=canary_version::${{format('v{0}-canary.{1}', steps.next-semver.outputs.patch, steps.current-date.outputs.formatted_date)}}'
 
       - name: Full version string
         run: |
-          echo ${{ steps.next_version.outputs.next_version }}
+          echo ${{ steps.next_version.outputs.canary_version }}
 
       - name: Checkout
         uses: actions/checkout@v2
@@ -191,7 +191,7 @@ jobs:
 
       - name: Publish Release
         run: |
-          gh release create ${{ steps.next_version.outputs.next_version }} $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip --title ${{ steps.next_version.outputs.next_version }} --prerelease --draft
+          gh release create ${{ steps.next_version.outputs.canary_version }} $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip $GITHUB_WORKSPACE/dist/checksums.txt --title ${{ steps.next_version.outputs.canary_version }} --prerelease --draft
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
