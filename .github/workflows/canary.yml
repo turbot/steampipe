@@ -3,7 +3,7 @@ on:
   schedule:
     # At minute 0 past every 2nd hour on every day-of-week from Monday through Friday.
     # https://crontab.guru/#0_22_*_*_*
-    - cron: '0 22 * * *'
+    - cron: '0 22 * * 1,2,3,4,5'
   pull_request:
     branches:
       - main
@@ -69,16 +69,10 @@ jobs:
         platform: [ ubuntu-latest ]
     runs-on: ${{ matrix.platform }}
     steps:
-    
-      - name: Stub
-        run: |
-          echo "nothing"
-
       - name: Checkout
         uses: actions/checkout@v2
         with:
           submodules: true
-          ref: ${{ github.event.inputs.branch }}
 
       - name: Setup BATS
         uses: mig4/setup-bats@v1
@@ -181,6 +175,12 @@ jobs:
       - name: Hook private repo
         run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
 
+      - name: Setting up goreleaser to build with canary version string
+        uses: mikefarah/yq@v4.7.1
+        run: |
+          cat $GITHUB_WORKSPACE/.goreleaser.yml | yq e '.builds.0.ldflags[0]="-s -w -X main.steampipeVersion=${{ steps.next_version.outputs.canary_version }}"' - > $GITHUB_WORKSPACE/tmp_releaser.yml
+          mv $GITHUB_WORKSPACE/tmp_releaser.yml $GITHUB_WORKSPACE/.goreleaser.yml
+        
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
