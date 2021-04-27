@@ -22,7 +22,7 @@ control "c2"{
     description = "control 2"
     sql = "select 'control 2' as control, 'pass' as result"
     parent = "control_group.cg_1_1_2"
-    labels = ["foo", "bar"]
+    labels = ["foo", "https://twitter.com/home?lang=en-gb", "\"sgsg\""]
 }
 control "c3"{
     description = "control 3"
