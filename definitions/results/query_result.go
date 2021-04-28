@@ -7,7 +7,6 @@
 package results
 
 import (
-	"context"
 	"database/sql"
 	"time"
 )
@@ -35,11 +34,10 @@ func (r QueryResult) StreamError(err error) {
 	*r.RowChan <- &RowResult{Error: err}
 }
 
-func NewQueryResult(colTypes []*sql.ColumnType, ctx *context.Context) *QueryResult {
+func NewQueryResult(colTypes []*sql.ColumnType) *QueryResult {
 	rowChan := make(chan *RowResult)
 	return &QueryResult{
 		RowChan:  &rowChan,
-		QueryCtx: ctx,
 		ColTypes: colTypes,
 		Duration: make(chan time.Duration, 1),
 	}
