@@ -17,7 +17,7 @@ import (
 
 // ExecuteSync :: execute a query against this client and wait for the result
 func (c *Client) ExecuteSync(query string) (*results.SyncQueryResult, error) {
-	result, err := c.executeQuery(query, false)
+	result, err := c.executeQuery(query, false, context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func (c *Client) ExecuteSync(query string) (*results.SyncQueryResult, error) {
 	return syncResult, nil
 }
 
-func (c *Client) executeQuery(query string, countStream bool) (*results.QueryResult, error) {
+func (c *Client) executeQuery(query string, countStream bool, ctx context.Context) (*results.QueryResult, error) {
 	if query == "" {
 		return &results.QueryResult{}, nil
 	}
@@ -51,7 +51,6 @@ func (c *Client) executeQuery(query string, countStream bool) (*results.QueryRes
 		countStream = false
 	}
 
-	ctx := context.Background()
 	rows, err := c.dbClient.QueryContext(ctx, query)
 	queryDone <- true
 
@@ -67,7 +66,7 @@ func (c *Client) executeQuery(query string, countStream bool) (*results.QueryRes
 	}
 	cols, err := rows.Columns()
 
-	result := results.NewQueryResult(colTypes, &ctx)
+	result := results.NewQueryResult(colTypes)
 
 	rowCount := 0
 

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -225,7 +226,8 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 	} else {
 		// otherwise execute query
 		shouldShowCounter := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.ArgTable
-		if result, err := c.client.executeQuery(query, shouldShowCounter); err != nil {
+		ctx := context.Background()
+		if result, err := c.client.executeQuery(query, shouldShowCounter, ctx); err != nil {
 			utils.ShowError(err)
 			resultsStreamer.Done()
 		} else {

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -60,7 +61,7 @@ func RunInteractivePrompt(workspace *workspace.Workspace) (*results.ResultStream
 func ExecuteQuery(queryString string, client *Client) (*results.ResultStreamer, error) {
 	resultsStreamer := results.NewResultStreamer()
 
-	result, err := client.executeQuery(queryString, false)
+	result, err := client.executeQuery(queryString, false, context.Background())
 	if err != nil {
 		return nil, err
 	}
