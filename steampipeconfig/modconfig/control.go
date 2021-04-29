@@ -5,8 +5,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hcldec"
-	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/turbot/go-kit/types"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -34,36 +32,14 @@ type Control struct {
 func (c *Control) Schema() *hcl.BodySchema {
 	// todo this could be done automatically if we had a tag for block properties
 	var attributes []hcl.AttributeSchema
-	for attribute := range HclProperties(c) {
+	for attribute := range GetAttributeDetails(c) {
 		attributes = append(attributes, hcl.AttributeSchema{Name: attribute})
 	}
 	return &hcl.BodySchema{Attributes: attributes}
 }
 
 func (c *Control) CtyValue() (cty.Value, error) {
-	return getCtyValue(c, controlBlock)
-}
-
-// controlBlock :: return the block schema of a hydrated Control
-// used to convert a control into a cty type for block evaluation
-// TODO autogenerate from Control struct by reflection?
-var controlBlock = configschema.Block{
-	Attributes: map[string]*configschema.Attribute{
-		"name":          {Optional: true, Type: cty.String},
-		"description":   {Optional: true, Type: cty.String},
-		"documentation": {Optional: true, Type: cty.String},
-		"labels":        {Optional: true, Type: cty.List(cty.String)},
-		"links":         {Optional: true, Type: cty.List(cty.String)},
-		"parent":        {Optional: true, Type: cty.String},
-		"sql":           {Optional: true, Type: cty.String},
-		"severity":      {Optional: true, Type: cty.String},
-		"title":         {Optional: true, Type: cty.String},
-	},
-}
-
-func controlCtyType() cty.Type {
-	spec := controlBlock.DecoderSpec()
-	return hcldec.ImpliedType(spec)
+	return getCtyValue(c)
 }
 
 func (c *Control) String() string {

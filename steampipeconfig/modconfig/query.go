@@ -6,8 +6,6 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/hashicorp/hcl/v2/hcldec"
-	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
@@ -35,36 +33,16 @@ type Query struct {
 // Schema :: hcl schema for control
 func (q *Query) Schema() *hcl.BodySchema {
 	var attributes []hcl.AttributeSchema
-	for attribute := range HclProperties(q) {
+	for attribute := range GetAttributeDetails(q) {
 		attributes = append(attributes, hcl.AttributeSchema{Name: attribute})
 	}
 	return &hcl.BodySchema{Attributes: attributes}
 }
 
 func (q *Query) CtyValue() (cty.Value, error) {
-	return getCtyValue(q, queryBlock)
+	return getCtyValue(q)
 }
 
-// queryBlock :: return the block schema of a hydrated Query
-// used to convert a query into a cty type for block evaluation
-// TODO autogenerate from Query struct by reflection?
-var queryBlock = configschema.Block{
-	Attributes: map[string]*configschema.Attribute{
-		"name":               {Optional: true, Type: cty.String},
-		"description":        {Optional: true, Type: cty.String},
-		"documentation":      {Optional: true, Type: cty.String},
-		"labels":             {Optional: true, Type: cty.List(cty.String)},
-		"sql":                {Optional: true, Type: cty.String},
-		"search_path":        {Optional: true, Type: cty.String},
-		"search_path_prefix": {Optional: true, Type: cty.String},
-		"title":              {Optional: true, Type: cty.String},
-	},
-}
-
-func queryCtyType() cty.Type {
-	spec := queryBlock.DecoderSpec()
-	return hcldec.ImpliedType(spec)
-}
 func (q *Query) String() string {
 	return fmt.Sprintf(`
   -----

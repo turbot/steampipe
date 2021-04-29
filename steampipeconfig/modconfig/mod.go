@@ -6,8 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/hashicorp/hcl/v2/hcldec"
-	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
@@ -46,7 +44,7 @@ func (m *Mod) Schema() *hcl.BodySchema {
 	// todo this could be done automatically if we had a tag for block properties
 
 	var attributes []hcl.AttributeSchema
-	for attribute := range HclProperties(m) {
+	for attribute := range GetAttributeDetails(m) {
 		attributes = append(attributes, hcl.AttributeSchema{Name: attribute})
 	}
 	return &hcl.BodySchema{
@@ -58,27 +56,7 @@ func (m *Mod) Schema() *hcl.BodySchema {
 }
 
 func (m *Mod) CtyValue() (cty.Value, error) {
-	return getCtyValue(m, modBlock)
-}
-
-// modBlock :: return the block schema of a hydrated Mod
-// used to convert a mod into a cty type for block evaluation
-// TODO autogenerate from Mod struct by reflection?
-var modBlock = configschema.Block{
-	Attributes: map[string]*configschema.Attribute{
-		"name":          {Optional: true, Type: cty.String},
-		"color":         {Optional: true, Type: cty.String},
-		"description":   {Optional: true, Type: cty.String},
-		"documentation": {Optional: true, Type: cty.String},
-		"icon":          {Optional: true, Type: cty.String},
-		"labels":        {Optional: true, Type: cty.List(cty.String)},
-		"title":         {Optional: true, Type: cty.String},
-	},
-}
-
-func modCtyType() cty.Type {
-	spec := modBlock.DecoderSpec()
-	return hcldec.ImpliedType(spec)
+	return getCtyValue(m)
 }
 
 func NewMod(shortName, modPath string) *Mod {

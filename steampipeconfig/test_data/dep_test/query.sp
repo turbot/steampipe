@@ -1,6 +1,6 @@
 locals {
-    ll358--58___ = "testing"
-    2:ll77024 = "select 4 as foo"
+    ll35858 = "testing"
+    ll4 = "select 4 as foo"
 }
 
 

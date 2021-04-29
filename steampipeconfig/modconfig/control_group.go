@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hcldec"
-	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/turbot/go-kit/types"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -32,33 +30,14 @@ type ControlGroup struct {
 // Schema :: hcl schema for control
 func (c *ControlGroup) Schema() *hcl.BodySchema {
 	var attributes []hcl.AttributeSchema
-	for attribute := range HclProperties(c) {
+	for attribute := range GetAttributeDetails(c) {
 		attributes = append(attributes, hcl.AttributeSchema{Name: attribute})
 	}
 	return &hcl.BodySchema{Attributes: attributes}
 }
 
 func (q *ControlGroup) CtyValue() (cty.Value, error) {
-	return getCtyValue(q, controlGroupBlock)
-}
-
-// controlGroupBlock :: return the block schema of a hydrated ControlGroup
-// used to convert a controlGroup into a cty type for block evaluation
-// TODO autogenerate from ControlGroup struct by reflection?
-var controlGroupBlock = configschema.Block{
-	Attributes: map[string]*configschema.Attribute{
-		"name":          {Optional: true, Type: cty.String},
-		"description":   {Optional: true, Type: cty.String},
-		"documentation": {Optional: true, Type: cty.String},
-		"labels":        {Optional: true, Type: cty.List(cty.String)},
-		"parent":        {Optional: true, Type: cty.String},
-		"title":         {Optional: true, Type: cty.String},
-	},
-}
-
-func controlGroupCtyType() cty.Type {
-	spec := controlGroupBlock.DecoderSpec()
-	return hcldec.ImpliedType(spec)
+	return getCtyValue(q)
 }
 
 func (c *ControlGroup) String() string {

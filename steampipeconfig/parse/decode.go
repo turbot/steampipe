@@ -98,8 +98,8 @@ func decodeQuery(block *hcl.Block, ctx *hcl.EvalContext) (*modconfig.Query, *dec
 	}
 
 	res := &decodeResult{}
-	for attribute, dest := range modconfig.HclProperties(query) {
-		res.Merge(parseAttribute(attribute, dest, content, ctx))
+	for attribute, attributeDetails := range modconfig.GetAttributeDetails(query) {
+		res.Merge(parseAttribute(attribute, attributeDetails.Dest, content, ctx))
 	}
 	return query, res
 }
@@ -127,8 +127,8 @@ func decodeControl(block *hcl.Block, ctx *hcl.EvalContext) (*modconfig.Control, 
 	}
 
 	res := &decodeResult{}
-	for attribute, dest := range modconfig.HclProperties(control) {
-		res.Merge(parseAttribute(attribute, dest, content, ctx))
+	for attribute, attributeDetails := range modconfig.GetAttributeDetails(control) {
+		res.Merge(parseAttribute(attribute, attributeDetails.Dest, content, ctx))
 	}
 	return control, res
 }
@@ -156,8 +156,8 @@ func decodeControlGroup(block *hcl.Block, ctx *hcl.EvalContext) (*modconfig.Cont
 	}
 
 	res := &decodeResult{}
-	for attribute, dest := range modconfig.HclProperties(controlGroup) {
-		res.Merge(parseAttribute(attribute, dest, content, ctx))
+	for attribute, attributeDetails := range modconfig.GetAttributeDetails(controlGroup) {
+		res.Merge(parseAttribute(attribute, attributeDetails.Dest, content, ctx))
 	}
 	return controlGroup, res
 }
@@ -195,7 +195,6 @@ func decodeLocals(block *hcl.Block, ctx *hcl.EvalContext) ([]*modconfig.Local, *
 }
 
 func decodeMod(block *hcl.Block, mod *modconfig.Mod, ctx *hcl.EvalContext) *decodeResult {
-	mod.ShortName = block.Labels[0]
 	content, diags := block.Body.Content(mod.Schema())
 	if diags.HasErrors() {
 		return &decodeResult{Diags: diags}
@@ -213,8 +212,8 @@ func decodeMod(block *hcl.Block, mod *modconfig.Mod, ctx *hcl.EvalContext) *deco
 	}
 
 	res := &decodeResult{}
-	for attribute, dest := range modconfig.HclProperties(mod) {
-		res.Merge(parseAttribute(attribute, dest, content, ctx))
+	for attribute, attributeDetails := range modconfig.GetAttributeDetails(mod) {
+		res.Merge(parseAttribute(attribute, attributeDetails.Dest, content, ctx))
 	}
 
 	for _, block := range content.Blocks {
@@ -242,8 +241,8 @@ func decodeOpenGraph(block *hcl.Block, ctx *hcl.EvalContext) (*modconfig.OpenGra
 		return nil, &decodeResult{Diags: diags}
 	}
 
-	for attribute, dest := range modconfig.HclProperties(opengraph) {
-		res.Merge(parseAttribute(attribute, dest, content, ctx))
+	for attribute, attributeDetails := range modconfig.GetAttributeDetails(opengraph) {
+		res.Merge(parseAttribute(attribute, attributeDetails.Dest, content, ctx))
 	}
 
 	return opengraph, res
