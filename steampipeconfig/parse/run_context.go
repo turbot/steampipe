@@ -157,7 +157,7 @@ func (c *RunContext) AddResource(resource modconfig.HclResource, block *hcl.Bloc
 	if !c.Mod.AddResource(resource) {
 		diagnostics = append(diagnostics, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("mod defines more that one query named %s", resource.Name()),
+			Summary:  fmt.Sprintf("mod defines more that one query named %s", resource.FullName()),
 			Subject:  &block.DefRange,
 		})
 	}
@@ -173,17 +173,17 @@ func (c *RunContext) addResourceToVariables(resource modconfig.HclResource, bloc
 	if err != nil {
 		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("failed to convert resource '%s'to its cty value", resource.Name()),
+			Summary:  fmt.Sprintf("failed to convert resource '%s'to its cty value", resource.FullName()),
 			Detail:   err.Error(),
 			Subject:  &block.DefRange,
 		}}
 	}
 
-	parsedName, err := modconfig.ParseResourceName(resource.Name())
+	parsedName, err := modconfig.ParseResourceName(resource.FullName())
 	if err != nil {
 		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("failed to parse resourece name %s", resource.Name()),
+			Summary:  fmt.Sprintf("failed to parse resourece name %s", resource.FullName()),
 			Detail:   err.Error(),
 			Subject:  &block.DefRange,
 		}}
@@ -204,8 +204,8 @@ func (c *RunContext) addResourceToVariables(resource modconfig.HclResource, bloc
 	c.buildEvalContext()
 
 	// remove this resource from unparsed blocks
-	if _, ok := c.UnresolvedBlocks[resource.Name()]; ok {
-		delete(c.UnresolvedBlocks, resource.Name())
+	if _, ok := c.UnresolvedBlocks[resource.FullName()]; ok {
+		delete(c.UnresolvedBlocks, resource.FullName())
 	}
 	return nil
 }

@@ -38,7 +38,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 				diags = append(diags, res.Diags...)
 			}
 			if len(res.Depends) > 0 {
-				runCtx.AddDependencies(block, runCtx.Mod.Name(), res.Depends)
+				runCtx.AddDependencies(block, runCtx.Mod.FullName(), res.Depends)
 			}
 
 		case modconfig.BlockTypeQuery:
@@ -80,7 +80,7 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 	if res.Success() {
 		// if resource supports metadata, save it
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
-			metadata := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.Mod)
+			metadata := GetMetadataForParsedResource(resource.FullName(), block, runCtx.FileData, runCtx.Mod)
 			resourceWithMetadata.SetMetadata(metadata)
 		}
 		moreDiags := runCtx.AddResource(resource, block)
@@ -92,7 +92,7 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 			diags = append(diags, res.Diags...)
 		}
 		if len(res.Depends) > 0 {
-			runCtx.AddDependencies(block, resource.Name(), res.Depends)
+			runCtx.AddDependencies(block, resource.FullName(), res.Depends)
 		}
 	}
 	return diags

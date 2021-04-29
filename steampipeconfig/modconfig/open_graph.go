@@ -26,7 +26,7 @@ func (o *OpenGraph) CtyValue() (cty.Value, error) {
 	return getCtyValue(o)
 }
 
-// Name :: implementation of  HclResource
-func (o *OpenGraph) Name() string {
+// FullName :: implementation of  HclResource
+func (o *OpenGraph) FullName() string {
 	return o.Title
 }

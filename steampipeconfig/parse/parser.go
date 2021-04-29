@@ -97,8 +97,8 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	for _, r := range pseudoResources {
 		// is there a hcl resource with the same name as this pseudo resource - it takes precedece
 		// TODO CHECK FOR PSEUDO RESOURCE DUPES AND WARN
-		if _, ok := hclResources[r.Name()]; ok {
-			duplicates = append(duplicates, r.Name())
+		if _, ok := hclResources[r.FullName()]; ok {
+			duplicates = append(duplicates, r.FullName())
 			continue
 		}
 		mod.AddPseudoResource(r)

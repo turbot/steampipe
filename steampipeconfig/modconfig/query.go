@@ -86,14 +86,14 @@ func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 	return q, sqlBytes, nil
 }
 
-// Name :: implementation of MappableResource, HclResource
-func (q *Query) Name() string {
+// FullName :: implementation of MappableResource, HclResource
+func (q *Query) FullName() string {
 	return fmt.Sprintf("query.%s", q.ShortName)
 }
 
-// LongName :: name in format: '<modName>.control.<shortName>'
-func (q *Query) LongName() string {
-	return fmt.Sprintf("%s.%s", q.metadata.ModShortName, q.Name())
+// QualifiedName :: name in format: '<modName>.control.<shortName>'
+func (q *Query) QualifiedName() string {
+	return fmt.Sprintf("%s.%s", q.metadata.ModShortName, q.FullName())
 }
 
 // GetMetadata :: implementation of HclResource and MappableResource

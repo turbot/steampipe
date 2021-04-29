@@ -12,7 +12,7 @@ func LoadModDependencies(m *modconfig.Mod, modsFolder string, modMap modconfig.M
 	//	if _, ok := modMap[dependencyName]; ok {
 	//		continue
 	//	}
-	//	// convert mod Name into a path
+	//	// convert mod FullName into a path
 	//	modPath := path.Join(modsFolder, dependencyName)
 	//	if _, err := os.Stat(modPath); os.IsNotExist(err) {
 	//		return fmt.Errorf("mod %s not found in mod folder %s", dependencyName, modsFolder)

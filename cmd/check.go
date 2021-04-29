@@ -109,7 +109,7 @@ func getControls(args []string, workspace *workspace.Workspace, client *db.Clien
 		utils.FailOnErrorWithMessage(err, "failed to execute '--where' SQL")
 		var filteredRes []*modconfig.Control
 		for _, control := range res {
-			if _, ok := filterControlNames[control.Name()]; ok {
+			if _, ok := filterControlNames[control.FullName()]; ok {
 				filteredRes = append(filteredRes, control)
 			}
 		}
@@ -185,7 +185,7 @@ func executeControl(control *modconfig.Control, workspace *workspace.Workspace, 
 	// resolve the query parameter of the control
 	query, _ = getQueryFromArg(typeHelpers.SafeString(control.SQL), workspace)
 	if query == "" {
-		utils.ShowWarning(fmt.Sprintf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typeHelpers.SafeString(control.SQL)))
+		utils.ShowWarning(fmt.Sprintf(`cannot run %s - failed to resolve query "%s"`, control.FullName(), typeHelpers.SafeString(control.SQL)))
 		return nil
 	}
 	// the db executor sends result data over resultsStreamer

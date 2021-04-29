@@ -15,8 +15,8 @@ type Local struct {
 	metadata *ResourceMetadata
 }
 
-// Name :: implementation of HclResource
-func (l *Local) Name() string {
+// FullName :: implementation of HclResource
+func (l *Local) FullName() string {
 	return fmt.Sprintf("local.%s", l.ShortName)
 }
 

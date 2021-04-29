@@ -69,9 +69,9 @@ func (c *Control) String() string {
 		labels, links)
 }
 
-//LongName :: name in format: '<modName>.control.<shortName>'
-func (c *Control) LongName() string {
-	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.Name())
+// QualifiedName :: name in format: '<modName>.control.<shortName>'
+func (c *Control) QualifiedName() string {
+	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName())
 }
 
 // AddChild  :: implementation of ControlTreeItem - controls cannot have children so just return error
@@ -90,15 +90,15 @@ func (c *Control) SetParent(parent ControlTreeItem) error {
 	return nil
 }
 
-// Name :: implementation of ControlTreeItem, HclResource
+// FullName :: implementation of ControlTreeItem, HclResource
 // return name in format: 'control.<shortName>'
-func (c *Control) Name() string {
+func (c *Control) FullName() string {
 	return fmt.Sprintf("control.%s", c.ShortName)
 }
 
 // Path :: implementation of ControlTreeItem
 func (c *Control) Path() []string {
-	path := []string{c.Name()}
+	path := []string{c.FullName()}
 	if c.parent != nil {
 		path = append(c.parent.Path(), path...)
 	}

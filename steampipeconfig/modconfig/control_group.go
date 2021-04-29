@@ -48,7 +48,7 @@ func (c *ControlGroup) String() string {
 	// build list of childrens long names
 	var children []string
 	for _, child := range c.children {
-		children = append(children, child.Name())
+		children = append(children, child.FullName())
 	}
 	sort.Strings(children)
 	return fmt.Sprintf(`
@@ -61,7 +61,7 @@ func (c *ControlGroup) String() string {
   Children: 
     %s
 `,
-		types.SafeString(c.Name),
+		c.ShortName,
 		types.SafeString(c.Title),
 		types.SafeString(c.Description),
 		types.SafeString(c.ParentName),
@@ -81,9 +81,9 @@ func (c *ControlGroup) GetChildControls() []*Control {
 	return res
 }
 
-// LongName :: name in format: '<modName>.control.<shortName>'
-func (c *ControlGroup) LongName() string {
-	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.Name())
+// QualifiedName :: name in format: '<modName>.control.<shortName>'
+func (c *ControlGroup) QualifiedName() string {
+	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName())
 }
 
 // AddChild :: implementation of ControlTreeItem
@@ -108,15 +108,15 @@ func (c *ControlGroup) SetParent(parent ControlTreeItem) error {
 	return nil
 }
 
-// Name :: implementation of ControlTreeItem, HclResource
+// FullName :: implementation of ControlTreeItem, HclResource
 // return name in format: 'control.<shortName>'
-func (c *ControlGroup) Name() string {
+func (c *ControlGroup) FullName() string {
 	return fmt.Sprintf("control_group.%s", c.ShortName)
 }
 
 // Path :: implementation of ControlTreeItem
 func (c *ControlGroup) Path() []string {
-	path := []string{c.Name()}
+	path := []string{c.FullName()}
 	if c.parent != nil {
 		path = append(c.parent.Path(), path...)
 	}

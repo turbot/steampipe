@@ -10,7 +10,7 @@ import (
 // return the created resource, and the file data
 type MappableResource interface {
 	InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error)
-	Name() string
+	FullName() string
 
 	GetMetadata() *ResourceMetadata
 	SetMetadata(*ResourceMetadata)
@@ -23,15 +23,15 @@ type ControlTreeItem interface {
 	SetParent(ControlTreeItem) error
 	// AddChild :: add a child to the item
 	AddChild(child ControlTreeItem) error
-	// Name :: name in the format <type>.<name>
-	Name() string
+	// FullName :: name in the format <type>.<name>
+	FullName() string
 	// Path ::array of parents in the control hiearchy
 	Path() []string
 }
 
 //  HclResource :: a resource which is defined in HCL, and supports metadata
 type HclResource interface {
-	Name() string
+	FullName() string
 
 	CtyValue() (cty.Value, error)
 	Schema() *hcl.BodySchema
@@ -39,7 +39,7 @@ type HclResource interface {
 
 //  ResourceWithMetadata :: a resource which is supports reflection metadata
 type ResourceWithMetadata interface {
-	Name() string
+	FullName() string
 	GetMetadata() *ResourceMetadata
 	SetMetadata(metadata *ResourceMetadata)
 }
