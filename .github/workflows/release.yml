@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'The branch that will be built'
+        description: "The branch that will be built"
         required: true
       tag:
-        description: 'The release tag that will be set'
+        description: "The release tag that will be set"
         required: true
 
 env:
@@ -16,7 +16,7 @@ jobs:
   goreleaser:
     name: Build
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -70,10 +70,9 @@ jobs:
     needs: goreleaser
     strategy:
       matrix:
-        platform: [ ubuntu-latest ]
+        platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -168,6 +167,37 @@ jobs:
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # publish_docker_image:
+  #   name: Push Docker image to Docker Hub
+  #   needs: [goreleaser, create_release]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Check out the repo
+  #       uses: actions/checkout@v2
+  #     - name: Download Linux Build Artifacts
+  #       uses: actions/download-artifact@v2
+  #       with:
+  #         name: build-artifact-linux
+  #         path: /home/runner/work/steampipe/steampipe
+  #     - name: Location of files
+  #       run: |
+  #         ls -la $GITHUB_WORKSPACE
+  #     - name: Login to DockerHub
+  #       uses: docker/login-action@v1
+  #       with:
+  #         username: ${{ secrets.DOCKER_USERNAME }}
+  #         password: ${{ secrets.DOCKER_PASSWORD }}
+  #     - name: Push to Docker Hub
+  #       id: docker_build
+  #       uses: docker/build-push-action@v2
+  #       with:
+  #         context: ./
+  #         file: ./dockerfile
+  #         push: true
+  #         tags: turbot/steampipe:${{ github.event.inputs.tag }}
+  #     - name: Image digest
+  #       run: echo ${{ steps.docker_build.outputs.digest }}
 
   clean_up:
     # let's clean up the artifacts.
