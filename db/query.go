@@ -1,9 +1,12 @@
 package db
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/constants"
@@ -55,7 +58,19 @@ func RunInteractivePrompt(workspace NamedQueryProvider, client *Client) (*result
 func ExecuteQuery(queryString string, client *Client) (*results.ResultStreamer, error) {
 	resultsStreamer := results.NewResultStreamer()
 
-	result, err := client.ExecuteQuery(queryString, false)
+	// setup the Ctrl+C Signal Channel
+	ctx, cancel := context.WithCancel(context.Background())
+	sigIntChannel := make(chan os.Signal, 1)
+	signal.Notify(sigIntChannel, os.Interrupt)
+	go func() {
+		<-sigIntChannel
+		cancel()
+		close(sigIntChannel)
+		resultsStreamer.Done()
+		fmt.Println("Query cancelled")
+	}()
+
+	result, err := client.executeQuery(queryString, false, ctx)
 	if err != nil {
 		return nil, err
 	}

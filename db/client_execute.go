@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -89,7 +90,10 @@ func (c *Client) ExecuteQuery(query string, countStream bool) (*results.QueryRes
 			}
 			err = rows.Scan(resultPtrs...)
 			if err != nil {
-				utils.ShowErrorWithMessage(err, "Failed to scan row")
+				if err != context.Canceled {
+					utils.ShowErrorWithMessage(err, "Failed to scan row")
+				}
+				utils.StopSpinner(spinner)
 				return
 			}
 			// populate row data - handle special case types

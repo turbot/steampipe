@@ -1,7 +1,11 @@
 package db
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"runtime/debug"
 	"sort"
 	"strings"
 
@@ -27,6 +31,7 @@ type InteractiveClient struct {
 	interactivePrompt       *prompt.Prompt
 	interactiveQueryHistory *queryhistory.QueryHistory
 	autocompleteOnEmpty     bool
+	activeQueryCancelFunc   context.CancelFunc
 }
 
 func newInteractiveClient(workspace NamedQueryProvider, client *Client) (*InteractiveClient, error) {
@@ -58,7 +63,22 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 	fmt.Printf("Welcome to Steampipe v%s\n", version.String())
 	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
 
+	// setup the Ctrl+C Signal Channel
+	sigIntChannel := make(chan os.Signal, 1)
+	signal.Notify(sigIntChannel, os.Interrupt)
+	go func() {
+		for range sigIntChannel {
+			if c.hasActiveCancel() {
+				c.activeQueryCancelFunc()
+				resultsStreamer.Done()
+				c.nullifyActiveCancel()
+			}
+		}
+	}()
+
 	for {
+		c.nullifyActiveCancel()
+
 		rerun := c.runInteractivePrompt(resultsStreamer)
 
 		// persist saved history
@@ -71,6 +91,9 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 		// so that we know
 		resultsStreamer.Wait()
 	}
+
+	// close up the SIGINT channel so that the receiver goroutine can quit
+	close(sigIntChannel)
 }
 
 func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *results.ResultStreamer) (ret utils.InteractiveExitStatus) {
@@ -226,7 +249,10 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 	} else {
 		// otherwise execute query
 		shouldShowCounter := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.ArgTable
-		if result, err := c.client.ExecuteQuery(query, shouldShowCounter); err != nil {
+		ctx := context.Background()
+		ctx, cancel := context.WithCancel(ctx)
+		c.setupActiveCancel(ctx, cancel)
+		if result, err := c.client.ExecuteQuery(query, shouldShowCounter, ctx); err != nil {
 			utils.ShowError(err)
 			resultsStreamer.Done()
 		} else {
@@ -237,6 +263,23 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 	// store the history
 	c.interactiveQueryHistory.Put(historyItem)
 	c.restartInteractiveSession()
+}
+
+func (c *InteractiveClient) hasActiveCancel() bool {
+	fmt.Println("hasActiveCancel")
+	debug.PrintStack()
+	return c.activeQueryCancelFunc != nil
+}
+func (c *InteractiveClient) setupActiveCancel(ctx context.Context, cancel context.CancelFunc) {
+	fmt.Println("setupActiveCancel")
+	debug.PrintStack()
+	c.activeQueryCancelFunc = cancel
+}
+
+func (c *InteractiveClient) nullifyActiveCancel() {
+	fmt.Println("v")
+	debug.PrintStack()
+	c.activeQueryCancelFunc = nil
 }
 
 func (c *InteractiveClient) executeMetaquery(query string) error {
