@@ -66,16 +66,16 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	// 1) get names of all resources defined in hcl
 	hclResources := make(map[string]bool)
 	for _, block := range content.Blocks {
-		// if this is a mod, build a shell mod struct (with just thename populated)
-		if block.Type == string(modconfig.BlockTypeMod) {
+		// if this is a mod, build a shell mod struct (with just the ame populated)
+		switch block.Type {
+		case string(modconfig.BlockTypeMod):
 			// if there is more than one mod, fail
 			if mod != nil {
 				return nil, fmt.Errorf("more than 1 mod definition found in %s", modPath)
 			}
 			mod = modconfig.NewMod(block.Labels[0], modPath)
-		} else {
-			// all non mod resources, save the resource name
-			// TODO ERROR HANDLING FOR BAD BLOCK TYPES
+		case modconfig.BlockTypeQuery:
+			// for any mappable resource, store the resource name
 			name := modconfig.BuildModResourceName(modconfig.ModBlockType(block.Type), block.Labels[0])
 			hclResources[name] = true
 		}

@@ -43,6 +43,8 @@ type Mod struct {
 
 // Schema :: implementation of HclResource
 func (m *Mod) Schema() *hcl.BodySchema {
+	// todo this could be done automatically if we had a tag for block properties
+
 	var attributes []hcl.AttributeSchema
 	for attribute := range HclProperties(m) {
 		attributes = append(attributes, hcl.AttributeSchema{Name: attribute})
@@ -87,13 +89,6 @@ func NewMod(shortName, modPath string) *Mod {
 		ControlGroups: make(map[string]*ControlGroup),
 		ModPath:       modPath,
 	}
-}
-
-func (m *Mod) FullName() string {
-	if m.Version == nil {
-		return types.SafeString(m.Name)
-	}
-	return fmt.Sprintf("%s@%s", m.Name, types.SafeString(m.Version))
 }
 
 func (m *Mod) String() string {
@@ -146,7 +141,7 @@ func (m *Mod) String() string {
 	if m.Version != nil {
 		versionString = fmt.Sprintf("\nVersion: %s", types.SafeString(m.Version))
 	}
-	return fmt.Sprintf(`Name: %s
+	return fmt.Sprintf(`ShortName: %s
 Title: %s
 Description: %s %s
 //Mod Dependencies: %s

@@ -41,6 +41,7 @@ func Load(workspacePath string) (*Workspace, error) {
 	// create shell workspace
 	workspace := &Workspace{Path: workspacePath}
 
+	// determine whether to load files recursively or just from the top level folder
 	workspace.setListFlag()
 
 	// load the .steampipe ignore file

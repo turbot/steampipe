@@ -1,3 +1,9 @@
+locals {
+    ll358--58___ = "testing"
+    2:ll77024 = "select 4 as foo"
+}
+
+
 query "q1"{
     title ="Q1"
     description = "THIS IS QUERY 1"
@@ -28,11 +34,11 @@ query "q4"{
 query "q5"{
     title ="Q1"
     description = "THIS IS QUERY 5"
-    sql = query.q6.sql
+    sql = local.ll4
 }
 
 query "q6"{
     title ="Q1"
     description = "THIS IS QUERY 6"
-    sql ="OK THIS WILL FAIL"
+    sql = local.q2
 }

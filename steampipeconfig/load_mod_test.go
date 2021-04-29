@@ -112,7 +112,7 @@ var testCasesLoadMod = map[string]loadModTest{
 	},
 	"controls_and_groups": {
 		source: "test_data/mods/controls_and_groups",
-		expected: `Name: 
+		expected: `ShortName: 
 Title: M1
 Description: THIS IS M1 
 Mod Dependencies: []
@@ -122,7 +122,7 @@ Queries:
 Controls: 
 
   -----
-  Name: c1
+  ShortName: c1
   Title: 
   Description: 
   Query: select 'pass' as result
@@ -132,7 +132,7 @@ Controls:
 
 
   -----
-  Name: c2
+  ShortName: c2
   Title: 
   Description: 
   Query: select 'pass' as result
@@ -142,7 +142,7 @@ Controls:
 
 
   -----
-  Name: c3
+  ShortName: c3
   Title: 
   Description: 
   Query: select 'pass' as result
@@ -152,7 +152,7 @@ Controls:
 
 
   -----
-  Name: c4
+  ShortName: c4
   Title: 
   Description: 
   Query: select 'pass' as result
@@ -162,7 +162,7 @@ Controls:
 
 
   -----
-  Name: c5
+  ShortName: c5
   Title: 
   Description: 
   Query: select 'pass' as result
@@ -172,7 +172,7 @@ Controls:
 
 
   -----
-  Name: c6
+  ShortName: c6
   Title: 
   Description: 
   Query: select 'FAIL' as result
@@ -183,7 +183,7 @@ Controls:
 Control Groups: 
 
   -----
-  Name: 
+  ShortName: 
   Title: 
   Description: 
   Parent:  
@@ -194,7 +194,7 @@ Control Groups:
 
 
   -----
-  Name: 
+  ShortName: 
   Title: 
   Description: 
   Parent: control_group.cg_1 
@@ -206,7 +206,7 @@ Control Groups:
 
 
   -----
-  Name: 
+  ShortName: 
   Title: 
   Description: 
   Parent: control_group.cg_1_1 
@@ -216,7 +216,7 @@ Control Groups:
 
 
   -----
-  Name: 
+  ShortName: 
   Title: 
   Description: 
   Parent: control_group.cg_1_1 
@@ -228,7 +228,7 @@ Control Groups:
 
 
   -----
-  Name: 
+  ShortName: 
   Title: 
   Description: 
   Parent: control_group.cg_1 

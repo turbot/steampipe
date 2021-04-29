@@ -36,6 +36,5 @@ type HclResource interface {
 	SetMetadata(metadata *ResourceMetadata)
 
 	CtyValue() (cty.Value, error)
-	//HclProperties() map[string]interface{}
 	Schema() *hcl.BodySchema
 }

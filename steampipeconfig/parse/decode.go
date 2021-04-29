@@ -2,8 +2,12 @@ package parse
 
 import (
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
+
+// A consistent detail message for all "not a valid identifier" diagnostics.
+const badIdentifierDetail = "A name must start with a letter or underscore and may contain only letters, digits, underscores, and dashes."
 
 func decode(runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
@@ -38,8 +42,14 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			diags = append(diags, handleDecodeResult(control, res, block, runCtx)...)
 
 		case modconfig.BlockTypeControlGroup:
-			query, res := decodeControlGroup(block, runCtx.EvalCtx)
-			diags = append(diags, handleDecodeResult(query, res, block, runCtx)...)
+			controlGroup, res := decodeControlGroup(block, runCtx.EvalCtx)
+			diags = append(diags, handleDecodeResult(controlGroup, res, block, runCtx)...)
+
+		case modconfig.BlockTypeLocals:
+			locals, res := decodeLocals(block, runCtx.EvalCtx)
+			for _, local := range locals {
+				diags = append(diags, handleDecodeResult(local, res, block, runCtx)...)
+			}
 		}
 	}
 	return diags
@@ -70,9 +80,21 @@ func decodeQuery(block *hcl.Block, ctx *hcl.EvalContext) (*modconfig.Query, *dec
 		ShortName: block.Labels[0],
 		DeclRange: block.DefRange,
 	}
+
 	content, diags := block.Body.Content(query.Schema())
 	if diags.HasErrors() {
 		return nil, &decodeResult{Diags: diags}
+	}
+
+	if !hclsyntax.ValidIdentifier(query.ShortName) {
+		return nil, &decodeResult{
+			Diags: hcl.Diagnostics{&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Invalid query name",
+				Detail:   badIdentifierDetail,
+				Subject:  &block.LabelRanges[0],
+			}},
+		}
 	}
 
 	res := &decodeResult{}
@@ -87,9 +109,21 @@ func decodeControl(block *hcl.Block, ctx *hcl.EvalContext) (*modconfig.Control, 
 		ShortName: block.Labels[0],
 		DeclRange: block.DefRange,
 	}
+
 	content, diags := block.Body.Content(control.Schema())
 	if diags.HasErrors() {
 		return nil, &decodeResult{Diags: diags}
+	}
+
+	if !hclsyntax.ValidIdentifier(control.ShortName) {
+		return nil, &decodeResult{
+			Diags: hcl.Diagnostics{&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Invalid query name",
+				Detail:   badIdentifierDetail,
+				Subject:  &block.LabelRanges[0],
+			}},
+		}
 	}
 
 	res := &decodeResult{}
@@ -104,9 +138,21 @@ func decodeControlGroup(block *hcl.Block, ctx *hcl.EvalContext) (*modconfig.Cont
 		ShortName: block.Labels[0],
 		DeclRange: block.DefRange,
 	}
+
 	content, diags := block.Body.Content(controlGroup.Schema())
 	if diags.HasErrors() {
 		return nil, &decodeResult{Diags: diags}
+	}
+
+	if !hclsyntax.ValidIdentifier(controlGroup.ShortName) {
+		return nil, &decodeResult{
+			Diags: hcl.Diagnostics{&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Invalid query name",
+				Detail:   badIdentifierDetail,
+				Subject:  &block.LabelRanges[0],
+			}},
+		}
 	}
 
 	res := &decodeResult{}
@@ -116,10 +162,54 @@ func decodeControlGroup(block *hcl.Block, ctx *hcl.EvalContext) (*modconfig.Cont
 	return controlGroup, res
 }
 
+func decodeLocals(block *hcl.Block, ctx *hcl.EvalContext) ([]*modconfig.Local, *decodeResult) {
+	attrs, diags := block.Body.JustAttributes()
+	if len(attrs) == 0 {
+		return nil, &decodeResult{Diags: diags}
+	}
+
+	locals := make([]*modconfig.Local, 0, len(attrs))
+	for name, attr := range attrs {
+		if !hclsyntax.ValidIdentifier(name) {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Invalid local value name",
+				Detail:   badIdentifierDetail,
+				Subject:  &attr.NameRange,
+			})
+		}
+
+		val, moreDiags := attr.Expr.Value(ctx)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+			continue
+		}
+
+		locals = append(locals, &modconfig.Local{
+			ShortName: name,
+			Value:     val,
+			DeclRange: attr.Range,
+		})
+	}
+	return locals, &decodeResult{Diags: diags}
+}
+
 func decodeMod(block *hcl.Block, mod *modconfig.Mod, ctx *hcl.EvalContext) *decodeResult {
+	mod.ShortName = block.Labels[0]
 	content, diags := block.Body.Content(mod.Schema())
 	if diags.HasErrors() {
 		return &decodeResult{Diags: diags}
+	}
+
+	if !hclsyntax.ValidIdentifier(mod.ShortName) {
+		return &decodeResult{
+			Diags: hcl.Diagnostics{&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Invalid query name",
+				Detail:   badIdentifierDetail,
+				Subject:  &block.LabelRanges[0],
+			}},
+		}
 	}
 
 	res := &decodeResult{}

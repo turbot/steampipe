@@ -39,10 +39,6 @@ var ModFileSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type:       "variable",
-			LabelNames: []string{"name"},
-		},
-		{
 			Type:       string(modconfig.BlockTypeMod),
 			LabelNames: []string{"name"},
 		},
@@ -57,6 +53,9 @@ var ModFileSchema = &hcl.BodySchema{
 		{
 			Type:       string(modconfig.BlockTypeControlGroup),
 			LabelNames: []string{"name"},
+		},
+		{
+			Type: string(modconfig.BlockTypeLocals),
 		},
 	},
 }

@@ -1,3 +1,8 @@
+locals {
+  l1 = "testing"
+  q2 = "select 3 as Iamalocal"
+}
+
 mod "m1" {
   # hub metadata
   title = upper("aws cis")
