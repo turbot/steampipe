@@ -17,7 +17,7 @@ query "cg"{
 query "q2"{
     title ="Q1"
     description = "THIS IS QUERY 2"
-    sql = query.q3.sql
+    sql = query.q1.name
 }
 
 query "q3"{

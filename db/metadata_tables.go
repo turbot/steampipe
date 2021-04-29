@@ -133,7 +133,7 @@ func getColumnDefinitions(item interface{}) []string {
 	return columnDef
 }
 
-func getTableInsertSqlForResource(item modconfig.HclResource, tableName string) string {
+func getTableInsertSqlForResource(item modconfig.ResourceWithMetadata, tableName string) string {
 
 	// for each item there is core reflection data (i.e. reflection resource all items have)
 	// and item specific reflection data

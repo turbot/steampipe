@@ -11,18 +11,18 @@ import (
 
 // Control :: struct representing the control mod resource
 type Control struct {
-	ShortName string `json:"name"`
+	ShortName string `cty:"name"`
 
-	Description   *string   `json:"description" column:"description" column_type:"text"`
-	Documentation *string   `json:"documentation" column:"documentation" column_type:"text"`
-	Labels        *[]string `json:"labels" column:"labels" column_type:"jsonb"`
-	Links         *[]string `json:"links" column:"links" column_type:"jsonb"`
-	ParentName    *string   `json:"parent" column:"parent" column_type:"text"`
-	SQL           *string   `json:"sql" column:"sql" column_type:"text"`
-	Severity      *string   `json:"severity" column:"severity" column_type:"text"`
-	Title         *string   `json:"title" column:"title" column_type:"text"`
+	Description   *string   `cty:"description" column:"description" column_type:"text"`
+	Documentation *string   `cty:"documentation" column:"documentation" column_type:"text"`
+	Labels        *[]string `cty:"labels" column:"labels" column_type:"jsonb"`
+	Links         *[]string `cty:"links" column:"links" column_type:"jsonb"`
+	ParentName    *string   `cty:"parent" column:"parent" column_type:"text"`
+	SQL           *string   `cty:"sql" column:"sql" column_type:"text"`
+	Severity      *string   `cty:"severity" column:"severity" column_type:"text"`
+	Title         *string   `cty:"title" column:"title" column_type:"text"`
 
-	DeclRange hcl.Range `json:"-"`
+	DeclRange hcl.Range
 
 	parent   ControlTreeItem
 	metadata *ResourceMetadata

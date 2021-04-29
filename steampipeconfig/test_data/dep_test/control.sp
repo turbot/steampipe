@@ -15,9 +15,11 @@ control "c3"{
     title = upper("aws cis")
 }
 control "c4"{
-    sql = control.c1.sql
-    labels = ["public cloud", "aws"]
-    title = upper("aws cis")
+    sql = control.c1.name
+    labels = concat(control.c3.labels,[
+"cis_item_id:1"
+])
+    title = control.c1.name
 }
 control "c5"{
     sql = control.c2.sql

@@ -2,12 +2,15 @@ package parse
 
 import (
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 // A consistent detail message for all "not a valid identifier" diagnostics.
 const badIdentifierDetail = "A name must start with a letter or underscore and may contain only letters, digits, underscores, and dashes."
+const unknownVariableError = "Unknown variable"
+const missingMapElement = "Missing map element"
 
 func decode(runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
@@ -21,8 +24,13 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			Detail:   err.Error()})
 	}
 	for _, block := range blocks {
-		blockType := modconfig.ModBlockType(block.Type)
-		switch blockType {
+		moreDiags := validateName(block)
+		if diags.HasErrors() {
+			diags = append(diags, moreDiags...)
+			continue
+		}
+
+		switch modconfig.ModBlockType(block.Type) {
 		case modconfig.BlockTypeMod:
 			// pass the shell mod - it will be mutated
 			res := decodeMod(block, runCtx.Mod, runCtx.EvalCtx)
@@ -34,15 +42,27 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			}
 
 		case modconfig.BlockTypeQuery:
-			query, res := decodeQuery(block, runCtx.EvalCtx)
+			query := &modconfig.Query{
+				ShortName: block.Labels[0],
+				DeclRange: block.DefRange,
+			}
+			res := decodeResource(block, query, runCtx.EvalCtx)
 			diags = append(diags, handleDecodeResult(query, res, block, runCtx)...)
 
 		case modconfig.BlockTypeControl:
-			control, res := decodeControl(block, runCtx.EvalCtx)
+			control := &modconfig.Control{
+				ShortName: block.Labels[0],
+				DeclRange: block.DefRange,
+			}
+			res := decodeResource(block, control, runCtx.EvalCtx)
 			diags = append(diags, handleDecodeResult(control, res, block, runCtx)...)
 
 		case modconfig.BlockTypeControlGroup:
-			controlGroup, res := decodeControlGroup(block, runCtx.EvalCtx)
+			controlGroup := &modconfig.ControlGroup{
+				ShortName: block.Labels[0],
+				DeclRange: block.DefRange,
+			}
+			res := decodeResource(block, controlGroup, runCtx.EvalCtx)
 			diags = append(diags, handleDecodeResult(controlGroup, res, block, runCtx)...)
 
 		case modconfig.BlockTypeLocals:
@@ -58,8 +78,11 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	if res.Success() {
-		metadata := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.Mod)
-		resource.SetMetadata(metadata)
+		// if resource supports metadata, save it
+		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
+			metadata := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.Mod)
+			resourceWithMetadata.SetMetadata(metadata)
+		}
 		moreDiags := runCtx.AddResource(resource, block)
 		if diags.HasErrors() {
 			diags = append(diags, moreDiags...)
@@ -75,94 +98,49 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 	return diags
 }
 
-func decodeQuery(block *hcl.Block, ctx *hcl.EvalContext) (*modconfig.Query, *decodeResult) {
-	query := &modconfig.Query{
-		ShortName: block.Labels[0],
-		DeclRange: block.DefRange,
-	}
-
-	content, diags := block.Body.Content(query.Schema())
+func decodeResource(block *hcl.Block, resource modconfig.HclResource, ctx *hcl.EvalContext) *decodeResult {
+	content, diags := block.Body.Content(resource.Schema())
 	if diags.HasErrors() {
-		return nil, &decodeResult{Diags: diags}
+		return &decodeResult{Diags: diags}
 	}
 
-	if !hclsyntax.ValidIdentifier(query.ShortName) {
-		return nil, &decodeResult{
-			Diags: hcl.Diagnostics{&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid query name",
-				Detail:   badIdentifierDetail,
-				Subject:  &block.LabelRanges[0],
-			}},
-		}
-	}
-
-	res := &decodeResult{}
-	for attribute, attributeDetails := range modconfig.GetAttributeDetails(query) {
-		res.Merge(parseAttribute(attribute, attributeDetails.Dest, content, ctx))
-	}
-	return query, res
+	return decodeAttributes(resource, content, ctx)
 }
 
-func decodeControl(block *hcl.Block, ctx *hcl.EvalContext) (*modconfig.Control, *decodeResult) {
-	control := &modconfig.Control{
-		ShortName: block.Labels[0],
-		DeclRange: block.DefRange,
-	}
-
-	content, diags := block.Body.Content(control.Schema())
+func decodeMod(block *hcl.Block, mod *modconfig.Mod, ctx *hcl.EvalContext) *decodeResult {
+	diags := validateName(block)
 	if diags.HasErrors() {
-		return nil, &decodeResult{Diags: diags}
+		return &decodeResult{Diags: diags}
 	}
 
-	if !hclsyntax.ValidIdentifier(control.ShortName) {
-		return nil, &decodeResult{
-			Diags: hcl.Diagnostics{&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid query name",
-				Detail:   badIdentifierDetail,
-				Subject:  &block.LabelRanges[0],
-			}},
+	content, diags := block.Body.Content(mod.Schema())
+	if diags.HasErrors() {
+		return &decodeResult{Diags: diags}
+	}
+
+	res := decodeAttributes(mod, content, ctx)
+
+	for _, block := range content.Blocks {
+		switch block.Type {
+		// TODO add parsing of requires block
+		case "opengraph":
+			opengraph := &modconfig.OpenGraph{
+				DeclRange: block.DefRange,
+			}
+			res := decodeResource(block, opengraph, ctx)
+
+			res.Merge(res)
+			if res.Success() {
+				mod.OpenGraph = opengraph
+			}
 		}
 	}
 
-	res := &decodeResult{}
-	for attribute, attributeDetails := range modconfig.GetAttributeDetails(control) {
-		res.Merge(parseAttribute(attribute, attributeDetails.Dest, content, ctx))
-	}
-	return control, res
-}
-
-func decodeControlGroup(block *hcl.Block, ctx *hcl.EvalContext) (*modconfig.ControlGroup, *decodeResult) {
-	controlGroup := &modconfig.ControlGroup{
-		ShortName: block.Labels[0],
-		DeclRange: block.DefRange,
-	}
-
-	content, diags := block.Body.Content(controlGroup.Schema())
-	if diags.HasErrors() {
-		return nil, &decodeResult{Diags: diags}
-	}
-
-	if !hclsyntax.ValidIdentifier(controlGroup.ShortName) {
-		return nil, &decodeResult{
-			Diags: hcl.Diagnostics{&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid query name",
-				Detail:   badIdentifierDetail,
-				Subject:  &block.LabelRanges[0],
-			}},
-		}
-	}
-
-	res := &decodeResult{}
-	for attribute, attributeDetails := range modconfig.GetAttributeDetails(controlGroup) {
-		res.Merge(parseAttribute(attribute, attributeDetails.Dest, content, ctx))
-	}
-	return controlGroup, res
+	return res
 }
 
 func decodeLocals(block *hcl.Block, ctx *hcl.EvalContext) ([]*modconfig.Local, *decodeResult) {
+	// this implemented differently
 	attrs, diags := block.Body.JustAttributes()
 	if len(attrs) == 0 {
 		return nil, &decodeResult{Diags: diags}
@@ -194,58 +172,62 @@ func decodeLocals(block *hcl.Block, ctx *hcl.EvalContext) ([]*modconfig.Local, *
 	return locals, &decodeResult{Diags: diags}
 }
 
-func decodeMod(block *hcl.Block, mod *modconfig.Mod, ctx *hcl.EvalContext) *decodeResult {
-	content, diags := block.Body.Content(mod.Schema())
-	if diags.HasErrors() {
-		return &decodeResult{Diags: diags}
-	}
-
-	if !hclsyntax.ValidIdentifier(mod.ShortName) {
-		return &decodeResult{
-			Diags: hcl.Diagnostics{&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid query name",
-				Detail:   badIdentifierDetail,
-				Subject:  &block.LabelRanges[0],
-			}},
-		}
-	}
-
+func decodeAttributes(resource modconfig.HclResource, content *hcl.BodyContent, ctx *hcl.EvalContext) *decodeResult {
 	res := &decodeResult{}
-	for attribute, attributeDetails := range modconfig.GetAttributeDetails(mod) {
-		res.Merge(parseAttribute(attribute, attributeDetails.Dest, content, ctx))
+	for _, attributeDetails := range modconfig.GetAttributeDetails(resource) {
+		res.Merge(decodeAttribute(attributeDetails, content, ctx))
 	}
-
-	for _, block := range content.Blocks {
-		switch block.Type {
-		// TODO add parsing of requires block
-		case "opengraph":
-			opengraph, res := decodeOpenGraph(block, ctx)
-			res.Merge(res)
-			if res.Success() {
-				mod.OpenGraph = opengraph
-			}
-		}
-	}
-
 	return res
 }
 
-func decodeOpenGraph(block *hcl.Block, ctx *hcl.EvalContext) (*modconfig.OpenGraph, *decodeResult) {
-	res := &decodeResult{}
+func decodeAttribute(attributeDetails modconfig.AttributeDetails, content *hcl.BodyContent, ctx *hcl.EvalContext) *decodeResult {
+	attribute := attributeDetails.Attribute
+	dest := attributeDetails.Dest
 
-	opengraph := &modconfig.OpenGraph{}
+	var diags hcl.Diagnostics
+	var dependencies []hcl.Traversal
+	if content.Attributes[attribute] != nil {
+		expr := content.Attributes[attribute].Expr
+		dependencies, diags = decodeExpression(expr, dest, ctx)
+	}
+	return &decodeResult{Diags: diags, Depends: dependencies}
+}
 
-	content, diags := block.Body.Content(opengraph.Schema())
-	if diags.HasErrors() {
-		return nil, &decodeResult{Diags: diags}
+func decodeExpression(expr hcl.Expression, dest interface{}, ctx *hcl.EvalContext) ([]hcl.Traversal, hcl.Diagnostics) {
+	diags := gohcl.DecodeExpression(expr, ctx, dest)
+	var dependencies []hcl.Traversal
+	for _, diag := range diags {
+		if IsMissingVariableError(diag) {
+			// was this error caused by a missing dependency?
+			dependencies = append(dependencies, expr.(*hclsyntax.ScopeTraversalExpr).Traversal)
+		}
+	}
+	// if there were missing variable errors, suppress the errors and just return the dependencies
+	if len(dependencies) > 0 {
+		diags = nil
 	}
 
-	for attribute, attributeDetails := range modconfig.GetAttributeDetails(opengraph) {
-		res.Merge(parseAttribute(attribute, attributeDetails.Dest, content, ctx))
+	return dependencies, diags
+}
+
+func IsMissingVariableError(diag *hcl.Diagnostic) bool {
+	return diag.Summary == unknownVariableError || diag.Summary == missingMapElement
+}
+
+func validateName(block *hcl.Block) hcl.Diagnostics {
+	if len(block.Labels) == 0 {
+		return nil
 	}
 
-	return opengraph, res
+	if !hclsyntax.ValidIdentifier(block.Labels[0]) {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Invalid name",
+			Detail:   badIdentifierDetail,
+			Subject:  &block.LabelRanges[0],
+		}}
+	}
+	return nil
 }
 
 //

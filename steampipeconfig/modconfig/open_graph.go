@@ -7,10 +7,10 @@ import (
 
 type OpenGraph struct {
 	// The opengraph description (og:description) of the mod, for use in social media applications
-	Description string `json:"description"`
+	Description string `cty:"description"`
 	// The opengraph display title (og:title) of the mod, for use in social media applications.
-	Title     string    `json:"title"`
-	DeclRange hcl.Range `json:"-"`
+	Title     string `cty:"title"`
+	DeclRange hcl.Range
 }
 
 // Schema :: hcl schema for control
@@ -24,4 +24,9 @@ func (o *OpenGraph) Schema() *hcl.BodySchema {
 
 func (o *OpenGraph) CtyValue() (cty.Value, error) {
 	return getCtyValue(o)
+}
+
+// Name :: implementation of  HclResource
+func (o *OpenGraph) Name() string {
+	return o.Title
 }

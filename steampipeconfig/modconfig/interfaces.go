@@ -32,9 +32,14 @@ type ControlTreeItem interface {
 //  HclResource :: a resource which is defined in HCL, and supports metadata
 type HclResource interface {
 	Name() string
-	GetMetadata() *ResourceMetadata
-	SetMetadata(metadata *ResourceMetadata)
 
 	CtyValue() (cty.Value, error)
 	Schema() *hcl.BodySchema
+}
+
+//  ResourceWithMetadata :: a resource which is supports reflection metadata
+type ResourceWithMetadata interface {
+	Name() string
+	GetMetadata() *ResourceMetadata
+	SetMetadata(metadata *ResourceMetadata)
 }

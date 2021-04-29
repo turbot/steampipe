@@ -14,26 +14,26 @@ import (
 )
 
 type Mod struct {
-	ShortName string `json:"name"`
+	ShortName string `cty:"name"`
 
 	// note these must be consistent with the attributes defined in 'modSchema'
-	Color         *string   `json:"color" column:"color" column_type:"text"`
-	Description   *string   `json:"description" column:"description" column_type:"text"`
-	Documentation *string   `json:"documentation" column:"documentation" column_type:"text"`
-	Icon          *string   `json:"icon" column:"icon" column_type:"text"`
-	Labels        *[]string `json:"labels" column:"labels" column_type:"text[]"`
-	Title         *string   `json:"title" column:"title" column_type:"text"`
+	Color         *string   `cty:"color" column:"color" column_type:"text"`
+	Description   *string   `cty:"description" column:"description" column_type:"text"`
+	Documentation *string   `cty:"documentation" column:"documentation" column_type:"text"`
+	Icon          *string   `cty:"icon" column:"icon" column_type:"text"`
+	Labels        *[]string `cty:"labels" column:"labels" column_type:"text[]"`
+	Title         *string   `cty:"title" column:"title" column_type:"text"`
 
 	// TODO do we need this?
-	Version *string `json:"-"`
-	//ModDepends    []*ModVersion            `json:"-"`
-	//PluginDepends []*PluginDependency      `json:"-"`
-	Queries       map[string]*Query        `json:"-"`
-	Controls      map[string]*Control      `json:"-"`
-	ControlGroups map[string]*ControlGroup `json:"-"`
-	OpenGraph     *OpenGraph               `json:"-"`
-	ModPath       string                   `json:"-"`
-	DeclRange     hcl.Range                `json:"-"`
+	Version *string
+	//ModDepends    []*ModVersion
+	//PluginDepends []*PluginDependency
+	Queries       map[string]*Query
+	Controls      map[string]*Control
+	ControlGroups map[string]*ControlGroup
+	OpenGraph     *OpenGraph
+	ModPath       string
+	DeclRange     hcl.Range
 
 	children []ControlTreeItem
 	metadata *ResourceMetadata
