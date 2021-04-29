@@ -59,6 +59,14 @@ func (r *Runner) runAsyncJob(job func(), wg *sync.WaitGroup) {
 // tasks are to be run at most once every 24 hours
 // also, this is not to run in batch query mode
 func (r *Runner) shouldRun() bool {
+	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+	cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
+	if cmd.Name() == "query" && len(cmdArgs) > 0 {
+		// this is query batch mode
+		// we will not run scheduled tasks in this mode
+		return false
+	}
+
 	now := time.Now()
 	if r.currentState.LastCheck == "" {
 		return true
@@ -69,15 +77,5 @@ func (r *Runner) shouldRun() bool {
 	}
 	minutesElapsed := now.Sub(lastCheckedAt).Minutes()
 
-	if minutesElapsed > minimumMinutesBetweenChecks {
-		cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-		cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
-		if cmd.Name() == "query" && len(cmdArgs) > 0 {
-			// this is query batch mode
-			// we will not run scheduled tasks in this mode
-			return false
-		}
-		return true
-	}
-	return false
+	return minutesElapsed > minimumMinutesBetweenChecks
 }
