@@ -6,47 +6,89 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2/hcldec"
+	"github.com/hashicorp/terraform/configs/configschema"
+	"github.com/zclconf/go-cty/cty"
+
+	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
 )
 
 type Mod struct {
-	ShortName *string
+	ShortName string `json:"name"`
 
 	// note these must be consistent with the attributes defined in 'modSchema'
-	Color         *string   `column:"color" column_type:"text"`
-	Description   *string   `column:"description" column_type:"text"`
-	Documentation *string   `column:"documentation" column_type:"text"`
-	Icon          *string   `column:"icon" column_type:"text"`
-	Labels        *[]string `column:"labels" column_type:"text[]"`
-	Title         *string   `column:"title" column_type:"text"`
+	Color         *string   `json:"color" column:"color" column_type:"text"`
+	Description   *string   `json:"description" column:"description" column_type:"text"`
+	Documentation *string   `json:"documentation" column:"documentation" column_type:"text"`
+	Icon          *string   `json:"icon" column:"icon" column_type:"text"`
+	Labels        *[]string `json:"labels" column:"labels" column_type:"text[]"`
+	Title         *string   `json:"title" column:"title" column_type:"text"`
 
 	// TODO do we need this?
-	Version *string
+	Version *string `json:"-"`
+	//ModDepends    []*ModVersion            `json:"-"`
+	//PluginDepends []*PluginDependency      `json:"-"`
+	Queries       map[string]*Query        `json:"-"`
+	Controls      map[string]*Control      `json:"-"`
+	ControlGroups map[string]*ControlGroup `json:"-"`
+	OpenGraph     *OpenGraph               `json:"-"`
+	ModPath       string                   `json:"-"`
+	DeclRange     hcl.Range                `json:"-"`
 
-	ModDepends    []*ModVersion
-	PluginDepends []*PluginDependency
-	Queries       map[string]*Query
-	Controls      map[string]*Control
-	ControlGroups map[string]*ControlGroup
-	OpenGraph     *OpenGraph
+	children []ControlTreeItem
+	metadata *ResourceMetadata
+}
 
-	// direct children in the control tree
-	Children []ControlTreeItem
+// Schema :: implementation of HclResource
+func (m *Mod) Schema() *hcl.BodySchema {
+	var attributes []hcl.AttributeSchema
+	for attribute := range HclProperties(m) {
+		attributes = append(attributes, hcl.AttributeSchema{Name: attribute})
+	}
+	return &hcl.BodySchema{
+		Attributes: attributes,
+		Blocks: []hcl.BlockHeaderSchema{
+			{Type: "requires"},
+			{Type: "opengraph"},
+		}}
+}
 
-	// mod directory
-	ModPath string
+func (m *Mod) CtyValue() (cty.Value, error) {
+	return getCtyValue(m, modBlock)
+}
+
+// modBlock :: return the block schema of a hydrated Mod
+// used to convert a mod into a cty type for block evaluation
+// TODO autogenerate from Mod struct by reflection?
+var modBlock = configschema.Block{
+	Attributes: map[string]*configschema.Attribute{
+		"name":          {Optional: true, Type: cty.String},
+		"color":         {Optional: true, Type: cty.String},
+		"description":   {Optional: true, Type: cty.String},
+		"documentation": {Optional: true, Type: cty.String},
+		"icon":          {Optional: true, Type: cty.String},
+		"labels":        {Optional: true, Type: cty.List(cty.String)},
+		"title":         {Optional: true, Type: cty.String},
+	},
+}
+
+func modCtyType() cty.Type {
+	spec := modBlock.DecoderSpec()
+	return hcldec.ImpliedType(spec)
 }
 
 func NewMod(shortName, modPath string) *Mod {
 	return &Mod{
-		ShortName:     &shortName,
+		ShortName:     shortName,
 		Queries:       make(map[string]*Query),
 		Controls:      make(map[string]*Control),
 		ControlGroups: make(map[string]*ControlGroup),
 		ModPath:       modPath,
 	}
 }
+
 func (m *Mod) FullName() string {
 	if m.Version == nil {
 		return types.SafeString(m.Name)
@@ -58,14 +100,14 @@ func (m *Mod) String() string {
 	if m == nil {
 		return ""
 	}
-	var modDependStr []string
-	for _, d := range m.ModDepends {
-		modDependStr = append(modDependStr, d.String())
-	}
-	var pluginDependStr []string
-	for _, d := range m.PluginDepends {
-		pluginDependStr = append(pluginDependStr, d.String())
-	}
+	//var modDependStr []string
+	//for _, d := range m.ModDepends {
+	//	modDependStr = append(modDependStr, d.String())
+	//}
+	//var pluginDependStr []string
+	//for _, d := range m.PluginDepends {
+	//	pluginDependStr = append(pluginDependStr, d.String())
+	//}
 	// build ordered list of query names
 	var queryNames []string
 	for name := range m.Queries {
@@ -107,8 +149,8 @@ func (m *Mod) String() string {
 	return fmt.Sprintf(`Name: %s
 Title: %s
 Description: %s %s
-Mod Dependencies: %s
-Plugin Dependencies: %s
+//Mod Dependencies: %s
+//Plugin Dependencies: %s
 Queries: 
 %s
 Controls: 
@@ -119,8 +161,8 @@ Control Groups:
 		types.SafeString(m.Title),
 		types.SafeString(m.Description),
 		versionString,
-		modDependStr,
-		pluginDependStr,
+		//modDependStr,
+		//pluginDependStr,
 		strings.Join(queryStrings, "\n"),
 		strings.Join(controlStrings, "\n"),
 		strings.Join(controlGroupStrings, "\n"),
@@ -172,13 +214,13 @@ func (m *Mod) addItemIntoControlTree(item ControlTreeItem) error {
 }
 
 func (m *Mod) ControlTreeItemFromName(fullName string) (ControlTreeItem, error) {
-	name, err := ParseModResourceName(fullName)
+	name, err := ParseResourceName(fullName)
 	if err != nil {
 		return nil, err
 	}
 	// this function only finds items in the current mod
-	if name.Mod != "" && name.Mod != types.SafeString(m.ShortName) {
-		return nil, fmt.Errorf("cannot find item '%s' in mod '%s' - it is a child of mod '%s'", fullName, types.SafeString(m.ShortName), name.Mod)
+	if name.Mod != "" && name.Mod != m.ShortName {
+		return nil, fmt.Errorf("cannot find item '%s' in mod '%s' - it is a child of mod '%s'", fullName, m.ShortName, name.Mod)
 	}
 	// does name include an item type
 	if name.ItemType == "" {
@@ -197,14 +239,45 @@ func (m *Mod) ControlTreeItemFromName(fullName string) (ControlTreeItem, error) 
 		return nil, fmt.Errorf("ControlTreeItemFromName called invalid item type; '%s'", name.ItemType)
 	}
 	if !found {
-		return nil, fmt.Errorf("cannot find item '%s' in mod '%s'", fullName, types.SafeString(m.ShortName))
+		return nil, fmt.Errorf("cannot find item '%s' in mod '%s'", fullName, m.ShortName)
 	}
 	return item, nil
 }
 
+func (m *Mod) AddResource(item HclResource) bool {
+	switch r := item.(type) {
+	case *Query:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.Queries[name]; ok {
+			return false
+		}
+		m.Queries[name] = r
+		return true
+	case *Control:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.Controls[name]; ok {
+			return false
+		}
+		m.Controls[name] = r
+		return true
+	case *ControlGroup:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.ControlGroups[name]; ok {
+			return false
+		}
+		m.ControlGroups[name] = r
+		return true
+	default:
+		return false
+	}
+}
+
 // AddChild  :: implementation of ControlTreeItem
 func (m *Mod) AddChild(child ControlTreeItem) error {
-	m.Children = append(m.Children, child)
+	m.children = append(m.children, child)
 	return nil
 }
 
@@ -218,48 +291,23 @@ func (m *Mod) SetParent(ControlTreeItem) error {
 	return errors.New("cannot set a parent on a mod")
 }
 
-// Name :: implementation of ControlTreeItem
+// Name :: implementation of ControlTreeItem, HclResource
 // note - for mod, long name and short name are the same
 func (m *Mod) Name() string {
-	name := types.SafeString(m.ShortName)
+	name := m.ShortName
 	// TODO think about name formats
 	if m.Version == nil {
-		//return fmt.Sprintf("mod.%s", name)
-		return name
+		return fmt.Sprintf("mod.%s", name)
+		//return name
 	}
-	return fmt.Sprintf("%s@%s", name, types.SafeString(m.Version))
-	//return fmt.Sprintf("mod.%s@%s", name, types.SafeString(m.Version))
+	//return fmt.Sprintf("%s@%s", name, types.SafeString(m.Version))
+	return fmt.Sprintf("mod.%s@%s", name, types.SafeString(m.Version))
 }
 
 // Path :: implementation of ControlTreeItem
 func (m *Mod) Path() []string {
 	return []string{m.Name()}
 }
-
-//
-//func (m *Mod) AddQueries(queries map[string]*Query) {
-//	// add mod into the reflection data of each query
-//	for _, q := range queries {
-//		q.Metadata.SetMod(m)
-//	}
-//	m.Queries = queries
-//}
-//
-//func (m *Mod) AddControls(controls map[string]*Control) {
-//	// add mod into the reflection data of each query
-//	for _, c := range controls {
-//		c.Metadata.SetMod(m)
-//	}
-//	m.Controls = controls
-//}
-//
-//func (m *Mod) AddControlGroups(controlGroups map[string]*ControlGroup) {
-//	// add mod into the reflection data of each query
-//	for _, c := range controlGroups {
-//		c.Metadata.SetMod(m)
-//	}
-//	m.ControlGroups = controlGroups
-//}
 
 // AddPseudoResource :: add resource to parse results, if there is no resource of same name
 func (m *Mod) AddPseudoResource(resource MappableResource) {
@@ -269,7 +317,17 @@ func (m *Mod) AddPseudoResource(resource MappableResource) {
 		if _, ok := m.Queries[r.Name()]; !ok {
 			m.Queries[r.Name()] = r
 			// set the mod on the query metadata
-			r.Metadata.SetMod(m)
+			r.GetMetadata().SetMod(m)
 		}
 	}
+}
+
+// GetMetadata :: implementation of HclResource
+func (m *Mod) GetMetadata() *ResourceMetadata {
+	return m.metadata
+}
+
+// SetMetadata :: implementation of HclResource
+func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
+	m.metadata = metadata
 }

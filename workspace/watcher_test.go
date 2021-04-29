@@ -167,7 +167,7 @@ package workspace
 //		types.SafeString(c.Title) == types.SafeString(other.Title) &&
 //		types.SafeString(c.Description) == types.SafeString(other.Description) &&
 //		reflect.DeepEqual(c.Labels, other.Labels) &&
-//		c.Parent == other.Parent z
+//		c.parent == other.parent z
 //
 //
 //}

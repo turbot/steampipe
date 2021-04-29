@@ -2,7 +2,7 @@ package parse
 
 import (
 	"github.com/hashicorp/hcl/v2/ext/tryfunc"
-	"github.com/turbot/steampipe/steampipeconfig/funcs"
+	"github.com/hashicorp/terraform/lang/funcs"
 	ctyyaml "github.com/zclconf/go-cty-yaml"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"

@@ -1,15 +1,17 @@
 package parse
 
-type LoadModFlag uint32
+import filehelpers "github.com/turbot/go-kit/files"
+
+type ParseModFlag uint32
 
 const (
-	CreateDefaultMod LoadModFlag = 1 << iota
+	CreateDefaultMod ParseModFlag = 1 << iota
 	CreatePseudoResources
 )
 
 type ParseModOptions struct {
-	Flags   LoadModFlag
-	Exclude []string
+	Flags       ParseModFlag
+	ListOptions *filehelpers.ListOptions
 }
 
 func (o *ParseModOptions) CreateDefaultMod() bool {

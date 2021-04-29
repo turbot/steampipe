@@ -15,27 +15,6 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/parse"
 )
 
-// Op describes a set of file operations.
-type LoadModFlag uint32
-
-const (
-	CreateDefaultMod LoadModFlag = 1 << iota
-	CreatePseudoResources
-)
-
-type LoadModOptions struct {
-	Flags       LoadModFlag
-	ListOptions *filehelpers.ListOptions
-}
-
-func (o *LoadModOptions) CreateDefaultMod() bool {
-	return o.Flags&CreateDefaultMod == CreateDefaultMod
-}
-
-func (o *LoadModOptions) CreatePseudoResources() bool {
-	return o.Flags&CreatePseudoResources == CreatePseudoResources
-}
-
 // LoadMod :: parse all hcl files in modPath and return a single mod
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
@@ -91,7 +70,7 @@ func parseMod(modPath string, pseudoResources []modconfig.MappableResource, opts
 	}
 
 	// parse all hcl files.
-	return parse.ParseModHcl(modPath, fileData, pseudoResources, opts)
+	return parse.ParseMod(modPath, fileData, pseudoResources, opts)
 }
 
 // GetModFileExtensions :: return list of all file extensions we care about
@@ -104,7 +83,7 @@ func GetModFileExtensions() []string {
 // this will include hcl files (with .sp extension)
 // as well as any other files with extensions that have been registered for pseudo resource creation
 // (see steampipeconfig/modconfig/resource_type_map.go)
-func getSourcePaths(modPath string, opts *LoadModOptions) ([]string, error) {
+func getSourcePaths(modPath string, opts *parse.ParseModOptions) ([]string, error) {
 	sourcePaths, err := filehelpers.ListFiles(modPath, opts.ListOptions)
 	if err != nil {
 		return nil, err
@@ -170,23 +149,4 @@ func getPseudoResourceMetadata(name string, path string, fileData []byte) *modco
 	}
 
 	return m
-}
-
-// add resource to parse results, if there is no resource of same name
-func addResourceIfUnique(resource modconfig.MappableResource, mod *modconfig.Mod, path string) error {
-	switch r := resource.(type) {
-	case *modconfig.Query:
-		// check there is not already a query with the same name
-		if _, ok := mod.Queries[*r.ShortName]; ok {
-			// we have already created a query with this name - skip!
-			return fmt.Errorf("not creating resource for '%s' as there is already a query '%s' defined", path, *r.ShortName)
-		}
-		mod.Queries[*r.ShortName] = r
-	}
-	return nil
-}
-
-func defaultWorkspaceMod() *modconfig.Mod {
-	name := constants.WorkspaceDefaultModName
-	return &modconfig.Mod{ShortName: &name}
 }

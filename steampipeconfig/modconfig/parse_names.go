@@ -15,30 +15,34 @@ const (
 	BlockTypeLocals                    = "locals"
 )
 
-type ModResourceName struct {
+type ParsedResourceName struct {
 	Mod      string
 	ItemType ModBlockType
 	Name     string
 }
 
-type ModResourcePropertyPath struct {
+func (m *ParsedResourceName) TypeString() string {
+	return string(m.ItemType)
+}
+
+type ParsedPropertyPath struct {
 	Mod          string
 	ItemType     ModBlockType
 	Name         string
 	PropertyPath []string
 }
 
-func ParseModResourceName(fullName string) (res *ModResourceName, err error) {
+func ParseResourceName(fullName string) (res *ParsedResourceName, err error) {
 	if fullName == "" {
-		return nil, fmt.Errorf("empty name passed to ParseModResourceName")
+		return nil, fmt.Errorf("empty name passed to ParseResourceName")
 	}
-	res = &ModResourceName{}
+	res = &ParsedResourceName{}
 
 	parts := strings.Split(fullName, ".")
 
 	switch len(parts) {
 	case 0:
-		err = fmt.Errorf("empty name passed to ParseModResourceName")
+		err = fmt.Errorf("empty name passed to ParseResourceName")
 	case 1:
 		res.Name = parts[0]
 	case 2:
@@ -49,28 +53,30 @@ func ParseModResourceName(fullName string) (res *ModResourceName, err error) {
 		res.ItemType = ModBlockType(parts[1])
 		res.Name = parts[2]
 	default:
-		err = fmt.Errorf("invalid name '%s' passed to ParseModResourceName", fullName)
+		err = fmt.Errorf("invalid name '%s' passed to ParseResourceName", fullName)
 	}
 
 	return
 }
 
-func ParseModResourcePropertyPath(propertyPath string) (res *ModResourcePropertyPath, err error) {
-	res = &ModResourcePropertyPath{}
+func ParseResourcePropertyPath(propertyPath string) (res *ParsedPropertyPath, err error) {
+	res = &ParsedPropertyPath{}
 
 	// valid property paths:
 	// <mod>.<resource>.<name>.<property path...>
 	// <resource>.<name>.<property path...>
 	// so either the first or second slice must be a valid resource type
-	// and len must be at least 3
+
 	parts := strings.Split(propertyPath, ".")
-	if len(parts) < 3 {
-		return nil, fmt.Errorf("invalid property path '%s' passed to ParseModResourcePropertyPath", propertyPath)
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid property path '%s' passed to ParseResourcePropertyPath", propertyPath)
 	}
 
 	switch len(parts) {
-	case 0:
-		err = fmt.Errorf("empty name passed to ParseModResourceName")
+	case 2:
+		// no property path specified
+		res.ItemType = ModBlockType(parts[0])
+		res.Name = parts[1]
 	case 3:
 		res.ItemType = ModBlockType(parts[0])
 		res.Name = parts[1]
@@ -83,6 +89,14 @@ func ParseModResourcePropertyPath(propertyPath string) (res *ModResourceProperty
 	}
 
 	return
+}
+
+func PropertyPathToResourceName(propertyPath string) (string, error) {
+	parsedPropertyPath, err := ParseResourcePropertyPath(propertyPath)
+	if err != nil {
+		return "", err
+	}
+	return BuildModResourceName(parsedPropertyPath.ItemType, parsedPropertyPath.Name), nil
 }
 
 func BuildModResourceName(blockType ModBlockType, name string) string {

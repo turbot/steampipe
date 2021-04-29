@@ -33,7 +33,8 @@ type Workspace struct {
 	loadLock   sync.Mutex
 	exclusions []string
 	// should we load/watch files recursively
-	listFlag filehelpers.ListFlag
+	listFlag     filehelpers.ListFlag
+	watcherError error
 }
 
 func Load(workspacePath string) (*Workspace, error) {
@@ -102,7 +103,7 @@ func (w *Workspace) GetControlsForArg(arg string) []*modconfig.Control {
 	defer w.loadLock.Unlock()
 
 	// if arg is in fact a controlGroup,  get all controls underneath the control group
-	name, err := modconfig.ParseModResourceName(arg)
+	name, err := modconfig.ParseResourceName(arg)
 	if err != nil {
 		return nil
 	}
@@ -128,7 +129,7 @@ func (w *Workspace) GetControlsForArg(arg string) []*modconfig.Control {
 	controlsMatched := make(map[string]bool)
 	for _, c := range w.ControlMap {
 		if _, alreadyMatched := controlsMatched[c.Name()]; !alreadyMatched {
-			if arg == "all" || arg == c.Metadata.ModShortName {
+			if arg == "all" || arg == c.GetMetadata().ModShortName {
 				controlsMatched[c.Name()] = true
 				result = append(result, c)
 			}
@@ -147,14 +148,19 @@ func (w *Workspace) loadMod() error {
 
 	// build options used to load workspace
 	// set flags to create pseudo resources and a default mod if needed
-	opts := &steampipeconfig.LoadModOptions{
-		Flags: steampipeconfig.CreatePseudoResources | steampipeconfig.CreateDefaultMod,
+	opts := &parse.ParseModOptions{
+		Flags: parse.CreatePseudoResources | parse.CreateDefaultMod,
 		ListOptions: &filehelpers.ListOptions{
 			// listFlag specifies whether to load files recursively
 			Flags:   w.listFlag,
 			Exclude: w.exclusions,
 		},
 	}
+
+	// clear all our maps
+	w.QueryMap = make(map[string]*modconfig.Query)
+	w.ControlMap = make(map[string]*modconfig.Control)
+	w.ControlGroupMap = make(map[string]*modconfig.ControlGroup)
 
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
 	if err != nil {
@@ -193,14 +199,14 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 	// for LOCAL queries, add map entries keyed by both short name: query.<shortName> and  long name: <modName>.query.<shortName?
 	for _, q := range w.Mod.Queries {
 		res[q.Name()] = q
-		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.ShortName), types.SafeString(q.ShortName))
+		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.ShortName), q.ShortName)
 		res[longName] = q
 	}
 
 	// for mode dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
-			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.ShortName), types.SafeString(q.ShortName))
+			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.ShortName), q.ShortName)
 			res[longName] = q
 		}
 	}
@@ -252,7 +258,16 @@ func (w *Workspace) SetupWatcher(client *db.Client) error {
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
 		OnChange: func(ev fsnotify.Event) {
-			w.loadMod()
+			err := w.loadMod()
+			if err != nil {
+				// if we are already in an error state, do not show error
+				if w.watcherError == nil {
+					fmt.Println()
+					utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
+				}
+			}
+			// now store/clear watcher error so we only show message once
+			w.watcherError = err
 			// todo detect differences and only refresh if necessary
 			db.UpdateMetadataTables(w.GetResourceMaps(), client)
 		},

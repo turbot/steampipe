@@ -21,7 +21,7 @@ type Connection struct {
 	Options *options.Connection
 }
 
-// set the options on the connection
+// SetOptions : set the options on the connection
 // verify the options is a valid options type (only options.Connection currently supported)
 func (c *Connection) SetOptions(opts options.Options, block *hcl.Block) hcl.Diagnostics {
 	var diags hcl.Diagnostics

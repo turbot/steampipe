@@ -1,11 +1,8 @@
 package modconfig
 
-import "github.com/turbot/go-kit/types"
-
-// ResourceWithMetadata :: a mod resource which supports metadata
-type ResourceWithMetadata interface {
-	GetMetadata() *ResourceMetadata
-}
+import (
+	"github.com/turbot/go-kit/types"
+)
 
 // ResourceMetadata :: additional data we collect about each resource to populate the reflection tables
 type ResourceMetadata struct {

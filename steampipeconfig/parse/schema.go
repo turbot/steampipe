@@ -34,6 +34,7 @@ var ConnectionSchema = &hcl.BodySchema{
 	},
 }
 
+// ModFileSchema :: top level schema for all mod resources
 var ModFileSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
 	Blocks: []hcl.BlockHeaderSchema{
@@ -56,44 +57,6 @@ var ModFileSchema = &hcl.BodySchema{
 		{
 			Type:       string(modconfig.BlockTypeControlGroup),
 			LabelNames: []string{"name"},
-		},
-	},
-}
-
-var modSchema = &hcl.BodySchema{
-	// NOTE: these must be consistent with the properties of the Mod struct steampipeconfig/modconfig/mod.go
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: "color",
-		},
-		{
-			Name: "description",
-		},
-		{
-			Name: "documentation",
-		},
-		{
-			Name: "description",
-		},
-		{
-			Name: "icon",
-		},
-		{
-			Name: "description",
-		},
-		{
-			Name: "labels",
-		},
-		{
-			Name: "title",
-		},
-	},
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type: "requires",
-		},
-		{
-			Type: "opengraph",
 		},
 	},
 }
