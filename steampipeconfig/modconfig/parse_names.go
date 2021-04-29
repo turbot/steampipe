@@ -34,7 +34,7 @@ type ParsedPropertyPath struct {
 
 func ParseResourceName(fullName string) (res *ParsedResourceName, err error) {
 	if fullName == "" {
-		return nil, fmt.Errorf("empty name passed to ParseResourceName")
+		return &ParsedResourceName{}, nil
 	}
 	res = &ParsedResourceName{}
 

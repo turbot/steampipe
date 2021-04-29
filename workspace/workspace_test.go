@@ -27,33 +27,33 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 		source: "test_data/w_1",
 		expected: &Workspace{
 			Mod: &modconfig.Mod{
-				ShortName: toStringPointer("w_1"),
-				Title:     toStringPointer("workspace 1"),
-				ModDepends: []*modconfig.ModVersion{
-					{Name: "github.com/turbot/m1", Version: "0.0.0"},
-					{Name: "github.com/turbot/m2", Version: "0.0.0"},
-				},
+				Name:  toStringPointer("w_1"),
+				Title: toStringPointer("workspace 1"),
+				//ModDepends: []*modconfig.ModVersion{
+				//	{Name: "github.com/turbot/m1", Version: "0.0.0"},
+				//	{Name: "github.com/turbot/m2", Version: "0.0.0"},
+				//},
 				Queries: map[string]*modconfig.Query{
 					"localq1": {
-						ShortName: toStringPointer("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
+						Name: toStringPointer("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
 					},
 					"localq2": {
-						ShortName: toStringPointer("localq2"), Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
+						Name: toStringPointer("localq2"), Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
 					},
 				},
 			},
 			QueryMap: map[string]*modconfig.Query{
 				"w_1.query.localq1": {
-					ShortName: toStringPointer("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
+					Name: toStringPointer("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
 				},
 				"query.localq1": {
-					ShortName: toStringPointer("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
+					Name: toStringPointer("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
 				},
 				"w_2.query.localq2": {
-					ShortName: toStringPointer("localq2"), Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
+					Name: toStringPointer("localq2"), Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
 				},
 				"query.localq2": {
-					ShortName: toStringPointer("localq2"), Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
+					Name: toStringPointer("localq2"), Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
 				},
 				"m1.query.q1": {
 					toStringPointer("q1"), toStringPointer("Q1"), toStringPointer("THIS IS QUERY 1"), toStringPointer("select 1"),
@@ -67,7 +67,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 	"single_mod_with_ignored_directory": {
 		source: "test_data/single_mod_with_ignored_directory",
 		expected: &Workspace{Mod: &modconfig.Mod{
-			ShortName:   toStringPointer("m1"),
+			Name:        toStringPointer("m1"),
 			Title:       toStringPointer("M1"),
 			Description: toStringPointer("THIS IS M1"),
 			Queries: map[string]*modconfig.Query{
@@ -84,7 +84,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 	"single_mod_with_ignored_sql_files": {
 		source: "test_data/single_mod_with_ignored_sql_files",
 		expected: &Workspace{Mod: &modconfig.Mod{
-			ShortName:   toStringPointer("m1"),
+			Name:        toStringPointer("m1"),
 			Title:       toStringPointer("M1"),
 			Description: toStringPointer("THIS IS M1"),
 			Queries: map[string]*modconfig.Query{

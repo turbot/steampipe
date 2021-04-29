@@ -200,14 +200,14 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 	// for LOCAL queries, add map entries keyed by both short name: query.<shortName> and  long name: <modName>.query.<shortName?
 	for _, q := range w.Mod.Queries {
 		res[q.FullName()] = q
-		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.ShortName), q.ShortName)
+		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.Name), q.Name)
 		res[longName] = q
 	}
 
 	// for mode dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
-			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.ShortName), q.ShortName)
+			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.Name), q.Name)
 			res[longName] = q
 		}
 	}

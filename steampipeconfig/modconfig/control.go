@@ -11,7 +11,7 @@ import (
 
 // Control :: struct representing the control mod resource
 type Control struct {
-	ShortName string `cty:"name"`
+	Name string `cty:"name"`
 
 	Description   *string   `cty:"description" column:"description" column_type:"text"`
 	Documentation *string   `cty:"documentation" column:"documentation" column_type:"text"`
@@ -61,17 +61,12 @@ func (c *Control) String() string {
   Labels: %v
   Links: %v
 `,
-		c.ShortName,
+		c.Name,
 		types.SafeString(c.Title),
 		types.SafeString(c.Description),
 		types.SafeString(c.SQL),
 		types.SafeString(c.ParentName),
 		labels, links)
-}
-
-// QualifiedName :: name in format: '<modName>.control.<shortName>'
-func (c *Control) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName())
 }
 
 // AddChild  :: implementation of ControlTreeItem - controls cannot have children so just return error
@@ -81,7 +76,7 @@ func (c *Control) AddChild(child ControlTreeItem) error {
 
 // GetParentName :: implementation of ControlTreeItem
 func (c *Control) GetParentName() string {
-	return types.SafeString(c.ParentName)
+	return getParentName(types.SafeString(c.ParentName))
 }
 
 // SetParent :: implementation of ControlTreeItem
@@ -93,7 +88,12 @@ func (c *Control) SetParent(parent ControlTreeItem) error {
 // FullName :: implementation of ControlTreeItem, HclResource
 // return name in format: 'control.<shortName>'
 func (c *Control) FullName() string {
-	return fmt.Sprintf("control.%s", c.ShortName)
+	return fmt.Sprintf("control.%s", c.Name)
+}
+
+// QualifiedName :: name in format: '<modName>.control.<shortName>'
+func (c *Control) QualifiedName() string {
+	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName())
 }
 
 // Path :: implementation of ControlTreeItem

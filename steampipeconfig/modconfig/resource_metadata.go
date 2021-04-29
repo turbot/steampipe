@@ -21,7 +21,7 @@ type ResourceMetadata struct {
 
 // SetMod set the mod name and mod short name
 func (m *ResourceMetadata) SetMod(mod *Mod) {
-	m.ModShortName = types.SafeString(mod.ShortName)
+	m.ModShortName = types.SafeString(mod.Name)
 	m.ModName = mod.FullName()
 }
 

@@ -16,7 +16,7 @@ import (
 )
 
 type Query struct {
-	ShortName string `cty:"name"`
+	Name string `cty:"name"`
 
 	Description      *string   `cty:"description" hcl:"description" column:"description" column_type:"text"`
 	Documentation    *string   `cty:"documentation" hcl:"documentation" column:"documentation" column_type:"text"`
@@ -50,7 +50,7 @@ func (q *Query) String() string {
   Title: %s
   Description: %s
   SQL: %s
-`, q.ShortName, types.SafeString(q.Title), types.SafeString(q.Description), types.SafeString(q.SQL))
+`, q.Name, types.SafeString(q.Title), types.SafeString(q.Description), types.SafeString(q.SQL))
 }
 
 // QueryFromFile :: factory function
@@ -81,14 +81,14 @@ func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 	if err != nil {
 		return nil, nil, err
 	}
-	q.ShortName = name
+	q.Name = name
 	q.SQL = &sql
 	return q, sqlBytes, nil
 }
 
 // FullName :: implementation of MappableResource, HclResource
 func (q *Query) FullName() string {
-	return fmt.Sprintf("query.%s", q.ShortName)
+	return fmt.Sprintf("query.%s", q.Name)
 }
 
 // QualifiedName :: name in format: '<modName>.control.<shortName>'

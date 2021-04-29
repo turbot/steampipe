@@ -12,7 +12,7 @@ import (
 
 // ControlGroup :: struct representing the control group mod resource
 type ControlGroup struct {
-	ShortName string `cty:"name"`
+	Name string `cty:"name"`
 
 	Description   *string   `cty:"description" column:"description" column_type:"text"`
 	Documentation *string   `cty:"documentation" column:"documentation" column_type:"text"`
@@ -61,7 +61,7 @@ func (c *ControlGroup) String() string {
   Children: 
     %s
 `,
-		c.ShortName,
+		c.Name,
 		types.SafeString(c.Title),
 		types.SafeString(c.Description),
 		types.SafeString(c.ParentName),
@@ -81,11 +81,6 @@ func (c *ControlGroup) GetChildControls() []*Control {
 	return res
 }
 
-// QualifiedName :: name in format: '<modName>.control.<shortName>'
-func (c *ControlGroup) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName())
-}
-
 // AddChild :: implementation of ControlTreeItem
 func (c *ControlGroup) AddChild(child ControlTreeItem) error {
 	// mod cannot be added as a child
@@ -99,7 +94,19 @@ func (c *ControlGroup) AddChild(child ControlTreeItem) error {
 
 // GetParentName :: implementation of ControlTreeItem
 func (c *ControlGroup) GetParentName() string {
-	return types.SafeString(c.ParentName)
+	return getParentName(types.SafeString(c.ParentName))
+}
+
+func getParentName(parentName string) string {
+	// convert parent name into full name
+	parent := types.SafeString(parentName)
+	if parent != "" {
+		parsedResourceName, _ := ParseResourceName(parent)
+		if parsedResourceName.ItemType == "" {
+			return BuildModResourceName(BlockTypeControlGroup, parent)
+		}
+	}
+	return parent
 }
 
 // SetParent :: implementation of ControlTreeItem
@@ -111,7 +118,12 @@ func (c *ControlGroup) SetParent(parent ControlTreeItem) error {
 // FullName :: implementation of ControlTreeItem, HclResource
 // return name in format: 'control.<shortName>'
 func (c *ControlGroup) FullName() string {
-	return fmt.Sprintf("control_group.%s", c.ShortName)
+	return fmt.Sprintf("control_group.%s", c.Name)
+}
+
+// QualifiedName :: name in format: '<modName>.control.<shortName>'
+func (c *ControlGroup) QualifiedName() string {
+	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName())
 }
 
 // Path :: implementation of ControlTreeItem

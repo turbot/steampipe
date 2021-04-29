@@ -8,7 +8,7 @@ import (
 )
 
 type Local struct {
-	ShortName string
+	Name      string
 	Value     cty.Value
 	DeclRange hcl.Range
 
@@ -17,7 +17,7 @@ type Local struct {
 
 // FullName :: implementation of HclResource
 func (l *Local) FullName() string {
-	return fmt.Sprintf("local.%s", l.ShortName)
+	return fmt.Sprintf("local.%s", l.Name)
 }
 
 // GetMetadata :: implementation of HclResource

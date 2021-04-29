@@ -34,16 +34,17 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 		case modconfig.BlockTypeMod:
 			// pass the shell mod - it will be mutated
 			res := decodeMod(block, runCtx.Mod, runCtx.EvalCtx)
-			if res.Diags.HasErrors() {
-				diags = append(diags, res.Diags...)
-			}
-			if len(res.Depends) > 0 {
-				runCtx.AddDependencies(block, runCtx.Mod.FullName(), res.Depends)
-			}
+			diags = append(diags, handleDecodeResult(runCtx.Mod, res, block, runCtx)...)
+			//if res.Diags.HasErrors() {
+			//	diags = append(diags, res.Diags...)
+			//}
+			//if len(res.Depends) > 0 {
+			//	runCtx.AddDependencies(block, runCtx.Mod.FullName(), res.Depends)
+			//}
 
 		case modconfig.BlockTypeQuery:
 			query := &modconfig.Query{
-				ShortName: block.Labels[0],
+				Name:      block.Labels[0],
 				DeclRange: block.DefRange,
 			}
 			res := decodeResource(block, query, runCtx.EvalCtx)
@@ -51,7 +52,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 
 		case modconfig.BlockTypeControl:
 			control := &modconfig.Control{
-				ShortName: block.Labels[0],
+				Name:      block.Labels[0],
 				DeclRange: block.DefRange,
 			}
 			res := decodeResource(block, control, runCtx.EvalCtx)
@@ -59,7 +60,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 
 		case modconfig.BlockTypeControlGroup:
 			controlGroup := &modconfig.ControlGroup{
-				ShortName: block.Labels[0],
+				Name:      block.Labels[0],
 				DeclRange: block.DefRange,
 			}
 			res := decodeResource(block, controlGroup, runCtx.EvalCtx)
@@ -108,11 +109,6 @@ func decodeResource(block *hcl.Block, resource modconfig.HclResource, ctx *hcl.E
 }
 
 func decodeMod(block *hcl.Block, mod *modconfig.Mod, ctx *hcl.EvalContext) *decodeResult {
-	diags := validateName(block)
-	if diags.HasErrors() {
-		return &decodeResult{Diags: diags}
-	}
-
 	content, diags := block.Body.Content(mod.Schema())
 	if diags.HasErrors() {
 		return &decodeResult{Diags: diags}
@@ -164,7 +160,7 @@ func decodeLocals(block *hcl.Block, ctx *hcl.EvalContext) ([]*modconfig.Local, *
 		}
 
 		locals = append(locals, &modconfig.Local{
-			ShortName: name,
+			Name:      name,
 			Value:     val,
 			DeclRange: attr.Range,
 		})

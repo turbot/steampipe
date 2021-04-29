@@ -14,7 +14,7 @@ import (
 )
 
 type Mod struct {
-	ShortName string `cty:"name"`
+	Name string `cty:"name"`
 
 	// note these must be consistent with the attributes defined in 'modSchema'
 	Color         *string   `cty:"color" column:"color" column_type:"text"`
@@ -61,7 +61,7 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 
 func NewMod(shortName, modPath string) *Mod {
 	return &Mod{
-		ShortName:     shortName,
+		Name:          shortName,
 		Queries:       make(map[string]*Query),
 		Controls:      make(map[string]*Control),
 		ControlGroups: make(map[string]*ControlGroup),
@@ -119,7 +119,7 @@ func (m *Mod) String() string {
 	if m.Version != nil {
 		versionString = fmt.Sprintf("\nVersion: %s", types.SafeString(m.Version))
 	}
-	return fmt.Sprintf(`ShortName: %s
+	return fmt.Sprintf(`Name: %s
 Title: %s
 Description: %s %s
 //Mod Dependencies: %s
@@ -130,7 +130,7 @@ Controls:
 %s
 Control Groups: 
 %s`,
-		m.ShortName,
+		m.Name,
 		types.SafeString(m.Title),
 		types.SafeString(m.Description),
 		versionString,
@@ -161,7 +161,7 @@ func (m *Mod) BuildControlTree() error {
 }
 
 func (m *Mod) addItemIntoControlTree(item ControlTreeItem) error {
-	parentName := types.SafeString(item.GetParentName())
+	parentName := item.GetParentName()
 	var parent ControlTreeItem
 	// if no parent is specified, the mod itself is the parent
 	if parentName == "" {
@@ -187,32 +187,32 @@ func (m *Mod) addItemIntoControlTree(item ControlTreeItem) error {
 }
 
 func (m *Mod) ControlTreeItemFromName(fullName string) (ControlTreeItem, error) {
-	name, err := ParseResourceName(fullName)
+	parsedName, err := ParseResourceName(fullName)
 	if err != nil {
 		return nil, err
 	}
 	// this function only finds items in the current mod
-	if name.Mod != "" && name.Mod != m.ShortName {
-		return nil, fmt.Errorf("cannot find item '%s' in mod '%s' - it is a child of mod '%s'", fullName, m.ShortName, name.Mod)
+	if parsedName.Mod != "" && parsedName.Mod != m.Name {
+		return nil, fmt.Errorf("cannot find item '%s' in mod '%s' - it is a child of mod '%s'", fullName, m.Name, parsedName.Mod)
 	}
 	// does name include an item type
-	if name.ItemType == "" {
+	if parsedName.ItemType == "" {
 		return nil, fmt.Errorf("name '%s' does not specify an item type", fullName)
 	}
 
 	// so this item either does not specify a mod or specifies this mod
 	var item ControlTreeItem
 	var found bool
-	switch name.ItemType {
+	switch parsedName.ItemType {
 	case BlockTypeControl:
-		item, found = m.Controls[name.Name]
+		item, found = m.Controls[fullName]
 	case BlockTypeControlGroup:
-		item, found = m.ControlGroups[name.Name]
+		item, found = m.ControlGroups[fullName]
 	default:
-		return nil, fmt.Errorf("ControlTreeItemFromName called invalid item type; '%s'", name.ItemType)
+		return nil, fmt.Errorf("ControlTreeItemFromName called invalid item type; '%s'", parsedName.ItemType)
 	}
 	if !found {
-		return nil, fmt.Errorf("cannot find item '%s' in mod '%s'", fullName, m.ShortName)
+		return nil, fmt.Errorf("cannot find item '%s' in mod '%s'", fullName, m.Name)
 	}
 	return item, nil
 }
@@ -244,7 +244,8 @@ func (m *Mod) AddResource(item HclResource) bool {
 		m.ControlGroups[name] = r
 		return true
 	default:
-		return false
+		// mod does not store other resource types
+		return true
 	}
 }
 
@@ -266,14 +267,11 @@ func (m *Mod) SetParent(ControlTreeItem) error {
 
 // FullName :: implementation of ControlTreeItem, HclResource
 func (m *Mod) FullName() string {
-	name := m.ShortName
-	// TODO think about name formats
+
 	if m.Version == nil {
-		return fmt.Sprintf("mod.%s", name)
-		//return name
+		return fmt.Sprintf("mod.%s", m.Name)
 	}
-	//return fmt.Sprintf("%s@%s", name, types.SafeString(m.Version))
-	return fmt.Sprintf("mod.%s@%s", name, types.SafeString(m.Version))
+	return fmt.Sprintf("mod.%s@%s", m.Name, types.SafeString(m.Version))
 }
 
 // Path :: implementation of ControlTreeItem
@@ -286,8 +284,8 @@ func (m *Mod) AddPseudoResource(resource MappableResource) {
 	switch r := resource.(type) {
 	case *Query:
 		// check there is not already a query with the same name
-		if _, ok := m.Queries[r.FullName()]; !ok {
-			m.Queries[r.FullName()] = r
+		if _, ok := m.Queries[r.Name]; !ok {
+			m.Queries[r.Name] = r
 			// set the mod on the query metadata
 			r.GetMetadata().SetMod(m)
 		}
