@@ -58,33 +58,24 @@ func (r *Runner) runAsyncJob(job func(), wg *sync.WaitGroup) {
 // determines whether the task runner should run at all
 // tasks are to be run at most once every 24 hours
 // also, this is not to run in batch query mode
-func (r *Runner) shouldRun() (returnValue bool) {
-	returnValue = true
-
-	defer func() {
-		// no matter what the outcome is, we should never run for batch query mode
-		cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-		cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
-		if cmd.Name() == "query" && len(cmdArgs) > 0 {
-			// this is query batch mode
-			// we will not run scheduled tasks in this mode
-			returnValue = false
-		}
-	}()
+func (r *Runner) shouldRun() bool {
+	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+	cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
+	if cmd.Name() == "query" && len(cmdArgs) > 0 {
+		// this is query batch mode
+		// we will not run scheduled tasks in this mode
+		return false
+	}
 
 	now := time.Now()
 	if r.currentState.LastCheck == "" {
-		return
+		return true
 	}
 	lastCheckedAt, err := time.Parse(time.RFC3339, r.currentState.LastCheck)
 	if err != nil {
-		return
+		return true
 	}
 	minutesElapsed := now.Sub(lastCheckedAt).Minutes()
 
-	if minutesElapsed > minimumMinutesBetweenChecks {
-		returnValue = true
-	}
-	returnValue = false
-	return
+	return minutesElapsed > minimumMinutesBetweenChecks
 }
