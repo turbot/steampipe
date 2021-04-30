@@ -17,12 +17,12 @@ type Local struct {
 	metadata *ResourceMetadata
 }
 
-func NewLocal(name string, val cty.Value, attr *hcl.Attribute) *Local {
+func NewLocal(name string, val cty.Value, declRange hcl.Range) *Local {
 	return &Local{
 		ShortName: name,
 		FullName:  fmt.Sprintf("local.%s", name),
 		Value:     val,
-		DeclRange: attr.Range,
+		DeclRange: declRange,
 	}
 }
 

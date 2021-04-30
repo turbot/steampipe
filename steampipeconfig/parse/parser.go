@@ -73,7 +73,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 			if mod != nil {
 				return nil, fmt.Errorf("more than 1 mod definition found in %s", modPath)
 			}
-			mod = modconfig.NewMod(block.Labels[0], modPath)
+			mod = modconfig.NewMod(block.Labels[0], modPath, block.DefRange)
 		case modconfig.BlockTypeQuery:
 			// for any mappable resource, store the resource name
 			name := modconfig.BuildModResourceName(modconfig.ModBlockType(block.Type), block.Labels[0])
@@ -89,7 +89,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 			return nil, fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
 		}
 		// just create a default mod
-		mod = defaultWorkspaceMod(modPath)
+		mod = defaultWorkspaceMod()
 	}
 
 	// 3) add pseudo resources to the mod
@@ -143,6 +143,6 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	return mod, nil
 }
 
-func defaultWorkspaceMod(modPath string) *modconfig.Mod {
-	return modconfig.NewMod("local", modPath)
+func defaultWorkspaceMod() *modconfig.Mod {
+	return modconfig.NewMod("local", "", hcl.Range{})
 }
