@@ -1,14 +1,14 @@
 locals {
-  l1 = "testing"
-  q2 = "select 3 as Iamalocal"
+   l = ["aws", "cis", "cis_version:v1.3.0"]
+   anythingelse = "doesnt work"
 }
 
 mod "m1" {
   # hub metadata
-  title = upper("aws cis")
+  title = local.anythingelse
   color = "#FF9900"
   icon = "/images/plugins/turbot/aws.svg"
-  labels = ["public cloud", "aws"]
+  labels = local.l
 
   opengraph {
     title = "Steampipe Mod for AWS CIS"
