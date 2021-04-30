@@ -12,36 +12,21 @@ import (
 // Control :: struct representing the control mod resource
 type Control struct {
 	ShortName string
-	FullName  string `hcl:"name"`
+	FullName  string `cty:"name"`
 
-	Description   *string   `hcl:"description" column:"description" column_type:"text"`
-	Documentation *string   `hcl:"documentation" column:"documentation" column_type:"text"`
-	Labels        *[]string `hcl:"labels" column:"labels" column_type:"jsonb"`
-	Links         *[]string `hcl:"links" column:"links" column_type:"jsonb"`
-	ParentName    *string   `hcl:"parent" column:"parent" column_type:"text"`
-	SQL           *string   `hcl:"sql" column:"sql" column_type:"text"`
-	Severity      *string   `hcl:"severity" column:"severity" column_type:"text"`
-	Title         *string   `hcl:"title" column:"title" column_type:"text"`
+	Description   *string   `cty:"description" hcl:"description" column_type:"text"`
+	Documentation *string   `cty:"documentation" hcl:"documentation" column_type:"text"`
+	Labels        *[]string `cty:"labels" hcl:"labels" column_type:"jsonb"`
+	Links         *[]string `cty:"links" hcl:"links" column_type:"jsonb"`
+	ParentName    *string   `cty:"parent" hcl:"parent" column_type:"text"`
+	SQL           *string   `cty:"sql" hcl:"sql" column_type:"text"`
+	Severity      *string   `cty:"severity" hcl:"severity" column_type:"text"`
+	Title         *string   `cty:"title" hcl:"title" column_type:"text"`
 
 	DeclRange hcl.Range
 
 	parent   ControlTreeItem
 	metadata *ResourceMetadata
-}
-type ControlConfig struct {
-	ShortName string
-	FullName  string `hcl:"name:lable"`
-
-	Description   *string   `hcl:"description"`
-	Documentation *string   `hcl:"documentation"`
-	Labels        *[]string `hcl:"labels"`
-	Links         *[]string `hcl:"links"`
-	ParentName    *string   `hcl:"parent"`
-	SQL           *string   `hcl:"sql"`
-	Severity      *string   `hcl:"severity"`
-	Title         *string   `hcl:"title"`
-
-	DeclRange hcl.Range
 }
 
 func NewControl(block *hcl.Block) *Control {

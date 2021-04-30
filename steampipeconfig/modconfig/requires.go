@@ -11,9 +11,9 @@ type Requires struct {
 }
 
 type RequiresConfig struct {
-	Steampipe hcl.Block   `hcl:"steampipe,block"`
-	Plugins   []hcl.Block `hcl:"plugin,block"`
-	Mods      []hcl.Block `hcl:"mod,block"`
+	Steampipe hcl.Block   `cty:"steampipe,block"`
+	Plugins   []hcl.Block `cty:"plugin,block"`
+	Mods      []hcl.Block `cty:"mod,block"`
 	DeclRange hcl.Range
 }
 

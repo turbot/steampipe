@@ -40,15 +40,11 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 
 		case modconfig.BlockTypeQuery:
 			query := modconfig.NewQuery(block)
+			moreDiags = gohcl.DecodeBody(block.Body, runCtx.EvalCtx, query)
 			res := decodeResource(block, query, runCtx.EvalCtx)
 			diags = append(diags, handleDecodeResult(query, res, block, runCtx)...)
 
 		case modconfig.BlockTypeControl:
-			controlConfig := &modconfig.ControlConfig{}
-			//s := gohcl.ImpliedBodySchema(controlConfig)
-			//content, diags := block.Body.Content(s)
-			//
-			gohcl.DecodeBody(block.Body, runCtx.EvalCtx, controlConfig)
 
 			control := modconfig.NewControl(block)
 			res := decodeResource(block, control, runCtx.EvalCtx)

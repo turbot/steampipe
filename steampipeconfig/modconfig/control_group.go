@@ -13,13 +13,13 @@ import (
 // ControlGroup :: struct representing the control group mod resource
 type ControlGroup struct {
 	ShortName string
-	FullName  string `hcl:"name"`
+	FullName  string `cty:"name"`
 
-	Description   *string   `hcl:"description" column:"description" column_type:"text"`
-	Documentation *string   `hcl:"documentation" column:"documentation" column_type:"text"`
-	Labels        *[]string `hcl:"labels" column:"labels" column_type:"jsonb"`
-	ParentName    *string   `hcl:"parent" column:"parent" column_type:"text"`
-	Title         *string   `hcl:"title" column:"title" column_type:"text"`
+	Description   *string   `cty:"description" hcl:"description" column_type:"text"`
+	Documentation *string   `cty:"documentation" hcl:"documentation" column_type:"text"`
+	Labels        *[]string `cty:"labels" hcl:"labels" column_type:"jsonb"`
+	ParentName    *string   `cty:"parent" hcl:"parent" column_type:"text"`
+	Title         *string   `cty:"title" hcl:"title" column_type:"text"`
 
 	DeclRange hcl.Range
 

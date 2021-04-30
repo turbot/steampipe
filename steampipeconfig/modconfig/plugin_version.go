@@ -8,9 +8,9 @@ import (
 
 type PluginVersion struct {
 	// the fully qualified plugin name, e.g. github.com/turbot/mod1
-	Name string `hcl:"name"`
+	Name string `cty:"name"`
 	// the version STREAM, can be either a major or minor version stream i.e. 1 or 1.1
-	Version   string `hcl:"version"`
+	Version   string `cty:"version"`
 	DeclRange hcl.Range
 }
 
