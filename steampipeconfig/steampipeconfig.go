@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+
 	"github.com/turbot/go-kit/helpers"
 
 	"github.com/turbot/go-kit/types"
@@ -15,7 +17,7 @@ import (
 // SteampipeConfig :: Connection map and Steampipe settings
 type SteampipeConfig struct {
 	// map of connection name to partially parsed connection config
-	Connections map[string]*Connection
+	Connections map[string]*modconfig.Connection
 
 	// Steampipe options
 	DefaultConnectionOptions *options.Connection
