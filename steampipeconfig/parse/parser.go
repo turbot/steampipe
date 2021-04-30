@@ -110,6 +110,8 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	// 4) Add dependencies?
 	// TODO think about where we resolve and store mod dependencies
 
+	// todo change runctx to Decoder object
+
 	// create run context to handle dependency resolution
 	runCtx, diags := NewRunContext(mod, content, fileData)
 	if diags.HasErrors() {
