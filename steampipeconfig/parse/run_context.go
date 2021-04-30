@@ -8,7 +8,6 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/gocty"
 )
 
 const rootDependencyNode = "rootDependencyNode"
@@ -20,7 +19,7 @@ type RunContext struct {
 	dependencyGraph  *topsort.Graph
 	//dependencies     map[string]bool
 	// store any objects which are depdnecy targets
-	variables map[string]cty.Value
+	variables map[string]map[string]cty.Value
 	EvalCtx   *hcl.EvalContext
 	blocks    hcl.Blocks
 }
@@ -31,9 +30,8 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 		FileData:         fileData,
 		UnresolvedBlocks: make(map[string]*hcl.Block),
 		dependencyGraph:  topsort.NewGraph(),
-		//dependencies:     make(map[string]bool),
-		variables: make(map[string]cty.Value),
-		blocks:    content.Blocks,
+		variables:        make(map[string]map[string]cty.Value),
+		blocks:           content.Blocks,
 	}
 	// add root node - this will depend on all other nodes
 	c.dependencyGraph.AddNode(rootDependencyNode)
@@ -139,9 +137,14 @@ func (c *RunContext) EvalComplete() bool {
 
 // eval functions
 func (c *RunContext) buildEvalContext() {
+	// convert variables to cty values
+	variables := make(map[string]cty.Value)
+	for k, v := range c.variables {
+		variables[k] = cty.ObjectVal(v)
+	}
 	// create evaluation context
 	c.EvalCtx = &hcl.EvalContext{
-		Variables: c.variables,
+		Variables: variables,
 		Functions: ContextFunctions(c.Mod.ModPath),
 	}
 }
@@ -167,7 +170,6 @@ func (c *RunContext) AddResource(resource modconfig.HclResource, block *hcl.Bloc
 }
 
 func (c *RunContext) addResourceToVariables(resource modconfig.HclResource, block *hcl.Block) hcl.Diagnostics {
-
 	// add resource to variable map
 	ctyValue, err := resource.CtyValue()
 	if err != nil {
@@ -189,17 +191,13 @@ func (c *RunContext) addResourceToVariables(resource modconfig.HclResource, bloc
 		}}
 	}
 
-	var goMap map[string]cty.Value
 	typeString := parsedName.TypeString()
-	ctyMap, ok := c.variables[typeString]
-	if ok {
-		gocty.FromCtyValue(ctyMap, &goMap)
-	} else {
-		goMap = make(map[string]cty.Value)
+	variablesForType, ok := c.variables[typeString]
+	if !ok {
+		variablesForType = make(map[string]cty.Value)
 	}
-	goMap[parsedName.Name] = ctyValue
-	c.variables[typeString] = cty.MapVal(goMap)
-
+	variablesForType[parsedName.Name] = ctyValue
+	c.variables[typeString] = variablesForType
 	// rebuild the eval context
 	c.buildEvalContext()
 
