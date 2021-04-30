@@ -28,6 +28,21 @@ type Control struct {
 	parent   ControlTreeItem
 	metadata *ResourceMetadata
 }
+type ControlConfig struct {
+	ShortName string
+	FullName  string `hcl:"name:lable"`
+
+	Description   *string   `hcl:"description"`
+	Documentation *string   `hcl:"documentation"`
+	Labels        *[]string `hcl:"labels"`
+	Links         *[]string `hcl:"links"`
+	ParentName    *string   `hcl:"parent"`
+	SQL           *string   `hcl:"sql"`
+	Severity      *string   `hcl:"severity"`
+	Title         *string   `hcl:"title"`
+
+	DeclRange hcl.Range
+}
 
 func NewControl(block *hcl.Block) *Control {
 	control := &Control{

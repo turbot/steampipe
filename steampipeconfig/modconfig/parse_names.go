@@ -13,6 +13,12 @@ const (
 	BlockTypeControl                   = "control"
 	BlockTypeControlGroup              = "control_group"
 	BlockTypeLocals                    = "locals"
+
+	BlockTypeOpengraph        = "opengraph"
+	BlockTypeRequires         = "requires"
+	BlockTypePluginVersion    = "plugin"
+	BlockTypeModVersion       = "mod"
+	BlockTypeSteampipeVersion = "steampipe"
 )
 
 type ParsedResourceName struct {

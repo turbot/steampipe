@@ -27,8 +27,8 @@ type Mod struct {
 
 	// TODO do we need this?
 	Version *string
-	//ModDepends    []*ModVersion
-	//PluginDepends []*PluginDependency
+
+	Requires      *Requires
 	Queries       map[string]*Query
 	Controls      map[string]*Control
 	ControlGroups map[string]*ControlGroup
@@ -45,8 +45,8 @@ func (m *Mod) Schema() *hcl.BodySchema {
 	// todo this could be done fully generically if we had a tag for block properties
 	schema := buildAttributeSchema(m)
 	schema.Blocks = []hcl.BlockHeaderSchema{
-		{Type: "requires"},
-		{Type: "opengraph"},
+		{Type: BlockTypeRequires},
+		{Type: BlockTypeOpengraph},
 	}
 	return schema
 

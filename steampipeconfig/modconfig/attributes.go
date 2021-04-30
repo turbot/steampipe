@@ -82,5 +82,6 @@ func buildAttributeSchema(item HclResource) *hcl.BodySchema {
 	for attribute := range GetAttributeDetails(item) {
 		attributes = append(attributes, hcl.AttributeSchema{Name: attribute})
 	}
+
 	return &hcl.BodySchema{Attributes: attributes}
 }

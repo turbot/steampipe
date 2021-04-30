@@ -1,6 +1,8 @@
 package parse
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -42,6 +44,12 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			diags = append(diags, handleDecodeResult(query, res, block, runCtx)...)
 
 		case modconfig.BlockTypeControl:
+			controlConfig := &modconfig.ControlConfig{}
+			//s := gohcl.ImpliedBodySchema(controlConfig)
+			//content, diags := block.Body.Content(s)
+			//
+			gohcl.DecodeBody(block.Body, runCtx.EvalCtx, controlConfig)
+
 			control := modconfig.NewControl(block)
 			res := decodeResource(block, control, runCtx.EvalCtx)
 			diags = append(diags, handleDecodeResult(control, res, block, runCtx)...)
@@ -99,25 +107,73 @@ func decodeMod(block *hcl.Block, mod *modconfig.Mod, ctx *hcl.EvalContext) *deco
 		return &decodeResult{Diags: diags}
 	}
 
-	res := decodeAttributes(mod, content, ctx)
+	modRes := decodeAttributes(mod, content, ctx)
 
 	for _, block := range content.Blocks {
 		switch block.Type {
-		// TODO add parsing of requires block
-		case "opengraph":
-			opengraph := &modconfig.OpenGraph{
-				DeclRange: block.DefRange,
-			}
+		case modconfig.BlockTypeOpengraph:
+			opengraph := &modconfig.OpenGraph{DeclRange: block.DefRange}
 			res := decodeResource(block, opengraph, ctx)
-
-			res.Merge(res)
 			if res.Success() {
 				mod.OpenGraph = opengraph
 			}
+			modRes.Merge(res)
+
+		case modconfig.BlockTypeRequires:
+			requires, res := decodeRequires(block, ctx)
+			if res.Success() {
+				mod.Requires = requires
+			}
+			modRes.Merge(res)
 		}
 	}
 
-	return res
+	return modRes
+}
+
+func decodeRequires(block *hcl.Block, ctx *hcl.EvalContext) (*modconfig.Requires, *decodeResult) {
+	s, partial := gohcl.ImpliedBodySchema(&modconfig.RequiresConfig{})
+	fmt.Println(s)
+	fmt.Println(partial)
+
+	requires := &modconfig.Requires{DeclRange: block.DefRange}
+
+	content, diags := block.Body.Content(requires.Schema())
+	if diags.HasErrors() {
+		return nil, &decodeResult{Diags: diags}
+	}
+
+	// no attributes for requires block
+	var requiresRes = &decodeResult{}
+	for _, block := range content.Blocks {
+		switch block.Type {
+		case modconfig.BlockTypePluginVersion:
+			pluginVersion := modconfig.NewPluginVersion(block)
+			requires.Plugins = append(requires.Plugins, pluginVersion)
+
+		case modconfig.BlockTypeSteampipeVersion:
+			if requires.Steampipe != nil {
+				requiresRes.Diags = append(requiresRes.Diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Stesampipe version defined more than once",
+					Subject:  &block.DefRange,
+				})
+				continue
+			}
+			requires.Steampipe = modconfig.NewSteampipeVersion(block)
+
+		case modconfig.BlockTypeModVersion:
+			modVersion := modconfig.NewModVersion(block)
+			res := decodeResource(block, modVersion, ctx)
+			if res.Success() {
+				requires.Mods = append(requires.Mods, modVersion)
+			}
+			requiresRes.Merge(res)
+
+		}
+	}
+
+	return requires, requiresRes
 }
 
 func decodeLocals(block *hcl.Block, ctx *hcl.EvalContext) ([]*modconfig.Local, *decodeResult) {
@@ -221,9 +277,9 @@ func validateName(block *hcl.Block) hcl.Diagnostics {
 //	return dest, nil
 //}
 //
-//func parsePluginDependency(block *hcl.Block) (*modconfig.PluginDependency, hcl.Diagnostics) {
+//func parsePluginDependency(block *hcl.Block) (*modconfig.PluginVersion, hcl.Diagnostics) {
 //	var diags hcl.Diagnostics
-//	var dest = &modconfig.PluginDependency{}
+//	var dest = &modconfig.PluginVersion{}
 //
 //	diags = gohcl.DecodeBody(block.Body, nil, dest)
 //	if diags.HasErrors() {
