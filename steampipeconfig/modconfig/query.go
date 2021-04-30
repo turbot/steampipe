@@ -19,13 +19,13 @@ type Query struct {
 	ShortName string
 	FullName  string `cty:"name"`
 
-	Description      *string   `cty:"description" hcl:"description" column:"description" column_type:"text"`
-	Documentation    *string   `cty:"documentation" hcl:"documentation" column:"documentation" column_type:"text"`
-	Labels           *[]string `cty:"labels" hcl:"labels" column:"labels" column_type:"jsonb"`
-	SQL              *string   `cty:"sql" hcl:"sql" column:"sql" column_type:"text"`
-	SearchPath       *string   `cty:"search_path" hcl:"search_path" column:"search_path" column_type:"text"`
-	SearchPathPrefix *string   `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix" column_type:"text"`
-	Title            *string   `cty:"title" hcl:"title" column:"title" column_type:"text"`
+	Description      *string   `cty:"description" hcl:"description" column_type:"text"`
+	Documentation    *string   `cty:"documentation" hcl:"documentation" column_type:"text"`
+	Labels           *[]string `cty:"labels" hcl:"labels" column_type:"jsonb"`
+	SQL              *string   `cty:"sql" hcl:"sql" column_type:"text"`
+	SearchPath       *string   `cty:"search_path" hcl:"search_path" column_type:"text"`
+	SearchPathPrefix *string   `cty:"search_path_prefix" hcl:"search_path_prefix" column_type:"text"`
+	Title            *string   `cty:"title" hcl:"title" column_type:"text"`
 
 	DeclRange hcl.Range
 	metadata  *ResourceMetadata
@@ -37,11 +37,6 @@ func NewQuery(block *hcl.Block) *Query {
 		FullName:  fmt.Sprintf("query.%s", block.Labels[0]),
 		DeclRange: block.DefRange,
 	}
-}
-
-// Schema :: hcl schema for control
-func (q *Query) Schema() *hcl.BodySchema {
-	return buildAttributeSchema(q)
 }
 
 func (q *Query) CtyValue() (cty.Value, error) {
