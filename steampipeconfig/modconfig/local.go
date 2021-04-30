@@ -9,7 +9,7 @@ import (
 
 type Local struct {
 	ShortName string
-	FullName  string `cty:"name"`
+	FullName  string `hcl:"name"`
 
 	Value     cty.Value
 	DeclRange hcl.Range

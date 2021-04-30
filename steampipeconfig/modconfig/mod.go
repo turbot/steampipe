@@ -18,12 +18,12 @@ type Mod struct {
 	FullName  string `cty:"name"`
 
 	// note these must be consistent with the attributes defined in 'modSchema'
-	Color         *string   `cty:"color" column:"color" column_type:"text"`
-	Description   *string   `cty:"description" column:"description" column_type:"text"`
-	Documentation *string   `cty:"documentation" column:"documentation" column_type:"text"`
-	Icon          *string   `cty:"icon" column:"icon" column_type:"text"`
-	Labels        *[]string `cty:"labels" column:"labels" column_type:"text[]"`
-	Title         *string   `cty:"title" column:"title" column_type:"text"`
+	Color         *string   `cty:"color" hcl:"color" column:"color" column_type:"text"`
+	Description   *string   `cty:"description" hcl:"description" column:"description" column_type:"text"`
+	Documentation *string   `cty:"documentation" hcl:"documentation" column:"documentation" column_type:"text"`
+	Icon          *string   `cty:"icon" hcl:"icon" column:"icon" column_type:"text"`
+	Labels        *[]string `cty:"labels" hcl:"labels" column:"labels" column_type:"text[]"`
+	Title         *string   `cty:"title" hcl:"title" column:"title" column_type:"text"`
 
 	// TODO do we need this?
 	Version *string

@@ -3,7 +3,7 @@ package modconfig
 import "github.com/hashicorp/hcl/v2"
 
 type SteampipeVersion struct {
-	Version   string `cty:"version"`
+	Version   string `hcl:"version"`
 	DeclRange hcl.Range
 }
 

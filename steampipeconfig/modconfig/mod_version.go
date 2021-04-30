@@ -13,10 +13,10 @@ import (
 type ModVersion struct {
 	// the fully qualified mod name, e.g. github.com/turbot/mod1
 	ShortName string
-	FullName  string `cty:"name"`
+	FullName  string `hcl:"name"`
 
-	Version   string  `cty:"version"`
-	Alias     *string `cty:"alias"`
+	Version   string  `hcl:"version"`
+	Alias     *string `hcl:"alias"`
 	DeclRange hcl.Range
 }
 

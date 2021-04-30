@@ -38,7 +38,7 @@ func GetAttributeDetails(item interface{}) map[string]AttributeDetails {
 
 	for i := 0; i < val.NumField(); i++ {
 		structField := t.Field(i)
-		attribute, ok := structField.Tag.Lookup("cty")
+		attribute, ok := structField.Tag.Lookup("hcl")
 		if ok && attribute != "-" {
 			valField := val.Field(i)
 			// get cty type
