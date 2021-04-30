@@ -14,10 +14,10 @@ import (
 )
 
 type Mod struct {
-	ShortName string
+	ShortName string `hcl:"name,label"`
 	FullName  string `cty:"name"`
 
-	// note these must be consistent with the attributes defined in 'modSchema'
+	// attributes
 	Color         *string   `cty:"color" hcl:"color" column_type:"text"`
 	Description   *string   `cty:"description" hcl:"description" column_type:"text"`
 	Documentation *string   `cty:"documentation" hcl:"documentation" column_type:"text"`
@@ -25,14 +25,16 @@ type Mod struct {
 	Labels        *[]string `cty:"labels" hcl:"labels" column_type:"text[]"`
 	Title         *string   `cty:"title" hcl:"title" column_type:"text"`
 
+	// blocks
+	Requires  *Requires  `hcl:"requires,block"`
+	OpenGraph *OpenGraph `hcl:"opengraph,block"`
+
 	// TODO do we need this?
 	Version *string
 
-	Requires      *Requires
 	Queries       map[string]*Query
 	Controls      map[string]*Control
 	ControlGroups map[string]*ControlGroup
-	OpenGraph     *OpenGraph
 	ModPath       string
 	DeclRange     hcl.Range
 
@@ -43,7 +45,14 @@ type Mod struct {
 // Schema :: implementation of HclResource
 func (m *Mod) Schema() *hcl.BodySchema {
 	// todo this could be done fully generically if we had a tag for block properties
-	schema := buildAttributeSchema(m)
+	schema := &hcl.BodySchema{Attributes: []hcl.AttributeSchema{
+		{Name: "color"},
+		{Name: "description"},
+		{Name: "documentation"},
+		{Name: "icon"},
+		{Name: "labels"},
+		{Name: "title"},
+	}}
 	schema.Blocks = []hcl.BlockHeaderSchema{
 		{Type: BlockTypeRequires},
 		{Type: BlockTypeOpengraph},
@@ -56,7 +65,7 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 	return getCtyValue(m)
 }
 
-func NewMod(shortName, modPath string) *Mod {
+func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	return &Mod{
 		ShortName:     shortName,
 		FullName:      fmt.Sprintf("mod.%s", shortName),
@@ -64,6 +73,7 @@ func NewMod(shortName, modPath string) *Mod {
 		Controls:      make(map[string]*Control),
 		ControlGroups: make(map[string]*ControlGroup),
 		ModPath:       modPath,
+		DeclRange:     defRange,
 	}
 }
 

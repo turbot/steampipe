@@ -1,10 +1,6 @@
 package modconfig
 
 import (
-	"fmt"
-
-	"github.com/zclconf/go-cty/cty"
-
 	"github.com/hashicorp/hcl/v2"
 
 	"github.com/turbot/go-kit/helpers"
@@ -12,30 +8,13 @@ import (
 
 type ModVersion struct {
 	// the fully qualified mod name, e.g. github.com/turbot/mod1
-	ShortName string
+	// TODO THINK ABOUT NAMES
+	ShortName string `hcl:"name,label"`
 	FullName  string `cty:"name"`
 
-	Version   string  `cty:"version"`
-	Alias     *string `cty:"alias"`
+	Version   string  `cty:"version" hcl:"version"`
+	Alias     *string `cty:"alias" hcl:"alias,optional"`
 	DeclRange hcl.Range
-}
-
-func NewModVersion(block *hcl.Block) *ModVersion {
-	return &ModVersion{
-		ShortName: block.Labels[0],
-		Version:   block.Labels[1],
-		FullName:  fmt.Sprintf("mod.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
-	}
-}
-
-// Schema :: hcl schema for control
-func (m *ModVersion) Schema() *hcl.BodySchema {
-	return buildAttributeSchema(m)
-}
-
-func (m *ModVersion) CtyValue() (cty.Value, error) {
-	return getCtyValue(m)
 }
 
 // Name :: return Name@Version

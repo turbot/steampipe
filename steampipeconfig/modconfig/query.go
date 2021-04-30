@@ -39,11 +39,6 @@ func NewQuery(block *hcl.Block) *Query {
 	}
 }
 
-// Schema :: hcl schema for control
-func (q *Query) Schema() *hcl.BodySchema {
-	return buildAttributeSchema(q)
-}
-
 func (q *Query) CtyValue() (cty.Value, error) {
 	return getCtyValue(q)
 }

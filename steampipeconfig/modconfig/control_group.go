@@ -36,11 +36,6 @@ func NewControlGroup(block *hcl.Block) *ControlGroup {
 	}
 }
 
-// Schema :: hcl schema for control
-func (c *ControlGroup) Schema() *hcl.BodySchema {
-	return buildAttributeSchema(c)
-}
-
 func (c *ControlGroup) CtyValue() (cty.Value, error) {
 	return getCtyValue(c)
 }

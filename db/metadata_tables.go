@@ -12,6 +12,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
+// use the hcl tag to identify metadata fields
 const TagColumn = "hcl"
 const TagColumnType = "column_type"
 
