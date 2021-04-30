@@ -1,7 +1,6 @@
 package modconfig
 
 import (
-	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -30,11 +29,10 @@ type ControlTreeItem interface {
 }
 
 // HclResource :: a resource which is defined in HCL
+// - must be implemented by resource with attributes to parse
 type HclResource interface {
 	Name() string
-
 	CtyValue() (cty.Value, error)
-	Schema() *hcl.BodySchema
 }
 
 // ResourceWithMetadata :: a resource which supports reflection metadata

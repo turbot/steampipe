@@ -15,11 +15,11 @@ type ControlGroup struct {
 	ShortName string
 	FullName  string `cty:"name"`
 
-	Description   *string   `cty:"description" column:"description" column_type:"text"`
-	Documentation *string   `cty:"documentation" column:"documentation" column_type:"text"`
-	Labels        *[]string `cty:"labels" column:"labels" column_type:"jsonb"`
-	ParentName    *string   `cty:"parent" column:"parent" column_type:"text"`
-	Title         *string   `cty:"title" column:"title" column_type:"text"`
+	Description   *string   `cty:"description" hcl:"description" column_type:"text"`
+	Documentation *string   `cty:"documentation" hcl:"documentation" column_type:"text"`
+	Labels        *[]string `cty:"labels" hcl:"labels" column_type:"jsonb"`
+	ParentName    *string   `cty:"parent" hcl:"parent" column_type:"text"`
+	Title         *string   `cty:"title" hcl:"title" column_type:"text"`
 
 	DeclRange hcl.Range
 
@@ -34,11 +34,6 @@ func NewControlGroup(block *hcl.Block) *ControlGroup {
 		FullName:  fmt.Sprintf("control_group.%s", block.Labels[0]),
 		DeclRange: block.DefRange,
 	}
-}
-
-// Schema :: hcl schema for control
-func (c *ControlGroup) Schema() *hcl.BodySchema {
-	return buildAttributeSchema(c)
 }
 
 func (c *ControlGroup) CtyValue() (cty.Value, error) {

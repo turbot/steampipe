@@ -14,14 +14,14 @@ type Control struct {
 	ShortName string
 	FullName  string `cty:"name"`
 
-	Description   *string   `cty:"description" column:"description" column_type:"text"`
-	Documentation *string   `cty:"documentation" column:"documentation" column_type:"text"`
-	Labels        *[]string `cty:"labels" column:"labels" column_type:"jsonb"`
-	Links         *[]string `cty:"links" column:"links" column_type:"jsonb"`
-	ParentName    *string   `cty:"parent" column:"parent" column_type:"text"`
-	SQL           *string   `cty:"sql" column:"sql" column_type:"text"`
-	Severity      *string   `cty:"severity" column:"severity" column_type:"text"`
-	Title         *string   `cty:"title" column:"title" column_type:"text"`
+	Description   *string   `cty:"description" hcl:"description" column_type:"text"`
+	Documentation *string   `cty:"documentation" hcl:"documentation" column_type:"text"`
+	Labels        *[]string `cty:"labels" hcl:"labels" column_type:"jsonb"`
+	Links         *[]string `cty:"links" hcl:"links" column_type:"jsonb"`
+	ParentName    *string   `cty:"parent" hcl:"parent" column_type:"text"`
+	SQL           *string   `cty:"sql" hcl:"sql" column_type:"text"`
+	Severity      *string   `cty:"severity" hcl:"severity" column_type:"text"`
+	Title         *string   `cty:"title" hcl:"title" column_type:"text"`
 
 	DeclRange hcl.Range
 
@@ -36,11 +36,6 @@ func NewControl(block *hcl.Block) *Control {
 		DeclRange: block.DefRange,
 	}
 	return control
-}
-
-// Schema :: hcl schema for control
-func (c *Control) Schema() *hcl.BodySchema {
-	return buildAttributeSchema(c)
 }
 
 func (c *Control) CtyValue() (cty.Value, error) {
