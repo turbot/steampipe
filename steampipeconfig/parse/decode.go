@@ -24,41 +24,100 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			Detail:   err.Error()})
 	}
 	for _, block := range blocks {
+		// check name is valid
 		moreDiags := validateName(block)
 		if diags.HasErrors() {
 			diags = append(diags, moreDiags...)
 			continue
 		}
 
-		switch modconfig.ModBlockType(block.Type) {
-		case modconfig.BlockTypeMod:
-			// pass the shell mod - it will be mutated
-			res := decodeMod(block, runCtx.Mod, runCtx.EvalCtx)
-			diags = append(diags, handleDecodeResult(runCtx.Mod, res, block, runCtx)...)
-
-		case modconfig.BlockTypeQuery:
-			query := modconfig.NewQuery(block)
-			res := decodeResource(block, query, runCtx.EvalCtx)
-			diags = append(diags, handleDecodeResult(query, res, block, runCtx)...)
-
-		case modconfig.BlockTypeControl:
-			control := modconfig.NewControl(block)
-			res := decodeResource(block, control, runCtx.EvalCtx)
-			diags = append(diags, handleDecodeResult(control, res, block, runCtx)...)
-
-		case modconfig.BlockTypeControlGroup:
-			controlGroup := modconfig.NewControlGroup(block)
-			res := decodeResource(block, controlGroup, runCtx.EvalCtx)
-			diags = append(diags, handleDecodeResult(controlGroup, res, block, runCtx)...)
-
-		case modconfig.BlockTypeLocals:
+		// special case decoding for locals
+		if block.Type == modconfig.BlockTypeLocals {
+			// special case decode logic for locals
 			locals, res := decodeLocals(block, runCtx.EvalCtx)
 			for _, local := range locals {
-				diags = append(diags, handleDecodeResult(local, res, block, runCtx)...)
+				// handle the result
+				// - if successful, add resource to mod and variables maps
+				// - if there are dependencies, add them to run context
+				moreDiags = handleDecodeResult(local, res, block, runCtx)
+				diags = append(diags, moreDiags...)
 			}
+			continue
 		}
+
+		// all other blocks are treated the same:
+		// decode the resource
+		resource, res := decodeResource(block, runCtx)
+
+		// handle the result
+		// - if successful, add resource to mod and variables maps
+		// - if there are dependencies, add them to run context
+		moreDiags = handleDecodeResult(resource, res, block, runCtx)
+		diags = append(diags, moreDiags...)
 	}
 	return diags
+}
+
+// return a shell resource for the given block
+func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResource {
+	var resource modconfig.HclResource
+	switch modconfig.ModBlockType(block.Type) {
+	case modconfig.BlockTypeMod:
+		// runCtx already contains the shell mod
+		resource = runCtx.Mod
+	case modconfig.BlockTypeQuery:
+		resource = modconfig.NewQuery(block)
+	case modconfig.BlockTypeControl:
+		resource = modconfig.NewControl(block)
+	case modconfig.BlockTypeControlGroup:
+		resource = modconfig.NewControlGroup(block)
+	}
+	return resource
+}
+
+func decodeLocals(block *hcl.Block, ctx *hcl.EvalContext) ([]*modconfig.Local, *decodeResult) {
+	attrs, diags := block.Body.JustAttributes()
+	if len(attrs) == 0 {
+		return nil, &decodeResult{Diags: diags}
+	}
+
+	// build list of locals
+	locals := make([]*modconfig.Local, 0, len(attrs))
+	for name, attr := range attrs {
+		if !hclsyntax.ValidIdentifier(name) {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Invalid local value name",
+				Detail:   badIdentifierDetail,
+				Subject:  &attr.NameRange,
+			})
+		}
+
+		val, moreDiags := attr.Expr.Value(ctx)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+			continue
+		}
+
+		// add to our list
+		locals = append(locals, modconfig.NewLocal(name, val, attr.Range))
+	}
+	return locals, &decodeResult{Diags: diags}
+}
+
+func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
+	// get shell resource
+	resource := resourceForBlock(block, runCtx)
+
+	res := &decodeResult{}
+	moreDiags := gohcl.DecodeBody(block.Body, runCtx.EvalCtx, resource)
+	for _, diag := range moreDiags {
+		if IsMissingVariableError(diag) {
+			// was this error caused by a missing dependency?
+			res.Depends = append(res.Depends, diag.Expression.Variables()...)
+		}
+	}
+	return resource, res
 }
 
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
@@ -84,109 +143,6 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 	return diags
 }
 
-func decodeResource(block *hcl.Block, resource modconfig.HclResource, ctx *hcl.EvalContext) *decodeResult {
-	content, diags := block.Body.Content(resource.Schema())
-	if diags.HasErrors() {
-		return &decodeResult{Diags: diags}
-	}
-
-	return decodeAttributes(resource, content, ctx)
-}
-
-func decodeMod(block *hcl.Block, mod *modconfig.Mod, ctx *hcl.EvalContext) *decodeResult {
-	content, diags := block.Body.Content(mod.Schema())
-	if diags.HasErrors() {
-		return &decodeResult{Diags: diags}
-	}
-
-	res := decodeAttributes(mod, content, ctx)
-
-	for _, block := range content.Blocks {
-		switch block.Type {
-		// TODO add parsing of requires block
-		case "opengraph":
-			opengraph := &modconfig.OpenGraph{
-				DeclRange: block.DefRange,
-			}
-			res := decodeResource(block, opengraph, ctx)
-
-			res.Merge(res)
-			if res.Success() {
-				mod.OpenGraph = opengraph
-			}
-		}
-	}
-
-	return res
-}
-
-func decodeLocals(block *hcl.Block, ctx *hcl.EvalContext) ([]*modconfig.Local, *decodeResult) {
-	// this implemented differently
-	attrs, diags := block.Body.JustAttributes()
-	if len(attrs) == 0 {
-		return nil, &decodeResult{Diags: diags}
-	}
-
-	locals := make([]*modconfig.Local, 0, len(attrs))
-	for name, attr := range attrs {
-		if !hclsyntax.ValidIdentifier(name) {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid local value name",
-				Detail:   badIdentifierDetail,
-				Subject:  &attr.NameRange,
-			})
-		}
-
-		val, moreDiags := attr.Expr.Value(ctx)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-			continue
-		}
-
-		locals = append(locals, modconfig.NewLocal(name, val, attr))
-	}
-	return locals, &decodeResult{Diags: diags}
-}
-
-func decodeAttributes(resource modconfig.HclResource, content *hcl.BodyContent, ctx *hcl.EvalContext) *decodeResult {
-	res := &decodeResult{}
-	for _, attributeDetails := range modconfig.GetAttributeDetails(resource) {
-		res.Merge(decodeAttribute(attributeDetails, content, ctx))
-	}
-	return res
-}
-
-func decodeAttribute(attributeDetails modconfig.AttributeDetails, content *hcl.BodyContent, ctx *hcl.EvalContext) *decodeResult {
-	attribute := attributeDetails.Attribute
-	dest := attributeDetails.Dest
-
-	var diags hcl.Diagnostics
-	var dependencies []hcl.Traversal
-	if content.Attributes[attribute] != nil {
-		expr := content.Attributes[attribute].Expr
-		dependencies, diags = decodeExpression(expr, dest, ctx)
-	}
-	return &decodeResult{Diags: diags, Depends: dependencies}
-}
-
-func decodeExpression(expr hcl.Expression, dest interface{}, ctx *hcl.EvalContext) ([]hcl.Traversal, hcl.Diagnostics) {
-	diags := gohcl.DecodeExpression(expr, ctx, dest)
-	var dependencies []hcl.Traversal
-	for _, diag := range diags {
-		if IsMissingVariableError(diag) {
-			// was this error caused by a missing dependency?
-			dependencies = append(dependencies, expr.(*hclsyntax.ScopeTraversalExpr).Traversal)
-		}
-	}
-	// if there were missing variable errors, suppress the errors and just return the dependencies
-	if len(dependencies) > 0 {
-		diags = nil
-	}
-
-	return dependencies, diags
-}
-
 func IsMissingVariableError(diag *hcl.Diagnostic) bool {
 	return diag.Summary == unknownVariableError || diag.Summary == missingMapElement
 }
@@ -206,29 +162,3 @@ func validateName(block *hcl.Block) hcl.Diagnostics {
 	}
 	return nil
 }
-
-//
-//
-//func parseModVersion(block *hcl.Block) (*modconfig.ModVersion, hcl.Diagnostics) {
-//	var diags hcl.Diagnostics
-//	var dest = &modconfig.ModVersion{}
-//
-//	diags = gohcl.DecodeBody(block.Body, nil, dest)
-//	if diags.HasErrors() {
-//		return nil, diags
-//	}
-//
-//	return dest, nil
-//}
-//
-//func parsePluginDependency(block *hcl.Block) (*modconfig.PluginDependency, hcl.Diagnostics) {
-//	var diags hcl.Diagnostics
-//	var dest = &modconfig.PluginDependency{}
-//
-//	diags = gohcl.DecodeBody(block.Body, nil, dest)
-//	if diags.HasErrors() {
-//		return nil, diags
-//	}
-//
-//	return dest, nil
-//}
