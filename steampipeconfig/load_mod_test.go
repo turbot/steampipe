@@ -32,26 +32,26 @@ var testCasesLoadMod = map[string]loadModTest{
 	"no_mod_sql_files": {
 		source: "test_data/mods/no_mod_sql_files",
 		expected: &modconfig.Mod{
-			Name: "local",
+			ShortName: "local",
 			Queries: map[string]*modconfig.Query{
 				"q1": {
-					Name: "q1", SQL: toStringPointer("select 1"),
+					ShortName: "q1", SQL: toStringPointer("select 1"),
 				},
 				"q2": {
-					Name: "q2", SQL: toStringPointer("select 2"),
+					ShortName: "q2", SQL: toStringPointer("select 2"),
 				},
 			}},
 	},
 	"no_mod_hcl_queries": {
 		source: "test_data/mods/no_mod_hcl_queries",
 		expected: &modconfig.Mod{
-			Name: "local",
+			ShortName: "local",
 			Queries: map[string]*modconfig.Query{
 				"q1": {
-					Name: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
+					ShortName: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
 				},
 				"q2": {
-					Name: "q2", Title: toStringPointer("Q2"), Description: toStringPointer("THIS IS QUERY 2"), SQL: toStringPointer("select 2"),
+					ShortName: "q2", Title: toStringPointer("Q2"), Description: toStringPointer("THIS IS QUERY 2"), SQL: toStringPointer("select 2"),
 				},
 			},
 		},
@@ -63,7 +63,7 @@ var testCasesLoadMod = map[string]loadModTest{
 	"single_mod_no_query": {
 		source: "test_data/mods/single_mod_no_query",
 		expected: &modconfig.Mod{
-			Name:        "m1",
+			ShortName:   "m1",
 			Title:       toStringPointer("M1"),
 			Description: toStringPointer("THIS IS M1"),
 			//ModDepends: []*modconfig.ModVersion{
@@ -74,7 +74,7 @@ var testCasesLoadMod = map[string]loadModTest{
 	"single_mod_one_query": {
 		source: "test_data/mods/single_mod_one_query",
 		expected: &modconfig.Mod{
-			Name:        "m1",
+			ShortName:   "m1",
 			Title:       toStringPointer("M1"),
 			Description: toStringPointer("THIS IS M1"),
 			//ModDepends: []*modconfig.ModVersion{
@@ -82,7 +82,7 @@ var testCasesLoadMod = map[string]loadModTest{
 			//},
 			Queries: map[string]*modconfig.Query{
 				"q1": {
-					Name: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
+					ShortName: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
 				},
 			},
 		},
@@ -90,18 +90,18 @@ var testCasesLoadMod = map[string]loadModTest{
 	"single_mod_one_query_one_control": {
 		source: "test_data/mods/single_mod_one_query_one_control",
 		expected: &modconfig.Mod{
-			Name:        "m1",
+			ShortName:   "m1",
 			Title:       toStringPointer("M1"),
 			Description: toStringPointer("THIS IS M1"),
 			Queries: map[string]*modconfig.Query{
 				"q1": {
 
-					Name: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
+					ShortName: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
 				},
 			},
 			Controls: map[string]*modconfig.Control{
 				"c1": {
-					Name:        "c1",
+					ShortName:   "c1",
 					Title:       toStringPointer("C1"),
 					Description: toStringPointer("THIS IS CONTROL 1"),
 					SQL:         toStringPointer("select 'pass' as result"),
@@ -112,7 +112,7 @@ var testCasesLoadMod = map[string]loadModTest{
 	},
 	"controls_and_groups": {
 		source: "test_data/mods/controls_and_groups",
-		expected: `Name: 
+		expected: `ShortName: 
 Title: M1
 Description: THIS IS M1 
 Mod Dependencies: []
@@ -122,7 +122,7 @@ Queries:
 Controls: 
 
   -----
-  Name: c1
+  ShortName: c1
   Title: 
   Description: 
   Query: select 'pass' as result
@@ -132,7 +132,7 @@ Controls:
 
 
   -----
-  Name: c2
+  ShortName: c2
   Title: 
   Description: 
   Query: select 'pass' as result
@@ -142,7 +142,7 @@ Controls:
 
 
   -----
-  Name: c3
+  ShortName: c3
   Title: 
   Description: 
   Query: select 'pass' as result
@@ -152,7 +152,7 @@ Controls:
 
 
   -----
-  Name: c4
+  ShortName: c4
   Title: 
   Description: 
   Query: select 'pass' as result
@@ -162,7 +162,7 @@ Controls:
 
 
   -----
-  Name: c5
+  ShortName: c5
   Title: 
   Description: 
   Query: select 'pass' as result
@@ -172,7 +172,7 @@ Controls:
 
 
   -----
-  Name: c6
+  ShortName: c6
   Title: 
   Description: 
   Query: select 'FAIL' as result
@@ -183,7 +183,7 @@ Controls:
 Control Groups: 
 
   -----
-  Name: 
+  ShortName: 
   Title: 
   Description: 
   Parent:  
@@ -194,7 +194,7 @@ Control Groups:
 
 
   -----
-  Name: 
+  ShortName: 
   Title: 
   Description: 
   Parent: control_group.cg_1 
@@ -206,7 +206,7 @@ Control Groups:
 
 
   -----
-  Name: 
+  ShortName: 
   Title: 
   Description: 
   Parent: control_group.cg_1_1 
@@ -216,7 +216,7 @@ Control Groups:
 
 
   -----
-  Name: 
+  ShortName: 
   Title: 
   Description: 
   Parent: control_group.cg_1_1 
@@ -228,7 +228,7 @@ Control Groups:
 
 
   -----
-  Name: 
+  ShortName: 
   Title: 
   Description: 
   Parent: control_group.cg_1 
@@ -244,24 +244,24 @@ Control Groups:
 	"single_mod_one_sql_file": {
 		source: "test_data/mods/single_mod_one_sql_file",
 		expected: &modconfig.Mod{
-			Name:        "m1",
+			ShortName:   "m1",
 			Title:       toStringPointer("M1"),
 			Description: toStringPointer("THIS IS M1"),
-			Queries:     map[string]*modconfig.Query{"q1": {Name: "q1", SQL: toStringPointer("select 1")}},
+			Queries:     map[string]*modconfig.Query{"q1": {ShortName: "q1", SQL: toStringPointer("select 1")}},
 		},
 	},
 	"single_mod_sql_file_and_hcl_query": {
 		source: "test_data/mods/single_mod_sql_file_and_hcl_query",
 		expected: &modconfig.Mod{
-			Name:        "m1",
+			ShortName:   "m1",
 			Title:       toStringPointer("M1"),
 			Description: toStringPointer("THIS IS M1"),
 			Queries: map[string]*modconfig.Query{
 				"q1": {
-					Name: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
+					ShortName: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
 				},
 				"q2": {
-					Name: "q2", SQL: toStringPointer("select 2"),
+					ShortName: "q2", SQL: toStringPointer("select 2"),
 				},
 			},
 		},
@@ -269,7 +269,7 @@ Control Groups:
 	"single_mod_two_queries_diff_files": {
 		source: "test_data/mods/single_mod_two_queries_diff_files",
 		expected: &modconfig.Mod{
-			Name:        "m1",
+			ShortName:   "m1",
 			Title:       toStringPointer("M1"),
 			Description: toStringPointer("THIS IS M1"),
 			//ModDepends: []*modconfig.ModVersion{
@@ -277,10 +277,10 @@ Control Groups:
 			//},
 			Queries: map[string]*modconfig.Query{
 				"q1": {
-					Name: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
+					ShortName: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
 				},
 				"q2": {
-					Name: "q2", Title: toStringPointer("Q2"), Description: toStringPointer("THIS IS QUERY 2"), SQL: toStringPointer("select 2"),
+					ShortName: "q2", Title: toStringPointer("Q2"), Description: toStringPointer("THIS IS QUERY 2"), SQL: toStringPointer("select 2"),
 				},
 			},
 		},
@@ -288,7 +288,7 @@ Control Groups:
 	"single_mod_two_queries_same_file": {
 		source: "test_data/mods/single_mod_two_queries_same_file",
 		expected: &modconfig.Mod{
-			Name:        "m1",
+			ShortName:   "m1",
 			Title:       toStringPointer("M1"),
 			Description: toStringPointer("THIS IS M1"),
 			//ModDepends: []*modconfig.ModVersion{
@@ -296,10 +296,10 @@ Control Groups:
 			//},
 			Queries: map[string]*modconfig.Query{
 				"q1": {
-					Name: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
+					ShortName: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
 				},
 				"q2": {
-					Name: "q2", Title: toStringPointer("Q2"), Description: toStringPointer("THIS IS QUERY 2"), SQL: toStringPointer("select 2"),
+					ShortName: "q2", Title: toStringPointer("Q2"), Description: toStringPointer("THIS IS QUERY 2"), SQL: toStringPointer("select 2"),
 				},
 			},
 		},
@@ -307,15 +307,15 @@ Control Groups:
 	"single_mod_two_sql_files": {
 		source: "test_data/mods/single_mod_two_sql_files",
 		expected: &modconfig.Mod{
-			Name:        "m1",
+			ShortName:   "m1",
 			Title:       toStringPointer("M1"),
 			Description: toStringPointer("THIS IS M1"),
 			Queries: map[string]*modconfig.Query{
 				"q1": {
-					Name: "q1", SQL: toStringPointer("select 1"),
+					ShortName: "q1", SQL: toStringPointer("select 1"),
 				},
 				"q2": {
-					Name: "q2", SQL: toStringPointer("select 2"),
+					ShortName: "q2", SQL: toStringPointer("select 2"),
 				},
 			},
 		},

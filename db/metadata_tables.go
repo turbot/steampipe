@@ -80,20 +80,20 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	resourcesAdded := make(map[string]bool)
 
 	for _, control := range workspaceResources.ControlMap {
-		if _, added := resourcesAdded[control.FullName()]; !added {
-			resourcesAdded[control.FullName()] = true
+		if _, added := resourcesAdded[control.Name()]; !added {
+			resourcesAdded[control.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.ReflectionTableControl))
 		}
 	}
 	for _, query := range workspaceResources.QueryMap {
-		if _, added := resourcesAdded[query.FullName()]; !added {
-			resourcesAdded[query.FullName()] = true
+		if _, added := resourcesAdded[query.Name()]; !added {
+			resourcesAdded[query.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.ReflectionTableQuery))
 		}
 	}
 	for _, controlGroup := range workspaceResources.ControlGroupMap {
-		if _, added := resourcesAdded[controlGroup.FullName()]; !added {
-			resourcesAdded[controlGroup.FullName()] = true
+		if _, added := resourcesAdded[controlGroup.Name()]; !added {
+			resourcesAdded[controlGroup.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(controlGroup, constants.ReflectionTableControlGroup))
 		}
 	}

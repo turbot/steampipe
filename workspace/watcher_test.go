@@ -25,15 +25,15 @@ package workspace
 //		operation: create,
 //		path:      "q1.sql",
 //		data:      "select 1",
-//		expected:  map[string]*modconfig.Query{"query.q1": {Name: "q1", SQL: "select 1"}},
+//		expected:  map[string]*modconfig.Query{"query.q1": {ShortName: "q1", SQL: "select 1"}},
 //	},
 //	{name: "add nested sql file",
 //		operation: create,
 //		path:      "queries/q1.sql",
 //		data:      "select 1",
 //		expected: map[string]*modconfig.Query{
-//			"query.q1":         {Name: "q1", SQL: "select 1"},
-//			"query.queries_q1": {Name: "queries_q1", SQL: "select 1"},
+//			"query.q1":         {ShortName: "q1", SQL: "select 1"},
+//			"query.queries_q1": {ShortName: "queries_q1", SQL: "select 1"},
 //		},
 //	},
 //	// TODO no event received
@@ -42,8 +42,8 @@ package workspace
 //		path:      "queries/q1.sql",
 //		data:      "select 2",
 //		expected: map[string]*modconfig.Query{
-//			"query.q1":         {Name: "q1", SQL: "select 1"},
-//			"query.queries_q1": {Name: "queries_q1", SQL: "select 2"},
+//			"query.q1":         {ShortName: "q1", SQL: "select 1"},
+//			"query.queries_q1": {ShortName: "queries_q1", SQL: "select 2"},
 //		},
 //	},
 //	{
@@ -52,9 +52,9 @@ package workspace
 //		path:      "queries/a/b/c/q10.sql",
 //		data:      "select 10",
 //		expected: map[string]*modconfig.Query{
-//			"query.q1":                {Name: "q1", SQL: "select 1"},
-//			"query.queries_q1":        {Name: "queries_q1", SQL: "select 2"},
-//			"query.queries_a_b_c_q10": {Name: "queries_a_b_c_q10", SQL: "select 10"},
+//			"query.q1":                {ShortName: "q1", SQL: "select 1"},
+//			"query.queries_q1":        {ShortName: "queries_q1", SQL: "select 2"},
+//			"query.queries_a_b_c_q10": {ShortName: "queries_a_b_c_q10", SQL: "select 10"},
 //		},
 //	},
 //}
@@ -154,7 +154,7 @@ package workspace
 //}
 
 //func (c *Control) Equals(other *Control) bool {
-//	return types.SafeString(c.Name) == types.SafeString(other.Name) &&
+//	return types.SafeString(c.ShortName) == types.SafeString(other.ShortName) &&
 //		types.SafeString(c.Title) == types.SafeString(other.Title) &&
 //		types.SafeString(c.Description) == types.SafeString(other.Description) &&
 //		types.SafeString(c.SQL) == types.SafeString(other.SQL) &&
@@ -163,7 +163,7 @@ package workspace
 //}
 
 //func (c *ControlGroup) Equals(other *Control) bool {
-//	return types.SafeString(c.Name) == types.SafeString(other.Name) &&
+//	return types.SafeString(c.ShortName) == types.SafeString(other.ShortName) &&
 //		types.SafeString(c.Title) == types.SafeString(other.Title) &&
 //		types.SafeString(c.Description) == types.SafeString(other.Description) &&
 //		reflect.DeepEqual(c.Labels, other.Labels) &&
@@ -174,7 +174,7 @@ package workspace
 
 //
 //func (q *Query) Equals(other *Query) bool {
-//	return types.SafeString(q.Name) == types.SafeString(other.Name) &&
+//	return types.SafeString(q.ShortName) == types.SafeString(other.ShortName) &&
 //		types.SafeString(q.Title) == types.SafeString(other.Title) &&
 //		types.SafeString(q.Description) == types.SafeString(other.Description) &&
 //		types.SafeString(q.SQL) == types.SafeString(other.SQL)

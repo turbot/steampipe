@@ -118,7 +118,7 @@ func createPseudoResources(modPath string, opts *parse.ParseModOptions) ([]modco
 			continue
 		}
 		if resource != nil {
-			metadata := getPseudoResourceMetadata(resource.FullName(), path, fileData)
+			metadata := getPseudoResourceMetadata(resource.Name(), path, fileData)
 			resource.SetMetadata(metadata)
 			res = append(res, resource)
 		}

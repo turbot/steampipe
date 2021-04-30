@@ -129,9 +129,9 @@ func (w *Workspace) GetControlsForArg(arg string) []*modconfig.Control {
 	// keep track of which controls we have identified in order to avoid dupes
 	controlsMatched := make(map[string]bool)
 	for _, c := range w.ControlMap {
-		if _, alreadyMatched := controlsMatched[c.FullName()]; !alreadyMatched {
+		if _, alreadyMatched := controlsMatched[c.Name()]; !alreadyMatched {
 			if arg == "all" || arg == c.GetMetadata().ModShortName {
-				controlsMatched[c.FullName()] = true
+				controlsMatched[c.Name()] = true
 				result = append(result, c)
 			}
 		}
@@ -199,15 +199,15 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 
 	// for LOCAL queries, add map entries keyed by both short name: query.<shortName> and  long name: <modName>.query.<shortName?
 	for _, q := range w.Mod.Queries {
-		res[q.FullName()] = q
-		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.Name), q.Name)
+		res[q.Name()] = q
+		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.ShortName), q.ShortName)
 		res[longName] = q
 	}
 
 	// for mode dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
-			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.Name), q.Name)
+			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.ShortName), q.ShortName)
 			res[longName] = q
 		}
 	}
@@ -220,7 +220,7 @@ func (w *Workspace) buildControlMap(modMap modconfig.ModMap) map[string]*modconf
 
 	// for LOCAL controls, add map entries keyed by both short name: control.<shortName> and  long name: <modName>.control.<shortName?
 	for _, c := range w.Mod.Controls {
-		res[c.FullName()] = c
+		res[c.Name()] = c
 		res[c.QualifiedName()] = c
 	}
 
@@ -239,7 +239,7 @@ func (w *Workspace) buildControlGroupMap(modMap modconfig.ModMap) map[string]*mo
 
 	// for LOCAL controls, add map entries keyed by both short name: control_group.<shortName> and  long name: <modName>.control_group.<shortName?
 	for _, c := range w.Mod.ControlGroups {
-		res[c.FullName()] = c
+		res[c.Name()] = c
 		res[c.QualifiedName()] = c
 	}
 

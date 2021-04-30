@@ -8,16 +8,27 @@ import (
 )
 
 type Local struct {
-	Name      string
+	ShortName string
+	FullName  string `cty:"name"`
+
 	Value     cty.Value
 	DeclRange hcl.Range
 
 	metadata *ResourceMetadata
 }
 
-// FullName :: implementation of HclResource
-func (l *Local) FullName() string {
-	return fmt.Sprintf("local.%s", l.Name)
+func NewLocal(name string, val cty.Value, attr *hcl.Attribute) *Local {
+	return &Local{
+		ShortName: name,
+		FullName:  fmt.Sprintf("local.%s", name),
+		Value:     val,
+		DeclRange: attr.Range,
+	}
+}
+
+// Name :: implementation of HclResource
+func (l *Local) Name() string {
+	return l.FullName
 }
 
 // GetMetadata :: implementation of HclResource

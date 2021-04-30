@@ -4,6 +4,7 @@ import (
 	"log"
 	"reflect"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/turbot/go-kit/helpers"
@@ -74,4 +75,12 @@ func getCtyValue(item interface{}) (cty.Value, error) {
 	ty := hcldec.ImpliedType(spec)
 
 	return gocty.ToCtyValue(item, ty)
+}
+
+func buildAttributeSchema(item HclResource) *hcl.BodySchema {
+	var attributes []hcl.AttributeSchema
+	for attribute := range GetAttributeDetails(item) {
+		attributes = append(attributes, hcl.AttributeSchema{Name: attribute})
+	}
+	return &hcl.BodySchema{Attributes: attributes}
 }

@@ -16,7 +16,8 @@ import (
 )
 
 type Query struct {
-	Name string `cty:"name"`
+	ShortName string
+	FullName  string `cty:"name"`
 
 	Description      *string   `cty:"description" hcl:"description" column:"description" column_type:"text"`
 	Documentation    *string   `cty:"documentation" hcl:"documentation" column:"documentation" column_type:"text"`
@@ -30,13 +31,17 @@ type Query struct {
 	metadata  *ResourceMetadata
 }
 
+func NewQuery(block *hcl.Block) *Query {
+	return &Query{
+		ShortName: block.Labels[0],
+		FullName:  fmt.Sprintf("query.%s", block.Labels[0]),
+		DeclRange: block.DefRange,
+	}
+}
+
 // Schema :: hcl schema for control
 func (q *Query) Schema() *hcl.BodySchema {
-	var attributes []hcl.AttributeSchema
-	for attribute := range GetAttributeDetails(q) {
-		attributes = append(attributes, hcl.AttributeSchema{Name: attribute})
-	}
-	return &hcl.BodySchema{Attributes: attributes}
+	return buildAttributeSchema(q)
 }
 
 func (q *Query) CtyValue() (cty.Value, error) {
@@ -50,7 +55,7 @@ func (q *Query) String() string {
   Title: %s
   Description: %s
   SQL: %s
-`, q.Name, types.SafeString(q.Title), types.SafeString(q.Description), types.SafeString(q.SQL))
+`, q.FullName, types.SafeString(q.Title), types.SafeString(q.Description), types.SafeString(q.SQL))
 }
 
 // QueryFromFile :: factory function
@@ -81,19 +86,20 @@ func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 	if err != nil {
 		return nil, nil, err
 	}
-	q.Name = name
+	q.ShortName = name
+	q.FullName = fmt.Sprintf("query.%s", name)
 	q.SQL = &sql
 	return q, sqlBytes, nil
 }
 
-// FullName :: implementation of MappableResource, HclResource
-func (q *Query) FullName() string {
-	return fmt.Sprintf("query.%s", q.Name)
+// Name :: implementation of MappableResource, HclResource
+func (q *Query) Name() string {
+	return q.FullName
 }
 
 // QualifiedName :: name in format: '<modName>.control.<shortName>'
 func (q *Query) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", q.metadata.ModShortName, q.FullName())
+	return fmt.Sprintf("%s.%s", q.metadata.ModShortName, q.FullName)
 }
 
 // GetMetadata :: implementation of HclResource and MappableResource

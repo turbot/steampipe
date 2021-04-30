@@ -14,7 +14,8 @@ import (
 )
 
 type Mod struct {
-	Name string `cty:"name"`
+	ShortName string
+	FullName  string `cty:"name"`
 
 	// note these must be consistent with the attributes defined in 'modSchema'
 	Color         *string   `cty:"color" column:"color" column_type:"text"`
@@ -41,18 +42,14 @@ type Mod struct {
 
 // Schema :: implementation of HclResource
 func (m *Mod) Schema() *hcl.BodySchema {
-	// todo this could be done automatically if we had a tag for block properties
-
-	var attributes []hcl.AttributeSchema
-	for attribute := range GetAttributeDetails(m) {
-		attributes = append(attributes, hcl.AttributeSchema{Name: attribute})
+	// todo this could be done fully generically if we had a tag for block properties
+	schema := buildAttributeSchema(m)
+	schema.Blocks = []hcl.BlockHeaderSchema{
+		{Type: "requires"},
+		{Type: "opengraph"},
 	}
-	return &hcl.BodySchema{
-		Attributes: attributes,
-		Blocks: []hcl.BlockHeaderSchema{
-			{Type: "requires"},
-			{Type: "opengraph"},
-		}}
+	return schema
+
 }
 
 func (m *Mod) CtyValue() (cty.Value, error) {
@@ -61,7 +58,8 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 
 func NewMod(shortName, modPath string) *Mod {
 	return &Mod{
-		Name:          shortName,
+		ShortName:     shortName,
+		FullName:      fmt.Sprintf("mod.%s", shortName),
 		Queries:       make(map[string]*Query),
 		Controls:      make(map[string]*Control),
 		ControlGroups: make(map[string]*ControlGroup),
@@ -130,7 +128,7 @@ Controls:
 %s
 Control Groups: 
 %s`,
-		m.Name,
+		m.FullName,
 		types.SafeString(m.Title),
 		types.SafeString(m.Description),
 		versionString,
@@ -176,8 +174,8 @@ func (m *Mod) addItemIntoControlTree(item ControlTreeItem) error {
 	}
 
 	// check this item does not exist in the parent path
-	if helpers.StringSliceContains(parent.Path(), item.FullName()) {
-		return fmt.Errorf("cyclical dependency adding '%s' into control tree - parent '%s'", item.FullName(), parentName)
+	if helpers.StringSliceContains(parent.Path(), item.Name()) {
+		return fmt.Errorf("cyclical dependency adding '%s' into control tree - parent '%s'", item.Name(), parentName)
 	}
 	// so we have a result - add into tree
 	item.SetParent(parent)
@@ -192,8 +190,8 @@ func (m *Mod) ControlTreeItemFromName(fullName string) (ControlTreeItem, error) 
 		return nil, err
 	}
 	// this function only finds items in the current mod
-	if parsedName.Mod != "" && parsedName.Mod != m.Name {
-		return nil, fmt.Errorf("cannot find item '%s' in mod '%s' - it is a child of mod '%s'", fullName, m.Name, parsedName.Mod)
+	if parsedName.Mod != "" && parsedName.Mod != m.ShortName {
+		return nil, fmt.Errorf("cannot find item '%s' in mod '%s' - it is a child of mod '%s'", fullName, m.ShortName, parsedName.Mod)
 	}
 	// does name include an item type
 	if parsedName.ItemType == "" {
@@ -212,7 +210,7 @@ func (m *Mod) ControlTreeItemFromName(fullName string) (ControlTreeItem, error) 
 		return nil, fmt.Errorf("ControlTreeItemFromName called invalid item type; '%s'", parsedName.ItemType)
 	}
 	if !found {
-		return nil, fmt.Errorf("cannot find item '%s' in mod '%s'", fullName, m.Name)
+		return nil, fmt.Errorf("cannot find item '%s' in mod '%s'", fullName, m.ShortName)
 	}
 	return item, nil
 }
@@ -220,7 +218,7 @@ func (m *Mod) ControlTreeItemFromName(fullName string) (ControlTreeItem, error) 
 func (m *Mod) AddResource(item HclResource) bool {
 	switch r := item.(type) {
 	case *Query:
-		name := r.FullName()
+		name := r.Name()
 		// check for dupes
 		if _, ok := m.Queries[name]; ok {
 			return false
@@ -228,7 +226,7 @@ func (m *Mod) AddResource(item HclResource) bool {
 		m.Queries[name] = r
 		return true
 	case *Control:
-		name := r.FullName()
+		name := r.Name()
 		// check for dupes
 		if _, ok := m.Controls[name]; ok {
 			return false
@@ -236,7 +234,7 @@ func (m *Mod) AddResource(item HclResource) bool {
 		m.Controls[name] = r
 		return true
 	case *ControlGroup:
-		name := r.FullName()
+		name := r.Name()
 		// check for dupes
 		if _, ok := m.ControlGroups[name]; ok {
 			return false
@@ -265,18 +263,18 @@ func (m *Mod) SetParent(ControlTreeItem) error {
 	return errors.New("cannot set a parent on a mod")
 }
 
-// FullName :: implementation of ControlTreeItem, HclResource
-func (m *Mod) FullName() string {
+// Name :: implementation of ControlTreeItem, HclResource
+func (m *Mod) Name() string {
 
 	if m.Version == nil {
-		return fmt.Sprintf("mod.%s", m.Name)
+		return m.FullName
 	}
-	return fmt.Sprintf("mod.%s@%s", m.Name, types.SafeString(m.Version))
+	return fmt.Sprintf("%s@%s", m.FullName, types.SafeString(m.Version))
 }
 
 // Path :: implementation of ControlTreeItem
 func (m *Mod) Path() []string {
-	return []string{m.FullName()}
+	return []string{m.Name()}
 }
 
 // AddPseudoResource :: add resource to parse results, if there is no resource of same name
@@ -284,8 +282,8 @@ func (m *Mod) AddPseudoResource(resource MappableResource) {
 	switch r := resource.(type) {
 	case *Query:
 		// check there is not already a query with the same name
-		if _, ok := m.Queries[r.Name]; !ok {
-			m.Queries[r.Name] = r
+		if _, ok := m.Queries[r.ShortName]; !ok {
+			m.Queries[r.ShortName] = r
 			// set the mod on the query metadata
 			r.GetMetadata().SetMod(m)
 		}

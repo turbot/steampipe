@@ -15,18 +15,14 @@ type OpenGraph struct {
 
 // Schema :: hcl schema for control
 func (o *OpenGraph) Schema() *hcl.BodySchema {
-	var attributes []hcl.AttributeSchema
-	for attribute := range GetAttributeDetails(o) {
-		attributes = append(attributes, hcl.AttributeSchema{Name: attribute})
-	}
-	return &hcl.BodySchema{Attributes: attributes}
+	return buildAttributeSchema(o)
 }
 
 func (o *OpenGraph) CtyValue() (cty.Value, error) {
 	return getCtyValue(o)
 }
 
-// FullName :: implementation of  HclResource
-func (o *OpenGraph) FullName() string {
+// Name :: implementation of  HclResource
+func (o *OpenGraph) Name() string {
 	return o.Title
 }

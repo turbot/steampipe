@@ -7,12 +7,12 @@ import (
 // if deep is false only load single level of dependencies - if true load full tree (tbd if this is needed)
 func LoadModDependencies(m *modconfig.Mod, modsFolder string, modMap modconfig.ModMap, deep bool) error {
 	//for _, dep := range m.ModDepends {
-	//	dependencyName := dep.FullName()
+	//	dependencyName := dep.Name()
 	//	// have we already loaded this dependency?
 	//	if _, ok := modMap[dependencyName]; ok {
 	//		continue
 	//	}
-	//	// convert mod FullName into a path
+	//	// convert mod Name into a path
 	//	modPath := path.Join(modsFolder, dependencyName)
 	//	if _, err := os.Stat(modPath); os.IsNotExist(err) {
 	//		return fmt.Errorf("mod %s not found in mod folder %s", dependencyName, modsFolder)

@@ -35,34 +35,19 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			// pass the shell mod - it will be mutated
 			res := decodeMod(block, runCtx.Mod, runCtx.EvalCtx)
 			diags = append(diags, handleDecodeResult(runCtx.Mod, res, block, runCtx)...)
-			//if res.Diags.HasErrors() {
-			//	diags = append(diags, res.Diags...)
-			//}
-			//if len(res.Depends) > 0 {
-			//	runCtx.AddDependencies(block, runCtx.Mod.FullName(), res.Depends)
-			//}
 
 		case modconfig.BlockTypeQuery:
-			query := &modconfig.Query{
-				Name:      block.Labels[0],
-				DeclRange: block.DefRange,
-			}
+			query := modconfig.NewQuery(block)
 			res := decodeResource(block, query, runCtx.EvalCtx)
 			diags = append(diags, handleDecodeResult(query, res, block, runCtx)...)
 
 		case modconfig.BlockTypeControl:
-			control := &modconfig.Control{
-				Name:      block.Labels[0],
-				DeclRange: block.DefRange,
-			}
+			control := modconfig.NewControl(block)
 			res := decodeResource(block, control, runCtx.EvalCtx)
 			diags = append(diags, handleDecodeResult(control, res, block, runCtx)...)
 
 		case modconfig.BlockTypeControlGroup:
-			controlGroup := &modconfig.ControlGroup{
-				Name:      block.Labels[0],
-				DeclRange: block.DefRange,
-			}
+			controlGroup := modconfig.NewControlGroup(block)
 			res := decodeResource(block, controlGroup, runCtx.EvalCtx)
 			diags = append(diags, handleDecodeResult(controlGroup, res, block, runCtx)...)
 
@@ -81,7 +66,7 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 	if res.Success() {
 		// if resource supports metadata, save it
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
-			metadata := GetMetadataForParsedResource(resource.FullName(), block, runCtx.FileData, runCtx.Mod)
+			metadata := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.Mod)
 			resourceWithMetadata.SetMetadata(metadata)
 		}
 		moreDiags := runCtx.AddResource(resource, block)
@@ -93,7 +78,7 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 			diags = append(diags, res.Diags...)
 		}
 		if len(res.Depends) > 0 {
-			runCtx.AddDependencies(block, resource.FullName(), res.Depends)
+			runCtx.AddDependencies(block, resource.Name(), res.Depends)
 		}
 	}
 	return diags
@@ -159,11 +144,7 @@ func decodeLocals(block *hcl.Block, ctx *hcl.EvalContext) ([]*modconfig.Local, *
 			continue
 		}
 
-		locals = append(locals, &modconfig.Local{
-			Name:      name,
-			Value:     val,
-			DeclRange: attr.Range,
-		})
+		locals = append(locals, modconfig.NewLocal(name, val, attr))
 	}
 	return locals, &decodeResult{Diags: diags}
 }

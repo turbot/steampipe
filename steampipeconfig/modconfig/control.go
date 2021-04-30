@@ -11,7 +11,8 @@ import (
 
 // Control :: struct representing the control mod resource
 type Control struct {
-	Name string `cty:"name"`
+	ShortName string
+	FullName  string `cty:"name"`
 
 	Description   *string   `cty:"description" column:"description" column_type:"text"`
 	Documentation *string   `cty:"documentation" column:"documentation" column_type:"text"`
@@ -28,14 +29,18 @@ type Control struct {
 	metadata *ResourceMetadata
 }
 
+func NewControl(block *hcl.Block) *Control {
+	control := &Control{
+		ShortName: block.Labels[0],
+		FullName:  fmt.Sprintf("control.%s", block.Labels[0]),
+		DeclRange: block.DefRange,
+	}
+	return control
+}
+
 // Schema :: hcl schema for control
 func (c *Control) Schema() *hcl.BodySchema {
-	// todo this could be done automatically if we had a tag for block properties
-	var attributes []hcl.AttributeSchema
-	for attribute := range GetAttributeDetails(c) {
-		attributes = append(attributes, hcl.AttributeSchema{Name: attribute})
-	}
-	return &hcl.BodySchema{Attributes: attributes}
+	return buildAttributeSchema(c)
 }
 
 func (c *Control) CtyValue() (cty.Value, error) {
@@ -61,7 +66,7 @@ func (c *Control) String() string {
   Labels: %v
   Links: %v
 `,
-		c.Name,
+		c.FullName,
 		types.SafeString(c.Title),
 		types.SafeString(c.Description),
 		types.SafeString(c.SQL),
@@ -76,7 +81,7 @@ func (c *Control) AddChild(child ControlTreeItem) error {
 
 // GetParentName :: implementation of ControlTreeItem
 func (c *Control) GetParentName() string {
-	return getParentName(types.SafeString(c.ParentName))
+	return types.SafeString(c.ParentName)
 }
 
 // SetParent :: implementation of ControlTreeItem
@@ -85,20 +90,20 @@ func (c *Control) SetParent(parent ControlTreeItem) error {
 	return nil
 }
 
-// FullName :: implementation of ControlTreeItem, HclResource
+// Name :: implementation of ControlTreeItem, HclResource
 // return name in format: 'control.<shortName>'
-func (c *Control) FullName() string {
-	return fmt.Sprintf("control.%s", c.Name)
+func (c *Control) Name() string {
+	return c.FullName
 }
 
 // QualifiedName :: name in format: '<modName>.control.<shortName>'
 func (c *Control) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName())
+	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName)
 }
 
 // Path :: implementation of ControlTreeItem
 func (c *Control) Path() []string {
-	path := []string{c.FullName()}
+	path := []string{c.FullName}
 	if c.parent != nil {
 		path = append(c.parent.Path(), path...)
 	}
