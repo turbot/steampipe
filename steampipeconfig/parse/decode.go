@@ -117,6 +117,10 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 			res.Depends = append(res.Depends, diag.Expression.Variables()...)
 		}
 	}
+	// only register errors if there are NOT any missing variables
+	if moreDiags.HasErrors() && len(res.Depends) == 0 {
+		res.Diags = append(res.Diags, moreDiags...)
+	}
 	return resource, res
 }
 
