@@ -274,7 +274,7 @@ To get information about the columns in a table, run %s
 }
 
 func listConnections(input *HandlerInput) error {
-	header := []string{"Connection", "Plugin"}
+	header := []string{"connection", "plugin"}
 	rows := [][]string{}
 
 	for _, schema := range input.Schema.GetSchemas() {
@@ -303,7 +303,7 @@ To get information about the columns in a table, run %s
 }
 
 func inspectConnection(connectionName string, input *HandlerInput) bool {
-	header := []string{"Table", "Description"}
+	header := []string{"table", "description"}
 	rows := [][]string{}
 
 	schema, found := input.Schema.Schemas[connectionName]
@@ -332,7 +332,7 @@ func clearScreen(input *HandlerInput) error {
 }
 
 func inspectTable(connectionName string, tableName string, input *HandlerInput) error {
-	header := []string{"Column", "Type", "Description"}
+	header := []string{"column", "type", "description"}
 	rows := [][]string{}
 
 	schema, found := input.Schema.Schemas[connectionName]
