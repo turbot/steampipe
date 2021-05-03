@@ -77,8 +77,6 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 	}()
 
 	for {
-		c.nullifyActiveCancel()
-
 		rerun := c.runInteractivePrompt(resultsStreamer)
 
 		// persist saved history
@@ -277,7 +275,7 @@ func (c *InteractiveClient) setupActiveCancel(ctx context.Context, cancel contex
 }
 
 func (c *InteractiveClient) nullifyActiveCancel() {
-	fmt.Println("v")
+	fmt.Println("nullifyActiveCancel")
 	debug.PrintStack()
 	c.activeQueryCancelFunc = nil
 }
