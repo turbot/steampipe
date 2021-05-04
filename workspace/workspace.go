@@ -316,9 +316,16 @@ func (w *Workspace) LoadExclusions() error {
 }
 
 func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
-	return &modconfig.WorkspaceResourceMaps{
+	workspaceMap := &modconfig.WorkspaceResourceMaps{
+		ModMap:          make(map[string]*modconfig.Mod),
 		QueryMap:        w.QueryMap,
 		ControlMap:      w.ControlMap,
 		ControlGroupMap: w.ControlGroupMap,
 	}
+	// TODO add in all mod dependencies
+	if !w.Mod.IsDefaultMod() {
+		workspaceMap.ModMap[w.Mod.Name()] = w.Mod
+	}
+
+	return workspaceMap
 }

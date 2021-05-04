@@ -65,6 +65,7 @@ const (
 	ReflectionTableQuery        = "steampipe_query"
 	ReflectionTableControl      = "steampipe_control"
 	ReflectionTableControlGroup = "steampipe_control_group"
+	ReflectionTableMod          = "steampipe_mod"
 )
 
 func ReflectionTableNames() []string {

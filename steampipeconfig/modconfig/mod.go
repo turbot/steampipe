@@ -13,6 +13,8 @@ import (
 	"github.com/turbot/go-kit/types"
 )
 
+const defaultModName = "local"
+
 type Mod struct {
 	ShortName string `hcl:"name,label"`
 	FullName  string `cty:"name"`
@@ -22,7 +24,7 @@ type Mod struct {
 	Description   *string   `cty:"description" hcl:"description" column_type:"text"`
 	Documentation *string   `cty:"documentation" hcl:"documentation" column_type:"text"`
 	Icon          *string   `cty:"icon" hcl:"icon" column_type:"text"`
-	Labels        *[]string `cty:"labels" hcl:"labels" column_type:"text[]"`
+	Labels        *[]string `cty:"labels" hcl:"labels"  column_type:"jsonb"`
 	Title         *string   `cty:"title" hcl:"title" column_type:"text"`
 
 	// blocks
@@ -77,18 +79,20 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	}
 }
 
+// CreateDefaultMod :: create a default mod created for a workspace with no mod definition
+func CreateDefaultMod(modPath string) *Mod {
+	return NewMod(defaultModName, modPath, hcl.Range{})
+}
+
+// IsDefaultMod :: is this mod a default mod created for a workspace with no mod definition
+func (m *Mod) IsDefaultMod() bool {
+	return m.ShortName == defaultModName
+}
+
 func (m *Mod) String() string {
 	if m == nil {
 		return ""
 	}
-	//var modDependStr []string
-	//for _, d := range m.ModDepends {
-	//	modDependStr = append(modDependStr, d.String())
-	//}
-	//var pluginDependStr []string
-	//for _, d := range m.PluginDepends {
-	//	pluginDependStr = append(pluginDependStr, d.String())
-	//}
 	// build ordered list of query names
 	var queryNames []string
 	for name := range m.Queries {
