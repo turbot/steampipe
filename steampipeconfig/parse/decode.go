@@ -4,13 +4,20 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 // A consistent detail message for all "not a valid identifier" diagnostics.
 const badIdentifierDetail = "A name must start with a letter or underscore and may contain only letters, digits, underscores, and dashes."
-const unknownVariableError = "Unknown variable"
-const missingMapElement = "Missing map element"
+
+var missingVariableErrors = []string{
+	// returned when the context variables does not have top level 'type' node (locals/control/etc)
+	"Unknown variable",
+	// returned when the variables have the type object but a field has not yet been populated
+	"Unsupported attribute",
+	"Missing map element",
+}
 
 func decode(runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
@@ -117,6 +124,10 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 			res.Depends = append(res.Depends, diag.Expression.Variables()...)
 		}
 	}
+	// only register errors if there are NOT any missing variables
+	if moreDiags.HasErrors() && len(res.Depends) == 0 {
+		res.Diags = append(res.Diags, moreDiags...)
+	}
 	return resource, res
 }
 
@@ -144,7 +155,7 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 }
 
 func IsMissingVariableError(diag *hcl.Diagnostic) bool {
-	return diag.Summary == unknownVariableError || diag.Summary == missingMapElement
+	return helpers.StringSliceContains(missingVariableErrors, diag.Summary)
 }
 
 func validateName(block *hcl.Block) hcl.Diagnostics {
