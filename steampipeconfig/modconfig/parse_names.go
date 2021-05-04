@@ -8,17 +8,11 @@ import (
 type ModBlockType string
 
 const (
-	BlockTypeMod          ModBlockType = "mod"
-	BlockTypeQuery                     = "query"
-	BlockTypeControl                   = "control"
-	BlockTypeControlGroup              = "control_group"
-	BlockTypeLocals                    = "locals"
-
-	BlockTypeOpengraph        = "opengraph"
-	BlockTypeRequires         = "requires"
-	BlockTypePluginVersion    = "plugin"
-	BlockTypeModVersion       = "mod"
-	BlockTypeSteampipeVersion = "steampipe"
+	BlockTypeMod       ModBlockType = "mod"
+	BlockTypeQuery                  = "query"
+	BlockTypeControl                = "control"
+	BlockTypeBenchmark              = "benchmark"
+	BlockTypeLocals                 = "locals"
 )
 
 type ParsedResourceName struct {

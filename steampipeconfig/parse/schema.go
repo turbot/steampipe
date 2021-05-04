@@ -51,7 +51,7 @@ var ModFileSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       string(modconfig.BlockTypeControlGroup),
+			Type:       string(modconfig.BlockTypeBenchmark),
 			LabelNames: []string{"name"},
 		},
 		{

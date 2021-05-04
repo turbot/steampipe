@@ -1,10 +1,4 @@
-/**
-	This package is for all interfaces that are imported in multiple packages in the
-	code base
-
-	This package MUST never import any other `steampipe` package
-**/
-package results
+package queryresult
 
 import (
 	"database/sql"
@@ -15,29 +9,37 @@ type RowResult struct {
 	Data  []interface{}
 	Error error
 }
-type QueryResult struct {
-	RowChan *chan *RowResult
-
+type Result struct {
+	RowChan  *chan *RowResult
 	ColTypes []*sql.ColumnType
 	Duration chan time.Duration
 }
 
-// close the channels
-func (r QueryResult) Close() {
+// Close closes the row channel
+func (r Result) Close() {
 	close(*r.RowChan)
 }
 
-func (r QueryResult) StreamRow(rowResult []interface{}) {
+func (r Result) StreamRow(rowResult []interface{}) {
 	*r.RowChan <- &RowResult{Data: rowResult}
 }
 
-func (r QueryResult) StreamError(err error) {
+func (r Result) StreamError(err error) {
 	*r.RowChan <- &RowResult{Error: err}
 }
 
-func NewQueryResult(colTypes []*sql.ColumnType) *QueryResult {
+func (r *Result) ColumnTypesContainsColumn(col string) bool {
+	for _, ct := range r.ColTypes {
+		if ct.Name() == col {
+			return true
+		}
+	}
+	return false
+}
+
+func NewQueryResult(colTypes []*sql.ColumnType) *Result {
 	rowChan := make(chan *RowResult)
-	return &QueryResult{
+	return &Result{
 		RowChan:  &rowChan,
 		ColTypes: colTypes,
 		Duration: make(chan time.Duration, 1),

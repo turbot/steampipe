@@ -11,8 +11,8 @@ import (
 	"github.com/zclconf/go-cty/cty/gocty"
 )
 
-// GetCtyTypes
-// build map of cty types for all teagged properties - used to convert the struct to a cty value
+// GetCtyTypes builds a map of cty types for all tagged properties.
+// It is used to convert the struct to a cty value
 func GetCtyTypes(item interface{}) map[string]cty.Type {
 	defer func() {
 		if r := recover(); r != nil {
@@ -44,7 +44,7 @@ func GetCtyTypes(item interface{}) map[string]cty.Type {
 	return res
 }
 
-// convert the item into a cty value.
+// convert the item into a cty value
 func getCtyValue(item interface{}) (cty.Value, error) {
 	// build the block schema
 	var block = configschema.Block{Attributes: make(map[string]*configschema.Attribute)}

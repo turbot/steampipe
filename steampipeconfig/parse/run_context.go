@@ -2,19 +2,35 @@ package parse
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
 )
 
 const rootDependencyNode = "rootDependencyNode"
 
+type unresolvedBlock struct {
+	Name         string
+	Block        *hcl.Block
+	Dependencies []*dependency
+}
+
+func (b unresolvedBlock) String() string {
+	depStrings := make([]string, len(b.Dependencies))
+	for i, dep := range b.Dependencies {
+		depStrings[i] = fmt.Sprintf(`%s -> %s`, b.Name, dep.String())
+	}
+	return strings.Join(depStrings, "\n")
+}
+
 type RunContext struct {
 	Mod              *modconfig.Mod
-	UnresolvedBlocks map[string]*hcl.Block
+	UnresolvedBlocks map[string]*unresolvedBlock
 	FileData         map[string][]byte
 	dependencyGraph  *topsort.Graph
 	//dependencies     map[string]bool
@@ -28,13 +44,13 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 	c := &RunContext{
 		Mod:              mod,
 		FileData:         fileData,
-		UnresolvedBlocks: make(map[string]*hcl.Block),
-		dependencyGraph:  topsort.NewGraph(),
-		variables:        make(map[string]map[string]cty.Value),
-		blocks:           content.Blocks,
+		UnresolvedBlocks: make(map[string]*unresolvedBlock),
+
+		variables: make(map[string]map[string]cty.Value),
+		blocks:    content.Blocks,
 	}
 	// add root node - this will depend on all other nodes
-	c.dependencyGraph.AddNode(rootDependencyNode)
+	c.dependencyGraph = c.newDependencyGraph()
 	c.buildEvalContext()
 
 	// add mod and any existing mod resources to the variables
@@ -43,13 +59,25 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 	return c, diags
 }
 
+func (c *RunContext) newDependencyGraph() *topsort.Graph {
+	dependencyGraph := topsort.NewGraph()
+	// add root node - this will depend on all other nodes
+	dependencyGraph.AddNode(rootDependencyNode)
+	return dependencyGraph
+}
+
+func (c *RunContext) ClearDependencies() {
+	c.UnresolvedBlocks = make(map[string]*unresolvedBlock)
+	c.dependencyGraph = c.newDependencyGraph()
+}
+
 // AddDependencies :: the block could not be resolved as it has dependencies
 // 1) store block as unresolved
-// 2) add dependencies to our tree of depdnecie
-func (c *RunContext) AddDependencies(block *hcl.Block, name string, dependencies []hcl.Traversal) hcl.Diagnostics {
+// 2) add dependencies to our tree of dependencies
+func (c *RunContext) AddDependencies(block *hcl.Block, name string, dependencies []*dependency) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	// store unresolved block
-	c.UnresolvedBlocks[name] = block
+	c.UnresolvedBlocks[name] = &unresolvedBlock{Name: name, Block: block, Dependencies: dependencies}
 
 	// store dependency in tree - d
 	if !c.dependencyGraph.ContainsNode(name) {
@@ -59,25 +87,25 @@ func (c *RunContext) AddDependencies(block *hcl.Block, name string, dependencies
 	c.dependencyGraph.AddEdge(rootDependencyNode, name)
 
 	for _, dep := range dependencies {
-		d := TraversalAsString(dep)
+		// each dependency object may have multiple traversals
+		for _, t := range dep.Traversals {
+			d := hclhelpers.TraversalAsString(t)
 
-		// 'd' may be a property path - when storing dependencies we only care about the resource names
-		dependencyResource, err := modconfig.PropertyPathToResourceName(d)
-		if err != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "failed to convert cty value - asJson failed",
-				Detail:   err.Error()})
-			continue
+			// 'd' may be a property path - when storing dependencies we only care about the resource names
+			dependencyResource, err := modconfig.PropertyPathToResourceName(d)
+			if err != nil {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "failed to convert cty value - asJson failed",
+					Detail:   err.Error()})
+				continue
 
+			}
+			if !c.dependencyGraph.ContainsNode(dependencyResource) {
+				c.dependencyGraph.AddNode(dependencyResource)
+			}
+			c.dependencyGraph.AddEdge(name, dependencyResource)
 		}
-		if !c.dependencyGraph.ContainsNode(dependencyResource) {
-			c.dependencyGraph.AddNode(dependencyResource)
-		}
-		c.dependencyGraph.AddEdge(name, dependencyResource)
-
-		// store the raw dependency properties
-		//c.dependencies[d] = true
 	}
 	return nil
 }
@@ -122,7 +150,7 @@ func (c *RunContext) BlocksToDecode() (hcl.Blocks, error) {
 		// if this one is unparsed, added to list
 		block, ok := c.UnresolvedBlocks[name]
 		if ok {
-			blocksToDecode = append(blocksToDecode, block)
+			blocksToDecode = append(blocksToDecode, block.Block)
 		}
 	}
 	return blocksToDecode, nil
@@ -157,16 +185,7 @@ func (c *RunContext) AddResource(resource modconfig.HclResource, block *hcl.Bloc
 	}
 
 	// try to add query to mod - this will fail if the mod already has a query with the same name
-	if !c.Mod.AddResource(resource) {
-		diagnostics = append(diagnostics, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("mod defines more that one query named %s", resource.Name()),
-			Subject:  &block.DefRange,
-		})
-	}
-
-	return diagnostics
-
+	return c.Mod.AddResource(resource, block)
 }
 
 func (c *RunContext) addResourceToVariables(resource modconfig.HclResource, block *hcl.Block) hcl.Diagnostics {
@@ -225,4 +244,30 @@ func (c *RunContext) addModToVariables() hcl.Diagnostics {
 		}
 	}
 	return diags
+}
+
+func (c *RunContext) FormatDependencies() string {
+	// first get the dependency order
+	dependencyOrder, err := c.getDependencyOrder()
+	if err != nil {
+		return err.Error()
+	}
+	// build array of dependency strings - processes dependencies in reverse order for presentation reasons
+	numDeps := len(dependencyOrder)
+	depStrings := make([]string, numDeps)
+	for i := 0; i < len(dependencyOrder); i++ {
+		srcIdx := len(dependencyOrder) - i - 1
+		resourceName := dependencyOrder[srcIdx]
+		// find dependency
+		dep, ok := c.UnresolvedBlocks[resourceName]
+
+		if ok {
+			depStrings[i] = dep.String()
+		} else {
+			// this could happen if there is a dependency on a missing item
+			depStrings[i] = fmt.Sprintf("  MISSING: %s", resourceName)
+		}
+	}
+
+	return helpers.Tabify(strings.Join(depStrings, "\n"), "   ")
 }

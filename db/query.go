@@ -1,20 +1,21 @@
 package db
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/definitions/results"
+	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/utils"
 )
 
 // EnsureDbAndStartService :: ensure db is installed and start service if necessary
 func EnsureDbAndStartService(invoker Invoker) error {
-	logging.LogTime("db.ExecuteQuery start")
-	log.Println("[TRACE] db.ExecuteQuery start")
+	logging.LogTime("db.EnsureDbAndStartService start")
+	log.Println("[TRACE] db.EnsureDbAndStartService start")
 
 	EnsureDBInstalled()
 	status, err := GetStatus()
@@ -34,10 +35,10 @@ func EnsureDbAndStartService(invoker Invoker) error {
 }
 
 // RunInteractivePrompt :: start the interactive query prompt
-func RunInteractivePrompt(workspace NamedQueryProvider, client *Client) (*results.ResultStreamer, error) {
-	resultsStreamer := results.NewResultStreamer()
+func RunInteractivePrompt(workspace NamedQueryProvider, client *Client) (*queryresult.ResultStreamer, error) {
+	resultsStreamer := queryresult.NewResultStreamer()
 
-	interactiveClient, err := newInteractiveClient(workspace, client)
+	interactiveClient, err := newInteractiveClient(workspace, client, resultsStreamer)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
 		Shutdown(client, InvokerQuery)
@@ -45,22 +46,21 @@ func RunInteractivePrompt(workspace NamedQueryProvider, client *Client) (*result
 	}
 
 	// start the interactive prompt in a go routine
-	go interactiveClient.InteractiveQuery(resultsStreamer)
+	go interactiveClient.InteractiveQuery()
 
-	logging.LogTime("db.ExecuteQuery end")
 	return resultsStreamer, nil
 }
 
 // ExecuteQuery :: execute a single query. If shutdownAfterCompletion is true, shutdown the client after completion
-func ExecuteQuery(queryString string, client *Client) (*results.ResultStreamer, error) {
-	resultsStreamer := results.NewResultStreamer()
+func ExecuteQuery(ctx context.Context, queryString string, client *Client) (*queryresult.ResultStreamer, error) {
+	logging.LogTime("db.ExecuteQuery start")
+	defer logging.LogTime("db.ExecuteQuery end")
 
-	result, err := client.executeQuery(queryString, false)
+	resultsStreamer := queryresult.NewResultStreamer()
+	result, err := client.ExecuteQuery(ctx, queryString, false)
 	if err != nil {
 		return nil, err
 	}
 	go resultsStreamer.StreamSingleResult(result)
-
-	logging.LogTime("db.ExecuteQuery end")
 	return resultsStreamer, nil
 }

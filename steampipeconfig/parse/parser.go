@@ -133,11 +133,12 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 
 		// we failed to resolve dependencies
 		if !runCtx.EvalComplete() {
-			return nil, fmt.Errorf("failed to resolve mod dependencies")
+			return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", runCtx.FormatDependencies())
 		}
 	}
 
-	// now tell mod to build tree of controls
+	// now tell mod to build tree of controls.
+	// NOTE: this also builds the sorted benchmark list
 	if err := mod.BuildControlTree(); err != nil {
 		return nil, err
 	}

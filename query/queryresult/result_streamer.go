@@ -1,23 +1,23 @@
-package results
+package queryresult
 
 type ResultStreamer struct {
-	Results      chan *QueryResult
+	Results      chan *Result
 	displayReady chan string
 }
 
 func NewResultStreamer() *ResultStreamer {
 	return &ResultStreamer{
 		// make buffered channel  so we can always stream a single result
-		Results:      make(chan *QueryResult, 1),
+		Results:      make(chan *Result, 1),
 		displayReady: make(chan string, 1),
 	}
 }
 
-func (q *ResultStreamer) StreamResult(result *QueryResult) {
+func (q *ResultStreamer) StreamResult(result *Result) {
 	q.Results <- result
 }
 
-func (q *ResultStreamer) StreamSingleResult(result *QueryResult) {
+func (q *ResultStreamer) StreamSingleResult(result *Result) {
 	q.Results <- result
 	q.Wait()
 	close(q.Results)
@@ -27,12 +27,12 @@ func (q *ResultStreamer) Close() {
 	close(q.Results)
 }
 
-// Done :: signals that the next QueryResult has been processed
+// Done :: signals that the next Result has been processed
 func (q *ResultStreamer) Done() {
 	q.displayReady <- ""
 }
 
-// Wait :: waits for the next QueryResult to get processed
+// Wait :: waits for the next Result to get processed
 func (q *ResultStreamer) Wait() {
 	<-q.displayReady
 }

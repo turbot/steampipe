@@ -1,10 +1,15 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
+
+	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/query/execute"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -14,7 +19,6 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -67,6 +71,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// enable spinner only in interactive mode
+	interactiveMode := len(args) == 0
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, interactiveMode)
+	// set config to indicate whether we are running an interactive query
+	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
+
 	// start db if necessary
 	err := db.EnsureDbAndStartService(db.InvokerQuery)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
@@ -80,7 +90,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	defer workspace.Close()
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-	queries := getQueries(args, workspace)
+	queries := execute.GetQueries(args, workspace)
 
 	// get a db client
 	client, err = db.NewClient(true)
@@ -91,18 +101,30 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnError(err)
 
 	// if no query is specified, run interactive prompt
-	if len(args) == 0 {
+	if interactiveMode {
 		// interactive session creates its own client
-		runInteractiveSession(workspace, client)
+		execute.RunInteractiveSession(workspace, client)
 	} else if len(queries) > 0 {
 		// ensure client is closed
 		defer client.Close()
 
+		ctx, cancel := context.WithCancel(context.Background())
+		startCancelHandler(cancel)
 		// otherwise if we have resolved any queries, run them
-		failures := executeQueries(queries, client)
+		failures := execute.ExecuteQueries(ctx, queries, client)
 		// set global exit code
 		exitCode = failures
 	}
+}
+
+func startCancelHandler(cancel context.CancelFunc) {
+	sigIntChannel := make(chan os.Signal, 1)
+	signal.Notify(sigIntChannel, os.Interrupt)
+	go func() {
+		<-sigIntChannel
+		cancel()
+		close(sigIntChannel)
+	}()
 }
 
 // retrieve queries from args - for each arg check if it is a named query or a file,
@@ -151,12 +173,6 @@ func runInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
 		utils.FailOnError(err)
 	}
 
-	// indicate we are running an interactive query
-	viper.Set(constants.ConfigKeyInteractive, true)
-
-	// set the flag to show spinner
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, true)
-
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.RunInteractivePrompt(workspace, client)
 	utils.FailOnError(err)
@@ -169,28 +185,33 @@ func runInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
 	}
 }
 
-func executeQueries(queries []string, client *db.Client) int {
-	// set the flag to hide spinner
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
-
+func executeQueries(ctx context.Context, queries []string, client *db.Client) int {
 	// run all queries
 	failures := 0
 	for i, q := range queries {
-		if err := executeQuery(q, client); err != nil {
+		select {
+		case <-ctx.Done():
+			// add to failures
 			failures++
-			utils.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), err))
-		}
-		if showBlankLineBetweenResults() {
-			fmt.Println()
+			// skip ahead to the end
+			continue
+		default:
+			if err := executeQuery(ctx, q, client); err != nil {
+				failures++
+				utils.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), utils.TrimDriversFromErrMsg(err.Error())))
+			}
+			if showBlankLineBetweenResults() {
+				fmt.Println()
+			}
 		}
 	}
 
 	return failures
 }
 
-func executeQuery(queryString string, client *db.Client) error {
+func executeQuery(ctx context.Context, queryString string, client *db.Client) error {
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.ExecuteQuery(queryString, client)
+	resultsStreamer, err := db.ExecuteQuery(ctx, queryString, client)
 	if err != nil {
 		return err
 	}

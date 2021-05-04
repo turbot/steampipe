@@ -15,17 +15,21 @@ import (
 	"github.com/turbot/steampipe/constants"
 )
 
+// Query is a struct representing the Query resource
 type Query struct {
 	ShortName string
 	FullName  string `cty:"name"`
 
-	Description      *string   `cty:"description" hcl:"description" column_type:"text"`
-	Documentation    *string   `cty:"documentation" hcl:"documentation" column_type:"text"`
-	Labels           *[]string `cty:"labels" hcl:"labels" column_type:"jsonb"`
-	SQL              *string   `cty:"sql" hcl:"sql" column_type:"text"`
-	SearchPath       *string   `cty:"search_path" hcl:"search_path" column_type:"text"`
-	SearchPathPrefix *string   `cty:"search_path_prefix" hcl:"search_path_prefix" column_type:"text"`
-	Title            *string   `cty:"title" hcl:"title" column_type:"text"`
+	Description      *string            `cty:"description" hcl:"description" column:"description,text"`
+	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
+	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
+	SearchPath       *string            `cty:"search_path" hcl:"search_path" column:"search_path,text"`
+	SearchPathPrefix *string            `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
+	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
+
+	// list of all block referenced by the resource
+	References []string `column:"refs,jsonb"`
 
 	DeclRange hcl.Range
 	metadata  *ResourceMetadata
@@ -59,7 +63,7 @@ func QueryFromFile(modPath, filePath string) (MappableResource, []byte, error) {
 	return q.InitialiseFromFile(modPath, filePath)
 }
 
-// InitialiseFromFile :: implementation of MappableResource
+// InitialiseFromFile implements MappableResource
 func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error) {
 	// only valid for sql files
 	if filepath.Ext(filePath) != constants.SqlExtension {
@@ -87,22 +91,30 @@ func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 	return q, sqlBytes, nil
 }
 
-// Name :: implementation of MappableResource, HclResource
+// Name implements MappableResource, HclResource
 func (q *Query) Name() string {
 	return q.FullName
 }
 
-// QualifiedName :: name in format: '<modName>.control.<shortName>'
+// QualifiedName returns the name in format: '<modName>.control.<shortName>'
 func (q *Query) QualifiedName() string {
 	return fmt.Sprintf("%s.%s", q.metadata.ModShortName, q.FullName)
 }
 
-// GetMetadata :: implementation of HclResource and MappableResource
+// GetMetadata implements HclResource and MappableResource
 func (q *Query) GetMetadata() *ResourceMetadata {
 	return q.metadata
 }
 
-// SetMetadata :: implementation of MappableResource, HclResource
+// SetMetadata implements MappableResource, HclResource
 func (q *Query) SetMetadata(metadata *ResourceMetadata) {
 	q.metadata = metadata
+}
+
+// OnDecoded implements HclResource
+func (q *Query) OnDecoded(*hcl.Block) {}
+
+// AddReference implements HclResource
+func (q *Query) AddReference(reference string) {
+	q.References = append(q.References, reference)
 }

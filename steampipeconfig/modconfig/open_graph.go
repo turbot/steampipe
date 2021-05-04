@@ -4,6 +4,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 )
 
+// OpenGraph is a struct representing the OpenGraph group mod resource
 type OpenGraph struct {
 	// The opengraph description (og:description) of the mod, for use in social media applications
 	Description string `cty:"description" hcl:"description"`

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -12,9 +13,8 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// use the hcl tag to identify metadata fields
-const TagColumn = "hcl"
-const TagColumnType = "column_type"
+// TagColumn :: tag used to specify the column name and type in the reflection tables
+const TagColumn = "column"
 
 func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client *Client) error {
 	// get the create sql for each table type
@@ -23,15 +23,12 @@ func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 	// now get sql to populate the tables
 	insertSql := getTableInsertSql(workspaceResources)
 
-	sql := []string{
-		"begin;",
-		clearSql,
-		insertSql,
-		"commit;",
+	sql := []string{clearSql, insertSql}
+	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"))
+	if err != nil {
+		return fmt.Errorf("failed to update reflection tables: %v", err)
 	}
-	_, err := client.ExecuteSync(strings.Join(sql, "\n"))
-
-	return err
+	return nil
 }
 
 func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client *Client) error {
@@ -44,17 +41,11 @@ func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 	// now get sql to populate the tables
 	insertSql := getTableInsertSql(workspaceResources)
 
-	sql := []string{
-		"begin;",
-		createSql,
-		insertSql,
-		"commit;",
-	}
-	_, err := client.ExecuteSync(strings.Join(sql, "\n"))
+	sql := []string{createSql, insertSql}
+	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create reflection tables: %v", err)
 	}
-
 	return nil
 }
 
@@ -62,7 +53,7 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	var createSql []string
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.ReflectionTableControl, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.ReflectionTableQuery, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ControlGroup{}, constants.ReflectionTableControlGroup, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.ReflectionTableBenchmark, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.ReflectionTableMod, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
@@ -93,10 +84,10 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 			insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.ReflectionTableQuery))
 		}
 	}
-	for _, controlGroup := range workspaceResources.ControlGroupMap {
-		if _, added := resourcesAdded[controlGroup.Name()]; !added {
-			resourcesAdded[controlGroup.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(controlGroup, constants.ReflectionTableControlGroup))
+	for _, benchmark := range workspaceResources.BenchmarkMap {
+		if _, added := resourcesAdded[benchmark.Name()]; !added {
+			resourcesAdded[benchmark.Name()] = true
+			insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.ReflectionTableBenchmark))
 		}
 	}
 	for _, mod := range workspaceResources.ModMap {
@@ -128,18 +119,29 @@ func getColumnDefinitions(item interface{}) []string {
 		fieldName := val.Type().Field(i).Name
 		field, _ := t.FieldByName(fieldName)
 
-		column, ok := field.Tag.Lookup(TagColumn)
+		column, columnType, ok := getColumnTagValues(field)
 		if !ok {
 			continue
 		}
-		columnType, ok := field.Tag.Lookup(TagColumnType)
-		if !ok {
-			continue
-		}
+
 		columnDef = append(columnDef, fmt.Sprintf("  %s  %s", column, columnType))
 
 	}
 	return columnDef
+}
+
+func getColumnTagValues(field reflect.StructField) (string, string, bool) {
+	columnTag, ok := field.Tag.Lookup(TagColumn)
+	if !ok {
+		return "", "", false
+	}
+	split := strings.Split(columnTag, ",")
+	if len(split) != 2 {
+		return "", "", false
+	}
+	column := split[0]
+	columnType := split[1]
+	return column, columnType, true
 }
 
 func getTableInsertSqlForResource(item modconfig.ResourceWithMetadata, tableName string) string {
@@ -174,11 +176,7 @@ func getColumnValues(item interface{}) ([]string, []string) {
 		fieldName := val.Type().Field(i).Name
 		field, _ := t.FieldByName(fieldName)
 
-		column, ok := field.Tag.Lookup(TagColumn)
-		if !ok {
-			continue
-		}
-		_, ok = field.Tag.Lookup(TagColumnType)
+		column, columnType, ok := getColumnTagValues(field)
 		if !ok {
 			continue
 		}
@@ -191,9 +189,9 @@ func getColumnValues(item interface{}) ([]string, []string) {
 			continue
 		}
 
-		// pgValue ascapes values, and for arrays, converts them into escaped JSON
+		// pgValue escapes values, and for json columns, converts them into escaped JSON
 		// ignore JSON conversion errors - trust that array values read from hcl will be convertable
-		formattedValue, _ := pgValue(value)
+		formattedValue, _ := pgValue(value, columnType)
 		values = append(values, formattedValue)
 		columns = append(columns, column)
 	}
@@ -201,20 +199,10 @@ func getColumnValues(item interface{}) ([]string, []string) {
 }
 
 // convert the value into a postgres format value which can used in an insert statement
-func pgValue(item interface{}) (string, error) {
-	rt := reflect.TypeOf(item)
-	switch rt.Kind() {
-	case reflect.Slice, reflect.Array:
-		s := reflect.ValueOf(item)
-
-		var items []string
-		for i := 0; i < s.Len(); i++ {
-			element := s.Index(i).Interface()
-			elementString := typeHelpers.ToString(element)
-			items = append(items, elementString)
-		}
-
-		jsonBytes, err := json.Marshal(items)
+func pgValue(item interface{}, columnsType string) (string, error) {
+	switch columnsType {
+	case "jsonb":
+		jsonBytes, err := json.Marshal(reflect.ValueOf(item).Interface())
 		if err != nil {
 			return "", err
 		}

@@ -8,8 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/turbot/steampipe/steampipeconfig/parse"
-
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
@@ -17,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -25,9 +24,10 @@ type Workspace struct {
 	Mod  *modconfig.Mod
 
 	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
-	QueryMap        map[string]*modconfig.Query
-	ControlMap      map[string]*modconfig.Control
-	ControlGroupMap map[string]*modconfig.ControlGroup
+	QueryMap     map[string]*modconfig.Query
+	ControlMap   map[string]*modconfig.Control
+	BenchmarkMap map[string]*modconfig.Benchmark
+	ModMap       map[string]*modconfig.Mod
 
 	watcher    *utils.FileWatcher
 	loadLock   sync.Mutex
@@ -37,6 +37,7 @@ type Workspace struct {
 	watcherError error
 }
 
+// Load creates a Workspace and loads the workdspace mod
 func Load(workspacePath string) (*Workspace, error) {
 	// create shell workspace
 	workspace := &Workspace{Path: workspacePath}
@@ -88,9 +89,6 @@ func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	// if the name starts with 'local', remove the prefix and try to resolve the short name
-	queryName = strings.TrimPrefix(queryName, "local.")
-
 	if query, ok := w.QueryMap[queryName]; ok {
 		return query, true
 	}
@@ -98,51 +96,24 @@ func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
 	return nil, false
 }
 
-// GetControlsForArg :: resolve the arg into one or more controls
-func (w *Workspace) GetControlsForArg(arg string) []*modconfig.Control {
+// GetChildControls builds a flat list of all controls in the worlspace, including dependencies
+func (w *Workspace) GetChildControls() []*modconfig.Control {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
-
-	// if arg is in fact a controlGroup,  get all controls underneath the control group
-	name, err := modconfig.ParseResourceName(arg)
-	if err != nil {
-		return nil
-	}
-	if name.ItemType == modconfig.BlockTypeControlGroup {
-		// look in the workspace control group map for this control group
-		if controlGroup, ok := w.ControlGroupMap[arg]; ok {
-			return controlGroup.GetChildControls()
-		}
-		return nil
-	}
-
-	// check whether the arg is a control name (removing a 'local' prefix if there is one)
-	if control, ok := w.ControlMap[strings.TrimPrefix(arg, "local.")]; ok {
-		return []*modconfig.Control{control}
-	}
-
-	// so arg is not a control group or a control name - check the following possible scopes:
-	// 1) 'all' - all controls from all mods
-	// 2) '<modName>' - all controls from mod <modName>
 	var result []*modconfig.Control
 	// the workspace resource maps have duplicate entries, keyed by long and short name.
 	// keep track of which controls we have identified in order to avoid dupes
 	controlsMatched := make(map[string]bool)
 	for _, c := range w.ControlMap {
 		if _, alreadyMatched := controlsMatched[c.Name()]; !alreadyMatched {
-			if arg == "all" || arg == c.GetMetadata().ModShortName {
-				controlsMatched[c.Name()] = true
-				result = append(result, c)
-			}
+			controlsMatched[c.Name()] = true
+			result = append(result, c)
 		}
 	}
 	return result
 }
 
 func (w *Workspace) loadMod() error {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
 	// parse all hcl files in the workspace folder (non recursively) and either parse or create a mod
 	// it is valid for 0 or 1 mod to be defined (if no mod is defined, create a default one)
 	// populate mod with all hcl resources we parse
@@ -161,7 +132,7 @@ func (w *Workspace) loadMod() error {
 	// clear all our maps
 	w.QueryMap = make(map[string]*modconfig.Query)
 	w.ControlMap = make(map[string]*modconfig.Control)
-	w.ControlGroupMap = make(map[string]*modconfig.ControlGroup)
+	w.BenchmarkMap = make(map[string]*modconfig.Benchmark)
 
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
 	if err != nil {
@@ -178,7 +149,8 @@ func (w *Workspace) loadMod() error {
 
 	w.QueryMap = w.buildQueryMap(modMap)
 	w.ControlMap = w.buildControlMap(modMap)
-	w.ControlGroupMap = w.buildControlGroupMap(modMap)
+	w.BenchmarkMap = w.buildBenchmarkMap(modMap)
+	w.ModMap = modMap
 
 	return nil
 }
@@ -186,7 +158,9 @@ func (w *Workspace) loadMod() error {
 // load all dependencies of workspace mod
 // used to load all mods in a workspace, using the workspace manifest mod
 func (w *Workspace) loadModDependencies(modsFolder string) (modconfig.ModMap, error) {
-	var res = modconfig.ModMap{}
+	var res = modconfig.ModMap{
+		w.Mod.Name(): w.Mod,
+	}
 	if err := steampipeconfig.LoadModDependencies(w.Mod, modsFolder, res, false); err != nil {
 		return nil, err
 	}
@@ -233,19 +207,19 @@ func (w *Workspace) buildControlMap(modMap modconfig.ModMap) map[string]*modconf
 	return res
 }
 
-func (w *Workspace) buildControlGroupMap(modMap modconfig.ModMap) map[string]*modconfig.ControlGroup {
+func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) map[string]*modconfig.Benchmark {
 	//  build a list of long and short names for these queries
-	var res = make(map[string]*modconfig.ControlGroup)
+	var res = make(map[string]*modconfig.Benchmark)
 
-	// for LOCAL controls, add map entries keyed by both short name: control_group.<shortName> and  long name: <modName>.control_group.<shortName?
-	for _, c := range w.Mod.ControlGroups {
+	// for LOCAL controls, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
+	for _, c := range w.Mod.Benchmarks {
 		res[c.Name()] = c
 		res[c.QualifiedName()] = c
 	}
 
 	// for mod dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
-		for _, c := range mod.ControlGroups {
+		for _, c := range mod.Benchmarks {
 			res[c.QualifiedName()] = c
 		}
 	}
@@ -258,7 +232,10 @@ func (w *Workspace) SetupWatcher(client *db.Client) error {
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
-		OnChange: func(ev fsnotify.Event) {
+		OnChange: func(events []fsnotify.Event) {
+			w.loadLock.Lock()
+			defer w.loadLock.Unlock()
+
 			err := w.loadMod()
 			if err != nil {
 				// if we are already in an error state, do not show error
@@ -317,10 +294,10 @@ func (w *Workspace) LoadExclusions() error {
 
 func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 	workspaceMap := &modconfig.WorkspaceResourceMaps{
-		ModMap:          make(map[string]*modconfig.Mod),
-		QueryMap:        w.QueryMap,
-		ControlMap:      w.ControlMap,
-		ControlGroupMap: w.ControlGroupMap,
+		ModMap:       make(map[string]*modconfig.Mod),
+		QueryMap:     w.QueryMap,
+		ControlMap:   w.ControlMap,
+		BenchmarkMap: w.BenchmarkMap,
 	}
 	// TODO add in all mod dependencies
 	if !w.Mod.IsDefaultMod() {
@@ -328,4 +305,24 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 	}
 
 	return workspaceMap
+}
+
+// GetMod attempts to return the mod with a name matching 'modName'
+// It first checks the workspace mod, then checks all mod dependencies
+func (w *Workspace) GetMod(modName string) *modconfig.Mod {
+	// is it the workspace mod?
+	if modName == w.Mod.Name() {
+		return w.Mod
+	}
+	// try workspace mod dependencies
+	return w.ModMap[modName]
+}
+
+// Mods returns a flat list of all mods - the workspace mod and depdnency mods
+func (w *Workspace) Mods() []*modconfig.Mod {
+	var res = []*modconfig.Mod{w.Mod}
+	for _, m := range w.ModMap {
+		res = append(res, m)
+	}
+	return res
 }

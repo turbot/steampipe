@@ -1,20 +1,20 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"strings"
+
+	"github.com/karrick/gows"
+	"github.com/turbot/steampipe/control/controldisplay"
+	"github.com/turbot/steampipe/control/execute"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
-	"github.com/turbot/steampipe/definitions/results"
-	"github.com/turbot/steampipe/display"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -46,6 +46,7 @@ func CheckCmd() *cobra.Command {
 
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runCheckCmd start")
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	defer func() {
 		logging.LogTime("runCheckCmd end")
@@ -53,6 +54,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			utils.ShowError(helpers.ToError(r))
 		}
 	}()
+
+	ctx, _ := context.WithCancel(context.Background())
 
 	// start db if necessary
 	err := db.EnsureDbAndStartService(db.InvokerCheck)
@@ -73,134 +76,35 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)
 	utils.FailOnError(err)
 
-	// convert the check or sql file arg into an array of executable queries - check names queries in the current workspace
-	controls, err := getControls(args, workspace, client)
-	utils.FailOnError(err)
-
-	if len(controls) > 0 {
-		// otherwise if we have resolved any queries, run them
-		failures := executeControls(controls, workspace, client)
-		// set global exit code
-		exitCode = failures
-	}
-}
-
-// retrieve queries from args - for each arg check if it is a named check or a file,
-// before falling back to treating it as sql
-func getControls(args []string, workspace *workspace.Workspace, client *db.Client) ([]*modconfig.Control, error) {
-
-	// 1)  build list of all controls corresponding to the scope args
-	var res []*modconfig.Control
-	for _, arg := range args {
-		if controls := workspace.GetControlsForArg(arg); len(controls) > 0 {
-			res = append(res, controls...)
-		}
-	}
-	if len(res) == 0 {
-		utils.ShowWarning(fmt.Sprintf("No controls found matching %s: %s", utils.Pluralize("argument", len(args)), strings.Join(args, ",")))
-		return res, nil
-	}
-
-	// 2) if a 'where' arg was used, execute this sql to get a list of  control names
-	// - we then filter the controls returned by 1) with those returned by 2)
-	if viper.IsSet(constants.ArgWhere) {
-		whereArg := viper.GetString(constants.ArgWhere)
-		filterControlNames, err := getControlsFromMetadataQuery(whereArg, workspace, client)
-		utils.FailOnErrorWithMessage(err, "failed to execute '--where' SQL")
-		var filteredRes []*modconfig.Control
-		for _, control := range res {
-			if _, ok := filterControlNames[control.Name()]; ok {
-				filteredRes = append(filteredRes, control)
-			}
-		}
-		res = filteredRes
-
-		if len(res) == 0 {
-			utils.ShowWarning(fmt.Sprintf("No controls found matching %s: %s and query: %s", utils.Pluralize("argument", len(args)), args, whereArg))
-		}
-	}
-	return res, nil
-}
-
-// query the steampipe_control table, using the given query
-func getControlsFromMetadataQuery(whereArg string, workspace *workspace.Workspace, client *db.Client) (map[string]bool, error) {
-	// query may either be a 'where' clause, or a named query
-	query, isNamedQuery := getQueryFromArg(whereArg, workspace)
-
-	// if the query is NOT a named query, we need to construct a full query by adding a select
-	if !isNamedQuery {
-		query = fmt.Sprintf("select resource_name from %s where %s", constants.ReflectionTableControl, whereArg)
-	}
-
-	res, err := client.ExecuteSync(query)
-	if err != nil {
-		return nil, err
-	}
-
-	//
-	// find the "resource_name" column index
-	resource_name_column_index := -1
-
-	for i, c := range res.ColTypes {
-		if c.Name() == "resource_name" {
-			resource_name_column_index = i
-		}
-	}
-	if resource_name_column_index == -1 {
-		return nil, fmt.Errorf("the named query passed in the 'where' argument must return the 'resource_name' column")
-	}
-
-	var controlNames = make(map[string]bool)
-	for _, row := range res.Rows {
-		rowResult := row.(*results.RowResult)
-		controlName := rowResult.Data[resource_name_column_index].(string)
-		controlNames[controlName] = true
-	}
-	return controlNames, nil
-}
-
-func executeControls(controls []*modconfig.Control, workspace *workspace.Workspace, client *db.Client) int {
-	// set the flag to hide spinner
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
-
-	// run all queries
+	// treat each arg as a separate execution
 	failures := 0
-	for i, c := range controls {
-		if err := executeControl(c, workspace, client); err != nil {
-			failures++
-			utils.ShowWarning(fmt.Sprintf("executeControls: control %d of %d failed: %v", i+1, len(controls), err))
-		}
-		if showBlankLineBetweenResults() {
-			fmt.Println()
-		}
+	for _, arg := range args {
+		executionTree, err := execute.NewExecutionTree(ctx, workspace, client, arg)
+		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
+
+		// for now we execute controls synchronously
+		// Execute returns the number of failures
+		executionTree.Execute(ctx, client)
+		DisplayControlResults(executionTree)
 	}
 
-	return failures
+	// set global exit code
+	exitCode = failures
 }
 
-func executeControl(control *modconfig.Control, workspace *workspace.Workspace, client *db.Client) error {
+func DisplayControlResults(executionTree *execute.ExecutionTree) {
+	//bytes, err := json.MarshalIndent(executionTree.Root, "", "  ")
+	maxCols := getMaxCols()
 
-	// resolve the query parameter of the control
-	var query string
-	// resolve the query parameter of the control
-	query, _ = getQueryFromArg(typeHelpers.SafeString(control.SQL), workspace)
-	if query == "" {
-		utils.ShowWarning(fmt.Sprintf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typeHelpers.SafeString(control.SQL)))
-		return nil
-	}
-	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.ExecuteQuery(query, client)
-	if err != nil {
-		return err
-	}
+	renderer := controldisplay.NewTableRenderer(executionTree, maxCols)
+	fmt.Println(renderer.Render())
+}
 
-	// TODO validate the result has all the required columns
-	// TODO encapsulate this in display object
-	// print the data as it comes
-	for r := range resultsStreamer.Results {
-		display.ShowOutput(r)
-		// signal to the resultStreamer that we are done with this chunk of the stream
-		resultsStreamer.Done()
+func getMaxCols() int {
+	maxCols, _, _ := gows.GetWinSize()
+	// limit to 120
+	if maxCols > 120 {
+		maxCols = 120
 	}
-	return nil
+	return maxCols
 }

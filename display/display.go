@@ -13,15 +13,14 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/karrick/gows"
 	"github.com/spf13/viper"
-
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/definitions/results"
+	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/utils"
 )
 
 // ShowOutput :: displays the output using the proper formatter as applicable
-func ShowOutput(result *results.QueryResult) {
+func ShowOutput(result *queryresult.Result) {
 	output := cmdconfig.Viper().GetString(constants.ArgOutput)
 	if output == constants.ArgJSON {
 		displayJSON(result)
@@ -103,7 +102,7 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 	return colConfigs, headerRow
 }
 
-func displayLine(result *results.QueryResult) {
+func displayLine(result *queryresult.Result) {
 	colNames := ColumnNames(result.ColTypes)
 	maxColNameLength := 0
 	for _, colName := range colNames {
@@ -115,7 +114,7 @@ func displayLine(result *results.QueryResult) {
 	itemIdx := 0
 
 	// define a function to display each row
-	rowFunc := func(row []interface{}, result *results.QueryResult) {
+	rowFunc := func(row []interface{}, result *queryresult.Result) {
 		recordAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		requiredTerminalColumnsForValuesOfRecord := 0
 		for _, colValue := range recordAsString {
@@ -174,11 +173,11 @@ func getTerminalColumnsRequiredForString(str string) int {
 	return colsRequired
 }
 
-func displayJSON(result *results.QueryResult) {
+func displayJSON(result *queryresult.Result) {
 	var jsonOutput []map[string]interface{}
 
 	// define function to add each row to the JSON output
-	rowFunc := func(row []interface{}, result *results.QueryResult) {
+	rowFunc := func(row []interface{}, result *queryresult.Result) {
 		record := map[string]interface{}{}
 		for idx, colType := range result.ColTypes {
 			value, _ := ParseJSONOutputColumnValue(row[idx], colType)
@@ -203,7 +202,7 @@ func displayJSON(result *results.QueryResult) {
 	fmt.Println()
 }
 
-func displayCSV(result *results.QueryResult) {
+func displayCSV(result *queryresult.Result) {
 	csvWriter := csv.NewWriter(os.Stdout)
 	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
 
@@ -213,7 +212,7 @@ func displayCSV(result *results.QueryResult) {
 
 	// print the data as it comes
 	// define function display each csv row
-	rowFunc := func(row []interface{}, result *results.QueryResult) {
+	rowFunc := func(row []interface{}, result *queryresult.Result) {
 		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		_ = csvWriter.Write(rowAsString)
 	}
@@ -230,7 +229,7 @@ func displayCSV(result *results.QueryResult) {
 	}
 }
 
-func displayTable(result *results.QueryResult) {
+func displayTable(result *queryresult.Result) {
 	// the buffer to put the output data in
 	outbuf := bytes.NewBufferString("")
 
@@ -258,7 +257,7 @@ func displayTable(result *results.QueryResult) {
 	}
 
 	// define a function to execute for each row
-	rowFunc := func(row []interface{}, result *results.QueryResult) {
+	rowFunc := func(row []interface{}, result *queryresult.Result) {
 		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		rowObj := table.Row{}
 		for _, col := range rowAsString {
@@ -269,6 +268,11 @@ func displayTable(result *results.QueryResult) {
 
 	// iterate each row, adding each to the table
 	if err := iterateResults(result, rowFunc); err != nil {
+		// render the table till what has been received till now
+		t.Render()
+		// disable the pager for this output
+		nullPager(outbuf.String())
+		// display the error
 		utils.ShowError(err)
 		return
 	}
@@ -285,10 +289,10 @@ func displayTable(result *results.QueryResult) {
 	ShowPaged(outbuf.String())
 }
 
-type displayResultsFunc func(row []interface{}, result *results.QueryResult)
+type displayResultsFunc func(row []interface{}, result *queryresult.Result)
 
 // call func displayResult for each row of results
-func iterateResults(result *results.QueryResult, displayResult displayResultsFunc) error {
+func iterateResults(result *queryresult.Result, displayResult displayResultsFunc) error {
 	for row := range *result.RowChan {
 		if row == nil {
 			return nil

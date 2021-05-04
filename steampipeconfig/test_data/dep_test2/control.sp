@@ -1,10 +1,10 @@
 
-control_group "c1"{
+benchmark "c1"{
 
 }
 control "c2"{
-    parent = control_group.c1
+    parent = benchmark.c1
 }
-control_group "c3"{
-    parent= control_group.c1
+benchmark "c3"{
+    parent= benchmark.c1
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
+// Local is a struct representing a Local resource
 type Local struct {
 	ShortName string
 	FullName  string `cty:"name"`
@@ -26,28 +27,28 @@ func NewLocal(name string, val cty.Value, declRange hcl.Range) *Local {
 	}
 }
 
-// Name :: implementation of HclResource
+// Name implements HclResource, ResourceWithMetadata
 func (l *Local) Name() string {
 	return l.FullName
 }
 
-// GetMetadata :: implementation of HclResource
+// GetMetadata implements ResourceWithMetadata
 func (l *Local) GetMetadata() *ResourceMetadata {
 	return l.metadata
 }
 
-// SetMetadata :: implementation of HclResource
+// SetMetadata implements ResourceWithMetadata
 func (l *Local) SetMetadata(metadata *ResourceMetadata) {
 	l.metadata = metadata
 }
 
-// CtyValue :: implementation of HclResource
+// OnDecoded implements HclResource
+func (l *Local) OnDecoded(*hcl.Block) {}
+
+// AddReference implements HclResource
+func (l *Local) AddReference(string) {}
+
+// CtyValue implements HclResource
 func (l *Local) CtyValue() (cty.Value, error) {
 	return l.Value, nil
-}
-
-// Schema :: implementation of HclResource
-func (l *Local) Schema() *hcl.BodySchema {
-	// no schema needed - we manual decode
-	return nil
 }

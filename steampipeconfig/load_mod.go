@@ -50,6 +50,9 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 	if err != nil {
 		return nil, err
 	}
+	// at this point we have loaded all mod resources, but have no idea of the control hierarchy
+	// populate the parent fields for all mods and benchmarslks
+	//mod.BuildControTree()
 
 	return
 }

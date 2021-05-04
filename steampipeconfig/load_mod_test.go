@@ -126,7 +126,7 @@ Controls:
   Title: 
   Description: 
   Query: select 'pass' as result
-  Parent: control_group.cg_1_1_1
+  Parent: benchmark.cg_1_1_1
   Labels: []
   Links: []
 
@@ -136,7 +136,7 @@ Controls:
   Title: 
   Description: 
   Query: select 'pass' as result
-  Parent: control_group.cg_1_1_2
+  Parent: benchmark.cg_1_1_2
   Labels: []
   Links: []
 
@@ -146,7 +146,7 @@ Controls:
   Title: 
   Description: 
   Query: select 'pass' as result
-  Parent: control_group.cg_1_1
+  Parent: benchmark.cg_1_1
   Labels: []
   Links: []
 
@@ -156,7 +156,7 @@ Controls:
   Title: 
   Description: 
   Query: select 'pass' as result
-  Parent: control_group.cg_1_1_2
+  Parent: benchmark.cg_1_1_2
   Labels: []
   Links: []
 
@@ -166,7 +166,7 @@ Controls:
   Title: 
   Description: 
   Query: select 'pass' as result
-  Parent: control_group.cg_1_1_2
+  Parent: benchmark.cg_1_1_2
   Labels: []
   Links: []
 
@@ -197,7 +197,7 @@ Control Groups:
   ShortName: 
   Title: 
   Description: 
-  Parent: control_group.cg_1 
+  Parent: benchmark.cg_1 
   Labels: []
   Children: 
     control.c3
@@ -209,7 +209,7 @@ Control Groups:
   ShortName: 
   Title: 
   Description: 
-  Parent: control_group.cg_1_1 
+  Parent: benchmark.cg_1_1 
   Labels: []
   Children: 
     control.c1
@@ -219,7 +219,7 @@ Control Groups:
   ShortName: 
   Title: 
   Description: 
-  Parent: control_group.cg_1_1 
+  Parent: benchmark.cg_1_1 
   Labels: []
   Children: 
     control.c2
@@ -231,7 +231,7 @@ Control Groups:
   ShortName: 
   Title: 
   Description: 
-  Parent: control_group.cg_1 
+  Parent: benchmark.cg_1 
   Labels: []
   Children: 
     
