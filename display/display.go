@@ -38,6 +38,7 @@ func ShowOutput(result *results.QueryResult) {
 func ShowWrappedTable(headers []string, rows [][]string, autoMerge bool) {
 	t := table.NewWriter()
 	t.SetStyle(table.StyleDefault)
+	t.Style().Format.Header = text.FormatDefault
 	t.SetOutputMirror(os.Stdout)
 
 	rowConfig := table.RowConfig{AutoMerge: autoMerge}
