@@ -1,11 +1,10 @@
 
-control "c1"{
-    sql = control.c2.sql
-    labels = ["public cloud", "aws"]
-    title = control.c2.name
+control_group "c1"{
+
 }
 control "c2"{
-    sql = "SELECT 1"
-    labels = ["public cloud", "aws"]
-    title = "TITLE"
+    parent = control_group.c1
+}
+control_group "c3"{
+    parent= control_group.c1
 }

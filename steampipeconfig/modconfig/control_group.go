@@ -5,21 +5,26 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
+
+	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 )
+
+type ControlGroupName struct {
+	Name string `cty:"name"`
+}
 
 // ControlGroup :: struct representing the control group mod resource
 type ControlGroup struct {
 	ShortName string
 	FullName  string `cty:"name"`
 
-	Description   *string   `cty:"description" hcl:"description" column_type:"text"`
-	Documentation *string   `cty:"documentation" hcl:"documentation" column_type:"text"`
-	Labels        *[]string `cty:"labels" hcl:"labels" column_type:"jsonb"`
-	ParentName    *string   `cty:"parent" hcl:"parent" column_type:"text"`
-	Title         *string   `cty:"title" hcl:"title" column_type:"text"`
+	Description   *string           `cty:"description" hcl:"description" column_type:"text"`
+	Documentation *string           `cty:"documentation" hcl:"documentation" column_type:"text"`
+	Labels        *[]string         `cty:"labels" hcl:"labels" column_type:"jsonb"`
+	ParentName    *ControlGroupName `cty:"parent" hcl:"parent" column_type:"text"`
+	Title         *string           `cty:"title" hcl:"title" column_type:"text"`
 
 	DeclRange hcl.Range
 
@@ -52,19 +57,19 @@ func (c *ControlGroup) String() string {
 	}
 	sort.Strings(children)
 	return fmt.Sprintf(`
-  -----
-  Name: %s
-  Title: %s
-  Description: %s
-  Parent: %s 
-  Labels: %v
-  Children: 
-    %s
-`,
+	 -----
+	 Name: %s
+	 Title: %s
+	 Description: %s
+	 Parent: %s
+	 Labels: %v
+	 Children:
+	   %s
+	`,
 		c.FullName,
 		types.SafeString(c.Title),
 		types.SafeString(c.Description),
-		types.SafeString(c.ParentName),
+		c.GetParentName(),
 		labels, strings.Join(children, "\n    "))
 }
 
@@ -94,7 +99,11 @@ func (c *ControlGroup) AddChild(child ControlTreeItem) error {
 
 // GetParentName :: implementation of ControlTreeItem
 func (c *ControlGroup) GetParentName() string {
-	return types.SafeString(c.ParentName)
+	if c.ParentName == nil {
+		return ""
+	}
+	return c.ParentName.Name
+
 }
 
 // SetParent :: implementation of ControlTreeItem
