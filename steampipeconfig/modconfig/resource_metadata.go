@@ -17,6 +17,10 @@ type ResourceMetadata struct {
 
 // SetMod set the mod name and mod short name
 func (m *ResourceMetadata) SetMod(mod *Mod) {
+	// if the mod is the auto-generated default workspace mod, do not save in metadata
+	if mod.IsDefaultMod() {
+		return
+	}
 	m.ModShortName = mod.ShortName
 	m.ModName = mod.FullName
 }

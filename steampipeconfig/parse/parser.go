@@ -89,7 +89,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 			return nil, fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
 		}
 		// just create a default mod
-		mod = defaultWorkspaceMod()
+		mod = modconfig.CreateDefaultMod(modPath)
 	}
 
 	// 3) add pseudo resources to the mod
@@ -143,8 +143,4 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	}
 
 	return mod, nil
-}
-
-func defaultWorkspaceMod() *modconfig.Mod {
-	return modconfig.NewMod("local", "", hcl.Range{})
 }
