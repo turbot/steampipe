@@ -14,11 +14,12 @@ type Control struct {
 	ShortName string
 	FullName  string `cty:"name"`
 
-	Description   *string           `cty:"description" hcl:"description" column_type:"text"`
-	Documentation *string           `cty:"documentation" hcl:"documentation" column_type:"text"`
-	Labels        *[]string         `cty:"labels" hcl:"labels" column_type:"jsonb"`
-	Links         *[]string         `cty:"links" hcl:"links" column_type:"jsonb"`
-	ParentName    *ControlGroupName `cty:"parent" hcl:"parent" column_type:"text"`
+	Description   *string            `cty:"description" hcl:"description" column_type:"text"`
+	Documentation *string            `cty:"documentation" hcl:"documentation" column_type:"text"`
+	Labels        *[]string          `cty:"labels" hcl:"labels" column_type:"jsonb"`
+	Links         *[]string          `cty:"links" hcl:"links" column_type:"jsonb"`
+	Tags          *map[string]string `cty:"tags" hcl:"tags" column_type:"jsonb"`
+	ParentName    *ControlGroupName  `cty:"parent" hcl:"parent" column_type:"text"`
 
 	SQL      *string `cty:"sql" hcl:"sql" column_type:"text"`
 	Severity *string `cty:"severity" hcl:"severity" column_type:"text"`
