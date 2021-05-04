@@ -14,14 +14,15 @@ type Control struct {
 	ShortName string
 	FullName  string `cty:"name"`
 
-	Description   *string   `cty:"description" hcl:"description" column_type:"text"`
-	Documentation *string   `cty:"documentation" hcl:"documentation" column_type:"text"`
-	Labels        *[]string `cty:"labels" hcl:"labels" column_type:"jsonb"`
-	Links         *[]string `cty:"links" hcl:"links" column_type:"jsonb"`
-	ParentName    *string   `cty:"parent" hcl:"parent" column_type:"text"`
-	SQL           *string   `cty:"sql" hcl:"sql" column_type:"text"`
-	Severity      *string   `cty:"severity" hcl:"severity" column_type:"text"`
-	Title         *string   `cty:"title" hcl:"title" column_type:"text"`
+	Description   *string           `cty:"description" hcl:"description" column_type:"text"`
+	Documentation *string           `cty:"documentation" hcl:"documentation" column_type:"text"`
+	Labels        *[]string         `cty:"labels" hcl:"labels" column_type:"jsonb"`
+	Links         *[]string         `cty:"links" hcl:"links" column_type:"jsonb"`
+	ParentName    *ControlGroupName `cty:"parent" hcl:"parent" column_type:"text"`
+
+	SQL      *string `cty:"sql" hcl:"sql" column_type:"text"`
+	Severity *string `cty:"severity" hcl:"severity" column_type:"text"`
+	Title    *string `cty:"title" hcl:"title" column_type:"text"`
 
 	DeclRange hcl.Range
 
@@ -65,7 +66,7 @@ func (c *Control) String() string {
 		types.SafeString(c.Title),
 		types.SafeString(c.Description),
 		types.SafeString(c.SQL),
-		types.SafeString(c.ParentName),
+		c.GetParentName(),
 		labels, links)
 }
 
@@ -76,7 +77,10 @@ func (c *Control) AddChild(child ControlTreeItem) error {
 
 // GetParentName :: implementation of ControlTreeItem
 func (c *Control) GetParentName() string {
-	return types.SafeString(c.ParentName)
+	if c.ParentName == nil {
+		return ""
+	}
+	return c.ParentName.Name
 }
 
 // SetParent :: implementation of ControlTreeItem
