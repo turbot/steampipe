@@ -63,6 +63,7 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.ReflectionTableControl, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.ReflectionTableQuery, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ControlGroup{}, constants.ReflectionTableControlGroup, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.ReflectionTableMod, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
 
@@ -98,6 +99,13 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 			insertSql = append(insertSql, getTableInsertSqlForResource(controlGroup, constants.ReflectionTableControlGroup))
 		}
 	}
+	for _, mod := range workspaceResources.ModMap {
+		if _, added := resourcesAdded[mod.Name()]; !added {
+			resourcesAdded[mod.Name()] = true
+			insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.ReflectionTableMod))
+		}
+	}
+
 	return strings.Join(insertSql, "\n")
 }
 
@@ -151,6 +159,9 @@ func getTableInsertSqlForResource(item modconfig.ResourceWithMetadata, tableName
 
 // use reflection to evaluate the column names and values from item - return as 2 separate arrays
 func getColumnValues(item interface{}) ([]string, []string) {
+	if item == nil {
+		return nil, nil
+	}
 	var columns, values []string
 
 	// dereference item in vcase it is a pointer
