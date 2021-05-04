@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/go-kit/types"
 )
 
+// mod name used if a default mod is created for a workspace which does not define one explicitly
 const defaultModName = "local"
 
 type Mod struct {
@@ -20,12 +21,13 @@ type Mod struct {
 	FullName  string `cty:"name"`
 
 	// attributes
-	Color         *string   `cty:"color" hcl:"color" column_type:"text"`
-	Description   *string   `cty:"description" hcl:"description" column_type:"text"`
-	Documentation *string   `cty:"documentation" hcl:"documentation" column_type:"text"`
-	Icon          *string   `cty:"icon" hcl:"icon" column_type:"text"`
-	Labels        *[]string `cty:"labels" hcl:"labels"  column_type:"jsonb"`
-	Title         *string   `cty:"title" hcl:"title" column_type:"text"`
+	Color         *string            `cty:"color" hcl:"color" column_type:"text"`
+	Description   *string            `cty:"description" hcl:"description" column_type:"text"`
+	Documentation *string            `cty:"documentation" hcl:"documentation" column_type:"text"`
+	Icon          *string            `cty:"icon" hcl:"icon" column_type:"text"`
+	Labels        *[]string          `cty:"labels" hcl:"labels"  column_type:"jsonb"`
+	Tags          *map[string]string `cty:"tags" hcl:"tags" column_type:"jsonb"`
+	Title         *string            `cty:"title" hcl:"title" column_type:"text"`
 
 	// blocks
 	Requires  *Requires  `hcl:"requires,block"`

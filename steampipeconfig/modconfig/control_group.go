@@ -15,16 +15,21 @@ type ControlGroupName struct {
 	Name string `cty:"name"`
 }
 
+func (c ControlGroupName) String() string {
+	return c.Name
+}
+
 // ControlGroup :: struct representing the control group mod resource
 type ControlGroup struct {
 	ShortName string
 	FullName  string `cty:"name"`
 
-	Description   *string           `cty:"description" hcl:"description" column_type:"text"`
-	Documentation *string           `cty:"documentation" hcl:"documentation" column_type:"text"`
-	Labels        *[]string         `cty:"labels" hcl:"labels" column_type:"jsonb"`
-	ParentName    *ControlGroupName `cty:"parent" hcl:"parent" column_type:"text"`
-	Title         *string           `cty:"title" hcl:"title" column_type:"text"`
+	Description   *string            `cty:"description" hcl:"description" column_type:"text"`
+	Documentation *string            `cty:"documentation" hcl:"documentation" column_type:"text"`
+	Labels        *[]string          `cty:"labels" hcl:"labels" column_type:"jsonb"`
+	Tags          *map[string]string `cty:"tags" hcl:"tags" column_type:"jsonb"`
+	ParentName    *ControlGroupName  `cty:"parent" hcl:"parent" column_type:"text"`
+	Title         *string            `cty:"title" hcl:"title" column_type:"text"`
 
 	DeclRange hcl.Range
 
