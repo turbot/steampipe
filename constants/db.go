@@ -69,5 +69,5 @@ const (
 )
 
 func ReflectionTableNames() []string {
-	return []string{ReflectionTableControl, ReflectionTableControlGroup, ReflectionTableQuery}
+	return []string{ReflectionTableControl, ReflectionTableControlGroup, ReflectionTableQuery, ReflectionTableMod}
 }
