@@ -2,6 +2,9 @@ control_group "cg_1"{
 }
 control_group "cg_1_1"{
     parent = control_group.cg_1
+    tags = {
+        Name = "example instance"
+    }
 }
 control_group "cg_1_2"{
     parent = control_group.cg_1

@@ -178,7 +178,7 @@ func getColumnValues(item interface{}) ([]string, []string) {
 		if !ok {
 			continue
 		}
-		_, ok = field.Tag.Lookup(TagColumnType)
+		fieldType, ok := field.Tag.Lookup(TagColumnType)
 		if !ok {
 			continue
 		}
@@ -191,9 +191,9 @@ func getColumnValues(item interface{}) ([]string, []string) {
 			continue
 		}
 
-		// pgValue ascapes values, and for arrays, converts them into escaped JSON
+		// pgValue escapes values, and for json columns, converts them into escaped JSON
 		// ignore JSON conversion errors - trust that array values read from hcl will be convertable
-		formattedValue, _ := pgValue(value)
+		formattedValue, _ := pgValue(value, fieldType)
 		values = append(values, formattedValue)
 		columns = append(columns, column)
 	}
@@ -201,20 +201,10 @@ func getColumnValues(item interface{}) ([]string, []string) {
 }
 
 // convert the value into a postgres format value which can used in an insert statement
-func pgValue(item interface{}) (string, error) {
-	rt := reflect.TypeOf(item)
-	switch rt.Kind() {
-	case reflect.Slice, reflect.Array:
-		s := reflect.ValueOf(item)
-
-		var items []string
-		for i := 0; i < s.Len(); i++ {
-			element := s.Index(i).Interface()
-			elementString := typeHelpers.ToString(element)
-			items = append(items, elementString)
-		}
-
-		jsonBytes, err := json.Marshal(items)
+func pgValue(item interface{}, columnsType string) (string, error) {
+	switch columnsType {
+	case "jsonb":
+		jsonBytes, err := json.Marshal(reflect.ValueOf(item).Interface())
 		if err != nil {
 			return "", err
 		}
