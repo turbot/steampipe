@@ -8,11 +8,11 @@ import (
 type ModBlockType string
 
 const (
-	BlockTypeMod          ModBlockType = "mod"
-	BlockTypeQuery                     = "query"
-	BlockTypeControl                   = "control"
-	BlockTypeControlGroup              = "control_group"
-	BlockTypeLocals                    = "locals"
+	BlockTypeMod       ModBlockType = "mod"
+	BlockTypeQuery                  = "query"
+	BlockTypeControl                = "control"
+	BlockTypeBenchmark              = "benchmark"
+	BlockTypeLocals                 = "locals"
 
 	BlockTypeOpengraph        = "opengraph"
 	BlockTypeRequires         = "requires"

@@ -162,7 +162,7 @@ package workspace
 //		reflect.DeepEqual(c.Tags, other.Tags)
 //}
 
-//func (c *ControlGroup) Equals(other *Control) bool {
+//func (c *Benchmark) Equals(other *Control) bool {
 //	return types.SafeString(c.ShortName) == types.SafeString(other.ShortName) &&
 //		types.SafeString(c.Title) == types.SafeString(other.Title) &&
 //		types.SafeString(c.Description) == types.SafeString(other.Description) &&
