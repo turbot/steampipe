@@ -16,7 +16,7 @@ import (
 
 // ExecuteSync :: execute a query against this client and wait for the result
 func (c *Client) ExecuteSync(query string) (*results.SyncQueryResult, error) {
-	result, err := c.executeQuery(query, false)
+	result, err := c.ExecuteQuery(query, false)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (c *Client) ExecuteSync(query string) (*results.SyncQueryResult, error) {
 	return syncResult, nil
 }
 
-func (c *Client) executeQuery(query string, countStream bool) (*results.QueryResult, error) {
+func (c *Client) ExecuteQuery(query string, countStream bool) (*results.QueryResult, error) {
 	if query == "" {
 		return &results.QueryResult{}, nil
 	}

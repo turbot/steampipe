@@ -55,7 +55,7 @@ func RunInteractivePrompt(workspace NamedQueryProvider, client *Client) (*result
 func ExecuteQuery(queryString string, client *Client) (*results.ResultStreamer, error) {
 	resultsStreamer := results.NewResultStreamer()
 
-	result, err := client.executeQuery(queryString, false)
+	result, err := client.ExecuteQuery(queryString, false)
 	if err != nil {
 		return nil, err
 	}
