@@ -62,7 +62,7 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	var createSql []string
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.ReflectionTableControl, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.ReflectionTableQuery, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ControlGroup{}, constants.ReflectionTableControlGroup, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.ReflectionTableBenchmark, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.ReflectionTableMod, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
@@ -93,10 +93,10 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 			insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.ReflectionTableQuery))
 		}
 	}
-	for _, controlGroup := range workspaceResources.ControlGroupMap {
-		if _, added := resourcesAdded[controlGroup.Name()]; !added {
-			resourcesAdded[controlGroup.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(controlGroup, constants.ReflectionTableControlGroup))
+	for _, benchmark := range workspaceResources.BenchmarkMap {
+		if _, added := resourcesAdded[benchmark.Name()]; !added {
+			resourcesAdded[benchmark.Name()] = true
+			insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.ReflectionTableBenchmark))
 		}
 	}
 	for _, mod := range workspaceResources.ModMap {

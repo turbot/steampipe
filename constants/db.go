@@ -62,12 +62,12 @@ var ReservedConnectionNames = []string{
 
 // reflection table names
 const (
-	ReflectionTableQuery        = "steampipe_query"
-	ReflectionTableControl      = "steampipe_control"
-	ReflectionTableControlGroup = "steampipe_control_group"
-	ReflectionTableMod          = "steampipe_mod"
+	ReflectionTableQuery     = "steampipe_query"
+	ReflectionTableControl   = "steampipe_control"
+	ReflectionTableBenchmark = "steampipe_benchmark"
+	ReflectionTableMod       = "steampipe_mod"
 )
 
 func ReflectionTableNames() []string {
-	return []string{ReflectionTableControl, ReflectionTableControlGroup, ReflectionTableQuery, ReflectionTableMod}
+	return []string{ReflectionTableControl, ReflectionTableBenchmark, ReflectionTableQuery, ReflectionTableMod}
 }
