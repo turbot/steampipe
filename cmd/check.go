@@ -173,7 +173,8 @@ func executeControls(controls []*modconfig.Control, workspace *workspace.Workspa
 	// for now we execute controls syncronously
 	spinner := utils.ShowSpinner("")
 	for _, c := range controls {
-		utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Running %d %s. (%d complete, %d pending, %d errors): executing \"%s\"", totalControls, utils.Pluralize("control", totalControls), completeControls, pendingControls, errorControls, typeHelpers.SafeString(c.Title)))
+		p := c.Path()
+		utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Running %d %s. (%d complete, %d pending, %d errors): executing \"%s\" (%s)", totalControls, utils.Pluralize("control", totalControls), completeControls, pendingControls, errorControls, typeHelpers.SafeString(c.Title), p))
 
 		res := executeControl(c, workspace, client)
 		if res.GetStatus() == results.ControlRunError {
@@ -238,10 +239,14 @@ func DisplayControlResults(controlResults []*results.ControlResult) {
 		fmt.Println()
 		fmt.Printf("%s [%s]\n", typeHelpers.SafeString(res.Control.Title), res.Control.ShortName)
 		if res.Error != nil {
-			fmt.Printf("FAILED: %v\n", res.Error)
+			fmt.Printf("  Execution error: %v\n", res.Error)
 			continue
 		}
 		for _, item := range res.Results {
+			if item == nil {
+				// should never happen!
+				continue
+			}
 			fmt.Printf("  [%s] [%s] %s\n", item.Status, item.Resource, item.Reason)
 		}
 	}

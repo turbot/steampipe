@@ -31,7 +31,9 @@ type ControlResult struct {
 	// the query result stream
 	queryResult *QueryResult
 	stateLock   sync.Mutex
-	doneChan    chan (bool)
+	doneChan    chan bool
+	// parent in the result tree
+	//parentResult
 }
 
 func NewControlResult(control *modconfig.Control) *ControlResult {
@@ -40,6 +42,11 @@ func NewControlResult(control *modconfig.Control) *ControlResult {
 		status:   ControlRunReady,
 		doneChan: make(chan bool, 1),
 	}
+}
+
+// Children :: implementation of ControlResultTreeNode
+func (r *ControlResult) Children() []ControlResultTreeNode {
+	return nil
 }
 
 func (r *ControlResult) Start(result *QueryResult) {
@@ -64,6 +71,7 @@ func (r *ControlResult) Start(result *QueryResult) {
 				if err != nil {
 					// fail on error
 					r.SetError(err)
+					continue
 				}
 				r.Results = append(r.Results, result)
 			case <-r.doneChan:
@@ -71,10 +79,8 @@ func (r *ControlResult) Start(result *QueryResult) {
 			default:
 				time.Sleep(25 * time.Millisecond)
 			}
-
 		}
 	}()
-
 }
 
 func (r *ControlResult) SetError(err error) {
