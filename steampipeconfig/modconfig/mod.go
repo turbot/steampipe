@@ -22,12 +22,12 @@ type Mod struct {
 
 	// attributes
 	Color         *string            `cty:"color" hcl:"color" column_type:"text"`
-	Description   *string            `cty:"description" hcl:"description" column_type:"text"`
-	Documentation *string            `cty:"documentation" hcl:"documentation" column_type:"text"`
+	Description   *string            `cty:"description" hcl:"description" column:"description" column_type:"text"`
+	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation" column_type:"text"`
 	Icon          *string            `cty:"icon" hcl:"icon" column_type:"text"`
-	Labels        *[]string          `cty:"labels" hcl:"labels"  column_type:"jsonb"`
-	Tags          *map[string]string `cty:"tags" hcl:"tags" column_type:"jsonb"`
-	Title         *string            `cty:"title" hcl:"title" column_type:"text"`
+	Labels        *[]string          `cty:"labels" hcl:"labels" column:"labels" column_type:"jsonb"`
+	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags" column_type:"jsonb"`
+	Title         *string            `cty:"title" hcl:"title" column:"title" column_type:"text"`
 
 	// blocks
 	Requires  *Requires  `hcl:"requires,block"`
@@ -175,60 +175,18 @@ func (m *Mod) BuildControlTree() error {
 }
 
 func (m *Mod) addItemIntoControlTree(item ControlTreeItem) error {
-	parentName := item.GetParentName()
-	var parent ControlTreeItem
-	// if no parent is specified, the mod itself is the parent
-	if parentName == "" {
-		parent = m
-	} else {
-		// otherwise find parent
-		var err error
-		parent, err = m.ControlTreeItemFromName(parentName)
-		if err != nil {
-			return err
-		}
-	}
+
+	parent := m.getParent(item)
 
 	// check this item does not exist in the parent path
 	if helpers.StringSliceContains(parent.Path(), item.Name()) {
-		return fmt.Errorf("cyclical dependency adding '%s' into control tree - parent '%s'", item.Name(), parentName)
+		return fmt.Errorf("cyclical dependency adding '%s' into control tree - parent '%s'", item.Name(), parent.Name())
 	}
 	// so we have a result - add into tree
 	item.SetParent(parent)
 	parent.AddChild(item)
 
 	return nil
-}
-
-func (m *Mod) ControlTreeItemFromName(fullName string) (ControlTreeItem, error) {
-	parsedName, err := ParseResourceName(fullName)
-	if err != nil {
-		return nil, err
-	}
-	// this function only finds items in the current mod
-	if parsedName.Mod != "" && parsedName.Mod != m.ShortName {
-		return nil, fmt.Errorf("cannot find item '%s' in mod '%s' - it is a child of mod '%s'", fullName, m.ShortName, parsedName.Mod)
-	}
-	// does name include an item type
-	if parsedName.ItemType == "" {
-		return nil, fmt.Errorf("name '%s' does not specify an item type", fullName)
-	}
-
-	// so this item either does not specify a mod or specifies this mod
-	var item ControlTreeItem
-	var found bool
-	switch parsedName.ItemType {
-	case BlockTypeControl:
-		item, found = m.Controls[fullName]
-	case BlockTypeBenchmark:
-		item, found = m.Benchmarks[fullName]
-	default:
-		return nil, fmt.Errorf("ControlTreeItemFromName called invalid item type; '%s'", parsedName.ItemType)
-	}
-	if !found {
-		return nil, fmt.Errorf("cannot find item '%s' in mod '%s'", fullName, m.ShortName)
-	}
-	return item, nil
 }
 
 func (m *Mod) AddResource(item HclResource) bool {
@@ -269,11 +227,6 @@ func (m *Mod) AddChild(child ControlTreeItem) error {
 	return nil
 }
 
-// GetParentName  :: implementation of ControlTreeItem
-func (m *Mod) GetParentName() string {
-	return ""
-}
-
 // SetParent :: implementation of ControlTreeItem
 func (m *Mod) SetParent(ControlTreeItem) error {
 	return errors.New("cannot set a parent on a mod")
@@ -311,7 +264,28 @@ func (m *Mod) GetMetadata() *ResourceMetadata {
 	return m.metadata
 }
 
+// OnDecoded :: implementation of HclResource
+func (m *Mod) OnDecoded() {}
+
 // SetMetadata :: implementation of HclResource
 func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
 	m.metadata = metadata
+}
+
+// get the parent item for this ControlTreeItem
+// first check all benchmarks - if they do not have this as child, default to the mod
+func (m *Mod) getParent(item ControlTreeItem) ControlTreeItem {
+	for _, benchmark := range m.Benchmarks {
+		if benchmark.ChildNames == nil {
+			continue
+		}
+		// check all child names of this benchmark for a matching name
+		for _, childName := range *benchmark.ChildNames {
+			if childName.Name == item.Name() {
+				return benchmark
+			}
+		}
+	}
+	// fall back on mod
+	return m
 }

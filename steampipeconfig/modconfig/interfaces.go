@@ -16,8 +16,6 @@ type MappableResource interface {
 }
 
 type ControlTreeItem interface {
-	// GetParentName :: get the name of the parent of this item
-	GetParentName() string
 	// SetParent :: set the parent of this item
 	SetParent(ControlTreeItem) error
 	// AddChild :: add a child to the item
@@ -33,6 +31,7 @@ type ControlTreeItem interface {
 type HclResource interface {
 	Name() string
 	CtyValue() (cty.Value, error)
+	OnDecoded()
 }
 
 // ResourceWithMetadata :: a resource which supports reflection metadata

@@ -128,6 +128,11 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 	if moreDiags.HasErrors() && len(res.Depends) == 0 {
 		res.Diags = append(res.Diags, moreDiags...)
 	}
+
+	// HACK call post-decode hook
+	if res.Success() {
+		resource.OnDecoded()
+	}
 	return resource, res
 }
 

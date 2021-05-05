@@ -13,7 +13,7 @@ import (
 )
 
 // use the hcl tag to identify metadata fields
-const TagColumn = "hcl"
+const TagColumn = "column"
 const TagColumnType = "column_type"
 
 func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client *Client) error {

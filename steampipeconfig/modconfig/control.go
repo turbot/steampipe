@@ -14,16 +14,14 @@ type Control struct {
 	ShortName string
 	FullName  string `cty:"name"`
 
-	Description   *string            `cty:"description" hcl:"description" column_type:"text"`
-	Documentation *string            `cty:"documentation" hcl:"documentation" column_type:"text"`
-	Labels        *[]string          `cty:"labels" hcl:"labels" column_type:"jsonb"`
+	Description   *string            `cty:"description" hcl:"description" column:"description" column_type:"text"`
+	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation" column_type:"text"`
+	Labels        *[]string          `cty:"labels" hcl:"labels" column:"labels" column_type:"jsonb"`
 	Links         *[]string          `cty:"links" hcl:"links" column_type:"jsonb"`
-	Tags          *map[string]string `cty:"tags" hcl:"tags" column_type:"jsonb"`
-	ParentName    *BenchmarkName     `cty:"parent" hcl:"parent" column_type:"text"`
-
-	SQL      *string `cty:"sql" hcl:"sql" column_type:"text"`
-	Severity *string `cty:"severity" hcl:"severity" column_type:"text"`
-	Title    *string `cty:"title" hcl:"title" column_type:"text"`
+	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags" column_type:"jsonb"`
+	SQL           *string            `cty:"sql" hcl:"sql" column_type:"text"`
+	Severity      *string            `cty:"severity" hcl:"severity" column_type:"text"`
+	Title         *string            `cty:"title" hcl:"title" column:"title" column_type:"text"`
 
 	DeclRange hcl.Range
 
@@ -67,21 +65,13 @@ func (c *Control) String() string {
 		types.SafeString(c.Title),
 		types.SafeString(c.Description),
 		types.SafeString(c.SQL),
-		c.GetParentName(),
+		c.parent.Name(),
 		labels, links)
 }
 
 // AddChild  :: implementation of ControlTreeItem - controls cannot have children so just return error
 func (c *Control) AddChild(child ControlTreeItem) error {
 	return errors.New("cannot add child to a control")
-}
-
-// GetParentName :: implementation of ControlTreeItem
-func (c *Control) GetParentName() string {
-	if c.ParentName == nil {
-		return ""
-	}
-	return c.ParentName.Name
 }
 
 // SetParent :: implementation of ControlTreeItem
@@ -114,6 +104,9 @@ func (c *Control) Path() []string {
 func (c *Control) GetMetadata() *ResourceMetadata {
 	return c.metadata
 }
+
+// OnDecoded :: implementation of HclResource
+func (c *Control) OnDecoded() {}
 
 // SetMetadata :: implementation of HclResource
 func (c *Control) SetMetadata(metadata *ResourceMetadata) {
