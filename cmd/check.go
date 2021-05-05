@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -13,7 +14,6 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/definitions/results"
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
@@ -88,7 +88,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 // retrieve queries from args - for each arg check if it is a named check or a file,
 // before falling back to treating it as sql
 func getControls(args []string, workspace *workspace.Workspace, client *db.Client) ([]*modconfig.Control, error) {
-
 	// 1)  build list of all controls corresponding to the scope args
 	var res []*modconfig.Control
 	for _, arg := range args {
@@ -164,43 +163,87 @@ func executeControls(controls []*modconfig.Control, workspace *workspace.Workspa
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	// run all queries
-	failures := 0
-	for i, c := range controls {
-		if err := executeControl(c, workspace, client); err != nil {
-			failures++
-			utils.ShowWarning(fmt.Sprintf("executeControls: control %d of %d failed: %v", i+1, len(controls), err))
-		}
-		if showBlankLineBetweenResults() {
-			fmt.Println()
-		}
-	}
+	var controlResults []*results.ControlResult
 
-	return failures
+	totalControls := len(controls)
+	pendingControls := len(controls)
+	completeControls := 0
+	errorControls := 0
+
+	// for now we execute controls syncronously
+	spinner := utils.ShowSpinner("")
+	for _, c := range controls {
+		utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Running %d %s. (%d complete, %d pending, %d errors): executing \"%s\"", totalControls, utils.Pluralize("control", totalControls), completeControls, pendingControls, errorControls, typeHelpers.SafeString(c.Title)))
+
+		res := executeControl(c, workspace, client)
+		if res.GetStatus() == results.ControlRunError {
+			errorControls++
+		} else {
+			// TODO for now this is syncronous
+			completeControls++
+		}
+		pendingControls--
+
+		controlResults = append(controlResults, res)
+	}
+	spinner.Stop()
+
+	DisplayControlResults(controlResults)
+
+	return errorControls
 }
 
-func executeControl(control *modconfig.Control, workspace *workspace.Workspace, client *db.Client) error {
+func executeControl(control *modconfig.Control, workspace *workspace.Workspace, client *db.Client) *results.ControlResult {
 
+	controlResult := results.NewControlResult(control)
 	// resolve the query parameter of the control
 	var query string
 	// resolve the query parameter of the control
 	query, _ = getQueryFromArg(typeHelpers.SafeString(control.SQL), workspace)
 	if query == "" {
-		utils.ShowWarning(fmt.Sprintf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typeHelpers.SafeString(control.SQL)))
-		return nil
-	}
-	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.ExecuteQuery(query, client)
-	if err != nil {
-		return err
+		controlResult.Error = fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typeHelpers.SafeString(control.SQL))
+		return controlResult
 	}
 
-	// TODO validate the result has all the required columns
-	// TODO encapsulate this in display object
-	// print the data as it comes
-	for r := range resultsStreamer.Results {
-		display.ShowOutput(r)
-		// signal to the resultStreamer that we are done with this chunk of the stream
-		resultsStreamer.Done()
+	// queryResult contains a result channel
+	startTime := time.Now()
+	queryResult, err := client.ExecuteQuery(query, false)
+	if err != nil {
+		controlResult.Error = err
+		return controlResult
 	}
-	return nil
+	// set the control as started
+	controlResult.Start(queryResult)
+
+	// TEMPORARY - we will eventually pass the stream,s to the renderer before completion
+	// wait for control to finish
+	controlCompletionTimeout := 120 * time.Second
+	for {
+		// if the control is finished (either successfully or with an error), return the result
+		if controlResult.Finished() {
+			return controlResult
+		}
+		time.Sleep(50 * time.Millisecond)
+		if time.Since(startTime) > controlCompletionTimeout {
+			controlResult.SetError(fmt.Errorf("control %s timed out", control.Name()))
+		}
+	}
+
+	return controlResult
+}
+
+func DisplayControlResults(controlResults []*results.ControlResult) {
+	// todo summary and hierarchy
+	for _, res := range controlResults {
+		fmt.Println()
+		fmt.Printf("%s [%s]\n", typeHelpers.SafeString(res.Control.Title), res.Control.ShortName)
+		if res.Error != nil {
+			fmt.Printf("FAILED: %v\n", res.Error)
+			continue
+		}
+		for _, item := range res.Results {
+			fmt.Printf("  [%s] [%s] %s\n", item.Status, item.Resource, item.Reason)
+		}
+	}
+	fmt.Println()
 }
