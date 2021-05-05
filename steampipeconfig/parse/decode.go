@@ -76,8 +76,8 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResourc
 		resource = modconfig.NewQuery(block)
 	case modconfig.BlockTypeControl:
 		resource = modconfig.NewControl(block)
-	case modconfig.BlockTypeControlGroup:
-		resource = modconfig.NewControlGroup(block)
+	case modconfig.BlockTypeBenchmark:
+		resource = modconfig.NewBenchmark(block)
 	}
 	return resource
 }

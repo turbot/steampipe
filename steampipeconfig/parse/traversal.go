@@ -33,5 +33,5 @@ func TraversalAsString(traversal hcl.Traversal) string {
 
 func isReferenceable(name string) bool {
 	// TODO USE block types
-	return helpers.StringSliceContains([]string{"mod", "control", "query", "control_group"}, name)
+	return helpers.StringSliceContains([]string{"mod", "control", "query", "benchmark"}, name)
 }

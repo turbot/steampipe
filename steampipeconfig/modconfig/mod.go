@@ -36,11 +36,11 @@ type Mod struct {
 	// TODO do we need this?
 	Version *string
 
-	Queries       map[string]*Query
-	Controls      map[string]*Control
-	ControlGroups map[string]*ControlGroup
-	ModPath       string
-	DeclRange     hcl.Range
+	Queries    map[string]*Query
+	Controls   map[string]*Control
+	Benchmarks map[string]*Benchmark
+	ModPath    string
+	DeclRange  hcl.Range
 
 	children []ControlTreeItem
 	metadata *ResourceMetadata
@@ -71,13 +71,13 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	return &Mod{
-		ShortName:     shortName,
-		FullName:      fmt.Sprintf("mod.%s", shortName),
-		Queries:       make(map[string]*Query),
-		Controls:      make(map[string]*Control),
-		ControlGroups: make(map[string]*ControlGroup),
-		ModPath:       modPath,
-		DeclRange:     defRange,
+		ShortName:  shortName,
+		FullName:   fmt.Sprintf("mod.%s", shortName),
+		Queries:    make(map[string]*Query),
+		Controls:   make(map[string]*Control),
+		Benchmarks: make(map[string]*Benchmark),
+		ModPath:    modPath,
+		DeclRange:  defRange,
 	}
 }
 
@@ -118,15 +118,15 @@ func (m *Mod) String() string {
 		controlStrings = append(controlStrings, m.Controls[name].String())
 	}
 	// build ordered list of control group names
-	var controlGroupNames []string
-	for name := range m.ControlGroups {
-		controlGroupNames = append(controlGroupNames, name)
+	var benchmarkNames []string
+	for name := range m.Benchmarks {
+		benchmarkNames = append(benchmarkNames, name)
 	}
-	sort.Strings(controlGroupNames)
+	sort.Strings(benchmarkNames)
 
-	var controlGroupStrings []string
-	for _, name := range controlGroupNames {
-		controlGroupStrings = append(controlGroupStrings, m.ControlGroups[name].String())
+	var benchmarkStrings []string
+	for _, name := range benchmarkNames {
+		benchmarkStrings = append(benchmarkStrings, m.Benchmarks[name].String())
 	}
 
 	versionString := ""
@@ -152,7 +152,7 @@ Control Groups:
 		//pluginDependStr,
 		strings.Join(queryStrings, "\n"),
 		strings.Join(controlStrings, "\n"),
-		strings.Join(controlGroupStrings, "\n"),
+		strings.Join(benchmarkStrings, "\n"),
 	)
 }
 
@@ -161,8 +161,8 @@ Control Groups:
 func (m *Mod) IsControlTreeItem() {}
 
 func (m *Mod) BuildControlTree() error {
-	for _, controlGroup := range m.ControlGroups {
-		if err := m.addItemIntoControlTree(controlGroup); err != nil {
+	for _, benchmark := range m.Benchmarks {
+		if err := m.addItemIntoControlTree(benchmark); err != nil {
 			return err
 		}
 	}
@@ -220,8 +220,8 @@ func (m *Mod) ControlTreeItemFromName(fullName string) (ControlTreeItem, error) 
 	switch parsedName.ItemType {
 	case BlockTypeControl:
 		item, found = m.Controls[fullName]
-	case BlockTypeControlGroup:
-		item, found = m.ControlGroups[fullName]
+	case BlockTypeBenchmark:
+		item, found = m.Benchmarks[fullName]
 	default:
 		return nil, fmt.Errorf("ControlTreeItemFromName called invalid item type; '%s'", parsedName.ItemType)
 	}
@@ -249,13 +249,13 @@ func (m *Mod) AddResource(item HclResource) bool {
 		}
 		m.Controls[name] = r
 		return true
-	case *ControlGroup:
+	case *Benchmark:
 		name := r.Name()
 		// check for dupes
-		if _, ok := m.ControlGroups[name]; ok {
+		if _, ok := m.Benchmarks[name]; ok {
 			return false
 		}
-		m.ControlGroups[name] = r
+		m.Benchmarks[name] = r
 		return true
 	default:
 		// mod does not store other resource types
