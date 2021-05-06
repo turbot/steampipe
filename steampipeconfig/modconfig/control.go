@@ -17,7 +17,7 @@ type Control struct {
 	Description   *string            `cty:"description" hcl:"description" column:"description,text"`
 	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
 	Labels        *[]string          `cty:"labels" hcl:"labels" column:"labels,jsonb"`
-	Links         *[]string          `cty:"links" hcl:"links" column:"labels,jsonb"`
+	Links         *[]string          `cty:"links" hcl:"links" column:"links,jsonb"`
 	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
 	SQL           *string            `cty:"sql" hcl:"sql" column:"sql,text"`
 	Severity      *string            `cty:"severity" hcl:"severity" column:"severity,text"`
