@@ -93,6 +93,7 @@ func (r *ControlResult) setStatus(status ControlRunStatus) {
 	defer r.stateLock.Unlock()
 	r.status = status
 	if r.Finished() {
+		// TODO CANCEL QUERY IF NEEDED
 		r.doneChan <- true
 	}
 

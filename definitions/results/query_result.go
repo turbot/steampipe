@@ -16,8 +16,7 @@ type RowResult struct {
 	Error error
 }
 type QueryResult struct {
-	RowChan *chan *RowResult
-
+	RowChan  *chan *RowResult
 	ColTypes []*sql.ColumnType
 	Duration chan time.Duration
 }

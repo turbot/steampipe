@@ -180,7 +180,7 @@ func executeControls(controls []*modconfig.Control, workspace *workspace.Workspa
 		if res.GetStatus() == results.ControlRunError {
 			errorControls++
 		} else {
-			// TODO for now this is syncronous
+			// TODO for now this is synchronous
 			completeControls++
 		}
 		pendingControls--
@@ -216,9 +216,9 @@ func executeControl(control *modconfig.Control, workspace *workspace.Workspace, 
 	// set the control as started
 	controlResult.Start(queryResult)
 
-	// TEMPORARY - we will eventually pass the stream,s to the renderer before completion
+	// TEMPORARY - we will eventually pass the streams to the renderer before completion
 	// wait for control to finish
-	controlCompletionTimeout := 120 * time.Second
+	controlCompletionTimeout := 240 * time.Second
 	for {
 		// if the control is finished (either successfully or with an error), return the result
 		if controlResult.Finished() {
@@ -234,6 +234,7 @@ func executeControl(control *modconfig.Control, workspace *workspace.Workspace, 
 }
 
 func DisplayControlResults(controlResults []*results.ControlResult) {
+	// NOTE: for now we can assume all results are complete
 	// todo summary and hierarchy
 	for _, res := range controlResults {
 		fmt.Println()

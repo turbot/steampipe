@@ -175,7 +175,6 @@ func (m *Mod) BuildControlTree() error {
 }
 
 func (m *Mod) addItemIntoControlTree(item ControlTreeItem) error {
-
 	parent := m.getParent(item)
 
 	// check this item does not exist in the parent path
