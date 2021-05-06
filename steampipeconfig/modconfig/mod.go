@@ -21,13 +21,13 @@ type Mod struct {
 	FullName  string `cty:"name"`
 
 	// attributes
-	Color         *string            `cty:"color" hcl:"color" column_type:"text"`
-	Description   *string            `cty:"description" hcl:"description" column:"description" column_type:"text"`
-	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation" column_type:"text"`
-	Icon          *string            `cty:"icon" hcl:"icon" column_type:"text"`
-	Labels        *[]string          `cty:"labels" hcl:"labels" column:"labels" column_type:"jsonb"`
-	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags" column_type:"jsonb"`
-	Title         *string            `cty:"title" hcl:"title" column:"title" column_type:"text"`
+	Color         *string            `cty:"color" hcl:"color" column:"color,text"`
+	Description   *string            `cty:"description" hcl:"description" column:"description,text"`
+	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	Icon          *string            `cty:"icon" hcl:"icon" column:"icon,text"`
+	Labels        *[]string          `cty:"labels" hcl:"labels" column:"labels,jsonb"`
+	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
+	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
 	// blocks
 	Requires  *Requires  `hcl:"requires,block"`

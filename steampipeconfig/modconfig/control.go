@@ -14,14 +14,14 @@ type Control struct {
 	ShortName string
 	FullName  string `cty:"name"`
 
-	Description   *string            `cty:"description" hcl:"description" column:"description" column_type:"text"`
-	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation" column_type:"text"`
-	Labels        *[]string          `cty:"labels" hcl:"labels" column:"labels" column_type:"jsonb"`
-	Links         *[]string          `cty:"links" hcl:"links" column_type:"jsonb"`
-	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags" column_type:"jsonb"`
-	SQL           *string            `cty:"sql" hcl:"sql" column_type:"text"`
-	Severity      *string            `cty:"severity" hcl:"severity" column_type:"text"`
-	Title         *string            `cty:"title" hcl:"title" column:"title" column_type:"text"`
+	Description   *string            `cty:"description" hcl:"description" column:"description,text"`
+	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	Labels        *[]string          `cty:"labels" hcl:"labels" column:"labels,jsonb"`
+	Links         *[]string          `cty:"links" hcl:"links" column:"labels,jsonb"`
+	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
+	SQL           *string            `cty:"sql" hcl:"sql" column:"sql,text"`
+	Severity      *string            `cty:"severity" hcl:"severity" column:"severity,text"`
+	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
 	DeclRange hcl.Range
 

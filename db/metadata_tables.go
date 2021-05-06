@@ -12,9 +12,8 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// use the hcl tag to identify metadata fields
+// TagColumn :: tag used to specify the column name and type in the reflection tables
 const TagColumn = "column"
-const TagColumnType = "column_type"
 
 func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client *Client) error {
 	// get the create sql for each table type
@@ -128,18 +127,29 @@ func getColumnDefinitions(item interface{}) []string {
 		fieldName := val.Type().Field(i).Name
 		field, _ := t.FieldByName(fieldName)
 
-		column, ok := field.Tag.Lookup(TagColumn)
+		column, columnType, ok := getColumnTagValues(field)
 		if !ok {
 			continue
 		}
-		columnType, ok := field.Tag.Lookup(TagColumnType)
-		if !ok {
-			continue
-		}
+
 		columnDef = append(columnDef, fmt.Sprintf("  %s  %s", column, columnType))
 
 	}
 	return columnDef
+}
+
+func getColumnTagValues(field reflect.StructField) (string, string, bool) {
+	columnTag, ok := field.Tag.Lookup(TagColumn)
+	if !ok {
+		return "", "", false
+	}
+	split := strings.Split(columnTag, ",")
+	if len(split) != 2 {
+		return "", "", false
+	}
+	column := split[0]
+	columnType := split[1]
+	return column, columnType, true
 }
 
 func getTableInsertSqlForResource(item modconfig.ResourceWithMetadata, tableName string) string {
@@ -174,11 +184,7 @@ func getColumnValues(item interface{}) ([]string, []string) {
 		fieldName := val.Type().Field(i).Name
 		field, _ := t.FieldByName(fieldName)
 
-		column, ok := field.Tag.Lookup(TagColumn)
-		if !ok {
-			continue
-		}
-		fieldType, ok := field.Tag.Lookup(TagColumnType)
+		column, columnType, ok := getColumnTagValues(field)
 		if !ok {
 			continue
 		}
@@ -193,7 +199,7 @@ func getColumnValues(item interface{}) ([]string, []string) {
 
 		// pgValue escapes values, and for json columns, converts them into escaped JSON
 		// ignore JSON conversion errors - trust that array values read from hcl will be convertable
-		formattedValue, _ := pgValue(value, fieldType)
+		formattedValue, _ := pgValue(value, columnType)
 		values = append(values, formattedValue)
 		columns = append(columns, column)
 	}
