@@ -1,3 +1,10 @@
+## v0.4.2 [2021-05-06]
+
+_Bug fixes_
+* Make `.inspect` column headers lowercase. ([#439](https://github.com/turbot/steampipe/issues/439))
+* Fix edge case where update notification may be displayed once when running in query `batch` mode, instead if being suppressed. This occurred the very first time an update check was performed. ([#428](https://github.com/turbot/steampipe/issues/428))
+* When checking for SDK compatibility of loaded plugins, use the column definition version, not the SDK version. ([#453](https://github.com/turbot/steampipe/issues/453))
+
 ## v0.4.1 [2021-04-22]
 
 _Bug fixes_

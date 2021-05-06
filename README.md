@@ -28,7 +28,7 @@ make
 Check the verison
 ```
 $ steampipe -v
-steampipe version 0.4.0
+steampipe version 0.4.2
 ```
 
 Install a plugin
