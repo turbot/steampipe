@@ -33,7 +33,7 @@ func ValidatePlugins(updates ConnectionMap, plugins []*ConnectionPlugin) ([]*Val
 
 	var validationFailures []*ValidationFailure
 	for _, p := range plugins {
-		if validationFailure := validateSdkVersion(p); validationFailure != nil {
+		if validationFailure := validateColumnDefVersion(p); validationFailure != nil {
 			// validation failed
 			validationFailures = append(validationFailures, validationFailure)
 		} else if validationFailure := validateConnectionName(p); validationFailure != nil {
@@ -90,23 +90,17 @@ func validateConnectionName(p *ConnectionPlugin) *ValidationFailure {
 	return nil
 }
 
-func validateSdkVersion(p *ConnectionPlugin) *ValidationFailure {
-	pluginSdkVersionString := p.Schema.SdkVersion
-	if pluginSdkVersionString == "" {
-		// plugins compiled against 0.1.x of the sdk do not return the version
+func validateColumnDefVersion(p *ConnectionPlugin) *ValidationFailure {
+	pluginProtocolVersion := p.Schema.GetProtocolVersion()
+	// if this is 0, the plugin does not define columnDefinitionVersion
+	// - so we know the plugin sdk version is older that the one we are using
+	// therefore we are compatible
+	if pluginProtocolVersion == 0 {
 		return nil
 	}
-	pluginSdkVersion, err := version.NewSemver(pluginSdkVersionString)
-	if err != nil {
-		return &ValidationFailure{
-			Plugin:             p.PluginName,
-			ConnectionName:     p.ConnectionName,
-			Message:            fmt.Sprintf("Could not parse plugin sdk version %s.", pluginSdkVersion),
-			ShouldDropIfExists: true,
-		}
-	}
-	steampipeSdkVersion := sdkversion.SemVer
-	if !validateIgnoringPrerelease(pluginSdkVersion, steampipeSdkVersion) {
+
+	steampipeProtocolVersion := sdkversion.ProtocolVersion
+	if steampipeProtocolVersion < pluginProtocolVersion {
 		return &ValidationFailure{
 			Plugin:             p.PluginName,
 			ConnectionName:     p.ConnectionName,
