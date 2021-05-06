@@ -8,11 +8,16 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-func GetMetadataForParsedResource(resourceName string, block *hcl.Block, fileData map[string][]byte, mod *modconfig.Mod) *modconfig.ResourceMetadata {
+func GetMetadataForParsedResource(resourceName string, block *hcl.Block, fileData map[string][]byte, mod *modconfig.Mod) (*modconfig.ResourceMetadata, error) {
 	body := block.Body.(*hclsyntax.Body)
 
+	// convert the name into a short name
+	parsedName, err := modconfig.ParseResourceName(resourceName)
+	if err != nil {
+		return nil, err
+	}
 	m := &modconfig.ResourceMetadata{
-		ResourceName:     resourceName,
+		ResourceName:     parsedName.Name,
 		FileName:         body.SrcRange.Filename,
 		StartLineNumber:  body.SrcRange.Start.Line,
 		EndLineNumber:    body.SrcRange.End.Line,
@@ -21,7 +26,7 @@ func GetMetadataForParsedResource(resourceName string, block *hcl.Block, fileDat
 	}
 	// update the 'ModName' and 'ModShortName' fields
 	m.SetMod(mod)
-	return m
+	return m, nil
 }
 
 func getSourceDefinition(sourceRange hcl.Range, fileData map[string][]byte) string {

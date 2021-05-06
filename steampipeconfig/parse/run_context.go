@@ -12,9 +12,14 @@ import (
 
 const rootDependencyNode = "rootDependencyNode"
 
+type unresolvedBlock struct {
+	Block        *hcl.Block
+	Dependencies []*dependency
+}
+
 type RunContext struct {
 	Mod              *modconfig.Mod
-	UnresolvedBlocks map[string]*hcl.Block
+	UnresolvedBlocks map[string]*unresolvedBlock
 	FileData         map[string][]byte
 	dependencyGraph  *topsort.Graph
 	//dependencies     map[string]bool
@@ -28,7 +33,7 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 	c := &RunContext{
 		Mod:              mod,
 		FileData:         fileData,
-		UnresolvedBlocks: make(map[string]*hcl.Block),
+		UnresolvedBlocks: make(map[string]*unresolvedBlock),
 		dependencyGraph:  topsort.NewGraph(),
 		variables:        make(map[string]map[string]cty.Value),
 		blocks:           content.Blocks,
@@ -46,10 +51,10 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 // AddDependencies :: the block could not be resolved as it has dependencies
 // 1) store block as unresolved
 // 2) add dependencies to our tree of depdnecie
-func (c *RunContext) AddDependencies(block *hcl.Block, name string, dependencies []hcl.Traversal) hcl.Diagnostics {
+func (c *RunContext) AddDependencies(block *hcl.Block, name string, dependencies []*dependency) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	// store unresolved block
-	c.UnresolvedBlocks[name] = block
+	c.UnresolvedBlocks[name] = &unresolvedBlock{Block: block, Dependencies: dependencies}
 
 	// store dependency in tree - d
 	if !c.dependencyGraph.ContainsNode(name) {
@@ -59,25 +64,25 @@ func (c *RunContext) AddDependencies(block *hcl.Block, name string, dependencies
 	c.dependencyGraph.AddEdge(rootDependencyNode, name)
 
 	for _, dep := range dependencies {
-		d := TraversalAsString(dep)
+		// each dependency object may have multiple traversals
+		for _, t := range dep.Traversals {
+			d := TraversalAsString(t)
 
-		// 'd' may be a property path - when storing dependencies we only care about the resource names
-		dependencyResource, err := modconfig.PropertyPathToResourceName(d)
-		if err != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "failed to convert cty value - asJson failed",
-				Detail:   err.Error()})
-			continue
+			// 'd' may be a property path - when storing dependencies we only care about the resource names
+			dependencyResource, err := modconfig.PropertyPathToResourceName(d)
+			if err != nil {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "failed to convert cty value - asJson failed",
+					Detail:   err.Error()})
+				continue
 
+			}
+			if !c.dependencyGraph.ContainsNode(dependencyResource) {
+				c.dependencyGraph.AddNode(dependencyResource)
+			}
+			c.dependencyGraph.AddEdge(name, dependencyResource)
 		}
-		if !c.dependencyGraph.ContainsNode(dependencyResource) {
-			c.dependencyGraph.AddNode(dependencyResource)
-		}
-		c.dependencyGraph.AddEdge(name, dependencyResource)
-
-		// store the raw dependency properties
-		//c.dependencies[d] = true
 	}
 	return nil
 }
@@ -122,7 +127,7 @@ func (c *RunContext) BlocksToDecode() (hcl.Blocks, error) {
 		// if this one is unparsed, added to list
 		block, ok := c.UnresolvedBlocks[name]
 		if ok {
-			blocksToDecode = append(blocksToDecode, block)
+			blocksToDecode = append(blocksToDecode, block.Block)
 		}
 	}
 	return blocksToDecode, nil
@@ -225,4 +230,8 @@ func (c *RunContext) addModToVariables() hcl.Diagnostics {
 		}
 	}
 	return diags
+}
+
+func (c *RunContext) FormatDependencies() string {
+	return ""
 }

@@ -20,7 +20,7 @@ benchmark "cg_1_1_1"{
 }
 benchmark "cg_1_1_2"{
     children = [
-        control.c2,
+        control.c20,
         control.c4,
         control.c5,
     ]

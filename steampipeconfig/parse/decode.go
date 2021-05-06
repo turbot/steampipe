@@ -119,9 +119,9 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 	res := &decodeResult{}
 	moreDiags := gohcl.DecodeBody(block.Body, runCtx.EvalCtx, resource)
 	for _, diag := range moreDiags {
-		if IsMissingVariableError(diag) {
+		if dependency := isDependencyError(diag); dependency != nil {
 			// was this error caused by a missing dependency?
-			res.Depends = append(res.Depends, diag.Expression.Variables()...)
+			res.Depends = append(res.Depends, dependency)
 		}
 	}
 	// only register errors if there are NOT any missing variables
@@ -129,7 +129,7 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 		res.Diags = append(res.Diags, moreDiags...)
 	}
 
-	// HACK call post-decode hook
+	// call post-decode hook
 	if res.Success() {
 		resource.OnDecoded()
 	}
@@ -141,11 +141,19 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 	if res.Success() {
 		// if resource supports metadata, save it
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
-			metadata := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.Mod)
-			resourceWithMetadata.SetMetadata(metadata)
+			metadata, err := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.Mod)
+			if err != nil {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  err.Error(),
+					Subject:  &block.DefRange,
+				})
+			} else {
+				resourceWithMetadata.SetMetadata(metadata)
+			}
 		}
 		moreDiags := runCtx.AddResource(resource, block)
-		if diags.HasErrors() {
+		if moreDiags.HasErrors() {
 			diags = append(diags, moreDiags...)
 		}
 	} else {
@@ -159,8 +167,12 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 	return diags
 }
 
-func IsMissingVariableError(diag *hcl.Diagnostic) bool {
-	return helpers.StringSliceContains(missingVariableErrors, diag.Summary)
+// determine whether the diag is a dependency error, and if so, return a dependency object
+func isDependencyError(diag *hcl.Diagnostic) *dependency {
+	if helpers.StringSliceContains(missingVariableErrors, diag.Summary) {
+		return &dependency{diag.Expression.Range(), diag.Expression.Variables()}
+	}
+	return nil
 }
 
 func validateName(block *hcl.Block) hcl.Diagnostics {

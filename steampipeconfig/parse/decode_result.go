@@ -2,10 +2,15 @@ package parse
 
 import "github.com/hashicorp/hcl/v2"
 
+type dependency struct {
+	Range      hcl.Range
+	Traversals []hcl.Traversal
+}
+
 // struct to hold the result of a decoding operation
 type decodeResult struct {
 	Diags   hcl.Diagnostics
-	Depends []hcl.Traversal
+	Depends []*dependency
 }
 
 // Merge :: merge this decode result with another
