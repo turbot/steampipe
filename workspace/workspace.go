@@ -258,7 +258,7 @@ func (w *Workspace) SetupWatcher(client *db.Client) error {
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
-		OnChange: func(ev fsnotify.Event) {
+		OnChange: func(events []fsnotify.Event) {
 			err := w.loadMod()
 			if err != nil {
 				// if we are already in an error state, do not show error

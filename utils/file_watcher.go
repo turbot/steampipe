@@ -11,6 +11,8 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 )
 
+const minHandlerInterval = 5 * time.Second
+
 type FileWatcher struct {
 	watch *fsnotify.Watcher
 	// directories to watch
@@ -22,21 +24,26 @@ type FileWatcher struct {
 
 	listFlag filehelpers.ListFlag
 
-	onChange func(fsnotify.Event)
+	onChange func([]fsnotify.Event)
 	onError  func(error)
 
 	closeChan    chan bool
 	pollInterval time.Duration
 	watches      map[string]bool
 
-	dirLock sync.Mutex
+	dirLock     sync.Mutex
+	handlerLock sync.Mutex
+	// when did the handler last run
+	lastHandlerTime time.Time
+	// events to be handled at the next handler execution
+	events []fsnotify.Event
 }
 
 type WatcherOptions struct {
 	Directories []string
 	Include     []string
 	Exclude     []string
-	OnChange    func(fsnotify.Event)
+	OnChange    func([]fsnotify.Event)
 	OnError     func(error)
 	ListFlag    filehelpers.ListFlag
 }
@@ -55,16 +62,17 @@ func NewWatcher(opts *WatcherOptions) (*FileWatcher, error) {
 	baseExclude := []string{"**/.*"}
 	// create the watcher
 	watcher := &FileWatcher{
-		watch:        watch,
-		directories:  make(map[string]bool),
-		include:      opts.Include,
-		exclude:      append(baseExclude, opts.Exclude...),
-		listFlag:     opts.ListFlag,
-		onChange:     opts.OnChange,
-		onError:      opts.OnError,
-		closeChan:    make(chan bool),
-		pollInterval: 4 * time.Second,
-		watches:      make(map[string]bool),
+		watch:           watch,
+		directories:     make(map[string]bool),
+		include:         opts.Include,
+		exclude:         append(baseExclude, opts.Exclude...),
+		listFlag:        opts.ListFlag,
+		onChange:        opts.OnChange,
+		onError:         opts.OnError,
+		closeChan:       make(chan bool),
+		pollInterval:    4 * time.Second,
+		watches:         make(map[string]bool),
+		lastHandlerTime: time.Now(),
 	}
 
 	// we store directories as a map to simplify removing and checking for dupes
@@ -152,7 +160,7 @@ func (w *FileWatcher) addWatches() {
 
 func (w *FileWatcher) addWatch(path string) error {
 	// raise a create event for this file
-	w.onChange(fsnotify.Event{
+	w.scheduleHandler(fsnotify.Event{
 		Name: path,
 		Op:   fsnotify.Create,
 	})
@@ -187,7 +195,9 @@ func (w *FileWatcher) handleFileEvent(ev fsnotify.Event) {
 	// check whether file name meets file inclusion/exclusions
 	if filehelpers.ShouldIncludePath(ev.Name, w.include, w.exclude) {
 		log.Printf("[TRACE] notify file change")
-		w.onChange(ev)
+
+		// schedule a handler run - maintain a minimum interval since the last run
+		w.scheduleHandler(ev)
 		// if this was a deletion or rename event, remove our local watch flag
 		if ev.Op == fsnotify.Remove || ev.Op == fsnotify.Rename {
 			w.watches[ev.Name] = false
@@ -265,4 +275,38 @@ func (w *FileWatcher) removeDirectory(name string) {
 
 func (w *FileWatcher) recursive() bool {
 	return w.listFlag&filehelpers.Recursive != 0
+}
+
+func (w *FileWatcher) scheduleHandler(ev fsnotify.Event) {
+	w.handlerLock.Lock()
+	defer w.handlerLock.Unlock()
+	// we can tell if a handler is scheduled by looking at the events array
+	handlerScheduled := len(w.events) > 0
+	// now add our event to the array
+	w.events = append(w.events, ev)
+
+	// if handler scheduled, there is nothing to do, it will process this event
+	if handlerScheduled {
+		return
+	}
+
+	// so no handler is scheduled - schedule handler to run - with a pause if necessary
+	delay := 0 * time.Second
+	timeSinceLastHandler := time.Since(w.lastHandlerTime)
+	if timeSinceLastHandler < minHandlerInterval {
+		delay = minHandlerInterval - timeSinceLastHandler
+	}
+
+	// no start go routine to run event handler
+	go func() {
+		time.Sleep(delay)
+		// lock the handlerLock AFTER the delay
+		w.handlerLock.Lock()
+		defer w.handlerLock.Unlock()
+
+		w.lastHandlerTime = time.Now()
+		w.onChange(w.events)
+		// clear events - this indicates no handler is scheduled
+		w.events = nil
+	}()
 }
