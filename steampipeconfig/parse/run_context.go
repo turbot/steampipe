@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
@@ -13,8 +14,17 @@ import (
 const rootDependencyNode = "rootDependencyNode"
 
 type unresolvedBlock struct {
+	Name         string
 	Block        *hcl.Block
 	Dependencies []*dependency
+}
+
+func (b unresolvedBlock) String() string {
+	depStrings := make([]string, len(b.Dependencies))
+	for i, dep := range b.Dependencies {
+		depStrings[i] = fmt.Sprintf(`%s -> %s`, b.Name, dep.String())
+	}
+	return strings.Join(depStrings, "\n")
 }
 
 type RunContext struct {
@@ -34,12 +44,12 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 		Mod:              mod,
 		FileData:         fileData,
 		UnresolvedBlocks: make(map[string]*unresolvedBlock),
-		dependencyGraph:  topsort.NewGraph(),
-		variables:        make(map[string]map[string]cty.Value),
-		blocks:           content.Blocks,
+
+		variables: make(map[string]map[string]cty.Value),
+		blocks:    content.Blocks,
 	}
 	// add root node - this will depend on all other nodes
-	c.dependencyGraph.AddNode(rootDependencyNode)
+	c.dependencyGraph = c.newDependencyGraph()
 	c.buildEvalContext()
 
 	// add mod and any existing mod resources to the variables
@@ -48,13 +58,25 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 	return c, diags
 }
 
+func (c *RunContext) newDependencyGraph() *topsort.Graph {
+	dependencyGraph := topsort.NewGraph()
+	// add root node - this will depend on all other nodes
+	dependencyGraph.AddNode(rootDependencyNode)
+	return dependencyGraph
+}
+
+func (c *RunContext) ClearDependencies() {
+	c.UnresolvedBlocks = make(map[string]*unresolvedBlock)
+	c.dependencyGraph = c.newDependencyGraph()
+}
+
 // AddDependencies :: the block could not be resolved as it has dependencies
 // 1) store block as unresolved
-// 2) add dependencies to our tree of depdnecie
+// 2) add dependencies to our tree of dependencies
 func (c *RunContext) AddDependencies(block *hcl.Block, name string, dependencies []*dependency) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	// store unresolved block
-	c.UnresolvedBlocks[name] = &unresolvedBlock{Block: block, Dependencies: dependencies}
+	c.UnresolvedBlocks[name] = &unresolvedBlock{Name: name, Block: block, Dependencies: dependencies}
 
 	// store dependency in tree - d
 	if !c.dependencyGraph.ContainsNode(name) {
@@ -162,16 +184,7 @@ func (c *RunContext) AddResource(resource modconfig.HclResource, block *hcl.Bloc
 	}
 
 	// try to add query to mod - this will fail if the mod already has a query with the same name
-	if !c.Mod.AddResource(resource) {
-		diagnostics = append(diagnostics, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("mod defines more that one query named %s", resource.Name()),
-			Subject:  &block.DefRange,
-		})
-	}
-
-	return diagnostics
-
+	return c.Mod.AddResource(resource, block)
 }
 
 func (c *RunContext) addResourceToVariables(resource modconfig.HclResource, block *hcl.Block) hcl.Diagnostics {
@@ -233,5 +246,27 @@ func (c *RunContext) addModToVariables() hcl.Diagnostics {
 }
 
 func (c *RunContext) FormatDependencies() string {
-	return ""
+	// first get the dependency order
+	dependencyOrder, err := c.getDependencyOrder()
+	if err != nil {
+		return err.Error()
+	}
+	// build array of dependency strings - processes dependencies in reverse order for presentation reasons
+	numDeps := len(dependencyOrder)
+	depStrings := make([]string, numDeps)
+	for i := 0; i < len(dependencyOrder); i++ {
+		srcIdx := len(dependencyOrder) - i - 1
+		resourceName := dependencyOrder[srcIdx]
+		// find dependency
+		dep, ok := c.UnresolvedBlocks[resourceName]
+
+		if ok {
+			depStrings[i] = dep.String()
+		} else {
+			// this could happen if there is a dependency on a missing item
+			depStrings[i] = fmt.Sprintf("  MISSING: %s", resourceName)
+		}
+	}
+
+	return helpers.Tabify(strings.Join(depStrings, "\n"), "   ")
 }

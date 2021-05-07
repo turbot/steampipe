@@ -24,6 +24,9 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 
 	// build list of blocks to decode
 	blocks, err := runCtx.BlocksToDecode()
+
+	// now clear dependencies from run context - they will be rebuilt
+	runCtx.ClearDependencies()
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,

@@ -188,35 +188,41 @@ func (m *Mod) addItemIntoControlTree(item ControlTreeItem) error {
 	return nil
 }
 
-func (m *Mod) AddResource(item HclResource) bool {
+func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
+	var diags hcl.Diagnostics
 	switch r := item.(type) {
 	case *Query:
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Queries[name]; ok {
-			return false
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
 		}
 		m.Queries[name] = r
-		return true
+
 	case *Control:
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Controls[name]; ok {
-			return false
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
 		}
 		m.Controls[name] = r
-		return true
 	case *Benchmark:
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Benchmarks[name]; ok {
-			return false
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
 		}
 		m.Benchmarks[name] = r
-		return true
-	default:
-		// mod does not store other resource types
-		return true
+	}
+	return diags
+
+}
+
+func duplicateResourceDiagnostics(item HclResource, block *hcl.Block) *hcl.Diagnostic {
+	return &hcl.Diagnostic{
+		Severity: hcl.DiagError,
+		Summary:  fmt.Sprintf("mod defines more that one resource named %s", item.Name()),
+		Subject:  &block.DefRange,
 	}
 }
 
