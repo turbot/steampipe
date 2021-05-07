@@ -36,6 +36,9 @@ func (l *Local) GetMetadata() *ResourceMetadata {
 	return l.metadata
 }
 
+// OnDecoded :: implementation of HclResource
+func (l *Local) OnDecoded() {}
+
 // SetMetadata :: implementation of HclResource
 func (l *Local) SetMetadata(metadata *ResourceMetadata) {
 	l.metadata = metadata

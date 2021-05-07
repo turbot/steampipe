@@ -133,7 +133,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 
 		// we failed to resolve dependencies
 		if !runCtx.EvalComplete() {
-			return nil, fmt.Errorf("failed to resolve mod dependencies")
+			return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", runCtx.FormatDependencies())
 		}
 	}
 

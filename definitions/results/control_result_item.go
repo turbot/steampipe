@@ -22,7 +22,6 @@ type ControlResultItem struct {
 	Reason   string
 	Resource string
 	Status   ControlStatus
-	Error    error
 	// the parent control
 	Control *modconfig.Control
 }
@@ -30,18 +29,18 @@ type ControlResultItem struct {
 func NewControlResultItem(control *modconfig.Control, row *RowResult, colTypes []*sql.ColumnType) (*ControlResultItem, error) {
 	res := &ControlResultItem{Control: control}
 
+	// was there a SQL error _executing the control
+	// Note: this is different from the contrrol state being 'error'
 	if row.Error != nil {
-		return nil, res.Error
+		return nil, row.Error
 	}
 
 	for i, c := range colTypes {
 		switch c.Name() {
 		case "reason":
 			res.Reason = typehelpers.ToString(row.Data[i])
-
 		case "resource":
 			res.Resource = typehelpers.ToString(row.Data[i])
-
 		case "status":
 			status := ControlStatus(typehelpers.ToString(row.Data[i]))
 			//if !ok {
