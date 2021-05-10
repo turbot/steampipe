@@ -25,7 +25,7 @@ type Mod struct {
 	Description   *string            `cty:"description" hcl:"description" column:"description,text"`
 	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
 	Icon          *string            `cty:"icon" hcl:"icon" column:"icon,text"`
-	Labels        *[]string          `cty:"labels" hcl:"labels" column:"labels,jsonb"`
+	Categories    *[]string          `cty:"categories" hcl:"categories" column:"categories,jsonb"`
 	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
 	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
@@ -54,7 +54,7 @@ func (m *Mod) Schema() *hcl.BodySchema {
 		{Name: "description"},
 		{Name: "documentation"},
 		{Name: "icon"},
-		{Name: "labels"},
+		{Name: "categories"},
 		{Name: "title"},
 	}}
 	schema.Blocks = []hcl.BlockHeaderSchema{

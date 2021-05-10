@@ -132,7 +132,7 @@ func getConnectionPlugins(updates steampipeconfig.ConnectionMap) ([]*steampipeco
 	for i := 0; i < numUpdates; i++ {
 		select {
 		case err := <-errorChan:
-			log.Println("[TRACE] hydrate err chan select", "error", err)
+			log.Println("[TRACE] get connections err chan select", "error", err)
 			return nil, err
 		case <-time.After(10 * time.Second):
 			return nil, fmt.Errorf("timed out retrieving schema from plugins")

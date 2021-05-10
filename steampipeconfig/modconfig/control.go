@@ -16,7 +16,6 @@ type Control struct {
 
 	Description   *string            `cty:"description" hcl:"description" column:"description,text"`
 	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Labels        *[]string          `cty:"labels" hcl:"labels" column:"labels,jsonb"`
 	Links         *[]string          `cty:"links" hcl:"links" column:"links,jsonb"`
 	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
 	SQL           *string            `cty:"sql" hcl:"sql" column:"sql,text"`
@@ -43,10 +42,6 @@ func (c *Control) CtyValue() (cty.Value, error) {
 }
 
 func (c *Control) String() string {
-	var labels []string
-	if c.Labels != nil {
-		labels = *c.Labels
-	}
 	var links []string
 	if c.Links != nil {
 		links = *c.Links
@@ -58,7 +53,6 @@ func (c *Control) String() string {
   Description: %s
   SQL: %s
   Parent: %s
-  Labels: %v
   Links: %v
 `,
 		c.FullName,
@@ -66,7 +60,7 @@ func (c *Control) String() string {
 		types.SafeString(c.Description),
 		types.SafeString(c.SQL),
 		c.parent.Name(),
-		labels, links)
+		links)
 }
 
 // AddChild  :: implementation of ControlTreeItem - controls cannot have children so just return error

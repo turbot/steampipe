@@ -26,7 +26,6 @@ type Benchmark struct {
 
 	Description      *string            `cty:"description" hcl:"description" column:"description,text"`
 	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Labels           *[]string          `cty:"labels" hcl:"labels" column:"labels,jsonb"`
 	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
 	ChildNames       *[]NamedItem       `cty:"children" hcl:"children"`
 	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
@@ -52,10 +51,6 @@ func (c *Benchmark) CtyValue() (cty.Value, error) {
 }
 
 func (c *Benchmark) String() string {
-	var labels []string
-	if c.Labels != nil {
-		labels = *c.Labels
-	}
 	// build list of childrens long names
 	var children []string
 	for _, child := range c.children {
@@ -68,7 +63,6 @@ func (c *Benchmark) String() string {
 	 Title: %s
 	 Description: %s
 	 Parent: %s
-	 Labels: %v
 	 Children:
 	   %s
 	`,
@@ -76,7 +70,7 @@ func (c *Benchmark) String() string {
 		types.SafeString(c.Title),
 		types.SafeString(c.Description),
 		c.parent.Name(),
-		labels, strings.Join(children, "\n    "))
+		strings.Join(children, "\n    "))
 }
 
 // GetChildControls :: return a flat list of controls underneath us in the tree

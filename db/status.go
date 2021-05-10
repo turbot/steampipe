@@ -7,7 +7,6 @@ import (
 
 // GetStatus :: check that the db instance is running and returns it's details
 func GetStatus() (*RunningDBInstanceInfo, error) {
-	log.Println("[TRACE] GetStatus ")
 	info, err := loadRunningInstanceInfo()
 	if err != nil {
 		return nil, err
