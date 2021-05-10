@@ -70,7 +70,7 @@ func ExecuteQuery(queryString string, client *Client) (*results.ResultStreamer, 
 		fmt.Println("Query cancelled")
 	}()
 
-	result, err := client.executeQuery(queryString, false, ctx)
+	result, err := client.ExecuteQuery(queryString, false, ctx)
 	if err != nil {
 		return nil, err
 	}

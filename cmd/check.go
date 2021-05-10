@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -208,7 +209,7 @@ func executeControl(control *modconfig.Control, workspace *workspace.Workspace, 
 
 	// queryResult contains a result channel
 	startTime := time.Now()
-	queryResult, err := client.ExecuteQuery(query, false)
+	queryResult, err := client.ExecuteQuery(query, false, context.TODO())
 	if err != nil {
 		controlResult.Error = err
 		return controlResult

@@ -249,7 +249,7 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 
 		shouldShowCounter := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.ArgTable
 
-		result, err := c.client.executeQuery(query, shouldShowCounter, ctx)
+		result, err := c.client.ExecuteQuery(query, shouldShowCounter, ctx)
 		if err != nil {
 			isCancelledBeforeResult := strings.Contains(err.Error(), "Unrecognized remote plugin message")
 			isCancelledUponResult := strings.Contains(err.Error(), "canceling statement due to user request")
@@ -272,12 +272,7 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 	}
 
 	// store the history
-	if isNamedQuery {
-		c.interactiveQueryHistory.Put(fmt.Sprintf("query.%s", namedQuery.Name))
-	} else {
-		c.interactiveQueryHistory.Put(query)
-	}
-
+	c.interactiveQueryHistory.Put(historyItem)
 	c.restartInteractiveSession()
 }
 
