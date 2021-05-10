@@ -269,6 +269,11 @@ func displayTable(result *results.QueryResult) {
 
 	// iterate each row, adding each to the table
 	if err := iterateResults(result, rowFunc); err != nil {
+		// render the table till what has been received till now
+		t.Render()
+		// disable the pager for this output
+		nullPager(outbuf.String())
+		// display the error
 		utils.ShowError(err)
 		return
 	}
