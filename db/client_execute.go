@@ -16,8 +16,8 @@ import (
 )
 
 // ExecuteSync :: execute a query against this client and wait for the result
-func (c *Client) ExecuteSync(query string) (*results.SyncQueryResult, error) {
-	result, err := c.ExecuteQuery(query, false, context.Background())
+func (c *Client) ExecuteSync(ctx context.Context, query string) (*results.SyncQueryResult, error) {
+	result, err := c.ExecuteQuery(ctx, query, false)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func (c *Client) ExecuteSync(query string) (*results.SyncQueryResult, error) {
 	return syncResult, nil
 }
 
-func (c *Client) ExecuteQuery(query string, countStream bool, ctx context.Context) (*results.QueryResult, error) {
+func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream bool) (*results.QueryResult, error) {
 	if query == "" {
 		return &results.QueryResult{}, nil
 	}
@@ -64,7 +64,6 @@ func (c *Client) ExecuteQuery(query string, countStream bool, ctx context.Contex
 	if err != nil {
 		return nil, fmt.Errorf("error reading columns from query: %v", err)
 	}
-	cols, err := rows.Columns()
 
 	result := results.NewQueryResult(colTypes)
 
@@ -82,6 +81,8 @@ func (c *Client) ExecuteQuery(query string, countStream bool, ctx context.Contex
 			// close the channels in the result object
 			result.Close()
 		}()
+
+		cols, err := rows.Columns()
 
 		for rows.Next() {
 			select {

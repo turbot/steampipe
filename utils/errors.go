@@ -22,24 +22,24 @@ func init() {
 
 func FailOnError(err error) {
 	if err != nil {
-		err = mutateErrorIfRequired(err)
+		err = handleCancelError(err)
 		panic(err)
 	}
 }
 func FailOnErrorWithMessage(err error, message string) {
 	if err != nil {
-		err = mutateErrorIfRequired(err)
+		err = handleCancelError(err)
 		panic(fmt.Sprintf("%s: %s", message, err.Error()))
 	}
 }
 
 func ShowError(err error) {
-	err = mutateErrorIfRequired(err)
+	err = handleCancelError(err)
 	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, trimDriversFromErrMsg(err.Error()))
 }
 
 func ShowErrorWithMessage(err error, message string) {
-	err = mutateErrorIfRequired(err)
+	err = handleCancelError(err)
 	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, trimDriversFromErrMsg(err.Error()))
 }
 
@@ -57,7 +57,7 @@ func trimDriversFromErrMsg(msg string) string {
 	}
 	return errString
 }
-func mutateErrorIfRequired(err error) error {
+func handleCancelError(err error) error {
 	if err == context.Canceled {
 		err = fmt.Errorf("query cancelled")
 	}

@@ -60,20 +60,10 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 		resultsStreamer.Close()
 	}()
 
+	interruptSignalChannel := c.startInterruptListener()
+
 	fmt.Printf("Welcome to Steampipe v%s\n", version.String())
 	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
-
-	interruptSignalChannel := make(chan os.Signal, 10)
-	signal.Notify(interruptSignalChannel, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		for range interruptSignalChannel {
-			if c.hasActiveCancel() {
-				c.activeQueryCancelFunc()
-				c.nullifyActiveCancel()
-			}
-		}
-	}()
-
 	for {
 		rerun := c.runInteractivePrompt(resultsStreamer)
 
@@ -90,6 +80,20 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 
 	// close up the SIGINT channel so that the receiver goroutine can quit
 	close(interruptSignalChannel)
+}
+
+func (c *InteractiveClient) startInterruptListener() chan os.Signal {
+	interruptSignalChannel := make(chan os.Signal, 10)
+	signal.Notify(interruptSignalChannel, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		for range interruptSignalChannel {
+			if c.hasActiveCancel() {
+				c.activeQueryCancelFunc()
+				c.clearCancelFunction()
+			}
+		}
+	}()
+	return interruptSignalChannel
 }
 
 func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *results.ResultStreamer) (ret utils.InteractiveExitStatus) {
@@ -245,17 +249,13 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 		// otherwise execute query
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
-		c.setupActiveCancel(ctx, cancel)
+		c.setCancelFunction(cancel)
 
 		shouldShowCounter := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.ArgTable
 
-		result, err := c.client.ExecuteQuery(query, shouldShowCounter, ctx)
+		result, err := c.client.ExecuteQuery(ctx, query, shouldShowCounter)
 		if err != nil {
-			isCancelledBeforeResult := strings.Contains(err.Error(), "Unrecognized remote plugin message")
-			isCancelledUponResult := strings.Contains(err.Error(), "canceling statement due to user request")
-			isCancelledAfterResult := err == context.Canceled
-
-			isCancelledError := isCancelledBeforeResult || isCancelledUponResult || isCancelledAfterResult
+			isCancelledError, isCancelledBeforeResult := isCancelledError(err)
 			if isCancelledError {
 				utils.ShowError(fmt.Errorf("query cancelled"))
 				if isCancelledBeforeResult {
@@ -276,14 +276,26 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 	c.restartInteractiveSession()
 }
 
+func isCancelledError(err error) (bool, bool) {
+
+	isCancelledBeforeResult := strings.Contains(err.Error(), "Unrecognized remote plugin message")
+	isCancelledUponResult := strings.Contains(err.Error(), "canceling statement due to user request")
+	isCancelledAfterResult := err == context.Canceled
+
+	isCancelledError := isCancelledBeforeResult || isCancelledUponResult || isCancelledAfterResult
+
+	return isCancelledError, isCancelledBeforeResult
+}
+
 func (c *InteractiveClient) hasActiveCancel() bool {
 	return c.activeQueryCancelFunc != nil
 }
-func (c *InteractiveClient) setupActiveCancel(ctx context.Context, cancel context.CancelFunc) {
+
+func (c *InteractiveClient) setCancelFunction(cancel context.CancelFunc) {
 	c.activeQueryCancelFunc = cancel
 }
 
-func (c *InteractiveClient) nullifyActiveCancel() {
+func (c *InteractiveClient) clearCancelFunction() {
 	c.activeQueryCancelFunc = nil
 }
 

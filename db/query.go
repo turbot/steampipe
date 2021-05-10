@@ -57,7 +57,17 @@ func RunInteractivePrompt(workspace NamedQueryProvider, client *Client) (*result
 // ExecuteQuery :: execute a single query. If shutdownAfterCompletion is true, shutdown the client after completion
 func ExecuteQuery(queryString string, client *Client) (*results.ResultStreamer, error) {
 	resultsStreamer := results.NewResultStreamer()
+	ctx := setupInterruptCancellation(resultsStreamer)
+	result, err := client.ExecuteQuery(ctx, queryString, false)
+	if err != nil {
+		return nil, err
+	}
+	go resultsStreamer.StreamSingleResult(result)
+	logging.LogTime("db.ExecuteQuery end")
+	return resultsStreamer, nil
+}
 
+func setupInterruptCancellation(resultsStreamer *results.ResultStreamer) context.Context {
 	// setup the Ctrl+C Signal Channel
 	ctx, cancel := context.WithCancel(context.Background())
 	sigIntChannel := make(chan os.Signal, 1)
@@ -67,15 +77,6 @@ func ExecuteQuery(queryString string, client *Client) (*results.ResultStreamer, 
 		cancel()
 		close(sigIntChannel)
 		resultsStreamer.Done()
-		fmt.Println("Query cancelled")
 	}()
-
-	result, err := client.ExecuteQuery(queryString, false, ctx)
-	if err != nil {
-		return nil, err
-	}
-	go resultsStreamer.StreamSingleResult(result)
-
-	logging.LogTime("db.ExecuteQuery end")
-	return resultsStreamer, nil
+	return ctx
 }
