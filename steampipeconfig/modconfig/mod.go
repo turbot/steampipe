@@ -16,16 +16,17 @@ import (
 // mod name used if a default mod is created for a workspace which does not define one explicitly
 const defaultModName = "local"
 
+// Mod is a struct representing a Mod resource
 type Mod struct {
 	ShortName string `hcl:"name,label"`
 	FullName  string `cty:"name"`
 
 	// attributes
+	Categories    *[]string          `cty:"categories" hcl:"categories" column:"categories,jsonb"`
 	Color         *string            `cty:"color" hcl:"color" column:"color,text"`
 	Description   *string            `cty:"description" hcl:"description" column:"description,text"`
 	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
 	Icon          *string            `cty:"icon" hcl:"icon" column:"icon,text"`
-	Categories    *[]string          `cty:"categories" hcl:"categories" column:"categories,jsonb"`
 	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
 	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
@@ -46,25 +47,6 @@ type Mod struct {
 	metadata *ResourceMetadata
 }
 
-// Schema :: implementation of HclResource
-func (m *Mod) Schema() *hcl.BodySchema {
-	// todo this could be done fully generically if we had a tag for block properties
-	schema := &hcl.BodySchema{Attributes: []hcl.AttributeSchema{
-		{Name: "color"},
-		{Name: "description"},
-		{Name: "documentation"},
-		{Name: "icon"},
-		{Name: "categories"},
-		{Name: "title"},
-	}}
-	schema.Blocks = []hcl.BlockHeaderSchema{
-		{Type: BlockTypeRequires},
-		{Type: BlockTypeOpengraph},
-	}
-	return schema
-
-}
-
 func (m *Mod) CtyValue() (cty.Value, error) {
 	return getCtyValue(m)
 }
@@ -81,12 +63,12 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	}
 }
 
-// CreateDefaultMod :: create a default mod created for a workspace with no mod definition
+// CreateDefaultMod creates a default mod created for a workspace with no mod definition
 func CreateDefaultMod(modPath string) *Mod {
 	return NewMod(defaultModName, modPath, hcl.Range{})
 }
 
-// IsDefaultMod :: is this mod a default mod created for a workspace with no mod definition
+// IsDefaultMod returns whether this mod is a default mod created for a workspace with no mod definition
 func (m *Mod) IsDefaultMod() bool {
 	return m.ShortName == defaultModName
 }
@@ -156,7 +138,7 @@ Control Groups:
 	)
 }
 
-// IsControlTreeItem :: implementation of ControlTreeItem
+// IsControlTreeItem implements ControlTreeItem
 // (mod is always top of the tree)
 func (m *Mod) IsControlTreeItem() {}
 
@@ -226,18 +208,18 @@ func duplicateResourceDiagnostics(item HclResource, block *hcl.Block) *hcl.Diagn
 	}
 }
 
-// AddChild  :: implementation of ControlTreeItem
+// AddChild  implements ControlTreeItem
 func (m *Mod) AddChild(child ControlTreeItem) error {
 	m.children = append(m.children, child)
 	return nil
 }
 
-// SetParent :: implementation of ControlTreeItem
+// SetParent implements ControlTreeItem
 func (m *Mod) SetParent(ControlTreeItem) error {
 	return errors.New("cannot set a parent on a mod")
 }
 
-// Name :: implementation of ControlTreeItem, HclResource
+// Name implements ControlTreeItem, HclResource
 func (m *Mod) Name() string {
 
 	if m.Version == nil {
@@ -246,12 +228,16 @@ func (m *Mod) Name() string {
 	return fmt.Sprintf("%s@%s", m.FullName, types.SafeString(m.Version))
 }
 
-// Path :: implementation of ControlTreeItem
+// Path implements ControlTreeItem
 func (m *Mod) Path() []string {
 	return []string{m.Name()}
 }
 
-// AddPseudoResource :: add resource to parse results, if there is no resource of same name
+// AddPseudoResource adds the pseudo resource to the mod,
+// as long as there is no existing resource of same name
+//
+// A pseudo resource ids a resource created by loading a content file (e.g. a SQL file),
+// rather than parsing a HCL defintion
 func (m *Mod) AddPseudoResource(resource MappableResource) {
 	switch r := resource.(type) {
 	case *Query:
@@ -264,15 +250,15 @@ func (m *Mod) AddPseudoResource(resource MappableResource) {
 	}
 }
 
-// GetMetadata :: implementation of HclResource
+// GetMetadata implements HclResource
 func (m *Mod) GetMetadata() *ResourceMetadata {
 	return m.metadata
 }
 
-// OnDecoded :: implementation of HclResource
+// OnDecoded implements HclResource
 func (m *Mod) OnDecoded() {}
 
-// SetMetadata :: implementation of HclResource
+// SetMetadata implements ResourceWithMetadata
 func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
 	m.metadata = metadata
 }

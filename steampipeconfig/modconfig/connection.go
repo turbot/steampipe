@@ -8,7 +8,10 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/options"
 )
 
-// Connection :: structure representing the partially parsed connection.
+// Connection is a struct representing the partially parsed connection
+//
+// (Partial as the connection config, which is plugin specific, is stored as raw HCL.
+// This will be parsed by the plugin)
 type Connection struct {
 	// connection name
 	Name string
@@ -21,8 +24,8 @@ type Connection struct {
 	Options *options.Connection
 }
 
-// SetOptions : set the options on the connection
-// verify the options is a valid options type (only options.Connection currently supported)
+// SetOptions sets the options on the connection
+// verify the options object is a valid options type (only options.Connection currently supported)
 func (c *Connection) SetOptions(opts options.Options, block *hcl.Block) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	switch o := opts.(type) {

@@ -17,13 +17,14 @@ type ModVersion struct {
 	DeclRange hcl.Range
 }
 
-// Name :: return Name@Version
+// Name returns Name@Version
 func (m *ModVersion) Name() string {
 	// TODO what about mod version in name?
 	return m.FullName
 }
 
-// HasVersion :: if no version is specified, or the version is "latest", this is the latest version
+// HasVersion returns whether the mod has a version specified, or is the latest
+// if no version is specified, or the version is "latest", this is the latest version
 func (m *ModVersion) HasVersion() bool {
 	return !helpers.StringSliceContains([]string{"", "latest"}, m.Version)
 }

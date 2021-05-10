@@ -1,6 +1,7 @@
 package modconfig
 
-// ResourceMetadata :: additional data we collect about each resource to populate the reflection tables
+// ResourceMetadata ius a struct containing additional data
+// about each resource, used to populate the reflection tables
 type ResourceMetadata struct {
 	ResourceName string `column:"resource_name,text"`
 	// mod name in the format mod.<modName>@<version?
@@ -15,7 +16,7 @@ type ResourceMetadata struct {
 	ModShortName string
 }
 
-// SetMod set the mod name and mod short name
+// SetMod sets the mod name and mod short name
 func (m *ResourceMetadata) SetMod(mod *Mod) {
 	// if the mod is the auto-generated default workspace mod, do not save in metadata
 	if mod.IsDefaultMod() {
