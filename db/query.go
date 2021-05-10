@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
 
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/constants"
@@ -16,8 +14,8 @@ import (
 
 // EnsureDbAndStartService :: ensure db is installed and start service if necessary
 func EnsureDbAndStartService(invoker Invoker) error {
-	logging.LogTime("db.ExecuteQuery start")
-	log.Println("[TRACE] db.ExecuteQuery start")
+	logging.LogTime("db.EnsureDbAndStartService start")
+	log.Println("[TRACE] db.EnsureDbAndStartService start")
 
 	EnsureDBInstalled()
 	status, err := GetStatus()
@@ -50,33 +48,19 @@ func RunInteractivePrompt(workspace NamedQueryProvider, client *Client) (*result
 	// start the interactive prompt in a go routine
 	go interactiveClient.InteractiveQuery(resultsStreamer)
 
-	logging.LogTime("db.ExecuteQuery end")
 	return resultsStreamer, nil
 }
 
 // ExecuteQuery :: execute a single query. If shutdownAfterCompletion is true, shutdown the client after completion
-func ExecuteQuery(queryString string, client *Client) (*results.ResultStreamer, error) {
+func ExecuteQuery(ctx context.Context, queryString string, client *Client) (*results.ResultStreamer, error) {
+	logging.LogTime("db.ExecuteQuery start")
+	defer logging.LogTime("db.ExecuteQuery end")
+
 	resultsStreamer := results.NewResultStreamer()
-	ctx := setupInterruptCancellation(resultsStreamer)
 	result, err := client.ExecuteQuery(ctx, queryString, false)
 	if err != nil {
 		return nil, err
 	}
 	go resultsStreamer.StreamSingleResult(result)
-	logging.LogTime("db.ExecuteQuery end")
 	return resultsStreamer, nil
-}
-
-func setupInterruptCancellation(resultsStreamer *results.ResultStreamer) context.Context {
-	// setup the Ctrl+C Signal Channel
-	ctx, cancel := context.WithCancel(context.Background())
-	sigIntChannel := make(chan os.Signal, 1)
-	signal.Notify(sigIntChannel, os.Interrupt)
-	go func() {
-		<-sigIntChannel
-		cancel()
-		close(sigIntChannel)
-		resultsStreamer.Done()
-	}()
-	return ctx
 }
