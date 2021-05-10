@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"runtime/debug"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
@@ -63,14 +63,12 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 	fmt.Printf("Welcome to Steampipe v%s\n", version.String())
 	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
 
-	// setup the Ctrl+C Signal Channel
-	sigIntChannel := make(chan os.Signal, 1)
-	signal.Notify(sigIntChannel, os.Interrupt)
+	interruptSignalChannel := make(chan os.Signal, 10)
+	signal.Notify(interruptSignalChannel, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		for range sigIntChannel {
+		for range interruptSignalChannel {
 			if c.hasActiveCancel() {
 				c.activeQueryCancelFunc()
-				resultsStreamer.Done()
 				c.nullifyActiveCancel()
 			}
 		}
@@ -91,7 +89,7 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 	}
 
 	// close up the SIGINT channel so that the receiver goroutine can quit
-	close(sigIntChannel)
+	close(interruptSignalChannel)
 }
 
 func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *results.ResultStreamer) (ret utils.InteractiveExitStatus) {
@@ -235,7 +233,6 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 
 	// if the line is ONLY a semicolon, do nothing and restart interactive session
 	if strings.TrimSpace(query) == ";" {
-		resultsStreamer.Done()
 		c.restartInteractiveSession()
 	}
 
@@ -246,37 +243,52 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 		resultsStreamer.Done()
 	} else {
 		// otherwise execute query
-		shouldShowCounter := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.ArgTable
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
 		c.setupActiveCancel(ctx, cancel)
-		if result, err := c.client.ExecuteQuery(query, shouldShowCounter, ctx); err != nil {
-			utils.ShowError(err)
-			resultsStreamer.Done()
+
+		shouldShowCounter := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.ArgTable
+
+		result, err := c.client.executeQuery(query, shouldShowCounter, ctx)
+		if err != nil {
+			isCancelledBeforeResult := strings.Contains(err.Error(), "Unrecognized remote plugin message")
+			isCancelledUponResult := strings.Contains(err.Error(), "canceling statement due to user request")
+			isCancelledAfterResult := err == context.Canceled
+
+			isCancelledError := isCancelledBeforeResult || isCancelledUponResult || isCancelledAfterResult
+			if isCancelledError {
+				utils.ShowError(fmt.Errorf("query cancelled"))
+				if isCancelledBeforeResult {
+					// we need to notify the streamer that we are done
+					resultsStreamer.Done()
+				}
+			} else {
+				utils.ShowError(err)
+				resultsStreamer.Done()
+			}
 		} else {
 			resultsStreamer.StreamResult(result)
 		}
 	}
 
 	// store the history
-	c.interactiveQueryHistory.Put(historyItem)
+	if isNamedQuery {
+		c.interactiveQueryHistory.Put(fmt.Sprintf("query.%s", namedQuery.Name))
+	} else {
+		c.interactiveQueryHistory.Put(query)
+	}
+
 	c.restartInteractiveSession()
 }
 
 func (c *InteractiveClient) hasActiveCancel() bool {
-	fmt.Println("hasActiveCancel")
-	debug.PrintStack()
 	return c.activeQueryCancelFunc != nil
 }
 func (c *InteractiveClient) setupActiveCancel(ctx context.Context, cancel context.CancelFunc) {
-	fmt.Println("setupActiveCancel")
-	debug.PrintStack()
 	c.activeQueryCancelFunc = cancel
 }
 
 func (c *InteractiveClient) nullifyActiveCancel() {
-	fmt.Println("nullifyActiveCancel")
-	debug.PrintStack()
 	c.activeQueryCancelFunc = nil
 }
 
