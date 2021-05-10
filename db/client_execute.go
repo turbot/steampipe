@@ -74,55 +74,56 @@ func (c *Client) ExecuteQuery(query string, countStream bool) (*results.QueryRes
 	go func() {
 		// defer this, so that these get cleaned up even if there is an unforeseen error
 		defer func() {
-			// close the channels in the result object
-			result.Close()
 			// close the sql rows object
 			rows.Close()
+			if err = rows.Err(); err != nil {
+				result.StreamError(err)
+			}
+			// close the channels in the result object
+			result.Close()
 		}()
 
 		for rows.Next() {
-			// slice of interfaces to receive the row data
-			columnValues := make([]interface{}, len(cols))
-			// make a slice of pointers to the result to pass to scan
-			resultPtrs := make([]interface{}, len(cols)) // A temporary interface{} slice
-			for i := range columnValues {
-				resultPtrs[i] = &columnValues[i]
-			}
-			err = rows.Scan(resultPtrs...)
-			if err != nil {
-				if err != context.Canceled {
-					utils.ShowErrorWithMessage(err, "Failed to scan row")
+			select {
+			case <-ctx.Done():
+				utils.UpdateSpinnerMessage(spinner, "Cancelling query")
+			default:
+				// slice of interfaces to receive the row data
+				columnValues := make([]interface{}, len(cols))
+				// make a slice of pointers to the result to pass to scan
+				resultPtrs := make([]interface{}, len(cols)) // A temporary interface{} slice
+				for i := range columnValues {
+					resultPtrs[i] = &columnValues[i]
 				}
-				utils.StopSpinner(spinner)
-				return
+				err = rows.Scan(resultPtrs...)
+				if err != nil {
+					if err == context.Canceled {
+						err = fmt.Errorf("Cancelled")
+					}
+					result.StreamError(err)
+					break
+				}
+				// populate row data - handle special case types
+				rowResult := populateRow(columnValues, colTypes)
+
+				if !countStream {
+					// stop the spinner if we don't want to show load count
+					utils.StopSpinner(spinner)
+				}
+
+				// we have started populating results
+				result.StreamRow(rowResult)
+
+				// update the spinner message with the count of rows that have already been fetched
+				utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
+				rowCount++
 			}
-			// populate row data - handle special case types
-			rowResult := populateRow(columnValues, colTypes)
-
-			if !countStream {
-				// stop the spinner if we don't want to show load count
-				utils.StopSpinner(spinner)
-			}
-
-			// we have started populating results
-			result.StreamRow(rowResult)
-
-			// update the spinner message with the count of rows that have already been fetched
-			utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
-			rowCount++
 		}
-
 		// we are done fetching results. time for display. remove the spinner
 		utils.StopSpinner(spinner)
 
 		// set the time that it took for this one to execute
 		result.Duration <- time.Since(start)
-
-		// now check for errors
-		rows.Close()
-		if err = rows.Err(); err != nil {
-			result.StreamError(err)
-		}
 	}()
 
 	return result, nil
