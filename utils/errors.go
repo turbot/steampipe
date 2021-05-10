@@ -35,18 +35,19 @@ func FailOnErrorWithMessage(err error, message string) {
 
 func ShowError(err error) {
 	err = handleCancelError(err)
-	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, trimDriversFromErrMsg(err.Error()))
+	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, TrimDriversFromErrMsg(err.Error()))
 }
 
+// ShowErrorWithMessage displays the given error nicely with the given message
 func ShowErrorWithMessage(err error, message string) {
 	err = handleCancelError(err)
-	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, trimDriversFromErrMsg(err.Error()))
+	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, TrimDriversFromErrMsg(err.Error()))
 }
 
-// remove the pq: and rpc error prefixes along
+// TrimDriversFromErrMsg removes the pq: and rpc error prefixes along
 // with all the unnecessary information that comes from the
-// drivers
-func trimDriversFromErrMsg(msg string) string {
+// drivers and libraries
+func TrimDriversFromErrMsg(msg string) string {
 	errString := strings.TrimSpace(msg)
 	if strings.HasPrefix(errString, "pq:") {
 		errString = strings.TrimSpace(strings.TrimPrefix(errString, "pq:"))
@@ -57,6 +58,7 @@ func trimDriversFromErrMsg(msg string) string {
 	}
 	return errString
 }
+
 func handleCancelError(err error) error {
 	if err == context.Canceled {
 		err = fmt.Errorf("query cancelled")
