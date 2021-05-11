@@ -19,7 +19,13 @@ func truncateSpinnerMessageToScreen(msg string) string {
 	return msg
 }
 
-// StartSpinnerAfterDelay :: create a spinner with a given message and start
+// StartSpinnerAfterDelay shows the spinner with the given `msg` if and only if `cancelStartIf` resolves
+// after `delay`.
+//
+// Example: if delay is 2 seconds and `cancelStartIf` resolves after 2.5 seconds, the spinner
+// will show for 0.5 seconds. If `cancelStartIf` resolves after 1.5 seconds, the spinner will
+// NOT be shown at all
+//
 func StartSpinnerAfterDelay(msg string, delay time.Duration, cancelStartIf chan bool) *spinner.Spinner {
 	msg = truncateSpinnerMessageToScreen(msg)
 	spinner := spinner.New(
@@ -44,7 +50,7 @@ func StartSpinnerAfterDelay(msg string, delay time.Duration, cancelStartIf chan 
 	return spinner
 }
 
-// ShowSpinner :: create a spinner with a given message and start
+// ShowSpinner shows a spinner with the given message
 func ShowSpinner(msg string) *spinner.Spinner {
 	msg = truncateSpinnerMessageToScreen(msg)
 	s := spinner.New(
@@ -58,7 +64,7 @@ func ShowSpinner(msg string) *spinner.Spinner {
 	return s
 }
 
-// StopSpinnerWithMessage :: stops a spinner instance and clears it, after writing `finalMsg`
+// StopSpinnerWithMessage stops a spinner instance and clears it, after writing `finalMsg`
 func StopSpinnerWithMessage(spinner *spinner.Spinner, finalMsg string) {
 	if spinner != nil && spinner.Active() {
 		spinner.FinalMSG = finalMsg
@@ -66,14 +72,14 @@ func StopSpinnerWithMessage(spinner *spinner.Spinner, finalMsg string) {
 	}
 }
 
-// StopSpinner :: stops a spinner instance and clears it
+// StopSpinner stops a spinner instance and clears it
 func StopSpinner(spinner *spinner.Spinner) {
 	if spinner != nil && spinner.Active() {
 		spinner.Stop()
 	}
 }
 
-// UpdateSpinnerMessage :: updates the message on the right of the given spinner
+// UpdateSpinnerMessage updates the message of the given spinner
 func UpdateSpinnerMessage(spinner *spinner.Spinner, newMessage string) {
 	if spinner != nil && spinner.Active() {
 		newMessage = truncateSpinnerMessageToScreen(newMessage)
