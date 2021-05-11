@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -38,7 +39,7 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 		return &results.QueryResult{}, nil
 	}
 
-	start := time.Now()
+	startTime := time.Now()
 
 	// channel to flag to spinner that the query has run
 	queryDone := make(chan bool, 1)
@@ -50,9 +51,6 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 		// if showspinner is false, the spinner gets created, but is never shown
 		// so the s.Active() will always come back false . . .
 		spinner = utils.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)
-	} else {
-		// no point in showing count if we don't have the spinner
-		countStream = false
 	}
 
 	rows, err := c.dbClient.QueryContext(ctx, query)
@@ -71,67 +69,81 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 
 	result := results.NewQueryResult(colTypes)
 
-	rowCount := 0
-
 	// read the rows in a go routine
-	go func() {
-		// defer this, so that these get cleaned up even if there is an unforeseen error
-		defer func() {
-			// close the sql rows object
-			rows.Close()
-			if err = rows.Err(); err != nil {
-				result.StreamError(err)
-			}
-			// close the channels in the result object
-			result.Close()
-		}()
-
-		cols, err := rows.Columns()
-
-		for rows.Next() {
-			select {
-			case <-ctx.Done():
-				utils.UpdateSpinnerMessage(spinner, "Cancelling query")
-			default:
-				// slice of interfaces to receive the row data
-				columnValues := make([]interface{}, len(cols))
-				// make a slice of pointers to the result to pass to scan
-				resultPtrs := make([]interface{}, len(cols)) // A temporary interface{} slice
-				for i := range columnValues {
-					resultPtrs[i] = &columnValues[i]
-				}
-				err = rows.Scan(resultPtrs...)
-				if err != nil {
-					if err == context.Canceled {
-						err = fmt.Errorf("Cancelled")
-					}
-					result.StreamError(err)
-					break
-				}
-				// populate row data - handle special case types
-				rowResult := populateRow(columnValues, colTypes)
-
-				if !countStream {
-					// stop the spinner if we don't want to show load count
-					utils.StopSpinner(spinner)
-				}
-
-				// we have started populating results
-				result.StreamRow(rowResult)
-
-				// update the spinner message with the count of rows that have already been fetched
-				utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
-				rowCount++
-			}
-		}
-		// we are done fetching results. time for display. remove the spinner
-		utils.StopSpinner(spinner)
-
-		// set the time that it took for this one to execute
-		result.Duration <- time.Since(start)
-	}()
+	go readRows(ctx, startTime, rows, result, spinner)
 
 	return result, nil
+}
+
+func readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *results.QueryResult, activeSpinner *spinner.Spinner) {
+	// defer this, so that these get cleaned up even if there is an unforeseen error
+	defer func() {
+		// close the sql rows object
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			result.StreamError(err)
+		}
+		// close the channels in the result object
+		result.Close()
+	}()
+
+	rowCount := 0
+	colTypes, err := rows.ColumnTypes()
+	if err != nil {
+		result.StreamError(err)
+		return
+	}
+	cols, err := rows.Columns()
+	if err != nil {
+		result.StreamError(err)
+		return
+	}
+
+	for rows.Next() {
+		continueToNext := true
+		select {
+		case <-ctx.Done():
+			utils.UpdateSpinnerMessage(activeSpinner, "Cancelling query")
+			continueToNext = false
+		default:
+			if rowResult, err := readRow(rows, cols, colTypes); err != nil {
+				result.StreamError(err)
+				continueToNext = false
+			} else {
+				result.StreamRow(rowResult)
+			}
+			// update the spinner message with the count of rows that have already been fetched
+			// this will not show if the spinner is not active
+			utils.UpdateSpinnerMessage(activeSpinner, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
+			rowCount++
+		}
+		if !continueToNext {
+			break
+		}
+	}
+	// we are done fetching results. time for display. remove the spinner
+	utils.StopSpinner(activeSpinner)
+
+	// set the time that it took for this one to execute
+	result.Duration <- time.Since(start)
+}
+
+func readRow(rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]interface{}, error) {
+	// slice of interfaces to receive the row data
+	columnValues := make([]interface{}, len(cols))
+	// make a slice of pointers to the result to pass to scan
+	resultPtrs := make([]interface{}, len(cols)) // A temporary interface{} slice
+	for i := range columnValues {
+		resultPtrs[i] = &columnValues[i]
+	}
+	err := rows.Scan(resultPtrs...)
+	if err != nil {
+		if err == context.Canceled {
+			err = fmt.Errorf("Cancelled")
+		}
+		return nil, err
+	}
+	return populateRow(columnValues, colTypes), nil
 }
 
 func humanizeRowCount(count int) string {
