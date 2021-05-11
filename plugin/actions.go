@@ -19,7 +19,7 @@ const (
 	DefaultImageOrg     = "turbot"
 )
 
-// Remove :: removes an installed plugin
+// Remove removes an installed plugin
 func Remove(image string, pluginConnections map[string][]string) error {
 	spinner := utils.ShowSpinner(fmt.Sprintf("Removing plugin %s", image))
 	defer utils.StopSpinner(spinner)
@@ -52,7 +52,7 @@ func Remove(image string, pluginConnections map[string][]string) error {
 	return v.Save()
 }
 
-// Exists :: looks up the version file and reports whether a plugin is already installed
+// Exists looks up the version file and reports whether a plugin is already installed
 func Exists(plugin string) (bool, error) {
 	versionData, err := versionfile.Load()
 	if err != nil {
@@ -66,22 +66,21 @@ func Exists(plugin string) (bool, error) {
 	return found, nil
 }
 
-// Install :: install plugin in the local file system
+// Install installs a plugin in the local file system
 func Install(plugin string) (*ociinstaller.SteampipeImage, error) {
 	image, err := ociinstaller.InstallPlugin(plugin)
 	return image, err
 }
 
-// ListItem :: an item in the list of plugins
+// ListItem is a struct representing an item in the list of plugins
 type ListItem struct {
 	Name        string
 	Version     string
 	Connections []string
 }
 
-// List :: lists all installed plugins
+// List returns all installed plugins
 func List(reverseConnectionMap map[string][]string) ([]ListItem, error) {
-
 	items := []ListItem{}
 
 	installedPlugins := []string{}

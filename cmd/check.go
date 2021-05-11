@@ -7,10 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/steampipe/definitions/controlresult"
-
-	"github.com/turbot/steampipe/definitions/queryresult"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -18,7 +14,9 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/control/controlresult"
 	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
@@ -81,16 +79,22 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	// treat aech arg as a separeate execution
 	failures := 0
 	for _, arg := range args {
-
-		controls, root := getControls(arg, workspace, client)
+		controls, resultTree := getControls(arg, workspace, client)
 		if len(controls) == 0 {
 			continue
 		}
 		// run the controls
-		failures += executeControls(controls, root, workspace, client)
+		failures += executeControls(controls, resultTree, workspace, client)
 	}
 	// set global exit code
 	exitCode = failures
+}
+
+type C9ontrolExecutor struct {
+	Controls   []*modconfig.Control
+	ResultTree *controlresult.ResultTree
+	Workspace  *workspace.Workspace
+	Client     *db.Client
 }
 
 // retrieve queries from args - for each arg check if it is a named check or a file,
@@ -214,7 +218,7 @@ func getControlsFromMetadataQuery(whereArg string, workspace *workspace.Workspac
 	return controlNames, nil
 }
 
-func executeControls(controls []*modconfig.Control, results *controlresult.ResultTree, workspace *workspace.Workspace, client *db.Client) int {
+func executeControls(controls []*modconfig.Control, resultTree *controlresult.ResultTree, workspace *workspace.Workspace, client *db.Client) int {
 	// set the flag to hide spinner
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
@@ -238,11 +242,11 @@ func executeControls(controls []*modconfig.Control, results *controlresult.Resul
 		}
 		pendingControls--
 
-		results.AddResult(res)
+		resultTree.AddResult(res)
 	}
 	spinner.Stop()
 
-	DisplayControlResults(results)
+	DisplayControlResults(resultTree)
 
 	return errorControls
 }
@@ -259,7 +263,7 @@ func executeControl(control *modconfig.Control, workspace *workspace.Workspace, 
 		return controlResult
 	}
 
-	// queryResult contains a result channel
+	// queryResult contains a controlResult channel
 	startTime := time.Now()
 	queryResult, err := client.ExecuteQuery(context.TODO(), query, false)
 	if err != nil {
@@ -273,7 +277,7 @@ func executeControl(control *modconfig.Control, workspace *workspace.Workspace, 
 	// wait for control to finish
 	controlCompletionTimeout := 240 * time.Second
 	for {
-		// if the control is finished (either successfully or with an error), return the result
+		// if the control is finished (either successfully or with an error), return the controlResult
 		if controlResult.Finished() {
 			return controlResult
 		}

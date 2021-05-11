@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/definitions/queryresult"
+	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 

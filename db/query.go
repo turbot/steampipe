@@ -8,7 +8,7 @@ import (
 
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/definitions/queryresult"
+	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/utils"
 )
 
