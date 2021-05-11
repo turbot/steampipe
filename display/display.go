@@ -13,10 +13,9 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/karrick/gows"
 	"github.com/spf13/viper"
-
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/definitions/queryresult"
+	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/utils"
 )
 

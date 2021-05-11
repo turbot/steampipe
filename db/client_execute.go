@@ -7,13 +7,12 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
-
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/definitions/queryresult"
+	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/utils"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 // ExecuteSync :: execute a query against this client and wait for the result

@@ -5,11 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/definitions/queryresult"
-
-	"github.com/turbot/steampipe/utils"
-
+	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 type ControlRunStatus uint32
