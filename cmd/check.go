@@ -132,6 +132,8 @@ func getControlsFromMetadataQuery(whereArg string, workspace *workspace.Workspac
 		query = fmt.Sprintf("select resource_name from %s where %s", constants.ReflectionTableControl, whereArg)
 	}
 
+	// context.TODO() :: till we merge up with `control` branch, where we will setup and use
+	// a cancellation function
 	res, err := client.ExecuteSync(context.TODO(), query)
 	if err != nil {
 		return nil, err

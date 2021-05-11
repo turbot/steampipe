@@ -23,7 +23,11 @@ func (c *Client) ExecuteSync(ctx context.Context, query string) (*results.SyncQu
 	}
 	syncResult := &results.SyncQueryResult{ColTypes: result.ColTypes}
 	for row := range *result.RowChan {
-		syncResult.Rows = append(syncResult.Rows, row)
+		select {
+		case <-ctx.Done():
+		default:
+			syncResult.Rows = append(syncResult.Rows, row)
+		}
 	}
 	syncResult.Duration = <-result.Duration
 	return syncResult, nil
