@@ -2,9 +2,9 @@ package controlresult
 
 // StatusSummary is a struct containing the counts of each possible control status
 type StatusSummary struct {
-	Alarm int
-	Ok    int
-	Info  int
-	Skip  int
-	Error int
+	Alarm int `json:"alarm"`
+	Ok    int `json:"ok"`
+	Info  int `json:"info"`
+	Skip  int `json:"skip"`
+	Error int `json:"error"`
 }

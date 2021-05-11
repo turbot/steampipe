@@ -250,7 +250,7 @@ func (m *Mod) GetTags() map[string]string {
 	if m.Tags != nil {
 		return *m.Tags
 	}
-	return nil
+	return map[string]string{}
 }
 
 // GetChildren implements ControlTreeItem

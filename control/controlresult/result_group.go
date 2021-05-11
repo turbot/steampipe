@@ -27,6 +27,9 @@ type GroupSummary struct {
 func NewRootResultGroup(rootItems []modconfig.ControlTreeItem) *ResultGroup {
 	root := &ResultGroup{
 		GroupId: "root",
+		Results: []*Result{},
+		Groups:  []*ResultGroup{},
+		Tags:    make(map[string]string),
 	}
 	for _, item := range rootItems {
 		root.Groups = append(root.Groups, NewResultGroup(item, root))
@@ -42,6 +45,8 @@ func NewResultGroup(item modconfig.ControlTreeItem, parent *ResultGroup) *Result
 		Description: item.GetDescription(),
 		Tags:        item.GetTags(),
 		parent:      parent,
+		Results:     []*Result{},
+		Groups:      []*ResultGroup{},
 	}
 	// add child groups for children which are benchmarks
 	for _, c := range item.GetChildren() {

@@ -28,7 +28,7 @@ benchmark "cg_1_1_2"{
 
 control "c1"{
     title = "control 1"
-    sql = "select 'r1' as resource, 'alarm' as status, 'Im alarmed' as reason"
+    sql = "select 'r1' as resource, 'alarm' as status, 'Im alarmed' as reason, 'dimension 1 val' as d1"
 }
 control "c2"{
     title = "control 2"

@@ -26,9 +26,9 @@ func NewResult(control *modconfig.Control) *Result {
 		Description: typehelpers.SafeString(control.Description),
 		Severity:    typehelpers.SafeString(control.Severity),
 		Title:       typehelpers.SafeString(control.Title),
+		Tags:        control.GetTags(),
+		Rows:        []*ResultRow{},
 	}
-	if control.Tags != nil {
-		res.Tags = *control.Tags
-	}
+
 	return res
 }

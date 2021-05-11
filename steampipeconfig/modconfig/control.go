@@ -98,12 +98,12 @@ func (m *Control) GetTags() map[string]string {
 	if m.Tags != nil {
 		return *m.Tags
 	}
-	return nil
+	return map[string]string{}
 }
 
 // GetChildren implements ControlTreeItem
 func (m *Control) GetChildren() []ControlTreeItem {
-	return nil
+	return []ControlTreeItem{}
 }
 
 // Name implements ControlTreeItem, HclResource

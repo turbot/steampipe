@@ -141,7 +141,7 @@ func (b *Benchmark) GetTags() map[string]string {
 	if b.Tags != nil {
 		return *b.Tags
 	}
-	return nil
+	return map[string]string{}
 }
 
 // GetChildren implements ControlTreeItem
