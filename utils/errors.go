@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -21,27 +22,32 @@ func init() {
 
 func FailOnError(err error) {
 	if err != nil {
+		err = handleCancelError(err)
 		panic(err)
 	}
 }
 func FailOnErrorWithMessage(err error, message string) {
 	if err != nil {
+		err = handleCancelError(err)
 		panic(fmt.Sprintf("%s: %s", message, err.Error()))
 	}
 }
 
 func ShowError(err error) {
-	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, trimDriversFromErrMsg(err.Error()))
+	err = handleCancelError(err)
+	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, TrimDriversFromErrMsg(err.Error()))
 }
 
+// ShowErrorWithMessage displays the given error nicely with the given message
 func ShowErrorWithMessage(err error, message string) {
-	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, trimDriversFromErrMsg(err.Error()))
+	err = handleCancelError(err)
+	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, TrimDriversFromErrMsg(err.Error()))
 }
 
-// remove the pq: and rpc error prefixes along
+// TrimDriversFromErrMsg removes the pq: and rpc error prefixes along
 // with all the unnecessary information that comes from the
-// drivers
-func trimDriversFromErrMsg(msg string) string {
+// drivers and libraries
+func TrimDriversFromErrMsg(msg string) string {
 	errString := strings.TrimSpace(msg)
 	if strings.HasPrefix(errString, "pq:") {
 		errString = strings.TrimSpace(strings.TrimPrefix(errString, "pq:"))
@@ -51,6 +57,15 @@ func trimDriversFromErrMsg(msg string) string {
 		}
 	}
 	return errString
+}
+
+// modifies a context.Canceled error into a readable error that can
+// be printed on the console
+func handleCancelError(err error) error {
+	if err == context.Canceled {
+		err = fmt.Errorf("query cancelled")
+	}
+	return err
 }
 
 func ShowWarning(warning string) {

@@ -1,9 +1,13 @@
 package db
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
@@ -22,16 +26,19 @@ import (
 // to facilitate interactive query prompt
 type InteractiveClient struct {
 	client                  *Client
+	resultsStreamer         *results.ResultStreamer
 	workspace               NamedQueryProvider
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
 	interactiveQueryHistory *queryhistory.QueryHistory
 	autocompleteOnEmpty     bool
+	activeQueryCancelFunc   context.CancelFunc
 }
 
-func newInteractiveClient(workspace NamedQueryProvider, client *Client) (*InteractiveClient, error) {
+func newInteractiveClient(workspace NamedQueryProvider, client *Client, resultsStreamer *results.ResultStreamer) (*InteractiveClient, error) {
 	return &InteractiveClient{
 		client:                  client,
+		resultsStreamer:         resultsStreamer,
 		workspace:               workspace,
 		interactiveQueryHistory: queryhistory.New(),
 		interactiveBuffer:       []string{},
@@ -40,7 +47,7 @@ func newInteractiveClient(workspace NamedQueryProvider, client *Client) (*Intera
 }
 
 // InteractiveQuery :: start an interactive prompt and return
-func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStreamer) {
+func (c *InteractiveClient) InteractiveQuery() {
 	defer func() {
 		// close the underlying client
 		c.client.Close()
@@ -52,14 +59,14 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 		// this needs to be the last thing we do,
 		// as the runQueryCmd uses this as an indication
 		// to quit out of the application
-		resultsStreamer.Close()
+		c.resultsStreamer.Close()
 	}()
 
+	interruptSignalChannel := c.startCancelHandler()
 	fmt.Printf("Welcome to Steampipe v%s\n", version.String())
 	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
-
 	for {
-		rerun := c.runInteractivePrompt(resultsStreamer)
+		rerun := c.runInteractivePrompt()
 
 		// persist saved history
 		c.interactiveQueryHistory.Persist()
@@ -69,11 +76,28 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 
 		// wait for the resultstreamer to have streamed everything out
 		// so that we know
-		resultsStreamer.Wait()
+		c.resultsStreamer.Wait()
 	}
+
+	// close up the SIGINT channel so that the receiver goroutine can quit
+	close(interruptSignalChannel)
 }
 
-func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *results.ResultStreamer) (ret utils.InteractiveExitStatus) {
+func (c *InteractiveClient) startCancelHandler() chan os.Signal {
+	interruptSignalChannel := make(chan os.Signal, 10)
+	signal.Notify(interruptSignalChannel, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		for range interruptSignalChannel {
+			if c.hasActiveCancel() {
+				c.activeQueryCancelFunc()
+				c.clearCancelFunction()
+			}
+		}
+	}()
+	return interruptSignalChannel
+}
+
+func (c *InteractiveClient) runInteractivePrompt() (ret utils.InteractiveExitStatus) {
 	defer func() {
 		// this is to catch the PANIC that gets raised by
 		// the executor of go-prompt
@@ -94,7 +118,7 @@ func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *results.Result
 		}
 	}()
 
-	callExecutor := func(line string) { c.executor(line, resultsStreamer) }
+	callExecutor := func(line string) { c.executor(line) }
 	completer := func(d prompt.Document) []prompt.Suggest { return c.queryCompleter(d, c.client.schemaMetadata) }
 	c.interactivePrompt = prompt.New(
 		callExecutor,
@@ -182,7 +206,7 @@ func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 	c.interactiveBuffer = []string{}
 }
 
-func (c *InteractiveClient) executor(line string, resultsStreamer *results.ResultStreamer) {
+func (c *InteractiveClient) executor(line string) {
 	line = strings.TrimSpace(line)
 
 	// if it's an empty line, then we don't need to do anything
@@ -214,7 +238,6 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 
 	// if the line is ONLY a semicolon, do nothing and restart interactive session
 	if strings.TrimSpace(query) == ";" {
-		resultsStreamer.Done()
 		c.restartInteractiveSession()
 	}
 
@@ -222,21 +245,62 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 		if err := c.executeMetaquery(query); err != nil {
 			utils.ShowError(err)
 		}
-		resultsStreamer.Done()
+		c.resultsStreamer.Done()
 	} else {
 		// otherwise execute query
+		ctx, cancel := context.WithCancel(context.Background())
+		c.setCancelFunction(cancel)
+
 		shouldShowCounter := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.ArgTable
-		if result, err := c.client.ExecuteQuery(query, shouldShowCounter); err != nil {
-			utils.ShowError(err)
-			resultsStreamer.Done()
+
+		result, err := c.client.ExecuteQuery(ctx, query, shouldShowCounter)
+		if err != nil {
+			c.handleExecuteError(err)
 		} else {
-			resultsStreamer.StreamResult(result)
+			c.resultsStreamer.StreamResult(result)
 		}
 	}
 
 	// store the history
 	c.interactiveQueryHistory.Put(historyItem)
 	c.restartInteractiveSession()
+}
+
+func (c *InteractiveClient) handleExecuteError(err error) {
+	isCancelledError, isCancelledBeforeResult := isCancelledError(err)
+	if isCancelledError {
+		utils.ShowError(fmt.Errorf("query cancelled"))
+		if isCancelledBeforeResult {
+			// we need to notify the streamer that we are done
+			c.resultsStreamer.Done()
+		}
+	} else {
+		utils.ShowError(err)
+		c.resultsStreamer.Done()
+	}
+}
+
+func isCancelledError(err error) (bool, bool) {
+
+	isCancelledBeforeResult := strings.Contains(err.Error(), "Unrecognized remote plugin message")
+	isCancelledUponResult := strings.Contains(err.Error(), "canceling statement due to user request")
+	isCancelledAfterResult := err == context.Canceled
+
+	isCancelledError := isCancelledBeforeResult || isCancelledUponResult || isCancelledAfterResult
+
+	return isCancelledError, isCancelledBeforeResult
+}
+
+func (c *InteractiveClient) hasActiveCancel() bool {
+	return c.activeQueryCancelFunc != nil
+}
+
+func (c *InteractiveClient) setCancelFunction(cancel context.CancelFunc) {
+	c.activeQueryCancelFunc = cancel
+}
+
+func (c *InteractiveClient) clearCancelFunction() {
+	c.activeQueryCancelFunc = nil
 }
 
 func (c *InteractiveClient) executeMetaquery(query string) error {

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -131,7 +132,8 @@ func getControlsFromMetadataQuery(whereArg string, workspace *workspace.Workspac
 		query = fmt.Sprintf("select resource_name from %s where %s", constants.ReflectionTableControl, whereArg)
 	}
 
-	res, err := client.ExecuteSync(query)
+	ctx, _ := context.WithCancel(context.Background())
+	res, err := client.ExecuteSync(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +210,7 @@ func executeControl(control *modconfig.Control, workspace *workspace.Workspace, 
 
 	// queryResult contains a result channel
 	startTime := time.Now()
-	queryResult, err := client.ExecuteQuery(query, false)
+	queryResult, err := client.ExecuteQuery(context.TODO(), query, false)
 	if err != nil {
 		controlResult.Error = err
 		return controlResult

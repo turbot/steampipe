@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -104,11 +106,23 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		// ensure client is closed
 		defer client.Close()
 
+		ctx, cancel := context.WithCancel(context.Background())
+		startCancelHandler(cancel)
 		// otherwise if we have resolved any queries, run them
-		failures := executeQueries(queries, client)
+		failures := executeQueries(ctx, queries, client)
 		// set global exit code
 		exitCode = failures
 	}
+}
+
+func startCancelHandler(cancel context.CancelFunc) {
+	sigIntChannel := make(chan os.Signal, 1)
+	signal.Notify(sigIntChannel, os.Interrupt)
+	go func() {
+		<-sigIntChannel
+		cancel()
+		close(sigIntChannel)
+	}()
 }
 
 // retrieve queries from args - for each arg check if it is a named query or a file,
@@ -169,25 +183,33 @@ func runInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
 	}
 }
 
-func executeQueries(queries []string, client *db.Client) int {
+func executeQueries(ctx context.Context, queries []string, client *db.Client) int {
 	// run all queries
 	failures := 0
 	for i, q := range queries {
-		if err := executeQuery(q, client); err != nil {
+		select {
+		case <-ctx.Done():
+			// add to failures
 			failures++
-			utils.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), err))
-		}
-		if showBlankLineBetweenResults() {
-			fmt.Println()
+			// skip ahead to the end
+			continue
+		default:
+			if err := executeQuery(ctx, q, client); err != nil {
+				failures++
+				utils.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), utils.TrimDriversFromErrMsg(err.Error())))
+			}
+			if showBlankLineBetweenResults() {
+				fmt.Println()
+			}
 		}
 	}
 
 	return failures
 }
 
-func executeQuery(queryString string, client *db.Client) error {
+func executeQuery(ctx context.Context, queryString string, client *db.Client) error {
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.ExecuteQuery(queryString, client)
+	resultsStreamer, err := db.ExecuteQuery(ctx, queryString, client)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -28,7 +29,7 @@ func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 		insertSql,
 		"commit;",
 	}
-	_, err := client.ExecuteSync(strings.Join(sql, "\n"))
+	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"))
 
 	return err
 }
@@ -49,7 +50,7 @@ func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 		insertSql,
 		"commit;",
 	}
-	_, err := client.ExecuteSync(strings.Join(sql, "\n"))
+	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create reflection tables: %v", err)
 	}
