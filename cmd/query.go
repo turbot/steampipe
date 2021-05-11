@@ -67,6 +67,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// enable spinner only in interactive mode
+	interactiveMode := len(args) == 0
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, interactiveMode)
+	// set config to indicate whether we are running an interactive query
+	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
+
 	// start db if necessary
 	err := db.EnsureDbAndStartService(db.InvokerQuery)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
@@ -91,7 +97,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnError(err)
 
 	// if no query is specified, run interactive prompt
-	if len(args) == 0 {
+	if interactiveMode {
 		// interactive session creates its own client
 		runInteractiveSession(workspace, client)
 	} else if len(queries) > 0 {
@@ -151,12 +157,6 @@ func runInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
 		utils.FailOnError(err)
 	}
 
-	// indicate we are running an interactive query
-	viper.Set(constants.ConfigKeyInteractive, true)
-
-	// set the flag to show spinner
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, true)
-
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.RunInteractivePrompt(workspace, client)
 	utils.FailOnError(err)
@@ -170,9 +170,6 @@ func runInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
 }
 
 func executeQueries(queries []string, client *db.Client) int {
-	// set the flag to hide spinner
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
-
 	// run all queries
 	failures := 0
 	for i, q := range queries {
