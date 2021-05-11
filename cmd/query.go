@@ -106,23 +106,27 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		// ensure client is closed
 		defer client.Close()
 
-		ctx := context.Background()
-		ctx, cancel := context.WithCancel(ctx)
-		sigIntChannel := make(chan os.Signal, 1)
-		signal.Notify(sigIntChannel, os.Interrupt)
-		go func() {
-			<-sigIntChannel
-			fmt.Println("handling interrupt")
-			cancel()
-			close(sigIntChannel)
-			fmt.Println("done")
-		}()
-
+		ctx := setupQueryCancel()
 		// otherwise if we have resolved any queries, run them
 		failures := executeQueries(ctx, queries, client)
 		// set global exit code
 		exitCode = failures
 	}
+}
+
+func setupQueryCancel() context.Context {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	sigIntChannel := make(chan os.Signal, 1)
+	signal.Notify(sigIntChannel, os.Interrupt)
+	go func() {
+		<-sigIntChannel
+		fmt.Println("handling interrupt")
+		cancel()
+		close(sigIntChannel)
+		fmt.Println("done")
+	}()
+	return ctx
 }
 
 // retrieve queries from args - for each arg check if it is a named query or a file,
