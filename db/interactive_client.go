@@ -62,8 +62,7 @@ func (c *InteractiveClient) InteractiveQuery() {
 		c.resultsStreamer.Close()
 	}()
 
-	interruptSignalChannel := c.startInterruptListener()
-
+	interruptSignalChannel := c.startCancelHandler()
 	fmt.Printf("Welcome to Steampipe v%s\n", version.String())
 	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
 	for {
@@ -84,7 +83,7 @@ func (c *InteractiveClient) InteractiveQuery() {
 	close(interruptSignalChannel)
 }
 
-func (c *InteractiveClient) startInterruptListener() chan os.Signal {
+func (c *InteractiveClient) startCancelHandler() chan os.Signal {
 	interruptSignalChannel := make(chan os.Signal, 10)
 	signal.Notify(interruptSignalChannel, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
