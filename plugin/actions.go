@@ -6,9 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
 )
@@ -21,8 +20,8 @@ const (
 
 // Remove :: removes an installed plugin
 func Remove(image string, pluginConnections map[string][]string) error {
-	spinner := utils.ShowSpinner(fmt.Sprintf("Removing plugin %s", image))
-	defer utils.StopSpinner(spinner)
+	spinner := display.ShowSpinner(fmt.Sprintf("Removing plugin %s", image))
+	defer display.StopSpinner(spinner)
 
 	fullPluginName := ociinstaller.NewSteampipeImageRef(image).DisplayImageRef()
 
