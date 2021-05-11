@@ -21,8 +21,7 @@ type ResultGroup struct {
 	Results []*Result
 	// Controls are derived from results
 
-	parent     *ResultGroup
-	ChildItems []modconfig.ControlTreeItem
+	parent *ResultGroup
 }
 
 // NewResultGroup creates a result group from a ControlTreeItem
