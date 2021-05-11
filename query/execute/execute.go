@@ -1,6 +1,7 @@
 package execute
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/viper"
@@ -30,11 +31,11 @@ func RunInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
 	}
 }
 
-func ExecuteQueries(queries []string, client *db.Client) int {
+func ExecuteQueries(ctx context.Context, queries []string, client *db.Client) int {
 	// run all queries
 	failures := 0
 	for i, q := range queries {
-		if err := executeQuery(q, client); err != nil {
+		if err := executeQuery(ctx, q, client); err != nil {
 			failures++
 			utils.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), err))
 		}
@@ -46,9 +47,9 @@ func ExecuteQueries(queries []string, client *db.Client) int {
 	return failures
 }
 
-func executeQuery(queryString string, client *db.Client) error {
+func executeQuery(ctx context.Context, queryString string, client *db.Client) error {
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.ExecuteQuery(queryString, client)
+	resultsStreamer, err := db.ExecuteQuery(ctx, queryString, client)
 	if err != nil {
 		return err
 	}

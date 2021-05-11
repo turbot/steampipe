@@ -42,8 +42,6 @@ type Mod struct {
 	Controls   map[string]*Control
 	Benchmarks map[string]*Benchmark
 
-	// dependencies
-	Mods      map[string]*Mod
 	ModPath   string
 	DeclRange hcl.Range
 
@@ -62,7 +60,6 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Queries:    make(map[string]*Query),
 		Controls:   make(map[string]*Control),
 		Benchmarks: make(map[string]*Benchmark),
-		Mods:       make(map[string]*Mod),
 		ModPath:    modPath,
 		DeclRange:  defRange,
 	}

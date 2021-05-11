@@ -1,6 +1,7 @@
 package execute
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -22,6 +23,7 @@ import (
 type ControlExecutor struct {
 	Controls   []*modconfig.Control
 	ResultTree *controlresult.ResultTree
+	Errors     int
 	workspace  *workspace.Workspace
 	client     *db.Client
 }
@@ -31,7 +33,7 @@ type ControlExecutor struct {
 // In order to build the executor:
 // 1) resolve the arg into one or more controls
 // 2) build the (unpopulated) ResultTree, which has a hierarchy matching the control hierarchy
-func NewExecutor(arg string, workspace *workspace.Workspace, client *db.Client) *ControlExecutor {
+func NewExecutor(ctx context.Context, arg string, workspace *workspace.Workspace, client *db.Client) *ControlExecutor {
 	executor := &ControlExecutor{
 		workspace: workspace,
 		client:    client,
@@ -48,7 +50,7 @@ func NewExecutor(arg string, workspace *workspace.Workspace, client *db.Client) 
 	// - we then filter the controls returned by 1) with those returned by 2)
 	if viper.IsSet(constants.ArgWhere) {
 		whereArg := viper.GetString(constants.ArgWhere)
-		executor.filterControlsWithWhereClause(whereArg)
+		executor.filterControlsWithWhereClause(ctx, whereArg)
 
 		if len(executor.Controls) == 0 {
 			utils.ShowWarning(fmt.Sprintf("No controls found matching argument: %s and query: %s", arg, whereArg))
@@ -58,7 +60,7 @@ func NewExecutor(arg string, workspace *workspace.Workspace, client *db.Client) 
 	return executor
 }
 
-func (e *ControlExecutor) Execute() int {
+func (e *ControlExecutor) Execute(ctx context.Context) {
 	// set the flag to hide spinner
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
@@ -73,8 +75,8 @@ func (e *ControlExecutor) Execute() int {
 		p := c.Path()
 		utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Running %d %s. (%d complete, %d pending, %d errors): executing \"%s\" (%s)", totalControls, utils.Pluralize("control", totalControls), completeControls, pendingControls, errorControls, typeHelpers.SafeString(c.Title), p))
 
-		res := e.executeControl(c)
-		if res.GetStatus() == controlresult.ControlRunError {
+		res := e.executeControl(ctx, c)
+		if res.GetRunStatus() == controlresult.ControlRunError {
 			errorControls++
 		} else {
 			completeControls++
@@ -85,45 +87,45 @@ func (e *ControlExecutor) Execute() int {
 	}
 	spinner.Stop()
 
-	return errorControls
+	e.Errors = errorControls
+
 }
 
-func (e *ControlExecutor) executeControl(control *modconfig.Control) *controlresult.Result {
-	controlResult := controlresult.NewControlResult(control)
+func (e *ControlExecutor) executeControl(ctx context.Context, control *modconfig.Control) *controlresult.ControlRun {
+	controlRun := controlresult.NewControlRun(control)
 	// resolve the query parameter of the control
 	var query string
 	// resolve the query parameter of the control
 	query, _ = execute.GetQueryFromArg(typeHelpers.SafeString(control.SQL), e.workspace)
 	if query == "" {
-		controlResult.Error = fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typeHelpers.SafeString(control.SQL))
-		return controlResult
+		controlRun.Error = fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typeHelpers.SafeString(control.SQL))
+		return controlRun
 	}
 
-	// queryResult contains a controlResult channel
 	startTime := time.Now()
-	queryResult, err := e.client.ExecuteQuery(query, false)
+	queryResult, err := e.client.ExecuteQuery(ctx, query, false)
 	if err != nil {
-		controlResult.Error = err
-		return controlResult
+		controlRun.Error = err
+		return controlRun
 	}
 	// set the control as started
-	controlResult.Start(queryResult)
+	controlRun.Start(queryResult)
 
 	// TEMPORARY - we will eventually pass the streams to the renderer before completion
 	// wait for control to finish
 	controlCompletionTimeout := 240 * time.Second
 	for {
-		// if the control is finished (either successfully or with an error), return the controlResult
-		if controlResult.Finished() {
-			return controlResult
+		// if the control is finished (either successfully or with an error), return the controlRun
+		if controlRun.Finished() {
+			return controlRun
 		}
 		time.Sleep(50 * time.Millisecond)
 		if time.Since(startTime) > controlCompletionTimeout {
-			controlResult.SetError(fmt.Errorf("control %s timed out", control.Name()))
+			controlRun.SetError(fmt.Errorf("control %s timed out", control.Name()))
 		}
 	}
 
-	return controlResult
+	return controlRun
 }
 
 // getControlsForArg resolves the arg into one or more controls
@@ -133,19 +135,20 @@ func (e *ControlExecutor) executeControl(control *modconfig.Control) *controlres
 // - if the arg is a mod name, the root will be the Mod with that name
 // - if the arg is 'all' the root will be a node with all Mods as children
 func (e *ControlExecutor) getControlsForArg(arg string, workspace *workspace.Workspace) {
-	// 1)  build list of all controls corresponding to the scope arg
-
-	// identify the 'root' node
-
 	// special case handling for the string "all"
 	if arg == "all" {
 		// get all controls from workspace
 		e.Controls = workspace.GetChildControls()
-		e.ResultTree = controlresult.NewResultTree(workspace.Mod)
+		// build list of all workspace mods
+		var mods = []modconfig.ControlTreeItem{workspace.Mod}
+		for _, m := range workspace.ModMap {
+			mods = append(mods, m)
+		}
+		e.ResultTree = controlresult.NewResultTree(mods...)
 		return
 	}
 
-	// if arg is in fact a benchmark,  get all controls underneath the it
+	// what resource type is arg?
 	name, err := modconfig.ParseResourceName(arg)
 	if err != nil {
 		// just log error
@@ -161,6 +164,7 @@ func (e *ControlExecutor) getControlsForArg(arg string, workspace *workspace.Wor
 	case modconfig.BlockTypeBenchmark:
 		// look in the workspace control group map for this control group
 		if benchmark, ok := workspace.BenchmarkMap[arg]; ok {
+			// TODO it would be nice to resolve the control parents in the case of multiple parents
 			e.Controls = benchmark.GetChildControls()
 			e.ResultTree = controlresult.NewResultTree(benchmark)
 		}
@@ -173,8 +177,8 @@ func (e *ControlExecutor) getControlsForArg(arg string, workspace *workspace.Wor
 	}
 }
 
-func (e *ControlExecutor) filterControlsWithWhereClause(whereArg string) {
-	filterControlNames, err := e.getControlsFromMetadataQuery(whereArg)
+func (e *ControlExecutor) filterControlsWithWhereClause(ctx context.Context, whereArg string) {
+	filterControlNames, err := e.getControlsFromMetadataQuery(ctx, whereArg)
 	utils.FailOnErrorWithMessage(err, "failed to execute '--where' SQL")
 	var filteredRes []*modconfig.Control
 	for _, control := range e.Controls {
@@ -187,7 +191,7 @@ func (e *ControlExecutor) filterControlsWithWhereClause(whereArg string) {
 
 // Get a list of controls from the reflection table steampipe_control/
 // This is used to implement the `where` control filtering
-func (e *ControlExecutor) getControlsFromMetadataQuery(whereArg string) (map[string]bool, error) {
+func (e *ControlExecutor) getControlsFromMetadataQuery(ctx context.Context, whereArg string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
 	query, isNamedQuery := execute.GetQueryFromArg(whereArg, e.workspace)
 
@@ -196,7 +200,7 @@ func (e *ControlExecutor) getControlsFromMetadataQuery(whereArg string) (map[str
 		query = fmt.Sprintf("select resource_name from %s where %s", constants.ReflectionTableControl, whereArg)
 	}
 
-	res, err := e.client.ExecuteSync(query)
+	res, err := e.client.ExecuteSync(ctx, query)
 	if err != nil {
 		return nil, err
 	}

@@ -74,7 +74,7 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 	return result, nil
 }
 
-func readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.QueryResult, activeSpinner *spinner.Spinner) {
+func readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result, activeSpinner *spinner.Spinner) {
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
 		// close the sql rows object

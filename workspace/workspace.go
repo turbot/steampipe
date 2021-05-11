@@ -307,8 +307,7 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 	return workspaceMap
 }
 
-// GetMod attempts to return the mod with a name matching 'modname'
-//
+// GetMod attempts to return the mod with a name matching 'modName'
 // It first checks the workspace mod, then checks all mod dependencies
 func (w *Workspace) GetMod(modName string) *modconfig.Mod {
 	// is it the workspace mod?
@@ -316,5 +315,14 @@ func (w *Workspace) GetMod(modName string) *modconfig.Mod {
 		return w.Mod
 	}
 	// try workspace mod dependencies
-	return w.Mod.Mods[modName]
+	return w.ModMap[modName]
+}
+
+// Mods returns a flat list of all mods - the workspace mod and depdnency mods
+func (w *Workspace) Mods() []*modconfig.Mod {
+	var res = []*modconfig.Mod{w.Mod}
+	for _, m := range w.ModMap {
+		res = append(res, m)
+	}
+	return res
 }

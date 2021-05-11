@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/turbot/steampipe/query/execute"
 	"context"
 	"fmt"
 	"log"
@@ -9,9 +8,13 @@ import (
 	"os/signal"
 	"path/filepath"
 
+	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/query/execute"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"

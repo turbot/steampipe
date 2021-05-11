@@ -13,26 +13,32 @@ type ResultTree struct {
 }
 
 // NewResultTree creates a result group from a ControlTreeItem
-func NewResultTree(rootItem modconfig.ControlTreeItem) *ResultTree {
+func NewResultTree(rootItems ...modconfig.ControlTreeItem) *ResultTree {
+	// build tree of result groups, starting with a synthetic 'root' node
+	root := NewRootResultGroup(rootItems)
+
+	// now populate the ResultTree
 	res := &ResultTree{
 		Groups: make(map[string]*ResultGroup),
-		Root:   NewResultGroup(rootItem),
+		Root:   root,
 	}
-
-	res.Root.GetGroupMap(res.Groups)
+	// now populate the map of result groups
+	// NOTE: this mutates res.Groups
+	res.Root.PopulateGroupMap(res.Groups)
 
 	return res
 }
 
-func (t ResultTree) AddResult(result *Result) error {
+func (t ResultTree) AddResult(result *ControlRun) error {
 	// find parent group
+	// TODO what if the same control is run by 2 parents?? we need result to know parent
 	parents := result.Control.GetParents()
 	for _, parent := range parents {
 		// find result group with name of parent
 		group, ok := t.Groups[parent.Name()]
 		// this parent group must exist in the tree
 		if ok {
-			group.Results = append(group.Results, result)
+			group.AddResult(result)
 			return nil
 		}
 	}

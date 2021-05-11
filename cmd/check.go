@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -55,6 +56,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	ctx, _ := context.WithCancel(context.Background())
+
 	// start db if necessary
 	err := db.EnsureDbAndStartService(db.InvokerCheck)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
@@ -77,10 +80,16 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	// treat each arg as a separate execution
 	failures := 0
 	for _, arg := range args {
-		executor := execute.NewExecutor(arg, workspace, client)
-		failures += executor.Execute()
+		executor := execute.NewExecutor(ctx, arg, workspace, client)
+		executor.Execute(ctx)
+		failures += executor.Errors
+		bytes, err := json.MarshalIndent(executor.ResultTree.Root, "", "  ")
+		str := string(bytes)
+		fmt.Println(str)
+		fmt.Println(err)
 		DisplayControlResults(executor.ResultTree)
 	}
+
 	// set global exit code
 	exitCode = failures
 }
@@ -88,14 +97,14 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 func DisplayControlResults(controlResults *controlresult.ResultTree) {
 	// NOTE: for now we can assume all results are complete
 	// todo summary and hierarchy
-	for _, res := range controlResults.Root.Results {
+	for _, res := range controlResults.Root.ControlRuns {
 		fmt.Println()
 		fmt.Printf("%s [%s]\n", typeHelpers.SafeString(res.Control.Title), res.Control.ShortName)
 		if res.Error != nil {
 			fmt.Printf("  Execution error: %v\n", res.Error)
 			continue
 		}
-		for _, item := range res.Rows {
+		for _, item := range res.Result.Rows {
 			if item == nil {
 				// should never happen!
 				panic("NIL RESULT")

@@ -13,14 +13,13 @@ import (
 
 // Control is a struct representing the Control resource
 type Control struct {
-	ShortName string
-	FullName  string `cty:"name"`
-
-	Description   *string            `cty:"description" hcl:"description" column:"description,text"`
-	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	SQL           *string            `cty:"sql" hcl:"sql" column:"sql,text"`
-	Severity      *string            `cty:"severity" hcl:"severity" column:"severity,text"`
-	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
+	ShortName     string             `json:"-"`
+	FullName      string             `cty:"name" json:"control_id"`
+	Description   *string            `cty:"description" hcl:"description" column:"description,text" json:"description"`
+	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"-"`
+	SQL           *string            `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
+	Severity      *string            `cty:"severity" hcl:"severity" column:"severity,text" json:"severity"`
+	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb" json:"tags"`
 	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
 	DeclRange hcl.Range

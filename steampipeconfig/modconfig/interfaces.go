@@ -16,7 +16,7 @@ type MappableResource interface {
 	SetMetadata(*ResourceMetadata)
 }
 
-// ControlTreeItem must be implemented by elements of the control hieararchy
+// ControlTreeItem must be implemented by elements of the control hierararchy
 // i.e. Control and Benchmark
 type ControlTreeItem interface {
 	AddParent(ControlTreeItem) error

@@ -11,21 +11,20 @@ import (
 type ControlStatus string
 
 const (
-	ControlOk    = "ok"
-	ControlAlarm = "alarm"
-	ControlSkip  = "skip"
-	ControlInfo  = "info"
-	ControlError = "error"
+	ControlOk    ControlStatus = "ok"
+	ControlAlarm               = "alarm"
+	ControlSkip                = "skip"
+	ControlInfo                = "info"
+	ControlError               = "error"
 )
 
 // ResultRow is the result of a control execution for a single resource
 type ResultRow struct {
-	Reason     string
-	Resource   string
-	Status     ControlStatus
-	Dimensions map[string]string
-	// the parent control
-	Control *modconfig.Control
+	Reason     string             `json:"reason"`
+	Resource   string             `json:"resource"`
+	Status     ControlStatus      `json:"status"`
+	Dimensions map[string]string  `json:"dimensions"`
+	Control    *modconfig.Control `json:"-"`
 }
 
 func NewResultRow(control *modconfig.Control, row *queryresult.RowResult, colTypes []*sql.ColumnType) (*ResultRow, error) {
