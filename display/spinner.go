@@ -3,6 +3,7 @@ package display
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -10,6 +11,10 @@ import (
 )
 
 func truncateSpinnerMessageToScreen(msg string) string {
+	if len(strings.TrimSpace(msg)) == 0 {
+		// if this is a blank message, return it as is
+		return msg
+	}
 	maxCols, _, _ := gows.GetWinSize()
 	availableColumns := maxCols - 7
 	if len(msg) > availableColumns {
