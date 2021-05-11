@@ -26,6 +26,7 @@ import (
 // to facilitate interactive query prompt
 type InteractiveClient struct {
 	client                  *Client
+	resultsStreamer         *results.ResultStreamer
 	workspace               NamedQueryProvider
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
@@ -34,9 +35,10 @@ type InteractiveClient struct {
 	activeQueryCancelFunc   context.CancelFunc
 }
 
-func newInteractiveClient(workspace NamedQueryProvider, client *Client) (*InteractiveClient, error) {
+func newInteractiveClient(workspace NamedQueryProvider, client *Client, resultsStreamer *results.ResultStreamer) (*InteractiveClient, error) {
 	return &InteractiveClient{
 		client:                  client,
+		resultsStreamer:         resultsStreamer,
 		workspace:               workspace,
 		interactiveQueryHistory: queryhistory.New(),
 		interactiveBuffer:       []string{},
@@ -45,7 +47,7 @@ func newInteractiveClient(workspace NamedQueryProvider, client *Client) (*Intera
 }
 
 // InteractiveQuery :: start an interactive prompt and return
-func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStreamer) {
+func (c *InteractiveClient) InteractiveQuery() {
 	defer func() {
 		// close the underlying client
 		c.client.Close()
@@ -57,7 +59,7 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 		// this needs to be the last thing we do,
 		// as the runQueryCmd uses this as an indication
 		// to quit out of the application
-		resultsStreamer.Close()
+		c.resultsStreamer.Close()
 	}()
 
 	interruptSignalChannel := c.startInterruptListener()
@@ -65,7 +67,7 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 	fmt.Printf("Welcome to Steampipe v%s\n", version.String())
 	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
 	for {
-		rerun := c.runInteractivePrompt(resultsStreamer)
+		rerun := c.runInteractivePrompt()
 
 		// persist saved history
 		c.interactiveQueryHistory.Persist()
@@ -75,7 +77,7 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 
 		// wait for the resultstreamer to have streamed everything out
 		// so that we know
-		resultsStreamer.Wait()
+		c.resultsStreamer.Wait()
 	}
 
 	// close up the SIGINT channel so that the receiver goroutine can quit
@@ -96,7 +98,7 @@ func (c *InteractiveClient) startInterruptListener() chan os.Signal {
 	return interruptSignalChannel
 }
 
-func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *results.ResultStreamer) (ret utils.InteractiveExitStatus) {
+func (c *InteractiveClient) runInteractivePrompt() (ret utils.InteractiveExitStatus) {
 	defer func() {
 		// this is to catch the PANIC that gets raised by
 		// the executor of go-prompt
@@ -117,7 +119,7 @@ func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *results.Result
 		}
 	}()
 
-	callExecutor := func(line string) { c.executor(line, resultsStreamer) }
+	callExecutor := func(line string) { c.executor(line) }
 	completer := func(d prompt.Document) []prompt.Suggest { return c.queryCompleter(d, c.client.schemaMetadata) }
 	c.interactivePrompt = prompt.New(
 		callExecutor,
@@ -205,7 +207,7 @@ func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 	c.interactiveBuffer = []string{}
 }
 
-func (c *InteractiveClient) executor(line string, resultsStreamer *results.ResultStreamer) {
+func (c *InteractiveClient) executor(line string) {
 	line = strings.TrimSpace(line)
 
 	// if it's an empty line, then we don't need to do anything
@@ -244,7 +246,7 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 		if err := c.executeMetaquery(query); err != nil {
 			utils.ShowError(err)
 		}
-		resultsStreamer.Done()
+		c.resultsStreamer.Done()
 	} else {
 		// otherwise execute query
 		ctx := context.Background()
@@ -255,25 +257,29 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 
 		result, err := c.client.ExecuteQuery(ctx, query, shouldShowCounter)
 		if err != nil {
-			isCancelledError, isCancelledBeforeResult := isCancelledError(err)
-			if isCancelledError {
-				utils.ShowError(fmt.Errorf("query cancelled"))
-				if isCancelledBeforeResult {
-					// we need to notify the streamer that we are done
-					resultsStreamer.Done()
-				}
-			} else {
-				utils.ShowError(err)
-				resultsStreamer.Done()
-			}
+			c.handleExecuteError(err)
 		} else {
-			resultsStreamer.StreamResult(result)
+			c.resultsStreamer.StreamResult(result)
 		}
 	}
 
 	// store the history
 	c.interactiveQueryHistory.Put(historyItem)
 	c.restartInteractiveSession()
+}
+
+func (c *InteractiveClient) handleExecuteError(err error) {
+	isCancelledError, isCancelledBeforeResult := isCancelledError(err)
+	if isCancelledError {
+		utils.ShowError(fmt.Errorf("query cancelled"))
+		if isCancelledBeforeResult {
+			// we need to notify the streamer that we are done
+			c.resultsStreamer.Done()
+		}
+	} else {
+		utils.ShowError(err)
+		c.resultsStreamer.Done()
+	}
 }
 
 func isCancelledError(err error) (bool, bool) {
