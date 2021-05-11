@@ -6,13 +6,26 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/karrick/gows"
 )
+
+func truncateSpinnerMessageToScreen(msg string) string {
+	maxCols, _, _ := gows.GetWinSize()
+	availableColumns := maxCols - 7
+	if len(msg) > availableColumns {
+		msg = msg[:availableColumns]
+		msg = fmt.Sprintf("%s ...", msg)
+	}
+	return msg
+}
 
 // StartSpinnerAfterDelay :: create a spinner with a given message and start
 func StartSpinnerAfterDelay(msg string, delay time.Duration, cancelStartIf chan bool) *spinner.Spinner {
+	msg = truncateSpinnerMessageToScreen(msg)
 	spinner := spinner.New(
 		spinner.CharSets[14],
 		100*time.Millisecond,
+		spinner.WithHiddenCursor(true),
 		spinner.WithWriter(os.Stdout),
 		spinner.WithSuffix(fmt.Sprintf(" %s", msg)),
 	)
@@ -33,9 +46,11 @@ func StartSpinnerAfterDelay(msg string, delay time.Duration, cancelStartIf chan 
 
 // ShowSpinner :: create a spinner with a given message and start
 func ShowSpinner(msg string) *spinner.Spinner {
+	msg = truncateSpinnerMessageToScreen(msg)
 	s := spinner.New(
 		spinner.CharSets[14],
 		100*time.Millisecond,
+		spinner.WithHiddenCursor(true),
 		spinner.WithWriter(os.Stdout),
 		spinner.WithSuffix(fmt.Sprintf(" %s", msg)),
 	)
@@ -61,6 +76,7 @@ func StopSpinner(spinner *spinner.Spinner) {
 // UpdateSpinnerMessage :: updates the message on the right of the given spinner
 func UpdateSpinnerMessage(spinner *spinner.Spinner, newMessage string) {
 	if spinner != nil && spinner.Active() {
+		newMessage = truncateSpinnerMessageToScreen(newMessage)
 		spinner.Suffix = fmt.Sprintf(" %s", newMessage)
 	}
 }
