@@ -59,6 +59,8 @@ func TrimDriversFromErrMsg(msg string) string {
 	return errString
 }
 
+// modifies a context.Canceled error into a readable error that can
+// be printed on the console
 func handleCancelError(err error) error {
 	if err == context.Canceled {
 		err = fmt.Errorf("query cancelled")
