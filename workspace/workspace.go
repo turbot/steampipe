@@ -28,6 +28,7 @@ type Workspace struct {
 	QueryMap     map[string]*modconfig.Query
 	ControlMap   map[string]*modconfig.Control
 	BenchmarkMap map[string]*modconfig.Benchmark
+	ModMap       map[string]*modconfig.Mod
 
 	watcher    *utils.FileWatcher
 	loadLock   sync.Mutex
@@ -37,7 +38,9 @@ type Workspace struct {
 	watcherError error
 }
 
+// Load creates a Workspace and loads the workdspace mod
 func Load(workspacePath string) (*Workspace, error) {
+
 	// create shell workspace
 	workspace := &Workspace{Path: workspacePath}
 
@@ -88,9 +91,6 @@ func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	// if the name starts with 'local', remove the prefix and try to resolve the short name
-	queryName = strings.TrimPrefix(queryName, "local.")
-
 	if query, ok := w.QueryMap[queryName]; ok {
 		return query, true
 	}
@@ -98,51 +98,24 @@ func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
 	return nil, false
 }
 
-// GetControlsForArg :: resolve the arg into one or more controls
-func (w *Workspace) GetControlsForArg(arg string) []*modconfig.Control {
+// GetChildControls builds a flat list of all controls in the worlspace, including dependencies
+func (w *Workspace) GetChildControls() []*modconfig.Control {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
-
-	// if arg is in fact a benchmark,  get all controls underneath the control group
-	name, err := modconfig.ParseResourceName(arg)
-	if err != nil {
-		return nil
-	}
-	if name.ItemType == modconfig.BlockTypeBenchmark {
-		// look in the workspace control group map for this control group
-		if benchmark, ok := w.BenchmarkMap[arg]; ok {
-			return benchmark.GetChildControls()
-		}
-		return nil
-	}
-
-	// check whether the arg is a control name (removing a 'local' prefix if there is one)
-	if control, ok := w.ControlMap[strings.TrimPrefix(arg, "local.")]; ok {
-		return []*modconfig.Control{control}
-	}
-
-	// so arg is not a control group or a control name - check the following possible scopes:
-	// 1) 'all' - all controls from all mods
-	// 2) '<modName>' - all controls from mod <modName>
 	var result []*modconfig.Control
 	// the workspace resource maps have duplicate entries, keyed by long and short name.
 	// keep track of which controls we have identified in order to avoid dupes
 	controlsMatched := make(map[string]bool)
 	for _, c := range w.ControlMap {
 		if _, alreadyMatched := controlsMatched[c.Name()]; !alreadyMatched {
-			if arg == "all" || arg == c.GetMetadata().ModShortName {
-				controlsMatched[c.Name()] = true
-				result = append(result, c)
-			}
+			controlsMatched[c.Name()] = true
+			result = append(result, c)
 		}
 	}
 	return result
 }
 
 func (w *Workspace) loadMod() error {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
 	// parse all hcl files in the workspace folder (non recursively) and either parse or create a mod
 	// it is valid for 0 or 1 mod to be defined (if no mod is defined, create a default one)
 	// populate mod with all hcl resources we parse
@@ -179,6 +152,7 @@ func (w *Workspace) loadMod() error {
 	w.QueryMap = w.buildQueryMap(modMap)
 	w.ControlMap = w.buildControlMap(modMap)
 	w.BenchmarkMap = w.buildBenchmarkMap(modMap)
+	w.ModMap = modMap
 
 	return nil
 }
@@ -259,6 +233,9 @@ func (w *Workspace) SetupWatcher(client *db.Client) error {
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
 		OnChange: func(events []fsnotify.Event) {
+			w.loadLock.Lock()
+			defer w.loadLock.Unlock()
+
 			err := w.loadMod()
 			if err != nil {
 				// if we are already in an error state, do not show error
@@ -328,4 +305,16 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 	}
 
 	return workspaceMap
+}
+
+// GetMod attempts to return the mod with a name matching 'modname'
+//
+// It first checks the workspace mod, then checks all mod dependencies
+func (w *Workspace) GetMod(modName string) *modconfig.Mod {
+	// is it the workspace mod?
+	if modName == w.Mod.Name() {
+		return w.Mod
+	}
+	// try workspace mod dependencies
+	return w.Mod.Mods[modName]
 }

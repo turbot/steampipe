@@ -3,9 +3,11 @@ package modconfig
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -23,7 +25,7 @@ type Control struct {
 
 	DeclRange hcl.Range
 
-	parent   ControlTreeItem
+	parents  []ControlTreeItem
 	metadata *ResourceMetadata
 }
 
@@ -41,19 +43,29 @@ func (c *Control) CtyValue() (cty.Value, error) {
 }
 
 func (c *Control) String() string {
+	// build list of parents's names
+	parents := c.GetParentNames()
 	return fmt.Sprintf(`
   -----
   Name: %s
   Title: %s
   Description: %s
   SQL: %s
-  Parent: %s
+  Parents: %s
 `,
 		c.FullName,
 		types.SafeString(c.Title),
 		types.SafeString(c.Description),
 		types.SafeString(c.SQL),
-		c.parent.Name())
+		strings.Join(parents, "\n    "))
+}
+
+func (c *Control) GetParentNames() []string {
+	var parents []string
+	for _, p := range c.parents {
+		parents = append(parents, p.Name())
+	}
+	return parents
 }
 
 // AddChild implements ControlTreeItem - controls cannot have children so just return error
@@ -61,9 +73,37 @@ func (c *Control) AddChild(child ControlTreeItem) error {
 	return errors.New("cannot add child to a control")
 }
 
-// SetParent implements ControlTreeItem
-func (c *Control) SetParent(parent ControlTreeItem) error {
-	c.parent = parent
+// AddParent implements ControlTreeItem
+func (c *Control) AddParent(parent ControlTreeItem) error {
+	c.parents = append(c.parents, parent)
+	return nil
+}
+
+// GetParents implements ControlTreeItem
+func (c *Control) GetParents() []ControlTreeItem {
+	return c.parents
+}
+
+// GetTitle implements ControlTreeItem
+func (m *Control) GetTitle() string {
+	return typehelpers.SafeString(m.Title)
+}
+
+// GetDescription implements ControlTreeItem
+func (m *Control) GetDescription() string {
+	return typehelpers.SafeString(m.Description)
+}
+
+// GetTags implements ControlTreeItem
+func (m *Control) GetTags() map[string]string {
+	if m.Tags != nil {
+		return *m.Tags
+	}
+	return nil
+}
+
+// GetChildren implements ControlTreeItem
+func (m *Control) GetChildren() []ControlTreeItem {
 	return nil
 }
 
@@ -80,9 +120,10 @@ func (c *Control) QualifiedName() string {
 
 // Path implements ControlTreeItem
 func (c *Control) Path() []string {
+	// TODO update for multiple paths
 	path := []string{c.FullName}
-	if c.parent != nil {
-		path = append(c.parent.Path(), path...)
+	if c.parents != nil {
+		path = append(c.parents[0].Path(), path...)
 	}
 	return path
 }

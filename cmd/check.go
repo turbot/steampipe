@@ -3,8 +3,13 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
+
+	"github.com/turbot/steampipe/definitions/controlresult"
+
+	"github.com/turbot/steampipe/definitions/queryresult"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -14,7 +19,6 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
-	"github.com/turbot/steampipe/definitions/results"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
@@ -74,31 +78,29 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)
 	utils.FailOnError(err)
 
-	// convert the check or sql file arg into an array of executable queries - check names queries in the current workspace
-	controls, err := getControls(args, workspace, client)
-	utils.FailOnError(err)
+	// treat aech arg as a separeate execution
+	failures := 0
+	for _, arg := range args {
 
-	if len(controls) > 0 {
-		// otherwise if we have resolved any queries, run them
-		failures := executeControls(controls, workspace, client)
-		// set global exit code
-		exitCode = failures
+		controls, root := getControls(arg, workspace, client)
+		if len(controls) == 0 {
+			continue
+		}
+		// run the controls
+		failures += executeControls(controls, root, workspace, client)
 	}
+	// set global exit code
+	exitCode = failures
 }
 
 // retrieve queries from args - for each arg check if it is a named check or a file,
 // before falling back to treating it as sql
-func getControls(args []string, workspace *workspace.Workspace, client *db.Client) ([]*modconfig.Control, error) {
-	// 1)  build list of all controls corresponding to the scope args
-	var res []*modconfig.Control
-	for _, arg := range args {
-		if controls := workspace.GetControlsForArg(arg); len(controls) > 0 {
-			res = append(res, controls...)
-		}
-	}
-	if len(res) == 0 {
-		utils.ShowWarning(fmt.Sprintf("No controls found matching %s: %s", utils.Pluralize("argument", len(args)), strings.Join(args, ",")))
-		return res, nil
+func getControls(arg string, workspace *workspace.Workspace, client *db.Client) ([]*modconfig.Control, *controlresult.ResultTree) {
+	controls, resultTree := getControlsForArg(arg, workspace)
+
+	if len(controls) == 0 {
+		utils.ShowWarning(fmt.Sprintf("No controls found matching argument: %s", arg))
+		return nil, nil
 	}
 
 	// 2) if a 'where' arg was used, execute this sql to get a list of  control names
@@ -108,18 +110,70 @@ func getControls(args []string, workspace *workspace.Workspace, client *db.Clien
 		filterControlNames, err := getControlsFromMetadataQuery(whereArg, workspace, client)
 		utils.FailOnErrorWithMessage(err, "failed to execute '--where' SQL")
 		var filteredRes []*modconfig.Control
-		for _, control := range res {
+		for _, control := range controls {
 			if _, ok := filterControlNames[control.Name()]; ok {
 				filteredRes = append(filteredRes, control)
 			}
 		}
-		res = filteredRes
+		controls = filteredRes
 
-		if len(res) == 0 {
-			utils.ShowWarning(fmt.Sprintf("No controls found matching %s: %s and query: %s", utils.Pluralize("argument", len(args)), args, whereArg))
+		if len(controls) == 0 {
+			utils.ShowWarning(fmt.Sprintf("No controls found matching argument: %s and query: %s", arg, whereArg))
 		}
 	}
-	return res, nil
+	return controls, resultTree
+}
+
+// getControlsForArg resolves the arg into one or more controls
+// It also returns the root item of the control hierarchy
+//
+// - if the arg is a control name, the root will be the Control with that name
+// - if the arg is a benchmark name, the root will be the Benchmark with that name
+// - if the arg is a mod name, the root will be the Mod with that name
+// - if the arg is 'all' the root will be a node with all Mods as children
+func getControlsForArg(arg string, workspace *workspace.Workspace) ([]*modconfig.Control, *controlresult.ResultTree) {
+	// 1)  build list of all controls corresponding to the scope arg
+
+	// identify the 'root' node
+	var resultTree *controlresult.ResultTree
+	var controls []*modconfig.Control
+
+	// special case handling for the string "all"
+	if arg == "all" {
+		// get all controls from workspace
+		controls := workspace.GetChildControls()
+		resultTree = controlresult.NewResultTree(workspace.Mod)
+		return controls, resultTree
+	}
+
+	// if arg is in fact a benchmark,  get all controls underneath the it
+	name, err := modconfig.ParseResourceName(arg)
+	if err != nil {
+		// just log error
+		log.Printf("[TRACE] error parsing check argumentr '%s': %v", arg, err)
+		return nil, nil
+	}
+	switch name.ItemType {
+	case modconfig.BlockTypeControl:
+		// check whether the arg is a control name
+		if control, ok := workspace.ControlMap[arg]; ok {
+			controls = []*modconfig.Control{control}
+		}
+	case modconfig.BlockTypeBenchmark:
+		// look in the workspace control group map for this control group
+		if benchmark, ok := workspace.BenchmarkMap[arg]; ok {
+			controls = benchmark.GetChildControls()
+			resultTree = controlresult.NewResultTree(benchmark)
+		}
+	case modconfig.BlockTypeMod:
+		// get all controls for the mod
+		if mod, ok := workspace.ModMap[arg]; ok {
+			controls := workspace.Mod.GetChildControls()
+			resultTree = controlresult.NewResultTree(mod)
+			return controls, resultTree
+		}
+	}
+	return controls, resultTree
 }
 
 // query the steampipe_control table, using the given query
@@ -153,19 +207,16 @@ func getControlsFromMetadataQuery(whereArg string, workspace *workspace.Workspac
 
 	var controlNames = make(map[string]bool)
 	for _, row := range res.Rows {
-		rowResult := row.(*results.RowResult)
+		rowResult := row.(*queryresult.RowResult)
 		controlName := rowResult.Data[resource_name_column_index].(string)
 		controlNames[controlName] = true
 	}
 	return controlNames, nil
 }
 
-func executeControls(controls []*modconfig.Control, workspace *workspace.Workspace, client *db.Client) int {
+func executeControls(controls []*modconfig.Control, results *controlresult.ResultTree, workspace *workspace.Workspace, client *db.Client) int {
 	// set the flag to hide spinner
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
-
-	// run all queries
-	var controlResults []*results.ControlResult
 
 	totalControls := len(controls)
 	pendingControls := len(controls)
@@ -179,7 +230,7 @@ func executeControls(controls []*modconfig.Control, workspace *workspace.Workspa
 		utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Running %d %s. (%d complete, %d pending, %d errors): executing \"%s\" (%s)", totalControls, utils.Pluralize("control", totalControls), completeControls, pendingControls, errorControls, typeHelpers.SafeString(c.Title), p))
 
 		res := executeControl(c, workspace, client)
-		if res.GetStatus() == results.ControlRunError {
+		if res.GetStatus() == controlresult.ControlRunError {
 			errorControls++
 		} else {
 			// TODO for now this is synchronous
@@ -187,18 +238,18 @@ func executeControls(controls []*modconfig.Control, workspace *workspace.Workspa
 		}
 		pendingControls--
 
-		controlResults = append(controlResults, res)
+		results.AddResult(res)
 	}
 	spinner.Stop()
 
-	DisplayControlResults(controlResults)
+	DisplayControlResults(results)
 
 	return errorControls
 }
 
-func executeControl(control *modconfig.Control, workspace *workspace.Workspace, client *db.Client) *results.ControlResult {
+func executeControl(control *modconfig.Control, workspace *workspace.Workspace, client *db.Client) *controlresult.Result {
 
-	controlResult := results.NewControlResult(control)
+	controlResult := controlresult.NewControlResult(control)
 	// resolve the query parameter of the control
 	var query string
 	// resolve the query parameter of the control
@@ -235,23 +286,36 @@ func executeControl(control *modconfig.Control, workspace *workspace.Workspace, 
 	return controlResult
 }
 
-func DisplayControlResults(controlResults []*results.ControlResult) {
+func DisplayControlResults(controlResults *controlresult.ResultTree) {
 	// NOTE: for now we can assume all results are complete
 	// todo summary and hierarchy
-	for _, res := range controlResults {
+	for _, res := range controlResults.Root.Results {
 		fmt.Println()
 		fmt.Printf("%s [%s]\n", typeHelpers.SafeString(res.Control.Title), res.Control.ShortName)
 		if res.Error != nil {
 			fmt.Printf("  Execution error: %v\n", res.Error)
 			continue
 		}
-		for _, item := range res.Results {
+		for _, item := range res.Rows {
 			if item == nil {
 				// should never happen!
-				continue
+				panic("NIL RESULT")
 			}
-			fmt.Printf("  [%s] [%s] %s\n", item.Status, item.Resource, item.Reason)
+			resString := fmt.Sprintf("  [%s] [%s] %s", item.Status, item.Resource, item.Reason)
+			dimensionString := getDimension(item)
+			fmt.Printf("%s %s\n", resString, dimensionString)
+
 		}
 	}
 	fmt.Println()
+}
+
+func getDimension(item *controlresult.ResultRow) string {
+	var dimensions []string
+
+	for _, v := range item.Dimensions {
+		dimensions = append(dimensions, v)
+	}
+
+	return strings.Join(dimensions, "  ")
 }

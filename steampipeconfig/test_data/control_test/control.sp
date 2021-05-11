@@ -20,10 +20,9 @@ benchmark "cg_1_1_1"{
 }
 benchmark "cg_1_1_2"{
     children = [
-        contro1.c0,
+        control.c2,
         control.c4,
-        control.c5,
-        local.s2
+        control.c5
     ]
 }
 
@@ -41,7 +40,7 @@ control "c3"{
 }
 control "c4"{
     title = "control 4"
-    sql = control.foo.sql
+    sql = "select 'r4' as resource, 'alarm' as status, 'Im alarmed' as reason"
     severity = "terrible"
 }
 control "c5"{

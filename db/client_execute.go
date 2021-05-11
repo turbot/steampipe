@@ -12,17 +12,17 @@ import (
 
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/definitions/results"
+	"github.com/turbot/steampipe/definitions/queryresult"
 	"github.com/turbot/steampipe/utils"
 )
 
 // ExecuteSync :: execute a query against this client and wait for the result
-func (c *Client) ExecuteSync(ctx context.Context, query string) (*results.SyncQueryResult, error) {
+func (c *Client) ExecuteSync(ctx context.Context, query string) (*queryresult.SyncQueryResult, error) {
 	result, err := c.ExecuteQuery(ctx, query, false)
 	if err != nil {
 		return nil, err
 	}
-	syncResult := &results.SyncQueryResult{ColTypes: result.ColTypes}
+	syncResult := &queryresult.SyncQueryResult{ColTypes: result.ColTypes}
 	for row := range *result.RowChan {
 		select {
 		case <-ctx.Done():
@@ -34,9 +34,9 @@ func (c *Client) ExecuteSync(ctx context.Context, query string) (*results.SyncQu
 	return syncResult, nil
 }
 
-func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream bool) (*results.QueryResult, error) {
+func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream bool) (*queryresult.Result, error) {
 	if query == "" {
-		return &results.QueryResult{}, nil
+		return &queryresult.Result{}, nil
 	}
 
 	startTime := time.Now()
@@ -67,7 +67,7 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 		return nil, fmt.Errorf("error reading columns from query: %v", err)
 	}
 
-	result := results.NewQueryResult(colTypes)
+	result := queryresult.NewQueryResult(colTypes)
 
 	// read the rows in a go routine
 	go readRows(ctx, startTime, rows, result, spinner)
@@ -75,7 +75,7 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 	return result, nil
 }
 
-func readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *results.QueryResult, activeSpinner *spinner.Spinner) {
+func readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.QueryResult, activeSpinner *spinner.Spinner) {
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
 		// close the sql rows object

@@ -1,10 +1,11 @@
-package results
+package controlresult
 
 import (
-	"database/sql"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/turbot/steampipe/definitions/queryresult"
 
 	"github.com/turbot/steampipe/utils"
 
@@ -20,38 +21,34 @@ const (
 	ControlRunError
 )
 
-// ControlResult :: the result of a control run - will contain one or more result items (oi.e. for one or more resources)
-type ControlResult struct {
+// Result is the result of a control run - will contain one or more result items (i.e. for one or more resources)
+type Result struct {
 	status ControlRunStatus
 	Error  error
 	// any completed results items
-	Results []*ControlResultItem
+	Rows []*ResultRow
 	// the parent control
 	Control *modconfig.Control
 	// the query result stream
-	queryResult *QueryResult
+	queryResult *queryresult.Result
 	stateLock   sync.Mutex
 	doneChan    chan bool
 	// parent in the result tree
 	//parentResult
 }
 
-func NewControlResult(control *modconfig.Control) *ControlResult {
-	return &ControlResult{
+func NewControlResult(control *modconfig.Control) *Result {
+	return &Result{
 		Control:  control,
 		status:   ControlRunReady,
 		doneChan: make(chan bool, 1),
 	}
 }
 
-// Children :: implementation of ControlResultTreeNode
-func (r *ControlResult) Children() []ControlResultTreeNode {
-	return nil
-}
-
-func (r *ControlResult) Start(result *QueryResult) {
+func (r *Result) Start(result *queryresult.Result) {
 	// validate required columns
-	if err := r.ValidateColumns(result); err != nil {
+	r.queryResult = result
+	if err := r.ValidateColumns(); err != nil {
 		r.SetError(err)
 		return
 	}
@@ -67,13 +64,13 @@ func (r *ControlResult) Start(result *QueryResult) {
 					r.setStatus(ControlRunComplete)
 					break
 				}
-				result, err := NewControlResultItem(r.Control, row, result.ColTypes)
+				result, err := NewResultRow(r.Control, row, result.ColTypes)
 				if err != nil {
 					// fail on error
 					r.SetError(err)
 					continue
 				}
-				r.Results = append(r.Results, result)
+				r.Rows = append(r.Rows, result)
 			case <-r.doneChan:
 				return
 			default:
@@ -83,12 +80,12 @@ func (r *ControlResult) Start(result *QueryResult) {
 	}()
 }
 
-func (r *ControlResult) SetError(err error) {
+func (r *Result) SetError(err error) {
 	r.Error = err
 	r.setStatus(ControlRunError)
 }
 
-func (r *ControlResult) setStatus(status ControlRunStatus) {
+func (r *Result) setStatus(status ControlRunStatus) {
 	r.stateLock.Lock()
 	defer r.stateLock.Unlock()
 	r.status = status
@@ -98,21 +95,21 @@ func (r *ControlResult) setStatus(status ControlRunStatus) {
 	}
 }
 
-func (r *ControlResult) GetStatus() ControlRunStatus {
+func (r *Result) GetStatus() ControlRunStatus {
 	return r.status
 }
 
-func (r *ControlResult) Finished() bool {
+func (r *Result) Finished() bool {
 	status := r.GetStatus()
 	return status == ControlRunComplete || status == ControlRunError
 }
 
-func (r *ControlResult) ValidateColumns(result *QueryResult) error {
+func (r *Result) ValidateColumns() error {
 	// validate columns
 	requiredColumns := []string{"reason", "resource", "status"}
 	var missingColumns []string
 	for _, col := range requiredColumns {
-		if !columnTypesContainsColumn(result.ColTypes, col) {
+		if !r.ColumnTypesContainsColumn(col) {
 			missingColumns = append(missingColumns, col)
 		}
 	}
@@ -122,12 +119,6 @@ func (r *ControlResult) ValidateColumns(result *QueryResult) error {
 	return nil
 }
 
-func columnTypesContainsColumn(colTypes []*sql.ColumnType, col string) bool {
-	for _, ct := range colTypes {
-		if ct.Name() == col {
-			return true
-		}
-	}
-	return false
-
+func (r *Result) ColumnTypesContainsColumn(col string) bool {
+	return r.queryResult.ColumnTypesContainsColumn(col)
 }

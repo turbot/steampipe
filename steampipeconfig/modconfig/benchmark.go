@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/go-kit/types"
-
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/go-kit/types"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -33,7 +33,7 @@ type Benchmark struct {
 	ChildNameStrings []string `column:"children,jsonb"`
 	DeclRange        hcl.Range
 
-	parent   ControlTreeItem
+	parents  []ControlTreeItem
 	children []ControlTreeItem
 	metadata *ResourceMetadata
 }
@@ -47,27 +47,32 @@ func NewBenchmark(block *hcl.Block) *Benchmark {
 }
 
 // CtyValue implements HclResource
-func (c *Benchmark) CtyValue() (cty.Value, error) {
-	return getCtyValue(c)
+func (b *Benchmark) CtyValue() (cty.Value, error) {
+	return getCtyValue(b)
 }
 
 // OnDecoded implements HclResource
-func (c *Benchmark) OnDecoded() {
-	if c.ChildNames == nil || len(*c.ChildNames) == 0 {
+func (b *Benchmark) OnDecoded() {
+	if b.ChildNames == nil || len(*b.ChildNames) == 0 {
 		return
 	}
 
-	c.ChildNameStrings = make([]string, len(*c.ChildNames))
-	for i, n := range *c.ChildNames {
-		c.ChildNameStrings[i] = n.Name
+	b.ChildNameStrings = make([]string, len(*b.ChildNames))
+	for i, n := range *b.ChildNames {
+		b.ChildNameStrings[i] = n.Name
 	}
 }
 
-func (c *Benchmark) String() string {
-	// build list of children's long names
+func (b *Benchmark) String() string {
+	// build list of children's names
 	var children []string
-	for _, child := range c.children {
+	for _, child := range b.children {
 		children = append(children, child.Name())
+	}
+	// build list of parents names
+	var parents []string
+	for _, p := range b.parents {
+		parents = append(parents, p.Name())
 	}
 	sort.Strings(children)
 	return fmt.Sprintf(`
@@ -79,17 +84,17 @@ func (c *Benchmark) String() string {
 	 Children:
 	   %s
 	`,
-		c.FullName,
-		types.SafeString(c.Title),
-		types.SafeString(c.Description),
-		c.parent.Name(),
+		b.FullName,
+		types.SafeString(b.Title),
+		types.SafeString(b.Description),
+		strings.Join(parents, "\n    "),
 		strings.Join(children, "\n    "))
 }
 
-// GetChildControls return a flat list of controls underneath us in the tree
-func (c *Benchmark) GetChildControls() []*Control {
+// GetChildControls return a flat list of controls underneath the benchmark in the tree
+func (b *Benchmark) GetChildControls() []*Control {
 	var res []*Control
-	for _, child := range c.children {
+	for _, child := range b.children {
 		if control, ok := child.(*Control); ok {
 			res = append(res, control)
 		} else if benchmark, ok := child.(*Benchmark); ok {
@@ -100,48 +105,76 @@ func (c *Benchmark) GetChildControls() []*Control {
 }
 
 // AddChild implements ControlTreeItem
-func (c *Benchmark) AddChild(child ControlTreeItem) error {
+func (b *Benchmark) AddChild(child ControlTreeItem) error {
 	// mod cannot be added as a child
 	if _, ok := child.(*Mod); ok {
 		return fmt.Errorf("mod cannot be added as a child")
 	}
 
-	c.children = append(c.children, child)
+	b.children = append(b.children, child)
 	return nil
 }
 
-// SetParent implements ControlTreeItem
-func (c *Benchmark) SetParent(parent ControlTreeItem) error {
-	c.parent = parent
+// AddParent implements ControlTreeItem
+func (b *Benchmark) AddParent(parent ControlTreeItem) error {
+	b.parents = append(b.parents, parent)
 	return nil
+}
+
+// GetParents implements ControlTreeItem
+func (c *Benchmark) GetParents() []ControlTreeItem {
+	return c.parents
+}
+
+// GetTitle implements ControlTreeItem
+func (b *Benchmark) GetTitle() string {
+	return typehelpers.SafeString(b.Title)
+}
+
+// GetDescription implements ControlTreeItem
+func (b *Benchmark) GetDescription() string {
+	return typehelpers.SafeString(b.Description)
+}
+
+// GetTags implements ControlTreeItem
+func (b *Benchmark) GetTags() map[string]string {
+	if b.Tags != nil {
+		return *b.Tags
+	}
+	return nil
+}
+
+// GetChildren implements ControlTreeItem
+func (b *Benchmark) GetChildren() []ControlTreeItem {
+	return b.children
+}
+
+// Path implements ControlTreeItem
+func (b *Benchmark) Path() []string {
+	path := []string{b.FullName}
+	if b.parents != nil {
+		path = append(b.parents[0].Path(), path...)
+	}
+	return path
 }
 
 // GetMetadata implements ResourceWithMetadata
-func (c *Benchmark) GetMetadata() *ResourceMetadata {
-	return c.metadata
+func (b *Benchmark) GetMetadata() *ResourceMetadata {
+	return b.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata
-func (c *Benchmark) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
+func (b *Benchmark) SetMetadata(metadata *ResourceMetadata) {
+	b.metadata = metadata
 }
 
 // Name implements ControlTreeItem, HclResource, ResourceWithMetadata
 // return name in format: 'control.<shortName>'
-func (c *Benchmark) Name() string {
-	return c.FullName
+func (b *Benchmark) Name() string {
+	return b.FullName
 }
 
 // QualifiedName returns the name in format: '<modName>.control.<shortName>'
-func (c *Benchmark) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName)
-}
-
-// Path implements ControlTreeItem
-func (c *Benchmark) Path() []string {
-	path := []string{c.FullName}
-	if c.parent != nil {
-		path = append(c.parent.Path(), path...)
-	}
-	return path
+func (b *Benchmark) QualifiedName() string {
+	return fmt.Sprintf("%s.%s", b.metadata.ModShortName, b.FullName)
 }

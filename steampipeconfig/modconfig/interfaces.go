@@ -19,13 +19,14 @@ type MappableResource interface {
 // ControlTreeItem must be implemented by elements of the control hieararchy
 // i.e. Control and Benchmark
 type ControlTreeItem interface {
-	// SetParent sets the parent of this item
-	SetParent(ControlTreeItem) error
-	// AddChild adds a child to the item
+	AddParent(ControlTreeItem) error
 	AddChild(child ControlTreeItem) error
-	// Name returns the name in the format <type>.<name>
 	Name() string
-	// Path returns an array of parents in the control hiearchy
+	GetTitle() string
+	GetDescription() string
+	GetTags() map[string]string
+	GetChildren() []ControlTreeItem
+	// Path returns an array of parents in the control hierarchy
 	Path() []string
 }
 

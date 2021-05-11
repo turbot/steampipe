@@ -14,9 +14,9 @@ import (
 	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/definitions/results"
-	"github.com/turbot/steampipe/metaquery"
-	"github.com/turbot/steampipe/queryhistory"
+	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/query/metaquery"
+	"github.com/turbot/steampipe/query/queryhistory"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
@@ -26,7 +26,7 @@ import (
 // to facilitate interactive query prompt
 type InteractiveClient struct {
 	client                  *Client
-	resultsStreamer         *results.ResultStreamer
+	resultsStreamer         *queryresult.ResultStreamer
 	workspace               NamedQueryProvider
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
@@ -35,7 +35,7 @@ type InteractiveClient struct {
 	activeQueryCancelFunc   context.CancelFunc
 }
 
-func newInteractiveClient(workspace NamedQueryProvider, client *Client, resultsStreamer *results.ResultStreamer) (*InteractiveClient, error) {
+func newInteractiveClient(workspace NamedQueryProvider, client *Client, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	return &InteractiveClient{
 		client:                  client,
 		resultsStreamer:         resultsStreamer,

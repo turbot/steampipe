@@ -8,7 +8,7 @@ import (
 
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/definitions/results"
+	"github.com/turbot/steampipe/definitions/queryresult"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -35,8 +35,8 @@ func EnsureDbAndStartService(invoker Invoker) error {
 }
 
 // RunInteractivePrompt :: start the interactive query prompt
-func RunInteractivePrompt(workspace NamedQueryProvider, client *Client) (*results.ResultStreamer, error) {
-	resultsStreamer := results.NewResultStreamer()
+func RunInteractivePrompt(workspace NamedQueryProvider, client *Client) (*queryresult.ResultStreamer, error) {
+	resultsStreamer := queryresult.NewResultStreamer()
 
 	interactiveClient, err := newInteractiveClient(workspace, client, resultsStreamer)
 	if err != nil {
@@ -52,11 +52,11 @@ func RunInteractivePrompt(workspace NamedQueryProvider, client *Client) (*result
 }
 
 // ExecuteQuery :: execute a single query. If shutdownAfterCompletion is true, shutdown the client after completion
-func ExecuteQuery(ctx context.Context, queryString string, client *Client) (*results.ResultStreamer, error) {
+func ExecuteQuery(ctx context.Context, queryString string, client *Client) (*queryresult.ResultStreamer, error) {
 	logging.LogTime("db.ExecuteQuery start")
 	defer logging.LogTime("db.ExecuteQuery end")
 
-	resultsStreamer := results.NewResultStreamer()
+	resultsStreamer := queryresult.NewResultStreamer()
 	result, err := client.ExecuteQuery(ctx, queryString, false)
 	if err != nil {
 		return nil, err

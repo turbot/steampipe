@@ -1,33 +1,35 @@
-package results
+package controlresult
 
 import (
 	"database/sql"
 
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/definitions/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 type ControlStatus string
 
 const (
-	ControlOk      = "ok"
-	ControlAlarm   = "alarm"
-	ControlSkipped = "skipped"
-	ControlInfo    = "info"
-	ControlError   = "error"
+	ControlOk    = "ok"
+	ControlAlarm = "alarm"
+	ControlSkip  = "skip"
+	ControlInfo  = "info"
+	ControlError = "error"
 )
 
-// ControlResultItem :: the result of a control for a single resource
-type ControlResultItem struct {
-	Reason   string
-	Resource string
-	Status   ControlStatus
+// ResultRow is the result of a control execution for a single resource
+type ResultRow struct {
+	Reason     string
+	Resource   string
+	Status     ControlStatus
+	Dimensions map[string]string
 	// the parent control
 	Control *modconfig.Control
 }
 
-func NewControlResultItem(control *modconfig.Control, row *RowResult, colTypes []*sql.ColumnType) (*ControlResultItem, error) {
-	res := &ControlResultItem{Control: control}
+func NewResultRow(control *modconfig.Control, row *queryresult.RowResult, colTypes []*sql.ColumnType) (*ResultRow, error) {
+	res := &ResultRow{Control: control}
 
 	// was there a SQL error _executing the control
 	// Note: this is different from the contrrol state being 'error'

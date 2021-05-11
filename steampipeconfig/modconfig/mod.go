@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
+	typehelpers "github.com/turbot/go-kit/types"
 )
 
 // mod name used if a default mod is created for a workspace which does not define one explicitly
@@ -40,8 +41,11 @@ type Mod struct {
 	Queries    map[string]*Query
 	Controls   map[string]*Control
 	Benchmarks map[string]*Benchmark
-	ModPath    string
-	DeclRange  hcl.Range
+
+	// dependencies
+	Mods      map[string]*Mod
+	ModPath   string
+	DeclRange hcl.Range
 
 	children []ControlTreeItem
 	metadata *ResourceMetadata
@@ -58,6 +62,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Queries:    make(map[string]*Query),
 		Controls:   make(map[string]*Control),
 		Benchmarks: make(map[string]*Benchmark),
+		Mods:       make(map[string]*Mod),
 		ModPath:    modPath,
 		DeclRange:  defRange,
 	}
@@ -164,7 +169,7 @@ func (m *Mod) addItemIntoControlTree(item ControlTreeItem) error {
 		return fmt.Errorf("cyclical dependency adding '%s' into control tree - parent '%s'", item.Name(), parent.Name())
 	}
 	// so we have a result - add into tree
-	item.SetParent(parent)
+	item.AddParent(parent)
 	parent.AddChild(item)
 
 	return nil
@@ -214,9 +219,14 @@ func (m *Mod) AddChild(child ControlTreeItem) error {
 	return nil
 }
 
-// SetParent implements ControlTreeItem
-func (m *Mod) SetParent(ControlTreeItem) error {
+// AddParent implements ControlTreeItem
+func (m *Mod) AddParent(ControlTreeItem) error {
 	return errors.New("cannot set a parent on a mod")
+}
+
+// GetParents implements ControlTreeItem
+func (c *Mod) GetParents() []ControlTreeItem {
+	return nil
 }
 
 // Name implements ControlTreeItem, HclResource
@@ -226,6 +236,29 @@ func (m *Mod) Name() string {
 		return m.FullName
 	}
 	return fmt.Sprintf("%s@%s", m.FullName, types.SafeString(m.Version))
+}
+
+// GetTitle implements ControlTreeItem
+func (m *Mod) GetTitle() string {
+	return typehelpers.SafeString(m.Title)
+}
+
+// GetDescription implements ControlTreeItem
+func (m *Mod) GetDescription() string {
+	return typehelpers.SafeString(m.Description)
+}
+
+// GetTags implements ControlTreeItem
+func (m *Mod) GetTags() map[string]string {
+	if m.Tags != nil {
+		return *m.Tags
+	}
+	return nil
+}
+
+// GetChildren implements ControlTreeItem
+func (m *Mod) GetChildren() []ControlTreeItem {
+	return m.children
 }
 
 // Path implements ControlTreeItem
@@ -279,4 +312,13 @@ func (m *Mod) getParent(item ControlTreeItem) ControlTreeItem {
 	}
 	// fall back on mod
 	return m
+}
+
+// GetChildControls return a flat list of controls underneath the mod
+func (m *Mod) GetChildControls() []*Control {
+	var res []*Control
+	for _, control := range m.Controls {
+		res = append(res, control)
+	}
+	return res
 }
