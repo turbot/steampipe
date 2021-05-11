@@ -249,8 +249,7 @@ func (c *InteractiveClient) executor(line string) {
 		c.resultsStreamer.Done()
 	} else {
 		// otherwise execute query
-		ctx := context.Background()
-		ctx, cancel := context.WithCancel(ctx)
+		ctx, cancel := context.WithCancel(context.Background())
 		c.setCancelFunction(cancel)
 
 		shouldShowCounter := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.ArgTable
