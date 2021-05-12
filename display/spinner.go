@@ -18,7 +18,7 @@ import (
 //
 // Not using the (…) character, since it is too small
 //
-const mustHaveCharLengthForSpinner = 7
+const minSpinnerWidth = 7
 
 func truncateSpinnerMessageToScreen(msg string) string {
 	if len(strings.TrimSpace(msg)) == 0 {
@@ -27,10 +27,11 @@ func truncateSpinnerMessageToScreen(msg string) string {
 	}
 
 	maxCols, _, _ := gows.GetWinSize()
-	if maxCols < mustHaveCharLengthForSpinner {
+	// if the screen is smaller than the minimum spinner width, we cannot truncate
+	if maxCols < minSpinnerWidth {
 		return msg
 	}
-	availableColumns := maxCols - mustHaveCharLengthForSpinner
+	availableColumns := maxCols - minSpinnerWidth
 	if len(msg) > availableColumns {
 		msg = msg[:availableColumns]
 		msg = fmt.Sprintf("%s ...", msg)
