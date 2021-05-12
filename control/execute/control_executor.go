@@ -117,7 +117,7 @@ func (e *ControlExecutor) executeControl(ctx context.Context, control *modconfig
 	for {
 		// if the control is finished (either successfully or with an error), return the controlRun
 		if controlRun.Finished() {
-			return controlRun
+			break
 		}
 		time.Sleep(50 * time.Millisecond)
 		if time.Since(startTime) > controlCompletionTimeout {
