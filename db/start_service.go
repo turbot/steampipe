@@ -10,6 +10,7 @@ import (
 
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -44,8 +45,8 @@ func StartService(invoker Invoker) {
 			}
 			if time.Since(startedAt) > constants.SpinnerShowTimeout && !spinnerShown {
 				if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
-					s := utils.ShowSpinner("Waiting for database to start...")
-					defer utils.StopSpinner(s)
+					s := display.ShowSpinner("Waiting for database to start...")
+					defer display.StopSpinner(s)
 				}
 				// set this anyway, so that next time it doesn't come in
 				spinnerShown = true
