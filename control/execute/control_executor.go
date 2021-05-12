@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/query/queryresult"
 
 	"github.com/spf13/viper"
@@ -70,10 +71,10 @@ func (e *ControlExecutor) Execute(ctx context.Context) {
 	errorControls := 0
 
 	// for now we execute controls syncronously
-	spinner := utils.ShowSpinner("")
+	spinner := display.ShowSpinner("")
 	for _, c := range e.Controls {
 		p := c.Path()
-		utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Running %d %s. (%d complete, %d pending, %d errors): executing \"%s\" (%s)", totalControls, utils.Pluralize("control", totalControls), completeControls, pendingControls, errorControls, typeHelpers.SafeString(c.Title), p))
+		display.UpdateSpinnerMessage(spinner, fmt.Sprintf("Running %d %s. (%d complete, %d pending, %d errors): executing \"%s\" (%s)", totalControls, utils.Pluralize("control", totalControls), completeControls, pendingControls, errorControls, typeHelpers.SafeString(c.Title), p))
 
 		res := e.executeControl(ctx, c)
 		if res.GetRunStatus() == controlresult.ControlRunError {

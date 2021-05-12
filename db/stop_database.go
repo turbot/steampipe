@@ -9,6 +9,7 @@ import (
 
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/display"
 
 	"github.com/turbot/steampipe/utils"
 )
@@ -69,7 +70,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 	if force {
 		// check if we have a process from another install-dir
 		checkedPreviousInstances := make(chan bool, 1)
-		s := utils.StartSpinnerAfterDelay("Checking for running instances...", constants.SpinnerShowTimeout, checkedPreviousInstances)
+		s := display.StartSpinnerAfterDelay("Checking for running instances...", constants.SpinnerShowTimeout, checkedPreviousInstances)
 		for {
 			previousProcess := findSteampipePostgresInstance()
 			if previousProcess != nil {
@@ -80,7 +81,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 			checkedPreviousInstances <- true
 			break
 		}
-		utils.StopSpinner(s)
+		display.StopSpinner(s)
 		os.Remove(runningInfoFilePath())
 		return ServiceStopped, nil
 	}
@@ -144,8 +145,8 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 			}
 			if time.Since(signalSentAt) > constants.SpinnerShowTimeout && !spinnerShown {
 				if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
-					s := utils.ShowSpinner("Shutting down...")
-					defer utils.StopSpinner(s)
+					s := display.ShowSpinner("Shutting down...")
+					defer display.StopSpinner(s)
 					spinnerShown = true
 				}
 			}

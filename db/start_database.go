@@ -13,7 +13,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/display"
 )
 
 // StartResult :: pseudoEnum for outcomes of Start
@@ -260,10 +260,10 @@ func handleStartFailure(err error) error {
 	// starting up the process. this may be because of a stray
 	// steampipe postgres running or another one from a different installation.
 	checkedPreviousInstances := make(chan bool, 1)
-	s := utils.StartSpinnerAfterDelay("Checking for running instances...", constants.SpinnerShowTimeout, checkedPreviousInstances)
+	s := display.StartSpinnerAfterDelay("Checking for running instances...", constants.SpinnerShowTimeout, checkedPreviousInstances)
 	otherProcess := findSteampipePostgresInstance()
 	checkedPreviousInstances <- true
-	utils.StopSpinner(s)
+	display.StopSpinner(s)
 	if otherProcess != nil {
 		return fmt.Errorf("Another Steampipe service is already running. Use %s to kill all running instances before continuing.", constants.Bold("steampipe service stop --force"))
 	}

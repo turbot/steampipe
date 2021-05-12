@@ -9,8 +9,8 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/query/queryresult"
-	"github.com/turbot/steampipe/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -49,7 +49,7 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 		if err != nil {
 			c.QueryLock.Unlock()
 			// stop spinner in case of error
-			utils.StopSpinner(spinner)
+			display.StopSpinner(spinner)
 		}
 		close(queryDone)
 	}()
@@ -57,7 +57,7 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 	if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
 		// if `show-interactive-output` is false, the spinner gets created, but is never shown
 		// so the s.Active() will always come back false . . .
-		spinner = utils.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)
+		spinner = display.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)
 	}
 
 	// begin a transaction
@@ -124,7 +124,7 @@ func (c *Client) readRows(ctx context.Context, start time.Time, rows *sql.Rows, 
 		continueToNext := true
 		select {
 		case <-ctx.Done():
-			utils.UpdateSpinnerMessage(activeSpinner, "Cancelling query")
+			display.UpdateSpinnerMessage(activeSpinner, "Cancelling query")
 			continueToNext = false
 		default:
 			if rowResult, err := readRow(rows, cols, colTypes); err != nil {
@@ -135,7 +135,7 @@ func (c *Client) readRows(ctx context.Context, start time.Time, rows *sql.Rows, 
 			}
 			// update the spinner message with the count of rows that have already been fetched
 			// this will not show if the spinner is not active
-			utils.UpdateSpinnerMessage(activeSpinner, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
+			display.UpdateSpinnerMessage(activeSpinner, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
 			rowCount++
 		}
 		if !continueToNext {
@@ -143,7 +143,7 @@ func (c *Client) readRows(ctx context.Context, start time.Time, rows *sql.Rows, 
 		}
 	}
 	// we are done fetching results. time for display. remove the spinner
-	utils.StopSpinner(activeSpinner)
+	display.StopSpinner(activeSpinner)
 
 	// set the time that it took for this one to execute
 	result.Duration <- time.Since(start)

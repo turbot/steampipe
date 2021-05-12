@@ -194,7 +194,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
 
-	spinner := utils.ShowSpinner("")
+	spinner := display.ShowSpinner("")
 
 	for _, p := range plugins {
 		isPluginExists, _ := plugin.Exists(p)
@@ -207,7 +207,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			})
 			continue
 		}
-		utils.UpdateSpinnerMessage(spinner, fmt.Sprintf("Installing plugin: %s", p))
+		display.UpdateSpinnerMessage(spinner, fmt.Sprintf("Installing plugin: %s", p))
 		image, err := plugin.Install(p)
 		if err != nil {
 			msg := ""
@@ -243,7 +243,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		})
 	}
 
-	utils.StopSpinner(spinner)
+	display.StopSpinner(spinner)
 
 	refreshConnectionsIfNecessary(installReports, false)
 	display.PrintInstallReports(installReports, false)
@@ -340,9 +340,9 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	spinner := utils.ShowSpinner("Checking for available updates")
+	spinner := display.ShowSpinner("Checking for available updates")
 	reports := plugin.GetUpdateReport(state.InstallationID, runUpdatesFor)
-	utils.StopSpinner(spinner)
+	display.StopSpinner(spinner)
 
 	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
@@ -362,9 +362,9 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		spinner := utils.ShowSpinner(fmt.Sprintf("Updating plugin %s...", report.CheckResponse.Name))
+		spinner := display.ShowSpinner(fmt.Sprintf("Updating plugin %s...", report.CheckResponse.Name))
 		image, err := plugin.Install(report.Plugin.Name)
-		utils.StopSpinner(spinner)
+		display.StopSpinner(spinner)
 		if err != nil {
 			msg := ""
 			if strings.HasSuffix(err.Error(), "not found") {
