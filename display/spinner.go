@@ -10,16 +10,27 @@ import (
 	"github.com/karrick/gows"
 )
 
+//
+// spinner format:
+// <spinner><space><message><space><dot><dot><dot><cursor>
+// 		1	   1   [.......]   1     1    1    1     1
+// We need at least seven characters to show the spinner properly
+//
+// Not using the (…) character, since it is too small
+//
+const mustHaveCharLengthForSpinner = 7
+
 func truncateSpinnerMessageToScreen(msg string) string {
 	if len(strings.TrimSpace(msg)) == 0 {
 		// if this is a blank message, return it as is
 		return msg
 	}
+
 	maxCols, _, _ := gows.GetWinSize()
-	if maxCols < 7 {
+	if maxCols < mustHaveCharLengthForSpinner {
 		return msg
 	}
-	availableColumns := maxCols - 7
+	availableColumns := maxCols - mustHaveCharLengthForSpinner
 	if len(msg) > availableColumns {
 		msg = msg[:availableColumns]
 		msg = fmt.Sprintf("%s ...", msg)
