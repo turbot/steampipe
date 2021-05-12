@@ -8,8 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/turbot/steampipe/steampipeconfig/parse"
-
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
@@ -17,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
 )
 

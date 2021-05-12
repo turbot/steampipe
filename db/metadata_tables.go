@@ -23,15 +23,12 @@ func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 	// now get sql to populate the tables
 	insertSql := getTableInsertSql(workspaceResources)
 
-	sql := []string{
-		"begin;",
-		clearSql,
-		insertSql,
-		"commit;",
-	}
+	sql := []string{clearSql, insertSql}
 	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"))
-
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to update reflection tables: %v", err)
+	}
+	return nil
 }
 
 func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client *Client) error {
@@ -44,17 +41,11 @@ func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 	// now get sql to populate the tables
 	insertSql := getTableInsertSql(workspaceResources)
 
-	sql := []string{
-		"begin;",
-		createSql,
-		insertSql,
-		"commit;",
-	}
+	sql := []string{createSql, insertSql}
 	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create reflection tables: %v", err)
 	}
-
 	return nil
 }
 

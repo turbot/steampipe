@@ -33,48 +33,68 @@ func (c *Client) ExecuteSync(ctx context.Context, query string) (*queryresult.Sy
 	return syncResult, nil
 }
 
-func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream bool) (*queryresult.Result, error) {
+func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream bool) (res *queryresult.Result, err error) {
 	if query == "" {
 		return &queryresult.Result{}, nil
 	}
-
 	startTime := time.Now()
-
 	// channel to flag to spinner that the query has run
 	queryDone := make(chan bool, 1)
-
-	// start spinner after a short delay
 	var spinner *spinner.Spinner
 
+	c.QueryLock.Lock()
+	defer func() {
+		// if there is no error, readRows() will unlock the QueryLock
+		// if there IS an error we need to unlock it here
+		if err != nil {
+			c.QueryLock.Unlock()
+			// stop spinner in case of error
+			utils.StopSpinner(spinner)
+		}
+		close(queryDone)
+	}()
+
 	if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
-		// if showspinner is false, the spinner gets created, but is never shown
+		// if `show-interactive-output` is false, the spinner gets created, but is never shown
 		// so the s.Active() will always come back false . . .
 		spinner = utils.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)
 	}
 
-	rows, err := c.dbClient.QueryContext(ctx, query)
-	queryDone <- true
-
+	// begin a transaction
+	var tx *sql.Tx
+	tx, err = c.dbClient.BeginTx(ctx, nil)
 	if err != nil {
-		// in case the query takes a long time to fail
-		utils.StopSpinner(spinner)
-		return nil, err
+		err = fmt.Errorf("error creating transaction: %v", err)
+		return
 	}
 
-	colTypes, err := rows.ColumnTypes()
+	var rows *sql.Rows
+	rows, err = c.dbClient.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("error reading columns from query: %v", err)
+		// error - rollback transaction
+		tx.Rollback()
+		return
+	}
+	// commit transaction
+	tx.Commit()
+
+	var colTypes []*sql.ColumnType
+	colTypes, err = rows.ColumnTypes()
+	if err != nil {
+		err = fmt.Errorf("error reading columns from query: %v", err)
+		return
 	}
 
 	result := queryresult.NewQueryResult(colTypes)
 
 	// read the rows in a go routine
-	go readRows(ctx, startTime, rows, result, spinner)
+	// NOTE: readRows will unlock QueryLock
+	go c.readRows(ctx, startTime, rows, result, spinner)
 
 	return result, nil
 }
 
-func readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result, activeSpinner *spinner.Spinner) {
+func (c *Client) readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result, activeSpinner *spinner.Spinner) {
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
 		// close the sql rows object
@@ -84,6 +104,8 @@ func readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *quer
 		}
 		// close the channels in the result object
 		result.Close()
+		// the Unlock will have been locked by the calling function, ExecuteQuery
+		c.QueryLock.Unlock()
 	}()
 
 	rowCount := 0

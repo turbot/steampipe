@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/turbot/steampipe/constants"
@@ -17,13 +18,18 @@ type Client struct {
 	dbClient       *sql.DB
 	schemaMetadata *schema.Metadata
 	connectionMap  *steampipeconfig.ConnectionMap
+	// only allow one query at a time
+	// this is required as if multiple concurrent queries are run, they will each get their own db conneciton,
+	// and only the first conneciton will have the Temp tables - the reflection metadata tables
+	QueryLock sync.Mutex
 }
 
 // Close closes the connection to the database and shuts down the backend
-func (c *Client) Close() {
+func (c *Client) Close() error {
 	if c.dbClient != nil {
-		c.dbClient.Close()
+		return c.dbClient.Close()
 	}
+	return nil
 }
 
 // NewClient ensures that the database instance is running

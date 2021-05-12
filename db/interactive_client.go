@@ -75,8 +75,8 @@ func (c *InteractiveClient) InteractiveQuery() {
 			break
 		}
 
-		// wait for the resultstreamer to have streamed everything out
-		// so that we know
+		// wait for the resultsStreamer to have streamed everything out
+		// this is to be sure the previous command has completed streaming
 		c.resultsStreamer.Wait()
 	}
 
