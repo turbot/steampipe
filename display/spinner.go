@@ -16,6 +16,9 @@ func truncateSpinnerMessageToScreen(msg string) string {
 		return msg
 	}
 	maxCols, _, _ := gows.GetWinSize()
+	if maxCols < 7 {
+		return msg
+	}
 	availableColumns := maxCols - 7
 	if len(msg) > availableColumns {
 		msg = msg[:availableColumns]
