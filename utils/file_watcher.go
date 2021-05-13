@@ -120,8 +120,8 @@ func (w *FileWatcher) handleEvent(ev fsnotify.Event) {
 
 func (w *FileWatcher) AddWatches() {
 	// enumerate all files meeting inclusions and exclusions in each watched directory and add a watch
-	opts := &filehelpers.ListFilesOptions{
-		Options: filehelpers.FilesFlat,
+	opts := &filehelpers.ListOptions{
+		Flags:   filehelpers.FilesFlat,
 		Exclude: w.exclude,
 		Include: w.include,
 	}
