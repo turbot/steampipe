@@ -28,32 +28,26 @@ func NewGroupRenderer(result *controlresult.ResultGroup, maxFailedControls, maxT
 	}
 }
 
-func (g GroupRenderer) String() string {
+func (g GroupRenderer) Render() string {
 	counter := NewCounterRenderer(g.failedControls, g.totalControls, g.maxFailedControls, g.maxTotalControls)
-	counterString := counter.String()
-	graphString := NewCounterGraphRenderer(g.failedControls, g.totalControls, g.maxTotalControls).String()
+	counterString, counterWidth := counter.Render()
+	graphString, graphWidth := NewCounterGraphRenderer(g.failedControls, g.totalControls, g.maxTotalControls).Render()
 
 	// figure out how much width we have available for the id
-	availableWidth := g.width - len(counterString) - len(graphString)
-	// if the id is longer than the available width, try the short counter string
-	// (if the fail count is zero, there is a short version of the counter)
-	if availableWidth < len(g.id) {
-		counterString = counter.ShortString()
-		availableWidth = g.width - len(counterString) - len(graphString)
-	}
+	availableWidth := g.width - counterWidth - graphWidth
 
 	// now availableWidth is all we have - if it is not enough we need to truncate the id
-	groupIdString := NewGroupIdRenderer(g.id, availableWidth).String()
+	groupIdString, idWidth := NewGroupIdRenderer(g.id, availableWidth).String()
 
 	// is there any room for a spacer
-	spacerWidth := availableWidth - len(groupIdString)
+
+	spacerWidth := availableWidth - idWidth
 	var spacerString string
 	if spacerWidth > 0 {
-		spacerString = NewSpacerRenderer(spacerWidth).String()
+		spacerString, _ = NewSpacerRenderer(spacerWidth).Render()
 	}
 
 	// now put these all together
-	str := fmt.Sprintf("%s %s %s %s", groupIdString, spacerString, counterString, graphString)
-	//fmt.Println(str)
+	str := fmt.Sprintf("%s%s%s%s", groupIdString, spacerString, counterString, graphString)
 	return str
 }

@@ -105,7 +105,7 @@ var testCasesCounter = map[string]counterTest{
 func TestCounter(t *testing.T) {
 	for name, test := range testCasesCounter {
 		counter := NewCounterRenderer(test.failedControls, test.totalControls, test.maxFailedControls, test.maxTotalControls)
-		output := counter.String()
+		output := counter.Render()
 
 		if output != test.expected {
 			t.Errorf("Test: '%s'' FAILED : \nexpected:\n%s \ngot:\n%s\n", name, test.expected, output)

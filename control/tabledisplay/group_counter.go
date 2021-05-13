@@ -24,7 +24,7 @@ func NewCounterRenderer(failedControls, totalControls, maxFailedControls, maxTot
 	}
 }
 
-/* String returns the counter string in format "<failed> / <total>.
+/* Render returns the counter string in format "<failed> / <total>.
 
 The alignment depends on the maximum failed and maximum total parameters, as the counters are aligned as follows:
 "  3 /   123"
@@ -34,7 +34,7 @@ The alignment depends on the maximum failed and maximum total parameters, as the
 "  1 / 1,020"
 
 */
-func (d CounterRenderer) String() string {
+func (d CounterRenderer) Render() (string, int) {
 	p := message.NewPrinter(language.English)
 	// get strings for fails and total - format with commas for thousands
 	failedString := p.Sprintf("%d", d.failedControls)
@@ -51,29 +51,14 @@ func (d CounterRenderer) String() string {
 	// this will generate a format string like: "%3s / %4s"
 	formatString := fmt.Sprintf("%%%ds %%s %%%ds", failedWidth, totalWidth)
 
-	// figure out colours
+	// calculate length - the 3 is the " / "
+	length := failedWidth + totalWidth + 3
 
 	if d.failedControls == 0 {
-		return fmt.Sprintf(formatString, colorCountZeroFail(failedString), colorCountZeroFailDivider("/"), colorCountTotalAllPassed(totalString))
+		return fmt.Sprintf(formatString, colorCountZeroFail(failedString), colorCountZeroFailDivider("/"), colorCountTotalAllPassed(totalString)), length
 	}
 
 	str := fmt.Sprintf(formatString, colorCountFail(failedString), colorCountDivider("/"), colorCountTotal(totalString))
 	//fmt.Println(str)
-	return str
-}
-
-// ShortString checks if there are ZERO failures
-// and if so, returns a shorter version of the counter omitting the  "0 / ..."
-func (d CounterRenderer) ShortString() string {
-	// we can only return a short version if the failures are zero
-	if d.failedControls != 0 {
-		return d.String()
-	}
-
-	p := message.NewPrinter(language.English)
-	totalString := p.Sprintf("%d", d.totalControls)
-	maxTotalString := p.Sprintf("%d", d.maxTotalControls)
-	totalWidth := len(maxTotalString)
-	formatString := fmt.Sprintf("%%%ds", totalWidth)
-	return fmt.Sprintf(formatString, colorCountTotalAllPassed(totalString))
+	return str, length
 }

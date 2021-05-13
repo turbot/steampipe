@@ -35,7 +35,7 @@ var testCasesResultReason = map[string]resultReasonTest{
 
 func TestResultReason(t *testing.T) {
 	for name, test := range testCasesResultReason {
-		output := NewResultReasonRenderer(test.status, test.reason, test.width).String()
+		output := NewResultReasonRenderer(test.status, test.reason, test.width).Render()
 		if output != test.expected {
 			t.Errorf("Test: '%s'' FAILED : \nexpected:\n %v \ngot:\n %v\n", name, test.expected, output)
 		}

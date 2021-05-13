@@ -23,7 +23,7 @@ var testCasesResultStatus = map[string]resultStatusTest{
 
 func TestResultStatus(t *testing.T) {
 	for name, test := range testCasesResultStatus {
-		output := NewResultStatusRenderer(test.status).String()
+		output := NewResultStatusRenderer(test.status).Render()
 		if output != test.expected {
 			t.Errorf("Test: '%s'' FAILED : \nexpected:\n %v \ngot:\n %v\n", name, test.expected, output)
 		}

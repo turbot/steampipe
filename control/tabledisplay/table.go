@@ -24,7 +24,7 @@ func NewTableRenderer(resultTree *controlresult.ResultTree, width int) *TableRen
 	}
 }
 
-func (t TableRenderer) String() string {
+func (t TableRenderer) Render() string {
 	if len(t.resultTree.Groups) == 0 {
 		return ""
 	}
@@ -36,9 +36,10 @@ func (t TableRenderer) String() string {
 }
 
 func (t TableRenderer) renderResultGroup(node *controlresult.ResultGroup) string {
+	groupRenderer := NewGroupRenderer(node, t.maxFailedControls, t.maxTotalControls, t.width)
 	var tableStrings = []string{
 		// render this group
-		NewGroupRenderer(node, t.maxFailedControls, t.maxTotalControls, t.width).String(),
+		groupRenderer.Render(),
 	}
 	// render results
 	//for _, result:= range node.Results{

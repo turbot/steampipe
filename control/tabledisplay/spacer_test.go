@@ -25,7 +25,7 @@ var testCasesSpacer = map[string]spacerTest{
 
 func TestSpacer(t *testing.T) {
 	for name, test := range testCasesSpacer {
-		output := NewSpacerRenderer(test.width).String()
+		output := NewSpacerRenderer(test.width).Render()
 		if output != test.expected {
 			t.Errorf("Test: '%s'' FAILED : \nexpected:\n %v \ngot:\n %v\n", name, test.expected, output)
 		}

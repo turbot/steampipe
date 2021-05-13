@@ -69,7 +69,7 @@ var testCasesCounterGraph = map[string]counterGraphTest{
 func TestCounterGraph(t *testing.T) {
 	for name, test := range testCasesCounterGraph {
 		counterGraph := NewCounterGraphRenderer(test.failedControls, test.totalControls, test.maxTotalControls)
-		output := counterGraph.String()
+		output := counterGraph.Render()
 		if output != test.expectedString {
 			t.Errorf("Test: '%s'' FAILED : \nexpected:\n %s, \ngot:\n %s\n", name, test.expectedString, output)
 		}

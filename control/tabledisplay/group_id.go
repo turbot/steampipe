@@ -7,8 +7,7 @@ import (
 )
 
 type GroupIdRenderer struct {
-	id string
-
+	id    string
 	width int
 }
 
@@ -20,8 +19,9 @@ func NewGroupIdRenderer(id string, width int) *GroupIdRenderer {
 }
 
 // String returns the id, truncated to the max length if necessary
-func (d GroupIdRenderer) String() string {
-	str := fmt.Sprintf("%s", colorId(helpers.TruncateString(d.id, d.width)))
-	//fmt.Println(str)
-	return str
+func (d GroupIdRenderer) String() (string, int) {
+	truncatedId := helpers.TruncateString(d.id, d.width)
+	length := len(truncatedId)
+	str := fmt.Sprintf("%s", colorId(truncatedId))
+	return str, length
 }

@@ -94,9 +94,12 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 }
 
 func DisplayControlResults(controlResults *controlresult.ResultTree) {
+	if controlResults == nil {
+		return
+	}
 	maxCols, _, _ := gows.GetWinSize()
 	renderer := tabledisplay.NewTableRenderer(controlResults, maxCols)
-	fmt.Println(renderer.String())
+	fmt.Println(renderer.Render())
 	//
 	//fmt.Println()
 	//// NOTE: for now we can assume all results are complete

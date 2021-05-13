@@ -20,16 +20,17 @@ func NewResultReasonRenderer(status, reason string, width int) *ResultReasonRend
 	}
 }
 
-// String returns the id, truncated to the max length if necessary
-func (d ResultReasonRenderer) String() string {
+// Render returns the id, truncated to the max length if necessary
+func (d ResultReasonRenderer) Render() (string, int) {
 	// get the color for our status
 	colorFunc, ok := reasonColors[d.status]
 
 	// truncate the reason
 	truncatedReason := helpers.TruncateString(d.reason, d.width)
+	length := len(truncatedReason)
 	// for unrecognised status, just return unformatted - we should be validating elsewhere
 	if !ok {
-		return truncatedReason
+		return truncatedReason, length
 	}
-	return fmt.Sprintf("%s", colorFunc(truncatedReason))
+	return fmt.Sprintf("%s", colorFunc(truncatedReason)), length
 }
