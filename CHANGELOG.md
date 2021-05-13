@@ -1,3 +1,9 @@
+## v0.4.3 [2021-05-13]
+
+_Bug fixes_
+* Fix cache check code incorrectly identifying a cache hit after a count(*) query.  ([#44](https://github.com/turbot/steampipe-postgres-fdw/issues/44))
+* Fix spinner displaying multiple newlines if spinner text is wider than the terminal. ([#450](https://github.com/turbot/steampipe/issues/450))
+
 ## v0.4.2 [2021-05-06]
 
 _Bug fixes_
