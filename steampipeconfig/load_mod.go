@@ -136,8 +136,8 @@ func getSourcePaths(modPath string, include, exclude []string) ([]string, error)
 	// - search the current folder only
 	// - include extensions we have identifed
 	// - ignore the .steampipe folder
-	opts := &filehelpers.ListFilesOptions{
-		Options: filehelpers.FilesFlat,
+	opts := &filehelpers.ListOptions{
+		Flags:   filehelpers.FilesFlat,
 		Exclude: exclude,
 		Include: include,
 	}

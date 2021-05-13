@@ -95,8 +95,8 @@ type loadConfigOptions struct {
 
 func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loadConfigOptions) error {
 	// get all the config files in the directory
-	configPaths, err := filehelpers.ListFiles(configFolder, &filehelpers.ListFilesOptions{
-		Options: filehelpers.FilesFlat,
+	configPaths, err := filehelpers.ListFiles(configFolder, &filehelpers.ListOptions{
+		Flags:   filehelpers.FilesFlat,
 		Include: opts.include,
 	})
 
