@@ -2,16 +2,17 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/karrick/gows"
+	"github.com/turbot/steampipe/control/tabledisplay"
 
 	"github.com/turbot/steampipe/control/execute"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -83,10 +84,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		executor := execute.NewExecutor(ctx, arg, workspace, client)
 		executor.Execute(ctx)
 		failures += executor.Errors
-		bytes, err := json.MarshalIndent(executor.ResultTree.Root, "", "  ")
-		str := string(bytes)
-		fmt.Println(str)
-		fmt.Println(err)
+		//bytes, err := json.MarshalIndent(executor.ResultTree.Root, "", "  ")
+
 		DisplayControlResults(executor.ResultTree)
 	}
 
@@ -95,27 +94,32 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 }
 
 func DisplayControlResults(controlResults *controlresult.ResultTree) {
-	// NOTE: for now we can assume all results are complete
-	// todo summary and hierarchy
-	for _, res := range controlResults.Root.ControlRuns {
-		fmt.Println()
-		fmt.Printf("%s [%s]\n", typeHelpers.SafeString(res.Control.Title), res.Control.ShortName)
-		if res.Error != nil {
-			fmt.Printf("  Execution error: %v\n", res.Error)
-			continue
-		}
-		for _, item := range res.Result.Rows {
-			if item == nil {
-				// should never happen!
-				panic("NIL RESULT")
-			}
-			resString := fmt.Sprintf("  [%s] [%s] %s", item.Status, item.Resource, item.Reason)
-			dimensionString := getDimension(item)
-			fmt.Printf("%s %s\n", resString, dimensionString)
-
-		}
-	}
-	fmt.Println()
+	maxCols, _, _ := gows.GetWinSize()
+	renderer := tabledisplay.NewTableRenderer(controlResults, maxCols)
+	fmt.Println(renderer.String())
+	//
+	//fmt.Println()
+	//// NOTE: for now we can assume all results are complete
+	//// todo summary and hierarchy
+	//for _, res := range controlResults.Root.ControlRuns {
+	//	fmt.Println()
+	//	fmt.Printf("%s [%s]\n", typeHelpers.SafeString(res.Control.Title), res.Control.ShortName)
+	//	if res.Error != nil {
+	//		fmt.Printf("  Execution error: %v\n", res.Error)
+	//		continue
+	//	}
+	//	for _, item := range res.Result.Rows {
+	//		if item == nil {
+	//			// should never happen!
+	//			panic("NIL RESULT")
+	//		}
+	//		resString := fmt.Sprintf("  [%s] [%s] %s", item.Status, item.Resource, item.Reason)
+	//		dimensionString := getDimension(item)
+	//		fmt.Printf("%s %s\n", resString, dimensionString)
+	//
+	//	}
+	//}
+	//fmt.Println()
 }
 
 func getDimension(item *controlresult.ResultRow) string {

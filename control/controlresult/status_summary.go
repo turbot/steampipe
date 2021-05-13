@@ -8,3 +8,11 @@ type StatusSummary struct {
 	Skip  int `json:"skip"`
 	Error int `json:"error"`
 }
+
+func (s *StatusSummary) FailedCount() int {
+	return s.Alarm + s.Error
+}
+
+func (s *StatusSummary) TotalCount() int {
+	return s.Alarm + s.Ok + s.Info + s.Skip + s.Error
+}
