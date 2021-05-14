@@ -7,6 +7,8 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
+const RootResultGroupName = "root_result_group"
+
 // ResultGroup is a struct representing a grouping of control results
 // It may correspond to a Benchmark, or some other arbitrary grouping
 type ResultGroup struct {
@@ -29,7 +31,7 @@ type GroupSummary struct {
 // NewRootResultGroup creates a ResultGroup to act as the root node of a control execution tree
 func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.ControlTreeItem) *ResultGroup {
 	root := &ResultGroup{
-		GroupId: "root",
+		GroupId: RootResultGroupName,
 		Groups:  []*ResultGroup{},
 		Tags:    make(map[string]string),
 	}

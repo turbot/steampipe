@@ -32,14 +32,32 @@ func (t TableRenderer) Render() string {
 
 func (t TableRenderer) renderResultGroup(node *execute.ResultGroup) string {
 	groupRenderer := NewGroupRenderer(node, t.maxFailedControls, t.maxTotalControls, t.width)
-	var tableStrings = []string{
+	var tableStrings []string
+
+	// do not render the root node
+	if node.GroupId != execute.RootResultGroupName {
 		// render this group
-		groupRenderer.Render(),
+		tableStrings = append(tableStrings,
+			groupRenderer.Render(),
+			// newline after group
+			"")
 	}
+
 	// render results
-	//for _, result:= range node.Results{
-	//	// TODO
-	//}
+	resultsRendered := 0
+	for _, run := range node.ControlRuns {
+		for _, row := range run.Result.Rows {
+			// TODO dimensions
+			resultRenderer := NewResultRenderer(row.Status, row.Reason, t.width)
+			tableStrings = append(tableStrings, resultRenderer.Render())
+			resultsRendered++
+		}
+	}
+	// newline after results
+	if resultsRendered > 0 {
+		tableStrings = append(tableStrings, "")
+	}
+
 	// render child groups
 	for _, child := range node.Groups {
 		tableStrings = append(tableStrings, t.renderResultGroup(child))

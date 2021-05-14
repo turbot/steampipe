@@ -13,23 +13,23 @@ type idTest struct {
 
 var testCasesId = map[string]idTest{
 	"shorter": {
-		id:       "group id",
+		id:       "group title",
 		width:    100,
-		expected: fmt.Sprintf("%s", colorId("group id")),
+		expected: fmt.Sprintf("%s", colorId("group title")),
 	},
 
 	"equal": {
-		id:       "group id",
+		id:       "group title",
 		width:    8,
-		expected: fmt.Sprintf("%s", colorId("group id")),
+		expected: fmt.Sprintf("%s", colorId("group title")),
 	},
 	"longer trim on space": {
-		id:       "group id",
+		id:       "group title",
 		width:    7,
 		expected: fmt.Sprintf("%s", colorId("group …")),
 	},
 	"longer trim on char": {
-		id:       "group id",
+		id:       "group title",
 		width:    5,
 		expected: fmt.Sprintf("%s", colorId("grou…")),
 	},
@@ -37,7 +37,7 @@ var testCasesId = map[string]idTest{
 
 func TestId(t *testing.T) {
 	for name, test := range testCasesId {
-		renderer := NewGroupIdRenderer(test.id, test.width)
+		renderer := NewGroupTitleRenderer(test.id, test.width)
 		output := renderer.String()
 
 		if output != test.expected {

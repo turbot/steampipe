@@ -58,7 +58,7 @@ control "cis_v130_4_2" {
 control "cis_v130_4_3" {
   title       = "4.3 Ensure a log metric filter and alarm exist for usage of \"root\" account"
   description = "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for root login attempts."
-  sql         = query.ok.sql
+  sql         = query.info.sql
   #documentation = file("./cis_v130/docs/cis_v130_4_3.md")
 
   tags = merge(local.cis_v130_4_common_tags, {
@@ -100,7 +100,7 @@ control "cis_v130_4_5" {
 control "cis_v130_4_6" {
   title       = "4.6 Ensure a log metric filter and alarm exist for AWS Management Console authentication failures"
   description = "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for failed console authentication attempts."
-  sql         = query.ok.sql
+  sql         = query.info.sql
   #documentation = file("./cis_v130/docs/cis_v130_4_6.md")
 
   tags = merge(local.cis_v130_4_common_tags, {
@@ -142,7 +142,7 @@ control "cis_v130_4_8" {
 control "cis_v130_4_9" {
   title       = "4.9 Ensure a log metric filter and alarm exist for AWS Config configuration changes"
   description = "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for detecting changes to CloudTrail's configurations."
-  sql         = query.ok.sql
+  sql         = query.skip.sql
   #documentation = file("./cis_v130/docs/cis_v130_4_9.md")
 
   tags = merge(local.cis_v130_4_common_tags, {
@@ -212,7 +212,7 @@ control "cis_v130_4_13" {
 control "cis_v130_4_14" {
   title       = "4.14 Ensure a log metric filter and alarm exist for VPC changes"
   description = "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is possible to have more than 1 VPC within an account, in addition it is also possible to create a peer connection between 2 VPCs enabling network traffic to route between VPCs. It is recommended that a metric filter and alarm be established for changes made to VPCs."
-  sql         = query.ok.sql
+  sql         = query.skip.sql
   #documentation = file("./cis_v130/docs/cis_v130_4_14.md")
 
   tags = merge(local.cis_v130_4_common_tags, {

@@ -10,7 +10,7 @@ import (
 
 // groups display
 
-// id color
+// title color
 var colorId = constants.BrightWhite
 
 // count
@@ -44,6 +44,8 @@ var reasonColors = map[string]func(arg interface{}) aurora.Value{
 	execute.ControlInfo:  constants.BrightCyan,
 	execute.ControlOk:    constants.Gray4,
 }
+
+var colorReasonColon = constants.Gray1
 
 // spacer dots used by both group and result
 var colorSpacer = constants.Gray1

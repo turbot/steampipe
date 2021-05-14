@@ -61,7 +61,7 @@ control "cis_v130_2_1_2" {
   title         = "2.1.2 Ensure S3 Bucket Policy allows HTTPS requests"
   description   = "At the Amazon S3 bucket level, you can configure permissions through a bucket policy making the objects accessible only through HTTPS."
   documentation = file("./cis_v130/docs/cis_v130_2_1_2.md")
-  sql           = query.ok.sql
+  sql           = query.info.sql
 
   tags = merge(local.cis_v130_2_1_common_tags, {
     cis_item_id  = "2.1.2"
