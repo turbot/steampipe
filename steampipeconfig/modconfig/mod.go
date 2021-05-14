@@ -41,6 +41,8 @@ type Mod struct {
 	Queries    map[string]*Query
 	Controls   map[string]*Control
 	Benchmarks map[string]*Benchmark
+	// list of benchmark names, sorted alphabetically
+	benchmarksOrdered []string
 
 	ModPath   string
 	DeclRange hcl.Range
@@ -144,12 +146,25 @@ Control Groups:
 // (mod is always top of the tree)
 func (m *Mod) IsControlTreeItem() {}
 
+// BuildControlTree builds the control tree structure by setting the parent property for each control and benchmar
+// NOTE: this also builds the sorted benchmark list
 func (m *Mod) BuildControlTree() error {
-	for _, benchmark := range m.Benchmarks {
+	// build sorted list of benchmarks
+	m.benchmarksOrdered = make([]string, len(m.Benchmarks))
+	idx := 0
+	for name, benchmark := range m.Benchmarks {
+		// save this benchmark name
+		m.benchmarksOrdered[idx] = name
+		idx++
+
+		// add benchmark into control tree
 		if err := m.addItemIntoControlTree(benchmark); err != nil {
 			return err
 		}
 	}
+	// now sort the benchmark names
+	sort.Strings(m.benchmarksOrdered)
+
 	for _, control := range m.Controls {
 		if err := m.addItemIntoControlTree(control); err != nil {
 			return err
@@ -195,8 +210,11 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		// check for dupes
 		if _, ok := m.Benchmarks[name]; ok {
 			diags = append(diags, duplicateResourceDiagnostics(item, block))
+		} else {
+
+			m.Benchmarks[name] = r
 		}
-		m.Benchmarks[name] = r
+
 	}
 	return diags
 

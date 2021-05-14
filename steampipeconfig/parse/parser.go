@@ -137,7 +137,8 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		}
 	}
 
-	// now tell mod to build tree of controls
+	// now tell mod to build tree of controls.
+	// NOTE: this also builds the sorted benchmark list
 	if err := mod.BuildControlTree(); err != nil {
 		return nil, err
 	}

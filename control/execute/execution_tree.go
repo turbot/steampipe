@@ -113,7 +113,7 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.Control
 			return []modconfig.ControlTreeItem{mod}, nil
 		}
 	}
-	return nil, fmt.Errorf("no controls founf matching argument '%s'", arg)
+	return nil, fmt.Errorf("no controls found matching argument '%s'", arg)
 }
 
 // Get a map of control names from the reflection table steampipe_control

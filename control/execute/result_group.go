@@ -3,8 +3,6 @@ package execute
 import (
 	"context"
 
-	"github.com/turbot/steampipe/display"
-
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
@@ -100,7 +98,7 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 }
 
 func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
-	spinner := display.ShowSpinner("")
+	//spinner := display.ShowSpinner("")
 
 	var errors = 0
 	//totalControls := len(e.Controls)
@@ -129,6 +127,6 @@ func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
 	for _, child := range r.Groups {
 		errors += child.Execute(ctx, client)
 	}
-	spinner.Stop()
+	//spinner.Stop()
 	return errors
 }

@@ -61,6 +61,7 @@ func (b *Benchmark) OnDecoded() {
 	for i, n := range *b.ChildNames {
 		b.ChildNameStrings[i] = n.Name
 	}
+	b.children = make([]ControlTreeItem, len(b.ChildNameStrings))
 }
 
 func (b *Benchmark) String() string {
@@ -111,8 +112,15 @@ func (b *Benchmark) AddChild(child ControlTreeItem) error {
 		return fmt.Errorf("mod cannot be added as a child")
 	}
 
-	b.children = append(b.children, child)
-	return nil
+	// now find which positing this child is in the array
+	for i, name := range b.ChildNameStrings {
+		if name == child.Name() {
+			b.children[i] = child
+			return nil
+		}
+	}
+
+	return fmt.Errorf("benchmark '%s' has no child '%s'", b.Name(), child.Name())
 }
 
 // AddParent implements ControlTreeItem

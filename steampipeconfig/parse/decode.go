@@ -147,6 +147,10 @@ func (res *decodeResult) handleDecodeDiags(diags hcl.Diagnostics) {
 	}
 }
 
+// handleDecodeResult
+// if decode was successful:
+// - generate and set resource metadata
+// - add resource to RunContext (which adds it to the mod(
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	if res.Success() {
