@@ -48,6 +48,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	// build tree of result groups, starting with a synthetic 'root' node
 	executionTree.Root = NewRootResultGroup(executionTree, rootItems...)
 
+	// after tree has built, ControlCount will be set - create progress rendered
 	executionTree.progress = NewControlProgressRenderer(executionTree.ControlCount)
 
 	return executionTree, nil
@@ -56,7 +57,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
 	e.progress.Start()
 	defer e.progress.Finish()
-
+	// just execute the root - it will traverse the tree
 	return e.Root.Execute(ctx, client)
 }
 
@@ -80,7 +81,6 @@ func (e *ExecutionTree) ShouldIncludeControl(controlName string) bool {
 	}
 	_, ok := e.controlNameFilterMap[controlName]
 	return ok
-
 }
 
 // getExecutionRootFromArg resolves the arg into the execution root

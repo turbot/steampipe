@@ -3,6 +3,9 @@ package execute
 import (
 	"fmt"
 
+	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+
 	"github.com/briandowns/spinner"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
@@ -24,8 +27,8 @@ func NewControlProgressRenderer(total int) *ControlProgressRenderer {
 func (p *ControlProgressRenderer) Start() {
 	p.spinner = display.ShowSpinner("")
 }
-func (p *ControlProgressRenderer) OnControlStart(name string) {
-	p.current = name
+func (p *ControlProgressRenderer) OnControlStart(control *modconfig.Control) {
+	p.current = typehelpers.SafeString(control.Title)
 	display.UpdateSpinnerMessage(p.spinner, p.message())
 }
 func (p *ControlProgressRenderer) OnComplete() {

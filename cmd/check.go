@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/karrick/gows"
 	"github.com/turbot/steampipe/control/controldisplay"
@@ -83,12 +82,9 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		executionTree, err := execute.NewExecutionTree(ctx, workspace, client, arg)
 		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
 
-		// for now we execute controls syncronously
+		// for now we execute controls synchronously
 		// Execute returns the number of failures
 		executionTree.Execute(ctx, client)
-
-		//bytes, err := json.MarshalIndent(executionTree.Root, "", "  ")
-
 		DisplayControlResults(executionTree)
 	}
 
@@ -97,41 +93,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 }
 
 func DisplayControlResults(executionTree *execute.ExecutionTree) {
-
+	//bytes, err := json.MarshalIndent(executionTree.Root, "", "  ")
 	maxCols, _, _ := gows.GetWinSize()
 	renderer := controldisplay.NewTableRenderer(executionTree, maxCols)
 	fmt.Println(renderer.Render())
-	//
-	//fmt.Println()
-	//// NOTE: for now we can assume all results are complete
-	//// todo summary and hierarchy
-	//for _, res := range executionTree.Root.ControlRuns {
-	//	fmt.Println()
-	//	fmt.Printf("%s [%s]\n", typeHelpers.SafeString(res.Control.Title), res.Control.ShortName)
-	//	if res.Error != nil {
-	//		fmt.Printf("  Execution error: %v\n", res.Error)
-	//		continue
-	//	}
-	//	for _, item := range res.Result.Rows {
-	//		if item == nil {
-	//			// should never happen!
-	//			panic("NIL RESULT")
-	//		}
-	//		resString := fmt.Sprintf("  [%s] [%s] %s", item.Status, item.Resource, item.Reason)
-	//		dimensionString := getDimension(item)
-	//		fmt.Printf("%s %s\n", resString, dimensionString)
-	//
-	//	}
-	//}
-	//fmt.Println()
-}
-
-func getDimension(item *execute.ResultRow) string {
-	var dimensions []string
-
-	for _, v := range item.Dimensions {
-		dimensions = append(dimensions, v)
-	}
-
-	return strings.Join(dimensions, "  ")
 }

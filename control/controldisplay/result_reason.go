@@ -22,17 +22,14 @@ func NewResultReasonRenderer(status, reason string, width int) *ResultReasonRend
 
 // Render returns the reason, truncated to the max length if necessary
 func (d ResultReasonRenderer) Render() (string, int) {
+	// truncate the reason (deduct 2 from length to allow for ": ")
+	availableWidth := d.width - 2
+	formattedReason := helpers.TruncateString(d.reason, availableWidth)
+
 	// get the color for our status
-	colorFunc, ok := reasonColors[d.status]
-
-	// truncate the reason
-	truncatedReason := helpers.TruncateString(d.reason, d.width)
-
-	// add 2 to length to allow for ": "
-	length := len(truncatedReason) + 2
-	// for unrecognised status, just return unformatted - we should be validating elsewhere
-	if !ok {
-		return truncatedReason, length
+	if colorFunc, ok := reasonColors[d.status]; ok {
+		formattedReason = fmt.Sprintf("%s", colorFunc(formattedReason))
 	}
-	return fmt.Sprintf("%s %s", colorReasonColon(":"), colorFunc(truncatedReason)), length
+
+	return fmt.Sprintf("%s %s", colorReasonColon(":"), formattedReason), d.width
 }

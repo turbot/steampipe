@@ -61,7 +61,7 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	control := r.Control
 
 	// update the current running control in the Progress renderer
-	r.executionTree.progress.OnControlStart(control.Name())
+	r.executionTree.progress.OnControlStart(control)
 
 	// resolve the query parameter of the control
 	query, _ := execute.GetQueryFromArg(typeHelpers.SafeString(control.SQL), r.executionTree.workspace)

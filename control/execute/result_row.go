@@ -24,7 +24,7 @@ type ResultRow struct {
 	Reason     string             `json:"reason"`
 	Resource   string             `json:"resource"`
 	Status     string             `json:"status"`
-	Dimensions map[string]string  `json:"dimensions"`
+	Dimensions []Dimension        `json:"dimensions"`
 	Control    *modconfig.Control `json:"-"`
 }
 
@@ -34,18 +34,17 @@ func (r ResultRow) AddDimension(c *sql.ColumnType, val interface{}) {
 	case reflect.Array, reflect.Map, reflect.Slice, reflect.Struct:
 		return
 	default:
-		r.Dimensions[c.Name()] = typehelpers.ToString(val)
+		r.Dimensions = append(r.Dimensions, Dimension{c.Name(), typehelpers.ToString(val)})
 	}
 }
 
 func NewResultRow(control *modconfig.Control, row *queryresult.RowResult, colTypes []*sql.ColumnType) (*ResultRow, error) {
 	res := &ResultRow{
-		Control:    control,
-		Dimensions: make(map[string]string),
+		Control: control,
 	}
 
 	// was there a SQL error _executing the control
-	// Note: this is different from the contrrol state being 'error'
+	// Note: this is different from the control state being 'error'
 	if row.Error != nil {
 		return nil, row.Error
 	}
