@@ -2,8 +2,6 @@ package controldisplay
 
 import (
 	"fmt"
-
-	"github.com/turbot/steampipe/control/execute"
 )
 
 type GroupRenderer struct {
@@ -17,13 +15,13 @@ type GroupRenderer struct {
 	width int
 }
 
-func NewGroupRenderer(result *execute.ResultGroup, maxFailedControls, maxTotalControls, width int) *GroupRenderer {
+func NewGroupRenderer(title string, failed, total, maxFailed, maxTotal, width int) *GroupRenderer {
 	return &GroupRenderer{
-		title:             result.Title,
-		failedControls:    result.Summary.Status.FailedCount(),
-		totalControls:     result.Summary.Status.TotalCount(),
-		maxFailedControls: maxFailedControls,
-		maxTotalControls:  maxTotalControls,
+		title:             title,
+		failedControls:    failed,
+		totalControls:     total,
+		maxFailedControls: maxFailed,
+		maxTotalControls:  maxTotal,
 		width:             width,
 	}
 }
@@ -40,7 +38,6 @@ func (g GroupRenderer) Render() string {
 	titleString, titleWidth := NewGroupTitleRenderer(g.title, availableWidth).Render()
 
 	// is there any room for a spacer
-
 	spacerWidth := availableWidth - titleWidth
 	var spacerString string
 	if spacerWidth > 0 {

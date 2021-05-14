@@ -33,7 +33,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 		workspace: workspace,
 		client:    client,
 	}
-
+	// if a "--where" parameter wa spassed, build a map of control manes used to filter the controls to run
 	err := executionTree.populateControlFilterMap(ctx)
 	if err != nil {
 		return nil, err
@@ -94,7 +94,6 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.Control
 	if arg == "all" {
 		//
 		// build list of all workspace mods - these will act as root items
-		res = append(res, e.workspace.Mod)
 		for _, m := range e.workspace.ModMap {
 			res = append(res, m)
 		}

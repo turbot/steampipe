@@ -100,35 +100,12 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 }
 
 func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
-	//spinner := display.ShowSpinner("")
-
 	var errors = 0
-	//totalControls := len(e.Controls)
-	//pendingControls := totalControls
-	//completeControls := 0
-	//errorControls := 0
-	//
 	for _, controlRun := range r.ControlRuns {
 		controlRun.Start(ctx, client)
-
-		//p := c.Path()
-		//display.UpdateSpinnerMessage(spinner, fmt.Sprintf("Running %d %s. (%d complete, %d pending, %d errors): executing \"%s\" (%s)", totalControls, utils.Pluralize("control", totalControls), completeControls, pendingControls, errorControls, typeHelpers.SafeString(c.Title), p))
-		//
-		//res := e.executeControl(ctx, c)
-		//if res.GetRunStatus() == controlresult.ControlRunError {
-		//	errorControls++
-		//} else {
-		//	completeControls++
-		//}
-		//pendingControls--
-		//
-		//e.ExecutionTree.AddResult(res)
-		// TODO store errors
-
 	}
 	for _, child := range r.Groups {
 		errors += child.Execute(ctx, client)
 	}
-	//spinner.Stop()
 	return errors
 }
