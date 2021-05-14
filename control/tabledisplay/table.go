@@ -3,11 +3,11 @@ package tabledisplay
 import (
 	"strings"
 
-	"github.com/turbot/steampipe/control/controlresult"
+	"github.com/turbot/steampipe/control/execute"
 )
 
 type TableRenderer struct {
-	resultTree *controlresult.ResultTree
+	resultTree *execute.ExecutionTree
 
 	// screen width
 	width             int
@@ -15,7 +15,7 @@ type TableRenderer struct {
 	maxTotalControls  int
 }
 
-func NewTableRenderer(resultTree *controlresult.ResultTree, width int) *TableRenderer {
+func NewTableRenderer(resultTree *execute.ExecutionTree, width int) *TableRenderer {
 	return &TableRenderer{
 		resultTree:        resultTree,
 		width:             width,
@@ -25,17 +25,12 @@ func NewTableRenderer(resultTree *controlresult.ResultTree, width int) *TableRen
 }
 
 func (t TableRenderer) Render() string {
-	if len(t.resultTree.Groups) == 0 {
-		return ""
-	}
-
 	// traverse tree
-	node := t.resultTree.Root
-	str := t.renderResultGroup(node)
+	str := t.renderResultGroup(t.resultTree.Root)
 	return str
 }
 
-func (t TableRenderer) renderResultGroup(node *controlresult.ResultGroup) string {
+func (t TableRenderer) renderResultGroup(node *execute.ResultGroup) string {
 	groupRenderer := NewGroupRenderer(node, t.maxFailedControls, t.maxTotalControls, t.width)
 	var tableStrings = []string{
 		// render this group

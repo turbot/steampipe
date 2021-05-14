@@ -6,9 +6,8 @@ import (
 	"strings"
 
 	"github.com/karrick/gows"
-	"github.com/turbot/steampipe/control/tabledisplay"
-
 	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/tabledisplay"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -16,7 +15,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/control/controlresult"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
@@ -81,35 +79,32 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	// treat each arg as a separate execution
 	failures := 0
 	for _, arg := range args {
-		resolver, err := execute.NewControlResolver(ctx, arg, workspace, client)
+		executionTree, err := execute.NewExecutionTree(ctx, workspace, client, arg)
 		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
 
 		// for now we execute controls syncronously
+		// Execute returns the number of failures
+		failures += executionTree.Root.Execute(ctx, client)
 
-		resolver.ResultTree.Root.Execute(ctx, client)
+		//bytes, err := json.MarshalIndent(resolver.ExecutionTree.Root, "", "  ")
 
-		failures += resolver.Errors
-		//bytes, err := json.MarshalIndent(resolver.ResultTree.Root, "", "  ")
-
-		DisplayControlResults(resolver.ResultTree)
+		DisplayControlResults(executionTree)
 	}
 
 	// set global exit code
 	exitCode = failures
 }
 
-func DisplayControlResults(controlResults *controlresult.ResultTree) {
-	if controlResults == nil {
-		return
-	}
+func DisplayControlResults(executionTree *execute.ExecutionTree) {
+
 	maxCols, _, _ := gows.GetWinSize()
-	renderer := tabledisplay.NewTableRenderer(controlResults, maxCols)
+	renderer := tabledisplay.NewTableRenderer(executionTree, maxCols)
 	fmt.Println(renderer.Render())
 	//
 	//fmt.Println()
 	//// NOTE: for now we can assume all results are complete
 	//// todo summary and hierarchy
-	//for _, res := range controlResults.Root.ControlRuns {
+	//for _, res := range executionTree.Root.ControlRuns {
 	//	fmt.Println()
 	//	fmt.Printf("%s [%s]\n", typeHelpers.SafeString(res.Control.Title), res.Control.ShortName)
 	//	if res.Error != nil {
@@ -130,7 +125,7 @@ func DisplayControlResults(controlResults *controlresult.ResultTree) {
 	//fmt.Println()
 }
 
-func getDimension(item *controlresult.ResultRow) string {
+func getDimension(item *execute.ResultRow) string {
 	var dimensions []string
 
 	for _, v := range item.Dimensions {

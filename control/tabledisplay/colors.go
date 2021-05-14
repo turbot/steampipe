@@ -3,7 +3,7 @@ package tabledisplay
 import (
 	"github.com/logrusorgru/aurora"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/control/controlresult"
+	"github.com/turbot/steampipe/control/execute"
 )
 
 // TODO handle light/dark scheme? maybe make this a map
@@ -31,18 +31,18 @@ var colorCountGraphPass = constants.BrightGreen
 // result colors
 // state
 var statusColors = map[string]func(arg interface{}) aurora.Value{
-	controlresult.ControlAlarm: constants.BoldBrightRed,
-	controlresult.ControlError: constants.BoldBrightRed,
-	controlresult.ControlSkip:  constants.Gray3,
-	controlresult.ControlInfo:  constants.BrightCyan,
-	controlresult.ControlOk:    constants.BrightGreen,
+	execute.ControlAlarm: constants.BoldBrightRed,
+	execute.ControlError: constants.BoldBrightRed,
+	execute.ControlSkip:  constants.Gray3,
+	execute.ControlInfo:  constants.BrightCyan,
+	execute.ControlOk:    constants.BrightGreen,
 }
 var reasonColors = map[string]func(arg interface{}) aurora.Value{
-	controlresult.ControlAlarm: constants.BoldBrightRed,
-	controlresult.ControlError: constants.BoldBrightRed,
-	controlresult.ControlSkip:  constants.Gray3,
-	controlresult.ControlInfo:  constants.BrightCyan,
-	controlresult.ControlOk:    constants.Gray4,
+	execute.ControlAlarm: constants.BoldBrightRed,
+	execute.ControlError: constants.BoldBrightRed,
+	execute.ControlSkip:  constants.Gray3,
+	execute.ControlInfo:  constants.BrightCyan,
+	execute.ControlOk:    constants.Gray4,
 }
 
 // spacer dots used by both group and result

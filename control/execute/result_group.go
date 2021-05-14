@@ -1,4 +1,4 @@
-package controlresult
+package execute
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/workspace"
 )
 
 // ResultGroup is a struct representing a grouping of control results
@@ -30,7 +29,7 @@ type GroupSummary struct {
 }
 
 // NewRootResultGroup creates a ResultGroup to act as the root node of a control execution tree
-func NewRootResultGroup(includeControlPredicate func(string) bool, workspace *workspace.Workspace, rootItems ...modconfig.ControlTreeItem) *ResultGroup {
+func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.ControlTreeItem) *ResultGroup {
 	root := &ResultGroup{
 		GroupId: "root",
 		Results: []*Result{},
@@ -38,30 +37,33 @@ func NewRootResultGroup(includeControlPredicate func(string) bool, workspace *wo
 		Tags:    make(map[string]string),
 	}
 	for _, item := range rootItems {
-		root.Groups = append(root.Groups, NewResultGroup(includeControlPredicate, workspace, item, root))
+		// create new result group with root as parent
+		root.Groups = append(root.Groups, NewResultGroup(executionTree, item, root))
 	}
 	return root
 }
 
 // NewResultGroup creates a result group from a ControlTreeItem
-func NewResultGroup(includeControlPredicate func(string) bool, workspace *workspace.Workspace, item modconfig.ControlTreeItem, parent *ResultGroup) *ResultGroup {
+func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ControlTreeItem, parent *ResultGroup) *ResultGroup {
 	group := &ResultGroup{
-		GroupId:     item.Name(),
-		Title:       item.GetTitle(),
-		Description: item.GetDescription(),
-		Tags:        item.GetTags(),
+		GroupId:     treeItem.Name(),
+		Title:       treeItem.GetTitle(),
+		Description: treeItem.GetDescription(),
+		Tags:        treeItem.GetTags(),
 		parent:      parent,
 		Results:     []*Result{},
 		Groups:      []*ResultGroup{},
 	}
 	// add child groups for children which are benchmarks
-	for _, c := range item.GetChildren() {
+	for _, c := range treeItem.GetChildren() {
 		if benchmark, ok := c.(*modconfig.Benchmark); ok {
-			group.Groups = append(group.Groups, NewResultGroup(includeControlPredicate, workspace, benchmark, group))
+			// create a new result group with 'group' as the parent
+			group.Groups = append(group.Groups, NewResultGroup(executionTree, benchmark, group))
 		}
 		if control, ok := c.(*modconfig.Control); ok {
-			if includeControlPredicate(control.Name()) {
-				group.ControlRuns = append(group.ControlRuns, NewControlRun(control, item, workspace))
+			if executionTree.ShouldIncludeControl(control.Name()) {
+				// create new ControlRun with treeItem as the parent
+				group.ControlRuns = append(group.ControlRuns, NewControlRun(control, treeItem, executionTree.workspace))
 			}
 		}
 	}
@@ -122,7 +124,7 @@ func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
 		//}
 		//pendingControls--
 		//
-		//e.ResultTree.AddResult(res)
+		//e.ExecutionTree.AddResult(res)
 		// TODO store errors
 
 	}

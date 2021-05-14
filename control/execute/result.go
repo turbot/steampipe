@@ -1,4 +1,4 @@
-package controlresult
+package execute
 
 import (
 	typehelpers "github.com/turbot/go-kit/types"

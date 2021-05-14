@@ -3,7 +3,7 @@ package tabledisplay
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/control/controlresult"
+	"github.com/turbot/steampipe/control/execute"
 )
 
 type GroupRenderer struct {
@@ -17,7 +17,7 @@ type GroupRenderer struct {
 	width int
 }
 
-func NewGroupRenderer(result *controlresult.ResultGroup, maxFailedControls, maxTotalControls, width int) *GroupRenderer {
+func NewGroupRenderer(result *execute.ResultGroup, maxFailedControls, maxTotalControls, width int) *GroupRenderer {
 	return &GroupRenderer{
 		id:                result.GroupId,
 		failedControls:    result.Summary.Status.FailedCount(),

@@ -4,21 +4,21 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/turbot/steampipe/control/controlresult"
+	"github.com/turbot/steampipe/control/execute"
 )
 
 type tableTest struct {
-	resultTree *controlresult.ResultTree
+	resultTree *execute.ExecutionTree
 	width      int
 }
 
 var testCasesTable = map[string]tableTest{
 	"3 Advanced": {
-		resultTree: &controlresult.ResultTree{
-			Root: &controlresult.ResultGroup{
+		resultTree: &execute.ExecutionTree{
+			Root: &execute.ResultGroup{
 				GroupId: "3 Advanced",
-				Summary: controlresult.GroupSummary{
-					Status: controlresult.StatusSummary{
+				Summary: execute.GroupSummary{
+					Status: execute.StatusSummary{
 						Alarm: 1,
 						Ok:    100,
 						Info:  0,
@@ -28,7 +28,7 @@ var testCasesTable = map[string]tableTest{
 				},
 			},
 			// Groups property not used but must not be empty
-			Groups: map[string]*controlresult.ResultGroup{"dummy": {}},
+			Groups: map[string]*execute.ResultGroup{"dummy": {}},
 		},
 		width: 116,
 	},
