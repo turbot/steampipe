@@ -19,9 +19,9 @@ type ResultGroup struct {
 	Summary     GroupSummary      `json:"summary"`
 	Groups      []*ResultGroup    `json:"groups"`
 	ControlRuns []*ControlRun     `json:"-"`
-	Results     []*Result         `json:"controls"`
-
-	parent *ResultGroup
+	// the control tree item associated with this group(i.e. a mod/benchmark
+	GroupItem modconfig.ControlTreeItem
+	parent    *ResultGroup
 }
 
 type GroupSummary struct {
@@ -32,7 +32,6 @@ type GroupSummary struct {
 func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.ControlTreeItem) *ResultGroup {
 	root := &ResultGroup{
 		GroupId: "root",
-		Results: []*Result{},
 		Groups:  []*ResultGroup{},
 		Tags:    make(map[string]string),
 	}
@@ -50,8 +49,8 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ControlTree
 		Title:       treeItem.GetTitle(),
 		Description: treeItem.GetDescription(),
 		Tags:        treeItem.GetTags(),
+		GroupItem:   treeItem,
 		parent:      parent,
-		Results:     []*Result{},
 		Groups:      []*ResultGroup{},
 	}
 	// add child groups for children which are benchmarks
@@ -63,7 +62,7 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ControlTree
 		if control, ok := c.(*modconfig.Control); ok {
 			if executionTree.ShouldIncludeControl(control.Name()) {
 				// create new ControlRun with treeItem as the parent
-				group.ControlRuns = append(group.ControlRuns, NewControlRun(control, treeItem, executionTree.workspace))
+				group.ControlRuns = append(group.ControlRuns, NewControlRun(control, group, executionTree.workspace))
 			}
 		}
 	}
@@ -86,8 +85,7 @@ func (r *ResultGroup) PopulateGroupMap(groupMap map[string]*ResultGroup) {
 // (this also updates the status of our parent, all the way up the tree)
 func (r *ResultGroup) AddResult(run *ControlRun) {
 	r.ControlRuns = append(r.ControlRuns, run)
-	r.Results = append(r.Results, run.Result)
-	r.updateSummary(run.Summary)
+
 }
 
 func (r *ResultGroup) updateSummary(summary StatusSummary) {

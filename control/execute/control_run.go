@@ -39,17 +39,18 @@ type ControlRun struct {
 	runStatus   ControlRunStatus
 	stateLock   sync.Mutex
 	doneChan    chan bool
-	parent      modconfig.ControlTreeItem
-	workspace   *workspace.Workspace
+
+	workspace *workspace.Workspace
+	group     *ResultGroup
 }
 
-func NewControlRun(control *modconfig.Control, parent modconfig.ControlTreeItem, workspace *workspace.Workspace) *ControlRun {
+func NewControlRun(control *modconfig.Control, group *ResultGroup, workspace *workspace.Workspace) *ControlRun {
 	return &ControlRun{
 		Control:   control,
 		Result:    NewResult(control),
-		parent:    parent,
 		workspace: workspace,
 		runStatus: ControlRunReady,
+		group:     group,
 		doneChan:  make(chan bool, 1),
 	}
 }
@@ -102,8 +103,11 @@ func (r *ControlRun) gatherResults(result *queryresult.Result) {
 		select {
 		case row := <-*r.queryResult.RowChan:
 			if row == nil {
+				// update the result group status with our status - this will be passed all the way up the execution tree
+				r.group.updateSummary(r.Summary)
 				// nil row means we are done
 				r.setRunStatus(ControlRunComplete)
+
 				break
 			}
 			result, err := NewResultRow(r.Control, row, result.ColTypes)
