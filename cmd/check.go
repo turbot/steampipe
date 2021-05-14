@@ -47,6 +47,7 @@ func CheckCmd() *cobra.Command {
 
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runCheckCmd start")
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	defer func() {
 		logging.LogTime("runCheckCmd end")
