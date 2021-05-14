@@ -5,6 +5,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
+// TODO could this be merged with ControlRun?
 // Result is a struct representing the result of a control run
 // It will contain one or more result rows (i.e. for one or more resources)
 type Result struct {

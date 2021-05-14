@@ -1,9 +1,16 @@
 package controlresult
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/turbot/steampipe/workspace"
+
+	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/query/execute"
 
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -32,50 +39,86 @@ type ControlRun struct {
 	runStatus   ControlRunStatus
 	stateLock   sync.Mutex
 	doneChan    chan bool
+	parent      modconfig.ControlTreeItem
+	workspace   *workspace.Workspace
 }
 
-func NewControlRun(control *modconfig.Control) *ControlRun {
+func NewControlRun(control *modconfig.Control, parent modconfig.ControlTreeItem, workspace *workspace.Workspace) *ControlRun {
 	return &ControlRun{
 		Control:   control,
 		Result:    NewResult(control),
+		parent:    parent,
+		workspace: workspace,
 		runStatus: ControlRunReady,
 		doneChan:  make(chan bool, 1),
 	}
 }
 
-func (r *ControlRun) Start(result *queryresult.Result) {
+func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
+	r.runStatus = ControlRunStarted
+
+	control := r.Control
+	// resolve the query parameter of the control
+	query, _ := execute.GetQueryFromArg(typeHelpers.SafeString(control.SQL), r.workspace)
+	if query == "" {
+		r.SetError(fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typeHelpers.SafeString(control.SQL)))
+		return
+	}
+
+	startTime := time.Now()
+	queryResult, err := client.ExecuteQuery(ctx, query, false)
+	if err != nil {
+		r.SetError(err)
+		return
+	}
 	// validate required columns
-	r.queryResult = result
+	r.queryResult = queryResult
 	if err := r.ValidateColumns(); err != nil {
 		r.SetError(err)
 		return
 	}
 
-	r.queryResult = result
-	r.runStatus = ControlRunStarted
-	go func() {
-		for {
-			select {
-			case row := <-*r.queryResult.RowChan:
-				if row == nil {
-					// nil row means we are done
-					r.setRunStatus(ControlRunComplete)
-					break
-				}
-				result, err := NewResultRow(r.Control, row, result.ColTypes)
-				if err != nil {
-					// fail on error
-					r.SetError(err)
-					continue
-				}
-				r.addResultRow(result)
-			case <-r.doneChan:
-				return
-			default:
-				time.Sleep(25 * time.Millisecond)
-			}
+	// set the control as started
+	go r.gatherResults(queryResult)
+
+	// TEMPORARY - we will eventually pass the streams to the renderer before completion
+	// wait for control to finish
+	controlCompletionTimeout := 240 * time.Second
+	for {
+		// if the control is finished (either successfully or with an error), return the controlRun
+		if r.Finished() {
+			break
 		}
-	}()
+		time.Sleep(50 * time.Millisecond)
+		if time.Since(startTime) > controlCompletionTimeout {
+			r.SetError(fmt.Errorf("control %s timed out", control.Name()))
+		}
+	}
+
+}
+
+func (r *ControlRun) gatherResults(result *queryresult.Result) {
+	for {
+		select {
+		case row := <-*r.queryResult.RowChan:
+			if row == nil {
+				// nil row means we are done
+				r.setRunStatus(ControlRunComplete)
+				break
+			}
+			result, err := NewResultRow(r.Control, row, result.ColTypes)
+			if err != nil {
+				// fail on error
+				r.SetError(err)
+				continue
+			}
+			r.addResultRow(result)
+		case <-r.doneChan:
+			return
+		default:
+			time.Sleep(25 * time.Millisecond)
+		}
+	}
 }
 
 // add the result row to our results and update the summary with the row status

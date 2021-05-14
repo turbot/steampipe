@@ -1,7 +1,13 @@
 package controlresult
 
 import (
+	"context"
+
+	"github.com/turbot/steampipe/display"
+
+	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/workspace"
 )
 
 // ResultGroup is a struct representing a grouping of control results
@@ -24,7 +30,7 @@ type GroupSummary struct {
 }
 
 // NewRootResultGroup creates a ResultGroup to act as the root node of a control execution tree
-func NewRootResultGroup(rootItems []modconfig.ControlTreeItem) *ResultGroup {
+func NewRootResultGroup(includeControlPredicate func(string) bool, workspace *workspace.Workspace, rootItems ...modconfig.ControlTreeItem) *ResultGroup {
 	root := &ResultGroup{
 		GroupId: "root",
 		Results: []*Result{},
@@ -32,13 +38,13 @@ func NewRootResultGroup(rootItems []modconfig.ControlTreeItem) *ResultGroup {
 		Tags:    make(map[string]string),
 	}
 	for _, item := range rootItems {
-		root.Groups = append(root.Groups, NewResultGroup(item, root))
+		root.Groups = append(root.Groups, NewResultGroup(includeControlPredicate, workspace, item, root))
 	}
 	return root
 }
 
 // NewResultGroup creates a result group from a ControlTreeItem
-func NewResultGroup(item modconfig.ControlTreeItem, parent *ResultGroup) *ResultGroup {
+func NewResultGroup(includeControlPredicate func(string) bool, workspace *workspace.Workspace, item modconfig.ControlTreeItem, parent *ResultGroup) *ResultGroup {
 	group := &ResultGroup{
 		GroupId:     item.Name(),
 		Title:       item.GetTitle(),
@@ -51,7 +57,12 @@ func NewResultGroup(item modconfig.ControlTreeItem, parent *ResultGroup) *Result
 	// add child groups for children which are benchmarks
 	for _, c := range item.GetChildren() {
 		if benchmark, ok := c.(*modconfig.Benchmark); ok {
-			group.Groups = append(group.Groups, NewResultGroup(benchmark, group))
+			group.Groups = append(group.Groups, NewResultGroup(includeControlPredicate, workspace, benchmark, group))
+		}
+		if control, ok := c.(*modconfig.Control); ok {
+			if includeControlPredicate(control.Name()) {
+				group.ControlRuns = append(group.ControlRuns, NewControlRun(control, item, workspace))
+			}
 		}
 	}
 	return group
@@ -86,4 +97,38 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 	if r.parent != nil {
 		r.parent.updateSummary(summary)
 	}
+}
+
+func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
+	spinner := display.ShowSpinner("")
+
+	var errors = 0
+	//totalControls := len(e.Controls)
+	//pendingControls := totalControls
+	//completeControls := 0
+	//errorControls := 0
+	//
+	for _, controlRun := range r.ControlRuns {
+		controlRun.Start(ctx, client)
+
+		//p := c.Path()
+		//display.UpdateSpinnerMessage(spinner, fmt.Sprintf("Running %d %s. (%d complete, %d pending, %d errors): executing \"%s\" (%s)", totalControls, utils.Pluralize("control", totalControls), completeControls, pendingControls, errorControls, typeHelpers.SafeString(c.Title), p))
+		//
+		//res := e.executeControl(ctx, c)
+		//if res.GetRunStatus() == controlresult.ControlRunError {
+		//	errorControls++
+		//} else {
+		//	completeControls++
+		//}
+		//pendingControls--
+		//
+		//e.ResultTree.AddResult(res)
+		// TODO store errors
+
+	}
+	for _, child := range r.Groups {
+		errors += child.Execute(ctx, client)
+	}
+	spinner.Stop()
+	return errors
 }

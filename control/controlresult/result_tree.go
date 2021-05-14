@@ -3,6 +3,8 @@ package controlresult
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/workspace"
+
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -13,9 +15,9 @@ type ResultTree struct {
 }
 
 // NewResultTree creates a result group from a ControlTreeItem
-func NewResultTree(rootItems ...modconfig.ControlTreeItem) *ResultTree {
+func NewResultTree(includeControlPredicate func(string) bool, workspace *workspace.Workspace, rootItems ...modconfig.ControlTreeItem) *ResultTree {
 	// build tree of result groups, starting with a synthetic 'root' node
-	root := NewRootResultGroup(rootItems)
+	root := NewRootResultGroup(includeControlPredicate, workspace, rootItems...)
 
 	// now populate the ResultTree
 	res := &ResultTree{

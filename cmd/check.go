@@ -81,12 +81,17 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	// treat each arg as a separate execution
 	failures := 0
 	for _, arg := range args {
-		executor := execute.NewExecutor(ctx, arg, workspace, client)
-		executor.Execute(ctx)
-		failures += executor.Errors
-		//bytes, err := json.MarshalIndent(executor.ResultTree.Root, "", "  ")
+		resolver, err := execute.NewControlResolver(ctx, arg, workspace, client)
+		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
 
-		DisplayControlResults(executor.ResultTree)
+		// for now we execute controls syncronously
+
+		resolver.ResultTree.Root.Execute(ctx, client)
+
+		failures += resolver.Errors
+		//bytes, err := json.MarshalIndent(resolver.ResultTree.Root, "", "  ")
+
+		DisplayControlResults(resolver.ResultTree)
 	}
 
 	// set global exit code
