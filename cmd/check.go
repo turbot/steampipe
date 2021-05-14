@@ -94,7 +94,17 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 func DisplayControlResults(executionTree *execute.ExecutionTree) {
 	//bytes, err := json.MarshalIndent(executionTree.Root, "", "  ")
-	maxCols, _, _ := gows.GetWinSize()
+	maxCols := getMaxCols()
+
 	renderer := controldisplay.NewTableRenderer(executionTree, maxCols)
 	fmt.Println(renderer.Render())
+}
+
+func getMaxCols() int {
+	maxCols, _, _ := gows.GetWinSize()
+	// limit to 120
+	if maxCols > 120 {
+		maxCols = 120
+	}
+	return maxCols
 }

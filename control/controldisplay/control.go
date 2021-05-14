@@ -43,7 +43,6 @@ func (c ControlRenderer) Render() string {
 
 	// now render the results
 	for _, row := range c.run.Result.Rows {
-
 		resultRenderer := NewResultRenderer(row.Status, row.Reason, row.Dimensions, c.colorMap, c.width)
 		controlStrings = append(controlStrings, resultRenderer.Render())
 

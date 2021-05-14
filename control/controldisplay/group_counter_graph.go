@@ -24,9 +24,15 @@ func NewCounterGraphRenderer(failedControls, totalControls, maxTotalControls int
 }
 
 func (d CounterGraphRenderer) Render() (string, int) {
+
 	// the graph has the format " [=======   ]"
 	// the graph is 10 segments long, so length is always 13
 	length := 13
+
+	// if no controls have been run, return empty graph
+	if d.maxTotalControls == 0 {
+		return " [          ]", length
+	}
 
 	// if each segment is 10 controls, count 1-10 => 1 segment, 11-20 => 2 segments
 	var failSegments, passSegments, spaces int
