@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/karrick/gows"
+	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/execute"
-	"github.com/turbot/steampipe/control/tabledisplay"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -84,9 +84,9 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		// for now we execute controls syncronously
 		// Execute returns the number of failures
-		failures += executionTree.Root.Execute(ctx, client)
+		executionTree.Execute(ctx, client)
 
-		//bytes, err := json.MarshalIndent(resolver.ExecutionTree.Root, "", "  ")
+		//bytes, err := json.MarshalIndent(executionTree.Root, "", "  ")
 
 		DisplayControlResults(executionTree)
 	}
@@ -98,7 +98,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 func DisplayControlResults(executionTree *execute.ExecutionTree) {
 
 	maxCols, _, _ := gows.GetWinSize()
-	renderer := tabledisplay.NewTableRenderer(executionTree, maxCols)
+	renderer := controldisplay.NewTableRenderer(executionTree, maxCols)
 	fmt.Println(renderer.Render())
 	//
 	//fmt.Println()

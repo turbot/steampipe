@@ -6,8 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/workspace"
-
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/query/execute"
@@ -40,18 +38,20 @@ type ControlRun struct {
 	stateLock   sync.Mutex
 	doneChan    chan bool
 
-	workspace *workspace.Workspace
-	group     *ResultGroup
+	group         *ResultGroup
+	executionTree *ExecutionTree
 }
 
-func NewControlRun(control *modconfig.Control, group *ResultGroup, workspace *workspace.Workspace) *ControlRun {
+func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree *ExecutionTree) *ControlRun {
+	executionTree.ControlCount++
+
 	return &ControlRun{
-		Control:   control,
-		Result:    NewResult(control),
-		workspace: workspace,
-		runStatus: ControlRunReady,
-		group:     group,
-		doneChan:  make(chan bool, 1),
+		Control:       control,
+		Result:        NewResult(control),
+		executionTree: executionTree,
+		runStatus:     ControlRunReady,
+		group:         group,
+		doneChan:      make(chan bool, 1),
 	}
 }
 
@@ -59,8 +59,12 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	r.runStatus = ControlRunStarted
 
 	control := r.Control
+
+	// update the current running control in the Progress renderer
+	r.executionTree.progress.OnControlStart(control.Name())
+
 	// resolve the query parameter of the control
-	query, _ := execute.GetQueryFromArg(typeHelpers.SafeString(control.SQL), r.workspace)
+	query, _ := execute.GetQueryFromArg(typeHelpers.SafeString(control.SQL), r.executionTree.workspace)
 	if query == "" {
 		r.SetError(fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typeHelpers.SafeString(control.SQL)))
 		return
@@ -100,6 +104,7 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 
 func (r *ControlRun) gatherResults(result *queryresult.Result) {
 	for {
+
 		select {
 		case row := <-*r.queryResult.RowChan:
 			if row == nil {
@@ -108,7 +113,8 @@ func (r *ControlRun) gatherResults(result *queryresult.Result) {
 				// nil row means we are done
 				r.setRunStatus(ControlRunComplete)
 
-				break
+				return
+
 			}
 			result, err := NewResultRow(r.Control, row, result.ColTypes)
 			if err != nil {
@@ -154,7 +160,16 @@ func (r *ControlRun) setRunStatus(status ControlRunStatus) {
 	r.stateLock.Lock()
 	defer r.stateLock.Unlock()
 	r.runStatus = status
+
 	if r.Finished() {
+
+		// update Progress
+		if status == ControlRunError {
+			r.executionTree.progress.OnError()
+		} else {
+			r.executionTree.progress.OnComplete()
+		}
+
 		// TODO CANCEL QUERY IF NEEDED
 		r.doneChan <- true
 	}

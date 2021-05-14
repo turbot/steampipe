@@ -1,4 +1,4 @@
-package tabledisplay
+package controldisplay
 
 type Result struct {
 	status string

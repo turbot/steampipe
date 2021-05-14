@@ -16,11 +16,14 @@ import (
 
 // ExecutionTree is a structure representing the control result hierarchy
 type ExecutionTree struct {
-	Root      *ResultGroup
+	Root         *ResultGroup
+	ControlCount int
+
 	workspace *workspace.Workspace
 	client    *db.Client
-
-	controlNameMap map[string]bool
+	// an optional map of control names used to filter the controls which are run
+	controlNameFilterMap map[string]bool
+	progress             *ControlProgressRenderer
 }
 
 // NewExecutionTree creates a result group from a ControlTreeItem
@@ -45,7 +48,16 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	// build tree of result groups, starting with a synthetic 'root' node
 	executionTree.Root = NewRootResultGroup(executionTree, rootItems...)
 
+	executionTree.progress = NewControlProgressRenderer(executionTree.ControlCount)
+
 	return executionTree, nil
+}
+
+func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
+	e.progress.Start()
+	defer e.progress.Finish()
+
+	return e.Root.Execute(ctx, client)
 }
 
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
@@ -54,7 +66,7 @@ func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
 	if viper.IsSet(constants.ArgWhere) {
 		whereArg := viper.GetString(constants.ArgWhere)
 		var err error
-		e.controlNameMap, err = e.getControlMapFromMetadataQuery(ctx, whereArg)
+		e.controlNameFilterMap, err = e.getControlMapFromMetadataQuery(ctx, whereArg)
 		if err != nil {
 			return err
 		}
@@ -63,10 +75,10 @@ func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
 }
 
 func (e *ExecutionTree) ShouldIncludeControl(controlName string) bool {
-	if e.controlNameMap == nil {
+	if e.controlNameFilterMap == nil {
 		return true
 	}
-	_, ok := e.controlNameMap[controlName]
+	_, ok := e.controlNameFilterMap[controlName]
 	return ok
 
 }

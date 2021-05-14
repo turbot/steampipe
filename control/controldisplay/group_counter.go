@@ -1,4 +1,4 @@
-package tabledisplay
+package controldisplay
 
 import (
 	"fmt"
