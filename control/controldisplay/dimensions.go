@@ -28,36 +28,35 @@ func NewDimensionsRenderer(dimensions []execute.Dimension, colorMap execute.Dime
 
 // Render returns the reason, truncated to the max length if necessary
 func (d DimensionsRenderer) Render() (string, int) {
+	if len(d.dimensions) == 0 {
+		return "", 0
+	}
 	// make array of dimension values (including trailing spaces
 	var formattedDimensions = make([]string, len(d.dimensions))
 	for i, d := range d.dimensions {
 		formattedDimensions[i] = fmt.Sprintf(" %s", d.Value)
 	}
 
-	minDimensionWidth := 3
 	var length int
 	for length = dimensionsLength(formattedDimensions); length > d.width; {
-		// truncate each dimension in turn to a min of const minDimensionWidth, until we satisfy the width requirement
-		for i, v := range formattedDimensions {
-			if len(v) > minDimensionWidth {
-				// truncate the original value, not the already truncated value
-				formattedDimensions[i] = helpers.TruncateString(d.dimensions[i].Value, len(v)-1)
-				break
-			}
-			// to get here all dimensions are at the min dimension width and we are still too long - reduce min width
-			if minDimensionWidth >= 2 {
-				minDimensionWidth--
+		// truncate the first dimension
+
+		if len(formattedDimensions[0]) > 0 {
+			// truncate the original value, not the already truncated value
+			formattedDimensions[0] = helpers.TruncateString(d.dimensions[0].Value, len(formattedDimensions[0])-1)
+		} else {
+			// so event with all dimensions 1 long, we still do not have enough space
+			// remove a dimension from the array
+			if len(formattedDimensions) > 2 {
+				d.dimensions = d.dimensions[1:]
+				formattedDimensions = formattedDimensions[1:]
 			} else {
-				// so event with all dimensions 1 long, we still do not have enough space
-				// remove a dimension from the array
-				if len(formattedDimensions) > 2 {
-					formattedDimensions = formattedDimensions[1:]
-				} else {
-					// there is only 1 dimension - nothing we can do here, give up
-					return "", 0
-				}
+				// there is only 1 dimension - nothing we can do here, give up
+				return "", 0
 			}
 		}
+		// update length
+		length = dimensionsLength(formattedDimensions)
 	}
 
 	// ok we now have dimensions that fir in the space, color them

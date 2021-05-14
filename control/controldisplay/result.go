@@ -6,7 +6,7 @@ import (
 	"github.com/turbot/steampipe/control/execute"
 )
 
-const minReasonWidth = 5
+const minReasonWidth = 10
 
 type ResultRenderer struct {
 	status     string
@@ -36,10 +36,13 @@ func (r ResultRenderer) Render() string {
 	availableWidth := r.width - statusWidth
 
 	// for now give this all to reason
-	availableDimensionWidth := availableWidth - minDimensionWidth
-	dimensionsString, dimensionsWidth := NewDimensionsRenderer(r.dimensions, r.colorMap, availableDimensionWidth).Render()
-
-	availableWidth -= dimensionsWidth
+	availableDimensionWidth := availableWidth - minReasonWidth
+	var dimensionsString string
+	var dimensionWidth int
+	if availableDimensionWidth > 0 {
+		dimensionsString, dimensionWidth = NewDimensionsRenderer(r.dimensions, r.colorMap, availableDimensionWidth).Render()
+		availableWidth -= dimensionWidth
+	}
 
 	// now availableWidth is all we have - if it is not enough we need to truncate the reason
 	reasonString, reasonWidth := NewResultReasonRenderer(r.status, r.reason, availableWidth).Render()

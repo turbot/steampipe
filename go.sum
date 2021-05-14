@@ -926,6 +926,8 @@ github.com/turbot/go-kit v0.2.0-rc.0 h1:ILLnTvSjVpV11bPMapMWWOtGccvvXQF7Kd1MPeIu
 github.com/turbot/go-kit v0.2.0-rc.0/go.mod h1:FboSf8p5XWOezO9V/N+rtG07FDKBuBiPhQrSJxQgm+I=
 github.com/turbot/go-kit v0.2.0 h1:8+kM0quTDMzc7eJRwMz/OXHk7/5LoeTWvxpgyzWkvgs=
 github.com/turbot/go-kit v0.2.0/go.mod h1:FboSf8p5XWOezO9V/N+rtG07FDKBuBiPhQrSJxQgm+I=
+github.com/turbot/go-kit v0.2.1 h1:NLcS25WrknLaGdDyi9ld0FePU+bbjgfm/FzMMD4b3VY=
+github.com/turbot/go-kit v0.2.1/go.mod h1:FboSf8p5XWOezO9V/N+rtG07FDKBuBiPhQrSJxQgm+I=
 github.com/turbot/go-prompt v0.2.6-steampipe h1:/stkR3dOdxKRk/lKsnKpb9KZA/m3v0/OqLIHwDN8zv4=
 github.com/turbot/go-prompt v0.2.6-steampipe/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
 github.com/turbot/steampipe-plugin-sdk v0.2.8 h1:pq85hYzoGQPspAjtl0O5yoMdntciTSW6cR/YTHKAtp4=

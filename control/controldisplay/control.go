@@ -27,7 +27,6 @@ func NewControlRenderer(run *execute.ControlRun, maxFailed, maxTotal int, colorM
 }
 
 func (c ControlRenderer) Render() string {
-
 	var controlStrings []string
 	// use group renderer to render the control title and counts
 	controlRenderer := NewGroupRenderer(typehelpers.SafeString(c.run.Control.Title),
