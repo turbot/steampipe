@@ -3,8 +3,6 @@ package controldisplay
 import (
 	"strings"
 
-	typehelpers "github.com/turbot/go-kit/types"
-
 	"github.com/turbot/steampipe/control/execute"
 )
 
@@ -51,32 +49,9 @@ func (t TableRenderer) renderResultGroup(group *execute.ResultGroup) string {
 			"")
 	}
 
-	// render controls
-	resultsRendered := 0
 	for _, run := range group.ControlRuns {
-		// use group renderer to render the control title and counts
-		controlRenderer := NewGroupRenderer(typehelpers.SafeString(run.Control.Title),
-			run.Summary.FailedCount(),
-			run.Summary.TotalCount(),
-			t.maxFailedControls,
-			t.maxTotalControls,
-			t.width)
-		tableStrings = append(tableStrings,
-			controlRenderer.Render(),
-			// newline after group
-			"")
-
-		// now render the results
-		for _, row := range run.Result.Rows {
-			// TODO dimensions
-			resultRenderer := NewResultRenderer(row.Status, row.Reason, t.width)
-			tableStrings = append(tableStrings, resultRenderer.Render())
-			resultsRendered++
-		}
-		// newline after results
-		if resultsRendered > 0 {
-			tableStrings = append(tableStrings, "")
-		}
+		controlRenderer := NewControlRenderer(run, t.maxFailedControls, t.maxTotalControls, t.resultTree.DimensionColorMap, t.width)
+		tableStrings = append(tableStrings, controlRenderer.Render())
 	}
 
 	// render child groups

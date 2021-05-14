@@ -43,8 +43,6 @@ type ControlRun struct {
 }
 
 func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree *ExecutionTree) *ControlRun {
-	executionTree.ControlCount++
-
 	return &ControlRun{
 		Control:       control,
 		Result:        NewResult(control),

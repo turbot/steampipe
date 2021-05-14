@@ -62,7 +62,11 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ControlTree
 		if control, ok := c.(*modconfig.Control); ok {
 			if executionTree.ShouldIncludeControl(control.Name()) {
 				// create new ControlRun with treeItem as the parent
-				group.ControlRuns = append(group.ControlRuns, NewControlRun(control, group, executionTree))
+				controlRun := NewControlRun(control, group, executionTree)
+				// add it into the group
+				group.ControlRuns = append(group.ControlRuns, controlRun)
+				// also add it into the tree
+				executionTree.controlRuns = append(executionTree.controlRuns, controlRun)
 			}
 		}
 	}

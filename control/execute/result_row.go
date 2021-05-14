@@ -29,7 +29,7 @@ type ResultRow struct {
 }
 
 // AddDimension checks whether a column value is a scalar type, and if so adds it to the Dimensions map
-func (r ResultRow) AddDimension(c *sql.ColumnType, val interface{}) {
+func (r *ResultRow) AddDimension(c *sql.ColumnType, val interface{}) {
 	switch c.ScanType().Kind() {
 	case reflect.Array, reflect.Map, reflect.Slice, reflect.Struct:
 		return

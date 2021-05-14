@@ -3,6 +3,7 @@ select
   'some other resource' as resource,
   'alarm' as  status,
   'is pretty insecure' as reason,
+  'partition 10000' as partition,
   'us-east-2' as region,
-  '1625354343537' as account
+  '3335354343537' as account
 

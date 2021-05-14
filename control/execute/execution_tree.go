@@ -16,14 +16,17 @@ import (
 
 // ExecutionTree is a structure representing the control result hierarchy
 type ExecutionTree struct {
-	Root         *ResultGroup
-	ControlCount int
+	Root *ResultGroup
 
 	workspace *workspace.Workspace
 	client    *db.Client
 	// an optional map of control names used to filter the controls which are run
 	controlNameFilterMap map[string]bool
 	progress             *ControlProgressRenderer
+	// map of dimension property name to property value to color map
+	DimensionColorMap DimensionColorMap
+	// flat list of all control runs
+	controlRuns []*ControlRun
 }
 
 // NewExecutionTree creates a result group from a ControlTreeItem
@@ -49,7 +52,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	executionTree.Root = NewRootResultGroup(executionTree, rootItems...)
 
 	// after tree has built, ControlCount will be set - create progress rendered
-	executionTree.progress = NewControlProgressRenderer(executionTree.ControlCount)
+	executionTree.progress = NewControlProgressRenderer(len(executionTree.controlRuns))
 
 	return executionTree, nil
 }
@@ -58,7 +61,10 @@ func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
 	e.progress.Start()
 	defer e.progress.Finish()
 	// just execute the root - it will traverse the tree
-	return e.Root.Execute(ctx, client)
+	errors := e.Root.Execute(ctx, client)
+	// now build map of dimension property name to property value to color map
+	e.DimensionColorMap = newDimensionColorMap(e)
+	return errors
 }
 
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {

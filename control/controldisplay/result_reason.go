@@ -25,11 +25,11 @@ func (d ResultReasonRenderer) Render() (string, int) {
 	// truncate the reason (deduct 2 from length to allow for ": ")
 	availableWidth := d.width - 2
 	formattedReason := helpers.TruncateString(d.reason, availableWidth)
-
+	length := len(formattedReason) + 2
 	// get the color for our status
 	if colorFunc, ok := reasonColors[d.status]; ok {
 		formattedReason = fmt.Sprintf("%s", colorFunc(formattedReason))
 	}
 
-	return fmt.Sprintf("%s %s", colorReasonColon(":"), formattedReason), d.width
+	return fmt.Sprintf("%s %s", colorReasonColon(":"), formattedReason), length
 }

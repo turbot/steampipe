@@ -3,6 +3,6 @@ select
   'resource name' as resource,
   'info' as  status,
   'just some info, thought you should know' as reason,
-  'us-east-2' as region,
-  '1625354343537' as account
-
+  'partition 20000' as partition,
+  'us-east-3' as region,
+  '21323354377537' as account
