@@ -30,6 +30,9 @@ func NewGroupRenderer(title string, failed, total, maxFailed, maxTotal, width in
 }
 
 func (r GroupRenderer) Render() string {
+	log.Println("[TRACE] begin group render")
+	defer log.Println("[TRACE] end group render")
+
 	if r.width <= 0 {
 		log.Printf("[WARN] group renderer has width of %d\n", r.width)
 		return ""

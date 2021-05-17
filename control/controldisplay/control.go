@@ -1,6 +1,7 @@
 package controldisplay
 
 import (
+	"log"
 	"strings"
 
 	typehelpers "github.com/turbot/go-kit/types"
@@ -27,6 +28,9 @@ func NewControlRenderer(run *execute.ControlRun, maxFailed, maxTotal int, colorM
 }
 
 func (r ControlRenderer) Render() string {
+	log.Println("[TRACE] begin control render")
+	defer log.Println("[TRACE] end control render")
+
 	var controlStrings []string
 	// use group renderer to render the control title and counts
 	controlRenderer := NewGroupRenderer(typehelpers.SafeString(r.run.Control.Title),

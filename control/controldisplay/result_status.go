@@ -2,6 +2,7 @@ package controldisplay
 
 import (
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -17,6 +18,9 @@ func NewResultStatusRenderer(status string) *ResultStatusRenderer {
 
 // Render returns the status
 func (r ResultStatusRenderer) Render() string {
+	log.Println("[TRACE] begin result status render")
+	defer log.Println("[TRACE] end result status render")
+
 	// pad status string to fixed width
 	statusString := r.paddedStatusString()
 

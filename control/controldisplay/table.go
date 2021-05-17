@@ -1,6 +1,7 @@
 package controldisplay
 
 import (
+	"log"
 	"strings"
 
 	"github.com/turbot/steampipe/control/execute"
@@ -31,6 +32,9 @@ func (r TableRenderer) Render() string {
 }
 
 func (r TableRenderer) renderResultGroup(group *execute.ResultGroup) string {
+	log.Println("[TRACE] begin table render")
+	defer log.Println("[TRACE] end table render")
+
 	groupRenderer := NewGroupRenderer(
 		group.Title,
 		group.Summary.Status.FailedCount(),

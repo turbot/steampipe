@@ -17,6 +17,9 @@ func NewSpacerRenderer(width int) *SpacerRenderer {
 
 // Render returns a divider string os format: "......."
 func (r SpacerRenderer) Render() string {
+	log.Println("[TRACE] begin spacer render")
+	defer log.Println("[TRACE] end spacer render")
+
 	if r.width <= 0 {
 		log.Printf("[WARN] spacer renderer has width of %d\n", r.width)
 		return ""

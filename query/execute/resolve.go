@@ -2,7 +2,6 @@ package execute
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -53,8 +52,6 @@ func GetQueryFromArg(arg string, workspace *workspace.Workspace) (string, bool) 
 }
 
 func getQueryFromFile(filename string) (string, bool, error) {
-	log.Println("[TRACE] getQueryFromFiles: ", filename)
-
 	// get absolute filename
 	path, err := filepath.Abs(filename)
 	if err != nil {

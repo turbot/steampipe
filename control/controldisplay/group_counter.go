@@ -2,6 +2,7 @@ package controldisplay
 
 import (
 	"fmt"
+	"log"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -33,6 +34,9 @@ The alignment depends on the maximum failed and maximum total parameters, as the
 "  1 / 1,020"
 */
 func (r CounterRenderer) Render() string {
+	log.Println("[TRACE] begin counter render")
+	defer log.Println("[TRACE] end counter render")
+
 	p := message.NewPrinter(language.English)
 	// get strings for fails and total - format with commas for thousands
 	failedString := p.Sprintf("%d", r.failedControls)

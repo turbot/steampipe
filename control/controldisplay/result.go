@@ -2,6 +2,7 @@ package controldisplay
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/turbot/go-kit/helpers"
 
@@ -31,6 +32,9 @@ func NewResultRenderer(status, reason string, dimensions []execute.Dimension, co
 }
 
 func (r ResultRenderer) Render() string {
+	log.Println("[TRACE] begin result render")
+	defer log.Println("[TRACE] end result render")
+
 	status := NewResultStatusRenderer(r.status)
 	statusString := status.Render()
 	statusWidth := helpers.PrintableLength(statusString)
