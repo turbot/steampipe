@@ -57,6 +57,18 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	return executionTree, nil
 }
 
+// AddControl checks whether control should be included in the tree
+// if so, creates a ControlRun, which is added to the parent group
+func (e *ExecutionTree) AddControl(control *modconfig.Control, group *ResultGroup) {
+	if e.ShouldIncludeControl(control.Name()) {
+		// create new ControlRun with treeItem as the parent
+		controlRun := NewControlRun(control, group, e)
+		// add it into the group
+		group.ControlRuns = append(group.ControlRuns, controlRun)
+		// also add it into the tree
+		e.controlRuns = append(e.controlRuns, controlRun)
+	}
+}
 func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
 	e.progress.Start()
 	defer e.progress.Finish()
