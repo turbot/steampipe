@@ -1,64 +1,94 @@
 package controldisplay
 
 import (
-	"fmt"
 	"log"
+	"strings"
 
-	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 type GroupRenderer struct {
-	title string
-
-	failedControls    int
-	totalControls     int
+	group *execute.ResultGroup
+	// screen width
+	width             int
 	maxFailedControls int
 	maxTotalControls  int
-	// screen width
-	width int
+	resultTree        *execute.ExecutionTree
 }
 
-func NewGroupRenderer(title string, failed, total, maxFailed, maxTotal, width int) *GroupRenderer {
+func NewGroupRenderer(group *execute.ResultGroup, maxFailedControls, maxTotalControls int, resultTree *execute.ExecutionTree, width int) *GroupRenderer {
 	return &GroupRenderer{
-		title:             title,
-		failedControls:    failed,
-		totalControls:     total,
-		maxFailedControls: maxFailed,
-		maxTotalControls:  maxTotal,
+		group:             group,
+		resultTree:        resultTree,
+		maxFailedControls: maxFailedControls,
+		maxTotalControls:  maxTotalControls,
 		width:             width,
 	}
 }
 
 func (r GroupRenderer) Render() string {
-	log.Println("[TRACE] begin group render")
-	defer log.Println("[TRACE] end group render")
+	log.Println("[TRACE] begin table render")
+	defer log.Println("[TRACE] end table render")
 
-	if r.width <= 0 {
-		log.Printf("[WARN] group renderer has width of %d\n", r.width)
-		return ""
+	if r.group.GroupId == execute.RootResultGroupName {
+		return r.renderRootResultGroup()
 	}
 
-	counterString := NewCounterRenderer(r.failedControls, r.totalControls, r.maxFailedControls, r.maxTotalControls).Render()
-	counterWidth := helpers.PrintableLength(counterString)
+	groupHeadingRenderer := NewGroupHeadingRenderer(
+		r.group.Title,
+		r.group.Summary.Status.FailedCount(),
+		r.group.Summary.Status.TotalCount(),
+		r.maxFailedControls,
+		r.maxTotalControls,
+		r.width)
 
-	graphString := NewCounterGraphRenderer(r.failedControls, r.totalControls, r.maxTotalControls).Render()
-	graphWidth := helpers.PrintableLength(graphString)
+	// render this group header
+	tableStrings := append([]string{},
+		groupHeadingRenderer.Render(),
+		// newline after group
+		"")
 
-	// figure out how much width we have available for the title
-	availableWidth := r.width - counterWidth - graphWidth
+	// now render the group children, in the order they are specified
+	childStrings := r.renderChildren()
+	tableStrings = append(tableStrings, childStrings...)
+	return strings.Join(tableStrings, "\n")
+}
 
-	// now availableWidth is all we have - if it is not enough we need to truncate the title
-	titleString := NewGroupTitleRenderer(r.title, availableWidth).Render()
-	titleWidth := helpers.PrintableLength(titleString)
+// for root result group, there will either be one or more groups, or one or more control runs
+// there will be no order specified so just lop through them
+func (r GroupRenderer) renderRootResultGroup() string {
+	var resultStrings = make([]string, len(r.group.Groups)+len(r.group.ControlRuns))
+	for i, group := range r.group.Groups {
+		groupRenderer := NewGroupRenderer(group, r.maxFailedControls, r.maxTotalControls, r.resultTree, r.width)
+		resultStrings[i] = groupRenderer.Render()
+	}
+	for i, run := range r.group.ControlRuns {
+		controlRenderer := NewControlRenderer(run, r.maxFailedControls, r.maxTotalControls, r.resultTree.DimensionColorMap, r.width)
+		resultStrings[i] = controlRenderer.Render()
+	}
+	return strings.Join(resultStrings, "\n")
+}
 
-	// is there any room for a spacer
-	spacerWidth := availableWidth - titleWidth
-	var spacerString string
-	if spacerWidth > 0 {
-		spacerString = NewSpacerRenderer(spacerWidth).Render()
+// render the children of this group, in the order they are specified in the hcl
+func (r GroupRenderer) renderChildren() []string {
+	children := r.group.GroupItem.GetChildren()
+	var childStrings = make([]string, len(children))
+
+	for i, child := range children {
+		if control, ok := child.(*modconfig.Control); ok {
+			// get Result group with a matching name
+			if run := r.group.GetControlRunByName(control.Name()); run != nil {
+				controlRenderer := NewControlRenderer(run, r.maxFailedControls, r.maxTotalControls, r.resultTree.DimensionColorMap, r.width)
+				childStrings[i] = controlRenderer.Render()
+			}
+		} else {
+			if childGroup := r.group.GetGroupByName(child.Name()); childGroup != nil {
+				groupRenderer := NewGroupRenderer(childGroup, r.maxFailedControls, r.maxTotalControls, r.resultTree, r.width)
+				childStrings[i] = groupRenderer.Render()
+			}
+		}
 	}
 
-	// now put these all together
-	str := fmt.Sprintf("%s%s%s%s", titleString, spacerString, counterString, graphString)
-	return str
+	return childStrings
 }

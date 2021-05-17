@@ -34,7 +34,7 @@ func (r CounterGraphRenderer) Render() string {
 
 	// if no controls have been run, return empty graph
 	if r.maxTotalControls == 0 {
-		return " [          ]"
+		return r.buildGraphString(0, 0, 10)
 	}
 	// if each segment is 10 controls, count 1-10 => 1 segment, 11-20 => 2 segments
 	var failSegments int
@@ -49,12 +49,15 @@ func (r CounterGraphRenderer) Render() string {
 	totalSegments := int(math.Ceil(float64(r.totalControls) / r.segmentSize))
 	passSegments := totalSegments - failSegments
 	spaces := 10 - totalSegments
+	return r.buildGraphString(failSegments, passSegments, spaces)
+}
 
-	str := fmt.Sprintf(" [%s%s%s]",
+func (r CounterGraphRenderer) buildGraphString(failSegments int, passSegments int, spaces int) string {
+	str := fmt.Sprintf("%s%s%s%s%s",
+		colorCountGraphBracket("["),
 		colorCountGraphFail(strings.Repeat("=", failSegments)),
 		colorCountGraphPass(strings.Repeat("=", passSegments)),
-		strings.Repeat(" ", spaces))
-
+		strings.Repeat(" ", spaces),
+		colorCountGraphBracket("]"))
 	return str
-
 }

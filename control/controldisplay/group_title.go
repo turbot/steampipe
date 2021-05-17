@@ -20,6 +20,7 @@ func NewGroupTitleRenderer(title string, width int) *GroupTitleRenderer {
 }
 
 // Render returns the title, truncated to the max length if necessary
+// NOTE: adds a trailing space
 func (r GroupTitleRenderer) Render() string {
 	log.Println("[TRACE] begin group title render")
 	defer log.Println("[TRACE] end group title render")
@@ -28,7 +29,8 @@ func (r GroupTitleRenderer) Render() string {
 		log.Printf("[WARN] group renderer has width of %d\n", r.width)
 		return ""
 	}
-	truncatedId := helpers.TruncateString(r.title, r.width)
-	str := fmt.Sprintf("%s", colorId(truncatedId))
+	// allow room for trailing space
+	truncatedId := helpers.TruncateString(r.title, r.width-1)
+	str := fmt.Sprintf("%s ", colorGroupTitle(truncatedId))
 	return str
 }

@@ -10,26 +10,24 @@ import (
 
 // groups display
 
-// title color
-var colorId = constants.BrightWhite
+// group title color
+var colorGroupTitle = constants.BoldBrightWhite
 
 // count
 var colorCountZeroFail = constants.Gray1
 var colorCountZeroFailDivider = constants.Gray1
+var colorCountDivider = constants.Gray2
 var colorCountFail = constants.BoldBrightRed
 var colorCountTotal = constants.BrightWhite
 var colorCountTotalAllPassed = constants.BoldBrightGreen
 
-func colorCountDivider(arg interface{}) aurora.Value {
-	return constants.Bold(constants.Gray2(arg))
-}
-
 // count graph
-var colorCountGraphFail = constants.BoldBrightRed
+var colorCountGraphFail = constants.BrightRed
 var colorCountGraphPass = constants.BrightGreen
+var colorCountGraphBracket = constants.Gray2
 
 // result colors
-// state
+// status
 var statusColors = map[string]func(arg interface{}) aurora.Value{
 	execute.ControlAlarm: constants.BoldBrightRed,
 	execute.ControlError: constants.BoldBrightRed,
@@ -37,15 +35,18 @@ var statusColors = map[string]func(arg interface{}) aurora.Value{
 	execute.ControlInfo:  constants.BrightCyan,
 	execute.ControlOk:    constants.BrightGreen,
 }
+var colorStatusColon = constants.Gray1
+
+// reason
 var reasonColors = map[string]func(arg interface{}) aurora.Value{
-	execute.ControlAlarm: constants.BoldBrightRed,
-	execute.ControlError: constants.BoldBrightRed,
+	execute.ControlAlarm: constants.BrightRed,
+	execute.ControlError: constants.BrightRed,
 	execute.ControlSkip:  constants.Gray3,
 	execute.ControlInfo:  constants.BrightCyan,
 	execute.ControlOk:    constants.Gray4,
 }
 
-var colorReasonColon = constants.Gray1
+var colorSeverity = constants.BoldBrightYellow
 
 // spacer dots used by both group and result
 var colorSpacer = constants.Gray1

@@ -32,27 +32,37 @@ func (r ControlRenderer) Render() string {
 	defer log.Println("[TRACE] end control render")
 
 	var controlStrings []string
-	// use group renderer to render the control title and counts
-	controlRenderer := NewGroupRenderer(typehelpers.SafeString(r.run.Control.Title),
+	// use group heading renderer to render the control title and counts
+	controlHeadingRenderer := NewGroupHeadingRenderer(typehelpers.SafeString(r.run.Control.Title),
 		r.run.Summary.FailedCount(),
 		r.run.Summary.TotalCount(),
 		r.maxFailedControls,
 		r.maxTotalControls,
 		r.width)
+
+	// set the severity on the heading renderer
+	controlHeadingRenderer.severity = typehelpers.SafeString(r.run.Control.Severity)
+
 	controlStrings = append(controlStrings,
-		controlRenderer.Render(),
-		// newline after group
+		controlHeadingRenderer.Render(),
+		// newline after control heading
 		"")
 
-	// now render the results
+	// if the control is in error, render an error
+	if r.run.Error != nil {
+		errorRenderer := NewErrorRenderer(r.run.Error, r.width)
+		controlStrings = append(controlStrings, errorRenderer.Render())
+	}
+
+	// now render the results (if any)
 	for _, row := range r.run.Result.Rows {
 		resultRenderer := NewResultRenderer(row.Status, row.Reason, row.Dimensions, r.colorMap, r.width)
 		controlStrings = append(controlStrings, resultRenderer.Render())
-
 	}
 	// newline after results
-	if len(r.run.Result.Rows) > 0 {
+	if len(r.run.Result.Rows) > 0 || r.run.Error != nil {
 		controlStrings = append(controlStrings, "")
 	}
+
 	return strings.Join(controlStrings, "\n")
 }

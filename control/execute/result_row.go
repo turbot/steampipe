@@ -9,6 +9,7 @@ import (
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 const (
@@ -39,6 +40,10 @@ func (r *ResultRow) AddDimension(c *sql.ColumnType, val interface{}) {
 }
 
 func NewResultRow(control *modconfig.Control, row *queryresult.RowResult, colTypes []*sql.ColumnType) (*ResultRow, error) {
+	// validate the required columns exist in the result
+	if err := validateColumns(colTypes); err != nil {
+		return nil, err
+	}
 	res := &ResultRow{
 		Control: control,
 	}
@@ -71,4 +76,27 @@ func NewResultRow(control *modconfig.Control, row *queryresult.RowResult, colTyp
 
 func IsValidControlStatus(status string) bool {
 	return helpers.StringSliceContains([]string{ControlOk, ControlAlarm, ControlInfo, ControlError, ControlSkip}, status)
+}
+
+func validateColumns(colTypes []*sql.ColumnType) error {
+	requiredColumns := []string{"reason", "resource", "status"}
+	var missingColumns []string
+	for _, col := range requiredColumns {
+		if !columnTypesContainsColumn(col, colTypes) {
+			missingColumns = append(missingColumns, col)
+		}
+	}
+	if len(missingColumns) > 0 {
+		return fmt.Errorf("control result is missing required %s: %v", utils.Pluralize("column", len(missingColumns)), missingColumns)
+	}
+	return nil
+}
+
+func columnTypesContainsColumn(col string, colTypes []*sql.ColumnType) bool {
+	for _, ct := range colTypes {
+		if ct.Name() == col {
+			return true
+		}
+	}
+	return false
 }

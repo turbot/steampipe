@@ -42,12 +42,12 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 	queryDone := make(chan bool, 1)
 	var spinner *spinner.Spinner
 
-	c.QueryLock.Lock()
+	c.queryLock.Lock()
 	defer func() {
-		// if there is no error, readRows() will unlock the QueryLock
+		// if there is no error, readRows() will unlock the queryLock
 		// if there IS an error we need to unlock it here
 		if err != nil {
-			c.QueryLock.Unlock()
+			c.queryLock.Unlock()
 			// stop spinner in case of error
 			display.StopSpinner(spinner)
 		}
@@ -88,7 +88,7 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 	result := queryresult.NewQueryResult(colTypes)
 
 	// read the rows in a go routine
-	// NOTE: readRows will unlock QueryLock
+	// NOTE: readRows will unlock queryLock
 	go c.readRows(ctx, startTime, rows, result, spinner)
 
 	return result, nil
@@ -105,7 +105,7 @@ func (c *Client) readRows(ctx context.Context, start time.Time, rows *sql.Rows, 
 		// close the channels in the result object
 		result.Close()
 		// the Unlock will have been locked by the calling function, ExecuteQuery
-		c.QueryLock.Unlock()
+		c.queryLock.Unlock()
 	}()
 
 	rowCount := 0

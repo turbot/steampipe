@@ -19,7 +19,7 @@ type ResultGroup struct {
 	Summary     GroupSummary      `json:"summary"`
 	Groups      []*ResultGroup    `json:"groups"`
 	ControlRuns []*ControlRun     `json:"-"`
-	// the control tree item associated with this group(i.e. a mod/benchmark
+	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ControlTreeItem
 	parent    *ResultGroup
 }
@@ -36,13 +36,12 @@ func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.Con
 		Tags:    make(map[string]string),
 	}
 	for _, item := range rootItems {
-		if benchmark, ok := item.(*modconfig.Benchmark); ok {
-			// if root item is a benchmark, create new result group with root as parent
-			root.Groups = append(root.Groups, NewResultGroup(executionTree, benchmark, root))
-		}
+		// if root item is a benchmark, create new result group with root as parent
 		if control, ok := item.(*modconfig.Control); ok {
 			// if root item is a control, add control run
 			executionTree.AddControl(control, root)
+		} else {
+			root.Groups = append(root.Groups, NewResultGroup(executionTree, item, root))
 		}
 	}
 	return root
@@ -103,12 +102,41 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 }
 
 func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
+	// TODO consider executing in order specified in hcl?
+	// it may not matter, as we display results in order
+	// it is only an issue if there are dependencies, in which case we must run in dependency order
+
 	var errors = 0
 	for _, controlRun := range r.ControlRuns {
-		controlRun.Start(ctx, client)
+		select {
+		case <-ctx.Done():
+			controlRun.SetError(ctx.Err())
+		default:
+			controlRun.Start(ctx, client)
+		}
 	}
 	for _, child := range r.Groups {
 		errors += child.Execute(ctx, client)
 	}
 	return errors
+}
+
+// GetGroupByName finds a child ResultGroup with a specific name
+func (r *ResultGroup) GetGroupByName(name string) *ResultGroup {
+	for _, group := range r.Groups {
+		if group.GroupId == name {
+			return group
+		}
+	}
+	return nil
+}
+
+// GetControlRunByName finds a child ControlRun with a specific control name
+func (r *ResultGroup) GetControlRunByName(name string) *ControlRun {
+	for _, run := range r.ControlRuns {
+		if run.Control.Name() == name {
+			return run
+		}
+	}
+	return nil
 }

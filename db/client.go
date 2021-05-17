@@ -19,9 +19,9 @@ type Client struct {
 	schemaMetadata *schema.Metadata
 	connectionMap  *steampipeconfig.ConnectionMap
 	// only allow one query at a time
-	// this is required as if multiple concurrent queries are run, they will each get their own db conneciton,
+	// this is required as if multiple concurrent queries are run, they will each get their own db connection,
 	// and only the first conneciton will have the Temp tables - the reflection metadata tables
-	QueryLock sync.Mutex
+	queryLock sync.Mutex
 }
 
 // Close closes the connection to the database and shuts down the backend
