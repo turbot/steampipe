@@ -22,6 +22,9 @@ type Control struct {
 	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb" json:"tags"`
 	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
+	// list of all block referenced by the resource
+	References []string `column:"refs,jsonb"`
+
 	DeclRange hcl.Range
 
 	parents  []ControlTreeItem
@@ -133,7 +136,12 @@ func (c *Control) GetMetadata() *ResourceMetadata {
 }
 
 // OnDecoded implements HclResource
-func (c *Control) OnDecoded() {}
+func (c *Control) OnDecoded(*hcl.Block) {}
+
+// AddReference implements HclResource
+func (c *Control) AddReference(reference string) {
+	c.References = append(c.References, reference)
+}
 
 // SetMetadata implements ResourceWithMetadata
 func (c *Control) SetMetadata(metadata *ResourceMetadata) {

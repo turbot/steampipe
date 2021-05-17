@@ -43,7 +43,10 @@ func (l *Local) SetMetadata(metadata *ResourceMetadata) {
 }
 
 // OnDecoded implements HclResource
-func (l *Local) OnDecoded() {}
+func (l *Local) OnDecoded(*hcl.Block) {}
+
+// AddReference implements HclResource
+func (l *Local) AddReference(string) {}
 
 // CtyValue implements HclResource
 func (l *Local) CtyValue() (cty.Value, error) {

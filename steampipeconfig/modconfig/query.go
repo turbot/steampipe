@@ -28,6 +28,9 @@ type Query struct {
 	SearchPathPrefix *string            `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
 	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
 
+	// list of all block referenced by the resource
+	References []string `column:"refs,jsonb"`
+
 	DeclRange hcl.Range
 	metadata  *ResourceMetadata
 }
@@ -109,4 +112,9 @@ func (q *Query) SetMetadata(metadata *ResourceMetadata) {
 }
 
 // OnDecoded implements HclResource
-func (q *Query) OnDecoded() {}
+func (q *Query) OnDecoded(*hcl.Block) {}
+
+// AddReference implements HclResource
+func (q *Query) AddReference(reference string) {
+	q.References = append(q.References, reference)
+}

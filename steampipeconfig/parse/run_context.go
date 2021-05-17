@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -88,7 +89,7 @@ func (c *RunContext) AddDependencies(block *hcl.Block, name string, dependencies
 	for _, dep := range dependencies {
 		// each dependency object may have multiple traversals
 		for _, t := range dep.Traversals {
-			d := TraversalAsString(t)
+			d := hclhelpers.TraversalAsString(t)
 
 			// 'd' may be a property path - when storing dependencies we only care about the resource names
 			dependencyResource, err := modconfig.PropertyPathToResourceName(d)

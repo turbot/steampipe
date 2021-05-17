@@ -30,6 +30,9 @@ type Benchmark struct {
 	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
 	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
+	// list of all block referenced by the resource
+	References []string `column:"refs,jsonb"`
+
 	ChildNameStrings []string `column:"children,jsonb"`
 	DeclRange        hcl.Range
 
@@ -52,7 +55,7 @@ func (b *Benchmark) CtyValue() (cty.Value, error) {
 }
 
 // OnDecoded implements HclResource
-func (b *Benchmark) OnDecoded() {
+func (b *Benchmark) OnDecoded(*hcl.Block) {
 	if b.ChildNames == nil || len(*b.ChildNames) == 0 {
 		return
 	}
@@ -62,6 +65,11 @@ func (b *Benchmark) OnDecoded() {
 		b.ChildNameStrings[i] = n.Name
 	}
 	b.children = make([]ControlTreeItem, len(b.ChildNameStrings))
+}
+
+// AddReference implements HclResource
+func (b *Benchmark) AddReference(reference string) {
+	b.References = append(b.References, reference)
 }
 
 func (b *Benchmark) String() string {
@@ -130,8 +138,8 @@ func (b *Benchmark) AddParent(parent ControlTreeItem) error {
 }
 
 // GetParents implements ControlTreeItem
-func (c *Benchmark) GetParents() []ControlTreeItem {
-	return c.parents
+func (b *Benchmark) GetParents() []ControlTreeItem {
+	return b.parents
 }
 
 // GetTitle implements ControlTreeItem

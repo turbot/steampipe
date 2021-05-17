@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/steampipe/steampipeconfig/hclhelpers"
 )
 
 type dependency struct {
@@ -15,7 +16,7 @@ type dependency struct {
 func (d dependency) String() string {
 	traversalStrings := make([]string, len(d.Traversals))
 	for i, t := range d.Traversals {
-		traversalStrings[i] = TraversalAsString(t)
+		traversalStrings[i] = hclhelpers.TraversalAsString(t)
 	}
 	return fmt.Sprintf(`%s` /*d.Range.String(), */, strings.Join(traversalStrings, ","))
 }

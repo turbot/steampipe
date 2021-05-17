@@ -31,6 +31,9 @@ type Mod struct {
 	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
 	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
+	// list of all block referenced by the resource
+	References []string `column:"refs,jsonb"`
+
 	// blocks
 	Requires  *Requires  `hcl:"requires,block"`
 	OpenGraph *OpenGraph `hcl:"opengraph,block"`
@@ -304,7 +307,12 @@ func (m *Mod) GetMetadata() *ResourceMetadata {
 }
 
 // OnDecoded implements HclResource
-func (m *Mod) OnDecoded() {}
+func (m *Mod) OnDecoded(*hcl.Block) {}
+
+// AddReference implements HclResource
+func (m *Mod) AddReference(reference string) {
+	m.References = append(m.References, reference)
+}
 
 // SetMetadata implements ResourceWithMetadata
 func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
