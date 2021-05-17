@@ -39,7 +39,7 @@ control "cis_v130_1_1" {
   description   = "Ensure contact email and telephone details for AWS accounts are current and map to more than one individual in your organization."
   sql           = query.alarm.sql
   documentation = file("./cis_v130/docs/cis_v130_1_1.md")
-
+  severity = "high"
   tags = merge(local.cis_v130_1_common_tags, {
     cis_controls = "6.3"
     cis_item_id  = "1.1"
@@ -53,7 +53,7 @@ control "cis_v130_1_2" {
   description   = "AWS provides customers with the option of specifying the contact information for accounts security team. It is recommended that this information be provided."
   sql           = query.alarm.sql
   documentation = file("./cis_v130/docs/cis_v130_1_2.md")
-
+  severity = "high"
   tags = merge(local.cis_v130_1_common_tags, {
     cis_controls = "19,19.2"
     cis_item_id  = "1.2"
@@ -67,7 +67,7 @@ control "cis_v130_1_3" {
   description   = "The AWS support portal allows account owners to establish security questions that can be used to authenticate individuals calling AWS customer service for support. It is recommended that security questions be established."
   sql           = query.ok.sql
   documentation = file("./cis_v130/docs/cis_v130_1_3.md")
-
+  severity = "high"
   tags = merge(local.cis_v130_1_common_tags, {
     cis_controls = "16"
     cis_item_id  = "1.3"
@@ -81,7 +81,7 @@ control "cis_v130_1_4" {
   description   = "The root user account is the most privileged user in an AWS account. AWS Access Keys provide programmatic access to a given AWS account. It is recommended that all access keys associated with the root user account be removed."
   sql           = query.ok.sql
   documentation = file("./cis_v130/docs/cis_v130_1_4.md")
-
+  severity = "high"
   tags = merge(local.cis_v130_1_common_tags, {
     cis_controls = "4.3"
     cis_item_id  = "1.4"
@@ -165,7 +165,7 @@ control "cis_v130_1_10" {
   description = "Multi-Factor Authentication (MFA) adds an extra layer of authentication assurance beyond traditional credentials. With MFA enabled, when a user signs in to the AWS Console, they will be prompted for their user name and password as well as for an authentication code from their physical or virtual MFA token. It is recommended that MFA be enabled for all accounts that have a console password."
   sql         = query.ok.sql
   #documentation = file("./cis_v130/docs/cis_v130_1_X.md")
-
+  severity = "critical"
   tags = merge(local.cis_v130_1_common_tags, {
     cis_item_id  = "1.10"
     cis_type     = "automated"
@@ -249,7 +249,7 @@ control "cis_v130_1_16" {
   description = "IAM policies are the means by which privileges are granted to users, groups, or roles. It is recommended and considered a standard security advice to grant least privilege -that is, granting only the permissions required to perform a task. Determine what users need to do and then craft policies for them that let the users perform only those tasks, instead of allowing full administrative privileges."
   sql         = query.ok.sql
   #documentation = file("./cis_v130/docs/cis_v130_1_16.md")
-
+  severity = "critical"
   tags = merge(local.cis_v130_1_common_tags, {
     cis_item_id  = "1.16"
     cis_type     = "automated"
@@ -319,7 +319,7 @@ control "cis_v130_1_21" {
   description = "Enable IAM Access analyzer for IAM policies about all resources. IAM Access Analyzer is a technology introduced at AWS reinvent 2019. After the Analyzer is enabled in IAM, scan results are displayed on the console showing the accessible resources. Scans show resources that other accounts and federated users can access, such as KMS keys and IAM roles. So the results allow you to determine if an unintended user is allowed, making it easier for administrators to monitor least privileges access."
   sql         = query.alarm.sql
   #documentation = file("./cis_v130/docs/cis_v130_1_21.md")
-
+  severity = "critical"
   tags = merge(local.cis_v130_1_common_tags, {
     cis_item_id  = "1.21"
     cis_type     = "automated"

@@ -46,5 +46,7 @@ var reasonColors = map[string]func(arg interface{}) aurora.Value{
 	execute.ControlOk:    constants.Gray4,
 }
 
+var colorSeverity = constants.BoldBrightYellow
+
 // spacer dots used by both group and result
 var colorSpacer = constants.Gray1

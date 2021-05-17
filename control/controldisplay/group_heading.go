@@ -8,8 +8,8 @@ import (
 )
 
 type GroupHeadingRenderer struct {
-	title string
-
+	title             string
+	severity          string
 	failedControls    int
 	totalControls     int
 	maxFailedControls int
@@ -38,6 +38,9 @@ func (r GroupHeadingRenderer) Render() string {
 		return ""
 	}
 
+	severityString := NewSeverityRenderer(r.severity).Render()
+	severityWidth := helpers.PrintableLength(severityString)
+
 	counterString := NewCounterRenderer(r.failedControls, r.totalControls, r.maxFailedControls, r.maxTotalControls).Render()
 	counterWidth := helpers.PrintableLength(counterString)
 
@@ -45,7 +48,7 @@ func (r GroupHeadingRenderer) Render() string {
 	graphWidth := helpers.PrintableLength(graphString)
 
 	// figure out how much width we have available for the title
-	availableWidth := r.width - counterWidth - graphWidth
+	availableWidth := r.width - counterWidth - graphWidth - severityWidth
 
 	// now availableWidth is all we have - if it is not enough we need to truncate the title
 	titleString := NewGroupTitleRenderer(r.title, availableWidth).Render()
@@ -59,6 +62,6 @@ func (r GroupHeadingRenderer) Render() string {
 	}
 
 	// now put these all together
-	str := fmt.Sprintf("%s%s%s%s", titleString, spacerString, counterString, graphString)
+	str := fmt.Sprintf("%s%s%s%s%s", titleString, spacerString, severityString, counterString, graphString)
 	return str
 }

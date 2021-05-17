@@ -39,6 +39,9 @@ func (r ControlRenderer) Render() string {
 		r.maxFailedControls,
 		r.maxTotalControls,
 		r.width)
+
+	// set the severity on the renderer
+	controlHeadingRenderer.severity = typehelpers.SafeString(r.run.Control.Severity)
 	controlStrings = append(controlStrings,
 		controlHeadingRenderer.Render(),
 		// newline after control heading
