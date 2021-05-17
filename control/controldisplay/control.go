@@ -32,16 +32,16 @@ func (r ControlRenderer) Render() string {
 	defer log.Println("[TRACE] end control render")
 
 	var controlStrings []string
-	// use group renderer to render the control title and counts
-	controlRenderer := NewGroupRenderer(typehelpers.SafeString(r.run.Control.Title),
+	// use group heading renderer to render the control title and counts
+	controlHeadingRenderer := NewGroupHeadingRenderer(typehelpers.SafeString(r.run.Control.Title),
 		r.run.Summary.FailedCount(),
 		r.run.Summary.TotalCount(),
 		r.maxFailedControls,
 		r.maxTotalControls,
 		r.width)
 	controlStrings = append(controlStrings,
-		controlRenderer.Render(),
-		// newline after group
+		controlHeadingRenderer.Render(),
+		// newline after control heading
 		"")
 
 	// now render the results

@@ -19,7 +19,7 @@ type ResultGroup struct {
 	Summary     GroupSummary      `json:"summary"`
 	Groups      []*ResultGroup    `json:"groups"`
 	ControlRuns []*ControlRun     `json:"-"`
-	// the control tree item associated with this group(i.e. a mod/benchmark
+	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ControlTreeItem
 	parent    *ResultGroup
 }
@@ -110,4 +110,24 @@ func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
 		errors += child.Execute(ctx, client)
 	}
 	return errors
+}
+
+// GetGroupByName finds a child ResultGroup with a specific name
+func (r *ResultGroup) GetGroupByName(name string) *ResultGroup {
+	for _, group := range r.Groups {
+		if group.GroupId == name {
+			return group
+		}
+	}
+	return nil
+}
+
+// GetControlRunByName finds a child ControlRun with a specific control name
+func (r *ResultGroup) GetControlRunByName(name string) *ControlRun {
+	for _, run := range r.ControlRuns {
+		if run.Control.Name() == name {
+			return run
+		}
+	}
+	return nil
 }

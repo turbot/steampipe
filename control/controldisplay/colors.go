@@ -22,7 +22,7 @@ var colorCountTotal = constants.BrightWhite
 var colorCountTotalAllPassed = constants.BoldBrightGreen
 
 // count graph
-var colorCountGraphFail = constants.BoldBrightRed
+var colorCountGraphFail = constants.BrightRed
 var colorCountGraphPass = constants.BrightGreen
 var colorCountGraphBracket = constants.Gray2
 
