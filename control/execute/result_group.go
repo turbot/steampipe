@@ -36,8 +36,14 @@ func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.Con
 		Tags:    make(map[string]string),
 	}
 	for _, item := range rootItems {
-		// create new result group with root as parent
-		root.Groups = append(root.Groups, NewResultGroup(executionTree, item, root))
+		if benchmark, ok := item.(*modconfig.Benchmark); ok {
+			// if root item is a benchmark, create new result group with root as parent
+			root.Groups = append(root.Groups, NewResultGroup(executionTree, benchmark, root))
+		}
+		if control, ok := item.(*modconfig.Control); ok {
+			// if root item is a control, add control run
+			executionTree.AddControl(control, root)
+		}
 	}
 	return root
 }
@@ -60,14 +66,7 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ControlTree
 			group.Groups = append(group.Groups, NewResultGroup(executionTree, benchmark, group))
 		}
 		if control, ok := c.(*modconfig.Control); ok {
-			if executionTree.ShouldIncludeControl(control.Name()) {
-				// create new ControlRun with treeItem as the parent
-				controlRun := NewControlRun(control, group, executionTree)
-				// add it into the group
-				group.ControlRuns = append(group.ControlRuns, controlRun)
-				// also add it into the tree
-				executionTree.controlRuns = append(executionTree.controlRuns, controlRun)
-			}
+			executionTree.AddControl(control, group)
 		}
 	}
 	return group
