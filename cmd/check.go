@@ -55,7 +55,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	ctx, _ := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	startCancelHandler(cancel)
 
 	// start db if necessary
 	err := db.EnsureDbAndStartService(db.InvokerCheck)
@@ -79,24 +80,35 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	// treat each arg as a separate execution
 	failures := 0
 	for _, arg := range args {
-		executionTree, err := execute.NewExecutionTree(ctx, workspace, client, arg)
-		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
+		select {
+		case <-ctx.Done():
+			// skip over the next, since the execution was cancelled
+			continue
+		default:
+			executionTree, err := execute.NewExecutionTree(ctx, workspace, client, arg)
+			utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
 
-		// for now we execute controls synchronously
-		// Execute returns the number of failures
-		executionTree.Execute(ctx, client)
-		DisplayControlResults(executionTree)
+			// for now we execute controls synchronously
+			// Execute returns the number of failures
+			executionTree.Execute(ctx, client)
+			DisplayControlResults(ctx, executionTree)
+		}
 	}
 
 	// set global exit code
 	exitCode = failures
 }
 
-func DisplayControlResults(executionTree *execute.ExecutionTree) {
+func DisplayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) {
 	//bytes, err := json.MarshalIndent(executionTree.Root, "", "  ")
 	maxCols := getMaxCols()
 
 	renderer := controldisplay.NewTableRenderer(executionTree, maxCols)
+
+	if ctx.Err() != nil {
+		utils.ShowError(ctx.Err())
+	}
+
 	fmt.Println(renderer.Render())
 }
 
