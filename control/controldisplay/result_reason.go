@@ -21,15 +21,18 @@ func NewResultReasonRenderer(status, reason string, width int) *ResultReasonRend
 }
 
 // Render returns the reason, truncated to the max length if necessary
-func (d ResultReasonRenderer) Render() (string, int) {
-	// truncate the reason (deduct 3 from length to allow for ": " and trailing space)
-	availableWidth := d.width - 3
-	formattedReason := helpers.TruncateString(d.reason, availableWidth)
-	length := len(formattedReason) + 3
+func (r ResultReasonRenderer) Render() string {
 	// get the color for our status
-	if colorFunc, ok := reasonColors[d.status]; ok {
-		formattedReason = fmt.Sprintf("%s", colorFunc(formattedReason))
+	colorFunc, ok := reasonColors[r.status]
+	if !ok {
+		return ""
 	}
+	// truncate the reason
+	// reason format is
+	// ": <reason> "
+	// deduct 3 from length to allow for ": " and trailing space)
+	availableWidth := r.width - 3
+	formattedReason := fmt.Sprintf("%s", colorFunc(helpers.TruncateString(r.reason, availableWidth)))
 
-	return fmt.Sprintf("%s %s ", colorReasonColon(":"), formattedReason), length
+	return fmt.Sprintf("%s %s ", colorReasonColon(":"), formattedReason)
 }

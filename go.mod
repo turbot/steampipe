@@ -55,3 +55,4 @@ require (
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe
 
+replace github.com/turbot/go-kit => github.com/turbot/go-kit v0.2.2-0.20210517131416-052d9629cbd5

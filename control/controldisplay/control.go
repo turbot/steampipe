@@ -26,28 +26,28 @@ func NewControlRenderer(run *execute.ControlRun, maxFailed, maxTotal int, colorM
 	}
 }
 
-func (c ControlRenderer) Render() string {
+func (r ControlRenderer) Render() string {
 	var controlStrings []string
 	// use group renderer to render the control title and counts
-	controlRenderer := NewGroupRenderer(typehelpers.SafeString(c.run.Control.Title),
-		c.run.Summary.FailedCount(),
-		c.run.Summary.TotalCount(),
-		c.maxFailedControls,
-		c.maxTotalControls,
-		c.width)
+	controlRenderer := NewGroupRenderer(typehelpers.SafeString(r.run.Control.Title),
+		r.run.Summary.FailedCount(),
+		r.run.Summary.TotalCount(),
+		r.maxFailedControls,
+		r.maxTotalControls,
+		r.width)
 	controlStrings = append(controlStrings,
 		controlRenderer.Render(),
 		// newline after group
 		"")
 
 	// now render the results
-	for _, row := range c.run.Result.Rows {
-		resultRenderer := NewResultRenderer(row.Status, row.Reason, row.Dimensions, c.colorMap, c.width)
+	for _, row := range r.run.Result.Rows {
+		resultRenderer := NewResultRenderer(row.Status, row.Reason, row.Dimensions, r.colorMap, r.width)
 		controlStrings = append(controlStrings, resultRenderer.Render())
 
 	}
 	// newline after results
-	if len(c.run.Result.Rows) > 0 {
+	if len(r.run.Result.Rows) > 0 {
 		controlStrings = append(controlStrings, "")
 	}
 	return strings.Join(controlStrings, "\n")

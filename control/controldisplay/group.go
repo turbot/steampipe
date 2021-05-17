@@ -2,6 +2,9 @@ package controldisplay
 
 import (
 	"fmt"
+	"log"
+
+	"github.com/turbot/go-kit/helpers"
 )
 
 type GroupRenderer struct {
@@ -26,22 +29,30 @@ func NewGroupRenderer(title string, failed, total, maxFailed, maxTotal, width in
 	}
 }
 
-func (g GroupRenderer) Render() string {
-	counter := NewCounterRenderer(g.failedControls, g.totalControls, g.maxFailedControls, g.maxTotalControls)
-	counterString, counterWidth := counter.Render()
-	graphString, graphWidth := NewCounterGraphRenderer(g.failedControls, g.totalControls, g.maxTotalControls).Render()
+func (r GroupRenderer) Render() string {
+	if r.width <= 0 {
+		log.Printf("[WARN] group renderer has width of %d\n", r.width)
+		return ""
+	}
+
+	counterString := NewCounterRenderer(r.failedControls, r.totalControls, r.maxFailedControls, r.maxTotalControls).Render()
+	counterWidth := helpers.PrintableLength(counterString)
+
+	graphString := NewCounterGraphRenderer(r.failedControls, r.totalControls, r.maxTotalControls).Render()
+	graphWidth := helpers.PrintableLength(graphString)
 
 	// figure out how much width we have available for the title
-	availableWidth := g.width - counterWidth - graphWidth
+	availableWidth := r.width - counterWidth - graphWidth
 
 	// now availableWidth is all we have - if it is not enough we need to truncate the title
-	titleString, titleWidth := NewGroupTitleRenderer(g.title, availableWidth).Render()
+	titleString := NewGroupTitleRenderer(r.title, availableWidth).Render()
+	titleWidth := helpers.PrintableLength(titleString)
 
 	// is there any room for a spacer
 	spacerWidth := availableWidth - titleWidth
 	var spacerString string
 	if spacerWidth > 0 {
-		spacerString, _ = NewSpacerRenderer(spacerWidth).Render()
+		spacerString = NewSpacerRenderer(spacerWidth).Render()
 	}
 
 	// now put these all together

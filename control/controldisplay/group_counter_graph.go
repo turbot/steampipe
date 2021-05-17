@@ -2,6 +2,7 @@ package controldisplay
 
 import (
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -10,66 +11,47 @@ type CounterGraphRenderer struct {
 	totalControls  int
 
 	maxTotalControls int
-	segmentSize      int
+	segmentSize      float64
 }
 
 func NewCounterGraphRenderer(failedControls, totalControls, maxTotalControls int) *CounterGraphRenderer {
-	return &CounterGraphRenderer{
+	renderer := &CounterGraphRenderer{
 		failedControls:   failedControls,
 		totalControls:    totalControls,
 		maxTotalControls: maxTotalControls,
 		// there are 10 segments - determine the value of each segment
-		segmentSize: maxTotalControls / 10,
+		segmentSize: float64(maxTotalControls) / 10.0,
 	}
+	return renderer
 }
 
-func (d CounterGraphRenderer) Render() (string, int) {
+func (r CounterGraphRenderer) Render() string {
 
 	// the graph has the format " [=======   ]"
-	// the graph is 10 segments long, so length is always 13
-	length := 13
 
 	// if no controls have been run, return empty graph
-	if d.maxTotalControls == 0 {
-		return " [          ]", length
+	if r.maxTotalControls == 0 {
+		return " [          ]"
 	}
-
 	// if each segment is 10 controls, count 1-10 => 1 segment, 11-20 => 2 segments
-	var failSegments, passSegments, spaces int
-	// TODO I'm sure we can tidy this up to avoid special cases
-	if d.failedControls == 0 {
-		passSegments = ((d.totalControls - 1) / d.segmentSize) + 1
-		spaces = 10 - passSegments
-		str := fmt.Sprintf(" [%s%s]",
-			colorCountGraphPass(strings.Repeat("=", passSegments)),
-			strings.Repeat(" ", spaces))
-		return str, length
-	}
+	var failSegments int
 
-	if d.failedControls == d.totalControls {
-		failSegments = ((d.totalControls - 1) / d.segmentSize) + 1
-		spaces = 10 - failSegments
-		str := fmt.Sprintf(" [%s%s]",
-			colorCountGraphFail(strings.Repeat("=", failSegments)),
-			strings.Repeat(" ", spaces))
-		return str, length
-	}
+	if r.failedControls == 0 {
+		failSegments = 0
+	} else {
+		// if there is a remainder round up
+		failSegments = int(math.Ceil(float64(r.failedControls) / r.segmentSize))
 
-	// so we have both pass and fail segments
-	failSegments = ((d.failedControls - 1) / d.segmentSize) + 1
-	passSegments = ((d.totalControls - d.failedControls - 1) / d.segmentSize) + 1
-
-	// can happen with rounding up
-	if passSegments+failSegments > 10 {
-		passSegments = 10 - failSegments
 	}
-	spaces = 10 - failSegments - passSegments
+	totalSegments := int(math.Ceil(float64(r.totalControls) / r.segmentSize))
+	passSegments := totalSegments - failSegments
+	spaces := 10 - totalSegments
 
 	str := fmt.Sprintf(" [%s%s%s]",
 		colorCountGraphFail(strings.Repeat("=", failSegments)),
 		colorCountGraphPass(strings.Repeat("=", passSegments)),
 		strings.Repeat(" ", spaces))
 
-	return str, length
+	return str
 
 }

@@ -16,14 +16,21 @@ func NewResultStatusRenderer(status string) *ResultStatusRenderer {
 }
 
 // Render returns the status
-func (d ResultStatusRenderer) Render() (string, int) {
+func (r ResultStatusRenderer) Render() string {
+	// pad status string to fixed width
+	statusString := r.paddedStatusString()
+
 	// get the color for our status
-	colorFunc, ok := statusColors[d.status]
-	// length is the length of the longest status - ERROR
-	length := 5
+	colorFunc, ok := statusColors[r.status]
+
 	if !ok {
 		// for unrecognised status, just return unformatted - we should be validating elsewhere
-		return fmt.Sprintf("%-6s", d.status), length
+		return statusString
 	}
-	return fmt.Sprintf("%-5s", colorFunc(strings.ToUpper(d.status))), length
+	return fmt.Sprintf("%-5s", colorFunc(statusString))
+}
+
+// pad out status toi length of longest status string = "ERROR" - 5 chars
+func (r ResultStatusRenderer) paddedStatusString() string {
+	return fmt.Sprintf("%-5s", strings.ToUpper(r.status))
 }

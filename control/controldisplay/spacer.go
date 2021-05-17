@@ -2,6 +2,7 @@ package controldisplay
 
 import (
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -10,17 +11,22 @@ type SpacerRenderer struct {
 }
 
 func NewSpacerRenderer(width int) *SpacerRenderer {
+
 	return &SpacerRenderer{width}
 }
 
 // Render returns a divider string os format: "......."
-func (d SpacerRenderer) Render() (string, int) {
-	// we always have and trailing space
-	if d.width < 3 {
-		return strings.Repeat(" ", d.width), d.width
+func (r SpacerRenderer) Render() string {
+	if r.width <= 0 {
+		log.Printf("[WARN] spacer renderer has width of %d\n", r.width)
+		return ""
+	}
+	// we always have a trailing space
+	if r.width < 2 {
+		return strings.Repeat(" ", r.width)
 	}
 
 	// allow for spaces
-	numberOfDots := d.width - 1
-	return fmt.Sprintf("%s ", colorSpacer(strings.Repeat(".", numberOfDots))), d.width
+	numberOfDots := r.width - 1
+	return fmt.Sprintf("%s ", colorSpacer(strings.Repeat(".", numberOfDots)))
 }

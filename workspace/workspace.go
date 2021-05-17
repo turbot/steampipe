@@ -39,7 +39,6 @@ type Workspace struct {
 
 // Load creates a Workspace and loads the workdspace mod
 func Load(workspacePath string) (*Workspace, error) {
-
 	// create shell workspace
 	workspace := &Workspace{Path: workspacePath}
 

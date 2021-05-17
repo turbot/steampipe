@@ -3,6 +3,8 @@ package controldisplay
 import (
 	"fmt"
 
+	"github.com/turbot/go-kit/helpers"
+
 	"github.com/turbot/steampipe/control/execute"
 )
 
@@ -30,7 +32,8 @@ func NewResultRenderer(status, reason string, dimensions []execute.Dimension, co
 
 func (r ResultRenderer) Render() string {
 	status := NewResultStatusRenderer(r.status)
-	statusString, statusWidth := status.Render()
+	statusString := status.Render()
+	statusWidth := helpers.PrintableLength(statusString)
 
 	// figure out how much width we have available for the  dimensions, allowing the minimum for the reason
 	availableWidth := r.width - statusWidth
@@ -40,18 +43,20 @@ func (r ResultRenderer) Render() string {
 	var dimensionsString string
 	var dimensionWidth int
 	if availableDimensionWidth > 0 {
-		dimensionsString, dimensionWidth = NewDimensionsRenderer(r.dimensions, r.colorMap, availableDimensionWidth).Render()
+		dimensionsString = NewDimensionsRenderer(r.dimensions, r.colorMap, availableDimensionWidth).Render()
+		dimensionWidth = helpers.PrintableLength(dimensionsString)
 		availableWidth -= dimensionWidth
 	}
 
 	// now availableWidth is all we have - if it is not enough we need to truncate the reason
-	reasonString, reasonWidth := NewResultReasonRenderer(r.status, r.reason, availableWidth).Render()
+	reasonString := NewResultReasonRenderer(r.status, r.reason, availableWidth).Render()
+	reasonWidth := helpers.PrintableLength(reasonString)
 
 	// is there any room for a spacer
 	availableWidth -= reasonWidth
 	var spacerString string
 	if availableWidth > 0 {
-		spacerString, _ = NewSpacerRenderer(availableWidth).Render()
+		spacerString = NewSpacerRenderer(availableWidth).Render()
 	}
 
 	// now put these all together

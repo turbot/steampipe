@@ -24,20 +24,20 @@ func NewTableRenderer(resultTree *execute.ExecutionTree, width int) *TableRender
 	}
 }
 
-func (t TableRenderer) Render() string {
+func (r TableRenderer) Render() string {
 	// traverse tree
-	str := t.renderResultGroup(t.resultTree.Root)
+	str := r.renderResultGroup(r.resultTree.Root)
 	return str
 }
 
-func (t TableRenderer) renderResultGroup(group *execute.ResultGroup) string {
+func (r TableRenderer) renderResultGroup(group *execute.ResultGroup) string {
 	groupRenderer := NewGroupRenderer(
 		group.Title,
 		group.Summary.Status.FailedCount(),
 		group.Summary.Status.TotalCount(),
-		t.maxFailedControls,
-		t.maxTotalControls,
-		t.width)
+		r.maxFailedControls,
+		r.maxTotalControls,
+		r.width)
 	var tableStrings []string
 
 	// do not render the root group
@@ -50,13 +50,13 @@ func (t TableRenderer) renderResultGroup(group *execute.ResultGroup) string {
 	}
 
 	for _, run := range group.ControlRuns {
-		controlRenderer := NewControlRenderer(run, t.maxFailedControls, t.maxTotalControls, t.resultTree.DimensionColorMap, t.width)
+		controlRenderer := NewControlRenderer(run, r.maxFailedControls, r.maxTotalControls, r.resultTree.DimensionColorMap, r.width)
 		tableStrings = append(tableStrings, controlRenderer.Render())
 	}
 
 	// render child groups
 	for _, child := range group.Groups {
-		tableStrings = append(tableStrings, t.renderResultGroup(child))
+		tableStrings = append(tableStrings, r.renderResultGroup(child))
 	}
 	return strings.Join(tableStrings, "\n")
 

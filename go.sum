@@ -116,6 +116,8 @@ github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d h1:G0m3OIz70MZUW
 github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d/go.mod h1:3eOhrUMpNV+6aFIbp5/iudMxNCF27Vw2OZgy4xEx0Fg=
 github.com/abdullin/seq v0.0.0-20160510034733-d5467c17e7af h1:DBNMBMuMiWYu0b+8KMJuWmfCkcxl09JwdlqwDZZ6U14=
 github.com/abdullin/seq v0.0.0-20160510034733-d5467c17e7af/go.mod h1:5Jv4cbFiHJMsVxt52+i0Ha45fjshj6wxYr1r19tB9bw=
+github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d h1:licZJFw2RwpHMqeKTCYkitsPqHNxTmd4SNR5r94FGM8=
+github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d/go.mod h1:asat636LX7Bqt5lYEZ27JNDcqxfjdBQuJ/MM4CN/Lzo=
 github.com/agext/levenshtein v1.2.1/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=
 github.com/agext/levenshtein v1.2.2 h1:0S/Yg6LYmFJ5stwQeRp6EeOcCbj7xiqQSdNelsXvaqE=
 github.com/agext/levenshtein v1.2.2/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=
@@ -928,6 +930,8 @@ github.com/turbot/go-kit v0.2.0 h1:8+kM0quTDMzc7eJRwMz/OXHk7/5LoeTWvxpgyzWkvgs=
 github.com/turbot/go-kit v0.2.0/go.mod h1:FboSf8p5XWOezO9V/N+rtG07FDKBuBiPhQrSJxQgm+I=
 github.com/turbot/go-kit v0.2.1 h1:NLcS25WrknLaGdDyi9ld0FePU+bbjgfm/FzMMD4b3VY=
 github.com/turbot/go-kit v0.2.1/go.mod h1:FboSf8p5XWOezO9V/N+rtG07FDKBuBiPhQrSJxQgm+I=
+github.com/turbot/go-kit v0.2.2-0.20210517131416-052d9629cbd5 h1:1JfhWosUhnv8zQOYGH7l5deqInOjng6dKU522xE3+Ds=
+github.com/turbot/go-kit v0.2.2-0.20210517131416-052d9629cbd5/go.mod h1:SBdPRngbEfYubiR81iAVtO43oPkg1+ASr+XxvgbH7/k=
 github.com/turbot/go-prompt v0.2.6-steampipe h1:/stkR3dOdxKRk/lKsnKpb9KZA/m3v0/OqLIHwDN8zv4=
 github.com/turbot/go-prompt v0.2.6-steampipe/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
 github.com/turbot/steampipe-plugin-sdk v0.2.8 h1:pq85hYzoGQPspAjtl0O5yoMdntciTSW6cR/YTHKAtp4=

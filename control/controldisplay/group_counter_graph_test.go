@@ -2,6 +2,7 @@ package controldisplay
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -13,56 +14,123 @@ type counterGraphTest struct {
 	expectedString string
 }
 
+// when calculating chart elements, round UP success to next segment, round DOWN space count
 var testCasesCounterGraph = map[string]counterGraphTest{
-	"1/10 max 10": {
-		failedControls:   1,
+
+	"0/10 max 20  (zero pass)": {
+		maxTotalControls: 20,
+		failedControls:   0,
 		totalControls:    10,
-		maxTotalControls: 10,
-		// each segment is 1
-		expectedString: fmt.Sprintf("[%s%s]", colorCountGraphFail("="), colorCountGraphPass("=========")),
+		// each segment is 12 -> 5 success, 5 blank
+		//[xxxxx     ]
+		expectedString: fmt.Sprintf(" [%s%s%s]",
+			colorCountGraphFail(strings.Repeat("=", 0)),
+			colorCountGraphPass(strings.Repeat("=", 5)),
+			strings.Repeat(" ", 5)),
 	},
 
-	"1/10 max 100": {
+	"1/10 max 20 (less than 1 segment failed)": {
+		maxTotalControls: 20,
+		totalControls:    10,
 		failedControls:   1,
+		// each segment is 2 -> 1 fail, 4 success, 5 blank
+		//	[Xxxxx     ]
+		expectedString: fmt.Sprintf(" [%s%s%s]",
+			colorCountGraphFail(strings.Repeat("=", 1)),
+			colorCountGraphPass(strings.Repeat("=", 4)),
+			strings.Repeat(" ", 5)),
+	},
+	"2/10 max 20 (exactly 1 segment failed)": {
+		maxTotalControls: 20,
 		totalControls:    10,
-		maxTotalControls: 100,
-		// each segment is 10 - 1 fail segment, 1 pass segment, 8 spaces
-		expectedString: fmt.Sprintf("[%s%s        ]", colorCountGraphFail("="), colorCountGraphPass("=")),
+		failedControls:   2,
+		// each segment is 2 -> 1 fail, 4 success, 5 blank
+		//	[Xxxxx     ]
+		expectedString: fmt.Sprintf(" [%s%s%s]",
+			colorCountGraphFail(strings.Repeat("=", 1)),
+			colorCountGraphPass(strings.Repeat("=", 4)),
+			strings.Repeat(" ", 5)),
 	},
-	"10/10 max 100": {
-		failedControls:   10,
+	"3/10 max 20 (more than 1 segment failed)": {
+		maxTotalControls: 20,
 		totalControls:    10,
-		maxTotalControls: 100,
-		// each segment is 10 - 1 fail segment, 0 pass segment, 9 spaces
-		expectedString: fmt.Sprintf("[%s         ]", colorCountGraphFail("=")),
+		failedControls:   3,
+		// each segment is 3 -> 2 fail, 3 success, 5 blank
+		//	[Xxxxx     ]
+		expectedString: fmt.Sprintf(" [%s%s%s]",
+			colorCountGraphFail(strings.Repeat("=", 2)),
+			colorCountGraphPass(strings.Repeat("=", 3)),
+			strings.Repeat(" ", 5)),
 	},
-	"1/10 max 1000": {
-		failedControls:   1,
-		totalControls:    10,
-		maxTotalControls: 1000,
-		// each segment is 100 - 1 fail segment, 1 pass segment, 8 spaces
-		expectedString: fmt.Sprintf("[%s%s        ]", colorCountGraphFail("="), colorCountGraphPass("=")),
-	},
-	"10/200 max 1000": {
-		failedControls:   20,
-		totalControls:    200,
-		maxTotalControls: 1000,
-		// each segment is 100 - 1 fail segment, 2 pass segments, 7 spaces
-		expectedString: fmt.Sprintf("[%s%s       ]", colorCountGraphFail("="), colorCountGraphPass("==")),
-	},
-	"100/500 max 1000": {
-		failedControls:   100,
-		totalControls:    500,
-		maxTotalControls: 1000,
-		// each segment is 100 - 1 fail segment, 4 pass segments, 5 spaces
-		expectedString: fmt.Sprintf("[%s%s     ]", colorCountGraphFail("="), colorCountGraphPass("====")),
-	},
-	"0/500 max 1000": {
+
+	"0/12 max 28 (zero pass)": {
+		maxTotalControls: 28,
+		totalControls:    12,
 		failedControls:   0,
-		totalControls:    500,
-		maxTotalControls: 1000,
-		// each segment is 100 - 0 fail segment, 5 pass segments, 5 spaces
-		expectedString: fmt.Sprintf("[%s     ]", colorCountGraphPass("=====")),
+		// segment=2.8 -> 0 fail, 5 success, 5 blank
+		// [Xxxxx     ]
+		expectedString: fmt.Sprintf(" [%s%s%s]",
+			colorCountGraphFail(strings.Repeat("=", 0)),
+			colorCountGraphPass(strings.Repeat("=", 5)),
+			strings.Repeat(" ", 5)),
+	},
+
+	"1/12 max 28 (less than 1 segment failed)": {
+		maxTotalControls: 28,
+		totalControls:    12,
+		failedControls:   1,
+		// segment=2.8 -> 1 fail, 4 success, 5 blank
+		// [Xxxxx     ]
+		expectedString: fmt.Sprintf(" [%s%s%s]",
+			colorCountGraphFail(strings.Repeat("=", 1)),
+			colorCountGraphPass(strings.Repeat("=", 4)),
+			strings.Repeat(" ", 5)),
+	},
+
+	"3/12 max 28 (more than 1 segment failed)": {
+		maxTotalControls: 28,
+		totalControls:    12,
+		failedControls:   3,
+		// segment=2.8 -> 2 fail, 3 success, 5 blank
+		// [Xxxxx     ]
+		expectedString: fmt.Sprintf(" [%s%s%s]",
+			colorCountGraphFail(strings.Repeat("=", 2)),
+			colorCountGraphPass(strings.Repeat("=", 3)),
+			strings.Repeat(" ", 5)),
+	},
+
+	" 0/17 max 51 (zero pass)": {
+		maxTotalControls: 51,
+		totalControls:    17,
+		failedControls:   0,
+		// segment=5.1 -> 0 fail, 4 success, 6 blank
+		// [xxxx      ]
+		expectedString: fmt.Sprintf(" [%s%s%s]",
+			colorCountGraphFail(strings.Repeat("=", 0)),
+			colorCountGraphPass(strings.Repeat("=", 4)),
+			strings.Repeat(" ", 6)),
+	},
+	"4/17 max 51 (less than 1 segment failed)": {
+		maxTotalControls: 51,
+		totalControls:    17,
+		failedControls:   4,
+		// segment=5.1 -> 1 fail, 3 success, 6 blank
+		// [xxxx      ]
+		expectedString: fmt.Sprintf(" [%s%s%s]",
+			colorCountGraphFail(strings.Repeat("=", 1)),
+			colorCountGraphPass(strings.Repeat("=", 3)),
+			strings.Repeat(" ", 6)),
+	},
+	"6/17 max 51 (more than 1 segment failed)": {
+		maxTotalControls: 51,
+		totalControls:    17,
+		failedControls:   6,
+		// segment=5.1 -> 2 fail, 2 success, 6 blank
+		// [xxxx      ]
+		expectedString: fmt.Sprintf(" [%s%s%s]",
+			colorCountGraphFail(strings.Repeat("=", 2)),
+			colorCountGraphPass(strings.Repeat("=", 2)),
+			strings.Repeat(" ", 6)),
 	},
 }
 
