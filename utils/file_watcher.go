@@ -11,7 +11,10 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 )
 
-const minHandlerInterval = 5 * time.Second
+// allow a short delay before starting handler
+// - this allows multiple events to be gathered for editors (such as vim) which make multiple file
+// operations when saving a file
+const handlerDelay = 100 * time.Millisecond
 
 type FileWatcher struct {
 	watch *fsnotify.Watcher
@@ -290,16 +293,9 @@ func (w *FileWatcher) scheduleHandler(ev fsnotify.Event) {
 		return
 	}
 
-	// so no handler is scheduled - schedule handler to run - with a pause if necessary
-	delay := 0 * time.Second
-	timeSinceLastHandler := time.Since(w.lastHandlerTime)
-	if timeSinceLastHandler < minHandlerInterval {
-		delay = minHandlerInterval - timeSinceLastHandler
-	}
-
-	// no start go routine to run event handler
+	// so no handler is scheduled - schedule handler to run - with a short pause
 	go func() {
-		time.Sleep(delay)
+		time.Sleep(handlerDelay)
 		// lock the handlerLock AFTER the delay
 		w.handlerLock.Lock()
 		defer w.handlerLock.Unlock()
