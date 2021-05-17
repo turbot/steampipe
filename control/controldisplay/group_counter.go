@@ -32,6 +32,8 @@ The alignment depends on the maximum failed and maximum total parameters, as the
 "111 /   123"
 "  1 /     4"
 "  1 / 1,020"
+
+// NOTE: adds a trailing space
 */
 func (r CounterRenderer) Render() string {
 	log.Println("[TRACE] begin counter render")
@@ -50,8 +52,9 @@ func (r CounterRenderer) Render() string {
 	totalWidth := len(maxTotalString)
 
 	// build format string, specifying widths of failedString and totalString
-	// this will generate a format string like: "%3s / %4s"
-	formatString := fmt.Sprintf("%%%ds %%s %%%ds", failedWidth, totalWidth)
+	// this will generate a format string like: "%3s / %4s "
+	// (adds a trailing space)
+	formatString := fmt.Sprintf("%%%ds %%s %%%ds ", failedWidth, totalWidth)
 
 	if r.failedControls == 0 {
 		return fmt.Sprintf(formatString, colorCountZeroFail(failedString), colorCountZeroFailDivider("/"), colorCountTotalAllPassed(totalString))

@@ -11,8 +11,6 @@ import (
 	"github.com/turbot/go-kit/helpers"
 )
 
-const minDimensionWidth = 3
-
 type DimensionsRenderer struct {
 	dimensions []execute.Dimension
 	colorMap   execute.DimensionColorMap
@@ -42,7 +40,7 @@ func (r DimensionsRenderer) Render() string {
 	// make array of dimension values (including trailing spaces
 	var formattedDimensions = make([]string, len(r.dimensions))
 	for i, d := range r.dimensions {
-		formattedDimensions[i] = fmt.Sprintf(" %s", d.Value)
+		formattedDimensions[i] = d.Value
 	}
 
 	var length int
@@ -67,7 +65,7 @@ func (r DimensionsRenderer) Render() string {
 		length = dimensionsLength(formattedDimensions)
 	}
 
-	// ok we now have dimensions that fir in the space, color them
+	// ok we now have dimensions that fit in the space, color them
 	for i, v := range formattedDimensions {
 		// get the source dimension object
 		dimension := r.dimensions[i]
@@ -77,14 +75,16 @@ func (r DimensionsRenderer) Render() string {
 		formattedDimensions[i] = fmt.Sprintf("%s", aurora.Index(color, v))
 	}
 
-	return strings.Join(formattedDimensions, "")
+	return strings.Join(formattedDimensions, " ")
 }
 
-// count the
+// count the total length of the dimensions
 func dimensionsLength(dimensionValues []string) int {
 	var res int
 	for _, v := range dimensionValues {
 		res += len(v)
 	}
+	// allow for spaces betweem the dimensions
+	res += len(dimensionValues) - 1
 	return res
 }
