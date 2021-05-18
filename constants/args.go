@@ -28,6 +28,7 @@ const (
 	ArgProgress                = "progress"
 	ArgQuiet                   = "quiet"
 	ArgColor                   = "color"
+	ArgDryRun                  = "dry-run"
 )
 
 /// metaquery mode arguments
