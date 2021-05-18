@@ -101,8 +101,11 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 	}
 }
 
-// TODO consider executing in order?
 func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
+	// TODO consider executing in order specified in hcl?
+	// it may not matter, as we display results in order
+	// it is only an issue if there are dependencies, in which case we must run in dependency order
+
 	var errors = 0
 	for _, controlRun := range r.ControlRuns {
 		controlRun.Start(ctx, client)

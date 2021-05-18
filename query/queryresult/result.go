@@ -28,15 +28,6 @@ func (r Result) StreamError(err error) {
 	*r.RowChan <- &RowResult{Error: err}
 }
 
-func (r *Result) ColumnTypesContainsColumn(col string) bool {
-	for _, ct := range r.ColTypes {
-		if ct.Name() == col {
-			return true
-		}
-	}
-	return false
-}
-
 func NewQueryResult(colTypes []*sql.ColumnType) *Result {
 	rowChan := make(chan *RowResult)
 	return &Result{

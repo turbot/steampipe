@@ -12,7 +12,6 @@ import (
 
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/utils"
 )
 
 type ControlRunStatus uint32
@@ -90,20 +89,11 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 		// if the control is finished (either successfully or with an error), return the controlRun
 		if r.Finished() {
 			//log.Println("[WARN]", "finished", r.Control.ShortName)
-
-			// we cannot do this until the query has finished - otherwise we would leave the query lock locked
-			// TODO we need a way to cancel
-			if err := r.ValidateColumns(); err != nil {
-				//log.Println("[WARN]", "set run error", r.Control.ShortName)
-				r.SetError(err)
-				return
-			}
-
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
 		if time.Since(startTime) > controlCompletionTimeout {
-			// TODO we need a way to cancel
+			// TODO we need a way to cancel a running query
 			r.SetError(fmt.Errorf("control %s timed out", control.Name()))
 		}
 	}
@@ -125,11 +115,12 @@ func (r *ControlRun) gatherResults(result *queryresult.Result) {
 
 			}
 			result, err := NewResultRow(r.Control, row, result.ColTypes)
+
 			if err != nil {
 				// fail on error
 				//log.Println("[WARN]", "set error", r.Control.ShortName)
 				r.SetError(err)
-				continue
+				return
 			}
 			r.addResultRow(result)
 		case <-r.doneChan:
@@ -163,6 +154,8 @@ func (r *ControlRun) addResultRow(row *ResultRow) {
 
 func (r *ControlRun) SetError(err error) {
 	r.Error = err
+	// update error count
+	r.Summary.Error++
 	r.setRunStatus(ControlRunError)
 }
 
@@ -194,23 +187,4 @@ func (r *ControlRun) GetRunStatus() ControlRunStatus {
 func (r *ControlRun) Finished() bool {
 	status := r.GetRunStatus()
 	return status == ControlRunComplete || status == ControlRunError
-}
-
-func (r *ControlRun) ValidateColumns() error {
-	// validate columns
-	requiredColumns := []string{"reason", "resource", "status"}
-	var missingColumns []string
-	for _, col := range requiredColumns {
-		if !r.ColumnTypesContainsColumn(col) {
-			missingColumns = append(missingColumns, col)
-		}
-	}
-	if len(missingColumns) > 0 {
-		return fmt.Errorf("control result is missing required %s: %v", utils.Pluralize("column", len(missingColumns)), missingColumns)
-	}
-	return nil
-}
-
-func (r *ControlRun) ColumnTypesContainsColumn(col string) bool {
-	return r.queryResult.ColumnTypesContainsColumn(col)
 }

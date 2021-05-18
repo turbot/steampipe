@@ -39,8 +39,8 @@ var colorStatusColon = constants.Gray1
 
 // reason
 var reasonColors = map[string]func(arg interface{}) aurora.Value{
-	execute.ControlAlarm: constants.BoldBrightRed,
-	execute.ControlError: constants.BoldBrightRed,
+	execute.ControlAlarm: constants.BrightRed,
+	execute.ControlError: constants.BrightRed,
 	execute.ControlSkip:  constants.Gray3,
 	execute.ControlInfo:  constants.BrightCyan,
 	execute.ControlOk:    constants.Gray4,
