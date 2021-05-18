@@ -53,6 +53,10 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 	}
 }
 
+func (r *ControlRun) Skip() {
+	r.setRunStatus(ControlRunComplete)
+}
+
 func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
