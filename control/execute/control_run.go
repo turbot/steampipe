@@ -58,6 +58,7 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 
 	control := r.Control
 
+	//log.Println("[WARN]", "start", r.Control.ShortName)
 	// update the current running control in the Progress renderer
 	r.executionTree.progress.OnControlStart(control)
 
@@ -69,17 +70,15 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	}
 
 	startTime := time.Now()
+
 	queryResult, err := client.ExecuteQuery(ctx, query, false)
 	if err != nil {
+		//log.Println("[WARN]", "set run error", r.Control.ShortName)
 		r.SetError(err)
 		return
 	}
 	// validate required columns
 	r.queryResult = queryResult
-	if err := r.ValidateColumns(); err != nil {
-		r.SetError(err)
-		return
-	}
 
 	// set the control as started
 	go r.gatherResults(queryResult)
@@ -90,10 +89,21 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	for {
 		// if the control is finished (either successfully or with an error), return the controlRun
 		if r.Finished() {
+			//log.Println("[WARN]", "finished", r.Control.ShortName)
+
+			// we cannot do this until the query has finished - otherwise we would leave the query lock locked
+			// TODO we need a way to cancel
+			if err := r.ValidateColumns(); err != nil {
+				//log.Println("[WARN]", "set run error", r.Control.ShortName)
+				r.SetError(err)
+				return
+			}
+
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
 		if time.Since(startTime) > controlCompletionTimeout {
+			// TODO we need a way to cancel
 			r.SetError(fmt.Errorf("control %s timed out", control.Name()))
 		}
 	}
@@ -109,19 +119,21 @@ func (r *ControlRun) gatherResults(result *queryresult.Result) {
 				// update the result group status with our status - this will be passed all the way up the execution tree
 				r.group.updateSummary(r.Summary)
 				// nil row means we are done
+				//log.Println("[WARN]", "set complete", r.Control.ShortName)
 				r.setRunStatus(ControlRunComplete)
-
 				return
 
 			}
 			result, err := NewResultRow(r.Control, row, result.ColTypes)
 			if err != nil {
 				// fail on error
+				//log.Println("[WARN]", "set error", r.Control.ShortName)
 				r.SetError(err)
 				continue
 			}
 			r.addResultRow(result)
 		case <-r.doneChan:
+			//log.Println("[WARN]", "close goroutine", r.Control.Title)
 			return
 		default:
 			time.Sleep(25 * time.Millisecond)
@@ -156,8 +168,8 @@ func (r *ControlRun) SetError(err error) {
 
 func (r *ControlRun) setRunStatus(status ControlRunStatus) {
 	r.stateLock.Lock()
-	defer r.stateLock.Unlock()
 	r.runStatus = status
+	r.stateLock.Unlock()
 
 	if r.Finished() {
 
@@ -174,6 +186,8 @@ func (r *ControlRun) setRunStatus(status ControlRunStatus) {
 }
 
 func (r *ControlRun) GetRunStatus() ControlRunStatus {
+	r.stateLock.Lock()
+	defer r.stateLock.Unlock()
 	return r.runStatus
 }
 

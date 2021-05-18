@@ -101,6 +101,7 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 	}
 }
 
+// TODO consider executing in order?
 func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
 	var errors = 0
 	for _, controlRun := range r.ControlRuns {
