@@ -108,7 +108,12 @@ func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
 
 	var errors = 0
 	for _, controlRun := range r.ControlRuns {
-		controlRun.Start(ctx, client)
+		select {
+		case <-ctx.Done():
+			controlRun.SetError(ctx.Err())
+		default:
+			controlRun.Start(ctx, client)
+		}
 	}
 	for _, child := range r.Groups {
 		errors += child.Execute(ctx, client)
