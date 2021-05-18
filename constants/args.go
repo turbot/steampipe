@@ -24,6 +24,7 @@ const (
 	ArgSearchPathPrefix        = "search-path-prefix"
 	ArgWatch                   = "watch"
 	ArgWhere                   = "where"
+	ArgTheme                   = "theme"
 )
 
 /// metaquery mode arguments

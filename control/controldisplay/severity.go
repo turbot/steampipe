@@ -26,7 +26,7 @@ func (r SeverityRenderer) Render() string {
 	defer log.Println("[TRACE] end severity render")
 
 	if helpers.StringSliceContains([]string{"CRITICAL", "HIGH"}, r.severity) {
-		return fmt.Sprintf("%s ", colorSeverity(r.severity))
+		return fmt.Sprintf("%s ", ControlColors.Severity(r.severity))
 	}
 	return ""
 }

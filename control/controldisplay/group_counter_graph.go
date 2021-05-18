@@ -54,10 +54,10 @@ func (r CounterGraphRenderer) Render() string {
 
 func (r CounterGraphRenderer) buildGraphString(failSegments int, passSegments int, spaces int) string {
 	str := fmt.Sprintf("%s%s%s%s%s",
-		colorCountGraphBracket("["),
-		colorCountGraphFail(strings.Repeat("=", failSegments)),
-		colorCountGraphPass(strings.Repeat("=", passSegments)),
+		ControlColors.CountGraphBracket("["),
+		ControlColors.CountGraphFail(strings.Repeat("=", failSegments)),
+		ControlColors.CountGraphPass(strings.Repeat("=", passSegments)),
 		strings.Repeat(" ", spaces),
-		colorCountGraphBracket("]"))
+		ControlColors.CountGraphBracket("]"))
 	return str
 }

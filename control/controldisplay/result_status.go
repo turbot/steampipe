@@ -25,14 +25,14 @@ func (r ResultStatusRenderer) Render() string {
 	statusString := r.paddedStatusString()
 
 	// get the color for our status
-	colorFunc, ok := statusColors[r.status]
+	colorFunc, ok := ControlColors.StatusColors[r.status]
 
 	if !ok {
 		// for unrecognised status, just return nothing - we should be validating elsewhere
 		return ""
 	}
 	// return status follow by colon and trailing space
-	return fmt.Sprintf("%-5s%s ", colorFunc(statusString), colorStatusColon(":"))
+	return fmt.Sprintf("%-5s%s ", colorFunc(statusString), ControlColors.StatusColon(":"))
 }
 
 // pad out status toi length of longest status string = "ERROR" - 5 chars

@@ -124,7 +124,6 @@ func (r *ControlRun) gatherResults(result *queryresult.Result) {
 			}
 			r.addResultRow(result)
 		case <-r.doneChan:
-			//log.Println("[WARN]", "close goroutine", r.Control.Title)
 			return
 		default:
 			time.Sleep(25 * time.Millisecond)

@@ -31,6 +31,6 @@ func (r GroupTitleRenderer) Render() string {
 	}
 	// allow room for trailing space
 	truncatedId := helpers.TruncateString(r.title, r.width-1)
-	str := fmt.Sprintf("%s ", colorGroupTitle(truncatedId))
+	str := fmt.Sprintf("%s ", ControlColors.GroupTitle(truncatedId))
 	return str
 }

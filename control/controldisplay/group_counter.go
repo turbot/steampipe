@@ -57,9 +57,15 @@ func (r CounterRenderer) Render() string {
 	formatString := fmt.Sprintf("%%%ds %%s %%%ds ", failedWidth, totalWidth)
 
 	if r.failedControls == 0 {
-		return fmt.Sprintf(formatString, colorCountZeroFail(failedString), colorCountZeroFailDivider("/"), colorCountTotalAllPassed(totalString))
+		return fmt.Sprintf(formatString,
+			ControlColors.CountZeroFail(failedString),
+			ControlColors.CountZeroFailDivider("/"),
+			ControlColors.CountTotalAllPassed(totalString))
 	}
 
-	str := fmt.Sprintf(formatString, colorCountFail(failedString), colorCountDivider("/"), colorCountTotal(totalString))
+	str := fmt.Sprintf(formatString,
+		ControlColors.CountFail(failedString),
+		ControlColors.CountDivider("/"),
+		ControlColors.CountTotal(totalString))
 	return str
 }

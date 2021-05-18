@@ -33,8 +33,7 @@ func (r ErrorRenderer) Render() string {
 	// figure out how much width we have available for the error message
 	availableWidth := r.width - statusWidth
 	errorMessage := helpers.TruncateString(r.error.Error(), availableWidth)
-
-	errorString := fmt.Sprintf("%s", reasonColors[execute.ControlError](errorMessage))
+	errorString := fmt.Sprintf("%s", ControlColors.StatusError(errorMessage))
 
 	// now put these all together
 	str := fmt.Sprintf("%s%s", statusString, errorString)
