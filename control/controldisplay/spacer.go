@@ -11,7 +11,6 @@ type SpacerRenderer struct {
 }
 
 func NewSpacerRenderer(width int) *SpacerRenderer {
-
 	return &SpacerRenderer{width}
 }
 
@@ -32,5 +31,5 @@ func (r SpacerRenderer) Render() string {
 
 	// allow for trailing space
 	numberOfDots := r.width - 1
-	return fmt.Sprintf("%s ", colorSpacer(strings.Repeat(".", numberOfDots)))
+	return fmt.Sprintf("%s ", ControlColors.Spacer(strings.Repeat(".", numberOfDots)))
 }

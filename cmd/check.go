@@ -39,7 +39,8 @@ func CheckCmd() *cobra.Command {
 		AddBoolFlag(constants.ArgWatch, "", true, "Watch SQL files in the current workspace (works only in interactive mode)").
 		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a check session (comma-separated)").
-		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls ")
+		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls ").
+		AddStringFlag(constants.ArgTheme, "", "dark", "Color scheme")
 
 	return cmd
 }
@@ -62,6 +63,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	err := db.EnsureDbAndStartService(db.InvokerCheck)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
 	defer db.Shutdown(nil, db.InvokerCheck)
+
+	// set color schema
+	err = initialiseColorScheme()
+	utils.FailOnErrorWithMessage(err, "invalid color schema")
 
 	// load the workspace
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
@@ -99,6 +104,21 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = failures
 }
 
+func initialiseColorScheme() error {
+	theme := viper.GetString(constants.ArgTheme)
+	themeDef, ok := controldisplay.ColorSchemes[theme]
+	if !ok {
+		return fmt.Errorf("invalid theme %s", theme)
+	}
+	scheme, err := controldisplay.NewControlColorScheme(themeDef)
+	if err != nil {
+		return err
+	}
+	controldisplay.ControlColors = scheme
+	return nil
+}
+
+
 func DisplayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) {
 	//bytes, err := json.MarshalIndent(executionTree.Root, "", "  ")
 	maxCols := getMaxCols()
@@ -114,8 +134,8 @@ func DisplayControlResults(ctx context.Context, executionTree *execute.Execution
 
 func getMaxCols() int {
 	maxCols, _, _ := gows.GetWinSize()
-	// limit to 120
-	if maxCols > 120 {
+	// limit to 200
+	if maxCols > 200 {
 		maxCols = 120
 	}
 	return maxCols

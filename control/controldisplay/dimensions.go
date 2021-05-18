@@ -84,7 +84,7 @@ func dimensionsLength(dimensionValues []string) int {
 	for _, v := range dimensionValues {
 		res += len(v)
 	}
-	// allow for spaces betweem the dimensions
+	// allow for spaces between the dimensions
 	res += len(dimensionValues) - 1
 	return res
 }

@@ -28,7 +28,7 @@ func (r ResultReasonRenderer) Render() string {
 	defer log.Println("[TRACE] end result reason render")
 
 	// get the color for our status
-	colorFunc, ok := reasonColors[r.status]
+	colorFunc, ok := ControlColors.ReasonColors[r.status]
 	if !ok {
 		return ""
 	}
