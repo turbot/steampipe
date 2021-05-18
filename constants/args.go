@@ -26,7 +26,8 @@ const (
 	ArgTheme                   = "theme"
 	ArgProgress                = "progress"
 	ArgExport                  = "export"
-	// ArgWhere                   = "where"
+	ArgQuiet                   = "quiet"
+	ArgDryRun                  = "dry-run"
 )
 
 /// metaquery mode arguments
