@@ -61,10 +61,11 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgWatch, "", true, "Watch SQL files in the current workspace (works only in interactive mode)").
 		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a check session (comma-separated)").
-		//AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls ").
 		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme, which determines the color scheme for the 'text' control output. Possible values are light, dark, plain").
 		AddStringSliceFlag(constants.ArgExport, "", []string{}, "Export output to files").
-		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress")
+		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
+		AddBoolFlag(constants.ArgQuiet, "", false, "Display only failed control results").
+		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them")
 
 	return cmd
 }
