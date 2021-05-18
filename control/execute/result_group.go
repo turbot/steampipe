@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
@@ -116,6 +118,9 @@ func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
 		case <-ctx.Done():
 			controlRun.SetError(ctx.Err())
 		default:
+		if viper.GetBool(constants.ArgDryRun) {
+			controlRun.Skip()
+		} else {
 			controlRun.Start(ctx, client)
 		}
 	}

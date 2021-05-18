@@ -43,7 +43,8 @@ func CheckCmd() *cobra.Command {
 		AddStringFlag(constants.ArgTheme, "", "dark", "Color scheme").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
 		AddBoolFlag(constants.ArgQuiet, "", false, "Display only failed control results").
-		AddBoolFlag(constants.ArgColor, "", true, "Display control results in color")
+		AddBoolFlag(constants.ArgColor, "", true, "Display control results in color").
+		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them")
 
 	return cmd
 }
