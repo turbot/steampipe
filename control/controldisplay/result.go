@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/turbot/go-kit/helpers"
 
 	"github.com/turbot/steampipe/control/execute"
@@ -19,6 +22,8 @@ type ResultRenderer struct {
 
 	// screen width
 	width int
+	// if true, only display failed results
+	errorsOnly bool
 }
 
 func NewResultRenderer(status, reason string, dimensions []execute.Dimension, colorMap execute.DimensionColorMap, width int) *ResultRenderer {
@@ -28,12 +33,18 @@ func NewResultRenderer(status, reason string, dimensions []execute.Dimension, co
 		dimensions: dimensions,
 		colorMap:   colorMap,
 		width:      width,
+		errorsOnly: viper.GetString(constants.ArgOutput) == "brief",
 	}
 }
 
 func (r ResultRenderer) Render() string {
 	log.Println("[TRACE] begin result render")
 	defer log.Println("[TRACE] end result render")
+
+	// in quiet mode, only render failures
+	if r.errorsOnly && !helpers.StringSliceContains([]string{string(execute.ControlAlarm), string(execute.ControlError)}, r.status) {
+		return ""
+	}
 
 	status := NewResultStatusRenderer(r.status)
 	statusString := status.Render()

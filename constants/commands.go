@@ -20,7 +20,7 @@ const (
 	CmdSearchPathPrefix = ".search_path_prefix" // set search path prefix
 )
 
-// ArgFromMetaquery :: convert metaquery of form '.header' into the config argument used to set the mode, i.e. 'header'
+// ArgFromMetaquery converts a metaquery of form '.header' into the config argument used to set the mode, i.e. 'header'
 func ArgFromMetaquery(cmd string) string {
 	if cmd[:1] != "." {
 		panic(fmt.Sprintf("ArgFromMetaquery called for non-metyaquery: %s", cmd))

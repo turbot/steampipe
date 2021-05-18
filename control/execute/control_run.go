@@ -3,6 +3,7 @@ package execute
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -53,6 +54,9 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 }
 
 func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
+	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
+	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
+
 	r.runStatus = ControlRunStarted
 
 	control := r.Control

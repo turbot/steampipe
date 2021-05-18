@@ -34,13 +34,14 @@ func CheckCmd() *cobra.Command {
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
-		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").
+		AddStringFlag(constants.ArgOutput, "", "text", "Select the console output format. Possible values are json,csv,text,brief,none").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports check time.").
 		AddBoolFlag(constants.ArgWatch, "", true, "Watch SQL files in the current workspace (works only in interactive mode)").
 		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a check session (comma-separated)").
-		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls ").
-		AddStringFlag(constants.ArgTheme, "", "dark", "Color scheme")
+		//AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls ").
+		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme, which determines the color scheme for the 'text' control output. Possible values are light,dark, plain").
+		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress")
 
 	return cmd
 }
@@ -56,17 +57,20 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	err := validateOutputFormat()
+	utils.FailOnError(err)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	startCancelHandler(cancel)
 
 	// start db if necessary
-	err := db.EnsureDbAndStartService(db.InvokerCheck)
+	err = db.EnsureDbAndStartService(db.InvokerCheck)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
 	defer db.Shutdown(nil, db.InvokerCheck)
 
 	// set color schema
 	err = initialiseColorScheme()
-	utils.FailOnErrorWithMessage(err, "invalid color schema")
+	utils.FailOnError(err)
 
 	// load the workspace
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
@@ -96,7 +100,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			// for now we execute controls synchronously
 			// Execute returns the number of failures
 			executionTree.Execute(ctx, client)
-			DisplayControlResults(ctx, executionTree)
+			err = DisplayControlResults(ctx, executionTree)
+			utils.FailOnError(err)
 		}
 	}
 
@@ -104,11 +109,26 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = failures
 }
 
+func validateOutputFormat() error {
+	outputFormat := viper.GetString(constants.ArgOutput)
+	if !helpers.StringSliceContains([]string{"text", "brief", "csv", "json", "none"}, outputFormat) {
+		return fmt.Errorf("invalid output format '%s' - must be one of json,csv,text,brief,none", outputFormat)
+	}
+	if helpers.StringSliceContains([]string{"csv", "json"}, outputFormat) {
+		return fmt.Errorf("output format '%s'is not supported yet", outputFormat)
+	}
+	if outputFormat == "none" {
+		// set progress to false
+		viper.Set(constants.ArgProgress, false)
+	}
+	return nil
+}
+
 func initialiseColorScheme() error {
 	theme := viper.GetString(constants.ArgTheme)
 	themeDef, ok := controldisplay.ColorSchemes[theme]
 	if !ok {
-		return fmt.Errorf("invalid theme %s", theme)
+		return fmt.Errorf("invalid theme '%s'", theme)
 	}
 	scheme, err := controldisplay.NewControlColorScheme(themeDef)
 	if err != nil {
@@ -118,8 +138,36 @@ func initialiseColorScheme() error {
 	return nil
 }
 
+func DisplayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) (err error) {
+	outputFormat := viper.GetString(constants.ArgOutput)
 
-func DisplayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) {
+	switch outputFormat {
+	case "text", "brief":
+		err = displayTextOutput(ctx, executionTree)
+	case "csv":
+		err = displayCsvOutput(ctx, executionTree)
+	case "json":
+		err = displayJsonOutput(ctx, executionTree)
+	case "none":
+		// set progress to false
+		viper.Set(constants.ArgProgress, false)
+		// no error, nothing else to do
+	default:
+		err = fmt.Errorf("invalid output format '%s' - must be one of json,csv,text,brief,none", outputFormat)
+	}
+
+	return
+}
+
+func displayCsvOutput(ctx context.Context, tree *execute.ExecutionTree) error {
+	return fmt.Errorf("CSV output not supported yet")
+}
+
+func displayJsonOutput(ctx context.Context, tree *execute.ExecutionTree) error {
+	return fmt.Errorf("JSON not supported yet")
+}
+
+func displayTextOutput(ctx context.Context, executionTree *execute.ExecutionTree) error {
 	//bytes, err := json.MarshalIndent(executionTree.Root, "", "  ")
 	maxCols := getMaxCols()
 
@@ -130,6 +178,7 @@ func DisplayControlResults(ctx context.Context, executionTree *execute.Execution
 	}
 
 	fmt.Println(renderer.Render())
+	return nil
 }
 
 func getMaxCols() int {

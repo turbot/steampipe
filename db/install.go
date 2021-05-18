@@ -180,6 +180,7 @@ func installSteampipeDatabase(withSteampipePassword string, withRootPassword str
 		// or createrole permissions.
 		`create user steampipe`,
 
+		// Allow the steampipe user to manage temporary tables
 		`grant temporary on database steampipe to steampipe_users`,
 
 		// Set a random, complex password for the steampipe user. Done as a separate

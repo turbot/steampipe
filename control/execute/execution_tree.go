@@ -3,8 +3,8 @@ package execute
 import (
 	"context"
 	"fmt"
+	"log"
 
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/query/execute"
@@ -36,8 +36,10 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 		workspace: workspace,
 		client:    client,
 	}
-	// if a "--where" parameter wa spassed, build a map of control manes used to filter the controls to run
+	// if a "--where" parameter was passed, build a map of control manes used to filter the controls to run
+	// NOTE: not enabled yet
 	err := executionTree.populateControlFilterMap(ctx)
+
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +72,8 @@ func (e *ExecutionTree) AddControl(control *modconfig.Control, group *ResultGrou
 	}
 }
 func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
+	log.Println("[TRACE]", "begin ExecutionTree.Execute")
+	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.progress.Start()
 	defer e.progress.Finish()
 	// just execute the root - it will traverse the tree
@@ -82,14 +86,14 @@ func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
 	//  if a 'where' arg was used, execute this sql to get a list of  control names
 	// use this list to build a name map used to determine whether to run a particular control
-	if viper.IsSet(constants.ArgWhere) {
-		whereArg := viper.GetString(constants.ArgWhere)
-		var err error
-		e.controlNameFilterMap, err = e.getControlMapFromMetadataQuery(ctx, whereArg)
-		if err != nil {
-			return err
-		}
-	}
+	//if viper.IsSet(constants.ArgWhere) {
+	//	whereArg := viper.GetString(constants.ArgWhere)
+	//	var err error
+	//	e.controlNameFilterMap, err = e.getControlMapFromMetadataQuery(ctx, whereArg)
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
 	return nil
 }
 
