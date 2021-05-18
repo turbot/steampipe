@@ -25,6 +25,9 @@ const (
 	ArgWatch                   = "watch"
 	ArgWhere                   = "where"
 	ArgTheme                   = "theme"
+	ArgProgress                = "progress"
+	ArgQuiet                   = "quiet"
+	ArgColor                   = "color"
 )
 
 /// metaquery mode arguments

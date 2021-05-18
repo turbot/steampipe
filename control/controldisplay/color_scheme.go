@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/logrusorgru/aurora"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
@@ -84,9 +85,14 @@ func NewControlColorScheme(def *ControlColorSchemaDefinition) (*ControlColorSche
 	}
 	return res, nil
 }
+
 func (c *ControlColorSchema) Initialise(def *ControlColorSchemaDefinition) error {
 	destV := reflect.ValueOf(c).Elem()
+	if !viper.GetBool(constants.ArgColor) {
+		def = monochromeTheme
+	}
 
+	nullColorFunc := func(val interface{}) aurora.Value { return aurora.Reset(val) }
 	var validationErrors []string
 
 	v := reflect.ValueOf(def).Elem()
@@ -97,12 +103,18 @@ func (c *ControlColorSchema) Initialise(def *ControlColorSchemaDefinition) error
 
 		colorString := fieldValue.Interface().(string)
 		property := fieldType.Name
+		// find corresponding field in dest
+		destField := destV.FieldByName(property)
 
+		// if no color is set, use null color function
+		if colorString == "" {
+			destField.Set(reflect.ValueOf(nullColorFunc))
+			continue
+		}
+
+		// is this a valid color string?
 		if f, ok := constants.Colors[colorString]; ok {
-			// find corresponding field in dest
-			destField := destV.FieldByName(property)
 			destField.Set(reflect.ValueOf(f))
-
 		} else {
 			validationErrors = append(validationErrors, property)
 		}
@@ -188,4 +200,13 @@ var ColorSchemes = map[string]*ControlColorSchemaDefinition{
 		ReasonOK:             "gray2",
 		Spacer:               "gray5",
 	},
+}
+
+// monochrome color scheme for internal use
+var monochromeTheme = &ControlColorSchemaDefinition{
+	GroupTitle:  "bold",
+	Severity:    "bold",
+	CountFail:   "bold",
+	StatusAlarm: "bold",
+	StatusError: "bold",
 }

@@ -40,7 +40,10 @@ func CheckCmd() *cobra.Command {
 		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a check session (comma-separated)").
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls ").
-		AddStringFlag(constants.ArgTheme, "", "dark", "Color scheme")
+		AddStringFlag(constants.ArgTheme, "", "dark", "Color scheme").
+		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
+		AddBoolFlag(constants.ArgQuiet, "", false, "Display only failed control results").
+		AddBoolFlag(constants.ArgColor, "", true, "Display control results in color")
 
 	return cmd
 }
@@ -66,7 +69,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// set color schema
 	err = initialiseColorScheme()
-	utils.FailOnErrorWithMessage(err, "invalid color schema")
+	utils.FailOnError(err)
 
 	// load the workspace
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
@@ -108,7 +111,7 @@ func initialiseColorScheme() error {
 	theme := viper.GetString(constants.ArgTheme)
 	themeDef, ok := controldisplay.ColorSchemes[theme]
 	if !ok {
-		return fmt.Errorf("invalid theme %s", theme)
+		return fmt.Errorf("invalid theme '%s'", theme)
 	}
 	scheme, err := controldisplay.NewControlColorScheme(themeDef)
 	if err != nil {

@@ -3,6 +3,9 @@ package execute
 import (
 	"fmt"
 
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
+
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
@@ -18,33 +21,47 @@ type ControlProgressRenderer struct {
 	error    int
 	spinner  *spinner.Spinner
 	current  string
+	enabled  bool
 }
 
 func NewControlProgressRenderer(total int) *ControlProgressRenderer {
-	return &ControlProgressRenderer{total: total, pending: total}
+	return &ControlProgressRenderer{
+		total:   total,
+		pending: total,
+		enabled: viper.GetBool(constants.ArgProgress)}
 }
 
 func (p *ControlProgressRenderer) Start() {
-	p.spinner = display.ShowSpinner("")
+	if p.enabled {
+		p.spinner = display.ShowSpinner("")
+	}
 }
 func (p *ControlProgressRenderer) OnControlStart(control *modconfig.Control) {
-	p.current = typehelpers.SafeString(control.Title)
-	display.UpdateSpinnerMessage(p.spinner, p.message())
+	if p.enabled {
+		p.current = typehelpers.SafeString(control.Title)
+		display.UpdateSpinnerMessage(p.spinner, p.message())
+	}
 }
 func (p *ControlProgressRenderer) OnComplete() {
-	p.pending--
-	p.complete++
-	display.UpdateSpinnerMessage(p.spinner, p.message())
+	if p.enabled {
+		p.pending--
+		p.complete++
+		display.UpdateSpinnerMessage(p.spinner, p.message())
+	}
 }
 
 func (p *ControlProgressRenderer) OnError() {
-	p.pending--
-	p.error++
-	display.UpdateSpinnerMessage(p.spinner, p.message())
+	if p.enabled {
+		p.pending--
+		p.error++
+		display.UpdateSpinnerMessage(p.spinner, p.message())
+	}
 }
 
 func (p *ControlProgressRenderer) Finish() {
-	display.StopSpinner(p.spinner)
+	if p.enabled {
+		display.StopSpinner(p.spinner)
+	}
 }
 
 func (p ControlProgressRenderer) message() string {

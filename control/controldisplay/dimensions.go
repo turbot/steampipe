@@ -6,9 +6,10 @@ import (
 	"strings"
 
 	"github.com/logrusorgru/aurora"
-	"github.com/turbot/steampipe/control/execute"
-
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/control/execute"
 )
 
 type DimensionsRenderer struct {
@@ -66,13 +67,22 @@ func (r DimensionsRenderer) Render() string {
 	}
 
 	// ok we now have dimensions that fit in the space, color them
+	// check whether color is disabled
+	showColor := viper.GetBool(constants.ArgColor)
 	for i, v := range formattedDimensions {
 		// get the source dimension object
 		dimension := r.dimensions[i]
-		// get the color code - there must be an entry
-		color := r.colorMap[dimension.Key][dimension.Value]
 
-		formattedDimensions[i] = fmt.Sprintf("%s", aurora.Index(color, v))
+		// get the color code - there must be an entry
+		dimensionColorFunc := func(val interface{}) aurora.Value {
+			if showColor {
+				dimensionColor := r.colorMap[dimension.Key][dimension.Value]
+				return aurora.Index(dimensionColor, val)
+			}
+			return aurora.Reset(val)
+		}
+
+		formattedDimensions[i] = fmt.Sprintf("%s", dimensionColorFunc(v))
 	}
 
 	return strings.Join(formattedDimensions, " ")

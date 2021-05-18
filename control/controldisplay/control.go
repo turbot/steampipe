@@ -55,13 +55,21 @@ func (r ControlRenderer) Render() string {
 	}
 
 	// now render the results (if any)
+	var resultStrings []string
 	for _, row := range r.run.Result.Rows {
 		resultRenderer := NewResultRenderer(row.Status, row.Reason, row.Dimensions, r.colorMap, r.width)
-		controlStrings = append(controlStrings, resultRenderer.Render())
+		// the result renderer may not render the result - in quiet mode only failures are rendered
+		if resultString := resultRenderer.Render(); resultString != "" {
+			resultStrings = append(controlStrings, resultString)
+		}
 	}
+
 	// newline after results
-	if len(r.run.Result.Rows) > 0 || r.run.Error != nil {
-		controlStrings = append(controlStrings, "")
+	if len(resultStrings) > 0 {
+		controlStrings = append(controlStrings, resultStrings...)
+		if len(r.run.Result.Rows) > 0 || r.run.Error != nil {
+			controlStrings = append(controlStrings, "")
+		}
 	}
 
 	return strings.Join(controlStrings, "\n")

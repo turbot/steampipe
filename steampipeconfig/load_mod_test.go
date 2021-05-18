@@ -105,7 +105,6 @@ var testCasesLoadMod = map[string]loadModTest{
 					Title:       toStringPointer("C1"),
 					Description: toStringPointer("THIS IS CONTROL 1"),
 					SQL:         toStringPointer("select 'pass' as result"),
-					Labels:      &[]string{"demo", "prod", "steampipe"},
 				},
 			},
 		},
