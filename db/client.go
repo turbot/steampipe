@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/turbot/steampipe/constants"
@@ -18,10 +17,6 @@ type Client struct {
 	dbClient       *sql.DB
 	schemaMetadata *schema.Metadata
 	connectionMap  *steampipeconfig.ConnectionMap
-	// only allow one query at a time
-	// this is required as if multiple concurrent queries are run, they will each get their own db connection,
-	// and only the first conneciton will have the Temp tables - the reflection metadata tables
-	queryLock sync.Mutex
 }
 
 // Close closes the connection to the database and shuts down the backend
@@ -115,6 +110,8 @@ func createDbClient(dbname string, username string) (*sql.DB, error) {
 
 	// connect to the database using the postgres driver
 	db, err := sql.Open("postgres", psqlInfo)
+	db.SetMaxOpenConns(1)
+
 	if err != nil {
 		return nil, err
 	}
