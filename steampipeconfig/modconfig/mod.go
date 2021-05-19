@@ -3,6 +3,7 @@ package modconfig
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -72,7 +73,10 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 
 // CreateDefaultMod creates a default mod created for a workspace with no mod definition
 func CreateDefaultMod(modPath string) *Mod {
-	return NewMod(defaultModName, modPath, hcl.Range{})
+	m := NewMod(defaultModName, modPath, hcl.Range{})
+	folderName := filepath.Base(modPath)
+	m.Title = &folderName
+	return m
 }
 
 // IsDefaultMod returns whether this mod is a default mod created for a workspace with no mod definition
