@@ -10,11 +10,11 @@ require (
 	github.com/briandowns/spinner v1.11.1
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/containerd/containerd v1.4.1
-	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/deislabs/oras v0.8.1
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.7.0
 	github.com/fsnotify/fsnotify v1.4.7
+	github.com/gerow/go-color v0.0.0-20140219113758-125d37f527f1
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/google/uuid v1.2.0
@@ -29,11 +29,11 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.8.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
+	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/otiai10/copy v1.2.0
-	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18
 	github.com/shirou/gopsutil v3.20.11+incompatible
