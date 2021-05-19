@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/spf13/viper"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/query/execute"
 
@@ -74,6 +77,25 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 
 	startTime := time.Now()
 
+	_, _ = client.ExecuteSync(ctx, fmt.Sprintf("--- Executing %s", *control.Title))
+
+	var originalConfiguredSearchPath []string
+	var originalConfiguredSearchPathPrefix []string
+
+	if control.SearchPath != nil || control.SearchPathPrefix != nil {
+		originalConfiguredSearchPath = viper.GetViper().GetStringSlice(constants.ArgSearchPath)
+		originalConfiguredSearchPathPrefix = viper.GetViper().GetStringSlice(constants.ArgSearchPathPrefix)
+
+		if control.SearchPath != nil {
+			viper.Set(constants.ArgSearchPath, strings.Split(*control.SearchPath, ","))
+		}
+		if control.SearchPathPrefix != nil {
+			viper.Set(constants.ArgSearchPathPrefix, strings.Split(*control.SearchPathPrefix, ","))
+		}
+
+		client.SetClientSearchPath()
+	}
+
 	queryResult, err := client.ExecuteQuery(ctx, query, false)
 	if err != nil {
 		//log.Println("[WARN]", "set run error", r.Control.ShortName)
@@ -84,7 +106,15 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	r.queryResult = queryResult
 
 	// set the control as started
-	go r.gatherResults(queryResult)
+	go func() {
+		r.gatherResults(queryResult)
+		if control.SearchPath != nil || control.SearchPathPrefix != nil {
+			// the search path was modified. Reset it!
+			viper.Set(constants.ArgSearchPath, originalConfiguredSearchPath)
+			viper.Set(constants.ArgSearchPathPrefix, originalConfiguredSearchPathPrefix)
+			client.SetClientSearchPath()
+		}
+	}()
 
 	// TEMPORARY - we will eventually pass the streams to the renderer before completion
 	// wait for control to finish
