@@ -263,6 +263,7 @@ func ensureSteampipeServer() error {
 }
 
 // ensures that the `steampipe_users` role has permissions to work with temporary tables
+// ideally this should be done during installation, but we need to migrate current installations
 func ensureTempTablePermissions() error {
 	rootClient, err := createSteampipeRootDbClient()
 	if err != nil {
