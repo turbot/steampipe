@@ -222,6 +222,13 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (startResult Sta
 		return ServiceFailedToStart, err
 	}
 
+	err = ensureTempTablePermissions()
+	if err != nil {
+		// there was a problem with the installation
+		StopDB(true, invoker)
+		return ServiceFailedToStart, err
+	}
+
 	// refresh plugin connections - ensure db schemas are in sync with connection config
 	// NOTE: refresh defaults to true but will be set to false if this service start command has been invoked by a query command
 	if cmdconfig.Viper().GetBool(constants.ArgRefresh) {
@@ -251,6 +258,20 @@ func ensureSteampipeServer() error {
 
 	if err != nil {
 		return installSteampipeHub()
+	}
+	return nil
+}
+
+// ensures that the `steampipe_users` role has permissions to work with temporary tables
+func ensureTempTablePermissions() error {
+	rootClient, err := createSteampipeRootDbClient()
+	if err != nil {
+		return err
+	}
+	defer rootClient.Close()
+	_, err = rootClient.Exec("grant temporary on database steampipe to steampipe_users")
+	if err != nil {
+		return err
 	}
 	return nil
 }
