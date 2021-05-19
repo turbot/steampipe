@@ -24,8 +24,8 @@ const maxRow = 5
 // NewDimensionColorGenerator creates a new NewDimensionColorGenerator
 func NewDimensionColorGenerator(startingRow, startingColumn uint8) (*DimensionColorGenerator, error) {
 	forbiddenColumns := map[uint8]bool{
-		16: true, 17: true, 18: true, 19: true, // red
-		22: true, 23: true, 28: true, 29: true, //orange
+		16: true, 17: true, 18: true, 19: true, 20: true, // red
+		22: true, 23: true, 27: true, 28: true, 29: true, //orange
 		34: true, 35: true, 36: true, 40: true, 41: true, 42: true, //green/orange
 		46: true, 47: true, 48: true, 49: true, // green
 	}
