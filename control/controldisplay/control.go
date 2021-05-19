@@ -60,7 +60,7 @@ func (r ControlRenderer) Render() string {
 		resultRenderer := NewResultRenderer(row.Status, row.Reason, row.Dimensions, r.colorMap, r.width)
 		// the result renderer may not render the result - in quiet mode only failures are rendered
 		if resultString := resultRenderer.Render(); resultString != "" {
-			resultStrings = append(controlStrings, resultString)
+			resultStrings = append(resultStrings, resultString)
 		}
 	}
 

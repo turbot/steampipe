@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"github.com/logrusorgru/aurora"
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
@@ -13,7 +12,7 @@ import (
 type colorFunc func(interface{}) aurora.Value
 
 // ControlColors is a global variable containing the current control color scheme
-var ControlColors *ControlColorSchema
+var ControlColors *ControlColorScheme
 
 type ControlColorSchemaDefinition struct {
 	// group
@@ -42,10 +41,11 @@ type ControlColorSchemaDefinition struct {
 	ReasonInfo  string
 	ReasonOK    string
 
-	Spacer string
+	Spacer   string
+	UseColor bool
 }
 
-type ControlColorSchema struct {
+type ControlColorScheme struct {
 	GroupTitle           colorFunc
 	Severity             colorFunc
 	CountZeroFail        colorFunc
@@ -72,10 +72,11 @@ type ControlColorSchema struct {
 
 	ReasonColors map[string]colorFunc
 	StatusColors map[string]colorFunc
+	UseColor     bool
 }
 
-func NewControlColorScheme(def *ControlColorSchemaDefinition) (*ControlColorSchema, error) {
-	res := &ControlColorSchema{
+func NewControlColorScheme(def *ControlColorSchemaDefinition) (*ControlColorScheme, error) {
+	res := &ControlColorScheme{
 		ReasonColors: make(map[string]colorFunc),
 		StatusColors: make(map[string]colorFunc),
 	}
@@ -86,11 +87,8 @@ func NewControlColorScheme(def *ControlColorSchemaDefinition) (*ControlColorSche
 	return res, nil
 }
 
-func (c *ControlColorSchema) Initialise(def *ControlColorSchemaDefinition) error {
+func (c *ControlColorScheme) Initialise(def *ControlColorSchemaDefinition) error {
 	destV := reflect.ValueOf(c).Elem()
-	if !viper.GetBool(constants.ArgColor) {
-		def = monochromeTheme
-	}
 
 	nullColorFunc := func(val interface{}) aurora.Value { return aurora.Reset(val) }
 	var validationErrors []string
@@ -100,6 +98,11 @@ func (c *ControlColorSchema) Initialise(def *ControlColorSchemaDefinition) error
 	for i := 0; i < v.NumField(); i++ {
 		fieldValue := v.Field(i)
 		fieldType := t.Field(i)
+
+		// all string fields are colors skip non string fields
+		if fieldType.Type.Name() != "string" {
+			continue
+		}
 
 		colorString := fieldValue.Interface().(string)
 		property := fieldType.Name
@@ -136,10 +139,11 @@ func (c *ControlColorSchema) Initialise(def *ControlColorSchemaDefinition) error
 	c.StatusColors["info"] = c.StatusInfo
 	c.StatusColors["error"] = c.StatusError
 	c.StatusColors["ok"] = c.StatusOK
+	c.UseColor = def.UseColor
 	return nil
 }
 
-func (c ControlColorSchema) initialiseColor(color string, dest *colorFunc, validationErrors []string) {
+func (c ControlColorScheme) initialiseColor(color string, dest *colorFunc, validationErrors []string) {
 	if f, ok := constants.Colors[color]; ok {
 		*dest = f
 	} else {
@@ -149,7 +153,6 @@ func (c ControlColorSchema) initialiseColor(color string, dest *colorFunc, valid
 
 var ColorSchemes = map[string]*ControlColorSchemaDefinition{
 	"dark": {
-
 		GroupTitle:           "bold-bright-white",
 		Severity:             "bold-bright-yellow",
 		CountZeroFail:        "gray1",
@@ -173,9 +176,9 @@ var ColorSchemes = map[string]*ControlColorSchemaDefinition{
 		ReasonInfo:           "bright-cyan",
 		ReasonOK:             "gray4",
 		Spacer:               "gray1",
+		UseColor:             true,
 	},
 	"light": {
-
 		GroupTitle:           "bold-bright-black",
 		Severity:             "bold-bright-yellow",
 		CountZeroFail:        "gray5",
@@ -199,14 +202,7 @@ var ColorSchemes = map[string]*ControlColorSchemaDefinition{
 		ReasonInfo:           "bright-cyan",
 		ReasonOK:             "gray2",
 		Spacer:               "gray5",
+		UseColor:             true,
 	},
-}
-
-// monochrome color scheme for internal use
-var monochromeTheme = &ControlColorSchemaDefinition{
-	GroupTitle:  "bold",
-	Severity:    "bold",
-	CountFail:   "bold",
-	StatusAlarm: "bold",
-	StatusError: "bold",
+	"plain": {UseColor: false},
 }

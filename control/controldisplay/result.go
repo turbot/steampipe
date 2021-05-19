@@ -23,7 +23,7 @@ type ResultRenderer struct {
 	// screen width
 	width int
 	// if true, only display failed results
-	quiet bool
+	errorsOnly bool
 }
 
 func NewResultRenderer(status, reason string, dimensions []execute.Dimension, colorMap execute.DimensionColorMap, width int) *ResultRenderer {
@@ -33,7 +33,7 @@ func NewResultRenderer(status, reason string, dimensions []execute.Dimension, co
 		dimensions: dimensions,
 		colorMap:   colorMap,
 		width:      width,
-		quiet:      viper.GetBool(constants.ArgQuiet),
+		errorsOnly: viper.GetString(constants.ArgOutput) == "brief",
 	}
 }
 
@@ -42,7 +42,7 @@ func (r ResultRenderer) Render() string {
 	defer log.Println("[TRACE] end result render")
 
 	// in quiet mode, only render failures
-	if r.quiet && !helpers.StringSliceContains([]string{string(execute.ControlAlarm), string(execute.ControlError)}, r.status) {
+	if r.errorsOnly && !helpers.StringSliceContains([]string{string(execute.ControlAlarm), string(execute.ControlError)}, r.status) {
 		return ""
 	}
 
