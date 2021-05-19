@@ -5,11 +5,12 @@ import (
 )
 
 type DimensionColorGenerator struct {
-	Map map[string]map[string]uint8
+	Map            map[string]map[string]uint8
+	startingRow    uint8
+	startingColumn uint8
 
-	startingRow         uint8
-	startingColumn      uint8
-	allocatedColorCodes map[uint8]bool
+	// state
+	allocatedColorCodes []uint8
 	forbiddenColumns    map[uint8]bool
 	currentRow          uint8
 	currentColumn       uint8
@@ -37,6 +38,8 @@ func NewDimensionColorGenerator(startingRow, startingColumn uint8) (*DimensionCo
 
 	g := &DimensionColorGenerator{
 		Map:              make(map[string]map[string]uint8),
+		startingRow:      startingRow,
+		startingColumn:   startingColumn,
 		forbiddenColumns: forbiddenColumns,
 	}
 	g.reset()
@@ -45,7 +48,6 @@ func NewDimensionColorGenerator(startingRow, startingColumn uint8) (*DimensionCo
 
 func (g *DimensionColorGenerator) reset() {
 	// create the state map
-	g.allocatedColorCodes = make(map[uint8]bool)
 	g.currentRow = g.startingRow
 	g.currentColumn = g.startingColumn
 }
@@ -86,11 +88,10 @@ func (g *DimensionColorGenerator) addDimensionValue(d Dimension) {
 }
 
 func (g *DimensionColorGenerator) getNextColor() uint8 {
-	// increment the column count - this avoids forbidden columns
 	g.incrementCurrentColumn(2)
 	g.incrementCurrentRow(2)
 
-	// does this color clash
+	// does this color clash, or is it forbidden
 	color := g.getCurrentColor()
 	origColor := color
 	for g.colorClashes(color) {
@@ -105,7 +106,7 @@ func (g *DimensionColorGenerator) getNextColor() uint8 {
 	}
 
 	// store this color code
-	g.allocatedColorCodes[color] = true
+	g.allocatedColorCodes = append(g.allocatedColorCodes, color)
 	return color
 }
 
@@ -132,5 +133,11 @@ func (g *DimensionColorGenerator) incrementCurrentColumn(increment uint8) {
 
 // check map our map of color indexes - if we are within 5 of any other element, skip this color
 func (g *DimensionColorGenerator) colorClashes(color uint8) bool {
-	return g.allocatedColorCodes[color]
+	for _, a := range g.allocatedColorCodes {
+		if a == color {
+			return true
+		}
+	}
+
+	return false
 }
