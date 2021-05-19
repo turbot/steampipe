@@ -33,6 +33,10 @@ func (c *Client) ExecuteSync(ctx context.Context, query string) (*queryresult.Sy
 	return syncResult, nil
 }
 
+// ExecuteQuery executes the provided query against the Database in the given context.Context
+// Bear in mind that whenever ExecuteQuery is called, the returned `queryresult.Result` MUST be fully read -
+// otherwise the transaction is left open, which will block the connection and will prevent subsequent communications
+// with the service
 func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream bool) (res *queryresult.Result, err error) {
 	if query == "" {
 		return &queryresult.Result{}, nil
@@ -41,15 +45,16 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 	// channel to flag to spinner that the query has run
 	queryDone := make(chan bool, 1)
 	var spinner *spinner.Spinner
+	var tx *sql.Tx
 
-	c.queryLock.Lock()
 	defer func() {
-		// if there is no error, readRows() will unlock the queryLock
-		// if there IS an error we need to unlock it here
 		if err != nil {
-			c.queryLock.Unlock()
 			// stop spinner in case of error
 			display.StopSpinner(spinner)
+			// error - rollback transaction if we have one
+			if tx != nil {
+				tx.Rollback()
+			}
 		}
 		close(queryDone)
 	}()
@@ -61,22 +66,17 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 	}
 
 	// begin a transaction
-	var tx *sql.Tx
 	tx, err = c.dbClient.BeginTx(ctx, nil)
 	if err != nil {
 		err = fmt.Errorf("error creating transaction: %v", err)
 		return
 	}
-
+	// start asynchronous query
 	var rows *sql.Rows
-	rows, err = c.dbClient.QueryContext(ctx, query)
+	rows, err = tx.QueryContext(ctx, query)
 	if err != nil {
-		// error - rollback transaction
-		tx.Rollback()
 		return
 	}
-	// commit transaction
-	tx.Commit()
 
 	var colTypes []*sql.ColumnType
 	colTypes, err = rows.ColumnTypes()
@@ -88,8 +88,12 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 	result := queryresult.NewQueryResult(colTypes)
 
 	// read the rows in a go routine
-	// NOTE: readRows will unlock queryLock
-	go c.readRows(ctx, startTime, rows, result, spinner)
+	go func() {
+		// read in the rows
+		c.readRows(ctx, startTime, rows, result, spinner)
+		// commit transaction
+		tx.Commit()
+	}()
 
 	return result, nil
 }
@@ -104,8 +108,6 @@ func (c *Client) readRows(ctx context.Context, start time.Time, rows *sql.Rows, 
 		}
 		// close the channels in the result object
 		result.Close()
-		// the Unlock will have been locked by the calling function, ExecuteQuery
-		c.queryLock.Unlock()
 	}()
 
 	rowCount := 0
