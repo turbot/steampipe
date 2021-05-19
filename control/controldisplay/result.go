@@ -15,10 +15,10 @@ import (
 const minReasonWidth = 10
 
 type ResultRenderer struct {
-	status     string
-	reason     string
-	dimensions []execute.Dimension
-	colorMap   execute.DimensionColorMap
+	status         string
+	reason         string
+	dimensions     []execute.Dimension
+	colorGenerator *execute.DimensionColorGenerator
 
 	// screen width
 	width int
@@ -26,14 +26,14 @@ type ResultRenderer struct {
 	errorsOnly bool
 }
 
-func NewResultRenderer(status, reason string, dimensions []execute.Dimension, colorMap execute.DimensionColorMap, width int) *ResultRenderer {
+func NewResultRenderer(status, reason string, dimensions []execute.Dimension, colorGenerator *execute.DimensionColorGenerator, width int) *ResultRenderer {
 	return &ResultRenderer{
-		status:     status,
-		reason:     reason,
-		dimensions: dimensions,
-		colorMap:   colorMap,
-		width:      width,
-		errorsOnly: viper.GetString(constants.ArgOutput) == "brief",
+		status:         status,
+		reason:         reason,
+		dimensions:     dimensions,
+		colorGenerator: colorGenerator,
+		width:          width,
+		errorsOnly:     viper.GetString(constants.ArgOutput) == "brief",
 	}
 }
 
@@ -58,7 +58,7 @@ func (r ResultRenderer) Render() string {
 	var dimensionsString string
 	var dimensionWidth int
 	if availableDimensionWidth > 0 {
-		dimensionsString = NewDimensionsRenderer(r.dimensions, r.colorMap, availableDimensionWidth).Render()
+		dimensionsString = NewDimensionsRenderer(r.dimensions, r.colorGenerator, availableDimensionWidth).Render()
 		dimensionWidth = helpers.PrintableLength(dimensionsString)
 		availableWidth -= dimensionWidth
 	}

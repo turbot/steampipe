@@ -12,17 +12,17 @@ type ControlRenderer struct {
 	maxFailedControls int
 	maxTotalControls  int
 	// screen width
-	width    int
-	run      *execute.ControlRun
-	colorMap execute.DimensionColorMap
+	width          int
+	run            *execute.ControlRun
+	colorGenerator *execute.DimensionColorGenerator
 }
 
-func NewControlRenderer(run *execute.ControlRun, maxFailed, maxTotal int, colorMap execute.DimensionColorMap, width int) *ControlRenderer {
+func NewControlRenderer(run *execute.ControlRun, maxFailed, maxTotal int, colorGenerator *execute.DimensionColorGenerator, width int) *ControlRenderer {
 	return &ControlRenderer{
 		run:               run,
 		maxFailedControls: maxFailed,
 		maxTotalControls:  maxTotal,
-		colorMap:          colorMap,
+		colorGenerator:    colorGenerator,
 		width:             width,
 	}
 }
@@ -60,7 +60,7 @@ func (r ControlRenderer) Render() string {
 	// now render the results (if any)
 	var resultStrings []string
 	for _, row := range r.run.Result.Rows {
-		resultRenderer := NewResultRenderer(row.Status, row.Reason, row.Dimensions, r.colorMap, r.width)
+		resultRenderer := NewResultRenderer(row.Status, row.Reason, row.Dimensions, r.colorGenerator, r.width)
 		// the result renderer may not render the result - in quiet mode only failures are rendered
 		if resultString := resultRenderer.Render(); resultString != "" {
 			resultStrings = append(resultStrings, resultString)

@@ -64,7 +64,7 @@ func (r GroupRenderer) renderRootResultGroup() string {
 		resultStrings[i] = groupRenderer.Render()
 	}
 	for i, run := range r.group.ControlRuns {
-		controlRenderer := NewControlRenderer(run, r.maxFailedControls, r.maxTotalControls, r.resultTree.DimensionColorMap, r.width)
+		controlRenderer := NewControlRenderer(run, r.maxFailedControls, r.maxTotalControls, r.resultTree.DimensionColorGenerator, r.width)
 		resultStrings[i] = controlRenderer.Render()
 	}
 	return strings.Join(resultStrings, "\n")
@@ -79,7 +79,7 @@ func (r GroupRenderer) renderChildren() []string {
 		if control, ok := child.(*modconfig.Control); ok {
 			// get Result group with a matching name
 			if run := r.group.GetControlRunByName(control.Name()); run != nil {
-				controlRenderer := NewControlRenderer(run, r.maxFailedControls, r.maxTotalControls, r.resultTree.DimensionColorMap, r.width)
+				controlRenderer := NewControlRenderer(run, r.maxFailedControls, r.maxTotalControls, r.resultTree.DimensionColorGenerator, r.width)
 				childStrings[i] = controlRenderer.Render()
 			}
 		} else {
