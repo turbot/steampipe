@@ -40,6 +40,7 @@ control "cis_v130_1_1" {
   sql           = query.alarm.sql
   documentation = file("./cis_v130/docs/cis_v130_1_1.md")
   severity = "high"
+  search_path="a,b,c"
   tags = merge(local.cis_v130_1_common_tags, {
     cis_controls = "6.3"
     cis_item_id  = "1.1"

@@ -24,7 +24,7 @@ type ExecutionTree struct {
 	controlNameFilterMap map[string]bool
 	progress             *ControlProgressRenderer
 	// map of dimension property name to property value to color map
-	DimensionColorMap DimensionColorMap
+	DimensionColorGenerator *DimensionColorGenerator
 	// flat list of all control runs
 	controlRuns []*ControlRun
 }
@@ -79,7 +79,9 @@ func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
 	// just execute the root - it will traverse the tree
 	errors := e.Root.Execute(ctx, client)
 	// now build map of dimension property name to property value to color map
-	e.DimensionColorMap = newDimensionColorMap(e)
+	e.DimensionColorGenerator, _ = NewDimensionColorGenerator(4, 27)
+	e.DimensionColorGenerator.populate(e)
+
 	return errors
 }
 

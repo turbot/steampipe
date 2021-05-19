@@ -11,16 +11,16 @@ import (
 )
 
 type DimensionsRenderer struct {
-	dimensions []execute.Dimension
-	colorMap   execute.DimensionColorMap
-	width      int
+	dimensions     []execute.Dimension
+	colorGenerator *execute.DimensionColorGenerator
+	width          int
 }
 
-func NewDimensionsRenderer(dimensions []execute.Dimension, colorMap execute.DimensionColorMap, width int) *DimensionsRenderer {
+func NewDimensionsRenderer(dimensions []execute.Dimension, colorGenerator *execute.DimensionColorGenerator, width int) *DimensionsRenderer {
 	return &DimensionsRenderer{
-		dimensions: dimensions,
-		colorMap:   colorMap,
-		width:      width,
+		dimensions:     dimensions,
+		colorGenerator: colorGenerator,
+		width:          width,
 	}
 }
 
@@ -75,7 +75,7 @@ func (r DimensionsRenderer) Render() string {
 		dimensionColorFunc := func(val interface{}) aurora.Value {
 			// if current theme supports colors, apply coloring
 			if ControlColors.UseColor {
-				dimensionColor := r.colorMap[dimension.Key][dimension.Value]
+				dimensionColor := r.colorGenerator.Map[dimension.Key][dimension.Value]
 				return aurora.Index(dimensionColor, val)
 			}
 			return aurora.Reset(val)
