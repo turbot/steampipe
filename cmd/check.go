@@ -185,7 +185,7 @@ func getMaxCols() int {
 	maxCols, _, _ := gows.GetWinSize()
 	// limit to 200
 	if maxCols > 200 {
-		maxCols = 120
+		maxCols = 200
 	}
 	return maxCols
 }
