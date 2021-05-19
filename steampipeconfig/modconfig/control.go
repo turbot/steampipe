@@ -13,14 +13,16 @@ import (
 
 // Control is a struct representing the Control resource
 type Control struct {
-	ShortName     string             `json:"-"`
-	FullName      string             `cty:"name" json:"control_id"`
-	Description   *string            `cty:"description" hcl:"description" column:"description,text" json:"description"`
-	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"-"`
-	SQL           *string            `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Severity      *string            `cty:"severity" hcl:"severity" column:"severity,text" json:"severity"`
-	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb" json:"tags"`
-	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
+	ShortName        string             `json:"-"`
+	FullName         string             `cty:"name" json:"control_id"`
+	Description      *string            `cty:"description" hcl:"description" column:"description,text" json:"description"`
+	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"-"`
+	SearchPath       *string            `cty:"search_path" hcl:"search_path" column:"search_path,text"`
+	SearchPathPrefix *string            `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
+	Severity         *string            `cty:"severity" hcl:"severity" column:"severity,text" json:"severity"`
+	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
+	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb" json:"tags"`
+	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
 
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`

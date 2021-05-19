@@ -45,10 +45,10 @@ func (r DimensionsRenderer) Render() string {
 	var length int
 	for length = dimensionsLength(formattedDimensions); length > r.width; {
 		// truncate the first dimension
-
-		if len(formattedDimensions[0]) > 0 {
+		if helpers.PrintableLength(formattedDimensions[0]) > 0 {
 			// truncate the original value, not the already truncated value
-			formattedDimensions[0] = helpers.TruncateString(r.dimensions[0].Value, len(formattedDimensions[0])-1)
+			newLength := helpers.PrintableLength(formattedDimensions[0]) - 1
+			formattedDimensions[0] = helpers.TruncateString(formattedDimensions[0], newLength)
 		} else {
 			// so event with all dimensions 1 long, we still do not have enough space
 			// remove a dimension from the array

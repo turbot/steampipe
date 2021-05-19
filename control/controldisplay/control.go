@@ -51,7 +51,10 @@ func (r ControlRenderer) Render() string {
 	// if the control is in error, render an error
 	if r.run.Error != nil {
 		errorRenderer := NewErrorRenderer(r.run.Error, r.width)
-		controlStrings = append(controlStrings, errorRenderer.Render())
+		controlStrings = append(controlStrings,
+			errorRenderer.Render(),
+			// newline after error
+			"")
 	}
 
 	// now render the results (if any)

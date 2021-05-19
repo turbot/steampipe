@@ -40,7 +40,7 @@ func CheckCmd() *cobra.Command {
 		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a check session (comma-separated)").
 		//AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls ").
-		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme, which determines the color scheme for the 'text' control output. Possible values are light,dark, plain").
+		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme, which determines the color scheme for the 'text' control output. Possible values are light, dark, plain").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress")
 
 	return cmd
@@ -185,7 +185,7 @@ func getMaxCols() int {
 	maxCols, _, _ := gows.GetWinSize()
 	// limit to 200
 	if maxCols > 200 {
-		maxCols = 120
+		maxCols = 200
 	}
 	return maxCols
 }
