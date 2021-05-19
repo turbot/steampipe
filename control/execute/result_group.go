@@ -2,6 +2,7 @@ package execute
 
 import (
 	"context"
+	"log"
 
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -102,6 +103,9 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 }
 
 func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
+	log.Printf("[TRACE] begin ResultGroup.Execute: %s\n", r.GroupId)
+	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
+
 	// TODO consider executing in order specified in hcl?
 	// it may not matter, as we display results in order
 	// it is only an issue if there are dependencies, in which case we must run in dependency order

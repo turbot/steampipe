@@ -121,7 +121,6 @@ func initialiseColorScheme() error {
 	return nil
 }
 
-
 func DisplayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) {
 	//bytes, err := json.MarshalIndent(executionTree.Root, "", "  ")
 	maxCols := getMaxCols()
