@@ -46,6 +46,7 @@ func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 	if err != nil {
 		return fmt.Errorf("failed to create reflection tables: %v", err)
 	}
+	client.loadSchema()
 	return nil
 }
 

@@ -36,6 +36,10 @@ func NewClient(autoRefreshConnections bool) (*Client, error) {
 	}
 	client := new(Client)
 	client.dbClient = db
+
+	// setup a blank struct for the schema metadata
+	client.schemaMetadata = schema.NewMetadata()
+
 	client.loadSchema()
 
 	var updatedConnections bool
@@ -179,8 +183,11 @@ func (c *Client) loadSchema() {
 
 	defer tablesResult.Close()
 
-	c.schemaMetadata, err = buildSchemaMetadata(tablesResult)
+	metadata, err := buildSchemaMetadata(tablesResult)
 	utils.FailOnError(err)
+
+	c.schemaMetadata.Schemas = metadata.Schemas
+	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
 }
 
 func (c *Client) getSchemaFromDB() (*sql.Rows, error) {
@@ -209,6 +216,8 @@ func (c *Client) getSchemaFromDB() (*sql.Rows, error) {
 			) 
 			OR
 			cols.table_schema = 'public'
+			OR
+			LEFT(cols.table_schema,8) = 'pg_temp_'
 		ORDER BY 
 			cols.table_schema, cols.table_name, cols.column_name;
 `
