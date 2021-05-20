@@ -54,7 +54,7 @@ func (g *DimensionColorGenerator) reset() {
 
 func (g *DimensionColorGenerator) populate(e *ExecutionTree) {
 	for _, run := range e.controlRuns {
-		for _, r := range run.Result.Rows {
+		for _, r := range run.Rows {
 			for _, d := range r.Dimensions {
 				if !g.hasDimensionValue(d) {
 					g.addDimensionValue(d)

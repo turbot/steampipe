@@ -4,6 +4,16 @@ locals {
   })
 }
 
+benchmark "cis_v130_1dupe" {
+  title         = "1 Identity and Access Management"
+  documentation = file("./cis_v130/docs/cis_v130_1.md")
+  children = [
+    control.cis_v130_1_1,
+    control.cis_v130_1_2,
+  ]
+  tags          = local.cis_v130_1_common_tags
+}
+
 benchmark "cis_v130_1" {
   title         = "1 Identity and Access Management"
   documentation = file("./cis_v130/docs/cis_v130_1.md")

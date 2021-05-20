@@ -188,7 +188,6 @@ func displayJsonOutput(ctx context.Context, tree *execute.ExecutionTree) error {
 }
 
 func displayTextOutput(ctx context.Context, executionTree *execute.ExecutionTree) error {
-
 	maxCols := getMaxCols()
 
 	renderer := controldisplay.NewTableRenderer(executionTree, maxCols)

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	typeHelpers "github.com/turbot/go-kit/types"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/query/execute"
@@ -29,12 +29,19 @@ const (
 
 // ControlRun is a struct representing a  a control run - will contain one or more result items (i.e. for one or more resources)
 type ControlRun struct {
-	Result *Result
-	Error  error
+	Error error `json:"-"`
 	// the parent control
-	Control *modconfig.Control
+	Control *modconfig.Control `json:"-"`
+	Summary StatusSummary      `json:"-"`
 
-	Summary StatusSummary
+	// the result
+	ControlId   string            `json:"control_id"`
+	Description string            `json:"description"`
+	Severity    string            `json:"severity"`
+	Tags        map[string]string `json:"tags"`
+	Title       string            `json:"title"`
+	Rows        []*ResultRow      `json:"results"`
+
 	// the query result stream
 	queryResult *queryresult.Result
 	runStatus   ControlRunStatus
@@ -47,12 +54,20 @@ type ControlRun struct {
 
 func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree *ExecutionTree) *ControlRun {
 	return &ControlRun{
-		Control:       control,
-		Result:        NewResult(control),
+		Control: control,
+
+		ControlId:   control.Name(),
+		Description: typehelpers.SafeString(control.Description),
+		Severity:    typehelpers.SafeString(control.Severity),
+		Title:       typehelpers.SafeString(control.Title),
+		Tags:        control.GetTags(),
+		Rows:        []*ResultRow{},
+
 		executionTree: executionTree,
 		runStatus:     ControlRunReady,
-		group:         group,
-		doneChan:      make(chan bool, 1),
+
+		group:    group,
+		doneChan: make(chan bool, 1),
 	}
 }
 
@@ -69,9 +84,9 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	r.executionTree.progress.OnControlStart(control)
 
 	// resolve the query parameter of the control
-	query, _ := execute.GetQueryFromArg(typeHelpers.SafeString(control.SQL), r.executionTree.workspace)
+	query, _ := execute.GetQueryFromArg(typehelpers.SafeString(control.SQL), r.executionTree.workspace)
 	if query == "" {
-		r.SetError(fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typeHelpers.SafeString(control.SQL)))
+		r.SetError(fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typehelpers.SafeString(control.SQL)))
 		return
 	}
 
@@ -168,7 +183,7 @@ func (r *ControlRun) gatherResults(result *queryresult.Result) {
 // add the result row to our results and update the summary with the row status
 func (r *ControlRun) addResultRow(row *ResultRow) {
 	// update results
-	r.Result.addResultRow(row)
+	r.Rows = append(r.Rows, row)
 
 	// update summary
 	switch row.Status {
