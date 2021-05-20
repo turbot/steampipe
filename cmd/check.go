@@ -23,19 +23,19 @@ import (
 // CheckCmd :: represents the check command
 func CheckCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:              "check",
+		Use:              "check [flags] [mod/benchmark/control/\"all\"]",
 		TraverseChildren: true,
 		Args:             cobra.ArbitraryArgs,
 		Run:              runCheckCmd,
 		Short:            "Execute one or more controls",
-		Long:             `Execute one or more controls."`,
+		Long:             `Execute one or more controls.`,
 	}
 
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
-		AddStringFlag(constants.ArgOutput, "", "text", "Select the console output format. Possible values are json,csv,text,brief,none").
+		AddStringFlag(constants.ArgOutput, "", "text", "Select the console output format. Possible values are json, text, brief, none").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports check time.").
 		AddBoolFlag(constants.ArgWatch, "", true, "Watch SQL files in the current workspace (works only in interactive mode)").
 		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
@@ -50,6 +50,16 @@ func CheckCmd() *cobra.Command {
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runCheckCmd start")
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
+
+	// verify we have an argument
+	if len(args) == 0 {
+		fmt.Println()
+		utils.ShowError(fmt.Errorf("you must provide at least one argument"))
+		fmt.Println()
+		cmd.Help()
+		fmt.Println()
+		return
+	}
 
 	defer func() {
 		logging.LogTime("runCheckCmd end")
@@ -112,11 +122,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 func validateOutputFormat() error {
 	outputFormat := viper.GetString(constants.ArgOutput)
-	if !helpers.StringSliceContains([]string{"text", "brief", "csv", "json", "none"}, outputFormat) {
-		return fmt.Errorf("invalid output format '%s' - must be one of json,csv,text,brief,none", outputFormat)
-	}
-	if outputFormat == "csv" {
-		return fmt.Errorf("output format '%s'is not supported yet", outputFormat)
+	if !helpers.StringSliceContains([]string{"text", "brief", "json", "none"}, outputFormat) {
+		return fmt.Errorf("invalid output format '%s' - must be one of json, text, brief, none", outputFormat)
 	}
 	if outputFormat == "none" {
 		// set progress to false
@@ -140,6 +147,13 @@ func initialiseColorScheme() error {
 }
 
 func DisplayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) (err error) {
+	// if there were no controls to run, show message
+	totalControls := executionTree.Root.Summary.Status.TotalCount()
+	if totalControls == 0 {
+		utils.ShowWarning("no controls found to run in current workspace")
+		return
+	}
+
 	outputFormat := viper.GetString(constants.ArgOutput)
 
 	switch outputFormat {
