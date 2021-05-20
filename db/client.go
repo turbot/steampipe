@@ -183,11 +183,11 @@ func (c *Client) loadSchema() {
 
 	defer tablesResult.Close()
 
-	schemas, tempSchemaName, err := buildSchemaMetadata(tablesResult)
+	metadata, err := buildSchemaMetadata(tablesResult)
 	utils.FailOnError(err)
 
-	c.schemaMetadata.Schemas = schemas
-	c.schemaMetadata.TemporarySchemaName = tempSchemaName
+	c.schemaMetadata.Schemas = metadata.Schemas
+	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
 }
 
 func (c *Client) getSchemaFromDB() (*sql.Rows, error) {

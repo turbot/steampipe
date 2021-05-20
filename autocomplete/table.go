@@ -19,7 +19,7 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 	// schema names
 	var schemasToAdd []string
 	// unqualified table names - initialise to the reflection table names
-	unqualifiedTablesToAdd := []string{} // constants.ReflectionTableNames()
+	unqualifiedTablesToAdd := []string{}
 	// fully qualified table names
 	var qualifiedTablesToAdd []string
 

@@ -252,9 +252,10 @@ func inspect(input *HandlerInput) error {
 
 		// there was no schema
 		if !schemaFound {
-			searchPath := input.Schema.SearchPath
+			searchPath, _ := input.Executor.GetCurrentSearchPath()
 
 			// add the temporary schema to the search_path so that it becomes searchable
+			// for the next step
 			searchPath = append(searchPath, input.Schema.TemporarySchemaName)
 
 			// go through the searchPath one by one and try to find the table by this name

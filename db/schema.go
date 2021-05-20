@@ -20,10 +20,10 @@ type schemaRecord struct {
 	TableDescription  string
 }
 
-func buildSchemaMetadata(rows *sql.Rows) (map[string]map[string]schema.TableSchema, string, error) {
+func buildSchemaMetadata(rows *sql.Rows) (*schema.Metadata, error) {
 	records, err := getSchemaRecordsFromRows(rows)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	schemaMetadata := schema.NewMetadata()
 
@@ -55,7 +55,7 @@ func buildSchemaMetadata(rows *sql.Rows) (map[string]map[string]schema.TableSche
 		}
 	}
 
-	return schemaMetadata.Schemas, schemaMetadata.TemporarySchemaName, err
+	return schemaMetadata, err
 }
 
 func getSchemaRecordsFromRows(rows *sql.Rows) ([]schemaRecord, error) {
