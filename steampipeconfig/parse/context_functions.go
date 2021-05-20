@@ -13,8 +13,6 @@ import (
 
 // ContextFunctions :: returns the set of functions that should be used to when evaluating expressions
 func ContextFunctions(workspaceDir string) map[string]function.Function {
-	// Some of our functions are just directly the cty stdlib functions.
-	// Others are implemented in the subdirectory "funcs" here in this repository.
 
 	ctxFuncs := map[string]function.Function{
 		"abs":              stdlib.AbsoluteFunc,

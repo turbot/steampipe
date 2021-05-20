@@ -47,7 +47,15 @@ func (r CounterGraphRenderer) Render() string {
 
 	}
 	totalSegments := int(math.Ceil(float64(r.totalControls) / r.segmentSize))
+
 	passSegments := totalSegments - failSegments
+	// allow for pass being rounded down to zero
+	// if there are any successful runs, but there is no room for a successful bar,
+	// increment totalSegments to allow room
+	if passSegments == 0 && r.failedControls < r.totalControls && totalSegments < 10 {
+		passSegments++
+		totalSegments++
+	}
 	spaces := 10 - totalSegments
 	return r.buildGraphString(failSegments, passSegments, spaces)
 }
