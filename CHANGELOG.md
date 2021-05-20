@@ -1,3 +1,10 @@
+## v0.5.0 [2021-05-20]
+_What's new?_
+* New `check` command, to run controls and benchmarks. ([#410](https://github.com/turbot/steampipe/issues/410), [#413](https://github.com/turbot/steampipe/issues/413))
+* Add resource reflection tables `steampipe_mod`, `steampipe_query`, `steampipe_control` and `steampipe_benchmark`.  ([#406](https://github.com/turbot/steampipe/issues/406))
+* Parsing of variable references, functions and locals. ([#405](https://github.com/turbot/steampipe/issues/405))
+* Support for cancellation of queries and control runs.  ([#475](https://github.com/turbot/steampipe/issues/475))
+  
 ## v0.4.3 [2021-05-13]
 
 _Bug fixes_
