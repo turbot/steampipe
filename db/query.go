@@ -24,7 +24,7 @@ func EnsureDbAndStartService(invoker Invoker) error {
 	}
 
 	if status != nil && status.Invoker == invoker {
-		return fmt.Errorf("You already have a %s session open. To run multiple sessions, first run %s.\nTo kill existing sessions run %s", constants.Bold("steampipe query"), constants.Bold("steampipe service start"), constants.Bold("steampipe service stop --force"))
+		return fmt.Errorf("You already have a %s session open. To run multiple sessions, first run %s.\nTo kill existing sessions run %s", constants.Bold(fmt.Sprintf("steampipe %s", invoker)), constants.Bold("steampipe service start"), constants.Bold("steampipe service stop --force"))
 	}
 
 	if status == nil {
