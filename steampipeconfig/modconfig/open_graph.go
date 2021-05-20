@@ -9,7 +9,7 @@ type OpenGraph struct {
 	// The opengraph description (og:description) of the mod, for use in social media applications
 	Description string `cty:"description" hcl:"description"`
 	// The opengraph display title (og:title) of the mod, for use in social media applications.
-	Title     string `cty:"title" hcl:"title"`
-	Image     string `cty:"image" hcl:"image"`
+	Title     string  `cty:"title" hcl:"title"`
+	Image     *string `cty:"image" hcl:"image"`
 	DeclRange hcl.Range
 }
