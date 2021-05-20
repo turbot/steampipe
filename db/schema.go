@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"strings"
 
 	typeHelpers "github.com/turbot/go-kit/types"
 
@@ -19,14 +20,12 @@ type schemaRecord struct {
 	TableDescription  string
 }
 
-func buildSchemaMetadata(rows *sql.Rows) (*schema.Metadata, error) {
+func buildSchemaMetadata(rows *sql.Rows) (map[string]map[string]schema.TableSchema, string, error) {
 	records, err := getSchemaRecordsFromRows(rows)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	schemaMetadata := &schema.Metadata{
-		Schemas: map[string]map[string]schema.TableSchema{},
-	}
+	schemaMetadata := schema.NewMetadata()
 
 	for _, record := range records {
 		_, schemaFound := schemaMetadata.Schemas[record.TableSchema]
@@ -50,9 +49,13 @@ func buildSchemaMetadata(rows *sql.Rows) (*schema.Metadata, error) {
 			Default:     record.ColumnDefault,
 			Description: record.ColumnDescription,
 		}
+
+		if strings.HasPrefix(record.TableSchema, "pg_temp") {
+			schemaMetadata.TemporarySchemaName = record.TableSchema
+		}
 	}
 
-	return schemaMetadata, err
+	return schemaMetadata.Schemas, schemaMetadata.TemporarySchemaName, err
 }
 
 func getSchemaRecordsFromRows(rows *sql.Rows) ([]schemaRecord, error) {
@@ -67,10 +70,7 @@ func getSchemaRecordsFromRows(rows *sql.Rows) ([]schemaRecord, error) {
 		dest[i] = &rawResult[i] // Put pointers to each string in the interface slice
 	}
 
-	for {
-		if rows.Next() == false {
-			break
-		}
+	for rows.Next() {
 
 		err := rows.Scan(dest...)
 		if err != nil {
