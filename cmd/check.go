@@ -90,6 +90,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
 
+	if len(workspace.ControlMap) == 0 {
+		utils.ShowWarning("no controls found in current workspace")
+		return
+	}
 	// first get a client - do this once for all controls
 	client, err := db.NewClient(true)
 	utils.FailOnError(err)
@@ -149,13 +153,6 @@ func initialiseColorScheme() error {
 }
 
 func DisplayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) (err error) {
-	// if there were no controls to run, show message
-	totalControls := executionTree.Root.Summary.Status.TotalCount()
-	if totalControls == 0 {
-		utils.ShowWarning("no controls found to run in current workspace")
-		return
-	}
-
 	outputFormat := viper.GetString(constants.ArgOutput)
 
 	switch outputFormat {
