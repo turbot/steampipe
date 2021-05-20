@@ -19,9 +19,9 @@ type ResultGroup struct {
 	Tags        map[string]string `json:"tags"`
 	Summary     GroupSummary      `json:"summary"`
 	Groups      []*ResultGroup    `json:"groups"`
-	ControlRuns []*ControlRun     `json:"-"`
+	ControlRuns []*ControlRun     `json:"controls"`
 	// the control tree item associated with this group(i.e. a mod/benchmark)
-	GroupItem modconfig.ControlTreeItem
+	GroupItem modconfig.ControlTreeItem `json:"-"`
 	parent    *ResultGroup
 }
 

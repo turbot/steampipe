@@ -59,7 +59,7 @@ func (r ControlRenderer) Render() string {
 
 	// now render the results (if any)
 	var resultStrings []string
-	for _, row := range r.run.Result.Rows {
+	for _, row := range r.run.Rows {
 		resultRenderer := NewResultRenderer(row.Status, row.Reason, row.Dimensions, r.colorGenerator, r.width)
 		// the result renderer may not render the result - in quiet mode only failures are rendered
 		if resultString := resultRenderer.Render(); resultString != "" {
@@ -70,7 +70,7 @@ func (r ControlRenderer) Render() string {
 	// newline after results
 	if len(resultStrings) > 0 {
 		controlStrings = append(controlStrings, resultStrings...)
-		if len(r.run.Result.Rows) > 0 || r.run.Error != nil {
+		if len(r.run.Rows) > 0 || r.run.Error != nil {
 			controlStrings = append(controlStrings, "")
 		}
 	}

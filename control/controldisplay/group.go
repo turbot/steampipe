@@ -28,8 +28,8 @@ func NewGroupRenderer(group *execute.ResultGroup, maxFailedControls, maxTotalCon
 }
 
 func (r GroupRenderer) Render() string {
-	log.Println("[TRACE] begin table render")
-	defer log.Println("[TRACE] end table render")
+	log.Printf("[TRACE] begin group render '%s'\n", r.group.GroupId)
+	defer log.Printf("[TRACE] end table render'%s'\n", r.group.GroupId)
 
 	if r.group.GroupId == execute.RootResultGroupName {
 		return r.renderRootResultGroup()

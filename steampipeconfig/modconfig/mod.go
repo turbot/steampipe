@@ -7,10 +7,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
+
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 )
@@ -181,15 +182,17 @@ func (m *Mod) BuildControlTree() error {
 }
 
 func (m *Mod) addItemIntoControlTree(item ControlTreeItem) error {
-	parent := m.getParent(item)
+	parents := m.getParents(item)
 
-	// check this item does not exist in the parent path
-	if helpers.StringSliceContains(parent.Path(), item.Name()) {
-		return fmt.Errorf("cyclical dependency adding '%s' into control tree - parent '%s'", item.Name(), parent.Name())
-	}
 	// so we have a result - add into tree
-	item.AddParent(parent)
-	parent.AddChild(item)
+	for _, p := range parents {
+		// check this item does not exist in the parent path
+		if helpers.StringSliceContains(p.Path(), item.Name()) {
+			return fmt.Errorf("cyclical dependency adding '%s' into control tree - parent '%s'", item.Name(), p.Name())
+		}
+		item.AddParent(p)
+		p.AddChild(item)
+	}
 
 	return nil
 }
@@ -325,7 +328,8 @@ func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
 
 // get the parent item for this ControlTreeItem
 // first check all benchmarks - if they do not have this as child, default to the mod
-func (m *Mod) getParent(item ControlTreeItem) ControlTreeItem {
+func (m *Mod) getParents(item ControlTreeItem) []ControlTreeItem {
+	var parents []ControlTreeItem
 	for _, benchmark := range m.Benchmarks {
 		if benchmark.ChildNames == nil {
 			continue
@@ -333,12 +337,15 @@ func (m *Mod) getParent(item ControlTreeItem) ControlTreeItem {
 		// check all child names of this benchmark for a matching name
 		for _, childName := range *benchmark.ChildNames {
 			if childName.Name == item.Name() {
-				return benchmark
+				parents = append(parents, benchmark)
 			}
 		}
 	}
-	// fall back on mod
-	return m
+	if len(parents) == 0 {
+		// fall back on mod
+		parents = []ControlTreeItem{m}
+	}
+	return parents
 }
 
 // GetChildControls return a flat list of controls underneath the mod

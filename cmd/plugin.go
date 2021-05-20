@@ -424,7 +424,8 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 
 	// reload the config, since an installation MUST have created a new config file
 	if !isUpdate {
-		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgWorkspace))
+		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgWorkspace), cmd.Name())
 		if err != nil {
 			return err
 		}
@@ -459,7 +460,7 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 	return nil
 }
 
-func runPluginListCmd(cmd *cobra.Command, args []string) {
+func runPluginListCmd(*cobra.Command, []string) {
 	logging.LogTime("runPluginListCmd list")
 	defer func() {
 		logging.LogTime("runPluginListCmd end")

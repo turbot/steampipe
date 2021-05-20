@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+
 	"github.com/turbot/steampipe/constants"
 
 	"github.com/turbot/steampipe/steampipeconfig/options"
@@ -19,7 +21,6 @@ type loadConfigTest struct {
 var trueVal = true
 var ttlVal = 300
 
-var cache_ttl = 300
 var databasePort = 9193
 var databaseListen = "local"
 var databaseSearchPath = "aws,gcp,foo"
@@ -41,7 +42,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	"multiple_connections": {
 		steampipeDir: "test_data/connection_config/multiple_connections",
 		expected: &SteampipeConfig{
-			Connections: map[string]*Connection{
+			Connections: map[string]*modconfig.Connection{
 				"aws_dmi_001": {
 					Name:   "aws_dmi_001",
 					Plugin: "hub.steampipe.io/plugins/turbot/aws@latest",
@@ -65,7 +66,7 @@ secret_key            = "aws_dmi_002_secret_key"`,
 	"single_connection": {
 		steampipeDir: "test_data/connection_config/single_connection",
 		expected: &SteampipeConfig{
-			Connections: map[string]*Connection{
+			Connections: map[string]*modconfig.Connection{
 				"a": {
 					Name:   "a",
 					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
@@ -80,7 +81,7 @@ secret_key            = "aws_dmi_002_secret_key"`,
 	"single_connection_with_default_options": {
 		steampipeDir: "test_data/connection_config/single_connection_with_default_options",
 		expected: &SteampipeConfig{
-			Connections: map[string]*Connection{
+			Connections: map[string]*modconfig.Connection{
 				"a": {
 					Name:   "a",
 					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
@@ -117,7 +118,7 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		steampipeDir: "test_data/connection_config/single_connection_with_default_options",
 		workspaceDir: "test_data/workspaces/search_path_prefix",
 		expected: &SteampipeConfig{
-			Connections: map[string]*Connection{
+			Connections: map[string]*modconfig.Connection{
 				"a": {
 					Name:   "a",
 					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
@@ -150,7 +151,7 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		steampipeDir: "test_data/connection_config/single_connection_with_default_options",
 		workspaceDir: "test_data/workspaces/override_terminal_config",
 		expected: &SteampipeConfig{
-			Connections: map[string]*Connection{
+			Connections: map[string]*modconfig.Connection{
 				"a": {
 					Name:   "a",
 					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
@@ -182,7 +183,7 @@ secret_key            = "aws_dmi_002_secret_key"`,
 	"single_connection_with_default_and_connection_options": {
 		steampipeDir: "test_data/connection_config/single_connection_with_default_and_connection_options",
 		expected: &SteampipeConfig{
-			Connections: map[string]*Connection{
+			Connections: map[string]*modconfig.Connection{
 				"a": {
 					Name:   "a",
 					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
@@ -263,7 +264,7 @@ func TestLoadConfig(t *testing.T) {
 		constants.SteampipeDir = steampipeDir
 
 		// now load config
-		config, err := newSteampipeConfig(workspaceDir)
+		config, err := newSteampipeConfig(workspaceDir, "")
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf("Test: '%s'' FAILED with unexpected error: %v", name, err)
