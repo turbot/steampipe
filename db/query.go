@@ -23,10 +23,7 @@ func EnsureDbAndStartService(invoker Invoker) error {
 		return errors.New("could not retrieve service status")
 	}
 
-	alreadyStartedByCheckOrQueryOrPlugin := status != nil && (status.Invoker == InvokerQuery || status.Invoker == InvokerCheck || status.Invoker == InvokerPlugin)
-	tryingStartByCheckOrQueryOrPlugin := (invoker == InvokerQuery || invoker == InvokerCheck || invoker == InvokerPlugin)
-
-	if alreadyStartedByCheckOrQueryOrPlugin && tryingStartByCheckOrQueryOrPlugin {
+	if status != nil && status.Invoker != InvokerService {
 		return fmt.Errorf("You already have a %s session open. To run multiple sessions, first run %s.\nTo kill existing sessions run %s", constants.Bold(fmt.Sprintf("steampipe %s", status.Invoker)), constants.Bold("steampipe service start"), constants.Bold("steampipe service stop --force"))
 	}
 
