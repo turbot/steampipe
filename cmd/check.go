@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/karrick/gows"
@@ -114,7 +115,7 @@ func validateOutputFormat() error {
 	if !helpers.StringSliceContains([]string{"text", "brief", "csv", "json", "none"}, outputFormat) {
 		return fmt.Errorf("invalid output format '%s' - must be one of json,csv,text,brief,none", outputFormat)
 	}
-	if helpers.StringSliceContains([]string{"csv", "json"}, outputFormat) {
+	if outputFormat == "csv" {
 		return fmt.Errorf("output format '%s'is not supported yet", outputFormat)
 	}
 	if outputFormat == "none" {
@@ -159,16 +160,21 @@ func DisplayControlResults(ctx context.Context, executionTree *execute.Execution
 	return
 }
 
-func displayCsvOutput(ctx context.Context, tree *execute.ExecutionTree) error {
+func displayCsvOutput(context.Context, *execute.ExecutionTree) error {
 	return fmt.Errorf("CSV output not supported yet")
 }
 
 func displayJsonOutput(ctx context.Context, tree *execute.ExecutionTree) error {
-	return fmt.Errorf("JSON not supported yet")
+	bytes, err := json.MarshalIndent(tree.Root, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(bytes))
+	return nil
 }
 
 func displayTextOutput(ctx context.Context, executionTree *execute.ExecutionTree) error {
-	//bytes, err := json.MarshalIndent(executionTree.Root, "", "  ")
+
 	maxCols := getMaxCols()
 
 	renderer := controldisplay.NewTableRenderer(executionTree, maxCols)
