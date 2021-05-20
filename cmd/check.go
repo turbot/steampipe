@@ -28,7 +28,9 @@ func CheckCmd() *cobra.Command {
 		Args:             cobra.ArbitraryArgs,
 		Run:              runCheckCmd,
 		Short:            "Execute one or more controls",
-		Long:             `Execute one or more controls.`,
+		Long: `Execute one of more Steampipe benchmarks and controls.
+
+You may specify one or more benchmarks or controls to run (separated by a space), or run 'steampipe check all' to run all controls in the workspace.`,
 	}
 
 	cmdconfig.

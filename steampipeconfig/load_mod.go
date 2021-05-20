@@ -86,18 +86,8 @@ func GetModFileExtensions() []string {
 // this will include hcl files (with .sp extension)
 // as well as any other files with extensions that have been registered for pseudo resource creation
 // (see steampipeconfig/modconfig/resource_type_map.go)
-func getSourcePaths(modPath string, include, exclude []string) ([]string, error) {
-
-	// build list options:
-	// - search the current folder only
-	// - include extensions we have identifed
-	// - ignore the .steampipe folder
-	opts := &filehelpers.ListOptions{
-		Flags:   filehelpers.FilesFlat,
-		Exclude: exclude,
-		Include: include,
-	}
-	sourcePaths, err := filehelpers.ListFiles(modPath, opts)
+func getSourcePaths(modPath string, opts *parse.ParseModOptions) ([]string, error) {
+	sourcePaths, err := filehelpers.ListFiles(modPath, opts.ListOptions)
 	if err != nil {
 		return nil, err
 	}
