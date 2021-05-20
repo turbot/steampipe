@@ -1,128 +1,172 @@
 package db
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/briandowns/spinner"
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
-
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/definitions/results"
 	"github.com/turbot/steampipe/display"
-	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/query/queryresult"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 // ExecuteSync :: execute a query against this client and wait for the result
-func (c *Client) ExecuteSync(query string) (*results.SyncQueryResult, error) {
-	result, err := c.executeQuery(query, false)
+func (c *Client) ExecuteSync(ctx context.Context, query string) (*queryresult.SyncQueryResult, error) {
+	result, err := c.ExecuteQuery(ctx, query, false)
 	if err != nil {
 		return nil, err
 	}
-	syncResult := &results.SyncQueryResult{ColTypes: result.ColTypes}
+	syncResult := &queryresult.SyncQueryResult{ColTypes: result.ColTypes}
 	for row := range *result.RowChan {
-		syncResult.Rows = append(syncResult.Rows, row)
+		select {
+		case <-ctx.Done():
+		default:
+			syncResult.Rows = append(syncResult.Rows, row)
+		}
 	}
 	syncResult.Duration = <-result.Duration
 	return syncResult, nil
 }
 
-func (c *Client) executeQuery(query string, countStream bool) (*results.QueryResult, error) {
+// ExecuteQuery executes the provided query against the Database in the given context.Context
+// Bear in mind that whenever ExecuteQuery is called, the returned `queryresult.Result` MUST be fully read -
+// otherwise the transaction is left open, which will block the connection and will prevent subsequent communications
+// with the service
+func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream bool) (res *queryresult.Result, err error) {
 	if query == "" {
-		return &results.QueryResult{}, nil
+		return &queryresult.Result{}, nil
 	}
-
-	start := time.Now()
-
+	startTime := time.Now()
 	// channel to flag to spinner that the query has run
 	queryDone := make(chan bool, 1)
-
-	// start spinner after a short delay
 	var spinner *spinner.Spinner
+	var tx *sql.Tx
+
+	defer func() {
+		if err != nil {
+			// stop spinner in case of error
+			display.StopSpinner(spinner)
+			// error - rollback transaction if we have one
+			if tx != nil {
+				tx.Rollback()
+			}
+		}
+		close(queryDone)
+	}()
 
 	if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
-		// if showspinner is false, the spinner gets created, but is never shown
+		// if `show-interactive-output` is false, the spinner gets created, but is never shown
 		// so the s.Active() will always come back false . . .
 		spinner = display.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)
-	} else {
-		// no point in showing count if we don't have the spinner
-		countStream = false
 	}
 
-	rows, err := c.dbClient.Query(query)
-	queryDone <- true
-
+	// begin a transaction
+	tx, err = c.dbClient.BeginTx(ctx, nil)
 	if err != nil {
-		// in case the query takes a long time to fail
-		display.StopSpinner(spinner)
-		return nil, err
+		err = fmt.Errorf("error creating transaction: %v", err)
+		return
 	}
-
-	colTypes, err := rows.ColumnTypes()
+	// start asynchronous query
+	var rows *sql.Rows
+	rows, err = tx.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("error reading columns from query: %v", err)
+		return
 	}
-	cols, err := rows.Columns()
 
-	result := results.NewQueryResult(colTypes)
+	var colTypes []*sql.ColumnType
+	colTypes, err = rows.ColumnTypes()
+	if err != nil {
+		err = fmt.Errorf("error reading columns from query: %v", err)
+		return
+	}
 
-	rowCount := 0
+	result := queryresult.NewQueryResult(colTypes)
 
 	// read the rows in a go routine
 	go func() {
-		// defer this, so that these get cleaned up even if there is an unforeseen error
-		defer func() {
-			// close the channels in the result object
-			result.Close()
-			// close the sql rows object
-			rows.Close()
-		}()
-
-		for rows.Next() {
-			// slice of interfaces to receive the row data
-			columnValues := make([]interface{}, len(cols))
-			// make a slice of pointers to the result to pass to scan
-			resultPtrs := make([]interface{}, len(cols)) // A temporary interface{} slice
-			for i := range columnValues {
-				resultPtrs[i] = &columnValues[i]
-			}
-			err = rows.Scan(resultPtrs...)
-			if err != nil {
-				utils.ShowErrorWithMessage(err, "Failed to scan row")
-				return
-			}
-			// populate row data - handle special case types
-			rowResult := populateRow(columnValues, colTypes)
-
-			if !countStream {
-				// stop the spinner if we don't want to show load count
-				display.StopSpinner(spinner)
-			}
-
-			// we have started populating results
-			result.StreamRow(rowResult)
-
-			// update the spinner message with the count of rows that have already been fetched
-			display.UpdateSpinnerMessage(spinner, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
-			rowCount++
-		}
-
-		// we are done fetching results. time for display. remove the spinner
-		display.StopSpinner(spinner)
-
-		// set the time that it took for this one to execute
-		result.Duration <- time.Since(start)
-
-		// now check for errors
-		rows.Close()
-		if err = rows.Err(); err != nil {
-			result.StreamError(err)
-		}
+		// read in the rows
+		c.readRows(ctx, startTime, rows, result, spinner)
+		// commit transaction
+		tx.Commit()
 	}()
 
 	return result, nil
+}
+
+func (c *Client) readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result, activeSpinner *spinner.Spinner) {
+	// defer this, so that these get cleaned up even if there is an unforeseen error
+	defer func() {
+		// close the sql rows object
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			result.StreamError(err)
+		}
+		// close the channels in the result object
+		result.Close()
+	}()
+
+	rowCount := 0
+	colTypes, err := rows.ColumnTypes()
+	if err != nil {
+		result.StreamError(err)
+		return
+	}
+	cols, err := rows.Columns()
+	if err != nil {
+		result.StreamError(err)
+		return
+	}
+
+	for rows.Next() {
+		continueToNext := true
+		select {
+		case <-ctx.Done():
+			display.UpdateSpinnerMessage(activeSpinner, "Cancelling query")
+			continueToNext = false
+		default:
+			if rowResult, err := readRow(rows, cols, colTypes); err != nil {
+				result.StreamError(err)
+				continueToNext = false
+			} else {
+				result.StreamRow(rowResult)
+			}
+			// update the spinner message with the count of rows that have already been fetched
+			// this will not show if the spinner is not active
+			display.UpdateSpinnerMessage(activeSpinner, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
+			rowCount++
+		}
+		if !continueToNext {
+			break
+		}
+	}
+	// we are done fetching results. time for display. remove the spinner
+	display.StopSpinner(activeSpinner)
+
+	// set the time that it took for this one to execute
+	result.Duration <- time.Since(start)
+}
+
+func readRow(rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]interface{}, error) {
+	// slice of interfaces to receive the row data
+	columnValues := make([]interface{}, len(cols))
+	// make a slice of pointers to the result to pass to scan
+	resultPtrs := make([]interface{}, len(cols)) // A temporary interface{} slice
+	for i := range columnValues {
+		resultPtrs[i] = &columnValues[i]
+	}
+	err := rows.Scan(resultPtrs...)
+	if err != nil {
+		if err == context.Canceled {
+			err = fmt.Errorf("Cancelled")
+		}
+		return nil, err
+	}
+	return populateRow(columnValues, colTypes), nil
 }
 
 func humanizeRowCount(count int) string {

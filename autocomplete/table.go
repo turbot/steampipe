@@ -14,19 +14,21 @@ import (
 
 // GetTableAutoCompleteSuggestions :: derives and returns tables for typeahead
 func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *steampipeconfig.ConnectionMap) []prompt.Suggest {
-	s := []prompt.Suggest{}
+	var s []prompt.Suggest
 
 	// schema names
-	schemasToAdd := []string{}
-	// unqualified table names
+	var schemasToAdd []string
+	// unqualified table names - initialise to the reflection table names
 	unqualifiedTablesToAdd := []string{}
 	// fully qualified table names
-	qualifiedTablesToAdd := []string{}
+	var qualifiedTablesToAdd []string
 
 	// keep track of which plugins we have added unqualified tables for
 	pluginSchemaMap := map[string]bool{}
 
 	for schemaName, schemaDetails := range schema.Schemas {
+
+		isTemporarySchema := (schemaName == schema.TemporarySchemaName)
 
 		// when the `schema.Schemas` map is built, it is built from the configured connections and `public`
 		// all other schema are ignored. Refer to Client.loadSchema()
@@ -39,11 +41,16 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 		}
 
 		// add the schema into the list of schema
-		schemasToAdd = append(schemasToAdd, schemaName)
+
+		if !isTemporarySchema {
+			schemasToAdd = append(schemasToAdd, schemaName)
+		}
 
 		// add qualified names of all tables
 		for tableName := range schemaDetails {
-			qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
+			if !isTemporarySchema {
+				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
+			}
 		}
 
 		// only add unqualified table name if the schema is in the search_path
@@ -51,10 +58,12 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 		schemaOfSamePluginIncluded := hasConnectionForSchema && pluginSchemaMap[pluginOfThisSchema]
 		foundInSearchPath := helpers.StringSliceContains(schema.SearchPath, schemaName)
 
-		if foundInSearchPath && !schemaOfSamePluginIncluded {
+		if (foundInSearchPath || isTemporarySchema) && !schemaOfSamePluginIncluded {
 			for tableName := range schemaDetails {
 				unqualifiedTablesToAdd = append(unqualifiedTablesToAdd, tableName)
-				pluginSchemaMap[pluginOfThisSchema] = true
+				if !isTemporarySchema {
+					pluginSchemaMap[pluginOfThisSchema] = true
+				}
 			}
 		}
 	}

@@ -13,16 +13,18 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
 )
 
 var Config *SteampipeConfig
 var defaultConfigFileName = "default.spc"
 
 // LoadSteampipeConfig :: load the HCL config and parse into the global Config variable
-func LoadSteampipeConfig(workspacePath string) (*SteampipeConfig, error) {
+func LoadSteampipeConfig(workspacePath string, commandName string) (*SteampipeConfig, error) {
 	_ = ensureDefaultConfigFile(constants.ConfigDir())
-	config, err := newSteampipeConfig(workspacePath)
+	config, err := newSteampipeConfig(workspacePath, commandName)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +42,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 	return nil
 }
 
-func newSteampipeConfig(workspacePath string) (steampipeConfig *SteampipeConfig, err error) {
+func newSteampipeConfig(workspacePath string, commandName string) (steampipeConfig *SteampipeConfig, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
@@ -48,7 +50,8 @@ func newSteampipeConfig(workspacePath string) (steampipeConfig *SteampipeConfig,
 	}()
 
 	steampipeConfig = &SteampipeConfig{
-		Connections: make(map[string]*Connection),
+		Connections: make(map[string]*modconfig.Connection),
+		commandName: commandName,
 	}
 
 	// load config from the installation folder -  load all spc files from config directory
@@ -108,19 +111,19 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 		return nil
 	}
 
-	fileData, diags := loadFileData(configPaths)
+	fileData, diags := parse.LoadFileData(configPaths)
 	if diags.HasErrors() {
 		log.Printf("[WARN] loadConfig: failed to load all config files: %v\n", err)
 		return plugin.DiagsToError("Failed to load all config files", diags)
 	}
 
-	body, diags := parseHclFiles(fileData)
+	body, diags := parse.ParseHclFiles(fileData)
 	if diags.HasErrors() {
 		return plugin.DiagsToError("Failed to load all config files", diags)
 	}
 
 	// do a partial decode
-	content, moreDiags := body.Content(configSchema)
+	content, moreDiags := body.Content(parse.ConfigSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 		return plugin.DiagsToError("Failed to load config", diags)
@@ -134,7 +137,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 	for _, block := range content.Blocks {
 		switch block.Type {
 		case "connection":
-			connection, moreDiags := parseConnection(block, fileData)
+			connection, moreDiags := parse.ParseConnection(block, fileData)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				continue
@@ -153,7 +156,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
 				return err
 			}
-			options, moreDiags := parseOptions(block)
+			options, moreDiags := parse.ParseOptions(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				continue

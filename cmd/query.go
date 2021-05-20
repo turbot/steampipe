@@ -1,19 +1,24 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
+
+	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/query/execute"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -58,7 +63,7 @@ Examples:
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runQueryCmd start")
-
+	var client *db.Client
 	defer func() {
 		logging.LogTime("runQueryCmd end")
 		if r := recover(); r != nil {
@@ -66,29 +71,60 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	// start db if necessary
-	err := db.StartServiceForQuery()
-	utils.FailOnErrorWithMessage(err, "failed to start service")
-	defer db.Shutdown(nil, db.InvokerQuery)
+	// enable spinner only in interactive mode
+	interactiveMode := len(args) == 0
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, interactiveMode)
+	// set config to indicate whether we are running an interactive query
+	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
-	// load the workspace (do not do this until after service start as watcher interferes with service start)
+	// start db if necessary
+	err := db.EnsureDbAndStartService(db.InvokerQuery)
+	utils.FailOnErrorWithMessage(err, "failed to start service")
+	defer func() {
+		db.Shutdown(client, db.InvokerQuery)
+	}()
+
+	// load the workspace
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-	queries := getQueries(args, workspace)
+	queries := execute.GetQueries(args, workspace)
+
+	// get a db client
+	client, err = db.NewClient(true)
+	utils.FailOnError(err)
+
+	// populate the reflection tables
+	err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)
+	utils.FailOnError(err)
 
 	// if no query is specified, run interactive prompt
-	if len(args) == 0 {
+	if interactiveMode {
 		// interactive session creates its own client
-		runInteractiveSession(workspace)
+		execute.RunInteractiveSession(workspace, client)
 	} else if len(queries) > 0 {
-		// otherwsie if we have resolvced any queries, run them
-		failures := executeQueries(queries)
+		// ensure client is closed
+		defer client.Close()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		startCancelHandler(cancel)
+		// otherwise if we have resolved any queries, run them
+		failures := execute.ExecuteQueries(ctx, queries, client)
 		// set global exit code
 		exitCode = failures
 	}
+}
+
+func startCancelHandler(cancel context.CancelFunc) {
+	sigIntChannel := make(chan os.Signal, 1)
+	signal.Notify(sigIntChannel, os.Interrupt)
+	go func() {
+		<-sigIntChannel
+		cancel()
+		close(sigIntChannel)
+	}()
 }
 
 // retrieve queries from args - for each arg check if it is a named query or a file,
@@ -96,43 +132,49 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 func getQueries(args []string, workspace *workspace.Workspace) []string {
 	var queries []string
 	for _, arg := range args {
-		if namedQuery, ok := workspace.GetNamedQuery(arg); ok {
-			queries = append(queries, namedQuery.SQL)
-			continue
+		query, _ := getQueryFromArg(arg, workspace)
+		if len(query) > 0 {
+			queries = append(queries, query)
 		}
-		fileQuery, fileExists, err := getQueryFromFile(arg)
-		if fileExists {
-			if err != nil {
-				utils.ShowWarning(fmt.Sprintf("error opening file '%s': %v", arg, err))
-			} else if len(fileQuery) == 0 {
-				utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", arg))
-			} else {
-				queries = append(queries, fileQuery)
-			}
-			continue
-		}
-
-		queries = append(queries, arg)
 	}
-
 	return queries
 }
 
-func runInteractiveSession(workspace *workspace.Workspace) {
+// attempt to resolve 'arg' to a query
+// if the arg was a named query or a sql file, return 'true for the second return value
+func getQueryFromArg(arg string, workspace *workspace.Workspace) (string, bool) {
+	// 1) is this a named query
+	if namedQuery, ok := workspace.GetNamedQuery(arg); ok {
+		return typeHelpers.SafeString(namedQuery.SQL), true
+	}
+
+	// 	2) is this a file
+	fileQuery, fileExists, err := getQueryFromFile(arg)
+	if fileExists {
+		if err != nil {
+			utils.ShowWarning(fmt.Sprintf("error opening file '%s': %v", arg, err))
+			return "", false
+		}
+		if len(fileQuery) == 0 {
+			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", arg))
+			// (just return the empty string - it will be filtered above)
+		}
+		return fileQuery, true
+	}
+
+	// 3) just use the arg string as is and assume it is valid SQL
+	return arg, false
+}
+
+func runInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
-		err := workspace.SetupWatcher()
+		err := workspace.SetupWatcher(client)
 		utils.FailOnError(err)
 	}
 
-	// indicate we are running an interactive query
-	viper.Set(constants.ConfigKeyInteractive, true)
-
-	// set the flag to not show spinner
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, true)
-
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.RunInteractivePrompt(workspace)
+	resultsStreamer, err := db.RunInteractivePrompt(workspace, client)
 	utils.FailOnError(err)
 
 	// print the data as it comes
@@ -143,42 +185,38 @@ func runInteractiveSession(workspace *workspace.Workspace) {
 	}
 }
 
-func executeQueries(queries []string) int {
-	// set the flag to show spinner
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
-
-	// first get a client - do this once for all queries
-	client, err := db.NewClient(true)
-	utils.FailOnError(err)
-	defer client.Close()
-
+func executeQueries(ctx context.Context, queries []string, client *db.Client) int {
 	// run all queries
 	failures := 0
 	for i, q := range queries {
-		if err := runQuery(q, client); err != nil {
+		select {
+		case <-ctx.Done():
+			// add to failures
 			failures++
-			utils.ShowWarning(fmt.Sprintf("query #%d failed: %v", i+1, err))
-		}
-		if showBlankLineBetweenResults() {
-			fmt.Println()
+			// skip ahead to the end
+			continue
+		default:
+			if err := executeQuery(ctx, q, client); err != nil {
+				failures++
+				utils.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), utils.TrimDriversFromErrMsg(err.Error())))
+			}
+			if showBlankLineBetweenResults() {
+				fmt.Println()
+			}
 		}
 	}
 
 	return failures
 }
 
-// if we are displaying csv with no header, do not include lines between the query results
-func showBlankLineBetweenResults() bool {
-	return !(viper.GetString(constants.ArgOutput) == "csv" && !viper.GetBool(constants.ArgHeader))
-}
-
-func runQuery(queryString string, client *db.Client) error {
+func executeQuery(ctx context.Context, queryString string, client *db.Client) error {
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.ExecuteQuery(queryString, client)
+	resultsStreamer, err := db.ExecuteQuery(ctx, queryString, client)
 	if err != nil {
 		return err
 	}
 
+	// TODO encapsulate this in display object
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
 		display.ShowOutput(r)
@@ -186,6 +224,11 @@ func runQuery(queryString string, client *db.Client) error {
 		resultsStreamer.Done()
 	}
 	return nil
+}
+
+// if we are displaying csv with no header, do not include lines between the query results
+func showBlankLineBetweenResults() bool {
+	return !(viper.GetString(constants.ArgOutput) == "csv" && !viper.GetBool(constants.ArgHeader))
 }
 
 func getQueryFromFile(filename string) (string, bool, error) {

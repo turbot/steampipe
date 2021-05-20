@@ -1,38 +1,45 @@
 package db
 
 import (
+	"context"
 	"fmt"
+
+	"os"
+	"os/signal"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/definitions/results"
-	"github.com/turbot/steampipe/metaquery"
-	"github.com/turbot/steampipe/queryhistory"
+	"github.com/turbot/steampipe/query/metaquery"
+	"github.com/turbot/steampipe/query/queryhistory"
+	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
-	"github.com/turbot/steampipe/workspace"
 )
 
 // InteractiveClient :: wrapper over *Client and *prompt.Prompt along
 // to facilitate interactive query prompt
 type InteractiveClient struct {
 	client                  *Client
-	workspace               *workspace.Workspace
+	resultsStreamer         *queryresult.ResultStreamer
+	workspace               NamedQueryProvider
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
 	interactiveQueryHistory *queryhistory.QueryHistory
 	autocompleteOnEmpty     bool
+	activeQueryCancelFunc   context.CancelFunc
 }
 
-func newInteractiveClient(client *Client, workspace *workspace.Workspace) (*InteractiveClient, error) {
+func newInteractiveClient(workspace NamedQueryProvider, client *Client, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	return &InteractiveClient{
 		client:                  client,
+		resultsStreamer:         resultsStreamer,
 		workspace:               workspace,
 		interactiveQueryHistory: queryhistory.New(),
 		interactiveBuffer:       []string{},
@@ -41,7 +48,7 @@ func newInteractiveClient(client *Client, workspace *workspace.Workspace) (*Inte
 }
 
 // InteractiveQuery :: start an interactive prompt and return
-func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStreamer) {
+func (c *InteractiveClient) InteractiveQuery() {
 	defer func() {
 		// close the underlying client
 		c.client.Close()
@@ -53,14 +60,14 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 		// this needs to be the last thing we do,
 		// as the runQueryCmd uses this as an indication
 		// to quit out of the application
-		resultsStreamer.Close()
+		c.resultsStreamer.Close()
 	}()
 
+	interruptSignalChannel := c.startCancelHandler()
 	fmt.Printf("Welcome to Steampipe v%s\n", version.String())
 	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
-
 	for {
-		rerun := c.runInteractivePrompt(resultsStreamer)
+		rerun := c.runInteractivePrompt()
 
 		// persist saved history
 		c.interactiveQueryHistory.Persist()
@@ -68,13 +75,30 @@ func (c *InteractiveClient) InteractiveQuery(resultsStreamer *results.ResultStre
 			break
 		}
 
-		// wait for the resultstreamer to have streamed everything out
-		// so that we know
-		resultsStreamer.Wait()
+		// wait for the resultsStreamer to have streamed everything out
+		// this is to be sure the previous command has completed streaming
+		c.resultsStreamer.Wait()
 	}
+
+	// close up the SIGINT channel so that the receiver goroutine can quit
+	close(interruptSignalChannel)
 }
 
-func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *results.ResultStreamer) (ret utils.InteractiveExitStatus) {
+func (c *InteractiveClient) startCancelHandler() chan os.Signal {
+	interruptSignalChannel := make(chan os.Signal, 10)
+	signal.Notify(interruptSignalChannel, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		for range interruptSignalChannel {
+			if c.hasActiveCancel() {
+				c.activeQueryCancelFunc()
+				c.clearCancelFunction()
+			}
+		}
+	}()
+	return interruptSignalChannel
+}
+
+func (c *InteractiveClient) runInteractivePrompt() (ret utils.InteractiveExitStatus) {
 	defer func() {
 		// this is to catch the PANIC that gets raised by
 		// the executor of go-prompt
@@ -95,7 +119,7 @@ func (c *InteractiveClient) runInteractivePrompt(resultsStreamer *results.Result
 		}
 	}()
 
-	callExecutor := func(line string) { c.executor(line, resultsStreamer) }
+	callExecutor := func(line string) { c.executor(line) }
 	completer := func(d prompt.Document) []prompt.Suggest { return c.queryCompleter(d, c.client.schemaMetadata) }
 	c.interactivePrompt = prompt.New(
 		callExecutor,
@@ -183,13 +207,15 @@ func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 	c.interactiveBuffer = []string{}
 }
 
-func (c *InteractiveClient) executor(line string, resultsStreamer *results.ResultStreamer) {
+func (c *InteractiveClient) executor(line string) {
 	line = strings.TrimSpace(line)
 
 	// if it's an empty line, then we don't need to do anything
 	if line == "" {
 		return
 	}
+	// store history item before doing named query translation
+	historyItem := line
 
 	// push the current line into the buffer
 	c.interactiveBuffer = append(c.interactiveBuffer, line)
@@ -201,7 +227,7 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 
 	// if it is a multiline query, execute even without `;`
 	if isNamedQuery {
-		query = namedQuery.SQL
+		query = *namedQuery.SQL
 	} else {
 		// should we execute?
 		if !c.shouldExecute(query) {
@@ -213,7 +239,6 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 
 	// if the line is ONLY a semicolon, do nothing and restart interactive session
 	if strings.TrimSpace(query) == ";" {
-		resultsStreamer.Done()
 		c.restartInteractiveSession()
 	}
 
@@ -221,25 +246,62 @@ func (c *InteractiveClient) executor(line string, resultsStreamer *results.Resul
 		if err := c.executeMetaquery(query); err != nil {
 			utils.ShowError(err)
 		}
-		resultsStreamer.Done()
+		c.resultsStreamer.Done()
 	} else {
 		// otherwise execute query
+		ctx, cancel := context.WithCancel(context.Background())
+		c.setCancelFunction(cancel)
+
 		shouldShowCounter := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.ArgTable
-		if result, err := c.client.executeQuery(query, shouldShowCounter); err != nil {
-			utils.ShowError(err)
-			resultsStreamer.Done()
+
+		result, err := c.client.ExecuteQuery(ctx, query, shouldShowCounter)
+		if err != nil {
+			c.handleExecuteError(err)
 		} else {
-			resultsStreamer.StreamResult(result)
+			c.resultsStreamer.StreamResult(result)
 		}
 	}
 
 	// store the history
-	if isNamedQuery {
-		c.interactiveQueryHistory.Put(fmt.Sprintf("query.%s", namedQuery.Name))
-	} else {
-		c.interactiveQueryHistory.Put(query)
-	}
+	c.interactiveQueryHistory.Put(historyItem)
 	c.restartInteractiveSession()
+}
+
+func (c *InteractiveClient) handleExecuteError(err error) {
+	isCancelledError, isCancelledBeforeResult := isCancelledError(err)
+	if isCancelledError {
+		utils.ShowError(fmt.Errorf("query cancelled"))
+		if isCancelledBeforeResult {
+			// we need to notify the streamer that we are done
+			c.resultsStreamer.Done()
+		}
+	} else {
+		utils.ShowError(err)
+		c.resultsStreamer.Done()
+	}
+}
+
+func isCancelledError(err error) (bool, bool) {
+
+	isCancelledBeforeResult := strings.Contains(err.Error(), "Unrecognized remote plugin message")
+	isCancelledUponResult := strings.Contains(err.Error(), "canceling statement due to user request")
+	isCancelledAfterResult := err == context.Canceled
+
+	isCancelledError := isCancelledBeforeResult || isCancelledUponResult || isCancelledAfterResult
+
+	return isCancelledError, isCancelledBeforeResult
+}
+
+func (c *InteractiveClient) hasActiveCancel() bool {
+	return c.activeQueryCancelFunc != nil
+}
+
+func (c *InteractiveClient) setCancelFunction(cancel context.CancelFunc) {
+	c.activeQueryCancelFunc = cancel
+}
+
+func (c *InteractiveClient) clearCancelFunction() {
+	c.activeQueryCancelFunc = nil
 }
 
 func (c *InteractiveClient) executeMetaquery(query string) error {
@@ -333,8 +395,8 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 	// add all the queries in the workspace
 	for name, q := range c.workspace.GetNamedQueryMap() {
 		description := "named query"
-		if q.Description != "" {
-			description += fmt.Sprintf(": %s", q.Description)
+		if q.Description != nil {
+			description += fmt.Sprintf(": %s", *q.Description)
 		}
 		res = append(res, prompt.Suggest{Text: name, Description: description})
 	}

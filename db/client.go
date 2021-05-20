@@ -20,10 +20,11 @@ type Client struct {
 }
 
 // Close closes the connection to the database and shuts down the backend
-func (c *Client) Close() {
+func (c *Client) Close() error {
 	if c.dbClient != nil {
-		c.dbClient.Close()
+		return c.dbClient.Close()
 	}
+	return nil
 }
 
 // NewClient ensures that the database instance is running
@@ -35,6 +36,10 @@ func NewClient(autoRefreshConnections bool) (*Client, error) {
 	}
 	client := new(Client)
 	client.dbClient = db
+
+	// setup a blank struct for the schema metadata
+	client.schemaMetadata = schema.NewMetadata()
+
 	client.loadSchema()
 
 	var updatedConnections bool
@@ -109,6 +114,8 @@ func createDbClient(dbname string, username string) (*sql.DB, error) {
 
 	// connect to the database using the postgres driver
 	db, err := sql.Open("postgres", psqlInfo)
+	db.SetMaxOpenConns(1)
+
 	if err != nil {
 		return nil, err
 	}
@@ -118,6 +125,26 @@ func createDbClient(dbname string, username string) (*sql.DB, error) {
 	}
 
 	return nil, fmt.Errorf("could not establish connection with database")
+}
+
+func executeSqlAsRoot(statements []string) ([]sql.Result, error) {
+	var results []sql.Result
+	rootClient, err := createSteampipeRootDbClient()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		rootClient.Close()
+	}()
+
+	for _, statement := range statements {
+		result, err := rootClient.Exec(statement)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+	return results, nil
 }
 
 // waits for the db to start accepting connections and returns true
@@ -156,8 +183,11 @@ func (c *Client) loadSchema() {
 
 	defer tablesResult.Close()
 
-	c.schemaMetadata, err = buildSchemaMetadata(tablesResult)
+	metadata, err := buildSchemaMetadata(tablesResult)
 	utils.FailOnError(err)
+
+	c.schemaMetadata.Schemas = metadata.Schemas
+	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
 }
 
 func (c *Client) getSchemaFromDB() (*sql.Rows, error) {
@@ -186,6 +216,8 @@ func (c *Client) getSchemaFromDB() (*sql.Rows, error) {
 			) 
 			OR
 			cols.table_schema = 'public'
+			OR
+			LEFT(cols.table_schema,8) = 'pg_temp_'
 		ORDER BY 
 			cols.table_schema, cols.table_name, cols.column_name;
 `

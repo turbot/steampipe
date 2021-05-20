@@ -27,6 +27,8 @@ var rootCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		viper.Set(constants.ConfigKeyActiveCommand, cmd)
 		viper.Set(constants.ConfigKeyActiveCommandArgs, args)
+		initGlobalConfig()
+		createLogger()
 		task.RunTasks()
 	},
 	Short: "Query cloud resources using SQL",
@@ -66,14 +68,10 @@ func InitCmd() {
 
 	AddCommands()
 
-	// the `OnInitialize` callbacks are called right before PreRun
-	cobra.OnInitialize(initGlobalConfig, createLogger)
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initGlobalConfig() {
-	cmdconfig.InitViper()
-
 	// set global containing install dir
 	setInstallDir()
 
@@ -87,8 +85,10 @@ func initGlobalConfig() {
 	}
 
 	// load config (this sets the global config steampipeconfig.Config)
-	config, err := steampipeconfig.LoadSteampipeConfig(workspace)
+	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+	config, err := steampipeconfig.LoadSteampipeConfig(workspace, cmd.Name())
 	utils.FailOnError(err)
+
 	steampipeconfig.Config = config
 
 	// set viper config defaults from config and env vars
@@ -125,6 +125,7 @@ func AddCommands() {
 	// explicitly initialise commands here rather than in init functions to allow us to handle errors from the config load
 	rootCmd.AddCommand(PluginCmd())
 	rootCmd.AddCommand(QueryCmd())
+	rootCmd.AddCommand(CheckCmd())
 	rootCmd.AddCommand(ServiceCmd())
 }
 
