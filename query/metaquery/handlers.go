@@ -192,6 +192,9 @@ func listTables(input *HandlerInput) error {
 	if len(input.args()) == 0 {
 		schemas := input.Schema.GetSchemas()
 		for _, schema := range schemas {
+			if schema == input.Schema.TemporarySchemaName {
+				continue
+			}
 			fmt.Printf(" ==> %s\n", schema)
 			inspectConnection(schema, input)
 		}
@@ -249,7 +252,11 @@ func inspect(input *HandlerInput) error {
 
 		// there was no schema
 		if !schemaFound {
-			searchPath := input.Schema.SearchPath
+			searchPath, _ := input.Executor.GetCurrentSearchPath()
+
+			// add the temporary schema to the search_path so that it becomes searchable
+			// for the next step
+			searchPath = append(searchPath, input.Schema.TemporarySchemaName)
 
 			// go through the searchPath one by one and try to find the table by this name
 			for _, schema := range searchPath {
@@ -278,6 +285,9 @@ func listConnections(input *HandlerInput) error {
 	rows := [][]string{}
 
 	for _, schema := range input.Schema.GetSchemas() {
+		if schema == input.Schema.TemporarySchemaName {
+			continue
+		}
 		plugin, found := (*input.Connections)[schema]
 		if found {
 			rows = append(rows, []string{schema, plugin.Plugin})
