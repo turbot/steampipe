@@ -22,9 +22,9 @@ var Config *SteampipeConfig
 var defaultConfigFileName = "default.spc"
 
 // LoadSteampipeConfig :: load the HCL config and parse into the global Config variable
-func LoadSteampipeConfig(workspacePath string) (*SteampipeConfig, error) {
+func LoadSteampipeConfig(workspacePath string, commandName string) (*SteampipeConfig, error) {
 	_ = ensureDefaultConfigFile(constants.ConfigDir())
-	config, err := newSteampipeConfig(workspacePath)
+	config, err := newSteampipeConfig(workspacePath, commandName)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 	return nil
 }
 
-func newSteampipeConfig(workspacePath string) (steampipeConfig *SteampipeConfig, err error) {
+func newSteampipeConfig(workspacePath string, commandName string) (steampipeConfig *SteampipeConfig, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
@@ -51,6 +51,7 @@ func newSteampipeConfig(workspacePath string) (steampipeConfig *SteampipeConfig,
 
 	steampipeConfig = &SteampipeConfig{
 		Connections: make(map[string]*modconfig.Connection),
+		commandName: commandName,
 	}
 
 	// load config from the installation folder -  load all spc files from config directory

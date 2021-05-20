@@ -24,6 +24,7 @@ type SteampipeConfig struct {
 	DatabaseOptions          *options.Database
 	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
+	commandName              string
 }
 
 // ConfigMap :: create a config map to pass to viper
@@ -80,6 +81,12 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) {
 			c.DatabaseOptions.Merge(o)
 		}
 	case *options.Terminal:
+		// NOTE: do not load terminal options for check command
+		// this is a short term workaround to handle the clashing 'output' argument
+		// this will be refactored
+		if c.commandName == "check" {
+			return
+		}
 		if c.TerminalOptions == nil {
 			c.TerminalOptions = o
 		} else {
