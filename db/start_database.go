@@ -9,7 +9,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/shirou/gopsutil/process"
+	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -69,7 +69,7 @@ func (slt Invoker) IsValid() error {
 	case InvokerService, InvokerQuery, InvokerCheck, InvokerInstaller, InvokerPlugin:
 		return nil
 	}
-	return fmt.Errorf("Invalid invoker. Can be one of '%v', '%v', '%v' or '%v'", InvokerService, InvokerQuery, InvokerInstaller, InvokerPlugin)
+	return fmt.Errorf("Invalid invoker. Can be one of '%v', '%v', '%v', '%v' or '%v'", InvokerService, InvokerQuery, InvokerInstaller, InvokerPlugin, InvokerCheck)
 }
 
 // StartDB :: start the database is not already running
@@ -89,10 +89,15 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (startResult Sta
 	}
 
 	if info != nil {
-		processRunning, err := pidExists(info.Pid)
+		// check whether the stated PID actually exists
+		processRunning, err := psutils.PidExists(int32(info.Pid))
 		if err != nil {
 			return ServiceFailedToStart, err
 		}
+
+		// Process with declared PID exists.
+		// Check if the service was started by another `service` command
+		// if not, throw an error.
 		if processRunning {
 			if info.Invoker != InvokerService {
 				return ServiceAlreadyRunning, fmt.Errorf("You have a %s session open. Close this session before running %s.\nTo force kill all existing sessions, run %s", constants.Bold(fmt.Sprintf("steampipe %s", info.Invoker)), constants.Bold("steampipe service start"), constants.Bold("steampipe service stop --force"))
@@ -319,8 +324,8 @@ func killPreviousInstanceIfAny() bool {
 	return wasKilled
 }
 
-func findSteampipePostgresInstance() *process.Process {
-	allProcesses, _ := process.Processes()
+func findSteampipePostgresInstance() *psutils.Process {
+	allProcesses, _ := psutils.Processes()
 	for _, p := range allProcesses {
 		cmdLine, _ := p.CmdlineSlice()
 		if isSteampipePostgresProcess(cmdLine) {
@@ -341,6 +346,7 @@ func isSteampipePostgresProcess(cmdline []string) bool {
 	return false
 }
 
+func killProcessTree(p *psutils.Process) {
 	// find it's children
 	children, _ := p.Children()
 	for _, child := range children {

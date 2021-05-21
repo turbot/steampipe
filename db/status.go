@@ -3,6 +3,8 @@ package db
 import (
 	"log"
 	"os"
+
+	psutils "github.com/shirou/gopsutil/process"
 )
 
 // GetStatus :: check that the db instance is running and returns it's details
@@ -18,7 +20,7 @@ func GetStatus() (*RunningDBInstanceInfo, error) {
 		return nil, nil
 	}
 
-	pidExists, err := pidExists(info.Pid)
+	pidExists, err := psutils.PidExists(int32(info.Pid))
 	if err != nil {
 		return nil, err
 	}
