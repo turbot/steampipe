@@ -49,10 +49,10 @@ func (r GroupHeadingRenderer) Render() string {
 	graphString := NewCounterGraphRenderer(r.failedControls, r.totalControls, r.maxTotalControls).Render()
 	graphWidth := helpers.PrintableLength(graphString)
 
-	nestingString := r.indent
-	nestingWidth := helpers.PrintableLength(nestingString)
+	formattedIndent := fmt.Sprintf("%s", ControlColors.Indent(r.indent))
+	indentWidth := helpers.PrintableLength(formattedIndent)
 	// figure out how much width we have available for the title
-	availableWidth := r.width - counterWidth - graphWidth - severityWidth - nestingWidth
+	availableWidth := r.width - counterWidth - graphWidth - severityWidth - indentWidth
 
 	// now availableWidth is all we have - if it is not enough we need to truncate the title
 	titleString := NewGroupTitleRenderer(r.title, availableWidth).Render()
@@ -66,6 +66,6 @@ func (r GroupHeadingRenderer) Render() string {
 	}
 
 	// now put these all together
-	str := fmt.Sprintf("%s%s%s%s%s%s", nestingString, titleString, spacerString, severityString, counterString, graphString)
+	str := fmt.Sprintf("%s%s%s%s%s%s", formattedIndent, titleString, spacerString, severityString, counterString, graphString)
 	return str
 }

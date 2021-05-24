@@ -31,15 +31,15 @@ func (r ErrorRenderer) Render() string {
 	status := NewResultStatusRenderer(execute.ControlError)
 	statusString := status.Render()
 	statusWidth := helpers.PrintableLength(statusString)
-	nestingString := r.indent
-	nestingWidth := helpers.PrintableLength(nestingString)
+	formattedIndent := fmt.Sprintf("%s", ControlColors.Indent(r.indent))
+	indentWidth := helpers.PrintableLength(formattedIndent)
 
 	// figure out how much width we have available for the error message
-	availableWidth := r.width - statusWidth - nestingWidth
+	availableWidth := r.width - statusWidth - indentWidth
 	errorMessage := helpers.TruncateString(r.error.Error(), availableWidth)
 	errorString := fmt.Sprintf("%s", ControlColors.StatusError(errorMessage))
 
 	// now put these all together
-	str := fmt.Sprintf("%s%s%s", nestingString, statusString, errorString)
+	str := fmt.Sprintf("%s%s%s", formattedIndent, statusString, errorString)
 	return str
 }

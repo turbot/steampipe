@@ -52,11 +52,11 @@ func (r ResultRenderer) Render() string {
 	statusString := status.Render()
 	statusWidth := helpers.PrintableLength(statusString)
 
-	nestingString := r.indent
-	nestingWidth := helpers.PrintableLength(nestingString)
+	formattedIndent := fmt.Sprintf("%s", ControlColors.Indent(r.indent))
+	indentWidth := helpers.PrintableLength(formattedIndent)
 
 	// figure out how much width we have available for the  dimensions, allowing the minimum for the reason
-	availableWidth := r.width - statusWidth - nestingWidth
+	availableWidth := r.width - statusWidth - indentWidth
 
 	// for now give this all to reason
 	availableDimensionWidth := availableWidth - minReasonWidth
@@ -80,6 +80,6 @@ func (r ResultRenderer) Render() string {
 	}
 
 	// now put these all together
-	str := fmt.Sprintf("%s%s%s%s%s", nestingString, statusString, reasonString, spacerString, dimensionsString)
+	str := fmt.Sprintf("%s%s%s%s%s", formattedIndent, statusString, reasonString, spacerString, dimensionsString)
 	return str
 }

@@ -1,6 +1,7 @@
 package controldisplay
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -32,6 +33,8 @@ func NewGroupRenderer(group *execute.ResultGroup, parent *GroupRenderer, maxFail
 	return r
 }
 
+// are we the last child of our parent?
+// this affects the tree rendering
 func (r GroupRenderer) isLastChild(group *execute.ResultGroup) bool {
 	if group.Parent == nil || group.Parent.GroupItem == nil {
 		return true
@@ -40,6 +43,42 @@ func (r GroupRenderer) isLastChild(group *execute.ResultGroup) bool {
 	return group.GroupItem.Name() == siblings[len(siblings)-1].Name()
 }
 
+// the indent for blank lines
+// same as for (not last) children
+func (r GroupRenderer) blankLineIndent() string {
+	return r.childIndent()
+}
+
+// the indent got group heading
+func (r GroupRenderer) headingIndent() string {
+	// if this is the first displayed node, no indent
+	if r.parent == nil || r.parent.group.GroupId == execute.RootResultGroupName {
+		return ""
+	}
+	// as our parent for the indent for a group
+	i := r.parent.childGroupIndent()
+	return i
+}
+
+// the indent for child groups/controls (which are not the final child)
+// include the tree '|'
+func (r GroupRenderer) childIndent() string {
+	return r.parentIndent() + "| "
+}
+
+// the indent for the FINAL child groups/controls
+// just a space
+func (r GroupRenderer) lastChildIndent() string {
+	return r.parentIndent() + "  "
+}
+
+// the indent for child groups - our parent indent with the group expander "+ "
+func (r GroupRenderer) childGroupIndent() string {
+	return r.parentIndent() + "+ "
+}
+
+// get the indent inherited from our parent
+// - this will depend on whether we are our parents last child
 func (r GroupRenderer) parentIndent() string {
 	if r.parent == nil || r.parent.group.GroupId == execute.RootResultGroupName {
 		return ""
@@ -48,33 +87,6 @@ func (r GroupRenderer) parentIndent() string {
 		return r.parent.lastChildIndent()
 	}
 	return r.parent.childIndent()
-}
-
-func (r GroupRenderer) lineIndent() string {
-	//if r.parent == nil || r.parent.group.GroupId == execute.RootResultGroupName {
-	return r.childIndent()
-	//}
-	//return r.parent.childIndent()
-}
-
-func (r GroupRenderer) indent() string {
-	if r.parent == nil || r.parent.group.GroupId == execute.RootResultGroupName {
-		return ""
-	}
-	i := r.parent.childGroupIndent()
-	return i
-}
-
-func (r GroupRenderer) childIndent() string {
-	return r.parentIndent() + "| "
-}
-
-func (r GroupRenderer) lastChildIndent() string {
-	return r.parentIndent() + "  "
-}
-
-func (r GroupRenderer) childGroupIndent() string {
-	return r.parentIndent() + "+ "
 }
 
 func (r GroupRenderer) Render() string {
@@ -92,13 +104,13 @@ func (r GroupRenderer) Render() string {
 		r.maxFailedControls,
 		r.maxTotalControls,
 		r.width,
-		r.indent())
+		r.headingIndent())
 
 	// render this group header
 	tableStrings := append([]string{},
 		groupHeadingRenderer.Render(),
 		// newline after group
-		r.lineIndent())
+		fmt.Sprintf("%s", ControlColors.Indent(r.blankLineIndent())))
 
 	// now render the group children, in the order they are specified
 	childStrings := r.renderChildren()
