@@ -9,7 +9,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/shirou/gopsutil/process"
+	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -69,7 +69,7 @@ func (slt Invoker) IsValid() error {
 	case InvokerService, InvokerQuery, InvokerCheck, InvokerInstaller, InvokerPlugin:
 		return nil
 	}
-	return fmt.Errorf("Invalid invoker. Can be one of '%v', '%v', '%v' or '%v'", InvokerService, InvokerQuery, InvokerInstaller, InvokerPlugin)
+	return fmt.Errorf("Invalid invoker. Can be one of '%v', '%v', '%v', '%v' or '%v'", InvokerService, InvokerQuery, InvokerInstaller, InvokerPlugin, InvokerCheck)
 }
 
 // StartDB :: start the database is not already running
@@ -89,13 +89,18 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (startResult Sta
 	}
 
 	if info != nil {
-		processRunning, err := pidExists(info.Pid)
+		// check whether the stated PID actually exists
+		processRunning, err := psutils.PidExists(int32(info.Pid))
 		if err != nil {
 			return ServiceFailedToStart, err
 		}
+
+		// Process with declared PID exists.
+		// Check if the service was started by another `service` command
+		// if not, throw an error.
 		if processRunning {
-			if info.Invoker == InvokerQuery {
-				return ServiceAlreadyRunning, fmt.Errorf("You have a %s session open. Close this session before running %s.\nTo kill existing sessions, run %s", constants.Bold("steampipe query"), constants.Bold("steampipe service stop"), constants.Bold("steampipe service stop --force"))
+			if info.Invoker != InvokerService {
+				return ServiceAlreadyRunning, fmt.Errorf("You have a %s session open. Close this session before running %s.\nTo force kill all existing sessions, run %s", constants.Bold(fmt.Sprintf("steampipe %s", info.Invoker)), constants.Bold("steampipe service start"), constants.Bold("steampipe service stop --force"))
 			}
 			return ServiceAlreadyRunning, nil
 		}
@@ -230,7 +235,8 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (startResult Sta
 	}
 
 	// refresh plugin connections - ensure db schemas are in sync with connection config
-	// NOTE: refresh defaults to true but will be set to false if this service start command has been invoked by a query command
+	// NOTE: refresh defaults to true but will be set to false if this service start command has been invoked
+	// internally by a different command which needs the service
 	if cmdconfig.Viper().GetBool(constants.ArgRefresh) {
 		if _, err = client.RefreshConnections(); err != nil {
 			return ServiceStarted, err
@@ -245,7 +251,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (startResult Sta
 }
 
 // ensures that the `steampipe` fdw server exists
-// checks for it - (re)installs FDW and creates server if it doesn't
+// checks for it - (re)install FDW and creates server if it doesn't
 func ensureSteampipeServer() error {
 	rootClient, err := createSteampipeRootDbClient()
 	if err != nil {
@@ -284,7 +290,7 @@ func handleStartFailure(err error) error {
 	checkedPreviousInstances := make(chan bool, 1)
 	s := display.StartSpinnerAfterDelay("Checking for running instances...", constants.SpinnerShowTimeout, checkedPreviousInstances)
 	otherProcess := findSteampipePostgresInstance()
-	checkedPreviousInstances <- true
+	close(checkedPreviousInstances)
 	display.StopSpinner(s)
 	if otherProcess != nil {
 		return fmt.Errorf("Another Steampipe service is already running. Use %s to kill all running instances before continuing.", constants.Bold("steampipe service stop --force"))
@@ -318,8 +324,8 @@ func killPreviousInstanceIfAny() bool {
 	return wasKilled
 }
 
-func findSteampipePostgresInstance() *process.Process {
-	allProcesses, _ := process.Processes()
+func findSteampipePostgresInstance() *psutils.Process {
+	allProcesses, _ := psutils.Processes()
 	for _, p := range allProcesses {
 		cmdLine, _ := p.CmdlineSlice()
 		if isSteampipePostgresProcess(cmdLine) {
@@ -334,15 +340,17 @@ func isSteampipePostgresProcess(cmdline []string) bool {
 		return false
 	}
 	if strings.Contains(cmdline[0], "postgres") {
-		// this is a postgres process
+		// this is a postgres process - but is it a steampipe service?
 		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", constants.APPNAME))
 	}
 	return false
 }
 
-func killProcessTree(p *process.Process) {
+func killProcessTree(p *psutils.Process) {
+	// find it's children
 	children, _ := p.Children()
 	for _, child := range children {
+		// and kill them first
 		killProcessTree(child)
 	}
 	p.Kill()

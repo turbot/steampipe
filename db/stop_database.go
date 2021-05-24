@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
@@ -78,9 +79,9 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 				killProcessTree(previousProcess)
 				continue
 			}
-			checkedPreviousInstances <- true
 			break
 		}
+		close(checkedPreviousInstances)
 		display.StopSpinner(s)
 		os.Remove(runningInfoFilePath())
 		return ServiceStopped, nil
@@ -91,7 +92,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 		return ServiceNotRunning, nil
 	}
 
-	doesPidExist, err := pidExists(info.Pid)
+	doesPidExist, err := psutils.PidExists(int32(info.Pid))
 
 	if err != nil {
 		return ServiceStopFailed, err
@@ -103,7 +104,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 	}
 
 	if info.Invoker != invoker {
-		return ServiceStopFailed, fmt.Errorf("You have a %s session open. The service will be stopped when the session ends.\nTo kill existing sessions, run %s", constants.Bold("steampipe query"), constants.Bold("steampipe service stop --force"))
+		return ServiceStopFailed, fmt.Errorf("You have a %s session open. The service will be stopped when the session ends.\nTo kill existing sessions, run %s", constants.Bold(fmt.Sprintf("steampipe %s", info.Invoker)), constants.Bold("steampipe service stop --force"))
 	}
 
 	process, err := os.FindProcess(info.Pid)
@@ -134,7 +135,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 	processKilledChannel := make(chan string, 1)
 	go func() {
 		for {
-			pEx, err := pidExists(info.Pid)
+			pEx, err := psutils.PidExists(int32(info.Pid))
 			if err != nil {
 				utils.ShowError(err)
 			}
