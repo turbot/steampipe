@@ -41,8 +41,10 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			continue
 		}
 
+		//var decodeResults []*decodeResult
 		// special case decoding for locals
-		if block.Type == modconfig.BlockTypeLocals {
+		switch block.Type {
+		case modconfig.BlockTypeLocals:
 			// special case decode logic for locals
 			locals, res := decodeLocals(block, runCtx.EvalCtx)
 			for _, local := range locals {
@@ -52,18 +54,18 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 				moreDiags = handleDecodeResult(local, res, block, runCtx)
 				diags = append(diags, moreDiags...)
 			}
-			continue
+		case modconfig.BlockTypePanel:
+		default:
+			// all other blocks are treated the same:
+			// decode the resource
+			resource, res := decodeResource(block, runCtx)
+
+			// handle the result
+			// - if successful, add resource to mod and variables maps
+			// - if there are dependencies, add them to run context
+			moreDiags = handleDecodeResult(resource, res, block, runCtx)
+
 		}
-
-		// all other blocks are treated the same:
-		// decode the resource
-		resource, res := decodeResource(block, runCtx)
-
-		// handle the result
-		// - if successful, add resource to mod and variables maps
-		// - if there are dependencies, add them to run context
-		moreDiags = handleDecodeResult(resource, res, block, runCtx)
-		diags = append(diags, moreDiags...)
 	}
 	return diags
 }
@@ -79,6 +81,10 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResourc
 		resource = modconfig.NewQuery(block)
 	case modconfig.BlockTypeControl:
 		resource = modconfig.NewControl(block)
+	case modconfig.BlockTypeReport:
+		resource = modconfig.NewReport(block)
+	case modconfig.BlockTypePanel:
+		resource = modconfig.NewPanel(block)
 	case modconfig.BlockTypeBenchmark:
 		resource = modconfig.NewBenchmark(block)
 	}

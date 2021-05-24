@@ -5,24 +5,25 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/zclconf/go-cty/cty"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // Control is a struct representing the Control resource
 type Control struct {
-	ShortName        string             `json:"-"`
-	FullName         string             `cty:"name" json:"control_id"`
-	Description      *string            `cty:"description" hcl:"description" column:"description,text" json:"description"`
-	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"-"`
+	ShortName        string             `cty:"name"`
+	FullName         string             `cty:"name"`
+	Description      *string            `cty:"description" hcl:"description" column:"description,text"`
+	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
 	SearchPath       *string            `cty:"search_path" hcl:"search_path" column:"search_path,text"`
 	SearchPathPrefix *string            `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
-	Severity         *string            `cty:"severity" hcl:"severity" column:"severity,text" json:"severity"`
-	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb" json:"tags"`
-	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
+	Severity         *string            `cty:"severity" hcl:"severity" column:"severity,text"`
+	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
+	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
+	Title            *string            `cty:"title" hcl:"title" column:"title,text""`
 
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
@@ -40,10 +41,6 @@ func NewControl(block *hcl.Block) *Control {
 		DeclRange: block.DefRange,
 	}
 	return control
-}
-
-func (c *Control) CtyValue() (cty.Value, error) {
-	return getCtyValue(c)
 }
 
 func (c *Control) String() string {
@@ -89,25 +86,25 @@ func (c *Control) GetParents() []ControlTreeItem {
 }
 
 // GetTitle implements ControlTreeItem
-func (m *Control) GetTitle() string {
-	return typehelpers.SafeString(m.Title)
+func (c *Control) GetTitle() string {
+	return typehelpers.SafeString(c.Title)
 }
 
 // GetDescription implements ControlTreeItem
-func (m *Control) GetDescription() string {
-	return typehelpers.SafeString(m.Description)
+func (c *Control) GetDescription() string {
+	return typehelpers.SafeString(c.Description)
 }
 
 // GetTags implements ControlTreeItem
-func (m *Control) GetTags() map[string]string {
-	if m.Tags != nil {
-		return *m.Tags
+func (c *Control) GetTags() map[string]string {
+	if c.Tags != nil {
+		return *c.Tags
 	}
 	return map[string]string{}
 }
 
 // GetChildren implements ControlTreeItem
-func (m *Control) GetChildren() []ControlTreeItem {
+func (c *Control) GetChildren() []ControlTreeItem {
 	return []ControlTreeItem{}
 }
 
@@ -130,6 +127,11 @@ func (c *Control) Path() []string {
 		path = append(c.parents[0].Path(), path...)
 	}
 	return path
+}
+
+// CtyValue implements HclResource
+func (c *Control) CtyValue() (cty.Value, error) {
+	return getCtyValue(c)
 }
 
 // GetMetadata implements HclResource
