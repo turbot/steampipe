@@ -22,4 +22,4 @@
 # vendor/
 
 # Report server
-/reportserver/static/
+/report/reportserver/static/

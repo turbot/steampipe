@@ -4,21 +4,21 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 )
 
 type tableTest struct {
-	resultTree *execute.ExecutionTree
+	resultTree *controlexecute.ExecutionTree
 	width      int
 }
 
 var testCasesTable = map[string]tableTest{
 	"3 Advanced": {
-		resultTree: &execute.ExecutionTree{
-			Root: &execute.ResultGroup{
+		resultTree: &controlexecute.ExecutionTree{
+			Root: &controlexecute.ResultGroup{
 				GroupId: "3 Advanced",
-				Summary: execute.GroupSummary{
-					Status: execute.StatusSummary{
+				Summary: controlexecute.GroupSummary{
+					Status: controlexecute.StatusSummary{
 						Alarm: 1,
 						Ok:    100,
 						Info:  0,

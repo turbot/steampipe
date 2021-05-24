@@ -3,6 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+
+	"github.com/karrick/gows"
+	"github.com/turbot/steampipe/control/controldisplay"
+	"github.com/turbot/steampipe/control/controlexecute"
 	"io"
 	"os"
 	"strings"
@@ -135,7 +139,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			// skip over the next, since the execution was cancelled
 			continue
 		default:
-			executionTree, err := execute.NewExecutionTree(ctx, workspace, client, arg)
+			executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, arg)
 			utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
 
 			// for now we execute controls synchronously

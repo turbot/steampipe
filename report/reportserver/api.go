@@ -2,14 +2,14 @@ package reportserver
 
 import (
 	"context"
-	"github.com/gin-contrib/static"
-	"github.com/gin-gonic/gin"
-	"gopkg.in/olahol/melody.v1"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/gin-contrib/static"
+	"github.com/gin-gonic/gin"
 )
 
 func StartAPI() {

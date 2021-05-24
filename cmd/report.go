@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 
+	reportserver2 "github.com/turbot/steampipe/report/reportserver"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -11,7 +13,6 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
-	"github.com/turbot/steampipe/reportserver"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -57,7 +58,7 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
 
-	server := reportserver.Server{}
+	server := reportserver2.Server{}
 
 	// TODO add this in when Kai exposes it
 	// workspace.registerUpdateHandler(server.HandleWorkspaceUpdate)
