@@ -15,10 +15,11 @@ type GroupHeadingRenderer struct {
 	maxFailedControls int
 	maxTotalControls  int
 	// screen width
-	width int
+	width  int
+	indent string
 }
 
-func NewGroupHeadingRenderer(title string, failed, total, maxFailed, maxTotal, width int) *GroupHeadingRenderer {
+func NewGroupHeadingRenderer(title string, failed, total, maxFailed, maxTotal, width int, indent string) *GroupHeadingRenderer {
 	return &GroupHeadingRenderer{
 		title:             title,
 		failedControls:    failed,
@@ -26,6 +27,7 @@ func NewGroupHeadingRenderer(title string, failed, total, maxFailed, maxTotal, w
 		maxFailedControls: maxFailed,
 		maxTotalControls:  maxTotal,
 		width:             width,
+		indent:            indent,
 	}
 }
 
@@ -47,8 +49,10 @@ func (r GroupHeadingRenderer) Render() string {
 	graphString := NewCounterGraphRenderer(r.failedControls, r.totalControls, r.maxTotalControls).Render()
 	graphWidth := helpers.PrintableLength(graphString)
 
+	nestingString := r.indent
+	nestingWidth := helpers.PrintableLength(nestingString)
 	// figure out how much width we have available for the title
-	availableWidth := r.width - counterWidth - graphWidth - severityWidth
+	availableWidth := r.width - counterWidth - graphWidth - severityWidth - nestingWidth
 
 	// now availableWidth is all we have - if it is not enough we need to truncate the title
 	titleString := NewGroupTitleRenderer(r.title, availableWidth).Render()
@@ -62,6 +66,6 @@ func (r GroupHeadingRenderer) Render() string {
 	}
 
 	// now put these all together
-	str := fmt.Sprintf("%s%s%s%s%s", titleString, spacerString, severityString, counterString, graphString)
+	str := fmt.Sprintf("%s%s%s%s%s%s", nestingString, titleString, spacerString, severityString, counterString, graphString)
 	return str
 }

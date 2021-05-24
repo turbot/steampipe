@@ -22,7 +22,7 @@ type ResultGroup struct {
 	ControlRuns []*ControlRun     `json:"controls"`
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ControlTreeItem `json:"-"`
-	parent    *ResultGroup
+	Parent    *ResultGroup
 }
 
 type GroupSummary struct {
@@ -56,7 +56,7 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ControlTree
 		Description: treeItem.GetDescription(),
 		Tags:        treeItem.GetTags(),
 		GroupItem:   treeItem,
-		parent:      parent,
+		Parent:      parent,
 		Groups:      []*ResultGroup{},
 	}
 	// add child groups for children which are benchmarks
@@ -97,8 +97,8 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 	r.Summary.Status.Info += summary.Info
 	r.Summary.Status.Ok += summary.Ok
 	r.Summary.Status.Error += summary.Error
-	if r.parent != nil {
-		r.parent.updateSummary(summary)
+	if r.Parent != nil {
+		r.Parent.updateSummary(summary)
 	}
 }
 
@@ -143,4 +143,16 @@ func (r *ResultGroup) GetControlRunByName(name string) *ControlRun {
 		}
 	}
 	return nil
+}
+
+func (r *ResultGroup) Path() []string {
+	path := []string{r.GroupId}
+	if r.Parent != nil {
+		path = append(r.Parent.Path(), path...)
+	}
+	return path
+}
+
+func (r *ResultGroup) GetNestingLevel() int {
+	return len(r.Path()) - 2
 }

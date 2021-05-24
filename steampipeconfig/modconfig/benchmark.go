@@ -166,6 +166,7 @@ func (b *Benchmark) GetChildren() []ControlTreeItem {
 }
 
 // Path implements ControlTreeItem
+// TODO is this needed - if so it needs to be an array
 func (b *Benchmark) Path() []string {
 	path := []string{b.FullName}
 	if b.parents != nil {

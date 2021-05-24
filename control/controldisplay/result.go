@@ -24,9 +24,10 @@ type ResultRenderer struct {
 	width int
 	// if true, only display failed results
 	errorsOnly bool
+	indent     string
 }
 
-func NewResultRenderer(status, reason string, dimensions []execute.Dimension, colorGenerator *execute.DimensionColorGenerator, width int) *ResultRenderer {
+func NewResultRenderer(status, reason string, dimensions []execute.Dimension, colorGenerator *execute.DimensionColorGenerator, width int, indent string) *ResultRenderer {
 	return &ResultRenderer{
 		status:         status,
 		reason:         reason,
@@ -34,6 +35,7 @@ func NewResultRenderer(status, reason string, dimensions []execute.Dimension, co
 		colorGenerator: colorGenerator,
 		width:          width,
 		errorsOnly:     viper.GetString(constants.ArgOutput) == "brief",
+		indent:         indent,
 	}
 }
 
@@ -50,8 +52,11 @@ func (r ResultRenderer) Render() string {
 	statusString := status.Render()
 	statusWidth := helpers.PrintableLength(statusString)
 
+	nestingString := r.indent
+	nestingWidth := helpers.PrintableLength(nestingString)
+
 	// figure out how much width we have available for the  dimensions, allowing the minimum for the reason
-	availableWidth := r.width - statusWidth
+	availableWidth := r.width - statusWidth - nestingWidth
 
 	// for now give this all to reason
 	availableDimensionWidth := availableWidth - minReasonWidth
@@ -75,6 +80,6 @@ func (r ResultRenderer) Render() string {
 	}
 
 	// now put these all together
-	str := fmt.Sprintf("%s%s%s%s", statusString, reasonString, spacerString, dimensionsString)
+	str := fmt.Sprintf("%s%s%s%s%s", nestingString, statusString, reasonString, spacerString, dimensionsString)
 	return str
 }
