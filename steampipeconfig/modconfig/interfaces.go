@@ -17,15 +17,18 @@ type MappableResource interface {
 	SetMetadata(*ResourceMetadata)
 }
 
-// ModTreeItem must be implemented by elements of the control hierarchy
-// i.e. Control and Benchmark
+// ModTreeItem must be implemented by elements of the mod resource hierarchy
+// i.e. Control, Benchmark, Report, Panel
 type ModTreeItem interface {
 	AddParent(ModTreeItem) error
 	AddChild(child ModTreeItem) error
+	GetChildren() []ModTreeItem
 	Name() string
 	GetTitle() string
 	GetDescription() string
 	GetTags() map[string]string
+	// GetPaths returns an array resource paths
+	GetPaths() []NodePath
 	GetChildren() []ModTreeItem
 	// Path returns an array of parents in the control hierarchy
 	Path() []string

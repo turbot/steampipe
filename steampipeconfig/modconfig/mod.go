@@ -7,13 +7,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/go-kit/helpers"
-
-	"github.com/zclconf/go-cty/cty"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // mod name used if a default mod is created for a workspace which does not define one explicitly
@@ -46,6 +43,8 @@ type Mod struct {
 	Queries    map[string]*Query
 	Controls   map[string]*Control
 	Benchmarks map[string]*Benchmark
+	Reports    map[string]*Report
+	Panels     map[string]*Panel
 	// list of benchmark names, sorted alphabetically
 	benchmarksOrdered []string
 
@@ -71,10 +70,6 @@ func (m *Mod) ParseRequiredPluginVersions() error {
 	return nil
 }
 
-func (m *Mod) CtyValue() (cty.Value, error) {
-	return getCtyValue(m)
-}
-
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	return &Mod{
 		ShortName:  shortName,
@@ -82,6 +77,8 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Queries:    make(map[string]*Query),
 		Controls:   make(map[string]*Control),
 		Benchmarks: make(map[string]*Benchmark),
+		Reports:    make(map[string]*Report),
+		Panels:     make(map[string]*Panel),
 		ModPath:    modPath,
 		DeclRange:  defRange,
 	}
@@ -156,21 +153,15 @@ Benchmarks:
 		types.SafeString(m.Title),
 		types.SafeString(m.Description),
 		versionString,
-		//modDependStr,
-		//pluginDependStr,
 		strings.Join(queryStrings, "\n"),
 		strings.Join(controlStrings, "\n"),
 		strings.Join(benchmarkStrings, "\n"),
 	)
 }
 
-// IsControlTreeItem implements ModTreeItem
-// (mod is always top of the tree)
-func (m *Mod) IsControlTreeItem() {}
-
-// BuildControlTree builds the control tree structure by setting the parent property for each control and benchmar
+// BuildResourceTree builds the control tree structure by setting the parent property for each control and benchmar
 // NOTE: this also builds the sorted benchmark list
-func (m *Mod) BuildControlTree() error {
+func (m *Mod) BuildResourceTree() error {
 	// build sorted list of benchmarks
 	m.benchmarksOrdered = make([]string, len(m.Benchmarks))
 	idx := 0
@@ -180,7 +171,7 @@ func (m *Mod) BuildControlTree() error {
 		idx++
 
 		// add benchmark into control tree
-		if err := m.addItemIntoControlTree(benchmark); err != nil {
+		if err := m.addItemIntoResourceTree(benchmark); err != nil {
 			return err
 		}
 	}
@@ -188,24 +179,37 @@ func (m *Mod) BuildControlTree() error {
 	sort.Strings(m.benchmarksOrdered)
 
 	for _, control := range m.Controls {
-		if err := m.addItemIntoControlTree(control); err != nil {
+		if err := m.addItemIntoResourceTree(control); err != nil {
+			return err
+		}
+	}
+	for _, panel := range m.Panels {
+		if err := m.addItemIntoResourceTree(panel); err != nil {
+			return err
+		}
+	}
+	for _, report := range m.Reports {
+		if err := m.addItemIntoResourceTree(report); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (m *Mod) addItemIntoControlTree(item ModTreeItem) error {
+func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
 	parents := m.getParents(item)
 
 	// so we have a result - add into tree
 	for _, p := range parents {
-		// check this item does not exist in the parent path
-		if helpers.StringSliceContains(p.Path(), item.Name()) {
-			return fmt.Errorf("cyclical dependency adding '%s' into control tree - parent '%s'", item.Name(), p.Name())
-		}
+		// TODO validity checking
+		//for _, parentPath := range p.GetPaths() {
+		//	// check this item does not exist in the parent path
+		//	if helpers.StringSliceContains(parentPath, item.Name()) {
+		//		return fmt.Errorf("cyclical dependency adding '%s' into control tree - parent '%s'", item.Name(), p.Name())
+		//	}
 		item.AddParent(p)
 		p.AddChild(item)
+		//}
 	}
 
 	return nil
@@ -219,6 +223,7 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		// check for dupes
 		if _, ok := m.Queries[name]; ok {
 			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			break
 		}
 		m.Queries[name] = r
 
@@ -227,21 +232,40 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		// check for dupes
 		if _, ok := m.Controls[name]; ok {
 			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			break
 		}
 		m.Controls[name] = r
+
 	case *Benchmark:
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Benchmarks[name]; ok {
 			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			break
 		} else {
-
 			m.Benchmarks[name] = r
 		}
+	case *Panel:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.Panels[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			break
+		} else {
+			m.Panels[name] = r
+		}
 
+	case *Report:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.Reports[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			break
+		} else {
+			m.Reports[name] = r
+		}
 	}
 	return diags
-
 }
 
 func duplicateResourceDiagnostics(item HclResource, block *hcl.Block) *hcl.Diagnostic {
@@ -300,31 +324,31 @@ func (m *Mod) GetChildren() []ModTreeItem {
 	return m.children
 }
 
-// Path implements ModTreeItem
-func (m *Mod) Path() []string {
-	return []string{m.Name()}
+// GetPaths implements ModTreeItem
+func (m *Mod) GetPaths() []NodePath {
+	return []NodePath{{m.Name()}}
 }
 
 // AddPseudoResource adds the pseudo resource to the mod,
 // as long as there is no existing resource of same name
 //
 // A pseudo resource ids a resource created by loading a content file (e.g. a SQL file),
-// rather than parsing a HCL defintion
+// rather than parsing a HCL definition
 func (m *Mod) AddPseudoResource(resource MappableResource) {
 	switch r := resource.(type) {
 	case *Query:
 		// check there is not already a query with the same name
-		if _, ok := m.Queries[r.ShortName]; !ok {
-			m.Queries[r.ShortName] = r
+		if _, ok := m.Queries[r.Name()]; !ok {
+			m.Queries[r.Name()] = r
 			// set the mod on the query metadata
 			r.GetMetadata().SetMod(m)
 		}
 	}
 }
 
-// GetMetadata implements HclResource
-func (m *Mod) GetMetadata() *ResourceMetadata {
-	return m.metadata
+// CtyValue implements HclResource
+func (m *Mod) CtyValue() (cty.Value, error) {
+	return getCtyValue(m)
 }
 
 // OnDecoded implements HclResource
@@ -333,6 +357,11 @@ func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 // AddReference implements HclResource
 func (m *Mod) AddReference(reference string) {
 	m.References = append(m.References, reference)
+}
+
+// GetMetadata implements ResourceWithMetadata
+func (m *Mod) GetMetadata() *ResourceMetadata {
+	return m.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata
@@ -355,6 +384,22 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 			}
 		}
 	}
+	for _, report := range m.Reports {
+		// check all child names of this benchmark for a matching name
+		for _, child := range report.GetChildren() {
+			if child.Name() == item.Name() {
+				parents = append(parents, report)
+			}
+		}
+	}
+	for _, panel := range m.Panels {
+		// check all child names of this benchmark for a matching name
+		for _, child := range panel.GetChildren() {
+			if child.Name() == item.Name() {
+				parents = append(parents, panel)
+			}
+		}
+	}
 	if len(parents) == 0 {
 		// fall back on mod
 		parents = []ModTreeItem{m}
@@ -370,19 +415,3 @@ func (m *Mod) GetChildControls() []*Control {
 	}
 	return res
 }
-
-//// BuildControTree :: populate the parent fields for all mods and benchmarslks
-//func (m *Mod) BuildControTree() {
-//
-//	for name, benchmark := range m.Benchmarks{
-//
-//		for _, childName := range benchmark.ChildNameStrings{
-//			parsedName, _ := ParseResourceName(childName)
-//			if parsedName.ItemType ==BlockTypeControl{
-//				child := m.Controls[childName]
-//				child.A
-//			}
-//			child :=
-//		}
-//	},
-//}

@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/query/queryexecute"
 	"github.com/turbot/steampipe/utils"
 
+	"github.com/turbot/steampipe/query/queryexecute"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )

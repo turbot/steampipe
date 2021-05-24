@@ -12,6 +12,8 @@ const (
 	BlockTypeQuery                  = "query"
 	BlockTypeControl                = "control"
 	BlockTypeBenchmark              = "benchmark"
+	BlockTypeReport                 = "report"
+	BlockTypePanel                  = "panel"
 	BlockTypeLocals                 = "locals"
 )
 

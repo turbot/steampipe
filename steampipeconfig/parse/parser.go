@@ -79,6 +79,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 			name := modconfig.BuildModResourceName(modconfig.ModBlockType(block.Type), block.Labels[0])
 			hclResources[name] = true
 		}
+		// TODO PANEL
 	}
 
 	// 2) create mod if needed
@@ -117,15 +118,16 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to create run context", diags)
 	}
-	// execute loop once to get dependencies
+
+	// now attempt to decode the mod
 	diags = decode(runCtx)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
 	}
 
+	// if eval is not complete, there must be dependencies - run again in dependency order
+	// (no need to do anything else here, this should be handled when building the eval context)
 	if !runCtx.EvalComplete() {
-		// if eval is not complete, there must be dependencies - run again in dependency order
-		// (no need to do anything else here, this should be handled when building the eval context)
 		diags = decode(runCtx)
 		if diags.HasErrors() {
 			return nil, plugin.DiagsToError("Failed to parse all mod hcl files", diags)
@@ -139,7 +141,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 
 	// now tell mod to build tree of controls.
 	// NOTE: this also builds the sorted benchmark list
-	if err := mod.BuildControlTree(); err != nil {
+	if err := mod.BuildResourceTree(); err != nil {
 		return nil, err
 	}
 

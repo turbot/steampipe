@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/zclconf/go-cty/cty"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // Control is a struct representing the Control resource
@@ -40,10 +41,6 @@ func NewControl(block *hcl.Block) *Control {
 		DeclRange: block.DefRange,
 	}
 	return control
-}
-
-func (c *Control) CtyValue() (cty.Value, error) {
-	return getCtyValue(c)
 }
 
 func (c *Control) String() string {
@@ -122,19 +119,20 @@ func (c *Control) QualifiedName() string {
 	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName)
 }
 
-// Path implements ModTreeItem
-func (c *Control) Path() []string {
-	// TODO update for multiple paths
-	path := []string{c.FullName}
-	if c.parents != nil {
-		path = append(c.parents[0].Path(), path...)
+// GetPaths implements ModTreeItem
+func (c *Control) GetPaths() []NodePath {
+	var res []NodePath
+	for _, parent := range c.parents {
+		for _, parentPath := range parent.GetPaths() {
+			res = append(res, append(parentPath, c.Name()))
+		}
 	}
-	return path
+	return res
 }
 
-// GetMetadata implements HclResource
-func (c *Control) GetMetadata() *ResourceMetadata {
-	return c.metadata
+// CtyValue implements HclResource
+func (c *Control) CtyValue() (cty.Value, error) {
+	return getCtyValue(c)
 }
 
 // OnDecoded implements HclResource
@@ -143,6 +141,11 @@ func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 // AddReference implements HclResource
 func (c *Control) AddReference(reference string) {
 	c.References = append(c.References, reference)
+}
+
+// GetMetadata implements ResourceWithMetadata
+func (c *Control) GetMetadata() *ResourceMetadata {
+	return c.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata

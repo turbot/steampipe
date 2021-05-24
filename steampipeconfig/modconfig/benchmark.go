@@ -134,7 +134,7 @@ func (b *Benchmark) AddChild(child ModTreeItem) error {
 		return fmt.Errorf("mod cannot be added as a child")
 	}
 
-	// now find which positing this child is in the array
+	// now find which position this child is in the array
 	for i, name := range b.ChildNameStrings {
 		if name == child.Name() {
 			b.children[i] = child
@@ -179,14 +179,15 @@ func (b *Benchmark) GetChildren() []ModTreeItem {
 	return b.children
 }
 
-// Path implements ModTreeItem
-// TODO is this needed - if so it needs to be an array
-func (b *Benchmark) Path() []string {
-	path := []string{b.FullName}
-	if b.parents != nil {
-		path = append(b.parents[0].Path(), path...)
+// GetPaths implements ModTreeItem
+func (b *Benchmark) GetPaths() []NodePath {
+	var res []NodePath
+	for _, parent := range b.parents {
+		for _, parentPath := range parent.GetPaths() {
+			res = append(res, append(parentPath, b.Name()))
+		}
 	}
-	return path
+	return res
 }
 
 // GetMetadata implements ResourceWithMetadata

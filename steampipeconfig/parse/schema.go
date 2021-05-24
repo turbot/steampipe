@@ -61,7 +61,53 @@ var ModFileSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
+			Type:       string(modconfig.BlockTypeReport),
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       string(modconfig.BlockTypePanel),
+			LabelNames: []string{"name"},
+		},
+		{
 			Type: string(modconfig.BlockTypeLocals),
+		},
+	},
+}
+
+var PanelSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "title"},
+		{Name: "text"},
+		{Name: "type"},
+		{Name: "width"},
+		{Name: "height"},
+		{Name: "source"},
+		{Name: "sql"},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "panel",
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       "report",
+			LabelNames: []string{"type"},
+		},
+	},
+}
+
+var ReportSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "title"},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "panel",
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       "report",
+			LabelNames: []string{"type"},
 		},
 	},
 }
