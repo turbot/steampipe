@@ -236,11 +236,3 @@ func (r *ControlRun) Finished() bool {
 	status := r.GetRunStatus()
 	return status == ControlRunComplete || status == ControlRunError
 }
-
-func (r *ControlRun) Path() []string {
-	path := []string{r.Control.Name()}
-	if r.group != nil {
-		path = append(r.group.Path(), path...)
-	}
-	return path
-}

@@ -144,15 +144,3 @@ func (r *ResultGroup) GetControlRunByName(name string) *ControlRun {
 	}
 	return nil
 }
-
-func (r *ResultGroup) Path() []string {
-	path := []string{r.GroupId}
-	if r.Parent != nil {
-		path = append(r.Parent.Path(), path...)
-	}
-	return path
-}
-
-func (r *ResultGroup) GetNestingLevel() int {
-	return len(r.Path()) - 2
-}

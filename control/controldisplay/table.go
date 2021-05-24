@@ -27,6 +27,5 @@ func NewTableRenderer(resultTree *execute.ExecutionTree, width int) *TableRender
 func (r TableRenderer) Render() string {
 	// leading newline
 	fmt.Println()
-
 	return NewGroupRenderer(r.resultTree.Root, nil, r.maxFailedControls, r.maxTotalControls, r.resultTree, r.width).Render()
 }

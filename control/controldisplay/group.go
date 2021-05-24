@@ -37,7 +37,7 @@ func (r GroupRenderer) isLastChild(group *execute.ResultGroup) bool {
 		return true
 	}
 	siblings := group.Parent.GroupItem.GetChildren()
-	return group.GroupItem.Name() == siblings[len(siblings)-2].Name()
+	return group.GroupItem.Name() == siblings[len(siblings)-1].Name()
 }
 
 func (r GroupRenderer) parentIndent() string {
@@ -94,7 +94,6 @@ func (r GroupRenderer) Render() string {
 		r.width,
 		r.indent())
 
-	CRASHES HERE IF NO DUPE _ WEIRD
 	// render this group header
 	tableStrings := append([]string{},
 		groupHeadingRenderer.Render(),
