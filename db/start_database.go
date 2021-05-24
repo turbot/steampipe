@@ -51,6 +51,8 @@ const (
 	InvokerInstaller = "installer"
 	// InvokerPlugin :: Invoker - when invoked by the `pluginmanager`
 	InvokerPlugin = "plugin"
+	// InvokerReport :: Invoker - when invoked by `report`
+	InvokerReport = "report"
 )
 
 // IsValid :: validator for StartListenType known values

@@ -14,8 +14,11 @@ require (
 	github.com/deislabs/oras v0.8.1
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.7.0
+	github.com/fsnotify/fsnotify v1.4.7
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gertd/go-pluralize v0.1.7
+	github.com/gin-contrib/static v0.0.1
+	github.com/gin-gonic/gin v1.7.2
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/hashicorp/go-cleanhttp v0.5.1
@@ -57,6 +60,7 @@ require (
 	google.golang.org/grpc v1.33.1
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
+	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
 	gotest.tools/v3 v3.0.3 // indirect
 )
 

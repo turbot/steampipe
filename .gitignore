@@ -20,3 +20,6 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# Report server
+/reportserver/static/
