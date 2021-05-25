@@ -21,14 +21,14 @@ const (
 
 // PanelRun is a struct representing a  a panel run - will contain one or more result items (i.e. for one or more resources)
 type PanelRun struct {
-	Error error `json:"-"`
-
-	// the result
-	Text   string          `json:"text,omitempty"`
+	Name   string          `json:"name"`
 	Title  string          `json:"title,omitempty"`
+	Text   string          `json:"text,omitempty"`
 	Width  int             `json:"width,omitempty"`
-	Source string          `json:"source"`
+	Source string          `json:"source,omitempty"`
 	Data   [][]interface{} `json:"data,omitempty"`
+
+	Error error `json:"-"`
 
 	// children
 	PanelRuns  []*PanelRun  `json:"panels,omitempty"`
@@ -38,12 +38,42 @@ type PanelRun struct {
 	executionTree *ReportExecutionTree
 }
 
-func NewPanelRun(panel *modconfig.Panel, executionTree *controlexecute.ExecutionTree) *PanelRun {
-	return &PanelRun{
-		Title: typehelpers.SafeString(panel.Title),
-		// TODO OTHER STUFF
-		runStatus: PanelRunReady,
+func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *PanelRun {
+	r := &PanelRun{
+		Name:          panel.Name(),
+		Title:         typehelpers.SafeString(panel.Title),
+		executionTree: executionTree,
+		// set to complete, optimistically
+		// if any children have SQL we will set this to ReportRunReady instead
+		runStatus: ReportRunComplete,
 	}
+
+	// if we have sql, set status to ready
+	if panel.SQL != nil {
+		r.runStatus = ReportRunReady
+	}
+	// create report runs for all children
+	for _, childReport := range panel.Reports {
+		// todo register dependencies
+		childRun := NewReportRun(childReport, executionTree)
+		// if our child has not completed, we have not completed
+		if childRun.runStatus == ReportRunReady {
+			// add a dependency on this child
+			executionTree.AddDependency(r.Name, childRun.Name)
+			r.runStatus = ReportRunReady
+		}
+		r.ReportRuns = append(r.ReportRuns, childRun)
+	}
+	for _, childPanel := range panel.Panels {
+		// todo register dependencies
+		childRun := NewPanelRun(childPanel, executionTree)
+		// if our child has not completed, we have not completed
+		if childRun.runStatus == ReportRunReady {
+			r.runStatus = ReportRunReady
+		}
+		r.PanelRuns = append(r.PanelRuns, childRun)
+	}
+	return r
 }
 
 func (r *PanelRun) Start(ctx context.Context, client *db.Client) {
@@ -52,5 +82,5 @@ func (r *PanelRun) Start(ctx context.Context, client *db.Client) {
 
 func (r *PanelRun) SetError(err error) {
 	r.Error = err
-	r.runStatus = PanelRunError
+	r.runStatus = ReportRunError
 }

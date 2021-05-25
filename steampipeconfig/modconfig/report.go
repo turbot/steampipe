@@ -11,8 +11,8 @@ import (
 // Report is a struct representing the Report resource
 type Report struct {
 	FullName  string `cty:"name"`
-	ShortName string `json:"short_name"`
-	Title     string `json:"title"`
+	ShortName string
+	Title     *string
 
 	Reports []*Report //`hcl:"report,block"`
 	Panels  []*Panel  //`hcl:"panel,block"`

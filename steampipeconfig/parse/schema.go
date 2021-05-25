@@ -87,3 +87,19 @@ var PanelSchema = &hcl.BodySchema{
 		},
 	},
 }
+
+var ReportSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "title"},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "panel",
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       "report",
+			LabelNames: []string{"type"},
+		},
+	},
+}

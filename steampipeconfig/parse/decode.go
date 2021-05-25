@@ -181,10 +181,12 @@ func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decod
 func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Report, *decodeResult) {
 	res := &decodeResult{}
 
-	content, diags := block.Body.Content(PanelSchema)
+	content, diags := block.Body.Content(ReportSchema)
 	res.handleDecodeDiags(diags)
 
 	report := modconfig.NewReport(block)
+	diags = decodeProperty(content, "title", &report.Title, runCtx)
+	res.handleDecodeDiags(diags)
 
 	diags = decodeReportBlocks(report, content, runCtx)
 	res.handleDecodeDiags(diags)

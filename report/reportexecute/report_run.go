@@ -3,7 +3,8 @@ package reportexecute
 import (
 	"context"
 
-	"github.com/turbot/steampipe/control/controlexecute"
+	typehelpers "github.com/turbot/go-kit/types"
+
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
@@ -19,20 +20,39 @@ const (
 
 // ReportRun is a struct representing a  a report run - will contain one or more result items (i.e. for one or more resources)
 type ReportRun struct {
-	Error error `json:"-"`
+	Name  string `json:"name"`
+	Title string `json:"title,omitempty"`
 
 	// children
-	PanelRuns  []*PanelRun  `json:"panels"`
-	ReportRuns []*ReportRun `json:"reports"`
+	PanelRuns  []*PanelRun  `json:"panels,omitempty"`
+	ReportRuns []*ReportRun `json:"reports,omitempty"`
+
+	Error error `json:"-"`
 
 	runStatus     ReportRunStatus      `json:"-"`
 	executionTree *ReportExecutionTree `json:"-"`
 }
 
-func NewReportRun(report *modconfig.Report, executionTree *controlexecute.ExecutionTree) *ReportRun {
-	return &ReportRun{
-		// TODO OTHER STUFF
-		runStatus: ReportRunReady,
+func NewReportRun(report *modconfig.Report, executionTree *ReportExecutionTree) *ReportRun {
+	r := &ReportRun{
+		Name:          report.Name(),
+		Title:         typehelpers.SafeString(report.Title),
+		executionTree: executionTree,
+
+		// set to complete, optimistically
+		// if any children have SQL we will set this to ReportRunReady instead
+		runStatus: ReportRunComplete,
+	}
+
+	// create report runs for all children
+	for _, childReport := range report.Reports {
+		// todo register dependencies
+		childRun := NewReportRun(childReport, executionTree)
+		// if our child has not completed, we have not completed
+		if childRun.runStatus == ReportRunReady {
+			r.runStatus = ReportRunReady
+		}
+		r.ReportRuns = append(r.ReportRuns, childRun)
 	}
 }
 

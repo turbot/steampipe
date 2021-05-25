@@ -59,11 +59,11 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
 
-	// TODO remove this
-	workspace.ReportMap = make(map[string]*modconfig.Report)
-	workspace.ReportMap["simple"] = &modconfig.Report{ShortName: "simple", Title: "Simple"}
-	workspace.ReportMap["two-panel"] = &modconfig.Report{ShortName: "two-panel", Title: "Two Panel"}
-	workspace.ReportMap["bar-chart"] = &modconfig.Report{ShortName: "bar-chart", Title: "Bar Chart"}
+	//// TODO remove this
+	//workspace.ReportMap = make(map[string]*modconfig.Report)
+	//workspace.ReportMap["simple"] = &modconfig.Report{ShortName: "simple", Title: "Simple"}
+	//workspace.ReportMap["two-panel"] = &modconfig.Report{ShortName: "two-panel", Title: "Two Panel"}
+	//workspace.ReportMap["bar-chart"] = &modconfig.Report{ShortName: "bar-chart", Title: "Bar Chart"}
 
 	webSocket := melody.New()
 	server := reportserver2.Server{webSocket, workspace}
