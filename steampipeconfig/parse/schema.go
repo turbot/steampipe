@@ -71,6 +71,7 @@ var ModFileSchema = &hcl.BodySchema{
 var PanelSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "title"},
+		{Name: "text"},
 		{Name: "width"},
 		{Name: "source"},
 		{Name: "sql"},
