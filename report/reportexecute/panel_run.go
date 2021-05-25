@@ -22,18 +22,17 @@ const (
 // PanelRun is a struct representing a  a panel run - will contain one or more result items (i.e. for one or more resources)
 type PanelRun struct {
 	Error error `json:"-"`
-	// the parent panel
-	Panel *modconfig.Panel `json:"-"`
 
 	// the result
-	Title  string          `json:"title"`
-	Width  int             `json:"width"`
+	Text   string          `json:"text,omitempty"`
+	Title  string          `json:"title,omitempty"`
+	Width  int             `json:"width,omitempty"`
 	Source string          `json:"source"`
-	Data   [][]interface{} `json:"data"`
+	Data   [][]interface{} `json:"data,omitempty"`
 
 	// children
-	PanelRuns  []*PanelRun
-	ReportRuns []*ReportRun
+	PanelRuns  []*PanelRun  `json:"panels,omitempty"`
+	ReportRuns []*ReportRun `json:"reports,omitempty"`
 
 	runStatus     PanelRunStatus
 	executionTree *ReportExecutionTree
@@ -41,7 +40,6 @@ type PanelRun struct {
 
 func NewPanelRun(panel *modconfig.Panel, executionTree *controlexecute.ExecutionTree) *PanelRun {
 	return &PanelRun{
-		Panel: panel,
 		Title: typehelpers.SafeString(panel.Title),
 		// TODO OTHER STUFF
 		runStatus: PanelRunReady,

@@ -1,6 +1,7 @@
 package reportevents
 
 import (
+	"fmt"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -8,7 +9,7 @@ import (
 	"time"
 )
 
-type executorFunction func(ReportEvent)
+type ExecutorFunction func(ReportEvent)
 
 var p1 = modconfig.Panel{
 	Source: utils.ToStringPointer("steampipe.panel.markdown"),
@@ -19,15 +20,10 @@ var eventMap = map[string][]ReportEvent{
 	"simple": {
 		&ExecutionStarted{
 			Report: &reportexecute.ReportRun{
-				Report: &modconfig.Report{
-					Panels: []*modconfig.Panel{
-						&p1,
-					},
-				},
 				PanelRuns: []*reportexecute.PanelRun{
 					{
-						Panel:  &p1,
 						Source: typehelpers.SafeString(p1.Source),
+						Text:   typehelpers.SafeString(p1.Text),
 					},
 				},
 			},
@@ -35,11 +31,12 @@ var eventMap = map[string][]ReportEvent{
 	},
 }
 
-func GenerateReportEvents(report string, executorFunction executorFunction) {
-	events := eventMap[report]
+func GenerateReportEvents(report *modconfig.Report, executorFunction ExecutorFunction) {
+	fmt.Println("Emitting events", report.ShortName)
+	events := eventMap[report.ShortName]
 	for _, event := range events {
+		// Wait 1 second
+		time.Sleep(1 * time.Second)
 		executorFunction(event)
-		// Wait 2 seconds
-		time.Sleep(2 * time.Second)
 	}
 }

@@ -20,20 +20,17 @@ const (
 // ReportRun is a struct representing a  a report run - will contain one or more result items (i.e. for one or more resources)
 type ReportRun struct {
 	Error error `json:"-"`
-	// the parent report
-	Report *modconfig.Report `json:"-"`
 
 	// children
-	PanelRuns  []*PanelRun
-	ReportRuns []*ReportRun
+	PanelRuns  []*PanelRun  `json:"panels"`
+	ReportRuns []*ReportRun `json:"reports"`
 
-	runStatus     ReportRunStatus
-	executionTree *ReportExecutionTree
+	runStatus     ReportRunStatus      `json:"-"`
+	executionTree *ReportExecutionTree `json:"-"`
 }
 
 func NewReportRun(report *modconfig.Report, executionTree *controlexecute.ExecutionTree) *ReportRun {
 	return &ReportRun{
-		Report: report,
 		// TODO OTHER STUFF
 		runStatus: ReportRunReady,
 	}

@@ -2,6 +2,8 @@ package reportserver
 
 import (
 	"context"
+	"github.com/turbot/steampipe/report/reportevents"
+	"github.com/turbot/steampipe/workspace"
 	"log"
 	"net/http"
 	"os"
@@ -14,10 +16,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func StartAPI(webSocket *melody.Melody) {
+func StartAPI(webSocket *melody.Melody, workspace *workspace.Workspace, executorFunction reportevents.ExecutorFunction) {
 	router := gin.Default()
 
-	go Init(webSocket)
+	go Init(webSocket, workspace, executorFunction)
 
 	router.Use(static.Serve("/", static.LocalFile("./static", true)))
 
