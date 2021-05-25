@@ -32,9 +32,7 @@ func NewReportExecutionTree(ctx context.Context, reportName string, workspace *w
 		client:          client,
 		dependencyGraph: topsort.NewGraph(),
 	}
-
-	// build tree of result groups, starting with a synthetic 'root' node
-	//reportExecutionTree.Root = NewRootResultGroup(reportExecutionTree, rootItems...)
+	reportExecutionTree.Root = NewReportRun(report, reportExecutionTree)
 
 	return reportExecutionTree, nil
 }

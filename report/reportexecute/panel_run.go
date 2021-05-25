@@ -8,15 +8,6 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-type PanelRunStatus uint32
-
-const (
-	PanelRunReady PanelRunStatus = 1 << iota
-	PanelRunStarted
-	PanelRunComplete
-	PanelRunError
-)
-
 // PanelRun is a struct representing a  a panel run - will contain one or more result items (i.e. for one or more resources)
 type PanelRun struct {
 	Name   string          `json:"name"`
@@ -33,7 +24,7 @@ type PanelRun struct {
 	PanelRuns  []*PanelRun  `json:"panels,omitempty"`
 	ReportRuns []*ReportRun `json:"reports,omitempty"`
 
-	runStatus     PanelRunStatus
+	runStatus     ReportRunStatus
 	executionTree *ReportExecutionTree
 }
 
@@ -60,7 +51,6 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 	}
 	// create report runs for all children
 	for _, childReport := range panel.Reports {
-		// todo register dependencies
 		childRun := NewReportRun(childReport, executionTree)
 		// if our child has not completed, we have not completed
 		if childRun.runStatus == ReportRunReady {
@@ -71,7 +61,6 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 		r.ReportRuns = append(r.ReportRuns, childRun)
 	}
 	for _, childPanel := range panel.Panels {
-		// todo register dependencies
 		childRun := NewPanelRun(childPanel, executionTree)
 		// if our child has not completed, we have not completed
 		if childRun.runStatus == PanelRunReady {

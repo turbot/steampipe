@@ -61,6 +61,8 @@ func (r *ReportRun) Start(ctx context.Context, client *db.Client) {
 
 }
 
+func (r *ReportRun) Start(ctx context.Context, client *db.Client) {}
+
 func (r *ReportRun) SetError(err error) {
 	r.Error = err
 	r.runStatus = ReportRunError

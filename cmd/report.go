@@ -6,18 +6,19 @@ import (
 	"gopkg.in/olahol/melody.v1"
 
 	"github.com/turbot/steampipe/executionlayer"
-	reportserver2 "github.com/turbot/steampipe/report/reportserver"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/executionlayer"
+	"github.com/turbot/steampipe/report/reportserver"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
+	"gopkg.in/olahol/melody.v1"
 )
 
 // ReportCmd :: represents the report command
@@ -31,15 +32,12 @@ func ReportCmd() *cobra.Command {
 		Long:             `Run a report...TODO better description!`,
 	}
 
-	cmdconfig.
-		OnCmd(cmd)
+	cmdconfig.OnCmd(cmd)
 	return cmd
 }
 
 func runReportCmd(cmd *cobra.Command, args []string) {
 	logging.LogTime("runReportCmd start")
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
-
 	defer func() {
 		logging.LogTime("runReportCmd end")
 		if r := recover(); r != nil {
@@ -47,6 +45,7 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 	_, cancel := context.WithCancel(context.Background())
 	startCancelHandler(cancel)
 
@@ -61,10 +60,8 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	defer workspace.Close()
 
 	webSocket := melody.New()
-	server := reportserver2.Server{webSocket, workspace}
-
-	// TODO add this in when Kai exposes it, mock for now
-	// workspace.registerUpdateHandler(server.HandleWorkspaceUpdate)
+	var server = reportserver.Server{WebSocket: webSocket, Workspace: workspace} // TODO add this in when Kai exposes it, mock for now
+	workspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
 	//go reportevents.GenerateReportEvents(mockReport, server.HandleWorkspaceUpdate)
 
 	ctx, cancel := context.WithCancel(context.Background())
