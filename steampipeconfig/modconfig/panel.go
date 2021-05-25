@@ -18,8 +18,8 @@ type Panel struct {
 	Source  *string `hcl:"source"`
 	SQL     *string `hcl:"source"`
 	Text    *string `hcl:"text"`
-	Reports *[]Report
-	Panels  *[]Panel
+	Reports []*Report
+	Panels  []*Panel
 
 	DeclRange hcl.Range
 }
@@ -56,4 +56,14 @@ func (p *Panel) OnDecoded(*hcl.Block) {}
 // AddReference implements HclResource
 func (p *Panel) AddReference(reference string) {
 	// TODO
+}
+
+// AddChild implements ReportTreeItem
+func (p *Panel) AddChild(child ReportTreeItem) {
+	switch c := child.(type) {
+	case *Panel:
+		p.Panels = append(p.Panels, c)
+	case *Report:
+		p.Reports = append(p.Reports, c)
+	}
 }

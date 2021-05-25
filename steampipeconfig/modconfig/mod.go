@@ -7,13 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zclconf/go-cty/cty"
-
-	"github.com/turbot/go-kit/helpers"
-
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // mod name used if a default mod is created for a workspace which does not define one explicitly
@@ -46,6 +44,8 @@ type Mod struct {
 	Queries    map[string]*Query
 	Controls   map[string]*Control
 	Benchmarks map[string]*Benchmark
+	Reports    map[string]*Report
+	Panels     map[string]*Panel
 	// list of benchmark names, sorted alphabetically
 	benchmarksOrdered []string
 
@@ -82,6 +82,8 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Queries:    make(map[string]*Query),
 		Controls:   make(map[string]*Control),
 		Benchmarks: make(map[string]*Benchmark),
+		Reports:    make(map[string]*Report),
+		Panels:     make(map[string]*Panel),
 		ModPath:    modPath,
 		DeclRange:  defRange,
 	}
@@ -228,6 +230,7 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 			break
 		}
 		m.Controls[name] = r
+
 	case *Benchmark:
 		name := r.Name()
 		// check for dupes
@@ -237,10 +240,27 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		} else {
 			m.Benchmarks[name] = r
 		}
+	case *Panel:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.Panels[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			break
+		} else {
+			m.Panels[name] = r
+		}
 
+	case *Report:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.Reports[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			break
+		} else {
+			m.Reports[name] = r
+		}
 	}
 	return diags
-
 }
 
 func duplicateResourceDiagnostics(item HclResource, block *hcl.Block) *hcl.Diagnostic {

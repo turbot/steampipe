@@ -53,3 +53,13 @@ func (r *Report) OnDecoded(*hcl.Block) {}
 func (r *Report) AddReference(reference string) {
 	// TODO
 }
+
+// AddChild implements ReportTreeItem
+func (r *Report) AddChild(child ReportTreeItem) {
+	switch c := child.(type) {
+	case *Panel:
+		r.Panels = append(r.Panels, c)
+	case *Report:
+		r.Reports = append(r.Reports, c)
+	}
+}

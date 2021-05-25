@@ -45,3 +45,8 @@ type ResourceWithMetadata interface {
 	GetMetadata() *ResourceMetadata
 	SetMetadata(metadata *ResourceMetadata)
 }
+
+// ReportTreeItem must be implemented by members of the report tree hierarchy
+type ReportTreeItem interface {
+	AddChild(ReportTreeItem)
+}
