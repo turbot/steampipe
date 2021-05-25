@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/turbot/steampipe/db"
+
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/olahol/melody.v1"
@@ -15,10 +17,10 @@ import (
 	"github.com/turbot/steampipe/workspace"
 )
 
-func StartAPI(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace) {
+func StartAPI(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, client *db.Client) {
 	router := gin.Default()
 
-	go Init(ctx, webSocket, workspace)
+	go Init(ctx, webSocket, workspace, client)
 
 	router.Use(static.Serve("/", static.LocalFile("./static", true)))
 

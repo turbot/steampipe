@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/executionlayer"
 
 	"github.com/turbot/go-kit/types"
@@ -44,7 +46,7 @@ func availableReportsPayload(reports map[string]*modconfig.Report) []byte {
 	return jsonString
 }
 
-func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace) {
+func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, client *db.Client) {
 	// Return list of reports on connect
 	webSocket.HandleConnect(func(session *melody.Session) {
 		fmt.Println("Client connected")
@@ -69,7 +71,7 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 			case "select_report":
 				fmt.Println(fmt.Sprintf("Got event: %v", request.Payload.Report))
 				//for reportName := range workspace.ReportMap {
-				executionlayer.ExecuteReport(ctx, request.Payload.Report.FullName, workspace)
+				executionlayer.ExecuteReport(ctx, request.Payload.Report.FullName, workspace, client)
 				//break
 				//}
 				//report := workspace.Mod.Reports[request.Payload.Report.FullName]

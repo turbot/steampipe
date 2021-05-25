@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/turbot/steampipe/db"
+
 	"github.com/turbot/steampipe/report/reporteventpublisher"
 	"github.com/turbot/steampipe/report/reportexecute"
 
@@ -19,6 +21,7 @@ type Server struct {
 	context   context.Context
 	webSocket *melody.Melody
 	workspace *workspace.Workspace
+	client    *db.Client
 }
 
 type ExecutionPayload struct {
@@ -26,11 +29,13 @@ type ExecutionPayload struct {
 	Report *reportexecute.ReportRun `json:"report"`
 }
 
-func NewServer(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace) Server {
+func NewServer(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, client *db.Client) Server {
+	// TODO would be nice to create and own client here - and ensure it is closed when server is shutdown
 	return Server{
-		ctx,
-		webSocket,
-		workspace,
+		context:   ctx,
+		webSocket: webSocket,
+		workspace: workspace,
+		client:    client,
 	}
 }
 
@@ -54,7 +59,7 @@ func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte
 
 // Starts the API server
 func (s *Server) Start() {
-	StartAPI(s.context, s.webSocket, s.workspace)
+	StartAPI(s.context, s.webSocket, s.workspace, s.client)
 }
 
 func (s *Server) HandleWorkspaceUpdate(event reporteventpublisher.ReportEvent) {

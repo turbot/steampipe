@@ -55,8 +55,13 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
 
+	// get a db client
+	client, err := db.NewClient(true)
+	utils.FailOnError(err)
+	defer client.Close()
+
 	webSocket := melody.New()
-	var server = reportserver.NewServer(ctx, webSocket, workspace)
+	var server = reportserver.NewServer(ctx, webSocket, workspace, client)
 	workspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
 
 	server.Start()
