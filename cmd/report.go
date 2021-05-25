@@ -41,7 +41,8 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
-	_, cancel := context.WithCancel(context.Background())
+
+	ctx, cancel := context.WithCancel(context.Background())
 	startCancelHandler(cancel)
 
 	// start db if necessary
@@ -54,13 +55,9 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	startCancelHandler(cancel)
-
 	webSocket := melody.New()
 	var server = reportserver.NewServer(ctx, webSocket, workspace)
 	workspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
 
-	Execute()
 	server.Start()
 }
