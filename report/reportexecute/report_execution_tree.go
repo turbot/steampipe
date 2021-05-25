@@ -6,8 +6,9 @@ import (
 	"log"
 
 	"github.com/stevenle/topsort"
-
 	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 )
 
@@ -18,6 +19,8 @@ type ReportExecutionTree struct {
 
 	workspace *workspace.Workspace
 	client    *db.Client
+	panels    map[string]*PanelRun
+	reports   map[string]*ReportRun
 }
 
 // NewReportExecutionTree creates a result group from a ControlTreeItem
@@ -31,6 +34,8 @@ func NewReportExecutionTree(reportName string, workspace *workspace.Workspace, c
 		workspace:       workspace,
 		client:          client,
 		dependencyGraph: topsort.NewGraph(),
+		panels:          make(map[string]*PanelRun),
+		reports:         make(map[string]*ReportRun),
 	}
 	reportExecutionTree.Root = NewReportRun(report, reportExecutionTree)
 
@@ -51,6 +56,12 @@ func (e *ReportExecutionTree) Execute(ctx context.Context) error {
 		return err
 	}
 	fmt.Println(executionOrder)
+	for _, name := range executionOrder {
+		err = e.ExecuteNode(ctx, name)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -70,4 +81,68 @@ func (e *ReportExecutionTree) AddDependency(resource, dependency string) {
 
 func (e *ReportExecutionTree) runStatus() ReportRunStatus {
 	return e.Root.runStatus
+}
+
+func (e *ReportExecutionTree) ExecuteNode(ctx context.Context, name string) error {
+	parsedName, err := modconfig.ParseResourceName(name)
+	if err != nil {
+		return err
+	}
+
+	if parsedName.ItemType == modconfig.BlockTypeReport {
+		report, ok := e.reports[name]
+		if !ok {
+			return fmt.Errorf("report '%s' not found in execution tree", name)
+		}
+		// panel should now be complete, i.e. all it's children should be complete
+		if !report.ChildrenComplete() {
+			return fmt.Errorf("panel '%s' should be complete, but it has inomplete children", report.Name)
+		}
+		report.runStatus = ReportRunComplete
+		return nil
+	}
+
+	if parsedName.ItemType == modconfig.BlockTypePanel {
+		panel, ok := e.panels[name]
+		if !ok {
+			return fmt.Errorf("panel '%s' not found in execution tree", name)
+		}
+		// if panel has sql execute it
+		if panel.SQL != "" {
+			data, err := e.executePanelSQL(ctx, panel.SQL)
+			if err != nil {
+				return err
+			}
+			panel.Data = data
+		}
+		// panel should now be complete, i.e. all it's children should be complete
+		if !panel.ChildrenComplete() {
+			return fmt.Errorf("panel '%s' should be complete, but it has inomplete children", panel.Name)
+		}
+		panel.runStatus = ReportRunComplete
+		return nil
+	}
+	return fmt.Errorf("invalid block type '%s' passed to ReportExecutionTree.ExecuteNode", name)
+}
+
+func (e *ReportExecutionTree) executePanelSQL(ctx context.Context, query string) ([][]interface{}, error) {
+	queryResult, err := e.client.ExecuteSync(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	var res = make([][]interface{}, len(queryResult.Rows)+1)
+	var columns = make([]interface{}, len(queryResult.ColTypes))
+	for i, c := range queryResult.ColTypes {
+		columns[i] = c.Name()
+	}
+	res[0] = columns
+	for i, row := range queryResult.Rows {
+		rowData := make([]interface{}, len(queryResult.ColTypes))
+		for j, columnVal := range row.(*queryresult.RowResult).Data {
+			rowData[j] = columnVal
+		}
+		res[i+1] = rowData
+	}
+
+	return res, nil
 }

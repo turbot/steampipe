@@ -1,10 +1,7 @@
 package reportexecute
 
 import (
-	"context"
-
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -64,18 +61,32 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 		childRun := NewPanelRun(childPanel, executionTree)
 		// if our child has not completed, we have not completed
 		if childRun.runStatus == ReportRunReady {
+			// add dependency on this child
+			r.executionTree.AddDependency(r.Name, childRun.Name)
 			r.runStatus = ReportRunReady
 		}
 		r.PanelRuns = append(r.PanelRuns, childRun)
 	}
+	// add r into execution tree
+	executionTree.panels[r.Name] = r
 	return r
-}
-
-func (r *PanelRun) Start(ctx context.Context, client *db.Client) {
-
 }
 
 func (r *PanelRun) SetError(err error) {
 	r.Error = err
 	r.runStatus = ReportRunError
+}
+
+func (r *PanelRun) ChildrenComplete() bool {
+	for _, panel := range r.PanelRuns {
+		if panel.runStatus != ReportRunComplete {
+			return false
+		}
+	}
+	for _, report := range r.ReportRuns {
+		if report.runStatus != ReportRunComplete {
+			return false
+		}
+	}
+	return true
 }
