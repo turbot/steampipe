@@ -3,14 +3,19 @@ package reportserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 	"gopkg.in/olahol/melody.v1"
 )
 
+type ClientRequestReportPayload struct {
+	FullName string `json:"full_name"`
+}
+
 type ClientRequestPayload struct {
-	Report *modconfig.Report `json:"report"`
+	Report ClientRequestReportPayload `json:"report"`
 }
 
 type ClientRequest struct {
@@ -19,14 +24,18 @@ type ClientRequest struct {
 }
 
 type AvailableReportsPayload struct {
-	Action  string                       `json:"action"`
-	Reports map[string]*modconfig.Report `json:"reports"`
+	Action  string            `json:"action"`
+	Reports map[string]string `json:"reports"`
 }
 
 func availableReportsPayload(reports map[string]*modconfig.Report) []byte {
+	reportsPayload := make(map[string]string)
+	for _, report := range reports {
+		reportsPayload[report.FullName] = types.SafeString(report.Title)
+	}
 	payload := AvailableReportsPayload{
 		Action:  "available_reports",
-		Reports: reports,
+		Reports: reportsPayload,
 	}
 	jsonString, _ := json.Marshal(payload)
 	return jsonString
@@ -52,11 +61,12 @@ func Init(webSocket *melody.Melody, workspace *workspace.Workspace, executorFunc
 		} else {
 			switch request.Action {
 			case "available_reports":
-				reports := workspace.ReportMap
+				reports := workspace.Mod.Reports
 				webSocket.Broadcast(availableReportsPayload(reports))
 			case "select_report":
-				fmt.Println(fmt.Sprintf("Got event: %v", *request.Payload.Report))
-				go reportevents.GenerateReportEvents(request.Payload.Report, executorFunction)
+				fmt.Println(fmt.Sprintf("Got event: %v", request.Payload.Report))
+				report := workspace.Mod.Reports[request.Payload.Report.FullName]
+				go reportevents.GenerateReportEvents(report, executorFunction)
 			}
 		}
 	})

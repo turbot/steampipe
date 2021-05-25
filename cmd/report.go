@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"gopkg.in/olahol/melody.v1"
 
 	reportserver2 "github.com/turbot/steampipe/report/reportserver"
@@ -58,12 +57,6 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
-
-	//// TODO remove this
-	//workspace.ReportMap = make(map[string]*modconfig.Report)
-	//workspace.ReportMap["simple"] = &modconfig.Report{ShortName: "simple", Title: "Simple"}
-	//workspace.ReportMap["two-panel"] = &modconfig.Report{ShortName: "two-panel", Title: "Two Panel"}
-	//workspace.ReportMap["bar-chart"] = &modconfig.Report{ShortName: "bar-chart", Title: "Bar Chart"}
 
 	webSocket := melody.New()
 	server := reportserver2.Server{webSocket, workspace}

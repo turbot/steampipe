@@ -54,6 +54,7 @@ func NewReportRun(report *modconfig.Report, executionTree *ReportExecutionTree) 
 		}
 		r.ReportRuns = append(r.ReportRuns, childRun)
 	}
+	return r
 }
 
 func (r *ReportRun) Start(ctx context.Context, client *db.Client) {

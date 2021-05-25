@@ -3,8 +3,6 @@ package reportexecute
 import (
 	"context"
 
-	"github.com/turbot/steampipe/control/controlexecute"
-
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -45,12 +43,12 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 		executionTree: executionTree,
 		// set to complete, optimistically
 		// if any children have SQL we will set this to ReportRunReady instead
-		runStatus: ReportRunComplete,
+		runStatus: PanelRunComplete,
 	}
 
 	// if we have sql, set status to ready
 	if panel.SQL != nil {
-		r.runStatus = ReportRunReady
+		r.runStatus = PanelRunReady
 	}
 	// create report runs for all children
 	for _, childReport := range panel.Reports {
@@ -60,7 +58,7 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 		if childRun.runStatus == ReportRunReady {
 			// add a dependency on this child
 			executionTree.AddDependency(r.Name, childRun.Name)
-			r.runStatus = ReportRunReady
+			r.runStatus = PanelRunReady
 		}
 		r.ReportRuns = append(r.ReportRuns, childRun)
 	}
@@ -68,8 +66,8 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 		// todo register dependencies
 		childRun := NewPanelRun(childPanel, executionTree)
 		// if our child has not completed, we have not completed
-		if childRun.runStatus == ReportRunReady {
-			r.runStatus = ReportRunReady
+		if childRun.runStatus == PanelRunReady {
+			r.runStatus = PanelRunReady
 		}
 		r.PanelRuns = append(r.PanelRuns, childRun)
 	}
@@ -82,5 +80,5 @@ func (r *PanelRun) Start(ctx context.Context, client *db.Client) {
 
 func (r *PanelRun) SetError(err error) {
 	r.Error = err
-	r.runStatus = ReportRunError
+	r.runStatus = PanelRunError
 }

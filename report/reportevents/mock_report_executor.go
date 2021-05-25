@@ -32,7 +32,7 @@ var p4 = modconfig.Panel{
 }
 
 var eventMap = map[string][]ReportEvent{
-	"simple": {
+	"report.simple": {
 		&ExecutionStarted{
 			Report: &reportexecute.ReportRun{
 				PanelRuns: []*reportexecute.PanelRun{
@@ -54,7 +54,7 @@ var eventMap = map[string][]ReportEvent{
 			},
 		},
 	},
-	"two-panel": {
+	"report.two_panel": {
 		&ExecutionStarted{
 			Report: &reportexecute.ReportRun{
 				PanelRuns: []*reportexecute.PanelRun{
@@ -88,7 +88,7 @@ var eventMap = map[string][]ReportEvent{
 			},
 		},
 	},
-	"bar-chart": {
+	"report.barchart": {
 		&ExecutionStarted{
 			Report: &reportexecute.ReportRun{
 				PanelRuns: []*reportexecute.PanelRun{
@@ -127,8 +127,8 @@ var eventMap = map[string][]ReportEvent{
 }
 
 func GenerateReportEvents(report *modconfig.Report, executorFunction ExecutorFunction) {
-	fmt.Println("Emitting events", report.ShortName)
-	events := eventMap[report.ShortName]
+	fmt.Println(fmt.Sprintf("Emitting events: %v", report))
+	events := eventMap[report.FullName]
 	for _, event := range events {
 		// Wait 1 second
 		time.Sleep(1 * time.Second)
