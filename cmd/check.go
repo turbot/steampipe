@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
-	"github.com/karrick/gows"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/execute"
 
@@ -145,10 +145,12 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 func validateOutputFormat() error {
 	outputFormat := viper.GetString(constants.ArgOutput)
-	if !helpers.StringSliceContains([]string{"text", "brief", "json", "none"}, outputFormat) {
-		return fmt.Errorf("invalid output format '%s' - must be one of json, text, brief, none", outputFormat)
+	// try to get a formatter for the desired output.
+	if _, err := controldisplay.GetFormatter(outputFormat); err != nil {
+		// could not get a formatter
+		return err
 	}
-	if outputFormat == "none" {
+	if outputFormat == controldisplay.OutputFormatNone {
 		// set progress to false
 		viper.Set(constants.ArgProgress, false)
 	}
@@ -171,56 +173,11 @@ func initialiseColorScheme() error {
 
 func DisplayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) (err error) {
 	outputFormat := viper.GetString(constants.ArgOutput)
+	formatter, _ := controldisplay.GetFormatter(outputFormat)
 
-	switch outputFormat {
-	case "text", "brief":
-		err = displayTextOutput(ctx, executionTree)
-	case "csv":
-		err = displayCsvOutput(ctx, executionTree)
-	case "json":
-		err = displayJsonOutput(ctx, executionTree)
-	case "none":
-		// set progress to false
-		viper.Set(constants.ArgProgress, false)
-		// no error, nothing else to do
-	default:
-		err = fmt.Errorf("invalid output format '%s' - must be one of json,csv,text,brief,none", outputFormat)
+	if formatted, err := formatter.Format(ctx, executionTree); err == nil {
+		io.Copy(os.Stdout, formatted)
 	}
 
 	return
-}
-
-func displayCsvOutput(context.Context, *execute.ExecutionTree) error {
-	return fmt.Errorf("CSV output not supported yet")
-}
-
-func displayJsonOutput(ctx context.Context, tree *execute.ExecutionTree) error {
-	bytes, err := json.MarshalIndent(tree.Root, "", "  ")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bytes))
-	return nil
-}
-
-func displayTextOutput(ctx context.Context, executionTree *execute.ExecutionTree) error {
-	maxCols := getMaxCols()
-
-	renderer := controldisplay.NewTableRenderer(executionTree, maxCols)
-
-	if ctx.Err() != nil {
-		utils.ShowError(ctx.Err())
-	}
-
-	fmt.Println(renderer.Render())
-	return nil
-}
-
-func getMaxCols() int {
-	maxCols, _, _ := gows.GetWinSize()
-	// limit to 200
-	if maxCols > 200 {
-		maxCols = 200
-	}
-	return maxCols
 }
