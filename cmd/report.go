@@ -61,7 +61,8 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 
 	// TODO remove this
 	workspace.ReportMap = make(map[string]*modconfig.Report)
-	workspace.ReportMap["simple"] = &modconfig.Report{ShortName: "simple"}
+	workspace.ReportMap["simple"] = &modconfig.Report{ShortName: "simple", Title: "Simple"}
+	workspace.ReportMap["two-panel"] = &modconfig.Report{ShortName: "two-panel", Title: "Two Panel"}
 
 	webSocket := melody.New()
 	server := reportserver2.Server{webSocket, workspace}

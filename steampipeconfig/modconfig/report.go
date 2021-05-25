@@ -12,6 +12,7 @@ import (
 type Report struct {
 	FullName  string `cty:"name"`
 	ShortName string `json:"short_name"`
+	Title     string `json:"title"`
 
 	Reports []*Report //`hcl:"report,block"`
 	Panels  []*Panel  //`hcl:"panel,block"`
