@@ -42,6 +42,7 @@ type ControlColorSchemaDefinition struct {
 	ReasonOK    string
 
 	Spacer   string
+	Indent   string
 	UseColor bool
 }
 
@@ -69,6 +70,7 @@ type ControlColorScheme struct {
 	ReasonInfo           colorFunc
 	ReasonOK             colorFunc
 	Spacer               colorFunc
+	Indent               colorFunc
 
 	ReasonColors map[string]colorFunc
 	StatusColors map[string]colorFunc
@@ -176,6 +178,7 @@ var ColorSchemes = map[string]*ControlColorSchemaDefinition{
 		ReasonInfo:           "bright-cyan",
 		ReasonOK:             "gray4",
 		Spacer:               "gray1",
+		Indent:               "gray1",
 		UseColor:             true,
 	},
 	"light": {
@@ -202,6 +205,7 @@ var ColorSchemes = map[string]*ControlColorSchemaDefinition{
 		ReasonInfo:           "bright-cyan",
 		ReasonOK:             "gray2",
 		Spacer:               "gray5",
+		Indent:               "gray5",
 		UseColor:             true,
 	},
 	"plain": {UseColor: false},
