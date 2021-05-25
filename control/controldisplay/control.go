@@ -36,6 +36,9 @@ func NewControlRenderer(run *execute.ControlRun, parent *GroupRenderer) *Control
 // are we the last child of our parent?
 // this affects the tree rendering
 func (r ControlRenderer) isLastChild(run *execute.ControlRun) bool {
+	if r.parent.group == nil || r.parent.group.GroupItem == nil {
+		return true
+	}
 	siblings := r.parent.group.GroupItem.GetChildren()
 	return run.Control.Name() == siblings[len(siblings)-1].Name()
 }
