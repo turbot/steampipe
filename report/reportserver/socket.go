@@ -3,8 +3,11 @@ package reportserver
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/report/reportevents"
+
+	"github.com/turbot/steampipe/report/reporteventpublisher"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 	"gopkg.in/olahol/melody.v1"
@@ -41,7 +44,7 @@ func availableReportsPayload(reports map[string]*modconfig.Report) []byte {
 	return jsonString
 }
 
-func Init(webSocket *melody.Melody, workspace *workspace.Workspace, executorFunction reportevents.ExecutorFunction) {
+func Init(webSocket *melody.Melody, workspace *workspace.Workspace, handler reporteventpublisher.ReportEventHandler) {
 	// Return list of reports on connect
 	webSocket.HandleConnect(func(session *melody.Session) {
 		fmt.Println("Client connected")

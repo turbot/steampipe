@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+
 	"gopkg.in/olahol/melody.v1"
 
+	"github.com/turbot/steampipe/executionlayer"
 	reportserver2 "github.com/turbot/steampipe/report/reportserver"
 
 	"github.com/spf13/cobra"
@@ -65,5 +67,13 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	// workspace.registerUpdateHandler(server.HandleWorkspaceUpdate)
 	//go reportevents.GenerateReportEvents(mockReport, server.HandleWorkspaceUpdate)
 
+	ctx, cancel := context.WithCancel(context.Background())
+	startCancelHandler(cancel)
+
+	for reportName := range workspace.ReportMap {
+		executionlayer.ExecuteReport(ctx, reportName, workspace, client)
+		break
+	}
+	Execute()
 	server.Start()
 }

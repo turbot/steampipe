@@ -134,17 +134,17 @@ func (c *Control) CtyValue() (cty.Value, error) {
 	return getCtyValue(c)
 }
 
-// GetMetadata implements HclResource
-func (c *Control) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
 // OnDecoded implements HclResource
 func (c *Control) OnDecoded(*hcl.Block) {}
 
 // AddReference implements HclResource
 func (c *Control) AddReference(reference string) {
 	c.References = append(c.References, reference)
+}
+
+// GetMetadata implements ResourceWithMetadata
+func (c *Control) GetMetadata() *ResourceMetadata {
+	return c.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata

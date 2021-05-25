@@ -2,13 +2,14 @@ package reportserver
 
 import (
 	"context"
-	"github.com/turbot/steampipe/report/reportevents"
-	"github.com/turbot/steampipe/workspace"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/turbot/steampipe/report/reporteventpublisher"
+	"github.com/turbot/steampipe/workspace"
 
 	"gopkg.in/olahol/melody.v1"
 
@@ -16,10 +17,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func StartAPI(webSocket *melody.Melody, workspace *workspace.Workspace, executorFunction reportevents.ExecutorFunction) {
+func StartAPI(webSocket *melody.Melody, workspace *workspace.Workspace, handler reporteventpublisher.ReportEventHandler) {
 	router := gin.Default()
 
-	go Init(webSocket, workspace, executorFunction)
+	go Init(webSocket, workspace, handler)
 
 	router.Use(static.Serve("/", static.LocalFile("./static", true)))
 

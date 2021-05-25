@@ -39,11 +39,22 @@ func NewReportExecutionTree(ctx context.Context, reportName string, workspace *w
 	return reportExecutionTree, nil
 }
 
-func (e *ReportExecutionTree) Execute(ctx context.Context, client *db.Client) int {
+func (e *ReportExecutionTree) Execute(ctx context.Context) error {
 	log.Println("[TRACE]", "begin ReportExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ReportExecutionTree.Execute")
 
-	return 0
+	if e.runStatus() == ReportRunComplete {
+		log.Println("[TRACE]", "execution tree already complete")
+		return nil
+	}
+	//get the dependency order
+	executionOrder, err := e.dependencyGraph.TopSort(e.Root.Name)
+	if err != nil {
+		return err
+	}
+	fmt.Println(executionOrder)
+
+	return nil
 }
 
 // AddDependency adds a dependency relationship to our dependency graph
@@ -57,4 +68,8 @@ func (e *ReportExecutionTree) AddDependency(resource, dependency string) {
 	}
 	// add root dependency
 	e.dependencyGraph.AddEdge(resource, dependency)
+}
+
+func (e *ReportExecutionTree) runStatus() ReportRunStatus {
+	return e.Root.runStatus
 }

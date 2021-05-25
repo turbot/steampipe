@@ -24,6 +24,7 @@ type PanelRun struct {
 	Text   string          `json:"text,omitempty"`
 	Width  int             `json:"width,omitempty"`
 	Source string          `json:"source,omitempty"`
+	SQL    string          `json:"sql,omitempty"`
 	Data   [][]interface{} `json:"data,omitempty"`
 
 	Error error `json:"-"`
@@ -40,10 +41,17 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 	r := &PanelRun{
 		Name:          panel.Name(),
 		Title:         typehelpers.SafeString(panel.Title),
+		Text:          typehelpers.SafeString(panel.Text),
+		Source:        typehelpers.SafeString(panel.Source),
+		SQL:           typehelpers.SafeString(panel.SQL),
 		executionTree: executionTree,
+
 		// set to complete, optimistically
 		// if any children have SQL we will set this to ReportRunReady instead
 		runStatus: PanelRunComplete,
+	}
+	if panel.Width != nil {
+		r.Width = *panel.Width
 	}
 
 	// if we have sql, set status to ready

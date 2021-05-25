@@ -3,7 +3,10 @@ package reportserver
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/turbot/steampipe/report/reporteventpublisher"
 	"github.com/turbot/steampipe/report/reportexecute"
+
 	"github.com/turbot/steampipe/workspace"
 
 	"gopkg.in/olahol/melody.v1"
@@ -44,7 +47,7 @@ func (s *Server) Start() {
 	StartAPI(s.WebSocket, s.Workspace, s.HandleWorkspaceUpdate)
 }
 
-func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
+func (s *Server) HandleWorkspaceUpdate(event reporteventpublisher.ReportEvent) {
 	// TODO ...
 	fmt.Println("Got update event", event)
 	switch e := event.(type) {

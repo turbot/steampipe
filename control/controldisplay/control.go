@@ -7,7 +7,6 @@ import (
 
 	"github.com/spf13/viper"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/execute"
 )

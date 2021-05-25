@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/turbot/steampipe/report/reporteventpublisher"
+
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
@@ -30,6 +32,7 @@ type Workspace struct {
 	BenchmarkMap map[string]*modconfig.Benchmark
 	ModMap       map[string]*modconfig.Mod
 	ReportMap    map[string]*modconfig.Report
+	PanelMap     map[string]*modconfig.Panel
 
 	watcher    *utils.FileWatcher
 	loadLock   sync.Mutex
@@ -37,15 +40,20 @@ type Workspace struct {
 	// should we load/watch files recursively
 	listFlag     filehelpers.ListFlag
 	watcherError error
+	// event publisher
+	reportEventPublisher *reporteventpublisher.ReportEventPublisher
 }
 
-// Load creates a Workspace and loads the workdspace mod
+// Load creates a Workspace and loads the workspace mod
 func Load(workspacePath string) (*Workspace, error) {
 	utils.LogTime("workspace.Load start")
 	defer utils.LogTime("workspace.Load end")
 
 	// create shell workspace
-	workspace := &Workspace{Path: workspacePath}
+	workspace := &Workspace{
+		Path:                 workspacePath,
+		reportEventPublisher: &reporteventpublisher.ReportEventPublisher{},
+	}
 
 	// determine whether to load files recursively or just from the top level folder
 	workspace.setListFlag()
@@ -299,6 +307,8 @@ func (w *Workspace) loadMod() error {
 	w.QueryMap = w.buildQueryMap(modMap)
 	w.ControlMap = w.buildControlMap(modMap)
 	w.BenchmarkMap = w.buildBenchmarkMap(modMap)
+	w.ReportMap = w.buildReportMap(modMap)
+	w.PanelMap = w.buildPanelMap(modMap)
 	w.ModMap = modMap
 
 	return nil
@@ -370,6 +380,44 @@ func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) map[string]*modco
 	for _, mod := range modMap {
 		for _, c := range mod.Benchmarks {
 			res[c.QualifiedName()] = c
+		}
+	}
+	return res
+}
+
+func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfig.Report {
+	//  build a list of long and short names for these queries
+	var res = make(map[string]*modconfig.Report)
+
+	// for LOCAL reports, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
+	for _, r := range w.Mod.Reports {
+		res[r.Name()] = r
+		res[r.QualifiedName()] = r
+	}
+
+	// for mod dependencies, add queries keyed by long name only
+	for _, mod := range modMap {
+		for _, r := range mod.Reports {
+			res[r.QualifiedName()] = r
+		}
+	}
+	return res
+}
+
+func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig.Panel {
+	//  build a list of long and short names for these queries
+	var res = make(map[string]*modconfig.Panel)
+
+	// for LOCAL panels, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
+	for _, r := range w.Mod.Panels {
+		res[r.Name()] = r
+		res[r.QualifiedName()] = r
+	}
+
+	// for mod dependencies, add queries keyed by long name only
+	for _, mod := range modMap {
+		for _, p := range mod.Panels {
+			res[p.QualifiedName()] = p
 		}
 	}
 	return res

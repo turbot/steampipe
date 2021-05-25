@@ -22,6 +22,7 @@ type Panel struct {
 	Panels  []*Panel
 
 	DeclRange hcl.Range
+	metadata  *ResourceMetadata
 }
 
 func NewPanel(block *hcl.Block) *Panel {
@@ -44,10 +45,9 @@ func (p *Panel) Name() string {
 	return p.FullName
 }
 
-// GetMetadata implements HclResource
-func (p *Panel) GetMetadata() *ResourceMetadata {
-	// TODO
-	return nil
+// QualifiedName returns the name in format: '<modName>.panel.<shortName>'
+func (p *Panel) QualifiedName() string {
+	return fmt.Sprintf("%s.%s", p.metadata.ModShortName, p.FullName)
 }
 
 // OnDecoded implements HclResource
@@ -66,4 +66,14 @@ func (p *Panel) AddChild(child ReportTreeItem) {
 	case *Report:
 		p.Reports = append(p.Reports, c)
 	}
+}
+
+// GetMetadata implements ResourceWithMetadata
+func (p *Panel) GetMetadata() *ResourceMetadata {
+	return p.metadata
+}
+
+// SetMetadata implements ResourceWithMetadata
+func (p *Panel) SetMetadata(metadata *ResourceMetadata) {
+	p.metadata = metadata
 }

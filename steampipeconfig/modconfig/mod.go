@@ -346,17 +346,17 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 	return getCtyValue(m)
 }
 
-// GetMetadata implements HclResource
-func (m *Mod) GetMetadata() *ResourceMetadata {
-	return m.metadata
-}
-
 // OnDecoded implements HclResource
 func (m *Mod) OnDecoded(*hcl.Block) {}
 
 // AddReference implements HclResource
 func (m *Mod) AddReference(reference string) {
 	m.References = append(m.References, reference)
+}
+
+// GetMetadata implements ResourceWithMetadata
+func (m *Mod) GetMetadata() *ResourceMetadata {
+	return m.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata
@@ -394,19 +394,3 @@ func (m *Mod) GetChildControls() []*Control {
 	}
 	return res
 }
-
-//// BuildControTree :: populate the parent fields for all mods and benchmarslks
-//func (m *Mod) BuildControTree() {
-//
-//	for name, benchmark := range m.Benchmarks{
-//
-//		for _, childName := range benchmark.ChildNameStrings{
-//			parsedName, _ := ParseResourceName(childName)
-//			if parsedName.ItemType ==BlockTypeControl{
-//				child := m.Controls[childName]
-//				child.A
-//			}
-//			child :=
-//		}
-//	},
-//}

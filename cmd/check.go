@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/karrick/gows"
-	"github.com/turbot/steampipe/control/controldisplay"
-	"github.com/turbot/steampipe/control/controlexecute"
 	"io"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/turbot/steampipe/control/controldisplay"
+	"github.com/turbot/steampipe/control/controlexecute"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
