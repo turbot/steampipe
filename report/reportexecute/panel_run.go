@@ -8,15 +8,6 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-type PanelRunStatus uint32
-
-const (
-	PanelRunReady PanelRunStatus = 1 << iota
-	PanelRunStarted
-	PanelRunComplete
-	PanelRunError
-)
-
 // PanelRun is a struct representing a  a panel run - will contain one or more result items (i.e. for one or more resources)
 type PanelRun struct {
 	Name   string          `json:"name"`
@@ -33,7 +24,7 @@ type PanelRun struct {
 	PanelRuns  []*PanelRun  `json:"panels,omitempty"`
 	ReportRuns []*ReportRun `json:"reports,omitempty"`
 
-	runStatus     PanelRunStatus
+	runStatus     ReportRunStatus
 	executionTree *ReportExecutionTree
 }
 
@@ -48,7 +39,7 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 
 		// set to complete, optimistically
 		// if any children have SQL we will set this to ReportRunReady instead
-		runStatus: PanelRunComplete,
+		runStatus: ReportRunComplete,
 	}
 	if panel.Width != nil {
 		r.Width = *panel.Width
@@ -56,7 +47,7 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 
 	// if we have sql, set status to ready
 	if panel.SQL != nil {
-		r.runStatus = PanelRunReady
+		r.runStatus = ReportRunReady
 	}
 	// create report runs for all children
 	for _, childReport := range panel.Reports {
@@ -65,15 +56,15 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 		if childRun.runStatus == ReportRunReady {
 			// add a dependency on this child
 			executionTree.AddDependency(r.Name, childRun.Name)
-			r.runStatus = PanelRunReady
+			r.runStatus = ReportRunReady
 		}
 		r.ReportRuns = append(r.ReportRuns, childRun)
 	}
 	for _, childPanel := range panel.Panels {
 		childRun := NewPanelRun(childPanel, executionTree)
 		// if our child has not completed, we have not completed
-		if childRun.runStatus == PanelRunReady {
-			r.runStatus = PanelRunReady
+		if childRun.runStatus == ReportRunReady {
+			r.runStatus = ReportRunReady
 		}
 		r.PanelRuns = append(r.PanelRuns, childRun)
 	}
@@ -86,5 +77,5 @@ func (r *PanelRun) Start(ctx context.Context, client *db.Client) {
 
 func (r *PanelRun) SetError(err error) {
 	r.Error = err
-	r.runStatus = PanelRunError
+	r.runStatus = ReportRunError
 }

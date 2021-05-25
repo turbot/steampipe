@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/report/reportevents"
 
 	"github.com/turbot/steampipe/report/reporteventpublisher"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -68,8 +67,8 @@ func Init(webSocket *melody.Melody, workspace *workspace.Workspace, handler repo
 				webSocket.Broadcast(availableReportsPayload(reports))
 			case "select_report":
 				fmt.Println(fmt.Sprintf("Got event: %v", request.Payload.Report))
-				report := workspace.Mod.Reports[request.Payload.Report.FullName]
-				go reportevents.GenerateReportEvents(report, executorFunction)
+				//report := workspace.Mod.Reports[request.Payload.Report.FullName]
+				//go reportevents.GenerateReportEvents(report, executorFunction)
 			}
 		}
 	})

@@ -3,10 +3,6 @@ package cmd
 import (
 	"context"
 
-	"gopkg.in/olahol/melody.v1"
-
-	"github.com/turbot/steampipe/executionlayer"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -66,6 +62,10 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	startCancelHandler(cancel)
+
+	// get a db client
+	client, err := db.NewClient(true)
+	utils.FailOnError(err)
 
 	for reportName := range workspace.ReportMap {
 		executionlayer.ExecuteReport(ctx, reportName, workspace, client)
