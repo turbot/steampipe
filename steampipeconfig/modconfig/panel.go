@@ -13,13 +13,13 @@ type Panel struct {
 	FullName  string `cty:"name"`
 	ShortName string
 
-	Title  *string `hcl:"title"`
-	Width  *int    `hcl:"width"`
-	Source *string `hcl:"source"`
-	SQL    *string `hcl:"source"`
-	Text   *string `hcl:"text"`
-	//Reports *[]Report //`hcl:"panel,block"`
-	Panels *[]Panel // `hcl:"panel,block"`
+	Title   *string `hcl:"title"`
+	Width   *int    `hcl:"width"`
+	Source  *string `hcl:"source"`
+	SQL     *string `hcl:"source"`
+	Text    *string `hcl:"text"`
+	Reports *[]Report
+	Panels  *[]Panel
 
 	DeclRange hcl.Range
 }

@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/go-kit/helpers"
-
 	"github.com/zclconf/go-cty/cty"
+
+	"github.com/turbot/go-kit/helpers"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
@@ -145,8 +145,6 @@ func (m *Mod) String() string {
 	return fmt.Sprintf(`Name: %s
 Title: %s
 Description: %s %s
-//Mod Dependencies: %s
-//Plugin Dependencies: %s
 Queries: 
 %s
 Controls: 
@@ -157,8 +155,6 @@ Control Groups:
 		types.SafeString(m.Title),
 		types.SafeString(m.Description),
 		versionString,
-		//modDependStr,
-		//pluginDependStr,
 		strings.Join(queryStrings, "\n"),
 		strings.Join(controlStrings, "\n"),
 		strings.Join(benchmarkStrings, "\n"),
@@ -220,6 +216,7 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		// check for dupes
 		if _, ok := m.Queries[name]; ok {
 			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			break
 		}
 		m.Queries[name] = r
 
@@ -228,6 +225,7 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		// check for dupes
 		if _, ok := m.Controls[name]; ok {
 			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			break
 		}
 		m.Controls[name] = r
 	case *Benchmark:
@@ -235,8 +233,8 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		// check for dupes
 		if _, ok := m.Benchmarks[name]; ok {
 			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			break
 		} else {
-
 			m.Benchmarks[name] = r
 		}
 
@@ -315,12 +313,17 @@ func (m *Mod) AddPseudoResource(resource MappableResource) {
 	switch r := resource.(type) {
 	case *Query:
 		// check there is not already a query with the same name
-		if _, ok := m.Queries[r.ShortName]; !ok {
-			m.Queries[r.ShortName] = r
+		if _, ok := m.Queries[r.Name()]; !ok {
+			m.Queries[r.Name()] = r
 			// set the mod on the query metadata
 			r.GetMetadata().SetMod(m)
 		}
 	}
+}
+
+// CtyValue implements HclResource
+func (m *Mod) CtyValue() (cty.Value, error) {
+	return getCtyValue(m)
 }
 
 // GetMetadata implements HclResource

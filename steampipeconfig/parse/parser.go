@@ -79,6 +79,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 			name := modconfig.BuildModResourceName(modconfig.ModBlockType(block.Type), block.Labels[0])
 			hclResources[name] = true
 		}
+		// TODO PANEL
 	}
 
 	// 2) create mod if needed

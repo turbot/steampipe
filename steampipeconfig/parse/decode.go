@@ -1,6 +1,8 @@
 package parse
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -55,17 +57,27 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 				diags = append(diags, moreDiags...)
 			}
 		case modconfig.BlockTypePanel:
+			// special case decode logic for locals
+			panel, moreDiags := decodePanel(block, runCtx)
+			fmt.Println(panel)
+			// todo use decoderesult
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
+		case modconfig.BlockTypeReport:
+			// special case decode logic for locals
+			report, moreDiags := decodeReport(block, runCtx)
+			fmt.Println(report)
+			// todo use decoderesult
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
 		default:
 			// all other blocks are treated the same:
-			// decode the resource
 			resource, res := decodeResource(block, runCtx)
-
-			// handle the result
-			// - if successful, add resource to mod and variables maps
-			// - if there are dependencies, add them to run context
 			moreDiags = handleDecodeResult(resource, res, block, runCtx)
-
 		}
+
 	}
 	return diags
 }
@@ -139,6 +151,88 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 	return resource, res
 }
 
+func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	content, diags := block.Body.Content(PanelSchema)
+	if diags.HasErrors() {
+		return nil, diags
+	}
+	panel := &modconfig.Panel{}
+
+	moreDiags := decodeProperty(content, "title", &panel.Title, runCtx)
+	if moreDiags.HasErrors() {
+		diags = append(diags, moreDiags...)
+	}
+	moreDiags = decodeProperty(content, "width", &panel.Width, runCtx)
+	if moreDiags.HasErrors() {
+		diags = append(diags, moreDiags...)
+	}
+	moreDiags = decodeProperty(content, "source", &panel.Source, runCtx)
+	if moreDiags.HasErrors() {
+		diags = append(diags, moreDiags...)
+	}
+	moreDiags = decodeProperty(content, "text", &panel.Text, runCtx)
+	if moreDiags.HasErrors() {
+		diags = append(diags, moreDiags...)
+	}
+	moreDiags = decodeProperty(content, "sql", &panel.SQL, runCtx)
+	if moreDiags.HasErrors() {
+		diags = append(diags, moreDiags...)
+	}
+
+	for _, b := range content.Blocks {
+		switch b.Type {
+		case modconfig.BlockTypePanel:
+			p, moreDiags := decodePanel(b, runCtx)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
+			panel.Panels = append(panel.Panels, p)
+		case modconfig.BlockTypeReport:
+			r, moreDiags := decodeReport(b, runCtx)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
+			panel.Reports = append(panel.Reports, r)
+		}
+	}
+	return panel, diags
+}
+func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Report, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	content, diags := block.Body.Content(PanelSchema)
+	if diags.HasErrors() {
+		return nil, diags
+	}
+	report := &modconfig.Report{}
+
+	for _, b := range content.Blocks {
+		switch b.Type {
+		case modconfig.BlockTypePanel:
+			p, moreDiags := decodePanel(b, runCtx)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
+			report.Panels = append(report.Panels, p)
+		case modconfig.BlockTypeReport:
+			r, moreDiags := decodeReport(b, runCtx)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
+			report.Reports = append(report.Reports, r)
+		}
+	}
+	return report, diags
+}
+
+func decodeProperty(content *hcl.BodyContent, property string, dest interface{}, runCtx *RunContext) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	if title, ok := content.Attributes[property]; ok {
+		diags = gohcl.DecodeExpression(title.Expr, runCtx.EvalCtx, dest)
+	}
+	return diags
+}
+
 // if the diags contains dependency errors, add dependencies to the result
 // otherwise add diags to the result
 func (res *decodeResult) handleDecodeDiags(diags hcl.Diagnostics) {
@@ -157,7 +251,7 @@ func (res *decodeResult) handleDecodeDiags(diags hcl.Diagnostics) {
 // handleDecodeResult
 // if decode was successful:
 // - generate and set resource metadata
-// - add resource to RunContext (which adds it to the mod(
+// - add resource to RunContext (which adds it to the mod)
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	if res.Success() {

@@ -53,13 +53,3 @@ func (r *Report) OnDecoded(*hcl.Block) {}
 func (r *Report) AddReference(reference string) {
 	// TODO
 }
-
-// SetPanels implements ReportTreeItem
-func (r *Report) SetPanels(panels []*Panel) {
-	r.Panels = panels
-}
-
-// SetReports implements ReportTreeItem
-func (r *Report) SetReports(reports []*Report) {
-	r.Reports = reports
-}
