@@ -21,7 +21,7 @@ type ReportExecutionTree struct {
 }
 
 // NewReportExecutionTree creates a result group from a ControlTreeItem
-func NewReportExecutionTree(ctx context.Context, reportName string, workspace *workspace.Workspace, client *db.Client) (*ReportExecutionTree, error) {
+func NewReportExecutionTree(reportName string, workspace *workspace.Workspace, client *db.Client) (*ReportExecutionTree, error) {
 	report, ok := workspace.ReportMap[reportName]
 	if !ok {
 		return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
