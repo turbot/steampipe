@@ -108,17 +108,22 @@ func (c *Client) readRows(ctx context.Context, start time.Time, rows *sql.Rows, 
 		}
 		// close the channels in the result object
 		result.Close()
+
+		// we are done fetching results. time for display. remove the spinner
+		display.StopSpinner(activeSpinner)
 	}()
 
 	rowCount := 0
 	colTypes, err := rows.ColumnTypes()
 	if err != nil {
-		result.StreamError(err)
+		// we do not need to stream because
+		// defer takes care of it!
 		return
 	}
 	cols, err := rows.Columns()
 	if err != nil {
-		result.StreamError(err)
+		// we do not need to stream because
+		// defer takes care of it!
 		return
 	}
 
@@ -144,8 +149,6 @@ func (c *Client) readRows(ctx context.Context, start time.Time, rows *sql.Rows, 
 			break
 		}
 	}
-	// we are done fetching results. time for display. remove the spinner
-	display.StopSpinner(activeSpinner)
 
 	// set the time that it took for this one to execute
 	result.Duration <- time.Since(start)

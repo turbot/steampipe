@@ -2,19 +2,14 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
 
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/query/execute"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -125,131 +120,4 @@ func startCancelHandler(cancel context.CancelFunc) {
 		cancel()
 		close(sigIntChannel)
 	}()
-}
-
-// retrieve queries from args - for each arg check if it is a named query or a file,
-// before falling back to treating it as sql
-func getQueries(args []string, workspace *workspace.Workspace) []string {
-	var queries []string
-	for _, arg := range args {
-		query, _ := getQueryFromArg(arg, workspace)
-		if len(query) > 0 {
-			queries = append(queries, query)
-		}
-	}
-	return queries
-}
-
-// attempt to resolve 'arg' to a query
-// if the arg was a named query or a sql file, return 'true for the second return value
-func getQueryFromArg(arg string, workspace *workspace.Workspace) (string, bool) {
-	// 1) is this a named query
-	if namedQuery, ok := workspace.GetNamedQuery(arg); ok {
-		return typeHelpers.SafeString(namedQuery.SQL), true
-	}
-
-	// 	2) is this a file
-	fileQuery, fileExists, err := getQueryFromFile(arg)
-	if fileExists {
-		if err != nil {
-			utils.ShowWarning(fmt.Sprintf("error opening file '%s': %v", arg, err))
-			return "", false
-		}
-		if len(fileQuery) == 0 {
-			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", arg))
-			// (just return the empty string - it will be filtered above)
-		}
-		return fileQuery, true
-	}
-
-	// 3) just use the arg string as is and assume it is valid SQL
-	return arg, false
-}
-
-func runInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
-	// start the workspace file watcher
-	if viper.GetBool(constants.ArgWatch) {
-		err := workspace.SetupWatcher(client)
-		utils.FailOnError(err)
-	}
-
-	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.RunInteractivePrompt(workspace, client)
-	utils.FailOnError(err)
-
-	// print the data as it comes
-	for r := range resultsStreamer.Results {
-		display.ShowOutput(r)
-		// signal to the resultStreamer that we are done with this chunk of the stream
-		resultsStreamer.Done()
-	}
-}
-
-func executeQueries(ctx context.Context, queries []string, client *db.Client) int {
-	// run all queries
-	failures := 0
-	for i, q := range queries {
-		select {
-		case <-ctx.Done():
-			// add to failures
-			failures++
-			// skip ahead to the end
-			continue
-		default:
-			if err := executeQuery(ctx, q, client); err != nil {
-				failures++
-				utils.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), utils.TrimDriversFromErrMsg(err.Error())))
-			}
-			if showBlankLineBetweenResults() {
-				fmt.Println()
-			}
-		}
-	}
-
-	return failures
-}
-
-func executeQuery(ctx context.Context, queryString string, client *db.Client) error {
-	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.ExecuteQuery(ctx, queryString, client)
-	if err != nil {
-		return err
-	}
-
-	// TODO encapsulate this in display object
-	// print the data as it comes
-	for r := range resultsStreamer.Results {
-		display.ShowOutput(r)
-		// signal to the resultStreamer that we are done with this chunk of the stream
-		resultsStreamer.Done()
-	}
-	return nil
-}
-
-// if we are displaying csv with no header, do not include lines between the query results
-func showBlankLineBetweenResults() bool {
-	return !(viper.GetString(constants.ArgOutput) == "csv" && !viper.GetBool(constants.ArgHeader))
-}
-
-func getQueryFromFile(filename string) (string, bool, error) {
-	log.Println("[TRACE] getQueryFromFiles: ", filename)
-
-	// get absolute filename
-	path, err := filepath.Abs(filename)
-	if err != nil {
-		return "", false, nil
-	}
-	// does it exist?
-	if _, err := os.Stat(path); err != nil {
-		// if this gives any error, return not exist. we may get a not found or a path too long for example
-		return "", false, nil
-	}
-
-	// read file
-	fileBytes, err := os.ReadFile(path)
-	if err != nil {
-		return "", true, err
-	}
-
-	return string(fileBytes), true, nil
 }
