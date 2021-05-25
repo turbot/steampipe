@@ -16,14 +16,23 @@ type Server struct {
 	Workspace *workspace.Workspace
 }
 
-type ExecutionStartedPayload struct {
+type ExecutionPayload struct {
 	Action string                   `json:"action"`
 	Report *reportexecute.ReportRun `json:"report"`
 }
 
 func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) []byte {
-	payload := ExecutionStartedPayload{
+	payload := ExecutionPayload{
 		Action: "execution_started",
+		Report: event.Report,
+	}
+	jsonString, _ := json.Marshal(payload)
+	return jsonString
+}
+
+func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte {
+	payload := ExecutionPayload{
+		Action: "execution_complete",
 		Report: event.Report,
 	}
 	jsonString, _ := json.Marshal(payload)
@@ -42,5 +51,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 	case *reportevents.ExecutionStarted:
 		fmt.Println("Got execution started event", *e)
 		s.WebSocket.Broadcast(buildExecutionStartedPayload(e))
+	case *reportevents.ExecutionComplete:
+		fmt.Println("Got execution complete event", *e)
+		s.WebSocket.Broadcast(buildExecutionCompletePayload(e))
 	}
 }

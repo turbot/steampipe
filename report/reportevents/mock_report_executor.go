@@ -21,6 +21,16 @@ var p2 = modconfig.Panel{
 	Text:   utils.ToStringPointer("# Goodbye Universe"),
 }
 
+var p3 = modconfig.Panel{
+	Source: utils.ToStringPointer("steampipe.panel.markdown"),
+	Text:   utils.ToStringPointer("# Basic Bar Chart Report"),
+}
+
+var p4 = modconfig.Panel{
+	Source: utils.ToStringPointer("steampipe.panel.barchart"),
+	Title:  utils.ToStringPointer("# AWS IAM Entities"),
+}
+
 var eventMap = map[string][]ReportEvent{
 	"simple": {
 		&ExecutionStarted{
@@ -67,10 +77,48 @@ var eventMap = map[string][]ReportEvent{
 					{
 						Source: typehelpers.SafeString(p1.Source),
 						Text:   typehelpers.SafeString(p1.Text),
+						Width:  6,
 					},
 					{
 						Source: typehelpers.SafeString(p2.Source),
 						Text:   typehelpers.SafeString(p2.Text),
+						Width:  6,
+					},
+				},
+			},
+		},
+	},
+	"bar-chart": {
+		&ExecutionStarted{
+			Report: &reportexecute.ReportRun{
+				PanelRuns: []*reportexecute.PanelRun{
+					{
+						Source: typehelpers.SafeString(p3.Source),
+						Text:   typehelpers.SafeString(p3.Text),
+					},
+					{
+						Source: typehelpers.SafeString(p4.Source),
+						Text:   typehelpers.SafeString(p4.Text),
+					},
+				},
+			},
+		},
+		&ExecutionComplete{
+			Report: &reportexecute.ReportRun{
+				PanelRuns: []*reportexecute.PanelRun{
+					{
+						Source: typehelpers.SafeString(p3.Source),
+						Text:   typehelpers.SafeString(p3.Text),
+					},
+					{
+						Source: typehelpers.SafeString(p4.Source),
+						Text:   typehelpers.SafeString(p4.Text),
+						Data: [][]interface{}{
+							{"Entity", "Total"},
+							{"Groups", 2},
+							{"Policies", 102},
+							{"Users", 10},
+						},
 					},
 				},
 			},
