@@ -8,13 +8,14 @@ import (
 	"os/signal"
 	"time"
 
+	"gopkg.in/olahol/melody.v1"
+
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 )
 
-func StartAPI() {
+func StartAPI(webSocket *melody.Melody) {
 	router := gin.Default()
-	webSocket := melody.New()
 
 	go Init(webSocket)
 

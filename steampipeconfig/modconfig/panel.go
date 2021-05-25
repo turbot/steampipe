@@ -17,6 +17,7 @@ type Panel struct {
 	Width  *int    `hcl:"width"`
 	Source *string `hcl:"source"`
 	SQL    *string `hcl:"source"`
+	Text   *string `hcl:"text"`
 	//Reports *[]Report //`hcl:"panel,block"`
 	Panels *[]Panel // `hcl:"panel,block"`
 

@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"github.com/turbot/steampipe/report/reportevents"
+	"gopkg.in/olahol/melody.v1"
 
 	reportserver2 "github.com/turbot/steampipe/report/reportserver"
 
@@ -20,7 +22,7 @@ import (
 // CheckCmd :: represents the check command
 func ReportCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:              "report [flags]",
+		Use:              "report [report]",
 		TraverseChildren: true,
 		Args:             cobra.ArbitraryArgs,
 		Run:              runReportCmd,
@@ -29,7 +31,8 @@ func ReportCmd() *cobra.Command {
 	}
 
 	cmdconfig.
-		OnCmd(cmd)
+		OnCmd(cmd).
+		AddStringFlag("mock-report", "", ",", "Mock report to simulate")
 
 	return cmd
 }
@@ -58,10 +61,13 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
 
-	server := reportserver2.Server{}
+	webSocket := melody.New()
+	server := reportserver2.Server{webSocket}
 
-	// TODO add this in when Kai exposes it
+	// TODO add this in when Kai exposes it, mock for now
 	// workspace.registerUpdateHandler(server.HandleWorkspaceUpdate)
+	mockReport := viper.GetString("mock-report")
+	go reportevents.GenerateReportEvents(mockReport, server.HandleWorkspaceUpdate)
 
 	server.Start()
 }
