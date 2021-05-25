@@ -8,6 +8,15 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
+type PanelRunStatus uint32
+
+const (
+	PanelRunReady PanelRunStatus = 1 << iota
+	PanelRunStarted
+	PanelRunComplete
+	PanelRunError
+)
+
 // PanelRun is a struct representing a  a panel run - will contain one or more result items (i.e. for one or more resources)
 type PanelRun struct {
 	Name   string          `json:"name"`
@@ -24,7 +33,7 @@ type PanelRun struct {
 	PanelRuns  []*PanelRun  `json:"panels,omitempty"`
 	ReportRuns []*ReportRun `json:"reports,omitempty"`
 
-	runStatus     ReportRunStatus
+	runStatus     PanelRunStatus
 	executionTree *ReportExecutionTree
 }
 
