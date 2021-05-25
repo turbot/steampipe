@@ -63,12 +63,8 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	startCancelHandler(cancel)
 
-	// get a db client
-	client, err := db.NewClient(true)
-	utils.FailOnError(err)
-
 	for reportName := range workspace.ReportMap {
-		executionlayer.ExecuteReport(ctx, reportName, workspace, client)
+		executionlayer.ExecuteReport(ctx, reportName, workspace)
 		break
 	}
 	Execute()
