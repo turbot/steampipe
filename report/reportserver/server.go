@@ -1,6 +1,7 @@
 package reportserver
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -15,13 +16,22 @@ import (
 )
 
 type Server struct {
-	WebSocket *melody.Melody
-	Workspace *workspace.Workspace
+	context   context.Context
+	webSocket *melody.Melody
+	workspace *workspace.Workspace
 }
 
 type ExecutionPayload struct {
 	Action string                   `json:"action"`
 	Report *reportexecute.ReportRun `json:"report"`
+}
+
+func NewServer(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace) Server {
+	return Server{
+		ctx,
+		webSocket,
+		workspace,
+	}
 }
 
 func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) []byte {
@@ -44,7 +54,7 @@ func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte
 
 // Starts the API server
 func (s *Server) Start() {
-	StartAPI(s.WebSocket, s.Workspace, s.HandleWorkspaceUpdate)
+	StartAPI(s.context, s.webSocket, s.workspace)
 }
 
 func (s *Server) HandleWorkspaceUpdate(event reporteventpublisher.ReportEvent) {
@@ -53,9 +63,9 @@ func (s *Server) HandleWorkspaceUpdate(event reporteventpublisher.ReportEvent) {
 	switch e := event.(type) {
 	case *reportevents.ExecutionStarted:
 		fmt.Println("Got execution started event", *e)
-		s.WebSocket.Broadcast(buildExecutionStartedPayload(e))
+		s.webSocket.Broadcast(buildExecutionStartedPayload(e))
 	case *reportevents.ExecutionComplete:
 		fmt.Println("Got execution complete event", *e)
-		s.WebSocket.Broadcast(buildExecutionCompletePayload(e))
+		s.webSocket.Broadcast(buildExecutionCompletePayload(e))
 	}
 }

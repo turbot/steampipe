@@ -8,19 +8,17 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/turbot/steampipe/report/reporteventpublisher"
-	"github.com/turbot/steampipe/workspace"
-
-	"gopkg.in/olahol/melody.v1"
-
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"gopkg.in/olahol/melody.v1"
+
+	"github.com/turbot/steampipe/workspace"
 )
 
-func StartAPI(webSocket *melody.Melody, workspace *workspace.Workspace, handler reporteventpublisher.ReportEventHandler) {
+func StartAPI(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace) {
 	router := gin.Default()
 
-	go Init(webSocket, workspace, handler)
+	go Init(ctx, webSocket, workspace)
 
 	router.Use(static.Serve("/", static.LocalFile("./static", true)))
 

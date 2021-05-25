@@ -10,7 +10,6 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
-	"github.com/turbot/steampipe/executionlayer"
 	"github.com/turbot/steampipe/report/reportserver"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
@@ -55,18 +54,13 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
 
-	webSocket := melody.New()
-	var server = reportserver.Server{WebSocket: webSocket, Workspace: workspace} // TODO add this in when Kai exposes it, mock for now
-	workspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
-	//go reportevents.GenerateReportEvents(mockReport, server.HandleWorkspaceUpdate)
-
 	ctx, cancel := context.WithCancel(context.Background())
 	startCancelHandler(cancel)
 
-	for reportName := range workspace.ReportMap {
-		executionlayer.ExecuteReport(ctx, reportName, workspace)
-		break
-	}
+	webSocket := melody.New()
+	var server = reportserver.NewServer(ctx, webSocket, workspace)
+	workspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
+
 	Execute()
 	server.Start()
 }
