@@ -28,7 +28,7 @@ var testCasesTable = map[string]tableTest{
 				},
 			},
 			// Groups property not used but must not be empty
-			//Groups: map[string]*execute.ResultGroup{"dummy": {}},
+			//Groups: map[string]*controlexecute.ResultGroup{"dummy": {}},
 		},
 		width: 116,
 	},

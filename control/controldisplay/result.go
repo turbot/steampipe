@@ -26,7 +26,7 @@ type ResultRenderer struct {
 	indent     string
 }
 
-func NewResultRenderer(status, reason string, dimensions []execute.Dimension, colorGenerator *execute.DimensionColorGenerator, width int, indent string) *ResultRenderer {
+func NewResultRenderer(status, reason string, dimensions []controlexecute.Dimension, colorGenerator *controlexecute.DimensionColorGenerator, width int, indent string) *ResultRenderer {
 	return &ResultRenderer{
 		status:         status,
 		reason:         reason,

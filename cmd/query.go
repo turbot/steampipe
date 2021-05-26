@@ -7,9 +7,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/query/queryexecute"
-	"github.com/turbot/steampipe/query/execute"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
