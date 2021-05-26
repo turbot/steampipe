@@ -65,17 +65,17 @@ func (c *RunContext) addSteampipeVariables() {
 	// add steampipe variables
 	c.variables["steampipe"] = map[string]cty.Value{
 		"panel": cty.ObjectVal(map[string]cty.Value{
-			"markdown":         cty.StringVal("markdown"),
-			"barchart":         cty.StringVal("barchart"),
-			"counter":          cty.StringVal("counter"),
-			"linechart":        cty.StringVal("linechart"),
-			"piechart":         cty.StringVal("piechart"),
-			"placeholder":      cty.StringVal("placeholder"),
-			"control_list":     cty.StringVal("control_list"),
-			"control_progress": cty.StringVal("control_progress"),
-			"control_table":    cty.StringVal("control_table"),
-			"status":           cty.StringVal("status"),
-			"table":            cty.StringVal("table"),
+			"markdown":         cty.StringVal("steampipe.panel.markdown"),
+			"barchart":         cty.StringVal("steampipe.panel.barchart"),
+			"counter":          cty.StringVal("steampipe.panel.counter"),
+			"linechart":        cty.StringVal("steampipe.panel.linechart"),
+			"piechart":         cty.StringVal("steampipe.panel.piechart"),
+			"placeholder":      cty.StringVal("steampipe.panel.placeholder"),
+			"control_list":     cty.StringVal("steampipe.panel.control_list"),
+			"control_progress": cty.StringVal("steampipe.panel.control_progress"),
+			"control_table":    cty.StringVal("steampipe.panel.control_table"),
+			"status":           cty.StringVal("steampipe.panel.status"),
+			"table":            cty.StringVal("steampipe.panel.table"),
 		}),
 	}
 }
