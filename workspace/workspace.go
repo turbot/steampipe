@@ -402,31 +402,6 @@ func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig
 	return res
 }
 
-func (w *Workspace) handleFileWatcherEvent(client *db.Client, events []fsnotify.Event) {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	// we build a list of diffs for panels and workspaces so store the old ones
-	// TODO - same for all resources??
-	prevPanels := w.getPanelMap()
-	prevReports := w.getReportMap()
-
-	err := w.loadMod()
-	if err != nil {
-		// if we are already in an error state, do not show error
-		if w.watcherError == nil {
-			fmt.Println()
-			utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
-		}
-	}
-	// now store/clear watcher error so we only show message once
-	w.watcherError = err
-	// todo detect differences and only refresh if necessary
-	db.UpdateMetadataTables(w.GetResourceMaps(), client)
-
-	w.RaiseReportChangedEvents(w.getPanelMap(), prevPanels, w.getReportMap(), prevReports)
-}
-
 // return a map of all unique panels, keyed by name
 // not we cannot just use PanelMap as this contains duplicates (qualified and unqualified version)
 func (w *Workspace) getPanelMap() map[string]*modconfig.Panel {

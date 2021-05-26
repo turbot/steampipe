@@ -1,8 +1,13 @@
 package workspace
 
 import (
+	"fmt"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 func (w *Workspace) PublishReportEvent(e reportevents.ReportEvent) {
@@ -15,7 +20,32 @@ func (w *Workspace) RegisterReportEventHandler(handler reportevents.ReportEventH
 	w.reportEventHandlers = append(w.reportEventHandlers, handler)
 }
 
-func (w *Workspace) RaiseReportChangedEvents(panels, prevPanels map[string]*modconfig.Panel, reports, prevReports map[string]*modconfig.Report) {
+func (w *Workspace) handleFileWatcherEvent(client *db.Client, events []fsnotify.Event) {
+	w.loadLock.Lock()
+	defer w.loadLock.Unlock()
+
+	// we build a list of diffs for panels and workspaces so store the old ones
+	// TODO - same for all resources??
+	prevPanels := w.getPanelMap()
+	prevReports := w.getReportMap()
+
+	err := w.loadMod()
+	if err != nil {
+		// if we are already in an error state, do not show error
+		if w.watcherError == nil {
+			fmt.Println()
+			utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
+		}
+	}
+	// now store/clear watcher error so we only show message once
+	w.watcherError = err
+	// todo detect differences and only refresh if necessary
+	db.UpdateMetadataTables(w.GetResourceMaps(), client)
+
+	w.raiseReportChangedEvents(w.getPanelMap(), prevPanels, w.getReportMap(), prevReports)
+}
+
+func (w *Workspace) raiseReportChangedEvents(panels, prevPanels map[string]*modconfig.Panel, reports, prevReports map[string]*modconfig.Report) {
 	event := &reportevents.ReportChanged{}
 
 	// first detect detect changes to existing panels/reports and removed panels and reports

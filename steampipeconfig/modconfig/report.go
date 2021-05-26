@@ -57,39 +57,24 @@ func (r *Report) AddReference(reference string) {
 }
 
 // AddChild implements ModTreeItem
-func (p *Report) AddChild(child ModTreeItem) error {
+func (r *Report) AddChild(child ModTreeItem) error {
 	switch c := child.(type) {
 	case *Panel:
-		// TODO why is this necessary??
-		// TODO can we share with report
-		// does this child already exist
-		for _, existingPanel := range p.Panels {
-			if existingPanel.Name() == child.Name() {
-				return nil
-			}
+		// avoid duplicates
+		if r.containsPanel(c.Name()) {
+			r.Panels = append(r.Panels, c)
 		}
-		p.Panels = append(p.Panels, c)
 	case *Report:
-		// does this child already exist
-		for _, existingReport := range p.Reports {
-			if existingReport.Name() == child.Name() {
-				return nil
-			}
+		// avoid duplicates
+		if r.containsReport(c.Name()) {
+			r.Reports = append(r.Reports, c)
 		}
-		p.Reports = append(p.Reports, c)
 	}
 	return nil
 }
 
 // AddParent implements ModTreeItem
 func (r *Report) AddParent(parent ModTreeItem) error {
-	// TODO why is this necessary - does benchmark need it???
-	// does this panel already have this parent
-	for _, currentParent := range r.parents {
-		if currentParent.Name() == parent.Name() {
-			return nil
-		}
-	}
 	r.parents = append(r.parents, parent)
 	return nil
 }
@@ -162,4 +147,24 @@ func (r *Report) Diff(new *Report) *ReportTreeItemDiffs {
 
 	res.populateChildDiffs(r, new)
 	return res
+}
+
+func (r *Report) containsPanel(name string) bool {
+	// does this child already exist
+	for _, existingPanel := range r.Panels {
+		if existingPanel.Name() == name {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *Report) containsReport(name string) bool {
+	// does this child already exist
+	for _, existingReport := range r.Reports {
+		if existingReport.Name() == name {
+			return true
+		}
+	}
+	return false
 }

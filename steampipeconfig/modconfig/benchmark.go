@@ -120,7 +120,7 @@ func (b *Benchmark) AddChild(child ModTreeItem) error {
 		return fmt.Errorf("mod cannot be added as a child")
 	}
 
-	// now find which positing this child is in the array
+	// now find which position this child is in the array
 	for i, name := range b.ChildNameStrings {
 		if name == child.Name() {
 			b.children[i] = child
