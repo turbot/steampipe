@@ -163,13 +163,9 @@ Control Groups:
 	)
 }
 
-// IsControlTreeItem implements ModTreeItem
-// (mod is always top of the tree)
-func (m *Mod) IsControlTreeItem() {}
-
-// BuildControlTree builds the control tree structure by setting the parent property for each control and benchmar
+// BuildResourceTree builds the control tree structure by setting the parent property for each control and benchmar
 // NOTE: this also builds the sorted benchmark list
-func (m *Mod) BuildControlTree() error {
+func (m *Mod) BuildResourceTree() error {
 	// build sorted list of benchmarks
 	m.benchmarksOrdered = make([]string, len(m.Benchmarks))
 	idx := 0
@@ -179,7 +175,7 @@ func (m *Mod) BuildControlTree() error {
 		idx++
 
 		// add benchmark into control tree
-		if err := m.addItemIntoControlTree(benchmark); err != nil {
+		if err := m.addItemIntoResourceTree(benchmark); err != nil {
 			return err
 		}
 	}
@@ -187,14 +183,24 @@ func (m *Mod) BuildControlTree() error {
 	sort.Strings(m.benchmarksOrdered)
 
 	for _, control := range m.Controls {
-		if err := m.addItemIntoControlTree(control); err != nil {
+		if err := m.addItemIntoResourceTree(control); err != nil {
+			return err
+		}
+	}
+	for _, panel := range m.Panels {
+		if err := m.addItemIntoResourceTree(panel); err != nil {
+			return err
+		}
+	}
+	for _, report := range m.Reports {
+		if err := m.addItemIntoResourceTree(report); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (m *Mod) addItemIntoControlTree(item ModTreeItem) error {
+func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
 	parents := m.getParents(item)
 
 	// so we have a result - add into tree
@@ -330,7 +336,7 @@ func (m *Mod) GetPaths() []NodePath {
 // as long as there is no existing resource of same name
 //
 // A pseudo resource ids a resource created by loading a content file (e.g. a SQL file),
-// rather than parsing a HCL defintion
+// rather than parsing a HCL definition
 func (m *Mod) AddPseudoResource(resource MappableResource) {
 	switch r := resource.(type) {
 	case *Query:
