@@ -194,10 +194,10 @@ func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Report, *dec
 	return report, res
 }
 
-func decodeReportBlocks(resource modconfig.ControlTreeItem, content *hcl.BodyContent, runCtx *RunContext) hcl.Diagnostics {
+func decodeReportBlocks(resource modconfig.ModTreeItem, content *hcl.BodyContent, runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	for _, b := range content.Blocks {
-		var childResource modconfig.ControlTreeItem
+		var childResource modconfig.ModTreeItem
 		var decodeResult *decodeResult
 		switch b.Type {
 		case modconfig.BlockTypePanel:

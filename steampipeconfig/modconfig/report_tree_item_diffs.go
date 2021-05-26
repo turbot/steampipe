@@ -3,7 +3,7 @@ package modconfig
 // ReportTreeItemDiffs is a struct representing the differences between 2 ReportTreeItems (of same type)
 type ReportTreeItemDiffs struct {
 	Name              string
-	Item              ControlTreeItem
+	Item              ModTreeItem
 	ChangedProperties []string
 	AddedItems        []string
 	RemovedItems      []string
@@ -21,7 +21,7 @@ func (d *ReportTreeItemDiffs) AddRemovedItem(name string) {
 	d.RemovedItems = append(d.RemovedItems)
 }
 
-func (d *ReportTreeItemDiffs) populateChildDiffs(old ControlTreeItem, new ControlTreeItem) {
+func (d *ReportTreeItemDiffs) populateChildDiffs(old ModTreeItem, new ModTreeItem) {
 	// build map of panel and report names
 	oldChildMap := make(map[string]bool)
 	newChildMap := make(map[string]bool)

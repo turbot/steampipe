@@ -23,7 +23,7 @@ type Panel struct {
 
 	DeclRange hcl.Range
 
-	parents  []ControlTreeItem
+	parents  []ModTreeItem
 	metadata *ResourceMetadata
 }
 
@@ -60,66 +60,67 @@ func (p *Panel) AddReference(reference string) {
 	// TODO
 }
 
-// AddChild implements ControlTreeItem
-func (r *Panel) AddChild(child ControlTreeItem) error {
+// AddChild implements ModTreeItem
+func (p *Panel) AddChild(child ModTreeItem) error {
 	switch c := child.(type) {
 	case *Panel:
-		r.Panels = append(r.Panels, c)
+		p.Panels = append(p.Panels, c)
 	case *Report:
-		r.Reports = append(r.Reports, c)
+		p.Reports = append(p.Reports, c)
 	}
 	return nil
 }
 
-// AddParent implements ControlTreeItem
-func (c *Panel) AddParent(parent ControlTreeItem) error {
-	c.parents = append(c.parents, parent)
+// AddParent implements ModTreeItem
+func (p *Panel) AddParent(parent ModTreeItem) error {
+	p.parents = append(p.parents, parent)
 	return nil
 }
 
-// GetParents implements ControlTreeItem
-func (c *Panel) GetParents() []ControlTreeItem {
-	return c.parents
+// GetParents implements ModTreeItem
+func (p *Panel) GetParents() []ModTreeItem {
+	return p.parents
 }
 
-// GetChildren implements ControlTreeItem
-func (c *Panel) GetChildren() []ControlTreeItem {
-	children := make([]ControlTreeItem, len(c.Panels)+len(c.Reports))
+// GetChildren implements ModTreeItem
+func (p *Panel) GetChildren() []ModTreeItem {
+	children := make([]ModTreeItem, len(p.Panels)+len(p.Reports))
 	idx := 0
-	for _, p := range c.Panels {
+	for _, p := range p.Panels {
 		children[idx] = p
 		idx++
 	}
-	for _, r := range c.Reports {
+	for _, r := range p.Reports {
 		children[idx] = r
 		idx++
 	}
 	return children
 }
 
-// GetTitle implements ControlTreeItem
-func (c *Panel) GetTitle() string {
-	return typehelpers.SafeString(c.Title)
+// GetTitle implements ModTreeItem
+func (p *Panel) GetTitle() string {
+	return typehelpers.SafeString(p.Title)
 }
 
-// GetDescription implements ControlTreeItem
-func (c *Panel) GetDescription() string {
+// GetDescription implements ModTreeItem
+func (p *Panel) GetDescription() string {
 	return ""
 }
 
-// GetTags implements ControlTreeItem
-func (c *Panel) GetTags() map[string]string {
+// GetTags implements ModTreeItem
+func (p *Panel) GetTags() map[string]string {
 	return nil
 }
 
-// Path implements ControlTreeItem
-func (c *Panel) Path() []string {
-	// TODO update for multiple paths
-	path := []string{c.FullName}
-	if c.parents != nil {
-		path = append(c.parents[0].Path(), path...)
+// GetPaths implements ModTreeItem
+func (p *Panel) GetPaths() []NodePath {
+	var res []NodePath
+	for _, parent := range p.parents {
+		for _, parentPath := range parent.GetPaths() {
+			res = append(res, append(parentPath, p.Name()))
+		}
 	}
-	return path
+	return res
 }
 
 //// AddChild implements ReportTreeItem

@@ -31,7 +31,7 @@ type ExecutionTree struct {
 	controlRuns []*ControlRun
 }
 
-// NewExecutionTree creates a result group from a ControlTreeItem
+// NewExecutionTree creates a result group from a ModTreeItem
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client *db.Client, arg string) (*ExecutionTree, error) {
 	// now populate the ExecutionTree
 	executionTree := &ExecutionTree{
@@ -162,8 +162,8 @@ func (e *ExecutionTree) ShouldIncludeControl(controlName string) bool {
 // - if the arg is a benchmark name, the root will be the Benchmark with that name
 // - if the arg is a mod name, the root will be the Mod with that name
 // - if the arg is 'all' the root will be a node with all Mods as children
-func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ControlTreeItem, error) {
-	var res []modconfig.ControlTreeItem
+func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTreeItem, error) {
+	var res []modconfig.ModTreeItem
 	// special case handling for the string "all"
 	if arg == "all" {
 		//
@@ -185,17 +185,17 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.Control
 	case modconfig.BlockTypeControl:
 		// check whether the arg is a control name
 		if control, ok := e.workspace.ControlMap[arg]; ok {
-			return []modconfig.ControlTreeItem{control}, nil
+			return []modconfig.ModTreeItem{control}, nil
 		}
 	case modconfig.BlockTypeBenchmark:
 		// look in the workspace control group map for this control group
 		if benchmark, ok := e.workspace.BenchmarkMap[arg]; ok {
-			return []modconfig.ControlTreeItem{benchmark}, nil
+			return []modconfig.ModTreeItem{benchmark}, nil
 		}
 	case modconfig.BlockTypeMod:
 		// get all controls for the mod
 		if mod, ok := e.workspace.ModMap[arg]; ok {
-			return []modconfig.ControlTreeItem{mod}, nil
+			return []modconfig.ModTreeItem{mod}, nil
 		}
 	}
 	return nil, fmt.Errorf("no controls found matching argument '%s'", arg)

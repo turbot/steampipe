@@ -18,7 +18,9 @@ type Report struct {
 	Panels  []*Panel  //`hcl:"panel,block"`
 
 	DeclRange hcl.Range
-	metadata  *ResourceMetadata
+
+	parents  []ModTreeItem
+	metadata *ResourceMetadata
 }
 
 func NewReport(block *hcl.Block) *Report {
@@ -35,8 +37,8 @@ func (r *Report) CtyValue() (cty.Value, error) {
 	return getCtyValue(r)
 }
 
-// Name implements HclResource
-// return name in format: 'panel.<shortName>'
+// Name implements HclResource, ModTreeItem
+// return name in format: 'report.<shortName>'
 func (r *Report) Name() string {
 	return r.FullName
 }
@@ -54,8 +56,8 @@ func (r *Report) AddReference(reference string) {
 	// TODO
 }
 
-// AddChild implements ReportTreeItem
-func (r *Report) AddChild(child ReportTreeItem) {
+// AddChild implements ModTreeItem
+func (r *Report) AddChild(child ModTreeItem) error {
 	switch c := child.(type) {
 	case *Panel:
 		r.Panels = append(r.Panels, c)
@@ -65,14 +67,56 @@ func (r *Report) AddChild(child ReportTreeItem) {
 	return nil
 }
 
-// GetPanels implements ReportTreeItem
-func (r *Report) GetPanels() []*Panel {
-	return r.Panels
+// AddParent implements ModTreeItem
+func (r *Report) AddParent(parent ModTreeItem) error {
+	r.parents = append(r.parents, parent)
+	return nil
 }
 
-// GetReports implements ReportTreeItem
-func (r *Report) GetReports() []*Report {
-	return r.Reports
+// GetParents implements ModTreeItem
+func (r *Report) GetParents() []ModTreeItem {
+	return r.parents
+}
+
+// GetChildren implements ModTreeItem
+func (r *Report) GetChildren() []ModTreeItem {
+	children := make([]ModTreeItem, len(r.Panels)+len(r.Reports))
+	idx := 0
+	for _, p := range r.Panels {
+		children[idx] = p
+		idx++
+	}
+	for _, r := range r.Reports {
+		children[idx] = r
+		idx++
+	}
+	return children
+}
+
+// GetTitle implements ModTreeItem
+func (r *Report) GetTitle() string {
+	return typehelpers.SafeString(r.Title)
+}
+
+// GetDescription implements ModTreeItem
+func (r *Report) GetDescription() string {
+	return ""
+}
+
+// GetTags implements ModTreeItem
+func (r *Report) GetTags() map[string]string {
+	return nil
+}
+
+// GetPaths implements ModTreeItem
+func (r *Report) GetPaths() []NodePath {
+	var res []NodePath
+	for _, parent := range r.parents {
+		for _, parentPath := range parent.GetPaths() {
+			res = append(res, append(parentPath, r.Name()))
+		}
+	}
+	return res
 }
 
 // GetMetadata implements ResourceWithMetadata

@@ -20,7 +20,7 @@ type ReportExecutionTree struct {
 	reports         map[string]*ReportRun
 }
 
-// NewReportExecutionTree creates a result group from a ControlTreeItem
+// NewReportExecutionTree creates a result group from a ModTreeItem
 func NewReportExecutionTree(root *modconfig.Report, client *db.Client) (*ReportExecutionTree, error) {
 
 	// now populate the ReportExecutionTree
