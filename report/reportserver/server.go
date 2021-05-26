@@ -166,7 +166,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 		// Capture the changed panels and make a note of the report(s) they're in
 		for _, changedPanel := range changedPanels {
-			for _, nodePath := range changedPanel.Item.GetPaths() {
+			paths := changedPanel.Item.GetPaths()
+			for _, nodePath := range paths {
 				for _, nodeName := range nodePath {
 					resourceParts, _ := modconfig.ParseResourceName(nodeName)
 					if resourceParts.ItemType != modconfig.BlockTypeReport {
