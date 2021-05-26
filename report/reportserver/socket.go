@@ -4,15 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 
-	"github.com/turbot/steampipe/db"
-	"github.com/turbot/steampipe/executionlayer"
+	"gopkg.in/olahol/melody.v1"
 
 	"github.com/turbot/go-kit/types"
-
+	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/executionlayer"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
-	"gopkg.in/olahol/melody.v1"
 )
 
 type ClientRequestReportPayload struct {
@@ -46,18 +46,23 @@ func availableReportsPayload(reports map[string]*modconfig.Report) []byte {
 	return jsonString
 }
 
-func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, client *db.Client) {
+func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, dbClient *db.Client, socketSessions map[*melody.Session]*ReportClientInfo, mutex *sync.Mutex) {
 	// Return list of reports on connect
 	webSocket.HandleConnect(func(session *melody.Session) {
 		fmt.Println("Client connected")
-		//reports := listReportsForWorkspace()
-		//err := webSocket.Broadcast(availableReportsPayload(reports))
-		//if err != nil {
-		//	log.Println(err)
-		//}
+		mutex.Lock()
+		socketSessions[session] = &ReportClientInfo{}
+		mutex.Unlock()
 	})
 
-	webSocket.HandleMessage(func(s *melody.Session, msg []byte) {
+	webSocket.HandleDisconnect(func(session *melody.Session) {
+		fmt.Println("Client disconnected")
+		mutex.Lock()
+		delete(socketSessions, session)
+		mutex.Unlock()
+	})
+
+	webSocket.HandleMessage(func(session *melody.Session, msg []byte) {
 		fmt.Println("Got message", string(msg))
 		var request ClientRequest
 		if err := json.Unmarshal(msg, &request); err != nil {
@@ -67,15 +72,14 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 			switch request.Action {
 			case "available_reports":
 				reports := workspace.Mod.Reports
-				webSocket.Broadcast(availableReportsPayload(reports))
+				session.Write(availableReportsPayload(reports))
 			case "select_report":
 				fmt.Println(fmt.Sprintf("Got event: %v", request.Payload.Report))
-				//for reportName := range workspace.ReportMap {
-				executionlayer.ExecuteReport(ctx, request.Payload.Report.FullName, workspace, client)
-				//break
-				//}
-				//report := workspace.Mod.Reports[request.Payload.Report.FullName]
-				//go reportevents.GenerateReportEvents(report, executorFunction)
+				mutex.Lock()
+				reportClientInfo := socketSessions[session]
+				reportClientInfo.Report = &request.Payload.Report.FullName
+				mutex.Unlock()
+				executionlayer.ExecuteReport(ctx, request.Payload.Report.FullName, workspace, dbClient)
 			}
 		}
 	})

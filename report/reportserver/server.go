@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/executionlayer"
+	"sync"
 
 	"github.com/spf13/viper"
 	"gopkg.in/olahol/melody.v1"
@@ -16,15 +19,21 @@ import (
 )
 
 type Server struct {
-	context   context.Context
-	webSocket *melody.Melody
-	workspace *workspace.Workspace
-	client    *db.Client
+	context       context.Context
+	dbClient      *db.Client
+	mutex         *sync.Mutex
+	reportClients map[*melody.Session]*ReportClientInfo
+	webSocket     *melody.Melody
+	workspace     *workspace.Workspace
 }
 
 type ExecutionPayload struct {
 	Action string                   `json:"action"`
 	Report *reportexecute.ReportRun `json:"report"`
+}
+
+type ReportClientInfo struct {
+	Report *string
 }
 
 func NewServer(ctx context.Context) (*Server, error) {
@@ -40,16 +49,23 @@ func NewServer(ctx context.Context) (*Server, error) {
 
 	webSocket := melody.New()
 
+	var reportClients = make(map[*melody.Session]*ReportClientInfo)
+
+	var mutex = &sync.Mutex{}
+
 	server := &Server{
-		client:    dbClient,
-		context:   ctx,
-		webSocket: webSocket,
-		workspace: loadedWorkspace,
+		context:       ctx,
+		dbClient:      dbClient,
+		mutex:         mutex,
+		reportClients: reportClients,
+		webSocket:     webSocket,
+		workspace:     loadedWorkspace,
 	}
 
-	server.workspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
+	loadedWorkspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
+	err = loadedWorkspace.SetupWatcher(dbClient)
 
-	return server, nil
+	return server, err
 }
 
 func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) []byte {
@@ -72,13 +88,14 @@ func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte
 
 // Starts the API server
 func (s *Server) Start() {
-	StartAPI(s.context, s.webSocket, s.workspace, s.client)
+	go Init(s.context, s.webSocket, s.workspace, s.dbClient, s.reportClients, s.mutex)
+	StartAPI(s.context, s.webSocket)
 }
 
 func (s *Server) Shutdown() {
 	// Close the DB client
-	if s.client != nil {
-		s.client.Close()
+	if s.dbClient != nil {
+		s.dbClient.Close()
 	}
 
 	if s.webSocket != nil {
@@ -97,9 +114,62 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 	switch e := event.(type) {
 	case *reportevents.ExecutionStarted:
 		fmt.Println("Got execution started event", *e)
-		s.webSocket.Broadcast(buildExecutionStartedPayload(e))
+		payload := buildExecutionStartedPayload(e)
+		reportName := e.Report.Name
+		s.mutex.Lock()
+		for session, repoInfo := range s.reportClients {
+			// If this session is interested in this report, broadcast to it
+			if (repoInfo.Report != nil) && *repoInfo.Report == reportName {
+				session.Write(payload)
+			}
+		}
+		s.mutex.Unlock()
+
 	case *reportevents.ExecutionComplete:
 		fmt.Println("Got execution complete event", *e)
-		s.webSocket.Broadcast(buildExecutionCompletePayload(e))
+		payload := buildExecutionCompletePayload(e)
+		reportName := e.Report.Name
+		s.mutex.Lock()
+		for session, repoInfo := range s.reportClients {
+			// If this session is interested in this report, broadcast to it
+			if (repoInfo.Report != nil) && *repoInfo.Report == reportName {
+				session.Write(payload)
+			}
+		}
+		s.mutex.Unlock()
+	case *reportevents.ReportChanged:
+		fmt.Println("Got report changed event", *e)
+		changedPanels := e.ChangedPanels
+		changedReports := e.ChangedReports
+
+		// If we have no changed panels or reports, ignore the message for now
+		if len(changedPanels) == 0 && len(changedReports) == 0 {
+			return
+		}
+
+		var changedReportNames []string
+
+		// Capture the changed reports
+		for _, changedReport := range changedReports {
+			if helpers.StringSliceContains(changedReportNames, changedReport.Name) {
+				continue
+			}
+			changedReportNames = append(changedReportNames, changedReport.Name)
+		}
+
+		for _, changedReport := range changedReports {
+			if helpers.StringSliceContains(changedReportNames, changedReport.Name) {
+				continue
+			}
+			changedReportNames = append(changedReportNames, changedReport.Name)
+		}
+
+		reportsBeingWatched := []string{"report.deep_nesting"}
+
+		for _, changedReportName := range changedReportNames {
+			if helpers.StringSliceContains(reportsBeingWatched, changedReportName) {
+				executionlayer.ExecuteReport(s.context, changedReportName, s.workspace, s.dbClient)
+			}
+		}
 	}
 }
