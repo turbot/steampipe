@@ -2,9 +2,13 @@ package modconfig
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -34,6 +38,37 @@ func NewPanel(block *hcl.Block) *Panel {
 		DeclRange: block.DefRange,
 	}
 	return panel
+}
+
+// PanelFromFile :: factory function
+func PanelFromFile(modPath, filePath string) (MappableResource, []byte, error) {
+	p := &Panel{}
+	return p.InitialiseFromFile(modPath, filePath)
+}
+
+// InitialiseFromFile implements MappableResource
+func (q *Panel) InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error) {
+	// only valid for sql files
+	if filepath.Ext(filePath) != constants.MarkdownExtension {
+		return nil, nil, fmt.Errorf("Panel.InitialiseFromFile must be called with markdown files only - filepath: '%s'", filePath)
+	}
+
+	markdownBytes, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, nil, err
+	}
+	markdown := string(markdownBytes)
+
+	// get a sluggified version of the filename
+	name, err := PseudoResourceNameFromPath(modPath, filePath)
+	if err != nil {
+		return nil, nil, err
+	}
+	q.ShortName = name
+	q.FullName = fmt.Sprintf("panel.%s", name)
+	q.Text = &markdown
+	q.Source = utils.ToStringPointer("steampipe.panel.markdown")
+	return q, markdownBytes, nil
 }
 
 // CtyValue implements HclResource
