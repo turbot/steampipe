@@ -376,6 +376,7 @@ func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
 // first check all benchmarks - if they do not have this as child, default to the mod
 func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 	var parents []ModTreeItem
+	// TODO refactor this more generically - do not use child names
 	for _, benchmark := range m.Benchmarks {
 		if benchmark.ChildNames == nil {
 			continue
@@ -384,6 +385,22 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 		for _, childName := range *benchmark.ChildNames {
 			if childName.Name == item.Name() {
 				parents = append(parents, benchmark)
+			}
+		}
+	}
+	for _, report := range m.Reports {
+		// check all child names of this benchmark for a matching name
+		for _, child := range report.GetChildren() {
+			if child.Name() == item.Name() {
+				parents = append(parents, report)
+			}
+		}
+	}
+	for _, panel := range m.Panels {
+		// check all child names of this benchmark for a matching name
+		for _, child := range panel.GetChildren() {
+			if child.Name() == item.Name() {
+				parents = append(parents, panel)
 			}
 		}
 	}
