@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/turbot/go-kit/helpers"
+	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/executionlayer"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -147,14 +149,35 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			return
 		}
 
+		var reportsBeingWatched []string
+		s.mutex.Lock()
+		for _, reportClientInfo := range s.reportClients {
+			reportName := typeHelpers.SafeString(reportClientInfo.Report)
+			if reportClientInfo.Report != nil {
+				if helpers.StringSliceContains(reportsBeingWatched, reportName) {
+					continue
+				}
+				reportsBeingWatched = append(reportsBeingWatched, reportName)
+			}
+		}
+		s.mutex.Unlock()
+
 		var changedReportNames []string
 
-		// Capture the changed reports
-		for _, changedReport := range changedReports {
-			if helpers.StringSliceContains(changedReportNames, changedReport.Name) {
-				continue
+		// Capture the changed panels and make a note of the report(s) they're in
+		for _, changedPanel := range changedPanels {
+			for _, nodePath := range changedPanel.Item.GetPaths() {
+				for _, nodeName := range nodePath {
+					resourceParts, _ := modconfig.ParseResourceName(nodeName)
+					if resourceParts.ItemType != modconfig.BlockTypeReport {
+						continue
+					}
+					if helpers.StringSliceContains(changedReportNames, nodeName) {
+						continue
+					}
+					changedReportNames = append(changedReportNames, nodeName)
+				}
 			}
-			changedReportNames = append(changedReportNames, changedReport.Name)
 		}
 
 		for _, changedReport := range changedReports {
@@ -163,8 +186,6 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			}
 			changedReportNames = append(changedReportNames, changedReport.Name)
 		}
-
-		reportsBeingWatched := []string{"report.deep_nesting"}
 
 		for _, changedReportName := range changedReportNames {
 			if helpers.StringSliceContains(reportsBeingWatched, changedReportName) {
