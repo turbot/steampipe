@@ -105,7 +105,7 @@ func (p *Panel) AddChild(child ModTreeItem) error {
 		}
 	case *Report:
 		// avoid duplicates
-		if p.containsReport(c.Name()) {
+		if !p.containsReport(c.Name()) {
 			p.Reports = append(p.Reports, c)
 		}
 	}

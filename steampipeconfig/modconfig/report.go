@@ -61,12 +61,12 @@ func (r *Report) AddChild(child ModTreeItem) error {
 	switch c := child.(type) {
 	case *Panel:
 		// avoid duplicates
-		if r.containsPanel(c.Name()) {
+		if !r.containsPanel(c.Name()) {
 			r.Panels = append(r.Panels, c)
 		}
 	case *Report:
 		// avoid duplicates
-		if r.containsReport(c.Name()) {
+		if !r.containsReport(c.Name()) {
 			r.Reports = append(r.Reports, c)
 		}
 	}
