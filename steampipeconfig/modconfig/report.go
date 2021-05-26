@@ -57,18 +57,39 @@ func (r *Report) AddReference(reference string) {
 }
 
 // AddChild implements ModTreeItem
-func (r *Report) AddChild(child ModTreeItem) error {
+func (p *Report) AddChild(child ModTreeItem) error {
 	switch c := child.(type) {
 	case *Panel:
-		r.Panels = append(r.Panels, c)
+		// TODO why is this necessary??
+		// TODO can we share with report
+		// does this child already exist
+		for _, existingPanel := range p.Panels {
+			if existingPanel.Name() == child.Name() {
+				return nil
+			}
+		}
+		p.Panels = append(p.Panels, c)
 	case *Report:
-		r.Reports = append(r.Reports, c)
+		// does this child already exist
+		for _, existingReport := range p.Reports {
+			if existingReport.Name() == child.Name() {
+				return nil
+			}
+		}
+		p.Reports = append(p.Reports, c)
 	}
 	return nil
 }
 
 // AddParent implements ModTreeItem
 func (r *Report) AddParent(parent ModTreeItem) error {
+	// TODO why is this necessary - does benchmark need it???
+	// does this panel already have this parent
+	for _, currentParent := range r.parents {
+		if currentParent.Name() == parent.Name() {
+			return nil
+		}
+	}
 	r.parents = append(r.parents, parent)
 	return nil
 }

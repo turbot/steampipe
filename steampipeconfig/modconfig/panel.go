@@ -47,7 +47,7 @@ func PanelFromFile(modPath, filePath string) (MappableResource, []byte, error) {
 }
 
 // InitialiseFromFile implements MappableResource
-func (q *Panel) InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error) {
+func (p *Panel) InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error) {
 	// only valid for sql files
 	if filepath.Ext(filePath) != constants.MarkdownExtension {
 		return nil, nil, fmt.Errorf("Panel.InitialiseFromFile must be called with markdown files only - filepath: '%s'", filePath)
@@ -64,11 +64,11 @@ func (q *Panel) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 	if err != nil {
 		return nil, nil, err
 	}
-	q.ShortName = name
-	q.FullName = fmt.Sprintf("panel.%s", name)
-	q.Text = &markdown
-	q.Source = utils.ToStringPointer("steampipe.panel.markdown")
-	return q, markdownBytes, nil
+	p.ShortName = name
+	p.FullName = fmt.Sprintf("panel.%s", name)
+	p.Text = &markdown
+	p.Source = utils.ToStringPointer("steampipe.panel.markdown")
+	return p, markdownBytes, nil
 }
 
 // CtyValue implements HclResource
@@ -99,8 +99,22 @@ func (p *Panel) AddReference(reference string) {
 func (p *Panel) AddChild(child ModTreeItem) error {
 	switch c := child.(type) {
 	case *Panel:
+		// TODO why is this necessary??
+		// TODO can we share with report
+		// does this child already exist
+		for _, existingPanel := range p.Panels {
+			if existingPanel.Name() == child.Name() {
+				return nil
+			}
+		}
 		p.Panels = append(p.Panels, c)
 	case *Report:
+		// does this child already exist
+		for _, existingReport := range p.Reports {
+			if existingReport.Name() == child.Name() {
+				return nil
+			}
+		}
 		p.Reports = append(p.Reports, c)
 	}
 	return nil
@@ -108,6 +122,12 @@ func (p *Panel) AddChild(child ModTreeItem) error {
 
 // AddParent implements ModTreeItem
 func (p *Panel) AddParent(parent ModTreeItem) error {
+	// does this panel already have this parent
+	for _, currentParent := range p.parents {
+		if currentParent.Name() == parent.Name() {
+			return nil
+		}
+	}
 	p.parents = append(p.parents, parent)
 	return nil
 }
@@ -157,17 +177,6 @@ func (p *Panel) GetPaths() []NodePath {
 	}
 	return res
 }
-
-//// AddChild implements ReportTreeItem
-//func (p *Panel) AddChild(child ReportTreeItem) {
-//	switch c := child.(type) {
-//	case *Panel:
-//		p.Panels = append(p.Panels, c)
-//	case *Report:
-//		p.Reports = append(p.Reports, c)
-//	}
-//}
-//
 
 // GetMetadata implements ResourceWithMetadata
 func (p *Panel) GetMetadata() *ResourceMetadata {
