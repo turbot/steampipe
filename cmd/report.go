@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
@@ -12,8 +12,6 @@ import (
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/report/reportserver"
 	"github.com/turbot/steampipe/utils"
-	"github.com/turbot/steampipe/workspace"
-	"gopkg.in/olahol/melody.v1"
 )
 
 // ReportCmd :: represents the report command
@@ -50,19 +48,13 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnErrorWithMessage(err, "failed to start service")
 	defer db.Shutdown(nil, db.InvokerReport)
 
-	// load the workspace
-	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
-	defer workspace.Close()
+	server, err := reportserver.NewServer(ctx)
 
-	// get a db client
-	client, err := db.NewClient(true)
-	utils.FailOnError(err)
-	defer client.Close()
+	if err != nil {
+		utils.FailOnError(err)
+	}
 
-	webSocket := melody.New()
-	var server = reportserver.NewServer(ctx, webSocket, workspace, client)
-	workspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
+	defer server.Shutdown()
 
 	server.Start()
 }

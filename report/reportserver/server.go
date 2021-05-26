@@ -5,16 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/turbot/steampipe/db"
-
-	"github.com/turbot/steampipe/report/reporteventpublisher"
-	"github.com/turbot/steampipe/report/reportexecute"
-
-	"github.com/turbot/steampipe/workspace"
-
+	"github.com/spf13/viper"
 	"gopkg.in/olahol/melody.v1"
 
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/report/reporteventpublisher"
 	"github.com/turbot/steampipe/report/reportevents"
+	"github.com/turbot/steampipe/report/reportexecute"
+	"github.com/turbot/steampipe/workspace"
 )
 
 type Server struct {
@@ -29,14 +28,29 @@ type ExecutionPayload struct {
 	Report *reportexecute.ReportRun `json:"report"`
 }
 
-func NewServer(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, client *db.Client) Server {
-	// TODO would be nice to create and own client here - and ensure it is closed when server is shutdown
-	return Server{
+func NewServer(ctx context.Context) (*Server, error) {
+	dbClient, err := db.NewClient(true)
+	if err != nil {
+		return nil, err
+	}
+
+	loadedWorkspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+	if err != nil {
+		return nil, err
+	}
+
+	webSocket := melody.New()
+
+	server := &Server{
+		client:    dbClient,
 		context:   ctx,
 		webSocket: webSocket,
-		workspace: workspace,
-		client:    client,
+		workspace: loadedWorkspace,
 	}
+
+	server.workspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
+
+	return server, nil
 }
 
 func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) []byte {
@@ -60,6 +74,22 @@ func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte
 // Starts the API server
 func (s *Server) Start() {
 	StartAPI(s.context, s.webSocket, s.workspace, s.client)
+}
+
+func (s *Server) Shutdown() {
+	// Close the DB client
+	if s.client != nil {
+		s.client.Close()
+	}
+
+	if s.webSocket != nil {
+		s.webSocket.Close()
+	}
+
+	// Close the workspace
+	if s.workspace != nil {
+		s.workspace.Close()
+	}
 }
 
 func (s *Server) HandleWorkspaceUpdate(event reporteventpublisher.ReportEvent) {
