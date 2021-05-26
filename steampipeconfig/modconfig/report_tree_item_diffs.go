@@ -18,7 +18,7 @@ func (d *ReportTreeItemDiffs) AddAddedItem(name string) {
 }
 
 func (d *ReportTreeItemDiffs) AddRemovedItem(name string) {
-	d.RemovedItems = append(d.RemovedItems)
+	d.RemovedItems = append(d.RemovedItems, name)
 }
 
 func (d *ReportTreeItemDiffs) populateChildDiffs(old ModTreeItem, new ModTreeItem) {
