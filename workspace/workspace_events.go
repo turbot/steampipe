@@ -15,7 +15,7 @@ func (w *Workspace) RegisterReportEventHandler(handler reportevents.ReportEventH
 	w.reportEventHandlers = append(w.reportEventHandlers, handler)
 }
 
-func (w *Workspace) RaiseChangeEvents(panels, prevPanels map[string]*modconfig.Panel, reports, prevReports map[string]*modconfig.Report) {
+func (w *Workspace) RaiseReportChangedEvents(panels, prevPanels map[string]*modconfig.Panel, reports, prevReports map[string]*modconfig.Report) {
 	event := &reportevents.ReportChanged{}
 
 	// first detect detect changes to existing panels/reports and removed panels and reports
@@ -53,5 +53,4 @@ func (w *Workspace) RaiseChangeEvents(panels, prevPanels map[string]*modconfig.P
 	if event.HasChanges() {
 		w.PublishReportEvent(event)
 	}
-
 }

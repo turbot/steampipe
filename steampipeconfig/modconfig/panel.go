@@ -22,7 +22,9 @@ type Panel struct {
 	Panels  []*Panel
 
 	DeclRange hcl.Range
-	metadata  *ResourceMetadata
+
+	parents  []ControlTreeItem
+	metadata *ResourceMetadata
 }
 
 func NewPanel(block *hcl.Block) *Panel {
@@ -58,23 +60,78 @@ func (p *Panel) AddReference(reference string) {
 	// TODO
 }
 
-// AddChild implements ReportTreeItem
-func (p *Panel) AddChild(child ReportTreeItem) {
+// AddChild implements ControlTreeItem
+func (r *Panel) AddChild(child ControlTreeItem) error {
 	switch c := child.(type) {
 	case *Panel:
-		p.Panels = append(p.Panels, c)
+		r.Panels = append(r.Panels, c)
 	case *Report:
-		p.Reports = append(p.Reports, c)
+		r.Reports = append(r.Reports, c)
 	}
+	return nil
 }
 
-func (p *Panel) GetPanels() []*Panel {
-	return p.Panels
+// AddParent implements ControlTreeItem
+func (c *Panel) AddParent(parent ControlTreeItem) error {
+	c.parents = append(c.parents, parent)
+	return nil
 }
 
-func (p *Panel) GetReports() []*Report {
-	return p.Reports
+// GetParents implements ControlTreeItem
+func (c *Panel) GetParents() []ControlTreeItem {
+	return c.parents
 }
+
+// GetChildren implements ControlTreeItem
+func (c *Panel) GetChildren() []ControlTreeItem {
+	children := make([]ControlTreeItem, len(c.Panels)+len(c.Reports))
+	idx := 0
+	for _, p := range c.Panels {
+		children[idx] = p
+		idx++
+	}
+	for _, r := range c.Reports {
+		children[idx] = r
+		idx++
+	}
+	return children
+}
+
+// GetTitle implements ControlTreeItem
+func (c *Panel) GetTitle() string {
+	return typehelpers.SafeString(c.Title)
+}
+
+// GetDescription implements ControlTreeItem
+func (c *Panel) GetDescription() string {
+	return ""
+}
+
+// GetTags implements ControlTreeItem
+func (c *Panel) GetTags() map[string]string {
+	return nil
+}
+
+// Path implements ControlTreeItem
+func (c *Panel) Path() []string {
+	// TODO update for multiple paths
+	path := []string{c.FullName}
+	if c.parents != nil {
+		path = append(c.parents[0].Path(), path...)
+	}
+	return path
+}
+
+//// AddChild implements ReportTreeItem
+//func (p *Panel) AddChild(child ReportTreeItem) {
+//	switch c := child.(type) {
+//	case *Panel:
+//		p.Panels = append(p.Panels, c)
+//	case *Report:
+//		p.Reports = append(p.Reports, c)
+//	}
+//}
+//
 
 // GetMetadata implements ResourceWithMetadata
 func (p *Panel) GetMetadata() *ResourceMetadata {

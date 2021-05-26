@@ -58,7 +58,7 @@ func Load(workspacePath string) (*Workspace, error) {
 	workspace.setListFlag()
 
 	// load the .steampipe ignore file
-	if err := workspace.LoadExclusions(); err != nil {
+	if err := workspace.loadExclusions(); err != nil {
 		return nil, err
 	}
 
@@ -70,7 +70,6 @@ func Load(workspacePath string) (*Workspace, error) {
 }
 
 func (w *Workspace) SetupWatcher(client *db.Client) error {
-
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
@@ -90,7 +89,7 @@ func (w *Workspace) SetupWatcher(client *db.Client) error {
 	return nil
 }
 
-func (w *Workspace) LoadExclusions() error {
+func (w *Workspace) loadExclusions() error {
 	w.exclusions = []string{}
 
 	ignorePath := filepath.Join(w.Path, constants.WorkspaceIgnoreFile)
@@ -271,11 +270,6 @@ func (w *Workspace) loadMod() error {
 		},
 	}
 
-	// clear all our maps
-	w.QueryMap = make(map[string]*modconfig.Query)
-	w.ControlMap = make(map[string]*modconfig.Control)
-	w.BenchmarkMap = make(map[string]*modconfig.Benchmark)
-
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
 	if err != nil {
 		return err
@@ -414,7 +408,8 @@ func (w *Workspace) handleFileWatcherEvent(client *db.Client, events []fsnotify.
 
 	// we build a list of diffs for panels and workspaces so store the old ones
 	// TODO - same for all resources??
-	prevPanels, prevReports := w.saveCurrentResources()
+	prevPanels := w.getPanelMap()
+	prevReports := w.getReportMap()
 
 	err := w.loadMod()
 	if err != nil {
@@ -429,17 +424,29 @@ func (w *Workspace) handleFileWatcherEvent(client *db.Client, events []fsnotify.
 	// todo detect differences and only refresh if necessary
 	db.UpdateMetadataTables(w.GetResourceMaps(), client)
 
-	w.RaiseChangeEvents(w.PanelMap, prevPanels, w.ReportMap, prevReports)
+	w.RaiseReportChangedEvents(w.getPanelMap(), prevPanels, w.getReportMap(), prevReports)
 }
 
-func (w *Workspace) saveCurrentResources() (map[string]*modconfig.Panel, map[string]*modconfig.Report) {
-	prevPanels := make(map[string]*modconfig.Panel, len(w.PanelMap))
-	prevReports := make(map[string]*modconfig.Report, len(w.ReportMap))
-	for name, p := range w.PanelMap {
-		prevPanels[name] = p
+// return a map of all unique panels, keyed by name
+// not we cannot just use PanelMap as this contains duplicates (qualified and unqualified version)
+func (w *Workspace) getPanelMap() map[string]*modconfig.Panel {
+	panels := make(map[string]*modconfig.Panel, len(w.PanelMap))
+	for _, p := range w.PanelMap {
+		// refetch the name property to avoid duplicates
+		// (as we save resources with qualified and unqualified name)
+		panels[p.Name()] = p
 	}
-	for name, p := range w.ReportMap {
-		prevReports[name] = p
+	return panels
+}
+
+// return a map of all unique reports, keyed by name
+// not we cannot just use ReportMap as this contains duplicates (qualified and unqualified version)
+func (w *Workspace) getReportMap() map[string]*modconfig.Report {
+	reports := make(map[string]*modconfig.Report, len(w.ReportMap))
+	for _, p := range w.ReportMap {
+		// refetch the name property to avoid duplicates
+		// (as we save resources with qualified and unqualified name)
+		reports[p.Name()] = p
 	}
-	return prevPanels, prevReports
+	return reports
 }

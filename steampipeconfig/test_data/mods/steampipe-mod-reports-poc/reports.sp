@@ -2,7 +2,7 @@ report simple {
   title = "Simple"
 
   panel header {
-    source = "steampipe.panel.markdown"
+    source = "steampipe.panel.markdown_"
     text = "# Hello World"
   }
 }

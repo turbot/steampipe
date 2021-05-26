@@ -194,10 +194,10 @@ func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Report, *dec
 	return report, res
 }
 
-func decodeReportBlocks(resource modconfig.ReportTreeItem, content *hcl.BodyContent, runCtx *RunContext) hcl.Diagnostics {
+func decodeReportBlocks(resource modconfig.ControlTreeItem, content *hcl.BodyContent, runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	for _, b := range content.Blocks {
-		var childResource modconfig.ReportTreeItem
+		var childResource modconfig.ControlTreeItem
 		var decodeResult *decodeResult
 		switch b.Type {
 		case modconfig.BlockTypePanel:
@@ -207,7 +207,10 @@ func decodeReportBlocks(resource modconfig.ReportTreeItem, content *hcl.BodyCont
 		}
 
 		// add this panel to the mod
-		diags = handleDecodeResult(childResource.(modconfig.HclResource), decodeResult, b, runCtx)
+		moreDiags := handleDecodeResult(childResource.(modconfig.HclResource), decodeResult, b, runCtx)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+		}
 		if decodeResult.Success() {
 			resource.AddChild(childResource)
 		}
@@ -270,7 +273,9 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 			runCtx.AddDependencies(block, resource.Name(), res.Depends)
 		}
 	}
-	return diags
+	// update result diags
+	res.Diags = diags
+	return res.Diags
 }
 
 // determine whether the diag is a dependency error, and if so, return a dependency object

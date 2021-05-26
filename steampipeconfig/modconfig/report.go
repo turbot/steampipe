@@ -62,6 +62,7 @@ func (r *Report) AddChild(child ReportTreeItem) {
 	case *Report:
 		r.Reports = append(r.Reports, c)
 	}
+	return nil
 }
 
 // GetPanels implements ReportTreeItem
