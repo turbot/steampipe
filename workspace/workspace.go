@@ -77,21 +77,7 @@ func (w *Workspace) SetupWatcher(client *db.Client) error {
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
 		OnChange: func(events []fsnotify.Event) {
-			w.loadLock.Lock()
-			defer w.loadLock.Unlock()
-
-			err := w.loadMod()
-			if err != nil {
-				// if we are already in an error state, do not show error
-				if w.watcherError == nil {
-					fmt.Println()
-					utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
-				}
-			}
-			// now store/clear watcher error so we only show message once
-			w.watcherError = err
-			// todo detect differences and only refresh if necessary
-			db.UpdateMetadataTables(w.GetResourceMaps(), client)
+			w.handleFileWatcherEvent(client, events)
 		},
 		ListFlag: w.listFlag,
 		//onError:          nil,
@@ -421,4 +407,81 @@ func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig
 		}
 	}
 	return res
+}
+
+func (w *Workspace) handleFileWatcherEvent(client *db.Client, events []fsnotify.Event) {
+	w.loadLock.Lock()
+	defer w.loadLock.Unlock()
+
+	// we build a list of diffs for panels and workspaces so store the old ones
+	// TODO - same for all resources??
+	prevPanels, prevReports := w.saveCurrentResources()
+
+	err := w.loadMod()
+	if err != nil {
+		// if we are already in an error state, do not show error
+		if w.watcherError == nil {
+			fmt.Println()
+			utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
+		}
+	}
+	// now store/clear watcher error so we only show message once
+	w.watcherError = err
+	// todo detect differences and only refresh if necessary
+	db.UpdateMetadataTables(w.GetResourceMaps(), client)
+
+	w.raiseChangeEvents(prevPanels, prevReports)
+}
+
+func (w *Workspace) saveCurrentResources() (map[string]*modconfig.Panel, map[string]*modconfig.Report) {
+	prevPanels := make(map[string]*modconfig.Panel, len(w.PanelMap))
+	prevReports := make(map[string]*modconfig.Report, len(w.ReportMap))
+	for name, p := range w.PanelMap {
+		prevPanels[name] = p
+	}
+	for name, p := range w.ReportMap {
+		prevReports[name] = p
+	}
+	return prevPanels, prevReports
+}
+
+func (w *Workspace) raiseChangeEvents(prevPanels map[string]*modconfig.Panel, prevReports map[string]*modconfig.Report) {
+	event := &reportevents.ReportChanged{}
+
+	// first detect detect changes to existing panels/reports and removed panels and reports
+	for name, prevPanel := range prevPanels {
+		if currentPanel, ok := w.PanelMap[name]; ok {
+			diff := prevPanel.Diff(currentPanel)
+			if diff.HasChanges() {
+				event.ChangedPanels = append(event.ChangedPanels, diff)
+			}
+		} else {
+			event.DeletedPanels = append(event.DeletedPanels, prevPanel)
+		}
+	}
+	for name, prevReport := range prevReports {
+		if currentReport, ok := w.ReportMap[name]; ok {
+			diff := prevReport.Diff(currentReport)
+			if diff.HasChanges() {
+				event.ChangedReports = append(event.ChangedReports, diff)
+			}
+		} else {
+			event.DeletedReports = append(event.DeletedReports, prevReport)
+		}
+	}
+	// now detect new panels/reports
+	for name, p := range w.PanelMap {
+		if _, ok := prevPanels[name]; !ok {
+			event.NewPanels = append(event.NewPanels, p)
+		}
+	}
+	for name, p := range w.ReportMap {
+		if _, ok := prevReports[name]; !ok {
+			event.NewReports = append(event.NewReports, p)
+		}
+	}
+	if event.HasChanges() {
+		w.PublishReportEvent(event)
+	}
+
 }

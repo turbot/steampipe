@@ -49,4 +49,7 @@ type ResourceWithMetadata interface {
 // ReportTreeItem must be implemented by members of the report tree hierarchy
 type ReportTreeItem interface {
 	AddChild(ReportTreeItem)
+	GetPanels() []*Panel
+	GetReports() []*Report
+	//GetPaths()[]Path
 }

@@ -3,9 +3,9 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/zclconf/go-cty/cty"
-
 	"github.com/hashicorp/hcl/v2"
+	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // Report is a struct representing the Report resource
@@ -64,6 +64,16 @@ func (r *Report) AddChild(child ReportTreeItem) {
 	}
 }
 
+// GetPanels implements ReportTreeItem
+func (r *Report) GetPanels() []*Panel {
+	return r.Panels
+}
+
+// GetReports implements ReportTreeItem
+func (r *Report) GetReports() []*Report {
+	return r.Reports
+}
+
 // GetMetadata implements ResourceWithMetadata
 func (r *Report) GetMetadata() *ResourceMetadata {
 	return r.metadata
@@ -72,4 +82,18 @@ func (r *Report) GetMetadata() *ResourceMetadata {
 // SetMetadata implements ResourceWithMetadata
 func (r *Report) SetMetadata(metadata *ResourceMetadata) {
 	r.metadata = metadata
+}
+
+func (r *Report) Diff(new *Report) *ReportTreeItemDiffs {
+	res := &ReportTreeItemDiffs{
+		Item: r,
+		Name: r.Name(),
+	}
+
+	if typehelpers.SafeString(r.Title) != typehelpers.SafeString(new.Title) {
+		res.AddPropertyDiff("Title")
+	}
+
+	res.populateChildDiffs(r, new)
+	return res
 }
