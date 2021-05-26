@@ -50,6 +50,8 @@ func (g *DimensionColorGenerator) reset() {
 	// create the state map
 	g.currentRow = g.startingRow
 	g.currentColumn = g.startingColumn
+	// clear allocated colors
+	g.allocatedColorCodes = nil
 }
 
 func (g *DimensionColorGenerator) populate(e *ExecutionTree) {
