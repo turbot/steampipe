@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/zclconf/go-cty/cty"
@@ -205,14 +204,15 @@ func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
 
 	// so we have a result - add into tree
 	for _, p := range parents {
-		for _, parentPath := range p.GetPaths() {
-			// check this item does not exist in the parent path
-			if helpers.StringSliceContains(parentPath, item.Name()) {
-				return fmt.Errorf("cyclical dependency adding '%s' into control tree - parent '%s'", item.Name(), p.Name())
-			}
-			item.AddParent(p)
-			p.AddChild(item)
-		}
+		// TODO validity checking
+		//for _, parentPath := range p.GetPaths() {
+		//	// check this item does not exist in the parent path
+		//	if helpers.StringSliceContains(parentPath, item.Name()) {
+		//		return fmt.Errorf("cyclical dependency adding '%s' into control tree - parent '%s'", item.Name(), p.Name())
+		//	}
+		item.AddParent(p)
+		p.AddChild(item)
+		//}
 	}
 
 	return nil
