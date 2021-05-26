@@ -56,7 +56,28 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 	// add mod and any existing mod resources to the variables
 	diags := c.addModToVariables()
 
+	c.addSteampipeVariables()
 	return c, diags
+}
+
+// add enums to the variables which may be referenced from within the hcl
+func (c *RunContext) addSteampipeVariables() {
+	// add steampipe variables
+	c.variables["steampipe"] = map[string]cty.Value{
+		"panel": cty.ObjectVal(map[string]cty.Value{
+			"markdown":         cty.StringVal("markdown"),
+			"barchart":         cty.StringVal("barchart"),
+			"counter":          cty.StringVal("counter"),
+			"linechart":        cty.StringVal("linechart"),
+			"piechart":         cty.StringVal("piechart"),
+			"placeholder":      cty.StringVal("placeholder"),
+			"control_list":     cty.StringVal("control_list"),
+			"control_progress": cty.StringVal("control_progress"),
+			"control_table":    cty.StringVal("control_table"),
+			"status":           cty.StringVal("status"),
+			"table":            cty.StringVal("table"),
+		}),
+	}
 }
 
 func (c *RunContext) newDependencyGraph() *topsort.Graph {
