@@ -1,4 +1,4 @@
-package reporteventpublisher
+package reportevents
 
 type ReportEvent interface {
 	IsReportEvent()

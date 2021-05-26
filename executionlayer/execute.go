@@ -2,6 +2,7 @@ package executionlayer
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/report/reportevents"
@@ -10,8 +11,11 @@ import (
 )
 
 func ExecuteReport(ctx context.Context, reportName string, workspace *workspace.Workspace, client *db.Client) error {
-
-	executionTree, err := reportexecute.NewReportExecutionTree(reportName, workspace, client)
+	report, ok := workspace.ReportMap[reportName]
+	if !ok {
+		return fmt.Errorf("report '%s' does not exist in workspace", reportName)
+	}
+	executionTree, err := reportexecute.NewReportExecutionTree(report, client)
 	if err != nil {
 		return err
 	}

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/turbot/steampipe/report/reporteventpublisher"
+	"github.com/turbot/steampipe/report/reportevents"
 
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -40,8 +40,8 @@ type Workspace struct {
 	// should we load/watch files recursively
 	listFlag     filehelpers.ListFlag
 	watcherError error
-	// event publisher
-	reportEventPublisher *reporteventpublisher.ReportEventPublisher
+	// event handlers
+	reportEventHandlers []reportevents.ReportEventHandler
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -51,8 +51,7 @@ func Load(workspacePath string) (*Workspace, error) {
 
 	// create shell workspace
 	workspace := &Workspace{
-		Path:                 workspacePath,
-		reportEventPublisher: &reporteventpublisher.ReportEventPublisher{},
+		Path: workspacePath,
 	}
 
 	// determine whether to load files recursively or just from the top level folder
@@ -430,7 +429,7 @@ func (w *Workspace) handleFileWatcherEvent(client *db.Client, events []fsnotify.
 	// todo detect differences and only refresh if necessary
 	db.UpdateMetadataTables(w.GetResourceMaps(), client)
 
-	w.raiseChangeEvents(prevPanels, prevReports)
+	w.RaiseChangeEvents(w.PanelMap, prevPanels, w.ReportMap, prevReports)
 }
 
 func (w *Workspace) saveCurrentResources() (map[string]*modconfig.Panel, map[string]*modconfig.Report) {
@@ -443,45 +442,4 @@ func (w *Workspace) saveCurrentResources() (map[string]*modconfig.Panel, map[str
 		prevReports[name] = p
 	}
 	return prevPanels, prevReports
-}
-
-func (w *Workspace) raiseChangeEvents(prevPanels map[string]*modconfig.Panel, prevReports map[string]*modconfig.Report) {
-	event := &reportevents.ReportChanged{}
-
-	// first detect detect changes to existing panels/reports and removed panels and reports
-	for name, prevPanel := range prevPanels {
-		if currentPanel, ok := w.PanelMap[name]; ok {
-			diff := prevPanel.Diff(currentPanel)
-			if diff.HasChanges() {
-				event.ChangedPanels = append(event.ChangedPanels, diff)
-			}
-		} else {
-			event.DeletedPanels = append(event.DeletedPanels, prevPanel)
-		}
-	}
-	for name, prevReport := range prevReports {
-		if currentReport, ok := w.ReportMap[name]; ok {
-			diff := prevReport.Diff(currentReport)
-			if diff.HasChanges() {
-				event.ChangedReports = append(event.ChangedReports, diff)
-			}
-		} else {
-			event.DeletedReports = append(event.DeletedReports, prevReport)
-		}
-	}
-	// now detect new panels/reports
-	for name, p := range w.PanelMap {
-		if _, ok := prevPanels[name]; !ok {
-			event.NewPanels = append(event.NewPanels, p)
-		}
-	}
-	for name, p := range w.ReportMap {
-		if _, ok := prevReports[name]; !ok {
-			event.NewReports = append(event.NewReports, p)
-		}
-	}
-	if event.HasChanges() {
-		w.PublishReportEvent(event)
-	}
-
 }

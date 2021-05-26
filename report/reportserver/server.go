@@ -10,7 +10,6 @@ import (
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
-	"github.com/turbot/steampipe/report/reporteventpublisher"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/workspace"
@@ -92,7 +91,7 @@ func (s *Server) Shutdown() {
 	}
 }
 
-func (s *Server) HandleWorkspaceUpdate(event reporteventpublisher.ReportEvent) {
+func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 	// TODO ...
 	fmt.Println("Got update event", event)
 	switch e := event.(type) {

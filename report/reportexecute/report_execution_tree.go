@@ -9,35 +9,28 @@ import (
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/workspace"
 )
 
 // ReportExecutionTree is a structure representing the control result hierarchy
 type ReportExecutionTree struct {
 	Root            *ReportRun
 	dependencyGraph *topsort.Graph
-
-	workspace *workspace.Workspace
-	client    *db.Client
-	panels    map[string]*PanelRun
-	reports   map[string]*ReportRun
+	client          *db.Client
+	panels          map[string]*PanelRun
+	reports         map[string]*ReportRun
 }
 
 // NewReportExecutionTree creates a result group from a ControlTreeItem
-func NewReportExecutionTree(reportName string, workspace *workspace.Workspace, client *db.Client) (*ReportExecutionTree, error) {
-	report, ok := workspace.ReportMap[reportName]
-	if !ok {
-		return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
-	}
+func NewReportExecutionTree(root *modconfig.Report, client *db.Client) (*ReportExecutionTree, error) {
+
 	// now populate the ReportExecutionTree
 	reportExecutionTree := &ReportExecutionTree{
-		workspace:       workspace,
 		client:          client,
 		dependencyGraph: topsort.NewGraph(),
 		panels:          make(map[string]*PanelRun),
 		reports:         make(map[string]*ReportRun),
 	}
-	reportExecutionTree.Root = NewReportRun(report, reportExecutionTree)
+	reportExecutionTree.Root = NewReportRun(root, reportExecutionTree)
 
 	return reportExecutionTree, nil
 }
