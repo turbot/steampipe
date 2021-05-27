@@ -22,9 +22,9 @@ const (
 
 // ResultRow is the result of a control execution for a single resource
 type ResultRow struct {
-	Reason     string             `json:"reason"`
-	Resource   string             `json:"resource"`
-	Status     string             `json:"status"`
+	Reason     string             `json:"reason" csv:"reason"`
+	Resource   string             `json:"resource" csv:"resource"`
+	Status     string             `json:"status" csv:"status"`
 	Dimensions []Dimension        `json:"dimensions"`
 	Control    *modconfig.Control `json:"-"`
 }
@@ -37,14 +37,6 @@ func (r *ResultRow) AddDimension(c *sql.ColumnType, val interface{}) {
 	default:
 		r.Dimensions = append(r.Dimensions, Dimension{c.Name(), typehelpers.ToString(val)})
 	}
-}
-
-func (r ResultRow) CsvColumns() (map[string]string, []string) {
-	return map[string]string{
-		"reason":   "Reason",
-		"resource": "Resource",
-		"status":   "Status",
-	}, []string{"reason", "resource", "status"}
 }
 
 func NewResultRow(control *modconfig.Control, row *queryresult.RowResult, colTypes []*sql.ColumnType) (*ResultRow, error) {
