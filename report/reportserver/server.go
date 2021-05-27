@@ -123,10 +123,11 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		EXECUTION_COMPLETE
 	*/
 
-	fmt.Println("Got update event", event)
+	fmt.Println("Got workspace update event", event)
 	switch e := event.(type) {
+
 	case *reportevents.WorkspaceError:
-		// TODO handle this
+		fmt.Println("Got workspace error event", event)
 		break
 
 	case *reportevents.ExecutionStarted:
@@ -142,9 +143,14 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		}
 		s.mutex.Unlock()
 
-	case *reportevents.PanelComplete:
-		// TODO handle this
+	case *reportevents.PanelError:
+		fmt.Println("Got panel error event", event)
 		break
+
+	case *reportevents.PanelComplete:
+		fmt.Println("Got panel complete event", event)
+		break
+
 	case *reportevents.ReportChanged:
 		fmt.Println("Got report changed event", *e)
 		changedPanels := e.ChangedPanels
@@ -199,9 +205,11 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 				executionlayer.ExecuteReportNode(s.context, changedReportName, s.workspace, s.dbClient)
 			}
 		}
+
 	case *reportevents.ReportComplete:
-		// TODO handle this
+		fmt.Println("Got report complete event", event)
 		break
+
 	case *reportevents.ExecutionComplete:
 		fmt.Println("Got execution complete event", *e)
 		payload := buildExecutionCompletePayload(e)
