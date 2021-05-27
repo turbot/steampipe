@@ -111,9 +111,25 @@ func (s *Server) Shutdown() {
 }
 
 func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
-	// TODO ...
+	// Possible events - TODO work out best way to handle these
+	/*
+		WORKSPACE_ERROR
+		EXECUTION_STARTED
+		PANEL_CHANGED
+		PANEL_ERROR
+		PANEL_COMPLETE
+		REPORT_CHANGED
+		REPORT_ERROR
+		REPORT_COMPLETE
+		EXECUTION_COMPLETE
+	*/
+
 	fmt.Println("Got update event", event)
 	switch e := event.(type) {
+	case *reportevents.WorkspaceError:
+		// TODO handle this
+		break
+
 	case *reportevents.ExecutionStarted:
 		fmt.Println("Got execution started event", *e)
 		payload := buildExecutionStartedPayload(e)
@@ -127,18 +143,9 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		}
 		s.mutex.Unlock()
 
-	case *reportevents.ExecutionComplete:
-		fmt.Println("Got execution complete event", *e)
-		payload := buildExecutionCompletePayload(e)
-		reportName := e.Report.Name
-		s.mutex.Lock()
-		for session, repoInfo := range s.reportClients {
-			// If this session is interested in this report, broadcast to it
-			if (repoInfo.Report != nil) && *repoInfo.Report == reportName {
-				session.Write(payload)
-			}
-		}
-		s.mutex.Unlock()
+	case *reportevents.PanelComplete:
+		// TODO handle this
+		break
 	case *reportevents.ReportChanged:
 		fmt.Println("Got report changed event", *e)
 		changedPanels := e.ChangedPanels
@@ -193,5 +200,20 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 				executionlayer.ExecuteReport(s.context, changedReportName, s.workspace, s.dbClient)
 			}
 		}
+	case *reportevents.ReportComplete:
+		// TODO handle this
+		break
+	case *reportevents.ExecutionComplete:
+		fmt.Println("Got execution complete event", *e)
+		payload := buildExecutionCompletePayload(e)
+		reportName := e.Report.Name
+		s.mutex.Lock()
+		for session, repoInfo := range s.reportClients {
+			// If this session is interested in this report, broadcast to it
+			if (repoInfo.Report != nil) && *repoInfo.Report == reportName {
+				session.Write(payload)
+			}
+		}
+		s.mutex.Unlock()
 	}
 }
