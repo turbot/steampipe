@@ -9,16 +9,15 @@ import (
 )
 
 type GroupCsvRenderer struct {
-	columns *execute.ResultColumns
+	columns *ResultColumns
 }
 
-func newGroupCsvRenderer(flatResults *execute.ResultColumns) *GroupCsvRenderer {
-	return &GroupCsvRenderer{
-		columns: flatResults,
-	}
+func newGroupCsvRenderer() *GroupCsvRenderer {
+	return &GroupCsvRenderer{}
 }
 
 func (r GroupCsvRenderer) Render(tree *execute.ExecutionTree) [][]string {
+	r.columns = newResultColumns(tree)
 	return r.renderGroup(tree.Root)
 }
 
@@ -37,29 +36,21 @@ func (r GroupCsvRenderer) renderGroup(group *execute.ResultGroup) [][]string {
 
 func (r GroupCsvRenderer) renderControl(run *execute.ControlRun, group *execute.ResultGroup) [][]string {
 	var res = make([][]string, len(run.Rows))
-	_, groupColumnsKeyOrder := execute.ResultGroup{}.CsvColumns()
-	_, resultColumnsKeyOrder := execute.ResultRow{}.CsvColumns()
+
+	groupColumns := getCsvColumns(*group)
 
 	for idx, row := range run.Rows {
 		record := []string{}
-		for _, groupColumnName := range groupColumnsKeyOrder {
-			val, _ := helpers.GetFieldValueFromInterface(group, r.columns.GroupColumns[groupColumnName])
+		rowColumns := getCsvColumns(*row)
+
+		for _, groupColumn := range groupColumns {
+			val, _ := helpers.GetFieldValueFromInterface(group, groupColumn.fieldName)
 			record = append(record, typehelpers.ToString(val))
 		}
-		for _, resultColumnName := range resultColumnsKeyOrder {
-			val, _ := helpers.GetFieldValueFromInterface(row, r.columns.ResultColumns[resultColumnName])
+		for _, rowColumn := range rowColumns {
+			val, _ := helpers.GetFieldValueFromInterface(row, rowColumn.fieldName)
 			record = append(record, typehelpers.ToString(val))
 		}
-		// for _, fieldName := range r.columns.ResultColumns {
-		// 	if helpers.StringSliceContains(resultColumnsKeyOrder, fieldName) {
-		// 		continue
-		// 	}
-		// 	val, _ := helpers.GetFieldValueFromInterface(row, fieldName)
-		// 	if val == nil {
-		// 		val = ""
-		// 	}
-		// 	record = append(record, typehelpers.ToString(val))
-		// }
 		for _, fieldName := range r.columns.DimensionColumns {
 			val, _ := helpers.GetFieldValueFromInterface(row, fieldName)
 			if val == nil {
