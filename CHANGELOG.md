@@ -1,3 +1,11 @@
+## v0.5.1 [2021-05-27]
+_What's new?_
+* Update the `check` output to show the tree structure of the benchmarks and controls. [#500](https://github.com/turbot/steampipe/issues/500)
+
+_Bug fixes_
+* Fix issue where interactive prompt sometimes hangs on cancellation. [#507](https://github.com/turbot/steampipe/issues/507)
+* Fix stack overflow error when allocating colors for large number of dimension property values. [#509](https://github.com/turbot/steampipe/issues/509)
+
 ## v0.5.0 [2021-05-20]
 _What's new?_
 * New `check` command, to run controls and benchmarks. ([#410](https://github.com/turbot/steampipe/issues/410), [#413](https://github.com/turbot/steampipe/issues/413))

@@ -31,7 +31,7 @@ Check the verison
 
 ```
 $ steampipe -v
-steampipe version 0.5.0
+steampipe version 0.5.1
 ```
 
 Install a plugin
