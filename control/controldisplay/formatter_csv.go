@@ -15,11 +15,12 @@ type CSVFormatter struct {
 }
 
 func (j *CSVFormatter) Format(_ context.Context, tree *execute.ExecutionTree) (io.Reader, error) {
-	renderer := newGroupCsvRenderer(tree.GetResultColumns())
+	resultColumns := newResultColumns(tree)
+	renderer := newGroupCsvRenderer()
 	outBuffer := bytes.NewBufferString("")
 	j.csvWriter = csv.NewWriter(outBuffer)
 	data := renderer.Render(tree)
-	j.csvWriter.Write(tree.GetResultColumns().AllColumns)
+	j.csvWriter.Write(resultColumns.AllColumns)
 	j.csvWriter.WriteAll(data)
 	return strings.NewReader(outBuffer.String()), nil
 }
