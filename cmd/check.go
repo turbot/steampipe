@@ -171,13 +171,13 @@ func initialiseColorScheme() error {
 	return nil
 }
 
-func DisplayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) (err error) {
+func DisplayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) error {
 	outputFormat := viper.GetString(constants.ArgOutput)
 	formatter, _ := controldisplay.GetFormatter(outputFormat)
-
-	if formatted, err := formatter.Format(ctx, executionTree); err == nil {
-		io.Copy(os.Stdout, formatted)
+	formattedReader, err := formatter.Format(ctx, executionTree)
+	if err != nil {
+		return err
 	}
-
-	return
+	_, err = io.Copy(os.Stdout, formattedReader)
+	return err
 }
