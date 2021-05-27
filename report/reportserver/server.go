@@ -205,7 +205,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 	case *reportevents.ExecutionComplete:
 		fmt.Println("Got execution complete event", *e)
 		payload := buildExecutionCompletePayload(e)
-		reportName := e.Report.Name
+		reportName := e.Report.GetName()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
 			// If this session is interested in this report, broadcast to it
