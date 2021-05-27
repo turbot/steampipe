@@ -143,3 +143,11 @@ func (g *DimensionColorGenerator) colorClashes(color uint8) bool {
 
 	return false
 }
+
+func (g *DimensionColorGenerator) getDimensionProperties() []string {
+	var res []string
+	for d := range g.Map {
+		res = append(res, d)
+	}
+	return res
+}
