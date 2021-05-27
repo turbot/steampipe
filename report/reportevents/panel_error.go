@@ -1,9 +1,9 @@
 package reportevents
 
-import "github.com/turbot/steampipe/report/reportexecute"
+import "github.com/turbot/steampipe/report/reportinterfaces"
 
 type PanelError struct {
-	Panel *reportexecute.PanelRun
+	Panel reportinterfaces.ReportNodeRun
 }
 
 // IsReportEvent implements ReportEvent interface

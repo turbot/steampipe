@@ -79,7 +79,7 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 				reportClientInfo := socketSessions[session]
 				reportClientInfo.Report = &request.Payload.Report.FullName
 				mutex.Unlock()
-				executionlayer.ExecuteReport(ctx, request.Payload.Report.FullName, workspace, dbClient)
+				executionlayer.ExecuteReportNode(ctx, request.Payload.Report.FullName, workspace, dbClient)
 			}
 		}
 	})

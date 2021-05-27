@@ -1,9 +1,9 @@
 package reportevents
 
-import "github.com/turbot/steampipe/report/reportexecute"
+import "github.com/turbot/steampipe/report/reportinterfaces"
 
 type ExecutionComplete struct {
-	Report *reportexecute.ReportRun
+	Report reportinterfaces.ReportNodeRun
 }
 
 // IsReportEvent implements ReportEvent interface

@@ -4,20 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/go-kit/helpers"
-	typeHelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/executionlayer"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"sync"
 
 	"github.com/spf13/viper"
-	"gopkg.in/olahol/melody.v1"
-
+	"github.com/turbot/go-kit/helpers"
+	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/executionlayer"
 	"github.com/turbot/steampipe/report/reportevents"
-	"github.com/turbot/steampipe/report/reportexecute"
+	"github.com/turbot/steampipe/report/reportinterfaces"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
+	"gopkg.in/olahol/melody.v1"
 )
 
 type Server struct {
@@ -30,8 +29,8 @@ type Server struct {
 }
 
 type ExecutionPayload struct {
-	Action string                   `json:"action"`
-	Report *reportexecute.ReportRun `json:"report"`
+	Action     string                         `json:"action"`
+	ReportNode reportinterfaces.ReportNodeRun `json:"report_node"`
 }
 
 type ReportClientInfo struct {
@@ -72,8 +71,8 @@ func NewServer(ctx context.Context) (*Server, error) {
 
 func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) []byte {
 	payload := ExecutionPayload{
-		Action: "execution_started",
-		Report: event.Report,
+		Action:     "execution_started",
+		ReportNode: event.ReportNode,
 	}
 	jsonString, _ := json.Marshal(payload)
 	return jsonString
@@ -81,8 +80,8 @@ func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) []byte {
 
 func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte {
 	payload := ExecutionPayload{
-		Action: "execution_complete",
-		Report: event.Report,
+		Action:     "execution_complete",
+		ReportNode: event.Report,
 	}
 	jsonString, _ := json.Marshal(payload)
 	return jsonString
@@ -133,7 +132,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 	case *reportevents.ExecutionStarted:
 		fmt.Println("Got execution started event", *e)
 		payload := buildExecutionStartedPayload(e)
-		reportName := e.Report.Name
+		reportName := e.ReportNode.GetName()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
 			// If this session is interested in this report, broadcast to it
@@ -197,7 +196,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 		for _, changedReportName := range changedReportNames {
 			if helpers.StringSliceContains(reportsBeingWatched, changedReportName) {
-				executionlayer.ExecuteReport(s.context, changedReportName, s.workspace, s.dbClient)
+				executionlayer.ExecuteReportNode(s.context, changedReportName, s.workspace, s.dbClient)
 			}
 		}
 	case *reportevents.ReportComplete:
