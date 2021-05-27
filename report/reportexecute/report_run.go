@@ -2,6 +2,8 @@ package reportexecute
 
 import (
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/report/reportevents"
+	"github.com/turbot/steampipe/report/reportexecutiontree"
 
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
@@ -26,11 +28,11 @@ type ReportRun struct {
 
 	Error error `json:"-"`
 
-	runStatus     ReportRunStatus      `json:"-"`
-	executionTree *ReportExecutionTree `json:"-"`
+	runStatus     ReportRunStatus                          `json:"-"`
+	executionTree *reportexecutiontree.ReportExecutionTree `json:"-"`
 }
 
-func NewReportRun(report *modconfig.Report, executionTree *ReportExecutionTree) *ReportRun {
+func NewReportRun(report *modconfig.Report, executionTree *reportexecutiontree.ReportExecutionTree) *ReportRun {
 	r := &ReportRun{
 		Name:          report.Name(),
 		Title:         typehelpers.SafeString(report.Title),
@@ -71,6 +73,14 @@ func NewReportRun(report *modconfig.Report, executionTree *ReportExecutionTree) 
 func (r *ReportRun) SetError(err error) {
 	r.Error = err
 	r.runStatus = ReportRunError
+	// raise report error event
+	r.executionTree.workspace.PublishReportEvent(&reportevents.ReportError{Report: r})
+}
+
+func (r *ReportRun) SetComplete() {
+	r.runStatus = ReportRunComplete
+	// raise report complete event
+	r.executionTree.workspace.PublishReportEvent(&reportevents.ReportComplete{Report: r})
 }
 
 func (r *ReportRun) ChildrenComplete() bool {

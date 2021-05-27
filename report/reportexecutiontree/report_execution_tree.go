@@ -1,9 +1,13 @@
-package reportexecute
+package reportexecutiontree
 
 import (
 	"context"
 	"fmt"
 	"log"
+
+	"github.com/turbot/steampipe/report/reportevents"
+	"github.com/turbot/steampipe/report/reportexecute"
+	"github.com/turbot/steampipe/workspace"
 
 	"github.com/stevenle/topsort"
 	"github.com/turbot/steampipe/db"
@@ -13,24 +17,26 @@ import (
 
 // ReportExecutionTree is a structure representing the control result hierarchy
 type ReportExecutionTree struct {
-	Root            *ReportRun
+	Root            *reportexecute.ReportRun
 	dependencyGraph *topsort.Graph
 	client          *db.Client
-	panels          map[string]*PanelRun
-	reports         map[string]*ReportRun
+	panels          map[string]*reportexecute.PanelRun
+	reports         map[string]*reportexecute.ReportRun
+	workspace       *workspace.Workspace
 }
 
 // NewReportExecutionTree creates a result group from a ModTreeItem
-func NewReportExecutionTree(root *modconfig.Report, client *db.Client) (*ReportExecutionTree, error) {
+func NewReportExecutionTree(root *modconfig.Report, client *db.Client, workspace *workspace.Workspace) (*ReportExecutionTree, error) {
 
 	// now populate the ReportExecutionTree
 	reportExecutionTree := &ReportExecutionTree{
 		client:          client,
 		dependencyGraph: topsort.NewGraph(),
-		panels:          make(map[string]*PanelRun),
-		reports:         make(map[string]*ReportRun),
+		panels:          make(map[string]*reportexecute.PanelRun),
+		reports:         make(map[string]*reportexecute.ReportRun),
+		workspace:       workspace,
 	}
-	reportExecutionTree.Root = NewReportRun(root, reportExecutionTree)
+	reportExecutionTree.Root = reportexecute.NewReportRun(root, reportExecutionTree)
 
 	return reportExecutionTree, nil
 }
@@ -39,7 +45,8 @@ func (e *ReportExecutionTree) Execute(ctx context.Context) error {
 	log.Println("[TRACE]", "begin ReportExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ReportExecutionTree.Execute")
 
-	if e.runStatus() == ReportRunComplete {
+	if e.runStatus() == reportexecute.ReportRunComplete {
+		// there must be no sql panels to execute
 		log.Println("[TRACE]", "execution tree already complete")
 		return nil
 	}
@@ -72,7 +79,7 @@ func (e *ReportExecutionTree) AddDependency(resource, dependency string) {
 	e.dependencyGraph.AddEdge(resource, dependency)
 }
 
-func (e *ReportExecutionTree) runStatus() ReportRunStatus {
+func (e *ReportExecutionTree) runStatus() reportexecute.ReportRunStatus {
 	return e.Root.runStatus
 }
 
@@ -85,34 +92,47 @@ func (e *ReportExecutionTree) ExecuteNode(ctx context.Context, name string) erro
 	if parsedName.ItemType == modconfig.BlockTypeReport {
 		report, ok := e.reports[name]
 		if !ok {
+			// this error will be passed up the execution tree and raised as a report error for the root node
 			return fmt.Errorf("report '%s' not found in execution tree", name)
 		}
 		// panel should now be complete, i.e. all it's children should be complete
 		if !report.ChildrenComplete() {
-			return fmt.Errorf("panel '%s' should be complete, but it has inomplete children", report.Name)
+			// this error will be passed up the execution tree and raised as a report error for the root node
+			return fmt.Errorf("panel '%s' should be complete, but it has incomplete children", report.Name)
 		}
-		report.runStatus = ReportRunComplete
+		// set complete status on report - this will raise panel complete event
+		report.SetComplete()
 		return nil
 	}
 
 	if parsedName.ItemType == modconfig.BlockTypePanel {
 		panel, ok := e.panels[name]
 		if !ok {
+			// this error will be passed up the execution tree and raised as a report error for the root node
 			return fmt.Errorf("panel '%s' not found in execution tree", name)
 		}
 		// if panel has sql execute it
 		if panel.SQL != "" {
 			data, err := e.executePanelSQL(ctx, panel.SQL)
 			if err != nil {
+				// set the error status on the panel
+				panel.SetError(err)
+				// raise panel error event
+				e.workspace.PublishReportEvent(&reportevents.PanelError{Panel: r})
+
 				return err
 			}
+
 			panel.Data = data
 		}
 		// panel should now be complete, i.e. all it's children should be complete
 		if !panel.ChildrenComplete() {
+			// this error will be passed up the execution tree and raised as a report error for the root node
 			return fmt.Errorf("panel '%s' should be complete, but it has inomplete children", panel.Name)
 		}
-		panel.runStatus = ReportRunComplete
+		// set complete status on panel - this will raise panel complete event
+		panel.SetComplete()
+
 		return nil
 	}
 	return fmt.Errorf("invalid block type '%s' passed to ReportExecutionTree.ExecuteNode", name)

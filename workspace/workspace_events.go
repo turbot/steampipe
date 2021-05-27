@@ -31,17 +31,20 @@ func (w *Workspace) handleFileWatcherEvent(client *db.Client, events []fsnotify.
 
 	err := w.loadMod()
 	if err != nil {
-		// publish error event
-		w.PublishReportEvent(&reportevents.WorkspaceError{Error: err})
-		// if we are already in an error state, do not show error
+		// check the existing watcher error - if we are already in an error state, do not show error
 		if w.watcherError == nil {
 			fmt.Println()
 			utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
 		}
-
+		// now set watcher error to new error
+		w.watcherError = err
+		// publish error event
+		w.PublishReportEvent(&reportevents.WorkspaceError{Error: err})
+	} else {
+		// clear watcher error
+		w.watcherError = nil
 	}
-	// now store/clear watcher error so we only show message once
-	w.watcherError = err
+
 	// todo detect differences and only refresh if necessary
 	db.UpdateMetadataTables(w.GetResourceMaps(), client)
 

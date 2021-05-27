@@ -2,6 +2,8 @@ package reportexecute
 
 import (
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/report/reportevents"
+	"github.com/turbot/steampipe/report/reportexecutiontree"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -22,10 +24,10 @@ type PanelRun struct {
 	ReportRuns []*ReportRun `json:"reports,omitempty"`
 
 	runStatus     ReportRunStatus
-	executionTree *ReportExecutionTree
+	executionTree *reportexecutiontree.ReportExecutionTree
 }
 
-func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *PanelRun {
+func NewPanelRun(panel *modconfig.Panel, executionTree *reportexecutiontree.ReportExecutionTree) *PanelRun {
 	r := &PanelRun{
 		Name:          panel.Name(),
 		Title:         typehelpers.SafeString(panel.Title),
@@ -75,6 +77,12 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 func (r *PanelRun) SetError(err error) {
 	r.Error = err
 	r.runStatus = ReportRunError
+}
+
+func (r *PanelRun) SetComplete() {
+	r.runStatus = ReportRunComplete
+	// raise panel complete event
+	r.executionTree.workspace.PublishReportEvent(&reportevents.PanelComplete{Panel: r})
 }
 
 func (r *PanelRun) ChildrenComplete() bool {
