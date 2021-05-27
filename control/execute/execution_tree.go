@@ -189,12 +189,7 @@ func (e *ExecutionTree) getControlMapFromMetadataQuery(ctx context.Context, wher
 	return controlNames, nil
 }
 
-func (e *ExecutionTree) GetResultColumns() *ResultColumns {
-	// first group properties
-	return newResultColumns(e)
-}
-
-func (e *ExecutionTree) getAllTags() []string {
+func (e *ExecutionTree) GetAllTags() []string {
 	tagColumnMap := make(map[string]bool) // to keep track which tags have been added as columns
 	var tagColumns []string
 	for _, r := range e.controlRuns {
