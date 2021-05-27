@@ -270,7 +270,7 @@ func (c *InteractiveClient) executor(line string) {
 func (c *InteractiveClient) handleExecuteError(err error) {
 	isCancelledError, isCancelledBeforeResult := isCancelledError(err)
 	if isCancelledError {
-		utils.ShowError(fmt.Errorf("query cancelled"))
+		utils.ShowError(fmt.Errorf("execution cancelled"))
 		if isCancelledBeforeResult {
 			// we need to notify the streamer that we are done
 			c.resultsStreamer.Done()
