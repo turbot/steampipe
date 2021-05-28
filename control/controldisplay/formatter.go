@@ -17,26 +17,48 @@ const (
 	OutputFormatJSON  = "json"
 )
 
+var outputFormatters map[string]Formatter = map[string]Formatter{
+	OutputFormatNone:  &NullFormatter{},
+	OutputFormatCSV:   &CSVFormatter{},
+	OutputFormatJSON:  &JSONFormatter{},
+	OutputFormatText:  &TextFormatter{},
+	OutputFormatBrief: &TextFormatter{},
+}
+
+var exportFormatters map[string]Formatter = map[string]Formatter{
+	OutputFormatCSV:  &CSVFormatter{},
+	OutputFormatJSON: &JSONFormatter{},
+}
+
+type CheckExportFormat struct {
+	Format string
+	File   string
+}
+
+func NewCheckOutputFormat(format string, file string) CheckExportFormat {
+	return CheckExportFormat{
+		Format: format,
+		File:   file,
+	}
+}
+
 type Formatter interface {
 	Format(ctx context.Context, tree *execute.ExecutionTree) (io.Reader, error)
 }
 
-func GetFormatter(outputFormat string) (Formatter, error) {
-	var formatter Formatter
+func GetExportFormatter(exportFormat string) (Formatter, error) {
+	formatter, found := exportFormatters[exportFormat]
+	if !found {
+		return nil, fmt.Errorf("invalid export format '%s' - must be one of json,csv", exportFormat)
+	}
+	return formatter, nil
+}
 
-	switch outputFormat {
-	case OutputFormatText, OutputFormatBrief:
-		formatter = &TextFormatter{}
-	case OutputFormatCSV:
-		formatter = &CSVFormatter{}
-	case OutputFormatJSON:
-		formatter = &JSONFormatter{}
-	case OutputFormatNone:
-		formatter = &NullFormatter{}
-	default:
+func GetOutputFormatter(outputFormat string) (Formatter, error) {
+	formatter, found := outputFormatters[outputFormat]
+	if !found {
 		return nil, fmt.Errorf("invalid output format '%s' - must be one of json,csv,text,brief,none", outputFormat)
 	}
-
 	return formatter, nil
 }
 
