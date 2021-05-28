@@ -16,7 +16,7 @@ type ReportRun struct {
 	PanelRuns  []*PanelRun  `json:"panels,omitempty"`
 	ReportRuns []*ReportRun `json:"reports,omitempty"`
 
-	Error error `json:"-"`
+	Error error `json:"error,omitempty"`
 
 	runStatus     reportinterfaces.ReportRunStatus `json:"-"`
 	executionTree *ReportExecutionTree             `json:"-"`

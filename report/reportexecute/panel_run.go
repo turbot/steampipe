@@ -17,7 +17,7 @@ type PanelRun struct {
 	SQL    string          `json:"sql,omitempty"`
 	Data   [][]interface{} `json:"data,omitempty"`
 
-	Error error `json:"-"`
+	Error error `json:"error,omitempty"`
 
 	// children
 	PanelRuns  []*PanelRun  `json:"panels,omitempty"`
