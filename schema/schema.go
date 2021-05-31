@@ -63,23 +63,27 @@ func (m *Metadata) GetTablesInSchema(schemaName string) []string {
 }
 
 // IsSchemaNameValid :: verifies that the given string is a valid pgsql schema name
-func IsSchemaNameValid(name string) bool {
+func IsSchemaNameValid(name string) (bool, string) {
+	var message string
 
 	// start with the basics
 
 	// cannot be blank
 	if len(strings.TrimSpace(name)) == 0 {
-		return false
+		message = "Schema name cannot be blank."
+		return false, message
 	}
 
 	// there should not be whitespaces or dashes
 	if strings.Contains(name, " ") || strings.Contains(name, "-") {
-		return false
+		message = "Schema name should not contain whitespaces or dashes."
+		return false, message
 	}
 
 	// cannot start with `pg_`
 	if strings.HasPrefix(name, "pg_") {
-		return false
+		message = "Schema name should not start with `pg_`"
+		return false, message
 	}
 
 	// as per https://www.postgresql.org/docs/9.2/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
@@ -87,13 +91,15 @@ func IsSchemaNameValid(name string) bool {
 	regex := regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*`)
 
 	if !regex.MatchString(name) {
-		return false
+		message = "Schema name string contains invalid pattern."
+		return false, message
 	}
 
 	// let's limit the length to 63
 	if len(name) > 63 {
-		return false
+		message = "Schema name length should not exceed 63 characters."
+		return false, message
 	}
 
-	return true
+	return true, message
 }
