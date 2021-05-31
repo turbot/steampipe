@@ -129,7 +129,7 @@ func AddCommands() {
 	rootCmd.AddCommand(ServiceCmd())
 }
 
-func Execute() {
+func Execute() int {
 	rootCmd.Execute()
-	os.Exit(exitCode)
+	return exitCode
 }

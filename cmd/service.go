@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -121,7 +120,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runServiceStartCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
-			os.Exit(-1)
+			exitCode = -1
 		}
 	}()
 

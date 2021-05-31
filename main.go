@@ -15,11 +15,13 @@ var Logger hclog.Logger
 
 func main() {
 	utils.LogTime("main start")
+	exitCode := 0
 	defer func() {
 		utils.LogTime("main end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
+		os.Exit(exitCode)
 	}()
 
 	// ensure steampipe is not being run as root
@@ -27,7 +29,7 @@ func main() {
 	cmd.InitCmd()
 
 	// execute the command
-	cmd.Execute()
+	exitCode = cmd.Execute()
 
 	utils.LogTime("end")
 	utils.DisplayProfileData()
