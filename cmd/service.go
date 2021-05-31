@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
@@ -117,9 +116,9 @@ func ServiceRestartCmd() *cobra.Command {
 }
 
 func runServiceStartCmd(cmd *cobra.Command, args []string) {
-	logging.LogTime("runServiceStartCmd start")
+	utils.LogTime("runServiceStartCmd start")
 	defer func() {
-		logging.LogTime("runServiceStartCmd end")
+		utils.LogTime("runServiceStartCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 			os.Exit(-1)
@@ -164,9 +163,9 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 }
 
 func runServiceRestartCmd(cmd *cobra.Command, args []string) {
-	logging.LogTime("runServiceRestartCmd start")
+	utils.LogTime("runServiceRestartCmd start")
 	defer func() {
-		logging.LogTime("runServiceRestartCmd end")
+		utils.LogTime("runServiceRestartCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
@@ -223,9 +222,9 @@ to force a restart.
 }
 
 func runServiceStatusCmd(cmd *cobra.Command, args []string) {
-	logging.LogTime("runServiceStatusCmd status")
+	utils.LogTime("runServiceStatusCmd status")
 	defer func() {
-		logging.LogTime("runServiceStatusCmd end")
+		utils.LogTime("runServiceStatusCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
@@ -277,9 +276,9 @@ Steampipe service is running in the background.
 }
 
 func runServiceStopCmd(cmd *cobra.Command, args []string) {
-	logging.LogTime("runServiceStopCmd stop")
+	utils.LogTime("runServiceStopCmd stop")
 	defer func() {
-		logging.LogTime("runServiceStopCmd end")
+		utils.LogTime("runServiceStopCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}

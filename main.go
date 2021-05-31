@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/go-hclog"
 	_ "github.com/lib/pq"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/utils"
 )
@@ -15,9 +14,9 @@ import (
 var Logger hclog.Logger
 
 func main() {
-	logging.LogTime("main start")
+	utils.LogTime("main start")
 	defer func() {
-		logging.LogTime("main end")
+		utils.LogTime("main end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
@@ -30,7 +29,7 @@ func main() {
 	// execute the command
 	cmd.Execute()
 
-	logging.LogTime("end")
+	utils.LogTime("end")
 	utils.DisplayProfileData()
 }
 

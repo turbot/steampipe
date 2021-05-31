@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
@@ -57,10 +56,10 @@ Examples:
 }
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
-	logging.LogTime("runQueryCmd start")
+	utils.LogTime("runQueryCmd start")
 	var client *db.Client
 	defer func() {
-		logging.LogTime("runQueryCmd end")
+		utils.LogTime("runQueryCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}

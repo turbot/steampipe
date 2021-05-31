@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
@@ -168,9 +167,9 @@ Example:
 }
 
 func runPluginInstallCmd(cmd *cobra.Command, args []string) {
-	logging.LogTime("runPluginInstallCmd install")
+	utils.LogTime("runPluginInstallCmd install")
 	defer func() {
-		logging.LogTime("runPluginInstallCmd end")
+		utils.LogTime("runPluginInstallCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
@@ -253,9 +252,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 }
 
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
-	logging.LogTime("runPluginUpdateCmd install")
+	utils.LogTime("runPluginUpdateCmd install")
 	defer func() {
-		logging.LogTime("runPluginUpdateCmd end")
+		utils.LogTime("runPluginUpdateCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
@@ -461,9 +460,9 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 }
 
 func runPluginListCmd(*cobra.Command, []string) {
-	logging.LogTime("runPluginListCmd list")
+	utils.LogTime("runPluginListCmd list")
 	defer func() {
-		logging.LogTime("runPluginListCmd end")
+		utils.LogTime("runPluginListCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
@@ -488,10 +487,10 @@ func runPluginListCmd(*cobra.Command, []string) {
 }
 
 func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
-	logging.LogTime("runPluginUninstallCmd uninstall")
+	utils.LogTime("runPluginUninstallCmd uninstall")
 
 	defer func() {
-		logging.LogTime("runPluginUninstallCmd end")
+		utils.LogTime("runPluginUninstallCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}

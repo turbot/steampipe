@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"sync"
 
-	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/ociinstaller"
@@ -20,13 +19,13 @@ var ensureMux sync.Mutex
 
 // EnsureDBInstalled makes sure that the embedded pg database is installed and running
 func EnsureDBInstalled() {
-	logging.LogTime("setup start")
+	utils.LogTime("setup start")
 	log.Println("[TRACE] ensure installed")
 
 	ensureMux.Lock()
 	defer func() {
 		log.Println("[TRACE] ensured installed")
-		logging.LogTime("setup end")
+		utils.LogTime("setup end")
 		ensureMux.Unlock()
 	}()
 
