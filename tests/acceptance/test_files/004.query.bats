@@ -15,12 +15,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query "drop table all_columns"
 }
 
-@test "query pipe from stdin" {
-  run cat "select 1 as val, 2 as col" | steampipe query --output json
-  assert_success
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_query_json.json)"
-}
-
 @test "query json" {
   run steampipe query "select 1 as val, 2 as col" --output json
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_query_json.json)"
