@@ -127,6 +127,7 @@ func AddCommands() {
 	rootCmd.AddCommand(queryCmd())
 	rootCmd.AddCommand(checkCmd())
 	rootCmd.AddCommand(serviceCmd())
+	rootCmd.AddCommand(generateCompletionScriptsCmd())
 }
 
 func Execute() {
