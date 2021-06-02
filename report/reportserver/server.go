@@ -28,6 +28,11 @@ type Server struct {
 	workspace     *workspace.Workspace
 }
 
+type ErrorPayload struct {
+	Action string `json:"action"`
+	Error  string `json:"error"`
+}
+
 type ExecutionPayload struct {
 	Action     string                         `json:"action"`
 	ReportNode reportinterfaces.ReportNodeRun `json:"report_node"`
@@ -67,6 +72,15 @@ func NewServer(ctx context.Context) (*Server, error) {
 	err = loadedWorkspace.SetupWatcher(dbClient)
 
 	return server, err
+}
+
+func buildWorkspaceErrorPayload(e *reportevents.WorkspaceError) []byte {
+	payload := ErrorPayload{
+		Action: "workspace_error",
+		Error:  e.Error.Error(),
+	}
+	jsonString, _ := json.Marshal(payload)
+	return jsonString
 }
 
 func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) []byte {
@@ -127,7 +141,9 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 	switch e := event.(type) {
 
 	case *reportevents.WorkspaceError:
-		fmt.Println("Got workspace error event", event)
+		fmt.Println("Got workspace error event", *e)
+		payload := buildWorkspaceErrorPayload(e)
+		s.webSocket.Broadcast(payload)
 		break
 
 	case *reportevents.ExecutionStarted:
@@ -142,13 +158,14 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			}
 		}
 		s.mutex.Unlock()
+		break
 
 	case *reportevents.PanelError:
-		fmt.Println("Got panel error event", event)
+		fmt.Println("Got panel error event", *e)
 		break
 
 	case *reportevents.PanelComplete:
-		fmt.Println("Got panel complete event", event)
+		fmt.Println("Got panel complete event", *e)
 		break
 
 	case *reportevents.ReportChanged:
@@ -205,9 +222,14 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 				executionlayer.ExecuteReportNode(s.context, changedReportName, s.workspace, s.dbClient)
 			}
 		}
+		break
+
+	case *reportevents.ReportError:
+		fmt.Println("Got report error event", *e)
+		break
 
 	case *reportevents.ReportComplete:
-		fmt.Println("Got report complete event", event)
+		fmt.Println("Got report complete event", *e)
 		break
 
 	case *reportevents.ExecutionComplete:
@@ -222,5 +244,6 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			}
 		}
 		s.mutex.Unlock()
+		break
 	}
 }
