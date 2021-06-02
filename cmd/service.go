@@ -16,8 +16,8 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// ServiceCmd :: Service management commands
-func ServiceCmd() *cobra.Command {
+// serviceCmd :: Service management commands
+func serviceCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "service [command]",
 		Args:  cobra.NoArgs,
@@ -29,16 +29,16 @@ Run Steampipe as a local service, exposing it as a database endpoint for
 connection from any Postgres compatible database client.`,
 	}
 
-	cmd.AddCommand(ServiceStartCmd())
-	cmd.AddCommand(ServiceStatusCmd())
-	cmd.AddCommand(ServiceStopCmd())
-	cmd.AddCommand(ServiceRestartCmd())
+	cmd.AddCommand(serviceStartCmd())
+	cmd.AddCommand(serviceStatusCmd())
+	cmd.AddCommand(serviceStopCmd())
+	cmd.AddCommand(serviceRestartCmd())
 
 	return cmd
 }
 
-// ServiceStartCmd :: handler for service start
-func ServiceStartCmd() *cobra.Command {
+// serviceStartCmd :: handler for service start
+func serviceStartCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "start",
 		Args:  cobra.NoArgs,
@@ -65,8 +65,8 @@ connection from any Postgres compatible database client.`,
 	return cmd
 }
 
-// ServiceStatusCmd :: handler for service status
-func ServiceStatusCmd() *cobra.Command {
+// serviceStatusCmd :: handler for service status
+func serviceStatusCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "status",
 		Args:  cobra.NoArgs,
@@ -82,8 +82,8 @@ Report current status of the Steampipe database service.`,
 	return cmd
 }
 
-// ServiceStopCmd :: handler for service stop
-func ServiceStopCmd() *cobra.Command {
+// serviceStopCmd :: handler for service stop
+func serviceStopCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stop",
 		Args:  cobra.NoArgs,
@@ -99,8 +99,8 @@ func ServiceStopCmd() *cobra.Command {
 	return cmd
 }
 
-// ServiceRestartCmd :: restarts the database service
-func ServiceRestartCmd() *cobra.Command {
+// serviceRestartCmd :: restarts the database service
+func serviceRestartCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "restart",
 		Args:  cobra.NoArgs,

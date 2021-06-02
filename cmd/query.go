@@ -18,8 +18,8 @@ import (
 	"github.com/turbot/steampipe/workspace"
 )
 
-// QueryCmd :: represents the query command
-func QueryCmd() *cobra.Command {
+// queryCmd :: represents the query command
+func queryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:              "query",
 		TraverseChildren: true,

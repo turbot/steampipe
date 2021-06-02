@@ -21,8 +21,8 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// PluginCmd :: Plugin management commands
-func PluginCmd() *cobra.Command {
+// pluginCmd :: Plugin management commands
+func pluginCmd() *cobra.Command {
 
 	var cmd = &cobra.Command{
 		Use:   "plugin [command]",
@@ -45,16 +45,16 @@ Examples:
   steampipe plugin uninstall aws`,
 	}
 
-	cmd.AddCommand(PluginInstallCmd())
-	cmd.AddCommand(PluginListCmd())
-	cmd.AddCommand(PluginUninstallCmd())
-	cmd.AddCommand(PluginUpdateCmd())
+	cmd.AddCommand(pluginInstallCmd())
+	cmd.AddCommand(pluginListCmd())
+	cmd.AddCommand(pluginUninstallCmd())
+	cmd.AddCommand(pluginUpdateCmd())
 
 	return cmd
 }
 
-// PluginInstallCmd :: Install a plugin
-func PluginInstallCmd() *cobra.Command {
+// pluginInstallCmd :: Install a plugin
+func pluginInstallCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "install [flags] [registry/org/]name[@version]",
 		Args:  cobra.ArbitraryArgs,
@@ -82,8 +82,8 @@ Examples:
 	return cmd
 }
 
-// PluginUpdateCmd :: Update plugins
-func PluginUpdateCmd() *cobra.Command {
+// pluginUpdateCmd :: Update plugins
+func pluginUpdateCmd() *cobra.Command {
 
 	var cmd = &cobra.Command{
 		Use:   "update [flags] [registry/org/]name[@version]",
@@ -113,8 +113,8 @@ Examples:
 	return cmd
 }
 
-// PluginListCmd :: List plugins
-func PluginListCmd() *cobra.Command {
+// pluginListCmd :: List plugins
+func pluginListCmd() *cobra.Command {
 
 	var cmd = &cobra.Command{
 		Use:   "list",
@@ -141,8 +141,8 @@ Examples:
 	return cmd
 }
 
-// PluginUninstallCmd :: Uninstall a plugin
-func PluginUninstallCmd() *cobra.Command {
+// pluginUninstallCmd :: Uninstall a plugin
+func pluginUninstallCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "uninstall [flags] [registry/org/]name",
 		Args:  cobra.ArbitraryArgs,

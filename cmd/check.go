@@ -20,8 +20,8 @@ import (
 	"github.com/turbot/steampipe/workspace"
 )
 
-// CheckCmd :: represents the check command
-func CheckCmd() *cobra.Command {
+// checkCmd :: represents the check command
+func checkCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:              "check [flags] [mod/benchmark/control/\"all\"]",
 		TraverseChildren: true,
