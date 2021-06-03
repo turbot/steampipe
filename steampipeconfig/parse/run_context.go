@@ -67,8 +67,10 @@ func (c *RunContext) addSteampipeVariables() {
 		"panel": cty.ObjectVal(map[string]cty.Value{
 			"markdown":         cty.StringVal("steampipe.panel.markdown"),
 			"barchart":         cty.StringVal("steampipe.panel.barchart"),
+			"stackedbarchart":  cty.StringVal("steampipe.panel.stackedbarchart"),
 			"counter":          cty.StringVal("steampipe.panel.counter"),
 			"linechart":        cty.StringVal("steampipe.panel.linechart"),
+			"multilinechart":   cty.StringVal("steampipe.panel.multilinechart"),
 			"piechart":         cty.StringVal("steampipe.panel.piechart"),
 			"placeholder":      cty.StringVal("steampipe.panel.placeholder"),
 			"control_list":     cty.StringVal("steampipe.panel.control_list"),
