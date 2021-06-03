@@ -94,8 +94,8 @@ func (r ControlRenderer) Render() string {
 		formattedPreResultIndent)
 
 	// if the control is in error, render an error
-	if r.run.Error != nil {
-		errorRenderer := NewErrorRenderer(r.run.Error, r.width, r.parentIndent())
+	if r.run.GetError() != nil {
+		errorRenderer := NewErrorRenderer(r.run.GetError(), r.width, r.parentIndent())
 		controlStrings = append(controlStrings,
 			errorRenderer.Render(),
 			// newline after error
@@ -121,7 +121,7 @@ func (r ControlRenderer) Render() string {
 	// newline after results
 	if len(resultStrings) > 0 {
 		controlStrings = append(controlStrings, resultStrings...)
-		if len(r.run.Rows) > 0 || r.run.Error != nil {
+		if len(r.run.Rows) > 0 || r.run.GetError() != nil {
 			controlStrings = append(controlStrings, formattedPostResultIndent)
 		}
 	}
