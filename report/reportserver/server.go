@@ -9,6 +9,9 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"gopkg.in/olahol/melody.v1"
+
+	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/executionlayer"
@@ -16,7 +19,6 @@ import (
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
-	"gopkg.in/olahol/melody.v1"
 )
 
 type Server struct {
@@ -72,6 +74,19 @@ func NewServer(ctx context.Context) (*Server, error) {
 	err = loadedWorkspace.SetupWatcher(dbClient)
 
 	return server, err
+}
+
+func buildAvailableReportsPayload(reports map[string]*modconfig.Report) []byte {
+	reportsPayload := make(map[string]string)
+	for _, report := range reports {
+		reportsPayload[report.FullName] = types.SafeString(report.Title)
+	}
+	payload := AvailableReportsPayload{
+		Action:  "available_reports",
+		Reports: reportsPayload,
+	}
+	jsonString, _ := json.Marshal(payload)
+	return jsonString
 }
 
 func buildWorkspaceErrorPayload(e *reportevents.WorkspaceError) []byte {
@@ -170,11 +185,23 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 	case *reportevents.ReportChanged:
 		fmt.Println("Got report changed event", *e)
+		deletedReports := e.DeletedReports
+		newReports := e.NewReports
 		changedPanels := e.ChangedPanels
 		changedReports := e.ChangedReports
 
+		// If nothing has changed, ignore
+		if len(deletedReports) == 0 && len(newReports) == 0 && len(changedPanels) == 0 && len(changedReports) == 0 {
+			return
+		}
+
+		// If any deleted/new/changed reports, emit an available reports message to clients
+		if len(deletedReports) != 0 || len(newReports) != 0 || len(changedReports) != 0 {
+			s.webSocket.Broadcast(buildAvailableReportsPayload(s.workspace.Mod.Reports))
+		}
+
 		// If we have no changed panels or reports, ignore the message for now
-		if len(changedPanels) == 0 && len(changedReports) == 0 {
+		if len(deletedReports) == 0 && len(newReports) == 0 && len(changedPanels) == 0 && len(changedReports) == 0 {
 			return
 		}
 

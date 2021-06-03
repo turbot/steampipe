@@ -8,10 +8,8 @@ import (
 
 	"gopkg.in/olahol/melody.v1"
 
-	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/executionlayer"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 )
 
@@ -31,19 +29,6 @@ type ClientRequest struct {
 type AvailableReportsPayload struct {
 	Action  string            `json:"action"`
 	Reports map[string]string `json:"reports"`
-}
-
-func availableReportsPayload(reports map[string]*modconfig.Report) []byte {
-	reportsPayload := make(map[string]string)
-	for _, report := range reports {
-		reportsPayload[report.FullName] = types.SafeString(report.Title)
-	}
-	payload := AvailableReportsPayload{
-		Action:  "available_reports",
-		Reports: reportsPayload,
-	}
-	jsonString, _ := json.Marshal(payload)
-	return jsonString
 }
 
 func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, dbClient *db.Client, socketSessions map[*melody.Session]*ReportClientInfo, mutex *sync.Mutex) {
@@ -72,7 +57,7 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 			switch request.Action {
 			case "available_reports":
 				reports := workspace.Mod.Reports
-				session.Write(availableReportsPayload(reports))
+				session.Write(buildAvailableReportsPayload(reports))
 			case "select_report":
 				fmt.Println(fmt.Sprintf("Got event: %v", request.Payload.Report))
 				mutex.Lock()
