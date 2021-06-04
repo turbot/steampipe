@@ -14,12 +14,14 @@ report two_panel {
     source = "steampipe.panel.markdown"
     text = "# Hello World"
     width = 6
+    height = 1
   }
 
   panel goodbye {
     source = "steampipe.panel.markdown"
     text = "# Goodbye Universe"
     width = 6
+    height = 2
   }
 }
 

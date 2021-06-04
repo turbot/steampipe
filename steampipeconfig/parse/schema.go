@@ -73,6 +73,7 @@ var PanelSchema = &hcl.BodySchema{
 		{Name: "title"},
 		{Name: "text"},
 		{Name: "width"},
+		{Name: "height"},
 		{Name: "source"},
 		{Name: "sql"},
 	},

@@ -163,6 +163,9 @@ func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decod
 	diags = decodeProperty(content, "width", &panel.Width, runCtx)
 	res.handleDecodeDiags(diags)
 
+	diags = decodeProperty(content, "height", &panel.Height, runCtx)
+	res.handleDecodeDiags(diags)
+
 	diags = decodeProperty(content, "source", &panel.Source, runCtx)
 	res.handleDecodeDiags(diags)
 

@@ -19,6 +19,7 @@ type Panel struct {
 
 	Title   *string `hcl:"title"`
 	Width   *int    `hcl:"width"`
+	Height  *int    `hcl:"height"`
 	Source  *string `hcl:"source"`
 	SQL     *string `hcl:"source"`
 	Text    *string `hcl:"text"`
@@ -197,6 +198,13 @@ func (p *Panel) Diff(new *Panel) *ReportTreeItemDiffs {
 		}
 	} else if *p.Width != *new.Width {
 		res.AddPropertyDiff("Width")
+	}
+	if p.Height == nil || new.Height == nil {
+		if !(p.Height == nil && new.Height == nil) {
+			res.AddPropertyDiff("Height")
+		}
+	} else if *p.Height != *new.Height {
+		res.AddPropertyDiff("Height")
 	}
 
 	res.populateChildDiffs(p, new)

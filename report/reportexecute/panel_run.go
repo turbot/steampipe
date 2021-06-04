@@ -13,6 +13,7 @@ type PanelRun struct {
 	Title  string          `json:"title,omitempty"`
 	Text   string          `json:"text,omitempty"`
 	Width  int             `json:"width,omitempty"`
+	Height int             `json:"height,omitempty"`
 	Source string          `json:"source,omitempty"`
 	SQL    string          `json:"sql,omitempty"`
 	Data   [][]interface{} `json:"data,omitempty"`
@@ -42,6 +43,10 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 	}
 	if panel.Width != nil {
 		r.Width = *panel.Width
+	}
+
+	if panel.Height != nil {
+		r.Height = *panel.Height
 	}
 
 	// if we have sql, set status to ready
