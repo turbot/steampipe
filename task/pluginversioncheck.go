@@ -12,9 +12,10 @@ import (
 )
 
 // check if there is a new version
-func checkPluginVersions(installationID string) {
+func checkPluginVersions(installationID string) [][]string {
+	var notificationLines = [][]string{}
 	if !viper.GetBool(constants.ArgUpdateCheck) {
-		return
+		return notificationLines
 	}
 
 	updateReport := plugin.GetAllUpdateReport(installationID)
@@ -28,11 +29,12 @@ func checkPluginVersions(installationID string) {
 	}
 
 	if len(pluginsToUpdate) > 0 {
-		showPluginUpdateNotification(pluginsToUpdate)
+		notificationLines = showPluginUpdateNotification(pluginsToUpdate)
 	}
+	return notificationLines
 }
 
-func showPluginUpdateNotification(reports []plugin.VersionCheckReport) {
+func showPluginUpdateNotification(reports []plugin.VersionCheckReport) [][]string {
 	var notificationLines = [][]string{
 		{""},
 		{"Updated versions of the following plugins are available:"},
@@ -90,6 +92,8 @@ func showPluginUpdateNotification(reports []plugin.VersionCheckReport) {
 	fmt.Println()
 	table.Render()
 	fmt.Println()
+
+	return notificationLines
 }
 
 // func getNameFromReport(report plugin.VersionCheckReport) string {

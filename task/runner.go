@@ -28,16 +28,21 @@ func NewRunner() *Runner {
 }
 
 func (r *Runner) Run() {
+	notificationLines := [][][]string{}
 	if r.shouldRun() {
 		waitGroup := sync.WaitGroup{}
 
 		// check whether an updated version is available
 		waitGroup.Add(1)
-		go r.runAsyncJob(func() { checkSteampipeVersion(r.currentState.InstallationID) }, &waitGroup)
+		go r.runAsyncJob(func() {
+			notificationLines = append(notificationLines, checkSteampipeVersion(r.currentState.InstallationID))
+		}, &waitGroup)
 
 		// check whether an updated version is available
 		waitGroup.Add(1)
-		go r.runAsyncJob(func() { checkPluginVersions(r.currentState.InstallationID) }, &waitGroup)
+		go r.runAsyncJob(func() {
+			notificationLines = append(notificationLines, checkPluginVersions(r.currentState.InstallationID))
+		}, &waitGroup)
 
 		// remove log files older than 7 days
 		waitGroup.Add(1)
@@ -45,6 +50,13 @@ func (r *Runner) Run() {
 
 		// update last check time
 		waitGroup.Wait()
+
+		if len(notificationLines) > 0 {
+			for _, v := range notificationLines {
+				displayUpdateNotification(v)
+			}
+		}
+
 		r.currentState.Save()
 		r.currentState, _ = statefile.LoadState()
 	}
