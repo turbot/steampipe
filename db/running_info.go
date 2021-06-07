@@ -8,6 +8,7 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 )
 
 // RunningDBInstanceInfo :: contains data about the running process
@@ -32,6 +33,9 @@ func saveRunningInstanceInfo(info *RunningDBInstanceInfo) error {
 }
 
 func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
+	utils.LogTime("db.loadRunningInstanceInfo start")
+	defer utils.LogTime("db.loadRunningInstanceInfo end")
+
 	if !helpers.FileExists(runningInfoFilePath()) {
 		return nil, nil
 	}

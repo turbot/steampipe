@@ -5,10 +5,14 @@ import (
 	"os"
 
 	psutils "github.com/shirou/gopsutil/process"
+	"github.com/turbot/steampipe/utils"
 )
 
 // GetStatus :: check that the db instance is running and returns it's details
 func GetStatus() (*RunningDBInstanceInfo, error) {
+	utils.LogTime("db.GetStatus start")
+	defer utils.LogTime("db.GetStatus end")
+
 	info, err := loadRunningInstanceInfo()
 	if err != nil {
 		return nil, err

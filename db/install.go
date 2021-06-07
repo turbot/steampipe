@@ -19,13 +19,13 @@ var ensureMux sync.Mutex
 
 // EnsureDBInstalled makes sure that the embedded pg database is installed and running
 func EnsureDBInstalled() {
-	utils.LogTime("setup start")
+	utils.LogTime("db.EnsureDBInstalled start")
 	log.Println("[TRACE] ensure installed")
 
 	ensureMux.Lock()
 	defer func() {
 		log.Println("[TRACE] ensured installed")
-		utils.LogTime("setup end")
+		utils.LogTime("db.EnsureDBInstalled end")
 		ensureMux.Unlock()
 	}()
 
@@ -252,6 +252,8 @@ func installFDW(firstSetup bool) (string, error) {
 
 // IsInstalled :: checks and reports whether the embedded database is installed and setup
 func IsInstalled() bool {
+	utils.LogTime("db.IsInstalled start")
+	defer utils.LogTime("db.IsInstalled end")
 	// check that both postgres binary and initdb binary exist
 	// and are executable by us
 

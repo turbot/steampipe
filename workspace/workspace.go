@@ -40,6 +40,8 @@ type Workspace struct {
 
 // Load creates a Workspace and loads the workdspace mod
 func Load(workspacePath string) (*Workspace, error) {
+	utils.LogTime("workspace.Load start")
+	defer utils.LogTime("workspace.Load end")
 	// create shell workspace
 	workspace := &Workspace{Path: workspacePath}
 

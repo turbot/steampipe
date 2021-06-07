@@ -17,6 +17,8 @@ import (
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
 func (c *Client) RefreshConnections() (bool, error) {
+	utils.LogTime("db.RefreshConnections start")
+	defer utils.LogTime("db.RefreshConnections end")
 	// load required connection from global config
 	requiredConnections := steampipeconfig.Config.Connections
 

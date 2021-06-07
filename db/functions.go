@@ -6,6 +6,7 @@ import (
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/utils"
 )
 
 /**
@@ -24,6 +25,8 @@ ORDER BY
 **/
 
 func refreshFunctions() error {
+	utils.LogTime("db.refreshFunctions start")
+	defer utils.LogTime("db.refreshFunctions end")
 	sql := []string{
 		fmt.Sprintf(`create schema if not exists %s;`, constants.FunctionSchema),
 		fmt.Sprintf(`grant usage on schema %s to steampipe_users;`, constants.FunctionSchema),

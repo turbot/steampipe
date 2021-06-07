@@ -32,6 +32,8 @@ const (
 // Shutdown :: closes the client connection and stops the
 // database instance if the given `invoker` matches
 func Shutdown(client *Client, invoker Invoker) {
+	utils.LogTime("db.Shutdown start")
+	defer utils.LogTime("db.Shutdown end")
 	log.Println("[TRACE] shutdown")
 	if client != nil {
 		client.Close()

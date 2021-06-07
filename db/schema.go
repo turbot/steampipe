@@ -7,6 +7,7 @@ import (
 	typeHelpers "github.com/turbot/go-kit/types"
 
 	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/utils"
 )
 
 type schemaRecord struct {
@@ -21,12 +22,15 @@ type schemaRecord struct {
 }
 
 func buildSchemaMetadata(rows *sql.Rows) (*schema.Metadata, error) {
+	utils.LogTime("db.buildSchemaMetadata start")
+	defer utils.LogTime("db.buildSchemaMetadata end")
 	records, err := getSchemaRecordsFromRows(rows)
 	if err != nil {
 		return nil, err
 	}
 	schemaMetadata := schema.NewMetadata()
 
+	utils.LogTime("db.buildSchemaMetadata.iteration start")
 	for _, record := range records {
 		_, schemaFound := schemaMetadata.Schemas[record.TableSchema]
 		if !schemaFound {
@@ -54,11 +58,14 @@ func buildSchemaMetadata(rows *sql.Rows) (*schema.Metadata, error) {
 			schemaMetadata.TemporarySchemaName = record.TableSchema
 		}
 	}
+	utils.LogTime("db.buildSchemaMetadata.iteration end")
 
 	return schemaMetadata, err
 }
 
 func getSchemaRecordsFromRows(rows *sql.Rows) ([]schemaRecord, error) {
+	utils.LogTime("db.getSchemaRecordsFromRows start")
+	defer utils.LogTime("db.getSchemaRecordsFromRows end")
 	records := []schemaRecord{}
 
 	// set this to the number of cols that are getting fetched

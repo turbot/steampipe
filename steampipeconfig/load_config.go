@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
+	"github.com/turbot/steampipe/utils"
 )
 
 var Config *SteampipeConfig
@@ -23,6 +24,9 @@ var defaultConfigFileName = "default.spc"
 
 // LoadSteampipeConfig :: load the HCL config and parse into the global Config variable
 func LoadSteampipeConfig(workspacePath string, commandName string) (*SteampipeConfig, error) {
+	utils.LogTime("steampipeconfig.LoadSteampipeConfig start")
+	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
+
 	_ = ensureDefaultConfigFile(constants.ConfigDir())
 	config, err := newSteampipeConfig(workspacePath, commandName)
 	if err != nil {
@@ -43,6 +47,8 @@ func ensureDefaultConfigFile(configFolder string) error {
 }
 
 func newSteampipeConfig(workspacePath string, commandName string) (steampipeConfig *SteampipeConfig, err error) {
+	utils.LogTime("steampipeconfig.newSteampipeConfig start")
+	defer utils.LogTime("steampipeconfig.newSteampipeConfig end")
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)

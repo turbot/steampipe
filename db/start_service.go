@@ -16,6 +16,8 @@ import (
 
 // StartService :: invokes `steampipe service start --database-listen local --refresh=false --invoker query`
 func StartService(invoker Invoker) {
+	utils.LogTime("db.StartService start")
+	defer utils.LogTime("db.StartService end")
 	log.Println("[TRACE] start service")
 	// spawn a process to start the service, passing refresh=false to ensure we DO NOT refresh connections
 	// (as we will do that ourselves)
@@ -26,7 +28,9 @@ func StartService(invoker Invoker) {
 	errorChannel := make(chan error, 1)
 
 	go func() {
+		utils.LogTime("Starting CMD start")
 		out, err := cmd.CombinedOutput()
+		utils.LogTime("Starting CMD end")
 		// we need to ignore errors when the invoker is the Installer
 		// since when the installer starts the service, it will not be a stable state
 		if err != nil && invoker != InvokerInstaller {

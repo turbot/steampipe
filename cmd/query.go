@@ -76,10 +76,10 @@ func getPipedStdinData() string {
 }
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
-	utils.LogTime("runQueryCmd start")
+	utils.LogTime("cmd.runQueryCmd start")
 	var client *db.Client
 	defer func() {
-		utils.LogTime("runQueryCmd end")
+		utils.LogTime("cmd.runQueryCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}

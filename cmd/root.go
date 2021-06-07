@@ -25,6 +25,8 @@ var rootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
 	Version: version.String(),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		utils.LogTime("cmd.root.PersistentPreRun start")
+		defer utils.LogTime("cmd.root.PersistentPreRun end")
 		viper.Set(constants.ConfigKeyActiveCommand, cmd)
 		viper.Set(constants.ConfigKeyActiveCommandArgs, args)
 		initGlobalConfig()
@@ -59,6 +61,8 @@ Getting started:
 }
 
 func InitCmd() {
+	utils.LogTime("cmd.root.InitCmd start")
+	defer utils.LogTime("cmd.root.InitCmd end")
 
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace (default to current working directory) ")
@@ -72,6 +76,9 @@ func InitCmd() {
 
 // initConfig reads in config file and ENV variables if set.
 func initGlobalConfig() {
+	utils.LogTime("cmd.root.initGlobalConfig start")
+	defer utils.LogTime("cmd.root.initGlobalConfig end")
+
 	// set global containing install dir
 	setInstallDir()
 
@@ -130,6 +137,8 @@ func AddCommands() {
 }
 
 func Execute() int {
+	utils.LogTime("cmd.root.Execute start")
+	defer utils.LogTime("cmd.root.Execute end")
 	rootCmd.Execute()
 	return exitCode
 }

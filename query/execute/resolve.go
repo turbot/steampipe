@@ -14,6 +14,8 @@ import (
 //
 // For each arg check if it is a named query or a file, before falling back to treating it as sql
 func GetQueries(args []string, workspace *workspace.Workspace) []string {
+	utils.LogTime("execute.GetQueries start")
+	defer utils.LogTime("execute.GetQueries end")
 	var queries []string
 	for _, arg := range args {
 		query, _ := GetQueryFromArg(arg, workspace)

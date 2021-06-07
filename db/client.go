@@ -30,6 +30,8 @@ func (c *Client) Close() error {
 // NewClient ensures that the database instance is running
 // and returns a `Client` to interact with it
 func NewClient(autoRefreshConnections bool) (*Client, error) {
+	utils.LogTime("db.NewClient start")
+	defer utils.LogTime("db.NewClient end")
 	db, err := createSteampipeDbClient()
 	if err != nil {
 		return nil, err
@@ -71,6 +73,8 @@ func NewClient(autoRefreshConnections bool) (*Client, error) {
 }
 
 func createSteampipeDbClient() (*sql.DB, error) {
+	utils.LogTime("db.createSteampipeDbClient start")
+	defer utils.LogTime("db.createSteampipeDbClient end")
 	return createDbClient(constants.DatabaseName, constants.DatabaseUser)
 }
 
@@ -94,6 +98,8 @@ func createPostgresDbClient() (*sql.DB, error) {
 }
 
 func createDbClient(dbname string, username string) (*sql.DB, error) {
+	utils.LogTime("db.createDbClient start")
+	defer utils.LogTime("db.createDbClient end")
 
 	log.Println("[TRACE] createDbClient")
 	info, err := GetStatus()
@@ -113,8 +119,10 @@ func createDbClient(dbname string, username string) (*sql.DB, error) {
 	log.Println("[TRACE] Connection string: ", psqlInfo)
 
 	// connect to the database using the postgres driver
+	utils.LogTime("db.createDbClient connection open start")
 	db, err := sql.Open("postgres", psqlInfo)
 	db.SetMaxOpenConns(1)
+	utils.LogTime("db.createDbClient connection open end")
 
 	if err != nil {
 		return nil, err
@@ -178,6 +186,8 @@ func (c *Client) ConnectionMap() *steampipeconfig.ConnectionMap {
 
 // return both the raw query result and a sanitised version in list form
 func (c *Client) loadSchema() {
+	utils.LogTime("db.loadSchema start")
+	defer utils.LogTime("db.loadSchema end")
 	tablesResult, err := c.getSchemaFromDB()
 	utils.FailOnError(err)
 
@@ -191,6 +201,8 @@ func (c *Client) loadSchema() {
 }
 
 func (c *Client) getSchemaFromDB() (*sql.Rows, error) {
+	utils.LogTime("db.getSchemaFromDB start")
+	defer utils.LogTime("db.getSchemaFromDB end")
 	query := `
 		SELECT 
 			table_name, 
