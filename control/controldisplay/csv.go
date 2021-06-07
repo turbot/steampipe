@@ -1,29 +1,25 @@
 package controldisplay
 
 import (
-	"log"
-
 	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/control/execute"
 )
 
-type GroupCsvRenderer struct {
+type CSVRenderer struct {
 	columns *ResultColumns
 }
 
-func newGroupCsvRenderer() *GroupCsvRenderer {
-	return &GroupCsvRenderer{}
+func newGroupCsvRenderer() *CSVRenderer {
+	return &CSVRenderer{}
 }
 
-func (r GroupCsvRenderer) Render(tree *execute.ExecutionTree) [][]string {
+func (r CSVRenderer) Render(tree *execute.ExecutionTree) [][]string {
 	r.columns = newResultColumns(tree)
 	return r.renderGroup(tree.Root)
 }
 
-func (r GroupCsvRenderer) renderGroup(group *execute.ResultGroup) [][]string {
-	log.Printf("[TRACE] begin group  csv render '%s'\n", group.GroupId)
-	defer log.Printf("[TRACE] end table csv render'%s'\n", group.GroupId)
+func (r CSVRenderer) renderGroup(group *execute.ResultGroup) [][]string {
 	var results [][]string
 	for _, childGroup := range group.Groups {
 		results = append(results, r.renderGroup(childGroup)...)
@@ -34,14 +30,14 @@ func (r GroupCsvRenderer) renderGroup(group *execute.ResultGroup) [][]string {
 	return results
 }
 
-func (r GroupCsvRenderer) renderControl(run *execute.ControlRun, group *execute.ResultGroup) [][]string {
+func (r CSVRenderer) renderControl(run *execute.ControlRun, group *execute.ResultGroup) [][]string {
 	var res = make([][]string, len(run.Rows))
 
-	groupColumns := getCsvColumns(*group)
+	groupColumns := r.columns.GroupColumns
+	rowColumns := r.columns.ResultColumns
 
 	for idx, row := range run.Rows {
 		record := []string{}
-		rowColumns := getCsvColumns(*row)
 
 		for _, groupColumn := range groupColumns {
 			val, _ := helpers.GetFieldValueFromInterface(group, groupColumn.fieldName)
