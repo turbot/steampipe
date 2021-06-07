@@ -195,7 +195,11 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			return
 		}
 
-		// If any deleted/new/changed reports, emit an available reports message to clients
+		for k, v := range s.reportClients {
+			fmt.Println(fmt.Sprintf("Report client: %v %v", k, types.SafeString(v.Report)))
+		}
+
+		// If) any deleted/new/changed reports, emit an available reports message to clients
 		if len(deletedReports) != 0 || len(newReports) != 0 || len(changedReports) != 0 {
 			s.webSocket.Broadcast(buildAvailableReportsPayload(s.workspace.Mod.Reports))
 		}
@@ -219,6 +223,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		s.mutex.Unlock()
 
 		var changedReportNames []string
+		var newReportNames []string
 
 		// Capture the changed panels and make a note of the report(s) they're in
 		for _, changedPanel := range changedPanels {
@@ -249,6 +254,23 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 				executionlayer.ExecuteReportNode(s.context, changedReportName, s.workspace, s.dbClient)
 			}
 		}
+
+		// Special case - if we previously had a workspace error, any previously existing reports
+		// will come in here as new, so we need to check if any of those new reports are being watched.
+		// If so, execute them
+		for _, newReport := range newReports {
+			if helpers.StringSliceContains(newReportNames, newReport.Name()) {
+				continue
+			}
+			newReportNames = append(newReportNames, newReport.Name())
+		}
+
+		for _, newReportName := range newReportNames {
+			if helpers.StringSliceContains(reportsBeingWatched, newReportName) {
+				executionlayer.ExecuteReportNode(s.context, newReportName, s.workspace, s.dbClient)
+			}
+		}
+
 		break
 
 	case *reportevents.ReportError:
