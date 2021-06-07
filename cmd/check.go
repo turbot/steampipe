@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/karrick/gows"
@@ -30,41 +29,15 @@ func checkCmd() *cobra.Command {
 		Args:             cobra.ArbitraryArgs,
 		Run:              runCheckCmd,
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			// if len(toComplete) == 0 {
-			// 	return []string{"benchmark.", "control."}, cobra.ShellCompDirectiveNoSpace
-			// }
-
-			// if strings.HasPrefix("benchmark.", toComplete) {
-			// 	return []string{"benchmark."}, cobra.ShellCompDirectiveNoSpace
-			// }
-
-			// if strings.HasPrefix("control.", toComplete) {
-			// 	return []string{"control."}, cobra.ShellCompDirectiveNoSpace
-			// }
-
 			workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
 			if err != nil {
 				return []string{}, cobra.ShellCompDirectiveError
 			}
 			defer workspace.Close()
 
-			benchmarkList := []string{}
-			controlList := []string{}
-
-			for key := range workspace.BenchmarkMap {
-				benchmarkList = append(benchmarkList, key)
-			}
-
-			for key := range workspace.ControlMap {
-				controlList = append(controlList, key)
-			}
-
-			sort.Strings(benchmarkList)
-			sort.Strings(controlList)
-
 			completions := []string{}
 
-			for _, item := range append(benchmarkList, controlList...) {
+			for _, item := range workspace.GetSortedBenchmarksAndControlNames() {
 				if strings.HasPrefix(item, toComplete) {
 					completions = append(completions, item)
 				}

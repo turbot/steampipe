@@ -33,9 +33,9 @@ func queryCmd() *cobra.Command {
 			}
 			defer workspace.Close()
 			namedQueries := []string{}
-			for key := range workspace.GetNamedQueryMap() {
-				if strings.HasPrefix(key, toComplete) {
-					namedQueries = append(namedQueries, key)
+			for _, name := range workspace.GetSortedNamedQueryNames() {
+				if strings.HasPrefix(name, toComplete) {
+					namedQueries = append(namedQueries, name)
 				}
 			}
 			return namedQueries, cobra.ShellCompDirectiveNoFileComp
