@@ -9,11 +9,13 @@ import (
 	"github.com/turbot/steampipe/control/execute"
 )
 
+const UsableMaxCols = 200
+
 type TextFormatter struct{}
 
 func (j *TextFormatter) Format(ctx context.Context, tree *execute.ExecutionTree) (io.Reader, error) {
 	// limit to 200
-	maxCols := j.getMaxCols(200)
+	maxCols := j.getMaxCols(UsableMaxCols)
 	renderer := NewTableRenderer(tree, maxCols)
 	return (strings.NewReader(renderer.Render())), nil
 }
