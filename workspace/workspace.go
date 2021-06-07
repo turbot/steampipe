@@ -120,6 +120,27 @@ func (w *Workspace) loadExclusions() error {
 	return nil
 }
 
+// clear all resource maps
+func (w *Workspace) reset() {
+	w.QueryMap = make(map[string]*modconfig.Query)
+	w.ControlMap = make(map[string]*modconfig.Control)
+	w.BenchmarkMap = make(map[string]*modconfig.Benchmark)
+	w.ModMap = make(map[string]*modconfig.Mod)
+	w.ReportMap = make(map[string]*modconfig.Report)
+	w.PanelMap = make(map[string]*modconfig.Panel)
+}
+
+// determine whether to load files recursively or just from the top level folder
+// if there is a mod file in the workspace folder, load recursively
+func (w *Workspace) setListFlag() {
+
+	if err = scanner.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (w *Workspace) GetSortedBenchmarksAndControlNames() []string {
 	benchmarkList := []string{}
 	controlList := []string{}
@@ -258,6 +279,9 @@ func (w *Workspace) loadMod() error {
 	// parse all hcl files in the workspace folder (non recursively) and either parse or create a mod
 	// it is valid for 0 or 1 mod to be defined (if no mod is defined, create a default one)
 	// populate mod with all hcl resources we parse
+
+	// clear all resource maps
+	w.reset()
 
 	// build options used to load workspace
 	// set flags to create pseudo resources and a default mod if needed
