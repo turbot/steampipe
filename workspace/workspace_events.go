@@ -40,10 +40,11 @@ func (w *Workspace) handleFileWatcherEvent(client *db.Client, events []fsnotify.
 		w.watcherError = err
 		// publish error event
 		w.PublishReportEvent(&reportevents.WorkspaceError{Error: err})
-	} else {
-		// clear watcher error
-		w.watcherError = nil
+		return
 	}
+
+	// clear watcher error
+	w.watcherError = nil
 
 	// todo detect differences and only refresh if necessary
 	db.UpdateMetadataTables(w.GetResourceMaps(), client)
