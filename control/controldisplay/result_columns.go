@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
+	"sort"
 
 	"github.com/turbot/steampipe/control/execute"
 )
@@ -27,6 +28,12 @@ func newResultColumns(e *execute.ExecutionTree) *ResultColumns {
 
 	dimensionColumns := e.DimensionColorGenerator.GetDimensionProperties()
 	tagColumns := e.GetAllTags()
+
+	sort.Strings(dimensionColumns)
+	sort.Strings(tagColumns)
+	sort.Slice(rowColumns, func(i, j int) bool {
+		return rowColumns[i].fieldName < rowColumns[j].fieldName
+	})
 
 	allColumns := []string{}
 
