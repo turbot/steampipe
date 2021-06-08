@@ -2,6 +2,7 @@ package controldisplay
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strings"
 
@@ -17,7 +18,7 @@ func (j *TextFormatter) Format(ctx context.Context, tree *execute.ExecutionTree)
 	// limit to 200
 	maxCols := j.getMaxCols(UsableMaxCols)
 	renderer := NewTableRenderer(tree, maxCols)
-	return (strings.NewReader(renderer.Render())), nil
+	return (strings.NewReader(fmt.Sprintf("\n%s\n", renderer.Render()))), nil
 }
 
 func (j *TextFormatter) getMaxCols(limitCol int) int {
