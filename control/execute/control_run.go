@@ -91,8 +91,9 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 		return
 	}
 
-	startTime := time.Now()
+	shouldBeDoneBy := time.Now().Add(240 * time.Millisecond)
 
+	// set a log line in the database logs for convenience
 	_, _ = client.ExecuteSync(ctx, fmt.Sprintf("--- Executing %s", *control.Title))
 
 	var originalConfiguredSearchPath []string
@@ -112,6 +113,12 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 		client.SetClientSearchPath()
 	}
 
+	ctx, cancel := context.WithDeadline(ctx, shouldBeDoneBy)
+	// Even though ctx will be expired, it is good practice to call its
+	// cancellation function in any case. Failure to do so may keep the
+	// context and its parent alive longer than necessary.
+	defer cancel()
+
 	queryResult, err := client.ExecuteQuery(ctx, query, false)
 	if err != nil {
 		r.SetError(err)
@@ -120,54 +127,51 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	// validate required columns
 	r.queryResult = queryResult
 
-	// set the control as started
+	// create a channel to get updates on row extraction
+	// the channel should be closed when cleaning up
+	gatheringUpdateChannel := make(chan string)
 	go func() {
-		r.gatherResults(queryResult)
+		r.gatherResults(gatheringUpdateChannel)
 		if control.SearchPath != nil || control.SearchPathPrefix != nil {
 			// the search path was modified. Reset it!
 			viper.Set(constants.ArgSearchPath, originalConfiguredSearchPath)
 			viper.Set(constants.ArgSearchPathPrefix, originalConfiguredSearchPathPrefix)
 			client.SetClientSearchPath()
 		}
+		close(gatheringUpdateChannel)
 	}()
 
-	// TEMPORARY - we will eventually pass the streams to the renderer before completion
-	// wait for control to finish
-	controlCompletionTimeout := 240 * time.Second
-	for {
-		// if the control is finished (either successfully or with an error), return the controlRun
-		if r.Finished() {
-			//log.Println("[WARN]", "finished", r.Control.ShortName)
-			break
-		}
-		time.Sleep(50 * time.Millisecond)
-		if time.Since(startTime) > controlCompletionTimeout {
-			// TODO we need a way to cancel a running query
-			r.SetError(fmt.Errorf("control %s timed out", control.Name()))
+	for range gatheringUpdateChannel {
+		select {
+		case <-time.After(time.Until(shouldBeDoneBy)):
+			r.SetError(fmt.Errorf("control timed out"))
+		default:
+			time.Sleep(50 * time.Millisecond)
 		}
 	}
-
 }
 
-func (r *ControlRun) gatherResults(result *queryresult.Result) {
+func (r *ControlRun) gatherResults(gatheringUpdateChannel chan string) {
 	for {
-
 		select {
 		case row := <-*r.queryResult.RowChan:
 			if row == nil {
 				// update the result group status with our status - this will be passed all the way up the execution tree
 				r.group.updateSummary(r.Summary)
 				// nil row means we are done
-				//log.Println("[WARN]", "set complete", r.Control.ShortName)
 				r.setRunStatus(ControlRunComplete)
 				return
 
 			}
-			result, err := NewResultRow(r.Control, row, result.ColTypes)
-
+			// got a result - send a ping over the channel so that the
+			// loop can check against the timeout
+			gatheringUpdateChannel <- ""
+			if row.Error != nil {
+				r.SetError(row.Error)
+				return
+			}
+			result, err := NewResultRow(r.Control, row, r.queryResult.ColTypes)
 			if err != nil {
-				// fail on error
-				//log.Println("[WARN]", "set error", r.Control.ShortName)
 				r.SetError(err)
 				return
 			}
