@@ -22,7 +22,7 @@ type ResultGroup struct {
 	ControlRuns []*ControlRun     `json:"controls"`
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ControlTreeItem `json:"-"`
-	Parent    *ResultGroup
+	Parent    *ResultGroup              `json:"-"`
 }
 
 type GroupSummary struct {
