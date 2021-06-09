@@ -15,3 +15,16 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe check all --workspace $WORKSPACE_DIR --output=json --progress=false
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_check_json.json)"
 }
+
+@test "steampipe check all - export csv" {
+  run steampipe check all --workspace $WORKSPACE_DIR --export=csv:./test.csv --progress=false
+  assert_equal "$(cat ./test.csv)" "$(cat $TEST_DATA_DIR/expected_check_csv.csv)"
+  rm -f ./test.csv
+}
+
+@test "steampipe check all - export json" {
+  run steampipe check all --workspace $WORKSPACE_DIR --export=json:./test.json --progress=false
+  assert_equal "$(cat ./test.json)" "$(cat $TEST_DATA_DIR/expected_check_json.json)"
+  rm -f ./test.json
+}
+
