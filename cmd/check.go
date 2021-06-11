@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/karrick/gows"
 	"github.com/turbot/steampipe/control/controldisplay"
@@ -20,14 +21,31 @@ import (
 	"github.com/turbot/steampipe/workspace"
 )
 
-// CheckCmd :: represents the check command
-func CheckCmd() *cobra.Command {
+// checkCmd :: represents the check command
+func checkCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:              "check [flags] [mod/benchmark/control/\"all\"]",
 		TraverseChildren: true,
 		Args:             cobra.ArbitraryArgs,
 		Run:              runCheckCmd,
-		Short:            "Execute one or more controls",
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+			if err != nil {
+				return []string{}, cobra.ShellCompDirectiveError
+			}
+			defer workspace.Close()
+
+			completions := []string{}
+
+			for _, item := range workspace.GetSortedBenchmarksAndControlNames() {
+				if strings.HasPrefix(item, toComplete) {
+					completions = append(completions, item)
+				}
+			}
+
+			return completions, cobra.ShellCompDirectiveNoFileComp
+		},
+		Short: "Execute one or more controls",
 		Long: `Execute one of more Steampipe benchmarks and controls.
 
 You may specify one or more benchmarks or controls to run (separated by a space), or run 'steampipe check all' to run all controls in the workspace.`,

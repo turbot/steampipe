@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/turbot/steampipe/query/execute"
 
@@ -18,14 +19,28 @@ import (
 	"github.com/turbot/steampipe/workspace"
 )
 
-// QueryCmd :: represents the query command
-func QueryCmd() *cobra.Command {
+// queryCmd :: represents the query command
+func queryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:              "query",
 		TraverseChildren: true,
 		Args:             cobra.ArbitraryArgs,
 		Run:              runQueryCmd,
-		Short:            "Execute SQL queries interactively or by argument",
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+			if err != nil {
+				return []string{}, cobra.ShellCompDirectiveError
+			}
+			defer workspace.Close()
+			namedQueries := []string{}
+			for _, name := range workspace.GetSortedNamedQueryNames() {
+				if strings.HasPrefix(name, toComplete) {
+					namedQueries = append(namedQueries, name)
+				}
+			}
+			return namedQueries, cobra.ShellCompDirectiveNoFileComp
+		},
+		Short: "Execute SQL queries interactively or by argument",
 		Long: `Execute SQL queries interactively, or by a query argument.
 
 Open a interactive SQL query console to Steampipe to explore your data and run

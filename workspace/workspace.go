@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -55,6 +56,33 @@ func Load(workspacePath string) (*Workspace, error) {
 	}
 
 	return workspace, nil
+}
+
+func (w *Workspace) GetSortedBenchmarksAndControlNames() []string {
+	benchmarkList := []string{}
+	controlList := []string{}
+
+	for key := range w.BenchmarkMap {
+		benchmarkList = append(benchmarkList, key)
+	}
+
+	for key := range w.ControlMap {
+		controlList = append(controlList, key)
+	}
+
+	sort.Strings(benchmarkList)
+	sort.Strings(controlList)
+
+	return append(benchmarkList, controlList...)
+}
+
+func (w *Workspace) GetSortedNamedQueryNames() []string {
+	namedQueries := []string{}
+	for key := range w.GetNamedQueryMap() {
+		namedQueries = append(namedQueries, key)
+	}
+	sort.Strings(namedQueries)
+	return namedQueries
 }
 
 // determine whether to load files recursively or just from the top level folder
