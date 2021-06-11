@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/go-hclog"
 	_ "github.com/lib/pq"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/utils"
 )
@@ -15,12 +14,14 @@ import (
 var Logger hclog.Logger
 
 func main() {
-	logging.LogTime("main start")
+	utils.LogTime("main start")
+	exitCode := 0
 	defer func() {
-		logging.LogTime("main end")
+		utils.LogTime("main end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
+		os.Exit(exitCode)
 	}()
 
 	// ensure steampipe is not being run as root
@@ -28,9 +29,9 @@ func main() {
 	cmd.InitCmd()
 
 	// execute the command
-	cmd.Execute()
+	exitCode = cmd.Execute()
 
-	logging.LogTime("end")
+	utils.LogTime("end")
 	utils.DisplayProfileData()
 }
 

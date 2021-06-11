@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/logrusorgru/aurora"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -50,15 +51,20 @@ func DisplayProfileData() {
 		for _, logEntry := range Timing {
 			var itemData []string
 			itemData = append(itemData, logEntry.Operation)
-			itemData = append(itemData, fmt.Sprintf("%s", logEntry.Interval))
-			itemData = append(itemData, fmt.Sprintf("%s", logEntry.Cumulative))
+			if logEntry.Interval > 300*time.Millisecond {
+				itemData = append(itemData, aurora.Bold(aurora.BrightRed(logEntry.Interval.String())).String())
+			} else {
+				itemData = append(itemData, logEntry.Interval.String())
+			}
+			itemData = append(itemData, logEntry.Cumulative.String())
 			data = append(data, itemData)
 		}
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetHeader([]string{"Operation", "Elapsed", "Cumulative"})
 		table.SetBorder(true)
-		table.AppendBulk(data)
+		table.SetReflowDuringAutoWrap(false)
 		table.SetAutoWrapText(false)
+		table.AppendBulk(data)
 		table.Render()
 	}
 

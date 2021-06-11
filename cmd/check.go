@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
@@ -68,7 +67,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 }
 
 func runCheckCmd(cmd *cobra.Command, args []string) {
-	logging.LogTime("runCheckCmd start")
+	utils.LogTime("runCheckCmd start")
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	// verify we have an argument
@@ -82,7 +81,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	defer func() {
-		logging.LogTime("runCheckCmd end")
+		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}

@@ -130,7 +130,7 @@ func AddCommands() {
 	rootCmd.AddCommand(generateCompletionScriptsCmd())
 }
 
-func Execute() {
+func Execute() int {
 	rootCmd.Execute()
-	os.Exit(exitCode)
+	return exitCode
 }

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/utils"
@@ -14,7 +13,8 @@ import (
 
 // EnsureDbAndStartService :: ensure db is installed and start service if necessary
 func EnsureDbAndStartService(invoker Invoker) error {
-	logging.LogTime("db.EnsureDbAndStartService start")
+	utils.LogTime("db.EnsureDbAndStartService start")
+	defer utils.LogTime("db.EnsureDbAndStartService end")
 	log.Println("[TRACE] db.EnsureDbAndStartService start")
 
 	EnsureDBInstalled()
@@ -53,8 +53,8 @@ func RunInteractivePrompt(workspace NamedQueryProvider, client *Client) (*queryr
 
 // ExecuteQuery :: execute a single query. If shutdownAfterCompletion is true, shutdown the client after completion
 func ExecuteQuery(ctx context.Context, queryString string, client *Client) (*queryresult.ResultStreamer, error) {
-	logging.LogTime("db.ExecuteQuery start")
-	defer logging.LogTime("db.ExecuteQuery end")
+	utils.LogTime("db.ExecuteQuery start")
+	defer utils.LogTime("db.ExecuteQuery end")
 
 	resultsStreamer := queryresult.NewResultStreamer()
 	result, err := client.ExecuteQuery(ctx, queryString, false)
