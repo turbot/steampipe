@@ -35,28 +35,32 @@ func FailOnErrorWithMessage(err error, message string) {
 
 func ShowError(err error) {
 	err = handleCancelError(err)
-	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, TrimDriversFromErrMsg(err.Error()))
+	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, TransformErrorToSteampipe(err))
 }
 
 // ShowErrorWithMessage displays the given error nicely with the given message
 func ShowErrorWithMessage(err error, message string) {
 	err = handleCancelError(err)
-	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, TrimDriversFromErrMsg(err.Error()))
+	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, TransformErrorToSteampipe(err))
 }
 
-// TrimDriversFromErrMsg removes the pq: and rpc error prefixes along
+// TransformErrorToSteampipe removes the pq: and rpc error prefixes along
 // with all the unnecessary information that comes from the
 // drivers and libraries
-func TrimDriversFromErrMsg(msg string) string {
-	errString := strings.TrimSpace(msg)
+func TransformErrorToSteampipe(err error) error {
+	errString := strings.TrimSpace(err.Error())
+
+	// an error that originated from our database/sql driver (always prefixed with "pq:")
 	if strings.HasPrefix(errString, "pq:") {
 		errString = strings.TrimSpace(strings.TrimPrefix(errString, "pq:"))
+
+		// if this is an RPC Error while talking with the plugin
 		if strings.HasPrefix(errString, "rpc error") {
 			// trim out "rpc error: code = Unknown desc ="
-			errString = strings.TrimSpace(errString[33:])
+			errString = strings.TrimPrefix(errString, "rpc error: code = Unknown desc =")
 		}
 	}
-	return errString
+	return fmt.Errorf(strings.TrimSpace(errString))
 }
 
 // modifies a context.Canceled error into a readable error that can

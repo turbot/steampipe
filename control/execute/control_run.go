@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/query/execute"
+	"github.com/turbot/steampipe/utils"
 
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -29,7 +30,7 @@ const (
 
 // ControlRun is a struct representing a  a control run - will contain one or more result items (i.e. for one or more resources)
 type ControlRun struct {
-	Error error `json:"-"`
+	runError error `json:"-"`
 	// the parent control
 	Control *modconfig.Control `json:"-"`
 	Summary StatusSummary      `json:"-"`
@@ -113,7 +114,6 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 
 	queryResult, err := client.ExecuteQuery(ctx, query, false)
 	if err != nil {
-		//log.Println("[WARN]", "set run error", r.Control.ShortName)
 		r.SetError(err)
 		return
 	}
@@ -201,10 +201,15 @@ func (r *ControlRun) addResultRow(row *ResultRow) {
 }
 
 func (r *ControlRun) SetError(err error) {
-	r.Error = err
+	r.runError = utils.TransformErrorToSteampipe(err)
+
 	// update error count
 	r.Summary.Error++
 	r.setRunStatus(ControlRunError)
+}
+
+func (r *ControlRun) GetError() error {
+	return r.runError
 }
 
 func (r *ControlRun) setRunStatus(status ControlRunStatus) {
