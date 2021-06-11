@@ -146,8 +146,8 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			if alreadyThere {
 				return fmt.Errorf("duplicate connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename)
 			}
-			if !schema.IsSchemaNameValid(connection.Name) {
-				return fmt.Errorf("invalid connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename)
+			if ok, errorMessage := schema.IsSchemaNameValid(connection.Name); !ok {
+				return fmt.Errorf("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage)
 			}
 			steampipeConfig.Connections[connection.Name] = connection
 
