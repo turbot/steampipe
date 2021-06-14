@@ -91,8 +91,6 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 		return
 	}
 
-	shouldBeDoneBy := time.Now().Add(240 * time.Millisecond)
-
 	// set a log line in the database logs for convenience
 	_, _ = client.ExecuteSync(ctx, fmt.Sprintf("--- Executing %s", *control.Title))
 
@@ -113,6 +111,7 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 		client.SetClientSearchPath()
 	}
 
+	shouldBeDoneBy := time.Now().Add(240 * time.Second)
 	ctx, cancel := context.WithDeadline(ctx, shouldBeDoneBy)
 	// Even though ctx will be expired, it is good practice to call its
 	// cancellation function in any case. Failure to do so may keep the
@@ -127,31 +126,36 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	// validate required columns
 	r.queryResult = queryResult
 
-	// create a channel to get updates on row extraction
-	// the channel should be closed when cleaning up
-	gatheringUpdateChannel := make(chan string)
+	// create a channel to which will be closed when gathering has been done
+	gatherDoneChan := make(chan string)
 	go func() {
-		r.gatherResults(gatheringUpdateChannel)
+		r.gatherResults()
 		if control.SearchPath != nil || control.SearchPathPrefix != nil {
 			// the search path was modified. Reset it!
 			viper.Set(constants.ArgSearchPath, originalConfiguredSearchPath)
 			viper.Set(constants.ArgSearchPathPrefix, originalConfiguredSearchPathPrefix)
 			client.SetClientSearchPath()
 		}
-		close(gatheringUpdateChannel)
+		close(gatherDoneChan)
 	}()
 
-	for range gatheringUpdateChannel {
+	for {
+		breakOutOfOuterLoop := false
 		select {
-		case <-time.After(time.Until(shouldBeDoneBy)):
+		case <-ctx.Done():
 			r.SetError(fmt.Errorf("control timed out"))
+		case <-gatherDoneChan:
+			breakOutOfOuterLoop = true
 		default:
 			time.Sleep(50 * time.Millisecond)
+		}
+		if breakOutOfOuterLoop {
+			break
 		}
 	}
 }
 
-func (r *ControlRun) gatherResults(gatheringUpdateChannel chan string) {
+func (r *ControlRun) gatherResults() {
 	for {
 		select {
 		case row := <-*r.queryResult.RowChan:
@@ -165,7 +169,6 @@ func (r *ControlRun) gatherResults(gatheringUpdateChannel chan string) {
 			}
 			// got a result - send a ping over the channel so that the
 			// loop can check against the timeout
-			gatheringUpdateChannel <- ""
 			if row.Error != nil {
 				r.SetError(row.Error)
 				return
@@ -178,8 +181,8 @@ func (r *ControlRun) gatherResults(gatheringUpdateChannel chan string) {
 			r.addResultRow(result)
 		case <-r.doneChan:
 			return
-		default:
-			time.Sleep(25 * time.Millisecond)
+			// default:
+			// 	time.Sleep(25 * time.Millisecond)
 		}
 	}
 }
