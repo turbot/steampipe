@@ -37,6 +37,7 @@ type versionChecker struct {
 // check if there is a new version
 func checkSteampipeVersion(id string) [][]string {
 	var notificationLines = [][]string{}
+
 	if !viper.GetBool(constants.ArgUpdateCheck) {
 		return notificationLines
 	}
@@ -85,7 +86,6 @@ func (c *versionChecker) Notify() ([][]string, error) {
 			{""},
 		}
 		return notificationLines, nil
-		// displayUpdateNotification(info, currentVersion, newVersion, notificationLines)
 	}
 	return nil, nil
 }

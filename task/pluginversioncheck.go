@@ -2,10 +2,8 @@ package task
 
 import (
 	"fmt"
-	"os"
 	"sort"
 
-	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/plugin"
@@ -57,7 +55,7 @@ func showPluginUpdateNotification(reports []plugin.VersionCheckReport) [][]strin
 		thisName := report.ShortName()
 		line := ""
 		if len(report.Plugin.Version) == 0 {
-			format := fmt.Sprintf("  %%-%ds @ %%-10s       %%21s", longestNameLength)
+			format := fmt.Sprintf("  %%-%ds @ %%-10s  →  %%10s", longestNameLength)
 			line = fmt.Sprintf(
 				format,
 				thisName,
@@ -81,17 +79,6 @@ func showPluginUpdateNotification(reports []plugin.VersionCheckReport) [][]strin
 		fmt.Sprintf("You can update by running %s", constants.Bold("steampipe plugin update --all")),
 	})
 	notificationLines = append(notificationLines, []string{""})
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{})                // no headers
-	table.SetAlignment(tablewriter.ALIGN_LEFT) // align to the left
-	table.SetAutoWrapText(false)               // do not wrap the text
-	table.SetBorder(true)                      // there needs to be a border to give the dialog feel
-	table.AppendBulk(notificationLines)        // Add Bulk Data
-
-	fmt.Println()
-	table.Render()
-	fmt.Println()
 
 	return notificationLines
 }
