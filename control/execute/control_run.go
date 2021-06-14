@@ -139,18 +139,16 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 		close(gatherDoneChan)
 	}()
 
-	for {
-		breakOutOfOuterLoop := false
+	resultsGathered := false
+	for !resultsGathered {
 		select {
 		case <-ctx.Done():
 			r.SetError(fmt.Errorf("control timed out"))
+			resultsGathered = true
 		case <-gatherDoneChan:
-			breakOutOfOuterLoop = true
+			resultsGathered = true
 		default:
 			time.Sleep(50 * time.Millisecond)
-		}
-		if breakOutOfOuterLoop {
-			break
 		}
 	}
 }
@@ -181,8 +179,6 @@ func (r *ControlRun) gatherResults() {
 			r.addResultRow(result)
 		case <-r.doneChan:
 			return
-			// default:
-			// 	time.Sleep(25 * time.Millisecond)
 		}
 	}
 }
