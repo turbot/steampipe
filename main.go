@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	filehelpers "github.com/turbot/go-kit/files"
+
 	"github.com/hashicorp/go-hclog"
 	_ "github.com/lib/pq"
 	"github.com/turbot/go-kit/helpers"
@@ -26,6 +28,11 @@ func main() {
 
 	// ensure steampipe is not being run as root
 	checkRoot()
+
+	// increase the soft ULIMIT to match the hard limit
+	err := setULimit()
+	utils.FailOnErrorWithMessage(err, "failed to increase the file limit")
+
 	cmd.InitCmd()
 
 	// execute the command
@@ -33,6 +40,23 @@ func main() {
 
 	utils.LogTime("end")
 	utils.DisplayProfileData()
+}
+
+// set the current to the max to avoid any file handle shortages
+func setULimit() error {
+	ulimit, err := filehelpers.GetULimit()
+	if err != nil {
+		return err
+	}
+
+	// set the current ulimit to the max
+	// (hard limiting to 32768 - problems have been observed at > 48000, so leave a threshold of safety )
+	newULimit := ulimit.Max
+	if newULimit > 32768 {
+		newULimit = 32768
+	}
+	err = filehelpers.SetULimit(newULimit)
+	return err
 }
 
 // this is to replicate the user security mechanism of out underlying
