@@ -48,7 +48,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
-	github.com/turbot/go-kit v0.2.1
+	github.com/turbot/go-kit v0.2.2-0.20210614162002-b56bc76ce374
 	github.com/turbot/steampipe-plugin-sdk v0.2.8
 	github.com/ugorji/go v1.1.4 // indirect
 	github.com/ulikunitz/xz v0.5.8
@@ -63,5 +63,3 @@ require (
 )
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe
-
-replace github.com/turbot/go-kit => github.com/turbot/go-kit v0.2.2-0.20210517131416-052d9629cbd5

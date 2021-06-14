@@ -58,6 +58,72 @@ func Load(workspacePath string) (*Workspace, error) {
 	return workspace, nil
 }
 
+func (w *Workspace) SetupWatcher(client *db.Client) error {
+
+	watcherOptions := &utils.WatcherOptions{
+		Directories: []string{w.Path},
+		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
+		Exclude:     w.exclusions,
+		OnChange: func(events []fsnotify.Event) {
+			w.loadLock.Lock()
+			defer w.loadLock.Unlock()
+
+			err := w.loadMod()
+			if err != nil {
+				// if we are already in an error state, do not show error
+				if w.watcherError == nil {
+					fmt.Println()
+					utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
+				}
+			}
+			// now store/clear watcher error so we only show message once
+			w.watcherError = err
+			// todo detect differences and only refresh if necessary
+			db.UpdateMetadataTables(w.GetResourceMaps(), client)
+		},
+		ListFlag: w.listFlag,
+		//onError:          nil,
+	}
+	watcher, err := utils.NewWatcher(watcherOptions)
+	if err != nil {
+		return err
+	}
+	w.watcher = watcher
+
+	return nil
+}
+
+func (w *Workspace) LoadExclusions() error {
+	w.exclusions = []string{}
+
+	ignorePath := filepath.Join(w.Path, constants.WorkspaceIgnoreFile)
+	file, err := os.Open(ignorePath)
+	if err != nil {
+		// if file does not exist, just return
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if len(strings.TrimSpace(line)) != 0 && !strings.HasPrefix(line, "#") {
+			// add exclusion to the workspace path (to ensure relative patterns work)
+			absoluteExclusion := filepath.Join(w.Path, line)
+			w.exclusions = append(w.exclusions, absoluteExclusion)
+		}
+	}
+
+	if err = scanner.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (w *Workspace) GetSortedBenchmarksAndControlNames() []string {
 	benchmarkList := []string{}
 	controlList := []string{}
@@ -83,21 +149,6 @@ func (w *Workspace) GetSortedNamedQueryNames() []string {
 	}
 	sort.Strings(namedQueries)
 	return namedQueries
-}
-
-// determine whether to load files recursively or just from the top level folder
-// if there is a mod file in the workspace folder, load recursively
-func (w *Workspace) setListFlag() {
-
-	modFilePath := filepath.Join(w.Path, "mod.sp")
-	_, err := os.Stat(modFilePath)
-	modFileExists := err == nil
-	if modFileExists {
-		// only load/watch recursively if a mod sp file exists in the workspace folder
-		w.listFlag = filehelpers.FilesRecursive
-	} else {
-		w.listFlag = filehelpers.Files
-	}
 }
 
 func (w *Workspace) Close() {
@@ -139,6 +190,56 @@ func (w *Workspace) GetChildControls() []*modconfig.Control {
 		}
 	}
 	return result
+}
+
+func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
+	workspaceMap := &modconfig.WorkspaceResourceMaps{
+		ModMap:       make(map[string]*modconfig.Mod),
+		QueryMap:     w.QueryMap,
+		ControlMap:   w.ControlMap,
+		BenchmarkMap: w.BenchmarkMap,
+	}
+	// TODO add in all mod dependencies
+	if !w.Mod.IsDefaultMod() {
+		workspaceMap.ModMap[w.Mod.Name()] = w.Mod
+	}
+
+	return workspaceMap
+}
+
+// GetMod attempts to return the mod with a name matching 'modName'
+// It first checks the workspace mod, then checks all mod dependencies
+func (w *Workspace) GetMod(modName string) *modconfig.Mod {
+	// is it the workspace mod?
+	if modName == w.Mod.Name() {
+		return w.Mod
+	}
+	// try workspace mod dependencies
+	return w.ModMap[modName]
+}
+
+// Mods returns a flat list of all mods - the workspace mod and depdnency mods
+func (w *Workspace) Mods() []*modconfig.Mod {
+	var res = []*modconfig.Mod{w.Mod}
+	for _, m := range w.ModMap {
+		res = append(res, m)
+	}
+	return res
+}
+
+// determine whether to load files recursively or just from the top level folder
+// if there is a mod file in the workspace folder, load recursively
+func (w *Workspace) setListFlag() {
+
+	modFilePath := filepath.Join(w.Path, "mod.sp")
+	_, err := os.Stat(modFilePath)
+	modFileExists := err == nil
+	if modFileExists {
+		// only load/watch recursively if a mod sp file exists in the workspace folder
+		w.listFlag = filehelpers.FilesRecursive
+	} else {
+		w.listFlag = filehelpers.Files
+	}
 }
 
 func (w *Workspace) loadMod() error {
@@ -250,107 +351,6 @@ func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) map[string]*modco
 		for _, c := range mod.Benchmarks {
 			res[c.QualifiedName()] = c
 		}
-	}
-	return res
-}
-
-func (w *Workspace) SetupWatcher(client *db.Client) error {
-
-	watcherOptions := &utils.WatcherOptions{
-		Directories: []string{w.Path},
-		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
-		Exclude:     w.exclusions,
-		OnChange: func(events []fsnotify.Event) {
-			w.loadLock.Lock()
-			defer w.loadLock.Unlock()
-
-			err := w.loadMod()
-			if err != nil {
-				// if we are already in an error state, do not show error
-				if w.watcherError == nil {
-					fmt.Println()
-					utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
-				}
-			}
-			// now store/clear watcher error so we only show message once
-			w.watcherError = err
-			// todo detect differences and only refresh if necessary
-			db.UpdateMetadataTables(w.GetResourceMaps(), client)
-		},
-		ListFlag: w.listFlag,
-		//onError:          nil,
-	}
-	watcher, err := utils.NewWatcher(watcherOptions)
-	if err != nil {
-		return err
-	}
-	w.watcher = watcher
-
-	return nil
-}
-
-func (w *Workspace) LoadExclusions() error {
-	w.exclusions = []string{}
-
-	ignorePath := filepath.Join(w.Path, constants.WorkspaceIgnoreFile)
-	file, err := os.Open(ignorePath)
-	if err != nil {
-		// if file does not exist, just return
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if len(strings.TrimSpace(line)) != 0 && !strings.HasPrefix(line, "#") {
-			// add exclusion to the workspace path (to ensure relative patterns work)
-			absoluteExclusion := filepath.Join(w.Path, line)
-			w.exclusions = append(w.exclusions, absoluteExclusion)
-		}
-	}
-
-	if err = scanner.Err(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
-	workspaceMap := &modconfig.WorkspaceResourceMaps{
-		ModMap:       make(map[string]*modconfig.Mod),
-		QueryMap:     w.QueryMap,
-		ControlMap:   w.ControlMap,
-		BenchmarkMap: w.BenchmarkMap,
-	}
-	// TODO add in all mod dependencies
-	if !w.Mod.IsDefaultMod() {
-		workspaceMap.ModMap[w.Mod.Name()] = w.Mod
-	}
-
-	return workspaceMap
-}
-
-// GetMod attempts to return the mod with a name matching 'modName'
-// It first checks the workspace mod, then checks all mod dependencies
-func (w *Workspace) GetMod(modName string) *modconfig.Mod {
-	// is it the workspace mod?
-	if modName == w.Mod.Name() {
-		return w.Mod
-	}
-	// try workspace mod dependencies
-	return w.ModMap[modName]
-}
-
-// Mods returns a flat list of all mods - the workspace mod and depdnency mods
-func (w *Workspace) Mods() []*modconfig.Mod {
-	var res = []*modconfig.Mod{w.Mod}
-	for _, m := range w.ModMap {
-		res = append(res, m)
 	}
 	return res
 }
