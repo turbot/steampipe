@@ -1,3 +1,7 @@
+## v0.5.3 [2021-06-14]
+_Bug fixes_
+* Fixes Steampipe failing to run when too many benchmarks use the same controls. ([#528](https://github.com/turbot/steampipe/issues/528))
+
 ## v0.5.2 [2021-06-10]
 _Bug fixes_
 * Ensure consistent ordering of query result cache key when more than one qual is used. ([#53](https://github.com/turbot/steampipe-postgres-fdw/issues/53))
