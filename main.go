@@ -53,7 +53,6 @@ func setULimit() error {
 	// (hard limiting to 32768 - problems have been observed at > 48000, so leave a threshold of safety )
 	newULimit := ulimit.Max
 	if newULimit > 32768 {
-		fmt.Println("ULIMIT", newULimit)
 		newULimit = 32768
 	}
 	err = filehelpers.SetULimit(newULimit)
