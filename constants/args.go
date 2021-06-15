@@ -25,7 +25,6 @@ const (
 	ArgTheme                   = "theme"
 	ArgProgress                = "progress"
 	ArgExport                  = "export"
-	ArgQuiet                   = "quiet"
 	ArgDryRun                  = "dry-run"
 )
 

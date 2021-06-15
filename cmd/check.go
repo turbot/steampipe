@@ -64,7 +64,6 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme, which determines the color scheme for the 'text' control output. Possible values are light, dark, plain").
 		AddStringSliceFlag(constants.ArgExport, "", []string{}, "Export output to files").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
-		AddBoolFlag(constants.ArgQuiet, "", false, "Display only failed control results").
 		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them")
 
 	return cmd
