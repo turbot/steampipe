@@ -10,8 +10,8 @@ import (
 )
 
 // check if there is a new version
-func checkPluginVersions(installationID string) [][]string {
-	var notificationLines = [][]string{}
+func checkPluginVersions(installationID string) []string {
+	var notificationLines []string
 	if !viper.GetBool(constants.ArgUpdateCheck) {
 		return notificationLines
 	}
@@ -27,16 +27,16 @@ func checkPluginVersions(installationID string) [][]string {
 	}
 
 	if len(pluginsToUpdate) > 0 {
-		notificationLines = showPluginUpdateNotification(pluginsToUpdate)
+		notificationLines = pluginNotificationMessage(pluginsToUpdate)
 	}
 	return notificationLines
 }
 
-func showPluginUpdateNotification(reports []plugin.VersionCheckReport) [][]string {
-	var notificationLines = [][]string{
-		{""},
-		{"Updated versions of the following plugins are available:"},
-		{""},
+func pluginNotificationMessage(reports []plugin.VersionCheckReport) []string {
+	var notificationLines = []string{
+		"",
+		"Updated versions of the following plugins are available:",
+		"",
 	}
 	longestNameLength := 0
 	for _, report := range reports {
@@ -72,13 +72,11 @@ func showPluginUpdateNotification(reports []plugin.VersionCheckReport) [][]strin
 				constants.Bold(report.CheckResponse.Version),
 			)
 		}
-		notificationLines = append(notificationLines, []string{line})
+		notificationLines = append(notificationLines, line)
 	}
-	notificationLines = append(notificationLines, []string{""})
-	notificationLines = append(notificationLines, []string{
-		fmt.Sprintf("You can update by running %s", constants.Bold("steampipe plugin update --all")),
-	})
-	notificationLines = append(notificationLines, []string{""})
+	notificationLines = append(notificationLines, "")
+	notificationLines = append(notificationLines, fmt.Sprintf("You can update by running %s", constants.Bold("steampipe plugin update --all")))
+	notificationLines = append(notificationLines, "")
 
 	return notificationLines
 }

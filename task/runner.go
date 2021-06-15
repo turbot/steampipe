@@ -28,35 +28,38 @@ func NewRunner() *Runner {
 }
 
 func (r *Runner) Run() {
-	notificationLines := [][]string{}
+	var versionNotificationLines []string
+	var pluginNotificationLines []string
 	if r.shouldRun() {
 		waitGroup := sync.WaitGroup{}
 
 		// check whether an updated version is available
 		waitGroup.Add(1)
 		go r.runAsyncJob(func() {
-			notificationLines = append(checkSteampipeVersion(r.currentState.InstallationID), notificationLines...)
+			versionNotificationLines = checkSteampipeVersion(r.currentState.InstallationID)
 		}, &waitGroup)
 
 		// check whether an updated version is available
 		waitGroup.Add(1)
 		go r.runAsyncJob(func() {
-			notificationLines = append(notificationLines, checkPluginVersions(r.currentState.InstallationID)...)
+			pluginNotificationLines = checkPluginVersions(r.currentState.InstallationID)
 		}, &waitGroup)
 
 		// remove log files older than 7 days
 		waitGroup.Add(1)
 		go r.runAsyncJob(func() { db.TrimLogs() }, &waitGroup)
 
-		// update last check time
+		// wait for all jobs to complete
 		waitGroup.Wait()
 
+		// display notifications, if any
+		notificationLines := append(versionNotificationLines, pluginNotificationLines...)
 		if len(notificationLines) > 0 {
 			displayUpdateNotification(notificationLines)
 		}
 
+		// save the state - this updates the last checked time
 		r.currentState.Save()
-		r.currentState, _ = statefile.LoadState()
 	}
 }
 
