@@ -8,7 +8,6 @@ import (
 	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
-	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
 
@@ -27,6 +26,10 @@ const (
 	ServiceStopFailed
 	// ServiceStopTimedOut :: StopStatus - service stop attempt timed out
 	ServiceStopTimedOut
+	// ServiceStopFailed_IsImplicit :: StopStatus - when service is running implicit to a different command
+	ServiceStopFailed_IsImplicit
+	// ServiceStopFailed_HasClients :: StopStatus - when service has client connected to it
+	ServiceStopFailed_HasClients
 )
 
 // Shutdown :: closes the client connection and stops the
@@ -34,15 +37,28 @@ const (
 func Shutdown(client *Client, invoker Invoker) {
 	utils.LogTime("db.Shutdown start")
 	defer utils.LogTime("db.Shutdown end")
-	log.Println("[TRACE] shutdown")
+
 	if client != nil {
 		client.Close()
 	}
 
 	status, _ := GetStatus()
 
-	// force stop if the service was invoked by the same invoker and we are the last one
-	if status != nil && status.Invoker == invoker {
+	if status != nil {
+		if status.Invoker == InvokerService {
+			// nothing to do here
+			return
+		}
+
+		count, _ := GetCountOfConnectedClients()
+
+		if count > 0 {
+			// there are other clients connected to the database
+			// we can't stop the DB.
+			return
+		}
+
+		// we can shutdown the database
 		status, err := StopDB(false, invoker)
 		if err != nil {
 			utils.ShowError(err)
@@ -53,9 +69,24 @@ func Shutdown(client *Client, invoker Invoker) {
 	}
 }
 
+func GetCountOfConnectedClients() (int, error) {
+	rootClient, err := createSteampipeRootDbClient()
+	if err != nil {
+		return -1, err
+	}
+	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and application_name='steampipe' and backend_type='client backend';")
+	count := 0
+	row.Scan(&count)
+	rootClient.Close()
+	return (count - 1 /* deduct the existing client */), nil
+}
+
 // StopDB :: search and stop the running instance. Does nothing if an instance was not found
 func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 	log.Println("[TRACE] StopDB", force)
+
+	utils.LogTime("db.StopDB start")
+	defer utils.LogTime("db.StopDB end")
 
 	if force {
 		// remove this file regardless of whether
@@ -64,8 +95,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 		// all previous instances are nuked
 		defer os.Remove(runningInfoFilePath())
 	}
-
-	info, err := loadRunningInstanceInfo()
+	info, err := GetStatus()
 	if err != nil {
 		return ServiceStopFailed, err
 	}
@@ -74,42 +104,30 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 		// check if we have a process from another install-dir
 		checkedPreviousInstances := make(chan bool, 1)
 		s := display.StartSpinnerAfterDelay("Checking for running instances...", constants.SpinnerShowTimeout, checkedPreviousInstances)
-		for {
-			previousProcess := findSteampipePostgresInstance()
-			if previousProcess != nil {
-				// we have an errant process
-				killProcessTree(previousProcess)
-				continue
+		defer func() {
+			close(checkedPreviousInstances)
+			display.StopSpinner(s)
+		}()
+		if processes, err := findAllSteampipePostgresInstance(); err == nil {
+			for _, process := range processes {
+				err := killProcessTree(process)
+				if err != nil {
+					return ServiceStopFailed, err
+				}
 			}
-			break
+		} else {
+			return ServiceStopFailed, err
 		}
-		close(checkedPreviousInstances)
-		display.StopSpinner(s)
-		os.Remove(runningInfoFilePath())
 		return ServiceStopped, nil
 	}
 
 	if info == nil {
 		// we do not have a info file
+		// assume that the service is not running
 		return ServiceNotRunning, nil
 	}
 
-	doesPidExist, err := psutils.PidExists(int32(info.Pid))
-
-	if err != nil {
-		return ServiceStopFailed, err
-	}
-
-	if !doesPidExist {
-		// nothing to do here
-		return ServiceNotRunning, os.Remove(runningInfoFilePath())
-	}
-
-	if info.Invoker != invoker {
-		return ServiceStopFailed, fmt.Errorf("You have a %s session open. The service will be stopped when the session ends.\nTo kill existing sessions, run %s", constants.Bold(fmt.Sprintf("steampipe %s", info.Invoker)), constants.Bold("steampipe service stop --force"))
-	}
-
-	process, err := os.FindProcess(info.Pid)
+	process, err := psutils.NewProcess(int32(info.Pid))
 	if err != nil {
 		return ServiceStopFailed, err
 	}
@@ -119,51 +137,94 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 	// makes PG terminate immediately without saving state.
 	// refer: https://www.postgresql.org/docs/12/server-shutdown.html
 	// refer: https://golang.org/src/os/exec_posix.go?h=kill#L65
-	killSignal := syscall.SIGTERM
-	if force {
-		killSignal = syscall.SIGINT
-	}
-
-	err = process.Signal(killSignal)
-	log.Println("[TRACE] signal sent", killSignal)
+	err = process.SendSignal(syscall.SIGTERM)
 
 	if err != nil {
 		return ServiceStopFailed, err
 	}
 
-	signalSentAt := time.Now()
-	spinnerShown := false
-
-	processKilledChannel := make(chan string, 1)
-	go func() {
-		for {
-			pEx, err := psutils.PidExists(int32(info.Pid))
-			if err != nil {
-				utils.ShowError(err)
-			}
-			if err == nil && !pEx {
-				// no more process
-				processKilledChannel <- "killed"
-				break
-			}
-			if time.Since(signalSentAt) > constants.SpinnerShowTimeout && !spinnerShown {
-				if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
-					s := display.ShowSpinner("Shutting down...")
-					defer display.StopSpinner(s)
-					spinnerShown = true
-				}
-			}
-			time.Sleep(50 * time.Millisecond)
-		}
+	processKilledChannel := make(chan bool, 1)
+	spinner := display.StartSpinnerAfterDelay("Shutting down...", constants.SpinnerShowTimeout, processKilledChannel)
+	defer func() {
+		close(processKilledChannel)
+		display.StopSpinner(spinner)
 	}()
+	err = doThreeStepProcessExit(process)
+	if err != nil {
+		// we couldn't stop it still.
+		// timeout
+		return ServiceStopTimedOut, err
+	}
 
-	timeoutAfter := time.After(10 * time.Second)
+	return ServiceStopped, nil
+}
 
-	select {
-	case <-timeoutAfter:
-		return ServiceStopTimedOut, nil
-	case <-processKilledChannel:
-		os.Remove(runningInfoFilePath())
-		return ServiceStopped, nil
+/**
+	Postgres has two more levels of shutdown:
+		* SIGTERM	- Smart Shutdown    	:  Wait for children to end normally - exit self
+		* SIGINT	- Fast Shutdown      	:  SIGTERM children - wait for them to exit - exit self
+		* SIGQUIT	- Immediate Shutdown 	:  SIGQUIT children - wait at most 5 seconds,
+											   send SIGKILL to children - exit self immediately
+
+	Postgres recommended shutdown is to send a SIGTERM - which initiates
+	a Smart-Shutdown sequence.
+
+	https://www.postgresql.org/docs/12/server-shutdown.html
+
+	By the time we actually try to run this sequence, we will have
+	checked that the service can indeed shutdown gracefully,
+	the sequence is there only as a backup.
+**/
+func doThreeStepProcessExit(process *psutils.Process) error {
+	var err error
+	var exitSuccessful bool
+
+	// send a SIGTERM
+	err = process.SendSignal(syscall.SIGTERM)
+	if err != nil {
+		return err
+	}
+	exitSuccessful = waitForProcessExit(process)
+	if !exitSuccessful {
+		// process didn't quit
+		// try a SIGINT
+		err = process.SendSignal(syscall.SIGINT)
+		if err != nil {
+			return err
+		}
+		exitSuccessful = waitForProcessExit(process)
+	}
+	if !exitSuccessful {
+		// process didn't quit
+		// desperation prevails
+		err = process.SendSignal(syscall.SIGQUIT)
+		if err != nil {
+			return err
+		}
+		exitSuccessful = waitForProcessExit(process)
+	}
+
+	if !exitSuccessful {
+		return fmt.Errorf("service shutdown timed out")
+	}
+
+	return nil
+}
+
+func waitForProcessExit(process *psutils.Process) bool {
+	checkTimer := time.NewTicker(50 * time.Millisecond)
+	timeoutAt := time.After(10 * time.Second)
+
+	for {
+		select {
+		case <-checkTimer.C:
+			pEx, _ := psutils.PidExists(process.Pid)
+			if pEx {
+				continue
+			}
+			return true
+		case <-timeoutAt:
+			return false
+		}
 	}
 }
