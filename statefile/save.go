@@ -9,6 +9,8 @@ import (
 	"github.com/turbot/steampipe/constants"
 )
 
+// Save the state
+// NOTE: this updates the last checked time
 func (s *State) Save() error {
 	s.LastCheck = nowTimeString()
 	// ensure internal dirs exists

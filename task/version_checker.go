@@ -35,37 +35,34 @@ type versionChecker struct {
 }
 
 // check if there is a new version
-func checkSteampipeVersion(id string) {
+func checkSteampipeVersion(id string) []string {
+	var notificationLines []string
+
 	if !viper.GetBool(constants.ArgUpdateCheck) {
-		return
+		return notificationLines
 	}
 
 	v := new(versionChecker)
 	v.signature = id
-	v.GetVersionResp()
-	v.Notify()
+	v.doCheckRequest()
+	notificationLines, _ = v.notificationMessage()
+	return notificationLines
 }
 
-// GetVersionResp :: Communicates with the Turbot Artifacts Server retrieves
-// the latest released version
-func (c *versionChecker) GetVersionResp() {
-	c.doCheckRequest()
-}
-
-// Notify :: Notifies the user if a new version is available
-func (c *versionChecker) Notify() {
+// notificationMessage returns any required update notification as an array of strings
+func (c *versionChecker) notificationMessage() ([]string, error) {
 	info := c.checkResult
 	if info == nil {
-		return
+		return nil, nil
 	}
 
 	if info.NewVersion == "" {
-		return
+		return nil, nil
 	}
 
 	newVersion, err := SemVer.NewVersion(info.NewVersion)
 	if err != nil {
-		return
+		return nil, err
 	}
 	currentVersion, err := SemVer.NewVersion(currentVersion)
 
@@ -75,19 +72,23 @@ func (c *versionChecker) Notify() {
 	}
 
 	if newVersion.GreaterThan(currentVersion) {
-		displayUpdateNotification(info, currentVersion, newVersion)
+		var downloadURLColor = color.New(color.FgYellow)
+		var notificationLines = []string{
+			"",
+			fmt.Sprintf("A new version of Steampipe is available! %s → %s", constants.Bold(currentVersion), constants.Bold(newVersion)),
+			fmt.Sprintf("You can update by downloading from %s", downloadURLColor.Sprint("https://steampipe.io/downloads")),
+			"",
+		}
+		return notificationLines, nil
 	}
+	return nil, nil
 }
 
-func displayUpdateNotification(info *versionCheckResponse, currentVersion *SemVer.Version, newVersion *SemVer.Version) {
-
-	var downloadURLColor = color.New(color.FgYellow)
-
-	var notificationLines = [][]string{
-		{""},
-		{fmt.Sprintf("A new version of Steampipe is available! %s → %s", constants.Bold(currentVersion), constants.Bold(newVersion))},
-		{fmt.Sprintf("You can update by downloading from %s", downloadURLColor.Sprint("https://steampipe.io/downloads"))},
-		{""},
+func displayUpdateNotification(notificationLines []string) {
+	// convert notificationLines into an array of arrays
+	var notificationTable = make([][]string, len(notificationLines))
+	for i, line := range notificationLines {
+		notificationTable[i] = []string{line}
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
@@ -95,13 +96,14 @@ func displayUpdateNotification(info *versionCheckResponse, currentVersion *SemVe
 	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
 	table.SetAutoWrapText(false)               // let's not wrap the text
 	table.SetBorder(true)                      // there needs to be a border to give the dialog feel
-	table.AppendBulk(notificationLines)        // Add Bulk Data
+	table.AppendBulk(notificationTable)        // Add Bulk Data
 
 	fmt.Println()
 	table.Render()
 	fmt.Println()
 }
 
+// contact the Turbot Artifacts Server and retrieve the latest released version
 func (c *versionChecker) doCheckRequest() {
 	payload := utils.BuildRequestPayload(c.signature, map[string]interface{}{})
 	sendRequestTo := c.versionCheckURL()
