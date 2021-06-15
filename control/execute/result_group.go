@@ -110,19 +110,21 @@ func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
 	// it may not matter, as we display results in order
 	// it is only an issue if there are dependencies, in which case we must run in dependency order
 
-	var errors = 0
+	var failures = 0
 	for _, controlRun := range r.ControlRuns {
 		select {
 		case <-ctx.Done():
 			controlRun.SetError(ctx.Err())
 		default:
 			controlRun.Start(ctx, client)
+			failures += controlRun.Summary.Alarm
+			failures += controlRun.Summary.Error
 		}
 	}
 	for _, child := range r.Groups {
-		errors += child.Execute(ctx, client)
+		failures += child.Execute(ctx, client)
 	}
-	return errors
+	return failures
 }
 
 // GetGroupByName finds a child ResultGroup with a specific name
