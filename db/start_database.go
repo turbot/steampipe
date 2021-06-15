@@ -118,7 +118,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (startResult Sta
 	}
 
 	if !isPortBindable(port) {
-		return ServiceFailedToStart, fmt.Errorf("Cannot listen on port %s. To start the service with a different port, use %s", constants.Bold(port), constants.Bold("--database-port <number>"))
+		return ServiceFailedToStart, fmt.Errorf("Cannot listen on port %d. To start the service with a different port, use %s", constants.Bold(port), constants.Bold("--database-port <number>"))
 	}
 
 	postgresCmd := exec.Command(
@@ -312,16 +312,32 @@ func isPortBindable(port int) bool {
 
 // kill all postgres processes that were started as part of steampipe (if any)
 func killPreviousInstanceIfAny() bool {
-	wasKilled := false
-	for {
-		p := findSteampipePostgresInstance()
-		if p == nil {
-			break
+	if processes, err := findAllSteampipePostgresInstance(); err != nil {
+		for _, process := range processes {
+			killProcessTree(process)
 		}
-		killProcessTree(p)
-		wasKilled = true
+		return len(processes) > 0
+	} else {
+		return false
 	}
-	return wasKilled
+}
+
+func findAllSteampipePostgresInstance() ([]*psutils.Process, error) {
+	instances := []*psutils.Process{}
+	allProcesses, err := psutils.Processes()
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range allProcesses {
+		if cmdLine, err := p.CmdlineSlice(); err == nil {
+			if isSteampipePostgresProcess(cmdLine) {
+				instances = append(instances, p)
+			}
+		} else {
+			return nil, err
+		}
+	}
+	return instances, nil
 }
 
 func findSteampipePostgresInstance() *psutils.Process {
@@ -346,14 +362,18 @@ func isSteampipePostgresProcess(cmdline []string) bool {
 	return false
 }
 
-func killProcessTree(p *psutils.Process) {
+func killProcessTree(p *psutils.Process) error {
 	// find it's children
-	children, _ := p.Children()
+	children, err := p.Children()
+	if err != nil {
+		return err
+	}
 	for _, child := range children {
 		// and kill them first
 		killProcessTree(child)
 	}
 	p.Kill()
+	return nil
 }
 
 func localAddresses() ([]string, error) {

@@ -301,22 +301,70 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	var status db.StopStatus
+	var err error
+
 	force := cmdconfig.Viper().GetBool(constants.ArgForce)
-	status, err := db.StopDB(force, db.InvokerService)
+	if force {
+		status, err = db.StopDB(force, db.InvokerService)
+	} else {
+		info, err := db.GetStatus()
+		if err != nil {
+			utils.ShowError(fmt.Errorf("error during stop"))
+			return
+		}
+		if info == nil {
+			fmt.Println("Service is not running")
+			return
+		}
+		if info.Invoker != db.InvokerService {
+			fmt.Printf(`
+Steampipe service is running exclusively for an active %s session.
+
+To force stop the service, use %s
+
+`,
+				fmt.Sprintf("steampipe %s", info.Invoker),
+				constants.Bold("steampipe service stop --force"),
+			)
+			return
+		}
+
+		// check if there are any connected clients to the service
+		connectedClientCount, err := db.GetCountOfConnectedClients()
+		if err != nil {
+			utils.ShowError(fmt.Errorf("error during stop"))
+		}
+
+		if connectedClientCount > 0 {
+			fmt.Printf(
+				`
+Cannot stop service since there are clients connected to the service.
+
+To force stop the service, use %s
+
+`,
+				constants.Bold("steampipe service stop --force"),
+			)
+
+			return
+		}
+
+		status, err = db.StopDB(false, db.InvokerService)
+	}
 
 	if err != nil {
 		utils.ShowError(err)
+		return
 	}
 
 	switch status {
 	case db.ServiceStopped:
 		fmt.Println("Steampipe database service stopped")
-	case db.ServiceStopFailed:
-		if err == nil {
-			fmt.Println("Could not stop service")
-		}
 	case db.ServiceNotRunning:
 		fmt.Println("Service is not running")
+	case db.ServiceStopFailed:
+		fmt.Println("Could not stop service")
 	case db.ServiceStopTimedOut:
 		fmt.Println(`
 Service stop operation timed-out.

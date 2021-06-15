@@ -158,20 +158,23 @@ func executeSqlAsRoot(statements []string) ([]sql.Result, error) {
 // waits for the db to start accepting connections and returns true
 // returns false if the dbClient does not start within a stipulated time,
 func waitForConnection(conn *sql.DB) bool {
-	timeoutAt := time.Now().Add(5 * time.Second)
-	intervalMs := 10
+	utils.LogTime("db.waitForConnection start")
+	defer utils.LogTime("db.waitForConnection end")
 
+	pingTimer := time.NewTicker(10 * time.Millisecond)
+	timeoutAt := time.After(5 * time.Second)
+	defer pingTimer.Stop()
 	for {
-		pingErr := conn.Ping()
-		if pingErr == nil {
-			return true
+		select {
+		case <-pingTimer.C:
+			pingErr := conn.Ping()
+			if pingErr == nil {
+				return true
+			}
+		case <-timeoutAt:
+			return false
 		}
-		if timeoutAt.Before(time.Now()) {
-			break
-		}
-		time.Sleep(time.Duration(intervalMs) * time.Millisecond)
 	}
-	return false
 }
 
 // SchemaMetadata :: returns the latest schema metadata
