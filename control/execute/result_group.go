@@ -118,16 +118,17 @@ func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
 		case <-ctx.Done():
 			controlRun.SetError(ctx.Err())
 		default:
-		if viper.GetBool(constants.ArgDryRun) {
-			controlRun.Skip()
-		} else {
-			controlRun.Start(ctx, client)
-			failures += controlRun.Summary.Alarm
-			failures += controlRun.Summary.Error
+			if viper.GetBool(constants.ArgDryRun) {
+				controlRun.Skip()
+			} else {
+				controlRun.Start(ctx, client)
+				failures += controlRun.Summary.Alarm
+				failures += controlRun.Summary.Error
+			}
 		}
-	}
-	for _, child := range r.Groups {
-		failures += child.Execute(ctx, client)
+		for _, child := range r.Groups {
+			failures += child.Execute(ctx, client)
+		}
 	}
 	return failures
 }
