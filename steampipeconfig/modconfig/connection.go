@@ -42,5 +42,5 @@ func (c *Connection) SetOptions(opts options.Options, block *hcl.Block) hcl.Diag
 }
 
 func (c *Connection) String() string {
-	return fmt.Sprintf("----\nName: %s\nPlugin: %s\nConfig:\n%s\nOptions:\n%s\n", c.Name, c.Plugin, c.Config, c.Options.String())
+	return fmt.Sprintf("\n----\nName: %s\nPlugin: %s\nConfig:\n%s\nOptions:\n%s\n", c.Name, c.Plugin, c.Config, c.Options.String())
 }

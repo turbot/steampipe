@@ -13,9 +13,9 @@ const RootResultGroupName = "root_result_group"
 // ResultGroup is a struct representing a grouping of control results
 // It may correspond to a Benchmark, or some other arbitrary grouping
 type ResultGroup struct {
-	GroupId     string            `json:"group_id"`
-	Title       string            `json:"title"`
-	Description string            `json:"description"`
+	GroupId     string            `json:"group_id" csv:"group_id"`
+	Title       string            `json:"title" csv:"title"`
+	Description string            `json:"description" csv:"description"`
 	Tags        map[string]string `json:"tags"`
 	Summary     GroupSummary      `json:"summary"`
 	Groups      []*ResultGroup    `json:"groups"`

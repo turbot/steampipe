@@ -46,6 +46,14 @@ func NewDimensionColorGenerator(startingRow, startingColumn uint8) (*DimensionCo
 	return g, nil
 }
 
+func (g *DimensionColorGenerator) GetDimensionProperties() []string {
+	var res []string
+	for d := range g.Map {
+		res = append(res, d)
+	}
+	return res
+}
+
 func (g *DimensionColorGenerator) reset() {
 	// create the state map
 	g.currentRow = g.startingRow
