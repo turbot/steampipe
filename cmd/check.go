@@ -127,7 +127,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	failures := 0
 	exportWaitGroup := sync.WaitGroup{}
 	for _, arg := range args {
-
 		// get the export formats for this argument
 		exportFormats := getExportFormats(arg)
 		err = validateExportFormats(exportFormats)
@@ -154,7 +153,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			go func() {
 				err := exportControlResults(ctx, executionTree, exportFormats)
 				if err != nil {
-					utils.ShowError(err)
+					utils.ShowErrorWithMessage(err, "could not export")
 				}
 				exportWaitGroup.Done()
 			}()
@@ -183,8 +182,7 @@ func validateOutputFormat() error {
 
 func validateExportFormats(formats []controldisplay.CheckExportFormat) error {
 	for _, exportFormat := range formats {
-		_, err := controldisplay.GetExportFormatter(exportFormat.Format)
-		if err != nil {
+		if _, err := controldisplay.GetExportFormatter(exportFormat.Format); err != nil {
 			return err
 		}
 	}
@@ -217,9 +215,7 @@ func displayControlResults(ctx context.Context, executionTree *execute.Execution
 }
 
 func exportControlResults(ctx context.Context, executionTree *execute.ExecutionTree, formats []controldisplay.CheckExportFormat) error {
-	fmt.Println()
 	for _, format := range formats {
-		fmt.Println("exporting", format.Format, format.File)
 		formatter, err := controldisplay.GetExportFormatter(format.Format)
 		if err != nil {
 			return err
