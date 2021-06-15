@@ -3,8 +3,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe check all" {
   cd $WORKSPACE_DIR
-  run steampipe check all --output=none --progress=false
-  assert_success
+  run steampipe check all
+  assert_equal $status 10
   cd -
 }
 
