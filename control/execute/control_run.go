@@ -139,17 +139,11 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 		close(gatherDoneChan)
 	}()
 
-	resultsGathered := false
-	for !resultsGathered {
-		select {
-		case <-ctx.Done():
-			r.SetError(fmt.Errorf("control timed out"))
-			resultsGathered = true
-		case <-gatherDoneChan:
-			resultsGathered = true
-		default:
-			time.Sleep(50 * time.Millisecond)
-		}
+	select {
+	case <-ctx.Done():
+		r.SetError(fmt.Errorf("control timed out"))
+	case <-gatherDoneChan:
+		// do nothing
 	}
 }
 
