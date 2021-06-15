@@ -281,6 +281,22 @@ func (w *Workspace) loadMod() error {
 	w.BenchmarkMap = w.buildBenchmarkMap(modMap)
 	w.ModMap = modMap
 
+	// validate plugin versions are valid
+	return w.ValidateRequiredPluginVersions()
+
+}
+
+func (w *Workspace) ValidateRequiredPluginVersions() error {
+	return nil
+}
+
+func (w *Workspace) CheckRequiredPluginsInstalled() error {
+	var errors []error
+	// look at w.Mod.Requires.Plugins and check each is installed
+
+	if len(errors) > 0 {
+		// construct single error
+	}
 	return nil
 }
 
