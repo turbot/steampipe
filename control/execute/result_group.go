@@ -126,10 +126,11 @@ func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
 				failures += controlRun.Summary.Error
 			}
 		}
-		for _, child := range r.Groups {
-			failures += child.Execute(ctx, client)
-		}
 	}
+	for _, child := range r.Groups {
+		failures += child.Execute(ctx, client)
+	}
+
 	return failures
 }
 
