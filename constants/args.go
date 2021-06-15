@@ -16,7 +16,6 @@ const (
 	ArgListenAddress           = "database-listen"
 	ArgInvoker                 = "invoker"
 	ArgRefresh                 = "refresh"
-	ArgLogLevel                = "log-level"
 	ArgUpdateCheck             = "update-check"
 	ArgInstallDir              = "install-dir"
 	ArgWorkspace               = "workspace"
@@ -31,6 +30,7 @@ const (
 )
 
 /// metaquery mode arguments
+
 var ArgOutput = ArgFromMetaquery(CmdOutput)
 var ArgSeparator = ArgFromMetaquery(CmdSeparator)
 var ArgHeader = ArgFromMetaquery(CmdHeaders)

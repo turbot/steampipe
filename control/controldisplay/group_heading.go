@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/constants"
 )
 
 type GroupHeadingRenderer struct {
@@ -32,6 +34,8 @@ func NewGroupHeadingRenderer(title string, failed, total, maxFailed, maxTotal, w
 }
 
 func (r GroupHeadingRenderer) Render() string {
+	isDryRun := viper.GetBool(constants.ArgDryRun)
+
 	log.Println("[TRACE] begin group heading render")
 	defer log.Println("[TRACE] end group heading render")
 
@@ -40,17 +44,20 @@ func (r GroupHeadingRenderer) Render() string {
 		return ""
 	}
 
-	severityString := NewSeverityRenderer(r.severity).Render()
-	severityWidth := helpers.PrintableLength(severityString)
-
-	counterString := NewCounterRenderer(r.failedControls, r.totalControls, r.maxFailedControls, r.maxTotalControls).Render()
-	counterWidth := helpers.PrintableLength(counterString)
-
-	graphString := NewCounterGraphRenderer(r.failedControls, r.totalControls, r.maxTotalControls).Render()
-	graphWidth := helpers.PrintableLength(graphString)
-
 	formattedIndent := fmt.Sprintf("%s", ControlColors.Indent(r.indent))
 	indentWidth := helpers.PrintableLength(formattedIndent)
+
+	// for a dry run we do not display the counters or graph
+	var severityString, counterString, graphString string
+	if !isDryRun {
+		severityString = NewSeverityRenderer(r.severity).Render()
+		counterString = NewCounterRenderer(r.failedControls, r.totalControls, r.maxFailedControls, r.maxTotalControls).Render()
+		graphString = NewCounterGraphRenderer(r.failedControls, r.totalControls, r.maxTotalControls).Render()
+	}
+	severityWidth := helpers.PrintableLength(severityString)
+	counterWidth := helpers.PrintableLength(counterString)
+	graphWidth := helpers.PrintableLength(graphString)
+
 	// figure out how much width we have available for the title
 	availableWidth := r.width - counterWidth - graphWidth - severityWidth - indentWidth
 
@@ -61,7 +68,7 @@ func (r GroupHeadingRenderer) Render() string {
 	// is there any room for a spacer
 	spacerWidth := availableWidth - titleWidth
 	var spacerString string
-	if spacerWidth > 0 {
+	if spacerWidth > 0 && !isDryRun {
 		spacerString = NewSpacerRenderer(spacerWidth).Render()
 	}
 
