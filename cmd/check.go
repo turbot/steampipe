@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/execute"
@@ -61,6 +63,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a check session (comma-separated)").
 		//AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls ").
 		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme, which determines the color scheme for the 'text' control output. Possible values are light, dark, plain").
+		AddStringSliceFlag(constants.ArgExport, "", []string{}, "Export output to files").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress")
 
 	return cmd
@@ -122,7 +125,16 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// treat each arg as a separate execution
 	failures := 0
+	exportWaitGroup := sync.WaitGroup{}
 	for _, arg := range args {
+		// get the export formats for this argument
+		exportFormats := getExportFormats(arg)
+		err = validateExportFormats(exportFormats)
+		if err != nil {
+			utils.ShowError(err)
+			return
+		}
+
 		select {
 		case <-ctx.Done():
 			// skip over the next, since the execution was cancelled
@@ -134,10 +146,21 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			// for now we execute controls synchronously
 			// Execute returns the number of failures
 			failures += executionTree.Execute(ctx, client)
-			err = DisplayControlResults(ctx, executionTree)
+			err = displayControlResults(ctx, executionTree)
 			utils.FailOnError(err)
+
+			exportWaitGroup.Add(1)
+			go func() {
+				err := exportControlResults(ctx, executionTree, exportFormats)
+				if err != nil {
+					utils.ShowErrorWithMessage(err, "could not export")
+				}
+				exportWaitGroup.Done()
+			}()
 		}
 	}
+
+	exportWaitGroup.Wait()
 
 	// set global exit code
 	exitCode = failures
@@ -146,13 +169,22 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 func validateOutputFormat() error {
 	outputFormat := viper.GetString(constants.ArgOutput)
 	// try to get a formatter for the desired output.
-	if _, err := controldisplay.GetFormatter(outputFormat); err != nil {
+	if _, err := controldisplay.GetOutputFormatter(outputFormat); err != nil {
 		// could not get a formatter
 		return err
 	}
 	if outputFormat == controldisplay.OutputFormatNone {
 		// set progress to false
 		viper.Set(constants.ArgProgress, false)
+	}
+	return nil
+}
+
+func validateExportFormats(formats []controldisplay.CheckExportFormat) error {
+	for _, exportFormat := range formats {
+		if _, err := controldisplay.GetExportFormatter(exportFormat.Format); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -171,13 +203,61 @@ func initialiseColorScheme() error {
 	return nil
 }
 
-func DisplayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) error {
+func displayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) error {
 	outputFormat := viper.GetString(constants.ArgOutput)
-	formatter, _ := controldisplay.GetFormatter(outputFormat)
+	formatter, _ := controldisplay.GetOutputFormatter(outputFormat)
 	formattedReader, err := formatter.Format(ctx, executionTree)
 	if err != nil {
 		return err
 	}
 	_, err = io.Copy(os.Stdout, formattedReader)
 	return err
+}
+
+func exportControlResults(ctx context.Context, executionTree *execute.ExecutionTree, formats []controldisplay.CheckExportFormat) error {
+	for _, format := range formats {
+		formatter, err := controldisplay.GetExportFormatter(format.Format)
+		if err != nil {
+			return err
+		}
+		formattedReader, err := formatter.Format(ctx, executionTree)
+		if err != nil {
+			return err
+		}
+		// create the output file
+		destination, err := os.Create(format.File)
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(destination, formattedReader)
+		if err != nil {
+			return err
+		}
+		destination.Close()
+	}
+
+	return nil
+}
+
+func getExportFormats(executing string) []controldisplay.CheckExportFormat {
+	formats := []controldisplay.CheckExportFormat{}
+	exports := viper.GetStringSlice(constants.ArgExport)
+	for _, export := range exports {
+		parts := strings.SplitN(export, ":", 2)
+		format := parts[0]
+		fileName := generateDefaultExportFileName(format, executing)
+		if len(parts) > 1 {
+			if f, err := helpers.Tildefy(parts[1]); err == nil {
+				fileName = f
+			} else {
+				fileName = parts[1]
+			}
+		}
+		formats = append(formats, controldisplay.NewCheckOutputFormat(format, fileName))
+	}
+	return formats
+}
+
+func generateDefaultExportFileName(format string, executing string) string {
+	return fmt.Sprintf("%s-%s.%s", executing, time.Now().UTC().Format(time.RFC3339), format)
 }
