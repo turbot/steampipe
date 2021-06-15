@@ -245,33 +245,51 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 
 func printStatus(info *db.RunningDBInstanceInfo) {
 
-	msg := `
+	statusMessage := ""
+
+	if info.Invoker == db.InvokerService {
+		msg := `
 Steampipe database service is now running:
 
-  Host(s):  %v
-  Port:     %v
-  Database: %v
-  User:     %v
-  Password: %v
+	Host(s):  %v
+	Port:     %v
+	Database: %v
+	User:     %v
+	Password: %v
 
 Connection string:
 
-  postgres://%v:%v@%v:%v/%v?sslmode=disable
+	postgres://%v:%v@%v:%v/%v?sslmode=disable
 
 Steampipe service is running in the background.
 
-  # Get status of the service
-  steampipe service status
-  
-  # Restart the service
-  steampipe service restart
+	# Get status of the service
+	steampipe service status
+	
+	# Restart the service
+	steampipe service restart
 
-  # Stop the service
-  steampipe service stop
+	# Stop the service
+	steampipe service stop
+	
+`
+		statusMessage = fmt.Sprintf(msg, strings.Join(info.Listen, ", "), info.Port, info.Database, info.User, info.Password, info.User, info.Password, info.Listen[0], info.Port, info.Database)
+	} else {
+		msg := `
+Steampipe service is running exclusively for an active %s session.
 
+To run multiple sessions against the service, close the %s session and use %s to start the service in the background.
 `
 
-	fmt.Printf(msg, strings.Join(info.Listen, ", "), info.Port, info.Database, info.User, info.Password, info.User, info.Password, info.Listen[0], info.Port, info.Database)
+		statusMessage = fmt.Sprintf(
+			msg,
+			constants.Bold(fmt.Sprintf("steampipe %s", info.Invoker)),
+			constants.Bold(info.Invoker),
+			constants.Bold("steampipe service start"),
+		)
+	}
+
+	fmt.Println(statusMessage)
 }
 
 func runServiceStopCmd(cmd *cobra.Command, args []string) {
