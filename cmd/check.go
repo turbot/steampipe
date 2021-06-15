@@ -133,7 +133,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 			// for now we execute controls synchronously
 			// Execute returns the number of failures
-			executionTree.Execute(ctx, client)
+			failures += executionTree.Execute(ctx, client)
 			err = DisplayControlResults(ctx, executionTree)
 			utils.FailOnError(err)
 		}
