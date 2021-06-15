@@ -283,8 +283,8 @@ To run multiple sessions against the service, close the %s session and use %s to
 
 		statusMessage = fmt.Sprintf(
 			msg,
-			constants.Bold(fmt.Sprintf("steampipe %s", info.Invoker)),
-			constants.Bold(info.Invoker),
+			fmt.Sprintf("steampipe %s", info.Invoker),
+			info.Invoker,
 			constants.Bold("steampipe service start"),
 		)
 	}
