@@ -49,11 +49,11 @@ func setULimit() error {
 		return err
 	}
 
-	// set the current ulimit to the max
-	// (hard limiting to 32768 - problems have been observed at > 48000, so leave a threshold of safety )
-	newULimit := ulimit.Max
-	if newULimit > 32768 {
-		newULimit = 32768
+	// set the current ulimit to 8192 (or the max, if less)
+	// this is to ensure we do not run out of file handler when watching files
+	var newULimit uint64 = 8192
+	if newULimit > ulimit.Max {
+		newULimit = ulimit.Max
 	}
 	err = filehelpers.SetULimit(newULimit)
 	return err
