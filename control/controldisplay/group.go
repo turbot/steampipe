@@ -46,14 +46,15 @@ func (r GroupRenderer) isLastChild(group *execute.ResultGroup) bool {
 		if b, ok := s.(*modconfig.Benchmark); ok {
 			// find the result group for this benchmark and see if it has controls
 			resultGroup := r.resultTree.Root.GetChildGroupByName(b.Name())
-			if resultGroup != nil && resultGroup.ControlRunCount() == 0 {
+			// if the result group has not controls, we will not find it in the result tree
+			if resultGroup == nil || resultGroup.ControlRunCount() == 0 {
 				continue
 			}
 		}
-		// sibling is a control - add
+		// store the name of this sibling
 		finalSiblingName = s.Name()
-
 	}
+
 	res := group.GroupItem.Name() == finalSiblingName
 
 	return res
