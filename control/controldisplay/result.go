@@ -75,7 +75,7 @@ func (r ResultRenderer) Render() string {
 	// is there any room for a spacer
 	availableWidth -= reasonWidth
 	var spacerString string
-	if availableWidth > 0 {
+	if availableWidth > 0 && r.dimensions != nil {
 		spacerString = NewSpacerRenderer(availableWidth).Render()
 	}
 
