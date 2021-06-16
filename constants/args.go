@@ -27,7 +27,7 @@ const (
 	ArgExport                  = "export"
 	ArgDryRun                  = "dry-run"
 	ArgWhere                   = "where"
-	ArgTag                     = "tag"
+	ArgFilterTag               = "filter-tag"
 )
 
 /// metaquery mode arguments

@@ -65,7 +65,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
 		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them").
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls ").
-		AddStringSliceFlag(constants.ArgTag, "", []string{}, "Key value pairs of tags for filter (### needs thought ###)")
+		AddStringSliceFlag(constants.ArgFilterTag, "", []string{}, "Key value pairs of tags for filter (### needs thought ###)")
 
 	return cmd
 }

@@ -2,7 +2,6 @@ package execute
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -93,15 +92,15 @@ func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
 
 	// if both `--where` and `--tag` have been used, then it's an error
-	if viper.IsSet(constants.ArgWhere) && viper.IsSet(constants.ArgTag) {
-		return errors.New("`--where` and `--tag` cannot be used together")
+	if viper.IsSet(constants.ArgWhere) && viper.IsSet(constants.ArgFilterTag) {
+		return fmt.Errorf("`--%s` and `--%s` cannot be used together", constants.ArgWhere, constants.ArgFilterTag)
 	}
 
 	controlFilterWhereClause := ""
 
-	if viper.IsSet(constants.ArgTag) {
+	if viper.IsSet(constants.ArgFilterTag) {
 		// if `--tags` were used, derive the whereClause from ut
-		tags := viper.GetStringSlice(constants.ArgTag)
+		tags := viper.GetStringSlice(constants.ArgFilterTag)
 		controlFilterWhereClause = e.generateWhereClauseFromTags(tags)
 	} else if viper.IsSet(constants.ArgWhere) {
 		// if a 'where' arg was used, execute this sql to get a list of  control names
