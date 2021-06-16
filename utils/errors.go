@@ -77,6 +77,14 @@ func ShowWarning(warning string) {
 }
 
 func CombineErrorsWithPrefix(prefix string, errors ...error) error {
+	if len(errors) == 0 {
+		return nil
+	}
+
+	if len(errors) == 1 {
+		return fmt.Errorf("%s%s", prefix, errors[0].Error())
+	}
+
 	combinedErrorString := []string{prefix}
 	for _, e := range errors {
 		combinedErrorString = append(combinedErrorString, e.Error())

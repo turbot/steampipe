@@ -31,15 +31,17 @@ var exportFormatters map[string]Formatter = map[string]Formatter{
 	OutputFormatJSON: &JSONFormatter{},
 }
 
-type CheckExportFormat struct {
+type CheckExportTarget struct {
 	Format string
 	File   string
+	Error  error
 }
 
-func NewCheckOutputFormat(format string, file string) CheckExportFormat {
-	return CheckExportFormat{
+func NewCheckExportTarget(format string, file string, err error) CheckExportTarget {
+	return CheckExportTarget{
 		Format: format,
 		File:   file,
+		Error:  err,
 	}
 }
 
@@ -63,15 +65,15 @@ func GetOutputFormatter(outputFormat string) (Formatter, error) {
 	return formatter, nil
 }
 
-func InferFormatFromExportFileName(filename string) string {
+func InferFormatFromExportFileName(filename string) (string, error) {
 	extension := strings.TrimPrefix(filepath.Ext(filename), ".")
 	switch extension {
 	case "csv", "json":
-		return extension
+		return extension, nil
 	default:
 		// return blank, so that it fails when it looks
 		// up the formatter when it's to format
-		return ""
+		return "", fmt.Errorf("could not infer valid export format from filename '%s'", filename)
 	}
 }
 
