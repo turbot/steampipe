@@ -69,6 +69,8 @@ func InferFormatFromExportFileName(filename string) string {
 	case "csv", "json":
 		return extension
 	default:
+		// return blank, so that it fails when it looks
+		// up the formatter when it's to format
 		return ""
 	}
 }
