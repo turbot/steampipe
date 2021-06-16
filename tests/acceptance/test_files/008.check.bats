@@ -15,6 +15,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
+@test "steampipe check all - output csv - | separator" {
+  cd $WORKSPACE_DIR
+  run steampipe check all --output=csv --progress=false "--separator=|"
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_check_separator_csv.csv)"
+  cd -
+}
+
 @test "steampipe check all - output json" {
   cd $WORKSPACE_DIR
   run steampipe check all --output=json --progress=false

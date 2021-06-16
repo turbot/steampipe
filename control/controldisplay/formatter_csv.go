@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/execute"
 )
 
@@ -18,8 +20,11 @@ func (j *CSVFormatter) Format(_ context.Context, tree *execute.ExecutionTree) (i
 	resultColumns := newResultColumns(tree)
 	renderer := newGroupCsvRenderer()
 	outBuffer := bytes.NewBufferString("")
-	j.csvWriter = csv.NewWriter(outBuffer)
 	data := renderer.Render(tree)
+
+	j.csvWriter = csv.NewWriter(outBuffer)
+	j.csvWriter.Comma = []rune(viper.GetString(constants.ArgSeparator))[0]
+
 	j.csvWriter.Write(resultColumns.AllColumns)
 	j.csvWriter.WriteAll(data)
 	return strings.NewReader(outBuffer.String()), nil
