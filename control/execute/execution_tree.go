@@ -2,8 +2,11 @@ package execute
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"net/url"
+	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -88,16 +91,56 @@ func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
 }
 
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
-	//  if a 'where' arg was used, execute this sql to get a list of  control names
-	// use this list to build a name map used to determine whether to run a particular control
-	if viper.IsSet(constants.ArgWhere) {
-		whereArg := viper.GetString(constants.ArgWhere)
+
+	// if both `--where` and `--tag` have been used, then it's an error
+	if viper.IsSet(constants.ArgWhere) && viper.IsSet(constants.ArgTag) {
+		return errors.New("`--where` and `--tag` cannot be used together")
+	}
+
+	controlFilterWhereClause := ""
+
+	if viper.IsSet(constants.ArgTag) {
+		// if `--tags` were used, derive the whereClause from ut
+		tags := viper.GetStringSlice(constants.ArgTag)
+		whereMap := map[string][]string{}
+
+		// `tags` should be KV Pairs of the form: `benchmark=pic` or `cis_level=1`
+		for _, tag := range tags {
+			value, _ := url.ParseQuery(tag)
+			for k, v := range value {
+				if _, found := whereMap[k]; !found {
+					whereMap[k] = []string{}
+				}
+				whereMap[k] = append(whereMap[k], v...)
+			}
+		}
+		whereComponents := []string{}
+		for key, values := range whereMap {
+			thisComponent := []string{}
+			for _, x := range values {
+				thisComponent = append(thisComponent, fmt.Sprintf("tags->>'%s'='%s'", key, x))
+			}
+			whereComponents = append(whereComponents, fmt.Sprintf("(%s)", strings.Join(thisComponent, " OR ")))
+		}
+
+		controlFilterWhereClause = strings.Join(whereComponents, " AND ")
+
+	} else if viper.IsSet(constants.ArgWhere) {
+		// if a 'where' arg was used, execute this sql to get a list of  control names
+		// use this list to build a name map used to determine whether to run a particular control
+		controlFilterWhereClause = viper.GetString(constants.ArgWhere)
+	}
+
+	// if we derived or were passed a where clause, run the filter
+	if len(controlFilterWhereClause) > 0 {
+		log.Println("[TRACE]", "filtering controls with", controlFilterWhereClause)
 		var err error
-		e.controlNameFilterMap, err = e.getControlMapFromMetadataQuery(ctx, whereArg)
+		e.controlNameFilterMap, err = e.getControlMapFromMetadataQuery(ctx, controlFilterWhereClause)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -155,13 +198,13 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.Control
 
 // Get a map of control names from the reflection table steampipe_control
 // This is used to implement the `where` control filtering
-func (e *ExecutionTree) getControlMapFromMetadataQuery(ctx context.Context, whereArg string) (map[string]bool, error) {
+func (e *ExecutionTree) getControlMapFromMetadataQuery(ctx context.Context, whereClause string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
-	query, isNamedQuery := execute.GetQueryFromArg(whereArg, e.workspace)
+	query, isNamedQuery := execute.GetQueryFromArg(whereClause, e.workspace)
 
 	// if the query is NOT a named query, we need to construct a full query by adding a select
 	if !isNamedQuery {
-		query = fmt.Sprintf("select resource_name from %s where %s", constants.ReflectionTableControl, whereArg)
+		query = fmt.Sprintf("select resource_name from %s where %s", constants.ReflectionTableControl, whereClause)
 	}
 
 	res, err := e.client.ExecuteSync(ctx, query)
