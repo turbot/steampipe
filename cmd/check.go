@@ -243,14 +243,35 @@ func getExportFormats(executing string) []controldisplay.CheckExportFormat {
 	formats := []controldisplay.CheckExportFormat{}
 	exports := viper.GetStringSlice(constants.ArgExport)
 	for _, export := range exports {
+		if len(strings.TrimSpace(export)) == 0 {
+			// if this is an expty string, ignore
+			continue
+		}
+
 		parts := strings.SplitN(export, ":", 2)
-		format := parts[0]
-		fileName := generateDefaultExportFileName(format, executing)
-		if len(parts) > 1 {
-			if f, err := helpers.Tildefy(parts[1]); err == nil {
+
+		format := ""
+		fileName := ""
+
+		if len(parts) == 2 {
+			// we have two distinct parts - life is good
+			format = parts[0]
+			fileName = parts[1]
+			if f, err := helpers.Tildefy(fileName); err == nil {
 				fileName = f
-			} else {
-				fileName = parts[1]
+			}
+		} else {
+			format = parts[0]
+			fileName = generateDefaultExportFileName(format, executing)
+
+			// try to get an export formatter
+			_, err := controldisplay.GetExportFormatter(format)
+			if err != nil {
+				// this is not a valid format. assume it is a file name
+				fileName = format
+
+				// now infer the format from the file name
+				format = controldisplay.InferFormatFromExportFileName(fileName)
 			}
 		}
 		formats = append(formats, controldisplay.NewCheckOutputFormat(format, fileName))
