@@ -289,13 +289,16 @@ func (w *Workspace) loadMod() error {
 }
 
 func (w *Workspace) ValidateRequiredPluginVersions() error {
-	requiredPluginVersions := w.Mod.Requires.Plugins
+	if w.Mod.Requires != nil {
+		requiredPluginVersions := w.Mod.Requires.Plugins
 
-	for _, v := range requiredPluginVersions {
-		err := v.Validate()
-		if err != nil {
-			return err
+		for _, v := range requiredPluginVersions {
+			err := v.Validate()
+			if err != nil {
+				return err
+			}
 		}
+		return nil
 	}
 	return nil
 }
@@ -330,14 +333,17 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 }
 
 func (w *Workspace) getRequiredPlugins() map[string]*SemVer.Version {
+	if w.Mod.Requires != nil {
+		requiredPluginVersions := w.Mod.Requires.Plugins
+		requiredVersion := make(map[string]*SemVer.Version)
+		for _, version := range requiredPluginVersions {
+			semverVersion, _ := SemVer.NewVersion(version.Version)
+			requiredVersion[version.Name] = semverVersion
+		}
+		return requiredVersion
 
-	requiredPluginVersions := w.Mod.Requires.Plugins
-	requiredVersion := make(map[string]*SemVer.Version)
-	for _, version := range requiredPluginVersions {
-		semverVersion, _ := SemVer.NewVersion(version.Version)
-		requiredVersion[version.Name] = semverVersion
 	}
-	return requiredVersion
+	return nil
 }
 
 func (w *Workspace) getInstalledPlugins() map[string]*SemVer.Version {

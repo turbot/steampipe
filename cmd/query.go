@@ -123,8 +123,8 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	defer workspace.Close()
 
 	// check if the required plugins are installed
-	// err = workspace.CheckRequiredPluginsInstalled()
-	// utils.FailOnError(err)
+	err = workspace.CheckRequiredPluginsInstalled()
+	utils.FailOnError(err)
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	queries := execute.GetQueries(args, workspace)
