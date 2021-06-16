@@ -91,15 +91,15 @@ func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
 
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
 
-	// if both `--where` and `--tag` have been used, then it's an error
+	// if both '--where' and '--tag' have been used, then it's an error
 	if viper.IsSet(constants.ArgWhere) && viper.IsSet(constants.ArgFilterTag) {
-		return fmt.Errorf("`--%s` and `--%s` cannot be used together", constants.ArgWhere, constants.ArgFilterTag)
+		return fmt.Errorf("'--%s' and '--%s' cannot be used together", constants.ArgWhere, constants.ArgFilterTag)
 	}
 
 	controlFilterWhereClause := ""
 
 	if viper.IsSet(constants.ArgFilterTag) {
-		// if `--tags` were used, derive the whereClause from ut
+		// if '--tags' were used, derive the whereClause from ut
 		tags := viper.GetStringSlice(constants.ArgFilterTag)
 		controlFilterWhereClause = e.generateWhereClauseFromTags(tags)
 	} else if viper.IsSet(constants.ArgWhere) {
@@ -124,7 +124,7 @@ func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
 func (e *ExecutionTree) generateWhereClauseFromTags(tags []string) string {
 	whereMap := map[string][]string{}
 
-	// `tags` should be KV Pairs of the form: `benchmark=pic` or `cis_level=1`
+	// 'tags' should be KV Pairs of the form: 'benchmark=pic' or 'cis_level=1'
 	for _, tag := range tags {
 		value, _ := url.ParseQuery(tag)
 		for k, v := range value {
@@ -203,7 +203,7 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.Control
 }
 
 // Get a map of control names from the reflection table steampipe_control
-// This is used to implement the `where` control filtering
+// This is used to implement the 'where' control filtering
 func (e *ExecutionTree) getControlMapFromMetadataQuery(ctx context.Context, whereClause string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
 	query, isNamedQuery := execute.GetQueryFromArg(whereClause, e.workspace)
