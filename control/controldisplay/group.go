@@ -40,7 +40,23 @@ func (r GroupRenderer) isLastChild(group *execute.ResultGroup) bool {
 		return true
 	}
 	siblings := group.Parent.GroupItem.GetChildren()
-	return group.GroupItem.Name() == siblings[len(siblings)-1].Name()
+	// get the name of the last sibling which has controls (or is a control)
+	var finalSiblingName string
+	for _, s := range siblings {
+		if b, ok := s.(*modconfig.Benchmark); ok {
+			// find the result group for this benchmark and see if it has controls
+			resultGroup := r.resultTree.Root.GetChildGroupByName(b.Name())
+			if resultGroup != nil && resultGroup.ControlRunCount() == 0 {
+				continue
+			}
+		}
+		// sibling is a control - add
+		finalSiblingName = s.Name()
+
+	}
+	res := group.GroupItem.Name() == finalSiblingName
+
+	return res
 }
 
 // the indent for blank lines
@@ -136,19 +152,19 @@ func (r GroupRenderer) renderRootResultGroup() string {
 // render the children of this group, in the order they are specified in the hcl
 func (r GroupRenderer) renderChildren() []string {
 	children := r.group.GroupItem.GetChildren()
-	var childStrings = make([]string, len(children))
+	var childStrings []string
 
-	for i, child := range children {
+	for _, child := range children {
 		if control, ok := child.(*modconfig.Control); ok {
 			// get Result group with a matching name
 			if run := r.group.GetControlRunByName(control.Name()); run != nil {
 				controlRenderer := NewControlRenderer(run, &r)
-				childStrings[i] = controlRenderer.Render()
+				childStrings = append(childStrings, controlRenderer.Render())
 			}
 		} else {
 			if childGroup := r.group.GetGroupByName(child.Name()); childGroup != nil {
 				groupRenderer := NewGroupRenderer(childGroup, &r, r.maxFailedControls, r.maxTotalControls, r.resultTree, r.width)
-				childStrings[i] = groupRenderer.Render()
+				childStrings = append(childStrings, groupRenderer.Render())
 			}
 		}
 	}

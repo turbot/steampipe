@@ -26,6 +26,7 @@ const (
 	ArgProgress                = "progress"
 	ArgExport                  = "export"
 	ArgDryRun                  = "dry-run"
+	ArgWhere                   = "where"
 )
 
 /// metaquery mode arguments

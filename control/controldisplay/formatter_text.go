@@ -10,15 +10,16 @@ import (
 	"github.com/turbot/steampipe/control/execute"
 )
 
-const UsableMaxCols = 200
+// limit text width
+const maxCols = 200
 
 type TextFormatter struct{}
 
 func (j *TextFormatter) Format(ctx context.Context, tree *execute.ExecutionTree) (io.Reader, error) {
-	// limit to 200
-	maxCols := j.getMaxCols(UsableMaxCols)
-	renderer := NewTableRenderer(tree, maxCols)
-	return (strings.NewReader(fmt.Sprintf("\n%s\n", renderer.Render()))), nil
+	maxCols := j.getMaxCols(maxCols)
+	renderedText := NewTableRenderer(tree, maxCols).Render()
+	res := strings.NewReader(fmt.Sprintf("\n%s\n", renderedText))
+	return res, nil
 }
 
 func (j *TextFormatter) getMaxCols(limitCol int) int {

@@ -9,14 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/control/controldisplay"
-	"github.com/turbot/steampipe/control/execute"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/control/controldisplay"
+	"github.com/turbot/steampipe/control/execute"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
@@ -64,7 +63,8 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme, which determines the color scheme for the 'text' control output. Possible values are light, dark, plain").
 		AddStringSliceFlag(constants.ArgExport, "", []string{}, "Export output to files").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
-		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them")
+		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them").
+		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls ")
 
 	return cmd
 }

@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/query/execute"
 	"github.com/turbot/steampipe/query/queryresult"
-	"github.com/turbot/steampipe/workspace"
-
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/workspace"
 )
 
 // ExecutionTree is a structure representing the control result hierarchy
@@ -62,15 +62,17 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 // AddControl checks whether control should be included in the tree
 // if so, creates a ControlRun, which is added to the parent group
 func (e *ExecutionTree) AddControl(control *modconfig.Control, group *ResultGroup) {
-	if e.ShouldIncludeControl(control.Name()) {
+	// note we use short name to determine whether to include a control
+	if e.ShouldIncludeControl(control.ShortName) {
 		// create new ControlRun with treeItem as the parent
 		controlRun := NewControlRun(control, group, e)
 		// add it into the group
 		group.ControlRuns = append(group.ControlRuns, controlRun)
-		// also add it into the tree
+		// also add it into the execution tree control run list
 		e.controlRuns = append(e.controlRuns, controlRun)
 	}
 }
+
 func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
@@ -88,14 +90,14 @@ func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
 	//  if a 'where' arg was used, execute this sql to get a list of  control names
 	// use this list to build a name map used to determine whether to run a particular control
-	//if viper.IsSet(constants.ArgWhere) {
-	//	whereArg := viper.GetString(constants.ArgWhere)
-	//	var err error
-	//	e.controlNameFilterMap, err = e.getControlMapFromMetadataQuery(ctx, whereArg)
-	//	if err != nil {
-	//		return err
-	//	}
-	//}
+	if viper.IsSet(constants.ArgWhere) {
+		whereArg := viper.GetString(constants.ArgWhere)
+		var err error
+		e.controlNameFilterMap, err = e.getControlMapFromMetadataQuery(ctx, whereArg)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -169,21 +171,21 @@ func (e *ExecutionTree) getControlMapFromMetadataQuery(ctx context.Context, wher
 
 	//
 	// find the "resource_name" column index
-	resource_name_column_index := -1
+	resourceNameColumnIndex := -1
 
 	for i, c := range res.ColTypes {
 		if c.Name() == "resource_name" {
-			resource_name_column_index = i
+			resourceNameColumnIndex = i
 		}
 	}
-	if resource_name_column_index == -1 {
+	if resourceNameColumnIndex == -1 {
 		return nil, fmt.Errorf("the named query passed in the 'where' argument must return the 'resource_name' column")
 	}
 
 	var controlNames = make(map[string]bool)
 	for _, row := range res.Rows {
 		rowResult := row.(*queryresult.RowResult)
-		controlName := rowResult.Data[resource_name_column_index].(string)
+		controlName := rowResult.Data[resourceNameColumnIndex].(string)
 		controlNames[controlName] = true
 	}
 	return controlNames, nil
