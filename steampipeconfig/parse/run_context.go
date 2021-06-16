@@ -76,6 +76,8 @@ func (c *RunContext) addSteampipeVariables() {
 			"control_list":     cty.StringVal("steampipe.panel.control_list"),
 			"control_progress": cty.StringVal("steampipe.panel.control_progress"),
 			"control_table":    cty.StringVal("steampipe.panel.control_table"),
+			"graph":            cty.StringVal("steampipe.panel.graph"),
+			"sankey_diagram":   cty.StringVal("steampipe.panel.sankey_diagram"),
 			"status":           cty.StringVal("steampipe.panel.status"),
 			"table":            cty.StringVal("steampipe.panel.table"),
 			"resource_detail":  cty.StringVal("steampipe.panel.resource_detail"),
