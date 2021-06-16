@@ -90,17 +90,16 @@ func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
 }
 
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
-
-	// if both '--where' and '--filter-tag' have been used, then it's an error
-	if viper.IsSet(constants.ArgWhere) && viper.IsSet(constants.ArgFilterTag) {
-		return fmt.Errorf("'--%s' and '--%s' cannot be used together", constants.ArgWhere, constants.ArgFilterTag)
+	// if both '--where' and '--tag' have been used, then it's an error
+	if viper.IsSet(constants.ArgWhere) && viper.IsSet(constants.ArgTag) {
+		return fmt.Errorf("'--%s' and '--%s' cannot be used together", constants.ArgWhere, constants.ArgTag)
 	}
 
 	controlFilterWhereClause := ""
 
-	if viper.IsSet(constants.ArgFilterTag) {
-		// if '--filter-tag' were used, derive the whereClause from ut
-		tags := viper.GetStringSlice(constants.ArgFilterTag)
+	if viper.IsSet(constants.ArgTag) {
+		// if '--tag' args were used, derive the whereClause from them
+		tags := viper.GetStringSlice(constants.ArgTag)
 		controlFilterWhereClause = e.generateWhereClauseFromTags(tags)
 	} else if viper.IsSet(constants.ArgWhere) {
 		// if a 'where' arg was used, execute this sql to get a list of  control names
