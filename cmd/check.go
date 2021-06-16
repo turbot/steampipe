@@ -111,10 +111,15 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	defer workspace.Close()
 
+	// check if the required plugins are installed
+	err = workspace.CheckRequiredPluginsInstalled()
+	utils.FailOnError(err)
+
 	if len(workspace.ControlMap) == 0 {
 		utils.ShowWarning("no controls found in current workspace")
 		return
 	}
+
 	// first get a client - do this once for all controls
 	client, err := db.NewClient(true)
 	utils.FailOnError(err)

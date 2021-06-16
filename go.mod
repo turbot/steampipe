@@ -6,6 +6,7 @@ require (
 	github.com/Machiel/slugify v1.0.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/ahmetb/go-linq v3.0.0+incompatible
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/briandowns/spinner v1.11.1
 	github.com/c-bata/go-prompt v0.2.5
@@ -14,7 +15,6 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.7.0
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/gerow/go-color v0.0.0-20140219113758-125d37f527f1
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/google/uuid v1.2.0
@@ -29,7 +29,6 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.8.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
@@ -50,7 +49,6 @@ require (
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
 	github.com/turbot/go-kit v0.2.2-0.20210614162002-b56bc76ce374
 	github.com/turbot/steampipe-plugin-sdk v0.2.8
-	github.com/ugorji/go v1.1.4 // indirect
 	github.com/ulikunitz/xz v0.5.8
 	github.com/zclconf/go-cty v1.8.2
 	github.com/zclconf/go-cty-yaml v1.0.2

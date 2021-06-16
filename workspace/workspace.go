@@ -10,10 +10,12 @@ import (
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
+	SemVer "github.com/hashicorp/go-version"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/plugin"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
@@ -287,17 +289,66 @@ func (w *Workspace) loadMod() error {
 }
 
 func (w *Workspace) ValidateRequiredPluginVersions() error {
+	requiredPluginVersions := w.Mod.Requires.Plugins
+
+	for _, v := range requiredPluginVersions {
+		err := v.Validate()
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 func (w *Workspace) CheckRequiredPluginsInstalled() error {
 	var errors []error
-	// look at w.Mod.Requires.Plugins and check each is installed
 
+	// get the list of all installed plugins
+	installedPlugins := w.getInstalledPlugins()
+
+	// get the list of all the required plugins
+	requiredPlugins := w.getRequiredPlugins()
+
+	for name, _ := range requiredPlugins {
+		if _, found := installedPlugins[name]; found {
+			if installedPlugins[name].LessThan(requiredPlugins[name]) {
+				errors = append(errors, fmt.Errorf("Required version for %s plugin is %s, while the installed version is %s", name, requiredPlugins[name], installedPlugins[name]))
+			}
+		} else {
+			errors = append(errors, fmt.Errorf("Plugin %s with version %s is required, but it is not installed", name, requiredPlugins[name]))
+		}
+
+	}
 	if len(errors) > 0 {
-		// construct single error
+		var combinedError []string
+		for _, err := range errors {
+			combinedError = append(combinedError, err.Error())
+		}
+		return fmt.Errorf(strings.Join(combinedError, "\n"))
 	}
 	return nil
+}
+
+func (w *Workspace) getRequiredPlugins() map[string]*SemVer.Version {
+
+	requiredPluginVersions := w.Mod.Requires.Plugins
+	requiredVersion := make(map[string]*SemVer.Version)
+	for _, version := range requiredPluginVersions {
+		semverVersion, _ := SemVer.NewVersion(version.Version)
+		requiredVersion[version.Name] = semverVersion
+	}
+	return requiredVersion
+}
+
+func (w *Workspace) getInstalledPlugins() map[string]*SemVer.Version {
+	installedPlugins := make(map[string]*SemVer.Version)
+	installedPluginsData, _ := plugin.List(nil)
+	for _, plugin := range installedPluginsData {
+		name := strings.Split(strings.Split(plugin.Name, "@")[0], "/")
+		semverVersion, _ := SemVer.NewVersion(plugin.Version)
+		installedPlugins[name[len(name)-1]] = semverVersion
+	}
+	return installedPlugins
 }
 
 // load all dependencies of workspace mod
