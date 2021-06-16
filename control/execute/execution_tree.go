@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -118,12 +119,19 @@ func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
 		for key, values := range whereMap {
 			thisComponent := []string{}
 			for _, x := range values {
+				if len(x) == 0 {
+					// ignore
+					continue
+				}
 				thisComponent = append(thisComponent, fmt.Sprintf("tags->>'%s'='%s'", key, x))
 			}
 			whereComponents = append(whereComponents, fmt.Sprintf("(%s)", strings.Join(thisComponent, " OR ")))
 		}
 
 		controlFilterWhereClause = strings.Join(whereComponents, " AND ")
+
+		fmt.Println(controlFilterWhereClause)
+		os.Exit(0)
 
 	} else if viper.IsSet(constants.ArgWhere) {
 		// if a 'where' arg was used, execute this sql to get a list of  control names
