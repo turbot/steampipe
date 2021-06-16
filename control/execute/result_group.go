@@ -44,7 +44,9 @@ func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.Con
 			// if root item is a control, add control run
 			executionTree.AddControl(control, root)
 		} else {
-			root.Groups = append(root.Groups, NewResultGroup(executionTree, item, root))
+			// create a result group for this item
+			itemGroup := NewResultGroup(executionTree, item, root)
+			root.Groups = append(root.Groups, itemGroup)
 		}
 	}
 	return root
@@ -64,13 +66,19 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ControlTree
 	// add child groups for children which are benchmarks
 	for _, c := range treeItem.GetChildren() {
 		if benchmark, ok := c.(*modconfig.Benchmark); ok {
-			// create a new result group with 'group' as the parent
-			group.Groups = append(group.Groups, NewResultGroup(executionTree, benchmark, group))
+			// create a result group for this item
+			benchmarkGroup := NewResultGroup(executionTree, benchmark, group)
+			// if the group has any control runs, add to tree
+			if benchmarkGroup.ControlRunCount() > 0 {
+				// create a new result group with 'group' as the parent
+				group.Groups = append(group.Groups, benchmarkGroup)
+			}
 		}
 		if control, ok := c.(*modconfig.Control); ok {
 			executionTree.AddControl(control, group)
 		}
 	}
+
 	return group
 }
 
@@ -134,11 +142,24 @@ func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
 	return failures
 }
 
-// GetGroupByName finds a child ResultGroup with a specific name
+// GetGroupByName finds an immediate child ResultGroup with a specific name
 func (r *ResultGroup) GetGroupByName(name string) *ResultGroup {
 	for _, group := range r.Groups {
 		if group.GroupId == name {
 			return group
+		}
+	}
+	return nil
+}
+
+// GetChildGroupByName finds a nested child ResultGroup with a specific name
+func (r *ResultGroup) GetChildGroupByName(name string) *ResultGroup {
+	for _, group := range r.Groups {
+		if group.GroupId == name {
+			return group
+		}
+		if child := group.GetChildGroupByName(name); child != nil {
+			return child
 		}
 	}
 	return nil
@@ -152,4 +173,12 @@ func (r *ResultGroup) GetControlRunByName(name string) *ControlRun {
 		}
 	}
 	return nil
+}
+
+func (r *ResultGroup) ControlRunCount() int {
+	count := len(r.ControlRuns)
+	for _, g := range r.Groups {
+		count += g.ControlRunCount()
+	}
+	return count
 }

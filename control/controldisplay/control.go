@@ -5,7 +5,9 @@ import (
 	"log"
 	"strings"
 
+	"github.com/spf13/viper"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/execute"
 )
 
@@ -29,18 +31,18 @@ func NewControlRenderer(run *execute.ControlRun, parent *GroupRenderer) *Control
 		colorGenerator:    parent.resultTree.DimensionColorGenerator,
 		width:             parent.width,
 	}
-	r.lastChild = r.isLastChild(run)
+	r.lastChild = r.isLastChild()
 	return r
 }
 
 // are we the last child of our parent?
 // this affects the tree rendering
-func (r ControlRenderer) isLastChild(run *execute.ControlRun) bool {
+func (r ControlRenderer) isLastChild() bool {
 	if r.parent.group == nil || r.parent.group.GroupItem == nil {
 		return true
 	}
 	siblings := r.parent.group.GroupItem.GetChildren()
-	return run.Control.Name() == siblings[len(siblings)-1].Name()
+	return r.run.Control.Name() == siblings[len(siblings)-1].Name()
 }
 
 // get the indent inherited from our parent
@@ -54,6 +56,10 @@ func (r ControlRenderer) parentIndent() string {
 
 // indent before first result
 func (r ControlRenderer) preResultIndent() string {
+	// for dry run we show no results so do not add a '|' to indent
+	if viper.GetBool(constants.ArgDryRun) {
+		return r.parentIndent()
+	}
 	return r.parentIndent() + "| "
 }
 
@@ -85,8 +91,8 @@ func (r ControlRenderer) Render() string {
 	controlHeadingRenderer.severity = typehelpers.SafeString(r.run.Control.Severity)
 
 	// get formatted indents
-	formattedPreResultIndent := fmt.Sprintf("%s", ControlColors.Indent(r.preResultIndent()))
 	formattedPostResultIndent := fmt.Sprintf("%s", ControlColors.Indent(r.postResultIndent()))
+	formattedPreResultIndent := fmt.Sprintf("%s", ControlColors.Indent(r.preResultIndent()))
 
 	controlStrings = append(controlStrings,
 		controlHeadingRenderer.Render(),

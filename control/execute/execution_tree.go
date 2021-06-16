@@ -4,14 +4,16 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
+	"strings"
 
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/query/execute"
 	"github.com/turbot/steampipe/query/queryresult"
-	"github.com/turbot/steampipe/workspace"
-
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/workspace"
 )
 
 // ExecutionTree is a structure representing the control result hierarchy
@@ -62,15 +64,17 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 // AddControl checks whether control should be included in the tree
 // if so, creates a ControlRun, which is added to the parent group
 func (e *ExecutionTree) AddControl(control *modconfig.Control, group *ResultGroup) {
-	if e.ShouldIncludeControl(control.Name()) {
+	// note we use short name to determine whether to include a control
+	if e.ShouldIncludeControl(control.ShortName) {
 		// create new ControlRun with treeItem as the parent
 		controlRun := NewControlRun(control, group, e)
 		// add it into the group
 		group.ControlRuns = append(group.ControlRuns, controlRun)
-		// also add it into the tree
+		// also add it into the execution tree control run list
 		e.controlRuns = append(e.controlRuns, controlRun)
 	}
 }
+
 func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
@@ -86,17 +90,63 @@ func (e *ExecutionTree) Execute(ctx context.Context, client *db.Client) int {
 }
 
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
-	//  if a 'where' arg was used, execute this sql to get a list of  control names
-	// use this list to build a name map used to determine whether to run a particular control
-	//if viper.IsSet(constants.ArgWhere) {
-	//	whereArg := viper.GetString(constants.ArgWhere)
-	//	var err error
-	//	e.controlNameFilterMap, err = e.getControlMapFromMetadataQuery(ctx, whereArg)
-	//	if err != nil {
-	//		return err
-	//	}
-	//}
+	// if both '--where' and '--tag' have been used, then it's an error
+	if viper.IsSet(constants.ArgWhere) && viper.IsSet(constants.ArgTag) {
+		return fmt.Errorf("'--%s' and '--%s' cannot be used together", constants.ArgWhere, constants.ArgTag)
+	}
+
+	controlFilterWhereClause := ""
+
+	if viper.IsSet(constants.ArgTag) {
+		// if '--tag' args were used, derive the whereClause from them
+		tags := viper.GetStringSlice(constants.ArgTag)
+		controlFilterWhereClause = e.generateWhereClauseFromTags(tags)
+	} else if viper.IsSet(constants.ArgWhere) {
+		// if a 'where' arg was used, execute this sql to get a list of  control names
+		// use this list to build a name map used to determine whether to run a particular control
+		controlFilterWhereClause = viper.GetString(constants.ArgWhere)
+	}
+
+	// if we derived or were passed a where clause, run the filter
+	if len(controlFilterWhereClause) > 0 {
+		log.Println("[TRACE]", "filtering controls with", controlFilterWhereClause)
+		var err error
+		e.controlNameFilterMap, err = e.getControlMapFromMetadataQuery(ctx, controlFilterWhereClause)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func (e *ExecutionTree) generateWhereClauseFromTags(tags []string) string {
+	whereMap := map[string][]string{}
+
+	// 'tags' should be KV Pairs of the form: 'benchmark=pic' or 'cis_level=1'
+	for _, tag := range tags {
+		value, _ := url.ParseQuery(tag)
+		for k, v := range value {
+			if _, found := whereMap[k]; !found {
+				whereMap[k] = []string{}
+			}
+			whereMap[k] = append(whereMap[k], v...)
+		}
+	}
+	whereComponents := []string{}
+	for key, values := range whereMap {
+		thisComponent := []string{}
+		for _, x := range values {
+			if len(x) == 0 {
+				// ignore
+				continue
+			}
+			thisComponent = append(thisComponent, fmt.Sprintf("tags->>'%s'='%s'", key, x))
+		}
+		whereComponents = append(whereComponents, fmt.Sprintf("(%s)", strings.Join(thisComponent, " OR ")))
+	}
+
+	return strings.Join(whereComponents, " AND ")
 }
 
 func (e *ExecutionTree) ShouldIncludeControl(controlName string) bool {
@@ -152,14 +202,14 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.Control
 }
 
 // Get a map of control names from the reflection table steampipe_control
-// This is used to implement the `where` control filtering
-func (e *ExecutionTree) getControlMapFromMetadataQuery(ctx context.Context, whereArg string) (map[string]bool, error) {
+// This is used to implement the 'where' control filtering
+func (e *ExecutionTree) getControlMapFromMetadataQuery(ctx context.Context, whereClause string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
-	query, isNamedQuery := execute.GetQueryFromArg(whereArg, e.workspace)
+	query, isNamedQuery := execute.GetQueryFromArg(whereClause, e.workspace)
 
 	// if the query is NOT a named query, we need to construct a full query by adding a select
 	if !isNamedQuery {
-		query = fmt.Sprintf("select resource_name from %s where %s", constants.ReflectionTableControl, whereArg)
+		query = fmt.Sprintf("select resource_name from %s where %s", constants.ReflectionTableControl, whereClause)
 	}
 
 	res, err := e.client.ExecuteSync(ctx, query)
@@ -169,21 +219,21 @@ func (e *ExecutionTree) getControlMapFromMetadataQuery(ctx context.Context, wher
 
 	//
 	// find the "resource_name" column index
-	resource_name_column_index := -1
+	resourceNameColumnIndex := -1
 
 	for i, c := range res.ColTypes {
 		if c.Name() == "resource_name" {
-			resource_name_column_index = i
+			resourceNameColumnIndex = i
 		}
 	}
-	if resource_name_column_index == -1 {
+	if resourceNameColumnIndex == -1 {
 		return nil, fmt.Errorf("the named query passed in the 'where' argument must return the 'resource_name' column")
 	}
 
 	var controlNames = make(map[string]bool)
 	for _, row := range res.Rows {
 		rowResult := row.(*queryresult.RowResult)
-		controlName := rowResult.Data[resource_name_column_index].(string)
+		controlName := rowResult.Data[resourceNameColumnIndex].(string)
 		controlNames[controlName] = true
 	}
 	return controlNames, nil

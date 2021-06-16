@@ -16,5 +16,6 @@ func (j *JSONFormatter) Format(ctx context.Context, tree *execute.ExecutionTree)
 	if err != nil {
 		return nil, err
 	}
-	return strings.NewReader(string(bytes)), nil
+	res := strings.NewReader(string(bytes))
+	return res, nil
 }
