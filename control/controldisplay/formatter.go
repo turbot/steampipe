@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 
 	"github.com/turbot/steampipe/control/execute"
@@ -60,6 +61,16 @@ func GetOutputFormatter(outputFormat string) (Formatter, error) {
 		return nil, fmt.Errorf("invalid output format '%s' - must be one of json,csv,text,brief,none", outputFormat)
 	}
 	return formatter, nil
+}
+
+func InferFormatFromExportFileName(filename string) string {
+	extension := strings.TrimPrefix(filepath.Ext(filename), ".")
+	switch extension {
+	case "csv", "json":
+		return extension
+	default:
+		return ""
+	}
 }
 
 // NullFormatter is to be used when no output is expected. It always returns a `io.Reader` which
