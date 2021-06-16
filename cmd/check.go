@@ -304,5 +304,5 @@ func getExportTargets(executing string) []controldisplay.CheckExportTarget {
 }
 
 func generateDefaultExportFileName(format string, executing string) string {
-	return fmt.Sprintf("%s-%s.%s", executing, time.Now().UTC().Format(time.RFC3339), format)
+	return fmt.Sprintf("%s-%s.%s", executing, time.Now().UTC().Format("20060102150405Z"), format)
 }
