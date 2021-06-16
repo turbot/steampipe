@@ -75,3 +75,15 @@ func handleCancelError(err error) error {
 func ShowWarning(warning string) {
 	fmt.Fprintf(color.Output, "%s: %v\n", colorWarn, warning)
 }
+
+func CombineErrorsWithPrefix(prefix string, errors ...error) error {
+	combinedErrorString := []string{prefix}
+	for _, e := range errors {
+		combinedErrorString = append(combinedErrorString, e.Error())
+	}
+	return fmt.Errorf(strings.Join(combinedErrorString, "\n"))
+}
+
+func CombineErrors(errors ...error) error {
+	return CombineErrorsWithPrefix("", errors...)
+}
