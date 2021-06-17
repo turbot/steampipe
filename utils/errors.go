@@ -26,6 +26,7 @@ func FailOnError(err error) {
 		panic(err)
 	}
 }
+
 func FailOnErrorWithMessage(err error, message string) {
 	if err != nil {
 		err = handleCancelError(err)

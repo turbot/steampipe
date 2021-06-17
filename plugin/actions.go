@@ -71,18 +71,18 @@ func Install(plugin string) (*ociinstaller.SteampipeImage, error) {
 	return image, err
 }
 
-// ListItem is a struct representing an item in the list of plugins
-type ListItem struct {
+// PluginListItem is a struct representing an item in the list of plugins
+type PluginListItem struct {
 	Name        string
 	Version     string
 	Connections []string
 }
 
 // List returns all installed plugins
-func List(reverseConnectionMap map[string][]string) ([]ListItem, error) {
-	items := []ListItem{}
+func List(pluginConnectionMap map[string][]string) ([]PluginListItem, error) {
+	var items []PluginListItem
 
-	installedPlugins := []string{}
+	var installedPlugins []string
 
 	filepath.Walk(constants.PluginDir(), func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() && strings.HasSuffix(info.Name(), ".plugin") {
@@ -108,11 +108,14 @@ func List(reverseConnectionMap map[string][]string) ([]ListItem, error) {
 		if found {
 			version = pluginDetails.Version
 		}
-		items = append(items, ListItem{
-			Name:        plugin,
-			Version:     version,
-			Connections: reverseConnectionMap[plugin],
-		})
+		item := PluginListItem{
+			Name:    plugin,
+			Version: version,
+		}
+		if pluginConnectionMap != nil {
+			item.Connections = pluginConnectionMap[plugin]
+		}
+		items = append(items, item)
 	}
 
 	return items, nil

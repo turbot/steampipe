@@ -468,13 +468,13 @@ func runPluginListCmd(*cobra.Command, []string) {
 		}
 	}()
 
-	connectionMap, err := getPluginConnectionMap()
+	pluginConnectionMap, err := getPluginConnectionMap()
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "Plugin Listing failed")
 		return
 	}
 
-	list, err := plugin.List(connectionMap)
+	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "Plugin Listing failed")
 	}
