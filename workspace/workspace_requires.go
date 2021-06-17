@@ -89,7 +89,7 @@ type requiredPluginVersion struct {
 
 func pluginVersionError(reqs []requiredPluginVersion) string {
 	var notificationLines = []string{
-		fmt.Sprintf("%d mod plugin %s are not satisfied. ", len(reqs), utils.Pluralize("requirement", len(reqs))),
+		fmt.Sprintf("%d mod plugin %s not satisfied. ", len(reqs), utils.Pluralize("requirement", len(reqs))),
 		"",
 	}
 	longestNameLength := 0
