@@ -24,7 +24,8 @@ func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 	insertSql := getTableInsertSql(workspaceResources)
 
 	sql := []string{clearSql, insertSql}
-	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"))
+	// execute the query, passing 'true' to disable the spinner
+	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"), true)
 	if err != nil {
 		return fmt.Errorf("failed to update reflection tables: %v", err)
 	}
@@ -42,7 +43,8 @@ func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 	insertSql := getTableInsertSql(workspaceResources)
 
 	sql := []string{createSql, insertSql}
-	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"))
+	// execute the query, passing 'true' to disable the spinner
+	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"), true)
 	if err != nil {
 		return fmt.Errorf("failed to create reflection tables: %v", err)
 	}

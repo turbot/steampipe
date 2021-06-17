@@ -212,7 +212,7 @@ func (e *ExecutionTree) getControlMapFromMetadataQuery(ctx context.Context, wher
 		query = fmt.Sprintf("select resource_name from %s where %s", constants.ReflectionTableControl, whereClause)
 	}
 
-	res, err := e.client.ExecuteSync(ctx, query)
+	res, err := e.client.ExecuteSync(ctx, query, false)
 	if err != nil {
 		return nil, err
 	}

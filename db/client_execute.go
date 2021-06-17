@@ -16,8 +16,8 @@ import (
 )
 
 // ExecuteSync :: execute a query against this client and wait for the result
-func (c *Client) ExecuteSync(ctx context.Context, query string) (*queryresult.SyncQueryResult, error) {
-	result, err := c.ExecuteQuery(ctx, query, false)
+func (c *Client) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
+	result, err := c.ExecuteQuery(ctx, query, disableSpinner)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (c *Client) ExecuteSync(ctx context.Context, query string) (*queryresult.Sy
 // Bear in mind that whenever ExecuteQuery is called, the returned `queryresult.Result` MUST be fully read -
 // otherwise the transaction is left open, which will block the connection and will prevent subsequent communications
 // with the service
-func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream bool) (res *queryresult.Result, err error) {
+func (c *Client) ExecuteQuery(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
 	if query == "" {
 		return &queryresult.Result{}, nil
 	}
@@ -59,7 +59,7 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, countStream boo
 		close(queryDone)
 	}()
 
-	if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
+	if !disableSpinner && cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
 		// if `show-interactive-output` is false, the spinner gets created, but is never shown
 		// so the s.Active() will always come back false . . .
 		spinner = display.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)

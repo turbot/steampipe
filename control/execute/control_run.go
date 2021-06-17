@@ -96,7 +96,7 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	}
 
 	// set a log line in the database logs for convenience
-	_, _ = client.ExecuteSync(ctx, fmt.Sprintf("--- Executing %s", *control.Title))
+	_, _ = client.ExecuteSync(ctx, fmt.Sprintf("--- Executing %s", *control.Title), false)
 
 	var originalConfiguredSearchPath []string
 	var originalConfiguredSearchPathPrefix []string
