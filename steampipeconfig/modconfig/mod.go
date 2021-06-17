@@ -61,7 +61,7 @@ func (m *Mod) ParseRequiredPluginVersions() error {
 		requiredPluginVersions := m.Requires.Plugins
 
 		for _, v := range requiredPluginVersions {
-			err := v.setParsedVersion()
+			err := v.parseProperties()
 			if err != nil {
 				return err
 			}

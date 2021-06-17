@@ -3,36 +3,49 @@ package modconfig
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/ociinstaller"
+
 	version "github.com/hashicorp/go-version"
 
 	"github.com/hashicorp/hcl/v2"
 )
 
 type PluginVersion struct {
-	// the fully qualified plugin name, e.g. github.com/turbot/mod1
-	Name string `cty:"name" hcl:"name,label"`
+	// the plugin name, as specified in the mod requires block. , e.g. turbot/mod1, aws
+	RawName string `cty:"name" hcl:"name,label"`
 	// the version STREAM, can be either a major or minor version stream i.e. 1 or 1.1
 	Version       string `cty:"version" hcl:"version,optional"`
 	DeclRange     hcl.Range
 	ParsedVersion *version.Version
+	// the org and name which are parsed from the raw name
+	Org  string
+	Name string
 }
 
 func (p *PluginVersion) FullName() string {
 	if p.Version == "" {
-		return p.Name
+		return p.ShortName()
 	}
-	return fmt.Sprintf("%s@%s", p.Name, p.Version)
+	return fmt.Sprintf("%s@%s", p.ShortName(), p.Version)
+}
+
+func (p *PluginVersion) ShortName() string {
+	return fmt.Sprintf("%s/%s", p.Org, p.Name)
 }
 
 func (p *PluginVersion) String() string {
 	return p.FullName()
 }
 
-func (p *PluginVersion) setParsedVersion() error {
+// parse the version and name properties
+func (p *PluginVersion) parseProperties() error {
 	v, err := version.NewVersion(p.Version)
+
 	if err != nil {
 		return err
 	}
 	p.ParsedVersion = v
+	// parse plugin name
+	p.Org, p.Name, _ = ociinstaller.NewSteampipeImageRef(p.RawName).GetOrgNameAndStream()
 	return nil
 }

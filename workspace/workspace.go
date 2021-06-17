@@ -284,6 +284,18 @@ func (w *Workspace) loadMod() error {
 	return nil
 }
 
+// load all dependencies of workspace mod
+// used to load all mods in a workspace, using the workspace manifest mod
+func (w *Workspace) loadModDependencies(modsFolder string) (modconfig.ModMap, error) {
+	var res = modconfig.ModMap{
+		w.Mod.Name(): w.Mod,
+	}
+	if err := steampipeconfig.LoadModDependencies(w.Mod, modsFolder, res, false); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig.Query {
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Query)

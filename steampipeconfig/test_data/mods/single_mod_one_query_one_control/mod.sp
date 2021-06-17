@@ -5,10 +5,10 @@ mod "m1"{
     plugin "aws"{
       version = "0.24.0"
     }
-    plugin "azure"{
+    plugin "gcp"{
       version = "0.12.0"
     }
-    plugin "chaos"{
+    plugin "turbot/chaos"{
       version = "0.11.0"
     }
   }
