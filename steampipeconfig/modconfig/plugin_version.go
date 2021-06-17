@@ -3,7 +3,7 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/blang/semver"
+	version "github.com/hashicorp/go-version"
 
 	"github.com/hashicorp/hcl/v2"
 )
@@ -14,7 +14,7 @@ type PluginVersion struct {
 	// the version STREAM, can be either a major or minor version stream i.e. 1 or 1.1
 	Version       string `cty:"version" hcl:"version,optional"`
 	DeclRange     hcl.Range
-	parsedVersion *semver.Version
+	ParsedVersion *version.Version
 }
 
 func (p *PluginVersion) FullName() string {
@@ -28,11 +28,11 @@ func (p *PluginVersion) String() string {
 	return p.FullName()
 }
 
-func (p *PluginVersion) Validate() error {
-	v, err := semver.New(p.Version)
+func (p *PluginVersion) setParsedVersion() error {
+	v, err := version.NewVersion(p.Version)
 	if err != nil {
 		return err
 	}
-	p.parsedVersion = v
+	p.ParsedVersion = v
 	return nil
 }

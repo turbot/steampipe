@@ -56,6 +56,21 @@ type Mod struct {
 	metadata *ResourceMetadata
 }
 
+func (m *Mod) ParseRequiredPluginVersions() error {
+	if m.Requires != nil {
+		requiredPluginVersions := m.Requires.Plugins
+
+		for _, v := range requiredPluginVersions {
+			err := v.setParsedVersion()
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	return nil
+}
+
 func (m *Mod) CtyValue() (cty.Value, error) {
 	return getCtyValue(m)
 }
@@ -250,7 +265,7 @@ func (m *Mod) AddParent(ControlTreeItem) error {
 }
 
 // GetParents implements ControlTreeItem
-func (c *Mod) GetParents() []ControlTreeItem {
+func (m *Mod) GetParents() []ControlTreeItem {
 	return nil
 }
 

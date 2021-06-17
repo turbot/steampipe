@@ -73,7 +73,14 @@ func parseMod(modPath string, pseudoResources []modconfig.MappableResource, opts
 	}
 
 	// parse all hcl files.
-	return parse.ParseMod(modPath, fileData, pseudoResources, opts)
+	mod, err := parse.ParseMod(modPath, fileData, pseudoResources, opts)
+	if err != nil {
+		return nil, err
+	}
+	// parse any required plugin versions which the mod specifies
+	// NOTE: this sets the parsedVersion property on the PluginVersion objects
+	err = mod.ParseRequiredPluginVersions()
+	return mod, err
 }
 
 // GetModFileExtensions :: return list of all file extensions we care about
