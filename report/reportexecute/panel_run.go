@@ -12,6 +12,7 @@ type PanelRun struct {
 	Name   string          `json:"name"`
 	Title  string          `json:"title,omitempty"`
 	Text   string          `json:"text,omitempty"`
+	Type   string          `json:"type,omitempty"`
 	Width  int             `json:"width,omitempty"`
 	Height int             `json:"height,omitempty"`
 	Source string          `json:"source,omitempty"`
@@ -33,6 +34,7 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 		Name:          panel.Name(),
 		Title:         typehelpers.SafeString(panel.Title),
 		Text:          typehelpers.SafeString(panel.Text),
+		Type:          typehelpers.SafeString(panel.Type),
 		Source:        typehelpers.SafeString(panel.Source),
 		SQL:           typehelpers.SafeString(panel.SQL),
 		executionTree: executionTree,

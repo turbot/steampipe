@@ -18,6 +18,7 @@ type Panel struct {
 	ShortName string
 
 	Title   *string `hcl:"title"`
+	Type    *string `hcl:"type"`
 	Width   *int    `hcl:"width"`
 	Height  *int    `hcl:"height"`
 	Source  *string `hcl:"source"`
@@ -191,6 +192,9 @@ func (p *Panel) Diff(new *Panel) *ReportTreeItemDiffs {
 	}
 	if typehelpers.SafeString(p.Text) != typehelpers.SafeString(new.Text) {
 		res.AddPropertyDiff("Text")
+	}
+	if typehelpers.SafeString(p.Type) != typehelpers.SafeString(new.Type) {
+		res.AddPropertyDiff("Type")
 	}
 	if p.Width == nil || new.Width == nil {
 		if !(p.Width == nil && new.Width == nil) {
