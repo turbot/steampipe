@@ -191,7 +191,7 @@ func validateExportTargets(exportTargets []controldisplay.CheckExportTarget) err
 		}
 	}
 	if len(targetErrors) > 0 {
-		message := fmt.Sprintf("%d export %s failed validation: ", len(targetErrors), utils.Pluralize("target", len(targetErrors)))
+		message := fmt.Sprintf("%d export %s failed validation.", len(targetErrors), utils.Pluralize("target", len(targetErrors)))
 		return utils.CombineErrorsWithPrefix(message, targetErrors...)
 	}
 	return nil
