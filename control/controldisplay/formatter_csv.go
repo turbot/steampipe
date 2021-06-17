@@ -25,7 +25,9 @@ func (j *CSVFormatter) Format(_ context.Context, tree *execute.ExecutionTree) (i
 	j.csvWriter = csv.NewWriter(outBuffer)
 	j.csvWriter.Comma = []rune(viper.GetString(constants.ArgSeparator))[0]
 
-	j.csvWriter.Write(resultColumns.AllColumns)
+	if viper.GetBool(constants.ArgHeader) {
+		j.csvWriter.Write(resultColumns.AllColumns)
+	}
 	j.csvWriter.WriteAll(data)
 	res := strings.NewReader(outBuffer.String())
 	return res, nil
