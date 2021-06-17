@@ -251,9 +251,7 @@ func (c *InteractiveClient) executor(line string) {
 		ctx, cancel := context.WithCancel(context.Background())
 		c.setCancelFunction(cancel)
 
-		shouldShowCounter := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.ArgTable
-
-		result, err := c.client.ExecuteQuery(ctx, query, shouldShowCounter)
+		result, err := c.client.ExecuteQuery(ctx, query, false)
 		if err != nil {
 			c.handleExecuteError(err)
 		} else {
