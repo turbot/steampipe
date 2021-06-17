@@ -7,11 +7,11 @@ _What's new?_
 * Update `service status` to make messaging more helpful when the service is running for a query session. ([#531](https://github.com/turbot/steampipe/issues/531))
 * Update `query` to add support for reading from `STDIN`. ([#499](https://github.com/turbot/steampipe/issues/499))
 * Validate that plugin versions required by the workspace mod are installed. ([#557](https://github.com/turbot/steampipe/issues/557))
-  
-  
+
 _Bug fixes_
-* `check` exit code should be the number of alerts. ([#498](https://github.com/turbot/steampipe/issues/498))
-* update check output formatting is now consistent when there is both a plugin and steampipe update.  ([#423](https://github.com/turbot/steampipe/issues/423))
+* Update `check` exit code to be the number of alerts. ([#498](https://github.com/turbot/steampipe/issues/498))
+* Update check output formatting is now consistent when there is both a plugin and steampipe update.  ([#423](https://github.com/turbot/steampipe/issues/423))
+* Fix failure to load SQL files from workspace folder if they include `$$` escape characters. ([#554](https://github.com/turbot/steampipe/issues/554))
 
 ## v0.5.3 [2021-06-14]
 _Bug fixes_
