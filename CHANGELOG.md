@@ -1,3 +1,18 @@
+## v0.6.0 [2021-06-17]
+_What's new?_
+* Add `csv` output format to `check` command. ([#479](https://github.com/turbot/steampipe/issues/479))
+* Add `--export` flag to `check` command. ([#511](https://github.com/turbot/steampipe/issues/511))
+* Add `--dry-run` flag to `check` command to show which controls would be run. ([#468](https://github.com/turbot/steampipe/issues/468))
+* Add `--tag` and `--where` arguments to `check` command to provide filtering of the controls which are run. ([#539](https://github.com/turbot/steampipe/issues/539))
+* Update `service status` to make messaging more helpful when the service is running for a query session. ([#531](https://github.com/turbot/steampipe/issues/531))
+* Update `query` to add support for reading from `STDIN`. ([#499](https://github.com/turbot/steampipe/issues/499))
+* Validate that plugin versions required by the workspace mod are installed. ([#557](https://github.com/turbot/steampipe/issues/557))
+  
+  
+_Bug fixes_
+* `check` exit code should be the number of alerts. ([#498](https://github.com/turbot/steampipe/issues/498))
+* update check output formatting is now consistent when there is both a plugin and steampipe update.  ([#423](https://github.com/turbot/steampipe/issues/423))
+
 ## v0.5.3 [2021-06-14]
 _Bug fixes_
 * Fixes Steampipe failing to run when too many benchmarks use the same controls. ([#528](https://github.com/turbot/steampipe/issues/528))
