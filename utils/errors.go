@@ -83,7 +83,11 @@ func CombineErrorsWithPrefix(prefix string, errors ...error) error {
 	}
 
 	if len(errors) == 1 {
-		return fmt.Errorf("%s%s", prefix, errors[0].Error())
+		if len(prefix) == 0 {
+			return errors[0]
+		} else {
+			return fmt.Errorf("%s - %s", prefix, errors[0].Error())
+		}
 	}
 
 	combinedErrorString := []string{prefix}
