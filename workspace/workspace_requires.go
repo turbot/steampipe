@@ -2,14 +2,13 @@ package workspace
 
 import (
 	"fmt"
-	"strings"
-
-	"github.com/turbot/steampipe/ociinstaller"
 
 	version "github.com/hashicorp/go-version"
+	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/plugin"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 func (w *Workspace) CheckRequiredPluginsInstalled() error {
@@ -35,14 +34,8 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 
 	}
 	if len(errors) > 0 {
-
-		var combinedError []string
-		for _, err := range errors {
-			combinedError = append(combinedError, err.Error())
-		}
-		//message := fmt.Sprintf()
-
-		return fmt.Errorf(strings.Join(combinedError, "\n"))
+		message := fmt.Sprintf("%d mod plugin %s are not satisfied: ", len(errors), utils.Pluralize("requirement", len(errors)))
+		return utils.CombineErrorsWithPrefix(message, errors...)
 	}
 	return nil
 }
