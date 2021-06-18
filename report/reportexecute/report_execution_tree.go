@@ -7,6 +7,7 @@ import (
 
 	"github.com/stevenle/topsort"
 	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -179,7 +180,12 @@ func (e *ReportExecutionTree) executePanelSQL(ctx context.Context, query string)
 	for i, row := range queryResult.Rows {
 		rowData := make([]interface{}, len(queryResult.ColTypes))
 		for j, columnVal := range row.(*queryresult.RowResult).Data {
-			rowData[j] = columnVal
+			// convert the raw result value into a string
+			str, err := display.ColumnValueAsString(columnVal, queryResult.ColTypes[j])
+			if err != nil {
+				return nil, err
+			}
+			rowData[j] = str
 		}
 		res[i+1] = rowData
 	}
