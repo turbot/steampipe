@@ -4,12 +4,12 @@
 set -e
 
 if ! command -v tar >/dev/null; then
-	echo "Error: `tar` is required to install Steampipe." 1>&2
+	echo "Error: 'tar' is required to install Steampipe." 1>&2
 	exit 1
 fi
 
 if ! command -v install >/dev/null; then
-	echo "Error: `install` is required to install Steampipe." 1>&2
+	echo "Error: 'install' is required to install Steampipe." 1>&2
 	exit 1
 fi
 
@@ -36,10 +36,17 @@ exe="$bin_dir/steampipe"
 test -z "$tmp_dir" && tmp_dir="$(mktemp -d)"
 mkdir -p "${tmp_dir}"
 tmp_dir="${tmp_dir%/}"
+
+echo "Created temporary directory at $tmp_dir. Changing to $tmp_dir"
+cd $tmp_dir
+
+# set a trap for a clean exit - even in failures
+trap "rm -rf $tmp_dir" EXIT
+
 case $(uname -sm) in
-	"Darwin x86_64") zip_location="steampipe.zip" ;;
-	"Darwin arm64") echo "Error: ARM is not supported yet." 1>&2;exit 1 ;;
-	*) zip_location="steampipe.tar.gz" ;;
+	"Darwin x86_64") zip_location="$tmp_dir/steampipe.zip" ;;
+	"Linux x86_64") zip_location="$tmp_dir/steampipe.tar.gz" ;;
+	*) echo "Error: steampipe is not supported on '$(uname -sm)' yet." 1>&2;exit 1 ;;
 esac
 
 echo "Downloading from $steampipe_uri"
@@ -73,5 +80,5 @@ echo "Steampipe was installed successfully to $exe"
 if command -v steampipe >/dev/null; then
 	echo "Run 'steampipe --help' to get started"
 else
-    echo "Steampipe was installed, but could not be located. Are you sure `/usr/local/bin` is exported?"
+    echo "Steampipe was installed, but could not be located. Are you sure `$bin_dir` is exported?"
 fi
