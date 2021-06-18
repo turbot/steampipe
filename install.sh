@@ -8,6 +8,11 @@ if ! command -v tar >/dev/null; then
 	exit 1
 fi
 
+if ! command -v gzip >/dev/null; then
+	echo "Error: 'gzip' is required to install Steampipe." 1>&2
+	exit 1
+fi
+
 if ! command -v install >/dev/null; then
 	echo "Error: 'install' is required to install Steampipe." 1>&2
 	exit 1
@@ -74,11 +79,12 @@ install -d "$bin_dir"
 install "$tmp_dir/steampipe" "$bin_dir"
 chmod +x $exe
 echo "Removing downloaded archive"
+echo $zip_location
 rm "$zip_location"
 
 echo "Steampipe was installed successfully to $exe"
 if command -v steampipe >/dev/null; then
 	echo "Run 'steampipe --help' to get started"
 else
-    echo "Steampipe was installed, but could not be located. Are you sure `$bin_dir` is exported?"
+    echo "Steampipe was installed, but could not be located. Are you sure '$bin_dir' is exported?"
 fi
