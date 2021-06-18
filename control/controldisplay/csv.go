@@ -3,7 +3,7 @@ package controldisplay
 import (
 	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 )
 
 type CSVRenderer struct {
@@ -14,12 +14,12 @@ func newGroupCsvRenderer() *CSVRenderer {
 	return &CSVRenderer{}
 }
 
-func (r CSVRenderer) Render(tree *execute.ExecutionTree) [][]string {
+func (r CSVRenderer) Render(tree *controlexecute.ExecutionTree) [][]string {
 	r.columns = newResultColumns(tree)
 	return r.renderGroup(tree.Root)
 }
 
-func (r CSVRenderer) renderGroup(group *execute.ResultGroup) [][]string {
+func (r CSVRenderer) renderGroup(group *controlexecute.ResultGroup) [][]string {
 	var results [][]string
 	for _, childGroup := range group.Groups {
 		results = append(results, r.renderGroup(childGroup)...)
@@ -30,7 +30,7 @@ func (r CSVRenderer) renderGroup(group *execute.ResultGroup) [][]string {
 	return results
 }
 
-func (r CSVRenderer) renderControl(run *execute.ControlRun, group *execute.ResultGroup) [][]string {
+func (r CSVRenderer) renderControl(run *controlexecute.ControlRun, group *controlexecute.ResultGroup) [][]string {
 	var res = make([][]string, len(run.Rows))
 
 	groupColumns := r.columns.GroupColumns

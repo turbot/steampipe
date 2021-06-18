@@ -349,11 +349,6 @@ func (m *Mod) AddPseudoResource(resource MappableResource) {
 	}
 }
 
-// CtyValue implements HclResource
-func (m *Mod) CtyValue() (cty.Value, error) {
-	return getCtyValue(m)
-}
-
 // OnDecoded implements HclResource
 func (m *Mod) OnDecoded(*hcl.Block) {}
 

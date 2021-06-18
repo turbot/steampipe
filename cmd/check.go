@@ -10,16 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/control/controldisplay"
-	"github.com/turbot/steampipe/control/controlexecute"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controldisplay"
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
@@ -235,7 +232,7 @@ func initialiseColorScheme() error {
 	return nil
 }
 
-func displayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) error {
+func displayControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree) error {
 	outputFormat := viper.GetString(constants.ArgOutput)
 	formatter, _ := controldisplay.GetOutputFormatter(outputFormat)
 	formattedReader, err := formatter.Format(ctx, executionTree)
@@ -247,7 +244,7 @@ func displayControlResults(ctx context.Context, executionTree *execute.Execution
 	return err
 }
 
-func exportControlResults(ctx context.Context, executionTree *execute.ExecutionTree, formats []controldisplay.CheckExportTarget) []error {
+func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, formats []controldisplay.CheckExportTarget) []error {
 	errors := []error{}
 	for _, format := range formats {
 		formatter, err := controldisplay.GetExportFormatter(format.Format)

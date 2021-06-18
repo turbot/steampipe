@@ -1,7 +1,7 @@
 package controldisplay
 
 import (
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 )
 
 type TableRenderer struct {

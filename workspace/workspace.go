@@ -9,13 +9,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/turbot/steampipe/report/reportevents"
-
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
@@ -128,17 +127,6 @@ func (w *Workspace) reset() {
 	w.ModMap = make(map[string]*modconfig.Mod)
 	w.ReportMap = make(map[string]*modconfig.Report)
 	w.PanelMap = make(map[string]*modconfig.Panel)
-}
-
-// determine whether to load files recursively or just from the top level folder
-// if there is a mod file in the workspace folder, load recursively
-func (w *Workspace) setListFlag() {
-
-	if err = scanner.Err(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (w *Workspace) GetSortedBenchmarksAndControlNames() []string {
