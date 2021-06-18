@@ -82,7 +82,7 @@ echo "Removing downloaded archive"
 echo $zip_location
 rm "$zip_location"
 
-sleep 5
+sleep 2
 
 if ! command -v steampipe >/dev/null; then
 	echo "Steampipe was installed, but could not be located. Are you sure '$bin_dir' is exported?"
