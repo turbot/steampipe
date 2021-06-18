@@ -180,12 +180,14 @@ func (e *ReportExecutionTree) executePanelSQL(ctx context.Context, query string)
 	for i, row := range queryResult.Rows {
 		rowData := make([]interface{}, len(queryResult.ColTypes))
 		for j, columnVal := range row.(*queryresult.RowResult).Data {
-			// convert the raw result value into a string
-			str, err := display.ColumnValueAsString(columnVal, queryResult.ColTypes[j])
-			if err != nil {
-				return nil, err
+			// if the column is base64 encoded, convert to string
+			if _, ok := columnVal.([]uint8); ok {
+				if columnVal, err = display.ColumnValueAsString(columnVal, queryResult.ColTypes[j]); err != nil {
+					return nil, err
+				}
+
 			}
-			rowData[j] = str
+			rowData[j] = columnVal
 		}
 		res[i+1] = rowData
 	}

@@ -44,6 +44,7 @@ func NewReportRun(report *modconfig.Report, executionTree *ReportExecutionTree) 
 		}
 		r.ReportRuns = append(r.ReportRuns, childRun)
 	}
+
 	for _, childPanel := range report.Panels {
 		childRun := NewPanelRun(childPanel, executionTree)
 		// if our child has not completed, we have not completed
