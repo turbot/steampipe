@@ -83,8 +83,9 @@ echo $zip_location
 rm "$zip_location"
 
 echo "Steampipe was installed successfully to $exe"
-if command -v steampipe >/dev/null; then
-	echo "Run 'steampipe --help' to get started"
-else
-    echo "Steampipe was installed, but could not be located. Are you sure '$bin_dir' is exported?"
+if ! command -v steampipe >/dev/null; then
+	echo "Steampipe was installed, but could not be located. Are you sure '$bin_dir' is exported?"
+	exit 1
 fi
+
+echo "Run 'steampipe --help' to get started"
