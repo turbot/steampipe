@@ -118,7 +118,25 @@ jobs:
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh
           steampipe service stop --force
+   
+  shell_check:
+    name: Shell Check (install.sh)
+    strategy:
+      matrix:
+        platform: [ ubuntu-latest ]
+    runs-on: ${{ matrix.platform }}
+    steps:
 
+      - name: Checkout
+        uses: actions/checkout@v2
+  
+      - name: ShellCheck install.sh
+        timeout-minutes: 5
+        run: |
+          # only runs on Linux platform in Actions
+          # for macos, do a #brew install shellcheck# first
+          shellcheck $GITHUB_WORKSPACE/install.sh
+          
   clean_up:
     # let's clean up the artifacts.
     # incase this step isn't reached,
