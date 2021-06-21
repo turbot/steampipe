@@ -43,10 +43,10 @@ mkdir -p "${tmp_dir}"
 tmp_dir="${tmp_dir%/}"
 
 echo "Created temporary directory at $tmp_dir. Changing to $tmp_dir"
-cd $tmp_dir
+cd "$tmp_dir"
 
 # set a trap for a clean exit - even in failures
-trap "rm -rf $tmp_dir" EXIT
+trap 'rm -rf $tmp_dir' EXIT
 
 case $(uname -sm) in
 	"Darwin x86_64") zip_location="$tmp_dir/steampipe.zip" ;;
@@ -58,7 +58,7 @@ echo "Downloading from $steampipe_uri"
 if command -v wget >/dev/null; then
 	# because --show-progress was introduced in 1.16.
 	wget --help | grep -q '\--showprogress' && _FORCE_PROGRESS_BAR="--no-verbose --show-progress" || _FORCE_PROGRESS_BAR=""
-	if ! wget --progress=bar:force:noscroll $_FORCE_PROGRESS_BAR -O "$zip_location" "$steampipe_uri"; then
+	if ! wget --progress=bar:force:noscroll "$_FORCE_PROGRESS_BAR" -O "$zip_location" "$steampipe_uri"; then
         echo "Could not find version $1"
         exit 1
     fi
@@ -74,17 +74,21 @@ fi
 
 echo "Deflating downloaded archive"
 tar -xf "$zip_location" -C "$tmp_dir"
+
 echo "Installing"
 install -d "$bin_dir"
 install "$tmp_dir/steampipe" "$bin_dir"
+
+echo "Applying necessary permissions"
 chmod +x $exe
+
 echo "Removing downloaded archive"
-echo $zip_location
 rm "$zip_location"
+
+echo "Steampipe was installed successfully to $exe"
 
 if ! command -v $bin_dir/steampipe >/dev/null; then
 	echo "Steampipe was installed, but could not be executed. Are you sure '$bin_dir/steampipe' has the necessary permissions?"
 	exit 1
 fi
 
-echo "Steampipe was installed successfully to $exe"
