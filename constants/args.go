@@ -7,6 +7,7 @@ const (
 	ArgTable                   = "table"
 	ArgLine                    = "line"
 	ArgForce                   = "force"
+	ArgAll                     = "all"
 	ArgTimer                   = "timing"
 	ArgOn                      = "on"
 	ArgOff                     = "off"

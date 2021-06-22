@@ -108,7 +108,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 			close(checkedPreviousInstances)
 			display.StopSpinner(s)
 		}()
-		if processes, err := findAllSteampipePostgresInstance(); err == nil {
+		if processes, err := FindAllSteampipePostgresInstances(); err == nil {
 			for _, process := range processes {
 				err := killProcessTree(process)
 				if err != nil {

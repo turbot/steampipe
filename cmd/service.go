@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"strings"
 
+	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -75,7 +77,8 @@ func serviceStatusCmd() *cobra.Command {
 Report current status of the Steampipe database service.`,
 	}
 
-	cmdconfig.OnCmd(cmd)
+	cmdconfig.OnCmd(cmd).
+		AddBoolFlag(constants.ArgAll, "", false, "Bypasses the INSTALL_DIR and reports status of all running steampipe services")
 
 	return cmd
 }
@@ -231,6 +234,27 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 
 	if !db.IsInstalled() {
 		fmt.Println("Steampipe database service is NOT installed")
+	} else if viper.GetBool(constants.ArgAll) {
+		var processes []*psutils.Process
+		var err error
+
+		gotDetails := make(chan bool)
+		sp := display.StartSpinnerAfterDelay("Getting details", constants.SpinnerShowTimeout, gotDetails)
+		defer func() {
+			close(gotDetails)
+			display.StopSpinner(sp)
+			printAllStatus(processes)
+		}()
+
+		processes, err = db.FindAllSteampipePostgresInstances()
+		if err != nil {
+			utils.ShowError(err)
+			return
+		}
+		if len(processes) == 0 {
+			fmt.Println("There are no steampipe services running")
+			return
+		}
 	} else {
 		if info, err := db.GetStatus(); err != nil {
 			utils.ShowError(fmt.Errorf("Could not get Steampipe database service status"))
@@ -241,6 +265,41 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
+}
+
+func printAllStatus(processes []*psutils.Process) {
+	headers := []string{"#PID", "Install Directory", "Port", "Listen"}
+	rows := [][]string{}
+
+	for _, process := range processes {
+		pid, installDir, port, listen := getServiceProcessDetails(process)
+		rows = append(rows, []string{pid, installDir, port, string(listen)})
+	}
+
+	display.ShowWrappedTable(headers, rows, false)
+}
+
+func getServiceProcessDetails(process *psutils.Process) (string, string, string, db.StartListenType) {
+	cmdLine, _ := process.CmdlineSlice()
+
+	installDir := strings.TrimSuffix(cmdLine[0], "/db/12.1.0/postgres/bin/postgres")
+	var port string
+	var listenType db.StartListenType
+
+	for idx, param := range cmdLine {
+		if param == "-p" {
+			port = cmdLine[idx+1]
+		}
+		if strings.HasPrefix(param, "listen_addresses") {
+			if strings.Contains(param, "localhost") {
+				listenType = db.ListenTypeLocal
+			} else {
+				listenType = db.ListenTypeNetwork
+			}
+		}
+	}
+
+	return fmt.Sprintf("%d", process.Pid), installDir, port, listenType
 }
 
 func printStatus(info *db.RunningDBInstanceInfo) {
