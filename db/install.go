@@ -49,7 +49,7 @@ func EnsureDBInstalled() {
 
 	log.Println("[TRACE] calling killPreviousInstanceIfAny")
 	killPreviousSpinner := display.ShowSpinner(fmt.Sprintf("Cleanup any Steampipe processes..."))
-	killPreviousInstanceIfAny()
+	killInstanceIfAny()
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
 	err := removeRunningInstanceInfo()
 	display.StopSpinner(killPreviousSpinner)

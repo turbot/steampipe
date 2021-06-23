@@ -26,10 +26,6 @@ const (
 	ServiceStopFailed
 	// ServiceStopTimedOut :: StopStatus - service stop attempt timed out
 	ServiceStopTimedOut
-	// ServiceStopFailed_IsImplicit :: StopStatus - when service is running implicit to a different command
-	ServiceStopFailed_IsImplicit
-	// ServiceStopFailed_HasClients :: StopStatus - when service has client connected to it
-	ServiceStopFailed_HasClients
 )
 
 // Shutdown :: closes the client connection and stops the
@@ -108,16 +104,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 			close(checkedPreviousInstances)
 			display.StopSpinner(s)
 		}()
-		if processes, err := FindAllSteampipePostgresInstances(); err == nil {
-			for _, process := range processes {
-				err := killProcessTree(process)
-				if err != nil {
-					return ServiceStopFailed, err
-				}
-			}
-		} else {
-			return ServiceStopFailed, err
-		}
+		killInstanceIfAny()
 		return ServiceStopped, nil
 	}
 

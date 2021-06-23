@@ -24,6 +24,10 @@ type RunningDBInstanceInfo struct {
 	Database   string
 }
 
+func (r *RunningDBInstanceInfo) Save() error {
+	return saveRunningInstanceInfo(r)
+}
+
 func saveRunningInstanceInfo(info *RunningDBInstanceInfo) error {
 	if content, err := json.Marshal(info); err != nil {
 		return err

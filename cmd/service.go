@@ -146,20 +146,55 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	db.EnsureDBInstalled()
 
+	info, err := db.GetStatus()
+	if err != nil {
+		utils.ShowErrorWithMessage(err, "could not fetch service information")
+		return
+	}
+
+	if info != nil {
+		if info.Invoker == db.InvokerService {
+			fmt.Println("Service is already running")
+			printStatus(info)
+			return
+		}
+		// check that we have the same port and listen parameters
+		if port != info.Port {
+			utils.ShowError(fmt.Errorf("cannot convert service - port does not match with running instance"))
+			return
+		}
+		if listen != info.ListenType {
+			utils.ShowError(fmt.Errorf("cannot convert service - listen binding does not match with running instance"))
+			return
+		}
+
+		// convert
+		info.Invoker = db.InvokerService
+		err = info.Save()
+		if err != nil {
+			utils.ShowErrorWithMessage(err, "conversion failed")
+		}
+		printStatus(info)
+		return
+	}
+
 	status, err := db.StartDB(cmdconfig.DatabasePort(), listen, invoker)
 	if err != nil {
-		panic(err)
+		utils.ShowError(err)
+		return
 	}
 
 	if status == db.ServiceFailedToStart {
-		panic(fmt.Errorf("Steampipe service failed to start"))
+		utils.ShowError(fmt.Errorf("Steampipe service failed to start"))
+		return
 	}
 
 	if status == db.ServiceAlreadyRunning {
-		panic(fmt.Errorf("Steampipe service is already running"))
+		utils.ShowError(fmt.Errorf("Steampipe service is already running"))
+		return
 	}
 
-	info, _ := db.GetStatus()
+	info, _ = db.GetStatus()
 
 	printStatus(info)
 }
@@ -234,27 +269,10 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 
 	if !db.IsInstalled() {
 		fmt.Println("Steampipe database service is NOT installed")
-	} else if viper.GetBool(constants.ArgAll) {
-		var processes []*psutils.Process
-		var err error
-
-		gotDetails := make(chan bool)
-		sp := display.StartSpinnerAfterDelay("Getting details", constants.SpinnerShowTimeout, gotDetails)
-		defer func() {
-			close(gotDetails)
-			display.StopSpinner(sp)
-			printAllStatus(processes)
-		}()
-
-		processes, err = db.FindAllSteampipePostgresInstances()
-		if err != nil {
-			utils.ShowError(err)
-			return
-		}
-		if len(processes) == 0 {
-			fmt.Println("There are no steampipe services running")
-			return
-		}
+		return
+	}
+	if viper.GetBool(constants.ArgAll) {
+		showAllStatus()
 	} else {
 		if info, err := db.GetStatus(); err != nil {
 			utils.ShowError(fmt.Errorf("Could not get Steampipe database service status"))
@@ -264,10 +282,28 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 			fmt.Println("Steampipe database service is NOT running")
 		}
 	}
-
 }
 
-func printAllStatus(processes []*psutils.Process) {
+func showAllStatus() {
+	var processes []*psutils.Process
+	var err error
+
+	gotDetails := make(chan bool)
+	sp := display.StartSpinnerAfterDelay("Getting details", constants.SpinnerShowTimeout, gotDetails)
+
+	processes, err = db.FindAllSteampipePostgresInstances()
+	close(gotDetails)
+	display.StopSpinner(sp)
+
+	if err != nil {
+		utils.ShowError(err)
+		return
+	}
+
+	if len(processes) == 0 {
+		fmt.Println("There are no steampipe services running")
+		return
+	}
 	headers := []string{"#PID", "Install Directory", "Port", "Listen"}
 	rows := [][]string{}
 

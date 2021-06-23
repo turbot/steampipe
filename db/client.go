@@ -191,6 +191,7 @@ func (c *Client) ConnectionMap() *steampipeconfig.ConnectionMap {
 func (c *Client) loadSchema() {
 	utils.LogTime("db.loadSchema start")
 	defer utils.LogTime("db.loadSchema end")
+
 	tablesResult, err := c.getSchemaFromDB()
 	utils.FailOnError(err)
 
@@ -206,6 +207,7 @@ func (c *Client) loadSchema() {
 func (c *Client) getSchemaFromDB() (*sql.Rows, error) {
 	utils.LogTime("db.getSchemaFromDB start")
 	defer utils.LogTime("db.getSchemaFromDB end")
+
 	query := `
 		SELECT 
 			table_name, 

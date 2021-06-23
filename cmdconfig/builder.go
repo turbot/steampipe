@@ -20,6 +20,7 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 	cfg.cmd = cmd
 	cfg.bindings = map[string]*pflag.Flag{}
 
+	// we will wrap over these two function - need references to call them
 	originalPreRun := cfg.cmd.PreRun
 	originalRun := cfg.cmd.Run
 

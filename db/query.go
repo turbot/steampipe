@@ -21,10 +21,6 @@ func EnsureDbAndStartService(invoker Invoker) error {
 		return errors.New("could not retrieve service status")
 	}
 
-	// if status != nil && status.Invoker != InvokerService {
-	// 	return fmt.Errorf("You already have a %s session open. To run multiple sessions, first run %s.\nTo kill existing sessions run %s", constants.Bold(fmt.Sprintf("steampipe %s", status.Invoker)), constants.Bold("steampipe service start"), constants.Bold("steampipe service stop --force"))
-	// }
-
 	if status == nil {
 		// the db service is not started - start it
 		StartService(invoker)
@@ -36,7 +32,7 @@ func EnsureDbAndStartService(invoker Invoker) error {
 func RunInteractivePrompt(workspace WorkspaceResourceProvider, client *Client) (*queryresult.ResultStreamer, error) {
 	resultsStreamer := queryresult.NewResultStreamer()
 
-	interactiveClient, err := newInteractiveClient(workspace, client, resultsStreamer, clientReadyChannel)
+	interactiveClient, err := newInteractiveClient(workspace, client, resultsStreamer)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
 		Shutdown(client, InvokerQuery)
