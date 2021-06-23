@@ -58,7 +58,7 @@ echo "Downloading from $steampipe_uri"
 if command -v wget >/dev/null; then
 	# because --show-progress was introduced in 1.16.
 	wget --help | grep -q '\--showprogress' && _FORCE_PROGRESS_BAR="--no-verbose --show-progress" || _FORCE_PROGRESS_BAR=""
-	if ! wget --progress=bar:force:noscroll "$_FORCE_PROGRESS_BAR" -O "$zip_location" "$steampipe_uri"; then
+	if ! wget --progress=bar:force:noscroll $_FORCE_PROGRESS_BAR -O "$zip_location" "$steampipe_uri"; then
         echo "Could not find version $1"
         exit 1
     fi
