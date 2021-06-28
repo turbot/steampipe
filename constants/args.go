@@ -18,6 +18,8 @@ const (
 	ArgRefresh                 = "refresh"
 	ArgUpdateCheck             = "update-check"
 	ArgInstallDir              = "install-dir"
+	ArgConfigDir               = "config-dir"
+	ArgLogDir                  = "log-dir"
 	ArgWorkspace               = "workspace"
 	ArgSearchPath              = "search-path"
 	ArgSearchPathPrefix        = "search-path-prefix"

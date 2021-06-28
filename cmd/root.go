@@ -60,10 +60,14 @@ Getting started:
 
 func InitCmd() {
 
-	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
+	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the steampipe install directory")
+	rootCmd.PersistentFlags().String(constants.ArgConfigDir, constants.DefaultConfigDir, "Path to the steampipe config directory")
+	rootCmd.PersistentFlags().String(constants.ArgLogDir, constants.DefaultLogDir, "Path to the steampipe logs directory")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace (default to current working directory) ")
 
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
+	viper.BindPFlag(constants.ArgConfigDir, rootCmd.PersistentFlags().Lookup(constants.ArgConfigDir))
+	viper.BindPFlag(constants.ArgLogDir, rootCmd.PersistentFlags().Lookup(constants.ArgLogDir))
 	viper.BindPFlag(constants.ArgWorkspace, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspace))
 
 	AddCommands()
@@ -73,7 +77,7 @@ func InitCmd() {
 // initConfig reads in config file and ENV variables if set.
 func initGlobalConfig() {
 	// set global containing install dir
-	setInstallDir()
+	setCustomPaths()
 
 	workspace := viper.GetString(constants.ArgWorkspace)
 	if workspace == "" {
@@ -110,15 +114,27 @@ func createLogger() {
 	log.SetFlags(0)
 }
 
-// SteampipeDir :: set the top level ~/.steampipe folder (creates if it doesnt exist)
-func setInstallDir() {
-	installDir, err := helpers.Tildefy(viper.GetString(constants.ArgInstallDir))
-	utils.FailOnErrorWithMessage(err, fmt.Sprintf("failed to sanitize install directory"))
-	if _, err := os.Stat(installDir); os.IsNotExist(err) {
-		err = os.MkdirAll(installDir, 0755)
-		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
+// setCustomPaths :: set the top level ~/.steampipe folder (creates if it doesnt exist)
+func setCustomPaths() {
+	ensureCustomDirectory(viper.GetString(constants.ArgInstallDir))
+	ensureCustomDirectory(viper.GetString(constants.ArgInstallDir))
+	customPaths := &constants.CustomPaths{
+		InstallDir: ensureCustomDirectory(viper.GetString(constants.ArgInstallDir)),
+		ConfigDir:  ensureCustomDirectory(viper.GetString(constants.ArgConfigDir)),
+		LogDir:     ensureCustomDirectory(viper.GetString(constants.ArgLogDir)),
 	}
-	constants.SteampipeDir = installDir
+	// populate from config...
+	constants.SetCustomPaths(customPaths)
+}
+
+func ensureCustomDirectory(dir string) string {
+	fullPath, err := helpers.Tildefy(dir)
+	utils.FailOnErrorWithMessage(err, fmt.Sprintf("failed to sanitize directory %s", dir))
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		err = os.MkdirAll(fullPath, 0755)
+		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create directory: %s", fullPath))
+	}
+	return fullPath
 }
 
 func AddCommands() {

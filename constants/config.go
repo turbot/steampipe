@@ -11,19 +11,29 @@ import (
 // Constants for Config
 const (
 	DefaultInstallDir        = "~/.steampipe"
+	DefaultConfigDir         = "~/.steampipe/config"
+	DefaultLogDir            = "~/.steampipe/logs"
 	ConnectionsStateFileName = "connection.json"
 )
 
-var SteampipeDir string
+func SetCustomPaths(paths *CustomPaths) {
+	SteampipePaths = paths
+}
+
+type CustomPaths struct {
+	InstallDir string
+	ConfigDir  string
+	LogDir     string
+}
+
+var SteampipePaths *CustomPaths
 
 func steampipeSubDir(dirName string) string {
-	subDir := filepath.Join(SteampipeDir, dirName)
-
+	subDir := filepath.Join(SteampipePaths.InstallDir, dirName)
 	if _, err := os.Stat(subDir); os.IsNotExist(err) {
 		err = os.MkdirAll(subDir, 0755)
 		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create %s directory", dirName))
 	}
-
 	return subDir
 }
 
@@ -44,7 +54,7 @@ func ModsDir() string {
 
 // ConfigDir :: returns the path to the config directory (creates if missing)
 func ConfigDir() string {
-	return steampipeSubDir("config")
+	return SteampipePaths.ConfigDir
 }
 
 // InternalDir :: returns the path to the internal directory (creates if missing)
@@ -59,7 +69,7 @@ func DatabaseDir() string {
 
 // LogDir :: returns the path to the db log directory (creates if missing)
 func LogDir() string {
-	return steampipeSubDir("logs")
+	return SteampipePaths.LogDir
 }
 
 // TempDir :: returns the path to the steampipe tmp directory (creates if missing)

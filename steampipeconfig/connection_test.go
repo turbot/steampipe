@@ -418,7 +418,7 @@ func TestGetConnectionsToUpdate(t *testing.T) {
 	// set steampipe dir
 	os.Chdir("./test_data/connections_to_update")
 	wd, _ := os.Getwd()
-	constants.SteampipeDir = wd
+	constants.SteampipePaths.InstallDir = wd
 
 	for name, test := range testCasesGetConnectionsToUpdate {
 		// setup connection config

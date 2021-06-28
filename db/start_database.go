@@ -167,7 +167,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (startResult Sta
 		// Data Directory
 		"-D", getDataLocation())
 
-	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", constants.SteampipeDir))
+	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", constants.SteampipePaths.InstallDir))
 
 	log.Println("[TRACE] postgres start command: ", postgresCmd.String())
 	//log.Println("[TRACE] postgres environment: ", postgresCmd.Env)

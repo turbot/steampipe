@@ -19,7 +19,7 @@ func StartService(invoker Invoker) {
 	log.Println("[TRACE] start service")
 	// spawn a process to start the service, passing refresh=false to ensure we DO NOT refresh connections
 	// (as we will do that ourselves)
-	cmd := exec.Command(os.Args[0], "service", "start", "--database-listen", "local", "--refresh=false", "--invoker", string(invoker), "--install-dir", constants.SteampipeDir)
+	cmd := exec.Command(os.Args[0], "service", "start", "--database-listen", "local", "--refresh=false", "--invoker", string(invoker), "--install-dir", constants.SteampipePaths.InstallDir, "--config-dir", constants.SteampipePaths.ConfigDir, "--log-dir", constants.SteampipePaths.LogDir)
 	startedAt := time.Now()
 	spinnerShown := false
 	startedChannel := make(chan bool, 1)

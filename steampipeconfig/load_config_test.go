@@ -261,7 +261,7 @@ func TestLoadConfig(t *testing.T) {
 		}
 
 		// set SteampipeDir
-		constants.SteampipeDir = steampipeDir
+		constants.SteampipePaths.InstallDir = steampipeDir
 
 		// now load config
 		config, err := newSteampipeConfig(workspaceDir, "")
