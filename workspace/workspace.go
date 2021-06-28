@@ -144,7 +144,7 @@ func (w *Workspace) GetSortedBenchmarksAndControlNames() []string {
 
 func (w *Workspace) GetSortedNamedQueryNames() []string {
 	namedQueries := []string{}
-	for key := range w.GetNamedQueryMap() {
+	for key := range w.GetQueryMap() {
 		namedQueries = append(namedQueries, key)
 	}
 	sort.Strings(namedQueries)
@@ -157,21 +157,37 @@ func (w *Workspace) Close() {
 	}
 }
 
-func (w *Workspace) GetNamedQueryMap() map[string]*modconfig.Query {
+func (w *Workspace) GetQueryMap() map[string]*modconfig.Query {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
 	return w.QueryMap
 }
 
-func (w *Workspace) GetNamedQuery(queryName string) (*modconfig.Query, bool) {
+func (w *Workspace) GetQuery(queryName string) (*modconfig.Query, bool) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
 	if query, ok := w.QueryMap[queryName]; ok {
 		return query, true
 	}
+	return nil, false
+}
 
+func (w *Workspace) GetControlMap() map[string]*modconfig.Control {
+	w.loadLock.Lock()
+	defer w.loadLock.Unlock()
+
+	return w.ControlMap
+}
+
+func (w *Workspace) GetControl(controlName string) (*modconfig.Control, bool) {
+	w.loadLock.Lock()
+	defer w.loadLock.Unlock()
+
+	if control, ok := w.ControlMap[controlName]; ok {
+		return control, true
+	}
 	return nil, false
 }
 

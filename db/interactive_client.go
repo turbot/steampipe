@@ -27,7 +27,7 @@ import (
 type InteractiveClient struct {
 	client                  *Client
 	resultsStreamer         *queryresult.ResultStreamer
-	workspace               NamedQueryProvider
+	workspace               WorkspaceResourceProvider
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
 	interactiveQueryHistory *queryhistory.QueryHistory
@@ -35,7 +35,7 @@ type InteractiveClient struct {
 	activeQueryCancelFunc   context.CancelFunc
 }
 
-func newInteractiveClient(workspace NamedQueryProvider, client *Client, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+func newInteractiveClient(workspace WorkspaceResourceProvider, client *Client, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	return &InteractiveClient{
 		client:                  client,
 		resultsStreamer:         resultsStreamer,
@@ -222,11 +222,21 @@ func (c *InteractiveClient) executor(line string) {
 	// expand the buffer out into 'query'
 	query := strings.Join(c.interactiveBuffer, "\n")
 
-	namedQuery, isNamedQuery := c.workspace.GetNamedQuery(query)
+	namedQuery, isNamedQuery := c.workspace.GetQuery(query)
 
 	// if it is a multiline query, execute even without `;`
 	if isNamedQuery {
 		query = *namedQuery.SQL
+	} else {
+		// should we execute?
+		if !c.shouldExecute(query) {
+			return
+		}
+	}
+
+	control, isControl := c.workspace.GetControl(query)
+	if isControl {
+		query = *control.SQL
 	} else {
 		// should we execute?
 		if !c.shouldExecute(query) {
@@ -390,12 +400,20 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 	var res []prompt.Suggest
 	// add all the queries in the workspace
-	for name, q := range c.workspace.GetNamedQueryMap() {
+	for queryName, q := range c.workspace.GetQueryMap() {
 		description := "named query"
 		if q.Description != nil {
 			description += fmt.Sprintf(": %s", *q.Description)
 		}
-		res = append(res, prompt.Suggest{Text: name, Description: description})
+		res = append(res, prompt.Suggest{Text: queryName, Description: description})
+	}
+	// add all the controls in the workspace
+	for controlName, c := range c.workspace.GetControlMap() {
+		description := "control"
+		if c.Description != nil {
+			description += fmt.Sprintf(": %s", *c.Description)
+		}
+		res = append(res, prompt.Suggest{Text: controlName, Description: description})
 	}
 	sort.Slice(res, func(i, j int) bool {
 		return res[i].Text < res[j].Text
