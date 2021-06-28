@@ -29,8 +29,12 @@ func GetQueries(args []string, workspace *workspace.Workspace) []string {
 // the second return value indicates whether the arg was resolved as a named query/SQL file
 func GetQueryFromArg(arg string, workspace *workspace.Workspace) (string, bool) {
 	// 1) is this a named query
-	if namedQuery, ok := workspace.GetNamedQuery(arg); ok {
+	if namedQuery, ok := workspace.GetQuery(arg); ok {
 		return typeHelpers.SafeString(namedQuery.SQL), true
+	}
+	// check if this is a control
+	if control, ok := workspace.GetControl(arg); ok {
+		return typeHelpers.SafeString(control.SQL), true
 	}
 
 	// 	2) is this a file
