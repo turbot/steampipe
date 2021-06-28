@@ -15,6 +15,7 @@ const (
 	ArgPort                    = "database-port"
 	ArgListenAddressDeprecated = "listen"
 	ArgListenAddress           = "database-listen"
+	ArgForeground              = "foreground"
 	ArgInvoker                 = "invoker"
 	ArgRefresh                 = "refresh"
 	ArgUpdateCheck             = "update-check"

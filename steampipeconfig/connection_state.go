@@ -14,6 +14,7 @@ import (
 func GetConnectionState(schemas []string) (ConnectionMap, error) {
 	utils.LogTime("steampipeconfig.GetConnectionState start")
 	defer utils.LogTime("steampipeconfig.GetConnectionState end")
+
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	connectionState, err := loadConnectionStateFile()
 	if err != nil {

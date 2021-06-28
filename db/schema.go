@@ -24,6 +24,7 @@ type schemaRecord struct {
 func buildSchemaMetadata(rows *sql.Rows) (*schema.Metadata, error) {
 	utils.LogTime("db.buildSchemaMetadata start")
 	defer utils.LogTime("db.buildSchemaMetadata end")
+
 	records, err := getSchemaRecordsFromRows(rows)
 	if err != nil {
 		return nil, err
@@ -66,6 +67,7 @@ func buildSchemaMetadata(rows *sql.Rows) (*schema.Metadata, error) {
 func getSchemaRecordsFromRows(rows *sql.Rows) ([]schemaRecord, error) {
 	utils.LogTime("db.getSchemaRecordsFromRows start")
 	defer utils.LogTime("db.getSchemaRecordsFromRows end")
+
 	records := []schemaRecord{}
 
 	// set this to the number of cols that are getting fetched

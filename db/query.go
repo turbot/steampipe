@@ -13,6 +13,7 @@ import (
 func EnsureDbAndStartService(invoker Invoker) error {
 	utils.LogTime("db.EnsureDbAndStartService start")
 	defer utils.LogTime("db.EnsureDbAndStartService end")
+
 	log.Println("[TRACE] db.EnsureDbAndStartService start")
 
 	EnsureDBInstalled()
@@ -23,7 +24,7 @@ func EnsureDbAndStartService(invoker Invoker) error {
 
 	if status == nil {
 		// the db service is not started - start it
-		StartService(invoker)
+		StartImplicitService(invoker)
 	}
 	return nil
 }

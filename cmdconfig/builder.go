@@ -38,6 +38,7 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 	cfg.cmd.Run = func(cmd *cobra.Command, args []string) {
 		utils.LogTime(fmt.Sprintf("cmd.%s.Run start", cmd.CommandPath()))
 		defer utils.LogTime(fmt.Sprintf("cmd.%s.Run end", cmd.CommandPath()))
+
 		originalRun(cmd, args)
 	}
 

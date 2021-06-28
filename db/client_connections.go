@@ -19,6 +19,7 @@ import (
 func (c *Client) RefreshConnections() (bool, error) {
 	utils.LogTime("db.RefreshConnections start")
 	defer utils.LogTime("db.RefreshConnections end")
+
 	// load required connection from global config
 	requiredConnections := steampipeconfig.Config.Connections
 

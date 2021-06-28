@@ -14,11 +14,13 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// StartService :: invokes `steampipe service start --database-listen local --refresh=false --invoker query`
-func StartService(invoker Invoker) {
-	utils.LogTime("db.StartService start")
-	defer utils.LogTime("db.StartService end")
-	log.Println("[TRACE] start service")
+// StartImplicitService :: invokes `steampipe service start --database-listen local --refresh=false --invoker query`
+func StartImplicitService(invoker Invoker) {
+	utils.LogTime("db.StartImplicitService start")
+	defer utils.LogTime("db.StartImplicitService end")
+
+	log.Println("[TRACE] start implicit service")
+
 	// spawn a process to start the service, passing refresh=false to ensure we DO NOT refresh connections
 	// (as we will do that ourselves)
 	cmd := exec.Command(os.Args[0], "service", "start", "--database-listen", "local", "--refresh=false", "--invoker", string(invoker), "--install-dir", constants.SteampipeDir)

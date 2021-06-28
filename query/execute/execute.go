@@ -34,6 +34,7 @@ func RunInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
 func ExecuteQueries(ctx context.Context, queries []string, client *db.Client) int {
 	utils.LogTime("query.execute.ExecuteQueries start")
 	defer utils.LogTime("query.execute.ExecuteQueries end")
+
 	// run all queries
 	failures := 0
 	for i, q := range queries {
@@ -52,6 +53,7 @@ func ExecuteQueries(ctx context.Context, queries []string, client *db.Client) in
 func executeQuery(ctx context.Context, queryString string, client *db.Client) error {
 	utils.LogTime("query.execute.executeQuery start")
 	defer utils.LogTime("query.execute.executeQuery end")
+
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.ExecuteQuery(ctx, queryString, client)
 	if err != nil {

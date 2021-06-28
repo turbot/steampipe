@@ -20,6 +20,7 @@ const TagColumn = "column"
 func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client *Client) error {
 	utils.LogTime("db.UpdateMetadataTables start")
 	defer utils.LogTime("db.UpdateMetadataTables end")
+
 	// get the create sql for each table type
 	clearSql := getClearTablesSql()
 
@@ -38,6 +39,7 @@ func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client *Client) error {
 	utils.LogTime("db.CreateMetadataTables start")
 	defer utils.LogTime("db.CreateMetadataTables end")
+
 	// get the sql for columns which every table has
 	commonColumnSql := getColumnDefinitions(modconfig.ResourceMetadata{})
 

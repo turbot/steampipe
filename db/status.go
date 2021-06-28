@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 
-	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -24,7 +23,7 @@ func GetStatus() (*RunningDBInstanceInfo, error) {
 		return nil, nil
 	}
 
-	pidExists, err := psutils.PidExists(int32(info.Pid))
+	pidExists, err := PidExists(info.Pid)
 	if err != nil {
 		return nil, err
 	}

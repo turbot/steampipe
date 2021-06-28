@@ -3,7 +3,10 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
+	"os/signal"
 	"strings"
+	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/cobra"
@@ -56,8 +59,10 @@ connection from any Postgres compatible database client.`,
 		AddIntFlag(constants.ArgPort, "", constants.DatabaseDefaultPort, "Database service port.").
 		AddIntFlag(constants.ArgPortDeprecated, "", constants.DatabaseDefaultPort, "Database service port.", cmdconfig.FlagOptions.Deprecated(constants.ArgPort)).
 		// for now default listen address to empty so we fall back to the default of the deprecated arg
-		AddStringFlag(constants.ArgListenAddress, "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)").
-		AddStringFlag(constants.ArgListenAddressDeprecated, "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)", cmdconfig.FlagOptions.Deprecated(constants.ArgListenAddress)).
+		AddStringFlag(constants.ArgListenAddress, "", string(db.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").
+		AddStringFlag(constants.ArgListenAddressDeprecated, "", string(db.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)", cmdconfig.FlagOptions.Deprecated(constants.ArgListenAddress)).
+		// foreground enables the service to run in the foreground - till exit
+		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
 		// Hidden flags for internal use
 		AddStringFlag(constants.ArgInvoker, "", string(db.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden()).
 		AddBoolFlag(constants.ArgRefresh, "", true, "Refresh connections on startup", cmdconfig.FlagOptions.Hidden())
@@ -95,7 +100,7 @@ func serviceStopCmd() *cobra.Command {
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants.ArgForce, "", false, "Forces the service to shutdown, releasing all open connections and ports")
+		AddBoolFlag(constants.ArgForce, "", false, "Forces all services to shutdown, releasing all open connections and ports")
 
 	return cmd
 }
@@ -155,16 +160,16 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	if info != nil {
 		if info.Invoker == db.InvokerService {
 			fmt.Println("Service is already running")
-			printStatus(info)
 			return
 		}
+
 		// check that we have the same port and listen parameters
 		if port != info.Port {
-			utils.ShowError(fmt.Errorf("cannot convert service - port does not match with running instance"))
+			utils.ShowError(fmt.Errorf("service is already running on port %d - cannot change port while it's running", info.Port))
 			return
 		}
 		if listen != info.ListenType {
-			utils.ShowError(fmt.Errorf("cannot convert service - listen binding does not match with running instance"))
+			utils.ShowError(fmt.Errorf("service is already running and listening on %s - cannot change listen type while it's running", info.ListenType))
 			return
 		}
 
@@ -172,31 +177,76 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		info.Invoker = db.InvokerService
 		err = info.Save()
 		if err != nil {
-			utils.ShowErrorWithMessage(err, "conversion failed")
+			utils.ShowErrorWithMessage(err, "service was already running, but could not make it persistent")
 		}
-		printStatus(info)
-		return
+	} else {
+		status, err := db.StartDB(cmdconfig.DatabasePort(), listen, invoker, viper.GetBool(constants.ArgRefresh))
+		if err != nil {
+			utils.ShowError(err)
+			return
+		}
+
+		if status == db.ServiceFailedToStart {
+			utils.ShowError(fmt.Errorf("steampipe service failed to start"))
+			return
+		}
+
+		if status == db.ServiceAlreadyRunning {
+			utils.ShowError(fmt.Errorf("steampipe service is already running"))
+			return
+		}
+
+		info, _ = db.GetStatus()
 	}
-
-	status, err := db.StartDB(cmdconfig.DatabasePort(), listen, invoker)
-	if err != nil {
-		utils.ShowError(err)
-		return
-	}
-
-	if status == db.ServiceFailedToStart {
-		utils.ShowError(fmt.Errorf("Steampipe service failed to start"))
-		return
-	}
-
-	if status == db.ServiceAlreadyRunning {
-		utils.ShowError(fmt.Errorf("Steampipe service is already running"))
-		return
-	}
-
-	info, _ = db.GetStatus()
-
 	printStatus(info)
+
+	if viper.GetBool(constants.ArgForeground) {
+		fmt.Println("Hit Ctrl+C to stop the service")
+
+		sigIntChannel := make(chan os.Signal, 1)
+		signal.Notify(sigIntChannel, os.Interrupt)
+
+		checkTimer := time.NewTicker(100 * time.Millisecond)
+		defer checkTimer.Stop()
+
+		var lastCtrlC time.Time
+
+		for {
+			select {
+			case <-checkTimer.C:
+				// get the current status
+				newInfo, err := db.GetStatus()
+				if err != nil {
+					continue
+				}
+				if newInfo == nil {
+					fmt.Println("Service stopped")
+					return
+				}
+			case <-sigIntChannel:
+				fmt.Print("\r")
+				count, err := db.GetCountOfConnectedClients()
+				if err != nil {
+					return
+				}
+				if count > 0 {
+					if lastCtrlC.IsZero() || time.Since(lastCtrlC) > 30*time.Second {
+						lastCtrlC = time.Now()
+						fmt.Println(`    
+Clients are still connected to the DB.
+
+If you still want to shut it down, press Ctrl+C again
+					`)
+						continue
+					}
+				}
+				fmt.Println("Stopping service")
+				db.StopDB(false, invoker)
+				fmt.Println("Service Stopped")
+				return
+			}
+		}
+	}
 }
 
 func runServiceRestartCmd(cmd *cobra.Command, args []string) {
@@ -239,7 +289,7 @@ to force a restart.
 		return
 	}
 
-	status, err := db.StartDB(currentServiceStatus.Port, currentServiceStatus.ListenType, currentServiceStatus.Invoker)
+	status, err := db.StartDB(currentServiceStatus.Port, currentServiceStatus.ListenType, currentServiceStatus.Invoker, viper.GetBool(constants.ArgRefresh))
 	if err != nil {
 		utils.ShowError(err)
 		return
@@ -275,7 +325,7 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 		showAllStatus()
 	} else {
 		if info, err := db.GetStatus(); err != nil {
-			utils.ShowError(fmt.Errorf("Could not get Steampipe database service status"))
+			utils.ShowError(fmt.Errorf("could not get Steampipe database service status"))
 		} else if info != nil {
 			printStatus(info)
 		} else {
@@ -288,11 +338,11 @@ func showAllStatus() {
 	var processes []*psutils.Process
 	var err error
 
-	gotDetails := make(chan bool)
-	sp := display.StartSpinnerAfterDelay("Getting details", constants.SpinnerShowTimeout, gotDetails)
+	doneFetchingDetailsChan := make(chan bool)
+	sp := display.StartSpinnerAfterDelay("Getting details", constants.SpinnerShowTimeout, doneFetchingDetailsChan)
 
 	processes, err = db.FindAllSteampipePostgresInstances()
-	close(gotDetails)
+	close(doneFetchingDetailsChan)
 	display.StopSpinner(sp)
 
 	if err != nil {
@@ -304,7 +354,7 @@ func showAllStatus() {
 		fmt.Println("There are no steampipe services running")
 		return
 	}
-	headers := []string{"#PID", "Install Directory", "Port", "Listen"}
+	headers := []string{"PID", "Install Directory", "Port", "Listen"}
 	rows := [][]string{}
 
 	for _, process := range processes {
@@ -318,7 +368,7 @@ func showAllStatus() {
 func getServiceProcessDetails(process *psutils.Process) (string, string, string, db.StartListenType) {
 	cmdLine, _ := process.CmdlineSlice()
 
-	installDir := strings.TrimSuffix(cmdLine[0], "/db/12.1.0/postgres/bin/postgres")
+	installDir := strings.TrimSuffix(cmdLine[0], db.PostgresBinaryExecutableLocationRelativeToInstallDir)
 	var port string
 	var listenType db.StartListenType
 
@@ -356,7 +406,7 @@ Connection string:
 
 	postgres://%v:%v@%v:%v/%v?sslmode=disable
 
-Steampipe service is running in the background.
+Managing Steampipe service:
 
 	# Get status of the service
 	steampipe service status
@@ -371,9 +421,9 @@ Steampipe service is running in the background.
 		statusMessage = fmt.Sprintf(msg, strings.Join(info.Listen, ", "), info.Port, info.Database, info.User, info.Password, info.User, info.Password, info.Listen[0], info.Port, info.Database)
 	} else {
 		msg := `
-Steampipe service is running exclusively for an active %s session.
+Steampipe service is running exclusively for an active %s session. The service will exit when all active session exit.
 
-To run multiple sessions against the service, close the %s session and use %s to start the service in the background.
+To persist the service, close the %s session and use %s.
 `
 
 		statusMessage = fmt.Sprintf(

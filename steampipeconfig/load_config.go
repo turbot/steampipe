@@ -49,6 +49,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 func newSteampipeConfig(workspacePath string, commandName string) (steampipeConfig *SteampipeConfig, err error) {
 	utils.LogTime("steampipeconfig.newSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.newSteampipeConfig end")
+
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)

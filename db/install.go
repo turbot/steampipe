@@ -100,7 +100,7 @@ func EnsureDBInstalled() {
 	}
 
 	startServiceSpinner := display.ShowSpinner(fmt.Sprintf("Configuring database..."))
-	StartService(InvokerInstaller)
+	StartImplicitService(InvokerInstaller)
 	err = installSteampipeDatabase(steampipePassword, rootPassword)
 	display.StopSpinner(startServiceSpinner)
 	if err != nil {
@@ -254,6 +254,7 @@ func installFDW(firstSetup bool) (string, error) {
 func IsInstalled() bool {
 	utils.LogTime("db.IsInstalled start")
 	defer utils.LogTime("db.IsInstalled end")
+
 	// check that both postgres binary and initdb binary exist
 	// and are executable by us
 

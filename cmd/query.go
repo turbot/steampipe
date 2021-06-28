@@ -40,6 +40,14 @@ Examples:
 
   # Run a specific query directly
   steampipe query "select * from cloud"`,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			// start db if necessary
+			err := db.EnsureDbAndStartService(db.InvokerQuery)
+			utils.FailOnErrorWithMessage(err, "failed to start service")
+		},
+		PostRun: func(cmd *cobra.Command, args []string) {
+			db.Shutdown(nil, db.InvokerQuery)
+		},
 	}
 
 	// Notes:
@@ -108,8 +116,8 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	queries := execute.GetQueries(args, workspace)
 
 	// start db if necessary
-	err = db.EnsureDbAndStartService(db.InvokerQuery)
-	utils.FailOnErrorWithMessage(err, "failed to start service")
+	// err = db.EnsureDbAndStartService(db.InvokerQuery)
+	// utils.FailOnErrorWithMessage(err, "failed to start service")
 
 	// get a db client
 	client, err = db.NewClient(true)
@@ -119,9 +127,9 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)
 	utils.FailOnError(err)
 
-	defer func() {
-		db.Shutdown(client, db.InvokerQuery)
-	}()
+	// defer func() {
+	// 	db.Shutdown(client, db.InvokerQuery)
+	// }()
 
 	// if no query is specified, run interactive prompt
 	if interactiveMode {

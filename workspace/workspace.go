@@ -42,6 +42,7 @@ type Workspace struct {
 func Load(workspacePath string) (*Workspace, error) {
 	utils.LogTime("workspace.Load start")
 	defer utils.LogTime("workspace.Load end")
+
 	// create shell workspace
 	workspace := &Workspace{Path: workspacePath}
 

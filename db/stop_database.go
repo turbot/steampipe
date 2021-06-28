@@ -114,6 +114,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 		return ServiceNotRunning, nil
 	}
 
+	// GetStatus has made sure that the process exists
 	process, err := psutils.NewProcess(int32(info.Pid))
 	if err != nil {
 		return ServiceStopFailed, err
@@ -136,6 +137,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 		close(processKilledChannel)
 		display.StopSpinner(spinner)
 	}()
+
 	err = doThreeStepProcessExit(process)
 	if err != nil {
 		// we couldn't stop it still.
@@ -161,6 +163,10 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 	By the time we actually try to run this sequence, we will have
 	checked that the service can indeed shutdown gracefully,
 	the sequence is there only as a backup.
+
+	We cannot do a simple os.Process().Kill(), since that sends a SIGKILL,
+	which makes PG terminate immediately without saving any state.
+	Its the BIG RED Button.
 **/
 func doThreeStepProcessExit(process *psutils.Process) error {
 	var err error
@@ -200,12 +206,12 @@ func doThreeStepProcessExit(process *psutils.Process) error {
 
 func waitForProcessExit(process *psutils.Process) bool {
 	checkTimer := time.NewTicker(50 * time.Millisecond)
-	timeoutAt := time.After(10 * time.Second)
+	timeoutAt := time.After(2 * time.Second)
 
 	for {
 		select {
 		case <-checkTimer.C:
-			pEx, _ := psutils.PidExists(process.Pid)
+			pEx, _ := PidExists(int(process.Pid))
 			if pEx {
 				continue
 			}
