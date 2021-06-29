@@ -48,3 +48,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query "select 1 as val, 2 as col" --header=false
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_query_table_header_off.txt)"
 }
+
+function setup() {
+  steampipe service start
+}
+
+function teardown() {
+  steampipe service stop
+}

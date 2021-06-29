@@ -9,6 +9,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/statefile"
+	"github.com/turbot/steampipe/utils"
 )
 
 const minimumMinutesBetweenChecks = 1440 // 1 day
@@ -18,16 +19,25 @@ type Runner struct {
 }
 
 func RunTasks() {
+	utils.LogTime("task.RunTasks start")
+	defer utils.LogTime("task.RunTasks end")
+
 	NewRunner().Run()
 }
 
 func NewRunner() *Runner {
+	utils.LogTime("task.NewRunner start")
+	defer utils.LogTime("task.NewRunner end")
+
 	r := new(Runner)
 	r.currentState, _ = statefile.LoadState()
 	return r
 }
 
 func (r *Runner) Run() {
+	utils.LogTime("task.Runner.Run start")
+	defer utils.LogTime("task.Runner.Run end")
+
 	var versionNotificationLines []string
 	var pluginNotificationLines []string
 	if r.shouldRun() {
@@ -72,6 +82,9 @@ func (r *Runner) runAsyncJob(job func(), wg *sync.WaitGroup) {
 // tasks are to be run at most once every 24 hours
 // also, this is not to run in batch query mode
 func (r *Runner) shouldRun() bool {
+	utils.LogTime("task.Runner.shouldRun start")
+	defer utils.LogTime("task.Runner.shouldRun end")
+
 	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
 	if cmd.Name() == "query" && len(cmdArgs) > 0 {

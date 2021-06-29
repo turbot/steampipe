@@ -313,14 +313,14 @@ func isPortBindable(port int) bool {
 
 // kill all postgres processes that were started as part of steampipe (if any)
 func killInstanceIfAny() bool {
-	if processes, err := FindAllSteampipePostgresInstances(); err != nil {
-		for _, process := range processes {
-			killProcessTree(process)
-		}
-		return len(processes) > 0
-	} else {
+	processes, err := FindAllSteampipePostgresInstances()
+	if err != nil {
 		return false
 	}
+	for _, process := range processes {
+		killProcessTree(process)
+	}
+	return len(processes) > 0
 }
 
 func FindAllSteampipePostgresInstances() ([]*psutils.Process, error) {

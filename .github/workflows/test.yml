@@ -108,6 +108,7 @@ jobs:
           echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
 
       - name: Install DB
+        continue-on-error: false
         run: |
           steampipe service start
           steampipe service stop --force

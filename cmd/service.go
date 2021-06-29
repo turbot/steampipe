@@ -59,8 +59,8 @@ connection from any Postgres compatible database client.`,
 		AddIntFlag(constants.ArgPort, "", constants.DatabaseDefaultPort, "Database service port.").
 		AddIntFlag(constants.ArgPortDeprecated, "", constants.DatabaseDefaultPort, "Database service port.", cmdconfig.FlagOptions.Deprecated(constants.ArgPort)).
 		// for now default listen address to empty so we fall back to the default of the deprecated arg
-		AddStringFlag(constants.ArgListenAddress, "", string(db.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").
-		AddStringFlag(constants.ArgListenAddressDeprecated, "", string(db.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)", cmdconfig.FlagOptions.Deprecated(constants.ArgListenAddress)).
+		AddStringFlag(constants.ArgListenAddress, "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)").
+		AddStringFlag(constants.ArgListenAddressDeprecated, "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)", cmdconfig.FlagOptions.Deprecated(constants.ArgListenAddress)).
 		// foreground enables the service to run in the foreground - till exit
 		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
 		// Hidden flags for internal use
@@ -232,11 +232,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 				if count > 0 {
 					if lastCtrlC.IsZero() || time.Since(lastCtrlC) > 30*time.Second {
 						lastCtrlC = time.Now()
-						fmt.Println(`    
-Clients are still connected to the DB.
-
-If you still want to shut it down, press Ctrl+C again
-					`)
+						fmt.Println(buildForegroundClientsConnectedMsg())
 						continue
 					}
 				}
@@ -368,7 +364,7 @@ func showAllStatus() {
 func getServiceProcessDetails(process *psutils.Process) (string, string, string, db.StartListenType) {
 	cmdLine, _ := process.CmdlineSlice()
 
-	installDir := strings.TrimSuffix(cmdLine[0], db.PostgresBinaryExecutableLocationRelativeToInstallDir)
+	installDir := strings.TrimSuffix(cmdLine[0], db.ServiceExecutableRelativeLocation)
 	var port string
 	var listenType db.StartListenType
 
@@ -421,9 +417,9 @@ Managing Steampipe service:
 		statusMessage = fmt.Sprintf(msg, strings.Join(info.Listen, ", "), info.Port, info.Database, info.User, info.Password, info.User, info.Password, info.Listen[0], info.Port, info.Database)
 	} else {
 		msg := `
-Steampipe service is running exclusively for an active %s session. The service will exit when all active session exit.
+Steampipe service was started for an active %s session. The service will exit when all active sessions exit.
 
-To persist the service, close the %s session and use %s.
+To keep the service running after the %s session completes, use %s.
 `
 
 		statusMessage = fmt.Sprintf(
@@ -455,7 +451,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	} else {
 		info, err := db.GetStatus()
 		if err != nil {
-			utils.ShowError(fmt.Errorf("error during stop"))
+			utils.ShowErrorWithMessage(err, "could not stop service")
 			return
 		}
 		if info == nil {
@@ -463,15 +459,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 			return
 		}
 		if info.Invoker != db.InvokerService {
-			fmt.Printf(`
-Steampipe service is running exclusively for an active %s session.
-
-To force stop the service, use %s
-
-`,
-				fmt.Sprintf("steampipe %s", info.Invoker),
-				constants.Bold("steampipe service stop --force"),
-			)
+			printRunningImplicit(info.Invoker)
 			return
 		}
 
@@ -482,16 +470,7 @@ To force stop the service, use %s
 		}
 
 		if connectedClientCount > 0 {
-			fmt.Printf(
-				`
-Cannot stop service since there are clients connected to the service.
-
-To force stop the service, use %s
-
-`,
-				constants.Bold("steampipe service stop --force"),
-			)
-
+			printClientsConnected()
 			return
 		}
 
@@ -524,4 +503,36 @@ to force a shutdown
 
 	}
 
+}
+
+func printRunningImplicit(invoker db.Invoker) {
+	fmt.Printf(`
+Steampipe service is running exclusively for an active %s session.
+
+To force stop the service, use %s
+
+`,
+		fmt.Sprintf("steampipe %s", invoker),
+		constants.Bold("steampipe service stop --force"),
+	)
+}
+
+func printClientsConnected() {
+	fmt.Printf(
+		`
+Cannot stop service since there are clients connected to the service.
+
+To force stop the service, use %s
+
+`,
+		constants.Bold("steampipe service stop --force"),
+	)
+}
+
+func buildForegroundClientsConnectedMsg() string {
+	return `    
+Not shutting down service as there as clients connected.
+
+To force shutdown, press Ctrl+C again
+	`
 }

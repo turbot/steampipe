@@ -40,9 +40,11 @@ func Shutdown(client *Client, invoker Invoker) {
 
 	status, _ := GetStatus()
 
+	// is the service running?
 	if status != nil {
 		if status.Invoker == InvokerService {
-			// nothing to do here
+			// if the service was invoked by `steampipe service`,
+			// then we don't shut it down
 			return
 		}
 

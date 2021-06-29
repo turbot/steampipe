@@ -9,7 +9,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-const ServiceExecutableLocationRelativeToInstallDir = "db/12.1.0/postgres/bin/postgres"
+const ServiceExecutableRelativeLocation = "/db/12.1.0/postgres/bin/postgres"
 
 func databaseInstanceDir() string {
 	loc := filepath.Join(constants.DatabaseDir(), constants.DatabaseVersion)
@@ -78,5 +78,3 @@ func getPgHbaConfLocation() string {
 func getPasswordFileLocation() string {
 	return filepath.Join(getDatabaseLocation(), ".passwd")
 }
-
-const PostgresBinaryExecutableLocationRelativeToInstallDir = "/db/12.1.0/postgres/bin/postgres"

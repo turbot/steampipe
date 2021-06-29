@@ -101,6 +101,7 @@ func EnsureDBInstalled() {
 
 	startServiceSpinner := display.ShowSpinner(fmt.Sprintf("Configuring database..."))
 	StartImplicitService(InvokerInstaller)
+
 	err = installSteampipeDatabase(steampipePassword, rootPassword)
 	display.StopSpinner(startServiceSpinner)
 	if err != nil {
