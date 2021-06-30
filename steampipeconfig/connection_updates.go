@@ -78,7 +78,7 @@ func (m ConnectionMap) Equals(other ConnectionMap) bool {
 }
 
 // GetConnectionsToUpdate :: returns updates to be made to the database to sync with connection config
-func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*modconfig.Connection) (*ConnectionUpdates, error) {
+func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*modconfig.Connection, connectionGroups map[string]*modconfig.ConnectionGroup) (*ConnectionUpdates, error) {
 	utils.LogTime("steampipeconfig.GetConnectionsToUpdate start")
 	defer utils.LogTime("steampipeconfig.GetConnectionsToUpdate end")
 

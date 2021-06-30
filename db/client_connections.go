@@ -22,12 +22,13 @@ func (c *Client) RefreshConnections() (bool, error) {
 
 	// load required connection from global config
 	requiredConnections := steampipeconfig.Config.Connections
+	requiredConnectionGroups := steampipeconfig.Config.ConnectionGroups
 
 	// first get a list of all existing schemas
 	schemas := c.schemaMetadata.GetSchemas()
 
 	// refresh the connection state file - the removes any connections which do not exist in the list of current schema
-	updates, err := steampipeconfig.GetConnectionsToUpdate(schemas, requiredConnections)
+	updates, err := steampipeconfig.GetConnectionsToUpdate(schemas, requiredConnections, requiredConnectionGroups)
 	if err != nil {
 		return false, err
 	}

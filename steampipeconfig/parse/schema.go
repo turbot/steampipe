@@ -13,6 +13,10 @@ var ConfigSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
+			Type:       "connection_group",
+			LabelNames: []string{"name"},
+		},
+		{
 			Type:       "options",
 			LabelNames: []string{"type"},
 		},
