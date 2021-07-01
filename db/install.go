@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"sync"
 
+	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/ociinstaller"
@@ -101,6 +102,13 @@ func EnsureDBInstalled() {
 
 	startServiceSpinner := display.ShowSpinner(fmt.Sprintf("Configuring database..."))
 	StartService(InvokerInstaller)
+	processes, _ := process.Processes()
+	p := []string{}
+	for _, pr := range processes {
+		cmdLine, _ := pr.Cmdline()
+		p = append(p, cmdLine)
+	}
+	utils.DebugDumpJSON("ps:", p)
 	err = installSteampipeDatabase(steampipePassword, rootPassword)
 	display.StopSpinner(startServiceSpinner)
 	if err != nil {
