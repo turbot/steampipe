@@ -126,6 +126,17 @@ func EnsureDBInstalled() {
 	// force stop
 	StopDB(true, InvokerInstaller)
 
+	fmt.Println("After StopDB")
+	info, err = GetStatus()
+	utils.DebugDumpJSON("Info:", info)
+	processes, _ = process.Processes()
+	p = []string{}
+	for _, pr := range processes {
+		cmdLine, _ := pr.Cmdline()
+		p = append(p, cmdLine)
+	}
+	utils.DebugDumpJSON("ps:", p)
+
 	// write a signature after everything gets done!
 	// so that we can check for this later on
 	writeSignaturesSpinner := display.ShowSpinner(fmt.Sprintf("Updating install records..."))
