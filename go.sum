@@ -937,6 +937,8 @@ github.com/turbot/go-kit v0.2.2-0.20210614162002-b56bc76ce374 h1:kc4zukzFJiYk1nD
 github.com/turbot/go-kit v0.2.2-0.20210614162002-b56bc76ce374/go.mod h1:SBdPRngbEfYubiR81iAVtO43oPkg1+ASr+XxvgbH7/k=
 github.com/turbot/go-kit v0.2.2-0.20210628165333-268ba0a30be3 h1:UAfWYp+K7oESlqomRus4k+h/dSPXU17tEcarbRdtBwQ=
 github.com/turbot/go-kit v0.2.2-0.20210628165333-268ba0a30be3/go.mod h1:SBdPRngbEfYubiR81iAVtO43oPkg1+ASr+XxvgbH7/k=
+github.com/turbot/go-kit v0.2.2-0.20210701162132-c7aef7d72757 h1:b9BnAhxiBRYNZq0aMz1l2r3xGnObCxPgpJ050I5n31g=
+github.com/turbot/go-kit v0.2.2-0.20210701162132-c7aef7d72757/go.mod h1:SBdPRngbEfYubiR81iAVtO43oPkg1+ASr+XxvgbH7/k=
 github.com/turbot/go-prompt v0.2.6-steampipe h1:/stkR3dOdxKRk/lKsnKpb9KZA/m3v0/OqLIHwDN8zv4=
 github.com/turbot/go-prompt v0.2.6-steampipe/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
 github.com/turbot/steampipe-plugin-sdk v0.2.8 h1:pq85hYzoGQPspAjtl0O5yoMdntciTSW6cR/YTHKAtp4=

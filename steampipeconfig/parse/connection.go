@@ -42,7 +42,7 @@ func ParseConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.C
 		if diags.HasErrors() {
 			return nil, diags
 		}
-		connection.Connections = connections
+		connection.ConnectionNames = connections
 	}
 
 	// check for nested options

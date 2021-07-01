@@ -32,43 +32,18 @@ type SteampipeConfig struct {
 func (c *SteampipeConfig) Validate() error {
 	var validationErrors []string
 	for _, connection := range c.Connections {
-		validationErrors = append(validationErrors, connection.Validate()...)
-		// we now need to verify that if the connection is an aggregate,
-		// all children use the same plugin as the aggregate connection
-		// (we do this here rather than inside Connection.Validate as we need to access other connections
+
+		// if the connection is an aggregate, populate the child connections
+		// this resolves any wildcards in the connection list
 		if connection.Type == modconfig.ConnectionTypeAggregate {
-			validationErrors = append(validationErrors, c.ValidateAggregateConnection(connection)...)
+			connection.PopulateChildren(c.Connections)
 		}
+		validationErrors = append(validationErrors, connection.Validate(c.Connections)...)
 	}
 	if len(validationErrors) > 0 {
 		return fmt.Errorf("config validation failed with %d %s: \n  - %s", len(validationErrors), utils.Pluralize("error", len(validationErrors)), strings.Join(validationErrors, "\n  - "))
 	}
 	return nil
-}
-
-func (c *SteampipeConfig) ValidateAggregateConnection(aggregateConnection *modconfig.Connection) []string {
-	var validationErrors []string
-	for _, child := range aggregateConnection.Connections {
-		// look for this connection
-		childConnection, ok := c.Connections[child]
-		if !ok {
-			validationErrors = append(validationErrors,
-				fmt.Sprintf("aggregate connection '%s' requires child connection '%s' which is not loaded",
-					aggregateConnection.Name,
-					child))
-			continue
-		}
-		if childConnection.Plugin != aggregateConnection.Plugin {
-			validationErrors = append(validationErrors,
-				fmt.Sprintf("aggregate connection '%s' uses plugin %s but child connection '%s' uses plugin '%s'",
-					aggregateConnection.Name,
-					aggregateConnection.Plugin,
-					child,
-					childConnection.Plugin,
-				))
-		}
-	}
-	return validationErrors
 }
 
 // ConfigMap :: create a config map to pass to viper
