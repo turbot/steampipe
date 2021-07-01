@@ -3,6 +3,7 @@ package execute
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -25,6 +26,7 @@ type ResultGroup struct {
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ControlTreeItem `json:"-"`
 	Parent    *ResultGroup              `json:"-"`
+	Duration  time.Duration             `json:"duration"`
 }
 
 type GroupSummary struct {
@@ -120,6 +122,8 @@ func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
 	// it may not matter, as we display results in order
 	// it is only an issue if there are dependencies, in which case we must run in dependency order
 
+	startTime := time.Now()
+
 	var failures = 0
 	for _, controlRun := range r.ControlRuns {
 		select {
@@ -138,6 +142,8 @@ func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
 	for _, child := range r.Groups {
 		failures += child.Execute(ctx, client)
 	}
+
+	r.Duration = time.Since(startTime)
 
 	return failures
 }

@@ -42,6 +42,7 @@ type ControlRun struct {
 	Tags        map[string]string `json:"tags"`
 	Title       string            `json:"title"`
 	Rows        []*ResultRow      `json:"results"`
+	Duration    time.Duration     `json:"duration"`
 
 	// the query result stream
 	queryResult *queryresult.Result
@@ -79,6 +80,8 @@ func (r *ControlRun) Skip() {
 func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
+
+	startTime := time.Now()
 
 	r.runStatus = ControlRunStarted
 
@@ -141,6 +144,7 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 			viper.Set(constants.ArgSearchPathPrefix, originalConfiguredSearchPathPrefix)
 			client.SetClientSearchPath()
 		}
+		r.Duration = time.Since(startTime)
 		close(gatherDoneChan)
 	}()
 
