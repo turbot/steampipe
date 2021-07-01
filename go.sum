@@ -941,6 +941,8 @@ github.com/turbot/go-prompt v0.2.6-steampipe h1:/stkR3dOdxKRk/lKsnKpb9KZA/m3v0/O
 github.com/turbot/go-prompt v0.2.6-steampipe/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
 github.com/turbot/steampipe-plugin-sdk v0.2.8 h1:pq85hYzoGQPspAjtl0O5yoMdntciTSW6cR/YTHKAtp4=
 github.com/turbot/steampipe-plugin-sdk v0.2.8/go.mod h1:hsg1nGt30Nn+FZhz3M+qvWiJy8x+EhxKZYJLaEDoxQk=
+github.com/turbot/steampipe-plugin-sdk v0.3.0-rc.0.0.20210701104519-8f310bdd5c60 h1:zLa7TO+NRDcx3U0iXCx7hgOmG7U7zo01pwVyEs03uOI=
+github.com/turbot/steampipe-plugin-sdk v0.3.0-rc.0.0.20210701104519-8f310bdd5c60/go.mod h1:E00M5qOvCp6qwaT1/KhdTNM6S0JUlNY6L11IvlELQV4=
 github.com/ugorji/go v0.0.0-20180813092308-00b869d2f4a5 h1:cMjKdf4PxEBN9K5HaD9UMW8gkTbM0kMzkTa9SJe0WNQ=
 github.com/ugorji/go v0.0.0-20180813092308-00b869d2f4a5/go.mod h1:hnLbHMwcvSihnDhEfx2/BzKp2xb0Y+ErdfYcrs9tkJQ=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8 h1:3SVOIvH7Ae1KRYyQWRjXWJEA9sS/c/pjvH++55Gr648=
@@ -1316,6 +1318,7 @@ google.golang.org/genproto v0.0.0-20200618031413-b414f8b61790/go.mod h1:jDfRM7Fc
 google.golang.org/genproto v0.0.0-20200729003335-053ba62fc06f/go.mod h1:FWY/as6DDZQgahTzZj3fqbO1CbirC29ZNUFHwi0/+no=
 google.golang.org/genproto v0.0.0-20200804131852-c06518451d9c/go.mod h1:FWY/as6DDZQgahTzZj3fqbO1CbirC29ZNUFHwi0/+no=
 google.golang.org/genproto v0.0.0-20200825200019-8632dd797987/go.mod h1:FWY/as6DDZQgahTzZj3fqbO1CbirC29ZNUFHwi0/+no=
+google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d h1:92D1fum1bJLKSdr11OJ+54YeCMCGYIygTA7R/YZxH5M=
 google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d/go.mod h1:FWY/as6DDZQgahTzZj3fqbO1CbirC29ZNUFHwi0/+no=
 google.golang.org/genproto v0.0.0-20201029200359-8ce4113da6f7 h1:2BaavIGjmdbQJl0IFOYI8SBd5WLIjH+tIOMIFf9QENo=
 google.golang.org/genproto v0.0.0-20201029200359-8ce4113da6f7/go.mod h1:FWY/as6DDZQgahTzZj3fqbO1CbirC29ZNUFHwi0/+no=
