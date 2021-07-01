@@ -61,3 +61,4 @@ require (
 )
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe
+replace github.com/turbot/go-kit => /Users/kai/Dev/github/turbot/go-kit

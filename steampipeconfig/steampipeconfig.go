@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/turbot/steampipe/utils"
+
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/turbot/go-kit/helpers"
@@ -25,6 +27,48 @@ type SteampipeConfig struct {
 	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
 	commandName              string
+}
+
+func (c *SteampipeConfig) Validate() error {
+	var validationErrors []string
+	for _, connection := range c.Connections {
+		validationErrors = append(validationErrors, connection.Validate()...)
+		// we now need to verify that if the connection is an aggregate,
+		// all children use the same plugin as the aggregate connection
+		// (we do this here rather than inside Connection.Validate as we need to access other connections
+		if connection.Type == modconfig.ConnectionTypeAggregate {
+			validationErrors = append(validationErrors, c.ValidateAggregateConnection(connection)...)
+		}
+	}
+	if len(validationErrors) > 0 {
+		return fmt.Errorf("config validation failed with %d %s: \n  - %s", len(validationErrors), utils.Pluralize("error", len(validationErrors)), strings.Join(validationErrors, "\n  - "))
+	}
+	return nil
+}
+
+func (c *SteampipeConfig) ValidateAggregateConnection(aggregateConnection *modconfig.Connection) []string {
+	var validationErrors []string
+	for _, child := range aggregateConnection.Connections {
+		// look for this connection
+		childConnection, ok := c.Connections[child]
+		if !ok {
+			validationErrors = append(validationErrors,
+				fmt.Sprintf("aggregate connection '%s' requires child connection '%s' which is not loaded",
+					aggregateConnection.Name,
+					child))
+			continue
+		}
+		if childConnection.Plugin != aggregateConnection.Plugin {
+			validationErrors = append(validationErrors,
+				fmt.Sprintf("aggregate connection '%s' uses plugin %s but child connection '%s' uses plugin '%s'",
+					aggregateConnection.Name,
+					aggregateConnection.Plugin,
+					child,
+					childConnection.Plugin,
+				))
+		}
+	}
+	return validationErrors
 }
 
 // ConfigMap :: create a config map to pass to viper
@@ -102,9 +146,11 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) {
 }
 
 const CacheEnabledEnvVar = "STEAMPIPE_CACHE"
+
 const CacheTTLEnvVar = "STEAMPIPE_CACHE_TTL"
 
 var defaultCacheEnabled = true
+
 var defaultTTL = 300
 
 // if default connection options have been set, assign them to any connection which do not define specific options
