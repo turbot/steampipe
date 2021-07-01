@@ -204,6 +204,14 @@ func installSteampipeDatabase(withSteampipePassword string, withRootPassword str
 }
 
 func installSteampipeHub() error {
+	rootClient, err := createSteampipeRootDbClient()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		rootClient.Close()
+	}()
 	statements := []string{
 		// Install the FDW. The name must match the binary file.
 		`drop extension if exists "steampipe_postgres_fdw" cascade`,
@@ -211,7 +219,16 @@ func installSteampipeHub() error {
 		// Use steampipe for the server name, it's simplest
 		`create server "steampipe" foreign data wrapper "steampipe_postgres_fdw"`,
 	}
-	_, err := executeSqlAsRoot(statements)
+
+	for _, statement := range statements {
+		// NOTE: This may print a password to the log file, but it doesn't matter
+		// since the password is stored in a config file anyway.
+		log.Println("[TRACE] Install steampipe database: ", statement)
+		if _, err := rootClient.Exec(statement); err != nil {
+			return err
+		}
+	}
+	// _, err := executeSqlAsRoot(statements)
 	return err
 }
 
