@@ -102,6 +102,8 @@ func EnsureDBInstalled() {
 
 	startServiceSpinner := display.ShowSpinner(fmt.Sprintf("Configuring database..."))
 	StartService(InvokerInstaller)
+	info, err := GetStatus()
+	utils.DebugDumpJSON("Info:", info)
 	processes, _ := process.Processes()
 	p := []string{}
 	for _, pr := range processes {
