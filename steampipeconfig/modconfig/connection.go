@@ -17,6 +17,10 @@ type Connection struct {
 	Name string
 	// Name of plugin
 	Plugin string
+	// Type - supported values: "aggregate"
+	Type string
+	// Child connections (only valid for "aggregate" type
+	Connections []string
 	// unparsed HCL of plugin specific connection config
 	Config string
 

@@ -57,9 +57,8 @@ func newSteampipeConfig(workspacePath string, commandName string) (steampipeConf
 	}()
 
 	steampipeConfig = &SteampipeConfig{
-		Connections:      make(map[string]*modconfig.Connection),
-		ConnectionGroups: make(map[string]*modconfig.ConnectionGroup),
-		commandName:      commandName,
+		Connections: make(map[string]*modconfig.Connection),
+		commandName: commandName,
 	}
 
 	// load config from the installation folder -  load all spc files from config directory
@@ -158,19 +157,6 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 				return fmt.Errorf("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage)
 			}
 			steampipeConfig.Connections[connection.Name] = connection
-
-		case "connection_group":
-			connectionGroup, moreDiags := parse.ParseConnectionGroup(block, fileData)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-				continue
-			}
-			_, alreadyThere := steampipeConfig.ConnectionGroups[connectionGroup.Name]
-			if alreadyThere {
-				return fmt.Errorf("duplicate connection group name: '%s' in '%s'", connectionGroup.Name, block.TypeRange.Filename)
-			}
-
-			steampipeConfig.ConnectionGroups[connectionGroup.Name] = connectionGroup
 
 		case "options":
 			// check this options type is permitted based on the options passed in

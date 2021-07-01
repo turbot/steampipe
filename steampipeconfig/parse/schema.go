@@ -13,10 +13,6 @@ var ConfigSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       "connection_group",
-			LabelNames: []string{"name"},
-		},
-		{
 			Type:       "options",
 			LabelNames: []string{"type"},
 		},
@@ -28,6 +24,12 @@ var ConnectionSchema = &hcl.BodySchema{
 		{
 			Name:     "plugin",
 			Required: true,
+		},
+		{
+			Name: "type",
+		},
+		{
+			Name: "connections",
 		},
 	},
 	Blocks: []hcl.BlockHeaderSchema{

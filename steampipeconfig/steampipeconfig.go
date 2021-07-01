@@ -17,8 +17,7 @@ import (
 // SteampipeConfig :: Connection map and Steampipe settings
 type SteampipeConfig struct {
 	// map of connection name to partially parsed connection config
-	Connections      map[string]*modconfig.Connection
-	ConnectionGroups map[string]*modconfig.ConnectionGroup
+	Connections map[string]*modconfig.Connection
 
 	// Steampipe options
 	DefaultConnectionOptions *options.Connection

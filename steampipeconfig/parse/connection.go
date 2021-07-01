@@ -28,6 +28,23 @@ func ParseConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.C
 	}
 	connection.Plugin = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
 
+	if connectionContent.Attributes["type"] != nil {
+		var connectionType string
+		diags = gohcl.DecodeExpression(connectionContent.Attributes["type"].Expr, nil, &connectionType)
+		if diags.HasErrors() {
+			return nil, diags
+		}
+		connection.Type = connectionType
+	}
+	if connectionContent.Attributes["connections"] != nil {
+		var connections []string
+		diags = gohcl.DecodeExpression(connectionContent.Attributes["connections"].Expr, nil, &connections)
+		if diags.HasErrors() {
+			return nil, diags
+		}
+		connection.Connections = connections
+	}
+
 	// check for nested options
 	for _, connectionBlock := range connectionContent.Blocks {
 		switch connectionBlock.Type {
