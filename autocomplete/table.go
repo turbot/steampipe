@@ -2,7 +2,6 @@ package autocomplete
 
 import (
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 
@@ -77,7 +76,6 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 	}
 
 	for _, table := range unqualifiedTablesToAdd {
-		log.Println(fmt.Sprintf("%s %s", "[TRACE]", table))
 		s = append(s, prompt.Suggest{Text: table, Description: "Table"})
 	}
 
