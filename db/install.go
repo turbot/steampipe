@@ -102,6 +102,8 @@ func EnsureDBInstalled() {
 
 	startServiceSpinner := display.ShowSpinner(fmt.Sprintf("Configuring database..."))
 	StartService(InvokerInstaller)
+	// STATUS
+	fmt.Println("After StartService")
 	info, err := GetStatus()
 	utils.DebugDumpJSON("Info:", info)
 	processes, _ := process.Processes()
@@ -111,6 +113,7 @@ func EnsureDBInstalled() {
 		p = append(p, cmdLine)
 	}
 	utils.DebugDumpJSON("ps:", p)
+	// STATUS
 	err = installSteampipeDatabase(steampipePassword, rootPassword)
 	display.StopSpinner(startServiceSpinner)
 	if err != nil {
@@ -125,6 +128,18 @@ func EnsureDBInstalled() {
 	}
 	// force stop
 	StopDB(true, InvokerInstaller)
+	// STATUS
+	fmt.Println("After StopDB")
+	info, err = GetStatus()
+	utils.DebugDumpJSON("Info:", info)
+	processes, _ = process.Processes()
+	p = []string{}
+	for _, pr := range processes {
+		cmdLine, _ := pr.Cmdline()
+		p = append(p, cmdLine)
+	}
+	utils.DebugDumpJSON("ps:", p)
+	// STATUS
 
 	// write a signature after everything gets done!
 	// so that we can check for this later on
