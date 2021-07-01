@@ -36,7 +36,7 @@ func EnsureDbAndStartService(invoker Invoker) error {
 func RunInteractivePrompt(workspace WorkspaceResourceProvider, client *Client) (*queryresult.ResultStreamer, error) {
 	resultsStreamer := queryresult.NewResultStreamer()
 
-	interactiveClient, err := newInteractiveClient(workspace, client, resultsStreamer, clientReadyChannel)
+	interactiveClient, err := newInteractiveClient(workspace, client, resultsStreamer)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
 		Shutdown(client, InvokerQuery)

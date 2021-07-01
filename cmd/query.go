@@ -131,7 +131,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// if no query is specified, run interactive prompt
 	if interactiveMode {
-		execute.RunInteractiveSession(workspace, client, clientReadyChannel)
+		execute.RunInteractiveSession(workspace, client)
 	} else if len(queries) > 0 {
 		// ensure client is closed after we are done
 		defer client.Close()

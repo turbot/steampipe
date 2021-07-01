@@ -39,7 +39,6 @@ type InteractiveClient struct {
 func newInteractiveClient(workspace WorkspaceResourceProvider, client *Client, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	return &InteractiveClient{
 		client:                  client,
-		clientReadyChannel:      clientReadyChannel,
 		resultsStreamer:         resultsStreamer,
 		workspace:               workspace,
 		interactiveQueryHistory: queryhistory.New(),
