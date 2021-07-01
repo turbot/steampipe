@@ -195,6 +195,7 @@ func installSteampipeDatabase(withSteampipePassword string, withRootPassword str
 		// NOTE: This may print a password to the log file, but it doesn't matter
 		// since the password is stored in a config file anyway.
 		log.Println("[TRACE] Install steampipe database: ", statement)
+		fmt.Println("Install steampipe database: ", statement)
 		if _, err := rawClient.Exec(statement); err != nil {
 			return err
 		}
@@ -221,9 +222,6 @@ func installSteampipeHub() error {
 	}
 
 	for _, statement := range statements {
-		// NOTE: This may print a password to the log file, but it doesn't matter
-		// since the password is stored in a config file anyway.
-		log.Println("[TRACE] Install steampipe database: ", statement)
 		if _, err := rootClient.Exec(statement); err != nil {
 			return err
 		}

@@ -67,6 +67,7 @@ func StartService(invoker Invoker) {
 	case <-startedChannel:
 	// do nothing
 	case x := <-errorChannel:
+		fmt.Println("sljdlsfdlskfjldshflkdshfkjdshfkdshfkjdsh")
 		utils.FailOnError(handleStartFailure(x))
 	}
 }
