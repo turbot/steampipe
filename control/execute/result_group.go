@@ -26,7 +26,7 @@ type ResultGroup struct {
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ControlTreeItem `json:"-"`
 	Parent    *ResultGroup              `json:"-"`
-	Duration  time.Duration             `json:"duration"`
+	Duration  time.Duration             `json:"-"`
 }
 
 type GroupSummary struct {

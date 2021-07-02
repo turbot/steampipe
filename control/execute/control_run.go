@@ -35,6 +35,9 @@ type ControlRun struct {
 	Control *modconfig.Control `json:"-"`
 	Summary StatusSummary      `json:"-"`
 
+	// execution duration
+	Duration time.Duration `json:"-"`
+
 	// the result
 	ControlId   string            `json:"control_id"`
 	Description string            `json:"description"`
@@ -42,7 +45,6 @@ type ControlRun struct {
 	Tags        map[string]string `json:"tags"`
 	Title       string            `json:"title"`
 	Rows        []*ResultRow      `json:"results"`
-	Duration    time.Duration     `json:"duration"`
 
 	// the query result stream
 	queryResult *queryresult.Result
@@ -144,7 +146,6 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 			viper.Set(constants.ArgSearchPathPrefix, originalConfiguredSearchPathPrefix)
 			client.SetClientSearchPath()
 		}
-		r.Duration = time.Since(startTime)
 		close(gatherDoneChan)
 	}()
 
@@ -154,6 +155,7 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	case <-gatherDoneChan:
 		// do nothing
 	}
+	r.Duration = time.Since(startTime)
 }
 
 func (r *ControlRun) gatherResults() {
