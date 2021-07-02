@@ -17,6 +17,7 @@ import (
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/execute"
 	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -118,6 +119,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exportErrorsLock := sync.Mutex{}
 
 	exportWaitGroup := sync.WaitGroup{}
+	durations := []time.Duration{}
 	for _, arg := range args {
 		// get the export formats for this argument
 		exportFormats := getExportTargets(arg)
@@ -129,6 +131,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		select {
 		case <-ctx.Done():
+			durations = append(durations, 0)
 			// skip over the next, since the execution was cancelled
 			continue
 		default:
@@ -151,6 +154,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 				}
 				exportWaitGroup.Done()
 			}()
+			durations = append(durations, executionTree.Root.Duration)
 		}
 	}
 
@@ -160,8 +164,25 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.ShowError(utils.CombineErrors(exportErrors...))
 	}
 
+	if shouldPrintTiming() {
+		headers := []string{"", "Duration"}
+		rows := [][]string{}
+		for idx, arg := range args {
+			rows = append(rows, []string{arg, durations[idx].String()})
+		}
+		fmt.Println("Timing:")
+		display.ShowWrappedTable(headers, rows, false)
+	}
+
 	// set global exit code
 	exitCode = failures
+}
+
+func shouldPrintTiming() bool {
+	outputFormat := viper.GetString(constants.ArgOutput)
+
+	return ((viper.GetBool(constants.ArgTimer) && !viper.GetBool(constants.ArgDryRun)) &&
+		(outputFormat == controldisplay.OutputFormatText || outputFormat == controldisplay.OutputFormatBrief))
 }
 
 func validateOutputFormat() error {
@@ -218,6 +239,7 @@ func displayControlResults(ctx context.Context, executionTree *execute.Execution
 		return err
 	}
 	_, err = io.Copy(os.Stdout, formattedReader)
+
 	return err
 }
 
