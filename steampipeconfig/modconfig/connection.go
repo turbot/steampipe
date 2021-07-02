@@ -119,6 +119,10 @@ func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {
 		log.Printf("[TRACE] Connection.PopulateChildren no connection matches %s - treating as a wildcard", childName)
 		// otherwise treat the connection name as a wildcard and see what matches
 		for name, connection := range connectionMap {
+			// if this is an aggregate connection, skip (this will also avoid us adding ourselves)
+			if connection.Type == ConnectionTypeAggregate {
+				continue
+			}
 			// have we already added this connection
 			if _, ok := c.Connections[name]; ok {
 				continue
@@ -129,7 +133,4 @@ func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {
 			}
 		}
 	}
-
-	log.Printf("[TRACE] Connection.PopulateChildren complete: \n%v", c.Connections)
-
 }

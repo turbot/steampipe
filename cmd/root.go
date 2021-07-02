@@ -30,8 +30,8 @@ var rootCmd = &cobra.Command{
 
 		viper.Set(constants.ConfigKeyActiveCommand, cmd)
 		viper.Set(constants.ConfigKeyActiveCommandArgs, args)
-		initGlobalConfig()
 		createLogger()
+		initGlobalConfig()
 		task.RunTasks()
 	},
 	Short: "Query cloud resources using SQL",
