@@ -35,6 +35,9 @@ type ControlRun struct {
 	Control *modconfig.Control `json:"-"`
 	Summary StatusSummary      `json:"-"`
 
+	// execution duration
+	Duration time.Duration `json:"-"`
+
 	// the result
 	ControlId   string            `json:"control_id"`
 	Description string            `json:"description"`
@@ -79,6 +82,8 @@ func (r *ControlRun) Skip() {
 func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
+
+	startTime := time.Now()
 
 	r.runStatus = ControlRunStarted
 
@@ -150,6 +155,7 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	case <-gatherDoneChan:
 		// do nothing
 	}
+	r.Duration = time.Since(startTime)
 }
 
 func (r *ControlRun) gatherResults() {
