@@ -119,7 +119,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		return nil, plugin.DiagsToError("Failed to create run context", diags)
 	}
 
-	// now attempt to decode the mod
+	// perform initial decode to get dependencies
 	diags = decode(runCtx)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
