@@ -34,7 +34,6 @@ func trimSchemaName(pluginFQN string) string {
 }
 
 func GetPluginPath(remoteSchema string) (string, error) {
-	log.Printf("[DEBUG] GetPluginPath for remote schema %s\n", remoteSchema)
 	// the fully qualified name of the plugin is the relative path of the folder containing the plugin
 	// calculate absolute folder path
 	pluginFolder := filepath.Join(constants.PluginDir(), remoteSchema)
