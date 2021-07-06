@@ -15,6 +15,7 @@ const (
 	BlockTypeReport                 = "report"
 	BlockTypePanel                  = "panel"
 	BlockTypeLocals                 = "locals"
+	BlockTypeVariable               = "variable"
 )
 
 type ParsedResourceName struct {

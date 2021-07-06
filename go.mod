@@ -32,7 +32,6 @@ require (
 	github.com/hashicorp/go-plugin v1.4.1
 	github.com/hashicorp/go-version v1.2.1
 	github.com/hashicorp/hcl/v2 v2.9.1
-	github.com/hashicorp/hcl2 v0.0.0-20191002203319-fb75b3253c80
 	github.com/hashicorp/terraform v0.15.1
 	github.com/jedib0t/go-pretty/v6 v6.0.6
 	github.com/karrick/gows v0.3.0
