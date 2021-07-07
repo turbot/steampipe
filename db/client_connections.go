@@ -243,7 +243,7 @@ func deleteConnectionQuery(name string) []string {
 }
 
 func executeConnectionQueries(schemaQueries []string, updates *steampipeconfig.ConnectionUpdates) error {
-	log.Printf("[DEBUG] there are connections to update, queries: \n%s\n", schemaQueries)
+	log.Printf("[TRACE] there are connections to update\n")
 	_, err := executeSqlAsRoot(schemaQueries)
 	if err != nil {
 		return err

@@ -1,7 +1,6 @@
 package steampipeconfig
 
 import (
-	"log"
 	"os"
 	"os/exec"
 
@@ -43,12 +42,10 @@ func CreateConnectionPlugin(input *ConnectionPluginInput) (*ConnectionPlugin, er
 	disableLogger := input.DisableLogger
 	conectionOptions := input.ConnectionOptions
 
-	log.Printf("[TRACE] createConnectionPlugin name %s, remoteSchema %s \n", connectionName, remoteSchema)
 	pluginPath, err := GetPluginPath(remoteSchema)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("[TRACE] found pluginPath %s\n", pluginPath)
 
 	// launch the plugin process.
 	// create the plugin map
