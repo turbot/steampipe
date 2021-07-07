@@ -52,10 +52,8 @@ connection from any Postgres compatible database client.`,
 		OnCmd(cmd).
 		// for now default port to -1 so we fall back to the default of the deprecated arg
 		AddIntFlag(constants.ArgPort, "", constants.DatabaseDefaultPort, "Database service port.").
-		AddIntFlag(constants.ArgPortDeprecated, "", constants.DatabaseDefaultPort, "Database service port.", cmdconfig.FlagOptions.Deprecated(constants.ArgPort)).
 		// for now default listen address to empty so we fall back to the default of the deprecated arg
 		AddStringFlag(constants.ArgListenAddress, "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)").
-		AddStringFlag(constants.ArgListenAddressDeprecated, "", string(db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)", cmdconfig.FlagOptions.Deprecated(constants.ArgListenAddress)).
 		// Hidden flags for internal use
 		AddStringFlag(constants.ArgInvoker, "", string(db.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden()).
 		AddBoolFlag(constants.ArgRefresh, "", true, "Refresh connections on startup", cmdconfig.FlagOptions.Hidden())
@@ -124,12 +122,12 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	port := cmdconfig.DatabasePort()
+	port := viper.GetInt(constants.ArgPort)
 	if port < 1 || port > 65535 {
 		fmt.Println("Invalid Port :: MUST be within range (1:65535)")
 	}
 
-	listen := db.StartListenType(cmdconfig.ListenAddress())
+	listen := db.StartListenType(viper.GetString(constants.ArgListenAddress))
 	if err := listen.IsValid(); err != nil {
 		utils.ShowError(err)
 		return
@@ -143,7 +141,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	db.EnsureDBInstalled()
 
-	status, err := db.StartDB(cmdconfig.DatabasePort(), listen, invoker)
+	status, err := db.StartDB(viper.GetInt(constants.ArgPort), listen, invoker)
 	if err != nil {
 		panic(err)
 	}
