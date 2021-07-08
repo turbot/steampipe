@@ -1,3 +1,16 @@
+## v0.6.1 [2021-07-08]
+_What's new?_
+* Support executing controls from query command. Closes ([#470](https://github.com/turbot/steampipe/issues/470))
+* Update steampipe-plugin-sdk reference version to support ProtocolVersion `20210701`
+
+_Bug fixes_
+* Fix issue where `dimension` values were not rendered in generated CSV for `check`. ([#587](https://github.com/turbot/steampipe/issues/587))
+* Fix Linux Installer script showing verification error for Amazon Linux. ([#479](https://github.com/turbot/steampipe/issues/438))
+* Fix issue where using `--timing` with `check` was not showing duration. ([#571](https://github.com/turbot/steampipe/issues/571))
+* Fix problem where milliseconds of timestamps were not being displayed ([#76](https://github.com/turbot/steampipe-postgres-fdw/issues/74))
+* Fix  freezing issues with 'limit' and cancellation. ([#74](https://github.com/turbot/steampipe-postgres-fdw/issues/74))
+* Fix incorrect caching of 'get' query results for plugins build with sdk >= 0.3.0. ([#60](https://github.com/turbot/steampipe-postgres-fdw/issues/60))
+  
 ## v0.6.0 [2021-06-17]
 _What's new?_
 * Add `csv` output format to `check` command. ([#479](https://github.com/turbot/steampipe/issues/479))
