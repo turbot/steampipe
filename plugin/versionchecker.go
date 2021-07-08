@@ -60,7 +60,7 @@ func GetAllUpdateReport(installationID string) map[string]VersionCheckReport {
 	versionChecker.signature = installationID
 	versionChecker.pluginsToCheck = []*versionfile.InstalledVersion{}
 
-	versionFileData, err := versionfile.Load()
+	versionFileData, err := versionfile.LoadForPlugin()
 	if err != nil {
 		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not load versionfile")
 		return nil
@@ -76,7 +76,7 @@ func GetAllUpdateReport(installationID string) map[string]VersionCheckReport {
 }
 
 func (v *VersionChecker) reportPluginUpdates() map[string]VersionCheckReport {
-	versionFileData, err := versionfile.Load()
+	versionFileData, err := versionfile.LoadForPlugin()
 	if err != nil {
 		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not load versionfile")
 		return nil
@@ -102,7 +102,7 @@ func (v *VersionChecker) reportPluginUpdates() map[string]VersionCheckReport {
 	for _, plugin := range v.pluginsToCheck {
 		versionFileData.Plugins[plugin.Name].LastCheckedDate = versionfile.FormatTime(time.Now())
 	}
-	versionFileData.Save()
+	versionFileData.SaveForPlugin()
 
 	return reports
 }

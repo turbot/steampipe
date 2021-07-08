@@ -12,18 +12,29 @@ import (
 )
 
 const (
-	versionFileName = "versions.json"
+	pluginVersionFileName = "versions.json"
+	dbVersionFileName     = "versions.json"
 )
 
-type VersionFile struct {
-	Plugins      map[string]*InstalledVersion `json:"plugins"`
-	FdwExtension InstalledVersion             `json:"fdwExtension"`
-	EmbeddedDB   InstalledVersion             `json:"embeddedDB"`
+type PluginVersionFile struct {
+	Plugins map[string]*InstalledVersion `json:"plugins"`
 }
 
-func NewVersionFile() *VersionFile {
-	return &VersionFile{
+type DBVersionFile struct {
+	FdwExtension InstalledVersion `json:"fdwExtension"`
+	EmbeddedDB   InstalledVersion `json:"embeddedDB"`
+}
+
+func NewPluginVersionFile() *PluginVersionFile {
+	return &PluginVersionFile{
 		Plugins: map[string]*InstalledVersion{},
+	}
+}
+
+func NewDBVersionFile() *DBVersionFile {
+	return &DBVersionFile{
+		FdwExtension: InstalledVersion{},
+		EmbeddedDB:   InstalledVersion{},
 	}
 }
 
@@ -36,19 +47,34 @@ type InstalledVersion struct {
 	InstallDate     string `json:"installDate"`
 }
 
-// Load :: load the config file from the standard path, or return an empty one
-func Load() (*VersionFile, error) {
+// LoadForPlugin :: load the config file for plugin from the standard path, or return an empty one
+func LoadForPlugin() (*PluginVersionFile, error) {
 	versionFilePath := versionFileLocation()
 	if fileExists(versionFilePath) {
-		return read(versionFilePath)
+		return readForPlugin(versionFilePath)
 	}
-	return NewVersionFile(), nil
+	return NewPluginVersionFile(), nil
 }
 
-// Save :: Save the config file from the standard path, or return an empty one
-func (f *VersionFile) Save() error {
+// LoadForDB :: load the config file for DB from the standard path, or return an empty one
+func LoadForDB() (*DBVersionFile, error) {
+	versionFilePath := dbVersionFileLocation()
+	if fileExists(versionFilePath) {
+		return readforDB(versionFilePath)
+	}
+	return NewDBVersionFile(), nil
+}
+
+// SaveForPlugin :: Save the config file from the standard path, or return an empty one
+func (f *PluginVersionFile) SaveForPlugin() error {
 	versionFilePath := versionFileLocation()
-	return f.write(versionFilePath)
+	return f.writeForPlugin(versionFilePath)
+}
+
+// SaveForDB :: Save the config file from the standard path, or return an empty one
+func (f *DBVersionFile) SaveForDB() error {
+	versionFilePath := versionFileLocation()
+	return f.writeForDB(versionFilePath)
 }
 
 func fileExists(filename string) bool {
@@ -59,7 +85,7 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func (f *VersionFile) write(path string) error {
+func (f *PluginVersionFile) writeForPlugin(path string) error {
 	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
 	if err != nil {
 		log.Println("[ERROR]", "Error while writing version file", err)
@@ -68,13 +94,22 @@ func (f *VersionFile) write(path string) error {
 	return ioutil.WriteFile(path, versionFileJSON, 0644)
 }
 
-func read(path string) (*VersionFile, error) {
+func (f *DBVersionFile) writeForDB(path string) error {
+	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
+	if err != nil {
+		log.Println("[ERROR]", "Error while writing version file", err)
+		return err
+	}
+	return ioutil.WriteFile(path, versionFileJSON, 0644)
+}
+
+func readForPlugin(path string) (*PluginVersionFile, error) {
 	file, _ := ioutil.ReadFile(path)
 
-	var data VersionFile
+	var data PluginVersionFile
 
 	if err := json.Unmarshal([]byte(file), &data); err != nil {
-		log.Println("[ERROR]", "Error while reading version file", err)
+		log.Println("[ERROR]", "Error while reading plugin version file", err)
 		return nil, err
 	}
 
@@ -90,9 +125,38 @@ func read(path string) (*VersionFile, error) {
 	return &data, nil
 }
 
+func readforDB(path string) (*DBVersionFile, error) {
+	file, _ := ioutil.ReadFile(path)
+	var data DBVersionFile
+	if err := json.Unmarshal([]byte(file), &data); err != nil {
+		log.Println("[ERROR]", "Error while reading DB version file", err)
+		return nil, err
+	}
+	if data.FdwExtension == (InstalledVersion{}) {
+		data.FdwExtension = InstalledVersion{}
+	}
+
+	if data.EmbeddedDB == (InstalledVersion{}) {
+		data.EmbeddedDB = InstalledVersion{}
+	}
+
+	return &data, nil
+}
+
 // ex: $CONFIG_DIR/plugins/hub.steampipe.io/turbot/aws/1.1.2/steampipe-plugin-aws
 func versionFileLocation() string {
-	path := filepath.Join(constants.InternalDir(), versionFileName)
+	path := filepath.Join(constants.PluginDir(), pluginVersionFileName)
+	return path
+}
+
+// ex: $CONFIG_DIR/plugins/hub.steampipe.io/turbot/aws/1.1.2/steampipe-plugin-aws
+func dbVersionFileLocation() string {
+	path := filepath.Join(constants.DatabaseDir(), pluginVersionFileName)
+	return path
+}
+
+func oldVersionFileLocation() string {
+	path := filepath.Join(constants.InternalDir(), pluginVersionFileName)
 	return path
 }
 

@@ -43,7 +43,7 @@ func InstallPlugin(imageRef string) (*SteampipeImage, error) {
 
 func updateVersionFilePlugin(image *SteampipeImage) error {
 	timeNow := versionfile.FormatTime(time.Now())
-	v, err := versionfile.Load()
+	v, err := versionfile.LoadForPlugin()
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 
 	v.Plugins[pluginFullName] = plugin
 
-	return v.Save()
+	return v.SaveForPlugin()
 }
 
 func installPluginBinary(image *SteampipeImage, tempdir string) error {

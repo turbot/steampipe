@@ -17,6 +17,9 @@ const (
 var SteampipeDir string
 
 func steampipeSubDir(dirName string) string {
+	if SteampipeDir == "" {
+		panic(fmt.Errorf("Can't set sub directory if the steampipe directory is empty"))
+	}
 	subDir := filepath.Join(SteampipeDir, dirName)
 
 	if _, err := os.Stat(subDir); os.IsNotExist(err) {

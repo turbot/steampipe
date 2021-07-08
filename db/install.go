@@ -218,7 +218,7 @@ func installSteampipeHub() error {
 
 func fdwNeedsUpdate() bool {
 	// check FDW version
-	versionInfo, err := versionfile.Load()
+	versionInfo, err := versionfile.LoadForDB()
 	if err != nil {
 		utils.FailOnError(fmt.Errorf("could not verify required FDW version"))
 	}
@@ -299,7 +299,7 @@ func IsInstalled() bool {
 }
 
 func updateDownloadedBinarySignature() error {
-	versionInfo, err := versionfile.Load()
+	versionInfo, err := versionfile.LoadForDB()
 	if err != nil {
 		return err
 	}
