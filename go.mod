@@ -6,7 +6,6 @@ require (
 	github.com/Machiel/slugify v1.0.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/ahmetb/go-linq v3.0.0+incompatible
-	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/briandowns/spinner v1.11.1
 	github.com/c-bata/go-prompt v0.2.5
@@ -14,7 +13,6 @@ require (
 	github.com/deislabs/oras v0.8.1
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.7.0
-	github.com/fsnotify/fsnotify v1.4.7
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/gin-contrib/static v0.0.1

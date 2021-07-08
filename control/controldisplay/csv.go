@@ -69,7 +69,7 @@ func (r CSVRenderer) renderControl(run *controlexecute.ControlRun, group *contro
 	return res
 }
 
-func (r CSVRenderer) resultDimensionMap(row *execute.ResultRow) map[string]string {
+func (r CSVRenderer) resultDimensionMap(row *controlexecute.ResultRow) map[string]string {
 	dimensionMap := map[string]string{}
 	for _, dimension := range row.Dimensions {
 		dimensionMap[dimension.Key] = dimension.Value
