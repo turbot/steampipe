@@ -1,6 +1,10 @@
+## v0.6.2 [2021-07-08]
+_Bug fixes_
+* Revert prototype code inadvertently included in 0.6.1 
+
 ## v0.6.1 [2021-07-08]
 _What's new?_
-* Support executing controls from query command. Closes ([#470](https://github.com/turbot/steampipe/issues/470))
+* Support executing control queries using the query command. ([#470](https://github.com/turbot/steampipe/issues/470))
 * Update steampipe-plugin-sdk reference version to support ProtocolVersion `20210701`
 
 _Bug fixes_
