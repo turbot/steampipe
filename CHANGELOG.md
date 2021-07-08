@@ -1,3 +1,7 @@
+## v0.6.2 [2021-07-08]
+_Bug fixes_
+* Revert prototype code inadvertently included in 0.6.1 
+
 ## v0.6.1 [2021-07-08]
 _What's new?_
 * Support executing control queries using the query command. ([#470](https://github.com/turbot/steampipe/issues/470))
