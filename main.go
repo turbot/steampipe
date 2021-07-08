@@ -19,10 +19,11 @@ func main() {
 	utils.LogTime("main start")
 	exitCode := 0
 	defer func() {
-		utils.LogTime("main end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
+		utils.LogTime("main end")
+		utils.DisplayProfileData()
 		os.Exit(exitCode)
 	}()
 
@@ -37,9 +38,6 @@ func main() {
 
 	// execute the command
 	exitCode = cmd.Execute()
-
-	utils.LogTime("end")
-	utils.DisplayProfileData()
 }
 
 // set the current to the max to avoid any file handle shortages

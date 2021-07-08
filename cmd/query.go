@@ -76,10 +76,10 @@ func getPipedStdinData() string {
 }
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
-	utils.LogTime("runQueryCmd start")
+	utils.LogTime("cmd.runQueryCmd start")
 	var client *db.Client
 	defer func() {
-		utils.LogTime("runQueryCmd end")
+		utils.LogTime("cmd.runQueryCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
@@ -95,13 +95,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
-	// start db if necessary
-	err := db.EnsureDbAndStartService(db.InvokerQuery)
-	utils.FailOnErrorWithMessage(err, "failed to start service")
-	defer func() {
-		db.Shutdown(client, db.InvokerQuery)
-	}()
-
 	// load the workspace
 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
@@ -114,6 +107,14 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	queries := execute.GetQueries(args, workspace)
 
+	// start db if necessary
+	err = db.EnsureDbAndStartService(db.InvokerQuery)
+	utils.FailOnErrorWithMessage(err, "failed to start service")
+
+	defer func() {
+		db.Shutdown(client, db.InvokerQuery)
+	}()
+
 	// get a db client
 	client, err = db.NewClient(true)
 	utils.FailOnError(err)
@@ -124,10 +125,9 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// if no query is specified, run interactive prompt
 	if interactiveMode {
-		// interactive session creates its own client
 		execute.RunInteractiveSession(workspace, client)
 	} else if len(queries) > 0 {
-		// ensure client is closed
+		// ensure client is closed after we are done
 		defer client.Close()
 
 		ctx, cancel := context.WithCancel(context.Background())

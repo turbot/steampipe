@@ -11,7 +11,6 @@ import (
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
 )
@@ -73,13 +72,19 @@ func (slt Invoker) IsValid() error {
 }
 
 // StartDB :: start the database is not already running
-func StartDB(port int, listen StartListenType, invoker Invoker) (startResult StartResult, err error) {
+func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnections bool) (startResult StartResult, err error) {
+	var client *Client
+
 	defer func() {
 		// if there was an error and we started the service, stop it again
 		if err != nil {
 			if startResult == ServiceStarted {
 				StopDB(false, invoker)
 			}
+		}
+
+		if client != nil {
+			client.Close()
 		}
 	}()
 	info, err := GetStatus()
@@ -90,7 +95,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (startResult Sta
 
 	if info != nil {
 		// check whether the stated PID actually exists
-		processRunning, err := psutils.PidExists(int32(info.Pid))
+		processRunning, err := PidExists(info.Pid)
 		if err != nil {
 			return ServiceFailedToStart, err
 		}
@@ -118,7 +123,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (startResult Sta
 	}
 
 	if !isPortBindable(port) {
-		return ServiceFailedToStart, fmt.Errorf("Cannot listen on port %s. To start the service with a different port, use %s", constants.Bold(port), constants.Bold("--database-port <number>"))
+		return ServiceFailedToStart, fmt.Errorf("Cannot listen on port %d. To start the service with a different port, use %s", constants.Bold(port), constants.Bold("--database-port <number>"))
 	}
 
 	postgresCmd := exec.Command(
@@ -170,7 +175,6 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (startResult Sta
 	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", constants.SteampipeDir))
 
 	log.Println("[TRACE] postgres start command: ", postgresCmd.String())
-	//log.Println("[TRACE] postgres environment: ", postgresCmd.Env)
 
 	postgresCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid:    true,
@@ -212,13 +216,10 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (startResult Sta
 	// create a client
 	// pass 'false' to disable auto refreshing connections
 	//- we will explicitly refresh connections after ensuring the steampipe server exists
-	client, err := NewClient(false)
+	client, err = NewClient(false)
 	if err != nil {
 		return ServiceFailedToStart, handleStartFailure(err)
 	}
-	defer func() {
-		client.Close()
-	}()
 
 	err = ensureSteampipeServer()
 	if err != nil {
@@ -237,7 +238,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker) (startResult Sta
 	// refresh plugin connections - ensure db schemas are in sync with connection config
 	// NOTE: refresh defaults to true but will be set to false if this service start command has been invoked
 	// internally by a different command which needs the service
-	if cmdconfig.Viper().GetBool(constants.ArgRefresh) {
+	if refreshConnections {
 		if _, err = client.RefreshConnections(); err != nil {
 			return ServiceStarted, err
 		}
@@ -311,17 +312,33 @@ func isPortBindable(port int) bool {
 }
 
 // kill all postgres processes that were started as part of steampipe (if any)
-func killPreviousInstanceIfAny() bool {
-	wasKilled := false
-	for {
-		p := findSteampipePostgresInstance()
-		if p == nil {
-			break
-		}
-		killProcessTree(p)
-		wasKilled = true
+func killInstanceIfAny() bool {
+	processes, err := FindAllSteampipePostgresInstances()
+	if err != nil {
+		return false
 	}
-	return wasKilled
+	for _, process := range processes {
+		killProcessTree(process)
+	}
+	return len(processes) > 0
+}
+
+func FindAllSteampipePostgresInstances() ([]*psutils.Process, error) {
+	instances := []*psutils.Process{}
+	allProcesses, err := psutils.Processes()
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range allProcesses {
+		if cmdLine, err := p.CmdlineSlice(); err == nil {
+			if isSteampipePostgresProcess(cmdLine) {
+				instances = append(instances, p)
+			}
+		} else {
+			return nil, err
+		}
+	}
+	return instances, nil
 }
 
 func findSteampipePostgresInstance() *psutils.Process {
@@ -346,14 +363,18 @@ func isSteampipePostgresProcess(cmdline []string) bool {
 	return false
 }
 
-func killProcessTree(p *psutils.Process) {
+func killProcessTree(p *psutils.Process) error {
 	// find it's children
-	children, _ := p.Children()
+	children, err := p.Children()
+	if err != nil {
+		return err
+	}
 	for _, child := range children {
 		// and kill them first
 		killProcessTree(child)
 	}
 	p.Kill()
+	return nil
 }
 
 func localAddresses() ([]string, error) {

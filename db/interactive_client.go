@@ -118,8 +118,12 @@ func (c *InteractiveClient) runInteractivePrompt() (ret utils.InteractiveExitSta
 		}
 	}()
 
-	callExecutor := func(line string) { c.executor(line) }
-	completer := func(d prompt.Document) []prompt.Suggest { return c.queryCompleter(d, c.client.schemaMetadata) }
+	callExecutor := func(line string) {
+		c.executor(line)
+	}
+	completer := func(d prompt.Document) []prompt.Suggest {
+		return c.queryCompleter(d, c.client.schemaMetadata)
+	}
 	c.interactivePrompt = prompt.New(
 		callExecutor,
 		completer,

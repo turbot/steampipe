@@ -79,9 +79,15 @@ func (m ConnectionMap) Equals(other ConnectionMap) bool {
 
 // GetConnectionsToUpdate :: returns updates to be made to the database to sync with connection config
 func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*modconfig.Connection) (*ConnectionUpdates, error) {
+	utils.LogTime("steampipeconfig.GetConnectionsToUpdate start")
+	defer utils.LogTime("steampipeconfig.GetConnectionsToUpdate end")
+
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
 	connectionState, err := GetConnectionState(schemas)
+	if err != nil {
+		return nil, err
+	}
 
 	requiredConnections, missingPlugins, err := getRequiredConnections(connectionConfig)
 	if err != nil {
@@ -114,9 +120,13 @@ func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*modco
 
 // load and parse the connection config
 func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (ConnectionMap, []string, error) {
+	utils.LogTime("steampipeconfig.getRequiredConnections start")
+	defer utils.LogTime("steampipeconfig.getRequiredConnections end")
+
 	requiredConnections := ConnectionMap{}
 	var missingPlugins []string
 
+	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration start")
 	// populate checksum for each referenced plugin
 	for name, config := range connectionConfig {
 		remoteSchema := config.Plugin
@@ -144,6 +154,7 @@ func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (
 			ConnectionName:   config.Name,
 		}
 	}
+	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration end")
 
 	return requiredConnections, missingPlugins, nil
 }

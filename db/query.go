@@ -3,10 +3,8 @@ package db
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/utils"
 )
@@ -15,6 +13,7 @@ import (
 func EnsureDbAndStartService(invoker Invoker) error {
 	utils.LogTime("db.EnsureDbAndStartService start")
 	defer utils.LogTime("db.EnsureDbAndStartService end")
+
 	log.Println("[TRACE] db.EnsureDbAndStartService start")
 
 	EnsureDBInstalled()
@@ -23,13 +22,9 @@ func EnsureDbAndStartService(invoker Invoker) error {
 		return errors.New("could not retrieve service status")
 	}
 
-	if status != nil && status.Invoker != InvokerService {
-		return fmt.Errorf("You already have a %s session open. To run multiple sessions, first run %s.\nTo kill existing sessions run %s", constants.Bold(fmt.Sprintf("steampipe %s", status.Invoker)), constants.Bold("steampipe service start"), constants.Bold("steampipe service stop --force"))
-	}
-
 	if status == nil {
 		// the db service is not started - start it
-		StartService(invoker)
+		StartImplicitService(invoker)
 	}
 	return nil
 }

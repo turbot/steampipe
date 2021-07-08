@@ -66,4 +66,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_13.json)"
 }
 
+function setup() {
+  steampipe service start
+}
+
+function teardown() {
+  steampipe service stop
+}
+
+
 
