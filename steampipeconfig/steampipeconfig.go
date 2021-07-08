@@ -33,9 +33,9 @@ func (c *SteampipeConfig) Validate() error {
 	var validationErrors []string
 	for _, connection := range c.Connections {
 
-		// if the connection is an aggregate, populate the child connections
+		// if the connection is an aggregator, populate the child connections
 		// this resolves any wildcards in the connection list
-		if connection.Type == modconfig.ConnectionTypeAggregate {
+		if connection.Type == modconfig.ConnectionTypeAggregator {
 			connection.PopulateChildren(c.Connections)
 		}
 		validationErrors = append(validationErrors, connection.Validate(c.Connections)...)

@@ -182,8 +182,6 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 	if diags.HasErrors() {
 		return plugin.DiagsToError("Failed to load config", diags)
 	}
-
-	//
 	return nil
 }
 
