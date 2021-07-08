@@ -45,11 +45,11 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a check session (comma-separated)").
 		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme, which determines the color scheme for the 'text' control output. Possible values are light, dark, plain").
-		AddStringSliceFlag(constants.ArgExport, "", []string{}, "Export output to files").
+		AddStringSliceFlag(constants.ArgExport, "", []string{}, "Export output to files. Multiple exports are allowed.").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
 		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them").
-		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls ").
-		AddStringSliceFlag(constants.ArgTag, "", []string{}, "Key value pairs of tags for filter (### needs thought ###)")
+		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls. Cannot be used with '--tag'").
+		AddStringSliceFlag(constants.ArgTag, "", []string{}, "Key-Value pairs to filter controls based on the 'tags' property. To be provided as 'key=value'. Multiple can be given and are merged together. Cannot be used with '--where'")
 
 	return cmd
 }
