@@ -10,6 +10,7 @@ import (
 )
 
 const ALREADY_INSTALLED = "Already installed"
+const ANOTHER_VERSION_EXISTS = "Another version already exists"
 const LATEST_ALREADY_INSTALLED = "Latest already installed"
 const NOT_INSTALLED = "Not installed"
 
@@ -78,7 +79,7 @@ func PrintInstallReports(reports []InstallReport, isUpdateReport bool) {
 			installedOrUpdated = append(installedOrUpdated, report)
 		} else if report.SkipReason == NOT_INSTALLED {
 			canBeInstalled = append(canBeInstalled, report)
-		} else if report.SkipReason == ALREADY_INSTALLED {
+		} else if report.SkipReason == ALREADY_INSTALLED || report.SkipReason == ANOTHER_VERSION_EXISTS {
 			canBeUpdated = append(canBeUpdated, report)
 		}
 	}
