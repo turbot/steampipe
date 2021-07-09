@@ -70,7 +70,7 @@ func (c *Connection) Validate(connectionMap map[string]*Connection) []string {
 		return []string{fmt.Sprintf("connection '%s' has invalid connection type '%s'", c.Name, c.Type)}
 	}
 	if c.Type == ConnectionTypeAggregator {
-		return c.ValidateAggregateConnection(connectionMap)
+		return c.ValidateAggregatorConnection(connectionMap)
 	}
 	// this is NOT an aggregator group - there should be no children
 	var validationErrors []string
