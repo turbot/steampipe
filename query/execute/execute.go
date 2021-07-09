@@ -9,18 +9,12 @@ import (
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
-	"github.com/turbot/steampipe/workspace"
 )
 
-func RunInteractiveSession(workspace *workspace.Workspace, client *db.Client) {
-	// start the workspace file watcher
-	if viper.GetBool(constants.ArgWatch) {
-		err := workspace.SetupWatcher(client)
-		utils.FailOnError(err)
-	}
+func RunInteractiveSession(initChan *chan *db.InteractiveClientInitData) {
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.RunInteractivePrompt(workspace, client)
+	resultsStreamer, err := db.RunInteractivePrompt(initChan)
 	utils.FailOnError(err)
 
 	// print the data as it comes

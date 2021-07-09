@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 
@@ -77,7 +78,7 @@ func getPipedStdinData() string {
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runQueryCmd start")
-	var client *db.Client
+
 	defer func() {
 		utils.LogTime("cmd.runQueryCmd end")
 		if r := recover(); r != nil {
@@ -95,47 +96,67 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
-	// load the workspace
-	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
-	defer workspace.Close()
+	initDataChan := make(chan *db.InteractiveClientInitData, 1)
+	var queries []string
+	go func() {
+		//log.Printf("[WARN] GET INIT DATA")
+		// load the workspace
+		workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+		utils.FailOnErrorWithMessage(err, "failed to load workspace")
+		defer workspace.Close()
 
-	// check if the required plugins are installed
-	err = workspace.CheckRequiredPluginsInstalled()
-	utils.FailOnError(err)
+		// check if the required plugins are installed
+		err = workspace.CheckRequiredPluginsInstalled()
+		utils.FailOnError(err)
 
-	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-	queries := execute.GetQueries(args, workspace)
+		// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
+		queries = execute.GetQueries(args, workspace)
 
-	// start db if necessary
-	err = db.EnsureDbAndStartService(db.InvokerQuery)
-	utils.FailOnErrorWithMessage(err, "failed to start service")
+		// start db if necessary
+		err = db.EnsureDbAndStartService(db.InvokerQuery)
+		utils.FailOnErrorWithMessage(err, "failed to start service")
 
-	defer func() {
-		db.Shutdown(client, db.InvokerQuery)
+		var client *db.Client
+
+		// get a db client
+		client, err = db.NewClient(true)
+		utils.FailOnError(err)
+
+		// populate the reflection tables
+		err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)
+		utils.FailOnError(err)
+
+		initDataChan <- &db.InteractiveClientInitData{
+			Workspace: workspace,
+			Client:    client,
+		}
+		close(initDataChan)
+		//log.Printf("[WARN] GOT INIT DATA")
 	}()
 
-	// get a db client
-	client, err = db.NewClient(true)
-	utils.FailOnError(err)
-
-	// populate the reflection tables
-	err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)
-	utils.FailOnError(err)
-
-	// if no query is specified, run interactive prompt
 	if interactiveMode {
-		execute.RunInteractiveSession(workspace, client)
-	} else if len(queries) > 0 {
-		// ensure client is closed after we are done
-		defer client.Close()
+		// TODO ensure we shut down DB
+		execute.RunInteractiveSession(&initDataChan)
+	} else {
 
-		ctx, cancel := context.WithCancel(context.Background())
-		startCancelHandler(cancel)
-		// otherwise if we have resolved any queries, run them
-		failures := execute.ExecuteQueries(ctx, queries, client)
-		// set global exit code
-		exitCode = failures
+		// wait for init
+		d := <-initDataChan
+		log.Printf("[WARN] INIT DATA HAS ARRIVED FOR NON INTERACTIVE")
+		// if no query is specified, run interactive prompt
+		if !interactiveMode && len(queries) > 0 {
+			defer func() {
+				// ensure client is closed after we are done
+				d.Client.Close()
+				db.Shutdown(d.Client, db.InvokerQuery)
+			}()
+
+			ctx, cancel := context.WithCancel(context.Background())
+			startCancelHandler(cancel)
+			// otherwise if we have resolved any queries, run them
+			failures := execute.ExecuteQueries(ctx, queries, d.Client)
+			// set global exit code
+			exitCode = failures
+		}
 	}
 }
 
