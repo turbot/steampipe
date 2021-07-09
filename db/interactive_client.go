@@ -9,6 +9,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/spf13/viper"
+
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/autocomplete"
@@ -17,40 +19,80 @@ import (
 	"github.com/turbot/steampipe/query/metaquery"
 	"github.com/turbot/steampipe/query/queryhistory"
 	"github.com/turbot/steampipe/query/queryresult"
-	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
 )
 
+type InteractiveClientInitData struct {
+	Workspace WorkspaceResourceProvider
+	Client    *Client
+}
+
 // InteractiveClient :: wrapper over *Client and *prompt.Prompt along
 // to facilitate interactive query prompt
 type InteractiveClient struct {
-	client                  *Client
+	client_                 *Client
 	resultsStreamer         *queryresult.ResultStreamer
-	workspace               WorkspaceResourceProvider
+	workspace_              WorkspaceResourceProvider
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
 	interactiveQueryHistory *queryhistory.QueryHistory
 	autocompleteOnEmpty     bool
 	activeQueryCancelFunc   context.CancelFunc
+	initChan                *chan *InteractiveClientInitData
 }
 
-func newInteractiveClient(workspace WorkspaceResourceProvider, client *Client, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
-	return &InteractiveClient{
-		client:                  client,
+func newInteractiveClient(initChan *chan *InteractiveClientInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+	c := &InteractiveClient{
 		resultsStreamer:         resultsStreamer,
-		workspace:               workspace,
 		interactiveQueryHistory: queryhistory.New(),
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
-	}, nil
+		initChan:                initChan,
+	}
+	go func() {
+
+	}()
+
+	return c, nil
+}
+
+func (c *InteractiveClient) waitForInitData() {
+	// TODO select with timeout
+	initData := <-*(c.initChan)
+	c.workspace_ = initData.Workspace
+	c.client_ = initData.Client
+	//log.Printf("[WARN] INIT DATA HAS ARRIVED FOR INTERACTIVE")
+
+	// start the workspace file watcher
+	if viper.GetBool(constants.ArgWatch) {
+		err := c.workspace_.SetupWatcher(c.client_)
+		utils.FailOnError(err)
+	}
+}
+
+func (c *InteractiveClient) isInitialised() bool {
+	return c.workspace_ != nil
+}
+func (c *InteractiveClient) WaitForWorkspace() WorkspaceResourceProvider {
+	if !c.isInitialised() {
+		c.waitForInitData()
+	}
+	return c.workspace_
+}
+
+func (c *InteractiveClient) WaitForClient() *Client {
+	if !c.isInitialised() {
+		c.waitForInitData()
+	}
+	return c.client_
 }
 
 // InteractiveQuery :: start an interactive prompt and return
 func (c *InteractiveClient) InteractiveQuery() {
 	defer func() {
 		// close the underlying client
-		c.client.Close()
+		c.WaitForClient().Close()
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
@@ -122,7 +164,7 @@ func (c *InteractiveClient) runInteractivePrompt() (ret utils.InteractiveExitSta
 		c.executor(line)
 	}
 	completer := func(d prompt.Document) []prompt.Suggest {
-		return c.queryCompleter(d, c.client.schemaMetadata)
+		return c.queryCompleter(d)
 	}
 	c.interactivePrompt = prompt.New(
 		callExecutor,
@@ -226,7 +268,7 @@ func (c *InteractiveClient) executor(line string) {
 	// expand the buffer out into 'query'
 	query := strings.Join(c.interactiveBuffer, "\n")
 
-	namedQuery, isNamedQuery := c.workspace.GetQuery(query)
+	namedQuery, isNamedQuery := c.WaitForWorkspace().GetQuery(query)
 
 	// if it is a multiline query, execute even without `;`
 	if isNamedQuery {
@@ -238,7 +280,7 @@ func (c *InteractiveClient) executor(line string) {
 		}
 	}
 
-	control, isControl := c.workspace.GetControl(query)
+	control, isControl := c.WaitForWorkspace().GetControl(query)
 	if isControl {
 		query = *control.SQL
 	} else {
@@ -265,7 +307,7 @@ func (c *InteractiveClient) executor(line string) {
 		ctx, cancel := context.WithCancel(context.Background())
 		c.setCancelFunction(cancel)
 
-		result, err := c.client.ExecuteQuery(ctx, query, false)
+		result, err := c.WaitForClient().ExecuteQuery(ctx, query, false)
 		if err != nil {
 			c.handleExecuteError(err)
 		} else {
@@ -327,12 +369,13 @@ func (c *InteractiveClient) executeMetaquery(query string) error {
 	if !validateResult.ShouldRun {
 		return nil
 	}
+	client := c.WaitForClient()
 	// validation passed, now we will run
 	return metaquery.Handle(&metaquery.HandlerInput{
 		Query:       query,
-		Executor:    c.client,
-		Schema:      c.client.schemaMetadata,
-		Connections: c.client.connectionMap,
+		Executor:    client,
+		Schema:      client.schemaMetadata,
+		Connections: client.connectionMap,
 		Prompt:      c.interactivePrompt,
 	})
 }
@@ -348,7 +391,7 @@ func (c *InteractiveClient) shouldExecute(line string) bool {
 	return !cmdconfig.Viper().GetBool(constants.ArgMultiLine) || strings.HasSuffix(line, ";") || metaquery.IsMetaQuery(line)
 }
 
-func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *schema.Metadata) []prompt.Suggest {
+func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 	text := strings.TrimLeft(strings.ToLower(d.Text), " ")
 
 	if len(c.interactiveBuffer) > 0 {
@@ -375,18 +418,22 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 		s = append(s, metaquery.PromptSuggestions()...)
 
 	} else if metaquery.IsMetaQuery(text) {
+		client := c.WaitForClient()
 		suggestions := metaquery.Complete(&metaquery.CompleterInput{
 			Query:       text,
-			Schema:      c.client.schemaMetadata,
-			Connections: c.client.connectionMap,
+			Schema:      client.schemaMetadata,
+			Connections: client.connectionMap,
 		})
 
 		s = append(s, suggestions...)
 	} else {
 		queryInfo := getQueryInfo(text)
 
-		if queryInfo.EditingTable {
-			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.client.schemaMetadata, c.client.connectionMap)...)
+		//log.Printf("[WARN] init %v", c.isInitialised())
+		// only add table suggestions if the client is initialised
+		//
+		if queryInfo.EditingTable && c.isInitialised() {
+			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.client_.schemaMetadata, c.client_.connectionMap)...)
 		}
 
 		// Not sure this is working. comment out for now!
@@ -403,8 +450,12 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document, schemaMetadata *sc
 
 func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 	var res []prompt.Suggest
+	// only add named query suggestions if the client is initialised
+	if !c.isInitialised() {
+		return nil
+	}
 	// add all the queries in the workspace
-	for queryName, q := range c.workspace.GetQueryMap() {
+	for queryName, q := range c.WaitForWorkspace().GetQueryMap() {
 		description := "named query"
 		if q.Description != nil {
 			description += fmt.Sprintf(": %s", *q.Description)
@@ -412,7 +463,7 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 		res = append(res, prompt.Suggest{Text: queryName, Description: description})
 	}
 	// add all the controls in the workspace
-	for controlName, c := range c.workspace.GetControlMap() {
+	for controlName, c := range c.WaitForWorkspace().GetControlMap() {
 		description := "control"
 		if c.Description != nil {
 			description += fmt.Sprintf(": %s", *c.Description)
