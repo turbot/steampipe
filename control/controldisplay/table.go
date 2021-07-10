@@ -1,11 +1,11 @@
 package controldisplay
 
 import (
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 )
 
 type TableRenderer struct {
-	resultTree *execute.ExecutionTree
+	resultTree *controlexecute.ExecutionTree
 
 	// screen width
 	width             int
@@ -13,7 +13,7 @@ type TableRenderer struct {
 	maxTotalControls  int
 }
 
-func NewTableRenderer(resultTree *execute.ExecutionTree, width int) *TableRenderer {
+func NewTableRenderer(resultTree *controlexecute.ExecutionTree, width int) *TableRenderer {
 	return &TableRenderer{
 		resultTree:        resultTree,
 		width:             width,

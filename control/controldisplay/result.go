@@ -6,10 +6,9 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/control/controlexecute"
 
 	"github.com/turbot/go-kit/helpers"
-
-	"github.com/turbot/steampipe/control/execute"
 )
 
 const minReasonWidth = 10
@@ -17,8 +16,8 @@ const minReasonWidth = 10
 type ResultRenderer struct {
 	status         string
 	reason         string
-	dimensions     []execute.Dimension
-	colorGenerator *execute.DimensionColorGenerator
+	dimensions     []controlexecute.Dimension
+	colorGenerator *controlexecute.DimensionColorGenerator
 
 	// screen width
 	width int
@@ -27,7 +26,7 @@ type ResultRenderer struct {
 	indent     string
 }
 
-func NewResultRenderer(status, reason string, dimensions []execute.Dimension, colorGenerator *execute.DimensionColorGenerator, width int, indent string) *ResultRenderer {
+func NewResultRenderer(status, reason string, dimensions []controlexecute.Dimension, colorGenerator *controlexecute.DimensionColorGenerator, width int, indent string) *ResultRenderer {
 	return &ResultRenderer{
 		status:         status,
 		reason:         reason,
@@ -44,7 +43,7 @@ func (r ResultRenderer) Render() string {
 	defer log.Println("[TRACE] end result render")
 
 	// in quiet mode, only render failures
-	if r.errorsOnly && !helpers.StringSliceContains([]string{string(execute.ControlAlarm), string(execute.ControlError)}, r.status) {
+	if r.errorsOnly && !helpers.StringSliceContains([]string{string(controlexecute.ControlAlarm), string(controlexecute.ControlError)}, r.status) {
 		return ""
 	}
 

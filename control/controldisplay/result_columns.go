@@ -6,7 +6,7 @@ import (
 	"runtime/debug"
 	"sort"
 
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 )
 
 type CsvColumnPair struct {
@@ -22,9 +22,9 @@ type ResultColumns struct {
 	TagColumns       []string
 }
 
-func newResultColumns(e *execute.ExecutionTree) *ResultColumns {
+func newResultColumns(e *controlexecute.ExecutionTree) *ResultColumns {
 	groupColumns := getCsvColumns(*e.Root)
-	rowColumns := getCsvColumns(execute.ResultRow{})
+	rowColumns := getCsvColumns(controlexecute.ResultRow{})
 
 	dimensionColumns := e.DimensionColorGenerator.GetDimensionProperties()
 	tagColumns := e.GetAllTags()

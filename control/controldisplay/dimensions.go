@@ -7,16 +7,16 @@ import (
 
 	"github.com/logrusorgru/aurora"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 )
 
 type DimensionsRenderer struct {
-	dimensions     []execute.Dimension
-	colorGenerator *execute.DimensionColorGenerator
+	dimensions     []controlexecute.Dimension
+	colorGenerator *controlexecute.DimensionColorGenerator
 	width          int
 }
 
-func NewDimensionsRenderer(dimensions []execute.Dimension, colorGenerator *execute.DimensionColorGenerator, width int) *DimensionsRenderer {
+func NewDimensionsRenderer(dimensions []controlexecute.Dimension, colorGenerator *controlexecute.DimensionColorGenerator, width int) *DimensionsRenderer {
 	return &DimensionsRenderer{
 		dimensions:     dimensions,
 		colorGenerator: colorGenerator,

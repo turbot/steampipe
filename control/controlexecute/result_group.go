@@ -1,4 +1,4 @@
-package execute
+package controlexecute
 
 import (
 	"context"
@@ -24,9 +24,9 @@ type ResultGroup struct {
 	Groups      []*ResultGroup    `json:"groups"`
 	ControlRuns []*ControlRun     `json:"controls"`
 	// the control tree item associated with this group(i.e. a mod/benchmark)
-	GroupItem modconfig.ControlTreeItem `json:"-"`
-	Parent    *ResultGroup              `json:"-"`
-	Duration  time.Duration             `json:"-"`
+	GroupItem modconfig.ModTreeItem `json:"-"`
+	Parent    *ResultGroup          `json:"-"`
+	Duration  time.Duration         `json:"-"`
 }
 
 type GroupSummary struct {
@@ -34,7 +34,7 @@ type GroupSummary struct {
 }
 
 // NewRootResultGroup creates a ResultGroup to act as the root node of a control execution tree
-func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.ControlTreeItem) *ResultGroup {
+func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.ModTreeItem) *ResultGroup {
 	root := &ResultGroup{
 		GroupId: RootResultGroupName,
 		Groups:  []*ResultGroup{},
@@ -54,8 +54,8 @@ func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.Con
 	return root
 }
 
-// NewResultGroup creates a result group from a ControlTreeItem
-func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ControlTreeItem, parent *ResultGroup) *ResultGroup {
+// NewResultGroup creates a result group from a ModTreeItem
+func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ModTreeItem, parent *ResultGroup) *ResultGroup {
 	group := &ResultGroup{
 		GroupId:     treeItem.Name(),
 		Title:       treeItem.GetTitle(),

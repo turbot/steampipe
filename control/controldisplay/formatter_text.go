@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/karrick/gows"
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 )
 
 // limit text width
@@ -15,7 +15,7 @@ const maxCols = 200
 
 type TextFormatter struct{}
 
-func (j *TextFormatter) Format(ctx context.Context, tree *execute.ExecutionTree) (io.Reader, error) {
+func (j *TextFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	maxCols := j.getMaxCols(maxCols)
 	renderedText := NewTableRenderer(tree, maxCols).Render()
 	res := strings.NewReader(fmt.Sprintf("\n%s\n", renderedText))

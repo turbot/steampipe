@@ -101,12 +101,12 @@ func (q *Query) QualifiedName() string {
 	return fmt.Sprintf("%s.%s", q.metadata.ModShortName, q.FullName)
 }
 
-// GetMetadata implements HclResource and MappableResource
+// GetMetadata implements ResourceWithMetadata
 func (q *Query) GetMetadata() *ResourceMetadata {
 	return q.metadata
 }
 
-// SetMetadata implements MappableResource, HclResource
+// SetMetadata implements ResourceWithMetadata
 func (q *Query) SetMetadata(metadata *ResourceMetadata) {
 	q.metadata = metadata
 }

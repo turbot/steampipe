@@ -18,16 +18,12 @@ type loadWorkspaceTest struct {
 
 var toStringPointer = utils.ToStringPointer
 
-var m3alias = "m3"
-
-// the actual mod loading logic is tested more thoroughly in TestLoadMod (steampipeconfig/load_mod_test.go)
-// this test is primarily to verify the QueryMap building
-var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
+var m3alias, testCasesLoadWorkspace = "m3", map[string]loadWorkspaceTest{
 	"single mod": {
 		source: "test_data/w_1",
 		expected: &Workspace{
 			Mod: &modconfig.Mod{
-				ShortName: toStringPointer("w_1"),
+				ShortName: "w_1",
 				Title:     toStringPointer("workspace 1"),
 				//ModDepends: []*modconfig.ModVersion{
 				//	{ShortName: "github.com/turbot/m1", Version: "0.0.0"},
@@ -35,28 +31,28 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 				//},
 				Queries: map[string]*modconfig.Query{
 					"localq1": {
-						ShortName: toStringPointer("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
+						ShortName: ("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
 					},
 					"localq2": {
-						ShortName: toStringPointer("localq2"), Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
+						ShortName: ("localq2"), Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
 					},
 				},
 			},
 			QueryMap: map[string]*modconfig.Query{
 				"w_1.query.localq1": {
-					ShortName: toStringPointer("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
+					ShortName: ("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
 				},
 				"query.localq1": {
-					ShortName: toStringPointer("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
+					ShortName: ("localq1"), Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
 				},
 				"w_2.query.localq2": {
-					ShortName: toStringPointer("localq2"), Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
+					ShortName: ("localq2"), Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
 				},
 				"query.localq2": {
-					ShortName: toStringPointer("localq2"), Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
+					ShortName: ("localq2"), Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
 				},
 				"m1.query.q1": {
-					toStringPointer("q1"), toStringPointer("Q1"), toStringPointer("THIS IS QUERY 1"), toStringPointer("select 1"),
+					ShortName: toStringPointer("q1"), FullName: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), Documentation: toStringPointer("select 1"),
 				},
 				"m2.query.q2": {
 					toStringPointer("q2"), toStringPointer("Q2"), toStringPointer("THIS IS QUERY 2"), toStringPointer("select 2"),
@@ -94,7 +90,8 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 			},
 		}},
 	},
-}
+} // the actual mod loading logic is tested more thoroughly in TestLoadMod (steampipeconfig/load_mod_test.go)
+// this test is primarily to verify the QueryMap building
 
 func TestLoadWorkspace(t *testing.T) {
 	for name, test := range testCasesLoadWorkspace {

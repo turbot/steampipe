@@ -8,21 +8,21 @@ import (
 	"github.com/spf13/viper"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 )
 
 type ControlRenderer struct {
-	run               *execute.ControlRun
+	run               *controlexecute.ControlRun
 	parent            *GroupRenderer
 	maxFailedControls int
 	maxTotalControls  int
 	// screen width
 	width          int
-	colorGenerator *execute.DimensionColorGenerator
+	colorGenerator *controlexecute.DimensionColorGenerator
 	lastChild      bool
 }
 
-func NewControlRenderer(run *execute.ControlRun, parent *GroupRenderer) *ControlRenderer {
+func NewControlRenderer(run *controlexecute.ControlRun, parent *GroupRenderer) *ControlRenderer {
 	r := &ControlRenderer{
 		run:               run,
 		parent:            parent,
