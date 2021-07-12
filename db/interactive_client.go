@@ -9,8 +9,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/spf13/viper"
-
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/autocomplete"
@@ -23,76 +21,47 @@ import (
 	"github.com/turbot/steampipe/version"
 )
 
-type InteractiveClientInitData struct {
-	Workspace WorkspaceResourceProvider
-	Client    *Client
-}
-
 // InteractiveClient :: wrapper over *Client and *prompt.Prompt along
 // to facilitate interactive query prompt
 type InteractiveClient struct {
-	client_                 *Client
+	initData                *QueryInitData
 	resultsStreamer         *queryresult.ResultStreamer
-	workspace_              WorkspaceResourceProvider
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
 	interactiveQueryHistory *queryhistory.QueryHistory
 	autocompleteOnEmpty     bool
 	activeQueryCancelFunc   context.CancelFunc
-	initChan                *chan *InteractiveClientInitData
+	// channel from which we read the result of the external initialisation process
+	initDataChan *chan *QueryInitData
+	// channel used internally to signal an init error
+	initErrorChan chan error
 }
 
-func newInteractiveClient(initChan *chan *InteractiveClientInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+func newInteractiveClient(initChan *chan *QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	c := &InteractiveClient{
 		resultsStreamer:         resultsStreamer,
 		interactiveQueryHistory: queryhistory.New(),
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
-		initChan:                initChan,
+		initDataChan:            initChan,
+		initErrorChan:           make(chan error, 1),
 	}
-	go func() {
-
-	}()
-
+	// asyncronously wait for init to complete
+	// we start this immedaietely rather than lazy loading as we want to hanbdle errors asap
+	go c.readInitDataStream()
 	return c, nil
-}
-
-func (c *InteractiveClient) waitForInitData() {
-	// TODO select with timeout
-	initData := <-*(c.initChan)
-	c.workspace_ = initData.Workspace
-	c.client_ = initData.Client
-	//log.Printf("[WARN] INIT DATA HAS ARRIVED FOR INTERACTIVE")
-
-	// start the workspace file watcher
-	if viper.GetBool(constants.ArgWatch) {
-		err := c.workspace_.SetupWatcher(c.client_)
-		utils.FailOnError(err)
-	}
-}
-
-func (c *InteractiveClient) isInitialised() bool {
-	return c.workspace_ != nil
-}
-func (c *InteractiveClient) WaitForWorkspace() WorkspaceResourceProvider {
-	if !c.isInitialised() {
-		c.waitForInitData()
-	}
-	return c.workspace_
-}
-
-func (c *InteractiveClient) WaitForClient() *Client {
-	if !c.isInitialised() {
-		c.waitForInitData()
-	}
-	return c.client_
 }
 
 // InteractiveQuery :: start an interactive prompt and return
 func (c *InteractiveClient) InteractiveQuery() {
+	interruptSignalChannel := c.startCancelHandler()
+
 	defer func() {
+		// close up the SIGINT channel so that the receiver goroutine can quit
+
+		close(interruptSignalChannel)
 		// close the underlying client
-		c.WaitForClient().Close()
+		c.waitForClient().Close()
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
@@ -104,25 +73,34 @@ func (c *InteractiveClient) InteractiveQuery() {
 		c.resultsStreamer.Close()
 	}()
 
-	interruptSignalChannel := c.startCancelHandler()
 	fmt.Printf("Welcome to Steampipe v%s\n", version.String())
 	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
+
 	for {
-		rerun := c.runInteractivePrompt()
+		rerunChan := make(chan utils.InteractiveExitStatus, 1)
+		go func() {
+			rerun := c.runInteractivePrompt()
+			rerunChan <- rerun
+		}()
 
-		// persist saved history
-		c.interactiveQueryHistory.Persist()
-		if !rerun.Restart {
-			break
+		select {
+		case err := <-c.initErrorChan:
+			utils.ShowError(err)
+			return
+		case rerun := <-rerunChan:
+
+			// persist saved history
+			c.interactiveQueryHistory.Persist()
+			if !rerun.Restart {
+				break
+			}
+
+			// wait for the resultsStreamer to have streamed everything out
+			// this is to be sure the previous command has completed streaming
+			c.resultsStreamer.Wait()
 		}
-
-		// wait for the resultsStreamer to have streamed everything out
-		// this is to be sure the previous command has completed streaming
-		c.resultsStreamer.Wait()
 	}
 
-	// close up the SIGINT channel so that the receiver goroutine can quit
-	close(interruptSignalChannel)
 }
 
 func (c *InteractiveClient) startCancelHandler() chan os.Signal {
@@ -253,6 +231,12 @@ func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 }
 
 func (c *InteractiveClient) executor(line string) {
+	//// TODO how to we quit immediately if there is an init error
+	//// check whether there is an init error
+	//if err := c.getInitError(); err != nil {
+	//	panic(err)
+	//}
+
 	line = strings.TrimSpace(line)
 
 	// if it's an empty line, then we don't need to do anything
@@ -268,7 +252,7 @@ func (c *InteractiveClient) executor(line string) {
 	// expand the buffer out into 'query'
 	query := strings.Join(c.interactiveBuffer, "\n")
 
-	namedQuery, isNamedQuery := c.WaitForWorkspace().GetQuery(query)
+	namedQuery, isNamedQuery := c.waitForWorkspace().GetQuery(query)
 
 	// if it is a multiline query, execute even without `;`
 	if isNamedQuery {
@@ -280,7 +264,7 @@ func (c *InteractiveClient) executor(line string) {
 		}
 	}
 
-	control, isControl := c.WaitForWorkspace().GetControl(query)
+	control, isControl := c.waitForWorkspace().GetControl(query)
 	if isControl {
 		query = *control.SQL
 	} else {
@@ -307,7 +291,7 @@ func (c *InteractiveClient) executor(line string) {
 		ctx, cancel := context.WithCancel(context.Background())
 		c.setCancelFunction(cancel)
 
-		result, err := c.WaitForClient().ExecuteQuery(ctx, query, false)
+		result, err := c.waitForClient().ExecuteQuery(ctx, query, false)
 		if err != nil {
 			c.handleExecuteError(err)
 		} else {
@@ -369,7 +353,7 @@ func (c *InteractiveClient) executeMetaquery(query string) error {
 	if !validateResult.ShouldRun {
 		return nil
 	}
-	client := c.WaitForClient()
+	client := c.waitForClient()
 	// validation passed, now we will run
 	return metaquery.Handle(&metaquery.HandlerInput{
 		Query:       query,
@@ -418,7 +402,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		s = append(s, metaquery.PromptSuggestions()...)
 
 	} else if metaquery.IsMetaQuery(text) {
-		client := c.WaitForClient()
+		client := c.waitForClient()
 		suggestions := metaquery.Complete(&metaquery.CompleterInput{
 			Query:       text,
 			Schema:      client.schemaMetadata,
@@ -433,7 +417,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		// only add table suggestions if the client is initialised
 		//
 		if queryInfo.EditingTable && c.isInitialised() {
-			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.client_.schemaMetadata, c.client_.connectionMap)...)
+			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.initData.Client.schemaMetadata, c.initData.Client.connectionMap)...)
 		}
 
 		// Not sure this is working. comment out for now!
@@ -455,7 +439,7 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 		return nil
 	}
 	// add all the queries in the workspace
-	for queryName, q := range c.WaitForWorkspace().GetQueryMap() {
+	for queryName, q := range c.waitForWorkspace().GetQueryMap() {
 		description := "named query"
 		if q.Description != nil {
 			description += fmt.Sprintf(": %s", *q.Description)
@@ -463,7 +447,7 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 		res = append(res, prompt.Suggest{Text: queryName, Description: description})
 	}
 	// add all the controls in the workspace
-	for controlName, c := range c.WaitForWorkspace().GetControlMap() {
+	for controlName, c := range c.waitForWorkspace().GetControlMap() {
 		description := "control"
 		if c.Description != nil {
 			description += fmt.Sprintf(": %s", *c.Description)

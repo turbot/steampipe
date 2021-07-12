@@ -149,7 +149,9 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	db.EnsureDBInstalled()
+	res := db.EnsureDBInstalled()
+	utils.FailOnError(res.Error)
+	// TODO display messages/warnings from res
 
 	info, err := db.GetStatus()
 	if err != nil {
