@@ -66,7 +66,7 @@ func getPipedStdinData() string {
 		return ""
 	}
 	stdinData := ""
-	if (fi.Mode() & os.ModeCharDevice) == 0 {
+	if (fi.Mode()&os.ModeCharDevice) == 0 && fi.Size() > 0 {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			stdinData = fmt.Sprintf("%s%s", stdinData, scanner.Text())
