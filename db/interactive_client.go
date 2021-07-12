@@ -60,8 +60,10 @@ func (c *InteractiveClient) InteractiveQuery() {
 		// close up the SIGINT channel so that the receiver goroutine can quit
 
 		close(interruptSignalChannel)
-		// close the underlying client
-		c.waitForClient().Close()
+		// close the underlying client if it exists
+		if client := c.waitForClient(); client != nil {
+			client.Close()
+		}
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}

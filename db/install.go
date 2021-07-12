@@ -36,7 +36,7 @@ func EnsureDBInstalled() *InitResult {
 		if fdwNeedsUpdate() {
 			_, err := installFDW(false)
 			if err != nil {
-				res.Error = fmt.Errorf("%s could not be updated", constants.Bold("steampipe-postgres-fdw"))
+				res.Error = utils.PrefixError(err, fmt.Sprintf("%s could not be updated", constants.Bold("steampipe-postgres-fdw")))
 			} else {
 				res.AddMessage(fmt.Sprintf("%s was updated to %s. ", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion)))
 			}
