@@ -82,7 +82,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	startCancelHandler(cancel)
 
 	// start db if necessary
-	err = db.EnsureDbAndStartService(db.InvokerCheck).Error
+	err = db.EnsureDbAndStartService(db.InvokerCheck)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
 	defer db.Shutdown(nil, db.InvokerCheck)
 
