@@ -6,7 +6,6 @@ require (
 	github.com/Machiel/slugify v1.0.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/ahmetb/go-linq v3.0.0+incompatible
-	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/briandowns/spinner v1.11.1
 	github.com/c-bata/go-prompt v0.2.5
@@ -61,4 +60,3 @@ require (
 )
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe
-replace github.com/turbot/go-kit => /Users/kai/Dev/github/turbot/go-kit
