@@ -34,14 +34,15 @@ func EnsureDBInstalled() {
 		if fdwNeedsUpdate() {
 			_, err := installFDW(false)
 			utils.FailOnError(err)
-		}
-		fmt.Printf("%s was updated to %s. ", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
-		currentStatus, err := GetStatus()
-		if err != nil || currentStatus != nil {
-			fmt.Printf("Run %s for change to take effect.", constants.Bold("steampipe service restart"))
-		}
-		fmt.Println()
+			fmt.Printf("%s was updated to %s. ", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
+			currentStatus, err := GetStatus()
+			if err != nil || currentStatus != nil {
+				fmt.Printf("Run %s for change to take effect.", constants.Bold("steampipe service restart"))
+			}
+			fmt.Println()
 
+		}
+		return
 	}
 
 	log.Println("[TRACE] calling killPreviousInstanceIfAny")
@@ -75,9 +76,57 @@ func EnsureDBInstalled() {
 		utils.FailOnErrorWithMessage(err, "x Download & install embedded PostgreSQL database... FAILED!")
 	}
 
+	// installFDW takes care of the spinner, since it may need to run independently
+	_, err = installFDW(true)
+	utils.FailOnError(err)
+
+	dbInitSpinner := display.ShowSpinner(fmt.Sprintf("Initializing database..."))
+	err = initDatabase()
+	display.StopSpinner(dbInitSpinner)
+	if err != nil {
+		utils.FailOnErrorWithMessage(err, "x Initializing database... FAILED!")
+	}
+
+	pwSpinner := display.ShowSpinner(fmt.Sprintf("Generating database passwords..."))
+	// Try for passwords of the form dbC-3Ji-d04d
+	steampipePassword := generatePassword()
+	rootPassword := generatePassword()
+	// write the passwords that were generated
+	err = writePasswordFile(steampipePassword, rootPassword)
+	display.StopSpinner(pwSpinner)
+	if err != nil {
+		utils.FailOnErrorWithMessage(err, "x Generating database passwords... FAILED!")
+	}
+
+	startServiceSpinner := display.ShowSpinner(fmt.Sprintf("Configuring database..."))
+	StartImplicitService(InvokerInstaller)
+
+	err = installSteampipeDatabase(steampipePassword, rootPassword)
+	display.StopSpinner(startServiceSpinner)
+	if err != nil {
+		utils.FailOnErrorWithMessage(err, "x Configuring database... FAILED!")
+	}
+
+	installSteampipeSpinner := display.ShowSpinner(fmt.Sprintf("Configuring Steampipe..."))
+	err = installSteampipeHub()
+	display.StopSpinner(installSteampipeSpinner)
+	if err != nil {
+		utils.FailOnErrorWithMessage(err, "x Configuring Steampipe... FAILED!")
+	}
+	// force stop
+	StopDB(true, InvokerInstaller)
+
+	// write a signature after everything gets done!
+	// so that we can check for this later on
+	writeSignaturesSpinner := display.ShowSpinner(fmt.Sprintf("Updating install records..."))
+	err = updateDownloadedBinarySignature()
+	display.StopSpinner(writeSignaturesSpinner)
+	if err != nil {
+		utils.FailOnErrorWithMessage(err, "x Updating install records... FAILED!")
+	}
 }
 
-func installSteampipeDatabase(withSteampipePassword string, withRootPassword string) error {
+func installSteampipeDatabase(steampipePassword string, rootPassword string) error {
 	rawClient, err := createPostgresDbClient()
 	if err != nil {
 		return err
@@ -109,7 +158,7 @@ func installSteampipeDatabase(withSteampipePassword string, withRootPassword str
 		`grant all on database steampipe to root`,
 
 		// The root user gets a password which will be used later on to connect
-		fmt.Sprintf(`alter user root with password '%s'`, withRootPassword),
+		fmt.Sprintf(`alter user root with password '%s'`, rootPassword),
 
 		//
 		// PERMISSIONS
@@ -136,7 +185,7 @@ func installSteampipeDatabase(withSteampipePassword string, withRootPassword str
 		// Set a random, complex password for the steampipe user. Done as a separate
 		// step from the create for clarity and reuse.
 		// TODO: need a complex random password here, that is available for sharing with the user when the do steampipe service
-		fmt.Sprintf(`alter user steampipe with password '%s'`, withSteampipePassword),
+		fmt.Sprintf(`alter user steampipe with password '%s'`, steampipePassword),
 
 		// Allow steampipe the privileges of steampipe_users.
 		`grant steampipe_users to steampipe`,
