@@ -6,9 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -53,11 +50,6 @@ func (c *Client) RefreshConnections() (bool, error) {
 				println(warningString)
 			}
 		}()
-		// in query, this can only start when in interactive
-		if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
-			spin := display.ShowSpinner("Refreshing connections...")
-			defer display.StopSpinner(spin)
-		}
 
 		// first instantiate connection plugins for all updates
 		connectionPlugins, err := getConnectionPlugins(updates.Update)
