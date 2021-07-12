@@ -171,10 +171,13 @@ func streamQueryInitData(initDataChan chan *db.QueryInitData, args []string) {
 	initData.Queries = execute.GetQueries(args, workspace)
 
 	// get a db client
-	client, err := db.NewClient(true)
-	if err != nil {
-		initData.Result.Error = err
+	client, res := db.NewClient(true)
+	if initData.Result.Error != nil {
+		initData.Result.Error = res.Error
 		return
+	}
+	if len(res.Warning) > 0 {
+		initData.Result.AddWarning(res.Warning)
 	}
 
 	initData.Client = client

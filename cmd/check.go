@@ -105,8 +105,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// first get a client - do this once for all controls
-	client, err := db.NewClient(true)
-	utils.FailOnError(err)
+	client, res := db.NewClient(true)
+	utils.FailOnError(res.Error)
 	defer client.Close()
 
 	// populate the reflection tables
