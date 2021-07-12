@@ -8,21 +8,23 @@ type InitResult struct {
 	Messages []string
 }
 
-func (d *InitResult) AddMessage(message string) {
-	d.Messages = append(d.Messages, message)
+func (r *InitResult) AddMessage(message string) {
+	r.Messages = append(r.Messages, message)
 }
 
-func (d *InitResult) AddWarning(warning string) {
-	d.Warnings = append(d.Warnings, warning)
+func (r *InitResult) AddWarning(warning string) {
+	r.Warnings = append(r.Warnings, warning)
 }
 
-func (d *InitResult) DisplayWarnings() {
-	for _, w := range d.Warnings {
+func (r *InitResult) HasMessages() bool {
+	return len(r.Warnings)+len(r.Messages) > 0
+}
+
+func (r *InitResult) DisplayMessages() {
+	for _, w := range r.Warnings {
 		fmt.Println(w)
 	}
-}
-func (d *InitResult) DisplayMessages() {
-	for _, w := range d.Messages {
+	for _, w := range r.Messages {
 		fmt.Println(w)
 	}
 }

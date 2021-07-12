@@ -80,16 +80,25 @@ func (c *InteractiveClient) InteractiveQuery() {
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors
 	promptResultChan := make(chan utils.InteractiveExitStatus, 1)
-	c.runInteractivePromptAsync(&promptResultChan)
+
+	ctx, cancelPrompt := context.WithCancel(context.Background())
+	c.runInteractivePromptAsync(ctx, &promptResultChan)
 	for {
 		select {
 		case initResult := <-c.initResultChan:
 			if initResult.Error != nil {
 				utils.ShowError(initResult.Error)
+				cancelPrompt()
 				return
 			}
-			initResult.DisplayWarnings()
-			initResult.DisplayMessages()
+			if initResult.HasMessages() {
+				cancelPrompt()
+				initResult.DisplayMessages()
+				// create new context
+				ctx, cancelPrompt = context.WithCancel(context.Background())
+				// run prompt again
+				c.runInteractivePromptAsync(ctx, &promptResultChan)
+			}
 
 		case rerun := <-promptResultChan:
 			// persist saved history
@@ -101,19 +110,19 @@ func (c *InteractiveClient) InteractiveQuery() {
 			// this is to be sure the previous command has completed streaming
 			c.resultsStreamer.Wait()
 			// now run it again
-			c.runInteractivePromptAsync(&promptResultChan)
+			c.runInteractivePromptAsync(ctx, &promptResultChan)
 		}
 	}
 }
 
-func (c *InteractiveClient) runInteractivePromptAsync(promptResultChan *chan utils.InteractiveExitStatus) {
+func (c *InteractiveClient) runInteractivePromptAsync(ctx context.Context, promptResultChan *chan utils.InteractiveExitStatus) {
 	go func() {
-		rerun := c.runInteractivePrompt()
+		rerun := c.runInteractivePrompt(ctx)
 		*promptResultChan <- rerun
 	}()
 }
 
-func (c *InteractiveClient) runInteractivePrompt() (ret utils.InteractiveExitStatus) {
+func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils.InteractiveExitStatus) {
 	defer func() {
 		// this is to catch the PANIC that gets raised by
 		// the executor of go-prompt
@@ -220,7 +229,8 @@ func (c *InteractiveClient) runInteractivePrompt() (ret utils.InteractiveExitSta
 	)
 	// set this to a default
 	c.autocompleteOnEmpty = false
-	c.interactivePrompt.Run()
+	c.interactivePrompt.Run(ctx)
+	ret = utils.InteractiveExitStatus{Restart: true}
 	return
 }
 
@@ -253,12 +263,6 @@ func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 }
 
 func (c *InteractiveClient) executor(line string) {
-	//// TODO how to we quit immediately if there is an init error
-	//// check whether there is an init error
-	//if err := c.getInitError(); err != nil {
-	//	panic(err)
-	//}
-
 	line = strings.TrimSpace(line)
 
 	// if it's an empty line, then we don't need to do anything
