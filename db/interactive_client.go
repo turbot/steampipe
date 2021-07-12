@@ -34,7 +34,7 @@ type InteractiveClient struct {
 	// channel from which we read the result of the external initialisation process
 	initDataChan *chan *QueryInitData
 	// channel used internally to signal an init error
-	initErrorChan chan error
+	initResultChan chan *InitResult
 }
 
 func newInteractiveClient(initChan *chan *QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
@@ -44,7 +44,7 @@ func newInteractiveClient(initChan *chan *QueryInitData, resultsStreamer *queryr
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
 		initDataChan:            initChan,
-		initErrorChan:           make(chan error, 1),
+		initResultChan:          make(chan *InitResult, 1),
 	}
 	// asyncronously wait for init to complete
 	// we start this immedaietely rather than lazy loading as we want to hanbdle errors asap
@@ -83,12 +83,14 @@ func (c *InteractiveClient) InteractiveQuery() {
 	c.runInteractivePromptAsync(&promptResultChan)
 	for {
 		select {
-		case err := <-c.initErrorChan:
-			if err == nil {
-				continue
+		case initResult := <-c.initResultChan:
+			if initResult.Error != nil {
+				utils.ShowError(initResult.Error)
+				return
 			}
-			utils.ShowError(err)
-			return
+			initResult.DisplayWarnings()
+			initResult.DisplayMessages()
+
 		case rerun := <-promptResultChan:
 			// persist saved history
 			c.interactiveQueryHistory.Persist()

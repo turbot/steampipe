@@ -10,7 +10,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-var initTimeout = 3 * time.Second
+var initTimeout = 20 * time.Second
 
 func (c *InteractiveClient) readInitDataStream() {
 	defer func() {
@@ -24,7 +24,7 @@ func (c *InteractiveClient) readInitDataStream() {
 	c.initData = initData
 
 	if initData.Result.Error != nil {
-		c.initErrorChan <- initData.Result.Error
+		c.initResultChan <- initData.Result
 		return
 	}
 	//log.Printf("[WARN] INIT DATA HAS ARRIVED FOR INTERACTIVE")
@@ -32,9 +32,9 @@ func (c *InteractiveClient) readInitDataStream() {
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
 		err := c.initData.Workspace.SetupWatcher(c.initData.Client)
-		c.initErrorChan <- err
+		initData.Result.Error = err
 	}
-
+	c.initResultChan <- initData.Result
 }
 
 func (c *InteractiveClient) getInitError() error {
