@@ -32,7 +32,7 @@ func (c *Client) Close() error {
 func NewClient(autoRefreshConnections bool) (*Client, *RefreshConnectionResult) {
 	utils.LogTime("db.NewClient start")
 	defer utils.LogTime("db.NewClient end")
-	var refreshResult *RefreshConnectionResult
+	refreshResult := &RefreshConnectionResult{}
 	db, err := createSteampipeDbClient()
 	if err != nil {
 		refreshResult.Error = err
