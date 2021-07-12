@@ -37,12 +37,12 @@ func (c *InteractiveClient) readInitDataStream() {
 
 }
 
-//func (c *InteractiveClient) getInitError() error {
-//	if c.initData == nil {
-//		return nil
-//	}
-//	return c.initData.Result.Error
-//}
+func (c *InteractiveClient) getInitError() error {
+	if c.initData == nil {
+		return nil
+	}
+	return c.initData.Result.Error
+}
 
 func (c *InteractiveClient) isInitialised() bool {
 	return c.initData != nil
@@ -66,5 +66,6 @@ func (c *InteractiveClient) waitForWorkspace() WorkspaceResourceProvider {
 
 func (c *InteractiveClient) waitForClient() *Client {
 	c.waitForInitData()
+
 	return c.initData.Client
 }
