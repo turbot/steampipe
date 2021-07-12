@@ -16,7 +16,6 @@ import (
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
-	"github.com/turbot/steampipe/utils"
 )
 
 var commonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.CmdExit}
@@ -34,6 +33,7 @@ type HandlerInput struct {
 	Schema      *schema.Metadata
 	Connections *steampipeconfig.ConnectionMap
 	Prompt      *prompt.Prompt
+	ClosePrompt func()
 }
 
 func (h *HandlerInput) args() []string {
@@ -140,8 +140,8 @@ func setViperConfig(viperKey string, value interface{}) handler {
 
 // exit
 func doExit(input *HandlerInput) error {
-	// this get's caught at the handleExit function in steampipe/osquery_client/interactive.go
-	panic(utils.InteractiveExitStatus{Restart: false})
+	input.ClosePrompt()
+	return nil
 }
 
 // help
