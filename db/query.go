@@ -10,28 +10,23 @@ import (
 )
 
 // EnsureDbAndStartService :: ensure db is installed and start service if necessary
-func EnsureDbAndStartService(invoker Invoker) *InitResult {
+func EnsureDbAndStartService(invoker Invoker) error {
 	utils.LogTime("db.EnsureDbAndStartService start")
 	defer utils.LogTime("db.EnsureDbAndStartService end")
 
 	log.Println("[TRACE] db.EnsureDbAndStartService start")
 
-	res := &InitResult{}
-	if res = EnsureDBInstalled(); res.Error != nil {
-		return res
-	}
-
+	EnsureDBInstalled()
 	status, err := GetStatus()
 	if err != nil {
-		res.Error = errors.New("could not retrieve service status")
-		return res
+		return errors.New("could not retrieve service status")
 	}
 
 	if status == nil {
 		// the db service is not started - start it
 		StartImplicitService(invoker)
 	}
-	return res
+	return nil
 }
 
 // RunInteractivePrompt :: start the interactive query prompt

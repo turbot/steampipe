@@ -96,8 +96,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
-	initDataChan := make(chan *db.QueryInitData, 1)
+	// start db if necessary
+	err := db.EnsureDbAndStartService(db.InvokerQuery)
+	utils.FailOnErrorWithMessage(err, "failed to start service")
 
+	// perform rest of initialisation async
+	initDataChan := make(chan *db.QueryInitData, 1)
 	go streamQueryInitData(initDataChan, args)
 
 	if interactiveMode {
@@ -167,15 +171,6 @@ func streamQueryInitData(initDataChan chan *db.QueryInitData, args []string) {
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	initData.Queries = execute.GetQueries(args, workspace)
-
-	// start db if necessary
-	dbInitResult := db.EnsureDbAndStartService(db.InvokerQuery)
-	// merge the result
-	initData.Result.Merge(dbInitResult)
-	// if there was a db init error return
-	if dbInitResult.Error != nil {
-		return
-	}
 
 	// get a db client
 	client, err := db.NewClient(true)

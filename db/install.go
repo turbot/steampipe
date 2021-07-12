@@ -18,30 +18,30 @@ import (
 var ensureMux sync.Mutex
 
 // EnsureDBInstalled makes sure that the embedded pg database is installed and running
-func EnsureDBInstalled() *InitResult {
+func EnsureDBInstalled() {
 	utils.LogTime("db.EnsureDBInstalled start")
 	log.Println("[TRACE] ensure installed")
 
-	res := &InitResult{}
 	ensureMux.Lock()
 	defer func() {
 		log.Println("[TRACE] ensured installed")
 		utils.LogTime("db.EnsureDBInstalled end")
 		ensureMux.Unlock()
-
 	}()
 
 	if IsInstalled() {
 		// check if FDW needs to be updated
 		if fdwNeedsUpdate() {
 			_, err := installFDW(false)
-			if err != nil {
-				res.Error = utils.PrefixError(err, fmt.Sprintf("%s could not be updated", constants.Bold("steampipe-postgres-fdw")))
-			} else {
-				res.AddMessage(fmt.Sprintf("%s was updated to %s. ", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion)))
-			}
+			utils.FailOnError(err)
 		}
-		return res
+		fmt.Printf("%s was updated to %s. ", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
+		currentStatus, err := GetStatus()
+		if err != nil || currentStatus != nil {
+			fmt.Printf("Run %s for change to take effect.", constants.Bold("steampipe service restart"))
+		}
+		fmt.Println()
+
 	}
 
 	log.Println("[TRACE] calling killPreviousInstanceIfAny")
@@ -51,91 +51,30 @@ func EnsureDBInstalled() *InitResult {
 	err := removeRunningInstanceInfo()
 	display.StopSpinner(killPreviousSpinner)
 	if err != nil && !os.IsNotExist(err) {
-		// set error and return
-		res.Error = utils.PrefixError(err, "x Cleanup any Steampipe processes... FAILED!")
-		return res
+		utils.FailOnErrorWithMessage(err, "x Cleanup any Steampipe processes... FAILED!")
 	}
 
 	log.Println("[TRACE] removing previous installation")
-	//dbCleanupSpinner := display.ShowSpinner(fmt.Sprintf("Prepare database install location..."))
+	dbCleanupSpinner := display.ShowSpinner(fmt.Sprintf("Prepare database install location..."))
 	err = os.RemoveAll(getDatabaseLocation())
 	if err != nil {
-		// set error and return
-		res.Error = utils.PrefixError(err, "x Prepare database install location... FAILED!")
-		return res
-		//	display.StopSpinner(dbCleanupSpinner)
+		display.StopSpinner(dbCleanupSpinner)
+		utils.FailOnErrorWithMessage(err, "x Prepare database install location... FAILED!")
 	}
 	err = os.RemoveAll(getDataLocation())
 	if err != nil {
-		//display.StopSpinner(dbCleanupSpinner)
-		res.Error = utils.PrefixError(err, "x Prepare database install location... FAILED!")
-		return res
+		display.StopSpinner(dbCleanupSpinner)
+		utils.FailOnErrorWithMessage(err, "x Prepare database install location... FAILED!")
 	}
-	//display.StopSpinner(dbCleanupSpinner)
+	display.StopSpinner(dbCleanupSpinner)
 
-	//dbInstallSpinner := display.ShowSpinner(fmt.Sprintf("Download & install embedded PostgreSQL database..."))
+	dbInstallSpinner := display.ShowSpinner(fmt.Sprintf("Download & install embedded PostgreSQL database..."))
 	_, err = ociinstaller.InstallDB(constants.DefaultEmbeddedPostgresImage, getDatabaseLocation())
-	//display.StopSpinner(dbInstallSpinner)
+	display.StopSpinner(dbInstallSpinner)
 	if err != nil {
-		res.Error = utils.PrefixError(err, "x Download & install embedded PostgreSQL database... FAILED!")
-		return res
+		utils.FailOnErrorWithMessage(err, "x Download & install embedded PostgreSQL database... FAILED!")
 	}
 
-	// installFDW takes care of the spinner, since it may need to run independently
-	_, err = installFDW(true)
-
-	//dbInitSpinner := display.ShowSpinner(fmt.Sprintf("Initializing database..."))
-	err = initDatabase()
-	//display.StopSpinner(dbInitSpinner)
-	if err != nil {
-		// set error and return
-		res.Error = utils.PrefixError(err, "x Initializing database... FAILED!")
-		return res
-	}
-
-	//pwSpinner := display.ShowSpinner(fmt.Sprintf("Generating database passwords..."))
-	// Try for passwords of the form dbC-3Ji-d04d
-	steampipePassword := generatePassword()
-	rootPassword := generatePassword()
-	// write the passwords that were generated
-	err = writePasswordFile(steampipePassword, rootPassword)
-	//display.StopSpinner(pwSpinner)
-	if err != nil {
-		res.Error = utils.PrefixError(err, "x Generating database passwords... FAILED!")
-		return res
-	}
-
-	//startServiceSpinner := display.ShowSpinner(fmt.Sprintf("Configuring database..."))
-	StartImplicitService(InvokerInstaller)
-
-	err = installSteampipeDatabase(steampipePassword, rootPassword)
-	//display.StopSpinner(startServiceSpinner)
-	if err != nil {
-		res.Error = utils.PrefixError(err, "x Configuring database... FAILED!")
-		return res
-	}
-
-	//installSteampipeSpinner := display.ShowSpinner(fmt.Sprintf("Configuring Steampipe..."))
-	err = installSteampipeHub()
-	//display.StopSpinner(installSteampipeSpinner)
-	if err != nil {
-		res.Error = utils.PrefixError(err, "x Configuring Steampipe... FAILED!")
-		return res
-
-	}
-	// stop db again
-	StopDB(true, InvokerInstaller)
-
-	// write a signature after everything gets done!
-	// so that we can check for this later on
-	//writeSignaturesSpinner := display.ShowSpinner(fmt.Sprintf("Updating install records..."))
-	err = updateDownloadedBinarySignature()
-	//display.StopSpinner(writeSignaturesSpinner)
-	if err != nil {
-		res.Error = utils.PrefixError(err, "x Updating install records... FAILED!")
-	}
-
-	return res
 }
 
 func installSteampipeDatabase(withSteampipePassword string, withRootPassword string) error {
