@@ -21,6 +21,13 @@ import (
 	"github.com/turbot/steampipe/version"
 )
 
+type AfterPromptCloseAction int
+
+const (
+	AfterPromptCloseExit AfterPromptCloseAction = iota
+	AfterPromptCloseRestart
+)
+
 // InteractiveClient :: wrapper over *Client and *prompt.Prompt along
 // to facilitate interactive query prompt
 type InteractiveClient struct {
@@ -35,6 +42,8 @@ type InteractiveClient struct {
 	initDataChan *chan *QueryInitData
 	// channel used internally to signal an init error
 	initResultChan chan *InitResult
+	cancelPrompt   context.CancelFunc
+	afterClose     AfterPromptCloseAction
 }
 
 func newInteractiveClient(initChan *chan *QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
@@ -80,39 +89,52 @@ func (c *InteractiveClient) InteractiveQuery() {
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors
 	promptResultChan := make(chan utils.InteractiveExitStatus, 1)
-
-	ctx, cancelPrompt := context.WithCancel(context.Background())
+	ctx := c.createCancelContext()
 	c.runInteractivePromptAsync(ctx, &promptResultChan)
 	for {
 		select {
 		case initResult := <-c.initResultChan:
 			if initResult.Error != nil {
 				utils.ShowError(initResult.Error)
-				cancelPrompt()
+				c.ClosePrompt(AfterPromptCloseExit)
 				return
 			}
 			if initResult.HasMessages() {
-				cancelPrompt()
+				// mark result streamer as done so we do not wait for it before restarting prompt
+				c.resultsStreamer.Done()
+				// after closing prompt, restart it
+				c.ClosePrompt(AfterPromptCloseRestart)
 				initResult.DisplayMessages()
-				// create new context
-				ctx, cancelPrompt = context.WithCancel(context.Background())
-				// run prompt again
-				c.runInteractivePromptAsync(ctx, &promptResultChan)
 			}
 
-		case rerun := <-promptResultChan:
+		case <-promptResultChan:
 			// persist saved history
 			c.interactiveQueryHistory.Persist()
-			if !rerun.Restart {
+			if c.afterClose == AfterPromptCloseExit {
 				return
 			}
 			// wait for the resultsStreamer to have streamed everything out
 			// this is to be sure the previous command has completed streaming
 			c.resultsStreamer.Wait()
+			// create new context
+			ctx = c.createCancelContext()
 			// now run it again
 			c.runInteractivePromptAsync(ctx, &promptResultChan)
 		}
 	}
+}
+
+func (c *InteractiveClient) createCancelContext() context.Context {
+	ctx, cancelPrompt := context.WithCancel(context.Background())
+	c.cancelPrompt = cancelPrompt
+	return ctx
+
+}
+
+// ClosePrompt cancels the running prompt, setting the action to take after close
+func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
+	c.afterClose = afterClose
+	c.cancelPrompt()
 }
 
 func (c *InteractiveClient) runInteractivePromptAsync(ctx context.Context, promptResultChan *chan utils.InteractiveExitStatus) {
@@ -229,18 +251,9 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 	)
 	// set this to a default
 	c.autocompleteOnEmpty = false
-	c.interactivePrompt.Run(ctx)
-	ret = utils.InteractiveExitStatus{Restart: true}
-	return
-}
+	c.interactivePrompt.RunCtx(ctx)
 
-func (c *InteractiveClient) handlePromptResult(rerun utils.InteractiveExitStatus) {
-	// if we are restarting, wait for the result streamer
-	if rerun.Restart {
-		// wait for the resultsStreamer to have streamed everything out
-		// this is to be sure the previous command has completed streaming
-		c.resultsStreamer.Wait()
-	}
+	return
 }
 
 func (c *InteractiveClient) startCancelHandler() chan os.Signal {
@@ -307,6 +320,8 @@ func (c *InteractiveClient) executor(line string) {
 		c.restartInteractiveSession()
 	}
 
+	// set afterClose to restart - is we are exiting the metaquery will set this to AfterPromptCloseExit
+	c.afterClose = AfterPromptCloseRestart
 	if metaquery.IsMetaQuery(query) {
 		if err := c.executeMetaquery(query); err != nil {
 			utils.ShowError(err)
@@ -327,7 +342,10 @@ func (c *InteractiveClient) executor(line string) {
 
 	// store the history
 	c.interactiveQueryHistory.Put(historyItem)
+	// restart the prompt (if required) - this will not be done if we ran the exit metaquery
+	//if c.afterClose == metaquery.AfterPromptCloseRestart {
 	c.restartInteractiveSession()
+	//}
 }
 
 func (c *InteractiveClient) handleExecuteError(err error) {
@@ -387,6 +405,7 @@ func (c *InteractiveClient) executeMetaquery(query string) error {
 		Schema:      client.schemaMetadata,
 		Connections: client.connectionMap,
 		Prompt:      c.interactivePrompt,
+		ClosePrompt: func() { c.afterClose = AfterPromptCloseExit },
 	})
 }
 
@@ -394,7 +413,7 @@ func (c *InteractiveClient) restartInteractiveSession() {
 	// empty the buffer
 	c.interactiveBuffer = []string{}
 	// restart the prompt
-	panic(utils.InteractiveExitStatus{Restart: true})
+	c.ClosePrompt(c.afterClose)
 }
 
 func (c *InteractiveClient) shouldExecute(line string) bool {
