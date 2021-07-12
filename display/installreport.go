@@ -9,8 +9,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-const ALREADY_INSTALLED = "Already installed"
-const ANOTHER_VERSION_EXISTS = "Another version already exists"
+const ALREADY_INSTALLED = "The same or another version of this plugin is already installed"
 const LATEST_ALREADY_INSTALLED = "Latest already installed"
 const NOT_INSTALLED = "Not installed"
 
@@ -79,7 +78,7 @@ func PrintInstallReports(reports []InstallReport, isUpdateReport bool) {
 			installedOrUpdated = append(installedOrUpdated, report)
 		} else if report.SkipReason == NOT_INSTALLED {
 			canBeInstalled = append(canBeInstalled, report)
-		} else if report.SkipReason == ALREADY_INSTALLED || report.SkipReason == ANOTHER_VERSION_EXISTS {
+		} else if report.SkipReason == ALREADY_INSTALLED {
 			canBeUpdated = append(canBeUpdated, report)
 		}
 	}
