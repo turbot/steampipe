@@ -10,33 +10,39 @@ import (
 )
 
 // EnsureDbAndStartService :: ensure db is installed and start service if necessary
-func EnsureDbAndStartService(invoker Invoker) error {
+func EnsureDbAndStartService(invoker Invoker) *InitResult {
 	utils.LogTime("db.EnsureDbAndStartService start")
 	defer utils.LogTime("db.EnsureDbAndStartService end")
 
 	log.Println("[TRACE] db.EnsureDbAndStartService start")
 
-	EnsureDBInstalled()
+	res := &InitResult{}
+	if res = EnsureDBInstalled(); res.Error != nil {
+		return res
+	}
+
 	status, err := GetStatus()
 	if err != nil {
-		return errors.New("could not retrieve service status")
+		res.Error = errors.New("could not retrieve service status")
+		return res
 	}
 
 	if status == nil {
 		// the db service is not started - start it
 		StartImplicitService(invoker)
 	}
-	return nil
+	return res
 }
 
 // RunInteractivePrompt :: start the interactive query prompt
-func RunInteractivePrompt(initChan *chan *InteractiveClientInitData) (*queryresult.ResultStreamer, error) {
+func RunInteractivePrompt(initChan *chan *QueryInitData) (*queryresult.ResultStreamer, error) {
 	resultsStreamer := queryresult.NewResultStreamer()
 
 	interactiveClient, err := newInteractiveClient(initChan, resultsStreamer)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
-		Shutdown(interactiveClient.client_, InvokerQuery)
+		// TODO CHECKOUT CLIENT SHUTDOWN
+		Shutdown(nil, InvokerQuery)
 		return nil, err
 	}
 

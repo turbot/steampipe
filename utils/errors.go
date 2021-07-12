@@ -100,3 +100,7 @@ func CombineErrorsWithPrefix(prefix string, errors ...error) error {
 func CombineErrors(errors ...error) error {
 	return CombineErrorsWithPrefix("", errors...)
 }
+
+func PrefixError(err error, prefix string) error {
+	return fmt.Errorf("%s: %s - %v\n", colorErr, prefix, TransformErrorToSteampipe(err))
+}

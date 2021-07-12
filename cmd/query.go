@@ -96,43 +96,9 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
-	initDataChan := make(chan *db.InteractiveClientInitData, 1)
-	var queries []string
-	go func() {
-		//log.Printf("[WARN] GET INIT DATA")
-		// load the workspace
-		workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-		utils.FailOnErrorWithMessage(err, "failed to load workspace")
-		defer workspace.Close()
+	initDataChan := make(chan *db.QueryInitData, 1)
 
-		// check if the required plugins are installed
-		err = workspace.CheckRequiredPluginsInstalled()
-		utils.FailOnError(err)
-
-		// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-		queries = execute.GetQueries(args, workspace)
-
-		// start db if necessary
-		err = db.EnsureDbAndStartService(db.InvokerQuery)
-		utils.FailOnErrorWithMessage(err, "failed to start service")
-
-		var client *db.Client
-
-		// get a db client
-		client, err = db.NewClient(true)
-		utils.FailOnError(err)
-
-		// populate the reflection tables
-		err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)
-		utils.FailOnError(err)
-
-		initDataChan <- &db.InteractiveClientInitData{
-			Workspace: workspace,
-			Client:    client,
-		}
-		close(initDataChan)
-		//log.Printf("[WARN] GOT INIT DATA")
-	}()
+	go streamQueryInitData(initDataChan, args)
 
 	if interactiveMode {
 		// TODO ensure we shut down DB
@@ -140,24 +106,93 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	} else {
 
 		// wait for init
-		d := <-initDataChan
+		initData := <-initDataChan
+		HandleInitResult(initData)
+
 		log.Printf("[WARN] INIT DATA HAS ARRIVED FOR NON INTERACTIVE")
 		// if no query is specified, run interactive prompt
-		if !interactiveMode && len(queries) > 0 {
+		if !interactiveMode && len(initData.Queries) > 0 {
 			defer func() {
 				// ensure client is closed after we are done
-				d.Client.Close()
-				db.Shutdown(d.Client, db.InvokerQuery)
+				initData.Client.Close()
+				db.Shutdown(initData.Client, db.InvokerQuery)
 			}()
 
 			ctx, cancel := context.WithCancel(context.Background())
 			startCancelHandler(cancel)
 			// otherwise if we have resolved any queries, run them
-			failures := execute.ExecuteQueries(ctx, queries, d.Client)
+			failures := execute.ExecuteQueries(ctx, initData.Queries, initData.Client)
 			// set global exit code
 			exitCode = failures
 		}
 	}
+}
+
+func HandleInitResult(d *db.QueryInitData) {
+	// check for error and warnings
+	if d.Result.Error != nil {
+		utils.FailOnError(d.Result.Error)
+	}
+	for _, warning := range d.Result.Warnings {
+		utils.ShowWarning(warning)
+	}
+	for _, message := range d.Result.Messages {
+		fmt.Println(message)
+	}
+}
+func streamQueryInitData(initDataChan chan *db.QueryInitData, args []string) {
+
+	initData := db.NewInitData()
+	defer func() {
+		initDataChan <- initData
+		close(initDataChan)
+	}()
+	//log.Printf("[WARN] GET INIT DATA")
+	// load the workspace
+	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+	if err != nil {
+		initData.Result.Error = utils.PrefixError(err, "failed to load workspace")
+		return
+	}
+
+	// se we have loaded a workspace - be sure to close it
+	defer workspace.Close()
+
+	// check if the required plugins are installed
+	if err := workspace.CheckRequiredPluginsInstalled(); err != nil {
+		initData.Result.Error = err
+		return
+	}
+	initData.Workspace = workspace
+
+	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
+	initData.Queries = execute.GetQueries(args, workspace)
+
+	// start db if necessary
+	dbInitResult := db.EnsureDbAndStartService(db.InvokerQuery)
+	// merge the result
+	initData.Result.Merge(dbInitResult)
+	// if there was a db init error return
+	if dbInitResult.Error != nil {
+		return
+	}
+
+	// get a db client
+	client, err := db.NewClient(true)
+	if err != nil {
+		initData.Result.Error = err
+		return
+	}
+
+	initData.Client = client
+	// populate the reflection tables
+	if err = db.CreateMetadataTables(workspace.GetResourceMaps(), client); err != nil {
+		initData.Result.Error = err
+		return
+	}
+
+	//log.Printf("[WARN] GOT INIT DATA")
+
 }
 
 func startCancelHandler(cancel context.CancelFunc) {
