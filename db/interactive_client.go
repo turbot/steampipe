@@ -78,47 +78,37 @@ func (c *InteractiveClient) InteractiveQuery() {
 	fmt.Printf("Welcome to Steampipe v%s\n", version.String())
 	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
 
+	// run the prompt in a goroutine, so we can also detect async initialisation errors
+	promptResultChan := make(chan utils.InteractiveExitStatus, 1)
+	c.runInteractivePromptAsync(&promptResultChan)
 	for {
-		rerunChan := make(chan utils.InteractiveExitStatus, 1)
-		go func() {
-			rerun := c.runInteractivePrompt()
-			rerunChan <- rerun
-		}()
-
 		select {
 		case err := <-c.initErrorChan:
-			if err != nil {
-				utils.ShowError(err)
-				return
+			if err == nil {
+				continue
 			}
-		case rerun := <-rerunChan:
-
+			utils.ShowError(err)
+			return
+		case rerun := <-promptResultChan:
 			// persist saved history
 			c.interactiveQueryHistory.Persist()
 			if !rerun.Restart {
 				return
 			}
-
 			// wait for the resultsStreamer to have streamed everything out
 			// this is to be sure the previous command has completed streaming
 			c.resultsStreamer.Wait()
+			// now run it again
+			c.runInteractivePromptAsync(&promptResultChan)
 		}
 	}
-
 }
 
-func (c *InteractiveClient) startCancelHandler() chan os.Signal {
-	interruptSignalChannel := make(chan os.Signal, 10)
-	signal.Notify(interruptSignalChannel, syscall.SIGINT, syscall.SIGTERM)
+func (c *InteractiveClient) runInteractivePromptAsync(promptResultChan *chan utils.InteractiveExitStatus) {
 	go func() {
-		for range interruptSignalChannel {
-			if c.hasActiveCancel() {
-				c.activeQueryCancelFunc()
-				c.clearCancelFunction()
-			}
-		}
+		rerun := c.runInteractivePrompt()
+		*promptResultChan <- rerun
 	}()
-	return interruptSignalChannel
 }
 
 func (c *InteractiveClient) runInteractivePrompt() (ret utils.InteractiveExitStatus) {
@@ -137,8 +127,10 @@ func (c *InteractiveClient) runInteractivePrompt() (ret utils.InteractiveExitSta
 			// set the return value
 			ret = v
 		default:
-			// for everything else, float up the panic
-			panic(r)
+			if r != nil {
+				// for everything else, float up the panic
+				panic(r)
+			}
 		}
 	}()
 
@@ -228,6 +220,30 @@ func (c *InteractiveClient) runInteractivePrompt() (ret utils.InteractiveExitSta
 	c.autocompleteOnEmpty = false
 	c.interactivePrompt.Run()
 	return
+}
+
+func (c *InteractiveClient) handlePromptResult(rerun utils.InteractiveExitStatus) {
+	// if we are restarting, wait for the result streamer
+	if rerun.Restart {
+		// wait for the resultsStreamer to have streamed everything out
+		// this is to be sure the previous command has completed streaming
+		c.resultsStreamer.Wait()
+	}
+}
+
+func (c *InteractiveClient) startCancelHandler() chan os.Signal {
+	interruptSignalChannel := make(chan os.Signal, 10)
+	signal.Notify(interruptSignalChannel, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		for range interruptSignalChannel {
+			if c.hasActiveCancel() {
+				c.activeQueryCancelFunc()
+				c.clearCancelFunction()
+			}
+		}
+	}()
+	return interruptSignalChannel
+
 }
 
 func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
