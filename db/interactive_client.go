@@ -87,14 +87,16 @@ func (c *InteractiveClient) InteractiveQuery() {
 
 		select {
 		case err := <-c.initErrorChan:
-			utils.ShowError(err)
-			return
+			if err != nil {
+				utils.ShowError(err)
+				return
+			}
 		case rerun := <-rerunChan:
 
 			// persist saved history
 			c.interactiveQueryHistory.Persist()
 			if !rerun.Restart {
-				break
+				return
 			}
 
 			// wait for the resultsStreamer to have streamed everything out

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 
@@ -113,7 +112,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		initData := <-initDataChan
 		HandleInitResult(initData)
 
-		log.Printf("[WARN] INIT DATA HAS ARRIVED FOR NON INTERACTIVE")
 		// if no query is specified, run interactive prompt
 		if !interactiveMode && len(initData.Queries) > 0 {
 			defer func() {
