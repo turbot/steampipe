@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/utils"
 )
 
 // StartResult :: pseudoEnum for outcomes of Start
@@ -73,6 +74,9 @@ func (slt Invoker) IsValid() error {
 
 // StartDB :: start the database is not already running
 func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnections bool) (startResult StartResult, err error) {
+	utils.LogTime("db.StartDB start")
+	defer utils.LogTime("db.StartDB end")
+
 	var client *Client
 
 	defer func() {
