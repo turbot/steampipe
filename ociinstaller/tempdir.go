@@ -1,10 +1,12 @@
 package ociinstaller
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
@@ -21,7 +23,7 @@ func NewTempDir(path string) *tempDir {
 }
 
 func getOrCreateTempDir(ref string) string {
-	pluginCacheDir := filepath.Join(constants.TempDir(), safeDirName(ref))
+	pluginCacheDir := filepath.Join(constants.PluginDir(), safeDirName(fmt.Sprintf("tmp-%s", generateTempDirName())))
 
 	if _, err := os.Stat(pluginCacheDir); os.IsNotExist(err) {
 		err = os.MkdirAll(pluginCacheDir, 0755)
@@ -40,4 +42,14 @@ func safeDirName(dirName string) string {
 	newName = strings.ReplaceAll(newName, ":", "@")
 
 	return newName
+}
+
+func generateTempDirName() string {
+	u, err := uuid.NewRandom()
+	if err != nil {
+		// Should never happen?
+		panic(err)
+	}
+	s := u.String()
+	return s[9:23]
 }
