@@ -3,11 +3,15 @@ package db
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
+
+	"github.com/turbot/steampipe-plugin-sdk/plugin"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
@@ -44,6 +48,8 @@ type InteractiveClient struct {
 	initResultChan chan *InitResult
 	cancelPrompt   context.CancelFunc
 	afterClose     AfterPromptCloseAction
+	// lock while execution is occurring to avoid errors/warnings being shown
+	executionLock sync.Mutex
 }
 
 func newInteractiveClient(initChan *chan *QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
@@ -92,36 +98,62 @@ func (c *InteractiveClient) InteractiveQuery() {
 	ctx := c.createCancelContext()
 	c.runInteractivePromptAsync(ctx, &promptResultChan)
 	for {
+		log.Printf("[WARN] BEFORE SELECT")
 		select {
 		case initResult := <-c.initResultChan:
-			if initResult.Error != nil {
-				utils.ShowError(initResult.Error)
-				c.ClosePrompt(AfterPromptCloseExit)
+			if err := c.handleInitResult(ctx, initResult); err != nil {
 				return
-			}
-			if initResult.HasMessages() {
-				// mark result streamer as done so we do not wait for it before restarting prompt
-				c.resultsStreamer.Done()
-				// after closing prompt, restart it
-				c.ClosePrompt(AfterPromptCloseRestart)
-				initResult.DisplayMessages()
 			}
 
 		case <-promptResultChan:
+
+			log.Printf("[WARN] <-promptResultChan")
 			// persist saved history
 			c.interactiveQueryHistory.Persist()
+			// check post-close action
 			if c.afterClose == AfterPromptCloseExit {
 				return
 			}
 			// wait for the resultsStreamer to have streamed everything out
 			// this is to be sure the previous command has completed streaming
 			c.resultsStreamer.Wait()
+			log.Printf("[WARN] after wait")
 			// create new context
 			ctx = c.createCancelContext()
+			log.Printf("[WARN] run again")
 			// now run it again
 			c.runInteractivePromptAsync(ctx, &promptResultChan)
 		}
 	}
+	log.Printf("[WARN] after FOR")
+}
+
+func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *InitResult) error {
+	c.executionLock.Lock()
+	defer c.executionLock.Unlock()
+
+	log.Printf("[WARN] initResult := <-c.initResultChan")
+	if plugin.IsCancelled(ctx) {
+		log.Printf("[WARN] context cancelled")
+		return nil
+	}
+
+	if initResult.Error != nil {
+		log.Printf("[WARN] ERROR")
+		utils.ShowError(initResult.Error)
+		c.ClosePrompt(AfterPromptCloseExit)
+		return initResult.Error
+	}
+	if initResult.HasMessages() {
+		log.Printf("[WARN] HAS MESSAGES")
+		// HACK mark result streamer as done so we do not wait for it before restarting prompt
+		// TODO would be better if result stream checked if it was started
+		c.resultsStreamer.Done()
+		// after closing prompt, restart it
+		c.ClosePrompt(AfterPromptCloseRestart)
+		initResult.DisplayMessages()
+	}
+	return nil
 }
 
 func (c *InteractiveClient) createCancelContext() context.Context {
@@ -133,14 +165,14 @@ func (c *InteractiveClient) createCancelContext() context.Context {
 
 // ClosePrompt cancels the running prompt, setting the action to take after close
 func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
+	log.Printf("[WARN] Close prompt - then %d", afterClose)
 	c.afterClose = afterClose
 	c.cancelPrompt()
 }
 
 func (c *InteractiveClient) runInteractivePromptAsync(ctx context.Context, promptResultChan *chan utils.InteractiveExitStatus) {
 	go func() {
-		rerun := c.runInteractivePrompt(ctx)
-		*promptResultChan <- rerun
+		*promptResultChan <- c.runInteractivePrompt(ctx)
 	}()
 }
 
@@ -193,6 +225,10 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 		prompt.OptionAddKeyBind(prompt.KeyBind{
 			Key: prompt.ControlC,
 			Fn:  func(b *prompt.Buffer) { c.breakMultilinePrompt(b) },
+		}),
+		prompt.OptionAddKeyBind(prompt.KeyBind{
+			Key: prompt.ControlD,
+			Fn:  func(b *prompt.Buffer) { c.afterClose = AfterPromptCloseExit },
 		}),
 		prompt.OptionAddKeyBind(prompt.KeyBind{
 			Key: prompt.Tab,
@@ -276,6 +312,10 @@ func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 }
 
 func (c *InteractiveClient) executor(line string) {
+	c.executionLock.Lock()
+	defer c.executionLock.Unlock()
+	log.Printf("[WARN] executor in")
+	defer log.Printf("[WARN] executor out")
 	line = strings.TrimSpace(line)
 
 	// if it's an empty line, then we don't need to do anything
@@ -410,6 +450,7 @@ func (c *InteractiveClient) executeMetaquery(query string) error {
 }
 
 func (c *InteractiveClient) restartInteractiveSession() {
+	log.Printf("[WARN] restartInteractiveSession")
 	// empty the buffer
 	c.interactiveBuffer = []string{}
 	// restart the prompt
