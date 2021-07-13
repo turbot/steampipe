@@ -3,12 +3,16 @@ package utils
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"hash/fnv"
 	"io"
 	"os"
 )
 
 func FileHash(filePath string) (string, error) {
+	LogTime(fmt.Sprintf("utils.FileHash %s start", filePath))
+	defer LogTime(fmt.Sprintf("utils.FileHash %s end", filePath))
+
 	// get checksum
 	f, err := os.Open(filePath)
 	if err != nil {

@@ -47,12 +47,13 @@ func (r CSVRenderer) renderControl(run *execute.ControlRun, group *execute.Resul
 			val, _ := helpers.GetFieldValueFromInterface(row, rowColumn.fieldName)
 			record = append(record, typehelpers.ToString(val))
 		}
-		for _, fieldName := range r.columns.DimensionColumns {
-			val, _ := helpers.GetFieldValueFromInterface(row, fieldName)
-			if val == nil {
-				val = ""
+		dimensions := r.resultDimensionMap(row)
+		for _, dimensionKey := range r.columns.DimensionColumns {
+			if value, found := dimensions[dimensionKey]; found {
+				record = append(record, value)
+			} else {
+				record = append(record, "")
 			}
-			record = append(record, typehelpers.ToString(val))
 		}
 		tags := make(map[string]string)
 		if run.Control.Tags != nil {
@@ -66,4 +67,12 @@ func (r CSVRenderer) renderControl(run *execute.ControlRun, group *execute.Resul
 		res[idx] = record
 	}
 	return res
+}
+
+func (r CSVRenderer) resultDimensionMap(row *execute.ResultRow) map[string]string {
+	dimensionMap := map[string]string{}
+	for _, dimension := range row.Dimensions {
+		dimensionMap[dimension.Key] = dimension.Value
+	}
+	return dimensionMap
 }

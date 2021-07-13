@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -49,6 +48,8 @@ Examples:
 	cmd.AddCommand(pluginUninstallCmd())
 	cmd.AddCommand(pluginUpdateCmd())
 
+	cmdconfig.OnCmd(cmd)
+
 	return cmd
 }
 
@@ -73,6 +74,14 @@ Examples:
 
   # Install a specific plugin version
   steampipe plugin install turbot/azure@0.1.0`,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			// start db if necessary
+			err := db.EnsureDbAndStartService(db.InvokerPlugin)
+			utils.FailOnErrorWithMessage(err, "failed to start service")
+		},
+		PostRun: func(cmd *cobra.Command, args []string) {
+			db.Shutdown(nil, db.InvokerPlugin)
+		},
 	}
 
 	cmdconfig.
@@ -103,6 +112,14 @@ Examples:
 
   # Update a common plugin (turbot/aws)
   steampipe plugin update aws`,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			// start db if necessary
+			err := db.EnsureDbAndStartService(db.InvokerPlugin)
+			utils.FailOnErrorWithMessage(err, "failed to start service")
+		},
+		PostRun: func(cmd *cobra.Command, args []string) {
+			db.Shutdown(nil, db.InvokerPlugin)
+		},
 	}
 
 	cmdconfig.
@@ -131,6 +148,14 @@ Examples:
 
   # List plugins that have updates available
   steampipe plugin list --outdated`,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			// start db if necessary
+			err := db.EnsureDbAndStartService(db.InvokerPlugin)
+			utils.FailOnErrorWithMessage(err, "failed to start service")
+		},
+		PostRun: func(cmd *cobra.Command, args []string) {
+			db.Shutdown(nil, db.InvokerPlugin)
+		},
 	}
 
 	cmdconfig.
@@ -159,6 +184,14 @@ Example:
   steampipe plugin uninstall aws
 
 `,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			// start db if necessary
+			err := db.EnsureDbAndStartService(db.InvokerPlugin)
+			utils.FailOnErrorWithMessage(err, "failed to start service")
+		},
+		PostRun: func(cmd *cobra.Command, args []string) {
+			db.Shutdown(nil, db.InvokerPlugin)
+		},
 	}
 
 	cmdconfig.OnCmd(cmd)
@@ -431,25 +464,12 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 		steampipeconfig.Config = config
 	}
 
-	// todo move this into db package
-	db.EnsureDBInstalled()
-	status, err := db.GetStatus()
-	if err != nil {
-		return errors.New("could not retrieve service status")
-	}
-
-	var client *db.Client
-	if status == nil {
-		// the db service is not started - start it
-		db.StartService(db.InvokerPlugin)
-		defer func() { db.Shutdown(client, db.InvokerPlugin) }()
-	}
-
 	// TODO i think we can pass true here and not refresh below
-	client, err = db.NewClient(false)
+	client, err := db.NewClient(false)
 	if err != nil {
 		return err
 	}
+	defer client.Close()
 
 	// refresh connections
 	if _, err = client.RefreshConnections(); err != nil {
@@ -522,22 +542,11 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
 func getPluginConnectionMap() (map[string][]string, error) {
-	status, err := db.GetStatus()
-	if err != nil {
-		return nil, fmt.Errorf("Could not start steampipe service")
-	}
-
-	var client *db.Client
-	if status == nil {
-		// the db service is not started - start it
-		db.StartService(db.InvokerPlugin)
-		defer func() { db.Shutdown(client, db.InvokerPlugin) }()
-	}
-
-	client, err = db.NewClient(true)
+	client, err := db.NewClient(true)
 	if err != nil {
 		return nil, fmt.Errorf("Could not connect with steampipe service")
 	}
+	defer client.Close()
 
 	pluginConnectionMap := map[string][]string{}
 

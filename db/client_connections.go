@@ -17,6 +17,9 @@ import (
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
 func (c *Client) RefreshConnections() (bool, error) {
+	utils.LogTime("db.RefreshConnections start")
+	defer utils.LogTime("db.RefreshConnections end")
+
 	// load required connection from global config
 	requiredConnections := steampipeconfig.Config.Connections
 
@@ -243,7 +246,7 @@ func deleteConnectionQuery(name string) []string {
 }
 
 func executeConnectionQueries(schemaQueries []string, updates *steampipeconfig.ConnectionUpdates) error {
-	log.Printf("[DEBUG] there are connections to update, queries: \n%s\n", schemaQueries)
+	log.Printf("[TRACE] there are connections to update\n")
 	_, err := executeSqlAsRoot(schemaQueries)
 	if err != nil {
 		return err

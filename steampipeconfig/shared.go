@@ -34,7 +34,6 @@ func trimSchemaName(pluginFQN string) string {
 }
 
 func GetPluginPath(remoteSchema string) (string, error) {
-	log.Printf("[DEBUG] GetPluginPath for remote schema %s\n", remoteSchema)
 	// the fully qualified name of the plugin is the relative path of the folder containing the plugin
 	// calculate absolute folder path
 	pluginFolder := filepath.Join(constants.PluginDir(), remoteSchema)
@@ -42,7 +41,7 @@ func GetPluginPath(remoteSchema string) (string, error) {
 	// if the plugin folder is missing, it is possible the plugin path was truncated to create a schema name
 	// - so search for a folder which when truncated would match the schema
 	if _, err := os.Stat(pluginFolder); os.IsNotExist(err) {
-		log.Printf("[DEBUG] plugin path %s not found - searching for folder using hashed name\n", pluginFolder)
+		log.Printf("[TRACE] plugin path %s not found - searching for folder using hashed name\n", pluginFolder)
 		if pluginFolder, err = findPluginFolder(remoteSchema); err != nil {
 			return "", err
 		} else if pluginFolder == "" {
@@ -90,7 +89,7 @@ func findPluginFolder(remoteSchema string) (string, error) {
 		}
 		hashedName := PluginFQNToSchemaName(folderRelativePath)
 		if hashedName == remoteSchema {
-			log.Printf("[DEBUG] folder %s matches %s\n", folderRelativePath, remoteSchema)
+			log.Printf("[TRACE] folder %s matches %s\n", folderRelativePath, remoteSchema)
 			return filepath.Join(pluginDir, folderRelativePath), nil
 		}
 	}

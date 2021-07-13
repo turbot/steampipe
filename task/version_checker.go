@@ -124,7 +124,7 @@ func (c *versionChecker) doCheckRequest() {
 	}
 
 	if resp.StatusCode != 200 {
-		log.Printf("[DEBUG] Unknown response during version check: %d\n", resp.StatusCode)
+		log.Printf("[TRACE] Unknown response during version check: %d\n", resp.StatusCode)
 		return
 	}
 

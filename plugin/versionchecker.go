@@ -173,23 +173,23 @@ func (v *VersionChecker) requestServerForLatest(payload []versionCheckPayload) [
 
 	resp, err := utils.SendRequest(v.signature, "POST", sendRequestTo, requestBody)
 	if err != nil {
-		log.Printf("[DEBUG] Could not send request")
+		log.Printf("[TRACE] Could not send request")
 		return nil
 	}
 
 	if resp.StatusCode == 204 {
-		log.Println("[DEBUG] Got 204")
+		log.Println("[TRACE] Got 204")
 		return nil
 	}
 
 	if resp.StatusCode != 200 {
-		log.Printf("[DEBUG] Unknown response during version check: %d\n", resp.StatusCode)
+		log.Printf("[TRACE] Unknown response during version check: %d\n", resp.StatusCode)
 		return nil
 	}
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Printf("[DEBUG] Error reading body stream")
+		fmt.Printf("[TRACE] Error reading body stream")
 		return nil
 	}
 	defer resp.Body.Close()
@@ -198,7 +198,7 @@ func (v *VersionChecker) requestServerForLatest(payload []versionCheckPayload) [
 
 	err = json.Unmarshal(bodyBytes, &responseData)
 	if err != nil {
-		log.Println("[DEBUG] Error in unmarshalling plugin update response", err)
+		log.Println("[TRACE] Error in unmarshalling plugin update response", err)
 		return nil
 	}
 

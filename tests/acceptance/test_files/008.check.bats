@@ -52,3 +52,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
+function setup() {
+  steampipe service start
+}
+
+function teardown() {
+  steampipe service stop
+}
+
+

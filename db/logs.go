@@ -26,7 +26,7 @@ func TrimLogs() {
 			logPath := filepath.Join(fileLocation, fileName)
 			err := os.Remove(logPath)
 			if err != nil {
-				log.Printf("[DEBUG] failed to delete log file %s\n", logPath)
+				log.Printf("[TRACE] failed to delete log file %s\n", logPath)
 			}
 		}
 	}

@@ -9,6 +9,8 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
+const ServiceExecutableRelativeLocation = "/db/12.1.0/postgres/bin/postgres"
+
 func databaseInstanceDir() string {
 	loc := filepath.Join(constants.DatabaseDir(), constants.DatabaseVersion)
 	if _, err := os.Stat(loc); os.IsNotExist(err) {

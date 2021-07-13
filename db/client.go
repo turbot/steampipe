@@ -30,6 +30,9 @@ func (c *Client) Close() error {
 // NewClient ensures that the database instance is running
 // and returns a `Client` to interact with it
 func NewClient(autoRefreshConnections bool) (*Client, error) {
+	utils.LogTime("db.NewClient start")
+	defer utils.LogTime("db.NewClient end")
+
 	db, err := createSteampipeDbClient()
 	if err != nil {
 		return nil, err
@@ -71,6 +74,9 @@ func NewClient(autoRefreshConnections bool) (*Client, error) {
 }
 
 func createSteampipeDbClient() (*sql.DB, error) {
+	utils.LogTime("db.createSteampipeDbClient start")
+	defer utils.LogTime("db.createSteampipeDbClient end")
+
 	return createDbClient(constants.DatabaseName, constants.DatabaseUser)
 }
 
@@ -94,6 +100,8 @@ func createPostgresDbClient() (*sql.DB, error) {
 }
 
 func createDbClient(dbname string, username string) (*sql.DB, error) {
+	utils.LogTime("db.createDbClient start")
+	defer utils.LogTime("db.createDbClient end")
 
 	log.Println("[TRACE] createDbClient")
 	info, err := GetStatus()
@@ -113,8 +121,10 @@ func createDbClient(dbname string, username string) (*sql.DB, error) {
 	log.Println("[TRACE] Connection string: ", psqlInfo)
 
 	// connect to the database using the postgres driver
+	utils.LogTime("db.createDbClient connection open start")
 	db, err := sql.Open("postgres", psqlInfo)
 	db.SetMaxOpenConns(1)
+	utils.LogTime("db.createDbClient connection open end")
 
 	if err != nil {
 		return nil, err
@@ -150,20 +160,23 @@ func executeSqlAsRoot(statements []string) ([]sql.Result, error) {
 // waits for the db to start accepting connections and returns true
 // returns false if the dbClient does not start within a stipulated time,
 func waitForConnection(conn *sql.DB) bool {
-	timeoutAt := time.Now().Add(5 * time.Second)
-	intervalMs := 10
+	utils.LogTime("db.waitForConnection start")
+	defer utils.LogTime("db.waitForConnection end")
 
+	pingTimer := time.NewTicker(10 * time.Millisecond)
+	timeoutAt := time.After(5 * time.Second)
+	defer pingTimer.Stop()
 	for {
-		pingErr := conn.Ping()
-		if pingErr == nil {
-			return true
+		select {
+		case <-pingTimer.C:
+			pingErr := conn.Ping()
+			if pingErr == nil {
+				return true
+			}
+		case <-timeoutAt:
+			return false
 		}
-		if timeoutAt.Before(time.Now()) {
-			break
-		}
-		time.Sleep(time.Duration(intervalMs) * time.Millisecond)
 	}
-	return false
 }
 
 // SchemaMetadata :: returns the latest schema metadata
@@ -178,6 +191,9 @@ func (c *Client) ConnectionMap() *steampipeconfig.ConnectionMap {
 
 // return both the raw query result and a sanitised version in list form
 func (c *Client) loadSchema() {
+	utils.LogTime("db.loadSchema start")
+	defer utils.LogTime("db.loadSchema end")
+
 	tablesResult, err := c.getSchemaFromDB()
 	utils.FailOnError(err)
 
@@ -191,6 +207,9 @@ func (c *Client) loadSchema() {
 }
 
 func (c *Client) getSchemaFromDB() (*sql.Rows, error) {
+	utils.LogTime("db.getSchemaFromDB start")
+	defer utils.LogTime("db.getSchemaFromDB end")
+
 	query := `
 		SELECT 
 			table_name, 
