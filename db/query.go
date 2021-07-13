@@ -36,7 +36,6 @@ func RunInteractivePrompt(initChan *chan *QueryInitData) (*queryresult.ResultStr
 	interactiveClient, err := newInteractiveClient(initChan, resultsStreamer)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
-		// TODO CHECKOUT CLIENT SHUTDOWN
 		Shutdown(nil, InvokerQuery)
 		return nil, err
 	}
