@@ -9,7 +9,7 @@ import (
 func TestWrite(t *testing.T) {
 
 	var v PluginVersionFile
-	var vDb DBVersionFile
+	var vDb DatabaseVersionFile
 
 	fileName := "test.json"
 	timeNow := time.Now()
@@ -55,15 +55,15 @@ func TestWrite(t *testing.T) {
 
 	//v.Plugins = append(v.Plugins, googlePlugin)
 
-	if err := vDb.writeForDB(fileName); err != nil {
+	if err := vDb.write(fileName); err != nil {
 		t.Errorf("\nError writing file: %s", err.Error())
 	}
 
-	v2, err := readforDB(fileName)
+	v2, err := readDatabaseVersionFile(fileName)
 	if err != nil {
 		t.Errorf("\nError reading file: %s", err.Error())
 	}
-	v3, err := readForPlugin(fileName)
+	v3, err := readPluginVersionFile(fileName)
 	if err != nil {
 		t.Errorf("\nError reading file: %s", err.Error())
 	}

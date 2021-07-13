@@ -34,7 +34,7 @@ func InstallDB(imageRef string, dest string) (string, error) {
 
 func updateVersionFileDB(image *SteampipeImage) error {
 	timeNow := versionfile.FormatTime(time.Now())
-	v, err := versionfile.LoadForDB()
+	v, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func updateVersionFileDB(image *SteampipeImage) error {
 	v.EmbeddedDB.InstalledFrom = image.ImageRef
 	v.EmbeddedDB.LastCheckedDate = timeNow
 	v.EmbeddedDB.InstallDate = timeNow
-	return v.SaveForDB()
+	return v.Save()
 }
 
 func extractDbFiles(image *SteampipeImage, tempDir string, dest string) error {

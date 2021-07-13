@@ -324,7 +324,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// load up the version file data
-	versionData, err := versionfile.LoadForPlugin()
+	versionData, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
 		utils.ShowError(fmt.Errorf("error loading current plugin data"))
 		return

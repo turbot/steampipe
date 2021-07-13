@@ -12,13 +12,14 @@ import (
 const (
 	DefaultInstallDir        = "~/.steampipe"
 	ConnectionsStateFileName = "connection.json"
+	versionFileName          = "versions.json"
 )
 
 var SteampipeDir string
 
 func steampipeSubDir(dirName string) string {
 	if SteampipeDir == "" {
-		panic(fmt.Errorf("Can't set sub directory if the steampipe directory is empty"))
+		panic(fmt.Errorf("cannot call any Steampipe directory functions before SteampipeDir is set"))
 	}
 	subDir := filepath.Join(SteampipeDir, dirName)
 
@@ -30,42 +31,60 @@ func steampipeSubDir(dirName string) string {
 	return subDir
 }
 
-// PluginDir :: returns the path to the plugins directory (creates if missing)
+// PluginDir returns the path to the plugins directory (creates if missing)
 func PluginDir() string {
 	return steampipeSubDir("plugins")
 }
 
-// ConnectionStatePath :: returns the path of the connections state file
+// ConnectionStatePath returns the path of the connections state file
 func ConnectionStatePath() string {
 	return filepath.Join(InternalDir(), ConnectionsStateFileName)
 }
 
-// ModsDir :: returns the path to the mods directory (creates if missing)
+// ModsDir returns the path to the mods directory (creates if missing)
 func ModsDir() string {
 	return steampipeSubDir("mods")
 }
 
-// ConfigDir :: returns the path to the config directory (creates if missing)
+// ConfigDir returns the path to the config directory (creates if missing)
 func ConfigDir() string {
 	return steampipeSubDir("config")
 }
 
-// InternalDir :: returns the path to the internal directory (creates if missing)
+// InternalDir returns the path to the internal directory (creates if missing)
 func InternalDir() string {
 	return steampipeSubDir("internal")
 }
 
-// DatabaseDir :: returns the path to the db directory (creates if missing)
+// DatabaseDir returns the path to the db directory (creates if missing)
 func DatabaseDir() string {
 	return steampipeSubDir("db")
 }
 
-// LogDir :: returns the path to the db log directory (creates if missing)
+// LogDir returns the path to the db log directory (creates if missing)
 func LogDir() string {
 	return steampipeSubDir("logs")
 }
 
-// TempDir :: returns the path to the steampipe tmp directory (creates if missing)
+// TempDir returns the path to the steampipe tmp directory (creates if missing)
 func TempDir() string {
 	return steampipeSubDir("tmp")
+}
+
+// LegacyVersionFilePath returns the legacy version file path
+func LegacyVersionFilePath() string {
+	path := filepath.Join(InternalDir(), versionFileName)
+	return path
+}
+
+// PluginVersionFilePath returns the plugin version file path
+func PluginVersionFilePath() string {
+	path := filepath.Join(PluginDir(), versionFileName)
+	return path
+}
+
+// DatabaseVersionFilePath returns the plugin version file path
+func DatabaseVersionFilePath() string {
+	path := filepath.Join(DatabaseDir(), versionFileName)
+	return path
 }
