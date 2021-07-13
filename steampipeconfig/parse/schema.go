@@ -25,6 +25,12 @@ var ConnectionSchema = &hcl.BodySchema{
 			Name:     "plugin",
 			Required: true,
 		},
+		{
+			Name: "type",
+		},
+		{
+			Name: "connections",
+		},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{

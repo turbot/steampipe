@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/turbot/steampipe/utils"
+
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/turbot/go-kit/helpers"
@@ -25,6 +27,23 @@ type SteampipeConfig struct {
 	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
 	commandName              string
+}
+
+func (c *SteampipeConfig) Validate() error {
+	var validationErrors []string
+	for _, connection := range c.Connections {
+
+		// if the connection is an aggregator, populate the child connections
+		// this resolves any wildcards in the connection list
+		if connection.Type == modconfig.ConnectionTypeAggregator {
+			connection.PopulateChildren(c.Connections)
+		}
+		validationErrors = append(validationErrors, connection.Validate(c.Connections)...)
+	}
+	if len(validationErrors) > 0 {
+		return fmt.Errorf("config validation failed with %d %s: \n  - %s", len(validationErrors), utils.Pluralize("error", len(validationErrors)), strings.Join(validationErrors, "\n  - "))
+	}
+	return nil
 }
 
 // ConfigMap :: create a config map to pass to viper
@@ -102,9 +121,11 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) {
 }
 
 const CacheEnabledEnvVar = "STEAMPIPE_CACHE"
+
 const CacheTTLEnvVar = "STEAMPIPE_CACHE_TTL"
 
 var defaultCacheEnabled = true
+
 var defaultTTL = 300
 
 // if default connection options have been set, assign them to any connection which do not define specific options

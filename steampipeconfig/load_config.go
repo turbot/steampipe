@@ -93,6 +93,10 @@ func newSteampipeConfig(workspacePath string, commandName string) (steampipeConf
 	// now set default options on all connections without options set
 	steampipeConfig.setDefaultConnectionOptions()
 
+	// now validate the config
+	if err := steampipeConfig.Validate(); err != nil {
+		return nil, err
+	}
 	return steampipeConfig, nil
 }
 

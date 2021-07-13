@@ -27,7 +27,7 @@ func newConnectionUpdates() *ConnectionUpdates {
 	}
 }
 
-// struct containing all details for a connection - the plugin name and checksum, the connection config and options
+// ConnectionData is a struct containing all details for a connection - the plugin name and checksum, the connection config and options
 type ConnectionData struct {
 	// the fully qualified name of the plugin
 	Plugin string `yaml:"plugin"`
@@ -96,7 +96,6 @@ func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*modco
 
 	result := newConnectionUpdates()
 	result.MissingPlugins = missingPlugins
-	// assume we will end up with the required connections
 	result.RequiredConnections = requiredConnections
 
 	// connections to create/update
