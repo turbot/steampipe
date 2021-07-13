@@ -233,6 +233,8 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 	if res.Error != nil {
 		return ServiceFailedToStart, handleStartFailure(res.Error)
 	}
+	// display any initialisation warnings
+	res.ShowWarnings()
 
 	err = ensureSteampipeServer()
 	if err != nil {
