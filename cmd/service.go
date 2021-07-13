@@ -142,7 +142,6 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	}
 
 	db.EnsureDBInstalled()
-
 	status, err := db.StartDB(cmdconfig.DatabasePort(), listen, invoker)
 	if err != nil {
 		panic(err)
@@ -259,7 +258,7 @@ Steampipe database service is now running:
 
 Connection string:
 
-	postgres://%v:%v@%v:%v/%v?sslmode=disable
+	postgres://%v:%v@%v:%v/%v?sslmode=%v
 
 Steampipe service is running in the background.
 
@@ -273,7 +272,7 @@ Steampipe service is running in the background.
 	steampipe service stop
 	
 `
-		statusMessage = fmt.Sprintf(msg, strings.Join(info.Listen, ", "), info.Port, info.Database, info.User, info.Password, info.User, info.Password, info.Listen[0], info.Port, info.Database)
+		statusMessage = fmt.Sprintf(msg, strings.Join(info.Listen, ", "), info.Port, info.Database, info.User, info.Password, info.User, info.Password, info.Listen[0], info.Port, info.Database, db.SslMode())
 	} else {
 		msg := `
 Steampipe service is running exclusively for an active %s session.
