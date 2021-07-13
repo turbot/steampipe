@@ -2,6 +2,7 @@ package metaquery
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -34,6 +35,10 @@ type HandlerInput struct {
 	Connections *steampipeconfig.ConnectionMap
 	Prompt      *prompt.Prompt
 	ClosePrompt func()
+}
+type PromptControl interface {
+	Clear()
+	Close()
 }
 
 func (h *HandlerInput) args() []string {
@@ -140,6 +145,7 @@ func setViperConfig(viperKey string, value interface{}) handler {
 
 // exit
 func doExit(input *HandlerInput) error {
+	log.Printf("[WARN] doExit")
 	input.ClosePrompt()
 	return nil
 }

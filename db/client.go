@@ -52,9 +52,7 @@ func NewClient(autoRefreshConnections bool) (*Client, *RefreshConnectionResult) 
 			client.Close()
 			return nil, refreshResult
 		}
-		if len(refreshResult.Warning) > 0 {
-			fmt.Println(refreshResult.Warning)
-		}
+
 		if err := refreshFunctions(); err != nil {
 			client.Close()
 			refreshResult.Error = err
