@@ -43,7 +43,7 @@ func Remove(image string, pluginConnections map[string][]string) error {
 	}
 
 	// update the version file
-	v, err := versionfile.Load()
+	v, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func Remove(image string, pluginConnections map[string][]string) error {
 
 // Exists looks up the version file and reports whether a plugin is already installed
 func Exists(plugin string) (bool, error) {
-	versionData, err := versionfile.Load()
+	versionData, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
 		return false, err
 	}
@@ -95,7 +95,7 @@ func List(pluginConnectionMap map[string][]string) ([]PluginListItem, error) {
 		return nil
 	})
 
-	v, err := versionfile.Load()
+	v, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
 		return nil, err
 	}

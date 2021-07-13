@@ -36,7 +36,7 @@ func InstallFdw(imageRef string, dbLocation string) (string, error) {
 
 func updateVersionFileFdw(image *SteampipeImage) error {
 	timeNow := versionfile.FormatTime(time.Now())
-	v, err := versionfile.Load()
+	v, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {
 		return err
 	}

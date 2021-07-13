@@ -6,9 +6,9 @@ import (
 	"time"
 )
 
-func TestWrite(t *testing.T) {
+func TestWriteDatabaseVersionFile(t *testing.T) {
 
-	var v VersionFile
+	var v DatabaseVersionFile
 
 	fileName := "test.json"
 	timeNow := time.Now()
@@ -29,36 +29,11 @@ func TestWrite(t *testing.T) {
 	v.FdwExtension.LastCheckedDate = timeNow2.Format(time.UnixDate)
 	v.FdwExtension.InstallDate = timeNow2.Format(time.UnixDate)
 
-	v.Plugins = make(map[string]*(InstalledVersion))
-
-	awsPlugin := InstalledVersion{
-		Name:            "hub.steampipe.io/steampipe/plugin/turbot/aws@latest",
-		Version:         "0.0.3",
-		ImageDigest:     "88995cc15963225884b825b12409f798b24aa7364bbf35a83d3a5fb5db85f346",
-		InstalledFrom:   "hub.steampipe.io/steampipe/plugin/turbot/aws:latest",
-		LastCheckedDate: timeNow2.Format(time.UnixDate),
-		InstallDate:     timeNow2.Format(time.UnixDate),
-	}
-
-	v.Plugins[awsPlugin.Name] = &awsPlugin
-
-	googlePlugin := InstalledVersion{
-		Name:            "hub.steampipe.io/steampipe/plugin/turbot/google@1",
-		Version:         "1.0.7",
-		ImageDigest:     "3211232123654987313216549876516351",
-		InstalledFrom:   "hub.steampipe.io/steampipe/plugin/turbot/google:1",
-		LastCheckedDate: timeNow2.Format(time.UnixDate),
-		InstallDate:     timeNow2.Format(time.UnixDate),
-	}
-	v.Plugins[googlePlugin.Name] = &googlePlugin
-
-	//v.Plugins = append(v.Plugins, googlePlugin)
-
 	if err := v.write(fileName); err != nil {
 		t.Errorf("\nError writing file: %s", err.Error())
 	}
 
-	v2, err := read(fileName)
+	v2, err := readDatabaseVersionFile(fileName)
 	if err != nil {
 		t.Errorf("\nError reading file: %s", err.Error())
 	}
@@ -82,10 +57,5 @@ func TestWrite(t *testing.T) {
 		t.Errorf("\nError EmbeddedDB.InstallDate is: %s, expected %s", v2.EmbeddedDB.InstallDate, v.EmbeddedDB.InstallDate)
 	}
 
-	if len(v2.Plugins) != 2 {
-		t.Errorf("\nexpected 2 plugins, found %d", len(v2.Plugins))
-	}
-
 	os.Remove(fileName)
-
 }

@@ -34,7 +34,7 @@ func InstallDB(imageRef string, dest string) (string, error) {
 
 func updateVersionFileDB(image *SteampipeImage) error {
 	timeNow := versionfile.FormatTime(time.Now())
-	v, err := versionfile.Load()
+	v, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {
 		return err
 	}
