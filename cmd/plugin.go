@@ -464,18 +464,11 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 		steampipeconfig.Config = config
 	}
 
-	// TODO i think we can pass true here and not refresh below
-	//client, err := db.NewClient(false)
 	client, res := db.NewClient(true)
 	if res.Error != nil {
 		return res.Error
 	}
 	defer client.Close()
-
-	//// refresh connections
-	//if _, err = client.RefreshConnections(); err != nil {
-	//	return err
-	//}
 
 	return nil
 }
