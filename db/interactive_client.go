@@ -228,7 +228,12 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 		}),
 		prompt.OptionAddKeyBind(prompt.KeyBind{
 			Key: prompt.ControlD,
-			Fn:  func(b *prompt.Buffer) { c.afterClose = AfterPromptCloseExit },
+			Fn: func(b *prompt.Buffer) {
+				if b.Text() == "" {
+					// just set after close action - go prompt will handle the prompt shutdown
+					c.afterClose = AfterPromptCloseExit
+				}
+			},
 		}),
 		prompt.OptionAddKeyBind(prompt.KeyBind{
 			Key: prompt.Tab,
