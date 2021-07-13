@@ -98,7 +98,7 @@ func (c *InteractiveClient) InteractiveQuery() {
 	ctx := c.createCancelContext()
 	c.runInteractivePromptAsync(ctx, &promptResultChan)
 	for {
-		log.Printf("[WARN] BEFORE SELECT")
+		log.Printf("[TRACE] BEFORE SELECT")
 		select {
 		case initResult := <-c.initResultChan:
 			if err := c.handleInitResult(ctx, initResult); err != nil {
@@ -107,7 +107,7 @@ func (c *InteractiveClient) InteractiveQuery() {
 
 		case <-promptResultChan:
 
-			log.Printf("[WARN] <-promptResultChan")
+			log.Printf("[TRACE] <-promptResultChan")
 			// persist saved history
 			c.interactiveQueryHistory.Persist()
 			// check post-close action
@@ -117,35 +117,35 @@ func (c *InteractiveClient) InteractiveQuery() {
 			// wait for the resultsStreamer to have streamed everything out
 			// this is to be sure the previous command has completed streaming
 			c.resultsStreamer.Wait()
-			log.Printf("[WARN] after wait")
+			log.Printf("[TRACE] after wait")
 			// create new context
 			ctx = c.createCancelContext()
-			log.Printf("[WARN] run again")
+			log.Printf("[TRACE] run again")
 			// now run it again
 			c.runInteractivePromptAsync(ctx, &promptResultChan)
 		}
 	}
-	log.Printf("[WARN] after FOR")
+	log.Printf("[TRACE] after FOR")
 }
 
 func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *InitResult) error {
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
-	log.Printf("[WARN] initResult := <-c.initResultChan")
+	log.Printf("[TRACE] initResult := <-c.initResultChan")
 	if plugin.IsCancelled(ctx) {
-		log.Printf("[WARN] context cancelled")
+		log.Printf("[TRACE] context cancelled")
 		return nil
 	}
 
 	if initResult.Error != nil {
-		log.Printf("[WARN] ERROR")
+		log.Printf("[TRACE] ERROR")
 		utils.ShowError(initResult.Error)
 		c.ClosePrompt(AfterPromptCloseExit)
 		return initResult.Error
 	}
 	if initResult.HasMessages() {
-		log.Printf("[WARN] HAS MESSAGES")
+		log.Printf("[TRACE] HAS MESSAGES")
 		// HACK mark result streamer as done so we do not wait for it before restarting prompt
 		// TODO would be better if result stream checked if it was started
 		c.resultsStreamer.Done()
@@ -165,7 +165,7 @@ func (c *InteractiveClient) createCancelContext() context.Context {
 
 // ClosePrompt cancels the running prompt, setting the action to take after close
 func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
-	log.Printf("[WARN] Close prompt - then %d", afterClose)
+	log.Printf("[TRACE] Close prompt - then %d", afterClose)
 	c.afterClose = afterClose
 	c.cancelPrompt()
 }
@@ -319,8 +319,8 @@ func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 func (c *InteractiveClient) executor(line string) {
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
-	log.Printf("[WARN] executor in")
-	defer log.Printf("[WARN] executor out")
+	log.Printf("[TRACE] executor in")
+	defer log.Printf("[TRACE] executor out")
 	line = strings.TrimSpace(line)
 
 	// if it's an empty line, then we don't need to do anything
@@ -455,7 +455,7 @@ func (c *InteractiveClient) executeMetaquery(query string) error {
 }
 
 func (c *InteractiveClient) restartInteractiveSession() {
-	log.Printf("[WARN] restartInteractiveSession")
+	log.Printf("[TRACE] restartInteractiveSession")
 	// empty the buffer
 	c.interactiveBuffer = []string{}
 	// restart the prompt
