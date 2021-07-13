@@ -7,7 +7,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// StartImplicitService :: invokes `steampipe service start --database-listen local --refresh=false --invoker query`
+// StartImplicitService starts up the service in an implicit mode
 func StartImplicitService(invoker Invoker) {
 	utils.LogTime("db.StartImplicitService start")
 	defer utils.LogTime("db.StartImplicitService end")
