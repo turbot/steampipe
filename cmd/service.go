@@ -397,6 +397,7 @@ Steampipe database service is now running:
 	Database: %v
 	User:     %v
 	Password: %v
+	SSL:      %v
 
 Connection string:
 
@@ -414,7 +415,7 @@ Managing Steampipe service:
 	steampipe service stop
 	
 `
-		statusMessage = fmt.Sprintf(msg, strings.Join(info.Listen, ", "), info.Port, info.Database, info.User, info.Password, info.User, info.Password, info.Listen[0], info.Port, info.Database, db.SslMode())
+		statusMessage = fmt.Sprintf(msg, strings.Join(info.Listen, ", "), info.Port, info.Database, info.User, info.Password, db.SslStatus(), info.User, info.Password, info.Listen[0], info.Port, info.Database, db.SslMode())
 	} else {
 		msg := `
 Steampipe service was started for an active %s session. The service will exit when all active sessions exit.

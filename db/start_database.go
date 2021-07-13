@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/utils"
 )
 
 // StartResult :: pseudoEnum for outcomes of Start
@@ -117,8 +118,10 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 	// remove the stale info file, ignoring errors - will overwrite anyway
 	_ = removeRunningInstanceInfo()
 
-	// Generate the certificate if it fails the set the ssl off
-	_ = generateSelfSignedCertificate()
+	// Generate the certificate if it fails then set the ssl to off
+	if err := generateSelfSignedCertificate(); err != nil {
+		utils.ShowWarning("self signed certificate creation failed, connecting the db without ssl")
+	}
 
 	listenAddresses := "localhost"
 
