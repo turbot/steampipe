@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
+	sdkversion "github.com/turbot/steampipe-plugin-sdk/version"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
@@ -97,15 +98,14 @@ func validateColumnDefVersion(p *ConnectionPlugin) *ValidationFailure {
 		return nil
 	}
 
-	// TODO HACK PUT BACK!!!
-	//steampipeProtocolVersion := sdkversion.ProtocolVersion
-	//if steampipeProtocolVersion < pluginProtocolVersion {
-	return &ValidationFailure{
-		Plugin:             p.PluginName,
-		ConnectionName:     p.ConnectionName,
-		Message:            "Incompatible steampipe-plugin-sdk version. Please upgrade Steampipe.",
-		ShouldDropIfExists: true,
+	steampipeProtocolVersion := sdkversion.ProtocolVersion
+	if steampipeProtocolVersion < pluginProtocolVersion {
+		return &ValidationFailure{
+			Plugin:             p.PluginName,
+			ConnectionName:     p.ConnectionName,
+			Message:            "Incompatible steampipe-plugin-sdk version. Please upgrade Steampipe.",
+			ShouldDropIfExists: true,
+		}
 	}
-	//}
 	return nil
 }
