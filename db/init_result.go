@@ -12,8 +12,8 @@ func (r *InitResult) AddMessage(message string) {
 	r.Messages = append(r.Messages, message)
 }
 
-func (r *InitResult) AddWarning(warning string) {
-	r.Warnings = append(r.Warnings, warning)
+func (r *InitResult) AddWarnings(warnings []string) {
+	r.Warnings = append(r.Warnings, warnings...)
 }
 
 func (r *InitResult) HasMessages() bool {

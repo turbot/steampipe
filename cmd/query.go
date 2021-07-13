@@ -115,13 +115,16 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 		// wait for init
 		initData := <-initDataChan
+		if err := initData.Result.Error; err != nil {
+			utils.FailOnError(err)
+		}
+		// display any initialisation messages/warnings
+		initData.Result.DisplayMessages()
 		// populate client so it gets closed by defer
 		client = initData.Client
-		HandleInitResult(initData)
 
 		// if no query is specified, run interactive prompt
 		if !interactiveMode && len(initData.Queries) > 0 {
-
 			ctx, cancel := context.WithCancel(context.Background())
 			startCancelHandler(cancel)
 			// otherwise if we have resolved any queries, run them
@@ -132,18 +135,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-func HandleInitResult(d *db.QueryInitData) {
-	// check for error and warnings
-	if d.Result.Error != nil {
-		utils.FailOnError(d.Result.Error)
-	}
-	for _, warning := range d.Result.Warnings {
-		fmt.Println(warning)
-	}
-	for _, message := range d.Result.Messages {
-		fmt.Println(message)
-	}
-}
 func getQueryInitDataAsync(initDataChan chan *db.QueryInitData, args []string) {
 	go func() {
 		log.Printf("[TRACE] getQueryInitDataAsync")
@@ -176,13 +167,13 @@ func getQueryInitDataAsync(initDataChan chan *db.QueryInitData, args []string) {
 		initData.Queries = execute.GetQueries(args, workspace)
 
 		// get a db client
-		client, res := db.NewClient(true)
-		if initData.Result.Error != nil {
-			initData.Result.Error = res.Error
+		client, newClientResult := db.NewClient(true)
+		if newClientResult.Error != nil {
+			initData.Result.Error = newClientResult.Error
 			return
 		}
-		if len(res.Warning) > 0 {
-			initData.Result.AddWarning(res.Warning)
+		if len(newClientResult.Warnings) > 0 {
+			initData.Result.AddWarnings(newClientResult.Warnings)
 		}
 
 		initData.Client = client

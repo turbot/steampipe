@@ -468,6 +468,9 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 	if res.Error != nil {
 		return res.Error
 	}
+	// display any initialisation warnings
+	res.ShowWarnings()
+
 	defer client.Close()
 
 	return nil
@@ -541,6 +544,8 @@ func getPluginConnectionMap() (map[string][]string, error) {
 		return nil, fmt.Errorf("could not connect with steampipe service")
 	}
 	defer client.Close()
+	// display any initialisation warnings
+	res.ShowWarnings()
 
 	pluginConnectionMap := map[string][]string{}
 

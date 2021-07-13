@@ -54,7 +54,7 @@ func (c *Client) RefreshConnections() *RefreshConnectionResult {
 		}
 		// find any plugins which use a newer sdk version than steampipe.
 		validationFailures, validatedUpdates, validatedPlugins := steampipeconfig.ValidatePlugins(updates.Update, connectionPlugins)
-		res.Warning = steampipeconfig.BuildValidationWarningString(validationFailures)
+		res.Warnings = append(res.Warnings, steampipeconfig.BuildValidationWarningString(validationFailures))
 
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
 		connectionQueries = getSchemaQueries(validatedUpdates, validationFailures)
