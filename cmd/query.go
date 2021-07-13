@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 
@@ -101,7 +102,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// perform rest of initialisation async
 	initDataChan := make(chan *db.QueryInitData, 1)
-	go streamQueryInitData(initDataChan, args)
+	getQueryInitDataAsync(initDataChan, args)
 
 	if interactiveMode {
 		// TODO ensure we shut down DB
@@ -142,53 +143,54 @@ func HandleInitResult(d *db.QueryInitData) {
 		fmt.Println(message)
 	}
 }
-func streamQueryInitData(initDataChan chan *db.QueryInitData, args []string) {
+func getQueryInitDataAsync(initDataChan chan *db.QueryInitData, args []string) {
+	go func() {
+		log.Printf("[TRACE] getQueryInitDataAsync")
 
-	initData := db.NewInitData()
-	defer func() {
-		initDataChan <- initData
-		close(initDataChan)
+		initData := db.NewInitData()
+		defer func() {
+			initDataChan <- initData
+			close(initDataChan)
+			log.Printf("[TRACE] getQueryInitDataAsync complete")
+		}()
+
+		// load the workspace
+		workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+		if err != nil {
+			initData.Result.Error = utils.PrefixError(err, "failed to load workspace")
+			return
+		}
+
+		// se we have loaded a workspace - be sure to close it
+		defer workspace.Close()
+
+		// check if the required plugins are installed
+		if err := workspace.CheckRequiredPluginsInstalled(); err != nil {
+			initData.Result.Error = err
+			return
+		}
+		initData.Workspace = workspace
+
+		// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
+		initData.Queries = execute.GetQueries(args, workspace)
+
+		// get a db client
+		client, res := db.NewClient(true)
+		if initData.Result.Error != nil {
+			initData.Result.Error = res.Error
+			return
+		}
+		if len(res.Warning) > 0 {
+			initData.Result.AddWarning(res.Warning)
+		}
+
+		initData.Client = client
+		// populate the reflection tables
+		if err = db.CreateMetadataTables(workspace.GetResourceMaps(), client); err != nil {
+			initData.Result.Error = err
+			return
+		}
 	}()
-	//log.Printf("[WARN] GET INIT DATA")
-	// load the workspace
-	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-	if err != nil {
-		initData.Result.Error = utils.PrefixError(err, "failed to load workspace")
-		return
-	}
-
-	// se we have loaded a workspace - be sure to close it
-	defer workspace.Close()
-
-	// check if the required plugins are installed
-	if err := workspace.CheckRequiredPluginsInstalled(); err != nil {
-		initData.Result.Error = err
-		return
-	}
-	initData.Workspace = workspace
-
-	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-	initData.Queries = execute.GetQueries(args, workspace)
-
-	// get a db client
-	client, res := db.NewClient(true)
-	if initData.Result.Error != nil {
-		initData.Result.Error = res.Error
-		return
-	}
-	if len(res.Warning) > 0 {
-		initData.Result.AddWarning(res.Warning)
-	}
-
-	initData.Client = client
-	// populate the reflection tables
-	if err = db.CreateMetadataTables(workspace.GetResourceMaps(), client); err != nil {
-		initData.Result.Error = err
-		return
-	}
-
-	//log.Printf("[WARN] GOT INIT DATA")
-
 }
 
 func startCancelHandler(cancel context.CancelFunc) {

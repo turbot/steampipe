@@ -2,7 +2,6 @@ package metaquery
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -145,7 +144,6 @@ func setViperConfig(viperKey string, value interface{}) handler {
 
 // exit
 func doExit(input *HandlerInput) error {
-	log.Printf("[WARN] doExit")
 	input.ClosePrompt()
 	return nil
 }

@@ -61,8 +61,8 @@ func newInteractiveClient(initChan *chan *QueryInitData, resultsStreamer *queryr
 		initDataChan:            initChan,
 		initResultChan:          make(chan *InitResult, 1),
 	}
-	// asyncronously wait for init to complete
-	// we start this immedaietely rather than lazy loading as we want to hanbdle errors asap
+	// asynchronously wait for init to complete
+	// we start this immediately rather than lazy loading as we want to handle errors asap
 	go c.readInitDataStream()
 	return c, nil
 }
@@ -128,24 +128,25 @@ func (c *InteractiveClient) InteractiveQuery() {
 	log.Printf("[TRACE] after FOR")
 }
 
+// init data has arrived, handle any errors/warnings/messages
 func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *InitResult) error {
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
-	log.Printf("[TRACE] initResult := <-c.initResultChan")
+	log.Printf("[TRACE] handleInitResult - initResult has been read")
 	if plugin.IsCancelled(ctx) {
-		log.Printf("[TRACE] context cancelled")
+		log.Printf("[TRACE] prompt context has been cancelled - not handling init result")
 		return nil
 	}
 
+	// if there is an error, shutdown
 	if initResult.Error != nil {
-		log.Printf("[TRACE] ERROR")
 		utils.ShowError(initResult.Error)
 		c.ClosePrompt(AfterPromptCloseExit)
 		return initResult.Error
 	}
 	if initResult.HasMessages() {
-		log.Printf("[TRACE] HAS MESSAGES")
+		log.Printf("[TRACE] init result has messages")
 		// HACK mark result streamer as done so we do not wait for it before restarting prompt
 		// TODO would be better if result stream checked if it was started
 		c.resultsStreamer.Done()
@@ -387,10 +388,8 @@ func (c *InteractiveClient) executor(line string) {
 
 	// store the history
 	c.interactiveQueryHistory.Put(historyItem)
-	// restart the prompt (if required) - this will not be done if we ran the exit metaquery
-	//if c.afterClose == metaquery.AfterPromptCloseRestart {
+	// restart the prompt
 	c.restartInteractiveSession()
-	//}
 }
 
 func (c *InteractiveClient) handleExecuteError(err error) {
@@ -504,9 +503,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 	} else {
 		queryInfo := getQueryInfo(text)
 
-		//log.Printf("[WARN] init %v", c.isInitialised())
 		// only add table suggestions if the client is initialised
-		//
 		if queryInfo.EditingTable && c.isInitialised() {
 			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.initData.Client.schemaMetadata, c.initData.Client.connectionMap)...)
 		}

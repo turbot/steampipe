@@ -1,6 +1,7 @@
 package db
 
 import (
+	"log"
 	"time"
 
 	"github.com/spf13/viper"
@@ -27,7 +28,8 @@ func (c *InteractiveClient) readInitDataStream() {
 		c.initResultChan <- initData.Result
 		return
 	}
-	//log.Printf("[WARN] INIT DATA HAS ARRIVED FOR INTERACTIVE")
+
+	log.Printf("[TRACE] readInitDataStream - data has arrived")
 
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {

@@ -89,7 +89,6 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 
 	control := r.Control
 
-	//log.Println("[WARN]", "start", r.Control.ShortName)
 	// update the current running control in the Progress renderer
 	r.executionTree.progress.OnControlStart(control)
 
