@@ -78,8 +78,13 @@ func getPipedStdinData() string {
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runQueryCmd start")
+	var client *db.Client
 
 	defer func() {
+		// ensure client is closed after we are done
+		// (it will only be non-null for non-interactive queries - interactive close their own client)
+		db.Shutdown(client, db.InvokerQuery)
+
 		utils.LogTime("cmd.runQueryCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
@@ -105,21 +110,17 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	getQueryInitDataAsync(initDataChan, args)
 
 	if interactiveMode {
-		// TODO ensure we shut down DB
 		execute.RunInteractiveSession(&initDataChan)
 	} else {
 
 		// wait for init
 		initData := <-initDataChan
+		// populate client so it gets closed by defer
+		client = initData.Client
 		HandleInitResult(initData)
 
 		// if no query is specified, run interactive prompt
 		if !interactiveMode && len(initData.Queries) > 0 {
-			defer func() {
-				// ensure client is closed after we are done
-				initData.Client.Close()
-				db.Shutdown(initData.Client, db.InvokerQuery)
-			}()
 
 			ctx, cancel := context.WithCancel(context.Background())
 			startCancelHandler(cancel)
@@ -137,7 +138,7 @@ func HandleInitResult(d *db.QueryInitData) {
 		utils.FailOnError(d.Result.Error)
 	}
 	for _, warning := range d.Result.Warnings {
-		utils.ShowWarning(warning)
+		fmt.Println(warning)
 	}
 	for _, message := range d.Result.Messages {
 		fmt.Println(message)

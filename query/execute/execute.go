@@ -12,7 +12,6 @@ import (
 )
 
 func RunInteractiveSession(initChan *chan *db.QueryInitData) {
-
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db.RunInteractivePrompt(initChan)
 	utils.FailOnError(err)
