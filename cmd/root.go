@@ -123,8 +123,11 @@ func createLogger() {
 
 // SteampipeDir :: set the top level ~/.steampipe folder (creates if it doesnt exist)
 func setInstallDir() {
+	utils.LogTime("cmd.root.setInstallDir start")
+	defer utils.LogTime("cmd.root.setInstallDir end")
+
 	installDir, err := helpers.Tildefy(viper.GetString(constants.ArgInstallDir))
-	utils.FailOnErrorWithMessage(err, fmt.Sprintf("failed to sanitize install directory"))
+	utils.FailOnErrorWithMessage(err, "failed to sanitize install directory")
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
 		err = os.MkdirAll(installDir, 0755)
 		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
