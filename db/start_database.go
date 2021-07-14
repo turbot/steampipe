@@ -75,13 +75,16 @@ func (slt Invoker) IsValid() error {
 
 // StartDB :: start the database is not already running
 func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnections bool) (startResult StartResult, err error) {
+	utils.LogTime("db.StartDB start")
+	defer utils.LogTime("db.StartDB end")
+
 	var client *Client
 
 	defer func() {
 		// if there was an error and we started the service, stop it again
 		if err != nil {
 			if startResult == ServiceStarted {
-				StopDB(false, invoker)
+				StopDB(false, invoker, nil)
 			}
 		}
 
@@ -236,14 +239,12 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 	err = ensureSteampipeServer()
 	if err != nil {
 		// there was a problem with the installation
-		StopDB(true, invoker)
 		return ServiceFailedToStart, err
 	}
 
 	err = ensureTempTablePermissions()
 	if err != nil {
 		// there was a problem with the installation
-		StopDB(true, invoker)
 		return ServiceFailedToStart, err
 	}
 
