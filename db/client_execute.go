@@ -62,7 +62,7 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, disableSpinner 
 	if !disableSpinner && cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
 		// if `show-interactive-output` is false, the spinner gets created, but is never shown
 		// so the s.Active() will always come back false . . .
-		spinner = display.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)
+		spinner = display.StartSpinnerAfterDelay("XXXX Loading results...", constants.SpinnerShowTimeout, queryDone)
 	}
 
 	// begin a transaction
@@ -101,6 +101,8 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, disableSpinner 
 func (c *Client) readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result, activeSpinner *spinner.Spinner) {
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
+		// we are done fetching results. time for display. remove the spinner
+		display.StopSpinner(activeSpinner)
 		// close the sql rows object
 		rows.Close()
 		if err := rows.Err(); err != nil {
@@ -109,8 +111,6 @@ func (c *Client) readRows(ctx context.Context, start time.Time, rows *sql.Rows, 
 		// close the channels in the result object
 		result.Close()
 
-		// we are done fetching results. time for display. remove the spinner
-		display.StopSpinner(activeSpinner)
 	}()
 
 	rowCount := 0
