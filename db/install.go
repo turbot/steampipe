@@ -41,15 +41,17 @@ func EnsureDBInstalled() {
 		if fdwNeedsUpdate() {
 			_, err := installFDW(false, spinner)
 			if err != nil {
-				utils.ShowError(fmt.Errorf("%s could not be updated", constants.Bold("steampipe-postgres-fdw")))
-			} else {
-				fmt.Printf("%s was updated to %s. ", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
-				currentStatus, err := GetStatus()
-				if err != nil || currentStatus != nil {
-					fmt.Printf("Run %s for change to take effect.", constants.Bold("steampipe service restart"))
-				}
-				fmt.Println()
+				display.StopSpinner(spinner)
+				utils.FailOnError(err)
 			}
+
+			fmt.Printf("%s was updated to %s. ", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
+			currentStatus, err := GetStatus()
+			if err != nil || currentStatus != nil {
+				fmt.Printf("Run %s for change to take effect.", constants.Bold("steampipe service restart"))
+			}
+			fmt.Println()
+
 		}
 
 		if needsInit() {
@@ -91,7 +93,11 @@ func EnsureDBInstalled() {
 	}
 
 	// installFDW takes care of the spinner, since it may need to run independently
-	installFDW(true, spinner)
+	_, err = installFDW(true, spinner)
+	if err != nil {
+		display.StopSpinner(spinner)
+		utils.FailOnError(err)
+	}
 
 	// do init
 	err = doInit(true, spinner)
@@ -144,9 +150,9 @@ func installFDW(firstSetup bool, spinner *spinner.Spinner) (string, error) {
 	newDigest, err := ociinstaller.InstallFdw(constants.DefaultFdwImage, getDatabaseLocation())
 	if err != nil {
 		if firstSetup {
-			utils.FailOnErrorWithMessage(err, "x Download & install steampipe-postgres-fdw... FAILED!")
+			err = utils.PrefixError(err, "x Download & install steampipe-postgres-fdw failed")
 		} else {
-			utils.ShowErrorWithMessage(err, "could not update steampipe-postgres-fdw")
+			err = utils.PrefixError(err, "x Update steampipe-postgres-fdw failed")
 		}
 	}
 	return newDigest, err
@@ -236,7 +242,7 @@ func initDatabase() error {
 	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(constants.PgHbaContent), 0600)
 }
 
-func installSteampipeDatabase(withSteampipePassword string, withRootPassword string) error {
+func installSteampipeDatabase(steampipePassword string, rootPassword string) error {
 	utils.LogTime("db.installSteampipeDatabase start")
 	defer utils.LogTime("db.installSteampipeDatabase end")
 
@@ -271,7 +277,7 @@ func installSteampipeDatabase(withSteampipePassword string, withRootPassword str
 		`grant all on database steampipe to root`,
 
 		// The root user gets a password which will be used later on to connect
-		fmt.Sprintf(`alter user root with password '%s'`, withRootPassword),
+		fmt.Sprintf(`alter user root with password '%s'`, rootPassword),
 
 		//
 		// PERMISSIONS
@@ -298,7 +304,7 @@ func installSteampipeDatabase(withSteampipePassword string, withRootPassword str
 		// Set a random, complex password for the steampipe user. Done as a separate
 		// step from the create for clarity and reuse.
 		// TODO: need a complex random password here, that is available for sharing with the user when the do steampipe service
-		fmt.Sprintf(`alter user steampipe with password '%s'`, withSteampipePassword),
+		fmt.Sprintf(`alter user steampipe with password '%s'`, steampipePassword),
 
 		// Allow steampipe the privileges of steampipe_users.
 		`grant steampipe_users to steampipe`,
