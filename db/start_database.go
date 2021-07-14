@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/utils"
 )
 
 // StartResult :: pseudoEnum for outcomes of Start
@@ -116,6 +118,11 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 	// remove the stale info file, ignoring errors - will overwrite anyway
 	_ = removeRunningInstanceInfo()
 
+	// Generate the certificate if it fails then set the ssl to off
+	if err := generateSelfSignedCertificate(); err != nil {
+		utils.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
+	}
+
 	listenAddresses := "localhost"
 
 	if listen == ListenTypeNetwork {
@@ -160,7 +167,6 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 		"-c", "wal-buffers=32kB",
 		"-c", "work-mem=64kB",
 		"-c", "jit=off",
-
 		// postgres log collection
 		"-c", "log_statement=all",
 		"-c", "log_min_duration_statement=2000",
@@ -168,6 +174,12 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 		"-c", "log_min_error_statement=error",
 		"-c", fmt.Sprintf("log_directory=%s", constants.LogDir()),
 		"-c", fmt.Sprintf("log_filename=%s", "database-%Y-%m-%d.log"),
+
+		// If ssl is off  it doesnot matter what we pass in the ssl_cert_file and ssl_key_file
+		// SSL will only get validated if the ssl is on
+		"-c", fmt.Sprintf("ssl=%s", SslStatus()),
+		"-c", fmt.Sprintf("ssl_cert_file=%s", filepath.Join(getDataLocation(), constants.ServerCert)),
+		"-c", fmt.Sprintf("ssl_key_file=%s", filepath.Join(getDataLocation(), constants.ServerKey)),
 
 		// Data Directory
 		"-D", getDataLocation())
