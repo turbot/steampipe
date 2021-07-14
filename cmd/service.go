@@ -237,7 +237,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 					}
 				}
 				fmt.Println("Stopping service")
-				db.StopDB(false, invoker)
+				db.StopDB(false, invoker, nil)
 				fmt.Println("Service Stopped")
 				return
 			}
@@ -266,7 +266,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	stopStatus, err := db.StopDB(viper.GetBool(constants.ArgForce), db.InvokerService)
+	stopStatus, err := db.StopDB(viper.GetBool(constants.ArgForce), db.InvokerService, nil)
 
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "could not stop current instance")
@@ -435,6 +435,14 @@ To keep the service running after the %s session completes, use %s.
 
 func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runServiceStopCmd stop")
+
+	stoppedChan := make(chan bool, 1)
+	var status db.StopStatus
+	var err error
+	var info *db.RunningDBInstanceInfo
+
+	spinner := display.StartSpinnerAfterDelay("", constants.SpinnerShowTimeout, stoppedChan)
+
 	defer func() {
 		utils.LogTime("runServiceStopCmd end")
 		if r := recover(); r != nil {
@@ -442,23 +450,23 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	var status db.StopStatus
-	var err error
-
 	force := cmdconfig.Viper().GetBool(constants.ArgForce)
 	if force {
-		status, err = db.StopDB(force, db.InvokerService)
+		status, err = db.StopDB(force, db.InvokerService, spinner)
 	} else {
-		info, err := db.GetStatus()
+		info, err = db.GetStatus()
 		if err != nil {
+			display.StopSpinner(spinner)
 			utils.ShowErrorWithMessage(err, "could not stop service")
 			return
 		}
 		if info == nil {
+			display.StopSpinner(spinner)
 			fmt.Println("Service is not running")
 			return
 		}
 		if info.Invoker != db.InvokerService {
+			display.StopSpinner(spinner)
 			printRunningImplicit(info.Invoker)
 			return
 		}
@@ -466,21 +474,26 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		// check if there are any connected clients to the service
 		connectedClientCount, err := db.GetCountOfConnectedClients()
 		if err != nil {
+			display.StopSpinner(spinner)
 			utils.ShowError(fmt.Errorf("error during stop"))
 		}
 
 		if connectedClientCount > 0 {
+			display.StopSpinner(spinner)
 			printClientsConnected()
 			return
 		}
 
-		status, err = db.StopDB(false, db.InvokerService)
+		status, _ = db.StopDB(false, db.InvokerService, spinner)
 	}
 
 	if err != nil {
+		display.StopSpinner(spinner)
 		utils.ShowError(err)
 		return
 	}
+
+	display.StopSpinner(spinner)
 
 	switch status {
 	case db.ServiceStopped:

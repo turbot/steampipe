@@ -7,8 +7,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/briandowns/spinner"
 	psutils "github.com/shirou/gopsutil/process"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
 
 	"github.com/turbot/steampipe/utils"
@@ -57,12 +57,12 @@ func Shutdown(client *Client, invoker Invoker) {
 		}
 
 		// we can shutdown the database
-		status, err := StopDB(false, invoker)
+		status, err := StopDB(false, invoker, nil)
 		if err != nil {
 			utils.ShowError(err)
 		}
 		if status != ServiceStopped {
-			StopDB(true, invoker)
+			StopDB(true, invoker, nil)
 		}
 	}
 }
@@ -80,7 +80,7 @@ func GetCountOfConnectedClients() (int, error) {
 }
 
 // StopDB :: search and stop the running instance. Does nothing if an instance was not found
-func StopDB(force bool, invoker Invoker) (StopStatus, error) {
+func StopDB(force bool, invoker Invoker, spinner *spinner.Spinner) (StopStatus, error) {
 	log.Println("[TRACE] StopDB", force)
 
 	utils.LogTime("db.StopDB start")
@@ -100,12 +100,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 
 	if force {
 		// check if we have a process from another install-dir
-		checkedPreviousInstances := make(chan bool, 1)
-		s := display.StartSpinnerAfterDelay("Checking for running instances...", constants.SpinnerShowTimeout, checkedPreviousInstances)
-		defer func() {
-			close(checkedPreviousInstances)
-			display.StopSpinner(s)
-		}()
+		display.UpdateSpinnerMessage(spinner, "Checking for running instances...")
 		killInstanceIfAny()
 		return ServiceStopped, nil
 	}
@@ -133,12 +128,7 @@ func StopDB(force bool, invoker Invoker) (StopStatus, error) {
 		return ServiceStopFailed, err
 	}
 
-	processKilledChannel := make(chan bool, 1)
-	spinner := display.StartSpinnerAfterDelay("Shutting down...", constants.SpinnerShowTimeout, processKilledChannel)
-	defer func() {
-		close(processKilledChannel)
-		display.StopSpinner(spinner)
-	}()
+	display.UpdateSpinnerMessage(spinner, "Shutting down...")
 
 	err = doThreeStepProcessExit(process)
 	if err != nil {
@@ -179,7 +169,7 @@ func doThreeStepProcessExit(process *psutils.Process) error {
 	if err != nil {
 		return err
 	}
-	exitSuccessful = waitForProcessExit(process)
+	exitSuccessful = waitForProcessExit(process, 2*time.Second)
 	if !exitSuccessful {
 		// process didn't quit
 		// try a SIGINT
@@ -187,7 +177,7 @@ func doThreeStepProcessExit(process *psutils.Process) error {
 		if err != nil {
 			return err
 		}
-		exitSuccessful = waitForProcessExit(process)
+		exitSuccessful = waitForProcessExit(process, 2*time.Second)
 	}
 	if !exitSuccessful {
 		// process didn't quit
@@ -196,7 +186,7 @@ func doThreeStepProcessExit(process *psutils.Process) error {
 		if err != nil {
 			return err
 		}
-		exitSuccessful = waitForProcessExit(process)
+		exitSuccessful = waitForProcessExit(process, 5*time.Second)
 	}
 
 	if !exitSuccessful {
@@ -206,9 +196,9 @@ func doThreeStepProcessExit(process *psutils.Process) error {
 	return nil
 }
 
-func waitForProcessExit(process *psutils.Process) bool {
+func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 	checkTimer := time.NewTicker(50 * time.Millisecond)
-	timeoutAt := time.After(2 * time.Second)
+	timeoutAt := time.After(waitFor)
 
 	for {
 		select {
