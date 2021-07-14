@@ -65,8 +65,8 @@ func InitCmd() {
 	utils.LogTime("cmd.root.InitCmd start")
 	defer utils.LogTime("cmd.root.InitCmd end")
 
-	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
-	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace (default to current working directory) ")
+	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", constants.DefaultInstallDir))
+	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace (defaults to current working directory) ")
 
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 	viper.BindPFlag(constants.ArgWorkspace, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspace))
@@ -79,6 +79,9 @@ func InitCmd() {
 func initGlobalConfig() {
 	utils.LogTime("cmd.root.initGlobalConfig start")
 	defer utils.LogTime("cmd.root.initGlobalConfig end")
+
+	// setup viper without the settings in the config files
+	cmdconfig.SetViperDefaults(nil)
 
 	// set global containing install dir
 	setInstallDir()
