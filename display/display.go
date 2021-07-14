@@ -267,14 +267,12 @@ func displayTable(result *queryresult.Result) {
 	}
 
 	// iterate each row, adding each to the table
-	if err := iterateResults(result, rowFunc); err != nil {
-		// render the table till what has been received till now
-		t.Render()
-		// disable the pager for this output
-		nullPager(outbuf.String())
+	err := iterateResults(result, rowFunc)
+	if err != nil {
 		// display the error
+		fmt.Println()
 		utils.ShowError(err)
-		return
+		fmt.Println()
 	}
 
 	// write out the table to the buffer
