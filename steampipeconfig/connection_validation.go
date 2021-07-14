@@ -103,7 +103,7 @@ func validateColumnDefVersion(p *ConnectionPlugin) *ValidationFailure {
 		return &ValidationFailure{
 			Plugin:             p.PluginName,
 			ConnectionName:     p.ConnectionName,
-			Message:            "Incompatible steampipe-plugin-sdk version. Please upgrade Steampipe.",
+			Message:            fmt.Sprintf("Incompatible steampipe-plugin-sdk version. Please upgrade Steampipe. found %d want %d", pluginProtocolVersion, steampipeProtocolVersion),
 			ShouldDropIfExists: true,
 		}
 	}
