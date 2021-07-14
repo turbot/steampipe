@@ -30,7 +30,9 @@ func Viper() *viper.Viper {
 
 func SetViperDefaults(config *steampipeconfig.SteampipeConfig) {
 	setBaseDefaults()
-	overrideDefaultsFromConfig(config)
+	if config != nil {
+		overrideDefaultsFromConfig(config)
+	}
 	overrideDefaultsFromEnv()
 }
 
@@ -38,6 +40,7 @@ func SetViperDefaults(config *steampipeconfig.SteampipeConfig) {
 func setBaseDefaults() {
 	defaults := map[string]interface{}{
 		constants.ArgUpdateCheck: true,
+		constants.ArgInstallDir:  constants.DefaultInstallDir,
 	}
 
 	for k, v := range defaults {
@@ -61,6 +64,7 @@ func overrideDefaultsFromEnv() {
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
 		constants.ENV_UPDATE_CHECK: {constants.ArgUpdateCheck, "bool"},
+		constants.ENV_INSTALL_DIR:  {constants.ArgInstallDir, "string"},
 	}
 	for k, v := range envMappings {
 		if val, ok := os.LookupEnv(k); ok {

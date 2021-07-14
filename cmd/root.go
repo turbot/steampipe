@@ -65,8 +65,8 @@ func InitCmd() {
 	utils.LogTime("cmd.root.InitCmd start")
 	defer utils.LogTime("cmd.root.InitCmd end")
 
-	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
-	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace (default to current working directory) ")
+	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", constants.DefaultInstallDir))
+	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace (defaults to current working directory) ")
 
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 	viper.BindPFlag(constants.ArgWorkspace, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspace))
@@ -79,6 +79,9 @@ func InitCmd() {
 func initGlobalConfig() {
 	utils.LogTime("cmd.root.initGlobalConfig start")
 	defer utils.LogTime("cmd.root.initGlobalConfig end")
+
+	// setup viper without the settings in the config files
+	cmdconfig.SetViperDefaults(nil)
 
 	// set global containing install dir
 	setInstallDir()
@@ -120,8 +123,11 @@ func createLogger() {
 
 // SteampipeDir :: set the top level ~/.steampipe folder (creates if it doesnt exist)
 func setInstallDir() {
+	utils.LogTime("cmd.root.setInstallDir start")
+	defer utils.LogTime("cmd.root.setInstallDir end")
+
 	installDir, err := helpers.Tildefy(viper.GetString(constants.ArgInstallDir))
-	utils.FailOnErrorWithMessage(err, fmt.Sprintf("failed to sanitize install directory"))
+	utils.FailOnErrorWithMessage(err, "failed to sanitize install directory")
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
 		err = os.MkdirAll(installDir, 0755)
 		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
