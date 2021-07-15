@@ -30,6 +30,7 @@ func (c *Client) Close() error {
 // NewClient ensures that the database instance is running
 // and returns a `Client` to interact with it
 func NewClient(autoRefreshConnections bool) (*Client, *RefreshConnectionResult) {
+	log.Printf("[WARN] NEW CLIENT\n")
 	utils.LogTime("db.NewClient start")
 	defer utils.LogTime("db.NewClient end")
 	refreshResult := &RefreshConnectionResult{}
@@ -58,25 +59,24 @@ func NewClient(autoRefreshConnections bool) (*Client, *RefreshConnectionResult) 
 			refreshResult.Error = err
 			return nil, refreshResult
 		}
-	}
 
-	// update the service and client search paths
-	if err := client.SetClientSearchPath(); err != nil {
-		refreshResult.Error = err
-		return nil, refreshResult
-	}
-	// TODO 0712 also set service search path?
-	if err := client.SetServiceSearchPath(); err != nil {
-		refreshResult.Error = err
-		return nil, refreshResult
-	}
+		// update the service and client search paths
+		if err := client.SetClientSearchPath(); err != nil {
+			refreshResult.Error = err
+			return nil, refreshResult
+		}
+		// TODO 0712 also set service search path?
+		if err := client.SetServiceSearchPath(); err != nil {
+			refreshResult.Error = err
+			return nil, refreshResult
+		}
 
-	// finally update the connection map
-	if err = client.updateConnectionMap(); err != nil {
-		refreshResult.Error = err
-		return nil, refreshResult
+		// finally update the connection map
+		if err = client.updateConnectionMap(); err != nil {
+			refreshResult.Error = err
+			return nil, refreshResult
+		}
 	}
-
 	return client, refreshResult
 }
 
