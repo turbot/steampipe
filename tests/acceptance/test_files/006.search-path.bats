@@ -21,7 +21,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "service start, no config, add connection, query with prefix" {
-  steampipe service start
+
   run steampipe query "show search_path"
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_1.txt)"
   cp $SRC_DATA_DIR/two_chaos.spc $STEAMPIPE_INSTALL_DIR/config/chaos.spc
