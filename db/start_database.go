@@ -196,7 +196,6 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 	if os.Getenv("OPENSSL_CONF") == "" {
 		postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", constants.SteampipeDir), "OPENSSL_CONF=/etc/ssl")
 	} else {
-		log.Println("Else")
 		postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", constants.SteampipeDir))
 	}
 
