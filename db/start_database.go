@@ -229,13 +229,18 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 	// pass 'false' to disable auto refreshing connections
 	//- we will explicitly refresh connections after ensuring the steampipe server exists
 	var res *RefreshConnectionResult
-	client, res = NewClient(false)
-	if res.Error != nil {
-		return ServiceFailedToStart, handleStartFailure(res.Error)
+	client, err = NewClient()
+	if err != nil {
+		return ServiceFailedToStart, handleStartFailure(err)
 	}
-	// display any initialisation warnings
-	res.ShowWarnings()
-
+	if refreshConnections {
+		res = client.RefreshConnectionAndSearchPaths()
+		if res.Error != nil {
+			return ServiceFailedToStart, handleStartFailure(res.Error)
+		}
+		// display any initialisation warnings
+		res.ShowWarnings()
+	}
 	err = ensureSteampipeServer()
 	if err != nil {
 		// there was a problem with the installation
@@ -250,30 +255,6 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 		return ServiceFailedToStart, err
 	}
 
-	// refresh plugin connections - ensure db schemas are in sync with connection config
-	// NOTE: refresh defaults to true but will be set to false if this service start command has been invoked
-	// internally by a different command which needs the service
-	if refreshConnections {
-		res := client.RefreshConnections()
-		if res.Error != nil {
-			return ServiceStarted, err
-		}
-		if err = refreshFunctions(); err != nil {
-			return ServiceStarted, err
-		}
-
-		// update the connection map
-		if err = client.updateConnectionMap(); err != nil {
-			return ServiceStarted, err
-		}
-	}
-
-	// TODO 0712 set client search path also?
-	// update the service and client search paths
-	if err := client.SetClientSearchPath(); err != nil {
-		return ServiceStarted, err
-	}
-	err = client.SetServiceSearchPath()
 	return ServiceStarted, err
 }
 

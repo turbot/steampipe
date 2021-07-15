@@ -101,8 +101,8 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
-	// start db if necessary
-	err := db.EnsureDbAndStartService(db.InvokerQuery)
+	// start db if necessary - do not refresh connections as we do it as part of the async startup
+	err := db.EnsureDbAndStartService(db.InvokerQuery, false)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
 
 	// perform rest of initialisation async
@@ -167,14 +167,17 @@ func getQueryInitDataAsync(initDataChan chan *db.QueryInitData, args []string) {
 		initData.Queries = execute.GetQueries(args, workspace)
 
 		// get a db client
-		client, newClientResult := db.NewClient(true)
-		if newClientResult.Error != nil {
-			initData.Result.Error = newClientResult.Error
+		client, err := db.NewClient()
+		if err != nil {
+			initData.Result.Error = err
 			return
 		}
-		if len(newClientResult.Warnings) > 0 {
-			initData.Result.AddWarnings(newClientResult.Warnings)
+		res := client.RefreshConnectionAndSearchPaths()
+		if res.Error != nil {
+			initData.Result.Error = res.Error
+			return
 		}
+		initData.Result.AddWarnings(res.Warnings)
 
 		initData.Client = client
 		// populate the reflection tables
