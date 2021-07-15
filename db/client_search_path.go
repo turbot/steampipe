@@ -38,7 +38,6 @@ func (c *Client) SetServiceSearchPath() error {
 		constants.DatabaseUser,
 		strings.Join(searchPath, ","),
 	)
-	log.Printf("[WARN] SETTTING SERVICE SEARCH PATH\n %s", query)
 	_, err := c.ExecuteSync(context.Background(), query, false)
 	return err
 }
@@ -76,7 +75,6 @@ func (c *Client) SetClientSearchPath() error {
 
 	// now construct and execute the query
 	q := fmt.Sprintf("set search_path to %s", strings.Join(searchPath, ","))
-	log.Printf("[WARN] SETTTING CLIENT SEARCH PATH %s\n", q)
 	_, err := c.ExecuteSync(context.Background(), q, false)
 	if err != nil {
 		return err
