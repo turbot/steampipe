@@ -130,7 +130,7 @@ func StopDB(force bool, invoker Invoker, spinner *spinner.Spinner) (StopStatus, 
 
 	display.UpdateSpinnerMessage(spinner, "Shutting down...")
 
-	err = doThreeStepProcessExit(process)
+	err = doThreeStepPostgresExit(process)
 	if err != nil {
 		// we couldn't stop it still.
 		// timeout
@@ -158,9 +158,9 @@ func StopDB(force bool, invoker Invoker, spinner *spinner.Spinner) (StopStatus, 
 
 	We cannot do a simple os.Process().Kill(), since that sends a SIGKILL,
 	which makes PG terminate immediately without saving any state.
-	Its the BIG RED Button.
+	Its the BIG RED Button - which we press if our 3 steps don't work
 **/
-func doThreeStepProcessExit(process *psutils.Process) error {
+func doThreeStepPostgresExit(process *psutils.Process) error {
 	var err error
 	var exitSuccessful bool
 
@@ -183,6 +183,14 @@ func doThreeStepProcessExit(process *psutils.Process) error {
 		// process didn't quit
 		// desperation prevails
 		err = process.SendSignal(syscall.SIGQUIT)
+		if err != nil {
+			return err
+		}
+		exitSuccessful = waitForProcessExit(process, 5*time.Second)
+	}
+	if !exitSuccessful {
+		// MURDER
+		err = killProcessTree(process)
 		if err != nil {
 			return err
 		}

@@ -24,7 +24,7 @@ func EnsureDbAndStartService(invoker Invoker) error {
 
 	if status == nil {
 		// the db service is not started - start it
-		StartImplicitService(invoker)
+		return StartImplicitService(invoker)
 	}
 	return nil
 }
