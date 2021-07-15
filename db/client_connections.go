@@ -6,9 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -16,7 +13,8 @@ import (
 // RefreshConnections :: load required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func (c *Client) RefreshConnections() (bool, error) {
+func (c *Client) RefreshConnections() *RefreshConnectionResult {
+	res := &RefreshConnectionResult{}
 	utils.LogTime("db.RefreshConnections start")
 	defer utils.LogTime("db.RefreshConnections end")
 
@@ -29,44 +27,34 @@ func (c *Client) RefreshConnections() (bool, error) {
 	// refresh the connection state file - the removes any connections which do not exist in the list of current schema
 	updates, err := steampipeconfig.GetConnectionsToUpdate(schemas, requiredConnections)
 	if err != nil {
-		return false, err
+		res.Error = err
+		return res
 	}
 	log.Printf("[TRACE] RefreshConnections, updates: %+v\n", updates)
 
 	missingCount := len(updates.MissingPlugins)
 	if missingCount > 0 {
 		// if any plugins are missing, error for now but we could prompt for an install
-		return false, fmt.Errorf("%d %s referenced in the connection config not installed: \n  %v",
+		res.Error = fmt.Errorf("%d %s referenced in the connection config not installed: \n  %v",
 			missingCount,
 			utils.Pluralize("plugin", missingCount),
 			strings.Join(updates.MissingPlugins, "\n  "))
+		return res
 	}
 
 	var connectionQueries []string
-	var warningString string
 	numUpdates := len(updates.Update)
 	if numUpdates > 0 {
-		defer func() {
-			// if any warnings were returned, display them on stderr
-			if len(warningString) > 0 {
-				// println writes to stderr
-				println(warningString)
-			}
-		}()
-		// in query, this can only start when in interactive
-		if cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
-			spin := display.ShowSpinner("Refreshing connections...")
-			defer display.StopSpinner(spin)
-		}
 
 		// first instantiate connection plugins for all updates
 		connectionPlugins, err := getConnectionPlugins(updates.Update)
 		if err != nil {
-			return false, err
+			res.Error = err
+			return res
 		}
 		// find any plugins which use a newer sdk version than steampipe.
 		validationFailures, validatedUpdates, validatedPlugins := steampipeconfig.ValidatePlugins(updates.Update, connectionPlugins)
-		warningString = steampipeconfig.BuildValidationWarningString(validationFailures)
+		res.Warnings = append(res.Warnings, steampipeconfig.BuildValidationWarningString(validationFailures))
 
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
 		connectionQueries = getSchemaQueries(validatedUpdates, validationFailures)
@@ -81,12 +69,13 @@ func (c *Client) RefreshConnections() (bool, error) {
 
 	if len(connectionQueries) == 0 {
 		log.Println("[TRACE] no connections to update")
-		return false, nil
+		return res
 	}
 
 	// execute the connection queries
 	if err = executeConnectionQueries(connectionQueries, updates); err != nil {
-		return false, err
+		res.Error = err
+		return res
 	}
 
 	// so there ARE connections to update
@@ -95,17 +84,8 @@ func (c *Client) RefreshConnections() (bool, error) {
 	log.Println("[TRACE] reloading schema")
 	c.loadSchema()
 
-	// update the service and client search paths
-	log.Println("[TRACE] setting search path")
-	c.SetServiceSearchPath()
-	c.SetClientSearchPath()
-
-	// finally update the connection map
-	if err = c.updateConnectionMap(); err != nil {
-		return false, err
-	}
-
-	return true, nil
+	res.UpdatedConnections = true
+	return res
 
 }
 

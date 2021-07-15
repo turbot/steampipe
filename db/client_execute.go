@@ -62,7 +62,7 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, disableSpinner 
 	if !disableSpinner && cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
 		// if `show-interactive-output` is false, the spinner gets created, but is never shown
 		// so the s.Active() will always come back false . . .
-		spinner = display.StartSpinnerAfterDelay("XXXX Loading results...", constants.SpinnerShowTimeout, queryDone)
+		spinner = display.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)
 	}
 
 	// begin a transaction

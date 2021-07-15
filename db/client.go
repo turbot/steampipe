@@ -29,7 +29,7 @@ func (c *Client) Close() error {
 
 // NewClient ensures that the database instance is running
 // and returns a `Client` to interact with it
-func NewClient(autoRefreshConnections bool) (*Client, error) {
+func NewClient() (*Client, error) {
 	utils.LogTime("db.NewClient start")
 	defer utils.LogTime("db.NewClient end")
 
@@ -45,32 +45,37 @@ func NewClient(autoRefreshConnections bool) (*Client, error) {
 
 	client.loadSchema()
 
-	var updatedConnections bool
-	if autoRefreshConnections {
-		if updatedConnections, err = client.RefreshConnections(); err != nil {
-			client.Close()
-			return nil, err
-		}
-		if err := refreshFunctions(); err != nil {
-			client.Close()
-			return nil, err
-		}
-	}
-
-	// if we did NOT update connections, initialise the connection map and search path
-	if !updatedConnections {
-		// load the connection state and cache it!
-		connectionMap, err := steampipeconfig.GetConnectionState(client.schemaMetadata.GetSchemas())
-		if err != nil {
-			return nil, err
-		}
-		client.connectionMap = &connectionMap
-		if err := client.SetClientSearchPath(); err != nil {
-			utils.ShowError(err)
-		}
-	}
-
 	return client, nil
+}
+
+func (c *Client) RefreshConnectionAndSearchPaths() *RefreshConnectionResult {
+	res := c.RefreshConnections()
+	if res.Error != nil {
+		return res
+	}
+	if err := refreshFunctions(); err != nil {
+		res.Error = err
+		return res
+	}
+
+	// load the connection state and cache it!
+	connectionMap, err := steampipeconfig.GetConnectionState(c.schemaMetadata.GetSchemas())
+	if err != nil {
+		res.Error = err
+		return res
+	}
+	c.connectionMap = &connectionMap
+	// set service search path first - client may fall back to using it
+	if err := c.SetServiceSearchPath(); err != nil {
+		res.Error = err
+		return res
+	}
+	if err := c.SetClientSearchPath(); err != nil {
+		res.Error = err
+		return res
+	}
+
+	return res
 }
 
 func createSteampipeDbClient() (*sql.DB, error) {

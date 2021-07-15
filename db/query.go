@@ -10,7 +10,7 @@ import (
 )
 
 // EnsureDbAndStartService :: ensure db is installed and start service if necessary
-func EnsureDbAndStartService(invoker Invoker) error {
+func EnsureDbAndStartService(invoker Invoker, refreshConnections bool) error {
 	utils.LogTime("db.EnsureDbAndStartService start")
 	defer utils.LogTime("db.EnsureDbAndStartService end")
 
@@ -24,19 +24,19 @@ func EnsureDbAndStartService(invoker Invoker) error {
 
 	if status == nil {
 		// the db service is not started - start it
-		return StartImplicitService(invoker)
+		return StartImplicitService(invoker, refreshConnections)
 	}
 	return nil
 }
 
 // RunInteractivePrompt :: start the interactive query prompt
-func RunInteractivePrompt(workspace WorkspaceResourceProvider, client *Client) (*queryresult.ResultStreamer, error) {
+func RunInteractivePrompt(initChan *chan *QueryInitData) (*queryresult.ResultStreamer, error) {
 	resultsStreamer := queryresult.NewResultStreamer()
 
-	interactiveClient, err := newInteractiveClient(workspace, client, resultsStreamer)
+	interactiveClient, err := newInteractiveClient(initChan, resultsStreamer)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
-		Shutdown(client, InvokerQuery)
+		Shutdown(nil, InvokerQuery)
 		return nil, err
 	}
 

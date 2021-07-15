@@ -17,7 +17,6 @@ const (
 	ArgListenAddress           = "database-listen"
 	ArgForeground              = "foreground"
 	ArgInvoker                 = "invoker"
-	ArgRefresh                 = "refresh"
 	ArgUpdateCheck             = "update-check"
 	ArgInstallDir              = "install-dir"
 	ArgWorkspace               = "workspace"

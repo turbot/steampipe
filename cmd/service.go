@@ -64,8 +64,7 @@ connection from any Postgres compatible database client.`,
 		// foreground enables the service to run in the foreground - till exit
 		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
 		// Hidden flags for internal use
-		AddStringFlag(constants.ArgInvoker, "", string(db.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden()).
-		AddBoolFlag(constants.ArgRefresh, "", true, "Refresh connections on startup", cmdconfig.FlagOptions.Hidden())
+		AddStringFlag(constants.ArgInvoker, "", string(db.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
 }
@@ -180,7 +179,8 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 			utils.ShowErrorWithMessage(err, "service was already running, but could not make it persistent")
 		}
 	} else {
-		status, err := db.StartDB(cmdconfig.DatabasePort(), listen, invoker, viper.GetBool(constants.ArgRefresh))
+		// start db, refreshing connections
+		status, err := db.StartDB(cmdconfig.DatabasePort(), listen, invoker, true)
 		if err != nil {
 			utils.ShowError(err)
 			return
@@ -284,8 +284,8 @@ to force a restart.
 		`)
 		return
 	}
-
-	status, err := db.StartDB(currentServiceStatus.Port, currentServiceStatus.ListenType, currentServiceStatus.Invoker, viper.GetBool(constants.ArgRefresh))
+	// start db, refreshing connections
+	status, err := db.StartDB(currentServiceStatus.Port, currentServiceStatus.ListenType, currentServiceStatus.Invoker, true)
 	if err != nil {
 		utils.ShowError(err)
 		return

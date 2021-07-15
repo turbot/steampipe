@@ -81,8 +81,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	startCancelHandler(cancel)
 
-	// start db if necessary
-	err = db.EnsureDbAndStartService(db.InvokerCheck)
+	// start db if necessary, refreshing connections
+	err = db.EnsureDbAndStartService(db.InvokerCheck, true)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
 	defer db.Shutdown(nil, db.InvokerCheck)
 
@@ -105,9 +105,13 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// first get a client - do this once for all controls
-	client, err := db.NewClient(true)
+	client, err := db.NewClient()
 	utils.FailOnError(err)
 	defer client.Close()
+	res := client.RefreshConnectionAndSearchPaths()
+	utils.FailOnError(res.Error)
+	// display any initialisation warnings
+	res.ShowWarnings()
 
 	// populate the reflection tables
 	err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)

@@ -75,8 +75,8 @@ Examples:
   # Install a specific plugin version
   steampipe plugin install turbot/azure@0.1.0`,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			// start db if necessary
-			err := db.EnsureDbAndStartService(db.InvokerPlugin)
+			// start db if necessary, refreshing connections
+			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -113,8 +113,8 @@ Examples:
   # Update a common plugin (turbot/aws)
   steampipe plugin update aws`,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			// start db if necessary
-			err := db.EnsureDbAndStartService(db.InvokerPlugin)
+			// start db if necessary, refreshing connections
+			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -149,8 +149,8 @@ Examples:
   # List plugins that have updates available
   steampipe plugin list --outdated`,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			// start db if necessary
-			err := db.EnsureDbAndStartService(db.InvokerPlugin)
+			// start db if necessary, refreshing connections
+			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -185,8 +185,8 @@ Example:
 
 `,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			// start db if necessary
-			err := db.EnsureDbAndStartService(db.InvokerPlugin)
+			// start db if necessary, refreshing connections
+			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -464,18 +464,17 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 		steampipeconfig.Config = config
 	}
 
-	// TODO i think we can pass true here and not refresh below
-	client, err := db.NewClient(false)
+	client, err := db.NewClient()
 	if err != nil {
 		return err
 	}
 	defer client.Close()
-
-	// refresh connections
-	if _, err = client.RefreshConnections(); err != nil {
-		return err
+	res := client.RefreshConnectionAndSearchPaths()
+	if res.Error != nil {
+		return res.Error
 	}
-
+	// display any initialisation warnings
+	res.ShowWarnings()
 	return nil
 }
 
@@ -542,11 +541,17 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
 func getPluginConnectionMap() (map[string][]string, error) {
-	client, err := db.NewClient(true)
+	client, err := db.NewClient()
 	if err != nil {
-		return nil, fmt.Errorf("Could not connect with steampipe service")
+		return nil, err
 	}
 	defer client.Close()
+	res := client.RefreshConnectionAndSearchPaths()
+	if res.Error != nil {
+		return nil, fmt.Errorf("could not connect with steampipe service")
+	}
+	// display any initialisation warnings
+	res.ShowWarnings()
 
 	pluginConnectionMap := map[string][]string{}
 

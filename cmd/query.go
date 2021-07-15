@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 
@@ -78,7 +79,12 @@ func getPipedStdinData() string {
 func runQueryCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runQueryCmd start")
 	var client *db.Client
+
 	defer func() {
+		// ensure client is closed after we are done
+		// (it will only be non-null for non-interactive queries - interactive close their own client)
+		db.Shutdown(client, db.InvokerQuery)
+
 		utils.LogTime("cmd.runQueryCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
@@ -95,48 +101,91 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
-	// load the workspace
-	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
-	defer workspace.Close()
-
-	// check if the required plugins are installed
-	err = workspace.CheckRequiredPluginsInstalled()
-	utils.FailOnError(err)
-
-	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-	queries := execute.GetQueries(args, workspace)
-
-	// start db if necessary
-	err = db.EnsureDbAndStartService(db.InvokerQuery)
+	// start db if necessary - do not refresh connections as we do it as part of the async startup
+	err := db.EnsureDbAndStartService(db.InvokerQuery, false)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
 
-	defer func() {
-		db.Shutdown(client, db.InvokerQuery)
-	}()
+	// perform rest of initialisation async
+	initDataChan := make(chan *db.QueryInitData, 1)
+	getQueryInitDataAsync(initDataChan, args)
 
-	// get a db client
-	client, err = db.NewClient(true)
-	utils.FailOnError(err)
-
-	// populate the reflection tables
-	err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)
-	utils.FailOnError(err)
-
-	// if no query is specified, run interactive prompt
 	if interactiveMode {
-		execute.RunInteractiveSession(workspace, client)
-	} else if len(queries) > 0 {
-		// ensure client is closed after we are done
-		defer client.Close()
+		execute.RunInteractiveSession(&initDataChan)
+	} else {
 
-		ctx, cancel := context.WithCancel(context.Background())
-		startCancelHandler(cancel)
-		// otherwise if we have resolved any queries, run them
-		failures := execute.ExecuteQueries(ctx, queries, client)
-		// set global exit code
-		exitCode = failures
+		// wait for init
+		initData := <-initDataChan
+		if err := initData.Result.Error; err != nil {
+			utils.FailOnError(err)
+		}
+		// display any initialisation messages/warnings
+		initData.Result.DisplayMessages()
+		// populate client so it gets closed by defer
+		client = initData.Client
+
+		// if no query is specified, run interactive prompt
+		if !interactiveMode && len(initData.Queries) > 0 {
+			ctx, cancel := context.WithCancel(context.Background())
+			startCancelHandler(cancel)
+			// otherwise if we have resolved any queries, run them
+			failures := execute.ExecuteQueries(ctx, initData.Queries, initData.Client)
+			// set global exit code
+			exitCode = failures
+		}
 	}
+}
+
+func getQueryInitDataAsync(initDataChan chan *db.QueryInitData, args []string) {
+	go func() {
+		log.Printf("[TRACE] getQueryInitDataAsync")
+
+		initData := db.NewInitData()
+		defer func() {
+			initDataChan <- initData
+			close(initDataChan)
+			log.Printf("[TRACE] getQueryInitDataAsync complete")
+		}()
+
+		// load the workspace
+		workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+		if err != nil {
+			initData.Result.Error = utils.PrefixError(err, "failed to load workspace")
+			return
+		}
+
+		// se we have loaded a workspace - be sure to close it
+		defer workspace.Close()
+
+		// check if the required plugins are installed
+		if err := workspace.CheckRequiredPluginsInstalled(); err != nil {
+			initData.Result.Error = err
+			return
+		}
+		initData.Workspace = workspace
+
+		// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
+		initData.Queries = execute.GetQueries(args, workspace)
+
+		// get a db client
+		client, err := db.NewClient()
+		if err != nil {
+			initData.Result.Error = err
+			return
+		}
+		res := client.RefreshConnectionAndSearchPaths()
+		if res.Error != nil {
+			initData.Result.Error = res.Error
+			return
+		}
+		initData.Result.AddWarnings(res.Warnings)
+
+		initData.Client = client
+		// populate the reflection tables
+		if err = db.CreateMetadataTables(workspace.GetResourceMaps(), client); err != nil {
+			initData.Result.Error = err
+			return
+		}
+	}()
 }
 
 func startCancelHandler(cancel context.CancelFunc) {
