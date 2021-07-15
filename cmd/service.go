@@ -476,7 +476,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		connectedClientCount, err := db.GetCountOfConnectedClients()
 		if err != nil {
 			display.StopSpinner(spinner)
-			utils.ShowError(fmt.Errorf("error during stop"))
+			utils.ShowError(utils.PrefixError(err, "error during service stop"))
 		}
 
 		if connectedClientCount > 0 {
