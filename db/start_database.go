@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 
 	psutils "github.com/shirou/gopsutil/process"
@@ -316,7 +317,7 @@ func handleStartFailure(err error) error {
 }
 
 func isPortBindable(port int) bool {
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	if err != nil {
 		return false
 	}
@@ -330,9 +331,15 @@ func killInstanceIfAny() bool {
 	if err != nil {
 		return false
 	}
+	wg := sync.WaitGroup{}
 	for _, process := range processes {
-		killProcessTree(process)
+		wg.Add(1)
+		go func(p *psutils.Process) {
+			doThreeStepPostgresExit(p)
+			wg.Done()
+		}(process)
 	}
+	wg.Wait()
 	return len(processes) > 0
 }
 
