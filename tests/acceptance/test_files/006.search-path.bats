@@ -45,6 +45,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_5.txt)"
   cp $SRC_DATA_DIR/two_chaos.spc $STEAMPIPE_INSTALL_DIR/config/chaos.spc
   run steampipe query "show search_path" --search-path-prefix foo2
+  # NOTE had to add blank line to expected output for some reason
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_6.txt)"
 }
 
