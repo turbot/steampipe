@@ -3,7 +3,7 @@ package db
 import (
 	"log"
 
-	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -14,7 +14,7 @@ func StartImplicitService(invoker Invoker) error {
 
 	log.Println("[TRACE] start implicit service")
 
-	if _, err := StartDB(constants.DatabaseDefaultPort, ListenTypeLocal, invoker, false); err != nil {
+	if _, err := StartDB(cmdconfig.DatabasePort(), ListenTypeLocal, invoker, false); err != nil {
 		return err
 	}
 	return nil
