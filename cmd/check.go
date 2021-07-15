@@ -105,9 +105,11 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// first get a client - do this once for all controls
-	client, err := db.NewClient(true)
+	client, err := db.NewClient()
 	utils.FailOnError(err)
 	defer client.Close()
+	err = client.AutoRefreshConnections()
+	utils.FailOnError(err)
 
 	// populate the reflection tables
 	err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)

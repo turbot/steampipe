@@ -116,7 +116,9 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// get a db client
-	client, err = db.NewClient(true)
+	client, err = db.NewClient()
+	utils.FailOnError(err)
+	err = client.AutoRefreshConnections()
 	utils.FailOnError(err)
 
 	// populate the reflection tables

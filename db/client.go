@@ -29,7 +29,7 @@ func (c *Client) Close() error {
 
 // NewClient ensures that the database instance is running
 // and returns a `Client` to interact with it
-func NewClient(autoRefreshConnections bool) (*Client, error) {
+func NewClient() (*Client, error) {
 	utils.LogTime("db.NewClient start")
 	defer utils.LogTime("db.NewClient end")
 
@@ -45,16 +45,16 @@ func NewClient(autoRefreshConnections bool) (*Client, error) {
 
 	client.loadSchema()
 
-	var updatedConnections bool
-	if autoRefreshConnections {
-		if updatedConnections, err = client.RefreshConnections(); err != nil {
-			client.Close()
-			return nil, err
-		}
-		if err := refreshFunctions(); err != nil {
-			client.Close()
-			return nil, err
-		}
+	return client, nil
+}
+
+func (client *Client) AutoRefreshConnections() error {
+	updatedConnections, err := client.RefreshConnections()
+	if err != nil {
+		return err
+	}
+	if err := refreshFunctions(); err != nil {
+		return err
 	}
 
 	// if we did NOT update connections, initialise the connection map and search path
@@ -62,15 +62,14 @@ func NewClient(autoRefreshConnections bool) (*Client, error) {
 		// load the connection state and cache it!
 		connectionMap, err := steampipeconfig.GetConnectionState(client.schemaMetadata.GetSchemas())
 		if err != nil {
-			return nil, err
+			return err
 		}
 		client.connectionMap = &connectionMap
 		if err := client.SetClientSearchPath(); err != nil {
-			utils.ShowError(err)
+			return err
 		}
 	}
-
-	return client, nil
+	return nil
 }
 
 func createSteampipeDbClient() (*sql.DB, error) {

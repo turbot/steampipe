@@ -464,15 +464,13 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 		steampipeconfig.Config = config
 	}
 
-	// TODO i think we can pass true here and not refresh below
-	client, err := db.NewClient(false)
+	client, err := db.NewClient()
 	if err != nil {
 		return err
 	}
 	defer client.Close()
-
-	// refresh connections
-	if _, err = client.RefreshConnections(); err != nil {
+	err = client.AutoRefreshConnections()
+	if err != nil {
 		return err
 	}
 
@@ -542,11 +540,15 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
 func getPluginConnectionMap() (map[string][]string, error) {
-	client, err := db.NewClient(true)
+	client, err := db.NewClient()
 	if err != nil {
-		return nil, fmt.Errorf("Could not connect with steampipe service")
+		return nil, fmt.Errorf("could not connect with steampipe service")
 	}
 	defer client.Close()
+	err = client.AutoRefreshConnections()
+	if err != nil {
+		return nil, err
+	}
 
 	pluginConnectionMap := map[string][]string{}
 

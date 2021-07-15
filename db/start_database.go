@@ -74,7 +74,7 @@ func (slt Invoker) IsValid() error {
 }
 
 // StartDB :: start the database is not already running
-func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnections bool) (startResult StartResult, err error) {
+func StartDB(port int, listen StartListenType, invoker Invoker) (startResult StartResult, err error) {
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
 
@@ -228,14 +228,17 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 		return ServiceStarted, err
 	}
 
-	// create a client
-	// pass 'false' to disable auto refreshing connections
-	//- we will explicitly refresh connections after ensuring the steampipe server exists
-	client, err = NewClient(false)
+	// create a client - purely to set the service search path
+	client, err = NewClient()
+	if err != nil {
+		return ServiceFailedToStart, handleStartFailure(err)
+	}
+	err = client.AutoRefreshConnections()
 	if err != nil {
 		return ServiceFailedToStart, handleStartFailure(err)
 	}
 
+	// verify the server -  we expect it to always exist at this point
 	err = ensureSteampipeServer()
 	if err != nil {
 		// there was a problem with the installation
@@ -248,19 +251,6 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 		return ServiceFailedToStart, err
 	}
 
-	// refresh plugin connections - ensure db schemas are in sync with connection config
-	// NOTE: refresh defaults to true but will be set to false if this service start command has been invoked
-	// internally by a different command which needs the service
-	if refreshConnections {
-		if _, err = client.RefreshConnections(); err != nil {
-			return ServiceStarted, err
-		}
-		if err = refreshFunctions(); err != nil {
-			return ServiceStarted, err
-		}
-	}
-
-	err = client.SetServiceSearchPath()
 	return ServiceStarted, err
 }
 

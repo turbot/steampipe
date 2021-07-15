@@ -14,5 +14,5 @@ func StartImplicitService(invoker Invoker) {
 
 	log.Println("[TRACE] start implicit service")
 
-	StartDB(constants.DatabaseDefaultPort, ListenTypeLocal, invoker, false)
+	StartDB(constants.DatabaseDefaultPort, ListenTypeLocal, invoker)
 }
