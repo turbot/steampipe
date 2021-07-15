@@ -11,7 +11,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_2.txt)"
 }
 
-@test "service start, no config, delete connection, query" {
+@test "service start, no config, delete connection, query with no restart" {
   steampipe service start
   run steampipe query "show search_path"
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_2.txt)"

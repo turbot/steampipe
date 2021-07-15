@@ -65,11 +65,12 @@ func (c *Client) RefreshConnectionAndSearchPaths() *RefreshConnectionResult {
 		return res
 	}
 	c.connectionMap = &connectionMap
-	if err := c.SetClientSearchPath(); err != nil {
+	// set service search path first - client may fall back to using it
+	if err := c.SetServiceSearchPath(); err != nil {
 		res.Error = err
 		return res
 	}
-	if err := c.SetServiceSearchPath(); err != nil {
+	if err := c.SetClientSearchPath(); err != nil {
 		res.Error = err
 		return res
 	}
