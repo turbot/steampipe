@@ -190,6 +190,20 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 
 	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", constants.SteampipeDir))
 
+	//  Check if the /etc/ssl directory exist in os
+	dirExist, _ := os.Stat(constants.SslConfDir)
+	_, envVariableExist := os.LookupEnv("OPENSSL_CONF")
+
+	// This is particularly required for debian:buster
+	// https://github.com/kelaberetiv/TagUI/issues/787
+	// For other os the env variable OPENSSL_CONF
+	// does not matter so its safe to put
+	// this in env variable
+	// Tested in amazonlinux, debian:buster, ubuntu, mac
+	if dirExist != nil && !envVariableExist {
+		postgresCmd.Env = append(os.Environ(), fmt.Sprintf("OPENSSL_CONF=%s", constants.SslConfDir))
+	}
+
 	log.Println("[TRACE] postgres start command: ", postgresCmd.String())
 
 	postgresCmd.SysProcAttr = &syscall.SysProcAttr{
