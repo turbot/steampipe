@@ -29,15 +29,13 @@ func (c *Client) Close() error {
 
 // NewClient ensures that the database instance is running
 // and returns a `Client` to interact with it
-func NewClient(autoRefreshConnections bool) (*Client, *RefreshConnectionResult) {
-	log.Printf("[WARN] NEW CLIENT\n")
+func NewClient() (*Client, error) {
 	utils.LogTime("db.NewClient start")
 	defer utils.LogTime("db.NewClient end")
-	refreshResult := &RefreshConnectionResult{}
+
 	db, err := createSteampipeDbClient()
 	if err != nil {
-		refreshResult.Error = err
-		return nil, refreshResult
+		return nil, err
 	}
 	client := new(Client)
 	client.dbClient = db
@@ -47,37 +45,36 @@ func NewClient(autoRefreshConnections bool) (*Client, *RefreshConnectionResult) 
 
 	client.loadSchema()
 
-	if autoRefreshConnections {
-		refreshResult = client.RefreshConnections()
-		if refreshResult.Error != nil {
-			client.Close()
-			return nil, refreshResult
-		}
+	return client, nil
+}
 
-		if err := refreshFunctions(); err != nil {
-			client.Close()
-			refreshResult.Error = err
-			return nil, refreshResult
-		}
-
-		// update the service and client search paths
-		if err := client.SetClientSearchPath(); err != nil {
-			refreshResult.Error = err
-			return nil, refreshResult
-		}
-		// TODO 0712 also set service search path?
-		if err := client.SetServiceSearchPath(); err != nil {
-			refreshResult.Error = err
-			return nil, refreshResult
-		}
-
-		// finally update the connection map
-		if err = client.updateConnectionMap(); err != nil {
-			refreshResult.Error = err
-			return nil, refreshResult
-		}
+func (c *Client) RefreshConnectionAndSearchPaths() *RefreshConnectionResult {
+	res := c.RefreshConnections()
+	if res.Error != nil {
+		return res
 	}
-	return client, refreshResult
+	if err := refreshFunctions(); err != nil {
+		res.Error = err
+		return res
+	}
+
+	// load the connection state and cache it!
+	connectionMap, err := steampipeconfig.GetConnectionState(c.schemaMetadata.GetSchemas())
+	if err != nil {
+		res.Error = err
+		return res
+	}
+	c.connectionMap = &connectionMap
+	if err := c.SetClientSearchPath(); err != nil {
+		res.Error = err
+		return res
+	}
+	if err := c.SetServiceSearchPath(); err != nil {
+		res.Error = err
+		return res
+	}
+
+	return res
 }
 
 func createSteampipeDbClient() (*sql.DB, error) {

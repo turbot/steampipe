@@ -196,7 +196,8 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring database...")
-	StartImplicitService(InvokerInstaller)
+	// start service, but do not refresh connections as there is no need
+	StartImplicitService(InvokerInstaller, false)
 
 	err = installSteampipeDatabase(steampipePassword, rootPassword)
 	if err != nil {
