@@ -189,8 +189,8 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 
 	// This is particularly required for debian:buster
 	// https://github.com/kelaberetiv/TagUI/issues/787
-	// For other os the env variable OPENSSL_CONF 
-	// does not matter so its safe to put 
+	// For other os the env variable OPENSSL_CONF
+	// does not matter so its safe to put
 	// this in env variable
 	// Tested in amazonlinux, debian:buster, ubuntu, mac
 	if os.Getenv("OPENSSL_CONF") == "" {
