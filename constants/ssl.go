@@ -5,4 +5,5 @@ const (
 	ServerKey  = "server.key"
 	ServerCert = "server.crt"
 	RootCert   = "root.crt"
+	SslConfDir     = "/etc/ssl"
 )
