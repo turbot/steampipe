@@ -195,11 +195,24 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 		utils.FailOnErrorWithMessage(err, "x Generating database passwords... FAILED!")
 	}
 
-	display.UpdateSpinnerMessage(spinner, "Configuring database...")
+	display.UpdateSpinnerMessage(spinner, "Starting database...")
+
 	// start service, but do not refresh connections as there is no need
+	//
+	// We cannot check for errors when starting Implicit service here
+	// since Start will error out when trying to connect with the `steampipe` user
+	// and ensuring the `steampipe_hub` server
+	//
+	// These do not exist yet and the service is being started to create these
+	// in the first place
+	//
+	// Ideally, this should just start the postgres process and not run the checks
+	// when starting it
+	//
 	StartImplicitService(InvokerInstaller, false)
 
-	err = installSteampipeDatabase(steampipePassword, rootPassword)
+	display.UpdateSpinnerMessage(spinner, "Configuring database...")
+	err = installSteampipeDatabaseAndUser(steampipePassword, rootPassword)
 	if err != nil {
 		display.StopSpinner(spinner)
 		utils.FailOnErrorWithMessage(err, "x Configuring database... FAILED!")
@@ -213,7 +226,7 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 	// force stop
 	display.UpdateSpinnerMessage(spinner, "Completing configuration")
-	_, err = StopDB(true, InvokerInstaller, spinner)
+	_, err = StopDB(true, InvokerInstaller, nil)
 
 	return err
 }
@@ -243,11 +256,11 @@ func initDatabase() error {
 	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(constants.PgHbaContent), 0600)
 }
 
-func installSteampipeDatabase(steampipePassword string, rootPassword string) error {
+func installSteampipeDatabaseAndUser(steampipePassword string, rootPassword string) error {
 	utils.LogTime("db.installSteampipeDatabase start")
 	defer utils.LogTime("db.installSteampipeDatabase end")
 
-	rawClient, err := createPostgresDbClient()
+	rawClient, err := createPostgresRootClient()
 	if err != nil {
 		return err
 	}
