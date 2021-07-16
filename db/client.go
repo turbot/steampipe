@@ -78,13 +78,6 @@ func (c *Client) RefreshConnectionAndSearchPaths() *RefreshConnectionResult {
 	return res
 }
 
-func createSteampipeDbClient() (*sql.DB, error) {
-	utils.LogTime("db.createSteampipeDbClient start")
-	defer utils.LogTime("db.createSteampipeDbClient end")
-
-	return createDbClient(constants.DatabaseName, constants.DatabaseUser)
-}
-
 // close and reopen db client
 func (c *Client) refreshDbClient() error {
 	c.dbClient.Close()
@@ -96,16 +89,23 @@ func (c *Client) refreshDbClient() error {
 	return nil
 }
 
-func createSteampipeRootDbClient() (*sql.DB, error) {
-	return createDbClient(constants.DatabaseName, constants.DatabaseSuperUser)
+func createSteampipeDbClient() (*sql.DB, error) {
+	utils.LogTime("db.createSteampipeDbClient start")
+	defer utils.LogTime("db.createSteampipeDbClient end")
+
+	return createDbClient(constants.DatabaseName, constants.DatabaseUser)
 }
 
-func createPostgresDbClient() (*sql.DB, error) {
-	return createDbClient("postgres", constants.DatabaseSuperUser)
+func createRootDbClient() (*sql.DB, error) {
+	utils.LogTime("db.createSteampipeRootDbClient start")
+	defer utils.LogTime("db.createSteampipeRootDbClient end")
+
+	return createDbClient(constants.DatabaseName, constants.DatabaseSuperUser)
 }
 
 func createDbClient(dbname string, username string) (*sql.DB, error) {
 	utils.LogTime("db.createDbClient start")
+	utils.LogTime(fmt.Sprintf("to %s with %s", dbname, username))
 	defer utils.LogTime("db.createDbClient end")
 
 	log.Println("[TRACE] createDbClient")
@@ -144,7 +144,7 @@ func createDbClient(dbname string, username string) (*sql.DB, error) {
 
 func executeSqlAsRoot(statements []string) ([]sql.Result, error) {
 	var results []sql.Result
-	rootClient, err := createSteampipeRootDbClient()
+	rootClient, err := createRootDbClient()
 	if err != nil {
 		return nil, err
 	}

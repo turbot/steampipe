@@ -195,11 +195,15 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 		utils.FailOnErrorWithMessage(err, "x Generating database passwords... FAILED!")
 	}
 
-	display.UpdateSpinnerMessage(spinner, "Configuring database...")
-	// start service, but do not refresh connections as there is no need
-	StartImplicitService(InvokerInstaller, false)
+	display.UpdateSpinnerMessage(spinner, "Starting database...")
+	err = startPostgresProcess(constants.DatabaseDefaultPort, ListenTypeLocal, InvokerInstaller)
+	if err != nil {
+		display.StopSpinner(spinner)
+		utils.FailOnErrorWithMessage(err, "x Starting database... FAILED!")
+	}
 
-	err = installSteampipeDatabase(steampipePassword, rootPassword)
+	display.UpdateSpinnerMessage(spinner, "Configuring database...")
+	err = installSteampipeDatabaseAndUser(steampipePassword, rootPassword)
 	if err != nil {
 		display.StopSpinner(spinner)
 		utils.FailOnErrorWithMessage(err, "x Configuring database... FAILED!")
@@ -213,7 +217,7 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 	// force stop
 	display.UpdateSpinnerMessage(spinner, "Completing configuration")
-	_, err = StopDB(true, InvokerInstaller, spinner)
+	_, err = StopDB(true, InvokerInstaller, nil)
 
 	return err
 }
@@ -243,11 +247,11 @@ func initDatabase() error {
 	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(constants.PgHbaContent), 0600)
 }
 
-func installSteampipeDatabase(steampipePassword string, rootPassword string) error {
+func installSteampipeDatabaseAndUser(steampipePassword string, rootPassword string) error {
 	utils.LogTime("db.installSteampipeDatabase start")
 	defer utils.LogTime("db.installSteampipeDatabase end")
 
-	rawClient, err := createPostgresDbClient()
+	rawClient, err := createDbClient("postgres", constants.DatabaseSuperUser)
 	if err != nil {
 		return err
 	}
