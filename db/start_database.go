@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -127,17 +126,59 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 		utils.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
 	}
 
+	if err := isPortBindable(port); err != nil {
+		return ServiceFailedToStart, fmt.Errorf("cannot listen on port %d", constants.Bold(port))
+	}
+
+	utils.LogTime("postgresCmd start")
+	err = startPostgresProcess(port, listen, invoker)
+	if err != nil {
+		return ServiceFailedToStart, err
+	}
+	utils.LogTime("postgresCmd end")
+
+	// create a client
+	// pass 'false' to disable auto refreshing connections
+	//- we will explicitly refresh connections after ensuring the steampipe server exists
+	if refreshConnections {
+		client, err = NewClient()
+		if err != nil {
+			return ServiceFailedToStart, handleStartFailure(err)
+		}
+		refreshResult := client.RefreshConnectionAndSearchPaths()
+		if refreshResult.Error != nil {
+			return ServiceFailedToStart, handleStartFailure(refreshResult.Error)
+		}
+		// display any initialisation warnings
+		refreshResult.ShowWarnings()
+	}
+	err = ensureSteampipeServer()
+	if err != nil {
+		// there was a problem with the installation
+		return ServiceFailedToStart, err
+	}
+
+	err = ensureTempTablePermissions()
+	if err != nil {
+		// there was a problem with the installation
+		return ServiceFailedToStart, err
+	}
+
+	return ServiceStarted, err
+}
+
+// startPostgresProcess starts the postgres process and writes out the state file
+// after it is convinced that the process is started and is accepting connections
+func startPostgresProcess(port int, listen StartListenType, invoker Invoker) error {
+	utils.LogTime("startPostgresProcess start")
+	defer utils.LogTime("startPostgresProcess end")
+
 	listenAddresses := "localhost"
 
 	if listen == ListenTypeNetwork {
 		listenAddresses = "*"
 	}
 
-	if err := isPortBindable(port); err != nil {
-		return ServiceFailedToStart, fmt.Errorf("cannot listen on port %d", constants.Bold(port))
-	}
-
-	utils.LogTime("postgresCmd start")
 	postgresCmd := exec.Command(
 		getPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port if free to listen to
@@ -205,21 +246,18 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 		postgresCmd.Env = append(os.Environ(), fmt.Sprintf("OPENSSL_CONF=%s", constants.SslConfDir))
 	}
 
-	log.Println("[TRACE] postgres start command: ", postgresCmd.String())
-
 	postgresCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid:    true,
 		Foreground: false,
 	}
 
-	err = postgresCmd.Start()
-
+	err := postgresCmd.Start()
 	if err != nil {
-		return ServiceFailedToStart, err
+		return err
 	}
 
 	// get the password file
-	passwords, err := getPasswords()
+	passwords, _ := getPasswords()
 
 	runningInfo := new(RunningDBInstanceInfo)
 	runningInfo.Pid = postgresCmd.Process.Pid
@@ -235,45 +273,26 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 		addrs, _ := localAddresses()
 		runningInfo.Listen = append(runningInfo.Listen, addrs...)
 	}
-
-	if err := postgresCmd.Process.Release(); err != nil {
-		return ServiceStarted, err
-	}
-
-	if err := saveRunningInstanceInfo(runningInfo); err != nil {
-		return ServiceStarted, err
-	}
-	utils.LogTime("postgresCmd end")
-
-	// create a client
-	// pass 'false' to disable auto refreshing connections
-	//- we will explicitly refresh connections after ensuring the steampipe server exists
-	var res *RefreshConnectionResult
-	client, err = NewClient()
+	err = runningInfo.Save()
 	if err != nil {
-		return ServiceFailedToStart, handleStartFailure(err)
-	}
-	if refreshConnections {
-		res = client.RefreshConnectionAndSearchPaths()
-		if res.Error != nil {
-			return ServiceFailedToStart, handleStartFailure(res.Error)
-		}
-		// display any initialisation warnings
-		res.ShowWarnings()
-	}
-	err = ensureSteampipeServer()
-	if err != nil {
-		// there was a problem with the installation
-		return ServiceFailedToStart, err
+		postgresCmd.Process.Kill()
+		return err
 	}
 
-	err = ensureTempTablePermissions()
+	err = postgresCmd.Process.Release()
 	if err != nil {
-		// there was a problem with the installation
-		return ServiceFailedToStart, err
+		postgresCmd.Process.Kill()
+		return err
 	}
 
-	return ServiceStarted, err
+	connection, err := createDbClient("postgres", constants.DatabaseSuperUser)
+	if err != nil {
+		postgresCmd.Process.Kill()
+		return err
+	}
+	connection.Close()
+
+	return nil
 }
 
 // ensures that the `steampipe` fdw server exists
