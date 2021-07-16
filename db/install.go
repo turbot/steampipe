@@ -196,20 +196,11 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Starting database...")
-
-	// start service, but do not refresh connections as there is no need
-	//
-	// We cannot check for errors when starting Implicit service here
-	// since Start will error out when trying to connect with the `steampipe` user
-	// and ensuring the `steampipe_hub` server
-	//
-	// These do not exist yet and the service is being started to create these
-	// in the first place
-	//
-	// Ideally, this should just start the postgres process and not run the checks
-	// when starting it
-	//
-	StartImplicitService(InvokerInstaller, false)
+	err = startPostgresProcess(constants.DatabaseDefaultPort, ListenTypeLocal, InvokerInstaller)
+	if err != nil {
+		display.StopSpinner(spinner)
+		utils.FailOnErrorWithMessage(err, "x Starting database... FAILED!")
+	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring database...")
 	err = installSteampipeDatabaseAndUser(steampipePassword, rootPassword)
