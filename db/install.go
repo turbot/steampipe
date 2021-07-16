@@ -171,7 +171,7 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	defer utils.LogTime("db.doInit end")
 
 	display.UpdateSpinnerMessage(spinner, "Cleaning up...")
-	err := os.RemoveAll(getDataLocation())
+	err := utils.RemoveDirectoryContents(getDataLocation())
 	if err != nil {
 		display.StopSpinner(spinner)
 		utils.FailOnErrorWithMessage(err, "x Prepare database install location... FAILED!")
