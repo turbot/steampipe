@@ -68,7 +68,7 @@ func Shutdown(client *Client, invoker Invoker) {
 }
 
 func GetCountOfConnectedClients() (int, error) {
-	rootClient, err := createSteampipeRootDbClient()
+	rootClient, err := createSteampipeRootClient()
 	if err != nil {
 		return -1, err
 	}

@@ -33,7 +33,7 @@ func NewClient() (*Client, error) {
 	utils.LogTime("db.NewClient start")
 	defer utils.LogTime("db.NewClient end")
 
-	db, err := createSteampipeUserClient()
+	db, err := createSteampipeSteampipeClient()
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (c *Client) RefreshConnectionAndSearchPaths() *RefreshConnectionResult {
 	return res
 }
 
-func createSteampipeUserClient() (*sql.DB, error) {
+func createSteampipeSteampipeClient() (*sql.DB, error) {
 	utils.LogTime("db.createSteampipeDbClient start")
 	defer utils.LogTime("db.createSteampipeDbClient end")
 
@@ -88,7 +88,7 @@ func createSteampipeUserClient() (*sql.DB, error) {
 // close and reopen db client
 func (c *Client) refreshDbClient() error {
 	c.dbClient.Close()
-	db, err := createSteampipeUserClient()
+	db, err := createSteampipeSteampipeClient()
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (c *Client) refreshDbClient() error {
 	return nil
 }
 
-func createSteampipeRootDbClient() (*sql.DB, error) {
+func createSteampipeRootClient() (*sql.DB, error) {
 	utils.LogTime("db.createSteampipeRootDbClient start")
 	defer utils.LogTime("db.createSteampipeRootDbClient end")
 
@@ -151,7 +151,7 @@ func createDbClient(dbname string, username string) (*sql.DB, error) {
 
 func executeSqlAsRoot(statements []string) ([]sql.Result, error) {
 	var results []sql.Result
-	rootClient, err := createSteampipeRootDbClient()
+	rootClient, err := createSteampipeRootClient()
 	if err != nil {
 		return nil, err
 	}
