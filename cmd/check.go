@@ -108,10 +108,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	client, err := db.NewClient()
 	utils.FailOnError(err)
 	defer client.Close()
-	res := client.RefreshConnectionAndSearchPaths()
-	utils.FailOnError(res.Error)
-	// display any initialisation warnings
-	res.ShowWarnings()
 
 	// populate the reflection tables
 	err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)
