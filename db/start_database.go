@@ -279,7 +279,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 // ensures that the `steampipe` fdw server exists
 // checks for it - (re)install FDW and creates server if it doesn't
 func ensureSteampipeServer() error {
-	rootClient, err := createSteampipeRootClient()
+	rootClient, err := createRootDbClient()
 	if err != nil {
 		return err
 	}
@@ -297,7 +297,7 @@ func ensureSteampipeServer() error {
 // ensures that the `steampipe_users` role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
 func ensureTempTablePermissions() error {
-	rootClient, err := createSteampipeRootClient()
+	rootClient, err := createRootDbClient()
 	if err != nil {
 		return err
 	}

@@ -33,7 +33,7 @@ func NewClient() (*Client, error) {
 	utils.LogTime("db.NewClient start")
 	defer utils.LogTime("db.NewClient end")
 
-	db, err := createSteampipeSteampipeClient()
+	db, err := createSteampipeDbClient()
 	if err != nil {
 		return nil, err
 	}
@@ -78,17 +78,10 @@ func (c *Client) RefreshConnectionAndSearchPaths() *RefreshConnectionResult {
 	return res
 }
 
-func createSteampipeSteampipeClient() (*sql.DB, error) {
-	utils.LogTime("db.createSteampipeDbClient start")
-	defer utils.LogTime("db.createSteampipeDbClient end")
-
-	return createDbClient(constants.DatabaseName, constants.DatabaseUser)
-}
-
 // close and reopen db client
 func (c *Client) refreshDbClient() error {
 	c.dbClient.Close()
-	db, err := createSteampipeSteampipeClient()
+	db, err := createSteampipeDbClient()
 	if err != nil {
 		return err
 	}
@@ -96,18 +89,18 @@ func (c *Client) refreshDbClient() error {
 	return nil
 }
 
-func createSteampipeRootClient() (*sql.DB, error) {
+func createSteampipeDbClient() (*sql.DB, error) {
+	utils.LogTime("db.createSteampipeDbClient start")
+	defer utils.LogTime("db.createSteampipeDbClient end")
+
+	return createDbClient(constants.DatabaseName, constants.DatabaseUser)
+}
+
+func createRootDbClient() (*sql.DB, error) {
 	utils.LogTime("db.createSteampipeRootDbClient start")
 	defer utils.LogTime("db.createSteampipeRootDbClient end")
 
 	return createDbClient(constants.DatabaseName, constants.DatabaseSuperUser)
-}
-
-func createPostgresRootClient() (*sql.DB, error) {
-	utils.LogTime("db.createPostgresDbClient start")
-	defer utils.LogTime("db.createPostgresDbClient end")
-
-	return createDbClient("postgres", constants.DatabaseSuperUser)
 }
 
 func createDbClient(dbname string, username string) (*sql.DB, error) {
@@ -151,7 +144,7 @@ func createDbClient(dbname string, username string) (*sql.DB, error) {
 
 func executeSqlAsRoot(statements []string) ([]sql.Result, error) {
 	var results []sql.Result
-	rootClient, err := createSteampipeRootClient()
+	rootClient, err := createRootDbClient()
 	if err != nil {
 		return nil, err
 	}

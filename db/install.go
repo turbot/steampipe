@@ -260,7 +260,7 @@ func installSteampipeDatabaseAndUser(steampipePassword string, rootPassword stri
 	utils.LogTime("db.installSteampipeDatabase start")
 	defer utils.LogTime("db.installSteampipeDatabase end")
 
-	rawClient, err := createPostgresRootClient()
+	rawClient, err := createDbClient("postgres", constants.DatabaseSuperUser)
 	if err != nil {
 		return err
 	}
