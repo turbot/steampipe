@@ -52,7 +52,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "service start, no config, query with prefix, delete connection, query with prefix" {
   steampipe service start
   run steampipe query "show search_path" --search-path-prefix foo2
-  assert_output "$(cat $TEST_DATA_DIR/expected_search_path_7.txt)"
+  assert_output "$(cat $TEST_DATA_DIR/expected_search_path_6.txt)"
   cp $SRC_DATA_DIR/single_chaos.spc $STEAMPIPE_INSTALL_DIR/config/chaos.spc
   run steampipe query "show search_path" --search-path-prefix foo
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_5.txt)"
