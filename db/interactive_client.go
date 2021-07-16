@@ -76,8 +76,10 @@ func (c *InteractiveClient) InteractiveQuery() {
 
 		close(interruptSignalChannel)
 		// close the underlying client if it exists
-		if client := c.waitForClient(); client != nil {
-			client.Close()
+		if c.isInitialised() {
+			if client := c.waitForClient(); client != nil {
+				client.Close()
+			}
 		}
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
@@ -98,7 +100,6 @@ func (c *InteractiveClient) InteractiveQuery() {
 	ctx := c.createCancelContext()
 	c.runInteractivePromptAsync(ctx, &promptResultChan)
 	for {
-		log.Printf("[TRACE] BEFORE SELECT")
 		select {
 		case initResult := <-c.initResultChan:
 			if err := c.handleInitResult(ctx, initResult); err != nil {
@@ -106,8 +107,6 @@ func (c *InteractiveClient) InteractiveQuery() {
 			}
 
 		case <-promptResultChan:
-
-			log.Printf("[TRACE] <-promptResultChan")
 			// persist saved history
 			c.interactiveQueryHistory.Persist()
 			// check post-close action

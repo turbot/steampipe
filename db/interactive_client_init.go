@@ -11,7 +11,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-var initTimeout = 20 * time.Second
+var initTimeout = 40 * time.Second
 
 func (c *InteractiveClient) readInitDataStream() {
 	defer func() {
