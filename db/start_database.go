@@ -133,10 +133,11 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 		listenAddresses = "*"
 	}
 
-	if !isPortBindable(port) {
-		return ServiceFailedToStart, fmt.Errorf("Cannot listen on port %d. To start the service with a different port, use %s", constants.Bold(port), constants.Bold("--database-port <number>"))
+	if err := isPortBindable(port); err != nil {
+		return ServiceFailedToStart, fmt.Errorf("cannot listen on port %d", constants.Bold(port))
 	}
 
+	utils.LogTime("postgresCmd start")
 	postgresCmd := exec.Command(
 		getPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port if free to listen to
@@ -242,6 +243,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 	if err := saveRunningInstanceInfo(runningInfo); err != nil {
 		return ServiceStarted, err
 	}
+	utils.LogTime("postgresCmd end")
 
 	// create a client
 	// pass 'false' to disable auto refreshing connections
@@ -325,13 +327,13 @@ func handleStartFailure(err error) error {
 	return err
 }
 
-func isPortBindable(port int) bool {
+func isPortBindable(port int) error {
 	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	if err != nil {
-		return false
+		return err
 	}
 	defer l.Close()
-	return true
+	return nil
 }
 
 // kill all postgres processes that were started as part of steampipe (if any)
