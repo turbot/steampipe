@@ -21,6 +21,7 @@ func (r *InitResult) HasMessages() bool {
 }
 
 func (r *InitResult) DisplayMessages() {
+	fmt.Println()
 	for _, w := range r.Warnings {
 		fmt.Println(w)
 	}

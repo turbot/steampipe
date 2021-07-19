@@ -46,12 +46,13 @@ func (c *Client) RefreshConnections() *RefreshConnectionResult {
 	numUpdates := len(updates.Update)
 	if numUpdates > 0 {
 
-		// first instantiate connection plugins for all updates
-		connectionPlugins, err := getConnectionPlugins(updates.Update)
-		if err != nil {
-			res.Error = err
+		// first instantiate connection plugins for all updates (reuse 'res' defined above)
+		var connectionPlugins []*steampipeconfig.ConnectionPlugin
+		connectionPlugins, res = getConnectionPlugins(updates.Update)
+		if res.Error != nil {
 			return res
 		}
+
 		// find any plugins which use a newer sdk version than steampipe.
 		validationFailures, validatedUpdates, validatedPlugins := steampipeconfig.ValidatePlugins(updates.Update, connectionPlugins)
 		res.Warnings = append(res.Warnings, steampipeconfig.BuildValidationWarningString(validationFailures))
@@ -102,33 +103,36 @@ func (c *Client) updateConnectionMap() error {
 	return nil
 }
 
-func getConnectionPlugins(updates steampipeconfig.ConnectionMap) ([]*steampipeconfig.ConnectionPlugin, error) {
+func getConnectionPlugins(updates steampipeconfig.ConnectionMap) ([]*steampipeconfig.ConnectionPlugin, *RefreshConnectionResult) {
+	res := &RefreshConnectionResult{}
 	var connectionPlugins []*steampipeconfig.ConnectionPlugin
+
+	// create channels buffered to hold all updates
 	numUpdates := len(updates)
 	var pluginChan = make(chan *steampipeconfig.ConnectionPlugin, numUpdates)
 	var errorChan = make(chan error, numUpdates)
-	for connectionName, connectionData := range updates {
 
+	for connectionName, connectionData := range updates {
 		// instantiate the connection plugin, and retrieve schema
-		go getConnectionPluginsAsync(connectionName, connectionData, pluginChan, errorChan)
+		go getConnectionPluginAsync(connectionName, connectionData, pluginChan, errorChan)
 	}
 
 	for i := 0; i < numUpdates; i++ {
 		select {
 		case err := <-errorChan:
-			log.Println("[TRACE] get connections err chan select", "error", err)
-			return nil, err
-		case <-time.After(10 * time.Second):
-			return nil, fmt.Errorf("timed out retrieving schema from plugins")
+			log.Println("[TRACE] get connections err chan select - adding warning", "error", err)
+			res.Warnings = append(res.Warnings, err.Error())
 		case p := <-pluginChan:
 			connectionPlugins = append(connectionPlugins, p)
+		case <-time.After(10 * time.Second):
+			res.Error = fmt.Errorf("timed out retrieving schema from plugins")
+			return nil, res
 		}
 	}
-
-	return connectionPlugins, nil
+	return connectionPlugins, res
 }
 
-func getConnectionPluginsAsync(connectionName string, connectionData *steampipeconfig.ConnectionData, pluginChan chan *steampipeconfig.ConnectionPlugin, errorChan chan error) {
+func getConnectionPluginAsync(connectionName string, connectionData *steampipeconfig.ConnectionData, pluginChan chan *steampipeconfig.ConnectionPlugin, errorChan chan error) {
 	opts := &steampipeconfig.ConnectionPluginInput{
 		ConnectionName:    connectionName,
 		PluginName:        connectionData.Plugin,
