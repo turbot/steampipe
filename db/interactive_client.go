@@ -153,6 +153,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *In
 		c.resultsStreamer.Done()
 		// after closing prompt, restart it
 		c.ClosePrompt(AfterPromptCloseRestart)
+		fmt.Println()
 		initResult.DisplayMessages()
 	}
 	return nil
