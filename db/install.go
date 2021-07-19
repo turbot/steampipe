@@ -41,10 +41,10 @@ func EnsureDBInstalled() {
 		if fdwNeedsUpdate() {
 			_, err := installFDW(false, spinner)
 			if err != nil {
-				display.StopSpinner(spinner)
 				utils.FailOnError(err)
 			}
 
+			spinner.Stop()
 			fmt.Printf("%s was updated to %s. ", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
 			currentStatus, err := GetStatus()
 			if err != nil || currentStatus != nil {
@@ -55,6 +55,7 @@ func EnsureDBInstalled() {
 		}
 
 		if needsInit() {
+			spinner.Start()
 			display.UpdateSpinnerMessage(spinner, "Cleanup any Steampipe processes...")
 			killInstanceIfAny()
 			if err := doInit(false, spinner); err != nil {
