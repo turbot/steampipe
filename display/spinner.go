@@ -86,7 +86,7 @@ func ShowSpinner(msg string) *spinner.Spinner {
 
 // StopSpinnerWithMessage stops a spinner instance and clears it, after writing `finalMsg`
 func StopSpinnerWithMessage(spinner *spinner.Spinner, finalMsg string) {
-	if spinner != nil && spinner.Active() {
+	if spinner != nil {
 		spinner.FinalMSG = finalMsg
 		spinner.Stop()
 	}
@@ -94,14 +94,14 @@ func StopSpinnerWithMessage(spinner *spinner.Spinner, finalMsg string) {
 
 // StopSpinner stops a spinner instance and clears it
 func StopSpinner(spinner *spinner.Spinner) {
-	if spinner != nil && spinner.Active() {
+	if spinner != nil {
 		spinner.Stop()
 	}
 }
 
 // UpdateSpinnerMessage updates the message of the given spinner
 func UpdateSpinnerMessage(spinner *spinner.Spinner, newMessage string) {
-	if spinner != nil && spinner.Active() {
+	if spinner != nil {
 		newMessage = truncateSpinnerMessageToScreen(newMessage)
 		spinner.Suffix = fmt.Sprintf(" %s", newMessage)
 	}
