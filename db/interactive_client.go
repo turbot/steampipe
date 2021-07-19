@@ -140,8 +140,10 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *In
 
 	// if there is an error, shutdown
 	if initResult.Error != nil {
-		utils.ShowError(initResult.Error)
 		c.ClosePrompt(AfterPromptCloseExit)
+		// add newline to ensure error is not printed at end of current prompt line
+		fmt.Println()
+		utils.ShowError(initResult.Error)
 		return initResult.Error
 	}
 	if initResult.HasMessages() {
@@ -151,6 +153,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *In
 		c.resultsStreamer.Done()
 		// after closing prompt, restart it
 		c.ClosePrompt(AfterPromptCloseRestart)
+		fmt.Println()
 		initResult.DisplayMessages()
 	}
 	return nil
