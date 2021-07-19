@@ -159,6 +159,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *In
 func (c *InteractiveClient) createCancelContext() context.Context {
 	ctx, cancelPrompt := context.WithCancel(context.Background())
 	c.cancelPrompt = cancelPrompt
+
 	return ctx
 
 }
