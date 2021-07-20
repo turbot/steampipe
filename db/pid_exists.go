@@ -37,7 +37,6 @@ func PidExists(targetPid int) (bool, error) {
 
 			if status == "Z" {
 				// this means that postgres went away, but the process itself is still a zombie.
-				// we are not sure why this occurs but can safely treat it as if the process does not exist
 				return false, nil
 			}
 			return true, nil
