@@ -3,8 +3,6 @@
 package db
 
 import (
-	"strings"
-
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/utils"
 )
@@ -31,12 +29,14 @@ func PidExists(targetPid int) (bool, error) {
 			if err != nil {
 				return true, nil
 			}
-			cmdLine, err := process.Cmdline()
+
+			status, err := process.Status()
 			if err != nil {
 				return true, err
 			}
-			if strings.Contains(cmdLine, "(postgres)") {
-				// this means that postgres went away, but the process has not yet completed.
+
+			if status == "Z" {
+				// this means that postgres went away, but the process itself is still a zombie.
 				// we are not sure why this occurs but can safely treat it as if the process does not exist
 				return false, nil
 			}
