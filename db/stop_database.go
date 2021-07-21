@@ -157,8 +157,6 @@ func StopDB(force bool, invoker Invoker, spinner *spinner.Spinner) (StopStatus, 
 func doThreeStepPostgresExit(process *psutils.Process) error {
 	var err error
 	var exitSuccessful bool
-	fmt.Println("[ERROR] Failed to stop service")
-	fmt.Printf("[ERROR] Service Details:\n%s\n", getPrintableProcessDetails(process, 0))
 
 	// send a SIGTERM
 	err = process.SendSignal(syscall.SIGTERM)
