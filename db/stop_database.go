@@ -215,34 +215,34 @@ func getPrintableProcessDetails(process *psutils.Process, indent int) string {
 	appendTo := []string{}
 
 	if name, err := process.Name(); err == nil {
-		appendTo = append(appendTo, fmt.Sprintf("** %s > Name:  %s", indentString, name))
+		appendTo = append(appendTo, fmt.Sprintf("%s> Name: %s", indentString, name))
 	}
 	if cmdLine, err := process.Cmdline(); err == nil {
-		appendTo = append(appendTo, fmt.Sprintf("** %s > CmdLine:  %s", indentString, cmdLine))
+		appendTo = append(appendTo, fmt.Sprintf("%s> CmdLine: %s", indentString, cmdLine))
 	}
 	if status, err := process.Status(); err == nil {
-		appendTo = append(appendTo, fmt.Sprintf("** %s > Status:  %s", indentString, status))
+		appendTo = append(appendTo, fmt.Sprintf("%s> Status: %s", indentString, status))
 	}
 	if cwd, err := process.Cwd(); err == nil {
-		appendTo = append(appendTo, fmt.Sprintf("** %s > CWD:  %s", indentString, cwd))
+		appendTo = append(appendTo, fmt.Sprintf("%s> CWD: %s", indentString, cwd))
 	}
 	if executable, err := process.Exe(); err == nil {
-		appendTo = append(appendTo, fmt.Sprintf("** %s > Executable:  %s", indentString, executable))
+		appendTo = append(appendTo, fmt.Sprintf("%s> Executable: %s", indentString, executable))
 	}
 	if username, err := process.Username(); err == nil {
-		appendTo = append(appendTo, fmt.Sprintf("** %s > Username:  %s", indentString, username))
+		appendTo = append(appendTo, fmt.Sprintf("%s> Username: %s", indentString, username))
 	}
 	if indent == 0 {
 		// I do not care about the parent of my parent
 		if parent, err := process.Parent(); err == nil && parent != nil {
-			appendTo = append(appendTo, "", fmt.Sprintf("** %s > Parent Details", indentString))
+			appendTo = append(appendTo, "", fmt.Sprintf("%s> Parent Details", indentString))
 			parentLog := getPrintableProcessDetails(parent, indent+1)
 			appendTo = append(appendTo, parentLog, "")
 		}
 
 		// I do not care about all the children of my parent
 		if children, err := process.Children(); err == nil && len(children) > 0 {
-			appendTo = append(appendTo, fmt.Sprintf("** %s > Children Details", indentString))
+			appendTo = append(appendTo, fmt.Sprintf("%s> Children Details", indentString))
 			for _, child := range children {
 				childLog := getPrintableProcessDetails(child, indent+1)
 				appendTo = append(appendTo, childLog, "")
