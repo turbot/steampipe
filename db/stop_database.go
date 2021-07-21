@@ -157,6 +157,8 @@ func StopDB(force bool, invoker Invoker, spinner *spinner.Spinner) (StopStatus, 
 func doThreeStepPostgresExit(process *psutils.Process) error {
 	var err error
 	var exitSuccessful bool
+	fmt.Println("[ERROR] Failed to stop service")
+	fmt.Printf("[ERROR] Service Details:\n%s\n", getPrintableProcessDetails(process, 0))
 
 	// send a SIGTERM
 	err = process.SendSignal(syscall.SIGTERM)
@@ -212,43 +214,43 @@ func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 
 func getPrintableProcessDetails(process *psutils.Process, indent int) string {
 	indentString := strings.Repeat("  ", indent)
-	appendTo := ""
+	appendTo := []string{}
 
 	if name, err := process.Name(); err == nil {
-		appendTo = fmt.Sprintf("%s ** %s > Name: %s\n", appendTo, indentString, name)
+		appendTo = append(appendTo, fmt.Sprintf("** %s > Name:  %s", indentString, name))
 	}
 	if cmdLine, err := process.Cmdline(); err == nil {
-		appendTo = fmt.Sprintf("%s ** %s > CmdLine: %s\n", appendTo, indentString, cmdLine)
+		appendTo = append(appendTo, fmt.Sprintf("** %s > CmdLine:  %s", indentString, cmdLine))
 	}
 	if status, err := process.Status(); err == nil {
-		appendTo = fmt.Sprintf("%s ** %s > Status: %s\n", appendTo, indentString, status)
+		appendTo = append(appendTo, fmt.Sprintf("** %s > Status:  %s", indentString, status))
 	}
 	if cwd, err := process.Cwd(); err == nil {
-		appendTo = fmt.Sprintf("%s ** %s > CWD: %s\n", appendTo, indentString, cwd)
+		appendTo = append(appendTo, fmt.Sprintf("** %s > CWD:  %s", indentString, cwd))
 	}
 	if executable, err := process.Exe(); err == nil {
-		appendTo = fmt.Sprintf("%s ** %s > Executable: %s\n", appendTo, indentString, executable)
+		appendTo = append(appendTo, fmt.Sprintf("** %s > Executable:  %s", indentString, executable))
 	}
 	if username, err := process.Username(); err == nil {
-		appendTo = fmt.Sprintf("%s ** %s > Username: %s\n", appendTo, indentString, username)
+		appendTo = append(appendTo, fmt.Sprintf("** %s > Username:  %s", indentString, username))
 	}
 	if indent == 0 {
 		// I do not care about the parent of my parent
 		if parent, err := process.Parent(); err == nil && parent != nil {
-			appendTo = fmt.Sprintf("%s ** %s > Parent Details", appendTo, indentString)
+			appendTo = append(appendTo, "", fmt.Sprintf("** %s > Parent Details", indentString))
 			parentLog := getPrintableProcessDetails(parent, indent+1)
-			appendTo = fmt.Sprintf("%s\n%s", appendTo, parentLog)
+			appendTo = append(appendTo, parentLog, "")
 		}
 
 		// I do not care about all the children of my parent
 		if children, err := process.Children(); err == nil && len(children) > 0 {
-			appendTo = fmt.Sprintf("%s ** %s > Children Details", appendTo, indentString)
+			appendTo = append(appendTo, fmt.Sprintf("** %s > Children Details", indentString))
 			for _, child := range children {
 				childLog := getPrintableProcessDetails(child, indent+1)
-				appendTo = fmt.Sprintf("%s\n%s", appendTo, childLog)
+				appendTo = append(appendTo, childLog, "")
 			}
 		}
 	}
 
-	return appendTo
+	return strings.Join(appendTo, "\n")
 }
