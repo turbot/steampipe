@@ -135,6 +135,10 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 	// remove the stale info file, ignoring errors - will overwrite anyway
 	_ = removeRunningInstanceInfo()
 
+	if err := utils.EnsureDirectoryPermission(getDataLocation()); err != nil {
+		return ServiceFailedToStart, fmt.Errorf("%s does not have the necessary permissions to start the service", getDataLocation())
+	}
+
 	// Generate the certificate if it fails then set the ssl to off
 	if err := generateSelfSignedCertificate(); err != nil {
 		utils.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
