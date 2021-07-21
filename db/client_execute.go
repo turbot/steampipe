@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/briandowns/spinner"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )

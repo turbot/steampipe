@@ -113,11 +113,9 @@ func (c *InteractiveClient) InteractiveQuery() {
 			if c.afterClose == AfterPromptCloseExit {
 				return
 			}
-			//log.Printf("[WARN] before wait")
 			// wait for the resultsStreamer to have streamed everything out
 			// this is to be sure the previous command has completed streaming
 			c.resultsStreamer.Wait()
-			//log.Printf("[WARN] after wait")
 			// create new context
 			ctx = c.createCancelContext()
 			log.Printf("[TRACE] run again")
@@ -384,7 +382,8 @@ func (c *InteractiveClient) executor(line string) {
 		client := c.waitForClient()
 		result, err := client.ExecuteAsync(ctx, query, false)
 		if err != nil {
-			c.handleExecuteError(err)
+			utils.ShowError(utils.HandleCancelError(err))
+			c.resultsStreamer.Done()
 		} else {
 			c.resultsStreamer.StreamResult(result)
 		}
@@ -394,11 +393,6 @@ func (c *InteractiveClient) executor(line string) {
 	c.interactiveQueryHistory.Put(historyItem)
 	// restart the prompt
 	c.restartInteractiveSession()
-}
-
-func (c *InteractiveClient) handleExecuteError(err error) {
-	utils.ShowError(utils.HandleCancelError(err))
-	c.resultsStreamer.Done()
 }
 
 func (c *InteractiveClient) hasActiveCancel() bool {
