@@ -75,7 +75,7 @@ func HandleCancelError(err error) error {
 }
 
 func IsContextCancelledError(err error) bool {
-	return errors.Is(err, context.Canceled)
+	return errors.Is(err, context.Canceled) || strings.Contains(err.Error(), "canceling statement due to user request")
 }
 
 func ShowWarning(warning string) {

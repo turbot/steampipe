@@ -380,7 +380,7 @@ func (c *InteractiveClient) executor(line string) {
 		c.setCancelFunction(cancel)
 
 		client := c.waitForClient()
-		result, err := client.ExecuteAsync(ctx, query, false)
+		result, err := client.Execute(ctx, query, false)
 		if err != nil {
 			utils.ShowError(utils.HandleCancelError(err))
 			c.resultsStreamer.Done()
