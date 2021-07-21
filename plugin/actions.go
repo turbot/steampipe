@@ -59,10 +59,22 @@ func Exists(plugin string) (bool, error) {
 	}
 
 	imageRef := ociinstaller.NewSteampipeImageRef(plugin)
+	pluginType := stripStream(imageRef.DisplayImageRef())
 
-	// lookup in the version data
-	_, found := versionData.Plugins[imageRef.DisplayImageRef()]
-	return found, nil
+	for plugin, _ := range versionData.Plugins {
+		typ := stripStream(plugin)
+		if typ == pluginType {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func stripStream(plugin string) string {
+	imageRef := ociinstaller.NewSteampipeImageRef(plugin)
+	_, _, stream := imageRef.GetOrgNameAndStream()
+	return strings.TrimSuffix(imageRef.DisplayImageRef(), fmt.Sprintf("@%s", stream))
 }
 
 // Install installs a plugin in the local file system

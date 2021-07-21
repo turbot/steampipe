@@ -9,7 +9,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-const ALREADY_INSTALLED = "Already installed"
+const ALREADY_INSTALLED = "The same or another version of this plugin is already installed"
 const LATEST_ALREADY_INSTALLED = "Latest already installed"
 const NOT_INSTALLED = "Not installed"
 
