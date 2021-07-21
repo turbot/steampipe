@@ -1,6 +1,8 @@
 package db
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -50,24 +52,35 @@ func (c *InteractiveClient) isInitialised() bool {
 	return c.initData != nil
 }
 
-func (c *InteractiveClient) waitForInitData() {
-	startWait := time.Now()
-	for !c.isInitialised() {
-		time.Sleep(20 * time.Millisecond)
-		if time.Since(startWait) > initTimeout {
-			// TODO is panic right?
-			panic("timed out waiting for initialisation to complete")
+func (c *InteractiveClient) waitForInitData(ctx context.Context) error {
+	ticker := time.NewTicker(20 * time.Millisecond)
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("context cancelled")
+		case <-ticker.C:
+			if c.isInitialised() {
+				return nil
+			}
+		case <-time.After(initTimeout):
+
+			return fmt.Errorf("timed out waiting for initialisation to complete")
 		}
 	}
 }
 
-func (c *InteractiveClient) waitForWorkspace() WorkspaceResourceProvider {
-	c.waitForInitData()
+// return the workspace, or nil if not yet initialised
+func (c *InteractiveClient) workspace() WorkspaceResourceProvider {
+	if c.initData == nil {
+		return nil
+	}
 	return c.initData.Workspace
 }
 
-func (c *InteractiveClient) waitForClient() *Client {
-	c.waitForInitData()
-
+// return the client, or nil if not yet initialised
+func (c *InteractiveClient) client() *Client {
+	if c.initData == nil {
+		return nil
+	}
 	return c.initData.Client
 }

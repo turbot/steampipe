@@ -1,6 +1,7 @@
 package metaquery
 
 import (
+	"context"
 	"sort"
 	"strings"
 
@@ -23,7 +24,7 @@ func IsMetaQuery(query string) bool {
 }
 
 // PromptSuggestions :: Returns a list of the suggestions for go-prompt
-func PromptSuggestions() []prompt.Suggest {
+func PromptSuggestions(context.Context) []prompt.Suggest {
 	suggestions := make([]prompt.Suggest, 0, len(metaQueryDefinitions))
 	for k, definition := range metaQueryDefinitions {
 		suggestions = append(suggestions, prompt.Suggest{Text: k, Description: definition.description})
