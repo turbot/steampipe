@@ -159,10 +159,6 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *In
 	return nil
 }
 
-// otherwise execute query
-//ctx, cancel := context.WithCancel(context.Background())
-//c.setCancelFunction(cancel)
-
 // ClosePrompt cancels the running prompt, setting the action to take after close
 func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
 	log.Printf("[TRACE] Close prompt - then %d", afterClose)
@@ -334,7 +330,6 @@ func (c *InteractiveClient) executor(line string) {
 		}
 		c.resultsStreamer.Done()
 		// cancel the context
-		log.Printf("[WARN] executeMetaquery cancel")
 		c.cancelActiveQueryIfAny()
 
 	} else {
