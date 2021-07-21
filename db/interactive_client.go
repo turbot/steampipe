@@ -73,12 +73,11 @@ func (c *InteractiveClient) InteractiveQuery() {
 	// (registered when we call createQueryContext)
 	interruptSignalChannel := c.startCancelHandler()
 
-	// create a cancel context for the prompt - this will set activeQueryCancelFunc
+	// create a cancel context for the prompt - this will set c.cancelPrompt
 	promptCtx := c.createPromptContext()
 
 	defer func() {
 		if r := recover(); r != nil {
-			//log.Printf("[WARN] interactive query recover")
 			utils.ShowError(helpers.ToError(r))
 		}
 		// close up the SIGINT channel so that the receiver goroutine can quit
@@ -111,27 +110,21 @@ func (c *InteractiveClient) InteractiveQuery() {
 			}
 
 		case <-promptResultChan:
-			//log.Printf("[WARN] <-promptResultChan")
 			// persist saved history
 			c.interactiveQueryHistory.Persist()
 			// check post-close action
 			if c.afterClose == AfterPromptCloseExit {
-				//log.Printf("[WARN] RETURN AfterPromptCloseExi")
 				return
 			}
-			//log.Printf("[WARN] BEFORE WAIT")
 			// wait for the resultsStreamer to have streamed everything out
 			// this is to be sure the previous command has completed streaming
 			c.resultsStreamer.Wait()
-			//log.Printf("[WARN] AFTER WAIT")
 			// create new context
 			promptCtx = c.createPromptContext()
-			log.Printf("[TRACE] run again")
 			// now run it again
 			c.runInteractivePromptAsync(promptCtx, &promptResultChan)
 		}
 	}
-	log.Printf("[TRACE] after FOR")
 }
 
 // init data has arrived, handle any errors/warnings/messages
@@ -322,6 +315,10 @@ func (c *InteractiveClient) executor(line string) {
 	query, err := c.getQuery(line)
 	if query == "" {
 		if err != nil {
+			// if there was an error other than cancellation, quit
+			if !utils.IsContextCancelledError(err) {
+				c.afterClose = AfterPromptCloseExit
+			}
 			// restart the prompt
 			c.restartInteractiveSession()
 		}
@@ -358,6 +355,7 @@ func (c *InteractiveClient) executor(line string) {
 }
 
 func (c *InteractiveClient) getQuery(line string) (string, error) {
+
 	// if it's an empty line, then we don't need to do anything
 	if line == "" {
 		return "", nil
@@ -365,24 +363,20 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 
 	// wait fore initialisation to complete so we can acces the workspace
 	if !c.isInitialised() {
-		//log.Printf("[WARN] getQuery not initialised")
 		// create a context used purely to detect cancellation during initialisation
 		// this will also set c.cancelActiveQuery
 		queryContext := c.createQueryContext()
 		defer func() {
-			//log.Printf("[WARN] getQuery defer")
 			// cancel this context
 			c.cancelActiveQueryIfAny()
 		}()
 
 		// wait for client initialisation to complete
 		if err := c.waitForInitData(queryContext); err != nil {
-			//log.Printf("[WARN] waitForInitData failed %v", err)
 			// if it failed, report error and quit
 			utils.ShowError(utils.HandleCancelError(err))
-			//log.Printf("[WARN] SHOWN ERROR")
+
 			c.resultsStreamer.Done()
-			//log.Printf("[WARN] getQuery RETURN")
 			return "", err
 		}
 	}

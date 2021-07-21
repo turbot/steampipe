@@ -63,7 +63,6 @@ func (c *InteractiveClient) waitForInitData(ctx context.Context) error {
 				return nil
 			}
 		case <-time.After(initTimeout):
-
 			return fmt.Errorf("timed out waiting for initialisation to complete")
 		}
 	}
