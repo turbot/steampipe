@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"syscall"
 	"time"
 
@@ -117,17 +118,6 @@ func StopDB(force bool, invoker Invoker, spinner *spinner.Spinner) (StopStatus, 
 		return ServiceStopFailed, err
 	}
 
-	// we need to do this since the standard
-	// cmd.Process.Kill() sends a SIGKILL which
-	// makes PG terminate immediately without saving state.
-	// refer: https://www.postgresql.org/docs/12/server-shutdown.html
-	// refer: https://golang.org/src/os/exec_posix.go?h=kill#L65
-	err = process.SendSignal(syscall.SIGTERM)
-
-	if err != nil {
-		return ServiceStopFailed, err
-	}
-
 	display.UpdateSpinnerMessage(spinner, "Shutting down...")
 
 	err = doThreeStepPostgresExit(process)
@@ -143,22 +133,26 @@ func StopDB(force bool, invoker Invoker, spinner *spinner.Spinner) (StopStatus, 
 /**
 	Postgres has two more levels of shutdown:
 		* SIGTERM	- Smart Shutdown    	:  Wait for children to end normally - exit self
-		* SIGINT	- Fast Shutdown      	:  SIGTERM children - wait for them to exit - exit self
+		* SIGINT	- Fast Shutdown      	:  SIGTERM children, causing them to abort current
+											:  transations and exit - wait for children to exit -
+											:  exit self
 		* SIGQUIT	- Immediate Shutdown 	:  SIGQUIT children - wait at most 5 seconds,
 											   send SIGKILL to children - exit self immediately
 
 	Postgres recommended shutdown is to send a SIGTERM - which initiates
 	a Smart-Shutdown sequence.
 
+	IMPORTANT:
+	As per documentation, it is best not to use SIGKILL
+	to shut down postgres. Doing so will prevent the server
+	from releasing shared memory and semaphores.
+
+	Reference:
 	https://www.postgresql.org/docs/12/server-shutdown.html
 
 	By the time we actually try to run this sequence, we will have
 	checked that the service can indeed shutdown gracefully,
 	the sequence is there only as a backup.
-
-	We cannot do a simple os.Process().Kill(), since that sends a SIGKILL,
-	which makes PG terminate immediately without saving any state.
-	Its the BIG RED Button - which we press if our 3 steps don't work
 **/
 func doThreeStepPostgresExit(process *psutils.Process) error {
 	var err error
@@ -188,16 +182,10 @@ func doThreeStepPostgresExit(process *psutils.Process) error {
 		}
 		exitSuccessful = waitForProcessExit(process, 5*time.Second)
 	}
-	if !exitSuccessful {
-		// MURDER
-		err = killProcessTree(process)
-		if err != nil {
-			return err
-		}
-		exitSuccessful = waitForProcessExit(process, 5*time.Second)
-	}
 
 	if !exitSuccessful {
+		log.Println("[ERROR] Failed to stop service")
+		log.Printf("[ERROR] Service Details:\n%s\n", getPrintableProcessDetails(process, 0))
 		return fmt.Errorf("service shutdown timed out")
 	}
 
@@ -220,4 +208,47 @@ func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 			return false
 		}
 	}
+}
+
+func getPrintableProcessDetails(process *psutils.Process, indent int) string {
+	indentString := strings.Repeat("  ", indent)
+	appendTo := []string{}
+
+	if name, err := process.Name(); err == nil {
+		appendTo = append(appendTo, fmt.Sprintf("%s> Name: %s", indentString, name))
+	}
+	if cmdLine, err := process.Cmdline(); err == nil {
+		appendTo = append(appendTo, fmt.Sprintf("%s> CmdLine: %s", indentString, cmdLine))
+	}
+	if status, err := process.Status(); err == nil {
+		appendTo = append(appendTo, fmt.Sprintf("%s> Status: %s", indentString, status))
+	}
+	if cwd, err := process.Cwd(); err == nil {
+		appendTo = append(appendTo, fmt.Sprintf("%s> CWD: %s", indentString, cwd))
+	}
+	if executable, err := process.Exe(); err == nil {
+		appendTo = append(appendTo, fmt.Sprintf("%s> Executable: %s", indentString, executable))
+	}
+	if username, err := process.Username(); err == nil {
+		appendTo = append(appendTo, fmt.Sprintf("%s> Username: %s", indentString, username))
+	}
+	if indent == 0 {
+		// I do not care about the parent of my parent
+		if parent, err := process.Parent(); err == nil && parent != nil {
+			appendTo = append(appendTo, "", fmt.Sprintf("%s> Parent Details", indentString))
+			parentLog := getPrintableProcessDetails(parent, indent+1)
+			appendTo = append(appendTo, parentLog, "")
+		}
+
+		// I do not care about all the children of my parent
+		if children, err := process.Children(); err == nil && len(children) > 0 {
+			appendTo = append(appendTo, fmt.Sprintf("%s> Children Details", indentString))
+			for _, child := range children {
+				childLog := getPrintableProcessDetails(child, indent+1)
+				appendTo = append(appendTo, childLog, "")
+			}
+		}
+	}
+
+	return strings.Join(appendTo, "\n")
 }
