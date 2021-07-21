@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -67,10 +68,14 @@ func TransformErrorToSteampipe(err error) error {
 // HandleCancelError modifies a context.Canceled error into a readable error that can
 // be printed on the console
 func HandleCancelError(err error) error {
-	if err == context.Canceled {
+	if IsContextCancelledError(err) {
 		err = fmt.Errorf("execution cancelled")
 	}
 	return err
+}
+
+func IsContextCancelledError(err error) bool {
+	return errors.Is(err, context.Canceled)
 }
 
 func ShowWarning(warning string) {

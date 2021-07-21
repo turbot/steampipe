@@ -306,7 +306,6 @@ func (c *InteractiveClient) startCancelHandler() chan os.Signal {
 	signal.Notify(interruptSignalChannel, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		for range interruptSignalChannel {
-			//log.Printf("[WARN] Cancel handler called")
 			if c.hasActiveCancel() {
 				c.activeQueryCancelFunc()
 				c.clearCancelFunction()
@@ -398,32 +397,8 @@ func (c *InteractiveClient) executor(line string) {
 }
 
 func (c *InteractiveClient) handleExecuteError(err error) {
-	//isCancelledError, isCancelledBeforeResult := isCancelledError(err)
-	//if isCancelledError {
-	//	log.Printf("[WARN] handleExecuteError isCancelledError")
-	//	utils.ShowError(fmt.Errorf("execution cancelled"))
-	//	if isCancelledBeforeResult {
-	//		log.Printf("[WARN] handleExecuteError isCancelledBeforeResult")
-	//		// we need to notify the streamer that we are done
-	//		c.resultsStreamer.Done()
-	//	}
-	//} else {
-	log.Printf("[WARN] handleExecuteError")
-
-	utils.ShowError(err)
+	utils.ShowError(utils.HandleCancelError(err))
 	c.resultsStreamer.Done()
-	//}
-}
-
-func isCancelledError(err error) (bool, bool) {
-
-	isCancelledBeforeResult := strings.Contains(err.Error(), "Unrecognized remote plugin message")
-	isCancelledUponResult := strings.Contains(err.Error(), "canceling statement due to user request")
-	isCancelledAfterResult := err == context.Canceled
-
-	isCancelledError := isCancelledBeforeResult || isCancelledUponResult || isCancelledAfterResult
-
-	return isCancelledError, isCancelledBeforeResult
 }
 
 func (c *InteractiveClient) hasActiveCancel() bool {

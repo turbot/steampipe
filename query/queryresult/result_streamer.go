@@ -3,7 +3,6 @@ package queryresult
 type ResultStreamer struct {
 	Results      chan *Result
 	displayReady chan string
-	started      bool
 }
 
 func NewResultStreamer() *ResultStreamer {
@@ -24,9 +23,6 @@ func (q *ResultStreamer) StreamSingleResult(result *Result) {
 	close(q.Results)
 }
 
-func (q *ResultStreamer) Start() {
-	q.started = true
-}
 func (q *ResultStreamer) Close() {
 	close(q.Results)
 }
@@ -38,8 +34,5 @@ func (q *ResultStreamer) Done() {
 
 // Wait :: waits for the next Result to get processed
 func (q *ResultStreamer) Wait() {
-	if q.started {
-		<-q.displayReady
-		q.started = false
-	}
+	<-q.displayReady
 }

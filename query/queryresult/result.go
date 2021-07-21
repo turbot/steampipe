@@ -25,6 +25,7 @@ func (r Result) StreamRow(rowResult []interface{}) {
 }
 
 func (r Result) StreamError(err error) {
+	//log.Printf("[WARN] result stream error %v", err)
 	*r.RowChan <- &RowResult{Error: err}
 }
 
