@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -22,26 +23,26 @@ func init() {
 
 func FailOnError(err error) {
 	if err != nil {
-		err = handleCancelError(err)
+		err = HandleCancelError(err)
 		panic(err)
 	}
 }
 
 func FailOnErrorWithMessage(err error, message string) {
 	if err != nil {
-		err = handleCancelError(err)
+		err = HandleCancelError(err)
 		panic(fmt.Sprintf("%s: %s", message, err.Error()))
 	}
 }
 
 func ShowError(err error) {
-	err = handleCancelError(err)
+	err = HandleCancelError(err)
 	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, TransformErrorToSteampipe(err))
 }
 
 // ShowErrorWithMessage displays the given error nicely with the given message
 func ShowErrorWithMessage(err error, message string) {
-	err = handleCancelError(err)
+	err = HandleCancelError(err)
 	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, TransformErrorToSteampipe(err))
 }
 
@@ -64,13 +65,17 @@ func TransformErrorToSteampipe(err error) error {
 	return fmt.Errorf(strings.TrimSpace(errString))
 }
 
-// modifies a context.Canceled error into a readable error that can
+// HandleCancelError modifies a context.Canceled error into a readable error that can
 // be printed on the console
-func handleCancelError(err error) error {
-	if err == context.Canceled {
+func HandleCancelError(err error) error {
+	if IsContextCancelledError(err) {
 		err = fmt.Errorf("execution cancelled")
 	}
 	return err
+}
+
+func IsContextCancelledError(err error) bool {
+	return errors.Is(err, context.Canceled) || strings.Contains(err.Error(), "canceling statement due to user request")
 }
 
 func ShowWarning(warning string) {

@@ -127,7 +127,7 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	// context and its parent alive longer than necessary.
 	defer cancel()
 
-	queryResult, err := client.ExecuteQuery(ctx, query, false)
+	queryResult, err := client.Execute(ctx, query, false)
 	if err != nil {
 		r.SetError(err)
 		return

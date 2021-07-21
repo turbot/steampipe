@@ -11,13 +11,14 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
 
 // ExecuteSync :: execute a query against this client and wait for the result
 func (c *Client) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
-	result, err := c.ExecuteQuery(ctx, query, disableSpinner)
+	result, err := c.Execute(ctx, query, disableSpinner)
 	if err != nil {
 		return nil, err
 	}
@@ -33,11 +34,11 @@ func (c *Client) ExecuteSync(ctx context.Context, query string, disableSpinner b
 	return syncResult, nil
 }
 
-// ExecuteQuery executes the provided query against the Database in the given context.Context
+// Execute executes the provided query against the Database in the given context.Context
 // Bear in mind that whenever ExecuteQuery is called, the returned `queryresult.Result` MUST be fully read -
 // otherwise the transaction is left open, which will block the connection and will prevent subsequent communications
 // with the service
-func (c *Client) ExecuteQuery(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
+func (c *Client) Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
 	if query == "" {
 		return &queryresult.Result{}, nil
 	}
@@ -89,7 +90,7 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, disableSpinner 
 
 	// read the rows in a go routine
 	go func() {
-		// read in the rows
+		// read in the rows and stream to the query result object
 		c.readRows(ctx, startTime, rows, result, spinner)
 		// commit transaction
 		tx.Commit()
@@ -164,10 +165,8 @@ func readRow(rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]inter
 	}
 	err := rows.Scan(resultPtrs...)
 	if err != nil {
-		if err == context.Canceled {
-			err = fmt.Errorf("Cancelled")
-		}
-		return nil, err
+		// return error, handling cancellation error explicitly
+		return nil, utils.HandleCancelError(err)
 	}
 	return populateRow(columnValues, colTypes), nil
 }

@@ -111,28 +111,30 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	if interactiveMode {
 		execute.RunInteractiveSession(&initDataChan)
-	} else {
-
-		// wait for init
-		initData := <-initDataChan
-		if err := initData.Result.Error; err != nil {
-			utils.FailOnError(err)
-		}
-		// display any initialisation messages/warnings
-		initData.Result.DisplayMessages()
-		// populate client so it gets closed by defer
-		client = initData.Client
-
-		// if no query is specified, run interactive prompt
-		if !interactiveMode && len(initData.Queries) > 0 {
-			ctx, cancel := context.WithCancel(context.Background())
-			startCancelHandler(cancel)
-			// otherwise if we have resolved any queries, run them
-			failures := execute.ExecuteQueries(ctx, initData.Queries, initData.Client)
-			// set global exit code
-			exitCode = failures
-		}
+		return
 	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	startCancelHandler(cancel)
+
+	// wait for init
+	// TODO CHECK FOR CANCEL
+	initData := <-initDataChan
+	if err := initData.Result.Error; err != nil {
+		utils.FailOnError(err)
+	}
+	// display any initialisation messages/warnings
+	initData.Result.DisplayMessages()
+	// populate client so it gets closed by defer
+	client = initData.Client
+
+	if len(initData.Queries) > 0 {
+		// otherwise if we have resolved any queries, run them
+		failures := execute.ExecuteQueries(ctx, initData.Queries, initData.Client)
+		// set global exit code
+		exitCode = failures
+	}
+
 }
 
 func getQueryInitDataAsync(initDataChan chan *db.QueryInitData, args []string) {
