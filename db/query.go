@@ -52,7 +52,7 @@ func ExecuteQuery(ctx context.Context, queryString string, client *Client) (*que
 	defer utils.LogTime("db.ExecuteQuery end")
 
 	resultsStreamer := queryresult.NewResultStreamer()
-	result, err := client.ExecuteQuery(ctx, queryString, false)
+	result, err := client.ExecuteAsync(ctx, queryString, false)
 	if err != nil {
 		return nil, err
 	}

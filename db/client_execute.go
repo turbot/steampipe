@@ -4,7 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
+
+	"github.com/turbot/steampipe/utils"
 
 	"github.com/briandowns/spinner"
 	"github.com/turbot/steampipe/cmdconfig"
@@ -17,7 +20,7 @@ import (
 
 // ExecuteSync :: execute a query against this client and wait for the result
 func (c *Client) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
-	result, err := c.ExecuteQuery(ctx, query, disableSpinner)
+	result, err := c.ExecuteAsync(ctx, query, disableSpinner)
 	if err != nil {
 		return nil, err
 	}
@@ -33,11 +36,34 @@ func (c *Client) ExecuteSync(ctx context.Context, query string, disableSpinner b
 	return syncResult, nil
 }
 
-// ExecuteQuery executes the provided query against the Database in the given context.Context
+// ExecuteAsync executes the provided query against the Database in the given context.Context
 // Bear in mind that whenever ExecuteQuery is called, the returned `queryresult.Result` MUST be fully read -
 // otherwise the transaction is left open, which will block the connection and will prevent subsequent communications
 // with the service
-func (c *Client) ExecuteQuery(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
+func (c *Client) ExecuteAsync(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
+	resultChan := make(chan *queryresult.Result)
+	errorChan := make(chan error)
+	go func() {
+		res, err := c.executeQuery(ctx, query, disableSpinner)
+		if err != nil {
+			errorChan <- err
+		} else {
+			resultChan <- res
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		log.Printf("[WARN] ExecuteAsync context cancelled")
+		return nil, ctx.Err()
+	case err := <-errorChan:
+		return nil, err
+	case res := <-resultChan:
+		return res, nil
+	}
+}
+
+func (c *Client) executeQuery(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
 	if query == "" {
 		return &queryresult.Result{}, nil
 	}
@@ -89,7 +115,7 @@ func (c *Client) ExecuteQuery(ctx context.Context, query string, disableSpinner 
 
 	// read the rows in a go routine
 	go func() {
-		// read in the rows
+		// read in the rows and stream to the query result object
 		c.readRows(ctx, startTime, rows, result, spinner)
 		// commit transaction
 		tx.Commit()
@@ -164,10 +190,8 @@ func readRow(rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]inter
 	}
 	err := rows.Scan(resultPtrs...)
 	if err != nil {
-		if err == context.Canceled {
-			err = fmt.Errorf("Cancelled")
-		}
-		return nil, err
+		// return error, handling cancellation error explicitly
+		return nil, utils.HandleCancelError(err)
 	}
 	return populateRow(columnValues, colTypes), nil
 }

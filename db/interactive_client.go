@@ -113,10 +113,11 @@ func (c *InteractiveClient) InteractiveQuery() {
 			if c.afterClose == AfterPromptCloseExit {
 				return
 			}
+			//log.Printf("[WARN] before wait")
 			// wait for the resultsStreamer to have streamed everything out
 			// this is to be sure the previous command has completed streaming
 			c.resultsStreamer.Wait()
-			log.Printf("[TRACE] after wait")
+			//log.Printf("[WARN] after wait")
 			// create new context
 			ctx = c.createCancelContext()
 			log.Printf("[TRACE] run again")
@@ -305,6 +306,7 @@ func (c *InteractiveClient) startCancelHandler() chan os.Signal {
 	signal.Notify(interruptSignalChannel, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		for range interruptSignalChannel {
+			//log.Printf("[WARN] Cancel handler called")
 			if c.hasActiveCancel() {
 				c.activeQueryCancelFunc()
 				c.clearCancelFunction()
@@ -380,7 +382,8 @@ func (c *InteractiveClient) executor(line string) {
 		ctx, cancel := context.WithCancel(context.Background())
 		c.setCancelFunction(cancel)
 
-		result, err := c.waitForClient().ExecuteQuery(ctx, query, false)
+		client := c.waitForClient()
+		result, err := client.ExecuteAsync(ctx, query, false)
 		if err != nil {
 			c.handleExecuteError(err)
 		} else {
@@ -395,17 +398,21 @@ func (c *InteractiveClient) executor(line string) {
 }
 
 func (c *InteractiveClient) handleExecuteError(err error) {
-	isCancelledError, isCancelledBeforeResult := isCancelledError(err)
-	if isCancelledError {
-		utils.ShowError(fmt.Errorf("execution cancelled"))
-		if isCancelledBeforeResult {
-			// we need to notify the streamer that we are done
-			c.resultsStreamer.Done()
-		}
-	} else {
-		utils.ShowError(err)
-		c.resultsStreamer.Done()
-	}
+	//isCancelledError, isCancelledBeforeResult := isCancelledError(err)
+	//if isCancelledError {
+	//	log.Printf("[WARN] handleExecuteError isCancelledError")
+	//	utils.ShowError(fmt.Errorf("execution cancelled"))
+	//	if isCancelledBeforeResult {
+	//		log.Printf("[WARN] handleExecuteError isCancelledBeforeResult")
+	//		// we need to notify the streamer that we are done
+	//		c.resultsStreamer.Done()
+	//	}
+	//} else {
+	log.Printf("[WARN] handleExecuteError")
+
+	utils.ShowError(err)
+	c.resultsStreamer.Done()
+	//}
 }
 
 func isCancelledError(err error) (bool, bool) {
