@@ -184,9 +184,8 @@ func doThreeStepPostgresExit(process *psutils.Process) error {
 	}
 
 	if !exitSuccessful {
-		log.Printf("[ERROR] ** > Failed to stop service\n")
-		errorLogProcessDetails(process, 0)
-		log.Printf("[ERROR] ** > Done\n")
+		log.Println("[ERROR] Failed to stop service")
+		log.Printf("[ERROR] Service Details:\n%s\n", getPrintableProcessDetails(process, 0))
 		return fmt.Errorf("service shutdown timed out")
 	}
 
@@ -211,41 +210,45 @@ func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 	}
 }
 
-func errorLogProcessDetails(process *psutils.Process, indent int) {
+func getPrintableProcessDetails(process *psutils.Process, indent int) string {
 	indentString := strings.Repeat("  ", indent)
+	appendTo := ""
 
 	if name, err := process.Name(); err == nil {
-		log.Printf("[ERROR] ** %s > Name: %s\n", indentString, name)
+		appendTo = fmt.Sprintf("%s ** %s > Name: %s\n", appendTo, indentString, name)
 	}
 	if cmdLine, err := process.Cmdline(); err == nil {
-		log.Printf("[ERROR] ** %s > CmdLine: %s\n", indentString, cmdLine)
+		appendTo = fmt.Sprintf("%s ** %s > CmdLine: %s\n", appendTo, indentString, cmdLine)
 	}
 	if status, err := process.Status(); err == nil {
-		log.Printf("[ERROR] ** %s > Status: %s\n", indentString, status)
+		appendTo = fmt.Sprintf("%s ** %s > Status: %s\n", appendTo, indentString, status)
 	}
 	if cwd, err := process.Cwd(); err == nil {
-		log.Printf("[ERROR] ** %s > CWD: %s\n", indentString, cwd)
+		appendTo = fmt.Sprintf("%s ** %s > CWD: %s\n", appendTo, indentString, cwd)
 	}
 	if executable, err := process.Exe(); err == nil {
-		log.Printf("[ERROR] ** %s > Executable: %s\n", indentString, executable)
+		appendTo = fmt.Sprintf("%s ** %s > Executable: %s\n", appendTo, indentString, executable)
 	}
 	if username, err := process.Username(); err == nil {
-		log.Printf("[ERROR] ** %s > Username: %s\n", indentString, username)
+		appendTo = fmt.Sprintf("%s ** %s > Username: %s\n", appendTo, indentString, username)
 	}
 	if indent == 0 {
 		// I do not care about the parent of my parent
 		if parent, err := process.Parent(); err == nil && parent != nil {
-			log.Printf("[ERROR] ** %s > Parent Details\n", indentString)
-			errorLogProcessDetails(parent, indent+1)
+			appendTo = fmt.Sprintf("%s ** %s > Parent Details", appendTo, indentString)
+			parentLog := getPrintableProcessDetails(parent, indent+1)
+			appendTo = fmt.Sprintf("%s\n%s", appendTo, parentLog)
 		}
 
 		// I do not care about all the children of my parent
 		if children, err := process.Children(); err == nil && len(children) > 0 {
-			log.Printf("[ERROR] ** %s > Children Details\n", indentString)
+			appendTo = fmt.Sprintf("%s ** %s > Children Details", appendTo, indentString)
 			for _, child := range children {
-				errorLogProcessDetails(child, indent+1)
+				childLog := getPrintableProcessDetails(child, indent+1)
+				appendTo = fmt.Sprintf("%s\n%s", appendTo, childLog)
 			}
 		}
 	}
-	log.Printf("[ERROR] ** \n")
+
+	return appendTo
 }
