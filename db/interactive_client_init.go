@@ -57,7 +57,7 @@ func (c *InteractiveClient) waitForInitData(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("context cancelled")
+			return ctx.Err()
 		case <-ticker.C:
 			if c.isInitialised() {
 				return nil

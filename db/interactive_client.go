@@ -8,11 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/turbot/go-kit/helpers"
-
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-
 	"github.com/c-bata/go-prompt"
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -39,7 +37,10 @@ type InteractiveClient struct {
 	interactivePrompt       *prompt.Prompt
 	interactiveQueryHistory *queryhistory.QueryHistory
 	autocompleteOnEmpty     bool
-	cancelFunc              context.CancelFunc
+	// the cancellation function for the active query - may be nil
+	// NOTE: should ONLY be called by cancelActiveQueryIfAny
+	cancelActiveQuery context.CancelFunc
+	cancelPrompt      context.CancelFunc
 	// channel from which we read the result of the external initialisation process
 	initDataChan *chan *QueryInitData
 	// channel used internally to signal an init error
@@ -69,15 +70,15 @@ func newInteractiveClient(initChan *chan *QueryInitData, resultsStreamer *queryr
 func (c *InteractiveClient) InteractiveQuery() {
 
 	// start a cancel handler for the interactive client - this will call activeQueryCancelFunc if it is set
-	// (registered when we call createCancelContext)
+	// (registered when we call createQueryContext)
 	interruptSignalChannel := c.startCancelHandler()
 
 	// create a cancel context for the prompt - this will set activeQueryCancelFunc
-	ctx := c.createCancelContext()
+	promptCtx := c.createPromptContext()
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("[WARN] interactive query recover")
+			//log.Printf("[WARN] interactive query recover")
 			utils.ShowError(helpers.ToError(r))
 		}
 		// close up the SIGINT channel so that the receiver goroutine can quit
@@ -99,31 +100,35 @@ func (c *InteractiveClient) InteractiveQuery() {
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors
 	promptResultChan := make(chan utils.InteractiveExitStatus, 1)
-	c.runInteractivePromptAsync(ctx, &promptResultChan)
+	c.runInteractivePromptAsync(promptCtx, &promptResultChan)
 
 	// select results
 	for {
 		select {
 		case initResult := <-c.initResultChan:
-			if err := c.handleInitResult(ctx, initResult); err != nil {
+			if err := c.handleInitResult(promptCtx, initResult); err != nil {
 				return
 			}
 
 		case <-promptResultChan:
+			//log.Printf("[WARN] <-promptResultChan")
 			// persist saved history
 			c.interactiveQueryHistory.Persist()
 			// check post-close action
 			if c.afterClose == AfterPromptCloseExit {
+				//log.Printf("[WARN] RETURN AfterPromptCloseExi")
 				return
 			}
+			//log.Printf("[WARN] BEFORE WAIT")
 			// wait for the resultsStreamer to have streamed everything out
 			// this is to be sure the previous command has completed streaming
 			c.resultsStreamer.Wait()
+			//log.Printf("[WARN] AFTER WAIT")
 			// create new context
-			ctx = c.createCancelContext()
+			promptCtx = c.createPromptContext()
 			log.Printf("[TRACE] run again")
 			// now run it again
-			c.runInteractivePromptAsync(ctx, &promptResultChan)
+			c.runInteractivePromptAsync(promptCtx, &promptResultChan)
 		}
 	}
 	log.Printf("[TRACE] after FOR")
@@ -169,7 +174,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *In
 func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
 	log.Printf("[TRACE] Close prompt - then %d", afterClose)
 	c.afterClose = afterClose
-	c.cancelFunc()
+	c.cancelPrompt()
 }
 
 func (c *InteractiveClient) runInteractivePromptAsync(ctx context.Context, promptResultChan *chan utils.InteractiveExitStatus) {
@@ -202,10 +207,10 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 	}()
 
 	callExecutor := func(line string) {
-		c.executor(ctx, line)
+		c.executor(line)
 	}
 	completer := func(d prompt.Document) []prompt.Suggest {
-		return c.queryCompleter(ctx, d)
+		return c.queryCompleter(d)
 	}
 	c.interactivePrompt = prompt.New(
 		callExecutor,
@@ -303,25 +308,84 @@ func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 	c.interactiveBuffer = []string{}
 }
 
-func (c *InteractiveClient) executor(ctx context.Context, line string) {
+func (c *InteractiveClient) executor(line string) {
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
+
 	log.Printf("[TRACE] executor in")
 	defer log.Printf("[TRACE] executor out")
-	line = strings.TrimSpace(line)
 
-	// wait for client initialisation to complete
-	if err := c.waitForInitData(ctx); err != nil {
-		// show error????
+	// set afterClose to restart - is we are exiting the metaquery will set this to AfterPromptCloseExit
+	c.afterClose = AfterPromptCloseRestart
+
+	line = strings.TrimSpace(line)
+	query, err := c.getQuery(line)
+	if query == "" {
+		if err != nil {
+			// restart the prompt
+			c.restartInteractiveSession()
+		}
 		return
 	}
 
+	// create a  context for the execution of the query
+	queryContext := c.createQueryContext()
+
+	if metaquery.IsMetaQuery(query) {
+		if err := c.executeMetaquery(queryContext, query); err != nil {
+			utils.ShowError(err)
+		}
+		c.resultsStreamer.Done()
+		// cancel the context
+		log.Printf("[WARN] executeMetaquery cancel")
+		c.cancelActiveQueryIfAny()
+
+	} else {
+		// otherwise execute query
+		result, err := c.client().Execute(queryContext, query, false)
+		if err != nil {
+			utils.ShowError(utils.HandleCancelError(err))
+			c.resultsStreamer.Done()
+		} else {
+			c.resultsStreamer.StreamResult(result)
+		}
+	}
+
+	// store the history (the raw line which was entered)
+	c.interactiveQueryHistory.Put(line)
+	// restart the prompt
+	c.restartInteractiveSession()
+}
+
+func (c *InteractiveClient) getQuery(line string) (string, error) {
 	// if it's an empty line, then we don't need to do anything
 	if line == "" {
-		return
+		return "", nil
 	}
-	// store history item before doing named query translation
-	historyItem := line
+
+	// wait fore initialisation to complete so we can acces the workspace
+	if !c.isInitialised() {
+		//log.Printf("[WARN] getQuery not initialised")
+		// create a context used purely to detect cancellation during initialisation
+		// this will also set c.cancelActiveQuery
+		queryContext := c.createQueryContext()
+		defer func() {
+			//log.Printf("[WARN] getQuery defer")
+			// cancel this context
+			c.cancelActiveQueryIfAny()
+		}()
+
+		// wait for client initialisation to complete
+		if err := c.waitForInitData(queryContext); err != nil {
+			//log.Printf("[WARN] waitForInitData failed %v", err)
+			// if it failed, report error and quit
+			utils.ShowError(utils.HandleCancelError(err))
+			//log.Printf("[WARN] SHOWN ERROR")
+			c.resultsStreamer.Done()
+			//log.Printf("[WARN] getQuery RETURN")
+			return "", err
+		}
+	}
 
 	// push the current line into the buffer
 	c.interactiveBuffer = append(c.interactiveBuffer, line)
@@ -337,7 +401,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	} else {
 		// should we execute?
 		if !c.shouldExecute(query) {
-			return
+			return "", nil
 		}
 	}
 
@@ -347,7 +411,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	} else {
 		// should we execute?
 		if !c.shouldExecute(query) {
-			return
+			return "", nil
 		}
 	}
 
@@ -356,33 +420,10 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	// if the line is ONLY a semicolon, do nothing and restart interactive session
 	if strings.TrimSpace(query) == ";" {
 		c.restartInteractiveSession()
+		return "", nil
 	}
 
-	// set afterClose to restart - is we are exiting the metaquery will set this to AfterPromptCloseExit
-	c.afterClose = AfterPromptCloseRestart
-	if metaquery.IsMetaQuery(query) {
-		if err := c.executeMetaquery(ctx, query); err != nil {
-			utils.ShowError(err)
-		}
-		c.resultsStreamer.Done()
-	} else {
-		// otherwise execute query
-		//ctx, cancel := context.WithCancel(context.Background())
-		//c.setCancelFunction(cancel)
-
-		result, err := c.client().Execute(ctx, query, false)
-		if err != nil {
-			utils.ShowError(utils.HandleCancelError(err))
-			c.resultsStreamer.Done()
-		} else {
-			c.resultsStreamer.StreamResult(result)
-		}
-	}
-
-	// store the history
-	c.interactiveQueryHistory.Put(historyItem)
-	// restart the prompt
-	c.restartInteractiveSession()
+	return query, nil
 }
 
 func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) error {
@@ -425,7 +466,7 @@ func (c *InteractiveClient) shouldExecute(line string) bool {
 	return !cmdconfig.Viper().GetBool(constants.ArgMultiLine) || strings.HasSuffix(line, ";") || metaquery.IsMetaQuery(line)
 }
 
-func (c *InteractiveClient) queryCompleter(ctx context.Context, d prompt.Document) []prompt.Suggest {
+func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 	if !c.isInitialised() {
 		return nil
 	}
@@ -448,12 +489,12 @@ func (c *InteractiveClient) queryCompleter(ctx context.Context, d prompt.Documen
 		// add all we know that can be the first words
 
 		//named queries
-		s = append(s, c.namedQuerySuggestions(ctx)...)
+		s = append(s, c.namedQuerySuggestions()...)
 		// "select"
 		s = append(s, prompt.Suggest{Text: "select"})
 
 		// metaqueries
-		s = append(s, metaquery.PromptSuggestions(ctx)...)
+		s = append(s, metaquery.PromptSuggestions()...)
 
 	} else if metaquery.IsMetaQuery(text) {
 		client := c.client()
@@ -484,7 +525,7 @@ func (c *InteractiveClient) queryCompleter(ctx context.Context, d prompt.Documen
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }
 
-func (c *InteractiveClient) namedQuerySuggestions(ctx context.Context) []prompt.Suggest {
+func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 	var res []prompt.Suggest
 	// only add named query suggestions if the client is initialised
 	if !c.isInitialised() {
