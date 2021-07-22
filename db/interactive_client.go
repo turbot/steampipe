@@ -312,7 +312,7 @@ func (c *InteractiveClient) executor(line string) {
 	if query == "" {
 		if err != nil {
 			// if there was an error other than cancellation, quit
-			if !utils.IsContextCancelledError(err) {
+			if !utils.IsCancelledError(err) {
 				c.afterClose = AfterPromptCloseExit
 			}
 			// restart the prompt
