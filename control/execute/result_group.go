@@ -128,7 +128,6 @@ func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
 	for _, controlRun := range r.ControlRuns {
 		select {
 		case <-ctx.Done():
-			log.Printf("[WARN] run %s CONTEXT CANCELLED", controlRun.Control.ShortName)
 			controlRun.SetError(ctx.Err())
 		default:
 			if viper.GetBool(constants.ArgDryRun) {

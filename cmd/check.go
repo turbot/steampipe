@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 	"sync"
@@ -132,7 +131,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		select {
 		case <-ctx.Done():
-			log.Println("[WARN] CONTEXT CANCELLED")
 			durations = append(durations, 0)
 			// skip over the next, since the execution was cancelled
 			continue
@@ -160,7 +158,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	log.Println("[WARN] out of loop")
 	exportWaitGroup.Wait()
 
 	if len(exportErrors) > 0 {
@@ -177,7 +174,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		display.ShowWrappedTable(headers, rows, false)
 	}
 
-	log.Println("[WARN] return")
 	// set global exit code
 	exitCode = failures
 }

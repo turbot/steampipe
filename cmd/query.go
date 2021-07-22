@@ -195,7 +195,6 @@ func startCancelHandler(cancel context.CancelFunc) {
 	signal.Notify(sigIntChannel, os.Interrupt)
 	go func() {
 		<-sigIntChannel
-		log.Println("[WARN] CANCEL")
 		// call context cancellation function
 		cancel()
 		// leave the channel open - any subsequent interrupts hits will be ignored
