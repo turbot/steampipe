@@ -1,4 +1,4 @@
-## v0.7.0 [2021-07-19]
+## v0.7.0 [2021-07-22]
 _What's new?_
 
 * Add support for aggregator connections. ([#610](https://github.com/turbot/steampipe/issues/610)) 
