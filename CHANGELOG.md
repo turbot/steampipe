@@ -1,3 +1,32 @@
+## v0.7.0 [2021-07-19]
+_What's new?_
+
+* Service management improvements: 
+  * Remove locking from service code to allow multiple `query` and `check` sessions in parallel without requiring a service start.([#579](https://github.com/turbot/steampipe/issues/579))
+  * Update service start to 'claim' a service started by query or check session, instead of failing. ([#580](https://github.com/turbot/steampipe/issues/580))
+  * Update `service status` - add `--all` flag to list status for all running services.([#580](https://github.com/turbot/steampipe/issues/580))
+  * Update `service start` to add `--foreground` flag. ([#535](https://github.com/turbot/steampipe/issues/535))
+* Add support for aggregate connections. ([#610](https://github.com/turbot/steampipe/issues/610)) 
+* Optimise interactive startup by initializing asynchronously. ([#627](https://github.com/turbot/steampipe/issues/627))
+* Optimise query caching - construct key based on the columns returned by the plugin, not the columns requested.([#82](https://github.com/turbot/steampipe-postgres-fdw/issues/82))
+* Update steampipe service to support SSL. ([#602](https://github.com/turbot/steampipe/issues/602)) 
+* Run `initdb` if database is installed but `data directory` is empty. ([#575](https://github.com/turbot/steampipe/issues/575))
+* Remove the requirement for `ps` to be installed in target system. ([#619](https://github.com/turbot/steampipe/issues/619))
+* Split `versions.json` into 2 files, one in the plugins dir, one in the database dir. ([#576](https://github.com/turbot/steampipe/issues/576))
+* Update plugin install to put temp files underneath the plugin directory. ([#600](https://github.com/turbot/steampipe/issues/600)) 
+* Increase length of history file to 500 entries. ([#664](https://github.com/turbot/steampipe/issues/664))
+* Steampipe service startup now validates that the `data-dir` is writable. ([#659](https://github.com/turbot/steampipe/issues/659))
+* Show timer result before query output, so it is visible even if results require paging. ([#655](https://github.com/turbot/steampipe/issues/655))
+
+_Bug fixes_
+* Do not disable pager when errors are displayed in interactive mode. ([#606](https://github.com/turbot/steampipe/issues/606))
+* Fixes issue where `STEAMPIPE_INSTALL_DIR` was not being respected. ([#613](https://github.com/turbot/steampipe/issues/613))
+* Fix multiple ctrl+C presses causing a crash on control runs. ([#630](https://github.com/turbot/steampipe/issues/630))
+* Ensure multiline control errors are rendered in full ([#672](https://github.com/turbot/steampipe/issues/672))
+* Fix crash when benchmark has duplicate children. Instead, raise a validaiton failure. ([#667](https://github.com/turbot/steampipe/issues/667))
+* Fixes issue where `service stop` does not work on `Linux` systems. ([#653](https://github.com/turbot/steampipe/issues/653))
+* Plugin schema validation errors should be displayed as warning, and not cause Steampipe to exit. ([#644](https://github.com/turbot/steampipe/issues/644))
+
 ## v0.6.2 [2021-07-08]
 _Bug fixes_
 * Revert prototype code inadvertently included in 0.6.1 
@@ -11,7 +40,7 @@ _Bug fixes_
 * Fix issue where `dimension` values were not rendered in generated CSV for `check`. ([#587](https://github.com/turbot/steampipe/issues/587))
 * Fix Linux Installer script showing verification error for Amazon Linux. ([#479](https://github.com/turbot/steampipe/issues/438))
 * Fix issue where using `--timing` with `check` was not showing duration. ([#571](https://github.com/turbot/steampipe/issues/571))
-* Fix problem where milliseconds of timestamps were not being displayed ([#76](https://github.com/turbot/steampipe-postgres-fdw/issues/74))
+* Fix problem where milliseconds of timestamps were not being displayed ([#76](https://github.com/turbot/steampipe-postgres-fdw/issues/76))
 * Fix  freezing issues with 'limit' and cancellation. ([#74](https://github.com/turbot/steampipe-postgres-fdw/issues/74))
 * Fix incorrect caching of 'get' query results for plugins build with sdk >= 0.3.0. ([#60](https://github.com/turbot/steampipe-postgres-fdw/issues/60))
   
