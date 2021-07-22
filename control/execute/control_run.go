@@ -101,7 +101,7 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 
 	// set a log line in the database logs for convenience
 	// pass 'true' to disable spinner
-	_, _ = client.ExecuteSync(ctx, fmt.Sprintf("--- Executing %s", *control.Title), true)
+	_, _ = client.ExecuteSync(ctx, fmt.Sprintf("--- Executing %s", control.GetTitle()), true)
 
 	var originalConfiguredSearchPath []string
 	var originalConfiguredSearchPathPrefix []string

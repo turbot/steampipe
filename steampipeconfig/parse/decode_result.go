@@ -38,3 +38,22 @@ func (p *decodeResult) Merge(other *decodeResult) *decodeResult {
 func (p *decodeResult) Success() bool {
 	return !p.Diags.HasErrors() && len(p.Depends) == 0
 }
+
+// if the diags contains dependency errors, add dependencies to the result
+// otherwise add diags to the result
+func (p *decodeResult) handleDecodeDiags(diags hcl.Diagnostics) {
+	for _, diag := range diags {
+		if dependency := isDependencyError(diag); dependency != nil {
+			// was this error caused by a missing dependency?
+			p.Depends = append(p.Depends, dependency)
+		}
+	}
+	// only register errors if there are NOT any missing variables
+	if diags.HasErrors() && len(p.Depends) == 0 {
+		p.addDiags(diags)
+	}
+}
+
+func (p *decodeResult) addDiags(diags hcl.Diagnostics) {
+	p.Diags = append(p.Diags, diags...)
+}

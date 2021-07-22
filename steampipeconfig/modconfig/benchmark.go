@@ -55,16 +55,30 @@ func (b *Benchmark) CtyValue() (cty.Value, error) {
 }
 
 // OnDecoded implements HclResource
-func (b *Benchmark) OnDecoded(*hcl.Block) {
+func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
+	var res hcl.Diagnostics
 	if b.ChildNames == nil || len(*b.ChildNames) == 0 {
-		return
+		return nil
 	}
 
+	// validate each child name appears only once
+	nameMap := make(map[string]bool)
 	b.ChildNameStrings = make([]string, len(*b.ChildNames))
 	for i, n := range *b.ChildNames {
+		if nameMap[n.Name] {
+			res = append(res, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("benchmark '%s' has duplicate child name '%s'", b.FullName, n.Name),
+				Subject:  &block.DefRange})
+
+			continue
+		}
 		b.ChildNameStrings[i] = n.Name
+		nameMap[n.Name] = true
 	}
+
 	b.children = make([]ControlTreeItem, len(b.ChildNameStrings))
+	return res
 }
 
 // AddReference implements HclResource
