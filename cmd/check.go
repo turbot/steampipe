@@ -54,96 +54,81 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 	return cmd
 }
 
+type checkInitData struct {
+	ctx           context.Context
+	workspace     *workspace.Workspace
+	client        *db.Client
+	dbInitialised bool
+	error         error
+	warning       string
+}
+
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
-
-	// verify we have an argument
-	if len(args) == 0 {
-		fmt.Println()
-		utils.ShowError(fmt.Errorf("you must provide at least one argument"))
-		fmt.Println()
-		cmd.Help()
-		fmt.Println()
-		return
-	}
-
+	initData := &checkInitData{}
 	defer func() {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
+
+		if initData.dbInitialised {
+			db.Shutdown(initData.client, db.InvokerCheck)
+		}
+		if initData.workspace != nil {
+			initData.workspace.Close()
+		}
 	}()
 
-	err := validateOutputFormat()
-	utils.FailOnError(err)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	startCancelHandler(cancel)
-
-	// start db if necessary, refreshing connections
-	err = db.EnsureDbAndStartService(db.InvokerCheck, true)
-	utils.FailOnErrorWithMessage(err, "failed to start service")
-	defer db.Shutdown(nil, db.InvokerCheck)
-
-	// set color schema
-	err = initialiseColorScheme()
-	utils.FailOnError(err)
-
-	// load the workspace
-	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
-	defer workspace.Close()
-
-	// check if the required plugins are installed
-	err = workspace.CheckRequiredPluginsInstalled()
-	utils.FailOnError(err)
-
-	if len(workspace.ControlMap) == 0 {
-		utils.ShowWarning("no controls found in current workspace")
+	// initialise
+	initData = initialiseCheck(cmd, args)
+	utils.FailOnError(initData.error)
+	if initData.warning != "" {
+		utils.ShowWarning(initData.warning)
 		return
 	}
 
-	// first get a client - do this once for all controls
-	client, err := db.NewClient()
-	utils.FailOnError(err)
-	defer client.Close()
-
-	// populate the reflection tables
-	err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)
-	utils.FailOnError(err)
+	ctx := initData.ctx
+	workspace := initData.workspace
+	client := initData.client
 
 	// treat each arg as a separate execution
 	failures := 0
 	var exportErrors []error
 	exportErrorsLock := sync.Mutex{}
-
 	exportWaitGroup := sync.WaitGroup{}
-	durations := []time.Duration{}
+	var durations []time.Duration
+
 	for _, arg := range args {
-		// get the export formats for this argument
-		exportFormats := getExportTargets(arg)
-		err = validateExportTargets(exportFormats)
-		if err != nil {
-			utils.ShowError(err)
-			return
+
+		if utils.IsContextCancelled(ctx) {
+			durations = append(durations, 0)
+			// skip over this arg, since the execution was cancelled
+			// (do not just quit as we want to populate the durations)
+			continue
 		}
 
-		select {
-		case <-ctx.Done():
-			durations = append(durations, 0)
-			// skip over the next, since the execution was cancelled
-			continue
-		default:
-			executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, arg)
-			utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
+		// get the export formats for this argument
+		exportFormats, err := getExportTargets(arg)
+		// TODO verify fail on error is ok here
+		//if err != nil {
+		//	utils.ShowError(err)
+		//	return
+		//}
+		utils.FailOnError(err)
 
-			// for now we execute controls synchronously
-			// Execute returns the number of failures
-			failures += executionTree.Execute(ctx, client)
-			err = displayControlResults(ctx, executionTree)
-			utils.FailOnError(err)
+		// create the execution tree
+		executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, arg)
+		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
 
+		// execute controls synchronously
+		// execute returns the number of failures
+		failures += executionTree.Execute(ctx, client)
+		err = displayControlResults(ctx, executionTree)
+		utils.FailOnError(err)
+
+		// TODO put into function
+		if len(exportFormats) > 0 {
 			exportWaitGroup.Add(1)
 			go func() {
 				err := exportControlResults(ctx, executionTree, exportFormats)
@@ -154,28 +139,116 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 				}
 				exportWaitGroup.Done()
 			}()
-			durations = append(durations, executionTree.Root.Duration)
 		}
+		durations = append(durations, executionTree.Root.Duration)
+
 	}
 
+	// wait for exports to complete
 	exportWaitGroup.Wait()
-
 	if len(exportErrors) > 0 {
 		utils.ShowError(utils.CombineErrors(exportErrors...))
 	}
 
 	if shouldPrintTiming() {
-		headers := []string{"", "Duration"}
-		rows := [][]string{}
-		for idx, arg := range args {
-			rows = append(rows, []string{arg, durations[idx].String()})
-		}
-		fmt.Println("Timing:")
-		display.ShowWrappedTable(headers, rows, false)
+		printTiming(args, durations)
 	}
 
 	// set global exit code
 	exitCode = failures
+}
+
+func printTiming(args []string, durations []time.Duration) {
+	headers := []string{"", "Duration"}
+	rows := [][]string{}
+	for idx, arg := range args {
+		rows = append(rows, []string{arg, durations[idx].String()})
+	}
+	fmt.Println("Timing:")
+	display.ShowWrappedTable(headers, rows, false)
+}
+
+func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
+	res := &checkInitData{}
+	// verify we have an argument
+	if !validateArgs(cmd, args) {
+		return res
+	}
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
+
+	err := validateOutputFormat()
+	if err != nil {
+		res.error = err
+		return res
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	startCancelHandler(cancel)
+	res.ctx = ctx
+
+	// set color schema
+	err = initialiseColorScheme()
+	if err != nil {
+		res.error = err
+		return res
+	}
+
+	// load the workspace
+	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+	if err != nil {
+		res.error = utils.PrefixError(err, "failed to load workspace")
+		return res
+	}
+	res.workspace = workspace
+
+	// check if the required plugins are installed
+	err = workspace.CheckRequiredPluginsInstalled()
+	if err != nil {
+		res.error = err
+		return res
+	}
+
+	if len(workspace.ControlMap) == 0 {
+		res.warning = "no controls found in current workspace"
+		return res
+	}
+
+	// start db if necessary, refreshing connections
+	err = db.EnsureDbAndStartService(db.InvokerCheck, true)
+	if err != nil {
+		res.error = utils.PrefixError(err, "failed to start service")
+		return res
+	}
+	res.dbInitialised = true
+
+	// first get a client - do this once for all controls
+	client, err := db.NewClient()
+	if err != nil {
+		res.error = err
+		return res
+	}
+	res.client = client
+
+	// populate the reflection tables
+	err = db.CreateMetadataTables(workspace.GetResourceMaps(), client)
+	if err != nil {
+		res.error = err
+		return res
+	}
+
+	return res
+}
+
+func validateArgs(cmd *cobra.Command, args []string) bool {
+	if len(args) == 0 {
+		fmt.Println()
+		utils.ShowError(fmt.Errorf("you must provide at least one argument"))
+		fmt.Println()
+		cmd.Help()
+		fmt.Println()
+		return false
+	}
+	return true
 }
 
 func shouldPrintTiming() bool {
@@ -273,7 +346,7 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 	return errors
 }
 
-func getExportTargets(executing string) []controldisplay.CheckExportTarget {
+func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, error) {
 	formats := []controldisplay.CheckExportTarget{}
 	exports := viper.GetStringSlice(constants.ArgExport)
 	for _, export := range exports {
@@ -309,7 +382,9 @@ func getExportTargets(executing string) []controldisplay.CheckExportTarget {
 		}
 		formats = append(formats, controldisplay.NewCheckExportTarget(format, fileName, targetError))
 	}
-	return formats
+	err := validateExportTargets(formats)
+
+	return formats, err
 }
 
 func generateDefaultExportFileName(format string, executing string) string {
