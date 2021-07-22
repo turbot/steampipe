@@ -25,304 +25,338 @@ type loadModTest struct {
 var loadWorkspaceOptions = &parse.ParseModOptions{
 	Flags: parse.CreatePseudoResources | parse.CreateDefaultMod,
 	ListOptions: &filehelpers.ListOptions{
+		Flags:   filehelpers.Files,
 		Exclude: []string{fmt.Sprintf("**/%s*", constants.WorkspaceDataDir)},
 	},
 }
-var testCasesLoadMod = map[string]loadModTest{
-	"no_mod_sql_files": {
-		source: "test_data/mods/no_mod_sql_files",
-		expected: &modconfig.Mod{
-			ShortName: "local",
-			Queries: map[string]*modconfig.Query{
-				"q1": {
-					ShortName: "q1", SQL: toStringPointer("select 1"),
-				},
-				"q2": {
-					ShortName: "q2", SQL: toStringPointer("select 2"),
-				},
-			}},
-	},
-	"no_mod_hcl_queries": {
-		source: "test_data/mods/no_mod_hcl_queries",
-		expected: &modconfig.Mod{
-			ShortName: "local",
-			Queries: map[string]*modconfig.Query{
-				"q1": {
-					ShortName: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
-				},
-				"q2": {
-					ShortName: "q2", Title: toStringPointer("Q2"), Description: toStringPointer("THIS IS QUERY 2"), SQL: toStringPointer("select 2"),
-				},
-			},
-		},
-	},
-	"single_mod_duplicate_query": {
-		source:   "test_data/mods/single_mod_duplicate_query",
-		expected: "ERROR",
-	},
-	"single_mod_no_query": {
-		source: "test_data/mods/single_mod_no_query",
-		expected: &modconfig.Mod{
-			ShortName:   "m1",
-			Title:       toStringPointer("M1"),
-			Description: toStringPointer("THIS IS M1"),
-			//ModDepends: []*modconfig.ModVersion{
-			//	{"github.com/turbot/m2", "0.0.0", toStringPointer("_m1")},
-			//},
-		},
-	},
-	"single_mod_one_query": {
-		source: "test_data/mods/single_mod_one_query",
-		expected: &modconfig.Mod{
-			ShortName:   "m1",
-			Title:       toStringPointer("M1"),
-			Description: toStringPointer("THIS IS M1"),
-			//ModDepends: []*modconfig.ModVersion{
-			//	{"github.com/turbot/m2", "0.0.0", toStringPointer("_m1")},
-			//},
-			Queries: map[string]*modconfig.Query{
-				"q1": {
-					ShortName: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
-				},
-			},
-		},
-	},
-	"single_mod_one_query_one_control": {
-		source: "test_data/mods/single_mod_one_query_one_control",
-		expected: &modconfig.Mod{
-			ShortName:   "m1",
-			Title:       toStringPointer("M1"),
-			Description: toStringPointer("THIS IS M1"),
-			Queries: map[string]*modconfig.Query{
-				"q1": {
+var testCasesLoadMod map[string]loadModTest
 
-					ShortName: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
-				},
-			},
-			Controls: map[string]*modconfig.Control{
-				"c1": {
-					ShortName:   "c1",
-					Title:       toStringPointer("C1"),
-					Description: toStringPointer("THIS IS CONTROL 1"),
-					SQL:         toStringPointer("select 'pass' as result"),
+func init() {
+	constants.SteampipeDir = "~/.steampipe"
+	testCasesLoadMod = map[string]loadModTest{
+		"no_mod_sql_files": {
+			source: "test_data/mods/no_mod_sql_files",
+			expected: &modconfig.Mod{
+				ShortName: "local",
+				FullName:  "mod.local",
+				Title:     toStringPointer("no_mod_sql_files"),
+				Queries: map[string]*modconfig.Query{
+					"q1": {
+						ShortName: "q1",
+						FullName:  "query.q1",
+						SQL:       toStringPointer("select 1"),
+					},
+					"q2": {
+						ShortName: "q2",
+						FullName:  "query.q2",
+						SQL:       toStringPointer("select 2"),
+					},
+				}},
+		},
+		"no_mod_hcl_queries": {
+			source: "test_data/mods/no_mod_hcl_queries",
+			expected: &modconfig.Mod{
+				ShortName: "local",
+				Title:     toStringPointer("no_mod_hcl_queries"),
+				FullName:  "mod.local",
+				Queries: map[string]*modconfig.Query{
+					"q1": {
+						ShortName:   "q1",
+						FullName:    "query.q1",
+						Title:       toStringPointer("Q1"),
+						Description: toStringPointer("THIS IS QUERY 1"),
+						SQL:         toStringPointer("select 1"),
+					},
+					"q2": {
+						ShortName:   "q2",
+						FullName:    "query.q2",
+						Title:       toStringPointer("Q2"),
+						Description: toStringPointer("THIS IS QUERY 2"),
+						SQL:         toStringPointer("select 2"),
+					},
 				},
 			},
 		},
-	},
-	"controls_and_groups": {
-		source: "test_data/mods/controls_and_groups",
-		expected: `ShortName: 
+		"single_mod_duplicate_query": {
+			source:   "test_data/mods/single_mod_duplicate_query",
+			expected: "ERROR",
+		},
+		"single_mod_no_query": {
+			source: "test_data/mods/single_mod_no_query",
+			expected: &modconfig.Mod{
+				ShortName:   "m1",
+				FullName:    "mod.m1",
+				Title:       toStringPointer("M1"),
+				Description: toStringPointer("THIS IS M1"),
+			},
+		},
+		"single_mod_one_query": {
+			source: "test_data/mods/single_mod_one_query",
+			expected: &modconfig.Mod{
+				ShortName:   "m1",
+				FullName:    "mod.m1",
+				Title:       toStringPointer("M1"),
+				Description: toStringPointer("THIS IS M1"),
+				Queries: map[string]*modconfig.Query{
+					"q1": {
+						ShortName:   "q1",
+						FullName:    "query.q1",
+						Title:       toStringPointer("Q1"),
+						Description: toStringPointer("THIS IS QUERY 1"),
+						SQL:         toStringPointer("select 1"),
+					},
+				},
+			},
+		},
+		"single_mod_one_query_one_control": {
+			source: "test_data/mods/single_mod_one_query_one_control",
+			expected: `Name: mod.m1
 Title: M1
 Description: THIS IS M1 
-Mod Dependencies: []
-Plugin Dependencies: []
+Version: 
+Queries: 
+
+  -----
+  Name: query.q1
+  Title: Q1
+  Description: THIS IS QUERY 1
+  SQL: select 1
+
+Controls: 
+
+  -----
+  Name: control.c1
+  Title: C1
+  Description: THIS IS CONTROL 1
+  SQL: select 'ok' as status, 'foo' as resource, 'bar' as reason
+  Parents: mod.m1
+
+Benchmarks: 
+`,
+		},
+		"controls_and_groups": {
+			source: "test_data/mods/controls_and_groups",
+			expected: `Name: mod.m1
+Title: M1
+Description: THIS IS M1 
+Version: 
 Queries: 
 
 Controls: 
 
   -----
-  ShortName: c1
+  Name: control.c1
   Title: 
   Description: 
-  Query: select 'pass' as result
-  Parent: benchmark.cg_1_1_1
-  Labels: []
-  Links: []
+  SQL: select 'pass' as result
+  Parents: benchmark.cg_1_1_1
 
 
   -----
-  ShortName: c2
+  Name: control.c2
   Title: 
   Description: 
-  Query: select 'pass' as result
-  Parent: benchmark.cg_1_1_2
-  Labels: []
-  Links: []
+  SQL: select 'pass' as result
+  Parents: benchmark.cg_1_1_2
 
 
   -----
-  ShortName: c3
+  Name: control.c3
   Title: 
   Description: 
-  Query: select 'pass' as result
-  Parent: benchmark.cg_1_1
-  Labels: []
-  Links: []
+  SQL: select 'pass' as result
+  Parents: benchmark.cg_1_1
 
 
   -----
-  ShortName: c4
+  Name: control.c4
   Title: 
   Description: 
-  Query: select 'pass' as result
-  Parent: benchmark.cg_1_1_2
-  Labels: []
-  Links: []
+  SQL: select 'pass' as result
+  Parents: benchmark.cg_1_1_2
 
 
   -----
-  ShortName: c5
+  Name: control.c5
   Title: 
   Description: 
-  Query: select 'pass' as result
-  Parent: benchmark.cg_1_1_2
-  Labels: []
-  Links: []
+  SQL: select 'pass' as result
+  Parents: benchmark.cg_1_1_2
 
 
   -----
-  ShortName: c6
+  Name: control.c6
   Title: 
   Description: 
-  Query: select 'FAIL' as result
-  Parent: 
-  Labels: []
-  Links: []
+  SQL: select 'FAIL' as result
+  Parents: mod.m1
 
-Control Groups: 
+Benchmarks: 
 
-  -----
-  ShortName: 
-  Title: 
-  Description: 
-  Parent:  
-  Labels: []
-  Children: 
-    control.cg_1_1
-    control.cg_1_2
+	 -----
+	 Name: benchmark.cg_1
+	 Title: 
+	 Description: 
+	 Parent: mod.m1
+	 Children:
+	   benchmark.cg_1_1
+    benchmark.cg_1_2
+	
 
-
-  -----
-  ShortName: 
-  Title: 
-  Description: 
-  Parent: benchmark.cg_1 
-  Labels: []
-  Children: 
+	 -----
+	 Name: benchmark.cg_1_1
+	 Title: 
+	 Description: 
+	 Parent: benchmark.cg_1
+	 Children:
+	   benchmark.cg_1_1_1
+    benchmark.cg_1_1_2
     control.c3
-    control.cg_1_1_1
-    control.cg_1_1_2
+	
 
+	 -----
+	 Name: benchmark.cg_1_1_1
+	 Title: 
+	 Description: 
+	 Parent: benchmark.cg_1_1
+	 Children:
+	   control.c1
+	
 
-  -----
-  ShortName: 
-  Title: 
-  Description: 
-  Parent: benchmark.cg_1_1 
-  Labels: []
-  Children: 
-    control.c1
-
-
-  -----
-  ShortName: 
-  Title: 
-  Description: 
-  Parent: benchmark.cg_1_1 
-  Labels: []
-  Children: 
-    control.c2
+	 -----
+	 Name: benchmark.cg_1_1_2
+	 Title: 
+	 Description: 
+	 Parent: benchmark.cg_1_1
+	 Children:
+	   control.c2
     control.c4
     control.c5
+	
 
-
-  -----
-  ShortName: 
-  Title: 
-  Description: 
-  Parent: benchmark.cg_1 
-  Labels: []
-  Children: 
-    
-`,
-	},
-	"controls_and_groups_circular": {
-		source:   "test_data/mods/controls_and_groups_circular",
-		expected: "ERROR",
-	},
-	"single_mod_one_sql_file": {
-		source: "test_data/mods/single_mod_one_sql_file",
-		expected: &modconfig.Mod{
-			ShortName:   "m1",
-			Title:       toStringPointer("M1"),
-			Description: toStringPointer("THIS IS M1"),
-			Queries:     map[string]*modconfig.Query{"q1": {ShortName: "q1", SQL: toStringPointer("select 1")}},
+	 -----
+	 Name: benchmark.cg_1_2
+	 Title: 
+	 Description: 
+	 Parent: benchmark.cg_1
+	 Children:
+	   
+	`,
 		},
-	},
-	"single_mod_sql_file_and_hcl_query": {
-		source: "test_data/mods/single_mod_sql_file_and_hcl_query",
-		expected: &modconfig.Mod{
-			ShortName:   "m1",
-			Title:       toStringPointer("M1"),
-			Description: toStringPointer("THIS IS M1"),
-			Queries: map[string]*modconfig.Query{
-				"q1": {
-					ShortName: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
-				},
-				"q2": {
-					ShortName: "q2", SQL: toStringPointer("select 2"),
-				},
-			},
-		},
-	},
-	"single_mod_two_queries_diff_files": {
-		source: "test_data/mods/single_mod_two_queries_diff_files",
-		expected: &modconfig.Mod{
-			ShortName:   "m1",
-			Title:       toStringPointer("M1"),
-			Description: toStringPointer("THIS IS M1"),
-			//ModDepends: []*modconfig.ModVersion{
-			//	{"github.com/turbot/m2", "0.0.0", toStringPointer("_m1")},
-			//},
-			Queries: map[string]*modconfig.Query{
-				"q1": {
-					ShortName: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
-				},
-				"q2": {
-					ShortName: "q2", Title: toStringPointer("Q2"), Description: toStringPointer("THIS IS QUERY 2"), SQL: toStringPointer("select 2"),
-				},
-			},
-		},
-	},
-	"single_mod_two_queries_same_file": {
-		source: "test_data/mods/single_mod_two_queries_same_file",
-		expected: &modconfig.Mod{
-			ShortName:   "m1",
-			Title:       toStringPointer("M1"),
-			Description: toStringPointer("THIS IS M1"),
-			//ModDepends: []*modconfig.ModVersion{
-			//	{"github.com/turbot/m2", "0.0.0", toStringPointer("_m1")},
-			//},
-			Queries: map[string]*modconfig.Query{
-				"q1": {
-					ShortName: "q1", Title: toStringPointer("Q1"), Description: toStringPointer("THIS IS QUERY 1"), SQL: toStringPointer("select 1"),
-				},
-				"q2": {
-					ShortName: "q2", Title: toStringPointer("Q2"), Description: toStringPointer("THIS IS QUERY 2"), SQL: toStringPointer("select 2"),
-				},
-			},
-		},
-	},
-	"single_mod_two_sql_files": {
-		source: "test_data/mods/single_mod_two_sql_files",
-		expected: &modconfig.Mod{
-			ShortName:   "m1",
-			Title:       toStringPointer("M1"),
-			Description: toStringPointer("THIS IS M1"),
-			Queries: map[string]*modconfig.Query{
-				"q1": {
-					ShortName: "q1", SQL: toStringPointer("select 1"),
-				},
-				"q2": {
-					ShortName: "q2", SQL: toStringPointer("select 2"),
-				},
-			},
-		},
-	},
-	"two_mods": {
-		source:   "test_data/mods/two_mods",
-		expected: "ERROR",
-	},
+		//"controls_and_groups_circular": {
+		//	source:   "test_data/mods/controls_and_groups_circular",
+		//	expected: "ERROR",
+		//},
+		//"single_mod_one_sql_file": {
+		//	source: "test_data/mods/single_mod_one_sql_file",
+		//	expected: &modconfig.Mod{
+		//		ShortName:   "m1",
+		//		FullName:    "mod.m1",
+		//		Title:       toStringPointer("M1"),
+		//		Description: toStringPointer("THIS IS M1"),
+		//		Queries: map[string]*modconfig.Query{"q1": {ShortName: "q1", FullName: "query.q1",
+		//			SQL: toStringPointer("select 1")}},
+		//	},
+		//},
+		//"single_mod_sql_file_and_hcl_query": {
+		//	source: "test_data/mods/single_mod_sql_file_and_hcl_query",
+		//	expected: &modconfig.Mod{
+		//		ShortName:   "m1",
+		//		FullName:    "mod.m1",
+		//		Title:       toStringPointer("M1"),
+		//		Description: toStringPointer("THIS IS M1"),
+		//		Queries: map[string]*modconfig.Query{
+		//			"q1": {
+		//				ShortName:   "q1",
+		//				FullName:    "query.q1",
+		//				Title:       toStringPointer("Q1"),
+		//				Description: toStringPointer("THIS IS QUERY 1"),
+		//				SQL:         toStringPointer("select 1"),
+		//			},
+		//			"q2": {
+		//				ShortName: "q2",
+		//				FullName:  "query.q2",
+		//				SQL:       toStringPointer("select 2"),
+		//			},
+		//		},
+		//	},
+		//},
+		//"single_mod_two_queries_diff_files": {
+		//	source: "test_data/mods/single_mod_two_queries_diff_files",
+		//	expected: &modconfig.Mod{
+		//		ShortName:   "m1",
+		//		FullName:    "mod.m1",
+		//		Title:       toStringPointer("M1"),
+		//		Description: toStringPointer("THIS IS M1"),
+		//		Queries: map[string]*modconfig.Query{
+		//			"q1": {
+		//				ShortName:   "q1",
+		//				FullName:    "query.q1",
+		//				Title:       toStringPointer("Q1"),
+		//				Description: toStringPointer("THIS IS QUERY 1"),
+		//				SQL:         toStringPointer("select 1"),
+		//			},
+		//			"q2": {
+		//				ShortName:   "q2",
+		//				FullName:    "query.q2",
+		//				Title:       toStringPointer("Q2"),
+		//				Description: toStringPointer("THIS IS QUERY 2"),
+		//				SQL:         toStringPointer("select 2"),
+		//			},
+		//		},
+		//	},
+		//},
+		//"single_mod_two_queries_same_file": {
+		//	source: "test_data/mods/single_mod_two_queries_same_file",
+		//	expected: &modconfig.Mod{
+		//		ShortName:   "m1",
+		//		FullName:    "mod.m1",
+		//		Title:       toStringPointer("M1"),
+		//		Description: toStringPointer("THIS IS M1"),
+		//		Queries: map[string]*modconfig.Query{
+		//			"q1": {
+		//				ShortName:   "q1",
+		//				FullName:    "query.q1",
+		//				Title:       toStringPointer("Q1"),
+		//				Description: toStringPointer("THIS IS QUERY 1"),
+		//				SQL:         toStringPointer("select 1"),
+		//			},
+		//			"q2": {
+		//				ShortName:   "q2",
+		//				FullName:    "query.q2",
+		//				Title:       toStringPointer("Q2"),
+		//				Description: toStringPointer("THIS IS QUERY 2"),
+		//				SQL:         toStringPointer("select 2"),
+		//			},
+		//		},
+		//	},
+		//},
+		//"single_mod_two_sql_files": {
+		//	source: "test_data/mods/single_mod_two_sql_files",
+		//	expected: &modconfig.Mod{
+		//		ShortName:   "m1",
+		//		FullName:    "mod.m1",
+		//		Title:       toStringPointer("M1"),
+		//		Description: toStringPointer("THIS IS M1"),
+		//		Queries: map[string]*modconfig.Query{
+		//			"q1": {
+		//				ShortName: "q1",
+		//				FullName:  "query.q1",
+		//				SQL:       toStringPointer("select 1"),
+		//			},
+		//			"q2": {
+		//				ShortName: "q2",
+		//				FullName:  "query.q2",
+		//				SQL:       toStringPointer("select 2"),
+		//			},
+		//		},
+		//	},
+		//},
+		//"two_mods": {
+		//	source:   "test_data/mods/two_mods",
+		//	expected: "ERROR",
+		//},
+	}
 }
 
 func TestLoadMod(t *testing.T) {
@@ -368,5 +402,4 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 		fmt.Printf("")
 		t.Errorf("Test: '%s'' FAILED : expected:\n\n%s\n\ngot:\n\n%s", name, expectedStr, actualString)
 	}
-
 }

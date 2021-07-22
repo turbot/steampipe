@@ -89,25 +89,25 @@ func (c *Control) GetParents() []ControlTreeItem {
 }
 
 // GetTitle implements ControlTreeItem
-func (m *Control) GetTitle() string {
-	return typehelpers.SafeString(m.Title)
+func (c *Control) GetTitle() string {
+	return typehelpers.SafeString(c.Title)
 }
 
 // GetDescription implements ControlTreeItem
-func (m *Control) GetDescription() string {
-	return typehelpers.SafeString(m.Description)
+func (c *Control) GetDescription() string {
+	return typehelpers.SafeString(c.Description)
 }
 
 // GetTags implements ControlTreeItem
-func (m *Control) GetTags() map[string]string {
-	if m.Tags != nil {
-		return *m.Tags
+func (c *Control) GetTags() map[string]string {
+	if c.Tags != nil {
+		return *c.Tags
 	}
 	return map[string]string{}
 }
 
 // GetChildren implements ControlTreeItem
-func (m *Control) GetChildren() []ControlTreeItem {
+func (c *Control) GetChildren() []ControlTreeItem {
 	return []ControlTreeItem{}
 }
 
@@ -138,7 +138,7 @@ func (c *Control) GetMetadata() *ResourceMetadata {
 }
 
 // OnDecoded implements HclResource
-func (c *Control) OnDecoded(*hcl.Block) {}
+func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
 func (c *Control) AddReference(reference string) {

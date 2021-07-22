@@ -35,7 +35,7 @@ type ControlTreeItem interface {
 type HclResource interface {
 	Name() string
 	CtyValue() (cty.Value, error)
-	OnDecoded(*hcl.Block)
+	OnDecoded(*hcl.Block) hcl.Diagnostics
 	AddReference(reference string)
 }
 

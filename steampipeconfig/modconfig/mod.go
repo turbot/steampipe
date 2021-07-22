@@ -144,14 +144,13 @@ func (m *Mod) String() string {
 	}
 	return fmt.Sprintf(`Name: %s
 Title: %s
-Description: %s %s
-//Mod Dependencies: %s
-//Plugin Dependencies: %s
+Description: %s 
+Version: %s
 Queries: 
 %s
 Controls: 
 %s
-Control Groups: 
+Benchmarks: 
 %s`,
 		m.FullName,
 		types.SafeString(m.Title),
@@ -329,7 +328,7 @@ func (m *Mod) GetMetadata() *ResourceMetadata {
 }
 
 // OnDecoded implements HclResource
-func (m *Mod) OnDecoded(*hcl.Block) {}
+func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
 func (m *Mod) AddReference(reference string) {

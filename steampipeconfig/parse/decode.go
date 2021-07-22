@@ -127,25 +127,12 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 
 	// call post-decode hook
 	if res.Success() {
-		resource.OnDecoded(block)
+		if diags := resource.OnDecoded(block); diags.HasErrors() {
+			res.addDiags(diags)
+		}
 		AddReferences(resource, block)
 	}
 	return resource, res
-}
-
-// if the diags contains dependency errors, add dependencies to the result
-// otherwise add diags to the result
-func (res *decodeResult) handleDecodeDiags(diags hcl.Diagnostics) {
-	for _, diag := range diags {
-		if dependency := isDependencyError(diag); dependency != nil {
-			// was this error caused by a missing dependency?
-			res.Depends = append(res.Depends, dependency)
-		}
-	}
-	// only register errors if there are NOT any missing variables
-	if diags.HasErrors() && len(res.Depends) == 0 {
-		res.Diags = append(res.Diags, diags...)
-	}
 }
 
 // handleDecodeResult
