@@ -1,22 +1,22 @@
 ## v0.7.0 [2021-07-19]
 _What's new?_
 
+* Add support for aggregator connections. ([#610](https://github.com/turbot/steampipe/issues/610)) 
 * Service management improvements: 
   * Remove locking from service code to allow multiple `query` and `check` sessions in parallel without requiring a service start.([#579](https://github.com/turbot/steampipe/issues/579))
   * Update service start to 'claim' a service started by query or check session, instead of failing. ([#580](https://github.com/turbot/steampipe/issues/580))
   * Update `service status` - add `--all` flag to list status for all running services.([#580](https://github.com/turbot/steampipe/issues/580))
   * Update `service start` to add `--foreground` flag. ([#535](https://github.com/turbot/steampipe/issues/535))
-* Add support for aggregate connections. ([#610](https://github.com/turbot/steampipe/issues/610)) 
+* Improvements for Docker:
+  * Run `initdb` if database is installed but `data directory` is empty. ([#575](https://github.com/turbot/steampipe/issues/575))
+  * Split `versions.json` into 2 files, one in the plugins dir, one in the database dir. ([#576](https://github.com/turbot/steampipe/issues/576))
+  * Update plugin install to put temp files underneath the plugin directory. ([#600](https://github.com/turbot/steampipe/issues/600))
+  * Steampipe service startup now validates that the `data-dir` is writable. ([#659](https://github.com/turbot/steampipe/issues/659))
 * Optimise interactive startup by initializing asynchronously. ([#627](https://github.com/turbot/steampipe/issues/627))
 * Optimise query caching - construct key based on the columns returned by the plugin, not the columns requested.([#82](https://github.com/turbot/steampipe-postgres-fdw/issues/82))
-* Update steampipe service to support SSL. ([#602](https://github.com/turbot/steampipe/issues/602)) 
-* Run `initdb` if database is installed but `data directory` is empty. ([#575](https://github.com/turbot/steampipe/issues/575))
-* Remove the requirement for `ps` to be installed in target system. ([#619](https://github.com/turbot/steampipe/issues/619))
-* Split `versions.json` into 2 files, one in the plugins dir, one in the database dir. ([#576](https://github.com/turbot/steampipe/issues/576))
-* Update plugin install to put temp files underneath the plugin directory. ([#600](https://github.com/turbot/steampipe/issues/600)) 
-* Increase length of history file to 500 entries. ([#664](https://github.com/turbot/steampipe/issues/664))
-* Steampipe service startup now validates that the `data-dir` is writable. ([#659](https://github.com/turbot/steampipe/issues/659))
+* Update Steampipe service to support SSL. ([#602](https://github.com/turbot/steampipe/issues/602)) 
 * Show timer result before query output, so it is visible even if results require paging. ([#655](https://github.com/turbot/steampipe/issues/655))
+* Increase length of history file to 500 entries. ([#664](https://github.com/turbot/steampipe/issues/664))
 
 _Bug fixes_
 * Do not disable pager when errors are displayed in interactive mode. ([#606](https://github.com/turbot/steampipe/issues/606))
