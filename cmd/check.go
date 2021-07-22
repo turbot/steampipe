@@ -54,15 +54,6 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 	return cmd
 }
 
-type checkInitData struct {
-	ctx           context.Context
-	workspace     *workspace.Workspace
-	client        *db.Client
-	dbInitialised bool
-	error         error
-	warning       string
-}
-
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
 	initData := &checkInitData{}
@@ -82,23 +73,21 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// initialise
 	initData = initialiseCheck(cmd, args)
-	utils.FailOnError(initData.error)
-	if initData.warning != "" {
-		utils.ShowWarning(initData.warning)
+	if shouldExit := handleCheckInitResult(initData); shouldExit {
 		return
 	}
 
+	// pull out useful properties
 	ctx := initData.ctx
 	workspace := initData.workspace
 	client := initData.client
-
-	// treat each arg as a separate execution
 	failures := 0
 	var exportErrors []error
 	exportErrorsLock := sync.Mutex{}
 	exportWaitGroup := sync.WaitGroup{}
 	var durations []time.Duration
 
+	// treat each arg as a separate execution
 	for _, arg := range args {
 
 		if utils.IsContextCancelled(ctx) {
@@ -110,38 +99,23 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		// get the export formats for this argument
 		exportFormats, err := getExportTargets(arg)
-		// TODO verify fail on error is ok here
-		//if err != nil {
-		//	utils.ShowError(err)
-		//	return
-		//}
 		utils.FailOnError(err)
 
 		// create the execution tree
 		executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, arg)
 		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
 
-		// execute controls synchronously
-		// execute returns the number of failures
+		// execute controls synchronously (execute returns the number of failures)
 		failures += executionTree.Execute(ctx, client)
 		err = displayControlResults(ctx, executionTree)
 		utils.FailOnError(err)
 
-		// TODO put into function
 		if len(exportFormats) > 0 {
-			exportWaitGroup.Add(1)
-			go func() {
-				err := exportControlResults(ctx, executionTree, exportFormats)
-				if err != nil {
-					exportErrorsLock.Lock()
-					exportErrors = append(exportErrors, err...)
-					exportErrorsLock.Unlock()
-				}
-				exportWaitGroup.Done()
-			}()
+			d := &exportData{executionTree: executionTree, exportFormats: exportFormats, errorsLock: &exportErrorsLock, errors: exportErrors, waitGroup: &exportWaitGroup}
+			exportCheckResult(ctx, d)
 		}
-		durations = append(durations, executionTree.Root.Duration)
 
+		durations = append(durations, executionTree.Root.Duration)
 	}
 
 	// wait for exports to complete
@@ -156,16 +130,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// set global exit code
 	exitCode = failures
-}
-
-func printTiming(args []string, durations []time.Duration) {
-	headers := []string{"", "Duration"}
-	rows := [][]string{}
-	for idx, arg := range args {
-		rows = append(rows, []string{arg, durations[idx].String()})
-	}
-	fmt.Println("Timing:")
-	display.ShowWrappedTable(headers, rows, false)
 }
 
 func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
@@ -193,6 +157,7 @@ func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
 		return res
 	}
 
+	// define set of initialisation operations - we will execute each in turn, checking for cancellation after each
 	initFunctions := []func(){
 		func() {
 			// load workspace
@@ -231,12 +196,53 @@ func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
 
 	for _, f := range initFunctions {
 		f()
-		if res.error != nil || res.warning != "" || utils.IsContextCancelled(res.ctx) {
-			return res
+		if !res.success() {
+			break
 		}
 	}
 
 	return res
+}
+
+func handleCheckInitResult(initData *checkInitData) bool {
+	shouldExit := false
+	// if there is an error or cancellation we bomb out
+	// check for the various kinds of failures
+	utils.FailOnError(initData.error)
+	// cancelled?
+	if initData.ctx != nil {
+		utils.FailOnError(initData.ctx.Err())
+	}
+
+	// if there is a usage warning we display it and exit politely
+	if initData.warning != "" {
+		utils.ShowWarning(initData.warning)
+		shouldExit = true
+	}
+	return shouldExit
+}
+
+func exportCheckResult(ctx context.Context, d *exportData) {
+	d.waitGroup.Add(1)
+	go func() {
+		err := exportControlResults(ctx, d.executionTree, d.exportFormats)
+		if err != nil {
+			d.errorsLock.Lock()
+			d.errors = append(d.errors, err...)
+			d.errorsLock.Unlock()
+		}
+		d.waitGroup.Done()
+	}()
+}
+
+func printTiming(args []string, durations []time.Duration) {
+	headers := []string{"", "Duration"}
+	var rows [][]string
+	for idx, arg := range args {
+		rows = append(rows, []string{arg, durations[idx].String()})
+	}
+	fmt.Println("Timing:")
+	display.ShowWrappedTable(headers, rows, false)
 }
 
 func validateArgs(cmd *cobra.Command, args []string) bool {
