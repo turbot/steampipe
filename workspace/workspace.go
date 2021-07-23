@@ -67,7 +67,8 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 		return nil, err
 	}
 
-	return workspace, nil
+	// return context error so calling code can handle cancellations
+	return workspace, ctx.Err()
 }
 
 // clear all resource maps

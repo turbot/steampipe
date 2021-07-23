@@ -78,7 +78,7 @@ Examples:
   steampipe plugin install turbot/azure@0.1.0`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(nil, db.InvokerPlugin, true)
+			err := db.EnsureDbAndStartService(context.Background(), db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -116,7 +116,7 @@ Examples:
   steampipe plugin update aws`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(nil, db.InvokerPlugin, true)
+			err := db.EnsureDbAndStartService(context.Background(), db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -152,7 +152,7 @@ Examples:
   steampipe plugin list --outdated`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(nil, db.InvokerPlugin, true)
+			err := db.EnsureDbAndStartService(context.Background(), db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -188,7 +188,7 @@ Example:
 `,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(nil, db.InvokerPlugin, true)
+			err := db.EnsureDbAndStartService(context.Background(), db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {

@@ -102,7 +102,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
 	// start db if necessary - do not refresh connections as we do it as part of the async startup
-	err := db.EnsureDbAndStartService(nil, db.InvokerQuery, false)
+	err := db.EnsureDbAndStartService(context.Background(), db.InvokerQuery, false)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -151,7 +151,7 @@ func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db.QueryInitD
 		}()
 
 		// load the workspace
-		workspace, err := workspace.Load(nil, viper.GetString(constants.ArgWorkspace))
+		workspace, err := workspace.Load(ctx, viper.GetString(constants.ArgWorkspace))
 		if err != nil {
 			initData.Result.Error = utils.PrefixError(err, "failed to load workspace")
 			return
