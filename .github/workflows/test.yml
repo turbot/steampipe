@@ -111,7 +111,7 @@ jobs:
         continue-on-error: false
         run: |
           steampipe service start
-          steampipe service stop --force
+          steampipe service stop
 
       - name: Run Test Suite
         timeout-minutes: 15
