@@ -1,8 +1,6 @@
 package controldisplay
 
 import (
-	"fmt"
-
 	"github.com/turbot/steampipe/control/controlexecute"
 )
 

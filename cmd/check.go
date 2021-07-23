@@ -9,10 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/karrick/gows"
-	"github.com/turbot/steampipe/control/controldisplay"
-	"github.com/turbot/steampipe/control/controlexecute"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -276,7 +272,6 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 
 	return errors
 }
-
 
 func getExportTargets(executing string) []controldisplay.CheckExportTarget {
 	formats := []controldisplay.CheckExportTarget{}

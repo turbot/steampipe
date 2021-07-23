@@ -14,8 +14,8 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// ReportCmd :: represents the report command
-func ReportCmd() *cobra.Command {
+// reportCmd :: represents the report command
+func reportCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:              "report [report]",
 		TraverseChildren: true,
@@ -44,7 +44,7 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	startCancelHandler(cancel)
 
 	// start db if necessary
-	err := db.EnsureDbAndStartService(db.InvokerReport)
+	err := db.EnsureDbAndStartService(db.InvokerReport, true)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
 	defer db.Shutdown(nil, db.InvokerReport)
 

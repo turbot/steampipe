@@ -234,21 +234,6 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 	return diags
 }
 
-// if the diags contains dependency errors, add dependencies to the result
-// otherwise add diags to the result
-func (res *decodeResult) handleDecodeDiags(diags hcl.Diagnostics) {
-	for _, diag := range diags {
-		if dependency := isDependencyError(diag); dependency != nil {
-			// was this error caused by a missing dependency?
-			res.Depends = append(res.Depends, dependency)
-		}
-	}
-	// only register errors if there are NOT any missing variables
-	if diags.HasErrors() && len(res.Depends) == 0 {
-		res.Diags = append(res.Diags, diags...)
-	}
-}
-
 // handleDecodeResult
 // if decode was successful:
 // - generate and set resource metadata

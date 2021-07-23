@@ -29,9 +29,6 @@ type ModTreeItem interface {
 	GetTags() map[string]string
 	// GetPaths returns an array resource paths
 	GetPaths() []NodePath
-	GetChildren() []ModTreeItem
-	// Path returns an array of parents in the control hierarchy
-	Path() []string
 }
 
 // HclResource must be implemented by resources defined in HCL

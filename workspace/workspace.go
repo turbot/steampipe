@@ -80,27 +80,12 @@ func (w *Workspace) reset() {
 }
 
 func (w *Workspace) SetupWatcher(client *db.Client) error {
-
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
 		OnChange: func(events []fsnotify.Event) {
-			w.loadLock.Lock()
-			defer w.loadLock.Unlock()
-
-			err := w.loadMod()
-			if err != nil {
-				// if we are already in an error state, do not show error
-				if w.watcherError == nil {
-					fmt.Println()
-					utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
-				}
-			}
-			// now store/clear watcher error so we only show message once
-			w.watcherError = err
-			// todo detect differences and only refresh if necessary
-			db.UpdateMetadataTables(w.GetResourceMaps(), client)
+			w.handleFileWatcherEvent(client, events)
 		},
 		ListFlag: w.listFlag,
 		//onError:          nil,
@@ -430,26 +415,6 @@ func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig
 	return res
 }
 
-func (w *Workspace) SetupWatcher(client *db.Client) error {
-	watcherOptions := &utils.WatcherOptions{
-		Directories: []string{w.Path},
-		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
-		Exclude:     w.exclusions,
-		OnChange: func(events []fsnotify.Event) {
-			w.handleFileWatcherEvent(client, events)
-		},
-		ListFlag: w.listFlag,
-		//onError:          nil,
-	}
-	watcher, err := utils.NewWatcher(watcherOptions)
-	if err != nil {
-		return err
-	}
-	w.watcher = watcher
-
-	return nil
-}
-
 func (w *Workspace) loadExclusions() error {
 	w.exclusions = []string{}
 
@@ -479,41 +444,6 @@ func (w *Workspace) loadExclusions() error {
 	}
 
 	return nil
-}
-
-func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
-	workspaceMap := &modconfig.WorkspaceResourceMaps{
-		ModMap:       make(map[string]*modconfig.Mod),
-		QueryMap:     w.QueryMap,
-		ControlMap:   w.ControlMap,
-		BenchmarkMap: w.BenchmarkMap,
-	}
-	// TODO add in all mod dependencies
-	if !w.Mod.IsDefaultMod() {
-		workspaceMap.ModMap[w.Mod.Name()] = w.Mod
-	}
-
-	return workspaceMap
-}
-
-// GetMod attempts to return the mod with a name matching 'modName'
-// It first checks the workspace mod, then checks all mod dependencies
-func (w *Workspace) GetMod(modName string) *modconfig.Mod {
-	// is it the workspace mod?
-	if modName == w.Mod.Name() {
-		return w.Mod
-	}
-	// try workspace mod dependencies
-	return w.ModMap[modName]
-}
-
-// Mods returns a flat list of all mods - the workspace mod and depdnency mods
-func (w *Workspace) Mods() []*modconfig.Mod {
-	var res = []*modconfig.Mod{w.Mod}
-	for _, m := range w.ModMap {
-		res = append(res, m)
-	}
-	return res
 }
 
 // return a map of all unique panels, keyed by name

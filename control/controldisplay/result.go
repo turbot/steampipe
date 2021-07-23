@@ -5,9 +5,8 @@ import (
 	"log"
 
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
 )
 

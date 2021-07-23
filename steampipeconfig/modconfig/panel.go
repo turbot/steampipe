@@ -90,7 +90,7 @@ func (p *Panel) QualifiedName() string {
 }
 
 // OnDecoded implements HclResource
-func (p *Panel) OnDecoded(*hcl.Block) {}
+func (p *Panel) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
 func (p *Panel) AddReference(reference string) {

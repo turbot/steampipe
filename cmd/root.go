@@ -137,11 +137,11 @@ func setInstallDir() {
 
 func AddCommands() {
 	// explicitly initialise commands here rather than in init functions to allow us to handle errors from the config load
-	rootCmd.AddCommand(PluginCmd())
-	rootCmd.AddCommand(QueryCmd())
-	rootCmd.AddCommand(CheckCmd())
-	rootCmd.AddCommand(ReportCmd())
-	rootCmd.AddCommand(ServiceCmd())
+	rootCmd.AddCommand(pluginCmd())
+	rootCmd.AddCommand(queryCmd())
+	rootCmd.AddCommand(checkCmd())
+	rootCmd.AddCommand(reportCmd())
+	rootCmd.AddCommand(serviceCmd())
 }
 
 func Execute() int {

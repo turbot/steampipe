@@ -49,7 +49,7 @@ func (r *Report) QualifiedName() string {
 }
 
 // OnDecoded implements HclResource
-func (r *Report) OnDecoded(*hcl.Block) {}
+func (r *Report) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
 func (r *Report) AddReference(reference string) {

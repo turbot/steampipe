@@ -45,7 +45,7 @@ type ReportClientInfo struct {
 }
 
 func NewServer(ctx context.Context) (*Server, error) {
-	dbClient, err := db.NewClient(true)
+	dbClient, err := db.NewClient()
 	if err != nil {
 		return nil, err
 	}

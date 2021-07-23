@@ -13,11 +13,9 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/query/queryexecute"
-	"github.com/turbot/steampipe/utils"
-
-	"github.com/turbot/steampipe/query/queryexecute"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 type ControlRunStatus uint32
