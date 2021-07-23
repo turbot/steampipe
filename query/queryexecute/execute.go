@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/turbot/steampipe/interactive"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/interactive"
 	"github.com/turbot/steampipe/utils"
 )
 

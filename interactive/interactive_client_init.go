@@ -6,12 +6,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/turbot/steampipe/db"
-
 	"github.com/spf13/viper"
-
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/utils"
 )
 
