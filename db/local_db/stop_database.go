@@ -1,4 +1,4 @@
-package db
+package local_db
 
 import (
 	"fmt"
@@ -31,7 +31,7 @@ const (
 
 // Shutdown :: closes the client connection and stops the
 // database instance if the given `invoker` matches
-func Shutdown(client *Client, invoker Invoker) {
+func Shutdown(client *LocalClient, invoker Invoker) {
 	utils.LogTime("db.Shutdown start")
 	defer utils.LogTime("db.Shutdown end")
 

@@ -1,4 +1,4 @@
-package db
+package local_db
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 )
 
 // ExecuteSync :: execute a query against this client and wait for the result
-func (c *Client) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
+func (c *LocalClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	result, err := c.Execute(ctx, query, disableSpinner)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (c *Client) ExecuteSync(ctx context.Context, query string, disableSpinner b
 // Bear in mind that whenever ExecuteQuery is called, the returned `queryresult.Result` MUST be fully read -
 // otherwise the transaction is left open, which will block the connection and will prevent subsequent communications
 // with the service
-func (c *Client) Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
+func (c *LocalClient) Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
 	if query == "" {
 		return &queryresult.Result{}, nil
 	}
@@ -99,7 +99,7 @@ func (c *Client) Execute(ctx context.Context, query string, disableSpinner bool)
 	return result, nil
 }
 
-func (c *Client) readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result, activeSpinner *spinner.Spinner) {
+func (c *LocalClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result, activeSpinner *spinner.Spinner) {
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
 		// we are done fetching results. time for display. remove the spinner

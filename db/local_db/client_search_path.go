@@ -1,4 +1,4 @@
-package db
+package local_db
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 )
 
 // SetServiceSearchPath :: set the search path for the db service (by setting it on the steampipe user)
-func (c *Client) SetServiceSearchPath() error {
+func (c *LocalClient) SetServiceSearchPath() error {
 	var searchPath []string
 
 	// is there a service search path in the config?
@@ -45,7 +45,7 @@ func (c *Client) SetServiceSearchPath() error {
 // SetClientSearchPath :: set the search path for this client
 // if either a search-path or search-path-prefix is set in config, set the search path
 // (otherwise fall back to service search path)
-func (c *Client) SetClientSearchPath() error {
+func (c *LocalClient) SetClientSearchPath() error {
 	searchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 
@@ -82,7 +82,7 @@ func (c *Client) SetClientSearchPath() error {
 	return nil
 }
 
-func (c *Client) addSearchPathPrefix(searchPathPrefix []string, searchPath []string) []string {
+func (c *LocalClient) addSearchPathPrefix(searchPathPrefix []string, searchPath []string) []string {
 	if len(searchPathPrefix) > 0 {
 		prefixedSearchPath := searchPathPrefix
 		for _, p := range searchPath {
@@ -96,7 +96,7 @@ func (c *Client) addSearchPathPrefix(searchPathPrefix []string, searchPath []str
 }
 
 // build default search path from the connection schemas, bookended with public and internal
-func (c *Client) getDefaultSearchPath() []string {
+func (c *LocalClient) getDefaultSearchPath() []string {
 	searchPath := c.schemaMetadata.GetSchemas()
 	sort.Strings(searchPath)
 	// add the 'public' schema as the first schema in the search_path. This makes it
@@ -110,7 +110,7 @@ func (c *Client) getDefaultSearchPath() []string {
 }
 
 // query the database to get the current search path
-func (c *Client) GetCurrentSearchPath() ([]string, error) {
+func (c *LocalClient) GetCurrentSearchPath() ([]string, error) {
 	var currentSearchPath []string
 	var pathAsString string
 	row := c.dbClient.QueryRow("show search_path")

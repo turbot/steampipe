@@ -1,4 +1,4 @@
-package db
+package local_db
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 // RefreshConnections :: load required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func (c *Client) RefreshConnections() *RefreshConnectionResult {
+func (c *LocalClient) RefreshConnections() *RefreshConnectionResult {
 	res := &RefreshConnectionResult{}
 	utils.LogTime("db.RefreshConnections start")
 	defer utils.LogTime("db.RefreshConnections end")
@@ -92,7 +92,7 @@ func (c *Client) RefreshConnections() *RefreshConnectionResult {
 
 }
 
-func (c *Client) updateConnectionMap() error {
+func (c *LocalClient) updateConnectionMap() error {
 	// load the connection state and cache it!
 	log.Println("[TRACE]", "retrieving connection map")
 	connectionMap, err := steampipeconfig.GetConnectionState(c.schemaMetadata.GetSchemas())

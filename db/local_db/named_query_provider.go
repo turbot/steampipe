@@ -1,4 +1,4 @@
-package db
+package local_db
 
 import "github.com/turbot/steampipe/steampipeconfig/modconfig"
 

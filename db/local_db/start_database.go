@@ -1,4 +1,4 @@
-package db
+package local_db
 
 import (
 	"fmt"
@@ -94,7 +94,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
 
-	var client *Client
+	var client *LocalClient
 
 	defer func() {
 		// if there was an error and we started the service, stop it again
@@ -161,7 +161,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 	// pass 'false' to disable auto refreshing connections
 	//- we will explicitly refresh connections after ensuring the steampipe server exists
 	if refreshConnections {
-		client, err = NewClient()
+		client, err = NewLocalClient()
 		if err != nil {
 			return ServiceFailedToStart, handleStartFailure(err)
 		}

@@ -3,13 +3,14 @@ package cmd
 import (
 	"context"
 
+	"github.com/turbot/steampipe/db/local_db"
+
 	"github.com/spf13/cobra"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/report/reportserver"
 	"github.com/turbot/steampipe/utils"
 )
@@ -44,9 +45,9 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	startCancelHandler(cancel)
 
 	// start db if necessary
-	err := db.EnsureDbAndStartService(db.InvokerReport, true)
+	err := local_db.EnsureDbAndStartService(local_db.InvokerReport, true)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
-	defer db.Shutdown(nil, db.InvokerReport)
+	defer local_db.Shutdown(nil, local_db.InvokerReport)
 
 	server, err := reportserver.NewServer(ctx)
 

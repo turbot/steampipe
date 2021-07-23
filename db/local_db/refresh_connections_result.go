@@ -1,8 +1,8 @@
-package db
+package local_db
 
 import "fmt"
 
-// RefreshConnectionResult is a structure used to contain the result of either a RefreshConnections or a NewClient operation
+// RefreshConnectionResult is a structure used to contain the result of either a RefreshConnections or a NewLocalClient operation
 type RefreshConnectionResult struct {
 	UpdatedConnections bool
 	Warnings           []string

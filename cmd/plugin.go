@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/steampipe/db/local_db"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
@@ -78,11 +79,11 @@ Examples:
   steampipe plugin install turbot/azure@0.1.0`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
+			err := local_db.EnsureDbAndStartService(local_db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
-			db.Shutdown(nil, db.InvokerPlugin)
+			local_db.Shutdown(nil, local_db.InvokerPlugin)
 		},
 	}
 
@@ -116,11 +117,11 @@ Examples:
   steampipe plugin update aws`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
+			err := local_db.EnsureDbAndStartService(local_db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
-			db.Shutdown(nil, db.InvokerPlugin)
+			local_db.Shutdown(nil, local_db.InvokerPlugin)
 		},
 	}
 
@@ -152,11 +153,11 @@ Examples:
   steampipe plugin list --outdated`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
+			err := local_db.EnsureDbAndStartService(local_db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
-			db.Shutdown(nil, db.InvokerPlugin)
+			local_db.Shutdown(nil, local_db.InvokerPlugin)
 		},
 	}
 
@@ -188,11 +189,11 @@ Example:
 `,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
+			err := local_db.EnsureDbAndStartService(local_db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
-			db.Shutdown(nil, db.InvokerPlugin)
+			local_db.Shutdown(nil, local_db.InvokerPlugin)
 		},
 	}
 
@@ -471,7 +472,7 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports []display.Instal
 		steampipeconfig.Config = config
 	}
 
-	client, err := db.NewClient()
+	client, err := local_db.NewLocalClient()
 	if err != nil {
 		return err
 	}
@@ -548,7 +549,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
 func getPluginConnectionMap(ctx context.Context) (map[string][]string, error) {
-	client, err := db.NewClient()
+	client, err := local_db.NewLocalClient()
 	if err != nil {
 		return nil, err
 	}

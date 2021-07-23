@@ -1,12 +1,7 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
-	"fmt"
-	"log"
-	"os"
-	"os/signal"
 
 	"github.com/turbot/steampipe/db/local_db"
 
@@ -18,16 +13,15 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
-	"github.com/turbot/steampipe/workspace"
 )
 
 // queryCmd :: represents the query command
-func queryCmd() *cobra.Command {
+func newQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:              "query",
+		Use:              "query2",
 		TraverseChildren: true,
 		Args:             cobra.ArbitraryArgs,
-		Run:              runQueryCmd,
+		Run:              runNewQueryCmd,
 		Short:            "Execute SQL queries interactively or by argument",
 		Long: `Execute SQL queries interactively, or by a query argument.
 
@@ -37,11 +31,11 @@ immediately and the command will exit.
 
 Examples:
 
-  # Open an interactive query console
-  steampipe query
+ # Open an interactive query console
+ steampipe query
 
-  # Run a specific query directly
-  steampipe query "select * from cloud"`,
+ # Run a specific query directly
+ steampipe query "select * from cloud"`,
 	}
 
 	// Notes:
@@ -59,25 +53,7 @@ Examples:
 	return cmd
 }
 
-// getPipedStdinData reads the Standard Input and returns the available data as a string
-// if and only if the data was piped to the process
-func getPipedStdinData() string {
-	fi, err := os.Stdin.Stat()
-	if err != nil {
-		utils.ShowWarning("could not fetch information about STDIN")
-		return ""
-	}
-	stdinData := ""
-	if (fi.Mode()&os.ModeCharDevice) == 0 && fi.Size() > 0 {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			stdinData = fmt.Sprintf("%s%s", stdinData, scanner.Text())
-		}
-	}
-	return stdinData
-}
-
-func runQueryCmd(cmd *cobra.Command, args []string) {
+func runNewQueryCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runQueryCmd start")
 	var client *local_db.LocalClient
 
@@ -102,23 +78,30 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
+	// start db if necessary - do not refresh connections as we do it as part of the async startup
+	err := local_db.EnsureDbAndStartService(local_db.InvokerQuery, false)
+	utils.FailOnErrorWithMessage(err, "failed to start service")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	startCancelHandler(cancel)
+
 	// perform rest of initialisation async
 	initDataChan := make(chan *local_db.QueryInitData, 1)
-	getQueryInitDataAsync(context.Background(), initDataChan, args)
+	getQueryInitDataAsync(ctx, initDataChan, args)
 
 	if interactiveMode {
 		queryexecute.RunInteractiveSession(&initDataChan)
 		return
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	startCancelHandler(cancel)
-
 	// wait for init
 	initData := <-initDataChan
 	if err := initData.Result.Error; err != nil {
 		utils.FailOnError(err)
 	}
+	// check for cancellation
+	utils.FailOnError(utils.HandleCancelError(ctx.Err()))
+
 	// display any initialisation messages/warnings
 	initData.Result.DisplayMessages()
 	// populate client so it gets closed by defer
@@ -131,72 +114,4 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		exitCode = failures
 	}
 
-}
-
-func getQueryInitDataAsync(ctx context.Context, initDataChan chan *local_db.QueryInitData, args []string) {
-	go func() {
-		log.Printf("[TRACE] getQueryInitDataAsync")
-
-		initData := local_db.NewInitData()
-		defer func() {
-			initDataChan <- initData
-			close(initDataChan)
-			log.Printf("[TRACE] getQueryInitDataAsync complete")
-		}()
-
-		// start db if necessary - do not refresh connections as we do it as part of the async startup
-		err := local_db.EnsureDbAndStartService(local_db.InvokerQuery, false)
-		utils.FailOnErrorWithMessage(err, "failed to start service")
-		// get a db client
-		client, err := local_db.NewLocalClient()
-		if err != nil {
-			initData.Result.Error = err
-			return
-		}
-
-		// load the workspace
-		workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-		if err != nil {
-			initData.Result.Error = utils.PrefixError(err, "failed to load workspace")
-			return
-		}
-
-		// se we have loaded a workspace - be sure to close it
-		defer workspace.Close()
-
-		// check if the required plugins are installed
-		if err := workspace.CheckRequiredPluginsInstalled(); err != nil {
-			initData.Result.Error = err
-			return
-		}
-		initData.Workspace = workspace
-
-		// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-		initData.Queries = queryexecute.GetQueries(args, workspace)
-
-		res := client.RefreshConnectionAndSearchPaths()
-		if res.Error != nil {
-			initData.Result.Error = res.Error
-			return
-		}
-		initData.Result.AddWarnings(res.Warnings)
-
-		initData.Client = client
-		// populate the reflection tables
-		if err = local_db.CreateMetadataTables(ctx, workspace.GetResourceMaps(), client); err != nil {
-			initData.Result.Error = err
-			return
-		}
-	}()
-}
-
-func startCancelHandler(cancel context.CancelFunc) {
-	sigIntChannel := make(chan os.Signal, 1)
-	signal.Notify(sigIntChannel, os.Interrupt)
-	go func() {
-		<-sigIntChannel
-		// call context cancellation function
-		cancel()
-		// leave the channel open - any subsequent interrupts hits will be ignored
-	}()
 }

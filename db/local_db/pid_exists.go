@@ -1,6 +1,6 @@
 // +build darwin linux
 
-package db
+package local_db
 
 import (
 	psutils "github.com/shirou/gopsutil/process"

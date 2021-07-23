@@ -1,4 +1,4 @@
-package db
+package local_db
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 // TagColumn :: tag used to specify the column name and type in the reflection tables
 const TagColumn = "column"
 
-func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client *Client) error {
+func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client *LocalClient) error {
 	utils.LogTime("db.UpdateMetadataTables start")
 	defer utils.LogTime("db.UpdateMetadataTables end")
 
@@ -36,7 +36,7 @@ func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 	return nil
 }
 
-func CreateMetadataTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, client *Client) error {
+func CreateMetadataTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, client *LocalClient) error {
 	utils.LogTime("db.CreateMetadataTables start")
 	defer utils.LogTime("db.CreateMetadataTables end")
 

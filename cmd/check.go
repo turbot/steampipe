@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/steampipe/db/local_db"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -16,7 +18,6 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
@@ -64,7 +65,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 
 		if initData.dbInitialised {
-			db.Shutdown(initData.client, db.InvokerCheck)
+			local_db.Shutdown(initData.client, local_db.InvokerCheck)
 		}
 		if initData.workspace != nil {
 			initData.workspace.Close()
@@ -176,7 +177,7 @@ func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
 	}
 
 	// start db if necessary, refreshing connections
-	err = db.EnsureDbAndStartService(db.InvokerCheck, true)
+	err = local_db.EnsureDbAndStartService(local_db.InvokerCheck, true)
 	if err != nil {
 		if !utils.IsCancelledError(err) {
 			err = utils.PrefixError(err, "failed to start service")
@@ -187,13 +188,13 @@ func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
 	res.dbInitialised = true
 
 	// get a client
-	res.client, res.error = db.NewClient()
+	res.client, res.error = local_db.NewLocalClient()
 	if res.error != nil {
 		return res
 	}
 
 	// populate the reflection tables
-	res.error = db.CreateMetadataTables(ctx, res.workspace.GetResourceMaps(), res.client)
+	res.error = local_db.CreateMetadataTables(ctx, res.workspace.GetResourceMaps(), res.client)
 
 	return res
 }

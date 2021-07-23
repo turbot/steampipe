@@ -5,9 +5,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/turbot/steampipe/db/local_db"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -114,7 +115,7 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 	}
 }
 
-func (r *ResultGroup) Execute(ctx context.Context, client *db.Client) int {
+func (r *ResultGroup) Execute(ctx context.Context, client *local_db.LocalClient) int {
 	log.Printf("[TRACE] begin ResultGroup.Execute: %s\n", r.GroupId)
 	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
 

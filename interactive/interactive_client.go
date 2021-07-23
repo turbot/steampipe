@@ -8,13 +8,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/turbot/steampipe/db/local_db"
+
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/query/metaquery"
 	"github.com/turbot/steampipe/query/queryhistory"
 	"github.com/turbot/steampipe/query/queryresult"
@@ -29,10 +30,10 @@ const (
 	AfterPromptCloseRestart
 )
 
-// InteractiveClient :: wrapper over *Client and *prompt.Prompt along
+// InteractiveClient :: wrapper over *LocalClient and *prompt.Prompt along
 // to facilitate interactive query prompt
 type InteractiveClient struct {
-	initData                *db.QueryInitData
+	initData                *local_db.QueryInitData
 	resultsStreamer         *queryresult.ResultStreamer
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
@@ -43,23 +44,23 @@ type InteractiveClient struct {
 	cancelActiveQuery context.CancelFunc
 	cancelPrompt      context.CancelFunc
 	// channel from which we read the result of the external initialisation process
-	initDataChan *chan *db.QueryInitData
+	initDataChan *chan *local_db.QueryInitData
 	// channel used internally to signal an init error
-	initResultChan chan *db.InitResult
+	initResultChan chan *local_db.InitResult
 
 	afterClose AfterPromptCloseAction
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock sync.Mutex
 }
 
-func newInteractiveClient(initChan *chan *db.QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+func newInteractiveClient(initChan *chan *local_db.QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	c := &InteractiveClient{
 		resultsStreamer:         resultsStreamer,
 		interactiveQueryHistory: queryhistory.New(),
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
 		initDataChan:            initChan,
-		initResultChan:          make(chan *db.InitResult, 1),
+		initResultChan:          make(chan *local_db.InitResult, 1),
 	}
 	// asynchronously wait for init to complete
 	// we start this immediately rather than lazy loading as we want to handle errors asap
@@ -129,7 +130,7 @@ func (c *InteractiveClient) InteractiveQuery() {
 }
 
 // init data has arrived, handle any errors/warnings/messages
-func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db.InitResult) error {
+func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *local_db.InitResult) error {
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 

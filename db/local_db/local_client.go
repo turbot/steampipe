@@ -1,4 +1,4 @@
-package db
+package local_db
 
 import (
 	"database/sql"
@@ -12,32 +12,32 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// Client wraps over `sql.DB` and gives an interface to the database
-type Client struct {
+// LocalClient wraps over `sql.DB` and gives an interface to the database
+type LocalClient struct {
 	dbClient       *sql.DB
 	schemaMetadata *schema.Metadata
 	connectionMap  *steampipeconfig.ConnectionMap
 }
 
 // Close closes the connection to the database and shuts down the backend
-func (c *Client) Close() error {
+func (c *LocalClient) Close() error {
 	if c.dbClient != nil {
 		return c.dbClient.Close()
 	}
 	return nil
 }
 
-// NewClient ensures that the database instance is running
+// NewLocalClient ensures that the database instance is running
 // and returns a `Client` to interact with it
-func NewClient() (*Client, error) {
-	utils.LogTime("db.NewClient start")
-	defer utils.LogTime("db.NewClient end")
+func NewLocalClient() (*LocalClient, error) {
+	utils.LogTime("db.NewLocalClient start")
+	defer utils.LogTime("db.NewLocalClient end")
 
 	db, err := createSteampipeDbClient()
 	if err != nil {
 		return nil, err
 	}
-	client := new(Client)
+	client := new(LocalClient)
 	client.dbClient = db
 
 	// setup a blank struct for the schema metadata
@@ -48,7 +48,7 @@ func NewClient() (*Client, error) {
 	return client, nil
 }
 
-func (c *Client) RefreshConnectionAndSearchPaths() *RefreshConnectionResult {
+func (c *LocalClient) RefreshConnectionAndSearchPaths() *RefreshConnectionResult {
 	res := c.RefreshConnections()
 	if res.Error != nil {
 		return res
@@ -79,7 +79,7 @@ func (c *Client) RefreshConnectionAndSearchPaths() *RefreshConnectionResult {
 }
 
 // close and reopen db client
-func (c *Client) refreshDbClient() error {
+func (c *LocalClient) refreshDbClient() error {
 	c.dbClient.Close()
 	db, err := createSteampipeDbClient()
 	if err != nil {
@@ -185,17 +185,17 @@ func waitForConnection(conn *sql.DB) bool {
 }
 
 // SchemaMetadata :: returns the latest schema metadata
-func (c *Client) SchemaMetadata() *schema.Metadata {
+func (c *LocalClient) SchemaMetadata() *schema.Metadata {
 	return c.schemaMetadata
 }
 
 // ConnectionMap :: returns the latest connection map
-func (c *Client) ConnectionMap() *steampipeconfig.ConnectionMap {
+func (c *LocalClient) ConnectionMap() *steampipeconfig.ConnectionMap {
 	return c.connectionMap
 }
 
 // return both the raw query result and a sanitised version in list form
-func (c *Client) loadSchema() {
+func (c *LocalClient) loadSchema() {
 	utils.LogTime("db.loadSchema start")
 	defer utils.LogTime("db.loadSchema end")
 
@@ -211,7 +211,7 @@ func (c *Client) loadSchema() {
 	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
 }
 
-func (c *Client) getSchemaFromDB() (*sql.Rows, error) {
+func (c *LocalClient) getSchemaFromDB() (*sql.Rows, error) {
 	utils.LogTime("db.getSchemaFromDB start")
 	defer utils.LogTime("db.getSchemaFromDB end")
 

@@ -1,9 +1,9 @@
-package db
+package local_db
 
 type QueryInitData struct {
 	Queries   []string
 	Workspace WorkspaceResourceProvider
-	Client    *Client
+	Client    *LocalClient
 	Result    *InitResult
 }
 

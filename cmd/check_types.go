@@ -4,16 +4,17 @@ import (
 	"context"
 	"sync"
 
+	"github.com/turbot/steampipe/db/local_db"
+
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/workspace"
 )
 
 type checkInitData struct {
 	ctx           context.Context
 	workspace     *workspace.Workspace
-	client        *db.Client
+	client        *local_db.LocalClient
 	dbInitialised bool
 	error         error
 	warning       string
