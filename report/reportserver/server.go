@@ -45,12 +45,12 @@ type ReportClientInfo struct {
 }
 
 func NewServer(ctx context.Context) (*Server, error) {
-	dbClient, err := db.NewClient(ctx)
+	dbClient, err := db.NewClient()
 	if err != nil {
 		return nil, err
 	}
 
-	loadedWorkspace, err := workspace.Load(ctx, viper.GetString(constants.ArgWorkspace))
+	loadedWorkspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
 	if err != nil {
 		return nil, err
 	}

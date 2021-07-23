@@ -160,7 +160,7 @@ func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
 	}
 
 	// load workspace
-	res.workspace, err = workspace.Load(ctx, viper.GetString(constants.ArgWorkspace))
+	res.workspace, err = workspace.Load(viper.GetString(constants.ArgWorkspace))
 	if err != nil {
 		if !utils.IsCancelledError(err) {
 			err = utils.PrefixError(err, "failed to load workspace")
@@ -176,7 +176,7 @@ func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
 	}
 
 	// start db if necessary, refreshing connections
-	err = db.EnsureDbAndStartService(ctx, db.InvokerCheck, true)
+	err = db.EnsureDbAndStartService(db.InvokerCheck, true)
 	if err != nil {
 		if !utils.IsCancelledError(err) {
 			err = utils.PrefixError(err, "failed to start service")
@@ -187,7 +187,7 @@ func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
 	res.dbInitialised = true
 
 	// get a client
-	res.client, res.error = db.NewClient(ctx)
+	res.client, res.error = db.NewClient()
 	if res.error != nil {
 		return res
 	}

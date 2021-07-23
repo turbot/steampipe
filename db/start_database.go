@@ -1,7 +1,6 @@
 package db
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net"
@@ -78,20 +77,20 @@ func (slt Invoker) IsValid() error {
 }
 
 // StartImplicitService starts up the service in an implicit mode
-func StartImplicitService(ctx context.Context, invoker Invoker, refreshConnections bool) error {
+func StartImplicitService(invoker Invoker, refreshConnections bool) error {
 	utils.LogTime("db.StartImplicitService start")
 	defer utils.LogTime("db.StartImplicitService end")
 
 	log.Println("[TRACE] start implicit service")
 
-	if _, err := StartDB(ctx, constants.DatabaseDefaultPort, ListenTypeLocal, invoker, refreshConnections); err != nil {
+	if _, err := StartDB(constants.DatabaseDefaultPort, ListenTypeLocal, invoker, refreshConnections); err != nil {
 		return err
 	}
 	return nil
 }
 
 // StartDB :: start the database is not already running
-func StartDB(ctx context.Context, port int, listen StartListenType, invoker Invoker, refreshConnections bool) (startResult StartResult, err error) {
+func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnections bool) (startResult StartResult, err error) {
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
 
@@ -162,7 +161,7 @@ func StartDB(ctx context.Context, port int, listen StartListenType, invoker Invo
 	// pass 'false' to disable auto refreshing connections
 	//- we will explicitly refresh connections after ensuring the steampipe server exists
 	if refreshConnections {
-		client, err = NewClient(ctx)
+		client, err = NewClient()
 		if err != nil {
 			return ServiceFailedToStart, handleStartFailure(err)
 		}

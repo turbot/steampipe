@@ -102,29 +102,26 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
 	// start db if necessary - do not refresh connections as we do it as part of the async startup
-	err := db.EnsureDbAndStartService(context.Background(), db.InvokerQuery, false)
+	err := db.EnsureDbAndStartService(db.InvokerQuery, false)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
-
-	ctx, cancel := context.WithCancel(context.Background())
-	startCancelHandler(cancel)
 
 	// perform rest of initialisation async
 	initDataChan := make(chan *db.QueryInitData, 1)
-	getQueryInitDataAsync(ctx, initDataChan, args)
+	getQueryInitDataAsync(context.Background(), initDataChan, args)
 
 	if interactiveMode {
 		queryexecute.RunInteractiveSession(&initDataChan)
 		return
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	startCancelHandler(cancel)
+
 	// wait for init
 	initData := <-initDataChan
 	if err := initData.Result.Error; err != nil {
 		utils.FailOnError(err)
 	}
-	// check for cancellation
-	utils.FailOnError(utils.HandleCancelError(ctx.Err()))
-
 	// display any initialisation messages/warnings
 	initData.Result.DisplayMessages()
 	// populate client so it gets closed by defer
@@ -151,7 +148,7 @@ func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db.QueryInitD
 		}()
 
 		// load the workspace
-		workspace, err := workspace.Load(ctx, viper.GetString(constants.ArgWorkspace))
+		workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
 		if err != nil {
 			initData.Result.Error = utils.PrefixError(err, "failed to load workspace")
 			return
@@ -171,7 +168,7 @@ func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db.QueryInitD
 		initData.Queries = queryexecute.GetQueries(args, workspace)
 
 		// get a db client
-		client, err := db.NewClient(ctx)
+		client, err := db.NewClient()
 		if err != nil {
 			initData.Result.Error = err
 			return

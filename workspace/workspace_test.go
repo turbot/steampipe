@@ -1,7 +1,6 @@
 package workspace
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -98,7 +97,7 @@ func TestLoadWorkspace(t *testing.T) {
 	for name, test := range testCasesLoadWorkspace {
 
 		workspacePath, err := filepath.Abs(test.source)
-		workspace, err := Load(context.Background(), workspacePath)
+		workspace, err := Load(workspacePath)
 
 		if err != nil {
 			if test.expected != "ERROR" {

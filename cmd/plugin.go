@@ -78,7 +78,7 @@ Examples:
   steampipe plugin install turbot/azure@0.1.0`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(context.Background(), db.InvokerPlugin, true)
+			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -116,7 +116,7 @@ Examples:
   steampipe plugin update aws`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(context.Background(), db.InvokerPlugin, true)
+			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -152,7 +152,7 @@ Examples:
   steampipe plugin list --outdated`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(context.Background(), db.InvokerPlugin, true)
+			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -188,7 +188,7 @@ Example:
 `,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(context.Background(), db.InvokerPlugin, true)
+			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -471,7 +471,7 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports []display.Instal
 		steampipeconfig.Config = config
 	}
 
-	client, err := db.NewClient(ctx)
+	client, err := db.NewClient()
 	if err != nil {
 		return err
 	}
@@ -548,7 +548,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
 func getPluginConnectionMap(ctx context.Context) (map[string][]string, error) {
-	client, err := db.NewClient(ctx)
+	client, err := db.NewClient()
 	if err != nil {
 		return nil, err
 	}
