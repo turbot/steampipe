@@ -140,7 +140,6 @@ func AddCommands() {
 	rootCmd.AddCommand(pluginCmd())
 	rootCmd.AddCommand(queryCmd())
 	rootCmd.AddCommand(checkCmd())
-	rootCmd.AddCommand(reportCmd())
 	rootCmd.AddCommand(serviceCmd())
 }
 
