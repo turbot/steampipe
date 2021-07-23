@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/turbot/steampipe/query/execute"
+	"github.com/turbot/steampipe/query/queryexecute"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -110,7 +110,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	getQueryInitDataAsync(initDataChan, args)
 
 	if interactiveMode {
-		execute.RunInteractiveSession(&initDataChan)
+		queryexecute.RunInteractiveSession(&initDataChan)
 		return
 	}
 
@@ -130,7 +130,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	if len(initData.Queries) > 0 {
 		// otherwise if we have resolved any queries, run them
-		failures := execute.ExecuteQueries(ctx, initData.Queries, initData.Client)
+		failures := queryexecute.ExecuteQueries(ctx, initData.Queries, initData.Client)
 		// set global exit code
 		exitCode = failures
 	}
@@ -166,7 +166,7 @@ func getQueryInitDataAsync(initDataChan chan *db.QueryInitData, args []string) {
 		initData.Workspace = workspace
 
 		// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-		initData.Queries = execute.GetQueries(args, workspace)
+		initData.Queries = queryexecute.GetQueries(args, workspace)
 
 		// get a db client
 		client, err := db.NewClient()

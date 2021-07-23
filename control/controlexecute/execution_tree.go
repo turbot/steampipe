@@ -1,4 +1,4 @@
-package execute
+package controlexecute
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
-	"github.com/turbot/steampipe/query/execute"
+	"github.com/turbot/steampipe/query/queryexecute"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
@@ -31,7 +31,7 @@ type ExecutionTree struct {
 	controlRuns []*ControlRun
 }
 
-// NewExecutionTree creates a result group from a ControlTreeItem
+// NewExecutionTree creates a result group from a ModTreeItem
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client *db.Client, arg string) (*ExecutionTree, error) {
 	// now populate the ExecutionTree
 	executionTree := &ExecutionTree{
@@ -162,8 +162,8 @@ func (e *ExecutionTree) ShouldIncludeControl(controlName string) bool {
 // - if the arg is a benchmark name, the root will be the Benchmark with that name
 // - if the arg is a mod name, the root will be the Mod with that name
 // - if the arg is 'all' the root will be a node with all Mods as children
-func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ControlTreeItem, error) {
-	var res []modconfig.ControlTreeItem
+func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTreeItem, error) {
+	var res []modconfig.ModTreeItem
 	// special case handling for the string "all"
 	if arg == "all" {
 		//
@@ -185,17 +185,17 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.Control
 	case modconfig.BlockTypeControl:
 		// check whether the arg is a control name
 		if control, ok := e.workspace.ControlMap[arg]; ok {
-			return []modconfig.ControlTreeItem{control}, nil
+			return []modconfig.ModTreeItem{control}, nil
 		}
 	case modconfig.BlockTypeBenchmark:
 		// look in the workspace control group map for this control group
 		if benchmark, ok := e.workspace.BenchmarkMap[arg]; ok {
-			return []modconfig.ControlTreeItem{benchmark}, nil
+			return []modconfig.ModTreeItem{benchmark}, nil
 		}
 	case modconfig.BlockTypeMod:
 		// get all controls for the mod
 		if mod, ok := e.workspace.ModMap[arg]; ok {
-			return []modconfig.ControlTreeItem{mod}, nil
+			return []modconfig.ModTreeItem{mod}, nil
 		}
 	}
 	return nil, fmt.Errorf("no controls found matching argument '%s'", arg)
@@ -205,7 +205,7 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.Control
 // This is used to implement the 'where' control filtering
 func (e *ExecutionTree) getControlMapFromMetadataQuery(ctx context.Context, whereClause string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
-	query, isNamedQuery := execute.GetQueryFromArg(whereClause, e.workspace)
+	query, isNamedQuery := queryexecute.GetQueryFromArg(whereClause, e.workspace)
 
 	// if the query is NOT a named query, we need to construct a full query by adding a select
 	if !isNamedQuery {

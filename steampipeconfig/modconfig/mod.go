@@ -52,7 +52,7 @@ type Mod struct {
 	ModPath   string
 	DeclRange hcl.Range
 
-	children []ControlTreeItem
+	children []ModTreeItem
 	metadata *ResourceMetadata
 }
 
@@ -164,7 +164,7 @@ Benchmarks:
 	)
 }
 
-// IsControlTreeItem implements ControlTreeItem
+// IsControlTreeItem implements ModTreeItem
 // (mod is always top of the tree)
 func (m *Mod) IsControlTreeItem() {}
 
@@ -195,7 +195,7 @@ func (m *Mod) BuildControlTree() error {
 	return nil
 }
 
-func (m *Mod) addItemIntoControlTree(item ControlTreeItem) error {
+func (m *Mod) addItemIntoControlTree(item ModTreeItem) error {
 	parents := m.getParents(item)
 
 	// so we have a result - add into tree
@@ -252,23 +252,23 @@ func duplicateResourceDiagnostics(item HclResource, block *hcl.Block) *hcl.Diagn
 	}
 }
 
-// AddChild  implements ControlTreeItem
-func (m *Mod) AddChild(child ControlTreeItem) error {
+// AddChild  implements ModTreeItem
+func (m *Mod) AddChild(child ModTreeItem) error {
 	m.children = append(m.children, child)
 	return nil
 }
 
-// AddParent implements ControlTreeItem
-func (m *Mod) AddParent(ControlTreeItem) error {
+// AddParent implements ModTreeItem
+func (m *Mod) AddParent(ModTreeItem) error {
 	return errors.New("cannot set a parent on a mod")
 }
 
-// GetParents implements ControlTreeItem
-func (m *Mod) GetParents() []ControlTreeItem {
+// GetParents implements ModTreeItem
+func (m *Mod) GetParents() []ModTreeItem {
 	return nil
 }
 
-// Name implements ControlTreeItem, HclResource
+// Name implements ModTreeItem, HclResource
 func (m *Mod) Name() string {
 
 	if m.Version == nil {
@@ -277,17 +277,17 @@ func (m *Mod) Name() string {
 	return fmt.Sprintf("%s@%s", m.FullName, types.SafeString(m.Version))
 }
 
-// GetTitle implements ControlTreeItem
+// GetTitle implements ModTreeItem
 func (m *Mod) GetTitle() string {
 	return typehelpers.SafeString(m.Title)
 }
 
-// GetDescription implements ControlTreeItem
+// GetDescription implements ModTreeItem
 func (m *Mod) GetDescription() string {
 	return typehelpers.SafeString(m.Description)
 }
 
-// GetTags implements ControlTreeItem
+// GetTags implements ModTreeItem
 func (m *Mod) GetTags() map[string]string {
 	if m.Tags != nil {
 		return *m.Tags
@@ -295,12 +295,12 @@ func (m *Mod) GetTags() map[string]string {
 	return map[string]string{}
 }
 
-// GetChildren implements ControlTreeItem
-func (m *Mod) GetChildren() []ControlTreeItem {
+// GetChildren implements ModTreeItem
+func (m *Mod) GetChildren() []ModTreeItem {
 	return m.children
 }
 
-// Path implements ControlTreeItem
+// Path implements ModTreeItem
 func (m *Mod) Path() []string {
 	return []string{m.Name()}
 }
@@ -340,10 +340,10 @@ func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
 	m.metadata = metadata
 }
 
-// get the parent item for this ControlTreeItem
+// get the parent item for this ModTreeItem
 // first check all benchmarks - if they do not have this as child, default to the mod
-func (m *Mod) getParents(item ControlTreeItem) []ControlTreeItem {
-	var parents []ControlTreeItem
+func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
+	var parents []ModTreeItem
 	for _, benchmark := range m.Benchmarks {
 		if benchmark.ChildNames == nil {
 			continue
@@ -357,7 +357,7 @@ func (m *Mod) getParents(item ControlTreeItem) []ControlTreeItem {
 	}
 	if len(parents) == 0 {
 		// fall back on mod
-		parents = []ControlTreeItem{m}
+		parents = []ModTreeItem{m}
 	}
 	return parents
 }

@@ -1,4 +1,4 @@
-package execute
+package controlexecute
 
 // StatusSummary is a struct containing the counts of each possible control status
 type StatusSummary struct {

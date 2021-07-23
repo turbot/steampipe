@@ -5,22 +5,22 @@ import (
 	"log"
 	"strings"
 
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 type GroupRenderer struct {
-	group *execute.ResultGroup
+	group *controlexecute.ResultGroup
 	// screen width
 	width             int
 	maxFailedControls int
 	maxTotalControls  int
-	resultTree        *execute.ExecutionTree
+	resultTree        *controlexecute.ExecutionTree
 	lastChild         bool
 	parent            *GroupRenderer
 }
 
-func NewGroupRenderer(group *execute.ResultGroup, parent *GroupRenderer, maxFailedControls, maxTotalControls int, resultTree *execute.ExecutionTree, width int) *GroupRenderer {
+func NewGroupRenderer(group *controlexecute.ResultGroup, parent *GroupRenderer, maxFailedControls, maxTotalControls int, resultTree *controlexecute.ExecutionTree, width int) *GroupRenderer {
 	r := &GroupRenderer{
 		group:             group,
 		parent:            parent,
@@ -35,7 +35,7 @@ func NewGroupRenderer(group *execute.ResultGroup, parent *GroupRenderer, maxFail
 
 // are we the last child of our parent?
 // this affects the tree rendering
-func (r GroupRenderer) isLastChild(group *execute.ResultGroup) bool {
+func (r GroupRenderer) isLastChild(group *controlexecute.ResultGroup) bool {
 	if group.Parent == nil || group.Parent.GroupItem == nil {
 		return true
 	}
@@ -69,7 +69,7 @@ func (r GroupRenderer) blankLineIndent() string {
 // the indent got group heading
 func (r GroupRenderer) headingIndent() string {
 	// if this is the first displayed node, no indent
-	if r.parent == nil || r.parent.group.GroupId == execute.RootResultGroupName {
+	if r.parent == nil || r.parent.group.GroupId == controlexecute.RootResultGroupName {
 		return ""
 	}
 	// as our parent for the indent for a group
@@ -97,7 +97,7 @@ func (r GroupRenderer) childGroupIndent() string {
 // get the indent inherited from our parent
 // - this will depend on whether we are our parents last child
 func (r GroupRenderer) parentIndent() string {
-	if r.parent == nil || r.parent.group.GroupId == execute.RootResultGroupName {
+	if r.parent == nil || r.parent.group.GroupId == controlexecute.RootResultGroupName {
 		return ""
 	}
 	if r.lastChild {
@@ -110,7 +110,7 @@ func (r GroupRenderer) Render() string {
 	log.Printf("[TRACE] begin group render '%s'\n", r.group.GroupId)
 	defer log.Printf("[TRACE] end table render'%s'\n", r.group.GroupId)
 
-	if r.group.GroupId == execute.RootResultGroupName {
+	if r.group.GroupId == controlexecute.RootResultGroupName {
 		return r.renderRootResultGroup()
 	}
 

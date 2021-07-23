@@ -13,15 +13,15 @@ import (
 
 // Control is a struct representing the Control resource
 type Control struct {
-	ShortName        string             `json:"-"`
-	FullName         string             `cty:"name" json:"control_id"`
-	Description      *string            `cty:"description" hcl:"description" column:"description,text" json:"description"`
-	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"-"`
+	ShortName        string
+	FullName         string             `cty:"name"`
+	Description      *string            `cty:"description" hcl:"description" column:"description,text"`
+	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
 	SearchPath       *string            `cty:"search_path" hcl:"search_path" column:"search_path,text"`
 	SearchPathPrefix *string            `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
-	Severity         *string            `cty:"severity" hcl:"severity" column:"severity,text" json:"severity"`
-	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb" json:"tags"`
+	Severity         *string            `cty:"severity" hcl:"severity" column:"severity,text"`
+	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
+	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
 	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
 
 	// list of all block referenced by the resource
@@ -29,7 +29,7 @@ type Control struct {
 
 	DeclRange hcl.Range
 
-	parents  []ControlTreeItem
+	parents  []ModTreeItem
 	metadata *ResourceMetadata
 }
 
@@ -72,33 +72,33 @@ func (c *Control) GetParentNames() []string {
 	return parents
 }
 
-// AddChild implements ControlTreeItem - controls cannot have children so just return error
-func (c *Control) AddChild(child ControlTreeItem) error {
+// AddChild implements ModTreeItem - controls cannot have children so just return error
+func (c *Control) AddChild(child ModTreeItem) error {
 	return errors.New("cannot add child to a control")
 }
 
-// AddParent implements ControlTreeItem
-func (c *Control) AddParent(parent ControlTreeItem) error {
+// AddParent implements ModTreeItem
+func (c *Control) AddParent(parent ModTreeItem) error {
 	c.parents = append(c.parents, parent)
 	return nil
 }
 
-// GetParents implements ControlTreeItem
-func (c *Control) GetParents() []ControlTreeItem {
+// GetParents implements ModTreeItem
+func (c *Control) GetParents() []ModTreeItem {
 	return c.parents
 }
 
-// GetTitle implements ControlTreeItem
+// GetTitle implements ModTreeItem
 func (c *Control) GetTitle() string {
 	return typehelpers.SafeString(c.Title)
 }
 
-// GetDescription implements ControlTreeItem
+// GetDescription implements ModTreeItem
 func (c *Control) GetDescription() string {
 	return typehelpers.SafeString(c.Description)
 }
 
-// GetTags implements ControlTreeItem
+// GetTags implements ModTreeItem
 func (c *Control) GetTags() map[string]string {
 	if c.Tags != nil {
 		return *c.Tags
@@ -106,12 +106,12 @@ func (c *Control) GetTags() map[string]string {
 	return map[string]string{}
 }
 
-// GetChildren implements ControlTreeItem
-func (c *Control) GetChildren() []ControlTreeItem {
-	return []ControlTreeItem{}
+// GetChildren implements ModTreeItem
+func (c *Control) GetChildren() []ModTreeItem {
+	return []ModTreeItem{}
 }
 
-// Name implements ControlTreeItem, HclResource
+// Name implements ModTreeItem, HclResource
 // return name in format: 'control.<shortName>'
 func (c *Control) Name() string {
 	return c.FullName
@@ -122,7 +122,7 @@ func (c *Control) QualifiedName() string {
 	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName)
 }
 
-// Path implements ControlTreeItem
+// Path implements ModTreeItem
 func (c *Control) Path() []string {
 	// TODO update for multiple paths
 	path := []string{c.FullName}

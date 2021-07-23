@@ -1,4 +1,4 @@
-package execute
+package controlexecute
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
-	"github.com/turbot/steampipe/query/execute"
+	"github.com/turbot/steampipe/query/queryexecute"
 	"github.com/turbot/steampipe/utils"
 
 	"github.com/turbot/steampipe/query/queryresult"
@@ -93,7 +93,7 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 	r.executionTree.progress.OnControlStart(control)
 
 	// resolve the query parameter of the control
-	query, _ := execute.GetQueryFromArg(typehelpers.SafeString(control.SQL), r.executionTree.workspace)
+	query, _ := queryexecute.GetQueryFromArg(typehelpers.SafeString(control.SQL), r.executionTree.workspace)
 	if query == "" {
 		r.SetError(fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typehelpers.SafeString(control.SQL)))
 		return
