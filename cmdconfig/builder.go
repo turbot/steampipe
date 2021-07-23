@@ -22,9 +22,9 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 
 	// we will wrap over these two function - need references to call them
 	originalPreRun := cfg.cmd.PreRun
-	originalRun := cfg.cmd.Run
-
 	cfg.cmd.PreRun = func(cmd *cobra.Command, args []string) {
+		utils.LogTime(fmt.Sprintf("cmd.%s.PreRun start", cmd.CommandPath()))
+		defer utils.LogTime(fmt.Sprintf("cmd.%s.PreRun end", cmd.CommandPath()))
 		// bind flags
 		for flagName, flag := range cfg.bindings {
 			viper.GetViper().BindPFlag(flagName, flag)
@@ -35,11 +35,16 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 		}
 	}
 
+	// wrap over the original Run function
+	originalRun := cfg.cmd.Run
 	cfg.cmd.Run = func(cmd *cobra.Command, args []string) {
 		utils.LogTime(fmt.Sprintf("cmd.%s.Run start", cmd.CommandPath()))
 		defer utils.LogTime(fmt.Sprintf("cmd.%s.Run end", cmd.CommandPath()))
 
-		originalRun(cmd, args)
+		// run the original Run
+		if originalRun != nil {
+			originalRun(cmd, args)
+		}
 	}
 
 	return cfg

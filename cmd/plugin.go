@@ -33,8 +33,11 @@ Find plugins using the public registry at https://hub.steampipe.io.
 
 Examples:
 
-  # Install or update a plugin
+  # Install a plugin
   steampipe plugin install aws
+
+  # Update a plugin
+  steampipe plugin update aws
 
   # List installed plugins
   steampipe plugin list
@@ -47,8 +50,6 @@ Examples:
 	cmd.AddCommand(pluginListCmd())
 	cmd.AddCommand(pluginUninstallCmd())
 	cmd.AddCommand(pluginUpdateCmd())
-
-	cmdconfig.OnCmd(cmd)
 
 	return cmd
 }
