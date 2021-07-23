@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -45,7 +46,7 @@ type Workspace struct {
 }
 
 // Load creates a Workspace and loads the workspace mod
-func Load(workspacePath string) (*Workspace, error) {
+func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	utils.LogTime("workspace.Load start")
 	defer utils.LogTime("workspace.Load end")
 

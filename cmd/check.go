@@ -159,49 +159,41 @@ func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
 		return res
 	}
 
-	// define set of initialisation operations - we will execute each in turn, checking for cancellation after each
-	initFunctions := []func(){
-		func() {
-			// load workspace
-			res.workspace, err = workspace.Load(viper.GetString(constants.ArgWorkspace))
-			if err != nil {
-				res.error = utils.PrefixError(err, "failed to load workspace")
-			}
-		},
-		func() {
-			// check if the required plugins are installed
-			res.error = res.workspace.CheckRequiredPluginsInstalled()
-		},
-		func() {
-			if len(res.workspace.ControlMap) == 0 {
-				res.warning = "no controls found in current workspace"
-			}
-		},
-		func() {
-			// start db if necessary, refreshing connections
-			err = db.EnsureDbAndStartService(db.InvokerCheck, true)
-			if err != nil {
-				res.error = utils.PrefixError(err, "failed to start service")
-			} else {
-				res.dbInitialised = true
-			}
-		},
-		func() {
-			// get a client
-			res.client, res.error = db.NewClient()
-		},
-		func() {
-			// populate the reflection tables
-			res.error = db.CreateMetadataTables(res.workspace.GetResourceMaps(), res.client)
-		},
+	// load workspace
+	res.workspace, err = workspace.Load(ctx, viper.GetString(constants.ArgWorkspace))
+	if err != nil {
+		if !utils.IsCancelledError(err) {
+			err = utils.PrefixError(err, "failed to load workspace")
+		}
+		res.error = err
+		return res
 	}
 
-	for _, f := range initFunctions {
-		f()
-		if !res.success() {
-			break
-		}
+	// check if the required plugins are installed
+	res.error = res.workspace.CheckRequiredPluginsInstalled()
+	if len(res.workspace.ControlMap) == 0 {
+		res.warning = "no controls found in current workspace"
 	}
+
+	// start db if necessary, refreshing connections
+	err = db.EnsureDbAndStartService(ctx, db.InvokerCheck, true)
+	if err != nil {
+		if !utils.IsCancelledError(err) {
+			err = utils.PrefixError(err, "failed to start service")
+		}
+		res.error = err
+		return res
+	}
+	res.dbInitialised = true
+
+	// get a client
+	res.client, res.error = db.NewClient(ctx)
+	if res.error != nil {
+		return res
+	}
+
+	// populate the reflection tables
+	res.error = db.CreateMetadataTables(ctx, res.workspace.GetResourceMaps(), res.client)
 
 	return res
 }

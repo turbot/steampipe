@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -130,6 +131,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 			exitCode = -1
 		}
 	}()
+	ctx := context.Background()
 
 	port := cmdconfig.DatabasePort()
 	if port < 1 || port > 65535 {
@@ -180,7 +182,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	} else {
 		// start db, refreshing connections
-		status, err := db.StartDB(cmdconfig.DatabasePort(), listen, invoker, true)
+		status, err := db.StartDB(ctx, cmdconfig.DatabasePort(), listen, invoker, true)
 		if err != nil {
 			utils.ShowError(err)
 			return
@@ -254,6 +256,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	ctx := context.Background()
 	currentServiceStatus, err := db.GetStatus()
 
 	if err != nil {
@@ -285,7 +288,7 @@ to force a restart.
 		return
 	}
 	// start db, refreshing connections
-	status, err := db.StartDB(currentServiceStatus.Port, currentServiceStatus.ListenType, currentServiceStatus.Invoker, true)
+	status, err := db.StartDB(ctx, currentServiceStatus.Port, currentServiceStatus.ListenType, currentServiceStatus.Invoker, true)
 	if err != nil {
 		utils.ShowError(err)
 		return

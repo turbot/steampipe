@@ -44,7 +44,7 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	startCancelHandler(cancel)
 
 	// start db if necessary
-	err := db.EnsureDbAndStartService(db.InvokerReport, true)
+	err := db.EnsureDbAndStartService(nil, db.InvokerReport, true)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
 	defer db.Shutdown(nil, db.InvokerReport)
 

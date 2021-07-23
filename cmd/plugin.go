@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -77,7 +78,7 @@ Examples:
   steampipe plugin install turbot/azure@0.1.0`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
+			err := db.EnsureDbAndStartService(nil, db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -115,7 +116,7 @@ Examples:
   steampipe plugin update aws`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
+			err := db.EnsureDbAndStartService(nil, db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -151,7 +152,7 @@ Examples:
   steampipe plugin list --outdated`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
+			err := db.EnsureDbAndStartService(nil, db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -187,7 +188,7 @@ Example:
 `,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
+			err := db.EnsureDbAndStartService(nil, db.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -208,6 +209,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			utils.ShowError(helpers.ToError(r))
 		}
 	}()
+
+	// create a context
+	ctx := context.Background()
 
 	// args to 'plugin install' -- one or more plugins to install
 	// plugin names can be simple names ('aws') for "standard" plugins,
@@ -278,7 +282,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	display.StopSpinner(spinner)
 
-	refreshConnectionsIfNecessary(installReports, false)
+	refreshConnectionsIfNecessary(ctx, installReports, false)
 	display.PrintInstallReports(installReports, false)
 
 	// a concluding blank line - since we always output multiple lines
@@ -293,6 +297,8 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			utils.ShowError(helpers.ToError(r))
 		}
 	}()
+	// create a context
+	ctx := context.Background()
 
 	// args to 'plugin update' -- one or more plugins to install
 	// These can be simple names ('aws') for "standard" plugins, or
@@ -433,7 +439,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		})
 	}
 
-	refreshConnectionsIfNecessary(updateReports, true)
+	refreshConnectionsIfNecessary(ctx, updateReports, true)
 	display.PrintInstallReports(updateReports, true)
 
 	// a concluding blank line - since we always output multiple lines
@@ -441,7 +447,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 }
 
 // start service if necessary and refresh connections
-func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate bool) error {
+func refreshConnectionsIfNecessary(ctx context.Context, reports []display.InstallReport, isUpdate bool) error {
 	// get count of skipped reports
 	skipped := 0
 	for _, report := range reports {
@@ -465,7 +471,7 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 		steampipeconfig.Config = config
 	}
 
-	client, err := db.NewClient()
+	client, err := db.NewClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -487,8 +493,8 @@ func runPluginListCmd(*cobra.Command, []string) {
 			utils.ShowError(helpers.ToError(r))
 		}
 	}()
-
-	pluginConnectionMap, err := getPluginConnectionMap()
+	ctx := context.Background()
+	pluginConnectionMap, err := getPluginConnectionMap(ctx)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "Plugin Listing failed")
 		return
@@ -524,8 +530,8 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		return
 	}
-
-	connectionMap, err := getPluginConnectionMap()
+	ctx := context.Background()
+	connectionMap, err := getPluginConnectionMap(ctx)
 	if err != nil {
 		utils.ShowError(err)
 		return
@@ -541,8 +547,8 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 }
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
-func getPluginConnectionMap() (map[string][]string, error) {
-	client, err := db.NewClient()
+func getPluginConnectionMap(ctx context.Context) (map[string][]string, error) {
+	client, err := db.NewClient(ctx)
 	if err != nil {
 		return nil, err
 	}
