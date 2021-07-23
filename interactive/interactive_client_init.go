@@ -1,10 +1,12 @@
-package db
+package interactive
 
 import (
 	"context"
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/turbot/steampipe/db"
 
 	"github.com/spf13/viper"
 
@@ -69,7 +71,7 @@ func (c *InteractiveClient) waitForInitData(ctx context.Context) error {
 }
 
 // return the workspace, or nil if not yet initialised
-func (c *InteractiveClient) workspace() WorkspaceResourceProvider {
+func (c *InteractiveClient) workspace() db.WorkspaceResourceProvider {
 	if c.initData == nil {
 		return nil
 	}
@@ -77,7 +79,7 @@ func (c *InteractiveClient) workspace() WorkspaceResourceProvider {
 }
 
 // return the client, or nil if not yet initialised
-func (c *InteractiveClient) client() *Client {
+func (c *InteractiveClient) client() *db.Client {
 	if c.initData == nil {
 		return nil
 	}

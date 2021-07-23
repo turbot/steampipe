@@ -29,23 +29,6 @@ func EnsureDbAndStartService(ctx context.Context, invoker Invoker, refreshConnec
 	return nil
 }
 
-// RunInteractivePrompt :: start the interactive query prompt
-func RunInteractivePrompt(initChan *chan *QueryInitData) (*queryresult.ResultStreamer, error) {
-	resultsStreamer := queryresult.NewResultStreamer()
-
-	interactiveClient, err := newInteractiveClient(initChan, resultsStreamer)
-	if err != nil {
-		utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
-		Shutdown(nil, InvokerQuery)
-		return nil, err
-	}
-
-	// start the interactive prompt in a go routine
-	go interactiveClient.InteractiveQuery()
-
-	return resultsStreamer, nil
-}
-
 // ExecuteQuery :: execute a single query. If shutdownAfterCompletion is true, shutdown the client after completion
 func ExecuteQuery(ctx context.Context, queryString string, client *Client) (*queryresult.ResultStreamer, error) {
 	utils.LogTime("db.ExecuteQuery start")
