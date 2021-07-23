@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/turbot/steampipe/interactive"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db"
@@ -16,7 +18,7 @@ func RunInteractiveSession(initChan *chan *db.QueryInitData) {
 	defer utils.LogTime("execute.RunInteractiveSession end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.RunInteractivePrompt(initChan)
+	resultsStreamer, err := interactive.RunInteractivePrompt(initChan)
 	utils.FailOnError(err)
 
 	// print the data as it comes

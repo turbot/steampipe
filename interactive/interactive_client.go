@@ -1,4 +1,4 @@
-package db
+package interactive
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/turbot/steampipe/db"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
@@ -31,7 +33,7 @@ const (
 // InteractiveClient :: wrapper over *Client and *prompt.Prompt along
 // to facilitate interactive query prompt
 type InteractiveClient struct {
-	initData                *QueryInitData
+	initData                *db.QueryInitData
 	resultsStreamer         *queryresult.ResultStreamer
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
@@ -42,23 +44,23 @@ type InteractiveClient struct {
 	cancelActiveQuery context.CancelFunc
 	cancelPrompt      context.CancelFunc
 	// channel from which we read the result of the external initialisation process
-	initDataChan *chan *QueryInitData
+	initDataChan *chan *db.QueryInitData
 	// channel used internally to signal an init error
-	initResultChan chan *InitResult
+	initResultChan chan *db.InitResult
 
 	afterClose AfterPromptCloseAction
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock sync.Mutex
 }
 
-func newInteractiveClient(initChan *chan *QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+func newInteractiveClient(initChan *chan *db.QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	c := &InteractiveClient{
 		resultsStreamer:         resultsStreamer,
 		interactiveQueryHistory: queryhistory.New(),
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
 		initDataChan:            initChan,
-		initResultChan:          make(chan *InitResult, 1),
+		initResultChan:          make(chan *db.InitResult, 1),
 	}
 	// asynchronously wait for init to complete
 	// we start this immediately rather than lazy loading as we want to handle errors asap
@@ -128,7 +130,7 @@ func (c *InteractiveClient) InteractiveQuery() {
 }
 
 // init data has arrived, handle any errors/warnings/messages
-func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *InitResult) error {
+func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db.InitResult) error {
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
@@ -436,8 +438,8 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 	return metaquery.Handle(&metaquery.HandlerInput{
 		Query:       query,
 		Executor:    client,
-		Schema:      client.schemaMetadata,
-		Connections: client.connectionMap,
+		Schema:      client.SchemaMetadata(),
+		Connections: client.ConnectionMap(),
 		Prompt:      c.interactivePrompt,
 		ClosePrompt: func() { c.afterClose = AfterPromptCloseExit },
 	})
@@ -489,8 +491,8 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		client := c.client()
 		suggestions := metaquery.Complete(&metaquery.CompleterInput{
 			Query:       text,
-			Schema:      client.schemaMetadata,
-			Connections: client.connectionMap,
+			Schema:      client.SchemaMetadata(),
+			Connections: client.ConnectionMap(),
 		})
 
 		s = append(s, suggestions...)
@@ -499,7 +501,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 
 		// only add table suggestions if the client is initialised
 		if queryInfo.EditingTable && c.isInitialised() {
-			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.initData.Client.schemaMetadata, c.initData.Client.connectionMap)...)
+			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.initData.Client.SchemaMetadata(), c.initData.Client.ConnectionMap())...)
 		}
 
 		// Not sure this is working. comment out for now!
