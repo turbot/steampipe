@@ -36,7 +36,7 @@ func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 	return nil
 }
 
-func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client *Client) error {
+func CreateMetadataTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, client *Client) error {
 	utils.LogTime("db.CreateMetadataTables start")
 	defer utils.LogTime("db.CreateMetadataTables end")
 
@@ -56,7 +56,9 @@ func CreateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 		return fmt.Errorf("failed to create reflection tables: %v", err)
 	}
 	client.loadSchema()
-	return nil
+
+	// return context error - this enables calling code to respond to cancellation
+	return ctx.Err()
 }
 
 func getCreateTablesSql(commonColumnSql []string) string {

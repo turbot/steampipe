@@ -102,27 +102,29 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
 	// start db if necessary - do not refresh connections as we do it as part of the async startup
-	err := db.EnsureDbAndStartService(db.InvokerQuery, false)
+	err := db.EnsureDbAndStartService(nil, db.InvokerQuery, false)
 	utils.FailOnErrorWithMessage(err, "failed to start service")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	startCancelHandler(cancel)
 
 	// perform rest of initialisation async
 	initDataChan := make(chan *db.QueryInitData, 1)
-	getQueryInitDataAsync(initDataChan, args)
+	getQueryInitDataAsync(ctx, initDataChan, args)
 
 	if interactiveMode {
 		queryexecute.RunInteractiveSession(&initDataChan)
 		return
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	startCancelHandler(cancel)
-
 	// wait for init
-	// TODO CHECK FOR CANCEL
 	initData := <-initDataChan
 	if err := initData.Result.Error; err != nil {
 		utils.FailOnError(err)
 	}
+	// check for cancellation
+	utils.FailOnError(utils.HandleCancelError(ctx.Err()))
+
 	// display any initialisation messages/warnings
 	initData.Result.DisplayMessages()
 	// populate client so it gets closed by defer
@@ -137,7 +139,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 }
 
-func getQueryInitDataAsync(initDataChan chan *db.QueryInitData, args []string) {
+func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db.QueryInitData, args []string) {
 	go func() {
 		log.Printf("[TRACE] getQueryInitDataAsync")
 
@@ -149,7 +151,7 @@ func getQueryInitDataAsync(initDataChan chan *db.QueryInitData, args []string) {
 		}()
 
 		// load the workspace
-		workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+		workspace, err := workspace.Load(nil, viper.GetString(constants.ArgWorkspace))
 		if err != nil {
 			initData.Result.Error = utils.PrefixError(err, "failed to load workspace")
 			return
@@ -169,7 +171,7 @@ func getQueryInitDataAsync(initDataChan chan *db.QueryInitData, args []string) {
 		initData.Queries = queryexecute.GetQueries(args, workspace)
 
 		// get a db client
-		client, err := db.NewClient()
+		client, err := db.NewClient(ctx)
 		if err != nil {
 			initData.Result.Error = err
 			return
@@ -183,7 +185,7 @@ func getQueryInitDataAsync(initDataChan chan *db.QueryInitData, args []string) {
 
 		initData.Client = client
 		// populate the reflection tables
-		if err = db.CreateMetadataTables(workspace.GetResourceMaps(), client); err != nil {
+		if err = db.CreateMetadataTables(ctx, workspace.GetResourceMaps(), client); err != nil {
 			initData.Result.Error = err
 			return
 		}

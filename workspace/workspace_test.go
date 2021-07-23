@@ -97,7 +97,7 @@ func TestLoadWorkspace(t *testing.T) {
 	for name, test := range testCasesLoadWorkspace {
 
 		workspacePath, err := filepath.Abs(test.source)
-		workspace, err := Load(workspacePath)
+		workspace, err := Load(nil, workspacePath)
 
 		if err != nil {
 			if test.expected != "ERROR" {

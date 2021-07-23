@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -29,7 +30,7 @@ func (c *Client) Close() error {
 
 // NewClient ensures that the database instance is running
 // and returns a `Client` to interact with it
-func NewClient() (*Client, error) {
+func NewClient(ctx context.Context) (*Client, error) {
 	utils.LogTime("db.NewClient start")
 	defer utils.LogTime("db.NewClient end")
 
@@ -44,6 +45,12 @@ func NewClient() (*Client, error) {
 	client.schemaMetadata = schema.NewMetadata()
 
 	client.loadSchema()
+
+	// if context is cancelled, close again
+	if utils.IsContextCancelled(ctx) {
+		client.Close()
+		return nil, ctx.Err()
+	}
 
 	return client, nil
 }
