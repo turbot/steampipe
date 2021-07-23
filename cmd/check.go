@@ -71,6 +71,11 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// verify we have an argument
+	if !validateArgs(cmd, args) {
+		return
+	}
+
 	// initialise
 	initData = initialiseCheck(cmd, args)
 	if shouldExit := handleCheckInitResult(initData); shouldExit {
@@ -134,10 +139,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
 	res := &checkInitData{}
-	// verify we have an argument
-	if !validateArgs(cmd, args) {
-		return res
-	}
+
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	err := validateOutputFormat()

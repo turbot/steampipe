@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/turbot/steampipe/control/controldisplay"
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -24,7 +24,7 @@ func (c *checkInitData) success() bool {
 }
 
 type exportData struct {
-	executionTree *execute.ExecutionTree
+	executionTree *controlexecute.ExecutionTree
 	exportFormats []controldisplay.CheckExportTarget
 	errorsLock    *sync.Mutex
 	errors        []error
