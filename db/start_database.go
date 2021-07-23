@@ -54,6 +54,8 @@ const (
 	InvokerInstaller = "installer"
 	// InvokerPlugin :: Invoker - when invoked by the `pluginmanager`
 	InvokerPlugin = "plugin"
+	// InvokerReport :: Invoker - when invoked by `report`
+	InvokerReport = "report"
 )
 
 // IsValid :: validator for StartListenType known values
@@ -68,7 +70,7 @@ func (slt StartListenType) IsValid() error {
 // IsValid :: validator for Invoker known values
 func (slt Invoker) IsValid() error {
 	switch slt {
-	case InvokerService, InvokerQuery, InvokerCheck, InvokerInstaller, InvokerPlugin:
+	case InvokerService, InvokerQuery, InvokerCheck, InvokerInstaller, InvokerPlugin, InvokerReport:
 		return nil
 	}
 	return fmt.Errorf("Invalid invoker. Can be one of '%v', '%v', '%v', '%v' or '%v'", InvokerService, InvokerQuery, InvokerInstaller, InvokerPlugin, InvokerCheck)

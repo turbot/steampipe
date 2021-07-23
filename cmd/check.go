@@ -15,7 +15,7 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controldisplay"
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
@@ -135,7 +135,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			// skip over the next, since the execution was cancelled
 			continue
 		default:
-			executionTree, err := execute.NewExecutionTree(ctx, workspace, client, arg)
+			executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, arg)
 			utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
 
 			// for now we execute controls synchronously
@@ -231,7 +231,7 @@ func initialiseColorScheme() error {
 	return nil
 }
 
-func displayControlResults(ctx context.Context, executionTree *execute.ExecutionTree) error {
+func displayControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree) error {
 	outputFormat := viper.GetString(constants.ArgOutput)
 	formatter, _ := controldisplay.GetOutputFormatter(outputFormat)
 	formattedReader, err := formatter.Format(ctx, executionTree)
@@ -243,7 +243,7 @@ func displayControlResults(ctx context.Context, executionTree *execute.Execution
 	return err
 }
 
-func exportControlResults(ctx context.Context, executionTree *execute.ExecutionTree, formats []controldisplay.CheckExportTarget) []error {
+func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, formats []controldisplay.CheckExportTarget) []error {
 	errors := []error{}
 	for _, format := range formats {
 		formatter, err := controldisplay.GetExportFormatter(format.Format)

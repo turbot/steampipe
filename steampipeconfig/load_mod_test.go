@@ -27,6 +27,7 @@ var loadWorkspaceOptions = &parse.ParseModOptions{
 	ListOptions: &filehelpers.ListOptions{
 		Flags:   filehelpers.Files,
 		Exclude: []string{fmt.Sprintf("**/%s*", constants.WorkspaceDataDir)},
+		Flags:   filehelpers.Files,
 	},
 }
 var testCasesLoadMod map[string]loadModTest

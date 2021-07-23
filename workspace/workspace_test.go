@@ -18,11 +18,7 @@ type loadWorkspaceTest struct {
 
 var toStringPointer = utils.ToStringPointer
 
-var m3alias = "m3"
-
-// the actual mod loading logic is tested more thoroughly in TestLoadMod (steampipeconfig/load_mod_test.go)
-// this test is primarily to verify the QueryMap building
-var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
+var m3alias, testCasesLoadWorkspace = "m3", map[string]loadWorkspaceTest{
 	"single mod": {
 		source: "test_data/w_1",
 		expected: &Workspace{
@@ -94,7 +90,8 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 			},
 		}},
 	},
-}
+} // the actual mod loading logic is tested more thoroughly in TestLoadMod (steampipeconfig/load_mod_test.go)
+// this test is primarily to verify the QueryMap building
 
 func TestLoadWorkspace(t *testing.T) {
 	for name, test := range testCasesLoadWorkspace {

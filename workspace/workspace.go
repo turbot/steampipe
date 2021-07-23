@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/turbot/steampipe/report/reportevents"
+
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
@@ -29,6 +31,8 @@ type Workspace struct {
 	ControlMap   map[string]*modconfig.Control
 	BenchmarkMap map[string]*modconfig.Benchmark
 	ModMap       map[string]*modconfig.Mod
+	ReportMap    map[string]*modconfig.Report
+	PanelMap     map[string]*modconfig.Panel
 
 	watcher    *utils.FileWatcher
 	loadLock   sync.Mutex
@@ -36,21 +40,25 @@ type Workspace struct {
 	// should we load/watch files recursively
 	listFlag     filehelpers.ListFlag
 	watcherError error
+	// event handlers
+	reportEventHandlers []reportevents.ReportEventHandler
 }
 
-// Load creates a Workspace and loads the workdspace mod
+// Load creates a Workspace and loads the workspace mod
 func Load(workspacePath string) (*Workspace, error) {
 	utils.LogTime("workspace.Load start")
 	defer utils.LogTime("workspace.Load end")
 
 	// create shell workspace
-	workspace := &Workspace{Path: workspacePath}
+	workspace := &Workspace{
+		Path: workspacePath,
+	}
 
 	// determine whether to load files recursively or just from the top level folder
 	workspace.setListFlag()
 
 	// load the .steampipe ignore file
-	if err := workspace.LoadExclusions(); err != nil {
+	if err := workspace.loadExclusions(); err != nil {
 		return nil, err
 	}
 
@@ -61,28 +69,23 @@ func Load(workspacePath string) (*Workspace, error) {
 	return workspace, nil
 }
 
-func (w *Workspace) SetupWatcher(client *db.Client) error {
+// clear all resource maps
+func (w *Workspace) reset() {
+	w.QueryMap = make(map[string]*modconfig.Query)
+	w.ControlMap = make(map[string]*modconfig.Control)
+	w.BenchmarkMap = make(map[string]*modconfig.Benchmark)
+	w.ModMap = make(map[string]*modconfig.Mod)
+	w.ReportMap = make(map[string]*modconfig.Report)
+	w.PanelMap = make(map[string]*modconfig.Panel)
+}
 
+func (w *Workspace) SetupWatcher(client *db.Client) error {
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
 		OnChange: func(events []fsnotify.Event) {
-			w.loadLock.Lock()
-			defer w.loadLock.Unlock()
-
-			err := w.loadMod()
-			if err != nil {
-				// if we are already in an error state, do not show error
-				if w.watcherError == nil {
-					fmt.Println()
-					utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
-				}
-			}
-			// now store/clear watcher error so we only show message once
-			w.watcherError = err
-			// todo detect differences and only refresh if necessary
-			db.UpdateMetadataTables(w.GetResourceMaps(), client)
+			w.handleFileWatcherEvent(client, events)
 		},
 		ListFlag: w.listFlag,
 		//onError:          nil,
@@ -266,6 +269,9 @@ func (w *Workspace) loadMod() error {
 	// it is valid for 0 or 1 mod to be defined (if no mod is defined, create a default one)
 	// populate mod with all hcl resources we parse
 
+	// clear all resource maps
+	w.reset()
+
 	// build options used to load workspace
 	// set flags to create pseudo resources and a default mod if needed
 	opts := &parse.ParseModOptions{
@@ -276,11 +282,6 @@ func (w *Workspace) loadMod() error {
 			Exclude: w.exclusions,
 		},
 	}
-
-	// clear all our maps
-	w.QueryMap = make(map[string]*modconfig.Query)
-	w.ControlMap = make(map[string]*modconfig.Control)
-	w.BenchmarkMap = make(map[string]*modconfig.Benchmark)
 
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
 	if err != nil {
@@ -298,6 +299,8 @@ func (w *Workspace) loadMod() error {
 	w.QueryMap = w.buildQueryMap(modMap)
 	w.ControlMap = w.buildControlMap(modMap)
 	w.BenchmarkMap = w.buildBenchmarkMap(modMap)
+	w.ReportMap = w.buildReportMap(modMap)
+	w.PanelMap = w.buildPanelMap(modMap)
 	w.ModMap = modMap
 
 	return nil
@@ -372,4 +375,97 @@ func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) map[string]*modco
 		}
 	}
 	return res
+}
+
+func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfig.Report {
+	//  build a list of long and short names for these queries
+	var res = make(map[string]*modconfig.Report)
+
+	// for LOCAL reports, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
+	for _, r := range w.Mod.Reports {
+		res[r.Name()] = r
+		res[r.QualifiedName()] = r
+	}
+
+	// for mod dependencies, add queries keyed by long name only
+	for _, mod := range modMap {
+		for _, r := range mod.Reports {
+			res[r.QualifiedName()] = r
+		}
+	}
+	return res
+}
+
+func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig.Panel {
+	//  build a list of long and short names for these queries
+	var res = make(map[string]*modconfig.Panel)
+
+	// for LOCAL panels, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
+	for _, r := range w.Mod.Panels {
+		res[r.Name()] = r
+		res[r.QualifiedName()] = r
+	}
+
+	// for mod dependencies, add queries keyed by long name only
+	for _, mod := range modMap {
+		for _, p := range mod.Panels {
+			res[p.QualifiedName()] = p
+		}
+	}
+	return res
+}
+
+func (w *Workspace) loadExclusions() error {
+	w.exclusions = []string{}
+
+	ignorePath := filepath.Join(w.Path, constants.WorkspaceIgnoreFile)
+	file, err := os.Open(ignorePath)
+	if err != nil {
+		// if file does not exist, just return
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if len(strings.TrimSpace(line)) != 0 && !strings.HasPrefix(line, "#") {
+			// add exclusion to the workspace path (to ensure relative patterns work)
+			absoluteExclusion := filepath.Join(w.Path, line)
+			w.exclusions = append(w.exclusions, absoluteExclusion)
+		}
+	}
+
+	if err = scanner.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// return a map of all unique panels, keyed by name
+// not we cannot just use PanelMap as this contains duplicates (qualified and unqualified version)
+func (w *Workspace) getPanelMap() map[string]*modconfig.Panel {
+	panels := make(map[string]*modconfig.Panel, len(w.PanelMap))
+	for _, p := range w.PanelMap {
+		// refetch the name property to avoid duplicates
+		// (as we save resources with qualified and unqualified name)
+		panels[p.Name()] = p
+	}
+	return panels
+}
+
+// return a map of all unique reports, keyed by name
+// not we cannot just use ReportMap as this contains duplicates (qualified and unqualified version)
+func (w *Workspace) getReportMap() map[string]*modconfig.Report {
+	reports := make(map[string]*modconfig.Report, len(w.ReportMap))
+	for _, p := range w.ReportMap {
+		// refetch the name property to avoid duplicates
+		// (as we save resources with qualified and unqualified name)
+		reports[p.Name()] = p
+	}
+	return reports
 }

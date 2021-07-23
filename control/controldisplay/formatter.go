@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 )
 
 const (
@@ -46,7 +46,7 @@ func NewCheckExportTarget(format string, file string, err error) CheckExportTarg
 }
 
 type Formatter interface {
-	Format(ctx context.Context, tree *execute.ExecutionTree) (io.Reader, error)
+	Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error)
 }
 
 func GetExportFormatter(exportFormat string) (Formatter, error) {
@@ -81,6 +81,6 @@ func InferFormatFromExportFileName(filename string) (string, error) {
 // reads an empty string
 type NullFormatter struct{}
 
-func (j *NullFormatter) Format(ctx context.Context, tree *execute.ExecutionTree) (io.Reader, error) {
+func (j *NullFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	return strings.NewReader(""), nil
 }

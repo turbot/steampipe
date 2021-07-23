@@ -36,8 +36,8 @@ type Benchmark struct {
 	ChildNameStrings []string `column:"children,jsonb"`
 	DeclRange        hcl.Range
 
-	parents  []ControlTreeItem
-	children []ControlTreeItem
+	parents  []ModTreeItem
+	children []ModTreeItem
 	metadata *ResourceMetadata
 }
 
@@ -77,7 +77,7 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 		nameMap[n.Name] = true
 	}
 
-	b.children = make([]ControlTreeItem, len(b.ChildNameStrings))
+	b.children = make([]ModTreeItem, len(b.ChildNameStrings))
 	return res
 }
 
@@ -127,14 +127,14 @@ func (b *Benchmark) GetChildControls() []*Control {
 	return res
 }
 
-// AddChild implements ControlTreeItem
-func (b *Benchmark) AddChild(child ControlTreeItem) error {
+// AddChild implements ModTreeItem
+func (b *Benchmark) AddChild(child ModTreeItem) error {
 	// mod cannot be added as a child
 	if _, ok := child.(*Mod); ok {
 		return fmt.Errorf("mod cannot be added as a child")
 	}
 
-	// now find which positing this child is in the array
+	// now find which position this child is in the array
 	for i, name := range b.ChildNameStrings {
 		if name == child.Name() {
 			b.children[i] = child
@@ -145,28 +145,28 @@ func (b *Benchmark) AddChild(child ControlTreeItem) error {
 	return fmt.Errorf("benchmark '%s' has no child '%s'", b.Name(), child.Name())
 }
 
-// AddParent implements ControlTreeItem
-func (b *Benchmark) AddParent(parent ControlTreeItem) error {
+// AddParent implements ModTreeItem
+func (b *Benchmark) AddParent(parent ModTreeItem) error {
 	b.parents = append(b.parents, parent)
 	return nil
 }
 
-// GetParents implements ControlTreeItem
-func (b *Benchmark) GetParents() []ControlTreeItem {
+// GetParents implements ModTreeItem
+func (b *Benchmark) GetParents() []ModTreeItem {
 	return b.parents
 }
 
-// GetTitle implements ControlTreeItem
+// GetTitle implements ModTreeItem
 func (b *Benchmark) GetTitle() string {
 	return typehelpers.SafeString(b.Title)
 }
 
-// GetDescription implements ControlTreeItem
+// GetDescription implements ModTreeItem
 func (b *Benchmark) GetDescription() string {
 	return typehelpers.SafeString(b.Description)
 }
 
-// GetTags implements ControlTreeItem
+// GetTags implements ModTreeItem
 func (b *Benchmark) GetTags() map[string]string {
 	if b.Tags != nil {
 		return *b.Tags
@@ -174,19 +174,20 @@ func (b *Benchmark) GetTags() map[string]string {
 	return map[string]string{}
 }
 
-// GetChildren implements ControlTreeItem
-func (b *Benchmark) GetChildren() []ControlTreeItem {
+// GetChildren implements ModTreeItem
+func (b *Benchmark) GetChildren() []ModTreeItem {
 	return b.children
 }
 
-// Path implements ControlTreeItem
-// TODO is this needed - if so it needs to be an array
-func (b *Benchmark) Path() []string {
-	path := []string{b.FullName}
-	if b.parents != nil {
-		path = append(b.parents[0].Path(), path...)
+// GetPaths implements ModTreeItem
+func (b *Benchmark) GetPaths() []NodePath {
+	var res []NodePath
+	for _, parent := range b.parents {
+		for _, parentPath := range parent.GetPaths() {
+			res = append(res, append(parentPath, b.Name()))
+		}
 	}
-	return path
+	return res
 }
 
 // GetMetadata implements ResourceWithMetadata
@@ -199,7 +200,7 @@ func (b *Benchmark) SetMetadata(metadata *ResourceMetadata) {
 	b.metadata = metadata
 }
 
-// Name implements ControlTreeItem, HclResource, ResourceWithMetadata
+// Name implements ModTreeItem, HclResource, ResourceWithMetadata
 // return name in format: 'control.<shortName>'
 func (b *Benchmark) Name() string {
 	return b.FullName

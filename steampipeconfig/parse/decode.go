@@ -41,8 +41,10 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			continue
 		}
 
+		//var decodeResults []*decodeResult
 		// special case decoding for locals
-		if block.Type == modconfig.BlockTypeLocals {
+		switch block.Type {
+		case modconfig.BlockTypeLocals:
 			// special case decode logic for locals
 			locals, res := decodeLocals(block, runCtx.EvalCtx)
 			for _, local := range locals {
@@ -52,18 +54,28 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 				moreDiags = handleDecodeResult(local, res, block, runCtx)
 				diags = append(diags, moreDiags...)
 			}
-			continue
+		case modconfig.BlockTypePanel:
+			// special case decode logic for locals
+			panel, res := decodePanel(block, runCtx)
+			moreDiags = handleDecodeResult(panel, res, block, runCtx)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
+		case modconfig.BlockTypeReport:
+			// special case decode logic for locals
+			report, res := decodeReport(block, runCtx)
+			moreDiags = handleDecodeResult(report, res, block, runCtx)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
+		default:
+			// all other blocks are treated the same:
+			resource, res := decodeResource(block, runCtx)
+			moreDiags = handleDecodeResult(resource, res, block, runCtx)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
 		}
-
-		// all other blocks are treated the same:
-		// decode the resource
-		resource, res := decodeResource(block, runCtx)
-
-		// handle the result
-		// - if successful, add resource to mod and variables maps
-		// - if there are dependencies, add them to run context
-		moreDiags = handleDecodeResult(resource, res, block, runCtx)
-		diags = append(diags, moreDiags...)
 	}
 	return diags
 }
@@ -79,6 +91,10 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResourc
 		resource = modconfig.NewQuery(block)
 	case modconfig.BlockTypeControl:
 		resource = modconfig.NewControl(block)
+	case modconfig.BlockTypeReport:
+		resource = modconfig.NewReport(block)
+	case modconfig.BlockTypePanel:
+		resource = modconfig.NewPanel(block)
 	case modconfig.BlockTypeBenchmark:
 		resource = modconfig.NewBenchmark(block)
 	}
@@ -135,10 +151,93 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 	return resource, res
 }
 
+func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decodeResult) {
+	res := &decodeResult{}
+	content, diags := block.Body.Content(PanelSchema)
+	res.handleDecodeDiags(diags)
+
+	// get shell resource
+	panel := modconfig.NewPanel(block)
+
+	diags = decodeProperty(content, "title", &panel.Title, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "type", &panel.Type, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "width", &panel.Width, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "height", &panel.Height, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "source", &panel.Source, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "text", &panel.Text, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "sql", &panel.SQL, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeReportBlocks(panel, content, runCtx)
+	res.handleDecodeDiags(diags)
+
+	return panel, res
+}
+
+func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Report, *decodeResult) {
+	res := &decodeResult{}
+
+	content, diags := block.Body.Content(ReportSchema)
+	res.handleDecodeDiags(diags)
+
+	report := modconfig.NewReport(block)
+	diags = decodeProperty(content, "title", &report.Title, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeReportBlocks(report, content, runCtx)
+	res.handleDecodeDiags(diags)
+
+	return report, res
+}
+
+func decodeReportBlocks(resource modconfig.ModTreeItem, content *hcl.BodyContent, runCtx *RunContext) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	for _, b := range content.Blocks {
+		var childResource modconfig.ModTreeItem
+		var decodeResult *decodeResult
+		switch b.Type {
+		case modconfig.BlockTypePanel:
+			childResource, decodeResult = decodePanel(b, runCtx)
+		case modconfig.BlockTypeReport:
+			childResource, decodeResult = decodeReport(b, runCtx)
+		}
+
+		// add this panel to the mod
+		moreDiags := handleDecodeResult(childResource.(modconfig.HclResource), decodeResult, b, runCtx)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+		}
+		if decodeResult.Success() {
+			resource.AddChild(childResource)
+		}
+	}
+	return diags
+}
+
+func decodeProperty(content *hcl.BodyContent, property string, dest interface{}, runCtx *RunContext) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	if title, ok := content.Attributes[property]; ok {
+		diags = gohcl.DecodeExpression(title.Expr, runCtx.EvalCtx, dest)
+	}
+	return diags
+}
+
 // handleDecodeResult
 // if decode was successful:
 // - generate and set resource metadata
-// - add resource to RunContext (which adds it to the mod(
+// - add resource to RunContext (which adds it to the mod)handleDecodeResult
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	if res.Success() {
@@ -167,7 +266,9 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 			runCtx.AddDependencies(block, resource.Name(), res.Depends)
 		}
 	}
-	return diags
+	// update result diags
+	res.Diags = diags
+	return res.Diags
 }
 
 // determine whether the diag is a dependency error, and if so, return a dependency object

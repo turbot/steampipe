@@ -6,12 +6,12 @@ import (
 	"io"
 	"strings"
 
-	"github.com/turbot/steampipe/control/execute"
+	"github.com/turbot/steampipe/control/controlexecute"
 )
 
 type JSONFormatter struct{}
 
-func (j *JSONFormatter) Format(ctx context.Context, tree *execute.ExecutionTree) (io.Reader, error) {
+func (j *JSONFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	bytes, err := json.MarshalIndent(tree.Root, "", "  ")
 	if err != nil {
 		return nil, err
