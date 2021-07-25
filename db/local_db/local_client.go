@@ -6,6 +6,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/turbot/steampipe/db/db_common"
+
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -17,6 +19,7 @@ type LocalClient struct {
 	dbClient       *sql.DB
 	schemaMetadata *schema.Metadata
 	connectionMap  *steampipeconfig.ConnectionMap
+	invoker        constants.Invoker
 }
 
 // Close closes the connection to the database and shuts down the backend
@@ -24,12 +27,13 @@ func (c *LocalClient) Close() error {
 	if c.dbClient != nil {
 		return c.dbClient.Close()
 	}
+	ShutdownService(c.invoker)
 	return nil
 }
 
 // NewLocalClient ensures that the database instance is running
 // and returns a `Client` to interact with it
-func NewLocalClient() (*LocalClient, error) {
+func NewLocalClient(invoker constants.Invoker) (*LocalClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
 
@@ -37,18 +41,20 @@ func NewLocalClient() (*LocalClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := new(LocalClient)
+	client := &LocalClient{
+		invoker: invoker,
+	}
 	client.dbClient = db
 
 	// setup a blank struct for the schema metadata
 	client.schemaMetadata = schema.NewMetadata()
 
-	client.loadSchema()
+	client.LoadSchema()
 
 	return client, nil
 }
 
-func (c *LocalClient) RefreshConnectionAndSearchPaths() *RefreshConnectionResult {
+func (c *LocalClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConnectionResult {
 	res := c.RefreshConnections()
 	if res.Error != nil {
 		return res
@@ -76,6 +82,34 @@ func (c *LocalClient) RefreshConnectionAndSearchPaths() *RefreshConnectionResult
 	}
 
 	return res
+}
+
+// SchemaMetadata returns the latest schema metadata
+func (c *LocalClient) SchemaMetadata() *schema.Metadata {
+	return c.schemaMetadata
+}
+
+// ConnectionMap returns the latest connection map
+func (c *LocalClient) ConnectionMap() *steampipeconfig.ConnectionMap {
+	return c.connectionMap
+}
+
+// LoadSchema retrieves both the raw query result and a sanitised version in list form
+// todo share this between local and remote client - make a function not a method??
+func (c *LocalClient) LoadSchema() {
+	utils.LogTime("db.LoadSchema start")
+	defer utils.LogTime("db.LoadSchema end")
+
+	tablesResult, err := c.getSchemaFromDB()
+	utils.FailOnError(err)
+
+	defer tablesResult.Close()
+
+	metadata, err := buildSchemaMetadata(tablesResult)
+	utils.FailOnError(err)
+
+	c.schemaMetadata.Schemas = metadata.Schemas
+	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
 }
 
 // close and reopen db client
@@ -182,33 +216,6 @@ func waitForConnection(conn *sql.DB) bool {
 			return false
 		}
 	}
-}
-
-// SchemaMetadata :: returns the latest schema metadata
-func (c *LocalClient) SchemaMetadata() *schema.Metadata {
-	return c.schemaMetadata
-}
-
-// ConnectionMap :: returns the latest connection map
-func (c *LocalClient) ConnectionMap() *steampipeconfig.ConnectionMap {
-	return c.connectionMap
-}
-
-// return both the raw query result and a sanitised version in list form
-func (c *LocalClient) loadSchema() {
-	utils.LogTime("db.loadSchema start")
-	defer utils.LogTime("db.loadSchema end")
-
-	tablesResult, err := c.getSchemaFromDB()
-	utils.FailOnError(err)
-
-	defer tablesResult.Close()
-
-	metadata, err := buildSchemaMetadata(tablesResult)
-	utils.FailOnError(err)
-
-	c.schemaMetadata.Schemas = metadata.Schemas
-	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
 }
 
 func (c *LocalClient) getSchemaFromDB() (*sql.Rows, error) {

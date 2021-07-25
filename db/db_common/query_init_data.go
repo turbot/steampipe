@@ -1,12 +1,12 @@
-package local_db
+package db_common
 
 type QueryInitData struct {
 	Queries   []string
 	Workspace WorkspaceResourceProvider
-	Client    *LocalClient
+	Client    Client
 	Result    *InitResult
 }
 
-func NewInitData() *QueryInitData {
+func NewQueryInitData() *QueryInitData {
 	return &QueryInitData{Result: &InitResult{}}
 }

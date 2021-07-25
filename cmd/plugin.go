@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/steampipe/db"
+
 	"github.com/turbot/steampipe/db/local_db"
 
 	"github.com/spf13/cobra"
@@ -79,11 +81,11 @@ Examples:
   steampipe plugin install turbot/azure@0.1.0`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := local_db.EnsureDbAndStartService(local_db.InvokerPlugin, true)
+			err := local_db.EnsureDbAndStartService(constants.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
-			local_db.Shutdown(nil, local_db.InvokerPlugin)
+			local_db.ShutdownService(constants.InvokerPlugin)
 		},
 	}
 
@@ -115,14 +117,6 @@ Examples:
 
   # Update a common plugin (turbot/aws)
   steampipe plugin update aws`,
-		PreRun: func(cmd *cobra.Command, args []string) {
-			// start db if necessary, refreshing connections
-			err := local_db.EnsureDbAndStartService(local_db.InvokerPlugin, true)
-			utils.FailOnErrorWithMessage(err, "failed to start service")
-		},
-		PostRun: func(cmd *cobra.Command, args []string) {
-			local_db.Shutdown(nil, local_db.InvokerPlugin)
-		},
 	}
 
 	cmdconfig.
@@ -153,11 +147,11 @@ Examples:
   steampipe plugin list --outdated`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := local_db.EnsureDbAndStartService(local_db.InvokerPlugin, true)
+			err := local_db.EnsureDbAndStartService(constants.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
-			local_db.Shutdown(nil, local_db.InvokerPlugin)
+			local_db.ShutdownService(constants.InvokerPlugin)
 		},
 	}
 
@@ -189,11 +183,11 @@ Example:
 `,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// start db if necessary, refreshing connections
-			err := local_db.EnsureDbAndStartService(local_db.InvokerPlugin, true)
+			err := local_db.EnsureDbAndStartService(constants.InvokerPlugin, true)
 			utils.FailOnErrorWithMessage(err, "failed to start service")
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
-			local_db.Shutdown(nil, local_db.InvokerPlugin)
+			local_db.ShutdownService(constants.InvokerPlugin)
 		},
 	}
 
@@ -210,9 +204,6 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			utils.ShowError(helpers.ToError(r))
 		}
 	}()
-
-	// create a context
-	ctx := context.Background()
 
 	// args to 'plugin install' -- one or more plugins to install
 	// plugin names can be simple names ('aws') for "standard" plugins,
@@ -283,7 +274,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	display.StopSpinner(spinner)
 
-	refreshConnectionsIfNecessary(ctx, installReports, false)
+	refreshConnectionsIfNecessary(installReports, false)
 	display.PrintInstallReports(installReports, false)
 
 	// a concluding blank line - since we always output multiple lines
@@ -298,9 +289,6 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			utils.ShowError(helpers.ToError(r))
 		}
 	}()
-	// create a context
-	ctx := context.Background()
-
 	// args to 'plugin update' -- one or more plugins to install
 	// These can be simple names ('aws') for "standard" plugins, or
 	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
@@ -440,7 +428,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		})
 	}
 
-	refreshConnectionsIfNecessary(ctx, updateReports, true)
+	refreshConnectionsIfNecessary(updateReports, true)
 	display.PrintInstallReports(updateReports, true)
 
 	// a concluding blank line - since we always output multiple lines
@@ -448,7 +436,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 }
 
 // start service if necessary and refresh connections
-func refreshConnectionsIfNecessary(ctx context.Context, reports []display.InstallReport, isUpdate bool) error {
+func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate bool) error {
 	// get count of skipped reports
 	skipped := 0
 	for _, report := range reports {
@@ -472,7 +460,7 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports []display.Instal
 		steampipeconfig.Config = config
 	}
 
-	client, err := local_db.NewLocalClient()
+	client, err := db.GetClient(constants.InvokerPlugin)
 	if err != nil {
 		return err
 	}
@@ -549,7 +537,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
 func getPluginConnectionMap(ctx context.Context) (map[string][]string, error) {
-	client, err := local_db.NewLocalClient()
+	client, err := db.GetClient(constants.InvokerPlugin)
 	if err != nil {
 		return nil, err
 	}

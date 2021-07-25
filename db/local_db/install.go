@@ -193,7 +193,7 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Starting database...")
-	err = startPostgresProcess(constants.DatabaseDefaultPort, ListenTypeLocal, InvokerInstaller)
+	err = startPostgresProcess(constants.DatabaseDefaultPort, ListenTypeLocal, constants.InvokerInstaller)
 	if err != nil {
 		display.StopSpinner(spinner)
 		utils.FailOnErrorWithMessage(err, "x Starting database... FAILED!")
@@ -214,7 +214,7 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 	// force stop
 	display.UpdateSpinnerMessage(spinner, "Completing configuration")
-	_, err = StopDB(true, InvokerInstaller, nil)
+	_, err = StopDB(true, constants.InvokerInstaller, nil)
 
 	return err
 }

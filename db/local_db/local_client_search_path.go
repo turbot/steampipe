@@ -7,42 +7,38 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/turbot/steampipe/db/db_common"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 )
 
-// SetServiceSearchPath :: set the search path for the db service (by setting it on the steampipe user)
-func (c *LocalClient) SetServiceSearchPath() error {
-	var searchPath []string
-
-	// is there a service search path in the config?
-	// check ConfigKeyDatabaseSearchPath config (this is the value specified in the database config)
-	if viper.IsSet(constants.ConfigKeyDatabaseSearchPath) {
-		searchPath = viper.GetStringSlice(constants.ConfigKeyDatabaseSearchPath)
-		// add 'internal' schema as last schema in the search path
-		searchPath = append(searchPath, constants.FunctionSchema)
-	} else {
-		// no config set - set service search path to default
-		searchPath = c.getDefaultSearchPath()
+// GetCurrentSearchPath implements DbClient
+// query the database to get the current search path
+func (c *LocalClient) GetCurrentSearchPath() ([]string, error) {
+	var currentSearchPath []string
+	var pathAsString string
+	row := c.dbClient.QueryRow("show search_path")
+	if row.Err() != nil {
+		return nil, row.Err()
 	}
-
-	// escape the schema names
-	searchPath = escapeSearchPath(searchPath)
-
-	log.Println("[TRACE] setting service search path to", searchPath)
-
-	// now construct and execute the query
-	query := fmt.Sprintf(
-		"alter user %s set search_path to %s;",
-		constants.DatabaseUser,
-		strings.Join(searchPath, ","),
-	)
-	_, err := c.ExecuteSync(context.Background(), query, false)
-	return err
+	err := row.Scan(&pathAsString)
+	if err != nil {
+		return nil, err
+	}
+	currentSearchPath = strings.Split(pathAsString, ",")
+	// unescape search path
+	for idx, p := range currentSearchPath {
+		p = strings.Join(strings.Split(p, "\""), "")
+		p = strings.TrimSpace(p)
+		currentSearchPath[idx] = p
+	}
+	return currentSearchPath, nil
 }
 
-// SetClientSearchPath :: set the search path for this client
+// SetClientSearchPath implements DbClient
+//sets the search path for this client
 // if either a search-path or search-path-prefix is set in config, set the search path
 // (otherwise fall back to service search path)
 func (c *LocalClient) SetClientSearchPath() error {
@@ -82,6 +78,36 @@ func (c *LocalClient) SetClientSearchPath() error {
 	return nil
 }
 
+// SetServiceSearchPath sets the search path for the db service (by setting it on the steampipe user)
+func (c *LocalClient) SetServiceSearchPath() error {
+	var searchPath []string
+
+	// is there a service search path in the config?
+	// check ConfigKeyDatabaseSearchPath config (this is the value specified in the database config)
+	if viper.IsSet(constants.ConfigKeyDatabaseSearchPath) {
+		searchPath = viper.GetStringSlice(constants.ConfigKeyDatabaseSearchPath)
+		// add 'internal' schema as last schema in the search path
+		searchPath = append(searchPath, constants.FunctionSchema)
+	} else {
+		// no config set - set service search path to default
+		searchPath = c.getDefaultSearchPath()
+	}
+
+	// escape the schema names
+	searchPath = escapeSearchPath(searchPath)
+
+	log.Println("[TRACE] setting service search path to", searchPath)
+
+	// now construct and execute the query
+	query := fmt.Sprintf(
+		"alter user %s set search_path to %s;",
+		constants.DatabaseUser,
+		strings.Join(searchPath, ","),
+	)
+	_, err := c.ExecuteSync(context.Background(), query, false)
+	return err
+}
+
 func (c *LocalClient) addSearchPathPrefix(searchPathPrefix []string, searchPath []string) []string {
 	if len(searchPathPrefix) > 0 {
 		prefixedSearchPath := searchPathPrefix
@@ -109,33 +135,11 @@ func (c *LocalClient) getDefaultSearchPath() []string {
 	return searchPath
 }
 
-// query the database to get the current search path
-func (c *LocalClient) GetCurrentSearchPath() ([]string, error) {
-	var currentSearchPath []string
-	var pathAsString string
-	row := c.dbClient.QueryRow("show search_path")
-	if row.Err() != nil {
-		return nil, row.Err()
-	}
-	err := row.Scan(&pathAsString)
-	if err != nil {
-		return nil, err
-	}
-	currentSearchPath = strings.Split(pathAsString, ",")
-	// unescape search path
-	for idx, p := range currentSearchPath {
-		p = strings.Join(strings.Split(p, "\""), "")
-		p = strings.TrimSpace(p)
-		currentSearchPath[idx] = p
-	}
-	return currentSearchPath, nil
-}
-
 // apply postgres escaping to search path and remove whitespace
 func escapeSearchPath(searchPath []string) []string {
 	res := make([]string, len(searchPath))
 	for idx, path := range searchPath {
-		res[idx] = PgEscapeName(strings.TrimSpace(path))
+		res[idx] = db_common.PgEscapeName(strings.TrimSpace(path))
 	}
 	return res
 }

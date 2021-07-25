@@ -1,4 +1,4 @@
-package local_db
+package db_common
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 // TagColumn :: tag used to specify the column name and type in the reflection tables
 const TagColumn = "column"
 
-func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client *LocalClient) error {
+func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client Client) error {
 	utils.LogTime("db.UpdateMetadataTables start")
 	defer utils.LogTime("db.UpdateMetadataTables end")
 
@@ -36,7 +36,7 @@ func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 	return nil
 }
 
-func CreateMetadataTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, client *LocalClient) error {
+func CreateMetadataTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, client Client) error {
 	utils.LogTime("db.CreateMetadataTables start")
 	defer utils.LogTime("db.CreateMetadataTables end")
 
@@ -55,7 +55,7 @@ func CreateMetadataTables(ctx context.Context, workspaceResources *modconfig.Wor
 	if err != nil {
 		return fmt.Errorf("failed to create reflection tables: %v", err)
 	}
-	client.loadSchema()
+	client.LoadSchema()
 
 	// return context error - this enables calling code to respond to cancellation
 	return ctx.Err()

@@ -18,7 +18,7 @@ type RunningDBInstanceInfo struct {
 	Port       int
 	Listen     []string
 	ListenType StartListenType
-	Invoker    Invoker
+	Invoker    constants.Invoker
 	Password   string
 	User       string
 	Database   string

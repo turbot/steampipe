@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/turbot/steampipe/db/local_db"
+	"github.com/turbot/steampipe/db/db_common"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
@@ -33,7 +33,7 @@ const (
 // InteractiveClient :: wrapper over *LocalClient and *prompt.Prompt along
 // to facilitate interactive query prompt
 type InteractiveClient struct {
-	initData                *local_db.QueryInitData
+	initData                *db_common.QueryInitData
 	resultsStreamer         *queryresult.ResultStreamer
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
@@ -44,23 +44,23 @@ type InteractiveClient struct {
 	cancelActiveQuery context.CancelFunc
 	cancelPrompt      context.CancelFunc
 	// channel from which we read the result of the external initialisation process
-	initDataChan *chan *local_db.QueryInitData
+	initDataChan *chan *db_common.QueryInitData
 	// channel used internally to signal an init error
-	initResultChan chan *local_db.InitResult
+	initResultChan chan *db_common.InitResult
 
 	afterClose AfterPromptCloseAction
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock sync.Mutex
 }
 
-func newInteractiveClient(initChan *chan *local_db.QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	c := &InteractiveClient{
 		resultsStreamer:         resultsStreamer,
 		interactiveQueryHistory: queryhistory.New(),
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
 		initDataChan:            initChan,
-		initResultChan:          make(chan *local_db.InitResult, 1),
+		initResultChan:          make(chan *db_common.InitResult, 1),
 	}
 	// asynchronously wait for init to complete
 	// we start this immediately rather than lazy loading as we want to handle errors asap
@@ -130,7 +130,7 @@ func (c *InteractiveClient) InteractiveQuery() {
 }
 
 // init data has arrived, handle any errors/warnings/messages
-func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *local_db.InitResult) error {
+func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db_common.InitResult) error {
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 

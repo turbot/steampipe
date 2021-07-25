@@ -16,7 +16,8 @@ import (
 	"golang.org/x/text/message"
 )
 
-// ExecuteSync :: execute a query against this client and wait for the result
+// ExecuteSync implements DbClient
+// execute a query against this client and wait for the result
 func (c *LocalClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	result, err := c.Execute(ctx, query, disableSpinner)
 	if err != nil {
@@ -34,7 +35,8 @@ func (c *LocalClient) ExecuteSync(ctx context.Context, query string, disableSpin
 	return syncResult, nil
 }
 
-// Execute executes the provided query against the Database in the given context.Context
+// Execute  implements DbClient
+// execute the provided query against the Database in the given context.Context
 // Bear in mind that whenever ExecuteQuery is called, the returned `queryresult.Result` MUST be fully read -
 // otherwise the transaction is left open, which will block the connection and will prevent subsequent communications
 // with the service

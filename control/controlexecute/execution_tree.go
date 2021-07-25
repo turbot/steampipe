@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/turbot/steampipe/db/local_db"
+	"github.com/turbot/steampipe/db/db_common"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -22,7 +22,7 @@ type ExecutionTree struct {
 	Root *ResultGroup
 
 	workspace *workspace.Workspace
-	client    *local_db.LocalClient
+	client    db_common.Client
 	// an optional map of control names used to filter the controls which are run
 	controlNameFilterMap map[string]bool
 	progress             *ControlProgressRenderer
@@ -33,7 +33,7 @@ type ExecutionTree struct {
 }
 
 // NewExecutionTree creates a result group from a ModTreeItem
-func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client *local_db.LocalClient, arg string) (*ExecutionTree, error) {
+func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg string) (*ExecutionTree, error) {
 	// now populate the ExecutionTree
 	executionTree := &ExecutionTree{
 		workspace: workspace,
@@ -76,7 +76,7 @@ func (e *ExecutionTree) AddControl(control *modconfig.Control, group *ResultGrou
 	}
 }
 
-func (e *ExecutionTree) Execute(ctx context.Context, client *local_db.LocalClient) int {
+func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) int {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.progress.Start()

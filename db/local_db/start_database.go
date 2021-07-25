@@ -24,9 +24,6 @@ type StartResult int
 // StartListenType :: pseudoEnum of network binding for postgres
 type StartListenType string
 
-// Invoker :: pseudoEnum for what starts the service
-type Invoker string
-
 const (
 	// ServiceStarted :: StartResult - Service was started
 	ServiceStarted StartResult = iota
@@ -43,21 +40,6 @@ const (
 	ListenTypeLocal = "local"
 )
 
-const (
-	// InvokerService :: Invoker - when invoked by `service start`
-	InvokerService Invoker = "service"
-	// InvokerQuery :: Invoker - when invoked by `query`
-	InvokerQuery = "query"
-	// InvokerCheck :: Invoker - when invoked by `check`
-	InvokerCheck = "check"
-	// InvokerInstaller :: Invoker - when invoked by the `installer`
-	InvokerInstaller = "installer"
-	// InvokerPlugin :: Invoker - when invoked by the `pluginmanager`
-	InvokerPlugin = "plugin"
-	// InvokerReport :: Invoker - when invoked by `report`
-	InvokerReport = "report"
-)
-
 // IsValid :: validator for StartListenType known values
 func (slt StartListenType) IsValid() error {
 	switch slt {
@@ -67,17 +49,8 @@ func (slt StartListenType) IsValid() error {
 	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
 }
 
-// IsValid :: validator for Invoker known values
-func (slt Invoker) IsValid() error {
-	switch slt {
-	case InvokerService, InvokerQuery, InvokerCheck, InvokerInstaller, InvokerPlugin, InvokerReport:
-		return nil
-	}
-	return fmt.Errorf("Invalid invoker. Can be one of '%v', '%v', '%v', '%v' or '%v'", InvokerService, InvokerQuery, InvokerInstaller, InvokerPlugin, InvokerCheck)
-}
-
 // StartImplicitService starts up the service in an implicit mode
-func StartImplicitService(invoker Invoker, refreshConnections bool) error {
+func StartImplicitService(invoker constants.Invoker, refreshConnections bool) error {
 	utils.LogTime("db.StartImplicitService start")
 	defer utils.LogTime("db.StartImplicitService end")
 
@@ -90,7 +63,7 @@ func StartImplicitService(invoker Invoker, refreshConnections bool) error {
 }
 
 // StartDB :: start the database is not already running
-func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnections bool) (startResult StartResult, err error) {
+func StartDB(port int, listen StartListenType, invoker constants.Invoker, refreshConnections bool) (startResult StartResult, err error) {
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
 
@@ -125,7 +98,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 		// Check if the service was started by another `service` command
 		// if not, throw an error.
 		if processRunning {
-			if info.Invoker != InvokerService {
+			if info.Invoker != constants.InvokerService {
 				return ServiceAlreadyRunning, fmt.Errorf("You have a %s session open. Close this session before running %s.\nTo force kill all existing sessions, run %s", constants.Bold(fmt.Sprintf("steampipe %s", info.Invoker)), constants.Bold("steampipe service start"), constants.Bold("steampipe service stop --force"))
 			}
 			return ServiceAlreadyRunning, nil
@@ -161,7 +134,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 	// pass 'false' to disable auto refreshing connections
 	//- we will explicitly refresh connections after ensuring the steampipe server exists
 	if refreshConnections {
-		client, err = NewLocalClient()
+		client, err = NewLocalClient(invoker)
 		if err != nil {
 			return ServiceFailedToStart, handleStartFailure(err)
 		}
@@ -189,7 +162,7 @@ func StartDB(port int, listen StartListenType, invoker Invoker, refreshConnectio
 
 // startPostgresProcess starts the postgres process and writes out the state file
 // after it is convinced that the process is started and is accepting connections
-func startPostgresProcess(port int, listen StartListenType, invoker Invoker) error {
+func startPostgresProcess(port int, listen StartListenType, invoker constants.Invoker) error {
 	utils.LogTime("startPostgresProcess start")
 	defer utils.LogTime("startPostgresProcess end")
 

@@ -9,7 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/db/local_db"
+	"github.com/turbot/steampipe/db"
+
+	"github.com/turbot/steampipe/db/db_common"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -64,8 +66,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			utils.ShowError(helpers.ToError(r))
 		}
 
-		if initData.dbInitialised {
-			local_db.Shutdown(initData.client, local_db.InvokerCheck)
+		if initData.client != nil {
+			initData.client.Close()
 		}
 		if initData.workspace != nil {
 			initData.workspace.Close()
@@ -176,25 +178,14 @@ func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
 		res.warning = "no controls found in current workspace"
 	}
 
-	// start db if necessary, refreshing connections
-	err = local_db.EnsureDbAndStartService(local_db.InvokerCheck, true)
-	if err != nil {
-		if !utils.IsCancelledError(err) {
-			err = utils.PrefixError(err, "failed to start service")
-		}
-		res.error = err
-		return res
-	}
-	res.dbInitialised = true
-
 	// get a client
-	res.client, res.error = local_db.NewLocalClient()
+	res.client, res.error = db.GetClient(constants.InvokerCheck)
 	if res.error != nil {
 		return res
 	}
 
 	// populate the reflection tables
-	res.error = local_db.CreateMetadataTables(ctx, res.workspace.GetResourceMaps(), res.client)
+	res.error = db_common.CreateMetadataTables(ctx, res.workspace.GetResourceMaps(), res.client)
 
 	return res
 }

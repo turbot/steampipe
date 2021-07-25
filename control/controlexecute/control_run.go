@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/db/local_db"
+	"github.com/turbot/steampipe/db/db_common"
 
 	"github.com/spf13/viper"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -79,7 +79,7 @@ func (r *ControlRun) Skip() {
 	r.setRunStatus(ControlRunComplete)
 }
 
-func (r *ControlRun) Start(ctx context.Context, client *local_db.LocalClient) {
+func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
 

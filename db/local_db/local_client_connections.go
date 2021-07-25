@@ -6,15 +6,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/turbot/steampipe/db/db_common"
+
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
-// RefreshConnections :: load required connections from config
+// RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func (c *LocalClient) RefreshConnections() *RefreshConnectionResult {
-	res := &RefreshConnectionResult{}
+func (c *LocalClient) RefreshConnections() *db_common.RefreshConnectionResult {
+	res := &db_common.RefreshConnectionResult{}
 	utils.LogTime("db.RefreshConnections start")
 	defer utils.LogTime("db.RefreshConnections end")
 
@@ -85,7 +87,7 @@ func (c *LocalClient) RefreshConnections() *RefreshConnectionResult {
 
 	// reload the database schemas, since they have changed - otherwise we wouldn't be here
 	log.Println("[TRACE] reloading schema")
-	c.loadSchema()
+	c.LoadSchema()
 
 	res.UpdatedConnections = true
 	return res
@@ -105,8 +107,8 @@ func (c *LocalClient) updateConnectionMap() error {
 	return nil
 }
 
-func getConnectionPlugins(updates steampipeconfig.ConnectionMap) ([]*steampipeconfig.ConnectionPlugin, *RefreshConnectionResult) {
-	res := &RefreshConnectionResult{}
+func getConnectionPlugins(updates steampipeconfig.ConnectionMap) ([]*steampipeconfig.ConnectionPlugin, *db_common.RefreshConnectionResult) {
+	res := &db_common.RefreshConnectionResult{}
 	var connectionPlugins []*steampipeconfig.ConnectionPlugin
 
 	// create channels buffered to hold all updates
@@ -177,7 +179,7 @@ func getCommentQueries(plugins []*steampipeconfig.ConnectionPlugin) []string {
 
 func updateConnectionQuery(localSchema, remoteSchema string) []string {
 	// escape the name
-	localSchema = PgEscapeName(localSchema)
+	localSchema = db_common.PgEscapeName(localSchema)
 	return []string{
 
 		// Each connection has a unique schema. The schema, and all objects inside it,
@@ -208,16 +210,16 @@ func updateConnectionQuery(localSchema, remoteSchema string) []string {
 func commentsQuery(p *steampipeconfig.ConnectionPlugin) []string {
 	var statements []string
 	for t, schema := range p.Schema.Schema {
-		table := PgEscapeName(t)
-		schemaName := PgEscapeName(p.ConnectionName)
+		table := db_common.PgEscapeName(t)
+		schemaName := db_common.PgEscapeName(p.ConnectionName)
 		if schema.Description != "" {
-			tableDescription := PgEscapeString(schema.Description)
+			tableDescription := db_common.PgEscapeString(schema.Description)
 			statements = append(statements, fmt.Sprintf("COMMENT ON FOREIGN TABLE %s.%s is %s;", schemaName, table, tableDescription))
 		}
 		for _, c := range schema.Columns {
 			if c.Description != "" {
-				column := PgEscapeName(c.Name)
-				columnDescription := PgEscapeString(c.Description)
+				column := db_common.PgEscapeName(c.Name)
+				columnDescription := db_common.PgEscapeString(c.Description)
 				statements = append(statements, fmt.Sprintf("COMMENT ON COLUMN %s.%s.%s is %s;", schemaName, table, column, columnDescription))
 			}
 		}

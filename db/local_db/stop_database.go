@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/briandowns/spinner"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/display"
@@ -29,21 +31,16 @@ const (
 	ServiceStopTimedOut
 )
 
-// Shutdown :: closes the client connection and stops the
-// database instance if the given `invoker` matches
-func Shutdown(client *LocalClient, invoker Invoker) {
-	utils.LogTime("db.Shutdown start")
-	defer utils.LogTime("db.Shutdown end")
-
-	if client != nil {
-		client.Close()
-	}
+// ShutdownService stops the database instance if the given `invoker` matches
+func ShutdownService(invoker constants.Invoker) {
+	utils.LogTime("db.ShutdownService start")
+	defer utils.LogTime("db.ShutdownService end")
 
 	status, _ := GetStatus()
 
 	// is the service running?
 	if status != nil {
-		if status.Invoker == InvokerService {
+		if status.Invoker == constants.InvokerService {
 			// if the service was invoked by `steampipe service`,
 			// then we don't shut it down
 			return
@@ -67,7 +64,6 @@ func Shutdown(client *LocalClient, invoker Invoker) {
 		}
 	}
 }
-
 func GetCountOfConnectedClients() (int, error) {
 	rootClient, err := createRootDbClient()
 	if err != nil {
@@ -81,7 +77,7 @@ func GetCountOfConnectedClients() (int, error) {
 }
 
 // StopDB :: search and stop the running instance. Does nothing if an instance was not found
-func StopDB(force bool, invoker Invoker, spinner *spinner.Spinner) (StopStatus, error) {
+func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (StopStatus, error) {
 	log.Println("[TRACE] StopDB", force)
 
 	utils.LogTime("db.StopDB start")
@@ -132,15 +128,15 @@ func StopDB(force bool, invoker Invoker, spinner *spinner.Spinner) (StopStatus, 
 
 /**
 	Postgres has two more levels of shutdown:
-		* SIGTERM	- Smart Shutdown    	:  Wait for children to end normally - exit self
-		* SIGINT	- Fast Shutdown      	:  SIGTERM children, causing them to abort current
+		* SIGTERM	- Smart ShutdownService    	:  Wait for children to end normally - exit self
+		* SIGINT	- Fast ShutdownService      	:  SIGTERM children, causing them to abort current
 											:  transations and exit - wait for children to exit -
 											:  exit self
-		* SIGQUIT	- Immediate Shutdown 	:  SIGQUIT children - wait at most 5 seconds,
+		* SIGQUIT	- Immediate ShutdownService 	:  SIGQUIT children - wait at most 5 seconds,
 											   send SIGKILL to children - exit self immediately
 
 	Postgres recommended shutdown is to send a SIGTERM - which initiates
-	a Smart-Shutdown sequence.
+	a Smart-ShutdownService sequence.
 
 	IMPORTANT:
 	As per documentation, it is best not to use SIGKILL

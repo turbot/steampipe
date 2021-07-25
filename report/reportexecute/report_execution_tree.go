@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/turbot/steampipe/db/local_db"
-
 	"github.com/stevenle/topsort"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -18,14 +17,14 @@ import (
 type ReportExecutionTree struct {
 	Root            reportinterfaces.ReportNodeRun
 	dependencyGraph *topsort.Graph
-	client          *local_db.LocalClient
+	client          db_common.Client
 	panels          map[string]*PanelRun
 	reports         map[string]*ReportRun
 	workspace       *workspace.Workspace
 }
 
 // NewReportExecutionTree creates a result group from a ModTreeItem
-func NewReportExecutionTree(reportName string, client *local_db.LocalClient, workspace *workspace.Workspace) (*ReportExecutionTree, error) {
+func NewReportExecutionTree(reportName string, client db_common.Client, workspace *workspace.Workspace) (*ReportExecutionTree, error) {
 	// now populate the ReportExecutionTree
 	reportExecutionTree := &ReportExecutionTree{
 		client:          client,

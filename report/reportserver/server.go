@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/turbot/steampipe/db/local_db"
+	"github.com/turbot/steampipe/db"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/db/db_common"
 	"gopkg.in/olahol/melody.v1"
 
 	"github.com/turbot/go-kit/types"
@@ -24,7 +25,7 @@ import (
 
 type Server struct {
 	context       context.Context
-	dbClient      *local_db.LocalClient
+	dbClient      db_common.Client
 	mutex         *sync.Mutex
 	reportClients map[*melody.Session]*ReportClientInfo
 	webSocket     *melody.Melody
@@ -46,7 +47,7 @@ type ReportClientInfo struct {
 }
 
 func NewServer(ctx context.Context) (*Server, error) {
-	dbClient, err := local_db.NewLocalClient()
+	dbClient, err := db.GetClient(constants.InvokerReport)
 	if err != nil {
 		return nil, err
 	}

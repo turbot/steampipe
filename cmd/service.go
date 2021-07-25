@@ -65,7 +65,7 @@ connection from any Postgres compatible database client.`,
 		// foreground enables the service to run in the foreground - till exit
 		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
 		// Hidden flags for internal use
-		AddStringFlag(constants.ArgInvoker, "", string(local_db.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
+		AddStringFlag(constants.ArgInvoker, "", string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
 }
@@ -143,7 +143,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	invoker := local_db.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
+	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
 	if err := invoker.IsValid(); err != nil {
 		utils.ShowError(err)
 		return
@@ -158,7 +158,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if info != nil {
-		if info.Invoker == local_db.InvokerService {
+		if info.Invoker == constants.InvokerService {
 			fmt.Println("Service is already running")
 			return
 		}
@@ -174,7 +174,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 
 		// convert
-		info.Invoker = local_db.InvokerService
+		info.Invoker = constants.InvokerService
 		err = info.Save()
 		if err != nil {
 			utils.ShowErrorWithMessage(err, "service was already running, but could not make it persistent")
@@ -267,7 +267,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	stopStatus, err := local_db.StopDB(viper.GetBool(constants.ArgForce), local_db.InvokerService, nil)
+	stopStatus, err := local_db.StopDB(viper.GetBool(constants.ArgForce), constants.InvokerService, nil)
 
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "could not stop current instance")
@@ -389,7 +389,7 @@ func printStatus(info *local_db.RunningDBInstanceInfo) {
 
 	statusMessage := ""
 
-	if info.Invoker == local_db.InvokerService {
+	if info.Invoker == constants.InvokerService {
 		msg := `
 Steampipe database service is now running:
 
@@ -454,7 +454,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 
 	force := cmdconfig.Viper().GetBool(constants.ArgForce)
 	if force {
-		status, err = local_db.StopDB(force, local_db.InvokerService, spinner)
+		status, err = local_db.StopDB(force, constants.InvokerService, spinner)
 	} else {
 		info, err = local_db.GetStatus()
 		if err != nil {
@@ -467,7 +467,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 			fmt.Println("Service is not running")
 			return
 		}
-		if info.Invoker != local_db.InvokerService {
+		if info.Invoker != constants.InvokerService {
 			display.StopSpinner(spinner)
 			printRunningImplicit(info.Invoker)
 			return
@@ -486,7 +486,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 			return
 		}
 
-		status, _ = local_db.StopDB(false, local_db.InvokerService, spinner)
+		status, _ = local_db.StopDB(false, constants.InvokerService, spinner)
 	}
 
 	if err != nil {
@@ -520,7 +520,7 @@ to force a shutdown
 
 }
 
-func printRunningImplicit(invoker local_db.Invoker) {
+func printRunningImplicit(invoker constants.Invoker) {
 	fmt.Printf(`
 Steampipe service is running exclusively for an active %s session.
 

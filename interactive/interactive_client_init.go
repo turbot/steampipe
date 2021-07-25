@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/turbot/steampipe/db/local_db"
+	"github.com/turbot/steampipe/db/db_common"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -70,7 +70,7 @@ func (c *InteractiveClient) waitForInitData(ctx context.Context) error {
 }
 
 // return the workspace, or nil if not yet initialised
-func (c *InteractiveClient) workspace() local_db.WorkspaceResourceProvider {
+func (c *InteractiveClient) workspace() db_common.WorkspaceResourceProvider {
 	if c.initData == nil {
 		return nil
 	}
@@ -78,7 +78,7 @@ func (c *InteractiveClient) workspace() local_db.WorkspaceResourceProvider {
 }
 
 // return the client, or nil if not yet initialised
-func (c *InteractiveClient) client() *local_db.LocalClient {
+func (c *InteractiveClient) client() db_common.Client {
 	if c.initData == nil {
 		return nil
 	}

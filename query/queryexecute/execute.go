@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/turbot/steampipe/db/local_db"
+	"github.com/turbot/steampipe/db/db_common"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -13,7 +13,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func RunInteractiveSession(initChan *chan *local_db.QueryInitData) {
+func RunInteractiveSession(initChan *chan *db_common.QueryInitData) {
 	utils.LogTime("execute.RunInteractiveSession start")
 	defer utils.LogTime("execute.RunInteractiveSession end")
 
@@ -29,7 +29,7 @@ func RunInteractiveSession(initChan *chan *local_db.QueryInitData) {
 	}
 }
 
-func ExecuteQueries(ctx context.Context, queries []string, client *local_db.LocalClient) int {
+func ExecuteQueries(ctx context.Context, queries []string, client db_common.Client) int {
 	utils.LogTime("query.execute.ExecuteQueries start")
 	defer utils.LogTime("query.execute.ExecuteQueries end")
 
@@ -48,12 +48,12 @@ func ExecuteQueries(ctx context.Context, queries []string, client *local_db.Loca
 	return failures
 }
 
-func executeQuery(ctx context.Context, queryString string, client *local_db.LocalClient) error {
+func executeQuery(ctx context.Context, queryString string, client db_common.Client) error {
 	utils.LogTime("query.execute.executeQuery start")
 	defer utils.LogTime("query.execute.executeQuery end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := local_db.ExecuteQuery(ctx, queryString, client)
+	resultsStreamer, err := db_common.ExecuteQuery(ctx, queryString, client)
 	if err != nil {
 		return err
 	}

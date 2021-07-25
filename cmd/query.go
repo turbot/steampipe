@@ -8,6 +8,10 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/turbot/steampipe/db"
+
+	"github.com/turbot/steampipe/db/db_common"
+
 	"github.com/turbot/steampipe/db/local_db"
 
 	"github.com/turbot/steampipe/query/queryexecute"
@@ -79,13 +83,10 @@ func getPipedStdinData() string {
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runQueryCmd start")
-	var client *local_db.LocalClient
+	var client db_common.Client
 
 	defer func() {
-		// ensure client is closed after we are done
-		// (it will only be non-null for non-interactive queries - interactive close their own client)
-		local_db.Shutdown(client, local_db.InvokerQuery)
-
+		client.Close()
 		utils.LogTime("cmd.runQueryCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
@@ -103,7 +104,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
 	// perform rest of initialisation async
-	initDataChan := make(chan *local_db.QueryInitData, 1)
+	initDataChan := make(chan *db_common.QueryInitData, 1)
 	getQueryInitDataAsync(context.Background(), initDataChan, args)
 
 	if interactiveMode {
@@ -133,11 +134,11 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 }
 
-func getQueryInitDataAsync(ctx context.Context, initDataChan chan *local_db.QueryInitData, args []string) {
+func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db_common.QueryInitData, args []string) {
 	go func() {
 		log.Printf("[TRACE] getQueryInitDataAsync")
 
-		initData := local_db.NewInitData()
+		initData := db_common.NewQueryInitData()
 		defer func() {
 			initDataChan <- initData
 			close(initDataChan)
@@ -145,10 +146,10 @@ func getQueryInitDataAsync(ctx context.Context, initDataChan chan *local_db.Quer
 		}()
 
 		// start db if necessary - do not refresh connections as we do it as part of the async startup
-		err := local_db.EnsureDbAndStartService(local_db.InvokerQuery, false)
+		err := local_db.EnsureDbAndStartService(constants.InvokerQuery, false)
 		utils.FailOnErrorWithMessage(err, "failed to start service")
 		// get a db client
-		client, err := local_db.NewLocalClient()
+		client, err := db.GetClient(constants.InvokerQuery)
 		if err != nil {
 			initData.Result.Error = err
 			return
@@ -183,7 +184,7 @@ func getQueryInitDataAsync(ctx context.Context, initDataChan chan *local_db.Quer
 
 		initData.Client = client
 		// populate the reflection tables
-		if err = local_db.CreateMetadataTables(ctx, workspace.GetResourceMaps(), client); err != nil {
+		if err = db_common.CreateMetadataTables(ctx, workspace.GetResourceMaps(), client); err != nil {
 			initData.Result.Error = err
 			return
 		}
