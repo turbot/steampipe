@@ -69,18 +69,18 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 				diags = append(diags, moreDiags...)
 			}
 
-			//if block.Type == modconfig.BlockTypeVariable {
-		//	// special case decode logic for locals
-		//	variable, res := modconfig.decodeVariableBlock(block, false)
-		//	for _, local := range locals {
-		//		// handle the result
-		//		// - if successful, add resource to mod and variables maps
-		//		// - if there are dependencies, add them to run context
-		//		moreDiags = handleDecodeResult(local, res, block, runCtx)
-		//		diags = append(diags, moreDiags...)
-		//	}
-		//	continue
-		//}
+			if block.Type == modconfig.BlockTypeVariable {
+				// special case decode logic for locals
+				variable, res := modconfig.decodeVariableBlock(block, false)
+				for _, local := range locals {
+					// handle the result
+					// - if successful, add resource to mod and variables maps
+					// - if there are dependencies, add them to run context
+					moreDiags = handleDecodeResult(local, res, block, runCtx)
+					diags = append(diags, moreDiags...)
+				}
+				continue
+			}
 		default:
 			// all other blocks are treated the same:
 			resource, res := decodeResource(block, runCtx)

@@ -149,7 +149,7 @@ func decodeVariableBlock(block *hcl.Block, override bool) (*Variable, hcl.Diagno
 }
 
 func decodeVariableType(expr hcl.Expression) (cty.Type, VariableParsingMode, hcl.Diagnostics) {
-	if modconfig.exprIsNativeQuotedString(expr) {
+	if exprIsNativeQuotedString(expr) {
 		// If a user provides the pre-0.12 form of variable type argument where
 		// the string values "string", "list" and "map" are accepted, we
 		// provide an error to point the user towards using the type system
@@ -451,7 +451,7 @@ func decodeOutputBlock(block *hcl.Block, override bool) (*Output, hcl.Diagnostic
 
 	schema := outputBlockSchema
 	if override {
-		schema = modconfig.schemaForOverrides(schema)
+		schema = schemaForOverrides(schema)
 	}
 
 	content, moreDiags := block.Body.Content(schema)
