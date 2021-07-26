@@ -6,14 +6,12 @@ on:
 
 env:
   STEAMPIPE_UPDATE_CHECK: false
-  
-  
+
 jobs:
   create_publish_docker_image:
     name: Create and Publish Docker Image
     runs-on: ubuntu-latest
     steps:
-
       - name: Docker Login
         run: |
           docker login --username ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }}
