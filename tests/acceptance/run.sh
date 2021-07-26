@@ -32,7 +32,7 @@ echo " ___) | || (_| | |  | |_| | | | | (_| |   | |  __/\__ \ |_\__ \\"
 echo "|____/ \__\__,_|_|   \__|_|_| |_|\__, |   |_|\___||___/\__|___/"
 echo "                                 |___/                         "
 
-export PATH=$PATH:$MY_PATH/lib/bats/bin
+export PATH=$MY_PATH/lib/bats/bin:$PATH
 
 if [[ ! ${STEAMPIPE_INSTALL_DIR} ]];
 then
