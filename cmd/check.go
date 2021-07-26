@@ -80,7 +80,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// initialise
-	initData = initialiseCheck(cmd, args)
+	initData = initialiseCheck()
 	if shouldExit := handleCheckInitResult(initData); shouldExit {
 		return
 	}
@@ -140,8 +140,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = failures
 }
 
-func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
-	initData := &checkInitData{}
+func initialiseCheck() *checkInitData {
+	initData := &checkInitData{
+		result: &db_common.InitResult{},
+	}
 
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
