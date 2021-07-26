@@ -18,8 +18,9 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       
       - name: Clean Version for Tag
+        id: generate_docker_tag
         run: |
-          echo ${STEAMPIPE_VERSION#"v"}
+          echo "::set-output name=docker_tag::${STEAMPIPE_VERSION#"v"}"
           
       - name: Build and Push to Docker Hub
         id: docker_build
@@ -31,7 +32,7 @@ jobs:
             TARGETARCH=amd64
             TARGETVERSION=${{ env.STEAMPIPE_VERSION }}
           tags: |
-            binaek/steampipe:${{ env.STEAMPIPE_VERSION }}
+            binaek/steampipe:${{ steps.generate_docker_tag.outputs.docker_tag }}
             binaek/steampipe:latest
           
       - name: Image digest
