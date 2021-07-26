@@ -1,4 +1,12 @@
+## v0.7.1 [2021-07-29]
+_What's new?_
+* Add `open_graph` property to `steampipe_mod` reflection table. ([#692](https://github.com/turbot/steampipe/issues/692))
+  
+_Bug fixes_
+* When an aggregator connection is evaluating a wildcard, only include connections with compatible plugin type. ([#687](https://github.com/turbot/steampipe/issues/687))
+
 ## v0.7.0 [2021-07-22]
+
 _What's new?_
 
 * Add support for aggregator connections. ([#610](https://github.com/turbot/steampipe/issues/610)) 
