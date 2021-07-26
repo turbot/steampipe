@@ -31,6 +31,9 @@ WORKDIR /workspace
 # disable auto-update
 ENV STEAMPIPE_UPDATE_CHECK=false
 
+# Run --version
+RUN steampipe --version
+
 # Run steampipe query to install db and fdw (they are installed on the first run)
 RUN steampipe query "select * from steampipe_mod"
 
