@@ -9,6 +9,13 @@ env:
   
   
 jobs:
-  publish_github_release:
-  create_docker_image:
-  push_docker_image:
+  create_publish_docker_image:
+    name: Create and Publish Docker Image
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Docker Login
+        run: |
+          docker login --username ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }}
+          
+        
