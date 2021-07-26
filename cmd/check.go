@@ -9,10 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/db"
-
-	"github.com/turbot/steampipe/db/db_common"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -20,10 +16,28 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
+	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
+
+type checkInitData struct {
+	ctx           context.Context
+	workspace     *workspace.Workspace
+	client        db_common.Client
+	dbInitialised bool
+	result        *db_common.InitResult
+}
+
+type exportData struct {
+	executionTree *controlexecute.ExecutionTree
+	exportFormats []controldisplay.CheckExportTarget
+	errorsLock    *sync.Mutex
+	errors        []error
+	waitGroup     *sync.WaitGroup
+}
 
 // checkCmd :: represents the check command
 func checkCmd() *cobra.Command {
