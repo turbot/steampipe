@@ -179,10 +179,12 @@ func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
 	}
 
 	// get a client
-	initData.client, initData.result.Error = db.GetClient(constants.InvokerCheck)
-	if initData.result.Error != nil {
+	client, err := db.GetClient(constants.InvokerCheck)
+	if err != nil {
+		initData.result.Error = err
 		return initData
 	}
+	initData.client = client
 
 	refreshResult := initData.client.RefreshConnectionAndSearchPaths()
 	if refreshResult.Error != nil {

@@ -7,14 +7,9 @@ import (
 )
 
 func GetClient(invoker constants.Invoker) (db_common.Client, error) {
-	// start db if necessary, refreshing connections
+	// start db if necessary
 	err := local_db.EnsureDbAndStartService(invoker)
 	if err != nil {
-		// TODO ensure source errors are complete and do not need prefixing
-		//if !utils.IsCancelledError(err) {
-		//	err = utils.PrefixError(err, "failed to start service")
-		//}
-
 		return nil, err
 	}
 

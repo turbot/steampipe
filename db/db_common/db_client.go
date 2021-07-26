@@ -16,8 +16,12 @@ type Client interface {
 	ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error)
 	Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error)
 	SchemaMetadata() *schema.Metadata
-	ConnectionMap() *steampipeconfig.ConnectionMap
-	RefreshConnectionAndSearchPaths() *RefreshConnectionResult
+
 	// todo share this between locan and remote client?
 	LoadSchema()
+
+	// RemoteClient will have empty implementations
+
+	ConnectionMap() *steampipeconfig.ConnectionMap
+	RefreshConnectionAndSearchPaths() *RefreshConnectionResult
 }
