@@ -1,0 +1,14 @@
+name: Steampipe Publish Release
+on:
+  push:
+    branches:
+      - main
+
+env:
+  STEAMPIPE_UPDATE_CHECK: false
+  
+  
+jobs:
+  publish_github_release:
+  create_docker_image:
+  push_docker_image:
