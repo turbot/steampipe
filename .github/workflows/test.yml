@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main
-  pull_request:
+  # pull_request:
 
 env:
   STEAMPIPE_UPDATE_CHECK: false
