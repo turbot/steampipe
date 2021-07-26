@@ -3,23 +3,21 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/ociinstaller"
-
 	version "github.com/hashicorp/go-version"
-
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/steampipe/ociinstaller"
 )
 
 type PluginVersion struct {
 	// the plugin name, as specified in the mod requires block. , e.g. turbot/mod1, aws
 	RawName string `cty:"name" hcl:"name,label"`
 	// the version STREAM, can be either a major or minor version stream i.e. 1 or 1.1
-	Version       string `cty:"version" hcl:"version,optional"`
-	DeclRange     hcl.Range
-	ParsedVersion *version.Version
+	Version       string           `cty:"version" hcl:"version,optional"`
+	ParsedVersion *version.Version `json:"-"`
 	// the org and name which are parsed from the raw name
-	Org  string
-	Name string
+	Org       string
+	Name      string
+	DeclRange hcl.Range `json:"-"`
 }
 
 func (p *PluginVersion) FullName() string {
