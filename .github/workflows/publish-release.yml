@@ -15,11 +15,11 @@ jobs:
     steps:
       - name: Docker Login
         run: |
-          docker login --username ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }}
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login --username ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
       - name: Get release
         id: get_release
-        uses: agners/get-draft-release@v0.1.0
+        uses: agners/get-draft-release
         env:
           GITHUB_TOKEN: ${{ github.token }}
           
