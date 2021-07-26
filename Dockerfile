@@ -1,7 +1,7 @@
 FROM debian:buster-slim
 LABEL maintainer="Turbot Support <help@turbot.com>"
 
-ENV STEAMPIPE_VERSION v0.7.0
+ARG STEAMPIPE_VERSION
 ARG TARGETOS
 ARG TARGETARCH
 
