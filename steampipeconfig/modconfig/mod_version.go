@@ -12,9 +12,9 @@ type ModVersion struct {
 	ShortName string `hcl:"name,label"`
 	FullName  string `cty:"name"`
 
-	Version   string  `cty:"version" hcl:"version"`
-	Alias     *string `cty:"alias" hcl:"alias,optional"`
-	DeclRange hcl.Range
+	Version   string    `cty:"version" hcl:"version"`
+	Alias     *string   `cty:"alias" hcl:"alias,optional"`
+	DeclRange hcl.Range `json:"-"`
 }
 
 // Name returns Name@Version

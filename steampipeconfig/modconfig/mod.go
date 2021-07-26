@@ -35,7 +35,7 @@ type Mod struct {
 
 	// blocks
 	Requires  *Requires  `hcl:"requires,block"`
-	OpenGraph *OpenGraph `hcl:"opengraph,block"`
+	OpenGraph *OpenGraph `hcl:"opengraph,block" column:"opengraph,jsonb"`
 
 	// TODO do we need this?
 	Version *string

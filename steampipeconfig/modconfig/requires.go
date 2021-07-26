@@ -7,5 +7,5 @@ type Requires struct {
 	Steampipe string           `hcl:"steampipe,optional"`
 	Plugins   []*PluginVersion `hcl:"plugin,block"`
 	Mods      []*ModVersion    `hcl:"mod,block"`
-	DeclRange hcl.Range
+	DeclRange hcl.Range        `json:"-"`
 }
