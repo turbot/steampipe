@@ -4,8 +4,6 @@ on:
 
 env:
   STEAMPIPE_UPDATE_CHECK: false
-  TARGET_OS: linux
-  TARGETARCH: amd64
   STEAMPIPE_VERSION: v0.7.0
 
 jobs:
@@ -23,8 +21,9 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v2
         with:
-          context: ${{ $GITHUB_WORKSPACE }}/./
-          file: Dockerfile
+          build-args: |
+            TARGET_OS:linux
+            TARGETARCH:amd64
           push: true
           tags: binaek/steampipe:${{ env.STEAMPIPE_VERSION }}
           
