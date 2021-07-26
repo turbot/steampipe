@@ -22,9 +22,9 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           build-args: |
-            TARGET_OS:linux
+            TARGETOS:linux
             TARGETARCH:amd64
-            STEAMPIPE_VERSION:${{ env.STEAMPIPE_VERSION }}
+            TARGETVERSION:${{ env.STEAMPIPE_VERSION }}
           push: true
           tags: binaek/steampipe:${{ env.STEAMPIPE_VERSION }}
           

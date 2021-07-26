@@ -1,7 +1,7 @@
 FROM debian:buster-slim
 LABEL maintainer="Turbot Support <help@turbot.com>"
 
-ARG STEAMPIPE_VERSION
+ARG TARGETVERSION
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -13,7 +13,7 @@ RUN apt-get update -y \
 # downlaod the published image
 RUN echo \
  && cd /tmp \
- && wget -nv https://github.com/turbot/steampipe/releases/download/${STEAMPIPE_VERSION}/steampipe_${TARGETOS}_${TARGETARCH}.tar.gz \
+ && wget -nv https://github.com/turbot/steampipe/releases/download/${TARGETVERSION}/steampipe_${TARGETOS}_${TARGETARCH}.tar.gz \
  && tar xzf steampipe_${TARGETOS}_${TARGETARCH}.tar.gz \
  && mv steampipe /usr/local/bin/ \
  && rm -rf /tmp/steampipe_${TARGETOS}_${TARGETARCH}.tar.gz 
