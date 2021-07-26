@@ -4,7 +4,7 @@ on:
 
 env:
   STEAMPIPE_UPDATE_CHECK: false
-  STEAMPIPE_VERSION: v0.6.0
+  STEAMPIPE_VERSION: v0.7.0
 
 jobs:
   publish_docker:  
