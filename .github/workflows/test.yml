@@ -1,5 +1,5 @@
 name: Steampipe Acceptance Tests
-# on:
+on:
 #   push:
 #     branches:
 #       - main
