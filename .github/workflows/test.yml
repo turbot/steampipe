@@ -1,9 +1,9 @@
 name: Steampipe Acceptance Tests
-on:
-  push:
-    branches:
-      - main
-  pull_request:
+# on:
+#   push:
+#     branches:
+#       - main
+#   pull_request:
 
 env:
   STEAMPIPE_UPDATE_CHECK: false
