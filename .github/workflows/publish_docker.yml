@@ -24,7 +24,7 @@ jobs:
           build-args: |
             TARGETOS:linux
             TARGETARCH:amd64
-            TARGETVERSION:${{ env.STEAMPIPE_VERSION }}
+            STEAMPIPE_VERSION:${{ env.STEAMPIPE_VERSION }}
           push: true
           tags: binaek/steampipe:${{ env.STEAMPIPE_VERSION }}
           
