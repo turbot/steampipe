@@ -141,70 +141,76 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 }
 
 func initialiseCheck(cmd *cobra.Command, args []string) *checkInitData {
-	res := &checkInitData{}
+	initData := &checkInitData{}
 
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	err := validateOutputFormat()
 	if err != nil {
-		res.error = err
-		return res
+		initData.result.Error = err
+		return initData
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	startCancelHandler(cancel)
-	res.ctx = ctx
+	initData.ctx = ctx
 
 	// set color schema
 	err = initialiseColorScheme()
 	if err != nil {
-		res.error = err
-		return res
+		initData.result.Error = err
+		return initData
 	}
 
 	// load workspace
-	res.workspace, err = workspace.Load(viper.GetString(constants.ArgWorkspace))
+	initData.workspace, err = workspace.Load(viper.GetString(constants.ArgWorkspace))
 	if err != nil {
 		if !utils.IsCancelledError(err) {
 			err = utils.PrefixError(err, "failed to load workspace")
 		}
-		res.error = err
-		return res
+		initData.result.Error = err
+		return initData
 	}
 
 	// check if the required plugins are installed
-	res.error = res.workspace.CheckRequiredPluginsInstalled()
-	if len(res.workspace.ControlMap) == 0 {
-		res.warning = "no controls found in current workspace"
+	initData.result.Error = initData.workspace.CheckRequiredPluginsInstalled()
+	if len(initData.workspace.ControlMap) == 0 {
+		initData.result.AddWarnings("no controls found in current workspace")
 	}
 
 	// get a client
-	res.client, res.error = db.GetClient(constants.InvokerCheck)
-	if res.error != nil {
-		return res
+	initData.client, initData.result.Error = db.GetClient(constants.InvokerCheck)
+	if initData.result.Error != nil {
+		return initData
 	}
 
-	// populate the reflection tables
-	res.error = db_common.CreateMetadataTables(ctx, res.workspace.GetResourceMaps(), res.client)
+	refreshResult := initData.client.RefreshConnectionAndSearchPaths()
+	if refreshResult.Error != nil {
+		initData.result.Error = refreshResult.Error
+		return initData
+	}
+	initData.result.AddWarnings(refreshResult.Warnings...)
 
-	return res
+	// populate the reflection tables
+	initData.result.Error = db_common.CreateMetadataTables(ctx, initData.workspace.GetResourceMaps(), initData.client)
+
+	return initData
 }
 
 func handleCheckInitResult(initData *checkInitData) bool {
 	shouldExit := false
 	// if there is an error or cancellation we bomb out
 	// check for the various kinds of failures
-	utils.FailOnError(initData.error)
+	utils.FailOnError(initData.result.Error)
 	// cancelled?
 	if initData.ctx != nil {
 		utils.FailOnError(initData.ctx.Err())
 	}
 
 	// if there is a usage warning we display it and exit politely
-	if initData.warning != "" {
-		utils.ShowWarning(initData.warning)
-		shouldExit = true
-	}
+	initData.result.DisplayMessages()
+	shouldExit = len(initData.result.Warnings) > 0
+
 	return shouldExit
 }
 

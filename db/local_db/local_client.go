@@ -25,7 +25,9 @@ type LocalClient struct {
 // Close closes the connection to the database and shuts down the backend
 func (c *LocalClient) Close() error {
 	if c.dbClient != nil {
-		return c.dbClient.Close()
+		if err := c.dbClient.Close(); err != nil {
+			return err
+		}
 	}
 	ShutdownService(c.invoker)
 	return nil

@@ -16,12 +16,7 @@ type checkInitData struct {
 	workspace     *workspace.Workspace
 	client        db_common.Client
 	dbInitialised bool
-	error         error
-	warning       string
-}
-
-func (c *checkInitData) success() bool {
-	return c.error == nil && c.warning == "" && c.ctx.Err() == nil
+	result        *db_common.InitResult
 }
 
 type exportData struct {

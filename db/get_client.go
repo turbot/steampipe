@@ -8,7 +8,7 @@ import (
 
 func GetClient(invoker constants.Invoker) (db_common.Client, error) {
 	// start db if necessary, refreshing connections
-	err := local_db.EnsureDbAndStartService(invoker, true)
+	err := local_db.EnsureDbAndStartService(invoker)
 	if err != nil {
 		// TODO ensure source errors are complete and do not need prefixing
 		//if !utils.IsCancelledError(err) {
@@ -22,6 +22,6 @@ func GetClient(invoker constants.Invoker) (db_common.Client, error) {
 	if err != nil {
 		local_db.ShutdownService(invoker)
 	}
-	// TODO client shutdown should shutdown service
+	// NOTE:  client shutdown will shutdown service (if invoker matches)
 	return client, nil
 }

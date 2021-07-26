@@ -10,7 +10,7 @@ import (
 )
 
 // EnsureDbAndStartService :: ensure db is installed and start service if necessary
-func EnsureDbAndStartService(invoker constants.Invoker, refreshConnections bool) error {
+func EnsureDbAndStartService(invoker constants.Invoker) error {
 	utils.LogTime("db.EnsureDbAndStartService start")
 	defer utils.LogTime("db.EnsureDbAndStartService end")
 
@@ -24,7 +24,16 @@ func EnsureDbAndStartService(invoker constants.Invoker, refreshConnections bool)
 
 	if status == nil {
 		// the db service is not started - start it
-		return StartImplicitService(invoker, refreshConnections)
+		utils.LogTime("StartImplicitService start")
+		log.Println("[TRACE] start implicit service")
+
+		if _, err := StartDB(constants.DatabaseDefaultPort, ListenTypeLocal, invoker); err != nil {
+			return err
+		}
+		utils.LogTime("StartImplicitService end")
+
+		return nil
+
 	}
 	return nil
 }

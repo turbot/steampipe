@@ -52,6 +52,12 @@ func NewServer(ctx context.Context) (*Server, error) {
 		return nil, err
 	}
 
+	refreshResult := dbClient.RefreshConnectionAndSearchPaths()
+	if err != nil {
+		return nil, err
+	}
+	refreshResult.ShowWarnings()
+
 	loadedWorkspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
 	if err != nil {
 		return nil, err

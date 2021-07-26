@@ -7,8 +7,6 @@ import (
 
 	"github.com/turbot/steampipe/db"
 
-	"github.com/turbot/steampipe/db/local_db"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -79,14 +77,6 @@ Examples:
 
   # Install a specific plugin version
   steampipe plugin install turbot/azure@0.1.0`,
-		PreRun: func(cmd *cobra.Command, args []string) {
-			// start db if necessary, refreshing connections
-			err := local_db.EnsureDbAndStartService(constants.InvokerPlugin, true)
-			utils.FailOnErrorWithMessage(err, "failed to start service")
-		},
-		PostRun: func(cmd *cobra.Command, args []string) {
-			local_db.ShutdownService(constants.InvokerPlugin)
-		},
 	}
 
 	cmdconfig.
@@ -145,14 +135,6 @@ Examples:
 
   # List plugins that have updates available
   steampipe plugin list --outdated`,
-		PreRun: func(cmd *cobra.Command, args []string) {
-			// start db if necessary, refreshing connections
-			err := local_db.EnsureDbAndStartService(constants.InvokerPlugin, true)
-			utils.FailOnErrorWithMessage(err, "failed to start service")
-		},
-		PostRun: func(cmd *cobra.Command, args []string) {
-			local_db.ShutdownService(constants.InvokerPlugin)
-		},
 	}
 
 	cmdconfig.
@@ -181,14 +163,6 @@ Example:
   steampipe plugin uninstall aws
 
 `,
-		PreRun: func(cmd *cobra.Command, args []string) {
-			// start db if necessary, refreshing connections
-			err := local_db.EnsureDbAndStartService(constants.InvokerPlugin, true)
-			utils.FailOnErrorWithMessage(err, "failed to start service")
-		},
-		PostRun: func(cmd *cobra.Command, args []string) {
-			local_db.ShutdownService(constants.InvokerPlugin)
-		},
 	}
 
 	cmdconfig.OnCmd(cmd)

@@ -181,7 +181,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	} else {
 		// start db, refreshing connections
-		status, err := local_db.StartDB(cmdconfig.DatabasePort(), listen, invoker, true)
+		status, err := local_db.StartDB(cmdconfig.DatabasePort(), listen, invoker)
 		if err != nil {
 			utils.ShowError(err)
 			return
@@ -196,7 +196,10 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 			utils.ShowError(fmt.Errorf("steampipe service is already running"))
 			return
 		}
-
+		if err := local_db.RefreshConnectionAndSearchPaths(invoker); err != nil {
+			utils.ShowError(err)
+			return
+		}
 		info, _ = local_db.GetStatus()
 	}
 	printStatus(info)
@@ -286,7 +289,7 @@ to force a restart.
 		return
 	}
 	// start db, refreshing connections
-	status, err := local_db.StartDB(currentServiceStatus.Port, currentServiceStatus.ListenType, currentServiceStatus.Invoker, true)
+	status, err := local_db.StartDB(currentServiceStatus.Port, currentServiceStatus.ListenType, currentServiceStatus.Invoker)
 	if err != nil {
 		utils.ShowError(err)
 		return
@@ -294,6 +297,11 @@ to force a restart.
 
 	if status == local_db.ServiceFailedToStart {
 		fmt.Println("Steampipe service was stopped, but failed to start")
+		return
+	}
+
+	if err := local_db.RefreshConnectionAndSearchPaths(constants.InvokerService); err != nil {
+		utils.ShowError(err)
 		return
 	}
 

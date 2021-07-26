@@ -2,7 +2,6 @@ package local_db
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -14,7 +13,6 @@ import (
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -49,21 +47,8 @@ func (slt StartListenType) IsValid() error {
 	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
 }
 
-// StartImplicitService starts up the service in an implicit mode
-func StartImplicitService(invoker constants.Invoker, refreshConnections bool) error {
-	utils.LogTime("db.StartImplicitService start")
-	defer utils.LogTime("db.StartImplicitService end")
-
-	log.Println("[TRACE] start implicit service")
-
-	if _, err := StartDB(constants.DatabaseDefaultPort, ListenTypeLocal, invoker, refreshConnections); err != nil {
-		return err
-	}
-	return nil
-}
-
 // StartDB :: start the database is not already running
-func StartDB(port int, listen StartListenType, invoker constants.Invoker, refreshConnections bool) (startResult StartResult, err error) {
+func StartDB(port int, listen StartListenType, invoker constants.Invoker) (startResult StartResult, err error) {
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
 
@@ -130,21 +115,6 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker, refres
 	}
 	utils.LogTime("postgresCmd end")
 
-	// create a client
-	// pass 'false' to disable auto refreshing connections
-	//- we will explicitly refresh connections after ensuring the steampipe server exists
-	if refreshConnections {
-		client, err = NewLocalClient(invoker)
-		if err != nil {
-			return ServiceFailedToStart, handleStartFailure(err)
-		}
-		refreshResult := client.RefreshConnectionAndSearchPaths()
-		if refreshResult.Error != nil {
-			return ServiceFailedToStart, handleStartFailure(refreshResult.Error)
-		}
-		// display any initialisation warnings
-		refreshResult.ShowWarnings()
-	}
 	err = ensureSteampipeServer()
 	if err != nil {
 		// there was a problem with the installation
@@ -319,24 +289,6 @@ func ensureTempTablePermissions() error {
 		return err
 	}
 	return nil
-}
-
-func handleStartFailure(err error) error {
-	// if we got an error here, then there probably was a problem
-	// starting up the process. this may be because of a stray
-	// steampipe postgres running or another one from a different installation.
-	checkedPreviousInstances := make(chan bool, 1)
-	s := display.StartSpinnerAfterDelay("Checking for running instances...", constants.SpinnerShowTimeout, checkedPreviousInstances)
-	otherProcess := findSteampipePostgresInstance()
-	close(checkedPreviousInstances)
-	display.StopSpinner(s)
-	if otherProcess != nil {
-		return fmt.Errorf("Another Steampipe service is already running. Use %s to kill all running instances before continuing.", constants.Bold("steampipe service stop --force"))
-	}
-
-	// there was nothing to kill.
-	// this is some other problem that we are not accounting for
-	return err
 }
 
 func isPortBindable(port int) error {

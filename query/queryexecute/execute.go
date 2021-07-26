@@ -29,9 +29,34 @@ func RunInteractiveSession(initChan *chan *db_common.QueryInitData) {
 	}
 }
 
-func ExecuteQueries(ctx context.Context, queries []string, client db_common.Client) int {
-	utils.LogTime("query.execute.ExecuteQueries start")
-	defer utils.LogTime("query.execute.ExecuteQueries end")
+func RunBatchSession(ctx context.Context, initDataChan chan *db_common.QueryInitData) int {
+	// wait for init
+	initData := <-initDataChan
+	if err := initData.Result.Error; err != nil {
+		utils.FailOnError(err)
+	}
+	// ensure we close client
+	defer func() {
+		if initData.Client != nil {
+			initData.Client.Close()
+		}
+	}()
+
+	// display any initialisation messages/warnings
+	initData.Result.DisplayMessages()
+
+	failures := 0
+	if len(initData.Queries) > 0 {
+		// otherwise if we have resolved any queries, run them
+		failures = executeQueries(ctx, initData.Queries, initData.Client)
+	}
+	// set global exit code
+	return failures
+}
+
+func executeQueries(ctx context.Context, queries []string, client db_common.Client) int {
+	utils.LogTime("queryexecute.executeQueries start")
+	defer utils.LogTime("queryexecute.executeQueries end")
 
 	// run all queries
 	failures := 0
@@ -40,6 +65,7 @@ func ExecuteQueries(ctx context.Context, queries []string, client db_common.Clie
 			failures++
 			utils.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), err))
 		}
+		// TODO move into display layer
 		if showBlankLineBetweenResults() {
 			fmt.Println()
 		}

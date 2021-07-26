@@ -12,7 +12,7 @@ func (r *InitResult) AddMessage(message string) {
 	r.Messages = append(r.Messages, message)
 }
 
-func (r *InitResult) AddWarnings(warnings []string) {
+func (r *InitResult) AddWarnings(warnings ...string) {
 	r.Warnings = append(r.Warnings, warnings...)
 }
 
