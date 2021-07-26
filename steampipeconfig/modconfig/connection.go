@@ -128,8 +128,11 @@ func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {
 				continue
 			}
 			if match, _ := path.Match(childName, name); match {
-				c.Connections[name] = connection
-				log.Printf("[TRACE] Connection.PopulateChildren connection %s matches pattern %s", name, childName)
+				// verify that this connection is of a compatible type
+				if connection.Plugin == c.Plugin {
+					c.Connections[name] = connection
+					log.Printf("[TRACE] connection '%s' matches pattern '%s'", name, childName)
+				}
 			}
 		}
 	}
