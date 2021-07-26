@@ -1,9 +1,13 @@
 FROM debian:buster-slim
 LABEL maintainer="Turbot Support <help@turbot.com>"
 
-ARG TARGETVERSION=v0.7.0
+ARG TARGETVERSION
 ARG TARGETOS
 ARG TARGETARCH
+
+ENV TARGETVERSION=v0.7.0
+ENV TARGETOS=linux
+ENV TARGETARCH=amd64
 
 #  'wget' for downloading steampipe, 'less' for paging in the UI
 RUN apt-get update -y \
