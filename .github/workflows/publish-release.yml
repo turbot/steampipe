@@ -19,7 +19,7 @@ jobs:
 
       - name: Get release
         id: get_release
-        uses: agners/get-draft-release
+        uses: agners/get-draft-release@v1.2.2
         env:
           GITHUB_TOKEN: ${{ github.token }}
           
