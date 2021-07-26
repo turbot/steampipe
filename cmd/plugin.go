@@ -1,15 +1,17 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
+
+	"github.com/turbot/steampipe/db"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
@@ -75,14 +77,6 @@ Examples:
 
   # Install a specific plugin version
   steampipe plugin install turbot/azure@0.1.0`,
-		PreRun: func(cmd *cobra.Command, args []string) {
-			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
-			utils.FailOnErrorWithMessage(err, "failed to start service")
-		},
-		PostRun: func(cmd *cobra.Command, args []string) {
-			db.Shutdown(nil, db.InvokerPlugin)
-		},
 	}
 
 	cmdconfig.
@@ -113,14 +107,6 @@ Examples:
 
   # Update a common plugin (turbot/aws)
   steampipe plugin update aws`,
-		PreRun: func(cmd *cobra.Command, args []string) {
-			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
-			utils.FailOnErrorWithMessage(err, "failed to start service")
-		},
-		PostRun: func(cmd *cobra.Command, args []string) {
-			db.Shutdown(nil, db.InvokerPlugin)
-		},
 	}
 
 	cmdconfig.
@@ -149,14 +135,6 @@ Examples:
 
   # List plugins that have updates available
   steampipe plugin list --outdated`,
-		PreRun: func(cmd *cobra.Command, args []string) {
-			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
-			utils.FailOnErrorWithMessage(err, "failed to start service")
-		},
-		PostRun: func(cmd *cobra.Command, args []string) {
-			db.Shutdown(nil, db.InvokerPlugin)
-		},
 	}
 
 	cmdconfig.
@@ -185,14 +163,6 @@ Example:
   steampipe plugin uninstall aws
 
 `,
-		PreRun: func(cmd *cobra.Command, args []string) {
-			// start db if necessary, refreshing connections
-			err := db.EnsureDbAndStartService(db.InvokerPlugin, true)
-			utils.FailOnErrorWithMessage(err, "failed to start service")
-		},
-		PostRun: func(cmd *cobra.Command, args []string) {
-			db.Shutdown(nil, db.InvokerPlugin)
-		},
 	}
 
 	cmdconfig.OnCmd(cmd)
@@ -293,7 +263,6 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			utils.ShowError(helpers.ToError(r))
 		}
 	}()
-
 	// args to 'plugin update' -- one or more plugins to install
 	// These can be simple names ('aws') for "standard" plugins, or
 	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
@@ -465,7 +434,7 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 		steampipeconfig.Config = config
 	}
 
-	client, err := db.NewClient()
+	client, err := db.GetClient(constants.InvokerPlugin)
 	if err != nil {
 		return err
 	}
@@ -487,8 +456,8 @@ func runPluginListCmd(*cobra.Command, []string) {
 			utils.ShowError(helpers.ToError(r))
 		}
 	}()
-
-	pluginConnectionMap, err := getPluginConnectionMap()
+	ctx := context.Background()
+	pluginConnectionMap, err := getPluginConnectionMap(ctx)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "Plugin Listing failed")
 		return
@@ -524,8 +493,8 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		return
 	}
-
-	connectionMap, err := getPluginConnectionMap()
+	ctx := context.Background()
+	connectionMap, err := getPluginConnectionMap(ctx)
 	if err != nil {
 		utils.ShowError(err)
 		return
@@ -541,8 +510,8 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 }
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
-func getPluginConnectionMap() (map[string][]string, error) {
-	client, err := db.NewClient()
+func getPluginConnectionMap(ctx context.Context) (map[string][]string, error) {
+	client, err := db.GetClient(constants.InvokerPlugin)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,10 @@
 package constants
 
-import "github.com/turbot/steampipe/schema"
+import (
+	"fmt"
+
+	"github.com/turbot/steampipe/schema"
+)
 
 // dbClient constants
 // TODO these should be configuration settings
@@ -70,4 +74,33 @@ const (
 
 func ReflectionTableNames() []string {
 	return []string{ReflectionTableControl, ReflectionTableBenchmark, ReflectionTableQuery, ReflectionTableMod}
+}
+
+// Invoker :: pseudoEnum for what starts the service
+type Invoker string
+
+const (
+	// InvokerService :: Invoker - when invoked by `service start`
+	InvokerService Invoker = "service"
+	// InvokerQuery :: Invoker - when invoked by `query`
+	InvokerQuery = "query"
+	// InvokerCheck :: Invoker - when invoked by `check`
+	InvokerCheck = "check"
+	// InvokerInstaller :: Invoker - when invoked by the `installer`
+	InvokerInstaller = "installer"
+	// InvokerPlugin :: Invoker - when invoked by the `pluginmanager`
+	InvokerPlugin = "plugin"
+	// InvokerReport :: Invoker - when invoked by `report`
+	InvokerReport = "report"
+)
+
+// TODO - this is a bit naff
+
+// IsValid :: validator for Invoker known values
+func (slt Invoker) IsValid() error {
+	switch slt {
+	case InvokerService, InvokerQuery, InvokerCheck, InvokerInstaller, InvokerPlugin, InvokerReport:
+		return nil
+	}
+	return fmt.Errorf("Invalid invoker. Can be one of '%v', '%v', '%v', '%v', '%v' or '%v' ", InvokerService, InvokerQuery, InvokerInstaller, InvokerPlugin, InvokerCheck, InvokerReport)
 }

@@ -66,7 +66,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	// 1) get names of all resources defined in hcl
 	hclResources := make(map[string]bool)
 	for _, block := range content.Blocks {
-		// if this is a mod, build a shell mod struct (with just the ame populated)
+		// if this is a mod, build a shell mod struct (with just the name populated)
 		switch block.Type {
 		case string(modconfig.BlockTypeMod):
 			// if there is more than one mod, fail

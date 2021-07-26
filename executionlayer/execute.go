@@ -3,14 +3,14 @@ package executionlayer
 import (
 	"context"
 
-	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/workspace"
 )
 
-func ExecuteReportNode(ctx context.Context, reportName string, workspace *workspace.Workspace, client *db.Client) error {
+func ExecuteReportNode(ctx context.Context, reportName string, workspace *workspace.Workspace, client db_common.Client) error {
 	executionTree, err := reportexecute.NewReportExecutionTree(reportName, client, workspace)
 	if err != nil {
 		return err

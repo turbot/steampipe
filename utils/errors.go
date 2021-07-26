@@ -68,13 +68,13 @@ func TransformErrorToSteampipe(err error) error {
 // HandleCancelError modifies a context.Canceled error into a readable error that can
 // be printed on the console
 func HandleCancelError(err error) error {
-	if IsContextCancelledError(err) {
+	if IsCancelledError(err) {
 		err = fmt.Errorf("execution cancelled")
 	}
 	return err
 }
 
-func IsContextCancelledError(err error) bool {
+func IsCancelledError(err error) bool {
 	return errors.Is(err, context.Canceled) || strings.Contains(err.Error(), "canceling statement due to user request")
 }
 

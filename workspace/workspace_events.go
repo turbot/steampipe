@@ -3,8 +3,9 @@ package workspace
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/db/db_common"
+
 	"github.com/fsnotify/fsnotify"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -20,7 +21,7 @@ func (w *Workspace) RegisterReportEventHandler(handler reportevents.ReportEventH
 	w.reportEventHandlers = append(w.reportEventHandlers, handler)
 }
 
-func (w *Workspace) handleFileWatcherEvent(client *db.Client, events []fsnotify.Event) {
+func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsnotify.Event) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
@@ -47,7 +48,7 @@ func (w *Workspace) handleFileWatcherEvent(client *db.Client, events []fsnotify.
 	w.watcherError = nil
 
 	// todo detect differences and only refresh if necessary
-	db.UpdateMetadataTables(w.GetResourceMaps(), client)
+	db_common.UpdateMetadataTables(w.GetResourceMaps(), client)
 
 	w.raiseReportChangedEvents(w.getPanelMap(), prevPanels, w.getReportMap(), prevReports)
 }

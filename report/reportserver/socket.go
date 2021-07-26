@@ -8,7 +8,7 @@ import (
 
 	"gopkg.in/olahol/melody.v1"
 
-	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/executionlayer"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -31,7 +31,7 @@ type AvailableReportsPayload struct {
 	Reports map[string]string `json:"reports"`
 }
 
-func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, dbClient *db.Client, socketSessions map[*melody.Session]*ReportClientInfo, mutex *sync.Mutex) {
+func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, dbClient db_common.Client, socketSessions map[*melody.Session]*ReportClientInfo, mutex *sync.Mutex) {
 	// Return list of reports on connect
 	webSocket.HandleConnect(func(session *melody.Session) {
 		fmt.Println("Client connected")

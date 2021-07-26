@@ -8,6 +8,10 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/turbot/steampipe/db"
+
+	"github.com/turbot/steampipe/db/db_common"
+
 	"github.com/turbot/steampipe/query/queryexecute"
 
 	"github.com/spf13/cobra"
@@ -15,7 +19,6 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -78,13 +81,8 @@ func getPipedStdinData() string {
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runQueryCmd start")
-	var client *db.Client
 
 	defer func() {
-		// ensure client is closed after we are done
-		// (it will only be non-null for non-interactive queries - interactive close their own client)
-		db.Shutdown(client, db.InvokerQuery)
-
 		utils.LogTime("cmd.runQueryCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
@@ -101,52 +99,38 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
-	// start db if necessary - do not refresh connections as we do it as part of the async startup
-	err := db.EnsureDbAndStartService(db.InvokerQuery, false)
-	utils.FailOnErrorWithMessage(err, "failed to start service")
-
 	// perform rest of initialisation async
-	initDataChan := make(chan *db.QueryInitData, 1)
-	getQueryInitDataAsync(initDataChan, args)
+	ctx := context.Background()
+	initDataChan := make(chan *db_common.QueryInitData, 1)
+	getQueryInitDataAsync(ctx, initDataChan, args)
 
 	if interactiveMode {
 		queryexecute.RunInteractiveSession(&initDataChan)
 		return
+	} else {
+		ctx, cancel := context.WithCancel(ctx)
+		startCancelHandler(cancel)
+		exitCode = queryexecute.RunBatchSession(ctx, initDataChan)
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	startCancelHandler(cancel)
-
-	// wait for init
-	// TODO CHECK FOR CANCEL
-	initData := <-initDataChan
-	if err := initData.Result.Error; err != nil {
-		utils.FailOnError(err)
-	}
-	// display any initialisation messages/warnings
-	initData.Result.DisplayMessages()
-	// populate client so it gets closed by defer
-	client = initData.Client
-
-	if len(initData.Queries) > 0 {
-		// otherwise if we have resolved any queries, run them
-		failures := queryexecute.ExecuteQueries(ctx, initData.Queries, initData.Client)
-		// set global exit code
-		exitCode = failures
-	}
-
 }
 
-func getQueryInitDataAsync(initDataChan chan *db.QueryInitData, args []string) {
+func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db_common.QueryInitData, args []string) {
 	go func() {
 		log.Printf("[TRACE] getQueryInitDataAsync")
 
-		initData := db.NewInitData()
+		initData := db_common.NewQueryInitData()
 		defer func() {
 			initDataChan <- initData
 			close(initDataChan)
 			log.Printf("[TRACE] getQueryInitDataAsync complete")
 		}()
+
+		// get a db client
+		client, err := db.GetClient(constants.InvokerQuery)
+		if err != nil {
+			initData.Result.Error = err
+			return
+		}
 
 		// load the workspace
 		workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
@@ -168,22 +152,16 @@ func getQueryInitDataAsync(initDataChan chan *db.QueryInitData, args []string) {
 		// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 		initData.Queries = queryexecute.GetQueries(args, workspace)
 
-		// get a db client
-		client, err := db.NewClient()
-		if err != nil {
-			initData.Result.Error = err
-			return
-		}
 		res := client.RefreshConnectionAndSearchPaths()
 		if res.Error != nil {
 			initData.Result.Error = res.Error
 			return
 		}
-		initData.Result.AddWarnings(res.Warnings)
+		initData.Result.AddWarnings(res.Warnings...)
 
 		initData.Client = client
 		// populate the reflection tables
-		if err = db.CreateMetadataTables(workspace.GetResourceMaps(), client); err != nil {
+		if err = db_common.CreateMetadataTables(ctx, workspace.GetResourceMaps(), client); err != nil {
 			initData.Result.Error = err
 			return
 		}

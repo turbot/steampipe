@@ -9,13 +9,13 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/report/reportevents"
 
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
@@ -66,6 +66,7 @@ func Load(workspacePath string) (*Workspace, error) {
 		return nil, err
 	}
 
+	// return context error so calling code can handle cancellations
 	return workspace, nil
 }
 
@@ -79,7 +80,7 @@ func (w *Workspace) reset() {
 	w.PanelMap = make(map[string]*modconfig.Panel)
 }
 
-func (w *Workspace) SetupWatcher(client *db.Client) error {
+func (w *Workspace) SetupWatcher(client db_common.Client) error {
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),

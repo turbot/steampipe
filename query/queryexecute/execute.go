@@ -4,19 +4,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/turbot/steampipe/db/db_common"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/interactive"
 	"github.com/turbot/steampipe/utils"
 )
 
-func RunInteractiveSession(initChan *chan *db.QueryInitData) {
+func RunInteractiveSession(initChan *chan *db_common.QueryInitData) {
 	utils.LogTime("execute.RunInteractiveSession start")
 	defer utils.LogTime("execute.RunInteractiveSession end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.RunInteractivePrompt(initChan)
+	resultsStreamer, err := interactive.RunInteractivePrompt(initChan)
 	utils.FailOnError(err)
 
 	// print the data as it comes
@@ -27,9 +29,34 @@ func RunInteractiveSession(initChan *chan *db.QueryInitData) {
 	}
 }
 
-func ExecuteQueries(ctx context.Context, queries []string, client *db.Client) int {
-	utils.LogTime("query.execute.ExecuteQueries start")
-	defer utils.LogTime("query.execute.ExecuteQueries end")
+func RunBatchSession(ctx context.Context, initDataChan chan *db_common.QueryInitData) int {
+	// wait for init
+	initData := <-initDataChan
+	if err := initData.Result.Error; err != nil {
+		utils.FailOnError(err)
+	}
+	// ensure we close client
+	defer func() {
+		if initData.Client != nil {
+			initData.Client.Close()
+		}
+	}()
+
+	// display any initialisation messages/warnings
+	initData.Result.DisplayMessages()
+
+	failures := 0
+	if len(initData.Queries) > 0 {
+		// otherwise if we have resolved any queries, run them
+		failures = executeQueries(ctx, initData.Queries, initData.Client)
+	}
+	// set global exit code
+	return failures
+}
+
+func executeQueries(ctx context.Context, queries []string, client db_common.Client) int {
+	utils.LogTime("queryexecute.executeQueries start")
+	defer utils.LogTime("queryexecute.executeQueries end")
 
 	// run all queries
 	failures := 0
@@ -38,6 +65,7 @@ func ExecuteQueries(ctx context.Context, queries []string, client *db.Client) in
 			failures++
 			utils.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), err))
 		}
+		// TODO move into display layer
 		if showBlankLineBetweenResults() {
 			fmt.Println()
 		}
@@ -46,12 +74,12 @@ func ExecuteQueries(ctx context.Context, queries []string, client *db.Client) in
 	return failures
 }
 
-func executeQuery(ctx context.Context, queryString string, client *db.Client) error {
+func executeQuery(ctx context.Context, queryString string, client db_common.Client) error {
 	utils.LogTime("query.execute.executeQuery start")
 	defer utils.LogTime("query.execute.executeQuery end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db.ExecuteQuery(ctx, queryString, client)
+	resultsStreamer, err := db_common.ExecuteQuery(ctx, queryString, client)
 	if err != nil {
 		return err
 	}

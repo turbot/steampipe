@@ -6,14 +6,16 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/turbot/steampipe/db"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/db/db_common"
 	"gopkg.in/olahol/melody.v1"
 
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/executionlayer"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/report/reportinterfaces"
@@ -23,7 +25,7 @@ import (
 
 type Server struct {
 	context       context.Context
-	dbClient      *db.Client
+	dbClient      db_common.Client
 	mutex         *sync.Mutex
 	reportClients map[*melody.Session]*ReportClientInfo
 	webSocket     *melody.Melody
@@ -45,10 +47,16 @@ type ReportClientInfo struct {
 }
 
 func NewServer(ctx context.Context) (*Server, error) {
-	dbClient, err := db.NewClient()
+	dbClient, err := db.GetClient(constants.InvokerReport)
 	if err != nil {
 		return nil, err
 	}
+
+	refreshResult := dbClient.RefreshConnectionAndSearchPaths()
+	if err != nil {
+		return nil, err
+	}
+	refreshResult.ShowWarnings()
 
 	loadedWorkspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
 	if err != nil {
