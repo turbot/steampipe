@@ -184,9 +184,7 @@ func executeSqlAsRoot(statements []string) ([]sql.Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		rootClient.Close()
-	}()
+	defer rootClient.Close()
 
 	for _, statement := range statements {
 		result, err := rootClient.Exec(statement)
