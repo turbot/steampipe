@@ -279,7 +279,12 @@ func ensureSteampipeServer() error {
 	if err != nil {
 		return installSteampipeHub()
 	}
-	return nil
+	return ensureFDWControlSchema()
+}
+
+func ensureFDWControlSchema() error {
+	_, err := executeSqlAsRoot(updateConnectionQuery(constants.FDWCommandSchema, constants.FDWCommandSchema))
+	return err
 }
 
 // ensures that the `steampipe_users` role has permissions to work with temporary tables
