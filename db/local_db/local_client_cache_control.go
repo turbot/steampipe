@@ -8,11 +8,10 @@ import (
 
 func (c *LocalClient) executeCacheControlStatementWith(controlCommand string) error {
 	_, err := c.dbClient.Exec(fmt.Sprintf(
-		"select * from %s.%s where %s = '%s'",
+		"select %s from %s.%s",
+		controlCommand,
 		constants.FDWCommandSchema,
 		constants.FDWCommandTable,
-		constants.FDWCommandColumn,
-		controlCommand,
 	))
 	return err
 }
