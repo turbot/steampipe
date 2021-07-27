@@ -38,6 +38,14 @@ const (
 const (
 	// FunctionSchema :: schema container for all steampipe helper functions
 	FunctionSchema = "internal"
+
+	// FDWCommandSchema is the schema which contains all tables which allows the CLI to control the underlying FDW
+	FDWCommandSchema     = "steampipe_command"
+	FDWCommandTable      = "commands"
+	FDWCommandColumn     = "command"
+	FDWCacheOnCommand    = "cache_on"
+	FDWCacheOffCommand   = "cache_off"
+	FDWCacheClearCommand = "cache_clear"
 )
 
 // Functions :: a list of SQLFunc objects that are installed in the db 'internal' schema startup
