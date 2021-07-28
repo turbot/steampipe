@@ -3,7 +3,6 @@ package controldisplay
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/control/controlexecute"
@@ -37,11 +36,7 @@ func (r ErrorRenderer) Render() string {
 
 	// figure out how much width we have available for the error message
 	availableWidth := r.width - statusWidth - indentWidth
-	errStrings := strings.Split(r.error.Error(), "\n")
-	for i, str := range errStrings {
-		errStrings[i] = helpers.TruncateString(str, availableWidth)
-	}
-	errorMessage := strings.Join(errStrings, "\n")
+	errorMessage := helpers.TruncateString(r.error.Error(), availableWidth)
 	errorString := fmt.Sprintf("%s", ControlColors.StatusError(errorMessage))
 
 	// now put these all together
