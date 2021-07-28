@@ -32,12 +32,13 @@ const (
 // InteractiveClient :: wrapper over *LocalClient and *prompt.Prompt along
 // to facilitate interactive query prompt
 type InteractiveClient struct {
-	initData                *db_common.QueryInitData
-	resultsStreamer         *queryresult.ResultStreamer
-	interactiveBuffer       []string
-	interactivePrompt       *prompt.Prompt
-	interactiveQueryHistory *queryhistory.QueryHistory
-	autocompleteOnEmpty     bool
+	initData                 *db_common.QueryInitData
+	resultsStreamer          *queryresult.ResultStreamer
+	interactiveBuffer        []string
+	interactivePrompt        *prompt.Prompt
+	interactiveQueryHistory  *queryhistory.QueryHistory
+	autocompleteOnEmpty      bool
+	addHistoryToAutoComplete bool
 	// the cancellation function for the active query - may be nil
 	// NOTE: should ONLY be called by cancelActiveQueryIfAny
 	cancelActiveQuery context.CancelFunc
@@ -223,6 +224,12 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			},
 		}),
 		prompt.OptionAddKeyBind(prompt.KeyBind{
+			Key: prompt.ControlR,
+			Fn: func(b *prompt.Buffer) {
+				c.addHistoryToAutoComplete = !c.addHistoryToAutoComplete
+			},
+		}),
+		prompt.OptionAddKeyBind(prompt.KeyBind{
 			Key: prompt.Tab,
 			Fn: func(b *prompt.Buffer) {
 				if len(b.Text()) == 0 {
@@ -279,6 +286,7 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 	)
 	// set this to a default
 	c.autocompleteOnEmpty = false
+	c.addHistoryToAutoComplete = false
 	c.interactivePrompt.RunCtx(ctx)
 
 	return
@@ -286,6 +294,7 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 
 func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 	c.interactiveBuffer = []string{}
+	c.addHistoryToAutoComplete = false
 }
 
 func (c *InteractiveClient) executor(line string) {
@@ -462,17 +471,22 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		return s
 	}
 
+	if c.addHistoryToAutoComplete {
+		for _, historyElement := range c.interactiveQueryHistory.Get() {
+			s = append(s, prompt.Suggest{Text: historyElement})
+		}
+	}
+
 	if isFirstWord(text) {
 		// add all we know that can be the first words
 
 		//named queries
 		s = append(s, c.namedQuerySuggestions()...)
-		// "select"
-		s = append(s, prompt.Suggest{Text: "select"})
+		// "select","with"
+		s = append(s, prompt.Suggest{Text: "select"}, prompt.Suggest{Text: "with"})
 
 		// metaqueries
 		s = append(s, metaquery.PromptSuggestions()...)
-
 	} else if metaquery.IsMetaQuery(text) {
 		client := c.client()
 		suggestions := metaquery.Complete(&metaquery.CompleterInput{
