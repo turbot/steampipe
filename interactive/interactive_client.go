@@ -475,7 +475,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		added := []string{}
 		for _, historyElement := range c.interactiveQueryHistory.Get() {
 			if !helpers.StringSliceContains(added, historyElement) {
-				s = append(s, prompt.Suggest{Text: historyElement})
+				s = append(s, prompt.Suggest{Text: historyElement, Description: "History"})
 				added = append(added, historyElement)
 			}
 		}
