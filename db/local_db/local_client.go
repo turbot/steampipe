@@ -239,19 +239,23 @@ func (c *LocalClient) getSchemaFromDB() (*sql.Rows, error) {
 		LEFT JOIN
 			pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
 		WHERE
-			cols.table_name in (
-				SELECT 
-					foreign_table_name 
-				FROM 
-					information_schema.foreign_tables
-			) 
-			OR
-			cols.table_schema = 'public'
-			OR
-			LEFT(cols.table_schema,8) = 'pg_temp_'
+		    (
+    			cols.table_name in (
+    				SELECT 
+    					foreign_table_name 
+    				FROM 
+    					information_schema.foreign_tables
+    			) 
+    			OR
+    			cols.table_schema = 'public'
+    			OR
+    			LEFT(cols.table_schema,8) = 'pg_temp_'
+			)
+			AND
+			cols.table_schema <> '%s'
 		ORDER BY 
 			cols.table_schema, cols.table_name, cols.column_name;
 `
 
-	return c.dbClient.Query(query)
+	return c.dbClient.Query(fmt.Sprintf(query, constants.FDWCommandSchema))
 }
