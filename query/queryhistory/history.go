@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 )
 
@@ -20,8 +21,12 @@ func New() *QueryHistory {
 	return history
 }
 
-// Put :: add to the history queue; trim to maxHistorySize if necessary
+// Put :: add to the history queue; trim to HistorySize if necessary
 func (q *QueryHistory) Put(query string) {
+
+	if !isAllowedInHistory(query) {
+		return
+	}
 
 	// do a strict compare to see if we have this same exact query as the most recent history item
 	if len(q.history) > 0 && q.history[len(q.history)-1] == query {
@@ -74,6 +79,23 @@ func (q *QueryHistory) load() error {
 	}
 	defer file.Close()
 
+	var loadAt []string
 	decoder := json.NewDecoder(file)
-	return decoder.Decode(&q.history)
+	err = decoder.Decode(&loadAt)
+	if err != nil {
+		return err
+	}
+
+	for _, element := range loadAt {
+		if isAllowedInHistory(element) {
+			q.history = append(q.history, element)
+		}
+	}
+	return nil
+}
+
+// isAllowedInHistory prevents some meta commands from appearing in history
+func isAllowedInHistory(element string) bool {
+	disallowedElements := []string{constants.CmdClear, constants.CmdExit, constants.CmdQuit}
+	return !helpers.StringSliceContains(disallowedElements, element)
 }
