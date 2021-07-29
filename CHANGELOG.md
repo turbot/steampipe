@@ -4,6 +4,7 @@ _What's new?_
   
 _Bug fixes_
 * When an aggregator connection is evaluating a wildcard, only include connections with compatible plugin type. ([#687](https://github.com/turbot/steampipe/issues/687))
+* Fix search path not being honored by `steampipe check`. ([#708](https://github.com/turbot/steampipe/issues/708))
 
 ## v0.7.0 [2021-07-22]
 
