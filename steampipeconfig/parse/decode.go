@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig/terraform"
 )
 
 // A consistent detail message for all "not a valid identifier" diagnostics.
@@ -68,19 +69,18 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
+		case modconfig.BlockTypeVariable:
 
-			if block.Type == modconfig.BlockTypeVariable {
-				// special case decode logic for locals
-				variable, res := modconfig.decodeVariableBlock(block, false)
-				for _, local := range locals {
-					// handle the result
-					// - if successful, add resource to mod and variables maps
-					// - if there are dependencies, add them to run context
-					moreDiags = handleDecodeResult(local, res, block, runCtx)
-					diags = append(diags, moreDiags...)
-				}
-				continue
+			// special case decode logic for locals
+			variable, res := terraform.DecodeVariableBlock(block, false)
+			for _, local := range locals {
+				// handle the result
+				// - if successful, add resource to mod and variables maps
+				// - if there are dependencies, add them to run context
+				moreDiags = handleDecodeResult(local, res, block, runCtx)
+				diags = append(diags, moreDiags...)
 			}
+
 		default:
 			// all other blocks are treated the same:
 			resource, res := decodeResource(block, runCtx)
