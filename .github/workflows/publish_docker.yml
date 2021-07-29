@@ -5,10 +5,6 @@ on:
       release:
         description: "The name of the released version to publish"
         required: true
-      hub_namespace:
-        description: "The namespace in Docker Hub to publish to. Defaults to 'turbot'"
-        default: "turbot"
-        required: true
 
 env:
   STEAMPIPE_VERSION: ${{ github.event.inputs.release }}
@@ -39,8 +35,8 @@ jobs:
             TARGETARCH=amd64
             TARGETVERSION=${{ env.STEAMPIPE_VERSION }}
           tags: |
-            ${{ github.event.inputs.hub_namespace }}/steampipe:${{ steps.generate_docker_tag.outputs.docker_tag }}
-            ${{ github.event.inputs.hub_namespace }}/steampipe:latest
+            turbot/steampipe:${{ steps.generate_docker_tag.outputs.docker_tag }}
+            turbot/steampipe:latest
           
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
