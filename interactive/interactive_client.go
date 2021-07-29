@@ -410,6 +410,8 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 
 	// if the line is ONLY a semicolon, do nothing and restart interactive session
 	if strings.TrimSpace(query) == ";" {
+		// TACTICAL: mark result streamer as done so we do not wait for it before restarting prompt
+		c.resultsStreamer.Done()
 		c.restartInteractiveSession()
 		return "", nil
 	}
