@@ -1,4 +1,4 @@
-name: Steampipe Publish Release
+name: Steampipe Release
 on:
   workflow_dispatch:
     inputs:
