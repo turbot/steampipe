@@ -6,6 +6,7 @@ _Bug fixes_
 * When an aggregator connection is evaluating a wildcard, only include connections with compatible plugin type. ([#687](https://github.com/turbot/steampipe/issues/687))
 * Fix search path not being honored by `steampipe check`. ([#708](https://github.com/turbot/steampipe/issues/708))
 * Fix interactive console becoming unresponsive after ";" query. ([#700](https://github.com/turbot/steampipe/issues/700))
+* Fix `nil pointer exception` in `steampipe plugin`. Closes #678
 
 ## v0.7.0 [2021-07-22]
 
