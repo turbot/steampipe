@@ -1,0 +1,46 @@
+name: Publish Docker Release
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "The name of the released version to publish"
+        required: true
+
+env:
+  STEAMPIPE_VERSION: ${{ github.event.inputs.release }}
+
+jobs:
+  publish_docker:  
+    name: Push Docker image to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Clean Version for Tag
+        id: generate_docker_tag
+        run: |
+          echo "::set-output name=docker_tag::${STEAMPIPE_VERSION#"v"}"
+          
+      - name: Build and Push to Docker Hub
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          build-args: |
+            TARGETOS=linux
+            TARGETARCH=amd64
+            TARGETVERSION=${{ env.STEAMPIPE_VERSION }}
+          tags: |
+            turbot/steampipe:${{ steps.generate_docker_tag.outputs.docker_tag }}
+            turbot/steampipe:latest
+          
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+
+
+          
+        
