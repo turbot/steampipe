@@ -1,4 +1,4 @@
-name: Steampipe Release
+name: Build and Draft Github Release
 on:
   workflow_dispatch:
     inputs:
