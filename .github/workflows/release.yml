@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'The branch that will be built'
+        description: "The branch that will be built"
         required: true
       tag:
-        description: 'The release tag that will be set'
+        description: "The release tag that will be set"
         required: true
 
 env:
@@ -16,7 +16,7 @@ jobs:
   goreleaser:
     name: Build
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -70,10 +70,9 @@ jobs:
     needs: goreleaser
     strategy:
       matrix:
-        platform: [ ubuntu-latest ]
+        platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-
       - name: Checkout
         uses: actions/checkout@v2
         with:
