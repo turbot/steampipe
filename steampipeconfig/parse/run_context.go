@@ -54,43 +54,10 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 	c.buildEvalContext()
 
 	// add mod and any existing mod resources to the variables
-	diags := c.addModToVariables()
+	diags := c.addModToEvalCtx()
 
-	c.addSteampipeVariables()
+	c.addSteampipeEnums()
 	return c, diags
-}
-
-// add enums to the variables which may be referenced from within the hcl
-func (c *RunContext) addSteampipeVariables() {
-	// add steampipe variables
-	c.variables["steampipe"] = map[string]cty.Value{
-		"panel": cty.ObjectVal(map[string]cty.Value{
-			"markdown":         cty.StringVal("steampipe.panel.markdown"),
-			"barchart":         cty.StringVal("steampipe.panel.barchart"),
-			"stackedbarchart":  cty.StringVal("steampipe.panel.stackedbarchart"),
-			"counter":          cty.StringVal("steampipe.panel.counter"),
-			"linechart":        cty.StringVal("steampipe.panel.linechart"),
-			"multilinechart":   cty.StringVal("steampipe.panel.multilinechart"),
-			"piechart":         cty.StringVal("steampipe.panel.piechart"),
-			"placeholder":      cty.StringVal("steampipe.panel.placeholder"),
-			"control_list":     cty.StringVal("steampipe.panel.control_list"),
-			"control_progress": cty.StringVal("steampipe.panel.control_progress"),
-			"control_table":    cty.StringVal("steampipe.panel.control_table"),
-			"graph":            cty.StringVal("steampipe.panel.graph"),
-			"sankey_diagram":   cty.StringVal("steampipe.panel.sankey_diagram"),
-			"status":           cty.StringVal("steampipe.panel.status"),
-			"table":            cty.StringVal("steampipe.panel.table"),
-			"resource_detail":  cty.StringVal("steampipe.panel.resource_detail"),
-			"resource_tags":    cty.StringVal("steampipe.panel.resource_tags"),
-		}),
-	}
-}
-
-func (c *RunContext) newDependencyGraph() *topsort.Graph {
-	dependencyGraph := topsort.NewGraph()
-	// add root node - this will depend on all other nodes
-	dependencyGraph.AddNode(rootDependencyNode)
-	return dependencyGraph
 }
 
 func (c *RunContext) ClearDependencies() {
@@ -137,6 +104,66 @@ func (c *RunContext) AddDependencies(block *hcl.Block, name string, dependencies
 	return nil
 }
 
+// BlocksToDecode builds a list of blocks to decode, the order of which is determined by the depdnency order
+func (c *RunContext) BlocksToDecode() (hcl.Blocks, error) {
+	depOrder, err := c.getDependencyOrder()
+	if err != nil {
+		return nil, err
+	}
+	if len(depOrder) == 0 {
+		return c.blocks, nil
+	}
+
+	var blocksToDecode hcl.Blocks
+	for _, name := range depOrder {
+		// depOrder is all the blocks required to resolve dependencies.
+		// if this one is unparsed, added to list
+		block, ok := c.UnresolvedBlocks[name]
+		if ok {
+			blocksToDecode = append(blocksToDecode, block.Block)
+		}
+	}
+	return blocksToDecode, nil
+}
+
+// EvalComplete :: Are all elements in the dependency tree fully evaluated
+func (c *RunContext) EvalComplete() bool {
+	return len(c.UnresolvedBlocks) == 0
+}
+
+// add enums to the variables which may be referenced from within the hcl
+func (c *RunContext) addSteampipeEnums() {
+	c.variables["steampipe"] = map[string]cty.Value{
+		"panel": cty.ObjectVal(map[string]cty.Value{
+			"markdown":         cty.StringVal("steampipe.panel.markdown"),
+			"barchart":         cty.StringVal("steampipe.panel.barchart"),
+			"stackedbarchart":  cty.StringVal("steampipe.panel.stackedbarchart"),
+			"counter":          cty.StringVal("steampipe.panel.counter"),
+			"linechart":        cty.StringVal("steampipe.panel.linechart"),
+			"multilinechart":   cty.StringVal("steampipe.panel.multilinechart"),
+			"piechart":         cty.StringVal("steampipe.panel.piechart"),
+			"placeholder":      cty.StringVal("steampipe.panel.placeholder"),
+			"control_list":     cty.StringVal("steampipe.panel.control_list"),
+			"control_progress": cty.StringVal("steampipe.panel.control_progress"),
+			"control_table":    cty.StringVal("steampipe.panel.control_table"),
+			"graph":            cty.StringVal("steampipe.panel.graph"),
+			"sankey_diagram":   cty.StringVal("steampipe.panel.sankey_diagram"),
+			"status":           cty.StringVal("steampipe.panel.status"),
+			"table":            cty.StringVal("steampipe.panel.table"),
+			"resource_detail":  cty.StringVal("steampipe.panel.resource_detail"),
+			"resource_tags":    cty.StringVal("steampipe.panel.resource_tags"),
+		}),
+	}
+}
+
+func (c *RunContext) newDependencyGraph() *topsort.Graph {
+	dependencyGraph := topsort.NewGraph()
+	// add root node - this will depend on all other nodes
+	dependencyGraph.AddNode(rootDependencyNode)
+	return dependencyGraph
+}
+
+// return the optimal run order required to resolve dependencies
 func (c *RunContext) getDependencyOrder() ([]string, error) {
 	rawDeps, err := c.dependencyGraph.TopSort(rootDependencyNode)
 	if err != nil {
@@ -162,34 +189,6 @@ func (c *RunContext) getDependencyOrder() ([]string, error) {
 	return deps, nil
 }
 
-func (c *RunContext) BlocksToDecode() (hcl.Blocks, error) {
-	depOrder, err := c.getDependencyOrder()
-	if err != nil {
-		return nil, err
-	}
-	if len(depOrder) == 0 {
-		return c.blocks, nil
-	}
-
-	var blocksToDecode hcl.Blocks
-	for _, name := range depOrder {
-		// depOrder is all the blocks required to resolve dependencies.
-		// if this one is unparsed, added to list
-		block, ok := c.UnresolvedBlocks[name]
-		if ok {
-			blocksToDecode = append(blocksToDecode, block.Block)
-		}
-	}
-	return blocksToDecode, nil
-}
-
-// state
-
-// EvalComplete :: Are all elements in the dependency tree fully evaluated
-func (c *RunContext) EvalComplete() bool {
-	return len(c.UnresolvedBlocks) == 0
-}
-
 // eval functions
 func (c *RunContext) buildEvalContext() {
 	// convert variables to cty values
@@ -206,16 +205,16 @@ func (c *RunContext) buildEvalContext() {
 
 // AddResource :: store this resource as a variable to be added to the eval ccontext
 func (c *RunContext) AddResource(resource modconfig.HclResource, block *hcl.Block) hcl.Diagnostics {
-	diagnostics := c.addResourceToVariables(resource, block)
+	diagnostics := c.addResourceToEvalCtx(resource, block)
 	if diagnostics.HasErrors() {
 		return diagnostics
 	}
 
-	// try to add query to mod - this will fail if the mod already has a query with the same name
+	// add resource to mod - this will fail if the mod already has a resource with the same name
 	return c.Mod.AddResource(resource, block)
 }
 
-func (c *RunContext) addResourceToVariables(resource modconfig.HclResource, block *hcl.Block) hcl.Diagnostics {
+func (c *RunContext) addResourceToEvalCtx(resource modconfig.HclResource, block *hcl.Block) hcl.Diagnostics {
 	// add resource to variable map
 	ctyValue, err := resource.CtyValue()
 	if err != nil {
@@ -254,18 +253,18 @@ func (c *RunContext) addResourceToVariables(resource modconfig.HclResource, bloc
 	return nil
 }
 
-func (c *RunContext) addModToVariables() hcl.Diagnostics {
+func (c *RunContext) addModToEvalCtx() hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	// create empty block to pass
 	block := &hcl.Block{}
 
-	moreDiags := c.addResourceToVariables(c.Mod, block)
+	moreDiags := c.addResourceToEvalCtx(c.Mod, block)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 	}
 	// add all mappable resources to variables
 	for _, q := range c.Mod.Queries {
-		moreDiags := c.addResourceToVariables(q, block)
+		moreDiags := c.addResourceToEvalCtx(q, block)
 		if moreDiags.HasErrors() {
 			diags = append(diags, moreDiags...)
 		}
