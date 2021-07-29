@@ -8,6 +8,7 @@ require (
 	github.com/Microsoft/hcsshim v0.8.14 // indirect
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/ahmetb/go-linq v3.0.0+incompatible
+	github.com/alecthomas/chroma v0.9.2 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/briandowns/spinner v1.11.1
 	github.com/c-bata/go-prompt v0.2.5
@@ -76,4 +77,4 @@ require (
 	rsc.io/letsencrypt v0.0.3 // indirect
 )
 
-replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20210716071502-aaa801a61636
+replace github.com/c-bata/go-prompt => /Users/binaeksarkar/work/sources/go-prompt
