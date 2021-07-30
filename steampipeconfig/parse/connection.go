@@ -19,7 +19,7 @@ func ParseConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.C
 	}
 
 	// get connection name
-	connection := &modconfig.Connection{Name: block.Labels[0]}
+	connection := &modconfig.Connection{ConnectionName: block.Labels[0]}
 
 	var pluginName string
 	diags = gohcl.DecodeExpression(connectionContent.Attributes["plugin"].Expr, nil, &pluginName)
@@ -78,5 +78,17 @@ func ParseConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.C
 	sort.Strings(configProperties)
 	connection.Config = strings.Join(configProperties, "\n")
 
+	// save connection metadata
+
+	metadata, err := GetMetadataForParsedResource(connection.Name(), block, fileData)
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  err.Error(),
+			Subject:  &block.DefRange,
+		})
+	} else {
+		connection.SetMetadata(metadata)
+	}
 	return connection, diags
 }

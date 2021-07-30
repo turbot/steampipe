@@ -44,15 +44,15 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"aws_dmi_001": {
-					Name:   "aws_dmi_001",
-					Plugin: "hub.steampipe.io/plugins/turbot/aws@latest",
+					ConnectionName: "aws_dmi_001",
+					Plugin:         "hub.steampipe.io/plugins/turbot/aws@latest",
 					Config: `access_key            = "aws_dmi_001_access_key"
 regions               = "- us-east-1\n-us-west-"
 secret_key            = "aws_dmi_001_secret_key"`,
 				},
 				"aws_dmi_002": {
-					Name:   "aws_dmi_002",
-					Plugin: "hub.steampipe.io/plugins/turbot/aws@latest",
+					ConnectionName: "aws_dmi_002",
+					Plugin:         "hub.steampipe.io/plugins/turbot/aws@latest",
 					Config: `access_key            = "aws_dmi_002_access_key"
 regions               = "- us-east-1\n-us-west-"
 secret_key            = "aws_dmi_002_secret_key"`,
@@ -68,8 +68,8 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					ConnectionName: "a",
+					Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 					//Config: map[string]string{},
 				},
 			},
@@ -83,8 +83,8 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					ConnectionName: "a",
+					Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
@@ -120,8 +120,8 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					ConnectionName: "a",
+					Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
@@ -153,8 +153,8 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					ConnectionName: "a",
+					Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
@@ -185,8 +185,8 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					ConnectionName: "a",
+					Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 					Options: &options.Connection{
 						Cache:    &trueVal,
 						CacheTTL: &ttlVal,

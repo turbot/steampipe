@@ -222,7 +222,7 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 		ControlMap:   w.ControlMap,
 		BenchmarkMap: w.BenchmarkMap,
 	}
-	// TODO add in all mod dependencies
+
 	if !w.Mod.IsDefaultMod() {
 		workspaceMap.ModMap[w.Mod.Name()] = w.Mod
 	}

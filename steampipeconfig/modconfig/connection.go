@@ -22,22 +22,25 @@ const (
 // This will be parsed by the plugin)
 type Connection struct {
 	// connection name
-	Name string
+	ConnectionName string
 	// Name of plugin
-	Plugin string
+	Plugin string `column:"plugin,text"`
 	// Type - supported values: "aggregator"
-	Type string
+	Type string `column:"type,text"`
 	// this is a list of names or wildcards which are resolved to connections
 	// (only valid for "aggregator" type)
-	ConnectionNames []string
+	ConnectionNames         []string
+	ResolvedConnectionNames []string `column:"connection_names,jsonb"`
 	// a list of the resolved child connections
 	// (only valid for "aggregator" type)
 	Connections map[string]*Connection
 	// unparsed HCL of plugin specific connection config
-	Config string
+	Config string `column:"config,text"`
 
 	// options
-	Options *options.Connection
+	Options *options.Connection `column:"options,jsonb"`
+
+	metadata *ResourceMetadata
 }
 
 // SetOptions sets the options on the connection
@@ -58,7 +61,7 @@ func (c *Connection) SetOptions(opts options.Options, block *hcl.Block) hcl.Diag
 }
 
 func (c *Connection) String() string {
-	return fmt.Sprintf("\n----\nName: %s\nPlugin: %s\nConfig:\n%s\nOptions:\n%s\n", c.Name, c.Plugin, c.Config, c.Options.String())
+	return fmt.Sprintf("\n----\nName: %s\nPlugin: %s\nConfig:\n%s\nOptions:\n%s\n", c.ConnectionName, c.Plugin, c.Config, c.Options.String())
 }
 
 // Validate verifies the Type property is valid,
@@ -67,7 +70,7 @@ func (c *Connection) String() string {
 func (c *Connection) Validate(connectionMap map[string]*Connection) []string {
 	validConnectionTypes := []string{"", ConnectionTypeAggregator}
 	if !helpers.StringSliceContains(validConnectionTypes, c.Type) {
-		return []string{fmt.Sprintf("connection '%s' has invalid connection type '%s'", c.Name, c.Type)}
+		return []string{fmt.Sprintf("connection '%s' has invalid connection type '%s'", c.ConnectionName, c.Type)}
 	}
 	if c.Type == ConnectionTypeAggregator {
 		return c.ValidateAggregatorConnection(connectionMap)
@@ -76,7 +79,7 @@ func (c *Connection) Validate(connectionMap map[string]*Connection) []string {
 	var validationErrors []string
 
 	if len(c.ConnectionNames) != 0 {
-		validationErrors = append(validationErrors, fmt.Sprintf("connection '%s' has %d children, but is not of type 'aggregator'", c.Name, len(c.ConnectionNames)))
+		validationErrors = append(validationErrors, fmt.Sprintf("connection '%s' has %d children, but is not of type 'aggregator'", c.ConnectionName, len(c.ConnectionNames)))
 	}
 	return validationErrors
 
@@ -85,7 +88,7 @@ func (c *Connection) Validate(connectionMap map[string]*Connection) []string {
 func (c *Connection) ValidateAggregatorConnection(connectionMap map[string]*Connection) []string {
 	if len(c.Connections) == 0 {
 		/// there should be at least one connection
-		return []string{fmt.Sprintf("aggregator connection '%s' has no children", c.Name)}
+		return []string{fmt.Sprintf("aggregator connection '%s' has no children", c.ConnectionName)}
 	}
 
 	var validationErrors []string
@@ -95,9 +98,9 @@ func (c *Connection) ValidateAggregatorConnection(connectionMap map[string]*Conn
 		if childConnection.Plugin != c.Plugin {
 			validationErrors = append(validationErrors,
 				fmt.Sprintf("aggregator connection '%s' uses plugin %s but child connection '%s' uses plugin '%s'",
-					c.Name,
+					c.ConnectionName,
 					c.Plugin,
-					childConnection.Name,
+					childConnection.ConnectionName,
 					childConnection.Plugin,
 				))
 		}
@@ -107,13 +110,13 @@ func (c *Connection) ValidateAggregatorConnection(connectionMap map[string]*Conn
 }
 
 func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {
-	log.Printf("[TRACE] Connection.PopulateChildren for aggregator connection %s", c.Name)
+	log.Printf("[TRACE] Connection.PopulateChildren for aggregator connection %s", c.ConnectionName)
 	c.Connections = make(map[string]*Connection)
 	for _, childName := range c.ConnectionNames {
 		// if this resolves as an existing connection, populate it
 		if childConnection, ok := connectionMap[childName]; ok {
 			log.Printf("[TRACE] Connection.PopulateChildren found matching connection %s", childName)
-			c.Connections[childName] = childConnection
+			c.addChildConnection(childName, childConnection)
 			continue
 		}
 		log.Printf("[TRACE] Connection.PopulateChildren no connection matches %s - treating as a wildcard", childName)
@@ -130,10 +133,31 @@ func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {
 			if match, _ := path.Match(childName, name); match {
 				// verify that this connection is of a compatible type
 				if connection.Plugin == c.Plugin {
-					c.Connections[name] = connection
+					c.addChildConnection(name, connection)
 					log.Printf("[TRACE] connection '%s' matches pattern '%s'", name, childName)
 				}
 			}
 		}
 	}
+}
+
+func (c *Connection) addChildConnection(childName string, childConnection *Connection) {
+	c.Connections[childName] = childConnection
+	c.ResolvedConnectionNames = append(c.ResolvedConnectionNames, childName)
+}
+
+// Name implements ModTreeItem, HclResource
+// return name in format: 'control.<shortName>'
+func (c *Connection) Name() string {
+	return c.ConnectionName
+}
+
+// GetMetadata implements ResourceWithMetadata
+func (c *Connection) GetMetadata() *ResourceMetadata {
+	return c.metadata
+}
+
+// SetMetadata implements ResourceWithMetadata
+func (c *Connection) SetMetadata(metadata *ResourceMetadata) {
+	c.metadata = metadata
 }

@@ -150,7 +150,7 @@ func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (
 			Plugin:           remoteSchema,
 			CheckSum:         checksum,
 			ConnectionConfig: config.Config,
-			ConnectionName:   config.Name,
+			ConnectionName:   config.ConnectionName,
 		}
 	}
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration end")

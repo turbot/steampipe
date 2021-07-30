@@ -66,14 +66,15 @@ var ReservedConnectionNames = []string{
 
 // reflection table names
 const (
-	ReflectionTableQuery     = "steampipe_query"
-	ReflectionTableControl   = "steampipe_control"
-	ReflectionTableBenchmark = "steampipe_benchmark"
-	ReflectionTableMod       = "steampipe_mod"
+	ReflectionTableQuery      = "steampipe_query"
+	ReflectionTableControl    = "steampipe_control"
+	ReflectionTableBenchmark  = "steampipe_benchmark"
+	ReflectionTableMod        = "steampipe_mod"
+	ReflectionTableConnection = "steampipe_connection"
 )
 
 func ReflectionTableNames() []string {
-	return []string{ReflectionTableControl, ReflectionTableBenchmark, ReflectionTableQuery, ReflectionTableMod}
+	return []string{ReflectionTableControl, ReflectionTableBenchmark, ReflectionTableQuery, ReflectionTableMod, ReflectionTableConnection}
 }
 
 // Invoker :: pseudoEnum for what starts the service

@@ -153,14 +153,14 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 				diags = append(diags, moreDiags...)
 				continue
 			}
-			_, alreadyThere := steampipeConfig.Connections[connection.Name]
+			_, alreadyThere := steampipeConfig.Connections[connection.ConnectionName]
 			if alreadyThere {
-				return fmt.Errorf("duplicate connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename)
+				return fmt.Errorf("duplicate connection name: '%s' in '%s'", connection.ConnectionName, block.TypeRange.Filename)
 			}
-			if ok, errorMessage := schema.IsSchemaNameValid(connection.Name); !ok {
-				return fmt.Errorf("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage)
+			if ok, errorMessage := schema.IsSchemaNameValid(connection.ConnectionName); !ok {
+				return fmt.Errorf("invalid connection name: '%s' in '%s'. %s ", connection.ConnectionName, block.TypeRange.Filename, errorMessage)
 			}
-			steampipeConfig.Connections[connection.Name] = connection
+			steampipeConfig.Connections[connection.ConnectionName] = connection
 
 		case "options":
 			// check this options type is permitted based on the options passed in

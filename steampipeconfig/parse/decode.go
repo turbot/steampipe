@@ -243,7 +243,7 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 	if res.Success() {
 		// if resource supports metadata, save it
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
-			metadata, err := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.Mod)
+			metadata, err := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData)
 			if err != nil {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
@@ -251,6 +251,8 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 					Subject:  &block.DefRange,
 				})
 			} else {
+				// set the mod on the metadata
+				metadata.SetMod(runCtx.Mod)
 				resourceWithMetadata.SetMetadata(metadata)
 			}
 		}
