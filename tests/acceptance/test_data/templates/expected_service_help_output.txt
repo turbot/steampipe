@@ -1,0 +1,22 @@
+Steampipe service management.
+
+Run Steampipe as a local service, exposing it as a database endpoint for
+connection from any Postgres compatible database client.
+
+Usage:
+  steampipe service [command]
+
+Available Commands:
+  restart     Restart Steampipe service
+  start       Start Steampipe in service mode
+  status      Status of the Steampipe service
+  stop        Stop Steampipe service
+
+Flags:
+  -h, --help   help for service
+
+Global Flags:
+      --install-dir string   Path to the Config Directory (defaults to ~/.steampipe) (default "~/.steampipe")
+      --workspace string     Path to the workspace (defaults to current working directory)
+
+Use "steampipe service [command] --help" for more information about a command.

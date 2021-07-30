@@ -1,0 +1,36 @@
+Steampipe plugin management.
+
+Plugins extend Steampipe to work with many different services and providers.
+Find plugins using the public registry at https://hub.steampipe.io.
+
+Examples:
+
+  # Install a plugin
+  steampipe plugin install aws
+
+  # Update a plugin
+  steampipe plugin update aws
+
+  # List installed plugins
+  steampipe plugin list
+
+  # Uninstall a plugin
+  steampipe plugin uninstall aws
+
+Usage:
+  steampipe plugin [command]
+
+Available Commands:
+  install     Install one or more plugins
+  list        List currently installed plugins
+  uninstall   Uninstall a plugin
+  update      Update one or more plugins
+
+Flags:
+  -h, --help   help for plugin
+
+Global Flags:
+      --install-dir string   Path to the Config Directory (defaults to ~/.steampipe) (default "~/.steampipe")
+      --workspace string     Path to the workspace (defaults to current working directory)
+
+Use "steampipe plugin [command] --help" for more information about a command.

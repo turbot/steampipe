@@ -6,6 +6,16 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
 }
 
+@test "steampipe plugin help is displayed when no sub command given" {
+    run steampipe plugin
+    assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_help_output.txt)"
+}
+
+@test "steampipe service help is displayed when no sub command given" {
+    run steampipe service
+    assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_service_help_output.txt)"
+}
+
 # Check that when disabled in config, we do not perform HTTP requests for update checks, 
 # but we perform other scheduled operations
 @test "scheduled task run - no update check when disabled in config - TEST DISABLED" {
