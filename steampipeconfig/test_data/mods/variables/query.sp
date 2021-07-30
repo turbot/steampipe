@@ -1,7 +1,8 @@
 variable "v1"{
     type = string
-    default = "select 1"
+
 }
+
 variable "v2"{
     type = list(string)
     default = ["select 1", "select 2", "select 3"]
@@ -28,9 +29,14 @@ query "q1"{
     sql = variable.v1
 }
 
-
 query "q2"{
     title ="Q2"
     description = "THIS IS QUERY 2"
-    sql = variable.v4
+    sql = variable.v3[0].query
+}
+
+query "q3"{
+    title ="Q3"
+    description = query.q1.description
+    sql = variable.v3[0].query
 }
