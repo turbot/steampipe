@@ -58,7 +58,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
-	github.com/turbot/go-kit v0.2.2-0.20210628165333-268ba0a30be3
+	github.com/turbot/go-kit v0.2.2-0.20210730122803-1ecb35c27e98
 	github.com/turbot/steampipe-plugin-sdk v1.3.0
 	github.com/ulikunitz/xz v0.5.8
 	github.com/zclconf/go-cty v1.8.2
