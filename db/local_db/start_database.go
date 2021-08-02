@@ -6,14 +6,22 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/version"
+	"golang.org/x/sync/semaphore"
+	"gopkg.in/yaml.v3"
 )
 
 // StartResult :: pseudoEnum for outcomes of Start
@@ -244,24 +252,121 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 	}
 	err = runningInfo.Save()
 	if err != nil {
-		postgresCmd.Process.Kill()
-		return err
-	}
-
-	err = postgresCmd.Process.Release()
-	if err != nil {
-		postgresCmd.Process.Kill()
+		killOnStartFail(postgresCmd)
 		return err
 	}
 
 	connection, err := createDbClient("postgres", constants.DatabaseSuperUser)
+	err = fmt.Errorf("some error")
 	if err != nil {
-		postgresCmd.Process.Kill()
+		dumpDiagnosticData()
+		killOnStartFail(postgresCmd)
 		return err
 	}
 	connection.Close()
 
+	err = postgresCmd.Process.Release()
+	if err != nil {
+		killOnStartFail(postgresCmd)
+		return err
+	}
+
 	return nil
+}
+
+func killOnStartFail(cmd *exec.Cmd) {
+	// get the process
+	p, _ := psutils.NewProcess(int32(cmd.Process.Pid))
+	// kill it
+	doThreeStepPostgresExit(p)
+}
+
+func dumpDiagnosticData() {
+	dumpingDone := make(chan bool, 1)
+	sp := display.StartSpinnerAfterDelay("This shouldn't have happened. Collecting diagnostic data", constants.SpinnerShowTimeout, dumpingDone)
+	dump := DiagnosticDumpData{}
+
+	wg := sync.WaitGroup{}
+	wg.Add(5)
+
+	go dumpProcesses(&dump, &wg)
+	go dumpPortUsage(&dump, &wg)
+	go dumpInstalled(&dump, &wg)
+	go dumpState(&dump, &wg)
+
+	// We don't want to lose the call stack. DON'T run this is a goroutine
+	dump.CallStack = string(debug.Stack())
+	dump.Version = version.String()
+	wg.Done()
+
+	// wait for the whole thing to get filled up
+	wg.Wait()
+
+	dumpFileLocation := filepath.Join(getDatabaseLogDirectory(), fmt.Sprintf("dump-%s.dump", time.Now().Format("20060102150405Z")))
+	dumpFile, _ := os.Create(dumpFileLocation)
+
+	// use an YAML encoder, since the user may need to inspect and edit this file
+	// a YAML is easier to work with
+	ymlEncoder := yaml.NewEncoder(dumpFile)
+	ymlEncoder.Encode(dump)
+	ymlEncoder.Close()
+	dumpFile.Close()
+
+	msg := fmt.Sprintf(`
+This error should never have happened.
+
+We collected some diagnostic data and saved it in %s.
+
+It will be great if you could raise an issue at https://github.com/turbot/steampipe/issues/new and upload the file.
+
+Note: Please remove any sensitive data from the file before uploading.
+
+`, dumpFileLocation,
+	)
+	display.StopSpinnerWithMessage(sp, msg)
+	close(dumpingDone)
+}
+func dumpState(dump *DiagnosticDumpData, wg *sync.WaitGroup) {
+	defer wg.Done()
+	info, err := loadRunningInstanceInfo()
+	if err != nil {
+		dump.State = RunningDBInstanceInfo{}
+	}
+	dump.State = *info
+}
+func dumpProcesses(dump *DiagnosticDumpData, wg *sync.WaitGroup) {
+	systemProcesses, err := psutils.Processes()
+	if err != nil {
+		dump.ProcessDump = append(dump.ProcessDump, fmt.Sprintf("could not retrieve system processes:%v", err))
+	}
+	for _, p := range systemProcesses {
+		cmdLine, _ := p.Cmdline()
+		if strings.Contains(cmdLine, "postgres") || strings.Contains(cmdLine, constants.APPNAME) {
+			dump.ProcessDump = append(dump.ProcessDump, cmdLine)
+		}
+	}
+	wg.Done()
+}
+func dumpPortUsage(dump *DiagnosticDumpData, wg *sync.WaitGroup) {
+	ulimit, err := filehelpers.GetULimit()
+	if err != nil {
+		dump.PortDump = append(dump.PortDump, -1)
+	}
+	portScanner := &PortScanner{
+		ip:   "127.0.0.1",
+		lock: semaphore.NewWeighted(int64(ulimit.Cur)),
+	}
+	dump.PortDump = portScanner.Start(1, 65535, 500*time.Millisecond)
+	wg.Done()
+}
+func dumpInstalled(dump *DiagnosticDumpData, wg *sync.WaitGroup) {
+	pl, _ := versionfile.LoadPluginVersionFile()
+	db, _ := versionfile.LoadDatabaseVersionFile()
+	dump.Installed = append(dump.Installed, db.EmbeddedDB, db.FdwExtension)
+	for _, p := range pl.Plugins {
+		dump.Installed = append(dump.Installed, *p)
+	}
+	wg.Done()
 }
 
 // ensures that the `steampipe` fdw server exists
