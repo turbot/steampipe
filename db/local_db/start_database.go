@@ -19,7 +19,7 @@ import (
 // StartResult :: pseudoEnum for outcomes of Start
 type StartResult int
 
-// StartListenType :: pseudoEnum of network binding for postgres
+// StartListenType is a pseudoEnum of network binding for postgres
 type StartListenType string
 
 const (
@@ -38,7 +38,7 @@ const (
 	ListenTypeLocal = "local"
 )
 
-// IsValid :: validator for StartListenType known values
+// IsValid is a validator for StartListenType known values
 func (slt StartListenType) IsValid() error {
 	switch slt {
 	case ListenTypeNetwork, ListenTypeLocal:
@@ -47,7 +47,7 @@ func (slt StartListenType) IsValid() error {
 	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
 }
 
-// StartDB :: start the database is not already running
+// StartDB starts the database if not already running
 func StartDB(port int, listen StartListenType, invoker constants.Invoker) (startResult StartResult, err error) {
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
@@ -55,6 +55,9 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	var client *LocalClient
 
 	defer func() {
+		if r := recover(); r != nil {
+			err = helpers.ToError(r)
+		}
 		// if there was an error and we started the service, stop it again
 		if err != nil {
 			if startResult == ServiceStarted {
@@ -220,7 +223,10 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 	}
 
 	// get the password file
-	passwords, _ := getPasswords()
+	passwords, err := getPasswords()
+	if err != nil {
+		return err
+	}
 
 	runningInfo := new(RunningDBInstanceInfo)
 	runningInfo.Pid = postgresCmd.Process.Pid

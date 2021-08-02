@@ -12,7 +12,6 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -91,8 +90,7 @@ func (c *InteractiveClient) InteractiveQuery() {
 
 		// close the result stream
 		// this needs to be the last thing we do,
-		// as the runQueryCmd uses this as an indication
-		// to quit out of the application
+		// as the query result display code will exit once the result stream is closed
 		c.resultsStreamer.Close()
 	}()
 
@@ -107,9 +105,9 @@ func (c *InteractiveClient) InteractiveQuery() {
 	for {
 		select {
 		case initResult := <-c.initResultChan:
-			if err := c.handleInitResult(promptCtx, initResult); err != nil {
-				return
-			}
+			c.handleInitResult(promptCtx, initResult)
+			// if there was an error, handleInitResult will shut down the prompt
+			// - we must wait for it to shut down and not return immediately
 
 		case <-promptResultChan:
 			// persist saved history
@@ -118,9 +116,6 @@ func (c *InteractiveClient) InteractiveQuery() {
 			if c.afterClose == AfterPromptCloseExit {
 				return
 			}
-			// wait for the resultsStreamer to have streamed everything out
-			// this is to be sure the previous command has completed streaming
-			c.resultsStreamer.Wait()
 			// create new context
 			promptCtx = c.createPromptContext()
 			// now run it again
@@ -130,40 +125,34 @@ func (c *InteractiveClient) InteractiveQuery() {
 }
 
 // init data has arrived, handle any errors/warnings/messages
-func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db_common.InitResult) error {
+func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db_common.InitResult) {
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
-	log.Printf("[TRACE] handleInitResult - initResult has been read")
-	if plugin.IsCancelled(ctx) {
+	if utils.IsContextCancelled(ctx) {
 		log.Printf("[TRACE] prompt context has been cancelled - not handling init result")
-		return nil
+		return
 	}
 
-	// if there is an error, shutdown
+	// if there is an error, shutdown the prompt
 	if initResult.Error != nil {
 		c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
 		fmt.Println()
 		utils.ShowError(initResult.Error)
-		return initResult.Error
+		return
 	}
 	if initResult.HasMessages() {
-		log.Printf("[TRACE] init result has messages")
-		// HACK mark result streamer as done so we do not wait for it before restarting prompt
-		// TODO would be better if result stream checked if it was started
-		c.resultsStreamer.Done()
 		// after closing prompt, restart it
 		c.ClosePrompt(AfterPromptCloseRestart)
 		fmt.Println()
 		initResult.DisplayMessages()
 	}
-	return nil
+
 }
 
 // ClosePrompt cancels the running prompt, setting the action to take after close
 func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
-	log.Printf("[TRACE] Close prompt - then %d", afterClose)
 	c.afterClose = afterClose
 	c.cancelPrompt()
 }
@@ -330,7 +319,6 @@ func (c *InteractiveClient) executor(line string) {
 		if err := c.executeMetaquery(queryContext, query); err != nil {
 			utils.ShowError(err)
 		}
-		c.resultsStreamer.Done()
 		// cancel the context
 		c.cancelActiveQueryIfAny()
 
@@ -339,7 +327,6 @@ func (c *InteractiveClient) executor(line string) {
 		result, err := c.client().Execute(queryContext, query, false)
 		if err != nil {
 			utils.ShowError(utils.HandleCancelError(err))
-			c.resultsStreamer.Done()
 		} else {
 			c.resultsStreamer.StreamResult(result)
 		}
@@ -373,7 +360,6 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 			// if it failed, report error and quit
 			utils.ShowError(utils.HandleCancelError(err))
 
-			c.resultsStreamer.Done()
 			return "", err
 		}
 	}
@@ -410,8 +396,6 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 
 	// if the line is ONLY a semicolon, do nothing and restart interactive session
 	if strings.TrimSpace(query) == ";" {
-		// TACTICAL: mark result streamer as done so we do not wait for it before restarting prompt
-		c.resultsStreamer.Done()
 		c.restartInteractiveSession()
 		return "", nil
 	}
