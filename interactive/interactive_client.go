@@ -12,7 +12,6 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -130,7 +129,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
-	if plugin.IsCancelled(ctx) {
+	if utils.IsContextCancelled(ctx) {
 		log.Printf("[TRACE] prompt context has been cancelled - not handling init result")
 		return
 	}
