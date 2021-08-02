@@ -40,7 +40,7 @@ func EnsureDBInstalled() error {
 			_, err := installFDW(false, spinner)
 			spinner.Stop()
 			if err != nil {
-				log.Printf("[TRACE] installFDW returned error: %v", err)
+				log.Printf("[TRACE] installFDW failed: %v", err)
 				return fmt.Errorf("Update steampipe-postgres-fdw... FAILED!")
 			}
 
@@ -54,7 +54,7 @@ func EnsureDBInstalled() error {
 			display.UpdateSpinnerMessage(spinner, "Cleanup any Steampipe processes...")
 			killInstanceIfAny()
 			if err := doInit(false, spinner); err != nil {
-				log.Printf("[TRACE] %v", err)
+				log.Printf("[TRACE] killInstanceIfAny failed: %v", err)
 				return fmt.Errorf("database could not be initialized")
 			}
 		}
@@ -71,7 +71,7 @@ func EnsureDBInstalled() error {
 	err := removeRunningInstanceInfo()
 	if err != nil && !os.IsNotExist(err) {
 		display.StopSpinner(spinner)
-		log.Printf("[TRACE] %v", err)
+		log.Printf("[TRACE] removeRunningInstanceInfo failed: %v", err)
 		return fmt.Errorf("Cleanup any Steampipe processes... FAILED!")
 	}
 
@@ -96,7 +96,7 @@ func EnsureDBInstalled() error {
 	_, err = installFDW(true, spinner)
 	if err != nil {
 		display.StopSpinner(spinner)
-		log.Printf("[TRACE] %v", err)
+		log.Printf("[TRACE] installFDW failed: %v", err)
 		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
 	}
 
@@ -104,7 +104,7 @@ func EnsureDBInstalled() error {
 	err = doInit(true, spinner)
 	if err != nil {
 		display.StopSpinner(spinner)
-		log.Printf("[TRACE] %v", err)
+		log.Printf("[TRACE] doInit failed: %v", err)
 		return fmt.Errorf("Database initialization... FAILED!")
 	}
 
@@ -114,7 +114,7 @@ func EnsureDBInstalled() error {
 	err = updateDownloadedBinarySignature()
 	if err != nil {
 		display.StopSpinner(spinner)
-		log.Printf("[TRACE] %v", err)
+		log.Printf("[TRACE] updateDownloadedBinarySignature failed: %v", err)
 		return fmt.Errorf("Updating install records... FAILED!")
 	}
 
@@ -170,14 +170,16 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	err := utils.RemoveDirectoryContents(getDataLocation())
 	if err != nil {
 		display.StopSpinner(spinner)
-		return utils.PrefixError(err, "Prepare database install location failed")
+		log.Printf("[TRACE] %v", err)
+		return fmt.Errorf("Prepare database install location... FAILED!")
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Initializing database...")
 	err = initDatabase()
 	if err != nil {
 		display.StopSpinner(spinner)
-		return utils.PrefixError(err, "Initializing database failed")
+		log.Printf("[TRACE] initDatabase failed: %v", err)
+		return fmt.Errorf("Initializing database... FAILED!")
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Generating database passwords...")
@@ -188,28 +190,32 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	err = writePasswordFile(steampipePassword, rootPassword)
 	if err != nil {
 		display.StopSpinner(spinner)
-		return utils.PrefixError(err, "Generating database passwords failed")
+		log.Printf("[TRACE] writePasswordFile failed: %v", err)
+		return fmt.Errorf("Generating database passwords... FAILED!")
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Starting database...")
 	err = startPostgresProcess(constants.DatabaseDefaultPort, ListenTypeLocal, constants.InvokerInstaller)
 	if err != nil {
 		display.StopSpinner(spinner)
-		return utils.PrefixError(err, "Starting database failed")
+		log.Printf("[TRACE] startPostgresProcess failed: %v", err)
+		return fmt.Errorf("Starting database... FAILED!")
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring database...")
 	err = installSteampipeDatabaseAndUser(steampipePassword, rootPassword)
 	if err != nil {
 		display.StopSpinner(spinner)
-		return utils.PrefixError(err, "Configuring database failed")
+		log.Printf("[TRACE] installSteampipeDatabaseAndUser failed: %v", err)
+		return fmt.Errorf("Configuring database... FAILED!")
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring Steampipe...")
 	err = installSteampipeHub()
 	if err != nil {
 		display.StopSpinner(spinner)
-		return utils.PrefixError(err, "Configuring Steampipe failed")
+		log.Printf("[TRACE] installSteampipeHub failed: %v", err)
+		return fmt.Errorf("Configuring Steampipe... FAILED!")
 	}
 	// force stop
 	display.UpdateSpinnerMessage(spinner, "Completing configuration")

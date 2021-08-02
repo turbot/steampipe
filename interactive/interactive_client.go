@@ -128,7 +128,6 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
-	//log.Printf("[TRACE] handleInitResult - initResult has been read")
 	if plugin.IsCancelled(ctx) {
 		log.Printf("[TRACE] prompt context has been cancelled - not handling init result")
 		return
@@ -136,11 +135,10 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 
 	// if there is an error, shutdown the prompt
 	if initResult.Error != nil {
-		//c.ClosePrompt(AfterPromptCloseExit)
+		c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
 		fmt.Println()
 		utils.ShowError(initResult.Error)
-		c.ClosePrompt(AfterPromptCloseExit)
 		return
 	}
 	if initResult.HasMessages() {
