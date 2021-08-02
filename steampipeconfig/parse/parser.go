@@ -12,7 +12,7 @@ import (
 )
 
 // LoadFileData :: built a map of filepath to file data
-func LoadFileData(paths []string) (map[string][]byte, hcl.Diagnostics) {
+func LoadFileData(paths ...string) (map[string][]byte, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var fileData = map[string][]byte{}
 
@@ -114,7 +114,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	// todo change runctx to Decoder object
 
 	// create run context to handle dependency resolution
-	runCtx, diags := NewRunContext(mod, content, fileData)
+	runCtx, diags := NewRunContext(mod, content, fileData, opts.Variables)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to create run context", diags)
 	}

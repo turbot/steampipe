@@ -76,7 +76,6 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
-
 		default:
 			// all other blocks are treated the same:
 			resource, res := decodeResource(block, runCtx)

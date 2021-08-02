@@ -1,6 +1,6 @@
 variable "v1"{
     type = string
-    default = "select 1"
+    default = "select 'default'"
 }
 
 variable "v2"{
