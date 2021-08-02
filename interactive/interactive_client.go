@@ -107,6 +107,8 @@ func (c *InteractiveClient) InteractiveQuery() {
 		select {
 		case initResult := <-c.initResultChan:
 			c.handleInitResult(promptCtx, initResult)
+			// if there was an error, handleInitResult will shut down the prompt
+			// - we must wait for it to shut down and not return immediately
 
 		case <-promptResultChan:
 			// persist saved history
