@@ -257,7 +257,6 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 	}
 
 	connection, err := createDbClient("postgres", constants.DatabaseSuperUser)
-	err = fmt.Errorf("some error")
 	if err != nil {
 		dumpDiagnosticData()
 		killOnStartFail(postgresCmd)
