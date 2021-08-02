@@ -149,7 +149,11 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	local_db.EnsureDBInstalled()
+	err := local_db.EnsureDBInstalled()
+	if err != nil {
+		utils.ShowError(err)
+		return
+	}
 
 	info, err := local_db.GetStatus()
 	if err != nil {

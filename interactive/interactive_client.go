@@ -107,9 +107,7 @@ func (c *InteractiveClient) InteractiveQuery() {
 	for {
 		select {
 		case initResult := <-c.initResultChan:
-			if err := c.handleInitResult(promptCtx, initResult); err != nil {
-				return
-			}
+			c.handleInitResult(promptCtx, initResult)
 
 		case <-promptResultChan:
 			// persist saved history
@@ -130,37 +128,36 @@ func (c *InteractiveClient) InteractiveQuery() {
 }
 
 // init data has arrived, handle any errors/warnings/messages
-func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db_common.InitResult) error {
+func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db_common.InitResult) {
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
-	log.Printf("[TRACE] handleInitResult - initResult has been read")
+	//log.Printf("[TRACE] handleInitResult - initResult has been read")
 	if plugin.IsCancelled(ctx) {
 		log.Printf("[TRACE] prompt context has been cancelled - not handling init result")
-		return nil
+		return
 	}
 
 	// if there is an error, shutdown
 	if initResult.Error != nil {
-		c.ClosePrompt(AfterPromptCloseExit)
+		//c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
 		fmt.Println()
 		utils.ShowError(initResult.Error)
-		return initResult.Error
+		c.ClosePrompt(AfterPromptCloseExit)
+		return
 	}
 	if initResult.HasMessages() {
-		log.Printf("[TRACE] init result has messages")
 		// after closing prompt, restart it
 		c.ClosePrompt(AfterPromptCloseRestart)
 		fmt.Println()
 		initResult.DisplayMessages()
 	}
-	return nil
+
 }
 
 // ClosePrompt cancels the running prompt, setting the action to take after close
 func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
-	log.Printf("[TRACE] Close prompt - then %d", afterClose)
 	c.afterClose = afterClose
 	c.cancelPrompt()
 }
@@ -284,6 +281,8 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			ASCIICode: constants.AltRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
+		// cancellation
+		//prompt.OptionSetExitCheckerOnInput(c.PromptShouldExit(ctx)),
 	)
 	// set this to a default
 	c.autocompleteOnEmpty = false
@@ -291,6 +290,13 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 
 	return
 }
+
+//func (c *InteractiveClient) PromptShouldExit(ctx context.Context) prompt.ExitChecker {
+//	return func(in string, breakline bool) bool {
+//		log.Printf("[WARN] PromptShouldExit")
+//		return utils.IsContextCancelled(ctx)
+//	}
+//}
 
 func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 	c.interactiveBuffer = []string{}

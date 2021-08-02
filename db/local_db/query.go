@@ -16,7 +16,10 @@ func EnsureDbAndStartService(invoker constants.Invoker) error {
 
 	log.Println("[TRACE] db.EnsureDbAndStartService start")
 
-	EnsureDBInstalled()
+	if err := EnsureDBInstalled(); err != nil {
+		return err
+	}
+
 	status, err := GetStatus()
 	if err != nil {
 		return errors.New("could not retrieve service status")

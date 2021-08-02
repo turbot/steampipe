@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 
@@ -116,13 +115,10 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db_common.QueryInitData, args []string) {
 	go func() {
-		log.Printf("[TRACE] getQueryInitDataAsync")
-
 		initData := db_common.NewQueryInitData()
 		defer func() {
 			initDataChan <- initData
 			close(initDataChan)
-			log.Printf("[TRACE] getQueryInitDataAsync complete")
 		}()
 
 		// get a db client
