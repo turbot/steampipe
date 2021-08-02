@@ -117,6 +117,9 @@ func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db_common.Que
 	go func() {
 		initData := db_common.NewQueryInitData()
 		defer func() {
+			if r := recover(); r != nil {
+				initData.Result.Error = helpers.ToError(r)
+			}
 			initDataChan <- initData
 			close(initDataChan)
 		}()
