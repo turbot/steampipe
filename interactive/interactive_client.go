@@ -150,9 +150,6 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	}
 	if initResult.HasMessages() {
 		log.Printf("[TRACE] init result has messages")
-		// HACK mark result streamer as done so we do not wait for it before restarting prompt
-		// TODO would be better if result stream checked if it was started
-		c.resultsStreamer.Done()
 		// after closing prompt, restart it
 		c.ClosePrompt(AfterPromptCloseRestart)
 		fmt.Println()
@@ -330,7 +327,6 @@ func (c *InteractiveClient) executor(line string) {
 		if err := c.executeMetaquery(queryContext, query); err != nil {
 			utils.ShowError(err)
 		}
-		c.resultsStreamer.Done()
 		// cancel the context
 		c.cancelActiveQueryIfAny()
 
@@ -339,7 +335,6 @@ func (c *InteractiveClient) executor(line string) {
 		result, err := c.client().Execute(queryContext, query, false)
 		if err != nil {
 			utils.ShowError(utils.HandleCancelError(err))
-			c.resultsStreamer.Done()
 		} else {
 			c.resultsStreamer.StreamResult(result)
 		}
@@ -373,7 +368,6 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 			// if it failed, report error and quit
 			utils.ShowError(utils.HandleCancelError(err))
 
-			c.resultsStreamer.Done()
 			return "", err
 		}
 	}
@@ -410,8 +404,6 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 
 	// if the line is ONLY a semicolon, do nothing and restart interactive session
 	if strings.TrimSpace(query) == ";" {
-		// TACTICAL: mark result streamer as done so we do not wait for it before restarting prompt
-		c.resultsStreamer.Done()
 		c.restartInteractiveSession()
 		return "", nil
 	}
