@@ -9,7 +9,7 @@ import (
 // dbClient constants
 // TODO these should be configuration settings
 
-// Arrays cannot be constants, so do the next most convenient thing
+// DatabaseListenAddresses is an arrays is listen addresses which Steampipe accepts
 var DatabaseListenAddresses = []string{"localhost", "127.0.0.1"}
 
 const (

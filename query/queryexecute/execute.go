@@ -25,7 +25,7 @@ func RunInteractiveSession(initChan *chan *db_common.QueryInitData) {
 	for r := range resultsStreamer.Results {
 		display.ShowOutput(r)
 		// signal to the resultStreamer that we are done with this chunk of the stream
-		resultsStreamer.Done()
+		resultsStreamer.AllResultsRead()
 	}
 }
 
@@ -84,12 +84,11 @@ func executeQuery(ctx context.Context, queryString string, client db_common.Clie
 		return err
 	}
 
-	// TODO encapsulate this in display object
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
 		display.ShowOutput(r)
-		// signal to the resultStreamer that we are done with this chunk of the stream
-		resultsStreamer.Done()
+		// signal to the resultStreamer that we are done with this result
+		resultsStreamer.AllResultsRead()
 	}
 	return nil
 }

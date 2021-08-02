@@ -91,8 +91,7 @@ func (c *InteractiveClient) InteractiveQuery() {
 
 		// close the result stream
 		// this needs to be the last thing we do,
-		// as the runQueryCmd uses this as an indication
-		// to quit out of the application
+		// as the query result display code will exit once the result stream is closed
 		c.resultsStreamer.Close()
 	}()
 
@@ -116,9 +115,6 @@ func (c *InteractiveClient) InteractiveQuery() {
 			if c.afterClose == AfterPromptCloseExit {
 				return
 			}
-			// wait for the resultsStreamer to have streamed everything out
-			// this is to be sure the previous command has completed streaming
-			c.resultsStreamer.Wait()
 			// create new context
 			promptCtx = c.createPromptContext()
 			// now run it again
@@ -138,7 +134,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		return
 	}
 
-	// if there is an error, shutdown
+	// if there is an error, shutdown the prompt
 	if initResult.Error != nil {
 		//c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
@@ -281,8 +277,6 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			ASCIICode: constants.AltRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
-		// cancellation
-		//prompt.OptionSetExitCheckerOnInput(c.PromptShouldExit(ctx)),
 	)
 	// set this to a default
 	c.autocompleteOnEmpty = false
@@ -290,13 +284,6 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 
 	return
 }
-
-//func (c *InteractiveClient) PromptShouldExit(ctx context.Context) prompt.ExitChecker {
-//	return func(in string, breakline bool) bool {
-//		log.Printf("[WARN] PromptShouldExit")
-//		return utils.IsContextCancelled(ctx)
-//	}
-//}
 
 func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 	c.interactiveBuffer = []string{}

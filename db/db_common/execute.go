@@ -17,6 +17,9 @@ func ExecuteQuery(ctx context.Context, queryString string, client Client) (*quer
 	if err != nil {
 		return nil, err
 	}
-	go resultsStreamer.StreamSingleResult(result)
+	go func() {
+		resultsStreamer.StreamResult(result)
+		resultsStreamer.Close()
+	}()
 	return resultsStreamer, nil
 }
