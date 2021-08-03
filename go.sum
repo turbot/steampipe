@@ -94,11 +94,14 @@ github.com/agext/levenshtein v1.2.2 h1:0S/Yg6LYmFJ5stwQeRp6EeOcCbj7xiqQSdNelsXva
 github.com/agext/levenshtein v1.2.2/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=
 github.com/ahmetb/go-linq v3.0.0+incompatible h1:qQkjjOXKrKOTy83X8OpRmnKflXKQIL/mC/gMVVDMhOA=
 github.com/ahmetb/go-linq v3.0.0+incompatible/go.mod h1:PFffvbdbtw+QTB0WKRP0cNht7vnCfnGlEpak/DVg5cY=
+github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 h1:smF2tmSOzy2Mm+0dGI2AIUHY+w0BUc+4tn40djz7+6U=
 github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38/go.mod h1:r7bzyVFMNntcxPZXK3/+KdruV1H5KSlyVY0gc+NgInI=
 github.com/alecthomas/chroma v0.9.2 h1:yU1sE2+TZbLIQPMk30SolL2Hn53SR/Pv750f7qZ/XMs=
 github.com/alecthomas/chroma v0.9.2/go.mod h1:eMuEnpA18XbG/WhOWtCzJHS7WqEtDAI+HxdwoW0nVSk=
+github.com/alecthomas/colour v0.0.0-20160524082231-60882d9e2721 h1:JHZL0hZKJ1VENNfmXvHbgYlbUOvpzYzvy2aZU5gXVeo=
 github.com/alecthomas/colour v0.0.0-20160524082231-60882d9e2721/go.mod h1:QO9JBoKquHd+jz9nshCh40fOfO+JzsoXy8qTHF68zU0=
 github.com/alecthomas/kong v0.2.4/go.mod h1:kQOmtJgV+Lb4aj+I2LEn40cbtawdWJ9Y8QLq+lElKxE=
+github.com/alecthomas/repr v0.0.0-20180818092828-117648cd9897 h1:p9Sln00KOTlrYkxI1zYWl1QLnEqAqEARBEYa8FQnQcY=
 github.com/alecthomas/repr v0.0.0-20180818092828-117648cd9897/go.mod h1:xTS7Pm1pD1mvyM075QCDSRqH6qRLXylzS24ZTpRiSzQ=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
@@ -793,8 +796,8 @@ github.com/tombuildsstuff/giovanni v0.15.1/go.mod h1:0TZugJPEtqzPlMpuJHYfXY6Dq2u
 github.com/turbot/go-kit v0.2.2-0.20210628165333-268ba0a30be3/go.mod h1:SBdPRngbEfYubiR81iAVtO43oPkg1+ASr+XxvgbH7/k=
 github.com/turbot/go-kit v0.2.2-0.20210730122803-1ecb35c27e98 h1:FC2PphWOAmLVxgS4rPUm8OkXOmzl1sgFt8jLrr5AGUc=
 github.com/turbot/go-kit v0.2.2-0.20210730122803-1ecb35c27e98/go.mod h1:SBdPRngbEfYubiR81iAVtO43oPkg1+ASr+XxvgbH7/k=
-github.com/turbot/go-prompt v0.2.6-steampipe.0.20210716071502-aaa801a61636 h1:DoPUBEiDIt+T3S7P2JU0wAHx4MlrT1MZ9opaufOvRd0=
-github.com/turbot/go-prompt v0.2.6-steampipe.0.20210716071502-aaa801a61636/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
+github.com/turbot/go-prompt v0.2.6-steampipe.0.20210803084547-1a995738f74a h1:tPiP6eVZ+EuZyvHPUVRbWqfbzOz9ZJO709plsyih3Pk=
+github.com/turbot/go-prompt v0.2.6-steampipe.0.20210803084547-1a995738f74a/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
 github.com/turbot/steampipe-plugin-sdk v1.3.0 h1:7KMA86Nxpw2dRC1Ri472aSRQgLv3gk9DqPxwFHd3EoE=
 github.com/turbot/steampipe-plugin-sdk v1.3.0/go.mod h1:E00M5qOvCp6qwaT1/KhdTNM6S0JUlNY6L11IvlELQV4=
 github.com/ugorji/go v0.0.0-20180813092308-00b869d2f4a5/go.mod h1:hnLbHMwcvSihnDhEfx2/BzKp2xb0Y+ErdfYcrs9tkJQ=
