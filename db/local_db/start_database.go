@@ -280,34 +280,35 @@ func killOnStartFail(cmd *exec.Cmd) {
 	doThreeStepPostgresExit(p)
 }
 
+func collectDumpDataAsync(fn func(d *DiagnosticDumpData), sink *DiagnosticDumpData, wg *sync.WaitGroup) {
+	wg.Add(1)
+	go func() {
+		fn(sink)
+		wg.Done()
+	}()
+}
+
 func dumpDiagnosticData() {
 	dumpingDone := make(chan bool, 1)
 	sp := display.StartSpinnerAfterDelay("Fatal error occurred. Collecting diagnostic data", constants.SpinnerShowTimeout, dumpingDone)
-	dump := DiagnosticDumpData{}
+	diagnosticData := DiagnosticDumpData{}
 
 	wg := sync.WaitGroup{}
 
-	// collector is a wrapper over the actual collector functions and provides the necessary concurrency
-	// support
-	collector := func(fn func(d *DiagnosticDumpData), sink *DiagnosticDumpData, wg *sync.WaitGroup) {
-		wg.Add(1)
-		go func() {
-			fn(sink)
-			wg.Done()
-		}()
-	}
-	collector(dumpProcesses, &dump, &wg)
-	collector(dumpPortUsage, &dump, &wg)
-	collector(dumpInstalled, &dump, &wg)
-	collector(dumpState, &dump, &wg)
+	collectDumpDataAsync(collectProcesses, &diagnosticData, &wg)
+	collectDumpDataAsync(collectPortUsage, &diagnosticData, &wg)
+	collectDumpDataAsync(collectInstalled, &diagnosticData, &wg)
+	collectDumpDataAsync(collectState, &diagnosticData, &wg)
 
 	// We don't want to lose the call stack.
 	// DON'T run this is a goroutine.
 	// If we run this in a goroutine then the callstack
-	// returned by 'debug.Stack()' is rooted to the `gorouting`
+	// returned by 'debug.Stack()' is rooted to the `goroutine`
 	// and not 'main'
-	dump.CallStack = string(debug.Stack())
-	dump.Version = version.String()
+	diagnosticData.CallStack = string(debug.Stack())
+
+	// get the version of steampipe, just in case
+	diagnosticData.Version = version.String()
 
 	wg.Done()
 
@@ -320,7 +321,7 @@ func dumpDiagnosticData() {
 	// use an YAML encoder, since the user may need to inspect and edit this file
 	// a YAML is easier to work with
 	ymlEncoder := yaml.NewEncoder(dumpFile)
-	ymlEncoder.Encode(dump)
+	ymlEncoder.Encode(diagnosticData)
 	ymlEncoder.Close()
 	dumpFile.Close()
 
@@ -329,23 +330,23 @@ This error should never have happened.
 
 We collected some diagnostic data and saved it in %s.
 
-It will be great if you could raise an issue at https://github.com/turbot/steampipe/issues/new and upload the file.
+It would be great if you could raise an issue at https://github.com/turbot/steampipe/issues/new and upload the file.
 
-Note: Please remove any sensitive data from the file before uploading.
+Please review the file first and confirm you are happy to share the data collected.
 
 `, dumpFileLocation,
 	)
 	display.StopSpinnerWithMessage(sp, msg)
 	close(dumpingDone)
 }
-func dumpState(dump *DiagnosticDumpData) {
+func collectState(dump *DiagnosticDumpData) {
 	info, err := loadRunningInstanceInfo()
 	if err != nil {
 		dump.State = RunningDBInstanceInfo{}
 	}
 	dump.State = *info
 }
-func dumpProcesses(dump *DiagnosticDumpData) {
+func collectProcesses(dump *DiagnosticDumpData) {
 	systemProcesses, err := psutils.Processes()
 	if err != nil {
 		dump.ProcessDump = append(dump.ProcessDump, fmt.Sprintf("could not retrieve system processes:%v", err))
@@ -357,7 +358,7 @@ func dumpProcesses(dump *DiagnosticDumpData) {
 		}
 	}
 }
-func dumpPortUsage(dump *DiagnosticDumpData) {
+func collectPortUsage(dump *DiagnosticDumpData) {
 	ulimit, err := filehelpers.GetULimit()
 	if err != nil {
 		dump.PortDump = append(dump.PortDump, -1)
@@ -368,7 +369,7 @@ func dumpPortUsage(dump *DiagnosticDumpData) {
 	}
 	dump.PortDump = portScanner.Start(1, 65535, 500*time.Millisecond)
 }
-func dumpInstalled(dump *DiagnosticDumpData) {
+func collectInstalled(dump *DiagnosticDumpData) {
 	pl, _ := versionfile.LoadPluginVersionFile()
 	db, _ := versionfile.LoadDatabaseVersionFile()
 	dump.Installed = append(dump.Installed, db.EmbeddedDB, db.FdwExtension)
