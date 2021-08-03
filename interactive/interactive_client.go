@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 
+	"github.com/chzyer/readline"
 	"github.com/turbot/steampipe/db/db_common"
 
 	"github.com/c-bata/go-prompt"
@@ -27,18 +30,21 @@ type AfterPromptCloseAction int
 const (
 	AfterPromptCloseExit AfterPromptCloseAction = iota
 	AfterPromptCloseRestart
+	AfterPromptCloseStartReadline
 )
 
 // InteractiveClient :: wrapper over *LocalClient and *prompt.Prompt along
 // to facilitate interactive query prompt
 type InteractiveClient struct {
-	initData                 *db_common.QueryInitData
-	resultsStreamer          *queryresult.ResultStreamer
-	interactiveBuffer        []string
-	interactivePrompt        *prompt.Prompt
-	interactiveQueryHistory  *queryhistory.QueryHistory
-	autocompleteOnEmpty      bool
-	addHistoryToAutoComplete bool
+	initData                    *db_common.QueryInitData
+	resultsStreamer             *queryresult.ResultStreamer
+	interactiveBuffer           []string
+	interactivePrompt           *prompt.Prompt
+	initialPromptContent        string
+	initialForwardSearchContent string
+	livePrefixCallback          func() (prefix string, useLive bool)
+	interactiveQueryHistory     *queryhistory.QueryHistory
+	autocompleteOnEmpty         bool
 	// the cancellation function for the active query - may be nil
 	// NOTE: should ONLY be called by cancelActiveQueryIfAny
 	cancelActiveQuery context.CancelFunc
@@ -111,11 +117,16 @@ func (c *InteractiveClient) InteractiveQuery() {
 			// - we must wait for it to shut down and not return immediately
 
 		case <-promptResultChan:
+			// reset the initial buffer
+			c.initialPromptContent = ""
 			// persist saved history
 			c.interactiveQueryHistory.Persist()
 			// check post-close action
 			if c.afterClose == AfterPromptCloseExit {
 				return
+			}
+			if c.afterClose == AfterPromptCloseStartReadline {
+				c.doReadlinePrompt(c.livePrefixCallback)
 			}
 			// create new context
 			promptCtx = c.createPromptContext()
@@ -123,6 +134,40 @@ func (c *InteractiveClient) InteractiveQuery() {
 			c.runInteractivePromptAsync(promptCtx, &promptResultChan)
 		}
 	}
+}
+
+func (c *InteractiveClient) doReadlinePrompt(livePrefix func() (prefix string, useLive bool)) {
+	promptPrefix, _ := livePrefix()
+
+	tmpHistoryFile := filepath.Join(constants.InternalDir(), "readline.tmp")
+
+	rlInstance, err := readline.NewEx(&readline.Config{
+		Prompt:              promptPrefix,
+		HistoryFile:         tmpHistoryFile,
+		AutoComplete:        nil,
+		InterruptPrompt:     "^C",
+		EOFPrompt:           "exit",
+		HistorySearchFold:   true,
+		FuncFilterInputRune: nil,
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer rlInstance.Close()
+	defer os.Remove(tmpHistoryFile)
+
+	// populate the readline history file with entries from steampipe history
+	rlInstance.ResetHistory()
+	rlInstance.HistoryEnable()
+	for _, elem := range c.interactiveQueryHistory.Get() {
+		rlInstance.SaveHistory(elem)
+	}
+	rlInstance.Config.StdinWriter.Write([]byte(c.initialForwardSearchContent))
+	rlInstance.Config.StdinWriter.Write(prompt.ASCIISequences[prompt.ControlR].ASCIICode)
+	line, _ := rlInstance.Readline()
+	c.initialPromptContent = line
+	c.executor(line)
+	c.ClosePrompt(AfterPromptCloseRestart)
 }
 
 // init data has arrived, handle any errors/warnings/messages
@@ -193,18 +238,20 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 	completer := func(d prompt.Document) []prompt.Suggest {
 		return c.queryCompleter(d)
 	}
+	c.livePrefixCallback = func() (prefix string, useLive bool) {
+		prefix = "> "
+		useLive = true
+		if len(c.interactiveBuffer) > 0 {
+			prefix = ">>  "
+		}
+		return
+	}
 	c.interactivePrompt = prompt.New(
 		callExecutor,
 		completer,
+		// prompt.OptionInitialBufferText(c.initialPromptContent),
 		prompt.OptionTitle("steampipe interactive client "),
-		prompt.OptionLivePrefix(func() (prefix string, useLive bool) {
-			prefix = "> "
-			useLive = true
-			if len(c.interactiveBuffer) > 0 {
-				prefix = ">>  "
-			}
-			return
-		}),
+		prompt.OptionLivePrefix(c.livePrefixCallback),
 		prompt.OptionHistory(c.interactiveQueryHistory.Get()),
 		prompt.OptionInputTextColor(prompt.DefaultColor),
 		prompt.OptionPrefixTextColor(prompt.DefaultColor),
@@ -217,7 +264,7 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 		prompt.OptionAddKeyBind(prompt.KeyBind{
 			Key: prompt.ControlD,
 			Fn: func(b *prompt.Buffer) {
-				if b.Text() == "" {
+				if len(strings.TrimSpace(b.Text())) == 0 {
 					// just set after close action - go prompt will handle the prompt shutdown
 					c.afterClose = AfterPromptCloseExit
 				}
@@ -226,7 +273,9 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 		prompt.OptionAddKeyBind(prompt.KeyBind{
 			Key: prompt.ControlR,
 			Fn: func(b *prompt.Buffer) {
-				c.addHistoryToAutoComplete = !c.addHistoryToAutoComplete
+				c.initialForwardSearchContent = b.Text()
+				c.afterClose = AfterPromptCloseStartReadline
+				c.restartInteractiveSession()
 			},
 		}),
 		prompt.OptionAddKeyBind(prompt.KeyBind{
@@ -283,18 +332,19 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			ASCIICode: constants.AltRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
+		prompt.OptionSetExitCheckerOnInput(func(in string, breakline bool) bool {
+			return utils.IsContextCancelled(ctx)
+		}),
 	)
 	// set this to a default
 	c.autocompleteOnEmpty = false
-	c.addHistoryToAutoComplete = false
-	c.interactivePrompt.RunCtx(ctx)
+	c.interactivePrompt.Run()
 
 	return
 }
 
 func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 	c.interactiveBuffer = []string{}
-	c.addHistoryToAutoComplete = false
 }
 
 func (c *InteractiveClient) executor(line string) {
@@ -469,16 +519,6 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		// if nothing has been typed yet, no point
 		// giving suggestions
 		return s
-	}
-
-	if c.addHistoryToAutoComplete {
-		added := []string{}
-		for _, historyElement := range c.interactiveQueryHistory.Get() {
-			if !helpers.StringSliceContains(added, historyElement) {
-				s = append(s, prompt.Suggest{Text: historyElement, Description: "History"})
-				added = append(added, historyElement)
-			}
-		}
 	}
 
 	if isFirstWord(text) {
