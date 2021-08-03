@@ -256,6 +256,6 @@ func (c *LocalClient) getSchemaFromDB() (*sql.Rows, error) {
 		ORDER BY 
 			cols.table_schema, cols.table_name, cols.column_name;
 `
-
+	// we do NOT want to fetch the command schema
 	return c.dbClient.Query(fmt.Sprintf(query, constants.CommandSchema))
 }

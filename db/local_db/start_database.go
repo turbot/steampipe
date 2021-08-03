@@ -126,7 +126,11 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 
 	err = ensureTempTablePermissions()
 	if err != nil {
-		// there was a problem with the installation
+		return ServiceFailedToStart, err
+	}
+	// ensure the db contains command schema
+	err = ensureCommandSchema()
+	if err != nil {
 		return ServiceFailedToStart, err
 	}
 
@@ -275,18 +279,19 @@ func ensureSteampipeServer() error {
 	out := rootClient.QueryRow("select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
 	var serverName string
 	err = out.Scan(&serverName)
-
+	// if there is an error, we need to reinstall the foreign server
 	if err != nil {
-		return installSteampipeHub()
+		return installForeignServer()
 	}
-	return ensureFDWControlSchema()
+	return nil
 }
 
-func ensureFDWControlSchema() error {
+// create the command schema and grant insert permission
+func ensureCommandSchema() error {
 	if _, err := executeSqlAsRoot(updateConnectionQuery(constants.CommandSchema, constants.CommandSchema)...); err != nil {
 		return err
 	}
-	_, err := executeSqlAsRoot("grant  insert on steampipe_command.cache to steampipe_users;")
+	_, err := executeSqlAsRoot(fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CacheCommandTable))
 
 	return err
 }
