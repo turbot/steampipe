@@ -1,6 +1,8 @@
 package parse
 
 import (
+	"fmt"
+
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -20,9 +22,10 @@ func ParseVariables(fileData map[string][]byte) (map[string]cty.Value, error) {
 	}
 
 	for name, attr := range attrs {
+		fullName := fmt.Sprintf("variable.%s", name)
 		val, valDiags := attr.Expr.Value(nil)
 		diags = append(diags, valDiags...)
-		res[name] = val
+		res[fullName] = val
 	}
 	return res, nil
 }

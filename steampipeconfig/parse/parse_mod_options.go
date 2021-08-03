@@ -16,6 +16,8 @@ type ParseModOptions struct {
 	Flags       ParseModFlag
 	ListOptions *filehelpers.ListOptions
 	Variables   map[string]cty.Value
+	// if set, only decode these blocks
+	BlockTypes []string
 }
 
 func (o *ParseModOptions) CreateDefaultMod() bool {

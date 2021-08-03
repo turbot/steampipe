@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig/terraform"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig/tf_config"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -25,7 +25,7 @@ type Variable struct {
 	metadata *ResourceMetadata
 }
 
-func NewVariable(v *terraform.Variable) *Variable {
+func NewVariable(v *tf_config.Variable) *Variable {
 	return &Variable{
 		ShortName:    v.Name,
 		Description:  v.Description,

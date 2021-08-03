@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig/terraform"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig/tf_config"
 )
 
 // A consistent detail message for all "not a valid identifier" diagnostics.
@@ -20,7 +20,7 @@ var missingVariableErrors = []string{
 	"Missing map element",
 }
 
-func decode(runCtx *RunContext) hcl.Diagnostics {
+func decode(runCtx *RunContext, opts *ParseModOptions) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 
 	// build list of blocks to decode
@@ -35,6 +35,10 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			Detail:   err.Error()})
 	}
 	for _, block := range blocks {
+		// if opts specifies block types, check whether this type is included
+		if len(opts.BlockTypes) > 0 && !helpers.StringSliceContains(opts.BlockTypes, block.Type) {
+			continue
+		}
 		// check name is valid
 		moreDiags := validateName(block)
 		if diags.HasErrors() {
@@ -91,7 +95,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 // return a shell resource for the given block
 func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResource {
 	var resource modconfig.HclResource
-	switch modconfig.ModBlockType(block.Type) {
+	switch block.Type {
 	case modconfig.BlockTypeMod:
 		// runCtx already contains the shell mod
 		resource = runCtx.Mod
@@ -144,7 +148,7 @@ func decodeVariable(block *hcl.Block, runCtx *RunContext) (*modconfig.Variable, 
 	res := &decodeResult{}
 
 	var variable *modconfig.Variable
-	v, diags := terraform.DecodeVariableBlock(block, false)
+	v, diags := tf_config.DecodeVariableBlock(block, false)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 

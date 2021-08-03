@@ -1,4 +1,4 @@
-package terraform
+package tf_config
 
 import (
 	"github.com/hashicorp/hcl/v2"

@@ -1,4 +1,4 @@
-package terraform
+package tf_config
 
 import (
 	"testing"

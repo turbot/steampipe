@@ -5,22 +5,20 @@ import (
 	"strings"
 )
 
-type ModBlockType string
-
 const (
-	BlockTypeMod       ModBlockType = "mod"
-	BlockTypeQuery                  = "query"
-	BlockTypeControl                = "control"
-	BlockTypeBenchmark              = "benchmark"
-	BlockTypeReport                 = "report"
-	BlockTypePanel                  = "panel"
-	BlockTypeLocals                 = "locals"
-	BlockTypeVariable               = "variable"
+	BlockTypeMod       = "mod"
+	BlockTypeQuery     = "query"
+	BlockTypeControl   = "control"
+	BlockTypeBenchmark = "benchmark"
+	BlockTypeReport    = "report"
+	BlockTypePanel     = "panel"
+	BlockTypeLocals    = "locals"
+	BlockTypeVariable  = "variable"
 )
 
 type ParsedResourceName struct {
 	Mod      string
-	ItemType ModBlockType
+	ItemType string
 	Name     string
 }
 
@@ -30,7 +28,7 @@ func (m *ParsedResourceName) TypeString() string {
 
 type ParsedPropertyPath struct {
 	Mod          string
-	ItemType     ModBlockType
+	ItemType     string
 	Name         string
 	PropertyPath []string
 }
@@ -49,11 +47,11 @@ func ParseResourceName(fullName string) (res *ParsedResourceName, err error) {
 	case 1:
 		res.Name = parts[0]
 	case 2:
-		res.ItemType = ModBlockType(parts[0])
+		res.ItemType = parts[0]
 		res.Name = parts[1]
 	case 3:
 		res.Mod = parts[0]
-		res.ItemType = ModBlockType(parts[1])
+		res.ItemType = parts[1]
 		res.Name = parts[2]
 	default:
 		err = fmt.Errorf("invalid name '%s' passed to ParseResourceName", fullName)
@@ -78,15 +76,15 @@ func ParseResourcePropertyPath(propertyPath string) (res *ParsedPropertyPath, er
 	switch len(parts) {
 	case 2:
 		// no property path specified
-		res.ItemType = ModBlockType(parts[0])
+		res.ItemType = parts[0]
 		res.Name = parts[1]
 	case 3:
-		res.ItemType = ModBlockType(parts[0])
+		res.ItemType = parts[0]
 		res.Name = parts[1]
 		res.PropertyPath = parts[2:]
 	default:
 		res.Mod = parts[0]
-		res.ItemType = ModBlockType(parts[1])
+		res.ItemType = parts[1]
 		res.Name = parts[2]
 		res.PropertyPath = parts[2:]
 	}
@@ -102,6 +100,6 @@ func PropertyPathToResourceName(propertyPath string) (string, error) {
 	return BuildModResourceName(parsedPropertyPath.ItemType, parsedPropertyPath.Name), nil
 }
 
-func BuildModResourceName(blockType ModBlockType, name string) string {
-	return fmt.Sprintf("%s.%s", string(blockType), name)
+func BuildModResourceName(blockType string, name string) string {
+	return fmt.Sprintf("%s.%s", blockType, name)
 }

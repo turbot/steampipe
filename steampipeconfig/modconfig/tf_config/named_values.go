@@ -1,4 +1,4 @@
-package terraform
+package tf_config
 
 // github.com/hashicorp/terraform/configs/parser_config.go
 import (
@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform/addrs"
-	"github.com/turbot/steampipe/steampipeconfig/terraform/typeexpr"
+	"github.com/turbot/steampipe/steampipeconfig/tf/typeexpr"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
 	//"github.com/hashicorp/terraform/internal/typeexpr"

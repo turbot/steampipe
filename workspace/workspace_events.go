@@ -28,7 +28,7 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 	prevPanels := w.getPanelMap()
 	prevReports := w.getReportMap()
 
-	err := w.loadMod()
+	err := w.loadWorkspaceMod()
 	if err != nil {
 		// check the existing watcher error - if we are already in an error state, do not show error
 		if w.watcherError == nil {

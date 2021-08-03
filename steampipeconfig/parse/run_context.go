@@ -39,7 +39,7 @@ type RunContext struct {
 	blocks    hcl.Blocks
 }
 
-func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[string][]byte, steampipeVariables map[string]cty.Value) (*RunContext, hcl.Diagnostics) {
+func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[string][]byte, inputVariables map[string]cty.Value) (*RunContext, hcl.Diagnostics) {
 	c := &RunContext{
 		Mod:              mod,
 		FileData:         fileData,
@@ -52,7 +52,9 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 	c.dependencyGraph = c.newDependencyGraph()
 
 	// add steampipe variables to the local variables
-	c.variables[modconfig.BlockTypeVariable] = steampipeVariables
+	if inputVariables != nil {
+		c.variables[modconfig.BlockTypeVariable] = inputVariables
+	}
 
 	// add mod and any existing mod resources to the variables
 	// NOTE: this will build the eval context

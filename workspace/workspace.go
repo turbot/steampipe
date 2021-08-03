@@ -11,7 +11,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/report/reportevents"
@@ -19,7 +18,6 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
-	"github.com/zclconf/go-cty/cty"
 )
 
 type Workspace struct {
@@ -63,7 +61,7 @@ func Load(workspacePath string) (*Workspace, error) {
 		return nil, err
 	}
 
-	if err := workspace.loadMod(); err != nil {
+	if err := workspace.loadWorkspaceMod(); err != nil {
 		return nil, err
 	}
 
@@ -209,8 +207,7 @@ func (w *Workspace) reset() {
 // determine whether to load files recursively or just from the top level folder
 // if there is a mod file in the workspace folder, load recursively
 func (w *Workspace) setListFlag() {
-
-	modFilePath := filepath.Join(w.Path, "mod.sp")
+	modFilePath := filepath.Join(w.Path, constants.WorkspaceModFileName)
 	_, err := os.Stat(modFilePath)
 	modFileExists := err == nil
 	if modFileExists {
@@ -221,16 +218,11 @@ func (w *Workspace) setListFlag() {
 	}
 }
 
-func (w *Workspace) loadMod() error {
-	// if there is a steampipe variables file, load it
-	variables, err := w.loadVariables()
+func (w *Workspace) loadWorkspaceMod() error {
+	inputVariables, err := w.getAllVariables()
 	if err != nil {
 		return err
 	}
-
-	// parse all hcl files in the workspace folder (non recursively) and either parse or create a mod
-	// it is valid for 0 or 1 mod to be defined (if no mod is defined, create a default one)
-	// populate mod with all hcl resources we parse
 
 	// clear all resource maps
 	w.reset()
@@ -244,7 +236,7 @@ func (w *Workspace) loadMod() error {
 			Flags:   w.listFlag,
 			Exclude: w.exclusions,
 		},
-		Variables: variables,
+		Variables: inputVariables.JustValues(),
 	}
 
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
@@ -268,25 +260,6 @@ func (w *Workspace) loadMod() error {
 	w.ModMap = modMap
 
 	return nil
-}
-
-func (w *Workspace) loadVariables() (map[string]cty.Value, error) {
-	// find all .spvars files
-	opts := &filehelpers.ListOptions{
-		// listFlag specifies whether to load files recursively
-		Flags:   filehelpers.Files,
-		Include: []string{fmt.Sprintf("*%s", constants.VariablesExtension)},
-	}
-	variablesFiles, err := filehelpers.ListFiles(w.Path, opts)
-
-	if err != nil {
-		return nil, err
-	}
-	fileData, diags := parse.LoadFileData(variablesFiles...)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load all variables files", diags)
-	}
-	return parse.ParseVariables(fileData)
 }
 
 // load all dependencies of workspace mod
