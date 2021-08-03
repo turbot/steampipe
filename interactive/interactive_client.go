@@ -292,9 +292,6 @@ func (c *InteractiveClient) executor(line string) {
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
-	log.Printf("[TRACE] executor in")
-	defer log.Printf("[TRACE] executor out")
-
 	// set afterClose to restart - is we are exiting the metaquery will set this to AfterPromptCloseExit
 	c.afterClose = AfterPromptCloseRestart
 

@@ -6,24 +6,25 @@ import (
 	"github.com/turbot/steampipe/constants"
 )
 
-func (c *LocalClient) executeCacheControlStatementWith(controlCommand string) error {
+func (c *LocalClient) executeCacheControlStatement(controlCommand string) error {
 	_, err := c.dbClient.Exec(fmt.Sprintf(
-		"select %s from %s.%s",
+		"insert into %s.%s (%s) values ('%s')",
+		constants.CommandSchema,
+		constants.CacheCommandTable,
+		constants.CacheCommandOperationColumn,
 		controlCommand,
-		constants.FDWCommandSchema,
-		constants.FDWCommandTable,
 	))
 	return err
 }
 
 func (c *LocalClient) CacheOn() error {
-	return c.executeCacheControlStatementWith(constants.FDWCacheOnCommand)
+	return c.executeCacheControlStatement(constants.CommandCacheOn)
 }
 
 func (c *LocalClient) CacheOff() error {
-	return c.executeCacheControlStatementWith(constants.FDWCacheOffCommand)
+	return c.executeCacheControlStatement(constants.CommandCacheOff)
 }
 
 func (c *LocalClient) CacheClear() error {
-	return c.executeCacheControlStatementWith(constants.FDWCacheClearCommand)
+	return c.executeCacheControlStatement(constants.CommandCacheClear)
 }

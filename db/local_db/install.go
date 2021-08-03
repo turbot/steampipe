@@ -347,7 +347,7 @@ func installSteampipeHub() error {
 		// Use steampipe for the server name, it's simplest
 		`create server "steampipe" foreign data wrapper "steampipe_postgres_fdw"`,
 	}
-	_, err := executeSqlAsRoot(statements)
+	_, err := executeSqlAsRoot(statements...)
 	return err
 }
 

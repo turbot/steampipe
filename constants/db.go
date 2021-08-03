@@ -39,13 +39,13 @@ const (
 	// FunctionSchema :: schema container for all steampipe helper functions
 	FunctionSchema = "internal"
 
-	// FDWCommandSchema is the schema which contains all tables which allows the CLI to control the underlying FDW
-	FDWCommandSchema     = "steampipe_command"
-	FDWCommandTable      = "commands"
-	FDWCommandColumn     = "command"
-	FDWCacheOnCommand    = "cache_on"
-	FDWCacheOffCommand   = "cache_off"
-	FDWCacheClearCommand = "cache_clear"
+	// CommandSchema is the schema which is used to send commands to the FDW
+	CommandSchema               = "steampipe_command"
+	CacheCommandTable           = "cache"
+	CacheCommandOperationColumn = "operation"
+	CommandCacheOn              = "cache_on"
+	CommandCacheOff             = "cache_off"
+	CommandCacheClear           = "cache_clear"
 )
 
 // Functions :: a list of SQLFunc objects that are installed in the db 'internal' schema startup
@@ -84,29 +84,27 @@ func ReflectionTableNames() []string {
 	return []string{ReflectionTableControl, ReflectionTableBenchmark, ReflectionTableQuery, ReflectionTableMod}
 }
 
-// Invoker :: pseudoEnum for what starts the service
+// Invoker is a pseudoEnum for the command/operation which starts the service
 type Invoker string
 
 const (
-	// InvokerService :: Invoker - when invoked by `service start`
+	// InvokerService is set when invoked by `service start`
 	InvokerService Invoker = "service"
-	// InvokerQuery :: Invoker - when invoked by `query`
+	// InvokerQuery is set when invoked by query command
 	InvokerQuery = "query"
-	// InvokerCheck :: Invoker - when invoked by `check`
+	// InvokerCheck is set when invoked by check command
 	InvokerCheck = "check"
-	// InvokerInstaller :: Invoker - when invoked by the `installer`
+	// InvokerInstaller is set when when invoked by the installer
 	InvokerInstaller = "installer"
-	// InvokerPlugin :: Invoker - when invoked by the `pluginmanager`
+	// InvokerPlugin is set when invoked by a plugin command
 	InvokerPlugin = "plugin"
-	// InvokerReport :: Invoker - when invoked by `report`
+	// InvokerReport is set when invoked by report command
 	InvokerReport = "report"
 )
 
-// TODO - this is a bit naff
-
-// IsValid :: validator for Invoker known values
-func (slt Invoker) IsValid() error {
-	switch slt {
+// IsValid is a validator for Invoker known values
+func (i Invoker) IsValid() error {
+	switch i {
 	case InvokerService, InvokerQuery, InvokerCheck, InvokerInstaller, InvokerPlugin, InvokerReport:
 		return nil
 	}

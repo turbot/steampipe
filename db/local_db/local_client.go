@@ -178,7 +178,7 @@ func createDbClient(dbname string, username string) (*sql.DB, error) {
 	return nil, fmt.Errorf("could not establish connection with database")
 }
 
-func executeSqlAsRoot(statements []string) ([]sql.Result, error) {
+func executeSqlAsRoot(statements ...string) ([]sql.Result, error) {
 	var results []sql.Result
 	rootClient, err := createRootDbClient()
 	if err != nil {
@@ -257,5 +257,5 @@ func (c *LocalClient) getSchemaFromDB() (*sql.Rows, error) {
 			cols.table_schema, cols.table_name, cols.column_name;
 `
 
-	return c.dbClient.Query(fmt.Sprintf(query, constants.FDWCommandSchema))
+	return c.dbClient.Query(fmt.Sprintf(query, constants.CommandSchema))
 }

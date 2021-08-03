@@ -28,12 +28,12 @@ func refreshFunctions() error {
 	utils.LogTime("db.refreshFunctions start")
 	defer utils.LogTime("db.refreshFunctions end")
 
-	sql := []string{
+	queries := []string{
 		fmt.Sprintf(`create schema if not exists %s;`, constants.FunctionSchema),
 		fmt.Sprintf(`grant usage on schema %s to steampipe_users;`, constants.FunctionSchema),
 	}
-	sql = append(sql, getFunctionAddStrings(constants.Functions)...)
-	if _, err := executeSqlAsRoot(sql); err != nil {
+	queries = append(queries, getFunctionAddStrings(constants.Functions)...)
+	if _, err := executeSqlAsRoot(queries...); err != nil {
 		return err
 	}
 	return nil

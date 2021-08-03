@@ -283,7 +283,11 @@ func ensureSteampipeServer() error {
 }
 
 func ensureFDWControlSchema() error {
-	_, err := executeSqlAsRoot(updateConnectionQuery(constants.FDWCommandSchema, constants.FDWCommandSchema))
+	if _, err := executeSqlAsRoot(updateConnectionQuery(constants.CommandSchema, constants.CommandSchema)...); err != nil {
+		return err
+	}
+	_, err := executeSqlAsRoot("grant  insert on steampipe_command.cache to steampipe_users;")
+
 	return err
 }
 
