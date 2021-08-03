@@ -8,6 +8,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/alecthomas/chroma/formatters"
+	"github.com/alecthomas/chroma/lexers"
+	"github.com/alecthomas/chroma/styles"
 	"github.com/turbot/steampipe/db/db_common"
 
 	"github.com/c-bata/go-prompt"
@@ -50,9 +53,12 @@ type InteractiveClient struct {
 	afterClose AfterPromptCloseAction
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock sync.Mutex
+
+	highlighter Highlighter
 }
 
 func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+
 	c := &InteractiveClient{
 		resultsStreamer:         resultsStreamer,
 		interactiveQueryHistory: queryhistory.New(),
@@ -60,6 +66,7 @@ func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStream
 		autocompleteOnEmpty:     false,
 		initDataChan:            initChan,
 		initResultChan:          make(chan *db_common.InitResult, 1),
+		highlighter:             newHighlighter(lexers.Get("sql"), formatters.Get("terminal256"), styles.VisualStudio),
 	}
 	// asynchronously wait for init to complete
 	// we start this immediately rather than lazy loading as we want to handle errors asap
@@ -203,6 +210,9 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 				prefix = ">>  "
 			}
 			return
+		}),
+		prompt.OptionFormatter(func(d prompt.Document) ([]byte, error) {
+			return c.highlighter.Highlight(d.Text)
 		}),
 		prompt.OptionHistory(c.interactiveQueryHistory.Get()),
 		prompt.OptionInputTextColor(prompt.DefaultColor),
