@@ -1,7 +1,6 @@
 package interactive
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -9,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/alecthomas/chroma"
 	"github.com/alecthomas/chroma/formatters"
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
@@ -34,12 +32,6 @@ const (
 	AfterPromptCloseRestart
 )
 
-type Highlighter struct {
-	lexer     chroma.Lexer
-	formatter chroma.Formatter
-	style     *chroma.Style
-}
-
 // InteractiveClient :: wrapper over *LocalClient and *prompt.Prompt along
 // to facilitate interactive query prompt
 type InteractiveClient struct {
@@ -62,7 +54,7 @@ type InteractiveClient struct {
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock sync.Mutex
 
-	highlights Highlighter
+	highlighter Highlighter
 }
 
 func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
@@ -74,11 +66,7 @@ func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStream
 		autocompleteOnEmpty:     false,
 		initDataChan:            initChan,
 		initResultChan:          make(chan *db_common.InitResult, 1),
-		highlights: Highlighter{
-			lexer:     lexers.Get("sql"),
-			formatter: formatters.Get("terminal256"),
-			style:     styles.VisualStudio,
-		},
+		highlighter:             newHighlighter(lexers.Get("sql"), formatters.Get("terminal256"), styles.VisualStudio),
 	}
 	// asynchronously wait for init to complete
 	// we start this immediately rather than lazy loading as we want to handle errors asap
@@ -223,14 +211,8 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			}
 			return
 		}),
-		prompt.OptionHighlighter(func(d prompt.Document) ([]byte, error) {
-			iterator, err := c.highlights.lexer.Tokenise(nil, d.Text)
-			if err != nil {
-				return nil, err
-			}
-			buffer := bytes.NewBuffer([]byte{})
-			c.highlights.formatter.Format(buffer, c.highlights.style, iterator)
-			return buffer.Bytes(), nil
+		prompt.OptionFormatter(func(d prompt.Document) ([]byte, error) {
+			return c.highlighter.Highlight(d.Text)
 		}),
 		prompt.OptionHistory(c.interactiveQueryHistory.Get()),
 		prompt.OptionInputTextColor(prompt.DefaultColor),
