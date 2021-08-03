@@ -69,14 +69,14 @@ func (c *LocalClient) Execute(ctx context.Context, query string, disableSpinner 
 	}
 
 	// begin a transaction
-	tx, err = c.dbClient.BeginTx(ctx, nil)
+	tx, err = c.createTransaction(ctx)
 	if err != nil {
-		err = fmt.Errorf("error creating transaction: %v", err)
 		return
 	}
-	// start asynchronous query
+
+	// start query
 	var rows *sql.Rows
-	rows, err = tx.QueryContext(ctx, query)
+	rows, err = c.startQuery(ctx, query, tx)
 	if err != nil {
 		return
 	}
@@ -99,6 +99,44 @@ func (c *LocalClient) Execute(ctx context.Context, query string, disableSpinner 
 	}()
 
 	return result, nil
+}
+
+// createTransaction, with a timeout - this is necessary if the database crashed
+func (c *LocalClient) createTransaction(ctx context.Context) (tx *sql.Tx, err error) {
+	doneChan := make(chan bool)
+
+	go func() {
+		tx, err = c.dbClient.BeginTx(ctx, nil)
+		if err != nil {
+			err = utils.PrefixError(err, "error creating transaction")
+		}
+		close(doneChan)
+	}()
+
+	select {
+	case <-doneChan:
+	case <-time.After(time.Second * 5):
+		err = fmt.Errorf("timed out creating transaction - please restart Steampipe")
+	}
+	return
+}
+
+// run query in a goroutine, so we can check for cancellation in case the query hangs
+func (c *LocalClient) startQuery(ctx context.Context, query string, tx *sql.Tx) (rows *sql.Rows, err error) {
+	doneChan := make(chan bool)
+
+	go func() {
+		// start asynchronous query
+		rows, err = tx.QueryContext(ctx, query)
+		close(doneChan)
+	}()
+
+	select {
+	case <-doneChan:
+	case <-ctx.Done():
+		err = ctx.Err()
+	}
+	return
 }
 
 func (c *LocalClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result, activeSpinner *spinner.Spinner) {
