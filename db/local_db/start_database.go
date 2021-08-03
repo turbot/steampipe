@@ -282,20 +282,33 @@ func killOnStartFail(cmd *exec.Cmd) {
 
 func dumpDiagnosticData() {
 	dumpingDone := make(chan bool, 1)
-	sp := display.StartSpinnerAfterDelay("This shouldn't have happened. Collecting diagnostic data", constants.SpinnerShowTimeout, dumpingDone)
+	sp := display.StartSpinnerAfterDelay("Fatal error occurred. Collecting diagnostic data", constants.SpinnerShowTimeout, dumpingDone)
 	dump := DiagnosticDumpData{}
 
 	wg := sync.WaitGroup{}
-	wg.Add(5)
 
-	go dumpProcesses(&dump, &wg)
-	go dumpPortUsage(&dump, &wg)
-	go dumpInstalled(&dump, &wg)
-	go dumpState(&dump, &wg)
+	// collector is a wrapper over the actual collector functions and provides the necessary concurrency
+	// support
+	collector := func(fn func(d *DiagnosticDumpData), sink *DiagnosticDumpData, wg *sync.WaitGroup) {
+		wg.Add(1)
+		go func() {
+			fn(sink)
+			wg.Done()
+		}()
+	}
+	collector(dumpProcesses, &dump, &wg)
+	collector(dumpPortUsage, &dump, &wg)
+	collector(dumpInstalled, &dump, &wg)
+	collector(dumpState, &dump, &wg)
 
-	// We don't want to lose the call stack. DON'T run this is a goroutine
+	// We don't want to lose the call stack.
+	// DON'T run this is a goroutine.
+	// If we run this in a goroutine then the callstack
+	// returned by 'debug.Stack()' is rooted to the `gorouting`
+	// and not 'main'
 	dump.CallStack = string(debug.Stack())
 	dump.Version = version.String()
+
 	wg.Done()
 
 	// wait for the whole thing to get filled up
@@ -325,15 +338,14 @@ Note: Please remove any sensitive data from the file before uploading.
 	display.StopSpinnerWithMessage(sp, msg)
 	close(dumpingDone)
 }
-func dumpState(dump *DiagnosticDumpData, wg *sync.WaitGroup) {
-	defer wg.Done()
+func dumpState(dump *DiagnosticDumpData) {
 	info, err := loadRunningInstanceInfo()
 	if err != nil {
 		dump.State = RunningDBInstanceInfo{}
 	}
 	dump.State = *info
 }
-func dumpProcesses(dump *DiagnosticDumpData, wg *sync.WaitGroup) {
+func dumpProcesses(dump *DiagnosticDumpData) {
 	systemProcesses, err := psutils.Processes()
 	if err != nil {
 		dump.ProcessDump = append(dump.ProcessDump, fmt.Sprintf("could not retrieve system processes:%v", err))
@@ -344,9 +356,8 @@ func dumpProcesses(dump *DiagnosticDumpData, wg *sync.WaitGroup) {
 			dump.ProcessDump = append(dump.ProcessDump, cmdLine)
 		}
 	}
-	wg.Done()
 }
-func dumpPortUsage(dump *DiagnosticDumpData, wg *sync.WaitGroup) {
+func dumpPortUsage(dump *DiagnosticDumpData) {
 	ulimit, err := filehelpers.GetULimit()
 	if err != nil {
 		dump.PortDump = append(dump.PortDump, -1)
@@ -356,16 +367,14 @@ func dumpPortUsage(dump *DiagnosticDumpData, wg *sync.WaitGroup) {
 		lock: semaphore.NewWeighted(int64(ulimit.Cur)),
 	}
 	dump.PortDump = portScanner.Start(1, 65535, 500*time.Millisecond)
-	wg.Done()
 }
-func dumpInstalled(dump *DiagnosticDumpData, wg *sync.WaitGroup) {
+func dumpInstalled(dump *DiagnosticDumpData) {
 	pl, _ := versionfile.LoadPluginVersionFile()
 	db, _ := versionfile.LoadDatabaseVersionFile()
 	dump.Installed = append(dump.Installed, db.EmbeddedDB, db.FdwExtension)
 	for _, p := range pl.Plugins {
 		dump.Installed = append(dump.Installed, *p)
 	}
-	wg.Done()
 }
 
 // ensures that the `steampipe` fdw server exists
