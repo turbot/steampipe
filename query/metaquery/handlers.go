@@ -24,6 +24,9 @@ var commonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.Cmd
 type QueryExecutor interface {
 	SetClientSearchPath() error
 	GetCurrentSearchPath() ([]string, error)
+	CacheOn() error
+	CacheOff() error
+	CacheClear() error
 }
 
 // HandlerInput :: input interface for the metaquery handler
@@ -118,6 +121,21 @@ func setHeader(input *HandlerInput) error {
 func setMultiLine(input *HandlerInput) error {
 	cmdconfig.Viper().Set(constants.ArgMultiLine, typeHelpers.StringToBool(input.args()[0]))
 	return nil
+}
+
+// controls the cache in the connected FDW
+func cacheControl(input *HandlerInput) error {
+	command := input.args()[0]
+	switch command {
+	case constants.ArgOn:
+		return input.Executor.CacheOn()
+	case constants.ArgOff:
+		return input.Executor.CacheOff()
+	case constants.ArgClear:
+		return input.Executor.CacheClear()
+	}
+
+	return fmt.Errorf("invalid command")
 }
 
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]

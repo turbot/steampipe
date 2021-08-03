@@ -17,6 +17,10 @@ type Client interface {
 	Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error)
 	SchemaMetadata() *schema.Metadata
 
+	CacheOn() error
+	CacheOff() error
+	CacheClear() error
+
 	// todo share this between locan and remote client?
 	LoadSchema()
 

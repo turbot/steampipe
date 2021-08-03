@@ -218,10 +218,10 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring Steampipe...")
-	err = installSteampipeHub()
+	err = installForeignServer()
 	if err != nil {
 		display.StopSpinner(spinner)
-		log.Printf("[TRACE] installSteampipeHub failed: %v", err)
+		log.Printf("[TRACE] installForeignServer failed: %v", err)
 		return fmt.Errorf("Configuring Steampipe... FAILED!")
 	}
 	// force stop
@@ -336,9 +336,9 @@ func installSteampipeDatabaseAndUser(steampipePassword string, rootPassword stri
 	return nil
 }
 
-func installSteampipeHub() error {
-	utils.LogTime("db.installSteampipeHub start")
-	defer utils.LogTime("db.installSteampipeHub end")
+func installForeignServer() error {
+	utils.LogTime("db.installForeignServer start")
+	defer utils.LogTime("db.installForeignServer end")
 
 	statements := []string{
 		// Install the FDW. The name must match the binary file.
@@ -347,7 +347,7 @@ func installSteampipeHub() error {
 		// Use steampipe for the server name, it's simplest
 		`create server "steampipe" foreign data wrapper "steampipe_postgres_fdw"`,
 	}
-	_, err := executeSqlAsRoot(statements)
+	_, err := executeSqlAsRoot(statements...)
 	return err
 }
 

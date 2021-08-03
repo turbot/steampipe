@@ -178,15 +178,13 @@ func createDbClient(dbname string, username string) (*sql.DB, error) {
 	return nil, fmt.Errorf("could not establish connection with database")
 }
 
-func executeSqlAsRoot(statements []string) ([]sql.Result, error) {
+func executeSqlAsRoot(statements ...string) ([]sql.Result, error) {
 	var results []sql.Result
 	rootClient, err := createRootDbClient()
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		rootClient.Close()
-	}()
+	defer rootClient.Close()
 
 	for _, statement := range statements {
 		result, err := rootClient.Exec(statement)
@@ -241,19 +239,23 @@ func (c *LocalClient) getSchemaFromDB() (*sql.Rows, error) {
 		LEFT JOIN
 			pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
 		WHERE
-			cols.table_name in (
-				SELECT 
-					foreign_table_name 
-				FROM 
-					information_schema.foreign_tables
-			) 
-			OR
-			cols.table_schema = 'public'
-			OR
-			LEFT(cols.table_schema,8) = 'pg_temp_'
+		    (
+    			cols.table_name in (
+    				SELECT 
+    					foreign_table_name 
+    				FROM 
+    					information_schema.foreign_tables
+    			) 
+    			OR
+    			cols.table_schema = 'public'
+    			OR
+    			LEFT(cols.table_schema,8) = 'pg_temp_'
+			)
+			AND
+			cols.table_schema <> '%s'
 		ORDER BY 
 			cols.table_schema, cols.table_name, cols.column_name;
 `
-
-	return c.dbClient.Query(query)
+	// we do NOT want to fetch the command schema
+	return c.dbClient.Query(fmt.Sprintf(query, constants.CommandSchema))
 }

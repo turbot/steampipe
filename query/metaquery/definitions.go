@@ -96,6 +96,18 @@ func init() {
 			},
 			completer: completerFromArgsOf(constants.CmdOutput),
 		},
+		constants.CmdCache: {
+			title:       constants.CmdCache,
+			handler:     cacheControl,
+			validator:   composeValidator(exactlyNArgs(1), validatorFromArgsOf(constants.CmdCache)),
+			description: "Toggle the query cache (on/off) or Clear the query cache",
+			args: []metaQueryArg{
+				{value: constants.ArgOn, description: "Turn on Caching"},
+				{value: constants.ArgOff, description: "Turn off caching"},
+				{value: constants.ArgClear, description: "Clear the cache"},
+			},
+			completer: completerFromArgsOf(constants.CmdCache),
+		},
 		constants.CmdInspect: {
 			title:       constants.CmdInspect,
 			handler:     inspect,
