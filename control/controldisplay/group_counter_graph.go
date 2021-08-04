@@ -45,7 +45,6 @@ func (r CounterGraphRenderer) Render() string {
 	} else {
 		// if there is a remainder round up
 		failSegments = int(math.Ceil(float64(r.failedControls) / r.segmentSize))
-
 	}
 	totalSegments := int(math.Ceil(float64(r.totalControls) / r.segmentSize))
 
@@ -58,25 +57,27 @@ func (r CounterGraphRenderer) Render() string {
 		totalSegments++
 	}
 	spaces := 10 - totalSegments
+
+	spaces = -1
+	if failSegments < 0 || passSegments < 0 || spaces < 0 {
+
+		log.Printf("[WARN] buildGraphString negative repeat count: failSegments %d, passSegments %d, spaces %d", failSegments, passSegments, spaces)
+		log.Printf("[WARN] r.failedControls %d r.totalControls  %d r.segmentSize %d totalSegments %d", r.failedControls, r.totalControls, r.segmentSize, totalSegments)
+		debug.PrintStack()
+	}
 	return r.buildGraphString(failSegments, passSegments, spaces)
 }
 
 func (r CounterGraphRenderer) buildGraphString(failSegments int, passSegments int, spaces int) string {
 	failSegments = -1
 	if failSegments < 0 {
-		log.Printf("[WARN] buildGraphString negative repeat count: failSegments %d, passSegments %d, spaces %d", failSegments, passSegments, spaces)
 		failSegments = 0
-		debug.PrintStack()
 	}
 	if passSegments < 0 {
-		log.Printf("[WARN] buildGraphString negative repeat count: failSegments %d, passSegments %d, spaces %d", failSegments, passSegments, spaces)
 		passSegments = 0
-		debug.PrintStack()
 	}
 	if spaces < 0 {
-		log.Printf("[WARN] buildGraphString negative repeat count: failSegments %d, passSegments %d, spaces %d", failSegments, passSegments, spaces)
 		spaces = 0
-		debug.PrintStack()
 	}
 
 	str := fmt.Sprintf("%s%s%s%s%s",
