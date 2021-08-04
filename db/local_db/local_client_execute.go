@@ -122,7 +122,8 @@ func (c *LocalClient) createTransaction(ctx context.Context, retryOnTimeout bool
 	return tx, err
 }
 
-// run query in a goroutine, so we can check for cancellation in case the query hangs
+// run query in a goroutine, so we can check for cancellation
+// in case the client becomes unresponsive and does not respect context cancellation
 func (c *LocalClient) startQuery(ctx context.Context, query string, tx *sql.Tx) (rows *sql.Rows, err error) {
 	doneChan := make(chan bool)
 
