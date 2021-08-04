@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"runtime/debug"
 	"strings"
 )
 
@@ -61,6 +62,23 @@ func (r CounterGraphRenderer) Render() string {
 }
 
 func (r CounterGraphRenderer) buildGraphString(failSegments int, passSegments int, spaces int) string {
+	failSegments = -1
+	if failSegments < 0 {
+		log.Printf("[WARN] buildGraphString negative repeat count: failSegments %d, passSegments %d, spaces %d", failSegments, passSegments, spaces)
+		failSegments = 0
+		debug.PrintStack()
+	}
+	if passSegments < 0 {
+		log.Printf("[WARN] buildGraphString negative repeat count: failSegments %d, passSegments %d, spaces %d", failSegments, passSegments, spaces)
+		passSegments = 0
+		debug.PrintStack()
+	}
+	if spaces < 0 {
+		log.Printf("[WARN] buildGraphString negative repeat count: failSegments %d, passSegments %d, spaces %d", failSegments, passSegments, spaces)
+		spaces = 0
+		debug.PrintStack()
+	}
+
 	str := fmt.Sprintf("%s%s%s%s%s",
 		ControlColors.CountGraphBracket("["),
 		ControlColors.CountGraphFail(strings.Repeat("=", failSegments)),
