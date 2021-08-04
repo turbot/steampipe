@@ -3,6 +3,10 @@ variable "v1"{
     default = "select 'default'"
 }
 
+variable "v4"{
+    type = string
+}
+
 variable "v2"{
     type = list(string)
     default = ["select 'default1'", "select 'default2'", "select 'default3'"]
@@ -26,7 +30,7 @@ variable "v3" {
 query "q1"{
     title ="Q1"
     description = "THIS IS QUERY 1"
-    sql = variable.v1
+    sql = variable.v4
 }
 
 query "q2"{

@@ -70,11 +70,13 @@ func validateVariables(variableMap map[string]*modconfig.Variable, variables tf.
 
 func displayValidationErrors(diags tfdiags.Diagnostics) {
 	fmt.Println()
-	for _, diag := range diags {
+	for i, diag := range diags {
+
 		utils.ShowError(fmt.Errorf("%s", constants.Bold(diag.Description().Summary)))
 		fmt.Println(diag.Description().Detail)
-		fmt.Println()
-
+		if i < len(diags)-1 {
+			fmt.Println()
+		}
 		// TODO range if there is one
 	}
 }
