@@ -3,12 +3,13 @@ package workspace
 import (
 	"fmt"
 
+	"github.com/spf13/viper"
+
 	"github.com/hashicorp/terraform/tfdiags"
 
 	"github.com/turbot/steampipe/utils"
 
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -17,7 +18,15 @@ import (
 )
 
 func (w *Workspace) getAllVariables() (tf.InputValues, error) {
-	variableMap, err := w.loadConfigVariables()
+	opts := &parse.ParseModOptions{
+		Flags: parse.CreateDefaultMod,
+		ListOptions: &filehelpers.ListOptions{
+			// listFlag specifies whether to load files recursively
+			Flags:   w.listFlag,
+			Exclude: w.exclusions,
+		},
+	}
+	variableMap, err := steampipeconfig.LoadVariables(w.Path, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -37,17 +46,17 @@ func (w *Workspace) getAllVariables() (tf.InputValues, error) {
 	return inputVariables, nil
 }
 
-func (w *Workspace) loadConfigVariables() (map[string]*modconfig.Variable, error) {
-	opts := &parse.ParseModOptions{
-		Flags: parse.CreateDefaultMod,
-		ListOptions: &filehelpers.ListOptions{
-			// listFlag specifies whether to load files recursively
-			Flags:   w.listFlag,
-			Exclude: w.exclusions,
-		},
-	}
+func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable) (tf.InputValues, error) {
+	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
+	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
-	return steampipeconfig.LoadVariables(w.Path, opts)
+	inputValuesUnparsed, diags := tf.CollectVariableValues(w.Path, variableFileArgs, variableArgs)
+	if diags.HasErrors() {
+		return nil, diags.Err()
+	}
+	parsedValues, diags := tf.ParseVariableValues(inputValuesUnparsed, variableMap)
+
+	return parsedValues, diags.Err()
 }
 
 func validateVariables(variableMap map[string]*modconfig.Variable, variables tf.InputValues) error {
@@ -68,49 +77,4 @@ func displayValidationErrors(diags tfdiags.Diagnostics) {
 
 		// TODO range if there is one
 	}
-}
-
-func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable) (tf.InputValues, error) {
-	meta := &tf.Meta{}
-
-	inputValuesUnparsed, diags := meta.CollectVariableValues(w.Path)
-	if diags.HasErrors() {
-		return nil, diags.Err()
-	}
-	parsedValues, diags := tf.ParseVariableValues(inputValuesUnparsed, variableMap)
-	return parsedValues, diags.Err()
-
-}
-
-func (w *Workspace) loadFileVariables() (tf.InputValues, error) {
-	opts := &filehelpers.ListOptions{
-		// listFlag specifies whether to load files recursively
-		Flags:   filehelpers.Files,
-		Include: []string{fmt.Sprintf("*%s", constants.VariablesExtension)},
-	}
-	variablesFiles, err := filehelpers.ListFiles(w.Path, opts)
-
-	if err != nil {
-		return nil, err
-	}
-	fileData, diags := parse.LoadFileData(variablesFiles...)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load all variables files", diags)
-	}
-	fileVariables, err := parse.ParseVariables(fileData)
-	if err != nil {
-		return nil, err
-	}
-
-	var res = tf.InputValues{}
-	for k, v := range fileVariables {
-		res[k] = &tf.InputValue{
-			Value: v,
-			// TODO named vs auto
-			SourceType: tf.ValueFromNamedFile,
-			// TODO get range out of ParseVariables
-			//SourceRange: nil,
-		}
-	}
-	return res, nil
 }

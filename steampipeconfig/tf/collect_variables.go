@@ -13,11 +13,6 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/tf_config"
 )
 
-type Meta struct {
-	variableFileArgs []string
-	variablesArgs    []string
-}
-
 // CollectVariableValues inspects the various places that root module input variable
 // values can come from and constructs a map ready to be passed to the
 // backend as part of a Operation.
@@ -25,7 +20,7 @@ type Meta struct {
 // This method returns diagnostics relating to the collection of the values,
 // but the values themselves may produce additional diagnostics when finally
 // parsed.
-func (m *Meta) CollectVariableValues(workspacePath string) (map[string]UnparsedVariableValue, tfdiags.Diagnostics) {
+func CollectVariableValues(workspacePath string, variableFileArgs []string, variablesArgs []string) (map[string]UnparsedVariableValue, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 	ret := map[string]UnparsedVariableValue{}
 
@@ -59,10 +54,10 @@ func (m *Meta) CollectVariableValues(workspacePath string) (map[string]UnparsedV
 	// Next up we have some implicit files that are loaded automatically
 	// if they are present. There's the original terraform.tfvars
 	// (constants.DefaultVarsFilename) along with the later-added search for all files
-	// ending in .auto.tfvars.
+	// ending in .auto.spvars.
 	defaultVarsPath := constants.DefaultVarsFilePath(workspacePath)
 	if _, err := os.Stat(defaultVarsPath); err == nil {
-		moreDiags := m.addVarsFromFile(defaultVarsPath, ValueFromAutoFile, ret)
+		moreDiags := addVarsFromFile(defaultVarsPath, ValueFromAutoFile, ret)
 		diags = diags.Append(moreDiags)
 	}
 
@@ -73,18 +68,18 @@ func (m *Meta) CollectVariableValues(workspacePath string) (map[string]UnparsedV
 			if !isAutoVarFile(name) {
 				continue
 			}
-			moreDiags := m.addVarsFromFile(name, ValueFromAutoFile, ret)
+			moreDiags := addVarsFromFile(name, ValueFromAutoFile, ret)
 			diags = diags.Append(moreDiags)
 		}
 	}
 
 	// Finally we process values given explicitly on the command line, either
 	// as individual literal settings or as additional files to read.
-	for _, fileArg := range m.variableFileArgs {
-		moreDiags := m.addVarsFromFile(fileArg, ValueFromNamedFile, ret)
+	for _, fileArg := range variableFileArgs {
+		moreDiags := addVarsFromFile(fileArg, ValueFromNamedFile, ret)
 		diags = diags.Append(moreDiags)
 	}
-	for _, variableArg := range m.variablesArgs {
+	for _, variableArg := range variablesArgs {
 		// Value should be in the form "name=value", where value is a
 		// raw string whose interpretation will depend on the variable's
 		// parsing mode.
@@ -99,20 +94,19 @@ func (m *Meta) CollectVariableValues(workspacePath string) (map[string]UnparsedV
 			continue
 		}
 
-		// TODO FIX ME
-		//name := raw[:eq]
-		//rawVal := raw[eq+1:]
-		//ret[name] = unparsedVariableValueString{
-		//	str:        rawVal,
-		//	name:       name,
-		//	sourceType: ValueFromCLIArg,
-		//}
+		name := raw[:eq]
+		rawVal := raw[eq+1:]
+		ret[name] = unparsedVariableValueString{
+			str:        rawVal,
+			name:       name,
+			sourceType: ValueFromCLIArg,
+		}
 	}
 
 	return ret, diags
 }
 
-func (m *Meta) addVarsFromFile(filename string, sourceType ValueSourceType, to map[string]UnparsedVariableValue) tfdiags.Diagnostics {
+func addVarsFromFile(filename string, sourceType ValueSourceType, to map[string]UnparsedVariableValue) tfdiags.Diagnostics {
 	var diags tfdiags.Diagnostics
 
 	src, err := ioutil.ReadFile(filename)

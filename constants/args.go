@@ -30,6 +30,8 @@ const (
 	ArgDryRun                  = "dry-run"
 	ArgWhere                   = "where"
 	ArgTag                     = "tag"
+	ArgVariable                = "var"
+	ArgVarFile                 = "var-file"
 )
 
 /// metaquery mode arguments
