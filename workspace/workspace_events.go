@@ -1,8 +1,6 @@
 package workspace
 
 import (
-	"fmt"
-
 	"github.com/turbot/steampipe/db/db_common"
 
 	"github.com/fsnotify/fsnotify"
@@ -34,8 +32,7 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 	if err != nil {
 		// check the existing watcher error - if we are already in an error state, do not show error
 		if w.watcherError == nil {
-			fmt.Println()
-			utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
+			w.fileWatcherErrorHandler(utils.PrefixError(err, "Failed to reload mod from file watcher"))
 		}
 		// now set watcher error to new error
 		w.watcherError = err
