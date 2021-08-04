@@ -2,19 +2,18 @@ package workspace
 
 import (
 	"fmt"
-
-	"github.com/spf13/viper"
+	"log"
+	"sort"
 
 	"github.com/hashicorp/terraform/tfdiags"
-
-	"github.com/turbot/steampipe/utils"
-
+	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/steampipeconfig/tf"
+	"github.com/turbot/steampipe/utils"
 )
 
 func (w *Workspace) getAllVariables() (tf.InputValues, error) {
@@ -55,6 +54,7 @@ func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable
 		return nil, diags.Err()
 	}
 
+	interactiveCollectVariables(inputValuesUnparsed, variableMap)
 	parsedValues, diags := tf.ParseVariableValues(inputValuesUnparsed, variableMap)
 
 	return parsedValues, diags.Err()
@@ -82,50 +82,49 @@ func displayValidationErrors(diags tfdiags.Diagnostics) {
 	}
 }
 
-//
-//func interactiveCollectVariables(existing map[string]backend.UnparsedVariableValue, vcs map[string]*configs.Variable, uiInput terraform.UIInput) map[string]backend.UnparsedVariableValue {
-//	var needed []string
-//	if b.OpInput && uiInput != nil {
-//		for name, vc := range vcs {
-//			if !vc.Required() {
-//				continue // We only prompt for required variables
-//			}
-//			if _, exists := existing[name]; !exists {
-//				needed = append(needed, name)
-//			}
-//		}
-//	} else {
-//		log.Print("[DEBUG] backend/local: Skipping interactive prompts for variables because input is disabled")
-//	}
-//	if len(needed) == 0 {
-//		return existing
-//	}
-//
-//	log.Printf("[DEBUG] backend/local: will prompt for input of unset required variables %s", needed)
-//
-//	// If we get here then we're planning to prompt for at least one additional
-//	// variable's value.
-//	sort.Strings(needed) // prompt in lexical order
-//	ret := make(map[string]backend.UnparsedVariableValue, len(vcs))
-//	for k, v := range existing {
-//		ret[k] = v
-//	}
-//	for _, name := range needed {
-//		vc := vcs[name]
-//		rawValue, err := uiInput.Input(ctx, &terraform.InputOpts{
-//			Id:          fmt.Sprintf("var.%s", name),
-//			Query:       fmt.Sprintf("var.%s", name),
-//			Description: vc.Description,
-//		})
-//		if err != nil {
-//			// Since interactive prompts are best-effort, we'll just continue
-//			// here and let subsequent validation report this as a variable
-//			// not specified.
-//			log.Printf("[WARN] backend/local: Failed to request user input for variable %q: %s", name, err)
-//			continue
-//		}
-//		ret[name] = unparsedInteractiveVariableValue{Name: name, RawValue: rawValue}
-//	}
-//	return ret
+func interactiveCollectVariables(existing map[string]tf.UnparsedVariableValue, vcs map[string]*modconfig.Variable) map[string]tf.UnparsedVariableValue {
+	var needed []string
 
-//}
+	for name := range vcs {
+		if _, exists := existing[name]; !exists {
+			needed = append(needed, name)
+		}
+	}
+	if len(needed) == 0 {
+		return existing
+	}
+
+	log.Printf("[TRACE]  will prompt for input of unset required variables %s", needed)
+
+	// If we get here then we're planning to prompt for at least one additional
+	// variable's value.
+	sort.Strings(needed) // prompt in lexical order
+	ret := make(map[string]tf.UnparsedVariableValue, len(vcs))
+	for k, v := range existing {
+		ret[k] = v
+	}
+	for _, name := range needed {
+		//vc := vcs[name]
+		//rawValue, err := uiInput.Input(ctx, &terraform.InputOpts{
+		//	Id:          fmt.Sprintf("var.%s", name),
+		//	Query:       fmt.Sprintf("var.%s", name),
+		//	Description: vc.Description,
+		//})
+		rawValue, err := promptForVariable(name)
+
+		if err != nil {
+			// Since interactive prompts are best-effort, we'll just continue
+			// here and let subsequent validation report this as a variable
+			// not specified.
+			log.Printf("[WARN] backend/local: Failed to request user input for variable %q: %s", name, err)
+			continue
+		}
+		ret[name] = tf.UnparsedInteractiveVariableValue{Name: name, RawValue: rawValue}
+	}
+	return ret
+
+}
+
+func promptForVariable(name string) (string, error) {
+	return "foo", nil
+}

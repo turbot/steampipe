@@ -135,3 +135,22 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 
 	return ret, diags
 }
+
+type UnparsedInteractiveVariableValue struct {
+	Name, RawValue string
+}
+
+//var _ UnparsedVariableValue = UnparsedInteractiveVariableValue{}
+
+func (v UnparsedInteractiveVariableValue) ParseVariableValue(mode tf_config.VariableParsingMode) (*InputValue, tfdiags.Diagnostics) {
+	var diags tfdiags.Diagnostics
+	val, valDiags := mode.Parse(v.Name, v.RawValue)
+	diags = diags.Append(valDiags)
+	if diags.HasErrors() {
+		return nil, diags
+	}
+	return &InputValue{
+		Value:      val,
+		SourceType: ValueFromInput,
+	}, diags
+}
