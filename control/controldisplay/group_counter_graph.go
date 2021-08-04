@@ -58,7 +58,6 @@ func (r CounterGraphRenderer) Render() string {
 	}
 	spaces := 10 - totalSegments
 
-	spaces = -1
 	if failSegments < 0 || passSegments < 0 || spaces < 0 {
 
 		log.Printf("[WARN] buildGraphString negative repeat count: failSegments %d, passSegments %d, spaces %d", failSegments, passSegments, spaces)
