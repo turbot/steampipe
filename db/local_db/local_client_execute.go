@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -102,24 +103,31 @@ func (c *LocalClient) Execute(ctx context.Context, query string, disableSpinner 
 }
 
 // createTransaction, with a timeout and retry - this may be required if the db client becomes unresponsive
-func (c *LocalClient) createTransaction(ctx context.Context, retryOnTimeout bool) (*sql.Tx, error) {
-	// create a timeout context - timeout transaction creation after 5 secs
-	transactionContext, _ := context.WithTimeout(ctx, 5*time.Second)
-	tx, err := c.dbClient.BeginTx(transactionContext, nil)
-	if err != nil {
-		// if the transaction creation timed out, the client may have got into an unresponsive state
-		// if retryOnTimeout flag is true, refresh the db client and try again
-		if err == context.DeadlineExceeded && retryOnTimeout {
+func (c *LocalClient) createTransaction(ctx context.Context, retryOnTimeout bool) (tx *sql.Tx, err error) {
+	doneChan := make(chan bool)
+	go func() {
+		tx, err = c.dbClient.BeginTx(ctx, nil)
+		if err != nil {
+			err = utils.PrefixError(err, "error creating transaction")
+		}
+		close(doneChan)
+	}()
+
+	select {
+	case <-doneChan:
+	case <-time.After(time.Second * 5):
+		log.Printf("[TRACE] timed out creating a transaction")
+		if retryOnTimeout {
+			log.Printf("[TRACE] refresh the client and retry")
 			// refresh the db client to try to fix the issue
 			c.refreshDbClient()
 			// recurse back into this function, passing 'retryOnTimeout=false' to prevent further recursion
 			return c.createTransaction(ctx, false)
 		}
 
-		err = utils.PrefixError(err, "error creating transaction")
+		err = fmt.Errorf("error creating transaction - please restart Steampipe")
 	}
-
-	return tx, err
+	return
 }
 
 // run query in a goroutine, so we can check for cancellation
