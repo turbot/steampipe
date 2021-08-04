@@ -8,7 +8,7 @@ import (
 
 type ModVersion struct {
 	// the fully qualified mod name, e.g. github.com/turbot/mod1
-	// TODO THINK ABOUT NAMES
+	// TODO think about names
 	ShortName string `hcl:"name,label"`
 	FullName  string `cty:"name"`
 

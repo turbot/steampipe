@@ -127,10 +127,9 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 		}
 
 		ret[name] = &InputValue{
-			Value:      vc.Default,
-			SourceType: ValueFromConfig,
-			// TODO FIX ME
-			//SourceRange: tfdiags.SourceRangeFromHCL(vc.DeclRange),
+			Value:       vc.Default,
+			SourceType:  ValueFromConfig,
+			SourceRange: tfdiags.SourceRangeFromHCL(vc.DeclRange),
 		}
 	}
 

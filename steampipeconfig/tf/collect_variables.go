@@ -192,13 +192,12 @@ func (v unparsedVariableValueExpression) ParseVariableValue(mode tf_config.Varia
 	val, hclDiags := v.expr.Value(nil) // nil because no function calls or variable references are allowed here
 	diags = diags.Append(hclDiags)
 
-	// TODO FIX ME
-	//rng := tfdiags.SourceRangeFromHCL(v.expr.Range())
+	rng := tfdiags.SourceRangeFromHCL(v.expr.Range())
 
 	return &InputValue{
-		Value:      val,
-		SourceType: v.sourceType,
-		//SourceRange: rng,
+		Value:       val,
+		SourceType:  v.sourceType,
+		SourceRange: rng,
 	}, diags
 }
 

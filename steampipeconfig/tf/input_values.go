@@ -20,7 +20,7 @@ type InputValue struct {
 	// SourceRange provides source location information for values whose
 	// SourceType is either ValueFromConfig or ValueFromFile. It is not
 	// populated for other source types, and so should not be used.
-	SourceRange *hcl.Range
+	SourceRange tfdiags.SourceRange
 }
 
 // ValueSourceType describes what broad category of source location provided
@@ -66,17 +66,13 @@ const (
 	ValueFromCaller ValueSourceType = 'S'
 )
 
-//func (v *InputValue) GoString() string {
-//	if (v.SourceRange != tfdiags.SourceRange{}) {
-//		return fmt.Sprintf("&terraform.InputValue{Value: %#v, SourceType: %#v, SourceRange: %#v}", v.Value, v.SourceType, v.SourceRange)
-//	} else {
-//		return fmt.Sprintf("&terraform.InputValue{Value: %#v, SourceType: %#v}", v.Value, v.SourceType)
-//	}
-//}
-
-//func (v ValueSourceType) GoString() string {
-//	return fmt.Sprintf("terraform.%s", v)
-//}
+func (v *InputValue) GoString() string {
+	if (v.SourceRange != tfdiags.SourceRange{}) {
+		return fmt.Sprintf("&InputValue{Value: %#v, SourceType: %#v, SourceRange: %#v}", v.Value, v.SourceType, v.SourceRange)
+	} else {
+		return fmt.Sprintf("&InputValue{Value: %#v, SourceType: %#v}", v.Value, v.SourceType)
+	}
+}
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type ValueSourceType
 
@@ -113,20 +109,20 @@ func (vv InputValues) JustValues() map[string]cty.Value {
 
 // DefaultVariableValues returns an InputValues map representing the default
 // values specified for variables in the given configuration map.
-func DefaultVariableValues(configs map[string]*modconfig.Variable) InputValues {
-	ret := make(InputValues)
-	for k, c := range configs {
-		if c.Default == cty.NilVal {
-			continue
-		}
-		ret[k] = &InputValue{
-			Value:       c.Default,
-			SourceType:  ValueFromConfig,
-			SourceRange: &c.DeclRange,
-		}
-	}
-	return ret
-}
+//func DefaultVariableValues(configs map[string]*modconfig.Variable) InputValues {
+//	ret := make(InputValues)
+//	for k, c := range configs {
+//		if c.Default == cty.NilVal {
+//			continue
+//		}
+//		ret[k] = &InputValue{
+//			Value:       c.Default,
+//			SourceType:  ValueFromConfig,
+//			SourceRange: &c.DeclRange,
+//		}
+//	}
+//	return ret
+//}
 
 // SameValues returns true if the given InputValues has the same values as
 // the receiever, disregarding the source types and source ranges.
@@ -243,7 +239,7 @@ func CheckInputVariables(vcs map[string]*modconfig.Variable, vs InputValues) tfd
 					Severity: hcl.DiagError,
 					Summary:  "Invalid value for input variable",
 					Detail:   fmt.Sprintf("The given value is not valid for variable %q: %s.", name, err),
-					Subject:  val.SourceRange,
+					Subject:  val.SourceRange.ToHCL().Ptr(),
 				})
 			case ValueFromEnvVar:
 				diags = diags.Append(tfdiags.Sourceless(

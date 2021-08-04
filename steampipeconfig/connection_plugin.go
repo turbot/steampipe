@@ -53,7 +53,7 @@ func CreateConnectionPlugin(input *ConnectionPluginInput) (*ConnectionPlugin, er
 		remoteSchema: &pluginshared.WrapperPlugin{},
 	}
 	loggOpts := &hclog.LoggerOptions{Name: "plugin"}
-	// HACK avoid logging if the plugin is being invoked by refreshConnections
+	// avoid logging if the plugin is being invoked by refreshConnections
 	if disableLogger {
 		loggOpts.Exclude = func(hclog.Level, string, ...interface{}) bool { return true }
 	}
