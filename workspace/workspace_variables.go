@@ -54,6 +54,7 @@ func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable
 	if diags.HasErrors() {
 		return nil, diags.Err()
 	}
+
 	parsedValues, diags := tf.ParseVariableValues(inputValuesUnparsed, variableMap)
 
 	return parsedValues, diags.Err()
@@ -80,3 +81,50 @@ func displayValidationErrors(diags tfdiags.Diagnostics) {
 		// TODO range if there is one
 	}
 }
+
+//
+//func interactiveCollectVariables(existing map[string]backend.UnparsedVariableValue, vcs map[string]*configs.Variable, uiInput terraform.UIInput) map[string]backend.UnparsedVariableValue {
+//	var needed []string
+//	if b.OpInput && uiInput != nil {
+//		for name, vc := range vcs {
+//			if !vc.Required() {
+//				continue // We only prompt for required variables
+//			}
+//			if _, exists := existing[name]; !exists {
+//				needed = append(needed, name)
+//			}
+//		}
+//	} else {
+//		log.Print("[DEBUG] backend/local: Skipping interactive prompts for variables because input is disabled")
+//	}
+//	if len(needed) == 0 {
+//		return existing
+//	}
+//
+//	log.Printf("[DEBUG] backend/local: will prompt for input of unset required variables %s", needed)
+//
+//	// If we get here then we're planning to prompt for at least one additional
+//	// variable's value.
+//	sort.Strings(needed) // prompt in lexical order
+//	ret := make(map[string]backend.UnparsedVariableValue, len(vcs))
+//	for k, v := range existing {
+//		ret[k] = v
+//	}
+//	for _, name := range needed {
+//		vc := vcs[name]
+//		rawValue, err := uiInput.Input(ctx, &terraform.InputOpts{
+//			Id:          fmt.Sprintf("var.%s", name),
+//			Query:       fmt.Sprintf("var.%s", name),
+//			Description: vc.Description,
+//		})
+//		if err != nil {
+//			// Since interactive prompts are best-effort, we'll just continue
+//			// here and let subsequent validation report this as a variable
+//			// not specified.
+//			log.Printf("[WARN] backend/local: Failed to request user input for variable %q: %s", name, err)
+//			continue
+//		}
+//		ret[name] = unparsedInteractiveVariableValue{Name: name, RawValue: rawValue}
+//	}
+//	return ret
+//}
