@@ -68,7 +68,7 @@ func (r CounterGraphRenderer) Render() string {
 }
 
 func (r CounterGraphRenderer) buildGraphString(failSegments int, passSegments int, spaces int) string {
-	failSegments = -1
+
 	if failSegments < 0 {
 		failSegments = 0
 	}
