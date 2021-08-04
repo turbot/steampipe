@@ -67,7 +67,7 @@ func (c *Client) Execute(ctx context.Context, query string, disableSpinner bool)
 	}
 
 	// begin a transaction
-	tx, err = c.dbClient.BeginTx(ctx, nil)
+	tx, err = c.createTransaction(ctx, true)
 	if err != nil {
 		err = fmt.Errorf("error creating transaction: %v", err)
 		return
@@ -97,6 +97,46 @@ func (c *Client) Execute(ctx context.Context, query string, disableSpinner bool)
 	}()
 
 	return result, nil
+}
+
+// createTransaction, with a timeout and retry - this may be required if the db client becomes unresponsive
+func (c *Client) createTransaction(ctx context.Context, retryOnTimeout bool) (*sql.Tx, error) {
+	// create a timeout context - timeout transaction creation after 5 secs
+	transactionContext, _ := context.WithTimeout(ctx, 5*time.Second)
+	tx, err := c.dbClient.BeginTx(transactionContext, nil)
+	if err != nil {
+		// if the transaction creation timed out, the client may have got into an unresponsive state
+		// if retryOnTimeout flag is true, refresh the db client and try again
+		if err == context.DeadlineExceeded && retryOnTimeout {
+			// refresh the db client to try to fix the issue
+			c.refreshDbClient()
+			// recurse back into this function, passing 'retryOnTimeout=false' to prevent further recursion
+			return c.createTransaction(ctx, false)
+		}
+
+		err = utils.PrefixError(err, "error creating transaction")
+	}
+
+	return tx, err
+}
+
+// run query in a goroutine, so we can check for cancellation
+// in case the client becomes unresponsive and does not respect context cancellation
+func (c *Client) startQuery(ctx context.Context, query string, tx *sql.Tx) (rows *sql.Rows, err error) {
+	doneChan := make(chan bool)
+
+	go func() {
+		// start asynchronous query
+		rows, err = tx.QueryContext(ctx, query)
+		close(doneChan)
+	}()
+
+	select {
+	case <-doneChan:
+	case <-ctx.Done():
+		err = ctx.Err()
+	}
+	return
 }
 
 func (c *Client) readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result, activeSpinner *spinner.Spinner) {
