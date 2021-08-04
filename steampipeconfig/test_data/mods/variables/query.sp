@@ -5,7 +5,7 @@ variable "v1"{
 
 variable "v2"{
     type = list(string)
-    default = ["select 5", "select 6", "select 7"]
+    default = ["select 'default1'", "select 'default2'", "select 'default3'"]
 }
 
 variable "v3" {
@@ -18,7 +18,7 @@ variable "v3" {
         {
             internal = 8300
             external = 8300
-            query = "select 8"
+            query = "select 'default4'"
         }
     ]
 }

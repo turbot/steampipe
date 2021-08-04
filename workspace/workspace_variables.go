@@ -23,7 +23,7 @@ func (w *Workspace) getAllVariables() (tf.InputValues, error) {
 	}
 
 	// if there is a steampipe variables file, load it
-	inputVariables, err := w.getInputVariables(tf.DefaultVariableValues(variableMap))
+	inputVariables, err := w.getInputVariables(variableMap)
 	if err != nil {
 		return nil, err
 	}
@@ -51,65 +51,6 @@ func (w *Workspace) loadConfigVariables() (map[string]*modconfig.Variable, error
 }
 
 func validateVariables(variableMap map[string]*modconfig.Variable, variables tf.InputValues) error {
-	//var diags hcl.Diagnostics
-	//for name, val := range variableMap {
-	//	inputVal, isSet := variables[name]
-	//	if !isSet {
-	//		// Always an error, since the caller should already have included
-	//		// default values from the configuration in the values map.
-	//		diags = diags.Append(&hcl.Diagnostic{
-	//			Severity: hcl.DiagError,
-	//			Summary:  "Unassigned variable",
-	//			Detail:   fmt.Sprintf("The input variable %q has not been assigned a value. This is a bug in Steampipe; please report it in a GitHub issue.", name),
-	//		})
-	//		continue
-	//	}
-	//
-	//	wantType := val.Type
-	//
-	//	// A given value is valid if it can convert to the desired type.
-	//	_, err := convert.Convert(inputVal.Value, wantType)
-	//	if err != nil {
-	//		switch inputVal.SourceType {
-	//		case tf.ValueFromConfig, tf.ValueFromAutoFile, tf.ValueFromNamedFile:
-	//			// We have source location information for these.
-	//			diags = diags.Append(&hcl.Diagnostic{
-	//				Severity: hcl.DiagError,
-	//				Summary:  "Invalid value for input variable",
-	//				Detail:   fmt.Sprintf("The given value is not valid for variable %q: %s.", name, err),
-	//				//Subject:  val.SourceRange.ToHCL().Ptr(),
-	//			})
-	//		case tf.ValueFromEnvVar:
-	//			diags = diags.Append(&hcl.Diagnostic{
-	//				Severity: hcl.DiagError,
-	//				Summary:  "Invalid value for input variable",
-	//				Detail:   fmt.Sprintf("The environment variable TF_VAR_%s does not contain a valid value for variable %q: %s.", name, name, err),
-	//			})
-	//		case tf.ValueFromCLIArg:
-	//			diags = diags.Append(&hcl.Diagnostic{
-	//				Severity: hcl.DiagError,
-	//				Summary:  "Invalid value for input variable",
-	//				Detail:   fmt.Sprintf("The argument -var=\"%s=...\" does not contain a valid value for variable %q: %s.", name, name, err),
-	//			})
-	//		case tf.ValueFromInput:
-	//			diags = diags.Append(&hcl.Diagnostic{
-	//				Severity: hcl.DiagError,
-	//				Summary:  "Invalid value for input variable",
-	//				Detail:   fmt.Sprintf("The value entered for variable %q is not valid: %s.", name, err),
-	//			})
-	//		default:
-	//			// The above gets us good coverage for the situations users
-	//			// are likely to encounter with their own inputs. The other
-	//			// cases are generally implementation bugs, so we'll just
-	//			// use a generic error for these.
-	//			diags = diags.Append(&hcl.Diagnostic{
-	//				Severity: hcl.DiagError,
-	//				Summary:  "Invalid value for input variable",
-	//				Detail:   fmt.Sprintf("The value provided for variable %q is not valid: %s.", name, err),
-	//			})
-	//		}
-	//	}
-	//}
 	diags := tf.CheckInputVariables(variableMap, variables)
 	if diags.HasErrors() {
 		displayValidationErrors(diags)
@@ -129,20 +70,15 @@ func displayValidationErrors(diags tfdiags.Diagnostics) {
 	}
 }
 
-func (w *Workspace) getInputVariables(defaultValues tf.InputValues) (tf.InputValues, error) {
-	// to do add in default values
-	// find all .spvars files
-	res, err := w.loadFileVariables()
-	if err != nil {
-		return nil, err
+func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable) (tf.InputValues, error) {
+	meta := &tf.Meta{}
+
+	inputValuesUnparsed, diags := meta.CollectVariableValues(w.Path)
+	if diags.HasErrors() {
+		return nil, diags.Err()
 	}
-	// now add in default values
-	for k, v := range defaultValues {
-		if _, hasValue := res[k]; !hasValue {
-			res[k] = v
-		}
-	}
-	return res, nil
+	parsedValues, diags := tf.ParseVariableValues(inputValuesUnparsed, variableMap)
+	return parsedValues, diags.Err()
 
 }
 

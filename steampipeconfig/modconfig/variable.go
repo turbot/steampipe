@@ -8,6 +8,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
+// TODO HANDLE REQUIRED?
 // Variable is a struct representing a Variable resource
 type Variable struct {
 	ShortName string
@@ -20,7 +21,8 @@ type Variable struct {
 	DescriptionSet bool
 	SensitiveSet   bool
 
-	DeclRange hcl.Range
+	ParsingMode tf_config.VariableParsingMode
+	DeclRange   hcl.Range
 
 	metadata *ResourceMetadata
 }
@@ -34,6 +36,7 @@ func NewVariable(v *tf_config.Variable) *Variable {
 		Type:         v.Type,
 		Sensitive:    v.Sensitive,
 		SensitiveSet: v.SensitiveSet,
+		ParsingMode:  v.ParsingMode,
 
 		DeclRange: v.DeclRange,
 	}

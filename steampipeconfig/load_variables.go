@@ -3,6 +3,7 @@ package steampipeconfig
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -31,5 +32,12 @@ func LoadVariables(workspacePath string, opts *parse.ParseModOptions) (variables
 		return nil, err
 	}
 
-	return mod.Variables, nil
+	// TODO look into naming consistency
+	// TACTICAL - as the tf derived code builds a map keyes by the short variable name, do the same
+	res := make(map[string]*modconfig.Variable)
+	for k, v := range mod.Variables {
+		name := strings.Split(k, ".")[1]
+		res[name] = v
+	}
+	return res, nil
 }

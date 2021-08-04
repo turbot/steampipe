@@ -63,8 +63,8 @@ type envMapping struct {
 func overrideDefaultsFromEnv() {
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
-		constants.ENV_UPDATE_CHECK: {constants.ArgUpdateCheck, "bool"},
-		constants.ENV_INSTALL_DIR:  {constants.ArgInstallDir, "string"},
+		constants.EnvUpdateCheck: {constants.ArgUpdateCheck, "bool"},
+		constants.EnvInstallDir:  {constants.ArgInstallDir, "string"},
 	}
 	for k, v := range envMappings {
 		if val, ok := os.LookupEnv(k); ok {
