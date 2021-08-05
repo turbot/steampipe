@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spf13/viper"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform/tfdiags"
@@ -103,6 +105,18 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 		}
 	}
 
+	// check viper for any interactively added variables
+	if varMap := viper.GetStringMap(constants.ConfigInteractiveVariables); varMap != nil {
+		for name, rawVal := range varMap {
+			// Value should be in the form "name=value", where value is a
+			// raw string whose interpretation will depend on the variable's
+			// parsing mode.
+			ret[name] = UnparsedInteractiveVariableValue{
+				Name:     name,
+				RawValue: rawVal.(string),
+			}
+		}
+	}
 	return ret, diags
 }
 

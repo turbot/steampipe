@@ -3,6 +3,8 @@ package tf
 import (
 	"fmt"
 
+	"github.com/zclconf/go-cty/cty"
+
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/hashicorp/hcl/v2"
@@ -126,10 +128,29 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 			continue
 		}
 
-		ret[name] = &InputValue{
-			Value:       vc.Default,
-			SourceType:  ValueFromConfig,
-			SourceRange: tfdiags.SourceRangeFromHCL(vc.DeclRange),
+		if vc.Required() {
+			diags = diags.Append(&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "No value for required variable",
+				Detail:   fmt.Sprintf("The root module input variable %q is not set, and has no default value. Use a -var or -var-file command line argument to provide a value for this variable.", name),
+				Subject:  vc.DeclRange.Ptr(),
+			})
+
+			// We'll include a placeholder value anyway, just so that our
+			// result is complete for any calling code that wants to cautiously
+			// analyze it for diagnostic purposes. Since our diagnostics now
+			// includes an error, normal processing will ignore this result.
+			ret[name] = &InputValue{
+				Value:       cty.DynamicVal,
+				SourceType:  ValueFromConfig,
+				SourceRange: tfdiags.SourceRangeFromHCL(vc.DeclRange),
+			}
+		} else {
+			ret[name] = &InputValue{
+				Value:       vc.Default,
+				SourceType:  ValueFromConfig,
+				SourceRange: tfdiags.SourceRangeFromHCL(vc.DeclRange),
+			}
 		}
 	}
 

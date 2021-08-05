@@ -3,14 +3,11 @@ variable "v1"{
     default = "select 'default'"
 }
 
-variable "v4"{
-    type = string
-}
-
 variable "v2"{
     type = list(string)
     default = ["select 'default1'", "select 'default2'", "select 'default3'"]
 }
+
 
 variable "v3" {
     type = list(object({
@@ -25,6 +22,14 @@ variable "v3" {
             query = "select 'default4'"
         }
     ]
+}
+variable "v4"{
+    type = string
+    description="this is v4"
+}
+variable "v5"{
+    type = string
+    description="this is v5"
 }
 
 query "q1"{

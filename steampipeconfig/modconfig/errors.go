@@ -1,0 +1,20 @@
+package modconfig
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/turbot/steampipe/utils"
+)
+
+type MissingVariableError struct {
+	MissingVariables []*Variable
+}
+
+func (m MissingVariableError) Error() string {
+	strs := make([]string, len(m.MissingVariables))
+	for i, v := range m.MissingVariables {
+		strs[i] = v.Name()
+	}
+	return fmt.Sprintf("missing %d variable %s: %s", len(strs), utils.Pluralize("value", len(strs)), strings.Join(strs, ","))
+}

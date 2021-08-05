@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"fmt"
-	"log"
 	"sort"
 
 	"github.com/hashicorp/terraform/tfdiags"
@@ -54,7 +53,9 @@ func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable
 		return nil, diags.Err()
 	}
 
-	interactiveCollectVariables(inputValuesUnparsed, variableMap)
+	if err := identifyMissingVariables(inputValuesUnparsed, variableMap); err != nil {
+		return nil, err
+	}
 	parsedValues, diags := tf.ParseVariableValues(inputValuesUnparsed, variableMap)
 
 	return parsedValues, diags.Err()
@@ -82,49 +83,23 @@ func displayValidationErrors(diags tfdiags.Diagnostics) {
 	}
 }
 
-func interactiveCollectVariables(existing map[string]tf.UnparsedVariableValue, vcs map[string]*modconfig.Variable) map[string]tf.UnparsedVariableValue {
-	var needed []string
+func identifyMissingVariables(existing map[string]tf.UnparsedVariableValue, vcs map[string]*modconfig.Variable) error {
+	var needed []*modconfig.Variable
 
-	for name := range vcs {
+	for name, vc := range vcs {
+		if !vc.Required() {
+			continue // We only prompt for required variables
+		}
 		if _, exists := existing[name]; !exists {
-			needed = append(needed, name)
+			needed = append(needed, vc)
 		}
 	}
-	if len(needed) == 0 {
-		return existing
+	sort.SliceStable(needed, func(i, j int) bool {
+		return needed[i].Name() < needed[j].Name()
+	})
+	if len(needed) > 0 {
+		return modconfig.MissingVariableError{needed}
 	}
+	return nil
 
-	log.Printf("[TRACE]  will prompt for input of unset required variables %s", needed)
-
-	// If we get here then we're planning to prompt for at least one additional
-	// variable's value.
-	sort.Strings(needed) // prompt in lexical order
-	ret := make(map[string]tf.UnparsedVariableValue, len(vcs))
-	for k, v := range existing {
-		ret[k] = v
-	}
-	for _, name := range needed {
-		//vc := vcs[name]
-		//rawValue, err := uiInput.Input(ctx, &terraform.InputOpts{
-		//	Id:          fmt.Sprintf("var.%s", name),
-		//	Query:       fmt.Sprintf("var.%s", name),
-		//	Description: vc.Description,
-		//})
-		rawValue, err := promptForVariable(name)
-
-		if err != nil {
-			// Since interactive prompts are best-effort, we'll just continue
-			// here and let subsequent validation report this as a variable
-			// not specified.
-			log.Printf("[WARN] backend/local: Failed to request user input for variable %q: %s", name, err)
-			continue
-		}
-		ret[name] = tf.UnparsedInteractiveVariableValue{Name: name, RawValue: rawValue}
-	}
-	return ret
-
-}
-
-func promptForVariable(name string) (string, error) {
-	return "foo", nil
 }

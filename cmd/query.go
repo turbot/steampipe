@@ -7,6 +7,11 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+
+	"github.com/hashicorp/terraform/terraform"
+	"github.com/turbot/steampipe/steampipeconfig/tf"
+
 	"github.com/turbot/steampipe/db"
 
 	"github.com/turbot/steampipe/db/db_common"
@@ -99,19 +104,73 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
+	for {
+		shouldRerun := doRunQuery(args, interactiveMode)
+		if !shouldRerun {
+			return
+		}
+	}
+
+}
+
+func doRunQuery(args []string, interactiveMode bool) bool {
 	// perform rest of initialisation async
 	ctx := context.Background()
 	initDataChan := make(chan *db_common.QueryInitData, 1)
 	getQueryInitDataAsync(ctx, initDataChan, args)
 
+	var shouldRerun = false
+	var err error
 	if interactiveMode {
-		queryexecute.RunInteractiveSession(&initDataChan)
-		return
+		err = queryexecute.RunInteractiveSession(&initDataChan)
 	} else {
 		ctx, cancel := context.WithCancel(ctx)
 		startCancelHandler(cancel)
-		exitCode = queryexecute.RunBatchSession(ctx, initDataChan)
+		var failures int
+		failures, err = queryexecute.RunBatchSession(ctx, initDataChan)
+		// set global exit code
+		exitCode = failures
 	}
+
+	if err != nil {
+		if missingVariablesError, ok := err.(modconfig.MissingVariableError); ok {
+			// is there are missing variables, we will prompt for the values then rerun
+			shouldRerun = true
+			fmt.Println()
+			fmt.Println("Variables defined with no value set.")
+			for _, v := range missingVariablesError.MissingVariables {
+				r, err := promptForVariable(ctx, v.ShortName, v.Description)
+				if err != nil {
+					utils.ShowError(err)
+					return false
+				}
+				addInteractiveVariableToViper(v.ShortName, r)
+
+			}
+		} else {
+			// otherwise just show error and return
+			utils.ShowError(err)
+		}
+	}
+
+	return shouldRerun
+}
+
+func addInteractiveVariableToViper(name string, rawValue string) {
+	varMap := viper.GetStringMap(constants.ConfigInteractiveVariables)
+	varMap[name] = rawValue
+	viper.Set(constants.ConfigInteractiveVariables, varMap)
+}
+
+func promptForVariable(ctx context.Context, name, description string) (string, error) {
+	uiInput := &tf.UIInput{}
+	rawValue, err := uiInput.Input(ctx, &terraform.InputOpts{
+		Id:          fmt.Sprintf("var.%s", name),
+		Query:       fmt.Sprintf("var.%s", name),
+		Description: description,
+	})
+
+	return rawValue, err
 }
 
 func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db_common.QueryInitData, args []string) {
@@ -124,18 +183,20 @@ func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db_common.Que
 			initDataChan <- initData
 			close(initDataChan)
 		}()
-
+		// load the workspace
+		workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+		if err != nil {
+			// leave MissingVariableError unmodified
+			if _, ok := err.(modconfig.MissingVariableError); !ok {
+				err = utils.PrefixError(err, "failed to load workspace")
+			}
+			initData.Result.Error = err
+			return
+		}
 		// get a db client
 		client, err := db.GetClient(constants.InvokerQuery)
 		if err != nil {
 			initData.Result.Error = err
-			return
-		}
-
-		// load the workspace
-		workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-		if err != nil {
-			initData.Result.Error = utils.PrefixError(err, "failed to load workspace")
 			return
 		}
 

@@ -67,3 +67,9 @@ func (v *Variable) AddReference(string) {}
 func (v *Variable) CtyValue() (cty.Value, error) {
 	return v.Default, nil
 }
+
+// Required returns true if this variable is required to be set by the caller,
+// or false if there is a default value that will be used when it isn't set.
+func (v *Variable) Required() bool {
+	return v.Default == cty.NilVal
+}

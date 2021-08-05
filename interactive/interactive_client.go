@@ -15,10 +15,12 @@ import (
 	"github.com/turbot/steampipe/display"
 
 	"github.com/c-bata/go-prompt"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/metaquery"
 	"github.com/turbot/steampipe/query/queryhistory"
 	"github.com/turbot/steampipe/query/queryresult"
@@ -102,8 +104,15 @@ func (c *InteractiveClient) InteractiveQuery() {
 		c.resultsStreamer.Close()
 	}()
 
-	fmt.Printf("Welcome to Steampipe v%s\n", version.String())
-	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
+	// show welcome message
+	// NOTE: only show this if this is the first attempt at running the prompt
+	// we can detect this by check whether we have saved anything in viper under key constants.ConfigInteractiveVariables
+	// this would indicate we have tried to open the prompt, identified missing variables, closed the prompt,
+	// prompted for them and rerun the prompt
+	if len(viper.GetStringMap(constants.ConfigInteractiveVariables)) == 0 {
+		fmt.Printf("Welcome to Steampipe v%s\n", version.String())
+		fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
+	}
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors
 	promptResultChan := make(chan utils.InteractiveExitStatus, 1)
@@ -145,9 +154,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	// if there is an error, shutdown the prompt
 	if initResult.Error != nil {
 		c.ClosePrompt(AfterPromptCloseExit)
-		// add newline to ensure error is not printed at end of current prompt line
-		fmt.Println()
-		utils.ShowError(initResult.Error)
+		c.resultsStreamer.StreamError(initResult.Error)
 		return
 	}
 	if initResult.HasMessages() {
