@@ -53,7 +53,8 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 
 	// add steampipe variables to the local variables
 	if inputVariables != nil {
-		c.variables[modconfig.BlockTypeVariable] = inputVariables
+		// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
+		c.variables["var"] = inputVariables
 	}
 
 	// add mod and any existing mod resources to the variables

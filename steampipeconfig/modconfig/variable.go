@@ -30,7 +30,7 @@ func NewVariable(v *tf_config.Variable) *Variable {
 	return &Variable{
 		ShortName:    v.Name,
 		Description:  v.Description,
-		FullName:     fmt.Sprintf("variable.%s", v.Name),
+		FullName:     fmt.Sprintf("var.%s", v.Name),
 		Default:      v.Default,
 		Type:         v.Type,
 		Sensitive:    v.Sensitive,
