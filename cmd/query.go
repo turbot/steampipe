@@ -138,7 +138,7 @@ func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
 	}
 	if err := interactive.PromptForMissingVariables(ctx, missingVariablesError.MissingVariables); err != nil {
 		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
-		return nil, nil
+		return nil, err
 	}
 	// ok we should have all variables now - reload workspace
 	return workspace.Load(viper.GetString(constants.ArgWorkspace))
