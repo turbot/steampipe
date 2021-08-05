@@ -45,20 +45,17 @@ func (r *Runner) Run() {
 		waitGroup := sync.WaitGroup{}
 
 		// check whether an updated version is available
-		waitGroup.Add(1)
-		go r.runAsyncJob(func() {
+		runJobAsync(func() {
 			versionNotificationLines = checkSteampipeVersion(r.currentState.InstallationID)
 		}, &waitGroup)
 
 		// check whether an updated version is available
-		waitGroup.Add(1)
-		go r.runAsyncJob(func() {
+		runJobAsync(func() {
 			pluginNotificationLines = checkPluginVersions(r.currentState.InstallationID)
 		}, &waitGroup)
 
 		// remove log files older than 7 days
-		waitGroup.Add(1)
-		go r.runAsyncJob(func() { local_db.TrimLogs() }, &waitGroup)
+		runJobAsync(func() { local_db.TrimLogs() }, &waitGroup)
 
 		// wait for all jobs to complete
 		waitGroup.Wait()
@@ -74,9 +71,12 @@ func (r *Runner) Run() {
 	}
 }
 
-func (r *Runner) runAsyncJob(job func(), wg *sync.WaitGroup) {
-	job()
-	wg.Done()
+func runJobAsync(job func(), wg *sync.WaitGroup) {
+	wg.Add(1)
+	go func() {
+		job()
+		wg.Done()
+	}()
 }
 
 // determines whether the task runner should run at all
