@@ -48,7 +48,6 @@ type UIInput struct {
 }
 
 func (i *UIInput) Input(ctx context.Context, opts *terraform.InputOpts) (string, error) {
-
 	i.once.Do(i.init)
 
 	r := i.Reader
@@ -66,7 +65,7 @@ func (i *UIInput) Input(ctx context.Context, opts *terraform.InputOpts) (string,
 		w = os.Stdout
 	}
 
-	// Make sure we only ask for input once at a time. Terraform
+	// Make sure we only ask for input once at a time. Steampipe
 	// should enforce this, but it doesn't hurt to verify.
 	i.l.Lock()
 	defer i.l.Unlock()
@@ -142,7 +141,6 @@ func (i *UIInput) Input(ctx context.Context, opts *terraform.InputOpts) (string,
 			line, err = buf.ReadString('\n')
 		}
 		if err != nil {
-			log.Printf("[ERR] UIInput scan err: %s", err)
 			i.err <- string(err.Error())
 		} else {
 			i.result <- strings.TrimRightFunc(line, unicode.IsSpace)
@@ -162,12 +160,14 @@ func (i *UIInput) Input(ctx context.Context, opts *terraform.InputOpts) (string,
 
 		return line, nil
 	case <-ctx.Done():
+		fmt.Printf("ctx.Done()\n")
 		// Print a newline so that any further output starts properly
 		// on a new line.
 		fmt.Fprintln(w)
 
 		return "", ctx.Err()
 	case <-sigCh:
+		fmt.Printf("SIG\n")
 		// Print a newline so that any further output starts properly
 		// on a new line.
 		fmt.Fprintln(w)

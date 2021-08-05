@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os/signal"
 	"sort"
 	"strings"
 	"sync"
@@ -11,9 +12,6 @@ import (
 	"github.com/alecthomas/chroma/formatters"
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
-	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/display"
-
 	"github.com/c-bata/go-prompt"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -21,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/query/metaquery"
 	"github.com/turbot/steampipe/query/queryhistory"
 	"github.com/turbot/steampipe/query/queryresult"
@@ -92,6 +91,7 @@ func (c *InteractiveClient) InteractiveQuery() {
 			utils.ShowError(helpers.ToError(r))
 		}
 		// close up the SIGINT channel so that the receiver goroutine can quit
+		signal.Stop(interruptSignalChannel)
 		close(interruptSignalChannel)
 		// close the underlying client if it exists
 		if client := c.client(); client != nil {

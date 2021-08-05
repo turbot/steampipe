@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/interactive"
 
-	"github.com/hashicorp/terraform/terraform"
-	"github.com/turbot/steampipe/steampipeconfig/tf"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/turbot/steampipe/db"
 
@@ -134,43 +134,19 @@ func doRunQuery(args []string, interactiveMode bool) bool {
 
 	if err != nil {
 		if missingVariablesError, ok := err.(modconfig.MissingVariableError); ok {
-			// is there are missing variables, we will prompt for the values then rerun
 			shouldRerun = true
-			fmt.Println()
-			fmt.Println("Variables defined with no value set.")
-			for _, v := range missingVariablesError.MissingVariables {
-				r, err := promptForVariable(ctx, v.ShortName, v.Description)
-				if err != nil {
-					utils.ShowError(err)
-					return false
-				}
-				addInteractiveVariableToViper(v.ShortName, r)
-
+			err := interactive.PromptForMissingVariables(shouldRerun, missingVariablesError, ctx)
+			if err != nil {
+				log.Printf("[TRACE] Interactive variables promptong returned error %v", err)
+				shouldRerun = false
 			}
 		} else {
-			// otherwise just show error and return
+			// otherwise just fail
 			utils.ShowError(err)
 		}
 	}
 
 	return shouldRerun
-}
-
-func addInteractiveVariableToViper(name string, rawValue string) {
-	varMap := viper.GetStringMap(constants.ConfigInteractiveVariables)
-	varMap[name] = rawValue
-	viper.Set(constants.ConfigInteractiveVariables, varMap)
-}
-
-func promptForVariable(ctx context.Context, name, description string) (string, error) {
-	uiInput := &tf.UIInput{}
-	rawValue, err := uiInput.Input(ctx, &terraform.InputOpts{
-		Id:          fmt.Sprintf("var.%s", name),
-		Query:       fmt.Sprintf("var.%s", name),
-		Description: description,
-	})
-
-	return rawValue, err
 }
 
 func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db_common.QueryInitData, args []string) {

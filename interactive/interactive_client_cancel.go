@@ -2,6 +2,7 @@ package interactive
 
 import (
 	"context"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,6 +13,7 @@ func (c *InteractiveClient) startCancelHandler() chan os.Signal {
 	signal.Notify(interruptSignalChannel, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		for range interruptSignalChannel {
+			log.Printf("[WARN] CANCEL")
 			c.cancelActiveQueryIfAny()
 		}
 	}()
