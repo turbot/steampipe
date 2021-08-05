@@ -65,7 +65,8 @@ func validateVariables(variableMap map[string]*modconfig.Variable, variables tf.
 	diags := tf.CheckInputVariables(variableMap, variables)
 	if diags.HasErrors() {
 		displayValidationErrors(diags)
-		return fmt.Errorf("%d validation errors occurred", len(diags))
+		// return empty error
+		return modconfig.VariableValidationFailedError{}
 	}
 	return nil
 }

@@ -5,10 +5,8 @@ variable "v1"{
 
 variable "v2"{
     type = list(string)
-    default = ["select 'default1'", "select 'default2'", "select 'default3'"]
+
 }
-
-
 
 variable "v3" {
     type = list(object({
@@ -24,10 +22,12 @@ variable "v3" {
         }
     ]
 }
+
 variable "v4"{
     type = string
     description="this is v4"
 }
+
 variable "v5"{
     type = string
     description="this is v5"

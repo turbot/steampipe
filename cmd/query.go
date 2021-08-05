@@ -131,11 +131,12 @@ func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
 	if err == nil {
 		return w, nil
 	}
-	// if there was an erro which is NOT a MissingVariableError, return it
 	missingVariablesError, ok := err.(modconfig.MissingVariableError)
+	// if there was an error which is NOT a MissingVariableError, return it
 	if !ok {
 		return nil, err
 	}
+	// so we have missing variables - prompt for them
 	if err := interactive.PromptForMissingVariables(ctx, missingVariablesError.MissingVariables); err != nil {
 		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
 		return nil, err

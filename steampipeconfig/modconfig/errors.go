@@ -18,3 +18,10 @@ func (m MissingVariableError) Error() string {
 	}
 	return fmt.Sprintf("missing %d variable %s: %s", len(strs), utils.Pluralize("value", len(strs)), strings.Join(strs, ","))
 }
+
+type VariableValidationFailedError struct {
+}
+
+func (m VariableValidationFailedError) Error() string {
+	return "variable validation failed"
+}
