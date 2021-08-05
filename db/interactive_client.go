@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/turbot/steampipe/display"
+
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
@@ -366,14 +368,20 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 			c.cancelActiveQueryIfAny()
 		}()
 
+		initDoneChan := make(chan bool)
+		sp := display.StartSpinnerAfterDelay("Initializing...", constants.SpinnerShowTimeout, initDoneChan)
 		// wait for client initialisation to complete
 		if err := c.waitForInitData(queryContext); err != nil {
 			// if it failed, report error and quit
+			close(initDoneChan)
+			display.StopSpinner(sp)
 			utils.ShowError(utils.HandleCancelError(err))
 
 			c.resultsStreamer.Done()
 			return "", err
 		}
+		close(initDoneChan)
+		display.StopSpinner(sp)
 	}
 
 	// push the current line into the buffer
