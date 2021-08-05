@@ -13,43 +13,27 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func RunInteractiveSession(initChan *chan *db_common.QueryInitData) error {
+func RunInteractiveSession(initChan *chan *db_common.QueryInitData) {
 	utils.LogTime("execute.RunInteractiveSession start")
 	defer utils.LogTime("execute.RunInteractiveSession end")
 
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := interactive.RunInteractivePrompt(initChan)
-	if err != nil {
-		return err
-
-	}
+	utils.FailOnError(err)
 
 	// print the data as it comes
-	for {
-		select {
-		case err := <-resultsStreamer.Error:
-			// if there is an error, this will be an initialisation error, rather than a query error - so it is fatal
-			display.ClearCurrentLine()
-			return err
-
-		case r := <-resultsStreamer.Results:
-			if r == nil {
-				return nil
-			}
-
-			display.ShowOutput(r)
-			// signal to the resultStreamer that we are done with this chunk of the stream
-			resultsStreamer.AllResultsRead()
-		}
+	for r := range resultsStreamer.Results {
+		display.ShowOutput(r)
+		// signal to the resultStreamer that we are done with this chunk of the stream
+		resultsStreamer.AllResultsRead()
 	}
 }
 
-func RunBatchSession(ctx context.Context, initDataChan chan *db_common.QueryInitData) (int, error) {
+func RunBatchSession(ctx context.Context, initDataChan chan *db_common.QueryInitData) int {
 	// wait for init
 	initData := <-initDataChan
 	if err := initData.Result.Error; err != nil {
-		return 0, err
-
+		utils.FailOnError(err)
 	}
 	// ensure we close client
 	defer func() {
@@ -67,7 +51,7 @@ func RunBatchSession(ctx context.Context, initDataChan chan *db_common.QueryInit
 		failures = executeQueries(ctx, initData.Queries, initData.Client)
 	}
 	// set global exit code
-	return failures, nil
+	return failures
 }
 
 func executeQueries(ctx context.Context, queries []string, client db_common.Client) int {

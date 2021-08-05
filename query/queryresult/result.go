@@ -13,7 +13,6 @@ type Result struct {
 	RowChan  *chan *RowResult
 	ColTypes []*sql.ColumnType
 	Duration chan time.Duration
-	Error    error
 }
 
 // Close closes the row channel

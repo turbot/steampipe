@@ -32,7 +32,7 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 	if err != nil {
 		// check the existing watcher error - if we are already in an error state, do not show error
 		if w.watcherError == nil {
-			w.fileWatcherErrorHandler(utils.PrefixError(err, "Failed to reload mod from file watcher"))
+			w.fileWatcherErrorHandler(utils.PrefixError(err, "Failed to reload workspace"))
 		}
 		// now set watcher error to new error
 		w.watcherError = err

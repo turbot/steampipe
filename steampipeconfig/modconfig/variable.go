@@ -8,7 +8,6 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// TODO HANDLE REQUIRED?
 // Variable is a struct representing a Variable resource
 type Variable struct {
 	ShortName string

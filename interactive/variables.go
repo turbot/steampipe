@@ -11,18 +11,15 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/tf"
 )
 
-func PromptForMissingVariables(shouldRerun bool, missingVariablesError modconfig.MissingVariableError, ctx context.Context) error {
-	// is there are missing variables, we will prompt for the values then rerun
-	shouldRerun = true
+func PromptForMissingVariables(ctx context.Context, missingVariables []*modconfig.Variable) error {
 	fmt.Println()
 	fmt.Println("Variables defined with no value set.")
-	for _, v := range missingVariablesError.MissingVariables {
+	for _, v := range missingVariables {
 		r, err := promptForVariable(ctx, v.ShortName, v.Description)
 		if err != nil {
 			return err
 		}
 		addInteractiveVariableToViper(v.ShortName, r)
-
 	}
 	return nil
 }

@@ -8,13 +8,10 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/turbot/steampipe/interactive"
-
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
 	"github.com/turbot/steampipe/db"
-
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/interactive"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/turbot/steampipe/query/queryexecute"
 
@@ -104,52 +101,50 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
-	for {
-		shouldRerun := doRunQuery(args, interactiveMode)
-		if !shouldRerun {
-			return
-		}
-	}
-
-}
-
-func doRunQuery(args []string, interactiveMode bool) bool {
-	// perform rest of initialisation async
 	ctx := context.Background()
-	initDataChan := make(chan *db_common.QueryInitData, 1)
-	getQueryInitDataAsync(ctx, initDataChan, args)
 
-	var shouldRerun = false
-	var err error
+	// load the workspace
+	w, err := loadWorkspacePromptingForVariables(ctx)
+	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+
+	// se we have loaded a workspace - be sure to close it
+	defer w.Close()
+
+	// perform rest of initialisation async
+	initDataChan := make(chan *db_common.QueryInitData, 1)
+	getQueryInitDataAsync(ctx, w, initDataChan, args)
+
 	if interactiveMode {
-		err = queryexecute.RunInteractiveSession(&initDataChan)
+		queryexecute.RunInteractiveSession(&initDataChan)
 	} else {
 		ctx, cancel := context.WithCancel(ctx)
 		startCancelHandler(cancel)
-		var failures int
-		failures, err = queryexecute.RunBatchSession(ctx, initDataChan)
 		// set global exit code
-		exitCode = failures
+		exitCode = queryexecute.RunBatchSession(ctx, initDataChan)
+
 	}
 
-	if err != nil {
-		if missingVariablesError, ok := err.(modconfig.MissingVariableError); ok {
-			shouldRerun = true
-			err := interactive.PromptForMissingVariables(shouldRerun, missingVariablesError, ctx)
-			if err != nil {
-				log.Printf("[TRACE] Interactive variables promptong returned error %v", err)
-				shouldRerun = false
-			}
-		} else {
-			// otherwise just fail
-			utils.ShowError(err)
-		}
-	}
-
-	return shouldRerun
 }
 
-func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db_common.QueryInitData, args []string) {
+func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspace, error) {
+	w, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+	if err == nil {
+		return w, nil
+	}
+	// if there was an erro which is NOT a MissingVariableError, return it
+	missingVariablesError, ok := err.(modconfig.MissingVariableError)
+	if !ok {
+		return nil, err
+	}
+	if err := interactive.PromptForMissingVariables(ctx, missingVariablesError.MissingVariables); err != nil {
+		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
+		return nil, nil
+	}
+	// ok we should have all variables now - reload workspace
+	return workspace.Load(viper.GetString(constants.ArgWorkspace))
+}
+
+func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, initDataChan chan *db_common.QueryInitData, args []string) {
 	go func() {
 		initData := db_common.NewQueryInitData()
 		defer func() {
@@ -159,25 +154,13 @@ func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db_common.Que
 			initDataChan <- initData
 			close(initDataChan)
 		}()
-		// load the workspace
-		workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-		if err != nil {
-			// leave MissingVariableError unmodified
-			if _, ok := err.(modconfig.MissingVariableError); !ok {
-				err = utils.PrefixError(err, "failed to load workspace")
-			}
-			initData.Result.Error = err
-			return
-		}
+
 		// get a db client
 		client, err := db.GetClient(constants.InvokerQuery)
 		if err != nil {
 			initData.Result.Error = err
 			return
 		}
-
-		// se we have loaded a workspace - be sure to close it
-		defer workspace.Close()
 
 		// check if the required plugins are installed
 		if err := workspace.CheckRequiredPluginsInstalled(); err != nil {

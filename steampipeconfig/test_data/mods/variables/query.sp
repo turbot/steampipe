@@ -9,6 +9,7 @@ variable "v2"{
 }
 
 
+
 variable "v3" {
     type = list(object({
         internal = number
@@ -28,6 +29,10 @@ variable "v4"{
     description="this is v4"
 }
 variable "v5"{
+    type = string
+    description="this is v5"
+}
+variable "v6"{
     type = string
     description="this is v5"
 }
