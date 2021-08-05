@@ -30,7 +30,7 @@ func (r DimensionsRenderer) Render() string {
 	defer log.Println("[TRACE] end dimensions render")
 
 	if r.width <= 0 {
-		log.Printf("[WARN] dimensions renderer has width of %d\n", r.width)
+		log.Printf("[WARN] dimensions renderer %v has width of %d\n", r, r.width)
 		return ""
 	}
 	if len(r.dimensions) == 0 {

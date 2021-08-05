@@ -21,6 +21,7 @@ type GroupRenderer struct {
 }
 
 func NewGroupRenderer(group *controlexecute.ResultGroup, parent *GroupRenderer, maxFailedControls, maxTotalControls int, resultTree *controlexecute.ExecutionTree, width int) *GroupRenderer {
+	log.Printf("[WARN] NewGroupRenderer maxTotalControls %d", maxTotalControls)
 	r := &GroupRenderer{
 		group:             group,
 		parent:            parent,

@@ -26,7 +26,7 @@ func (r GroupTitleRenderer) Render() string {
 	defer log.Println("[TRACE] end group title render")
 
 	if r.width <= 0 {
-		log.Printf("[WARN] group renderer has width of %d\n", r.width)
+		log.Printf("[WARN] group title renderer %v has width of %d\n", r, r.width)
 		return ""
 	}
 	// allow room for trailing space

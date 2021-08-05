@@ -1,6 +1,8 @@
 package controldisplay
 
 import (
+	"log"
+
 	"github.com/turbot/steampipe/control/controlexecute"
 )
 
@@ -14,6 +16,8 @@ type TableRenderer struct {
 }
 
 func NewTableRenderer(resultTree *controlexecute.ExecutionTree, width int) *TableRenderer {
+	log.Printf("[WARN] NewGroupRenderer root status: %v, maxTotalControls %d", resultTree.Root.Summary.Status, resultTree.Root.Summary.Status.TotalCount())
+
 	return &TableRenderer{
 		resultTree:        resultTree,
 		width:             width,

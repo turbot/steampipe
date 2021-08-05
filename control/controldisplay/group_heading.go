@@ -22,6 +22,9 @@ type GroupHeadingRenderer struct {
 }
 
 func NewGroupHeadingRenderer(title string, failed, total, maxFailed, maxTotal, width int, indent string) *GroupHeadingRenderer {
+	if maxTotal < total {
+		log.Printf("[WARN] NewGroupHeadingRenderer maxtotal < total: failed %d, total %d, maxFailed %d, maxTotal %d, width %d", failed, total, maxFailed, maxTotal, width)
+	}
 	return &GroupHeadingRenderer{
 		title:             title,
 		failedControls:    failed,
@@ -40,7 +43,7 @@ func (r GroupHeadingRenderer) Render() string {
 	defer log.Println("[TRACE] end group heading render")
 
 	if r.width <= 0 {
-		log.Printf("[WARN] group renderer has width of %d\n", r.width)
+		log.Printf("[WARN] group heading renderer %v has width of %d\n", r, r.width)
 		return ""
 	}
 
