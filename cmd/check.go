@@ -182,7 +182,8 @@ func initialiseCheck() *checkInitData {
 	}
 
 	// load workspace
-	initData.workspace, err = workspace.Load(viper.GetString(constants.ArgWorkspace))
+
+	initData.workspace, err = loadWorkspacePromptingForVariables(ctx)
 	if err != nil {
 		if !utils.IsCancelledError(err) {
 			err = utils.PrefixError(err, "failed to load workspace")
