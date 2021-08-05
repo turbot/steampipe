@@ -88,13 +88,8 @@ func (r *Runner) shouldRun() bool {
 
 	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
-	if cmd.Name() == "query" && len(cmdArgs) > 0 {
-		// this is query batch mode
-		// we will not run scheduled tasks in this mode
-		return false
-	}
-	if cmd.Parent() != nil && cmd.Parent().Name() == "service" && cmd.Name() == "stop" {
-		// no scheduled tasks for `service stop`
+	if isServiceStopCmd(cmd) || isBatchQueryCmd(cmd, cmdArgs) {
+		// no scheduled tasks for `service stop` and `query <sql>`
 		return false
 	}
 
@@ -109,4 +104,12 @@ func (r *Runner) shouldRun() bool {
 	minutesElapsed := now.Sub(lastCheckedAt).Minutes()
 
 	return minutesElapsed > minimumMinutesBetweenChecks
+}
+
+func isServiceStopCmd(cmd *cobra.Command) bool {
+	return cmd.Parent() != nil && cmd.Parent().Name() == "service" && cmd.Name() == "stop"
+}
+
+func isBatchQueryCmd(cmd *cobra.Command, cmdArgs []string) bool {
+	return cmd.Name() == "query" && len(cmdArgs) > 0
 }
