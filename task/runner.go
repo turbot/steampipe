@@ -93,6 +93,10 @@ func (r *Runner) shouldRun() bool {
 		// we will not run scheduled tasks in this mode
 		return false
 	}
+	if cmd.Parent() != nil && cmd.Parent().Name() == "service" && cmd.Name() == "stop" {
+		// no scheduled tasks for `service stop`
+		return false
+	}
 
 	now := time.Now()
 	if r.currentState.LastCheck == "" {
