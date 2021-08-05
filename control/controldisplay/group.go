@@ -21,7 +21,7 @@ type GroupRenderer struct {
 }
 
 func NewGroupRenderer(group *controlexecute.ResultGroup, parent *GroupRenderer, maxFailedControls, maxTotalControls int, resultTree *controlexecute.ExecutionTree, width int) *GroupRenderer {
-	log.Printf("[WARN] NewGroupRenderer maxTotalControls %d", maxTotalControls)
+	log.Printf("[WARN] NewGroupRenderer name %s maxTotalControls %d summary %v", group.GroupId, maxTotalControls, group.Summary)
 	r := &GroupRenderer{
 		group:             group,
 		parent:            parent,
@@ -111,6 +111,7 @@ func (r GroupRenderer) Render() string {
 	log.Printf("[TRACE] begin group render '%s'\n", r.group.GroupId)
 	defer log.Printf("[TRACE] end table render'%s'\n", r.group.GroupId)
 
+	log.Printf("[WARN] GroupRenderer) Render r.group.Summary.Status.FailedCount() %v r.group.Summary.Status.TotalCount() %v (%v)", r.group.Summary.Status.FailedCount(), r.group.Summary.Status.TotalCount(), r.group.Summary.Status)
 	if r.group.GroupId == controlexecute.RootResultGroupName {
 		return r.renderRootResultGroup()
 	}
