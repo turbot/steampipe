@@ -6,14 +6,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
 }
 
-@test "steampipe aggregator connection wildcard check" {
-    run steampipe plugin install chaos
-    run steampipe plugin install aws
-    cp $SRC_DATA_DIR/aggregator.spc $STEAMPIPE_INSTALL_DIR/config/chaos.spc
-    run steampipe query "select * from chaos_group.chaos_all_column_types"
-    assert_success
-}
-
 @test "steampipe plugin list" {
     run steampipe plugin list
     assert_success
