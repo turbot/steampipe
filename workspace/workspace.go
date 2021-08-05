@@ -38,8 +38,9 @@ type Workspace struct {
 	loadLock   sync.Mutex
 	exclusions []string
 	// should we load/watch files recursively
-	listFlag     filehelpers.ListFlag
-	watcherError error
+	listFlag                filehelpers.ListFlag
+	fileWatcherErrorHandler func(error)
+	watcherError            error
 	// event handlers
 	reportEventHandlers []reportevents.ReportEventHandler
 }
@@ -80,22 +81,35 @@ func (w *Workspace) reset() {
 	w.PanelMap = make(map[string]*modconfig.Panel)
 }
 
-func (w *Workspace) SetupWatcher(client db_common.Client) error {
+func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(error)) error {
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
+		ListFlag:    w.listFlag,
+		// we should look into passing the callback function into the underlying watcher
+		// we need to analyze the kind of errors that come out from the watcher and
+		// decide how to handle them
+		// OnError: errCallback,
 		OnChange: func(events []fsnotify.Event) {
 			w.handleFileWatcherEvent(client, events)
 		},
-		ListFlag: w.listFlag,
-		//onError:          nil,
 	}
 	watcher, err := utils.NewWatcher(watcherOptions)
 	if err != nil {
 		return err
 	}
 	w.watcher = watcher
+
+	// set the file watcher error handler, which will get called when there are parsing errors
+	// after a file watcher event
+	w.fileWatcherErrorHandler = errorHandler
+	if w.fileWatcherErrorHandler == nil {
+		w.fileWatcherErrorHandler = func(err error) {
+			fmt.Println()
+			utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
+		}
+	}
 
 	return nil
 }
