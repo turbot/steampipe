@@ -81,7 +81,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 
 		if initData.client != nil {
-
 			initData.client.Close()
 		}
 		if initData.workspace != nil {
