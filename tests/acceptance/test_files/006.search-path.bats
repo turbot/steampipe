@@ -55,16 +55,3 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query "show search_path" --search-path-prefix foo
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_5.txt)"
 }
-
-# function setup() {
-#   STEAMPIPE_PASSWD=$(cat $STEAMPIPE_INSTALL_DIR/db/12.1.0/postgres/.passwd | jq ".Steampipe")
-#   STEAMPIPE_PASSWD="${STEAMPIPE_PASSWD%\"}"
-#   STEAMPIPE_PASSWD="${STEAMPIPE_PASSWD#\"}"
-#   steampipe service start
-#   steampipe plugin install chaos
-#   steampipe service stop --force
-# }
-
-function teardown() {
-    steampipe service stop --force    
-}

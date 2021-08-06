@@ -42,7 +42,3 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$(cat output.json | jq '.controls[0].results[0].status')" '"ok"'
   rm -f output.json
 }
-
-function teardown() {
-    steampipe service stop --force    
-}
