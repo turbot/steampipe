@@ -157,6 +157,9 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *In
 		c.ClosePrompt(AfterPromptCloseRestart)
 		fmt.Println()
 		initResult.DisplayMessages()
+		// We need to Render the prompt here to make sure that it comes back
+		// after the messages have been displayed
+		c.interactivePrompt.Render()
 	}
 	return nil
 }

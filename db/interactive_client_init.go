@@ -35,17 +35,17 @@ func (c *InteractiveClient) readInitDataStream() {
 
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
-		err := c.initData.Workspace.SetupWatcher(c.initData.Client)
+		// provide an explicit error handler which re-renders the prompt after displaying the error
+		err := c.initData.Workspace.SetupWatcher(c.initData.Client, c.workspaceWatcherErrorHandler)
 		initData.Result.Error = err
 	}
 	c.initResultChan <- initData.Result
 }
 
-func (c *InteractiveClient) getInitError() error {
-	if c.initData == nil {
-		return nil
-	}
-	return c.initData.Result.Error
+func (c *InteractiveClient) workspaceWatcherErrorHandler(err error) {
+	fmt.Println()
+	utils.ShowError(err)
+	c.interactivePrompt.Render()
 }
 
 func (c *InteractiveClient) isInitialised() bool {

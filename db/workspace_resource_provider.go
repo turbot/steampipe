@@ -9,5 +9,5 @@ type WorkspaceResourceProvider interface {
 	GetQuery(queryName string) (*modconfig.Query, bool)
 	GetControlMap() map[string]*modconfig.Control
 	GetControl(controlName string) (*modconfig.Control, bool)
-	SetupWatcher(client *Client) error
+	SetupWatcher(client *Client, onError func(err error)) error
 }

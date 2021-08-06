@@ -71,8 +71,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 	}
 
 	loadedWorkspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
-	err = loadedWorkspace.SetupWatcher(dbClient)
-
+	err = loadedWorkspace.SetupWatcher(dbClient, nil)
 	return server, err
 }
 
