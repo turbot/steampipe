@@ -1,4 +1,4 @@
-package tf_config
+package var_config
 
 // github.com/hashicorp/terraform/configs/parser_config.go
 import (
@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform/addrs"
-	"github.com/turbot/steampipe/steampipeconfig/tf/typeexpr"
+	"github.com/turbot/steampipe/steampipeconfig/input_vars/typeexpr"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
 	//"github.com/hashicorp/terraform/internal/typeexpr"
@@ -427,109 +427,6 @@ func looksLikeSentences(s string) bool {
 	return last == '.' || last == '?' || last == '!'
 }
 
-// Output represents an "output" block in a module or file.
-type Output struct {
-	Name        string
-	Description string
-	Expr        hcl.Expression
-	DependsOn   []hcl.Traversal
-	Sensitive   bool
-
-	DescriptionSet bool
-	SensitiveSet   bool
-
-	DeclRange hcl.Range
-}
-
-func decodeOutputBlock(block *hcl.Block, override bool) (*Output, hcl.Diagnostics) {
-	var diags hcl.Diagnostics
-
-	o := &Output{
-		Name:      block.Labels[0],
-		DeclRange: block.DefRange,
-	}
-
-	schema := outputBlockSchema
-	if override {
-		schema = schemaForOverrides(schema)
-	}
-
-	content, moreDiags := block.Body.Content(schema)
-	diags = append(diags, moreDiags...)
-
-	if !hclsyntax.ValidIdentifier(o.Name) {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Invalid output name",
-			Detail:   badIdentifierDetail,
-			Subject:  &block.LabelRanges[0],
-		})
-	}
-
-	if attr, exists := content.Attributes["description"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, nil, &o.Description)
-		diags = append(diags, valDiags...)
-		o.DescriptionSet = true
-	}
-
-	if attr, exists := content.Attributes["value"]; exists {
-		o.Expr = attr.Expr
-	}
-
-	if attr, exists := content.Attributes["sensitive"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, nil, &o.Sensitive)
-		diags = append(diags, valDiags...)
-		o.SensitiveSet = true
-	}
-
-	return o, diags
-}
-
-//
-//// Local represents a single entry from a "locals" block in a module or file.
-//// The "locals" block itself is not represented, because it serves only to
-//// provide context for us to interpret its contents.
-//type Local struct {
-//	Name string
-//	Expr hcl.Expression
-//
-//	DeclRange hcl.Range
-//}
-//
-//func decodeLocalsBlock(block *hcl.Block) ([]*Local, hcl.Diagnostics) {
-//	attrs, diags := block.Body.JustAttributes()
-//	if len(attrs) == 0 {
-//		return nil, diags
-//	}
-//
-//	locals := make([]*Local, 0, len(attrs))
-//	for name, attr := range attrs {
-//		if !hclsyntax.ValidIdentifier(name) {
-//			diags = append(diags, &hcl.Diagnostic{
-//				Severity: hcl.DiagError,
-//				Summary:  "Invalid local value name",
-//				Detail:   badIdentifierDetail,
-//				Subject:  &attr.NameRange,
-//			})
-//		}
-//
-//		locals = append(locals, &Local{
-//			Name:      name,
-//			Expr:      attr.Expr,
-//			DeclRange: attr.Range,
-//		})
-//	}
-//	return locals, diags
-//}
-//
-//// Addr returns the address of the local value declared by the receiver,
-//// relative to its containing module.
-//func (l *Local) Addr() addrs.LocalValue {
-//	return addrs.LocalValue{
-//		Name: l.Name,
-//	}
-//}
-
 var variableBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{
@@ -561,24 +458,6 @@ var variableValidationBlockSchema = &hcl.BodySchema{
 		{
 			Name:     "error_message",
 			Required: true,
-		},
-	},
-}
-
-var outputBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: "description",
-		},
-		{
-			Name:     "value",
-			Required: true,
-		},
-		{
-			Name: "depends_on",
-		},
-		{
-			Name: "sensitive",
 		},
 	},
 }

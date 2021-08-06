@@ -1,4 +1,4 @@
-package tf_config
+package var_config
 
 import (
 	"github.com/hashicorp/hcl/v2"

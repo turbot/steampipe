@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig/tf_config"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
 )
 
 // A consistent detail message for all "not a valid identifier" diagnostics.
@@ -148,7 +148,7 @@ func decodeVariable(block *hcl.Block, runCtx *RunContext) (*modconfig.Variable, 
 	res := &decodeResult{}
 
 	var variable *modconfig.Variable
-	v, diags := tf_config.DecodeVariableBlock(block, false)
+	v, diags := var_config.DecodeVariableBlock(block, false)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 

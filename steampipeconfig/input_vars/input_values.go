@@ -1,4 +1,4 @@
-package tf
+package input_vars
 
 import (
 	"fmt"

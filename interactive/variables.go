@@ -7,8 +7,8 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/steampipeconfig/input_vars"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/steampipeconfig/tf"
 )
 
 func PromptForMissingVariables(ctx context.Context, missingVariables []*modconfig.Variable) error {
@@ -25,7 +25,7 @@ func PromptForMissingVariables(ctx context.Context, missingVariables []*modconfi
 }
 
 func promptForVariable(ctx context.Context, name, description string) (string, error) {
-	uiInput := &tf.UIInput{}
+	uiInput := &input_vars.UIInput{}
 	rawValue, err := uiInput.Input(ctx, &terraform.InputOpts{
 		Id:          fmt.Sprintf("var.%s", name),
 		Query:       fmt.Sprintf("var.%s", name),

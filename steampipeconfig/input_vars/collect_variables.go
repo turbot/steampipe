@@ -1,4 +1,4 @@
-package tf
+package input_vars
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig/tf_config"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
 )
 
 // CollectVariableValues inspects the various places that root module input variable
@@ -201,7 +201,7 @@ type unparsedVariableValueExpression struct {
 	sourceType ValueSourceType
 }
 
-func (v unparsedVariableValueExpression) ParseVariableValue(mode tf_config.VariableParsingMode) (*InputValue, tfdiags.Diagnostics) {
+func (v unparsedVariableValueExpression) ParseVariableValue(mode var_config.VariableParsingMode) (*InputValue, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 	val, hclDiags := v.expr.Value(nil) // nil because no function calls or variable references are allowed here
 	diags = diags.Append(hclDiags)
@@ -225,7 +225,7 @@ type unparsedVariableValueString struct {
 	sourceType ValueSourceType
 }
 
-func (v unparsedVariableValueString) ParseVariableValue(mode tf_config.VariableParsingMode) (*InputValue, tfdiags.Diagnostics) {
+func (v unparsedVariableValueString) ParseVariableValue(mode var_config.VariableParsingMode) (*InputValue, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 
 	val, hclDiags := mode.Parse(v.name, v.str)

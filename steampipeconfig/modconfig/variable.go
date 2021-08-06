@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig/tf_config"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -20,13 +20,13 @@ type Variable struct {
 	DescriptionSet bool
 	SensitiveSet   bool
 
-	ParsingMode tf_config.VariableParsingMode
+	ParsingMode var_config.VariableParsingMode
 	DeclRange   hcl.Range
 
 	metadata *ResourceMetadata
 }
 
-func NewVariable(v *tf_config.Variable) *Variable {
+func NewVariable(v *var_config.Variable) *Variable {
 	return &Variable{
 		ShortName:    v.Name,
 		Description:  v.Description,

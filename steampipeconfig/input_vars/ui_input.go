@@ -1,4 +1,4 @@
-package tf
+package input_vars
 
 import (
 	"bufio"
@@ -185,8 +185,7 @@ func (i *UIInput) init() {
 
 	if i.Colorize == nil {
 		i.Colorize = &colorstring.Colorize{
-			Colors:  colorstring.DefaultColors,
-			Disable: true,
+			Colors: colorstring.DefaultColors,
 		}
 	}
 }

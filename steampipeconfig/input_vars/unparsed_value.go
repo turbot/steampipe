@@ -1,4 +1,4 @@
-package tf
+package input_vars
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/tfdiags"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig/tf_config"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
 )
 
 // UnparsedVariableValue represents a variable value provided by the caller
@@ -24,7 +24,7 @@ type UnparsedVariableValue interface {
 	//
 	// If error diagnostics are returned, the resulting value may be invalid
 	// or incomplete.
-	ParseVariableValue(mode tf_config.VariableParsingMode) (*InputValue, tfdiags.Diagnostics)
+	ParseVariableValue(mode var_config.VariableParsingMode) (*InputValue, tfdiags.Diagnostics)
 }
 
 // ParseVariableValues processes a map of unparsed variable values by
@@ -54,12 +54,12 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 	seenUndeclaredInFile := 0
 
 	for name, rv := range vv {
-		var mode tf_config.VariableParsingMode
+		var mode var_config.VariableParsingMode
 		config, declared := decls[name]
 		if declared {
 			mode = config.ParsingMode
 		} else {
-			mode = tf_config.VariableParseLiteral
+			mode = var_config.VariableParseLiteral
 		}
 
 		val, valDiags := rv.ParseVariableValue(mode)
@@ -163,7 +163,7 @@ type UnparsedInteractiveVariableValue struct {
 
 //var _ UnparsedVariableValue = UnparsedInteractiveVariableValue{}
 
-func (v UnparsedInteractiveVariableValue) ParseVariableValue(mode tf_config.VariableParsingMode) (*InputValue, tfdiags.Diagnostics) {
+func (v UnparsedInteractiveVariableValue) ParseVariableValue(mode var_config.VariableParsingMode) (*InputValue, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 	val, valDiags := mode.Parse(v.Name, v.RawValue)
 	diags = diags.Append(valDiags)
