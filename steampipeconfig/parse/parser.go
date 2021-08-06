@@ -12,7 +12,7 @@ import (
 )
 
 // LoadFileData :: built a map of filepath to file data
-func LoadFileData(paths []string) (map[string][]byte, hcl.Diagnostics) {
+func LoadFileData(paths ...string) (map[string][]byte, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var fileData = map[string][]byte{}
 
@@ -76,7 +76,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 			mod = modconfig.NewMod(block.Labels[0], modPath, block.DefRange)
 		case modconfig.BlockTypeQuery:
 			// for any mappable resource, store the resource name
-			name := modconfig.BuildModResourceName(modconfig.ModBlockType(block.Type), block.Labels[0])
+			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
 			hclResources[name] = true
 		}
 		// TODO PANEL
@@ -114,13 +114,13 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	// todo change runctx to Decoder object
 
 	// create run context to handle dependency resolution
-	runCtx, diags := NewRunContext(mod, content, fileData)
+	runCtx, diags := NewRunContext(mod, content, fileData, opts.Variables)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to create run context", diags)
 	}
 
-	// now attempt to decode the mod
-	diags = decode(runCtx)
+	// perform initial decode to get dependencies
+	diags = decode(runCtx, opts)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
 	}
@@ -128,7 +128,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	// if eval is not complete, there must be dependencies - run again in dependency order
 	// (no need to do anything else here, this should be handled when building the eval context)
 	if !runCtx.EvalComplete() {
-		diags = decode(runCtx)
+		diags = decode(runCtx, opts)
 		if diags.HasErrors() {
 			return nil, plugin.DiagsToError("Failed to parse all mod hcl files", diags)
 		}

@@ -66,7 +66,9 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
 		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them").
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls. Cannot be used with '--tag'").
-		AddStringSliceFlag(constants.ArgTag, "", []string{}, "Key-Value pairs to filter controls based on the 'tags' property. To be provided as 'key=value'. Multiple can be given and are merged together. Cannot be used with '--where'")
+		AddStringSliceFlag(constants.ArgTag, "", []string{}, "Key-Value pairs to filter controls based on the 'tags' property. To be provided as 'key=value'. Multiple can be given and are merged together. Cannot be used with '--where'").
+		AddStringSliceFlag(constants.ArgVarFile, "", []string{}, "Specify a file containing variable values").
+		AddStringSliceFlag(constants.ArgVariable, "", []string{}, "Specify The value of a variable")
 
 	return cmd
 }
@@ -180,7 +182,8 @@ func initialiseCheck() *checkInitData {
 	}
 
 	// load workspace
-	initData.workspace, err = workspace.Load(viper.GetString(constants.ArgWorkspace))
+
+	initData.workspace, err = loadWorkspacePromptingForVariables(ctx)
 	if err != nil {
 		if !utils.IsCancelledError(err) {
 			err = utils.PrefixError(err, "failed to load workspace")

@@ -122,7 +122,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 		return nil
 	}
 
-	fileData, diags := parse.LoadFileData(configPaths)
+	fileData, diags := parse.LoadFileData(configPaths...)
 	if diags.HasErrors() {
 		log.Printf("[WARN] loadConfig: failed to load all config files: %v\n", err)
 		return plugin.DiagsToError("Failed to load all config files", diags)

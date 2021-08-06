@@ -49,27 +49,31 @@ var ModFileSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       string(modconfig.BlockTypeQuery),
+			Type:       modconfig.BlockTypeVariable,
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       string(modconfig.BlockTypeControl),
+			Type:       modconfig.BlockTypeQuery,
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       string(modconfig.BlockTypeBenchmark),
+			Type:       modconfig.BlockTypeControl,
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       string(modconfig.BlockTypeReport),
+			Type:       modconfig.BlockTypeBenchmark,
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       string(modconfig.BlockTypePanel),
+			Type:       modconfig.BlockTypeReport,
 			LabelNames: []string{"name"},
 		},
 		{
-			Type: string(modconfig.BlockTypeLocals),
+			Type:       modconfig.BlockTypePanel,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type: modconfig.BlockTypeLocals,
 		},
 	},
 }

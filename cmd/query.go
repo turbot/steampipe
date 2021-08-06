@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 
 	"github.com/turbot/steampipe/db"
-
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/interactive"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/turbot/steampipe/query/queryexecute"
 
@@ -55,8 +57,9 @@ Examples:
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.").
 		AddBoolFlag(constants.ArgWatch, "", true, "Watch SQL files in the current workspace (works only in interactive mode)").
 		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
-		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a query session (comma-separated)")
-
+		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a query session (comma-separated)").
+		AddStringSliceFlag(constants.ArgVarFile, "", []string{}, "Specify a file containing variable values").
+		AddStringSliceFlag(constants.ArgVariable, "", []string{}, "Specify The value of a variable")
 	return cmd
 }
 
@@ -98,22 +101,51 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
-	// perform rest of initialisation async
 	ctx := context.Background()
+
+	// load the workspace
+	w, err := loadWorkspacePromptingForVariables(ctx)
+	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+
+	// se we have loaded a workspace - be sure to close it
+	defer w.Close()
+
+	// perform rest of initialisation async
 	initDataChan := make(chan *db_common.QueryInitData, 1)
-	getQueryInitDataAsync(ctx, initDataChan, args)
+	getQueryInitDataAsync(ctx, w, initDataChan, args)
 
 	if interactiveMode {
 		queryexecute.RunInteractiveSession(&initDataChan)
-		return
 	} else {
 		ctx, cancel := context.WithCancel(ctx)
 		startCancelHandler(cancel)
+		// set global exit code
 		exitCode = queryexecute.RunBatchSession(ctx, initDataChan)
+
 	}
+
 }
 
-func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db_common.QueryInitData, args []string) {
+func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspace, error) {
+	w, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+	if err == nil {
+		return w, nil
+	}
+	missingVariablesError, ok := err.(modconfig.MissingVariableError)
+	// if there was an error which is NOT a MissingVariableError, return it
+	if !ok {
+		return nil, err
+	}
+	// so we have missing variables - prompt for them
+	if err := interactive.PromptForMissingVariables(ctx, missingVariablesError.MissingVariables); err != nil {
+		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
+		return nil, err
+	}
+	// ok we should have all variables now - reload workspace
+	return workspace.Load(viper.GetString(constants.ArgWorkspace))
+}
+
+func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, initDataChan chan *db_common.QueryInitData, args []string) {
 	go func() {
 		initData := db_common.NewQueryInitData()
 		defer func() {
@@ -130,16 +162,6 @@ func getQueryInitDataAsync(ctx context.Context, initDataChan chan *db_common.Que
 			initData.Result.Error = err
 			return
 		}
-
-		// load the workspace
-		workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-		if err != nil {
-			initData.Result.Error = utils.PrefixError(err, "failed to load workspace")
-			return
-		}
-
-		// se we have loaded a workspace - be sure to close it
-		defer workspace.Close()
 
 		// check if the required plugins are installed
 		if err := workspace.CheckRequiredPluginsInstalled(); err != nil {

@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
 )
 
 // A consistent detail message for all "not a valid identifier" diagnostics.
@@ -19,7 +20,7 @@ var missingVariableErrors = []string{
 	"Missing map element",
 }
 
-func decode(runCtx *RunContext) hcl.Diagnostics {
+func decode(runCtx *RunContext, opts *ParseModOptions) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 
 	// build list of blocks to decode
@@ -34,6 +35,10 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			Detail:   err.Error()})
 	}
 	for _, block := range blocks {
+		// if opts specifies block types, check whether this type is included
+		if len(opts.BlockTypes) > 0 && !helpers.StringSliceContains(opts.BlockTypes, block.Type) {
+			continue
+		}
 		// check name is valid
 		moreDiags := validateName(block)
 		if diags.HasErrors() {
@@ -46,7 +51,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 		switch block.Type {
 		case modconfig.BlockTypeLocals:
 			// special case decode logic for locals
-			locals, res := decodeLocals(block, runCtx.EvalCtx)
+			locals, res := decodeLocals(block, runCtx)
 			for _, local := range locals {
 				// handle the result
 				// - if successful, add resource to mod and variables maps
@@ -68,6 +73,13 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
+		case modconfig.BlockTypeVariable:
+			// special case decode logic for locals
+			variable, res := decodeVariable(block, runCtx)
+			moreDiags = handleDecodeResult(variable, res, block, runCtx)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
 		default:
 			// all other blocks are treated the same:
 			resource, res := decodeResource(block, runCtx)
@@ -83,7 +95,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 // return a shell resource for the given block
 func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResource {
 	var resource modconfig.HclResource
-	switch modconfig.ModBlockType(block.Type) {
+	switch block.Type {
 	case modconfig.BlockTypeMod:
 		// runCtx already contains the shell mod
 		resource = runCtx.Mod
@@ -101,7 +113,7 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResourc
 	return resource
 }
 
-func decodeLocals(block *hcl.Block, ctx *hcl.EvalContext) ([]*modconfig.Local, *decodeResult) {
+func decodeLocals(block *hcl.Block, runCtx *RunContext) ([]*modconfig.Local, *decodeResult) {
 	res := &decodeResult{}
 	attrs, diags := block.Body.JustAttributes()
 	if len(attrs) == 0 {
@@ -122,7 +134,7 @@ func decodeLocals(block *hcl.Block, ctx *hcl.EvalContext) ([]*modconfig.Local, *
 			continue
 		}
 		// try to evaluate expression
-		val, diags := attr.Expr.Value(ctx)
+		val, diags := attr.Expr.Value(runCtx.EvalCtx)
 		// handle any resulting diags, which may specify dependencies
 		res.handleDecodeDiags(diags)
 
@@ -130,6 +142,30 @@ func decodeLocals(block *hcl.Block, ctx *hcl.EvalContext) ([]*modconfig.Local, *
 		locals = append(locals, modconfig.NewLocal(name, val, attr.Range))
 	}
 	return locals, res
+}
+
+func decodeVariable(block *hcl.Block, runCtx *RunContext) (*modconfig.Variable, *decodeResult) {
+	res := &decodeResult{}
+
+	var variable *modconfig.Variable
+	v, diags := var_config.DecodeVariableBlock(block, false)
+	// handle any resulting diags, which may specify dependencies
+	res.handleDecodeDiags(diags)
+
+	// call post-decode hook
+	if res.Success() {
+		variable = modconfig.NewVariable(v)
+
+		if diags := variable.OnDecoded(block); diags.HasErrors() {
+			res.addDiags(diags)
+		}
+		// TODO for now we do not implement storing references for variables
+		// - special case code is required to exclude types from the reference detection code
+		//AddReferences(variable, block)
+	}
+
+	return variable, res
+
 }
 
 func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
@@ -243,17 +279,9 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 	if res.Success() {
 		// if resource supports metadata, save it
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
-			metadata, err := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.Mod)
-			if err != nil {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  err.Error(),
-					Subject:  &block.DefRange,
-				})
-			} else {
-				resourceWithMetadata.SetMetadata(metadata)
-			}
+			diags = addResourceMetadata(resource, block, runCtx, diags, resourceWithMetadata)
 		}
+		// add resource into the run context
 		moreDiags := runCtx.AddResource(resource, block)
 		if moreDiags.HasErrors() {
 			diags = append(diags, moreDiags...)
@@ -269,6 +297,20 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 	// update result diags
 	res.Diags = diags
 	return res.Diags
+}
+
+func addResourceMetadata(resource modconfig.HclResource, block *hcl.Block, runCtx *RunContext, diags hcl.Diagnostics, resourceWithMetadata modconfig.ResourceWithMetadata) hcl.Diagnostics {
+	metadata, err := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.Mod)
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  err.Error(),
+			Subject:  &block.DefRange,
+		})
+	} else {
+		resourceWithMetadata.SetMetadata(metadata)
+	}
+	return diags
 }
 
 // determine whether the diag is a dependency error, and if so, return a dependency object

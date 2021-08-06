@@ -12,7 +12,10 @@ func TraversalAsString(traversal hcl.Traversal) string {
 	s := traversal.SimpleSplit()
 	name := s.Abs.RootName()
 	for _, r := range s.Rel {
-		name += fmt.Sprintf(".%s", r.(hcl.TraverseAttr).Name)
+		switch t := r.(type) {
+		case hcl.TraverseAttr:
+			name += fmt.Sprintf(".%s", t.Name)
+		}
 	}
 	return name
 }

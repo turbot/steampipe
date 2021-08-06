@@ -25,7 +25,6 @@ type loadModTest struct {
 var loadWorkspaceOptions = &parse.ParseModOptions{
 	Flags: parse.CreatePseudoResources | parse.CreateDefaultMod,
 	ListOptions: &filehelpers.ListOptions{
-		Flags:   filehelpers.Files,
 		Exclude: []string{fmt.Sprintf("**/%s*", constants.WorkspaceDataDir)},
 		Flags:   filehelpers.Files,
 	},

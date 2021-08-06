@@ -5,17 +5,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"sync"
-
-	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/report/reportevents"
 
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
@@ -63,22 +61,12 @@ func Load(workspacePath string) (*Workspace, error) {
 		return nil, err
 	}
 
-	if err := workspace.loadMod(); err != nil {
+	if err := workspace.loadWorkspaceMod(); err != nil {
 		return nil, err
 	}
 
 	// return context error so calling code can handle cancellations
 	return workspace, nil
-}
-
-// clear all resource maps
-func (w *Workspace) reset() {
-	w.QueryMap = make(map[string]*modconfig.Query)
-	w.ControlMap = make(map[string]*modconfig.Control)
-	w.BenchmarkMap = make(map[string]*modconfig.Benchmark)
-	w.ModMap = make(map[string]*modconfig.Mod)
-	w.ReportMap = make(map[string]*modconfig.Report)
-	w.PanelMap = make(map[string]*modconfig.Panel)
 }
 
 func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(error)) error {
@@ -112,64 +100,6 @@ func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(erro
 	}
 
 	return nil
-}
-
-func (w *Workspace) LoadExclusions() error {
-	w.exclusions = []string{}
-
-	ignorePath := filepath.Join(w.Path, constants.WorkspaceIgnoreFile)
-	file, err := os.Open(ignorePath)
-	if err != nil {
-		// if file does not exist, just return
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if len(strings.TrimSpace(line)) != 0 && !strings.HasPrefix(line, "#") {
-			// add exclusion to the workspace path (to ensure relative patterns work)
-			absoluteExclusion := filepath.Join(w.Path, line)
-			w.exclusions = append(w.exclusions, absoluteExclusion)
-		}
-	}
-
-	if err = scanner.Err(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (w *Workspace) GetSortedBenchmarksAndControlNames() []string {
-	benchmarkList := []string{}
-	controlList := []string{}
-
-	for key := range w.BenchmarkMap {
-		benchmarkList = append(benchmarkList, key)
-	}
-
-	for key := range w.ControlMap {
-		controlList = append(controlList, key)
-	}
-
-	sort.Strings(benchmarkList)
-	sort.Strings(controlList)
-
-	return append(benchmarkList, controlList...)
-}
-
-func (w *Workspace) GetSortedNamedQueryNames() []string {
-	namedQueries := []string{}
-	for key := range w.GetQueryMap() {
-		namedQueries = append(namedQueries, key)
-	}
-	sort.Strings(namedQueries)
-	return namedQueries
 }
 
 func (w *Workspace) Close() {
@@ -264,11 +194,20 @@ func (w *Workspace) Mods() []*modconfig.Mod {
 	return res
 }
 
+// clear all resource maps
+func (w *Workspace) reset() {
+	w.QueryMap = make(map[string]*modconfig.Query)
+	w.ControlMap = make(map[string]*modconfig.Control)
+	w.BenchmarkMap = make(map[string]*modconfig.Benchmark)
+	w.ModMap = make(map[string]*modconfig.Mod)
+	w.ReportMap = make(map[string]*modconfig.Report)
+	w.PanelMap = make(map[string]*modconfig.Panel)
+}
+
 // determine whether to load files recursively or just from the top level folder
 // if there is a mod file in the workspace folder, load recursively
 func (w *Workspace) setListFlag() {
-
-	modFilePath := filepath.Join(w.Path, "mod.sp")
+	modFilePath := filepath.Join(w.Path, constants.WorkspaceModFileName)
 	_, err := os.Stat(modFilePath)
 	modFileExists := err == nil
 	if modFileExists {
@@ -279,10 +218,11 @@ func (w *Workspace) setListFlag() {
 	}
 }
 
-func (w *Workspace) loadMod() error {
-	// parse all hcl files in the workspace folder (non recursively) and either parse or create a mod
-	// it is valid for 0 or 1 mod to be defined (if no mod is defined, create a default one)
-	// populate mod with all hcl resources we parse
+func (w *Workspace) loadWorkspaceMod() error {
+	inputVariables, err := w.getAllVariables()
+	if err != nil {
+		return err
+	}
 
 	// clear all resource maps
 	w.reset()
@@ -296,6 +236,7 @@ func (w *Workspace) loadMod() error {
 			Flags:   w.listFlag,
 			Exclude: w.exclusions,
 		},
+		Variables: inputVariables.JustValues(),
 	}
 
 	m, err := steampipeconfig.LoadMod(w.Path, opts)

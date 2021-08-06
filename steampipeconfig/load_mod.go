@@ -50,9 +50,6 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 	if err != nil {
 		return nil, err
 	}
-	// at this point we have loaded all mod resources, but have no idea of the control hierarchy
-	// populate the parent fields for all mods and benchmarslks
-	//mod.BuildControTree()
 
 	return
 }
@@ -67,7 +64,7 @@ func parseMod(modPath string, pseudoResources []modconfig.MappableResource, opts
 		return nil, err
 	}
 
-	fileData, diags := parse.LoadFileData(sourcePaths)
+	fileData, diags := parse.LoadFileData(sourcePaths...)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to load all mod files", diags)
 	}
@@ -86,7 +83,7 @@ func parseMod(modPath string, pseudoResources []modconfig.MappableResource, opts
 // GetModFileExtensions :: return list of all file extensions we care about
 // this will be the mod data extension, plus any registered extensions registered in fileToResourceMap
 func GetModFileExtensions() []string {
-	return append(modconfig.RegisteredFileExtensions(), constants.ModDataExtension)
+	return append(modconfig.RegisteredFileExtensions(), constants.ModDataExtension, constants.VariablesExtension)
 }
 
 // build list of all filepaths we need to parse/load the mod
