@@ -8,6 +8,8 @@ on:
 env:
   STEAMPIPE_UPDATE_CHECK: false
 
+# Changing this so that we can push to the PR gain
+
 jobs:
   goreleaser:
     name: Build
@@ -83,7 +85,7 @@ jobs:
         with:
           name: build-artifact-linux
           path: ~/artifacts
-
+ 
       - name: Download Darwin Build Artifacts
         uses: actions/download-artifact@v2
         if: ${{ matrix.platform == 'macos-latest' }}
