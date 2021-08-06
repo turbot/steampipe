@@ -1,3 +1,11 @@
+## v0.7.2 [2021-08-06]
+_Bug fixes_
+* Fix issue where interactive prompt hangs with a `;` input. ([#700](https://github.com/turbot/steampipe/issues/700))
+* Fix cancellation not working when database client becomes unresponsive. ([#733](https://github.com/turbot/steampipe/issues/733))
+* Prevent update checks from getting triggered for `service stop` ([#745](https://github.com/turbot/steampipe/issues/745))
+* Add `initializing` spinner while waiting for asynchronous initialization to finish ([#671](https://github.com/turbot/steampipe/issues/671))
+* Prevent `interactive prompt` from disappearing after asynchronous messages are shown. ([#713](https://github.com/turbot/steampipe/issues/713))
+
 ## v0.7.1 [2021-07-29]
 _What's new?_
 * Add `open_graph` property to `steampipe_mod` reflection table. ([#692](https://github.com/turbot/steampipe/issues/692))
