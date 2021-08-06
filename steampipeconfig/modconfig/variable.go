@@ -13,12 +13,12 @@ type Variable struct {
 	ShortName string
 	FullName  string
 
-	Description    string
-	Default        cty.Value
-	Type           cty.Type
-	Sensitive      bool
+	Description string
+	Default     cty.Value
+	Type        cty.Type
+	//Sensitive      bool
 	DescriptionSet bool
-	SensitiveSet   bool
+	//SensitiveSet   bool
 
 	ParsingMode var_config.VariableParsingMode
 	DeclRange   hcl.Range
@@ -28,14 +28,14 @@ type Variable struct {
 
 func NewVariable(v *var_config.Variable) *Variable {
 	return &Variable{
-		ShortName:    v.Name,
-		Description:  v.Description,
-		FullName:     fmt.Sprintf("var.%s", v.Name),
-		Default:      v.Default,
-		Type:         v.Type,
-		Sensitive:    v.Sensitive,
-		SensitiveSet: v.SensitiveSet,
-		ParsingMode:  v.ParsingMode,
+		ShortName:   v.Name,
+		Description: v.Description,
+		FullName:    fmt.Sprintf("var.%s", v.Name),
+		Default:     v.Default,
+		Type:        v.Type,
+		//Sensitive:    v.Sensitive,
+		//SensitiveSet: v.SensitiveSet,
+		ParsingMode: v.ParsingMode,
 
 		DeclRange: v.DeclRange,
 	}

@@ -25,11 +25,11 @@ type Variable struct {
 	Default     cty.Value
 	Type        cty.Type
 	ParsingMode VariableParsingMode
-	Validations []*VariableValidation
-	Sensitive   bool
+	//Validations []*VariableValidation
+	//Sensitive   bool
 
 	DescriptionSet bool
-	SensitiveSet   bool
+	//SensitiveSet   bool
 
 	DeclRange hcl.Range
 }
@@ -97,11 +97,11 @@ func DecodeVariableBlock(block *hcl.Block, override bool) (*Variable, hcl.Diagno
 		v.ParsingMode = parseMode
 	}
 
-	if attr, exists := content.Attributes["sensitive"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, nil, &v.Sensitive)
-		diags = append(diags, valDiags...)
-		v.SensitiveSet = true
-	}
+	//if attr, exists := content.Attributes["sensitive"]; exists {
+	//	valDiags := gohcl.DecodeExpression(attr.Expr, nil, &v.Sensitive)
+	//	diags = append(diags, valDiags...)
+	//	v.SensitiveSet = true
+	//}
 
 	if attr, exists := content.Attributes["default"]; exists {
 		val, valDiags := attr.Expr.Value(nil)
@@ -133,10 +133,10 @@ func DecodeVariableBlock(block *hcl.Block, override bool) (*Variable, hcl.Diagno
 	for _, block := range content.Blocks {
 		switch block.Type {
 
-		case "validation":
-			vv, moreDiags := decodeVariableValidationBlock(v.Name, block, override)
-			diags = append(diags, moreDiags...)
-			v.Validations = append(v.Validations, vv)
+		//case "validation":
+		//	vv, moreDiags := decodeVariableValidationBlock(v.Name, block, override)
+		//	diags = append(diags, moreDiags...)
+		//	v.Validations = append(v.Validations, vv)
 
 		default:
 			// The above cases should be exhaustive for all block types
