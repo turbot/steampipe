@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -83,7 +84,7 @@ func StartImplicitService(invoker Invoker, refreshConnections bool) error {
 
 	log.Println("[TRACE] start implicit service")
 
-	if _, err := StartDB(constants.DatabaseDefaultPort, ListenTypeLocal, invoker, refreshConnections); err != nil {
+	if _, err := StartDB(*steampipeconfig.Config.DatabaseOptions.Port, ListenTypeLocal, invoker, refreshConnections); err != nil {
 		return err
 	}
 	return nil
