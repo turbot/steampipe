@@ -7,7 +7,7 @@ on:
 
 env:
   STEAMPIPE_UPDATE_CHECK: false
-#diff
+
 jobs:
   goreleaser:
     name: Build
