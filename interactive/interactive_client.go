@@ -13,8 +13,6 @@ import (
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/display"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
