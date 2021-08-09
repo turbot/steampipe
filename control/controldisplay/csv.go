@@ -40,11 +40,11 @@ func (r CSVRenderer) renderControl(run *controlexecute.ControlRun, group *contro
 		record := []string{}
 
 		for _, groupColumn := range groupColumns {
-			val, _ := helpers.GetFieldValueFromInterface(group, groupColumn.fieldName)
+			val, _ := helpers.GetNestedFieldValueFromInterface(group, groupColumn.fieldName)
 			record = append(record, typehelpers.ToString(val))
 		}
 		for _, rowColumn := range rowColumns {
-			val, _ := helpers.GetFieldValueFromInterface(row, rowColumn.fieldName)
+			val, _ := helpers.GetNestedFieldValueFromInterface(row, rowColumn.fieldName)
 			record = append(record, typehelpers.ToString(val))
 		}
 		dimensions := r.resultDimensionMap(row)
