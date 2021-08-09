@@ -128,38 +128,31 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runServiceStartCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
-			exitCode = -1
+			if exitCode == 0 {
+				// there was an error and the exitcode
+				// was not set to a non-zero value.
+				// set it
+				exitCode = 1
+			}
 		}
 	}()
 
 	port := cmdconfig.DatabasePort()
 	if port < 1 || port > 65535 {
-		fmt.Println("Invalid Port :: MUST be within range (1:65535)")
+		panic("Invalid Port :: MUST be within range (1:65535)")
 	}
 
 	listen := local_db.StartListenType(cmdconfig.ListenAddress())
-	if err := listen.IsValid(); err != nil {
-		utils.ShowError(err)
-		return
-	}
+	utils.FailOnError(listen.IsValid())
 
 	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
-	if err := invoker.IsValid(); err != nil {
-		utils.ShowError(err)
-		return
-	}
+	utils.FailOnError(invoker.IsValid())
 
 	err := local_db.EnsureDBInstalled()
-	if err != nil {
-		utils.ShowError(err)
-		return
-	}
+	utils.FailOnError(err)
 
 	info, err := local_db.GetStatus()
-	if err != nil {
-		utils.ShowErrorWithMessage(err, "could not fetch service information")
-		return
-	}
+	utils.FailOnErrorWithMessage(err, "could not fetch service information")
 
 	if info != nil {
 		if info.Invoker == constants.InvokerService {
@@ -169,26 +162,23 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 		// check that we have the same port and listen parameters
 		if port != info.Port {
-			utils.ShowError(fmt.Errorf("service is already running on port %d - cannot change port while it's running", info.Port))
-			return
+			utils.FailOnError(fmt.Errorf("service is already running on port %d - cannot change port while it's running", info.Port))
 		}
 		if listen != info.ListenType {
-			utils.ShowError(fmt.Errorf("service is already running and listening on %s - cannot change listen type while it's running", info.ListenType))
-			return
+			utils.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen type while it's running", info.ListenType))
 		}
 
 		// convert
 		info.Invoker = constants.InvokerService
 		err = info.Save()
 		if err != nil {
-			utils.ShowErrorWithMessage(err, "service was already running, but could not make it persistent")
+			utils.FailOnErrorWithMessage(err, "service was already running, but could not make it persistent")
 		}
 	} else {
 		// start db, refreshing connections
 		status, err := local_db.StartDB(cmdconfig.DatabasePort(), listen, invoker)
 		if err != nil {
-			utils.ShowError(err)
-			return
+			utils.FailOnError(err)
 		}
 
 		if status == local_db.ServiceFailedToStart {
@@ -197,12 +187,10 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 
 		if status == local_db.ServiceAlreadyRunning {
-			utils.ShowError(fmt.Errorf("steampipe service is already running"))
-			return
+			utils.FailOnError(fmt.Errorf("steampipe service is already running"))
 		}
 		if err := local_db.RefreshConnectionAndSearchPaths(invoker); err != nil {
-			utils.ShowError(err)
-			return
+			utils.FailOnError(err)
 		}
 		info, _ = local_db.GetStatus()
 	}
@@ -259,13 +247,19 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runServiceRestartCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
+			if exitCode == 0 {
+				// there was an error and the exitcode
+				// was not set to a non-zero value.
+				// set it
+				exitCode = 1
+			}
 		}
 	}()
 
 	currentServiceStatus, err := local_db.GetStatus()
 
 	if err != nil {
-		utils.ShowError(errors.New("could not retrieve service status"))
+		utils.FailOnError(errors.New("could not retrieve service status"))
 		return
 	}
 
@@ -277,8 +271,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 	stopStatus, err := local_db.StopDB(viper.GetBool(constants.ArgForce), constants.InvokerService, nil)
 
 	if err != nil {
-		utils.ShowErrorWithMessage(err, "could not stop current instance")
-		return
+		utils.FailOnErrorWithMessage(err, "could not stop current instance")
 	}
 
 	if stopStatus != local_db.ServiceStopped {
@@ -305,8 +298,7 @@ to force a restart.
 	}
 
 	if err := local_db.RefreshConnectionAndSearchPaths(constants.InvokerService); err != nil {
-		utils.ShowError(err)
-		return
+		utils.FailOnError(err)
 	}
 
 	fmt.Println("Steampipe service restarted")
@@ -432,6 +424,7 @@ to force a shutdown
 	}
 
 }
+
 func showAllStatus() {
 	var processes []*psutils.Process
 	var err error
