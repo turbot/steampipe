@@ -26,7 +26,7 @@ type ResultRow struct {
 	Resource   string             `json:"resource" csv:"resource"`
 	Status     string             `json:"status" csv:"status"`
 	Dimensions []Dimension        `json:"dimensions"`
-	Control    *modconfig.Control `json:"-"`
+	Control    *modconfig.Control `json:"-" csv:"control_id:FullName,control_title:Title,control_description:Description"`
 }
 
 // AddDimension checks whether a column value is a scalar type, and if so adds it to the Dimensions map
