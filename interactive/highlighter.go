@@ -14,12 +14,12 @@ type Highlighter struct {
 	style     *chroma.Style
 }
 
-func newHighlighter(lexer chroma.Lexer, formatter chroma.Formatter, style *chroma.Style) Highlighter {
-	return Highlighter{
-		lexer:     lexer,
-		formatter: formatter,
-		style:     style,
-	}
+func newHighlighter(lexer chroma.Lexer, formatter chroma.Formatter, style *chroma.Style) *Highlighter {
+	h := new(Highlighter)
+	h.formatter = formatter
+	h.lexer = lexer
+	h.style = style
+	return h
 }
 
 func (h *Highlighter) Highlight(d prompt.Document) ([]byte, error) {
