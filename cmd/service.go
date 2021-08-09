@@ -343,6 +343,95 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
+func runServiceStopCmd(cmd *cobra.Command, args []string) {
+	utils.LogTime("runServiceStopCmd stop")
+
+	stoppedChan := make(chan bool, 1)
+	var status local_db.StopStatus
+	var err error
+	var info *local_db.RunningDBInstanceInfo
+
+	spinner := display.StartSpinnerAfterDelay("", constants.SpinnerShowTimeout, stoppedChan)
+
+	defer func() {
+		utils.LogTime("runServiceStopCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+			if exitCode == 0 {
+				// there was an error and the exitcode
+				// was not set to a non-zero value.
+				// set it
+				exitCode = 1
+			}
+		}
+	}()
+
+	force := cmdconfig.Viper().GetBool(constants.ArgForce)
+	if force {
+		status, err = local_db.StopDB(force, constants.InvokerService, spinner)
+	} else {
+		info, err = local_db.GetStatus()
+		if err != nil {
+			display.StopSpinner(spinner)
+			utils.FailOnErrorWithMessage(err, "could not stop service")
+		}
+		if info == nil {
+			display.StopSpinner(spinner)
+			fmt.Println("Service is not running")
+			return
+		}
+		if info.Invoker != constants.InvokerService {
+			display.StopSpinner(spinner)
+			printRunningImplicit(info.Invoker)
+			return
+		}
+
+		// check if there are any connected clients to the service
+		connectedClientCount, err := local_db.GetCountOfConnectedClients()
+		if err != nil {
+			display.StopSpinner(spinner)
+			utils.FailOnErrorWithMessage(err, "error during service stop")
+		}
+
+		if connectedClientCount > 0 {
+			display.StopSpinner(spinner)
+			printClientsConnected()
+			return
+		}
+
+		status, _ = local_db.StopDB(false, constants.InvokerService, spinner)
+	}
+
+	if err != nil {
+		display.StopSpinner(spinner)
+		utils.ShowError(err)
+		return
+	}
+
+	display.StopSpinner(spinner)
+
+	switch status {
+	case local_db.ServiceStopped:
+		fmt.Println("Steampipe database service stopped")
+	case local_db.ServiceNotRunning:
+		fmt.Println("Service is not running")
+	case local_db.ServiceStopFailed:
+		fmt.Println("Could not stop service")
+	case local_db.ServiceStopTimedOut:
+		fmt.Println(`
+Service stop operation timed-out.
+
+This is probably because other clients are connected to the database service.
+
+Disconnect all clients, or use	
+	steampipe service stop --force
+
+to force a shutdown
+		`)
+
+	}
+
+}
 func showAllStatus() {
 	var processes []*psutils.Process
 	var err error
@@ -445,91 +534,6 @@ To keep the service running after the %s session completes, use %s.
 	}
 
 	fmt.Println(statusMessage)
-}
-
-func runServiceStopCmd(cmd *cobra.Command, args []string) {
-	utils.LogTime("runServiceStopCmd stop")
-
-	stoppedChan := make(chan bool, 1)
-	var status local_db.StopStatus
-	var err error
-	var info *local_db.RunningDBInstanceInfo
-
-	spinner := display.StartSpinnerAfterDelay("", constants.SpinnerShowTimeout, stoppedChan)
-
-	defer func() {
-		utils.LogTime("runServiceStopCmd end")
-		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
-		}
-	}()
-
-	force := cmdconfig.Viper().GetBool(constants.ArgForce)
-	if force {
-		status, err = local_db.StopDB(force, constants.InvokerService, spinner)
-	} else {
-		info, err = local_db.GetStatus()
-		if err != nil {
-			display.StopSpinner(spinner)
-			utils.ShowErrorWithMessage(err, "could not stop service")
-			return
-		}
-		if info == nil {
-			display.StopSpinner(spinner)
-			fmt.Println("Service is not running")
-			return
-		}
-		if info.Invoker != constants.InvokerService {
-			display.StopSpinner(spinner)
-			printRunningImplicit(info.Invoker)
-			return
-		}
-
-		// check if there are any connected clients to the service
-		connectedClientCount, err := local_db.GetCountOfConnectedClients()
-		if err != nil {
-			display.StopSpinner(spinner)
-			utils.ShowError(utils.PrefixError(err, "error during service stop"))
-		}
-
-		if connectedClientCount > 0 {
-			display.StopSpinner(spinner)
-			printClientsConnected()
-			return
-		}
-
-		status, _ = local_db.StopDB(false, constants.InvokerService, spinner)
-	}
-
-	if err != nil {
-		display.StopSpinner(spinner)
-		utils.ShowError(err)
-		return
-	}
-
-	display.StopSpinner(spinner)
-
-	switch status {
-	case local_db.ServiceStopped:
-		fmt.Println("Steampipe database service stopped")
-	case local_db.ServiceNotRunning:
-		fmt.Println("Service is not running")
-	case local_db.ServiceStopFailed:
-		fmt.Println("Could not stop service")
-	case local_db.ServiceStopTimedOut:
-		fmt.Println(`
-Service stop operation timed-out.
-
-This is probably because other clients are connected to the database service.
-
-Disconnect all clients, or use	
-	steampipe service stop --force
-
-to force a shutdown
-		`)
-
-	}
-
 }
 
 func printRunningImplicit(invoker constants.Invoker) {
