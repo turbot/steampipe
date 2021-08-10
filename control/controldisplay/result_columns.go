@@ -32,8 +32,16 @@ func newResultColumns(e *controlexecute.ExecutionTree) *ResultColumns {
 
 	sort.Strings(dimensionColumns)
 	sort.Strings(tagColumns)
-	sort.Slice(rowColumns[:], func(i, j int) bool {
-		return rowColumns[i].fieldName < rowColumns[j].fieldName
+	sort.SliceStable(rowColumns[:], func(i, j int) bool {
+		iControlField := strings.HasPrefix(rowColumns[i].fieldName, "Control")
+		jControlField := strings.HasPrefix(rowColumns[j].fieldName, "Control")
+
+		// if both are `Control` fields - let them be as is
+		// if one of them is a `Control` field - bring it to the front
+		return iControlField != jControlField
+
+		// TODO :: try to make this a bit generic, so that it's not only the
+		// `Control` subfields which are considered
 	})
 
 	allColumns := []string{}
