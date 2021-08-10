@@ -1,9 +1,11 @@
 package controldisplay
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
+	"github.com/olekukonko/tablewriter"
 	"github.com/turbot/steampipe/control/controlexecute"
 )
 
@@ -26,19 +28,23 @@ func NewSummaryRenderer(resultTree *controlexecute.ExecutionTree, width int) *Su
 }
 
 func (r SummaryRenderer) Render() string {
-	return fmt.Sprintf(`
-%s
-%s
-%s
-%s
-%s
-`,
-		r.renderStatus("Alarm", r.resultTree.Root.Summary.Status.Alarm, r.resultTree.Root.Summary.Status.TotalCount()),
-		r.renderStatus("Ok", r.resultTree.Root.Summary.Status.Ok, r.resultTree.Root.Summary.Status.TotalCount()),
-		r.renderStatus("Info", r.resultTree.Root.Summary.Status.Info, r.resultTree.Root.Summary.Status.TotalCount()),
-		r.renderStatus("Skip", r.resultTree.Root.Summary.Status.Skip, r.resultTree.Root.Summary.Status.TotalCount()),
-		r.renderStatus("Error", r.resultTree.Root.Summary.Status.Error, r.resultTree.Root.Summary.Status.TotalCount()),
-	)
+	outbuf := bytes.NewBufferString("")
+	table := tablewriter.NewWriter(outbuf)
+	table.SetHeader([]string{})                // no headers please
+	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
+	table.SetAutoWrapText(false)               // let's not wrap the text
+	table.SetBorder(true)                      // there needs to be a border to give the dialog feel
+	table.AppendBulk([][]string{
+		{r.renderStatus("Alarm", r.resultTree.Root.Summary.Status.Alarm, r.resultTree.Root.Summary.Status.TotalCount())},
+		{r.renderStatus("Ok", r.resultTree.Root.Summary.Status.Ok, r.resultTree.Root.Summary.Status.TotalCount())},
+		{r.renderStatus("Info", r.resultTree.Root.Summary.Status.Info, r.resultTree.Root.Summary.Status.TotalCount())},
+		{r.renderStatus("Skip", r.resultTree.Root.Summary.Status.Skip, r.resultTree.Root.Summary.Status.TotalCount())},
+		{r.renderStatus("Error", r.resultTree.Root.Summary.Status.Error, r.resultTree.Root.Summary.Status.TotalCount())},
+	}) // Add Bulk Data
+
+	table.Render()
+
+	return outbuf.String()
 }
 
 func (r SummaryRenderer) renderStatus(status string, count int, total int) string {
