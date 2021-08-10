@@ -3,6 +3,7 @@ package controldisplay
 import (
 	"fmt"
 	"log"
+	"runtime/debug"
 	"strings"
 )
 
@@ -31,5 +32,10 @@ func (r SpacerRenderer) Render() string {
 
 	// allow for trailing space
 	numberOfDots := r.width - 1
+	if numberOfDots < 0 {
+		log.Printf("[WARN] numberOfDots %d, width: %d", numberOfDots, r.width)
+		debug.PrintStack()
+		numberOfDots = 0
+	}
 	return fmt.Sprintf("%s ", ControlColors.Spacer(strings.Repeat(".", numberOfDots)))
 }
