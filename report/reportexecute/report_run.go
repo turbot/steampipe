@@ -87,7 +87,7 @@ func (r *ReportRun) SetComplete() {
 
 // RunComplete implements ReportNodeRun
 func (r *ReportRun) RunComplete() bool {
-	return r.runStatus == reportinterfaces.ReportRunComplete || r.runStatus == reportinterfaces.ReportRunComplete
+	return r.runStatus == reportinterfaces.ReportRunComplete
 }
 
 // ChildrenComplete implements ReportNodeRun
