@@ -266,6 +266,7 @@ func TestCsvFormatter(t *testing.T) {
 	spacer := strings.TrimSpace(output)
 	if spacer != expectedCsvOutput {
 		t.Log(`"expected" is not equal to "output"`)
+		t.Logf(spacer)
 		t.FailNow()
 	}
 }
