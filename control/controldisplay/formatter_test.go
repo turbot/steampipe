@@ -17,10 +17,25 @@ import (
 var rootBenchmark = modconfig.Benchmark{}
 var childBenchmark1 = modconfig.Benchmark{}
 var childBenchmark2 = modconfig.Benchmark{}
-var c11 = modconfig.Control{}
-var c12 = modconfig.Control{}
-var c21 = modconfig.Control{}
-var c22 = modconfig.Control{}
+
+var desc = "Dummy control for unit testing"
+var title = "DummyControl"
+var c11 = modconfig.Control{
+	Title: &title,
+	Description: &desc,
+	}
+var c12 = modconfig.Control{
+	Title: &title,
+	Description: &desc,
+}
+var c21 = modconfig.Control{
+	Title: &title,
+	Description: &desc,
+}
+var c22 = modconfig.Control{
+	Title: &title,
+	Description: &desc,
+}
 
 func addControls() {
 	childBenchmark1.AddChild(&c11)
@@ -233,14 +248,16 @@ func TestJsonFormatter(t *testing.T) {
 	}
 }
 
-const expectedCsvOutput = `,,,,,,is pretty insecure,some other resource,alarm
-,,,,,,is pretty insecure,some other resource,alarm
-,,,,,,is pretty insecure,some other resource,alarm
-,,,,,,is pretty insecure,some other resource,alarm`
+const expectedCsvOutput = `group_id,group_title,group_description,control_id,control_title,control_description,reason,resource,status
+,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm
+,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm
+,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm
+,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm`
 
 func TestCsvFormatter(t *testing.T) {
 	tree.DimensionColorGenerator, _ = controlexecute.NewDimensionColorGenerator(4, 27)
 	viper.Set(constants.ArgSeparator, ",")
+	viper.Set(constants.ArgHeader, true)
 	f := new(CSVFormatter)
 	reader, _ := f.Format(context.Background(), tree)
 	b := bytes.NewBufferString("")
