@@ -1,0 +1,58 @@
+<html>
+
+<head>
+    <title>Steampipe Report</title>
+    <style>
+        /**
+       {{- template "normalize_css" -}}
+       **/
+        /**
+       {{- template "foundation_css" -}}
+       **/
+    </style>
+    <script>
+        /**
+        {{- template "script" -}}
+         **/
+    </script>
+    <meta charset="UTF-8">
+</head>
+
+<body>
+    {{ template "group_template" .Root }}
+    {{ range .Root.Groups }}
+    {{ template "group_template" . }}
+    {{ end }}
+</body>
+
+</html>
+
+
+{{ define "group_template"}}
+<ul>
+    <div>
+        {{ range .Groups }}
+        {{template "group_template" . }}
+        {{ end }}
+    </div>
+    <div>
+        {{ range .ControlRuns }}
+        {{template "control_run_template" . }}
+        {{ end }}
+    </div>
+</ul>
+{{ end }}
+
+{{ define "control_run_template"}}
+<ul>
+    <div>
+        {{ range .Rows }}
+        <ul>
+            {{ .Resource }}
+            <li>Status: {{.Status}}</li>
+            <li>Reason: {{.Reason}}</li>
+        </ul>
+        {{ end }}
+    </div>
+</ul>
+{{ end }}
