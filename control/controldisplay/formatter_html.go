@@ -3,6 +3,7 @@ package controldisplay
 import (
 	"bytes"
 	"context"
+	"embed"
 	"html/template"
 	"io"
 	"strings"
@@ -12,9 +13,11 @@ import (
 
 type HTMLFormatter struct{}
 
+//go:embed html_template/*
+var templateFS embed.FS
+
 func (j *HTMLFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
-	const temp = `<p>Title: {{.Root.Title}}</p>`
-	t, err := template.New("test").Parse(temp)
+	t, err := template.ParseFS(templateFS, "html_template/*")
 	if err != nil {
 		return nil, err
 	}
