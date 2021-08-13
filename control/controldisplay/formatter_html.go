@@ -13,15 +13,13 @@ import (
 type HTMLFormatter struct{}
 
 func (j *HTMLFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
-	t := template.New("test")
-	const temp1 = `<p>Title: {{.Root.Title}}</p>`
-
-	a, err := t.Parse(temp1)
+	const temp = `<p>Title: {{.Root.Title}}</p>`
+	t, err := template.New("test").Parse(temp)
 	if err != nil {
 		return nil, err
 	}
 	b := bytes.NewBufferString("")
-	res := a.Execute(b, tree)
+	res := t.Execute(b, tree)
 	if res != nil {
 		return nil, res
 	}
