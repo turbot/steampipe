@@ -16,6 +16,7 @@ const (
 	OutputFormatBrief = "brief"
 	OutputFormatCSV   = "csv"
 	OutputFormatJSON  = "json"
+	OutputFormatHTML	= "html"
 )
 
 var outputFormatters map[string]Formatter = map[string]Formatter{
@@ -29,6 +30,7 @@ var outputFormatters map[string]Formatter = map[string]Formatter{
 var exportFormatters map[string]Formatter = map[string]Formatter{
 	OutputFormatCSV:  &CSVFormatter{},
 	OutputFormatJSON: &JSONFormatter{},
+	OutputFormatHTML: &HTMLFormatter{},
 }
 
 type CheckExportTarget struct {
@@ -52,7 +54,7 @@ type Formatter interface {
 func GetExportFormatter(exportFormat string) (Formatter, error) {
 	formatter, found := exportFormatters[exportFormat]
 	if !found {
-		return nil, fmt.Errorf("invalid export format '%s' - must be one of json,csv", exportFormat)
+		return nil, fmt.Errorf("invalid export format '%s' - must be one of json,csv,html", exportFormat)
 	}
 	return formatter, nil
 }
@@ -68,7 +70,7 @@ func GetOutputFormatter(outputFormat string) (Formatter, error) {
 func InferFormatFromExportFileName(filename string) (string, error) {
 	extension := strings.TrimPrefix(filepath.Ext(filename), ".")
 	switch extension {
-	case "csv", "json":
+	case "csv", "json", "html":
 		return extension, nil
 	default:
 		// return blank, so that it fails when it looks
