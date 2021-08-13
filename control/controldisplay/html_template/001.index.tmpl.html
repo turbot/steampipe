@@ -10,11 +10,6 @@
        {{- template "foundation_css" -}}
        **/
     </style>
-    <script>
-        /**
-        {{- template "script" -}}
-         **/
-    </script>
     <meta charset="UTF-8">
 </head>
 
@@ -23,6 +18,12 @@
     {{ range .Root.Groups }}
     {{ template "group_template" . }}
     {{ end }}
+
+    <script>
+        /**
+        {{- template "script" -}}
+         **/
+    </script>
 </body>
 
 </html>
