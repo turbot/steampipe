@@ -1,0 +1,254 @@
+/*
+{{ define "style_css" }}
+/*  */
+
+:root {
+  --color-background: #fff;
+  --color-foreground: #000;
+  --color-foreground-light: #666;
+
+  --color-link: #2645c5;
+
+  --color-error: #e00;
+  --color-warning: #f9a825;
+
+  --color-table-border: theme("colors.gray.200");
+  --color-table-divide: theme("colors.gray.200");
+  --color-table-head: theme("colors.steampipe-black");
+
+  --container-bgcolor: rgb(246, 248, 250);
+
+  --alarm-color: #801925;
+  --alarm-bgcolor: #f7d4d8;
+
+  --error-color: #801925;
+  --error-bgcolor: #f7d4d8;
+
+  --ok-color: #077151;
+  --ok-bgcolor: #cef2e7;
+
+  --info-color: #2f5f95;
+  --info-bgcolor: #dcecfe;
+
+  --skip-color: #949595;
+  --skip-bgcolor: #fdfefe;
+
+  --indent: 10px;
+  --status-separator: "•";
+  --status-separator-color: #000;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
+    Helvetica Neue, Arial, Noto Sans, Liberation Sans, sans-serif,
+    Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+  background-color: var(--container-bgcolor);
+}
+
+.brand {
+  border-bottom: 1px #ddd dotted;
+  margin-bottom: var(--indent);
+}
+
+.brand > img.logo {
+  width: 200px;
+  margin-top: var(--indent);
+  margin-bottom: var(--indent);
+  margin-right: var(--indent);
+  padding-right: var(--indent);
+  border-right: 1px solid #000;
+}
+
+.group {
+  padding-left: var(--indent);
+  border-left: 1px #ddd dotted;
+}
+
+.container {
+  padding: var(--indent);
+}
+
+.container > .group {
+  border-left: none;
+}
+
+.controls {
+  padding-left: var(--indent);
+  border-left: 1px #ddd dotted;
+}
+
+.group .controls > .control {
+  margin-bottom: var(--indent);
+}
+
+/** ResultError **/
+.group .controls > .control > div.run-error {
+  margin-left: var(--indent);
+  position: relative;
+  padding: 1rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  color: var(--color-error);
+  background-color: var(--error-bgcolor);
+}
+.group .controls > .control > div.run-error > span {
+  font-weight: bold;
+  margin-right: var(--indent);
+}
+/** ResultError **/
+
+/** ResultRow **/
+.group .controls > .control > div.result-row {
+  margin-left: var(--indent);
+  position: relative;
+  padding: 1rem 1rem;
+  /* margin-bottom: 1rem; */
+  border: 1px solid transparent;
+  /* border-radius: 0.25rem; */
+  display: flex;
+  flex-direction: row;
+}
+.group .controls > .control > div.result-row > .status {
+  width: 10rem;
+  text-transform: uppercase;
+}
+
+.group .controls > .control > div.result-row > .reason-resource {
+  width: 50rem;
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+}
+
+.group .controls > .control > div.result-row > .dimension {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.group .controls > .control > div.result-row.alarm {
+  color: var(--alarm-color);
+  background-color: var(--alarm-bgcolor);
+}
+.group .controls > .control > div.result-row.error {
+  color: var(--error-color);
+  background-color: var(--error-bgcolor);
+}
+.group .controls > .control > div.result-row.ok {
+  color: var(--ok-color);
+  background-color: var(--ok-bgcolor);
+}
+.group .controls > .control > div.result-row.info {
+  color: var(--info-color);
+  background-color: var(--info-bgcolor);
+}
+.group .controls > .control > div.result-row.skip {
+  color: var(--skip-color);
+  background-color: var(--skip-bgcolor);
+}
+
+.group .controls > .control > div.result-row > span.status {
+  font-weight: bold;
+  margin-right: var(--indent);
+}
+.group .controls > .control > div.result-row > span.reason-resource {
+  font-weight: bold;
+  margin-right: var(--indent);
+}
+.group .controls > .control > div.result-row > span.dimension {
+  font-weight: bold;
+  margin-right: var(--indent);
+}
+/** ResultRow **/
+
+.controls table td.status {
+  width: 10rem;
+  padding: 0.5rem;
+  text-transform: uppercase;
+}
+.controls table tr.alarm td {
+  color: var(--alarm-color);
+  background-color: var(--alarm-bgcolor);
+}
+.controls table tr.ok td {
+  color: var(--ok-color);
+  background-color: var(--ok-bgcolor);
+}
+.controls table tr.info td {
+  color: var(--info-color);
+  background-color: var(--info-bgcolor);
+}
+.controls table tr.skip td {
+  color: var(--skip-color);
+  background-color: var(--skip-bgcolor);
+}
+.controls table tr.error td {
+  color: var(--alarm-color);
+  background-color: var(--alarm-bgcolor);
+}
+.controls table td.resource-reason div {
+  width: 50rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.overview {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: var(--indent);
+}
+.overview > .title {
+  flex-grow: 1;
+}
+.summary {
+  font-weight: bold;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.summary > .status {
+  font-size: 1rem;
+}
+.summary > .status > span {
+  font-weight: normal;
+}
+
+.summary > .status::before {
+  content: var(--status-separator);
+  color: var(--status-separator-color);
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.summary > .status:nth-of-type(1)::before {
+  content: "";
+  margin-left: 0rem;
+}
+.summary > .status:last-of-type::after {
+  content: "";
+  margin-right: 0rem;
+}
+
+.summary .alarm {
+  color: var(--alarm-color);
+}
+
+.summary .ok {
+  color: var(--ok-color);
+}
+
+.summary .info {
+  color: var(--info-color);
+}
+
+.summary .skip {
+  color: var(--skip-color);
+}
+
+.summary .error {
+  color: var(--error-color);
+}
+
+/*
+{{ end }}
+/*  */
