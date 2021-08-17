@@ -248,7 +248,7 @@ func TestJsonFormatter(t *testing.T) {
 	}
 }
 
-const expectedCsvOutput = `group_id,group_title,group_description,control_id,control_title,control_description,reason,resource,status
+const expectedCsvOutput = `group_id,title,description,control_id,control_title,control_description,reason,resource,status
 ,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm
 ,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm
 ,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm
