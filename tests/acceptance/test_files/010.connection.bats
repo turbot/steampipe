@@ -8,9 +8,3 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run steampipe query "select * from chaos_group.chaos_all_column_types"
     assert_success
 }
-
-# To add more connection and aggregator connection tests
-
-function teardown() {
-    steampipe service stop --force    
-}

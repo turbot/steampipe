@@ -51,13 +51,3 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f ./test.json
   cd -
 }
-
-function setup() {
-  steampipe service start
-}
-
-function teardown() {
-  steampipe service stop
-}
-
-
