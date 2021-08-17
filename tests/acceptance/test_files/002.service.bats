@@ -16,6 +16,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
 }
 
+#upodate
+
 # @test "steampipe service start --database-port 8765" {
 #     run steampipe service start --database-port 8765
 #     assert_equal $(netstat -an tcp | grep LISTEN | grep tcp | grep 8765 | wc -l) 2
