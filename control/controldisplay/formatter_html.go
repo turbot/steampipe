@@ -1,12 +1,10 @@
 package controldisplay
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"html/template"
 	"io"
-	"strings"
 
 	"github.com/turbot/steampipe/control/controlexecute"
 )
@@ -21,11 +19,14 @@ func (j *HTMLFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 	if err != nil {
 		return nil, err
 	}
-	b := bytes.NewBufferString("")
-	res := t.Execute(b, tree)
-	if res != nil {
-		return nil, res
-	}
-	output := strings.NewReader(b.String())
-	return output, nil
+	reader, writer := io.Pipe()
+	go func() {
+		res := t.Execute(writer, tree)
+		if res != nil {
+			writer.CloseWithError(err)
+			return
+		}
+		writer.Close()
+	}()
+	return reader, nil
 }
