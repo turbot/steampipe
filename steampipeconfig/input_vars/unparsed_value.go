@@ -119,9 +119,9 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 		})
 	}
 
-	// By this point we should've gathered all of the required root module
-	// variables from one of the many possible sources. We'll now populate
-	// any we haven't gathered as their defaults and fail if any of the
+	// By this point we should've gathered all of the required variables
+	// from one of the many possible sources.
+	// We'll now populate any we haven't gathered as their defaults and fail if any of the
 	// missing ones are required.
 	for name, vc := range decls {
 		if _, defined := ret[name]; defined {
@@ -132,7 +132,7 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 			diags = diags.Append(&hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "No value for required variable",
-				Detail:   fmt.Sprintf("The root module input variable %q is not set, and has no default value. Use a -var or -var-file command line argument to provide a value for this variable.", name),
+				Detail:   fmt.Sprintf("The input variable %q is not set, and has no default value. Use a --var or --var-file command line argument to provide a value for this variable.", name),
 				Subject:  vc.DeclRange.Ptr(),
 			})
 

@@ -90,8 +90,8 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 		if eq == -1 {
 			diags = diags.Append(tfdiags.Sourceless(
 				tfdiags.Error,
-				"Invalid -var option",
-				fmt.Sprintf("The given -var option %q is not correctly specified. Must be a variable name and value separated by an equals sign, like -var=\"key=value\".", raw),
+				fmt.Sprintf("The given --var option %q is not correctly specified. It must be a variable name and value separated an equals sign: --var key=value", raw),
+				"",
 			))
 			continue
 		}

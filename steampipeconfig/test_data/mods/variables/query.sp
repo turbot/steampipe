@@ -1,3 +1,20 @@
+variable "account"{
+    type = string
+    description = "the account to use"
+}
+
+variable "reason"{
+    type = string
+    description = "reason for failure"
+    default = "check failed"
+}
+
+variable "regions"{
+    type = list(string)
+    description = "the available regions"
+    default = ["eu-west2", "us-east1"]
+}
+
 variable "v1"{
     type = string
     default = "select 'default'"
@@ -31,8 +48,8 @@ variable "v4"{
 
 query "q1"{
     title ="Q1"
-    description = "THIS IS QUERY 1"
-    sql = var.v4
+    description = var.reason
+    sql = "select ${var.regions[0]}"
 }
 
 query "q2"{
