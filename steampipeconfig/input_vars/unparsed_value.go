@@ -29,10 +29,10 @@ type UnparsedVariableValue interface {
 
 // ParseVariableValues processes a map of unparsed variable values by
 // correlating each one with the given variable declarations which should
-// be from a root module.
+// be from a configuration.
 //
 // The map of unparsed variable values should include variables from all
-// possible root module declarations sources such that it is as complete as
+// possible configuration declarations sources such that it is as complete as
 // it can possibly be for the current operation. If any declared variables
 // are not included in the map, ParseVariableValues will either substitute
 // a configured default value or produce an error.
@@ -79,7 +79,7 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 					diags = diags.Append(tfdiags.Sourceless(
 						tfdiags.Warning,
 						"Value for undeclared variable",
-						fmt.Sprintf("The root module does not declare a variable named %q but a value was found. If you meant to use this value, add a \"variable\" block to the configuration.\n\nTo silence these warnings, use TF_VAR_... environment variables to provide certain \"global\" settings to all configurations in your organization. To reduce the verbosity of these warnings, use the -compact-warnings option.", name), //, val.SourceRange.Filename),
+						fmt.Sprintf("The configuration does not declare a variable named %q but a value was found. If you meant to use this value, add a \"variable\" block to the configuration.\n\n.", name), //, val.SourceRange.Filename),
 					))
 				}
 				seenUndeclaredInFile++
@@ -93,7 +93,7 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 				diags = diags.Append(tfdiags.Sourceless(
 					tfdiags.Error,
 					"Value for undeclared variable",
-					fmt.Sprintf("A variable named %q was assigned on the command line, but the root module does not declare a variable of that name. To use this value, add a \"variable\" block to the configuration.", name),
+					fmt.Sprintf("A variable named %q was assigned on the command line, but the configuration does not declare a variable of that name. To use this value, add a \"variable\" block to the configuration.", name),
 				))
 			default:
 				// For all other source types we are more vague, but other situations
@@ -101,7 +101,7 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 				diags = diags.Append(tfdiags.Sourceless(
 					tfdiags.Error,
 					"Value for undeclared variable",
-					fmt.Sprintf("A variable named %q was assigned a value, but the root module does not declare a variable of that name. To use this value, add a \"variable\" block to the configuration.", name),
+					fmt.Sprintf("A variable named %q was assigned a value, but the configuration does not declare a variable of that name. To use this value, add a \"variable\" block to the configuration.", name),
 				))
 			}
 			continue

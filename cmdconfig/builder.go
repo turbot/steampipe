@@ -91,6 +91,15 @@ func (c *CmdBuilder) AddStringSliceFlag(name, shorthand string, defaultValue []s
 	return c
 }
 
+func (c *CmdBuilder) AddStringArrayFlag(name, shorthand string, defaultValue []string, desc string, opts ...flagOpt) *CmdBuilder {
+	c.cmd.Flags().StringArrayP(name, shorthand, defaultValue, desc)
+	c.bindings[name] = c.cmd.Flags().Lookup(name)
+	for _, o := range opts {
+		o(c.cmd, name, name)
+	}
+	return c
+}
+
 // Helper function to add a flag that accepts a map of strings
 func (c *CmdBuilder) AddStringMapStringFlag(name, shorthand string, defaultValue map[string]string, desc string, opts ...flagOpt) *CmdBuilder {
 	c.cmd.Flags().StringToStringP(name, shorthand, defaultValue, desc)

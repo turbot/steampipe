@@ -68,7 +68,10 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls. Cannot be used with '--tag'").
 		AddStringSliceFlag(constants.ArgTag, "", []string{}, "Key-Value pairs to filter controls based on the 'tags' property. To be provided as 'key=value'. Multiple can be given and are merged together. Cannot be used with '--where'").
 		AddStringSliceFlag(constants.ArgVarFile, "", []string{}, "Specify a file containing variable values").
-		AddStringSliceFlag(constants.ArgVariable, "", []string{}, "Specify The value of a variable")
+		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
+		// Cobra will interpret values passed to a StringSliceFlag as CSV,
+		// where args passed to StringArrayFlag are not parsed and used raw
+		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify The value of a variable")
 
 	return cmd
 }

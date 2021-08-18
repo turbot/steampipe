@@ -56,15 +56,18 @@ Examples:
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.").
 		AddBoolFlag(constants.ArgWatch, "", true, "Watch SQL files in the current workspace (works only in interactive mode)").
-		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
-		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a query session (comma-separated)").
-		AddStringSliceFlag(constants.ArgVarFile, "", []string{}, "Specify a file containing variable values").
-		AddStringSliceFlag(constants.ArgVariable, "", []string{}, "Specify The value of a variable")
+		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
+		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a query session (comma-separated)").
+		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify a file containing variable values").
+		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
+		// Cobra will interpret values passed to a StringSliceFlag as CSV,
+		// where args passed to StringArrayFlag are not parsed and used raw
+		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify The value of a variable")
 	return cmd
 }
 
 // getPipedStdinData reads the Standard Input and returns the available data as a string
-// if and only if the data was piped to the process
+// if and only if the data was piped to tahe process
 func getPipedStdinData() string {
 	fi, err := os.Stdin.Stat()
 	if err != nil {
