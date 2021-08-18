@@ -8,18 +8,16 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/turbot/steampipe/db"
-	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/interactive"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
-	"github.com/turbot/steampipe/query/queryexecute"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/interactive"
+	"github.com/turbot/steampipe/query/queryexecute"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -56,10 +54,13 @@ Examples:
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.").
 		AddBoolFlag(constants.ArgWatch, "", true, "Watch SQL files in the current workspace (works only in interactive mode)").
-		AddStringSliceFlag(constants.ArgSearchPath, "", []string{}, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
-		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", []string{}, "Set a prefix to the current search path for a query session (comma-separated)").
-		AddStringSliceFlag(constants.ArgVarFile, "", []string{}, "Specify a file containing variable values").
-		AddStringSliceFlag(constants.ArgVariable, "", []string{}, "Specify The value of a variable")
+		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
+		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a query session (comma-separated)").
+		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify a file containing variable values").
+		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
+		// Cobra will interpret values passed to a StringSliceFlag as CSV,
+		// where args passed to StringArrayFlag are not parsed and used raw
+		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify The value of a variable")
 	return cmd
 }
 

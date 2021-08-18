@@ -11,7 +11,7 @@ import (
 	"github.com/zclconf/go-cty/cty/convert"
 )
 
-// InputValue represents a value for a variable in the root module, provided
+// InputValue represents a value for a variable in the configuration, provided
 // as part of the definition of an operation.
 type InputValue struct {
 	Value      cty.Value
@@ -245,7 +245,7 @@ func CheckInputVariables(vcs map[string]*modconfig.Variable, vs InputValues) tfd
 				diags = diags.Append(tfdiags.Sourceless(
 					tfdiags.Error,
 					"Invalid value for input variable",
-					fmt.Sprintf("The environment variable TF_VAR_%s does not contain a valid value for variable %q: %s.", name, name, err),
+					fmt.Sprintf("The environment variable SP_VAR_%s does not contain a valid value for variable %q: %s.", name, name, err),
 				))
 			case ValueFromCLIArg:
 				diags = diags.Append(tfdiags.Sourceless(

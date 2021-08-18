@@ -252,7 +252,7 @@ const VariableParseHCL VariableParsingMode = 'H'
 //
 // The given name is used to create a synthetic filename in case any diagnostics
 // must be generated about the given string value. This should be the name
-// of the root module variable whose value will be populated from the given
+// of the configuration variable whose value will be populated from the given
 // string.
 //
 // If the returned diagnostics has errors, the returned value may not be

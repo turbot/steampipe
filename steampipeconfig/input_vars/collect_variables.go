@@ -15,7 +15,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
 )
 
-// CollectVariableValues inspects the various places that root module input variable
+// CollectVariableValues inspects the various places that configuration input variable
 // values can come from and constructs a map ready to be passed to the
 // backend as part of a Operation.
 //
