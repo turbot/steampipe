@@ -8,18 +8,16 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/turbot/steampipe/db"
-	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/interactive"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
-	"github.com/turbot/steampipe/query/queryexecute"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/interactive"
+	"github.com/turbot/steampipe/query/queryexecute"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -67,7 +65,7 @@ Examples:
 }
 
 // getPipedStdinData reads the Standard Input and returns the available data as a string
-// if and only if the data was piped to tahe process
+// if and only if the data was piped to the process
 func getPipedStdinData() string {
 	fi, err := os.Stdin.Stat()
 	if err != nil {
