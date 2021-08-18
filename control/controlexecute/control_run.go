@@ -130,10 +130,12 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 	// context and its parent alive longer than necessary.
 	defer cancel()
 
+	const pluginCrashErrorSubString = "error reading from server: EOF"
+
 	queryResult, err := client.Execute(ctx, query, false)
 	if err != nil {
 		// is this an rpc EOF error - meaning that the plugin somehow crashed
-		if strings.Contains(err.Error(), "error reading from server: EOF") {
+		if strings.Contains(err.Error(), pluginCrashErrorSubString) {
 			if r.attempts > constants.MaxControlRunAttempts {
 				// if exceeded max retries.
 				r.SetError(fmt.Errorf("max retry attempts exceeded"))
