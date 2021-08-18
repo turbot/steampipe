@@ -139,10 +139,12 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 				r.SetError(err)
 				return
 			}
-			// pass 'true' to disable spinner
+			// set a log line in the database logs for convenience - pass 'true' to disable spinner
 			_, _ = client.ExecuteSync(ctx, "-- Retrying...", true)
 			r.attempts++
-			// retry within the same context, so that we may timeout, even if the attempts haven't exceeded
+
+			// recurse into this function - but with the same context, so that we may timeout,
+			// even if the attempts haven't exceeded
 			r.Start(ctx, client)
 			return
 		}
