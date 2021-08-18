@@ -125,8 +125,9 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 
 	shouldBeDoneBy := time.Now().Add(240 * time.Second)
 	ctx, cancel := context.WithDeadline(ctx, shouldBeDoneBy)
-	// Even though ctx will be expired, it is good practice to call its
-	// cancellation function in any case. Failure to do so may keep the
+
+	// Even though ctx will expire, it is good practice to call its
+	// cancellation function in any case. Not doing so may keep the
 	// context and its parent alive longer than necessary.
 	defer cancel()
 
@@ -138,17 +139,13 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 		if strings.Contains(err.Error(), pluginCrashErrorSubString) {
 			if r.attempts > constants.MaxControlRunAttempts {
 				// if exceeded max retries.
-				r.SetError(fmt.Errorf("max retry attempts exceeded"))
+				r.SetError(err)
 				return
 			}
-			// set a log line in the database logs for convenience
 			// pass 'true' to disable spinner
 			_, _ = client.ExecuteSync(ctx, "-- Retrying...", true)
-			// increment attempt counter
 			r.attempts++
-			// retry within the same context,
-			// so that we may timeout, even if the attempts
-			// haven't exceeded
+			// retry within the same context, so that we may timeout, even if the attempts haven't exceeded
 			r.Start(ctx, client)
 			return
 		}
