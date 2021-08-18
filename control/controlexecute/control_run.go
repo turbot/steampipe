@@ -71,7 +71,6 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 
 		executionTree: executionTree,
 		runStatus:     ControlRunReady,
-		attempts:      0,
 
 		group:    group,
 		doneChan: make(chan bool, 1),
