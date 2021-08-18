@@ -31,6 +31,8 @@ const (
 // ControlRun is a struct representing a  a control run - will contain one or more result items (i.e. for one or more resources)
 type ControlRun struct {
 	runError error `json:"-"`
+	// the number of attempts this control made to run
+	attempts int `json:"-"`
 	// the parent control
 	Control *modconfig.Control `json:"-"`
 	Summary StatusSummary      `json:"-"`
@@ -69,6 +71,7 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 
 		executionTree: executionTree,
 		runStatus:     ControlRunReady,
+		attempts:      0,
 
 		group:    group,
 		doneChan: make(chan bool, 1),
@@ -129,6 +132,24 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 
 	queryResult, err := client.Execute(ctx, query, false)
 	if err != nil {
+		// is this an rpc EOF error - meaning that the plugin somehow crashed
+		if strings.Contains(err.Error(), "error reading from server: EOF") {
+			if r.attempts > constants.MaxControlRunAttempts {
+				// if exceeded max retries.
+				r.SetError(fmt.Errorf("max retry attempts exceeded"))
+				return
+			}
+			// set a log line in the database logs for convenience
+			// pass 'true' to disable spinner
+			_, _ = client.ExecuteSync(ctx, "-- Retrying...", true)
+			// increment attempt counter
+			r.attempts++
+			// retry within the same context,
+			// so that we may timeout, even if the attempts
+			// haven't exceeded
+			r.Start(ctx, client)
+			return
+		}
 		r.SetError(err)
 		return
 	}
