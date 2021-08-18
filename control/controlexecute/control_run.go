@@ -135,7 +135,7 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 		// is this an rpc EOF error - meaning that the plugin somehow crashed
 		if strings.Contains(err.Error(), constants.PluginCrashErrorSubString) {
 			if r.attempts > constants.MaxControlRunAttempts {
-				// if exceeded max retries - give up with the original error
+				// if exceeded max retries, give up
 				r.SetError(err)
 				return
 			}
