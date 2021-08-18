@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"runtime/debug"
 	"sort"
+	"strings"
 
 	"github.com/turbot/steampipe/control/controlexecute"
 )
@@ -31,8 +32,16 @@ func newResultColumns(e *controlexecute.ExecutionTree) *ResultColumns {
 
 	sort.Strings(dimensionColumns)
 	sort.Strings(tagColumns)
-	sort.Slice(rowColumns, func(i, j int) bool {
-		return rowColumns[i].fieldName < rowColumns[j].fieldName
+	sort.SliceStable(rowColumns[:], func(i, j int) bool {
+		iControlField := strings.HasPrefix(rowColumns[i].fieldName, "Control")
+		jControlField := strings.HasPrefix(rowColumns[j].fieldName, "Control")
+
+		// if both are `Control` fields - let them be as is
+		// if one of them is a `Control` field - bring it to the front
+		return iControlField != jControlField
+
+		// TODO :: try to make this a bit generic, so that it's not only the
+		// `Control` subfields which are considered
 	})
 
 	allColumns := []string{}
@@ -66,10 +75,27 @@ func getCsvColumns(item interface{}) []CsvColumnPair {
 		field, _ := t.FieldByName(fieldName)
 		tag, ok := field.Tag.Lookup("csv")
 		if ok {
-			columns = append(columns, CsvColumnPair{
-				fieldName:  fieldName,
-				columnName: tag,
-			})
+			// split by comma
+			csvAttrs := strings.Split(tag, ",")
+			for _, csvAttr := range csvAttrs {
+				// trim spaces from the sides
+				csvAttr = strings.TrimSpace(csvAttr)
+
+				// csvColumnName[:propertyNameOfValue]
+				split := strings.SplitN(csvAttr, ":", 2)
+				if len(split) > 1 {
+					// is this a sub-property
+					columns = append(columns, CsvColumnPair{
+						fieldName:  fmt.Sprintf("%s.%s", fieldName, strings.TrimSpace(split[1])),
+						columnName: strings.TrimSpace(split[0]),
+					})
+				} else {
+					columns = append(columns, CsvColumnPair{
+						fieldName:  fieldName,
+						columnName: csvAttr,
+					})
+				}
+			}
 		}
 	}
 

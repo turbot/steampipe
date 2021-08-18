@@ -27,6 +27,10 @@ jobs:
       - name: Hook private repo
         run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
 
+      - name: Run Unit Tests
+        run: |
+          go test -timeout 30s -run github.com/turbot/steampipe ./...
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:

@@ -109,7 +109,7 @@ func (r *PanelRun) SetComplete() {
 
 // RunComplete implements ReportNodeRun
 func (r *PanelRun) RunComplete() bool {
-	return r.runStatus == reportinterfaces.ReportRunComplete || r.runStatus == reportinterfaces.ReportRunComplete
+	return r.runStatus == reportinterfaces.ReportRunComplete
 }
 
 // ChildrenComplete implements ReportNodeRun
