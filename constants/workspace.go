@@ -11,6 +11,7 @@ const (
 	WorkspaceConfigFileName = "workspace.spc"
 	WorkspaceIgnoreFile     = ".steampipeignore"
 	WorkspaceDefaultModName = "local"
+	MaxControlRunAttempts   = 3
 )
 
 func WorkspaceModPath(workspacePath string) string {
