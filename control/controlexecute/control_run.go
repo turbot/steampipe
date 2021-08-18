@@ -146,6 +146,8 @@ func (r *ControlRun) Start(ctx context.Context, client *db.Client) {
 			r.Start(ctx, client)
 			return
 		}
+		r.SetError(err)
+		return
 	}
 	// validate required columns
 	r.queryResult = queryResult
