@@ -119,9 +119,9 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 		})
 	}
 
-	// By this point we should've gathered all of the required root module
-	// variables from one of the many possible sources. We'll now populate
-	// any we haven't gathered as their defaults and fail if any of the
+	// By this point we should've gathered all of the required variables
+	// from one of the many possible sources.
+	// We'll now populate any we haven't gathered as their defaults and fail if any of the
 	// missing ones are required.
 	for name, vc := range decls {
 		if _, defined := ret[name]; defined {
