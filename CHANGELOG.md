@@ -1,6 +1,7 @@
 ## v0.7.3 [2021-08-18]
 _Bug fixes_
-* Retry control run if the plugin crashes. ([#757](https://github.com/turbot/steampipe/issues/757))
+* Retry a control run if the plugin crashes. ([#757](https://github.com/turbot/steampipe/issues/757))
+* Restart a plugin if it exits unexpectedly. ([#89](https://github.com/turbot/steampipe-postgres-fdw/issues/89))
 
 ## v0.7.2 [2021-08-06]
 _Bug fixes_
