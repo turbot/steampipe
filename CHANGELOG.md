@@ -1,3 +1,7 @@
+## v0.7.3 [2021-08-18]
+_Bug fixes_
+* Retry control run if the plugin crashes. ([#757](https://github.com/turbot/steampipe/issues/757))
+
 ## v0.7.2 [2021-08-06]
 _Bug fixes_
 * Fix issue where interactive prompt hangs with a `;` input. ([#700](https://github.com/turbot/steampipe/issues/700))
