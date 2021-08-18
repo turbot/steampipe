@@ -31,6 +31,8 @@ const (
 // ControlRun is a struct representing a  a control run - will contain one or more result items (i.e. for one or more resources)
 type ControlRun struct {
 	runError error `json:"-"`
+	// the number of attempts this control made to run
+	attempts int `json:"-"`
 	// the parent control
 	Control *modconfig.Control `json:"-"`
 	Summary StatusSummary      `json:"-"`
@@ -122,13 +124,30 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 
 	shouldBeDoneBy := time.Now().Add(240 * time.Second)
 	ctx, cancel := context.WithDeadline(ctx, shouldBeDoneBy)
-	// Even though ctx will be expired, it is good practice to call its
-	// cancellation function in any case. Failure to do so may keep the
+
+	// Even though ctx will expire, it is good practice to call its
+	// cancellation function in any case. Not doing so may keep the
 	// context and its parent alive longer than necessary.
 	defer cancel()
 
 	queryResult, err := client.Execute(ctx, query, false)
 	if err != nil {
+		// is this an rpc EOF error - meaning that the plugin somehow crashed
+		if strings.Contains(err.Error(), constants.PluginCrashErrorSubString) {
+			if r.attempts > constants.MaxControlRunAttempts {
+				// if exceeded max retries, give up
+				r.SetError(err)
+				return
+			}
+			// set a log line in the database logs for convenience - pass 'true' to disable spinner
+			_, _ = client.ExecuteSync(ctx, "-- Retrying...", true)
+
+			// recurse into this function to retry
+			// use the same context, so that we respect the timeout
+			r.attempts++
+			r.Start(ctx, client)
+			return
+		}
 		r.SetError(err)
 		return
 	}
