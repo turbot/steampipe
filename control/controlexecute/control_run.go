@@ -135,7 +135,7 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 		// is this an rpc EOF error - meaning that the plugin somehow crashed
 		if strings.Contains(err.Error(), constants.PluginCrashErrorSubString) {
 			if r.attempts > constants.MaxControlRunAttempts {
-				// if exceeded max retries.
+				// if exceeded max retries - give up with the original error
 				r.SetError(err)
 				return
 			}
@@ -143,8 +143,8 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 			_, _ = client.ExecuteSync(ctx, "-- Retrying...", true)
 			r.attempts++
 
-			// recurse into this function - but with the same context, so that we may timeout,
-			// even if the attempts haven't exceeded
+			// recurse into this function to retry
+			// use the same context, so that we respect the timeout
 			r.Start(ctx, client)
 			return
 		}
