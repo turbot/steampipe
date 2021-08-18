@@ -132,7 +132,7 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 			diags = diags.Append(&hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "No value for required variable",
-				Detail:   fmt.Sprintf("The root module input variable %q is not set, and has no default value. Use a -var or -var-file command line argument to provide a value for this variable.", name),
+				Detail:   fmt.Sprintf("The input variable %q is not set, and has no default value. Use a --var or --var-file command line argument to provide a value for this variable.", name),
 				Subject:  vc.DeclRange.Ptr(),
 			})
 

@@ -251,7 +251,7 @@ func CheckInputVariables(vcs map[string]*modconfig.Variable, vs InputValues) tfd
 				diags = diags.Append(tfdiags.Sourceless(
 					tfdiags.Error,
 					"Invalid value for input variable",
-					fmt.Sprintf("The argument -var=\"%s=...\" does not contain a valid value for variable %q: %s.", name, name, err),
+					fmt.Sprintf("The argument --var=\"%s=...\" does not contain a valid value for variable %q: %s.", name, name, err),
 				))
 			case ValueFromInput:
 				diags = diags.Append(tfdiags.Sourceless(
