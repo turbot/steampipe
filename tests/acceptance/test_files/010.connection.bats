@@ -31,11 +31,14 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe aggregator connections should fail when querying a different plugin" {
-    run steampipe query "select * from chaos_group.chaos_transforms order by id"
-    # the above query should pass since the aggregator contains only chaos connections
+    run steampipe query "select * from chaos_group.chaos_all_numeric_column order by id"
+
+    # this should pass since the aggregator contains only chaos connections
+    assert_success
     
     run steampipe query "select * from chaos_group.steampipe_registry_plugin order by id"
-    # the above query should fail since the aggregator contains only chaos connections,
-    # and we are querying from a steampipe table
+
+    # this should fail since the aggregator contains only chaos connections, and we are
+    # querying a steampipe table
     assert_failure
 }
