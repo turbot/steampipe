@@ -23,3 +23,6 @@
 
 # Report server
 /report/reportserver/static/
+
+# Dist directory is created by goreleaser
+/dist

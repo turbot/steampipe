@@ -24,6 +24,15 @@ archives:
     - goos: linux
       format: tar.gz
 
+nfpms:
+  - id: "steampipe"
+    builds: ['steampipe']
+    formats:
+      - deb
+      - rpm
+    description: "Use SQL to instantly query your cloud services (AWS, Azure, GCP and more). Open source CLI. No DB required."
+    file_name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
 checksum:
   name_template: 'checksums.txt'
 release:
