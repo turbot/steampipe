@@ -23,12 +23,6 @@ func newHighlighter(lexer chroma.Lexer, formatter chroma.Formatter, style *chrom
 }
 
 func (h *Highlighter) Highlight(d prompt.Document) ([]byte, error) {
-	//
-	//	select domain_id from whois_domain where domain = 'steampipe.io'
-	//						^
-	//	(select domain_id) from (whois_domain where domain = 'steampipe.io')
-	//
-	//
 	leftIterator, err := h.lexer.Tokenise(nil, strings.TrimSuffix(d.TextBeforeCursor(), d.GetWordBeforeCursor()))
 	if err != nil {
 		return nil, err
