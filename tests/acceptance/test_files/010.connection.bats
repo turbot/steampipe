@@ -10,18 +10,35 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe aggregator connection check total results" {
-    run steampipe query "select * from chaos_group.chaos_transforms order by id" --output json
-    # since the aggregator connection `chaos_group` contains two chaos connections,
-    # we expect twice the number of rows
-    assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_aggregated_result.json)"
+    run steampipe query "select * from chaos.chaos_all_numeric_column" --output json
+
+    # store the length of the result when queried using `chaos` connection
+    length_chaos=$(echo $output | jq length)
+
+    run steampipe query "select * from chaos2.chaos_all_numeric_column" --output json
+
+    # store the length of the result when queried using `chaos2` connection
+    length_chaos_2=$(echo $output | jq length)
+
+    run steampipe query "select * from chaos_group.chaos_all_numeric_column" --output json
+
+    # store the length of the result when queried using `chaos_group` aggregated connection
+    length_chaos_agg=$(echo $output | jq length)
+
+    # since the aggregator connection `chaos_group` contains two chaos connections, we expect
+    # the number of results returned will be the summation of the two
+    assert_equal "$length_chaos_agg" "$((length_chaos+length_chaos_2))"
 }
 
 @test "steampipe aggregator connections should fail when querying a different plugin" {
-    run steampipe query "select * from chaos_group.chaos_transforms order by id"
-    # the above query should pass since the aggregator contains only chaos connections
+    run steampipe query "select * from chaos_group.chaos_all_numeric_column order by id"
+
+    # this should pass since the aggregator contains only chaos connections
+    assert_success
     
     run steampipe query "select * from chaos_group.steampipe_registry_plugin order by id"
-    # the above query should fail since the aggregator contains only chaos connections,
-    # and we are querying from a steampipe table
+
+    # this should fail since the aggregator contains only chaos connections, and we are
+    # querying a steampipe table
     assert_failure
 }
