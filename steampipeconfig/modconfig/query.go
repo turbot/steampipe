@@ -118,3 +118,8 @@ func (q *Query) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 func (q *Query) AddReference(reference string) {
 	q.References = append(q.References, reference)
 }
+
+// GetExecuteSQL returns the SQL to run this query as a prepared statement
+func (q *Query) GetExecuteSQL(paramsString string) string {
+	return fmt.Sprintf("execute %s%s", q.ShortName, paramsString)
+}

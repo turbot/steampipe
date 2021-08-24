@@ -11,7 +11,6 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/query/queryexecute"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
@@ -39,7 +38,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 		workspace: workspace,
 		client:    client,
 	}
-	// if a "--where" parameter was passed, build a map of control manes used to filter the controls to run
+	// if a "--where" or "--tag" parameter was passed, build a map of control manes used to filter the controls to run
 	// NOTE: not enabled yet
 	err := executionTree.populateControlFilterMap(ctx)
 
@@ -112,7 +111,7 @@ func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
 	if len(controlFilterWhereClause) > 0 {
 		log.Println("[TRACE]", "filtering controls with", controlFilterWhereClause)
 		var err error
-		e.controlNameFilterMap, err = e.getControlMapFromMetadataQuery(ctx, controlFilterWhereClause)
+		e.controlNameFilterMap, err = e.getControlMapFromWhereClause(ctx, controlFilterWhereClause)
 		if err != nil {
 			return err
 		}
@@ -204,9 +203,11 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTree
 
 // Get a map of control names from the reflection table steampipe_control
 // This is used to implement the 'where' control filtering
-func (e *ExecutionTree) getControlMapFromMetadataQuery(ctx context.Context, whereClause string) (map[string]bool, error) {
+func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereClause string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
-	query, isNamedQuery := queryexecute.GetQueryFromArg(whereClause, e.workspace)
+	// in case of a named query call with params, parse the where clause
+	queryName, paramsString := e.workspace.ParsePreparedStatementInvocation(whereClause)
+	query, isNamedQuery := e.workspace.GetQueryFromArg(queryName, paramsString)
 
 	// if the query is NOT a named query, we need to construct a full query by adding a select
 	if !isNamedQuery {

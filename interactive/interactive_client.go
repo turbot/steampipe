@@ -394,11 +394,13 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 	// expand the buffer out into 'query'
 	query := strings.Join(c.interactiveBuffer, "\n")
 
-	namedQuery, isNamedQuery := c.workspace().GetQuery(query)
+	// in case of a named query call with params, parse the where clause
+	queryName, paramsString := c.workspace().ParsePreparedStatementInvocation(query)
+	namedQuery, isNamedQuery := c.workspace().GetQuery(queryName)
 
 	// if it is a multiline query, execute even without `;`
 	if isNamedQuery {
-		query = *namedQuery.SQL
+		query = namedQuery.GetExecuteSQL(paramsString)
 	} else {
 		// should we execute?
 		if !c.shouldExecute(query) {
