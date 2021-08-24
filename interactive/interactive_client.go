@@ -216,9 +216,7 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			}
 			return
 		}),
-		prompt.OptionFormatter(func(d prompt.Document) ([]byte, error) {
-			return c.highlighter.Highlight(d.Text)
-		}),
+		prompt.OptionFormatter(c.highlighter.Highlight),
 		prompt.OptionHistory(c.interactiveQueryHistory.Get()),
 		prompt.OptionInputTextColor(prompt.DefaultColor),
 		prompt.OptionPrefixTextColor(prompt.DefaultColor),
