@@ -3,6 +3,7 @@ package workspace
 import (
 	"bufio"
 	"fmt"
+
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
+	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/report/reportevents"
@@ -285,7 +287,7 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 		res[longName] = q
 	}
 
-	// for mode dependencies, add queries keyed by long name only
+	// for mod dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
 			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.ShortName), q.ShortName)
@@ -424,4 +426,85 @@ func (w *Workspace) getReportMap() map[string]*modconfig.Report {
 		reports[p.Name()] = p
 	}
 	return reports
+}
+
+// GetQueriesFromArgs retrieves queries from args
+//
+// For each arg check if it is a named query or a file, before falling back to treating it as sql
+func (w *Workspace) GetQueriesFromArgs(args []string) []string {
+	utils.LogTime("execute.GetQueriesFromArgs start")
+	defer utils.LogTime("execute.GetQueriesFromArgs end")
+
+	var queries []string
+	for _, arg := range args {
+		// in case of a named query call with params, parse the where clause
+		queryName, paramsString := w.ParsePreparedStatementInvocation(arg)
+		query, _ := w.GetQueryFromArg(queryName, paramsString)
+		if len(query) > 0 {
+			queries = append(queries, query)
+		}
+	}
+	return queries
+}
+
+// GetQueryFromArg attempts to resolve 'arg' to a query
+// the second return value indicates whether the arg was resolved as a named query/SQL file
+func (w *Workspace) GetQueryFromArg(arg string, paramsString string) (string, bool) {
+	// 1) is this a named query
+	if namedQuery, ok := w.GetQuery(arg); ok {
+		return namedQuery.GetExecuteSQL(paramsString), true
+	}
+	// check if this is a control
+	if control, ok := w.GetControl(arg); ok {
+		return typeHelpers.SafeString(control.SQL), true
+	}
+
+	// 	2) is this a file
+	fileQuery, fileExists, err := w.getQueryFromFile(arg)
+	if fileExists {
+		if err != nil {
+			utils.ShowWarning(fmt.Sprintf("error opening file '%s': %v", arg, err))
+			return "", false
+		}
+		if len(fileQuery) == 0 {
+			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", arg))
+			// (just return the empty string - it will be filtered above)
+		}
+		return fileQuery, true
+	}
+
+	// 3) just use the arg string as is and assume it is valid SQL
+	return arg, false
+}
+
+func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
+	// get absolute filename
+	path, err := filepath.Abs(filename)
+	if err != nil {
+		return "", false, nil
+	}
+	// does it exist?
+	if _, err := os.Stat(path); err != nil {
+		// if this gives any error, return not exist. we may get a not found or a path too long for example
+		return "", false, nil
+	}
+
+	// read file
+	fileBytes, err := os.ReadFile(path)
+	if err != nil {
+		return "", true, err
+	}
+
+	return string(fileBytes), true, nil
+}
+
+func (w *Workspace) ParsePreparedStatementInvocation(arg string) (string, string) {
+	openBracketIdx := strings.Index(arg, "(")
+	closeBracketIdx := strings.LastIndex(arg, ")")
+	if openBracketIdx != -1 && closeBracketIdx == len(arg)-1 {
+		queryName := arg[:openBracketIdx]
+		paramsString := arg[openBracketIdx:len(arg)]
+		return queryName, paramsString
+	}
+	return arg, ""
 }

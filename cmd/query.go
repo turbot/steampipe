@@ -172,7 +172,7 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 		initData.Workspace = workspace
 
 		// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-		initData.Queries = queryexecute.GetQueries(args, workspace)
+		initData.Queries = workspace.GetQueriesFromArgs(args)
 
 		res := client.RefreshConnectionAndSearchPaths()
 		if res.Error != nil {
@@ -187,6 +187,8 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 			initData.Result.Error = err
 			return
 		}
+
+		initData.Result.Error = db_common.CreatePreparedStatements(ctx, workspace, client)
 	}()
 }
 
