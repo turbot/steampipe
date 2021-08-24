@@ -48,21 +48,25 @@ func (r SummaryRenderer) Render() string {
 }
 
 func (r SummaryRenderer) renderStatus(status string, count int, total int) string {
-	// countPadded := number.Decimal(
-	// 	count, number.Pad('.'), number.FormatWidth(r.width/2),
-	// )
 	statusColorFunction := ControlColors.StatusColors[strings.ToLower(status)]
 	countColorFunction := ControlColors.ReasonColors[strings.ToLower(status)]
 
-	countString := fmt.Sprintf("%d", count) // message.NewPrinter(language.English).Sprintf("%d", countPadded)
+	countString := fmt.Sprintf("%d", count)
 
-	return fmt.Sprintf("%s %s%s %s / %d", statusColorFunction(status), countColorFunction(separator(status, 10)), countColorFunction(separator(countString, 10)), countColorFunction(countString), total)
+	return fmt.Sprintf(
+		"%s %s%s %s / %d",
+		statusColorFunction(status),
+		countColorFunction(padLeft(status, (r.width/2)-6)),
+		countColorFunction(padLeft(countString, (r.width/2)-6)),
+		countColorFunction(countString),
+		total,
+	)
 }
 
-func separator(forString string, width int) string {
-	if len(forString) > width {
-		return forString
+func padLeft(str string, width int) string {
+	if len(str) > width {
+		return str
 	}
 
-	return strings.Repeat(".", width-len(forString))
+	return strings.Repeat(".", width-len(str))
 }
