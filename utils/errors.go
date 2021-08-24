@@ -50,6 +50,9 @@ func ShowErrorWithMessage(err error, message string) {
 // with all the unnecessary information that comes from the
 // drivers and libraries
 func TransformErrorToSteampipe(err error) error {
+	// transform to a context
+	err = HandleCancelError(err)
+
 	errString := strings.TrimSpace(err.Error())
 
 	// an error that originated from our database/sql driver (always prefixed with "pq:")
@@ -69,7 +72,7 @@ func TransformErrorToSteampipe(err error) error {
 // be printed on the console
 func HandleCancelError(err error) error {
 	if IsCancelledError(err) {
-		err = fmt.Errorf("execution cancelled")
+		err = errors.New("execution cancelled")
 	}
 	return err
 }
