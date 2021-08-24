@@ -34,7 +34,7 @@ func (h *Highlighter) Highlight(d prompt.Document) ([]byte, error) {
 
 	buffer := bytes.NewBuffer([]byte{})
 
-	// format till the second last work till the cursor
+	// format till the second last word before the cursor
 	h.formatter.Format(buffer, h.style, leftIterator)
 
 	// leave the last word before the cursor unformatted
