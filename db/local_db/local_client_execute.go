@@ -47,7 +47,6 @@ func (c *LocalClient) Execute(ctx context.Context, query string, disableSpinner 
 	}
 	startTime := time.Now()
 	// channel to flag to spinner that the query has run
-	queryDone := make(chan bool, 1)
 	var spinner *spinner.Spinner
 	var tx *sql.Tx
 
@@ -60,13 +59,12 @@ func (c *LocalClient) Execute(ctx context.Context, query string, disableSpinner 
 				tx.Rollback()
 			}
 		}
-		close(queryDone)
 	}()
 
 	if !disableSpinner && cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
 		// if `show-interactive-output` is false, the spinner gets created, but is never shown
 		// so the s.Active() will always come back false . . .
-		spinner = display.StartSpinnerAfterDelay("Loading results...", constants.SpinnerShowTimeout, queryDone)
+		spinner = display.ShowSpinner("Loading results...")
 	}
 
 	// begin a transaction
