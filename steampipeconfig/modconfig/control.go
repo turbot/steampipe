@@ -30,8 +30,8 @@ type Control struct {
 	// or as a list of positional parameters (ParamsList)
 	// NOTE: if both are specified, Params takes precedence
 	// (TODO SHOULD THIS BE AN ERROR?)
-	Params     map[string]string `cty:"params" hcl:"params" column:"params,jsonb"`
-	ParamsList []string          `cty:"params_list" hcl:"params_list" column:"params_list,jsonb"`
+	Params     *map[string]string `cty:"params" hcl:"params" column:"params,jsonb"`
+	ParamsList *[]string          `cty:"params_list" hcl:"params_list" column:"params_list,jsonb"`
 
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
@@ -163,8 +163,12 @@ func (c *Control) SetMetadata(metadata *ResourceMetadata) {
 
 // GetParams returns the query parameters which were specified in the control config
 func (c *Control) GetParams() *QueryParams {
-	return &QueryParams{
-		Params:     c.Params,
-		ParamsList: c.ParamsList,
+	res := &QueryParams{}
+	if c.Params != nil {
+		res.Params = *c.Params
 	}
+	if c.ParamsList != nil {
+		res.ParamsList = *c.ParamsList
+	}
+	return res
 }

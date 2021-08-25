@@ -6,20 +6,11 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/zclconf/go-cty/cty"
-
 	"github.com/hashicorp/hcl/v2"
-
 	"github.com/turbot/go-kit/types"
-
 	"github.com/turbot/steampipe/constants"
+	"github.com/zclconf/go-cty/cty"
 )
-
-type ParamDef struct {
-	Name        string  `hcl:"name,label"`
-	Description *string `cty:"description" hcl:"description" column:"description,text"`
-	Default     *string `cty:"default" hcl:"default" column:"default,text"`
-}
 
 // Query is a struct representing the Query resource
 type Query struct {
@@ -34,7 +25,7 @@ type Query struct {
 	SearchPathPrefix *string            `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
 	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
 
-	Params []ParamDef `hcl:"params,block"`
+	ParamsDefs []ParamDef `hcl:"params,block"`
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
 
@@ -127,11 +118,11 @@ func (q *Query) AddReference(reference string) {
 }
 
 // GetExecuteSQL returns the SQL to run this query as a prepared statement
-func (q *Query) GetExecuteSQL(params *QueryParams) string {
-	paramsString := q.ResolveParams(params)
-	return fmt.Sprintf("execute %s%s", q.ShortName, paramsString)
-}
-
-func (q *Query) ResolveParams(params *QueryParams) string {
-	return ""
+func (q *Query) GetExecuteSQL(params *QueryParams) (string, error) {
+	paramsString, err := q.ResolveParams(params)
+	if err != nil {
+		return "", err
+	}
+	executeString := fmt.Sprintf("execute %s%s", q.ShortName, paramsString)
+	return executeString, nil
 }

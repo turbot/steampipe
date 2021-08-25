@@ -109,6 +109,24 @@ func init() {
 				},
 			},
 		},
+		"query_with_paramdefs_control_with_positional_params": {
+			source: "test_data/mods/query_with_paramdefs_control_with_positional_params",
+			expected: &modconfig.Mod{
+				ShortName:   "m1",
+				FullName:    "mod.m1",
+				Title:       toStringPointer("M1"),
+				Description: toStringPointer("THIS IS M1"),
+				Queries: map[string]*modconfig.Query{
+					"q1": {
+						ShortName:   "q1",
+						FullName:    "query.q1",
+						Title:       toStringPointer("Q1"),
+						Description: toStringPointer("THIS IS QUERY 1"),
+						SQL:         toStringPointer("select 1"),
+					},
+				},
+			},
+		},
 		"single_mod_one_query_one_control": {
 			source: "test_data/mods/single_mod_one_query_one_control",
 			expected: `Name: mod.m1
@@ -271,11 +289,6 @@ Benchmarks:
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
 				Queries: map[string]*modconfig.Query{
-					"q2": {
-						ShortName: "q2",
-						FullName:  "query.q2",
-						SQL:       toStringPointer("select 2"),
-					},
 					// TODO investigate why pseudo resources have no "query." at start of key
 					"query.q1": {
 						ShortName:   "q1",
@@ -283,6 +296,11 @@ Benchmarks:
 						Title:       toStringPointer("Q1"),
 						Description: toStringPointer("THIS IS QUERY 1"),
 						SQL:         toStringPointer("select 1"),
+					},
+					"q2": {
+						ShortName: "q2",
+						FullName:  "query.q2",
+						SQL:       toStringPointer("select 2"),
 					},
 				},
 			},
