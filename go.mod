@@ -73,4 +73,4 @@ require (
 	rsc.io/letsencrypt v0.0.3 // indirect
 )
 
-replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20210818130818-e338311a49d4
+replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20210825141321-86fb3afc968e
