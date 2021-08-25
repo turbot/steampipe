@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"path/filepath"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
@@ -46,13 +47,23 @@ func (q *Query) CtyValue() (cty.Value, error) {
 }
 
 func (q *Query) String() string {
-	return fmt.Sprintf(`
+	res := fmt.Sprintf(`
   -----
   Name: %s
   Title: %s
   Description: %s
   SQL: %s
 `, q.FullName, types.SafeString(q.Title), types.SafeString(q.Description), types.SafeString(q.SQL))
+
+	// add param defs if there are any
+	if len(q.ParamsDefs) > 0 {
+		var paramDefsStr = make([]string, len(q.ParamsDefs))
+		for i, def := range q.ParamsDefs {
+			paramDefsStr[i] = def.String()
+		}
+		res += fmt.Sprintf("ParamDefs:\n\t%s\n  ", strings.Join(paramDefsStr, "\n\t"))
+	}
+	return res
 }
 
 // QueryFromFile :: factory function

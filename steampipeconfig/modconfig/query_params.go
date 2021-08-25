@@ -14,8 +14,11 @@ type ParamDef struct {
 	Default     *string `cty:"default" hcl:"default" column:"default,text"`
 }
 
-func (q *Query) ResolveParams(params *QueryParams) (string, error) {
+func (d ParamDef) String() string {
+	return fmt.Sprintf("Name: %s, Description: %s, Default: %s", d.Name, typehelpers.SafeString(d.Description), typehelpers.SafeString(d.Default))
+}
 
+func (q *Query) ResolveParams(params *QueryParams) (string, error) {
 	var paramStrs, missingParams []string
 	var err error
 	if len(params.Params) > 0 {
