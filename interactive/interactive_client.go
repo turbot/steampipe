@@ -61,20 +61,11 @@ type InteractiveClient struct {
 }
 
 func getHighlighter(theme string) *Highlighter {
-	if viper.GetString(constants.ArgTheme) == "light" {
-		return newHighlighter(
-			lexers.Get("sql"),
-			formatters.Get("terminal256"),
-			styles.MonokaiLight,
-		)
-	} else if viper.GetString(constants.ArgTheme) == "dark" {
-		return newHighlighter(
-			lexers.Get("sql"),
-			formatters.Get("terminal256"),
-			styles.Monokai,
-		)
-	}
-	return nil
+	return newHighlighter(
+		lexers.Get("sql"),
+		formatters.Get("terminal256"),
+		styles.Native,
+	)
 }
 
 func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
