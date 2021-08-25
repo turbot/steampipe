@@ -50,23 +50,23 @@ func checkCmd() *cobra.Command {
 		Long: `Execute one of more Steampipe benchmarks and controls.
 
 You may specify one or more benchmarks or controls to run (separated by a space), or run 'steampipe check all' to run all controls in the workspace.`,
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-			if err != nil {
-				return []string{}, cobra.ShellCompDirectiveError
-			}
-			defer workspace.Close()
+		// ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		// 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+		// 	if err != nil {
+		// 		return []string{}, cobra.ShellCompDirectiveError
+		// 	}
+		// 	defer workspace.Close()
 
-			completions := []string{}
+		// 	completions := []string{}
 
-			for _, item := range workspace.GetSortedBenchmarksAndControlNames() {
-				if strings.HasPrefix(item, toComplete) {
-					completions = append(completions, item)
-				}
-			}
+		// 	for _, item := range workspace.GetSortedBenchmarksAndControlNames() {
+		// 		if strings.HasPrefix(item, toComplete) {
+		// 			completions = append(completions, item)
+		// 		}
+		// 	}
 
-			return completions, cobra.ShellCompDirectiveNoFileComp
-		},
+		// 	return completions, cobra.ShellCompDirectiveNoFileComp
+		// },
 	}
 
 	cmdconfig.

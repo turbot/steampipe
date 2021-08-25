@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -45,20 +44,20 @@ Examples:
   # Run a specific query directly
   steampipe query "select * from cloud"`,
 
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
-			if err != nil {
-				return []string{}, cobra.ShellCompDirectiveError
-			}
-			defer workspace.Close()
-			namedQueries := []string{}
-			for _, name := range workspace.GetSortedNamedQueryNames() {
-				if strings.HasPrefix(name, toComplete) {
-					namedQueries = append(namedQueries, name)
-				}
-			}
-			return namedQueries, cobra.ShellCompDirectiveNoFileComp
-		},
+		// ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		// 	workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+		// 	if err != nil {
+		// 		return []string{}, cobra.ShellCompDirectiveError
+		// 	}
+		// 	defer workspace.Close()
+		// 	namedQueries := []string{}
+		// 	for _, name := range workspace.GetSortedNamedQueryNames() {
+		// 		if strings.HasPrefix(name, toComplete) {
+		// 			namedQueries = append(namedQueries, name)
+		// 		}
+		// 	}
+		// 	return namedQueries, cobra.ShellCompDirectiveNoFileComp
+		// },
 	}
 
 	// Notes:
