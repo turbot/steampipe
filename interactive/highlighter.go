@@ -2,7 +2,6 @@ package interactive
 
 import (
 	"bytes"
-	"strings"
 
 	"github.com/alecthomas/chroma"
 	"github.com/c-bata/go-prompt"
@@ -23,27 +22,11 @@ func newHighlighter(lexer chroma.Lexer, formatter chroma.Formatter, style *chrom
 }
 
 func (h *Highlighter) Highlight(d prompt.Document) ([]byte, error) {
-	leftIterator, err := h.lexer.Tokenise(nil, strings.TrimSuffix(d.TextBeforeCursor(), d.GetWordBeforeCursor()))
-	if err != nil {
-		return nil, err
-	}
-	rightIterator, err := h.lexer.Tokenise(nil, strings.TrimPrefix(d.TextAfterCursor(), d.GetWordAfterCursor()))
-	if err != nil {
-		return nil, err
-	}
-
 	buffer := bytes.NewBuffer([]byte{})
-
-	// format till the second last word before the cursor
-	h.formatter.Format(buffer, h.style, leftIterator)
-
-	// leave the last word before the cursor unformatted
-	buffer.WriteString(d.GetWordBeforeCursor())
-	// and the next word as well
-	buffer.WriteString(d.GetWordAfterCursor())
-
-	// format the rest
-	h.formatter.Format(buffer, h.style, rightIterator)
-
+	tokens, err := h.lexer.Tokenise(nil, d.Text)
+	if err != nil {
+		return nil, err
+	}
+	h.formatter.Format(buffer, h.style, tokens)
 	return buffer.Bytes(), nil
 }
