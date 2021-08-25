@@ -438,8 +438,8 @@ func (w *Workspace) GetQueriesFromArgs(args []string) []string {
 	var queries []string
 	for _, arg := range args {
 		// in case of a named query call with params, parse the where clause
-		queryName, paramsString := w.ParsePreparedStatementInvocation(arg)
-		query, _ := w.GetQueryFromArg(queryName, paramsString)
+		queryName, params := parse.ParsePreparedStatementInvocation(arg)
+		query, _ := w.GetQueryFromArg(queryName, params)
 		if len(query) > 0 {
 			queries = append(queries, query)
 		}
@@ -449,10 +449,10 @@ func (w *Workspace) GetQueriesFromArgs(args []string) []string {
 
 // GetQueryFromArg attempts to resolve 'arg' to a query
 // the second return value indicates whether the arg was resolved as a named query/SQL file
-func (w *Workspace) GetQueryFromArg(arg string, paramsString string) (string, bool) {
+func (w *Workspace) GetQueryFromArg(arg string, params *modconfig.QueryParams) (string, bool) {
 	// 1) is this a named query
 	if namedQuery, ok := w.GetQuery(arg); ok {
-		return namedQuery.GetExecuteSQL(paramsString), true
+		return namedQuery.GetExecuteSQL(params), true
 	}
 	// check if this is a control
 	if control, ok := w.GetControl(arg); ok {
@@ -496,15 +496,4 @@ func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
 	}
 
 	return string(fileBytes), true, nil
-}
-
-func (w *Workspace) ParsePreparedStatementInvocation(arg string) (string, string) {
-	openBracketIdx := strings.Index(arg, "(")
-	closeBracketIdx := strings.LastIndex(arg, ")")
-	if openBracketIdx != -1 && closeBracketIdx == len(arg)-1 {
-		queryName := arg[:openBracketIdx]
-		paramsString := arg[openBracketIdx:len(arg)]
-		return queryName, paramsString
-	}
-	return arg, ""
 }
