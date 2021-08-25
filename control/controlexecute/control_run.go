@@ -94,7 +94,7 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 	r.executionTree.progress.OnControlStart(control)
 
 	// resolve the query parameter of the control
-	query, _ := r.executionTree.workspace.GetQueryFromArg(typehelpers.SafeString(control.SQL), control.ParamsString())
+	query, _ := r.executionTree.workspace.GetQueryFromArg(typehelpers.SafeString(control.SQL), control.GetParams())
 	if query == "" {
 		r.SetError(fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typehelpers.SafeString(control.SQL)))
 		return
