@@ -7,12 +7,12 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/turbot/steampipe/db/db_common"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/workspace"
 )
 
@@ -206,7 +206,7 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTree
 func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereClause string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
 	// in case of a named query call with params, parse the where clause
-	queryName, paramsString := e.workspace.ParsePreparedStatementInvocation(whereClause)
+	queryName, paramsString := parse.ParsePreparedStatementInvocation(whereClause)
 	query, isNamedQuery := e.workspace.GetQueryFromArg(queryName, paramsString)
 
 	// if the query is NOT a named query, we need to construct a full query by adding a select

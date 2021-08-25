@@ -1,1 +1,0 @@
-select 'r1' as resource, 'alarm' as status,

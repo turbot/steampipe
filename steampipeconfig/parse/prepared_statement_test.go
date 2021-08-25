@@ -25,59 +25,63 @@ var testCasesParsePreparedStatementInvocation = map[string]parsePreparedStatemen
 	},
 	"no params": {
 		input:    `query.q1()`,
-		expected: parsePreparedStatementInvocationResult{"query.q1()", emptyParams},
+		expected: parsePreparedStatementInvocationResult{"query.q1", emptyParams},
 	},
 	"invalid params 1": {
-		input:    `query.q1(foo)`,
-		expected: parsePreparedStatementInvocationResult{"query.q1(foo)", emptyParams},
-	},
-	"invalid params 2": {
-		input:    `query.q1("foo")`,
-		expected: parsePreparedStatementInvocationResult{`query.q1("foo")`, emptyParams},
-	},
-	"invalid params 3": {
-		input:    `query.q1('foo',  'bar')`,
-		expected: parsePreparedStatementInvocationResult{`query.q1('foo',  'bar')`, emptyParams},
-	},
-	"invalid params 4": {
-		input:    `query.q1(['foo',  'bar'])`,
-		expected: parsePreparedStatementInvocationResult{`query.q1(['foo',  'bar'])`, emptyParams},
-	},
-	// we are not currently validating that the values are quoted correctly
-	//"invalid params 5": {
-	//	input:    `query.q1(array["foo"",  "bar"])`,
-	//	expected: parsePreparedStatementInvocationResult{`query.q1(array["foo"",  "bar"])`, emptyParams},
-	//},
-	//"invalid params 6": {
-	//	input:    `query.q1(p1 => "bar")`,
-	//	expected: parsePreparedStatementInvocationResult{`query.q1(p1 => "bar")`, emptyParams},
-	//},
-	"single positional param": {
-		input: `query.q1(array['foo'])`,
+		input: `query.q1(foo)`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
 			params:    &modconfig.QueryParams{ParamsList: []string{"foo"}},
+		},
+	},
+	"invalid params 2": {
+		input: `query.q1("foo")`,
+		expected: parsePreparedStatementInvocationResult{
+			queryName: `query.q1`,
+			params:    &modconfig.QueryParams{ParamsList: []string{`"foo"`}},
+		},
+	},
+	"invalid params 3": {
+		input: `query.q1('foo',  'bar')`,
+		expected: parsePreparedStatementInvocationResult{
+			queryName: `query.q1`,
+			params:    &modconfig.QueryParams{ParamsList: []string{"'foo'", "'bar'"}},
+		},
+	},
+	"invalid params 4": {
+		input: `query.q1(['foo',  'bar'])`,
+		expected: parsePreparedStatementInvocationResult{
+			queryName: `query.q1`,
+			params:    &modconfig.QueryParams{ParamsList: []string{"['foo'", "'bar']"}},
+		},
+	},
+
+	"single positional param": {
+		input: `query.q1('foo')`,
+		expected: parsePreparedStatementInvocationResult{
+			queryName: `query.q1`,
+			params:    &modconfig.QueryParams{ParamsList: []string{"'foo'"}},
 		},
 	},
 	"single positional param extra spaces": {
-		input: `query.q1(  array['foo' ] )`,
+		input: `query.q1('foo')`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryParams{ParamsList: []string{"foo"}},
+			params:    &modconfig.QueryParams{ParamsList: []string{"'foo'"}},
 		},
 	},
 	"multiple positional params": {
-		input: `query.q1(array['foo', 'bar', 'foo-bar'])`,
+		input: `query.q1('foo', 'bar', 'foo-bar')`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryParams{ParamsList: []string{"foo", "bar", "foo-bar"}},
+			params:    &modconfig.QueryParams{ParamsList: []string{"'foo'", "'bar'", "'foo-bar'"}},
 		},
 	},
 	"multiple positional params extra spaces": {
-		input: ` query.q1( array['foo' ,  'bar', 'foo-bar' ] )`,
+		input: ` query.q1('foo' ,  'bar', 'foo-bar'  )`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryParams{ParamsList: []string{"foo", "bar", "foo-bar"}},
+			params:    &modconfig.QueryParams{ParamsList: []string{"'foo'", "'bar'", "'foo-bar'"}},
 		},
 	},
 	"single named param": {

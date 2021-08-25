@@ -188,7 +188,7 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 			return
 		}
 
-		initData.Result.Error = db_common.CreatePreparedStatements(ctx, workspace, client)
+		initData.Result.Error = db_common.CreatePreparedStatements(ctx, workspace.GetQueryMap(), client)
 	}()
 }
 

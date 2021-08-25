@@ -1,6 +1,8 @@
 package workspace
 
 import (
+	"context"
+
 	"github.com/turbot/steampipe/db/db_common"
 
 	"github.com/fsnotify/fsnotify"
@@ -46,6 +48,7 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 
 	// todo detect differences and only refresh if necessary
 	db_common.UpdateMetadataTables(w.GetResourceMaps(), client)
+	db_common.UpdatePreparedStatements(context.Background(), w.QueryMap, client)
 
 	w.raiseReportChangedEvents(w.getPanelMap(), prevPanels, w.getReportMap(), prevReports)
 }

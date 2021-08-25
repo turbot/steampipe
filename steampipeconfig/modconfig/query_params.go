@@ -24,8 +24,9 @@ func (q *Query) ResolveParams(params *QueryParams) (string, error) {
 	if len(params.Params) > 0 {
 		// do params contain named params?
 		paramStrs, missingParams, err = q.resolveNamedParameters(params)
-	} else if len(params.ParamsList) > 0 {
-		// must be positional parameters
+	} else {
+		// resolve as positional parameters
+		// (or fall back to defaults if no positional params are present)
 		paramStrs, missingParams, err = q.resolvePositionalParameters(params)
 	}
 
@@ -43,7 +44,7 @@ func (q *Query) ResolveParams(params *QueryParams) (string, error) {
 	}
 
 	// success!
-	return formatParameters(paramStrs), err
+	return strings.Join(paramStrs, ","), err
 }
 
 func (q *Query) resolveNamedParameters(params *QueryParams) (paramStrs []string, missingParams []string, err error) {
@@ -111,11 +112,4 @@ func (q *Query) resolvePositionalParameters(params *QueryParams) (paramStrs []st
 		}
 	}
 	return
-}
-
-func formatParameters(paramStrs []string) string {
-	if len(paramStrs) == 0 {
-		return ""
-	}
-	return fmt.Sprintf("(array['%s'])", strings.Join(paramStrs, "','"))
 }
