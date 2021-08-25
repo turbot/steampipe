@@ -3,7 +3,7 @@ package workspace
 import (
 	"bufio"
 	"fmt"
-
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -498,7 +498,12 @@ func (w *Workspace) GetQueriesFromArgs(args []string) []string {
 func (w *Workspace) GetQueryFromArg(arg string, params *modconfig.QueryParams) (string, bool) {
 	// 1) is this a named query
 	if namedQuery, ok := w.GetQuery(arg); ok {
-		return namedQuery.GetExecuteSQL(params), true
+		sql, err := namedQuery.GetExecuteSQL(params)
+		if err != nil {
+			log.Printf("[WARN] GetQueryFromArg failed for value %s: %v", arg, err)
+			return "", false
+		}
+		return sql, true
 	}
 	// check if this is a control
 	if control, ok := w.GetControl(arg); ok {

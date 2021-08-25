@@ -12,5 +12,4 @@ type WorkspaceResourceProvider interface {
 	GetControlMap() map[string]*modconfig.Control
 	GetControl(controlName string) (*modconfig.Control, bool)
 	SetupWatcher(client Client, onError func(err error)) error
-	ParsePreparedStatementInvocation(arg string) (string, string)
 }

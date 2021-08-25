@@ -1,7 +1,6 @@
 package parse
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -24,10 +23,7 @@ func ParsePreparedStatementInvocation(arg string) (string, *modconfig.QueryParam
 	if openBracketIdx != -1 && closeBracketIdx == len(arg)-1 {
 		paramsString := arg[openBracketIdx+1 : len(arg)-1]
 		params = parseParams(paramsString)
-		// if we successfully parsed params, extract the query name from the start of the string
-		if !params.Empty() {
-			queryName = strings.TrimSpace(arg[:openBracketIdx])
-		}
+		queryName = strings.TrimSpace(arg[:openBracketIdx])
 	}
 	return queryName, params
 }
@@ -36,37 +32,45 @@ func ParsePreparedStatementInvocation(arg string) (string, *modconfig.QueryParam
 // supported formats are:
 //
 // 1) positional params
-// array['val1','val1']
+// 'val1','val1'
 //
 // 2) named params
 // my_param1 => 'val1', my_param2 => 'val2'
 func parseParams(paramsString string) *modconfig.QueryParams {
 	res := modconfig.NewQueryParams()
-	// first check for positional parameters
-	r := *regexp.MustCompile(`array\[(.*)\]`)
-	regexResult := r.FindStringSubmatch(paramsString)
-	if len(regexResult) > 0 {
-		paramsList := strings.Split(regexResult[1], ",")
-		for i, p := range paramsList {
-			paramsList[i] = strings.Trim(strings.TrimSpace(p), "'")
-		}
-
-		res.ParamsList = paramsList
+	if len(paramsString) == 0 {
 		return res
 	}
 
-	// otherwise check for named parameters
+	// split on comma to get each param string
 	paramsList := strings.Split(paramsString, ",")
+
+	// first check for named parameters
+	res.Params = parseNamedParams(paramsList)
+	if !res.Empty() {
+		return res
+	}
+
+	// just treat params as positional parameters
+	// strip spaces
+	for i, v := range paramsList {
+		paramsList[i] = strings.TrimSpace(v)
+	}
+	res.ParamsList = paramsList
+	return res
+}
+
+func parseNamedParams(paramsList []string) map[string]string {
+	var res = make(map[string]string)
 	for _, p := range paramsList {
 		paramTuple := strings.Split(strings.TrimSpace(p), "=>")
 		if len(paramTuple) != 2 {
 			// not all params have valid syntax - give up
-			return res
+			return nil
 		}
 		k := strings.TrimSpace(paramTuple[0])
 		v := strings.Trim(strings.TrimSpace(paramTuple[1]), "'")
-		res.Params[k] = v
+		res[k] = v
 	}
-
 	return res
 }

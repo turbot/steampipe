@@ -24,6 +24,7 @@ import (
 	"github.com/turbot/steampipe/query/metaquery"
 	"github.com/turbot/steampipe/query/queryhistory"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
 )
@@ -395,12 +396,16 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 	query := strings.Join(c.interactiveBuffer, "\n")
 
 	// in case of a named query call with params, parse the where clause
-	queryName, paramsString := c.workspace().ParsePreparedStatementInvocation(query)
+	queryName, params := parse.ParsePreparedStatementInvocation(query)
 	namedQuery, isNamedQuery := c.workspace().GetQuery(queryName)
 
 	// if it is a multiline query, execute even without `;`
 	if isNamedQuery {
-		query = namedQuery.GetExecuteSQL(paramsString)
+		var err error
+		query, err = namedQuery.GetExecuteSQL(params)
+		if err != nil {
+			return "", err
+		}
 	} else {
 		// should we execute?
 		if !c.shouldExecute(query) {

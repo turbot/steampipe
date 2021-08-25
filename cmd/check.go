@@ -239,7 +239,7 @@ func initialiseCheck() *checkInitData {
 	}
 
 	// create the prepared statements
-	initData.result.Error = db_common.CreatePreparedStatements(ctx, initData.workspace, initData.client)
+	initData.result.Error = db_common.CreatePreparedStatements(ctx, initData.workspace.GetQueryMap(), initData.client)
 
 	return initData
 }
