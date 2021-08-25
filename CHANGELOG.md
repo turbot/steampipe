@@ -1,3 +1,7 @@
+## v0.8.0 [TBD]
+_Bug fixes_
+* Fix issue where configs refering to unavailable plugin will display incorrect error message. ([#796](https://github.com/turbot/steampipe/issues/796))
+
 ## v0.7.3 [2021-08-18]
 _Bug fixes_
 * Retry a control run if the plugin crashes. ([#757](https://github.com/turbot/steampipe/issues/757))
