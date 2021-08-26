@@ -1,6 +1,9 @@
 package parse
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -77,6 +80,13 @@ func decode(runCtx *RunContext, opts *ParseModOptions) hcl.Diagnostics {
 			// special case decode logic for locals
 			variable, res := decodeVariable(block, runCtx)
 			moreDiags = handleDecodeResult(variable, res, block, runCtx)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
+		case modconfig.BlockTypeControl:
+			// special case decode logic for locals
+			control, res := decodeControl(block, runCtx)
+			moreDiags = handleDecodeResult(control, res, block, runCtx)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
@@ -168,6 +178,98 @@ func decodeVariable(block *hcl.Block, runCtx *RunContext) (*modconfig.Variable, 
 
 }
 
+func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *decodeResult) {
+	res := &decodeResult{}
+
+	c := modconfig.NewControl(block)
+
+	content, diags := block.Body.Content(ControlBlockSchema)
+
+	if !hclsyntax.ValidIdentifier(c.ShortName) {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Invalid control name",
+			Detail:   badIdentifierDetail,
+			Subject:  &block.LabelRanges[0],
+		})
+	}
+
+	if attr, exists := content.Attributes["description"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Description)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["documentation"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Documentation)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["search_path"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SearchPath)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["search_path_prefix"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SearchPathPrefix)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["severity"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Severity)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["sql"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SQL)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["tags"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Tags)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["title"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Title)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["params"]; exists {
+		valDiags := setControlParams(attr, runCtx.EvalCtx, c)
+		diags = append(diags, valDiags...)
+
+	}
+
+	// handle any resulting diags, which may specify dependencies
+	res.handleDecodeDiags(diags)
+
+	// call post-decode hook
+	if res.Success() {
+		if diags := c.OnDecoded(block); diags.HasErrors() {
+			res.addDiags(diags)
+		}
+		AddReferences(c, block)
+	}
+
+	return c, res
+
+}
+
+func setControlParams(attr *hcl.Attribute, evalCtx *hcl.EvalContext, c *modconfig.Control) hcl.Diagnostics {
+
+	v, diags := attr.Expr.Value(evalCtx)
+	if diags.HasErrors() {
+		return diags
+		//if err != nil {
+		//	diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
+		//}
+	}
+	ty := v.Type()
+	var err error
+	switch {
+	case ty.IsObjectType():
+		c.Params.Params, err = ctyObjectToPostgresMap(v)
+	case ty.IsTupleType():
+		c.Params.ParamsList, err = ctyTupleToPostgresArray(v)
+	default:
+		err = fmt.Errorf("unsupported parameter type %s", ty.FriendlyName())
+	}
+	log.Printf(err.Error())
+	return nil
+}
+
 func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
 	// get shell resource
 	resource := resourceForBlock(block, runCtx)
@@ -189,7 +291,7 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 
 func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decodeResult) {
 	res := &decodeResult{}
-	content, diags := block.Body.Content(PanelSchema)
+	content, diags := block.Body.Content(PanelBlockSchema)
 	res.handleDecodeDiags(diags)
 
 	// get shell resource
@@ -225,7 +327,7 @@ func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decod
 func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Report, *decodeResult) {
 	res := &decodeResult{}
 
-	content, diags := block.Body.Content(ReportSchema)
+	content, diags := block.Body.Content(ReportBlockSchema)
 	res.handleDecodeDiags(diags)
 
 	report := modconfig.NewReport(block)

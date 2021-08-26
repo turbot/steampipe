@@ -13,7 +13,7 @@ import (
 )
 
 func ParseConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.Connection, hcl.Diagnostics) {
-	connectionContent, rest, diags := block.Body.PartialContent(ConnectionSchema)
+	connectionContent, rest, diags := block.Body.PartialContent(ConnectionBlockSchema)
 	if diags.HasErrors() {
 		return nil, diags
 	}
