@@ -2,7 +2,6 @@ package parse
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -248,7 +247,6 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 }
 
 func setControlParams(attr *hcl.Attribute, evalCtx *hcl.EvalContext, c *modconfig.Control) hcl.Diagnostics {
-
 	v, diags := attr.Expr.Value(evalCtx)
 	if diags.HasErrors() {
 		return diags
@@ -264,12 +262,19 @@ func setControlParams(attr *hcl.Attribute, evalCtx *hcl.EvalContext, c *modconfi
 	case ty.IsTupleType():
 		c.Params.ParamsList, err = ctyTupleToPostgresArray(v)
 	default:
-		err = fmt.Errorf("unsupported parameter type %s", ty.FriendlyName())
+		err = fmt.Errorf("'params' property must be either a map or an array")
 	}
+
 	if err != nil {
-		log.Printf(err.Error())
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s has invalid parameter config", c.FullName),
+			Detail:   err.Error(),
+			Subject:  &attr.Range,
+		})
 	}
-	return nil
+
+	return diags
 }
 
 func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {

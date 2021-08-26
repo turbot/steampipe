@@ -21,6 +21,7 @@ func ctyObjectToPostgresMap(val cty.Value) (map[string]string, error) {
 		// decode the value into a postgres compatible
 		valStr, err := ctyToPostgresString(v)
 		if err != nil {
+			err := fmt.Errorf("invalid value provided for param '%s': %v", key, err)
 			return nil, err
 		}
 
@@ -68,7 +69,7 @@ func ctyToPostgresString(v cty.Value) (valStr string, err error) {
 		return
 	}
 
-	return "", fmt.Errorf("unsupported parameter type %s", ty.FriendlyName())
+	return "", fmt.Errorf("unsupported type '%s'", ty.FriendlyName())
 }
 
 func ctyTupleToPostgresArray(val cty.Value) ([]string, error) {
