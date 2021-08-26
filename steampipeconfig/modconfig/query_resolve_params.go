@@ -64,19 +64,19 @@ func (q *Query) resolveNamedParameters(params *QueryParams) (paramStrs []string,
 	paramStrs = make([]string, len(q.ParamsDefs))
 
 	// iterate through each param def and resolve the value
-	//for i, def := range q.ParamsDefs {
-	//	defaultValue := typehelpers.SafeString(def.Default)
-	//
-	//	// can we resolve a value for this param?
-	//	if val, ok := params.Params[def.Name]; ok {
-	//		paramStrs[i] = val
-	//	} else if defaultValue != "" {
-	//		paramStrs[i] = defaultValue
-	//	} else {
-	//		// no value provided and no default defined - add to missing list
-	//		missingParams = append(missingParams, def.Name)
-	//	}
-	//}
+	for i, def := range q.ParamsDefs {
+		defaultValue := typehelpers.SafeString(def.Default)
+
+		// can we resolve a value for this param?
+		if val, ok := params.Params[def.Name]; ok {
+			paramStrs[i] = val
+		} else if defaultValue != "" {
+			paramStrs[i] = defaultValue
+		} else {
+			// no value provided and no default defined - add to missing list
+			missingParams = append(missingParams, def.Name)
+		}
+	}
 
 	return paramStrs, missingParams, nil
 }
@@ -88,28 +88,28 @@ func (q *Query) resolvePositionalParameters(params *QueryParams) (paramStrs []st
 		return
 	}
 
-	//// if no param defs are defined, just use the given values
-	//if len(q.ParamsDefs) == 0 {
-	//	paramStrs = params.ParamsList
-	//	return
-	//}
-	//
-	//// so there are param defs - we must be able to resolve all params
-	//// if there are MORE defs than provided parameters, all remaining defs MUST provide a default
-	//paramStrs = make([]string, len(q.ParamsDefs))
-	//
-	//for i, def := range q.ParamsDefs {
-	//	defaultValue := typehelpers.SafeString(def.Default)
-	//
-	//	if i < len(params.ParamsList) {
-	//		paramStrs[i] = params.ParamsList[i]
-	//	} else if defaultValue != "" {
-	//		// so we have run out of provided params - is there a default?
-	//		paramStrs[i] = defaultValue
-	//	} else {
-	//		// no value provided and no default defined - add to missing list
-	//		missingParams = append(missingParams, def.Name)
-	//	}
-	//}
+	// if no param defs are defined, just use the given values
+	if len(q.ParamsDefs) == 0 {
+		paramStrs = params.ParamsList
+		return
+	}
+
+	// so there are param defs - we must be able to resolve all params
+	// if there are MORE defs than provided parameters, all remaining defs MUST provide a default
+	paramStrs = make([]string, len(q.ParamsDefs))
+
+	for i, def := range q.ParamsDefs {
+		defaultValue := typehelpers.SafeString(def.Default)
+
+		if i < len(params.ParamsList) {
+			paramStrs[i] = params.ParamsList[i]
+		} else if defaultValue != "" {
+			// so we have run out of provided params - is there a default?
+			paramStrs[i] = defaultValue
+		} else {
+			// no value provided and no default defined - add to missing list
+			missingParams = append(missingParams, def.Name)
+		}
+	}
 	return
 }
