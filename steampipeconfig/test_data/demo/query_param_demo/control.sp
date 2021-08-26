@@ -10,7 +10,10 @@ control "c2"{
     sql = "query.q1"
     params = {
         "p1" = "control2 "
-        "p3" = "a reason"
+        "p3" = {
+            "p1" = "control2 "
+            "p3" = "a reason"
+        }
     }
 }
 
