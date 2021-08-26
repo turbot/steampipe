@@ -12,6 +12,8 @@ import (
 	"github.com/alecthomas/chroma/formatters"
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
+	"github.com/spf13/viper"
+
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/autocomplete"
@@ -55,11 +57,18 @@ type InteractiveClient struct {
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock sync.Mutex
 
-	highlighter Highlighter
+	highlighter *Highlighter
+}
+
+func getHighlighter(theme string) *Highlighter {
+	return newHighlighter(
+		lexers.Get("sql"),
+		formatters.Get("terminal256"),
+		styles.Native,
+	)
 }
 
 func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
-
 	c := &InteractiveClient{
 		resultsStreamer:         resultsStreamer,
 		interactiveQueryHistory: queryhistory.New(),
@@ -67,7 +76,7 @@ func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStream
 		autocompleteOnEmpty:     false,
 		initDataChan:            initChan,
 		initResultChan:          make(chan *db_common.InitResult, 1),
-		highlighter:             newHighlighter(lexers.Get("sql"), formatters.Get("terminal256"), styles.VisualStudio),
+		highlighter:             getHighlighter(viper.GetString(constants.ArgTheme)),
 	}
 	// asynchronously wait for init to complete
 	// we start this immediately rather than lazy loading as we want to handle errors asap
