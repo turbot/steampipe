@@ -3,6 +3,10 @@ package parse
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/utils"
+
+	typehelpers "github.com/turbot/go-kit/types"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -214,8 +218,36 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 		diags = append(diags, valDiags...)
 	}
 	if attr, exists := content.Attributes["sql"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SQL)
+		// either Query or SQL property may be set -  if Query property already set, error
+		if c.Query != nil {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", c.FullName),
+				Subject:  &attr.Range,
+			})
+		} else {
+			valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SQL)
+			diags = append(diags, valDiags...)
+		}
+
+	}
+	if attr, exists := content.Attributes["query"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Query)
 		diags = append(diags, valDiags...)
+		if !valDiags.HasErrors() {
+			// either Query or SQL property may be set - if SQL property already set, error
+			if typehelpers.SafeString(c.SQL) != "" {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", c.FullName),
+					Subject:  &attr.Range,
+				})
+			} else {
+				// set SQL to the query NAME
+				c.SQL = utils.ToStringPointer(c.Query.FullName)
+			}
+		}
+
 	}
 	if attr, exists := content.Attributes["tags"]; exists {
 		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Tags)

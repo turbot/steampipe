@@ -23,7 +23,7 @@ type Control struct {
 	SQL              *string            `cty:"sql"  column:"sql,text"`
 	Tags             *map[string]string `cty:"tags"  column:"tags,jsonb"`
 	Title            *string            `cty:"title"  column:"title,text"`
-
+	Query            *Query
 	// parameters
 	// params may be specified by either a map of named parameters or as a list of positional parameters
 	// we apply special decode logic to convert the params block into a QueryParams object
@@ -168,6 +168,19 @@ func (c *Control) CtyValue() (cty.Value, error) {
 
 // OnDecoded implements HclResource
 func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+
+// OnDecoded implements HclResource
+func (c *Control) SetSQL(sql string, block *hcl.Block) hcl.Diagnostics {
+	// if both query and SQL are set, raise an error
+	if typehelpers.SafeString(c.SQL) != "" {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", c.FullName),
+			Subject:  &block.DefRange,
+		}}
+	}
+	return nil
+}
 
 // AddReference implements HclResource
 func (c *Control) AddReference(reference string) {

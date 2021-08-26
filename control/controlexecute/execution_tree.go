@@ -207,7 +207,12 @@ func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereC
 	// query may either be a 'where' clause, or a named query
 	// in case of a named query call with params, parse the where clause
 	queryName, paramsString := parse.ParsePreparedStatementInvocation(whereClause)
-	query, isNamedQuery := e.workspace.GetQueryFromArg(queryName, paramsString)
+	query, err := e.workspace.GetQueryFromArg(queryName, paramsString)
+	if err != nil {
+		return nil, err
+	}
+	// did we in fact resolve a named query, or just return the 'name' as the query
+	isNamedQuery := query != queryName
 
 	// if the query is NOT a named query, we need to construct a full query by adding a select
 	if !isNamedQuery {
