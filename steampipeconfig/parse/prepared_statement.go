@@ -10,7 +10,7 @@ import (
 // supported formats are:
 //
 // 1) positional params
-// query.my_prepared_statement(array['val1','val1'])
+// query.my_prepared_statement('val1','val1')
 //
 // 2) named params
 // query.my_prepared_statement(my_param1 => 'test', my_param2 => 'test2')
@@ -42,21 +42,21 @@ func parseParams(paramsString string) *modconfig.QueryParams {
 		return res
 	}
 
-	// split on comma to get each param string
-	paramsList := strings.Split(paramsString, ",")
-
-	// first check for named parameters
-	res.Params = parseNamedParams(paramsList)
-	if !res.Empty() {
-		return res
-	}
-
-	// just treat params as positional parameters
-	// strip spaces
-	for i, v := range paramsList {
-		paramsList[i] = strings.TrimSpace(v)
-	}
-	res.ParamsList = paramsList
+	//// split on comma to get each param string
+	//paramsList := strings.Split(paramsString, ",")
+	//
+	//// first check for named parameters
+	//res.Params = parseNamedParams(paramsList)
+	//if !res.Empty() {
+	//	return res
+	//}
+	//
+	//// just treat params as positional parameters
+	//// strip spaces
+	//for i, v := range paramsList {
+	//	paramsList[i] = strings.TrimSpace(v)
+	//}
+	//res.ParamsList = paramsList
 	return res
 }
 
@@ -69,7 +69,7 @@ func parseNamedParams(paramsList []string) map[string]string {
 			return nil
 		}
 		k := strings.TrimSpace(paramTuple[0])
-		v := strings.Trim(strings.TrimSpace(paramTuple[1]), "'")
+		v := strings.TrimSpace(paramTuple[1])
 		res[k] = v
 	}
 	return res
