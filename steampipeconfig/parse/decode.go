@@ -266,7 +266,9 @@ func setControlParams(attr *hcl.Attribute, evalCtx *hcl.EvalContext, c *modconfi
 	default:
 		err = fmt.Errorf("unsupported parameter type %s", ty.FriendlyName())
 	}
-	log.Printf(err.Error())
+	if err != nil {
+		log.Printf(err.Error())
+	}
 	return nil
 }
 
