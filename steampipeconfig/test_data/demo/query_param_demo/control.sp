@@ -18,5 +18,5 @@ control "c3"{
     title ="C3"
     description = "THIS IS CONTROL 3"
     sql = "query.q1"
-    params = [  "control3 ", "because______ " ]
+    params = [  "control3 ", "because  " ]
 }

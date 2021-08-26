@@ -163,6 +163,8 @@ func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
 
 func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, initDataChan chan *db_common.QueryInitData, args []string) {
 	go func() {
+		utils.LogTime("cmd.getQueryInitDataAsync start")
+		defer utils.LogTime("cmd.getQueryInitDataAsync end")
 		initData := db_common.NewQueryInitData()
 		defer func() {
 			if r := recover(); r != nil {
@@ -202,6 +204,8 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 			initData.Result.Error = err
 			return
 		}
+
+		utils.LogTime("cmd.getQueryInitDataAsync CreatePreparedStatements")
 
 		initData.Result.Error = db_common.CreatePreparedStatements(ctx, workspace.GetQueryMap(), client)
 	}()
