@@ -14,18 +14,19 @@ func CreatePreparedStatements(ctx context.Context, queryMap map[string]*modconfi
 	utils.LogTime("db.CreatePreparedStatements start")
 	defer utils.LogTime("db.CreatePreparedStatements end")
 
-	var sql []string
 	for name, query := range queryMap {
 		// query map contains long and short names for queries - avoid dupes
 		if !strings.HasPrefix(name, "query.") {
 			continue
 		}
-		sql = append(sql, fmt.Sprintf("PREPARE %s AS (\n%s\n)", query.ShortName, typehelpers.SafeString(query.SQL)))
-	}
-	// execute the query, passing 'true' to disable the spinner
-	_, err := client.ExecuteSync(ctx, strings.Join(sql, "\n"), true)
-	if err != nil {
-		return fmt.Errorf("failed to create prepared statements tables: %v", err)
+		// remove trailing semicolons from sql as this breaks the prepare statement
+		rawSql := strings.TrimRight(strings.TrimSpace(typehelpers.SafeString(query.SQL)), ";")
+		sql := fmt.Sprintf("PREPARE %s AS (\n%s\n)", query.ShortName, rawSql)
+		// execute the query, passing 'true' to disable the spinner
+		_, err := client.ExecuteSync(ctx, sql, true)
+		if err != nil {
+			return fmt.Errorf("failed to create prepared statements table %s: %v", name, err)
+		}
 	}
 
 	// return context error - this enables calling code to respond to cancellation
