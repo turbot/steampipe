@@ -118,32 +118,15 @@ var ReportBlockSchema = &hcl.BodySchema{
 
 var ControlBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
-		{
-			Name: "description",
-		},
-		{
-			Name: "documentation",
-		},
-		{
-			Name: "search_path",
-		},
-		{
-			Name: "search_path_prefix",
-		},
-		{
-			Name: "severity",
-		},
-		{
-			Name: "sql",
-		},
-		{
-			Name: "tags",
-		},
-		{
-			Name: "title",
-		},
-		{
-			Name: "params",
-		},
+		{Name: "description"},
+		{Name: "documentation"},
+		{Name: "search_path"},
+		{Name: "search_path_prefix"},
+		{Name: "severity"},
+		{Name: "sql"},
+		{Name: "query"},
+		{Name: "tags"},
+		{Name: "title"},
+		{Name: "params"},
 	},
 }
