@@ -3,6 +3,13 @@ variable "v1"{
     default = "from_var"
 }
 
+variable "regions"{
+    type = list(string)
+    description = "string array variable with default"
+    default = ["eu-west2", "us-east1"]
+}
+
+
 
 query "q1"{
     title ="Q1"

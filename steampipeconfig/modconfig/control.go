@@ -186,12 +186,5 @@ func (c *Control) SetMetadata(metadata *ResourceMetadata) {
 
 // GetParams returns the query parameters which were specified in the control config
 func (c *Control) GetParams() *QueryParams {
-	res := &QueryParams{}
-	//if c.Params != nil {
-	//	res.Params = *c.Params
-	//}
-	//if c.ParamsList != nil {
-	//	res.ParamsList = *c.ParamsList
-	//}
-	return res
+	return c.Params
 }

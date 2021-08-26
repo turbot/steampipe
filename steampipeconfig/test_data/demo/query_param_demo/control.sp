@@ -2,7 +2,6 @@ control "c1"{
     title ="C1"
     description = "THIS IS CONTROL 1"
     sql = "query.q1"
-    params = [  "control1", 1, "something" ]
 }
 
 control "c2"{
@@ -18,6 +17,6 @@ control "c2"{
 control "c3"{
     title ="C3"
     description = "THIS IS CONTROL 3"
-    sql = query.q1.sql
-    params = [  "control3 ", "because " ]
+    sql = "query.q1"
+    params = [  "control3 ", "because______ " ]
 }
