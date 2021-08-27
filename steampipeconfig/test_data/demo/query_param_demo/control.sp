@@ -10,6 +10,7 @@ control "c2"{
     query = query.q1
     params = {
         "p1" = "control2 "
+        "p2" = 100
         "p3" = "a reason"
     }
 }

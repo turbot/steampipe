@@ -3,9 +3,9 @@ package parse
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/utils"
-
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
+	"github.com/zclconf/go-cty/cty/gocty"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -90,6 +90,13 @@ func decode(runCtx *RunContext, opts *ParseModOptions) hcl.Diagnostics {
 			// special case decode logic for locals
 			control, res := decodeControl(block, runCtx)
 			moreDiags = handleDecodeResult(control, res, block, runCtx)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
+		case modconfig.BlockTypeQuery:
+			// special case decode logic for locals
+			query, res := decodeQuery(block, runCtx)
+			moreDiags = handleDecodeResult(query, res, block, runCtx)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
@@ -181,6 +188,104 @@ func decodeVariable(block *hcl.Block, runCtx *RunContext) (*modconfig.Variable, 
 
 }
 
+func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decodeResult) {
+	res := &decodeResult{}
+
+	q := modconfig.NewQuery(block)
+
+	content, diags := block.Body.Content(QueryBlockSchema)
+
+	if !hclsyntax.ValidIdentifier(q.ShortName) {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Invalid control name",
+			Detail:   badIdentifierDetail,
+			Subject:  &block.LabelRanges[0],
+		})
+	}
+
+	if attr, exists := content.Attributes["description"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.Description)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["documentation"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.Documentation)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["search_path"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.SearchPath)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["search_path_prefix"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.SearchPathPrefix)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["sql"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.SQL)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["tags"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.Tags)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["title"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.Title)
+		diags = append(diags, valDiags...)
+	}
+	for _, block := range content.Blocks {
+		if block.Type == "params" {
+			if paramDef, valDiags := decodeParamDef(block, runCtx, q.FullName); !diags.HasErrors() {
+				q.ParamsDefs = append(q.ParamsDefs, paramDef)
+			} else {
+				diags = append(diags, valDiags...)
+			}
+		}
+	}
+
+	// handle any resulting diags, which may specify dependencies
+	res.handleDecodeDiags(diags)
+
+	// call post-decode hook
+	if res.Success() {
+		if diags := q.OnDecoded(block); diags.HasErrors() {
+			res.addDiags(diags)
+		}
+		AddReferences(q, block)
+	}
+
+	return q, res
+
+}
+
+func decodeParamDef(block *hcl.Block, runCtx *RunContext, queryName string) (*modconfig.ParamDef, hcl.Diagnostics) {
+	def := modconfig.NewParamDef(block)
+
+	content, diags := block.Body.Content(ParamDefBlockSchema)
+
+	if attr, exists := content.Attributes["description"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &def.Description)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["default"]; exists {
+		v, diags := attr.Expr.Value(runCtx.EvalCtx)
+		if diags.HasErrors() {
+			return nil, diags
+		}
+		if valStr, err := ctyToPostgresString(v); err == nil {
+			def.Default = utils.ToStringPointer(valStr)
+		} else {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("%s has invalid parameter config", queryName),
+				Detail:   err.Error(),
+				Subject:  &attr.Range,
+			})
+		}
+	}
+	return def, diags
+
+}
+
 func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *decodeResult) {
 	res := &decodeResult{}
 
@@ -258,8 +363,16 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 		diags = append(diags, valDiags...)
 	}
 	if attr, exists := content.Attributes["params"]; exists {
-		valDiags := setControlParams(attr, runCtx.EvalCtx, c)
-		diags = append(diags, valDiags...)
+		if params, err := decodeControlParams(attr, runCtx.EvalCtx); err == nil {
+			c.Params = params
+		} else {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("%s has invalid parameter config", c.FullName),
+				Detail:   err.Error(),
+				Subject:  &attr.Range,
+			})
+		}
 
 	}
 
@@ -278,35 +391,88 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 
 }
 
-func setControlParams(attr *hcl.Attribute, evalCtx *hcl.EvalContext, c *modconfig.Control) hcl.Diagnostics {
+func decodeControlParams(attr *hcl.Attribute, evalCtx *hcl.EvalContext) (*modconfig.QueryParams, error) {
+	// TODO pass in control name and return diag???
+	var params = modconfig.NewQueryParams()
 	v, diags := attr.Expr.Value(evalCtx)
 	if diags.HasErrors() {
-		return diags
-		//if err != nil {
-		//	diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
-		//}
+		return nil, diags
 	}
 	ty := v.Type()
 	var err error
 	switch {
 	case ty.IsObjectType():
-		c.Params.Params, err = ctyObjectToPostgresMap(v)
+		params.Params, err = ctyObjectToPostgresMap(v)
 	case ty.IsTupleType():
-		c.Params.ParamsList, err = ctyTupleToPostgresArray(v)
+		params.ParamsList, err = ctyTupleToPostgresArray(v)
 	default:
 		err = fmt.Errorf("'params' property must be either a map or an array")
 	}
 
-	if err != nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s has invalid parameter config", c.FullName),
-			Detail:   err.Error(),
-			Subject:  &attr.Range,
-		})
+	return params, err
+}
+
+func decodeQueryParamsDef(attr *hcl.Attribute, evalCtx *hcl.EvalContext) (*modconfig.QueryParams, error) {
+	var params = modconfig.NewQueryParams()
+	v, diags := attr.Expr.Value(evalCtx)
+	if diags.HasErrors() {
+		return nil, diags
+	}
+	ty := v.Type()
+	var err error
+	switch {
+	case ty.IsObjectType():
+		params.Params, err = ctyObjectToPostgresMap(v)
+	case ty.IsTupleType():
+		params.ParamsList, err = ctyTupleToPostgresArray(v)
+	default:
+		err = fmt.Errorf("'params' property must be either a map or an array")
 	}
 
-	return diags
+	return params, err
+}
+
+func setQueryParamDefs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, q *modconfig.Query) hcl.Diagnostics {
+	val, diags := attr.Expr.Value(evalCtx)
+	if diags.HasErrors() {
+		return diags
+	}
+
+	it := val.ElementIterator()
+	for it.Next() {
+		_, def := it.Element()
+		var paramDef = &modconfig.ParamDef{Name: attr.Name}
+
+		defIt := def.ElementIterator()
+		for defIt.Next() {
+			k, v := defIt.Element()
+			// decode key
+			var key string
+			gocty.FromCtyValue(k, &key)
+			switch key {
+			case "description":
+				gocty.FromCtyValue(v, &paramDef.Description)
+			}
+		}
+	}
+	return nil
+	//
+	//
+	//q.Params.ParamsList, err = ctyTupleToPostgresArray(v)
+	//default:
+	//	err = fmt.Errorf("'params' property must be either a map or an array")
+	//}
+	//
+	//if err != nil {
+	//	diags = append(diags, &hcl.Diagnostic{
+	//		Severity: hcl.DiagError,
+	//		Summary:  fmt.Sprintf("%s has invalid parameter config", c.FullName),
+	//		Detail:   err.Error(),
+	//		Subject:  &attr.Range,
+	//	})
+	//}
+	//
+	//return diags
 }
 
 func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
