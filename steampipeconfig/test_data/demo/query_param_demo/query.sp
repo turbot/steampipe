@@ -3,13 +3,6 @@ variable "v1"{
     default = "from_var"
 }
 
-variable "regions"{
-    type = list(string)
-    description = "string array variable with default"
-    default = ["eu-west2", "us-east1"]
-}
-
-
 
 query "q1"{
     title ="Q1"
@@ -27,4 +20,10 @@ query "q1"{
         description = "p3"
         default = 100
     }
+}
+
+
+query "q2" {
+    title       = "EC2 Instances xlarge and bigger"
+    sql = "select 'ok' as status, 'foo' as resource, $1::json->1 as reason"
 }

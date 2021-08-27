@@ -196,8 +196,3 @@ func (c *Control) GetMetadata() *ResourceMetadata {
 func (c *Control) SetMetadata(metadata *ResourceMetadata) {
 	c.metadata = metadata
 }
-
-// GetParams returns the query parameters which were specified in the control config
-func (c *Control) GetParams() *QueryParams {
-	return c.Params
-}

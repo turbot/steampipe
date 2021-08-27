@@ -404,8 +404,10 @@ func decodeControlParams(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlN
 	if diags.HasErrors() {
 		return nil, diags
 	}
-	ty := v.Type()
+
 	var err error
+	ty := v.Type()
+
 	switch {
 	case ty.IsObjectType():
 		params.Params, err = ctyObjectToPostgresMap(v)
