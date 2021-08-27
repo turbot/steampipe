@@ -11,7 +11,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// LoadFileData :: built a map of filepath to file data
+// LoadFileData builds a map of filepath to file data
 func LoadFileData(paths ...string) (map[string][]byte, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var fileData = map[string][]byte{}
@@ -30,6 +30,7 @@ func LoadFileData(paths ...string) (map[string][]byte, hcl.Diagnostics) {
 	return fileData, diags
 }
 
+// ParseHclFiles parses hcl file data and returnes the hcl body object
 func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	var parsedConfigFiles []*hcl.File
 	var diags hcl.Diagnostics
@@ -47,7 +48,7 @@ func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	return hcl.MergeFiles(parsedConfigFiles), diags
 }
 
-// ParseMod :: parse all source hcl files for the mod and associated resources
+// ParseMod parses all source hcl files for the mod path and associated resources, and returns the mod object
 func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modconfig.MappableResource, opts *ParseModOptions) (*modconfig.Mod, error) {
 	body, diags := ParseHclFiles(fileData)
 	if diags.HasErrors() {
@@ -63,8 +64,9 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	// maps to store the parse resources
 	var mod *modconfig.Mod
 
-	// 1) get names of all resources defined in hcl
+	// 1) get names of all resources defined in hcl which may also be created as pseudo resources
 	hclResources := make(map[string]bool)
+
 	for _, block := range content.Blocks {
 		// if this is a mod, build a shell mod struct (with just the name populated)
 		switch block.Type {
@@ -146,4 +148,44 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	}
 
 	return mod, nil
+}
+
+// ParseModResourceNames parses all source hcl files for the mod path and associated resources,
+// and returns the resource names
+func ParseModResourceNames(fileData map[string][]byte) (*modconfig.WorkspaceResources, error) {
+	var resources = modconfig.NewWorkspaceResources()
+	body, diags := ParseHclFiles(fileData)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
+	}
+
+	content, moreDiags := body.Content(ModFileSchema)
+	if moreDiags.HasErrors() {
+		diags = append(diags, moreDiags...)
+		return nil, plugin.DiagsToError("Failed to load mod", diags)
+	}
+
+	for _, block := range content.Blocks {
+		// if this is a mod, build a shell mod struct (with just the name populated)
+		switch block.Type {
+
+		case modconfig.BlockTypeQuery:
+			// for any mappable resource, store the resource name
+			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
+			resources.Query[name] = true
+		case modconfig.BlockTypeControl:
+			// for any mappable resource, store the resource name
+			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
+			resources.Control[name] = true
+		case modconfig.BlockTypeBenchmark:
+			// for any mappable resource, store the resource name
+			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
+			resources.Benchmark[name] = true
+			//case modconfig.BlockTypePanel:
+			//	// for any mappable resource, store the resource name
+			//	name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
+			//	resources.Panel[name]=true
+		}
+	}
+	return resources, nil
 }

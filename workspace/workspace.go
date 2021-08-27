@@ -69,6 +69,27 @@ func Load(workspacePath string) (*Workspace, error) {
 	return workspace, nil
 }
 
+// LoadResourceNames builds lists of all workspace respurce names
+func LoadResourceNames(workspacePath string) (*modconfig.WorkspaceResources, error) {
+	utils.LogTime("workspace.LoadResourceNames start")
+	defer utils.LogTime("workspace.LoadResourceNames end")
+
+	// create shell workspace
+	workspace := &Workspace{
+		Path: workspacePath,
+	}
+
+	// determine whether to load files recursively or just from the top level folder
+	workspace.setListFlag()
+
+	// load the .steampipe ignore file
+	if err := workspace.loadExclusions(); err != nil {
+		return nil, err
+	}
+
+	return workspace.loadWorkspaceResourceName()
+}
+
 func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(error)) error {
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
@@ -261,9 +282,34 @@ func (w *Workspace) loadWorkspaceMod() error {
 
 	return nil
 }
+func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
+	// build options used to load workspace
+	// set flags to create pseudo resources and a default mod if needed
+	opts := &parse.ParseModOptions{
+		Flags: parse.CreatePseudoResources | parse.CreateDefaultMod,
+		ListOptions: &filehelpers.ListOptions{
+			// listFlag specifies whether to load files recursively
+			Flags:   w.listFlag,
+			Exclude: w.exclusions,
+		},
+	}
 
-// load all dependencies of workspace mod
-// used to load all mods in a workspace, using the workspace manifest mod
+	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO load resource names for dependency mods
+	//modsPath := constants.WorkspaceModPath(w.Path)
+	//dependencyResourceNames, err := w.loadModDependencyResourceNames(modsPath)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	return workspaceResourceNames, nil
+}
+
+// load resource names for all dependencies of workspace mod
 func (w *Workspace) loadModDependencies(modsFolder string) (modconfig.ModMap, error) {
 	var res = modconfig.ModMap{
 		w.Mod.Name(): w.Mod,
