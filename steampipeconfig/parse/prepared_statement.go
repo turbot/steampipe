@@ -19,6 +19,7 @@ import (
 // 2) named params
 // query.my_prepared_statement(my_param1 => 'test', my_param2 => 'test2')
 func ParsePreparedStatementInvocation(arg string) (string, *modconfig.QueryParams, error) {
+	// TODO strip non printing chars
 	params := &modconfig.QueryParams{}
 	arg = strings.TrimSpace(arg)
 	queryName := arg

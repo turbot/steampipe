@@ -49,6 +49,11 @@ func (q *Query) ResolveParams(params *QueryParams) (string, error) {
 			strings.Join(missingParams, ","))
 	}
 
+	// are there any params?
+	if len(paramStrs) == 0 {
+		return "", nil
+	}
+
 	// success!
 	return fmt.Sprintf("(%s)", strings.Join(paramStrs, ",")), err
 }
