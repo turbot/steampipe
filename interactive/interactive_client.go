@@ -319,12 +319,15 @@ func (c *InteractiveClient) executor(line string) {
 	c.afterClose = AfterPromptCloseRestart
 
 	line = strings.TrimSpace(line)
+	// store the history (the raw line which was entered)
+	// we want to store even if we fail to resolve a query
+	c.interactiveQueryHistory.Put(line)
+
 	query, err := c.getQuery(line)
 	if query == "" {
 		if err != nil {
-			// if there was an error other than cancellation, quit
 			if !utils.IsCancelledError(err) {
-				c.afterClose = AfterPromptCloseExit
+				utils.ShowError(err)
 			}
 			// restart the prompt
 			c.restartInteractiveSession()
@@ -352,8 +355,6 @@ func (c *InteractiveClient) executor(line string) {
 		}
 	}
 
-	// store the history (the raw line which was entered)
-	c.interactiveQueryHistory.Put(line)
 	// restart the prompt
 	c.restartInteractiveSession()
 }
