@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/utils"
 )
@@ -12,6 +13,10 @@ type ParamDef struct {
 	Name        string  `hcl:"name,label"`
 	Description *string `cty:"description" hcl:"description" column:"description,text"`
 	Default     *string `cty:"default" hcl:"default" column:"default,text"`
+}
+
+func NewParamDef(block *hcl.Block) *ParamDef {
+	return &ParamDef{Name: block.Labels[0]}
 }
 
 func (d ParamDef) String() string {

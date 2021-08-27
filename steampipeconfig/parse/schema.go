@@ -130,3 +130,27 @@ var ControlBlockSchema = &hcl.BodySchema{
 		{Name: "params"},
 	},
 }
+
+var QueryBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "description"},
+		{Name: "documentation"},
+		{Name: "search_path"},
+		{Name: "search_path_prefix"},
+		{Name: "sql"},
+		{Name: "tags"},
+		{Name: "title"},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "params",
+			LabelNames: []string{"name"},
+		},
+	},
+}
+var ParamDefBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "description"},
+		{Name: "default"},
+	},
+}
