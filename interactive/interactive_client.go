@@ -396,7 +396,10 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 	query := strings.Join(c.interactiveBuffer, "\n")
 
 	// in case of a named query call with params, parse the where clause
-	queryName, params := parse.ParsePreparedStatementInvocation(query)
+	queryName, params, err := parse.ParsePreparedStatementInvocation(query)
+	if err != nil {
+		return "", err
+	}
 	namedQuery, isNamedQuery := c.workspace().GetQuery(queryName)
 
 	// if it is a multiline query, execute even without `;`

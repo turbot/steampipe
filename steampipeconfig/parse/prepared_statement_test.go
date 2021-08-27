@@ -9,7 +9,7 @@ import (
 
 type parsePreparedStatementInvocationTest struct {
 	input    string
-	expected parsePreparedStatementInvocationResult
+	expected interface{}
 }
 
 type parsePreparedStatementInvocationResult struct {
@@ -116,13 +116,23 @@ var testCasesParsePreparedStatementInvocation = map[string]parsePreparedStatemen
 
 func TestParsePreparedStatementInvocation(t *testing.T) {
 	for name, test := range testCasesParsePreparedStatementInvocation {
-		queryName, params := ParsePreparedStatementInvocation(test.input)
-		if queryName != test.expected.queryName || !test.expected.params.Equals(params) {
+		queryName, params, err := ParsePreparedStatementInvocation(test.input)
+		if err != nil {
+			if test.expected != "ERROR" {
+				t.Errorf("Test: '%s'' FAILED : \nunexpected error %v", name, err)
+			}
+			return
+		}
+		if test.expected == "ERROR" {
+			t.Errorf("Test: '%s'' FAILED - expected error", name)
+		}
+		expected := test.expected.(parsePreparedStatementInvocationResult)
+		if queryName != expected.queryName || !expected.params.Equals(params) {
 			fmt.Printf("")
 			t.Errorf("Test: '%s'' FAILED : expected:\nquery: %s params: %s\n\ngot:\nquery: %s params: %s",
 				name,
-				test.expected.queryName,
-				test.expected.params,
+				expected.queryName,
+				expected.params,
 				queryName, params)
 		}
 	}

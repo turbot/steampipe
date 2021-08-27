@@ -206,7 +206,10 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTree
 func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereClause string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
 	// in case of a named query call with params, parse the where clause
-	queryName, paramsString := parse.ParsePreparedStatementInvocation(whereClause)
+	queryName, paramsString, err := parse.ParsePreparedStatementInvocation(whereClause)
+	if err != nil {
+		return nil, err
+	}
 	query, err := e.workspace.GetQueryFromArg(queryName, paramsString)
 	if err != nil {
 		return nil, err
