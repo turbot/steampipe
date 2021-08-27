@@ -3,16 +3,14 @@ package parse
 import (
 	"fmt"
 
-	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/utils"
-	"github.com/zclconf/go-cty/cty/gocty"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/go-kit/helpers"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
+	"github.com/turbot/steampipe/utils"
 )
 
 // A consistent detail message for all "not a valid identifier" diagnostics.
@@ -52,8 +50,6 @@ func decode(runCtx *RunContext, opts *ParseModOptions) hcl.Diagnostics {
 			continue
 		}
 
-		//var decodeResults []*decodeResult
-		// special case decoding for locals
 		switch block.Type {
 		case modconfig.BlockTypeLocals:
 			// special case decode logic for locals
@@ -110,6 +106,26 @@ func decode(runCtx *RunContext, opts *ParseModOptions) hcl.Diagnostics {
 		}
 	}
 	return diags
+}
+
+// generic decode function for any resource we do not have custom decode logic for
+func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
+	// get shell resource
+	resource := resourceForBlock(block, runCtx)
+
+	res := &decodeResult{}
+	diags := gohcl.DecodeBody(block.Body, runCtx.EvalCtx, resource)
+	// handle any resulting diags, which may specify dependencies
+	res.handleDecodeDiags(diags)
+
+	// call post-decode hook
+	if res.Success() {
+		if diags := resource.OnDecoded(block); diags.HasErrors() {
+			res.addDiags(diags)
+		}
+		AddReferences(resource, block)
+	}
+	return resource, res
 }
 
 // return a shell resource for the given block
@@ -254,7 +270,6 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 	}
 
 	return q, res
-
 }
 
 func decodeParamDef(block *hcl.Block, runCtx *RunContext, queryName string) (*modconfig.ParamDef, hcl.Diagnostics) {
@@ -363,17 +378,9 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 		diags = append(diags, valDiags...)
 	}
 	if attr, exists := content.Attributes["params"]; exists {
-		if params, err := decodeControlParams(attr, runCtx.EvalCtx); err == nil {
+		if params, diags := decodeControlParams(attr, runCtx.EvalCtx, c.FullName); !diags.HasErrors() {
 			c.Params = params
-		} else {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("%s has invalid parameter config", c.FullName),
-				Detail:   err.Error(),
-				Subject:  &attr.Range,
-			})
 		}
-
 	}
 
 	// handle any resulting diags, which may specify dependencies
@@ -391,8 +398,7 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 
 }
 
-func decodeControlParams(attr *hcl.Attribute, evalCtx *hcl.EvalContext) (*modconfig.QueryParams, error) {
-	// TODO pass in control name and return diag???
+func decodeControlParams(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName string) (*modconfig.QueryParams, hcl.Diagnostics) {
 	var params = modconfig.NewQueryParams()
 	v, diags := attr.Expr.Value(evalCtx)
 	if diags.HasErrors() {
@@ -409,89 +415,15 @@ func decodeControlParams(attr *hcl.Attribute, evalCtx *hcl.EvalContext) (*modcon
 		err = fmt.Errorf("'params' property must be either a map or an array")
 	}
 
-	return params, err
-}
-
-func decodeQueryParamsDef(attr *hcl.Attribute, evalCtx *hcl.EvalContext) (*modconfig.QueryParams, error) {
-	var params = modconfig.NewQueryParams()
-	v, diags := attr.Expr.Value(evalCtx)
-	if diags.HasErrors() {
-		return nil, diags
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s has invalid parameter config", controlName),
+			Detail:   err.Error(),
+			Subject:  &attr.Range,
+		})
 	}
-	ty := v.Type()
-	var err error
-	switch {
-	case ty.IsObjectType():
-		params.Params, err = ctyObjectToPostgresMap(v)
-	case ty.IsTupleType():
-		params.ParamsList, err = ctyTupleToPostgresArray(v)
-	default:
-		err = fmt.Errorf("'params' property must be either a map or an array")
-	}
-
-	return params, err
-}
-
-func setQueryParamDefs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, q *modconfig.Query) hcl.Diagnostics {
-	val, diags := attr.Expr.Value(evalCtx)
-	if diags.HasErrors() {
-		return diags
-	}
-
-	it := val.ElementIterator()
-	for it.Next() {
-		_, def := it.Element()
-		var paramDef = &modconfig.ParamDef{Name: attr.Name}
-
-		defIt := def.ElementIterator()
-		for defIt.Next() {
-			k, v := defIt.Element()
-			// decode key
-			var key string
-			gocty.FromCtyValue(k, &key)
-			switch key {
-			case "description":
-				gocty.FromCtyValue(v, &paramDef.Description)
-			}
-		}
-	}
-	return nil
-	//
-	//
-	//q.Params.ParamsList, err = ctyTupleToPostgresArray(v)
-	//default:
-	//	err = fmt.Errorf("'params' property must be either a map or an array")
-	//}
-	//
-	//if err != nil {
-	//	diags = append(diags, &hcl.Diagnostic{
-	//		Severity: hcl.DiagError,
-	//		Summary:  fmt.Sprintf("%s has invalid parameter config", c.FullName),
-	//		Detail:   err.Error(),
-	//		Subject:  &attr.Range,
-	//	})
-	//}
-	//
-	//return diags
-}
-
-func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
-	// get shell resource
-	resource := resourceForBlock(block, runCtx)
-
-	res := &decodeResult{}
-	diags := gohcl.DecodeBody(block.Body, runCtx.EvalCtx, resource)
-	// handle any resulting diags, which may specify dependencies
-	res.handleDecodeDiags(diags)
-
-	// call post-decode hook
-	if res.Success() {
-		if diags := resource.OnDecoded(block); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-		AddReferences(resource, block)
-	}
-	return resource, res
+	return params, diags
 }
 
 func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decodeResult) {

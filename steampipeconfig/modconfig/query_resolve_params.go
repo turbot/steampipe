@@ -10,9 +10,10 @@ import (
 )
 
 type ParamDef struct {
-	Name        string  `hcl:"name,label"`
-	Description *string `cty:"description" hcl:"description" column:"description,text"`
-	Default     *string `cty:"default" hcl:"default" column:"default,text"`
+	Name        string      `hcl:"name,label"`
+	Description *string     `cty:"description" hcl:"description" column:"description,text"`
+	RawDefault  interface{} `cty:"default" hcl:"default" column:"default,text"`
+	Default     *string
 }
 
 func NewParamDef(block *hcl.Block) *ParamDef {

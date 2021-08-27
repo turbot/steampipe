@@ -21,10 +21,10 @@ query "q1"{
     }
     params "p2"{
         description = "p2"
-        default = "default_because_${var.v1} "
+        default = ["default_because_${var.v1} ", 1]
     }
     params "p3"{
         description = "p3"
-        default = "default_reason"
+        default = 100
     }
 }
