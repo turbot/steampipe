@@ -2,10 +2,10 @@ package parse
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
+	"github.com/zclconf/go-cty/cty/json"
 )
 
 func ctyObjectToPostgresMap(val cty.Value) (map[string]string, error) {
@@ -32,22 +32,12 @@ func ctyObjectToPostgresMap(val cty.Value) (map[string]string, error) {
 
 func ctyToPostgresString(v cty.Value) (valStr string, err error) {
 	ty := v.Type()
-
-	if ty.IsTupleType() {
-		var array []string
-		if array, err = ctyTupleToPostgresArray(v); err == nil {
-			valStr = fmt.Sprintf("[%s]", strings.Join(array, ","))
-		}
-		return
-	}
-
 	switch ty {
 	case cty.Bool:
 		var target bool
 		if err = gocty.FromCtyValue(v, &target); err == nil {
 			valStr = fmt.Sprintf("%v", target)
 		}
-		return
 	case cty.Number:
 		var target int
 		if err = gocty.FromCtyValue(v, &target); err == nil {
@@ -58,7 +48,6 @@ func ctyToPostgresString(v cty.Value) (valStr string, err error) {
 			if err = gocty.FromCtyValue(v, &targetf); err == nil {
 				valStr = fmt.Sprintf("%d", target)
 			}
-			return
 		}
 
 	case cty.String:
@@ -66,10 +55,35 @@ func ctyToPostgresString(v cty.Value) (valStr string, err error) {
 		if err := gocty.FromCtyValue(v, &target); err == nil {
 			valStr = fmt.Sprintf("'%s'", target)
 		}
-		return
+	default:
+		var json string
+		// wrap as postgres string
+		if json, err = ctyToJSON(v); err == nil {
+			valStr = fmt.Sprintf("'%s'", json)
+		}
+
 	}
 
-	return "", fmt.Errorf("unsupported type '%s'", ty.FriendlyName())
+	return valStr, err
+}
+
+func ctyToJSON(val cty.Value) (string, error) {
+
+	if !val.IsWhollyKnown() {
+		return "", fmt.Errorf("cannot serialize unknown values")
+	}
+
+	if val.IsNull() {
+		return "{}", nil
+	}
+
+	buf, err := json.Marshal(val, val.Type())
+	if err != nil {
+		return "", err
+	}
+
+	return string(buf), nil
+
 }
 
 func ctyTupleToPostgresArray(val cty.Value) ([]string, error) {
