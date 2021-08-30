@@ -1,0 +1,2454 @@
+diff --git a/cmd/check.go b/cmd/check.go
+index 05fce5b..fbe7af9 100644
+--- a/cmd/check.go
++++ b/cmd/check.go
+@@ -217,7 +217,14 @@ func initialiseCheck() *checkInitData {
+ 	initData.result.AddWarnings(refreshResult.Warnings...)
+ 
+ 	// populate the reflection tables
+-	initData.result.Error = db_common.CreateMetadataTables(ctx, initData.workspace.GetResourceMaps(), initData.client)
++	err = db_common.CreateMetadataTables(ctx, initData.workspace.GetResourceMaps(), initData.client)
++	if err != nil {
++		initData.result.Error = err
++		return initData
++	}
++
++	// create the prepared statements
++	initData.result.Error = db_common.CreatePreparedStatements(ctx, initData.workspace.GetQueryMap(), initData.client)
+ 
+ 	return initData
+ }
+diff --git a/cmd/query.go b/cmd/query.go
+index e20dd07..d1366eb 100644
+--- a/cmd/query.go
++++ b/cmd/query.go
+@@ -148,6 +148,8 @@ func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
+ 
+ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, initDataChan chan *db_common.QueryInitData, args []string) {
+ 	go func() {
++		utils.LogTime("cmd.getQueryInitDataAsync start")
++		defer utils.LogTime("cmd.getQueryInitDataAsync end")
+ 		initData := db_common.NewQueryInitData()
+ 		defer func() {
+ 			if r := recover(); r != nil {
+@@ -172,7 +174,11 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace,
+ 		initData.Workspace = workspace
+ 
+ 		// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
+-		initData.Queries = queryexecute.GetQueries(args, workspace)
++		initData.Queries, err = workspace.GetQueriesFromArgs(args)
++		if err != nil {
++			initData.Result.Error = err
++			return
++		}
+ 
+ 		res := client.RefreshConnectionAndSearchPaths()
+ 		if res.Error != nil {
+@@ -187,6 +193,10 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace,
+ 			initData.Result.Error = err
+ 			return
+ 		}
++
++		utils.LogTime("cmd.getQueryInitDataAsync CreatePreparedStatements")
++
++		initData.Result.Error = db_common.CreatePreparedStatements(ctx, workspace.GetQueryMap(), client)
+ 	}()
+ }
+ 
+diff --git a/control/controlexecute/control_run.go b/control/controlexecute/control_run.go
+index c02691e..ba886c3 100644
+--- a/control/controlexecute/control_run.go
++++ b/control/controlexecute/control_run.go
+@@ -13,7 +13,6 @@ import (
+ 	"github.com/spf13/viper"
+ 	typehelpers "github.com/turbot/go-kit/types"
+ 	"github.com/turbot/steampipe/constants"
+-	"github.com/turbot/steampipe/query/queryexecute"
+ 	"github.com/turbot/steampipe/query/queryresult"
+ 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+ 	"github.com/turbot/steampipe/utils"
+@@ -95,7 +94,11 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
+ 	r.executionTree.progress.OnControlStart(control)
+ 
+ 	// resolve the query parameter of the control
+-	query, _ := queryexecute.GetQueryFromArg(typehelpers.SafeString(control.SQL), r.executionTree.workspace)
++	query, err := r.executionTree.workspace.GetQueryFromArg(typehelpers.SafeString(control.SQL), control.Params)
++	if err != nil {
++		r.SetError(err)
++		return
++	}
+ 	if query == "" {
+ 		r.SetError(fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typehelpers.SafeString(control.SQL)))
+ 		return
+diff --git a/control/controlexecute/execution_tree.go b/control/controlexecute/execution_tree.go
+index 330cb61..e5dd365 100644
+--- a/control/controlexecute/execution_tree.go
++++ b/control/controlexecute/execution_tree.go
+@@ -7,13 +7,12 @@ import (
+ 	"net/url"
+ 	"strings"
+ 
+-	"github.com/turbot/steampipe/db/db_common"
+-
+ 	"github.com/spf13/viper"
+ 	"github.com/turbot/steampipe/constants"
+-	"github.com/turbot/steampipe/query/queryexecute"
++	"github.com/turbot/steampipe/db/db_common"
+ 	"github.com/turbot/steampipe/query/queryresult"
+ 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
++	"github.com/turbot/steampipe/steampipeconfig/parse"
+ 	"github.com/turbot/steampipe/workspace"
+ )
+ 
+@@ -39,7 +38,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
+ 		workspace: workspace,
+ 		client:    client,
+ 	}
+-	// if a "--where" parameter was passed, build a map of control manes used to filter the controls to run
++	// if a "--where" or "--tag" parameter was passed, build a map of control manes used to filter the controls to run
+ 	// NOTE: not enabled yet
+ 	err := executionTree.populateControlFilterMap(ctx)
+ 
+@@ -112,7 +111,7 @@ func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
+ 	if len(controlFilterWhereClause) > 0 {
+ 		log.Println("[TRACE]", "filtering controls with", controlFilterWhereClause)
+ 		var err error
+-		e.controlNameFilterMap, err = e.getControlMapFromMetadataQuery(ctx, controlFilterWhereClause)
++		e.controlNameFilterMap, err = e.getControlMapFromWhereClause(ctx, controlFilterWhereClause)
+ 		if err != nil {
+ 			return err
+ 		}
+@@ -204,9 +203,19 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTree
+ 
+ // Get a map of control names from the reflection table steampipe_control
+ // This is used to implement the 'where' control filtering
+-func (e *ExecutionTree) getControlMapFromMetadataQuery(ctx context.Context, whereClause string) (map[string]bool, error) {
++func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereClause string) (map[string]bool, error) {
+ 	// query may either be a 'where' clause, or a named query
+-	query, isNamedQuery := queryexecute.GetQueryFromArg(whereClause, e.workspace)
++	// in case of a named query call with params, parse the where clause
++	queryName, paramsString, err := parse.ParsePreparedStatementInvocation(whereClause)
++	if err != nil {
++		return nil, err
++	}
++	query, err := e.workspace.GetQueryFromArg(queryName, paramsString)
++	if err != nil {
++		return nil, err
++	}
++	// did we in fact resolve a named query, or just return the 'name' as the query
++	isNamedQuery := query != queryName
+ 
+ 	// if the query is NOT a named query, we need to construct a full query by adding a select
+ 	if !isNamedQuery {
+diff --git a/db/db_common/prepared_statements.go b/db/db_common/prepared_statements.go
+new file mode 100644
+index 0000000..fe94306
+--- /dev/null
++++ b/db/db_common/prepared_statements.go
+@@ -0,0 +1,55 @@
++package db_common
++
++import (
++	"context"
++	"fmt"
++	"strings"
++
++	typehelpers "github.com/turbot/go-kit/types"
++	"github.com/turbot/steampipe/steampipeconfig/modconfig"
++	"github.com/turbot/steampipe/utils"
++)
++
++func CreatePreparedStatements(ctx context.Context, queryMap map[string]*modconfig.Query, client Client) error {
++	utils.LogTime("db.CreatePreparedStatements start")
++	defer utils.LogTime("db.CreatePreparedStatements end")
++
++	for name, query := range queryMap {
++		// query map contains long and short names for queries - avoid dupes
++		if !strings.HasPrefix(name, "query.") {
++			continue
++		}
++		// remove trailing semicolons from sql as this breaks the prepare statement
++		rawSql := strings.TrimRight(strings.TrimSpace(typehelpers.SafeString(query.SQL)), ";")
++		sql := fmt.Sprintf("PREPARE %s AS (\n%s\n)", query.ShortName, rawSql)
++		// execute the query, passing 'true' to disable the spinner
++		_, err := client.ExecuteSync(ctx, sql, true)
++		if err != nil {
++			return fmt.Errorf("failed to create prepared statements table %s: %v", name, err)
++		}
++	}
++
++	// return context error - this enables calling code to respond to cancellation
++	return ctx.Err()
++}
++
++// UpdatePreparedStatements first attempts to deallocate all prepared statements in workspace, then recreates them
++func UpdatePreparedStatements(ctx context.Context, queryMap map[string]*modconfig.Query, client Client) error {
++	utils.LogTime("db.UpdatePreparedStatements start")
++	defer utils.LogTime("db.UpdatePreparedStatements end")
++
++	for name, query := range queryMap {
++		// query map contains long and short names for queries - avoid dupes
++		if !strings.HasPrefix(name, "query.") {
++			continue
++		}
++		sql := fmt.Sprintf("DEALLOCATE %s ", query.ShortName)
++		// execute the query, passing 'true' to disable the spinner
++		// ignore errors
++		client.ExecuteSync(ctx, sql, true)
++	}
++
++	// now recreate them
++	return CreatePreparedStatements(ctx, queryMap, client)
++
++}
+diff --git a/db/local_db/local_client_search_path.go b/db/local_db/local_client_search_path.go
+index c49df93..a784383 100644
+--- a/db/local_db/local_client_search_path.go
++++ b/db/local_db/local_client_search_path.go
+@@ -71,7 +71,7 @@ func (c *LocalClient) SetClientSearchPath() error {
+ 
+ 	// now construct and execute the query
+ 	q := fmt.Sprintf("set search_path to %s", strings.Join(searchPath, ","))
+-	_, err := c.ExecuteSync(context.Background(), q, false)
++	_, err := c.ExecuteSync(context.Background(), q, true)
+ 	if err != nil {
+ 		return err
+ 	}
+@@ -104,7 +104,7 @@ func (c *LocalClient) SetServiceSearchPath() error {
+ 		constants.DatabaseUser,
+ 		strings.Join(searchPath, ","),
+ 	)
+-	_, err := c.ExecuteSync(context.Background(), query, false)
++	_, err := c.ExecuteSync(context.Background(), query, true)
+ 	return err
+ }
+ 
+diff --git a/go.mod b/go.mod
+index 302cef2..1a1fcb8 100644
+--- a/go.mod
++++ b/go.mod
+@@ -32,7 +32,7 @@ require (
+ 	github.com/hashicorp/go-cleanhttp v0.5.1
+ 	github.com/hashicorp/go-hclog v0.15.0
+ 	github.com/hashicorp/go-plugin v1.4.1
+-	github.com/hashicorp/go-version v1.2.1
++	github.com/hashicorp/go-version v1.3.0
+ 	github.com/hashicorp/hcl/v2 v2.9.1
+ 	github.com/hashicorp/terraform v0.15.1
+ 	github.com/jedib0t/go-pretty/v6 v6.0.6
+@@ -74,3 +74,5 @@ require (
+ )
+ 
+ replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20210830083819-c872df2bdcc9
++
++replace github.com/turbot/steampipe-plugin-sdk => github.com/turbot/steampipe-plugin-sdk v1.5.1-0.20210827170319-ff928325577c
+diff --git a/go.sum b/go.sum
+index 9c9b643..8b87c3c 100644
+--- a/go.sum
++++ b/go.sum
+@@ -482,8 +482,9 @@ github.com/hashicorp/go-uuid v1.0.1/go.mod h1:6SBZvOh/SIDV7/2o3Jml5SYk/TvGqwFJ/b
+ github.com/hashicorp/go-version v1.0.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
+ github.com/hashicorp/go-version v1.1.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
+ github.com/hashicorp/go-version v1.2.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
+-github.com/hashicorp/go-version v1.2.1 h1:zEfKbn2+PDgroKdiOzqiE8rsmLqU2uwi5PB5pBJ3TkI=
+ github.com/hashicorp/go-version v1.2.1/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
++github.com/hashicorp/go-version v1.3.0 h1:McDWVJIU/y+u1BRV06dPaLfLCaT7fUTJLp5r04x7iNw=
++github.com/hashicorp/go-version v1.3.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
+ github.com/hashicorp/go.net v0.0.1/go.mod h1:hjKkEWcCURg++eb33jQU7oqQcI9XDCnUzHA0oac0k90=
+ github.com/hashicorp/golang-lru v0.5.0/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
+ github.com/hashicorp/golang-lru v0.5.1/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
+@@ -838,8 +839,8 @@ github.com/turbot/go-kit v0.2.2-0.20210730122803-1ecb35c27e98 h1:FC2PphWOAmLVxgS
+ github.com/turbot/go-kit v0.2.2-0.20210730122803-1ecb35c27e98/go.mod h1:SBdPRngbEfYubiR81iAVtO43oPkg1+ASr+XxvgbH7/k=
+ github.com/turbot/go-prompt v0.2.6-steampipe.0.20210830083819-c872df2bdcc9 h1:mcDQVuT3E9tQtCB7sdLgEm3uC/eGGtBr27WwQCU6j+s=
+ github.com/turbot/go-prompt v0.2.6-steampipe.0.20210830083819-c872df2bdcc9/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
+-github.com/turbot/steampipe-plugin-sdk v1.3.0 h1:7KMA86Nxpw2dRC1Ri472aSRQgLv3gk9DqPxwFHd3EoE=
+-github.com/turbot/steampipe-plugin-sdk v1.3.0/go.mod h1:E00M5qOvCp6qwaT1/KhdTNM6S0JUlNY6L11IvlELQV4=
++github.com/turbot/steampipe-plugin-sdk v1.5.1-0.20210827170319-ff928325577c h1:4DsPBSfAGwFbAWeCNsMESYXtC3i/vqnG+kw5KtIYAaA=
++github.com/turbot/steampipe-plugin-sdk v1.5.1-0.20210827170319-ff928325577c/go.mod h1:zM68yGM+wjkjDPz8yUTx6078GDTVWkrI26EC56XIspw=
+ github.com/ugorji/go v0.0.0-20180813092308-00b869d2f4a5/go.mod h1:hnLbHMwcvSihnDhEfx2/BzKp2xb0Y+ErdfYcrs9tkJQ=
+ github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
+ github.com/ugorji/go v1.1.7 h1:/68gy2h+1mWMrwZFeD1kQialdSzAb432dtpeJ42ovdo=
+diff --git a/interactive/interactive_client.go b/interactive/interactive_client.go
+index a139d81..f535b32 100644
+--- a/interactive/interactive_client.go
++++ b/interactive/interactive_client.go
+@@ -24,6 +24,7 @@ import (
+ 	"github.com/turbot/steampipe/query/metaquery"
+ 	"github.com/turbot/steampipe/query/queryhistory"
+ 	"github.com/turbot/steampipe/query/queryresult"
++	"github.com/turbot/steampipe/steampipeconfig/parse"
+ 	"github.com/turbot/steampipe/utils"
+ 	"github.com/turbot/steampipe/version"
+ )
+@@ -318,12 +319,15 @@ func (c *InteractiveClient) executor(line string) {
+ 	c.afterClose = AfterPromptCloseRestart
+ 
+ 	line = strings.TrimSpace(line)
++	// store the history (the raw line which was entered)
++	// we want to store even if we fail to resolve a query
++	c.interactiveQueryHistory.Put(line)
++
+ 	query, err := c.getQuery(line)
+ 	if query == "" {
+ 		if err != nil {
+-			// if there was an error other than cancellation, quit
+ 			if !utils.IsCancelledError(err) {
+-				c.afterClose = AfterPromptCloseExit
++				utils.ShowError(err)
+ 			}
+ 			// restart the prompt
+ 			c.restartInteractiveSession()
+@@ -351,8 +355,6 @@ func (c *InteractiveClient) executor(line string) {
+ 		}
+ 	}
+ 
+-	// store the history (the raw line which was entered)
+-	c.interactiveQueryHistory.Put(line)
+ 	// restart the prompt
+ 	c.restartInteractiveSession()
+ }
+@@ -394,11 +396,20 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
+ 	// expand the buffer out into 'query'
+ 	query := strings.Join(c.interactiveBuffer, "\n")
+ 
+-	namedQuery, isNamedQuery := c.workspace().GetQuery(query)
++	// in case of a named query call with params, parse the where clause
++	queryName, params, err := parse.ParsePreparedStatementInvocation(query)
++	if err != nil {
++		return "", err
++	}
++	namedQuery, isNamedQuery := c.workspace().GetQuery(queryName)
+ 
+ 	// if it is a multiline query, execute even without `;`
+ 	if isNamedQuery {
+-		query = *namedQuery.SQL
++		var err error
++		query, err = namedQuery.GetExecuteSQL(params)
++		if err != nil {
++			return "", err
++		}
+ 	} else {
+ 		// should we execute?
+ 		if !c.shouldExecute(query) {
+diff --git a/query/queryexecute/execute.go b/query/queryexecute/execute.go
+index a5e2473..a88ef6c 100644
+--- a/query/queryexecute/execute.go
++++ b/query/queryexecute/execute.go
+@@ -47,7 +47,7 @@ func RunBatchSession(ctx context.Context, initDataChan chan *db_common.QueryInit
+ 
+ 	failures := 0
+ 	if len(initData.Queries) > 0 {
+-		// otherwise if we have resolved any queries, run them
++		// if we have resolved any queries, run them
+ 		failures = executeQueries(ctx, initData.Queries, initData.Client)
+ 	}
+ 	// set global exit code
+diff --git a/query/queryexecute/resolve.go b/query/queryexecute/resolve.go
+deleted file mode 100644
+index 8712dbe..0000000
+--- a/query/queryexecute/resolve.go
++++ /dev/null
+@@ -1,80 +0,0 @@
+-package queryexecute
+-
+-import (
+-	"fmt"
+-	"os"
+-	"path/filepath"
+-
+-	typeHelpers "github.com/turbot/go-kit/types"
+-	"github.com/turbot/steampipe/utils"
+-	"github.com/turbot/steampipe/workspace"
+-)
+-
+-// GetQueries retrieves queries from args
+-//
+-// For each arg check if it is a named query or a file, before falling back to treating it as sql
+-func GetQueries(args []string, workspace *workspace.Workspace) []string {
+-	utils.LogTime("execute.GetQueries start")
+-	defer utils.LogTime("execute.GetQueries end")
+-
+-	var queries []string
+-	for _, arg := range args {
+-		query, _ := GetQueryFromArg(arg, workspace)
+-		if len(query) > 0 {
+-			queries = append(queries, query)
+-		}
+-	}
+-	return queries
+-}
+-
+-// GetQueryFromArg attempts to resolve 'arg' to a query
+-//
+-// the second return value indicates whether the arg was resolved as a named query/SQL file
+-func GetQueryFromArg(arg string, workspace *workspace.Workspace) (string, bool) {
+-	// 1) is this a named query
+-	if namedQuery, ok := workspace.GetQuery(arg); ok {
+-		return typeHelpers.SafeString(namedQuery.SQL), true
+-	}
+-	// check if this is a control
+-	if control, ok := workspace.GetControl(arg); ok {
+-		return typeHelpers.SafeString(control.SQL), true
+-	}
+-
+-	// 	2) is this a file
+-	fileQuery, fileExists, err := getQueryFromFile(arg)
+-	if fileExists {
+-		if err != nil {
+-			utils.ShowWarning(fmt.Sprintf("error opening file '%s': %v", arg, err))
+-			return "", false
+-		}
+-		if len(fileQuery) == 0 {
+-			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", arg))
+-			// (just return the empty string - it will be filtered above)
+-		}
+-		return fileQuery, true
+-	}
+-
+-	// 3) just use the arg string as is and assume it is valid SQL
+-	return arg, false
+-}
+-
+-func getQueryFromFile(filename string) (string, bool, error) {
+-	// get absolute filename
+-	path, err := filepath.Abs(filename)
+-	if err != nil {
+-		return "", false, nil
+-	}
+-	// does it exist?
+-	if _, err := os.Stat(path); err != nil {
+-		// if this gives any error, return not exist. we may get a not found or a path too long for example
+-		return "", false, nil
+-	}
+-
+-	// read file
+-	fileBytes, err := os.ReadFile(path)
+-	if err != nil {
+-		return "", true, err
+-	}
+-
+-	return string(fileBytes), true, nil
+-}
+diff --git a/steampipeconfig/load_config.go b/steampipeconfig/load_config.go
+index dbeb120..8112ed6 100644
+--- a/steampipeconfig/load_config.go
++++ b/steampipeconfig/load_config.go
+@@ -134,7 +134,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
+ 	}
+ 
+ 	// do a partial decode
+-	content, moreDiags := body.Content(parse.ConfigSchema)
++	content, moreDiags := body.Content(parse.ConfigBlockSchema)
+ 	if moreDiags.HasErrors() {
+ 		diags = append(diags, moreDiags...)
+ 		return plugin.DiagsToError("Failed to load config", diags)
+diff --git a/steampipeconfig/load_mod_test.go b/steampipeconfig/load_mod_test.go
+index 50c26bd..cfa34c8 100644
+--- a/steampipeconfig/load_mod_test.go
++++ b/steampipeconfig/load_mod_test.go
+@@ -108,6 +108,96 @@ func init() {
+ 				},
+ 			},
+ 		},
++		"query_with_paramdefs": {
++			source: "test_data/mods/query_with_paramdefs",
++			expected: &modconfig.Mod{
++				ShortName:   "m1",
++				FullName:    "mod.m1",
++				Title:       toStringPointer("M1"),
++				Description: toStringPointer("THIS IS M1"),
++				Queries: map[string]*modconfig.Query{
++					"q1": {
++						ShortName:   "q1",
++						FullName:    "query.q1",
++						Title:       toStringPointer("Q1"),
++						Description: toStringPointer("THIS IS QUERY 1"),
++						SQL:         toStringPointer("select 1"),
++						ParamsDefs: []*modconfig.ParamDef{
++							{Name: "p1",
++								Description: utils.ToStringPointer("desc"),
++								Default:     utils.ToStringPointer("I am default"),
++							},
++							{Name: "p2",
++								Description: utils.ToStringPointer("desc 2"),
++								Default:     utils.ToStringPointer("I am default 2"),
++							},
++						},
++					},
++				},
++			},
++		},
++		"query_with_paramdefs_control_with_positional_params": {
++			source: "test_data/mods/query_with_paramdefs_control_with_positional_params",
++			expected: `Name: mod.m1
++Title: M1
++Description: THIS IS M1 
++Version: 
++Queries: 
++
++  -----
++  Name: query.q1
++  Title: Q1
++  Description: THIS IS QUERY 1
++  SQL: select 1
++ParamDefs:
++	Name: p1, Description: desc, Default: I am default
++	Name: p2, Description: desc 2, Default: I am default 2
++  
++Controls: 
++
++  -----
++  Name: control.c1
++  Title: C1
++  Description: THIS IS CONTROL 1
++  SQL: select 'ok' as status, 'foo' as resource, 'bar' as reason
++  Parents: mod.m1
++ParamsList:
++	0: val1
++	1: val2
++Benchmarks: 
++`,
++		},
++		"query_with_paramdefs_control_with_named_params": {
++			source: "test_data/mods/query_with_paramdefs_control_with_named_params",
++			expected: `Name: mod.m1
++Title: M1
++Description: THIS IS M1 
++Version: 
++Queries: 
++
++  -----
++  Name: query.q1
++  Title: Q1
++  Description: THIS IS QUERY 1
++  SQL: select 1
++ParamDefs:
++	Name: p1, Description: desc, Default: I am default
++	Name: p2, Description: desc 2, Default: I am default 2
++  
++Controls: 
++
++  -----
++  Name: control.c1
++  Title: C1
++  Description: THIS IS CONTROL 1
++  SQL: select 'ok' as status, 'foo' as resource, 'bar' as reason
++  Parents: mod.m1
++Params:
++	p1 = val1
++	p2 = val2
++Benchmarks: 
++`,
++		},
+ 		"single_mod_one_query_one_control": {
+ 			source: "test_data/mods/single_mod_one_query_one_control",
+ 			expected: `Name: mod.m1
+@@ -270,12 +360,6 @@ Benchmarks:
+ 				Title:       toStringPointer("M1"),
+ 				Description: toStringPointer("THIS IS M1"),
+ 				Queries: map[string]*modconfig.Query{
+-					"q2": {
+-						ShortName: "q2",
+-						FullName:  "query.q2",
+-						SQL:       toStringPointer("select 2"),
+-					},
+-					// TODO investigate why pseudo resources have no "query." at start of key
+ 					"query.q1": {
+ 						ShortName:   "q1",
+ 						FullName:    "query.q1",
+@@ -283,6 +367,11 @@ Benchmarks:
+ 						Description: toStringPointer("THIS IS QUERY 1"),
+ 						SQL:         toStringPointer("select 1"),
+ 					},
++					"query.q2": {
++						ShortName: "q2",
++						FullName:  "query.q2",
++						SQL:       toStringPointer("select 2"),
++					},
+ 				},
+ 			},
+ 		},
+diff --git a/steampipeconfig/modconfig/control.go b/steampipeconfig/modconfig/control.go
+index c8ead76..ca0d607 100644
+--- a/steampipeconfig/modconfig/control.go
++++ b/steampipeconfig/modconfig/control.go
+@@ -5,25 +5,31 @@ import (
+ 	"fmt"
+ 	"strings"
+ 
+-	"github.com/zclconf/go-cty/cty"
+-
+ 	"github.com/hashicorp/hcl/v2"
+ 	"github.com/turbot/go-kit/types"
+ 	typehelpers "github.com/turbot/go-kit/types"
++	"github.com/zclconf/go-cty/cty"
+ )
+ 
+ // Control is a struct representing the Control resource
+ type Control struct {
+ 	ShortName        string
+ 	FullName         string             `cty:"name"`
+-	Description      *string            `cty:"description" hcl:"description" column:"description,text"`
+-	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+-	SearchPath       *string            `cty:"search_path" hcl:"search_path" column:"search_path,text"`
+-	SearchPathPrefix *string            `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
+-	Severity         *string            `cty:"severity" hcl:"severity" column:"severity,text"`
+-	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
+-	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
+-	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
++	Description      *string            `cty:"description" column:"description,text"`
++	Documentation    *string            `cty:"documentation"  column:"documentation,text"`
++	SearchPath       *string            `cty:"search_path"  column:"search_path,text"`
++	SearchPathPrefix *string            `cty:"search_path_prefix"  column:"search_path_prefix,text"`
++	Severity         *string            `cty:"severity"  column:"severity,text"`
++	SQL              *string            `cty:"sql"  column:"sql,text"`
++	Tags             *map[string]string `cty:"tags"  column:"tags,jsonb"`
++	Title            *string            `cty:"title"  column:"title,text"`
++	Query            *Query
++	// parameters
++	// params may be specified by either a map of named parameters or as a list of positional parameters
++	// we apply special decode logic to convert the params block into a QueryParams object
++	// with either a param map or list assigned
++	// TODO CTY and REFLECTION TABLES?
++	Params *QueryParams
+ 
+ 	// list of all block referenced by the resource
+ 	References []string `column:"refs,jsonb"`
+@@ -39,6 +45,7 @@ func NewControl(block *hcl.Block) *Control {
+ 		ShortName: block.Labels[0],
+ 		FullName:  fmt.Sprintf("control.%s", block.Labels[0]),
+ 		DeclRange: block.DefRange,
++		Params:    NewQueryParams(),
+ 	}
+ 	return control
+ }
+@@ -46,7 +53,7 @@ func NewControl(block *hcl.Block) *Control {
+ func (c *Control) String() string {
+ 	// build list of parents's names
+ 	parents := c.GetParentNames()
+-	return fmt.Sprintf(`
++	res := fmt.Sprintf(`
+   -----
+   Name: %s
+   Title: %s
+@@ -59,6 +66,30 @@ func (c *Control) String() string {
+ 		types.SafeString(c.Description),
+ 		types.SafeString(c.SQL),
+ 		strings.Join(parents, "\n    "))
++
++	//if c.Params != nil && len(*c.Params) > 0 {
++	//	// build ordered list of param names
++	//	var paramNames []string
++	//	for name := range *c.Params {
++	//		paramNames = append(paramNames, name)
++	//	}
++	//	sort.Strings(paramNames)
++	//	var paramStrs = make([]string, len(*c.Params))
++	//
++	//	for i, name := range paramNames {
++	//		paramStrs[i] = fmt.Sprintf("%s = %s", name, (*c.Params)[name])
++	//	}
++	//	res += fmt.Sprintf("Params:\n\t%s", strings.Join(paramStrs, "\n\t"))
++	//}
++	//if c.ParamsList != nil && len(*c.ParamsList) > 0 {
++	//	var paramStrs = make([]string, len(*c.ParamsList))
++	//
++	//	for i, v := range *c.ParamsList {
++	//		paramStrs[i] = fmt.Sprintf("%d: %s", i, v)
++	//	}
++	//	res += fmt.Sprintf("ParamsList:\n\t%s", strings.Join(paramStrs, "\n\t"))
++	//}
++	return res
+ }
+ 
+ func (c *Control) GetParentNames() []string {
+@@ -138,6 +169,19 @@ func (c *Control) CtyValue() (cty.Value, error) {
+ // OnDecoded implements HclResource
+ func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+ 
++// OnDecoded implements HclResource
++func (c *Control) SetSQL(sql string, block *hcl.Block) hcl.Diagnostics {
++	// if both query and SQL are set, raise an error
++	if typehelpers.SafeString(c.SQL) != "" {
++		return hcl.Diagnostics{&hcl.Diagnostic{
++			Severity: hcl.DiagError,
++			Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", c.FullName),
++			Subject:  &block.DefRange,
++		}}
++	}
++	return nil
++}
++
+ // AddReference implements HclResource
+ func (c *Control) AddReference(reference string) {
+ 	c.References = append(c.References, reference)
+diff --git a/steampipeconfig/modconfig/mod.go b/steampipeconfig/modconfig/mod.go
+index 99b6600..b2e82d3 100644
+--- a/steampipeconfig/modconfig/mod.go
++++ b/steampipeconfig/modconfig/mod.go
+@@ -109,7 +109,6 @@ func (m *Mod) String() string {
+ 		queryNames = append(queryNames, name)
+ 	}
+ 	sort.Strings(queryNames)
+-
+ 	var queryStrings []string
+ 	for _, name := range queryNames {
+ 		queryStrings = append(queryStrings, m.Queries[name].String())
+diff --git a/steampipeconfig/modconfig/query.go b/steampipeconfig/modconfig/query.go
+index 8afce04..d1122af 100644
+--- a/steampipeconfig/modconfig/query.go
++++ b/steampipeconfig/modconfig/query.go
+@@ -5,14 +5,12 @@ import (
+ 	"io/ioutil"
+ 	"log"
+ 	"path/filepath"
+-
+-	"github.com/zclconf/go-cty/cty"
++	"strings"
+ 
+ 	"github.com/hashicorp/hcl/v2"
+-
+ 	"github.com/turbot/go-kit/types"
+-
+ 	"github.com/turbot/steampipe/constants"
++	"github.com/zclconf/go-cty/cty"
+ )
+ 
+ // Query is a struct representing the Query resource
+@@ -22,12 +20,13 @@ type Query struct {
+ 
+ 	Description      *string            `cty:"description" hcl:"description" column:"description,text"`
+ 	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+-	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
+-	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
+ 	SearchPath       *string            `cty:"search_path" hcl:"search_path" column:"search_path,text"`
+ 	SearchPathPrefix *string            `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
++	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
++	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
+ 	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
+ 
++	ParamsDefs []*ParamDef `hcl:"params,block"`
+ 	// list of all block referenced by the resource
+ 	References []string `column:"refs,jsonb"`
+ 
+@@ -48,13 +47,23 @@ func (q *Query) CtyValue() (cty.Value, error) {
+ }
+ 
+ func (q *Query) String() string {
+-	return fmt.Sprintf(`
++	res := fmt.Sprintf(`
+   -----
+   Name: %s
+   Title: %s
+   Description: %s
+   SQL: %s
+ `, q.FullName, types.SafeString(q.Title), types.SafeString(q.Description), types.SafeString(q.SQL))
++
++	// add param defs if there are any
++	if len(q.ParamsDefs) > 0 {
++		var paramDefsStr = make([]string, len(q.ParamsDefs))
++		for i, def := range q.ParamsDefs {
++			paramDefsStr[i] = def.String()
++		}
++		res += fmt.Sprintf("ParamDefs:\n\t%s\n  ", strings.Join(paramDefsStr, "\n\t"))
++	}
++	return res
+ }
+ 
+ // QueryFromFile :: factory function
+@@ -118,3 +127,13 @@ func (q *Query) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+ func (q *Query) AddReference(reference string) {
+ 	q.References = append(q.References, reference)
+ }
++
++// GetExecuteSQL returns the SQL to run this query as a prepared statement
++func (q *Query) GetExecuteSQL(params *QueryParams) (string, error) {
++	paramsString, err := q.ResolveParams(params)
++	if err != nil {
++		return "", err
++	}
++	executeString := fmt.Sprintf("execute %s%s", q.ShortName, paramsString)
++	return executeString, nil
++}
+diff --git a/steampipeconfig/modconfig/query_params.go b/steampipeconfig/modconfig/query_params.go
+new file mode 100644
+index 0000000..2d5be3e
+--- /dev/null
++++ b/steampipeconfig/modconfig/query_params.go
+@@ -0,0 +1,39 @@
++package modconfig
++
++// QueryParams is a struct which contains the parameters used to invoke a prepared statement
++// these may either be passed by name, in a map, or as a list of positional params
++// NOTE: if both are present the named parameters are used
++type QueryParams struct {
++	Params     map[string]string
++	ParamsList []string
++}
++
++func NewQueryParams() *QueryParams {
++	return &QueryParams{
++		Params: make(map[string]string),
++	}
++}
++
++func (q *QueryParams) Equals(other *QueryParams) bool {
++	if q.Empty() {
++		return other.Empty()
++	}
++	if len(other.Params) != len(q.Params) || len(other.ParamsList) != len(q.ParamsList) {
++		return false
++	}
++	for k, v := range q.Params {
++		if other.Params[k] != v {
++			return false
++		}
++	}
++	for i, v := range q.ParamsList {
++		if other.ParamsList[i] != v {
++			return false
++		}
++	}
++	return true
++}
++
++func (q *QueryParams) Empty() bool {
++	return len(q.Params)+len(q.ParamsList) == 0
++}
+diff --git a/steampipeconfig/modconfig/query_resolve_params.go b/steampipeconfig/modconfig/query_resolve_params.go
+new file mode 100644
+index 0000000..3eba3c1
+--- /dev/null
++++ b/steampipeconfig/modconfig/query_resolve_params.go
+@@ -0,0 +1,126 @@
++package modconfig
++
++import (
++	"fmt"
++	"strings"
++
++	"github.com/hashicorp/hcl/v2"
++	typehelpers "github.com/turbot/go-kit/types"
++	"github.com/turbot/steampipe/utils"
++)
++
++type ParamDef struct {
++	Name        string      `hcl:"name,label"`
++	Description *string     `cty:"description" hcl:"description" column:"description,text"`
++	RawDefault  interface{} `cty:"default" hcl:"default" column:"default,text"`
++	Default     *string
++}
++
++func NewParamDef(block *hcl.Block) *ParamDef {
++	return &ParamDef{Name: block.Labels[0]}
++}
++
++func (d ParamDef) String() string {
++	return fmt.Sprintf("Name: %s, Description: %s, Default: %s", d.Name, typehelpers.SafeString(d.Description), typehelpers.SafeString(d.Default))
++}
++
++func (q *Query) ResolveParams(params *QueryParams) (string, error) {
++	var paramStrs, missingParams []string
++	var err error
++	if len(params.Params) > 0 {
++		// do params contain named params?
++		paramStrs, missingParams, err = q.resolveNamedParameters(params)
++	} else {
++		// resolve as positional parameters
++		// (or fall back to defaults if no positional params are present)
++		paramStrs, missingParams, err = q.resolvePositionalParameters(params)
++	}
++
++	if err != nil {
++		return "", err
++	}
++
++	// did we resolve them all?
++	if len(missingParams) > 0 {
++		return "", fmt.Errorf("ResolveParams failed for %s - failed to resolve value for %d %s: %s",
++			q.FullName,
++			len(missingParams),
++			utils.Pluralize("parameter", len(missingParams)),
++			strings.Join(missingParams, ","))
++	}
++
++	// are there any params?
++	if len(paramStrs) == 0 {
++		return "", nil
++	}
++
++	// success!
++	return fmt.Sprintf("(%s)", strings.Join(paramStrs, ",")), err
++}
++
++func (q *Query) resolveNamedParameters(params *QueryParams) (paramStrs []string, missingParams []string, err error) {
++	// if query params contains both positional and named params, error out
++	if len(params.ParamsList) > 0 {
++		err = fmt.Errorf("ResolveParams failed for %s - params data contain both positional and named parameters", q.FullName)
++		return
++	}
++	// so params contain named params - if this query has no param defs, error out
++	if len(q.ParamsDefs) < len(params.Params) {
++		err = fmt.Errorf("ResolveParams failed for %s - params data contain %d named parameters but this query %d parameter definitions",
++			q.FullName, len(params.Params), len(q.ParamsDefs))
++		return
++	}
++
++	// to get here, we must have param defs for all provided named params
++	paramStrs = make([]string, len(q.ParamsDefs))
++
++	// iterate through each param def and resolve the value
++	for i, def := range q.ParamsDefs {
++		defaultValue := typehelpers.SafeString(def.Default)
++
++		// can we resolve a value for this param?
++		if val, ok := params.Params[def.Name]; ok {
++			paramStrs[i] = val
++		} else if defaultValue != "" {
++			paramStrs[i] = defaultValue
++		} else {
++			// no value provided and no default defined - add to missing list
++			missingParams = append(missingParams, def.Name)
++		}
++	}
++
++	return paramStrs, missingParams, nil
++}
++
++func (q *Query) resolvePositionalParameters(params *QueryParams) (paramStrs []string, missingParams []string, err error) {
++	// if query params contains both positional and named params, error out
++	if len(params.Params) > 0 {
++		err = fmt.Errorf("ResolveParams failed for %s - params data contain both positional and named parameters", q.FullName)
++		return
++	}
++
++	// if no param defs are defined, just use the given values
++	if len(q.ParamsDefs) == 0 {
++		paramStrs = params.ParamsList
++		return
++	}
++
++	// so there are param defs - we must be able to resolve all params
++	// if there are MORE defs than provided parameters, all remaining defs MUST provide a default
++	paramStrs = make([]string, len(q.ParamsDefs))
++
++	for i, def := range q.ParamsDefs {
++		defaultValue := typehelpers.SafeString(def.Default)
++
++		if i < len(params.ParamsList) {
++			paramStrs[i] = params.ParamsList[i]
++		} else if defaultValue != "" {
++			// so we have run out of provided params - is there a default?
++			paramStrs[i] = defaultValue
++		} else {
++			// no value provided and no default defined - add to missing list
++			missingParams = append(missingParams, def.Name)
++		}
++	}
++	return
++}
+diff --git a/steampipeconfig/modconfig/query_resolve_params_test.go b/steampipeconfig/modconfig/query_resolve_params_test.go
+new file mode 100644
+index 0000000..08b3097
+--- /dev/null
++++ b/steampipeconfig/modconfig/query_resolve_params_test.go
+@@ -0,0 +1,123 @@
++package modconfig
++
++import (
++	"testing"
++
++	"github.com/turbot/steampipe/utils"
++)
++
++type resolveParamsTest struct {
++	params    *QueryParams
++	paramDefs []*ParamDef
++	expected  interface{}
++}
++
++var testCasesResolveParams = map[string]resolveParamsTest{
++	"positional params no defs": {
++		params: &QueryParams{
++			ParamsList: []string{"val1", "val2"},
++		},
++		paramDefs: nil,
++		expected:  "(array['val1','val2'])",
++	},
++	"named params no defs": {
++		params: &QueryParams{
++			Params: map[string]string{
++				"p1": "val1",
++				"p2": "val2",
++			},
++		},
++		paramDefs: nil,
++		expected:  "ERROR",
++	},
++	"named params with defs": {
++		params: &QueryParams{
++			Params: map[string]string{
++				"p1": "val1",
++				"p2": "val2",
++			},
++		},
++		paramDefs: []*ParamDef{
++			{Name: "p1"},
++			{Name: "p2"},
++		},
++		expected: "(array['val1','val2'])",
++	},
++	"partial named params with defs and defaults": {
++		params: &QueryParams{
++			Params: map[string]string{
++				"p1": "val1",
++			},
++		},
++		paramDefs: []*ParamDef{
++			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
++			{Name: "p2", Default: utils.ToStringPointer("def_val2")},
++		},
++		expected: "(array['val1','def_val2'])",
++	},
++	"partial positional params with defs and defaults": {
++		params: &QueryParams{
++			ParamsList: []string{"val1"},
++		},
++		paramDefs: []*ParamDef{
++			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
++			{Name: "p2", Default: utils.ToStringPointer("def_val2")},
++		},
++		expected: "(array['val1','def_val2'])",
++	},
++	"partial positional params with defs and unmatched defaults": {
++		// only a default for first param, which is populated from the provided positional param
++		params: &QueryParams{
++			ParamsList: []string{"val1"},
++		},
++		paramDefs: []*ParamDef{
++			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
++			{Name: "p2"},
++		},
++		expected: "ERROR",
++	},
++	"partial named params with defs and unmatched defaults": {
++		// only a default for first param, which is populated from the provided positional param
++		params: &QueryParams{
++			Params: map[string]string{
++				"p1": "val1",
++			},
++		},
++		paramDefs: []*ParamDef{
++			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
++			{Name: "p2"},
++		},
++		expected: "ERROR",
++	},
++	"positional and named params": {
++		params: &QueryParams{
++			ParamsList: []string{"val1", "val2"},
++			Params: map[string]string{
++				"p1": "val1",
++				"p2": "val2",
++			},
++		},
++		paramDefs: nil,
++		expected:  "ERROR",
++	},
++}
++
++func TestResolveParams(t *testing.T) {
++	for name, test := range testCasesResolveParams {
++		query := &Query{ParamsDefs: test.paramDefs}
++		res, err := query.ResolveParams(test.params)
++		if err != nil {
++			if test.expected != "ERROR" {
++				t.Errorf("Test: '%s'' FAILED : \nunexpected error %v", name, err)
++			}
++			continue
++		}
++		if test.expected == "ERROR" {
++			t.Errorf("Test: '%s'' FAILED - expected error", name)
++			continue
++		}
++		if test.expected != res {
++			t.Errorf("Test: '%s'' FAILED : \nexpected:\n %v, \ngot:\n %v\n", name, test.expected, res)
++		}
++	}
++}
+diff --git a/steampipeconfig/parse/connection.go b/steampipeconfig/parse/connection.go
+index 9ca2335..46ae4c5 100644
+--- a/steampipeconfig/parse/connection.go
++++ b/steampipeconfig/parse/connection.go
+@@ -13,7 +13,7 @@ import (
+ )
+ 
+ func ParseConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.Connection, hcl.Diagnostics) {
+-	connectionContent, rest, diags := block.Body.PartialContent(ConnectionSchema)
++	connectionContent, rest, diags := block.Body.PartialContent(ConnectionBlockSchema)
+ 	if diags.HasErrors() {
+ 		return nil, diags
+ 	}
+diff --git a/steampipeconfig/parse/cty_to_postgres.go b/steampipeconfig/parse/cty_to_postgres.go
+new file mode 100644
+index 0000000..0be0402
+--- /dev/null
++++ b/steampipeconfig/parse/cty_to_postgres.go
+@@ -0,0 +1,103 @@
++package parse
++
++import (
++	"fmt"
++
++	"github.com/zclconf/go-cty/cty"
++	"github.com/zclconf/go-cty/cty/gocty"
++	"github.com/zclconf/go-cty/cty/json"
++)
++
++func ctyObjectToPostgresMap(val cty.Value) (map[string]string, error) {
++	res := make(map[string]string)
++	it := val.ElementIterator()
++	for it.Next() {
++		k, v := it.Element()
++
++		// decode key
++		var key string
++		gocty.FromCtyValue(k, &key)
++
++		// decode the value into a postgres compatible
++		valStr, err := ctyToPostgresString(v)
++		if err != nil {
++			err := fmt.Errorf("invalid value provided for param '%s': %v", key, err)
++			return nil, err
++		}
++
++		res[key] = valStr
++	}
++	return res, nil
++}
++
++func ctyToPostgresString(v cty.Value) (valStr string, err error) {
++	ty := v.Type()
++	switch ty {
++	case cty.Bool:
++		var target bool
++		if err = gocty.FromCtyValue(v, &target); err == nil {
++			valStr = fmt.Sprintf("%v", target)
++		}
++	case cty.Number:
++		var target int
++		if err = gocty.FromCtyValue(v, &target); err == nil {
++			valStr = fmt.Sprintf("%d", target)
++			return
++		} else {
++			var targetf float64
++			if err = gocty.FromCtyValue(v, &targetf); err == nil {
++				valStr = fmt.Sprintf("%d", target)
++			}
++		}
++
++	case cty.String:
++		var target string
++		if err := gocty.FromCtyValue(v, &target); err == nil {
++			valStr = fmt.Sprintf("'%s'", target)
++		}
++	default:
++		var json string
++		// wrap as postgres string
++		if json, err = ctyToJSON(v); err == nil {
++			valStr = fmt.Sprintf("'%s'", json)
++		}
++
++	}
++
++	return valStr, err
++}
++
++func ctyToJSON(val cty.Value) (string, error) {
++
++	if !val.IsWhollyKnown() {
++		return "", fmt.Errorf("cannot serialize unknown values")
++	}
++
++	if val.IsNull() {
++		return "{}", nil
++	}
++
++	buf, err := json.Marshal(val, val.Type())
++	if err != nil {
++		return "", err
++	}
++
++	return string(buf), nil
++
++}
++
++func ctyTupleToPostgresArray(val cty.Value) ([]string, error) {
++	var res []string
++	it := val.ElementIterator()
++	for it.Next() {
++		_, v := it.Element()
++		// decode the value into a postgres compatible
++		valStr, err := ctyToPostgresString(v)
++		if err != nil {
++			return nil, err
++		}
++
++		res = append(res, valStr)
++	}
++	return res, nil
++}
+diff --git a/steampipeconfig/parse/decode.go b/steampipeconfig/parse/decode.go
+index 92a1340..ec4715d 100644
+--- a/steampipeconfig/parse/decode.go
++++ b/steampipeconfig/parse/decode.go
+@@ -1,12 +1,16 @@
+ package parse
+ 
+ import (
++	"fmt"
++
+ 	"github.com/hashicorp/hcl/v2"
+ 	"github.com/hashicorp/hcl/v2/gohcl"
+ 	"github.com/hashicorp/hcl/v2/hclsyntax"
+ 	"github.com/turbot/go-kit/helpers"
++	typehelpers "github.com/turbot/go-kit/types"
+ 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+ 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
++	"github.com/turbot/steampipe/utils"
+ )
+ 
+ // A consistent detail message for all "not a valid identifier" diagnostics.
+@@ -46,8 +50,6 @@ func decode(runCtx *RunContext, opts *ParseModOptions) hcl.Diagnostics {
+ 			continue
+ 		}
+ 
+-		//var decodeResults []*decodeResult
+-		// special case decoding for locals
+ 		switch block.Type {
+ 		case modconfig.BlockTypeLocals:
+ 			// special case decode logic for locals
+@@ -80,6 +82,20 @@ func decode(runCtx *RunContext, opts *ParseModOptions) hcl.Diagnostics {
+ 			if moreDiags.HasErrors() {
+ 				diags = append(diags, moreDiags...)
+ 			}
++		case modconfig.BlockTypeControl:
++			// special case decode logic for locals
++			control, res := decodeControl(block, runCtx)
++			moreDiags = handleDecodeResult(control, res, block, runCtx)
++			if moreDiags.HasErrors() {
++				diags = append(diags, moreDiags...)
++			}
++		case modconfig.BlockTypeQuery:
++			// special case decode logic for locals
++			query, res := decodeQuery(block, runCtx)
++			moreDiags = handleDecodeResult(query, res, block, runCtx)
++			if moreDiags.HasErrors() {
++				diags = append(diags, moreDiags...)
++			}
+ 		default:
+ 			// all other blocks are treated the same:
+ 			resource, res := decodeResource(block, runCtx)
+@@ -92,6 +108,26 @@ func decode(runCtx *RunContext, opts *ParseModOptions) hcl.Diagnostics {
+ 	return diags
+ }
+ 
++// generic decode function for any resource we do not have custom decode logic for
++func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
++	// get shell resource
++	resource := resourceForBlock(block, runCtx)
++
++	res := &decodeResult{}
++	diags := gohcl.DecodeBody(block.Body, runCtx.EvalCtx, resource)
++	// handle any resulting diags, which may specify dependencies
++	res.handleDecodeDiags(diags)
++
++	// call post-decode hook
++	if res.Success() {
++		if diags := resource.OnDecoded(block); diags.HasErrors() {
++			res.addDiags(diags)
++		}
++		AddReferences(resource, block)
++	}
++	return resource, res
++}
++
+ // return a shell resource for the given block
+ func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResource {
+ 	var resource modconfig.HclResource
+@@ -168,28 +204,233 @@ func decodeVariable(block *hcl.Block, runCtx *RunContext) (*modconfig.Variable,
+ 
+ }
+ 
+-func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
+-	// get shell resource
+-	resource := resourceForBlock(block, runCtx)
++func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decodeResult) {
++	res := &decodeResult{}
++
++	q := modconfig.NewQuery(block)
++
++	content, diags := block.Body.Content(QueryBlockSchema)
++
++	if !hclsyntax.ValidIdentifier(q.ShortName) {
++		diags = append(diags, &hcl.Diagnostic{
++			Severity: hcl.DiagError,
++			Summary:  "Invalid control name",
++			Detail:   badIdentifierDetail,
++			Subject:  &block.LabelRanges[0],
++		})
++	}
++
++	if attr, exists := content.Attributes["description"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.Description)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["documentation"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.Documentation)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["search_path"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.SearchPath)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["search_path_prefix"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.SearchPathPrefix)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["sql"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.SQL)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["tags"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.Tags)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["title"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &q.Title)
++		diags = append(diags, valDiags...)
++	}
++	for _, block := range content.Blocks {
++		if block.Type == "params" {
++			if paramDef, valDiags := decodeParamDef(block, runCtx, q.FullName); !diags.HasErrors() {
++				q.ParamsDefs = append(q.ParamsDefs, paramDef)
++			} else {
++				diags = append(diags, valDiags...)
++			}
++		}
++	}
++
++	// handle any resulting diags, which may specify dependencies
++	res.handleDecodeDiags(diags)
++
++	// call post-decode hook
++	if res.Success() {
++		if diags := q.OnDecoded(block); diags.HasErrors() {
++			res.addDiags(diags)
++		}
++		AddReferences(q, block)
++	}
+ 
++	return q, res
++}
++
++func decodeParamDef(block *hcl.Block, runCtx *RunContext, queryName string) (*modconfig.ParamDef, hcl.Diagnostics) {
++	def := modconfig.NewParamDef(block)
++
++	content, diags := block.Body.Content(ParamDefBlockSchema)
++
++	if attr, exists := content.Attributes["description"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &def.Description)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["default"]; exists {
++		v, diags := attr.Expr.Value(runCtx.EvalCtx)
++		if diags.HasErrors() {
++			return nil, diags
++		}
++		if valStr, err := ctyToPostgresString(v); err == nil {
++			def.Default = utils.ToStringPointer(valStr)
++		} else {
++			diags = append(diags, &hcl.Diagnostic{
++				Severity: hcl.DiagError,
++				Summary:  fmt.Sprintf("%s has invalid parameter config", queryName),
++				Detail:   err.Error(),
++				Subject:  &attr.Range,
++			})
++		}
++	}
++	return def, diags
++
++}
++
++func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *decodeResult) {
+ 	res := &decodeResult{}
+-	diags := gohcl.DecodeBody(block.Body, runCtx.EvalCtx, resource)
++
++	c := modconfig.NewControl(block)
++
++	content, diags := block.Body.Content(ControlBlockSchema)
++
++	if !hclsyntax.ValidIdentifier(c.ShortName) {
++		diags = append(diags, &hcl.Diagnostic{
++			Severity: hcl.DiagError,
++			Summary:  "Invalid control name",
++			Detail:   badIdentifierDetail,
++			Subject:  &block.LabelRanges[0],
++		})
++	}
++
++	if attr, exists := content.Attributes["description"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Description)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["documentation"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Documentation)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["search_path"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SearchPath)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["search_path_prefix"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SearchPathPrefix)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["severity"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Severity)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["sql"]; exists {
++		// either Query or SQL property may be set -  if Query property already set, error
++		if c.Query != nil {
++			diags = append(diags, &hcl.Diagnostic{
++				Severity: hcl.DiagError,
++				Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", c.FullName),
++				Subject:  &attr.Range,
++			})
++		} else {
++			valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SQL)
++			diags = append(diags, valDiags...)
++		}
++
++	}
++	if attr, exists := content.Attributes["query"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Query)
++		diags = append(diags, valDiags...)
++		if !valDiags.HasErrors() {
++			// either Query or SQL property may be set - if SQL property already set, error
++			if typehelpers.SafeString(c.SQL) != "" {
++				diags = append(diags, &hcl.Diagnostic{
++					Severity: hcl.DiagError,
++					Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", c.FullName),
++					Subject:  &attr.Range,
++				})
++			} else {
++				// set SQL to the query NAME
++				c.SQL = utils.ToStringPointer(c.Query.FullName)
++			}
++		}
++
++	}
++	if attr, exists := content.Attributes["tags"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Tags)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["title"]; exists {
++		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Title)
++		diags = append(diags, valDiags...)
++	}
++	if attr, exists := content.Attributes["params"]; exists {
++		if params, diags := decodeControlParams(attr, runCtx.EvalCtx, c.FullName); !diags.HasErrors() {
++			c.Params = params
++		}
++	}
++
+ 	// handle any resulting diags, which may specify dependencies
+ 	res.handleDecodeDiags(diags)
+ 
+ 	// call post-decode hook
+ 	if res.Success() {
+-		if diags := resource.OnDecoded(block); diags.HasErrors() {
++		if diags := c.OnDecoded(block); diags.HasErrors() {
+ 			res.addDiags(diags)
+ 		}
+-		AddReferences(resource, block)
++		AddReferences(c, block)
+ 	}
+-	return resource, res
++
++	return c, res
++
++}
++
++func decodeControlParams(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName string) (*modconfig.QueryParams, hcl.Diagnostics) {
++	var params = modconfig.NewQueryParams()
++	v, diags := attr.Expr.Value(evalCtx)
++	if diags.HasErrors() {
++		return nil, diags
++	}
++
++	var err error
++	ty := v.Type()
++
++	switch {
++	case ty.IsObjectType():
++		params.Params, err = ctyObjectToPostgresMap(v)
++	case ty.IsTupleType():
++		params.ParamsList, err = ctyTupleToPostgresArray(v)
++	default:
++		err = fmt.Errorf("'params' property must be either a map or an array")
++	}
++
++	if err != nil {
++		diags = append(diags, &hcl.Diagnostic{
++			Severity: hcl.DiagError,
++			Summary:  fmt.Sprintf("%s has invalid parameter config", controlName),
++			Detail:   err.Error(),
++			Subject:  &attr.Range,
++		})
++	}
++	return params, diags
+ }
+ 
+ func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decodeResult) {
+ 	res := &decodeResult{}
+-	content, diags := block.Body.Content(PanelSchema)
++	content, diags := block.Body.Content(PanelBlockSchema)
+ 	res.handleDecodeDiags(diags)
+ 
+ 	// get shell resource
+@@ -225,7 +466,7 @@ func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decod
+ func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Report, *decodeResult) {
+ 	res := &decodeResult{}
+ 
+-	content, diags := block.Body.Content(ReportSchema)
++	content, diags := block.Body.Content(ReportBlockSchema)
+ 	res.handleDecodeDiags(diags)
+ 
+ 	report := modconfig.NewReport(block)
+diff --git a/steampipeconfig/parse/parser.go b/steampipeconfig/parse/parser.go
+index b039d1f..753f16c 100644
+--- a/steampipeconfig/parse/parser.go
++++ b/steampipeconfig/parse/parser.go
+@@ -54,7 +54,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
+ 		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
+ 	}
+ 
+-	content, moreDiags := body.Content(ModFileSchema)
++	content, moreDiags := body.Content(ModBlockSchema)
+ 	if moreDiags.HasErrors() {
+ 		diags = append(diags, moreDiags...)
+ 		return nil, plugin.DiagsToError("Failed to load mod", diags)
+@@ -68,7 +68,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
+ 	for _, block := range content.Blocks {
+ 		// if this is a mod, build a shell mod struct (with just the name populated)
+ 		switch block.Type {
+-		case string(modconfig.BlockTypeMod):
++		case modconfig.BlockTypeMod:
+ 			// if there is more than one mod, fail
+ 			if mod != nil {
+ 				return nil, fmt.Errorf("more than 1 mod definition found in %s", modPath)
+@@ -108,11 +108,6 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
+ 		log.Printf("[TRACE] %d files were not converted into resources as hcl resources of same name are defined: %v", len(duplicates), duplicates)
+ 	}
+ 
+-	// 4) Add dependencies?
+-	// TODO think about where we resolve and store mod dependencies
+-
+-	// todo change runctx to Decoder object
+-
+ 	// create run context to handle dependency resolution
+ 	runCtx, diags := NewRunContext(mod, content, fileData, opts.Variables)
+ 	if diags.HasErrors() {
+diff --git a/steampipeconfig/parse/prepared_statement.go b/steampipeconfig/parse/prepared_statement.go
+new file mode 100644
+index 0000000..554b04d
+--- /dev/null
++++ b/steampipeconfig/parse/prepared_statement.go
+@@ -0,0 +1,175 @@
++package parse
++
++import (
++	"fmt"
++	"strings"
++
++	"github.com/hashicorp/hcl/v2"
++	"github.com/hashicorp/hcl/v2/hclsyntax"
++	"github.com/turbot/steampipe-plugin-sdk/plugin"
++	"github.com/turbot/steampipe/steampipeconfig/modconfig"
++)
++
++// ParsePreparedStatementInvocation parses a query invocation and extracts th eparams (if any)
++// supported formats are:
++//
++// 1) positional params
++// query.my_prepared_statement('val1','val1')
++//
++// 2) named params
++// query.my_prepared_statement(my_param1 => 'test', my_param2 => 'test2')
++func ParsePreparedStatementInvocation(arg string) (string, *modconfig.QueryParams, error) {
++	// TODO strip non printing chars
++	params := &modconfig.QueryParams{}
++	arg = strings.TrimSpace(arg)
++	queryName := arg
++	openBracketIdx := strings.Index(arg, "(")
++	closeBracketIdx := strings.LastIndex(arg, ")")
++	if openBracketIdx != -1 && closeBracketIdx == len(arg)-1 {
++		paramsString := arg[openBracketIdx+1 : len(arg)-1]
++		var err error
++		params, err = parseParams(paramsString)
++		if err != nil {
++			return "", nil, err
++		}
++		queryName = strings.TrimSpace(arg[:openBracketIdx])
++	}
++	return queryName, params, nil
++}
++
++// parse the actual params string, i.e. the contents of the bracket
++// supported formats are:
++//
++// 1) positional params
++// 'val1','val1'
++//
++// 2) named params
++// my_param1 => 'val1', my_param2 => 'val2'
++func parseParams(paramsString string) (*modconfig.QueryParams, error) {
++	res := modconfig.NewQueryParams()
++	if len(paramsString) == 0 {
++		return res, nil
++	}
++
++	// split on comma to get each param string (taking quotes and brackets into account)
++	paramsList, err := splitParamString(paramsString)
++	if err != nil {
++		return nil, err
++	}
++
++	// first check for named parameters
++	res.Params, err = parseNamedParams(paramsList)
++	if err != nil {
++		return nil, err
++	}
++	if res.Empty() {
++		// no named params - fall back on positional
++		res.ParamsList, err = parsePositionalParams(paramsList)
++		if err != nil {
++			return nil, err
++		}
++	}
++	return res, nil
++}
++
++func splitParamString(paramsString string) ([]string, error) {
++	var paramsList []string
++	openElements := map[string]int{
++		"quote":  0,
++		"curly":  0,
++		"square": 0,
++	}
++	var currentWord string
++	for _, c := range paramsString {
++		// should we split - are we in a block
++		if c == ',' &&
++			openElements["quote"] == 0 && openElements["curly"] == 0 && openElements["square"] == 0 {
++			if len(currentWord) > 0 {
++				paramsList = append(paramsList, currentWord)
++				currentWord = ""
++			}
++		} else {
++			currentWord = currentWord + string(c)
++		}
++
++		// handle brackets and quotes
++		switch c {
++		case '{':
++			if openElements["quote"] == 0 {
++				openElements["curly"]++
++			}
++		case '}':
++			if openElements["quote"] == 0 {
++				openElements["curly"]--
++				if openElements["curly"] < 0 {
++					return nil, fmt.Errorf("bad parameter syntax")
++				}
++			}
++		case '[':
++			if openElements["quote"] == 0 {
++				openElements["square"]++
++			}
++		case ']':
++			if openElements["quote"] == 0 {
++				openElements["square"]--
++				if openElements["square"] < 0 {
++					return nil, fmt.Errorf("bad parameter syntax")
++				}
++			}
++		case '"':
++			if openElements["quote"] == 0 {
++				openElements["quote"] = 1
++			} else {
++				openElements["quote"] = 0
++			}
++		}
++	}
++	if len(currentWord) > 0 {
++		paramsList = append(paramsList, currentWord)
++	}
++	return paramsList, nil
++}
++
++func parseParam(v string) (string, error) {
++	b, diags := hclsyntax.ParseExpression([]byte(v), "", hcl.Pos{})
++	if diags.HasErrors() {
++		return "", plugin.DiagsToError("bad parameter syntax", diags)
++	}
++	val, diags := b.Value(nil)
++	if diags.HasErrors() {
++		return "", plugin.DiagsToError("bad parameter syntax", diags)
++	}
++	return ctyToPostgresString(val)
++}
++
++func parseNamedParams(paramsList []string) (map[string]string, error) {
++	var res = make(map[string]string)
++	for _, p := range paramsList {
++		paramTuple := strings.Split(strings.TrimSpace(p), "=>")
++		if len(paramTuple) != 2 {
++			// not all params have valid syntax - give up
++			return nil, nil
++		}
++		k := strings.TrimSpace(paramTuple[0])
++		valStr, err := parseParam(paramTuple[1])
++		if err != nil {
++			return nil, err
++		}
++		res[k] = valStr
++	}
++	return res, nil
++}
++
++func parsePositionalParams(paramsList []string) ([]string, error) {
++	// just treat params as positional parameters
++	// strip spaces
++	for i, v := range paramsList {
++		valStr, err := parseParam(v)
++		if err != nil {
++			return nil, err
++		}
++		paramsList[i] = valStr
++	}
++
++	return paramsList, nil
++}
+diff --git a/steampipeconfig/parse/prepared_statement_test.go b/steampipeconfig/parse/prepared_statement_test.go
+new file mode 100644
+index 0000000..7bc231f
+--- /dev/null
++++ b/steampipeconfig/parse/prepared_statement_test.go
+@@ -0,0 +1,139 @@
++package parse
++
++import (
++	"fmt"
++	"testing"
++
++	"github.com/turbot/steampipe/steampipeconfig/modconfig"
++)
++
++type parsePreparedStatementInvocationTest struct {
++	input    string
++	expected interface{}
++}
++
++type parsePreparedStatementInvocationResult struct {
++	queryName string
++	params    *modconfig.QueryParams
++}
++
++var emptyParams = modconfig.NewQueryParams()
++var testCasesParsePreparedStatementInvocation = map[string]parsePreparedStatementInvocationTest{
++	"no brackets": {
++		input:    `query.q1`,
++		expected: parsePreparedStatementInvocationResult{"query.q1", emptyParams},
++	},
++	"no params": {
++		input:    `query.q1()`,
++		expected: parsePreparedStatementInvocationResult{"query.q1", emptyParams},
++	},
++	"invalid params 1": {
++		input: `query.q1(foo)`,
++		expected: parsePreparedStatementInvocationResult{
++			queryName: `query.q1`,
++			params:    &modconfig.QueryParams{ParamsList: []string{"foo"}},
++		},
++	},
++	"invalid params 2": {
++		input: `query.q1("foo")`,
++		expected: parsePreparedStatementInvocationResult{
++			queryName: `query.q1`,
++			params:    &modconfig.QueryParams{ParamsList: []string{`"foo"`}},
++		},
++	},
++	"invalid params 3": {
++		input: `query.q1('foo',  'bar')`,
++		expected: parsePreparedStatementInvocationResult{
++			queryName: `query.q1`,
++			params:    &modconfig.QueryParams{ParamsList: []string{"'foo'", "'bar'"}},
++		},
++	},
++	"invalid params 4": {
++		input: `query.q1(['foo',  'bar'])`,
++		expected: parsePreparedStatementInvocationResult{
++			queryName: `query.q1`,
++			params:    &modconfig.QueryParams{ParamsList: []string{"['foo'", "'bar']"}},
++		},
++	},
++
++	"single positional param": {
++		input: `query.q1('foo')`,
++		expected: parsePreparedStatementInvocationResult{
++			queryName: `query.q1`,
++			params:    &modconfig.QueryParams{ParamsList: []string{"'foo'"}},
++		},
++	},
++	"single positional param extra spaces": {
++		input: `query.q1('foo')`,
++		expected: parsePreparedStatementInvocationResult{
++			queryName: `query.q1`,
++			params:    &modconfig.QueryParams{ParamsList: []string{"'foo'"}},
++		},
++	},
++	"multiple positional params": {
++		input: `query.q1('foo', 'bar', 'foo-bar')`,
++		expected: parsePreparedStatementInvocationResult{
++			queryName: `query.q1`,
++			params:    &modconfig.QueryParams{ParamsList: []string{"'foo'", "'bar'", "'foo-bar'"}},
++		},
++	},
++	"multiple positional params extra spaces": {
++		input: ` query.q1('foo' ,  'bar', 'foo-bar'  )`,
++		expected: parsePreparedStatementInvocationResult{
++			queryName: `query.q1`,
++			params:    &modconfig.QueryParams{ParamsList: []string{"'foo'", "'bar'", "'foo-bar'"}},
++		},
++	},
++	"single named param": {
++		input: `query.q1(p1 => 'foo')`,
++		expected: parsePreparedStatementInvocationResult{
++			queryName: `query.q1`,
++			params:    &modconfig.QueryParams{Params: map[string]string{"p1": "foo"}},
++		},
++	},
++	"single named param extra spaces": {
++		input: `query.q1( p1  =>  'foo' ) `,
++		expected: parsePreparedStatementInvocationResult{
++			queryName: `query.q1`,
++			params:    &modconfig.QueryParams{Params: map[string]string{"p1": "foo"}},
++		},
++	},
++	"multiple named params": {
++		input: `query.q1(p1 => 'foo', p2 => 'bar')`,
++		expected: parsePreparedStatementInvocationResult{
++			queryName: `query.q1`,
++			params:    &modconfig.QueryParams{Params: map[string]string{"p1": "foo", "p2": "bar"}},
++		},
++	},
++	"multiple named params extra spaces": {
++		input: ` query.q1 ( p1 => 'foo' ,  p2  => 'bar'     ) `,
++		expected: parsePreparedStatementInvocationResult{
++			queryName: `query.q1`,
++			params:    &modconfig.QueryParams{Params: map[string]string{"p1": "foo", "p2": "bar"}},
++		},
++	},
++}
++
++func TestParsePreparedStatementInvocation(t *testing.T) {
++	for name, test := range testCasesParsePreparedStatementInvocation {
++		queryName, params, err := ParsePreparedStatementInvocation(test.input)
++		if err != nil {
++			if test.expected != "ERROR" {
++				t.Errorf("Test: '%s'' FAILED : \nunexpected error %v", name, err)
++			}
++			return
++		}
++		if test.expected == "ERROR" {
++			t.Errorf("Test: '%s'' FAILED - expected error", name)
++		}
++		expected := test.expected.(parsePreparedStatementInvocationResult)
++		if queryName != expected.queryName || !expected.params.Equals(params) {
++			fmt.Printf("")
++			t.Errorf("Test: '%s'' FAILED : expected:\nquery: %s params: %s\n\ngot:\nquery: %s params: %s",
++				name,
++				expected.queryName,
++				expected.params,
++				queryName, params)
++		}
++	}
++}
+diff --git a/steampipeconfig/parse/schema.go b/steampipeconfig/parse/schema.go
+index d34b968..d4c8686 100644
+--- a/steampipeconfig/parse/schema.go
++++ b/steampipeconfig/parse/schema.go
+@@ -5,7 +5,7 @@ import (
+ 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+ )
+ 
+-var ConfigSchema = &hcl.BodySchema{
++var ConfigBlockSchema = &hcl.BodySchema{
+ 	Attributes: []hcl.AttributeSchema{},
+ 	Blocks: []hcl.BlockHeaderSchema{
+ 		{
+@@ -19,7 +19,7 @@ var ConfigSchema = &hcl.BodySchema{
+ 	},
+ }
+ 
+-var ConnectionSchema = &hcl.BodySchema{
++var ConnectionBlockSchema = &hcl.BodySchema{
+ 	Attributes: []hcl.AttributeSchema{
+ 		{
+ 			Name:     "plugin",
+@@ -40,8 +40,8 @@ var ConnectionSchema = &hcl.BodySchema{
+ 	},
+ }
+ 
+-// ModFileSchema :: top level schema for all mod resources
+-var ModFileSchema = &hcl.BodySchema{
++// ModBlockSchema :: top level schema for all mod resources
++var ModBlockSchema = &hcl.BodySchema{
+ 	Attributes: []hcl.AttributeSchema{},
+ 	Blocks: []hcl.BlockHeaderSchema{
+ 		{
+@@ -78,7 +78,7 @@ var ModFileSchema = &hcl.BodySchema{
+ 	},
+ }
+ 
+-var PanelSchema = &hcl.BodySchema{
++var PanelBlockSchema = &hcl.BodySchema{
+ 	Attributes: []hcl.AttributeSchema{
+ 		{Name: "title"},
+ 		{Name: "text"},
+@@ -100,7 +100,7 @@ var PanelSchema = &hcl.BodySchema{
+ 	},
+ }
+ 
+-var ReportSchema = &hcl.BodySchema{
++var ReportBlockSchema = &hcl.BodySchema{
+ 	Attributes: []hcl.AttributeSchema{
+ 		{Name: "title"},
+ 	},
+@@ -115,3 +115,42 @@ var ReportSchema = &hcl.BodySchema{
+ 		},
+ 	},
+ }
++
++var ControlBlockSchema = &hcl.BodySchema{
++	Attributes: []hcl.AttributeSchema{
++		{Name: "description"},
++		{Name: "documentation"},
++		{Name: "search_path"},
++		{Name: "search_path_prefix"},
++		{Name: "severity"},
++		{Name: "sql"},
++		{Name: "query"},
++		{Name: "tags"},
++		{Name: "title"},
++		{Name: "params"},
++	},
++}
++
++var QueryBlockSchema = &hcl.BodySchema{
++	Attributes: []hcl.AttributeSchema{
++		{Name: "description"},
++		{Name: "documentation"},
++		{Name: "search_path"},
++		{Name: "search_path_prefix"},
++		{Name: "sql"},
++		{Name: "tags"},
++		{Name: "title"},
++	},
++	Blocks: []hcl.BlockHeaderSchema{
++		{
++			Type:       "params",
++			LabelNames: []string{"name"},
++		},
++	},
++}
++var ParamDefBlockSchema = &hcl.BodySchema{
++	Attributes: []hcl.AttributeSchema{
++		{Name: "description"},
++		{Name: "default"},
++	},
++}
+diff --git a/steampipeconfig/test_data/control_test/control.sp b/steampipeconfig/test_data/control_test/control.sp
+deleted file mode 100644
+index 59de2e9..0000000
+--- a/steampipeconfig/test_data/control_test/control.sp
++++ /dev/null
+@@ -1,53 +0,0 @@
+-benchmark "cg_1"{
+-    children = [
+-        benchmark.cg_1_1,
+-        benchmark.cg_1_2
+-    ]
+-}
+-benchmark "cg_1_1"{
+-    children = [
+-        benchmark.cg_1_1_1,
+-        benchmark.cg_1_1_2,
+-        control.c3,
+-    ]
+-}
+-benchmark "cg_1_2"{
+-}
+-benchmark "cg_1_1_1"{
+-    children = [
+-        control.c1,
+-    ]
+-}
+-benchmark "cg_1_1_2"{
+-    children = [
+-        control.c2,
+-        control.c4,
+-        control.c5
+-    ]
+-}
+-
+-control "c1"{
+-    title = "control 1"
+-    sql = "select 'r1' as resource, 'alarm' as status, 'Im alarmed' as reason, 'dimension 1 val' as d1"
+-}
+-control "c2"{
+-    title = "control 2"
+-    sql = control.c3.sql
+-}
+-control "c3"{
+-    title = "control 3"
+-    sql = control.c4.sql
+-}
+-control "c4"{
+-    title = "control 4"
+-    sql = "select 'r4' as resource, 'alarm' as status, 'Im alarmed' as reason"
+-    severity = "terrible"
+-}
+-control "c5"{
+-    title = "control 5"
+-    sql = "select 'r5' as resource, 'alarm' as status, 'Im alarmed' as reason"
+-}
+-control "c6"{
+-    title = "control 6"
+-    sql = "select 'r6' as resource, 'alarm' as status, 'Im alarmed' as reason"
+-}
+diff --git a/steampipeconfig/test_data/control_test/manual_control.sql b/steampipeconfig/test_data/control_test/manual_control.sql
+deleted file mode 100644
+index 6a9d473..0000000
+--- a/steampipeconfig/test_data/control_test/manual_control.sql
++++ /dev/null
+@@ -1,11 +0,0 @@
+-select
+-  -- required columns
+-  'arn:' || partition || ':::' || account_id as resource,
+-  'info' as status,
+-  'This is a manual control, you must verify compliance manually.' as reason,
+-  -- extra columns (annotations?)
+-  account_id,
+-  partition,
+-  region
+-from
+-  aws_account;
+diff --git a/steampipeconfig/test_data/control_test/s1.sql b/steampipeconfig/test_data/control_test/s1.sql
+deleted file mode 100644
+index df56bc6..0000000
+--- a/steampipeconfig/test_data/control_test/s1.sql
++++ /dev/null
+@@ -1 +0,0 @@
+-select 'r1' as resource, 'alarm' as status,
+\ No newline at end of file
+diff --git a/steampipeconfig/test_data/control_demo/control.sp b/steampipeconfig/test_data/demo/control_demo/control.sp
+similarity index 100%
+rename from steampipeconfig/test_data/control_demo/control.sp
+rename to steampipeconfig/test_data/demo/control_demo/control.sp
+diff --git a/steampipeconfig/test_data/control_demo/mod.sp b/steampipeconfig/test_data/demo/control_demo/mod.sp
+similarity index 100%
+rename from steampipeconfig/test_data/control_demo/mod.sp
+rename to steampipeconfig/test_data/demo/control_demo/mod.sp
+diff --git a/steampipeconfig/test_data/control_demo/queries/q2.sql b/steampipeconfig/test_data/demo/control_demo/queries/q2.sql
+similarity index 100%
+rename from steampipeconfig/test_data/control_demo/queries/q2.sql
+rename to steampipeconfig/test_data/demo/control_demo/queries/q2.sql
+diff --git a/steampipeconfig/test_data/control_demo/queries/q2/q4/q3.sql b/steampipeconfig/test_data/demo/control_demo/queries/q2/q4/q3.sql
+similarity index 100%
+rename from steampipeconfig/test_data/control_demo/queries/q2/q4/q3.sql
+rename to steampipeconfig/test_data/demo/control_demo/queries/q2/q4/q3.sql
+diff --git a/steampipeconfig/test_data/control_demo/queries/q2/q5.sql b/steampipeconfig/test_data/demo/control_demo/queries/q2/q5.sql
+similarity index 100%
+rename from steampipeconfig/test_data/control_demo/queries/q2/q5.sql
+rename to steampipeconfig/test_data/demo/control_demo/queries/q2/q5.sql
+diff --git a/steampipeconfig/test_data/control_demo/queries/q3.sql b/steampipeconfig/test_data/demo/control_demo/queries/q3.sql
+similarity index 100%
+rename from steampipeconfig/test_data/control_demo/queries/q3.sql
+rename to steampipeconfig/test_data/demo/control_demo/queries/q3.sql
+diff --git a/steampipeconfig/test_data/control_demo/queries/q4.sql b/steampipeconfig/test_data/demo/control_demo/queries/q4.sql
+similarity index 100%
+rename from steampipeconfig/test_data/control_demo/queries/q4.sql
+rename to steampipeconfig/test_data/demo/control_demo/queries/q4.sql
+diff --git a/steampipeconfig/test_data/control_demo/query.sp b/steampipeconfig/test_data/demo/control_demo/query.sp
+similarity index 100%
+rename from steampipeconfig/test_data/control_demo/query.sp
+rename to steampipeconfig/test_data/demo/control_demo/query.sp
+diff --git a/steampipeconfig/test_data/control_demo_sql/q1.sql b/steampipeconfig/test_data/demo/control_demo_sql/q1.sql
+similarity index 100%
+rename from steampipeconfig/test_data/control_demo_sql/q1.sql
+rename to steampipeconfig/test_data/demo/control_demo_sql/q1.sql
+diff --git a/steampipeconfig/test_data/control_demo_sql/q2.sql b/steampipeconfig/test_data/demo/control_demo_sql/q2.sql
+similarity index 100%
+rename from steampipeconfig/test_data/control_demo_sql/q2.sql
+rename to steampipeconfig/test_data/demo/control_demo_sql/q2.sql
+diff --git a/steampipeconfig/test_data/control_demo_sql/query.sp b/steampipeconfig/test_data/demo/control_demo_sql/query.sp
+similarity index 100%
+rename from steampipeconfig/test_data/control_demo_sql/query.sp
+rename to steampipeconfig/test_data/demo/control_demo_sql/query.sp
+diff --git a/steampipeconfig/test_data/demo/query_param_demo/control.sp b/steampipeconfig/test_data/demo/query_param_demo/control.sp
+new file mode 100644
+index 0000000..523c97b
+--- /dev/null
++++ b/steampipeconfig/test_data/demo/query_param_demo/control.sp
+@@ -0,0 +1,24 @@
++//control "c1"{
++//    title ="C1"
++//    description = "THIS IS CONTROL 1"
++//    query = query.q1
++//}
++//
++//control "c2"{
++//    title ="C2"
++//    description = "THIS IS CONTROL 2"
++//    query = query.q1
++//    params = {
++//        "p1" = "control2 "
++//        "p2" = 100
++//        "p3" = "a reason"
++//    }
++//}
++//
++//control "c3"{
++//    title ="C3"
++//    description = "THIS IS CONTROL 3"
++//    query = query.q1
++//    params = [  "control3 ", "because______ " ]
++//}
++//
+diff --git a/steampipeconfig/test_data/demo/query_param_demo/control2.sp b/steampipeconfig/test_data/demo/query_param_demo/control2.sp
+new file mode 100644
+index 0000000..3b36179
+--- /dev/null
++++ b/steampipeconfig/test_data/demo/query_param_demo/control2.sp
+@@ -0,0 +1,11 @@
++
++variable "prohibited_instance_types" {
++    type    = list(string)
++    default = ["%4xl","%8xl","%12xl","%16xl","%24xl","%32xl","%.metal"]
++}
++
++control "array_param" {
++    title       = "EC2 Instances xlarge and bigger"
++    params  = [ var.prohibited_instance_types ]
++    query         = query.q2
++}
+diff --git a/steampipeconfig/test_data/demo/query_param_demo/mod.sp b/steampipeconfig/test_data/demo/query_param_demo/mod.sp
+new file mode 100644
+index 0000000..fd2175a
+--- /dev/null
++++ b/steampipeconfig/test_data/demo/query_param_demo/mod.sp
+@@ -0,0 +1,4 @@
++mod "m1"{
++  title = "M1"
++  description = "THIS IS M1"
++}
+\ No newline at end of file
+diff --git a/steampipeconfig/test_data/demo/query_param_demo/query.sp b/steampipeconfig/test_data/demo/query_param_demo/query.sp
+new file mode 100644
+index 0000000..5b74a90
+--- /dev/null
++++ b/steampipeconfig/test_data/demo/query_param_demo/query.sp
+@@ -0,0 +1,29 @@
++variable "v1"{
++    type = string
++    default = "from_var"
++}
++
++
++query "q1"{
++    title ="Q1"
++    description = "query 1 - 3 params all with defaults"
++    sql = "select 'ok' as status, 'foo' as resource, concat($1::text, $2::text, $3::text) as reason"
++    params "p1"{
++        description = "p1"
++        default = "default_control "
++    }
++    params "p2"{
++        description = "p2"
++        default = ["default_because_${var.v1} ", 1]
++    }
++    params "p3"{
++        description = "p3"
++        default = 100
++    }
++}
++
++
++query "q2" {
++    title       = "EC2 Instances xlarge and bigger"
++    sql = "select 'ok' as status, 'foo' as resource, $1::json->1 as reason"
++}
+\ No newline at end of file
+diff --git a/steampipeconfig/test_data/variables_demo/query.sp b/steampipeconfig/test_data/demo/variables_demo/query.sp
+similarity index 100%
+rename from steampipeconfig/test_data/variables_demo/query.sp
+rename to steampipeconfig/test_data/demo/variables_demo/query.sp
+diff --git a/steampipeconfig/test_data/variables_demo/steampipe.spvars b/steampipeconfig/test_data/demo/variables_demo/steampipe.spvars
+similarity index 100%
+rename from steampipeconfig/test_data/variables_demo/steampipe.spvars
+rename to steampipeconfig/test_data/demo/variables_demo/steampipe.spvars
+diff --git a/steampipeconfig/test_data/variables_demo/vars.spvars b/steampipeconfig/test_data/demo/variables_demo/vars.spvars
+similarity index 100%
+rename from steampipeconfig/test_data/variables_demo/vars.spvars
+rename to steampipeconfig/test_data/demo/variables_demo/vars.spvars
+diff --git a/steampipeconfig/test_data/variables_demo/vars2.auto.spvars b/steampipeconfig/test_data/demo/variables_demo/vars2.auto.spvars
+similarity index 100%
+rename from steampipeconfig/test_data/variables_demo/vars2.auto.spvars
+rename to steampipeconfig/test_data/demo/variables_demo/vars2.auto.spvars
+diff --git a/steampipeconfig/test_data/mods/query_with_paramdefs/mod.sp b/steampipeconfig/test_data/mods/query_with_paramdefs/mod.sp
+new file mode 100644
+index 0000000..fd2175a
+--- /dev/null
++++ b/steampipeconfig/test_data/mods/query_with_paramdefs/mod.sp
+@@ -0,0 +1,4 @@
++mod "m1"{
++  title = "M1"
++  description = "THIS IS M1"
++}
+\ No newline at end of file
+diff --git a/steampipeconfig/test_data/mods/query_with_paramdefs/query.sp b/steampipeconfig/test_data/mods/query_with_paramdefs/query.sp
+new file mode 100644
+index 0000000..b0f5584
+--- /dev/null
++++ b/steampipeconfig/test_data/mods/query_with_paramdefs/query.sp
+@@ -0,0 +1,13 @@
++query "q1"{
++    title ="Q1"
++    description = "THIS IS QUERY 1"
++    sql = "select 1"
++    params "p1"{
++        description = "desc"
++        default = "I am default"
++    }
++    params "p2"{
++        description = "desc 2"
++        default = "I am default 2"
++    }
++}
+diff --git a/steampipeconfig/test_data/mods/query_with_paramdefs_control_with_named_params/control.sp b/steampipeconfig/test_data/mods/query_with_paramdefs_control_with_named_params/control.sp
+new file mode 100644
+index 0000000..6eefdf2
+--- /dev/null
++++ b/steampipeconfig/test_data/mods/query_with_paramdefs_control_with_named_params/control.sp
+@@ -0,0 +1,9 @@
++control "c1"{
++    title ="C1"
++    description = "THIS IS CONTROL 1"
++    sql = "select 'ok' as status, 'foo' as resource, 'bar' as reason"
++    params = {
++        "p1" = "val1"
++        "p2" = "val2"
++    }
++}
+diff --git a/steampipeconfig/test_data/mods/query_with_paramdefs_control_with_named_params/mod.sp b/steampipeconfig/test_data/mods/query_with_paramdefs_control_with_named_params/mod.sp
+new file mode 100644
+index 0000000..fd2175a
+--- /dev/null
++++ b/steampipeconfig/test_data/mods/query_with_paramdefs_control_with_named_params/mod.sp
+@@ -0,0 +1,4 @@
++mod "m1"{
++  title = "M1"
++  description = "THIS IS M1"
++}
+\ No newline at end of file
+diff --git a/steampipeconfig/test_data/mods/query_with_paramdefs_control_with_named_params/query.sp b/steampipeconfig/test_data/mods/query_with_paramdefs_control_with_named_params/query.sp
+new file mode 100644
+index 0000000..b0f5584
+--- /dev/null
++++ b/steampipeconfig/test_data/mods/query_with_paramdefs_control_with_named_params/query.sp
+@@ -0,0 +1,13 @@
++query "q1"{
++    title ="Q1"
++    description = "THIS IS QUERY 1"
++    sql = "select 1"
++    params "p1"{
++        description = "desc"
++        default = "I am default"
++    }
++    params "p2"{
++        description = "desc 2"
++        default = "I am default 2"
++    }
++}
+diff --git a/workspace/workspace.go b/workspace/workspace.go
+index b4ef6c2..2e1b29a 100644
+--- a/workspace/workspace.go
++++ b/workspace/workspace.go
+@@ -11,6 +11,7 @@ import (
+ 	"github.com/fsnotify/fsnotify"
+ 	filehelpers "github.com/turbot/go-kit/files"
+ 	"github.com/turbot/go-kit/types"
++	typeHelpers "github.com/turbot/go-kit/types"
+ 	"github.com/turbot/steampipe/constants"
+ 	"github.com/turbot/steampipe/db/db_common"
+ 	"github.com/turbot/steampipe/report/reportevents"
+@@ -285,7 +286,7 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
+ 		res[longName] = q
+ 	}
+ 
+-	// for mode dependencies, add queries keyed by long name only
++	// for mod dependencies, add queries keyed by long name only
+ 	for _, mod := range modMap {
+ 		for _, q := range mod.Queries {
+ 			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.ShortName), q.ShortName)
+@@ -425,3 +426,82 @@ func (w *Workspace) getReportMap() map[string]*modconfig.Report {
+ 	}
+ 	return reports
+ }
++
++// GetQueriesFromArgs retrieves queries from args
++//
++// For each arg check if it is a named query or a file, before falling back to treating it as sql
++func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, error) {
++	utils.LogTime("execute.GetQueriesFromArgs start")
++	defer utils.LogTime("execute.GetQueriesFromArgs end")
++
++	var queries []string
++	for _, arg := range args {
++		// in case of a named query call with params, parse the where clause
++		queryName, params, err := parse.ParsePreparedStatementInvocation(arg)
++		if err != nil {
++			return nil, err
++		}
++		query, err := w.GetQueryFromArg(queryName, params)
++		if err != nil {
++			return nil, err
++		}
++		if len(query) > 0 {
++			queries = append(queries, query)
++		}
++	}
++	return queries, nil
++}
++
++// GetQueryFromArg attempts to resolve 'arg' to a query
++// the second return value indicates whether the arg was resolved as a named query/SQL file
++func (w *Workspace) GetQueryFromArg(arg string, params *modconfig.QueryParams) (string, error) {
++	// 1) is this a named query
++	if namedQuery, ok := w.GetQuery(arg); ok {
++		sql, err := namedQuery.GetExecuteSQL(params)
++		if err != nil {
++			return "", fmt.Errorf("GetQueryFromArg failed for value %s: %v", arg, err)
++		}
++		return sql, nil
++	}
++	// check if this is a control
++	if control, ok := w.GetControl(arg); ok {
++		return typeHelpers.SafeString(control.SQL), nil
++	}
++
++	// 	2) is this a file
++	fileQuery, fileExists, err := w.getQueryFromFile(arg)
++	if fileExists {
++		if err != nil {
++			return "", fmt.Errorf("GetQueryFromArg failed: error opening file '%s': %v", arg, err)
++		}
++		if len(fileQuery) == 0 {
++			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", arg))
++			// (just return the empty string - it will be filtered above)
++		}
++		return fileQuery, nil
++	}
++
++	// 3) just use the arg string as is and assume it is valid SQL
++	return arg, nil
++}
++
++func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
++	// get absolute filename
++	path, err := filepath.Abs(filename)
++	if err != nil {
++		return "", false, nil
++	}
++	// does it exist?
++	if _, err := os.Stat(path); err != nil {
++		// if this gives any error, return not exist. we may get a not found or a path too long for example
++		return "", false, nil
++	}
++
++	// read file
++	fileBytes, err := os.ReadFile(path)
++	if err != nil {
++		return "", true, err
++	}
++
++	return string(fileBytes), true, nil
++}
+diff --git a/workspace/workspace_events.go b/workspace/workspace_events.go
+index 6945d7a..38aa906 100644
+--- a/workspace/workspace_events.go
++++ b/workspace/workspace_events.go
+@@ -1,6 +1,8 @@
+ package workspace
+ 
+ import (
++	"context"
++
+ 	"github.com/turbot/steampipe/db/db_common"
+ 
+ 	"github.com/fsnotify/fsnotify"
+@@ -46,6 +48,7 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
+ 
+ 	// todo detect differences and only refresh if necessary
+ 	db_common.UpdateMetadataTables(w.GetResourceMaps(), client)
++	db_common.UpdatePreparedStatements(context.Background(), w.QueryMap, client)
+ 
+ 	w.raiseReportChangedEvents(w.getPanelMap(), prevPanels, w.getReportMap(), prevReports)
+ }
+diff --git a/workspace/workspace_test.go b/workspace/workspace_test.go
+index 5f06dd2..9709ee5 100644
+--- a/workspace/workspace_test.go
++++ b/workspace/workspace_test.go
+@@ -11,14 +11,17 @@ import (
+ 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+ )
+ 
++// the actual mod loading logic is tested more thoroughly in TestLoadMod (steampipeconfig/load_mod_test.go)
++// this test is primarily to verify the QueryMap building
+ type loadWorkspaceTest struct {
+ 	source   string
+ 	expected interface{}
+ }
+ 
+ var toStringPointer = utils.ToStringPointer
++var m3alias = "m3"
+ 
+-var m3alias, testCasesLoadWorkspace = "m3", map[string]loadWorkspaceTest{
++var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
+ 	"single mod": {
+ 		source: "test_data/w_1",
+ 		expected: &Workspace{
+@@ -90,8 +93,7 @@ var m3alias, testCasesLoadWorkspace = "m3", map[string]loadWorkspaceTest{
+ 			},
+ 		}},
+ 	},
+-} // the actual mod loading logic is tested more thoroughly in TestLoadMod (steampipeconfig/load_mod_test.go)
+-// this test is primarily to verify the QueryMap building
++}
+ 
+ func TestLoadWorkspace(t *testing.T) {
+ 	for name, test := range testCasesLoadWorkspace {
