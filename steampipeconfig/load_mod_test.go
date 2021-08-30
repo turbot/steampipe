@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
 	"testing"
 
 	filehelpers "github.com/turbot/go-kit/files"
@@ -406,5 +408,56 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	if expectedStr != actualString {
 		fmt.Printf("")
 		t.Errorf("Test: '%s'' FAILED : expected:\n\n%s\n\ngot:\n\n%s", name, expectedStr, actualString)
+	}
+}
+
+var benchmark_expected = []string{"benchmark.test_workspace"}
+var control_expected = []string{"control.test_workspace_1", "control.test_workspace_2", "control.test_workspace_3"}
+var query_expected = []string{"query.query_control_1", "query.query_control_2", "query.query_control_3"}
+
+func TestLoadModResourceNames(t *testing.T) {
+	modPath, err := filepath.Abs("../steampipeconfig/test_data/mods/test_load_mod_resource_names_workspace/")
+	if err != nil {
+		t.Errorf("failed to build absolute config filepath from %s", modPath)
+	}
+	names, _ := LoadModResourceNames(modPath, loadWorkspaceOptions)
+
+	// to compare the benchmarks
+	keys_b := make([]string, 0, len(names.Benchmark))
+	for k := range names.Benchmark {
+		keys_b = append(keys_b, k)
+	}
+	sort.Strings(keys_b)
+	flag_b := reflect.DeepEqual(keys_b, benchmark_expected)
+	if flag_b != true {
+		t.Log(`"expected" is not equal to "output"`)
+		t.Log(names.Benchmark)
+		t.FailNow()
+	}
+
+	// to compare the controls
+	keys_c := make([]string, 0, len(names.Control))
+	for k := range names.Control {
+		keys_c = append(keys_c, k)
+	}
+	sort.Strings(keys_c)
+	flag_c := reflect.DeepEqual(keys_c, control_expected)
+	if flag_c != true {
+		t.Log(`"expected" is not equal to "output"`)
+		t.Log(names.Control)
+		t.FailNow()
+	}
+
+	// to compare the queries
+	keys_q := make([]string, 0, len(names.Query))
+	for k := range names.Query {
+		keys_q = append(keys_q, k)
+	}
+	sort.Strings(keys_q)
+	flag_q := reflect.DeepEqual(keys_q, query_expected)
+	if flag_q != true {
+		t.Log(`"expected" is not equal to "output"`)
+		t.Log(names)
+		t.FailNow()
 	}
 }
