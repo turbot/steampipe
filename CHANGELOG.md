@@ -1,5 +1,21 @@
 ## v0.8.0 [TBD]
+
+* Add HCL support for variables. ([#754](https://github.com/turbot/steampipe/issues/754))
+* Add HCL support for passing parameters to queries. ([#802](https://github.com/turbot/steampipe/issues/802))
+* Add `completion` command providing completion support for bash, zshell and fish. ([#481](https://github.com/turbot/steampipe/issues/481))
+* Add `.cache` metacommand to control the FDW cache from the interactive prompt. ([#688](https://github.com/turbot/steampipe/issues/688))
+* Remove hardcoded Postgres runtime flags by adding defaults to postgresql.conf ([#767](https://github.com/turbot/steampipe/issues/767))
+* Add support for syntax highlighting in interactive prompt. ([#64](https://github.com/turbot/steampipe/issues/64))
+* Update interactive prompt to use adaptive suggestion window instead of giving `console window is too small` error. ([#712](https://github.com/turbot/steampipe/issues/712))
+* Log Postgres output if database initialisation fails. ([#800](https://github.com/turbot/steampipe/issues/800))
+* Various minor UI tweaks. ([#786](https://github.com/turbot/steampipe/issues/786))
+
 _Bug fixes_
+* Fix issue where the `>` prompt disappears when messages are shown from file watcher or asyncronous initialisation. ([#713](https://github.com/turbot/steampipe/issues/713))
+* Fix errors during async interactive startup leaving the prompt in a bad state. ([#728](https://github.com/turbot/steampipe/issues/728))
+* Fix for delay in `loading results` spinner showing, caused by asyncronous initialisation. ([#671](https://github.com/turbot/steampipe/issues/671))
+* Fix for missing `control_description`, `control_title` in `csv` output of `check` command. ([#739](https://github.com/turbot/steampipe/issues/739))
+* Fix for `0` exit code even if `service start` fails. ([#762](https://github.com/turbot/steampipe/issues/762))
 * Fix issue where configs refering to unavailable plugin will display incorrect error message. ([#796](https://github.com/turbot/steampipe/issues/796))
 
 ## v0.7.3 [2021-08-18]
