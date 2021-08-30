@@ -1,0 +1,23 @@
+# See https://docs.github.com/en/github/administering-a-repository/configuration-options-for-dependency-updates#package-ecosystem
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      # check every week
+      interval: "weekly"
+      # on monday
+      day: "monday"
+      # at 2:01 am
+      time: "02:01"
+    commit-message:
+      prefix: "[Dependency Update]"
+      include: "scope"
+    pull-request-branch-name:
+      separator: "-"
+    assignees:
+      - "binaek89"
+      - "kaidaguerre"
+    labels:
+      - "dependencies"
+      - "house-keeping"
