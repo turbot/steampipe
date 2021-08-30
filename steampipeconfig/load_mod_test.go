@@ -415,20 +415,17 @@ type loadResourceNamesTest struct {
 	expected interface{}
 }
 
-var testCasesLoadResourceNames map[string]loadResourceNamesTest
-
-func init() {
-	testCasesLoadResourceNames = map[string]loadResourceNamesTest{
-		"test_load_mod_resource_names_workspace": {
-			source: "test_data/mods/test_load_mod_resource_names_workspace",
-			expected: &modconfig.WorkspaceResources{
-				Benchmark: map[string]bool{"benchmark.test_workspace": true},
-				Control:   map[string]bool{"control.test_workspace_1": true, "control.test_workspace_2": true, "control.test_workspace_3": true},
-				Query:     map[string]bool{"query.query_control_1": true, "query.query_control_2": true, "query.query_control_3": true},
-			},
+var testCasesLoadResourceNames = map[string]loadResourceNamesTest{
+	"test_load_mod_resource_names_workspace": {
+		source: "test_data/mods/test_load_mod_resource_names_workspace",
+		expected: &modconfig.WorkspaceResources{
+			Benchmark: map[string]bool{"benchmark.test_workspace": true},
+			Control:   map[string]bool{"control.test_workspace_1": true, "control.test_workspace_2": true, "control.test_workspace_3": true},
+			Query:     map[string]bool{"query.query_control_1": true, "query.query_control_2": true, "query.query_control_3": true},
 		},
-	}
+	},
 }
+
 
 func TestLoadModResourceNames(t *testing.T) {
 	for name, test := range testCasesLoadResourceNames {
@@ -450,24 +447,21 @@ func TestLoadModResourceNames(t *testing.T) {
 
 		// to compare the benchmarks
 		benchmark_expected := test.expected.(*modconfig.WorkspaceResources).Benchmark
-		flag_b := reflect.DeepEqual(names.Benchmark, benchmark_expected)
-		if flag_b != true {
+		if reflect.DeepEqual(names.Benchmark, benchmark_expected) {
 			t.Log(`"expected" is not equal to "output"`)
 			t.Errorf("FAILED \nexpected: %#v\noutput: %#v", benchmark_expected, names.Benchmark)
 		}
 
 		// to compare the controls
 		control_expected := test.expected.(*modconfig.WorkspaceResources).Control
-		flag_c := reflect.DeepEqual(names.Control, control_expected)
-		if flag_c != true {
+		if reflect.DeepEqual(names.Control, control_expected) {
 			t.Log(`"expected" is not equal to "output"`)
 			t.Errorf("FAILED \nexpected: %#v\noutput: %#v", control_expected, names.Control)
 		}
 
 		// to compare the queries
 		query_expected := test.expected.(*modconfig.WorkspaceResources).Query
-		flag_q := reflect.DeepEqual(names.Query, query_expected)
-		if flag_q != true {
+		if reflect.DeepEqual(names.Query, query_expected) {
 			t.Log(`"expected" is not equal to "output"`)
 			t.Errorf("FAILED \nexpected: %#v\noutput: %#v", query_expected, names.Query)
 		}
