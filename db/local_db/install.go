@@ -246,10 +246,11 @@ func initDatabase() error {
 		"--debug",
 	)
 
-	log.Printf("[TRACE] %s", initDbProcess.String())
+	log.Printf("[TRACE] initdb start: %s", initDbProcess.String())
 
-	runError := initDbProcess.Run()
+	output, runError := initDbProcess.CombinedOutput()
 	if runError != nil {
+		log.Printf("[TRACE] initdb failed:\n %s", string(output))
 		return runError
 	}
 
