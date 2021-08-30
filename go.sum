@@ -836,8 +836,8 @@ github.com/tombuildsstuff/giovanni v0.15.1/go.mod h1:0TZugJPEtqzPlMpuJHYfXY6Dq2u
 github.com/turbot/go-kit v0.2.2-0.20210628165333-268ba0a30be3/go.mod h1:SBdPRngbEfYubiR81iAVtO43oPkg1+ASr+XxvgbH7/k=
 github.com/turbot/go-kit v0.2.2-0.20210730122803-1ecb35c27e98 h1:FC2PphWOAmLVxgS4rPUm8OkXOmzl1sgFt8jLrr5AGUc=
 github.com/turbot/go-kit v0.2.2-0.20210730122803-1ecb35c27e98/go.mod h1:SBdPRngbEfYubiR81iAVtO43oPkg1+ASr+XxvgbH7/k=
-github.com/turbot/go-prompt v0.2.6-steampipe.0.20210818130818-e338311a49d4 h1:NOaOscfj9A4TRgH98jyKFbg5e75A5BYO5RVufxgI048=
-github.com/turbot/go-prompt v0.2.6-steampipe.0.20210818130818-e338311a49d4/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
+github.com/turbot/go-prompt v0.2.6-steampipe.0.20210830083819-c872df2bdcc9 h1:mcDQVuT3E9tQtCB7sdLgEm3uC/eGGtBr27WwQCU6j+s=
+github.com/turbot/go-prompt v0.2.6-steampipe.0.20210830083819-c872df2bdcc9/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
 github.com/turbot/steampipe-plugin-sdk v1.3.0 h1:7KMA86Nxpw2dRC1Ri472aSRQgLv3gk9DqPxwFHd3EoE=
 github.com/turbot/steampipe-plugin-sdk v1.3.0/go.mod h1:E00M5qOvCp6qwaT1/KhdTNM6S0JUlNY6L11IvlELQV4=
 github.com/ugorji/go v0.0.0-20180813092308-00b869d2f4a5/go.mod h1:hnLbHMwcvSihnDhEfx2/BzKp2xb0Y+ErdfYcrs9tkJQ=
