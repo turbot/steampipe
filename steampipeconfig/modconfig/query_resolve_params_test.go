@@ -8,7 +8,7 @@ import (
 
 type resolveParamsTest struct {
 	params    *QueryParams
-	paramDefs []ParamDef
+	paramDefs []*ParamDef
 	expected  interface{}
 }
 
@@ -37,7 +37,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 				"p2": "val2",
 			},
 		},
-		paramDefs: []ParamDef{
+		paramDefs: []*ParamDef{
 			{Name: "p1"},
 			{Name: "p2"},
 		},
@@ -49,7 +49,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 				"p1": "val1",
 			},
 		},
-		paramDefs: []ParamDef{
+		paramDefs: []*ParamDef{
 			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
 			{Name: "p2", Default: utils.ToStringPointer("def_val2")},
 		},
@@ -59,7 +59,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 		params: &QueryParams{
 			ParamsList: []string{"val1"},
 		},
-		paramDefs: []ParamDef{
+		paramDefs: []*ParamDef{
 			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
 			{Name: "p2", Default: utils.ToStringPointer("def_val2")},
 		},
@@ -70,7 +70,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 		params: &QueryParams{
 			ParamsList: []string{"val1"},
 		},
-		paramDefs: []ParamDef{
+		paramDefs: []*ParamDef{
 			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
 			{Name: "p2"},
 		},
@@ -83,7 +83,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 				"p1": "val1",
 			},
 		},
-		paramDefs: []ParamDef{
+		paramDefs: []*ParamDef{
 			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
 			{Name: "p2"},
 		},
