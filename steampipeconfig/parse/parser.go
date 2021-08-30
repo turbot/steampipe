@@ -30,7 +30,7 @@ func LoadFileData(paths ...string) (map[string][]byte, hcl.Diagnostics) {
 	return fileData, diags
 }
 
-// ParseHclFiles parses hcl file data and returnes the hcl body object
+// ParseHclFiles parses hcl file data and returns the hcl body object
 func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	var parsedConfigFiles []*hcl.File
 	var diags hcl.Diagnostics
@@ -154,7 +154,7 @@ func ParseModResourceNames(fileData map[string][]byte) (*modconfig.WorkspaceReso
 		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
 	}
 
-	content, moreDiags := body.Content(ModFileSchema)
+	content, moreDiags := body.Content(ModBlockSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
