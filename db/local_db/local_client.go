@@ -56,34 +56,34 @@ func NewLocalClient(invoker constants.Invoker) (*LocalClient, error) {
 	return client, nil
 }
 
-func (c *LocalClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConnectionResult {
-	res := c.RefreshConnections()
+func (c *LocalClient) RefreshConnectionAndSearchPaths() (res *db_common.RefreshConnectionResult) {
+	res = c.RefreshConnections()
 	if res.Error != nil {
-		return res
+		return
 	}
 	if err := refreshFunctions(); err != nil {
 		res.Error = err
-		return res
+		return
 	}
-
-	// load the connection state and cache it!
-	connectionMap, err := steampipeconfig.GetConnectionState(c.schemaMetadata.GetSchemas())
-	if err != nil {
-		res.Error = err
-		return res
+	if res.UpdatedConnections {
+		// load the connection state and cache it!
+		connectionMap, err := steampipeconfig.GetConnectionState(c.schemaMetadata.GetSchemas())
+		if err != nil {
+			res.Error = err
+			return
+		}
+		c.connectionMap = &connectionMap
+		// set service search path first - client may fall back to using it
+		if err := c.SetServiceSearchPath(); err != nil {
+			res.Error = err
+			return
+		}
+		if err := c.SetClientSearchPath(); err != nil {
+			res.Error = err
+			return
+		}
 	}
-	c.connectionMap = &connectionMap
-	// set service search path first - client may fall back to using it
-	if err := c.SetServiceSearchPath(); err != nil {
-		res.Error = err
-		return res
-	}
-	if err := c.SetClientSearchPath(); err != nil {
-		res.Error = err
-		return res
-	}
-
-	return res
+	return
 }
 
 // SchemaMetadata returns the latest schema metadata

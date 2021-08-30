@@ -46,6 +46,7 @@ func (c *LocalClient) RefreshConnections() *db_common.RefreshConnectionResult {
 
 	var connectionQueries []string
 	numUpdates := len(updates.Update)
+	log.Printf("[TRACE] RefreshConnections: num updates %d", numUpdates)
 	if numUpdates > 0 {
 
 		// first instantiate connection plugins for all updates (reuse 'res' defined above)
@@ -73,7 +74,6 @@ func (c *LocalClient) RefreshConnections() *db_common.RefreshConnectionResult {
 	}
 
 	if len(connectionQueries) == 0 {
-		log.Println("[TRACE] no connections to update")
 		return res
 	}
 
@@ -86,7 +86,7 @@ func (c *LocalClient) RefreshConnections() *db_common.RefreshConnectionResult {
 	// so there ARE connections to update
 
 	// reload the database schemas, since they have changed - otherwise we wouldn't be here
-	log.Println("[TRACE] reloading schema")
+	log.Println("[TRACE] RefreshConnections: reloading schema")
 	c.LoadSchema()
 
 	res.UpdatedConnections = true
