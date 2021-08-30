@@ -5,25 +5,31 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zclconf/go-cty/cty"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // Control is a struct representing the Control resource
 type Control struct {
 	ShortName        string
 	FullName         string             `cty:"name"`
-	Description      *string            `cty:"description" hcl:"description" column:"description,text"`
-	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	SearchPath       *string            `cty:"search_path" hcl:"search_path" column:"search_path,text"`
-	SearchPathPrefix *string            `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
-	Severity         *string            `cty:"severity" hcl:"severity" column:"severity,text"`
-	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
-	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
-	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
+	Description      *string            `cty:"description" column:"description,text"`
+	Documentation    *string            `cty:"documentation"  column:"documentation,text"`
+	SearchPath       *string            `cty:"search_path"  column:"search_path,text"`
+	SearchPathPrefix *string            `cty:"search_path_prefix"  column:"search_path_prefix,text"`
+	Severity         *string            `cty:"severity"  column:"severity,text"`
+	SQL              *string            `cty:"sql"  column:"sql,text"`
+	Tags             *map[string]string `cty:"tags"  column:"tags,jsonb"`
+	Title            *string            `cty:"title"  column:"title,text"`
+	Query            *Query
+	// parameters
+	// params may be specified by either a map of named parameters or as a list of positional parameters
+	// we apply special decode logic to convert the params block into a QueryParams object
+	// with either a param map or list assigned
+	// TODO CTY and REFLECTION TABLES?
+	Params *QueryParams
 
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
@@ -39,6 +45,7 @@ func NewControl(block *hcl.Block) *Control {
 		ShortName: block.Labels[0],
 		FullName:  fmt.Sprintf("control.%s", block.Labels[0]),
 		DeclRange: block.DefRange,
+		Params:    NewQueryParams(),
 	}
 	return control
 }
@@ -46,7 +53,7 @@ func NewControl(block *hcl.Block) *Control {
 func (c *Control) String() string {
 	// build list of parents's names
 	parents := c.GetParentNames()
-	return fmt.Sprintf(`
+	res := fmt.Sprintf(`
   -----
   Name: %s
   Title: %s
@@ -59,6 +66,30 @@ func (c *Control) String() string {
 		types.SafeString(c.Description),
 		types.SafeString(c.SQL),
 		strings.Join(parents, "\n    "))
+
+	//if c.Params != nil && len(*c.Params) > 0 {
+	//	// build ordered list of param names
+	//	var paramNames []string
+	//	for name := range *c.Params {
+	//		paramNames = append(paramNames, name)
+	//	}
+	//	sort.Strings(paramNames)
+	//	var paramStrs = make([]string, len(*c.Params))
+	//
+	//	for i, name := range paramNames {
+	//		paramStrs[i] = fmt.Sprintf("%s = %s", name, (*c.Params)[name])
+	//	}
+	//	res += fmt.Sprintf("Params:\n\t%s", strings.Join(paramStrs, "\n\t"))
+	//}
+	//if c.ParamsList != nil && len(*c.ParamsList) > 0 {
+	//	var paramStrs = make([]string, len(*c.ParamsList))
+	//
+	//	for i, v := range *c.ParamsList {
+	//		paramStrs[i] = fmt.Sprintf("%d: %s", i, v)
+	//	}
+	//	res += fmt.Sprintf("ParamsList:\n\t%s", strings.Join(paramStrs, "\n\t"))
+	//}
+	return res
 }
 
 func (c *Control) GetParentNames() []string {
@@ -137,6 +168,19 @@ func (c *Control) CtyValue() (cty.Value, error) {
 
 // OnDecoded implements HclResource
 func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+
+// OnDecoded implements HclResource
+func (c *Control) SetSQL(sql string, block *hcl.Block) hcl.Diagnostics {
+	// if both query and SQL are set, raise an error
+	if typehelpers.SafeString(c.SQL) != "" {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", c.FullName),
+			Subject:  &block.DefRange,
+		}}
+	}
+	return nil
+}
 
 // AddReference implements HclResource
 func (c *Control) AddReference(reference string) {

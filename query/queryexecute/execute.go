@@ -47,7 +47,7 @@ func RunBatchSession(ctx context.Context, initDataChan chan *db_common.QueryInit
 
 	failures := 0
 	if len(initData.Queries) > 0 {
-		// otherwise if we have resolved any queries, run them
+		// if we have resolved any queries, run them
 		failures = executeQueries(ctx, initData.Queries, initData.Client)
 	}
 	// set global exit code

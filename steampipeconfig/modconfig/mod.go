@@ -109,7 +109,6 @@ func (m *Mod) String() string {
 		queryNames = append(queryNames, name)
 	}
 	sort.Strings(queryNames)
-
 	var queryStrings []string
 	for _, name := range queryNames {
 		queryStrings = append(queryStrings, m.Queries[name].String())

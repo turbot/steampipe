@@ -24,6 +24,7 @@ import (
 	"github.com/turbot/steampipe/query/metaquery"
 	"github.com/turbot/steampipe/query/queryhistory"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
 )
@@ -318,12 +319,15 @@ func (c *InteractiveClient) executor(line string) {
 	c.afterClose = AfterPromptCloseRestart
 
 	line = strings.TrimSpace(line)
+	// store the history (the raw line which was entered)
+	// we want to store even if we fail to resolve a query
+	c.interactiveQueryHistory.Put(line)
+
 	query, err := c.getQuery(line)
 	if query == "" {
 		if err != nil {
-			// if there was an error other than cancellation, quit
 			if !utils.IsCancelledError(err) {
-				c.afterClose = AfterPromptCloseExit
+				utils.ShowError(err)
 			}
 			// restart the prompt
 			c.restartInteractiveSession()
@@ -351,8 +355,6 @@ func (c *InteractiveClient) executor(line string) {
 		}
 	}
 
-	// store the history (the raw line which was entered)
-	c.interactiveQueryHistory.Put(line)
 	// restart the prompt
 	c.restartInteractiveSession()
 }
@@ -394,11 +396,20 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 	// expand the buffer out into 'query'
 	query := strings.Join(c.interactiveBuffer, "\n")
 
-	namedQuery, isNamedQuery := c.workspace().GetQuery(query)
+	// in case of a named query call with params, parse the where clause
+	queryName, params, err := parse.ParsePreparedStatementInvocation(query)
+	if err != nil {
+		return "", err
+	}
+	namedQuery, isNamedQuery := c.workspace().GetQuery(queryName)
 
 	// if it is a multiline query, execute even without `;`
 	if isNamedQuery {
-		query = *namedQuery.SQL
+		var err error
+		query, err = namedQuery.GetExecuteSQL(params)
+		if err != nil {
+			return "", err
+		}
 	} else {
 		// should we execute?
 		if !c.shouldExecute(query) {

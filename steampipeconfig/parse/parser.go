@@ -54,7 +54,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
 	}
 
-	content, moreDiags := body.Content(ModFileSchema)
+	content, moreDiags := body.Content(ModBlockSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
@@ -68,7 +68,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	for _, block := range content.Blocks {
 		// if this is a mod, build a shell mod struct (with just the name populated)
 		switch block.Type {
-		case string(modconfig.BlockTypeMod):
+		case modconfig.BlockTypeMod:
 			// if there is more than one mod, fail
 			if mod != nil {
 				return nil, fmt.Errorf("more than 1 mod definition found in %s", modPath)
@@ -107,11 +107,6 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	if len(duplicates) > 0 {
 		log.Printf("[TRACE] %d files were not converted into resources as hcl resources of same name are defined: %v", len(duplicates), duplicates)
 	}
-
-	// 4) Add dependencies?
-	// TODO think about where we resolve and store mod dependencies
-
-	// todo change runctx to Decoder object
 
 	// create run context to handle dependency resolution
 	runCtx, diags := NewRunContext(mod, content, fileData, opts.Variables)

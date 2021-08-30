@@ -5,14 +5,12 @@ import (
 	"io/ioutil"
 	"log"
 	"path/filepath"
-
-	"github.com/zclconf/go-cty/cty"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-
 	"github.com/turbot/go-kit/types"
-
 	"github.com/turbot/steampipe/constants"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // Query is a struct representing the Query resource
@@ -22,12 +20,13 @@ type Query struct {
 
 	Description      *string            `cty:"description" hcl:"description" column:"description,text"`
 	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
-	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
 	SearchPath       *string            `cty:"search_path" hcl:"search_path" column:"search_path,text"`
 	SearchPathPrefix *string            `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
+	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
+	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
 	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
 
+	ParamsDefs []*ParamDef `hcl:"params,block"`
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
 
@@ -48,13 +47,23 @@ func (q *Query) CtyValue() (cty.Value, error) {
 }
 
 func (q *Query) String() string {
-	return fmt.Sprintf(`
+	res := fmt.Sprintf(`
   -----
   Name: %s
   Title: %s
   Description: %s
   SQL: %s
 `, q.FullName, types.SafeString(q.Title), types.SafeString(q.Description), types.SafeString(q.SQL))
+
+	// add param defs if there are any
+	if len(q.ParamsDefs) > 0 {
+		var paramDefsStr = make([]string, len(q.ParamsDefs))
+		for i, def := range q.ParamsDefs {
+			paramDefsStr[i] = def.String()
+		}
+		res += fmt.Sprintf("ParamDefs:\n\t%s\n  ", strings.Join(paramDefsStr, "\n\t"))
+	}
+	return res
 }
 
 // QueryFromFile :: factory function
@@ -117,4 +126,14 @@ func (q *Query) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 // AddReference implements HclResource
 func (q *Query) AddReference(reference string) {
 	q.References = append(q.References, reference)
+}
+
+// GetExecuteSQL returns the SQL to run this query as a prepared statement
+func (q *Query) GetExecuteSQL(params *QueryParams) (string, error) {
+	paramsString, err := q.ResolveParams(params)
+	if err != nil {
+		return "", err
+	}
+	executeString := fmt.Sprintf("execute %s%s", q.ShortName, paramsString)
+	return executeString, nil
 }
