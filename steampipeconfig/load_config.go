@@ -22,7 +22,7 @@ import (
 var Config *SteampipeConfig
 var defaultConfigFileName = "default.spc"
 
-// LoadSteampipeConfig :: load the HCL config and parse into the global Config variable
+// LoadSteampipeConfig loads the HCL connection config and workspace options
 func LoadSteampipeConfig(workspacePath string, commandName string) (*SteampipeConfig, error) {
 	utils.LogTime("steampipeconfig.LoadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")

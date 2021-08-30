@@ -67,6 +67,8 @@ func (c *LocalClient) SetClientSearchPath() error {
 	// escape the schema
 	searchPath = escapeSearchPath(searchPath)
 
+	log.Println("[TRACE] setting client search path to", searchPath)
+
 	// now construct and execute the query
 	q := fmt.Sprintf("set search_path to %s", strings.Join(searchPath, ","))
 	_, err := c.ExecuteSync(context.Background(), q, true)

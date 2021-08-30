@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/turbot/steampipe/steampipeconfig"
+
 	"github.com/turbot/steampipe/db/local_db"
 
 	psutils "github.com/shirou/gopsutil/process"
@@ -197,48 +199,74 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	printStatus(info)
 
 	if viper.GetBool(constants.ArgForeground) {
-		fmt.Println("Hit Ctrl+C to stop the service")
+		runServiceInForeground(invoker)
+	}
+}
 
-		sigIntChannel := make(chan os.Signal, 1)
-		signal.Notify(sigIntChannel, os.Interrupt)
+func runServiceInForeground(invoker constants.Invoker) {
+	fmt.Println("Hit Ctrl+C to stop the service")
 
-		checkTimer := time.NewTicker(100 * time.Millisecond)
-		defer checkTimer.Stop()
+	sigIntChannel := make(chan os.Signal, 1)
+	signal.Notify(sigIntChannel, os.Interrupt)
 
-		var lastCtrlC time.Time
+	checkTimer := time.NewTicker(100 * time.Millisecond)
+	connectionPollTimer := time.NewTicker(1 * time.Second)
+	defer checkTimer.Stop()
 
-		for {
-			select {
-			case <-checkTimer.C:
-				// get the current status
-				newInfo, err := local_db.GetStatus()
-				if err != nil {
-					continue
-				}
-				if newInfo == nil {
-					fmt.Println("Service stopped")
-					return
-				}
-			case <-sigIntChannel:
-				fmt.Print("\r")
-				count, err := local_db.GetCountOfConnectedClients()
-				if err != nil {
-					return
-				}
-				if count > 0 {
-					if lastCtrlC.IsZero() || time.Since(lastCtrlC) > 30*time.Second {
-						lastCtrlC = time.Now()
-						fmt.Println(buildForegroundClientsConnectedMsg())
-						continue
-					}
-				}
-				fmt.Println("Stopping service")
-				local_db.StopDB(false, invoker, nil)
-				fmt.Println("Service Stopped")
+	client, err := local_db.NewLocalClient(invoker)
+	if err != nil {
+		utils.ShowError(err)
+		return
+	}
+
+	var lastCtrlC time.Time
+
+	for {
+		select {
+		case <-sigIntChannel:
+			fmt.Print("\r")
+			count, err := local_db.GetCountOfConnectedClients()
+			if err != nil {
 				return
 			}
+			// we know there will be at least 1 client (ours)
+			if count > 1 {
+				if lastCtrlC.IsZero() || time.Since(lastCtrlC) > 30*time.Second {
+					lastCtrlC = time.Now()
+					fmt.Println(buildForegroundClientsConnectedMsg())
+					continue
+				}
+			}
+			fmt.Println("Stopping service")
+			// close our client
+			client.Close()
+			local_db.StopDB(false, invoker, nil)
+			fmt.Println("Service Stopped")
+			return
+		case <-checkTimer.C:
+			newInfo, err := local_db.GetStatus()
+			if err != nil {
+				continue
+			}
+			if newInfo == nil {
+				fmt.Println("Service stopped")
+				return
+			}
+			// get the current status
+		case <-connectionPollTimer.C:
+			// TODO add new function to just load connection config, not options
+			config, err := steampipeconfig.LoadSteampipeConfig("", "")
+			if err != nil {
+				utils.ShowError(err)
+				continue
+			}
+			steampipeconfig.Config = config
+			refreshResult := client.RefreshConnectionAndSearchPaths()
+			// display any initialisation warnings
+			refreshResult.ShowWarnings()
 		}
 	}
+
 }
 
 func runServiceRestartCmd(cmd *cobra.Command, args []string) {
