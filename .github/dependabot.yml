@@ -11,7 +11,7 @@ updates:
       # at 2:01 am
       time: "02:01"
     commit-message:
-      prefix: "[Dependency Update]"
+      prefix: "[Dependabot]"
       include: "scope"
     pull-request-branch-name:
       separator: "-"
