@@ -15,7 +15,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/parse"
 )
 
-// LoadMod :: parse all hcl files in modPath and return a single mod
+// LoadMod parses all hcl files in modPath and returns a single mod
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
@@ -78,6 +78,57 @@ func parseMod(modPath string, pseudoResources []modconfig.MappableResource, opts
 	// NOTE: this sets the ParsedVersion property on the PluginVersion objects
 	err = mod.ParseRequiredPluginVersions()
 	return mod, err
+}
+
+// LoadModResourceNames parses all hcl files in modPath and returns the names of all resources
+func LoadModResourceNames(modPath string, opts *parse.ParseModOptions) (resources *modconfig.WorkspaceResources, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = helpers.ToError(r)
+		}
+	}()
+
+	resources = modconfig.NewWorkspaceResources()
+	if opts == nil {
+		opts = &parse.ParseModOptions{}
+	}
+	// verify the mod folder exists
+	if _, err := os.Stat(modPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("mod folder %s does not exist", modPath)
+	}
+
+	// now execute any pseudo-resource creations based on file mappings
+	pseudoResources, err := createPseudoResources(modPath, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// add pseudo resources to result
+	for _, r := range pseudoResources {
+		if strings.HasPrefix(r.Name(), "query.") {
+			resources.Query[r.Name()] = true
+		}
+	}
+
+	// build list of all filepaths we need to parse/load
+	// NOTE: pseudo resource creation is handled separately below
+	opts.ListOptions.Include = filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension})
+	sourcePaths, err := getSourcePaths(modPath, opts)
+	if err != nil {
+		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
+		return nil, err
+	}
+
+	fileData, diags := parse.LoadFileData(sourcePaths...)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to load all mod files", diags)
+	}
+
+	parsedResourceNames, err := parse.ParseModResourceNames(fileData)
+	if err != nil {
+		return nil, err
+	}
+	return resources.Merge(parsedResourceNames), nil
 }
 
 // GetModFileExtensions :: return list of all file extensions we care about

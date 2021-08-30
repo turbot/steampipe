@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	filehelpers "github.com/turbot/go-kit/files"
@@ -406,5 +407,63 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	if expectedStr != actualString {
 		fmt.Printf("")
 		t.Errorf("Test: '%s'' FAILED : expected:\n\n%s\n\ngot:\n\n%s", name, expectedStr, actualString)
+	}
+}
+
+type loadResourceNamesTest struct {
+	source   string
+	expected interface{}
+}
+
+var testCasesLoadResourceNames = map[string]loadResourceNamesTest{
+	"test_load_mod_resource_names_workspace": {
+		source: "test_data/mods/test_load_mod_resource_names_workspace",
+		expected: &modconfig.WorkspaceResources{
+			Benchmark: map[string]bool{"benchmark.test_workspace": true},
+			Control:   map[string]bool{"control.test_workspace_1": true, "control.test_workspace_2": true, "control.test_workspace_3": true},
+			Query:     map[string]bool{"query.query_control_1": true, "query.query_control_2": true, "query.query_control_3": true},
+		},
+	},
+}
+
+
+func TestLoadModResourceNames(t *testing.T) {
+	for name, test := range testCasesLoadResourceNames {
+
+		modPath, _ := filepath.Abs(test.source)
+		names, err := LoadModResourceNames(modPath, loadWorkspaceOptions)
+
+		if err != nil {
+			if test.expected != "ERROR" {
+				t.Errorf("Test: '%s'' FAILED with unexpected error: %v", name, err)
+			}
+			continue
+		}
+
+		if test.expected == "ERROR" {
+			t.Errorf("Test: '%s'' FAILED - expected error", name)
+			continue
+		}
+
+		// to compare the benchmarks
+		benchmark_expected := test.expected.(*modconfig.WorkspaceResources).Benchmark
+		if reflect.DeepEqual(names.Benchmark, benchmark_expected) {
+			t.Log(`"expected" is not equal to "output"`)
+			t.Errorf("FAILED \nexpected: %#v\noutput: %#v", benchmark_expected, names.Benchmark)
+		}
+
+		// to compare the controls
+		control_expected := test.expected.(*modconfig.WorkspaceResources).Control
+		if reflect.DeepEqual(names.Control, control_expected) {
+			t.Log(`"expected" is not equal to "output"`)
+			t.Errorf("FAILED \nexpected: %#v\noutput: %#v", control_expected, names.Control)
+		}
+
+		// to compare the queries
+		query_expected := test.expected.(*modconfig.WorkspaceResources).Query
+		if reflect.DeepEqual(names.Query, query_expected) {
+			t.Log(`"expected" is not equal to "output"`)
+			t.Errorf("FAILED \nexpected: %#v\noutput: %#v", query_expected, names.Query)
+		}
 	}
 }
