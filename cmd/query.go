@@ -46,11 +46,10 @@ Examples:
   steampipe query "select * from cloud"`,
 
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+			workspace, err := workspace.LoadResourceNames(viper.GetString(constants.ArgWorkspace))
 			if err != nil {
 				return []string{}, cobra.ShellCompDirectiveError
 			}
-			defer workspace.Close()
 			namedQueries := []string{}
 			for _, name := range workspace.GetSortedNamedQueryNames() {
 				if strings.HasPrefix(name, toComplete) {

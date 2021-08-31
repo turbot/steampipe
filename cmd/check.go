@@ -51,15 +51,14 @@ func checkCmd() *cobra.Command {
 
 You may specify one or more benchmarks or controls to run (separated by a space), or run 'steampipe check all' to run all controls in the workspace.`,
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			workspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+			workspaceResources, err := workspace.LoadResourceNames(viper.GetString(constants.ArgWorkspace))
 			if err != nil {
 				return []string{}, cobra.ShellCompDirectiveError
 			}
-			defer workspace.Close()
 
 			completions := []string{}
 
-			for _, item := range workspace.GetSortedBenchmarksAndControlNames() {
+			for _, item := range workspaceResources.GetSortedBenchmarksAndControlNames() {
 				if strings.HasPrefix(item, toComplete) {
 					completions = append(completions, item)
 				}
