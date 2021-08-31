@@ -1,7 +1,9 @@
 package local_db
 
 import (
+	"bufio"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -143,6 +145,11 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 	utils.LogTime("startPostgresProcess start")
 	defer utils.LogTime("startPostgresProcess end")
 
+	logChannel := make(chan string, 1000)
+	defer func() {
+		close(logChannel)
+	}()
+
 	listenAddresses := "localhost"
 
 	if listen == ListenTypeNetwork {
@@ -221,10 +228,33 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 		Foreground: false,
 	}
 
-	err := postgresCmd.Start()
+	stopCollectionFn, err := setupLogCollector(postgresCmd, logChannel)
 	if err != nil {
 		return err
 	}
+
+	err = postgresCmd.Start()
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for {
+			logLine := <-logChannel
+			if len(strings.TrimSpace(logLine)) == 0 {
+				continue
+			}
+			log.Printf("[TRACE] SERVICE: %s\n", logLine)
+			if strings.Contains(logLine, "database system is shut down") {
+				break
+			}
+			if strings.Contains(logLine, "database system is ready to accept connections") {
+				break
+			}
+		}
+		// close the channels, so that the reader goroutines can quit
+		stopCollectionFn()
+	}()
 
 	// get the password file
 	passwords, err := getPasswords()
@@ -266,6 +296,41 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 	connection.Close()
 
 	return nil
+}
+
+func setupLogCollector(postgresCmd *exec.Cmd, sendChannel chan string) (func(), error) {
+	stdoutPipe, err := postgresCmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	stderrPipe, err := postgresCmd.StderrPipe()
+	if err != nil {
+		return nil, err
+	}
+	closeFunction := func() {
+		fmt.Println("closing")
+		stdoutPipe.Close()
+		stderrPipe.Close()
+	}
+	stdoutScanner := bufio.NewScanner(stdoutPipe)
+	stderrScanner := bufio.NewScanner(stderrPipe)
+
+	stdoutScanner.Split(bufio.ScanLines)
+	stderrScanner.Split(bufio.ScanLines)
+
+	go func() {
+		for stdoutScanner.Scan() {
+			sendChannel <- stdoutScanner.Text()
+		}
+	}()
+
+	go func() {
+		for stderrScanner.Scan() {
+			sendChannel <- stderrScanner.Text()
+		}
+	}()
+
+	return closeFunction, nil
 }
 
 // ensures that the `steampipe` fdw server exists
