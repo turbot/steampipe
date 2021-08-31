@@ -226,7 +226,7 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 	// force stop
 	display.UpdateSpinnerMessage(spinner, "Completing configuration")
-	_, err = StopDB(true, constants.InvokerInstaller, nil)
+	_, err = StopDB(false, constants.InvokerInstaller, nil)
 
 	return err
 }
