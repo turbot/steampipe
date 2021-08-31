@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"sync"
 
@@ -89,36 +88,6 @@ func LoadResourceNames(workspacePath string) (*modconfig.WorkspaceResources, err
 	}
 
 	return workspace.loadWorkspaceResourceName()
-}
-
-// GetSortedBenchmarksAndControlNames gives back a list of the benchmarks
-// and controls in the current workspace.
-// The list is sorted alphabetically - with the benchmarks first
-func (w *Workspace) GetSortedBenchmarksAndControlNames() []string {
-	benchmarkList := []string{}
-	controlList := []string{}
-
-	for key := range w.BenchmarkMap {
-		benchmarkList = append(benchmarkList, key)
-	}
-
-	for key := range w.ControlMap {
-		controlList = append(controlList, key)
-	}
-
-	sort.Strings(benchmarkList)
-	sort.Strings(controlList)
-
-	return append(benchmarkList, controlList...)
-}
-
-func (w *Workspace) GetSortedNamedQueryNames() []string {
-	namedQueries := []string{}
-	for key := range w.QueryMap {
-		namedQueries = append(namedQueries, key)
-	}
-	sort.Strings(namedQueries)
-	return namedQueries
 }
 
 func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(error)) error {
