@@ -214,6 +214,12 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 		Foreground: false,
 	}
 
+	stopCollectionFn, err := setupLogCollector(postgresCmd, logChannel)
+	if err != nil {
+		return err
+	}
+	defer stopCollectionFn()
+
 	err = postgresCmd.Start()
 	if err != nil {
 		return err
@@ -233,8 +239,6 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 				break
 			}
 		}
-		// close the channels, so that the reader goroutines can quit
-		stopCollectionFn()
 	}()
 
 	// get the password file
@@ -289,7 +293,7 @@ func setupLogCollector(postgresCmd *exec.Cmd, sendChannel chan string) (func(), 
 		return nil, err
 	}
 	closeFunction := func() {
-		fmt.Println("closing")
+		log.Printf("[TRACE] Stop log collection\n")
 		stdoutPipe.Close()
 		stderrPipe.Close()
 	}
