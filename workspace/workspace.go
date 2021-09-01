@@ -498,6 +498,12 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, error) {
 // GetQueryFromArg attempts to resolve 'arg' to a query
 // the second return value indicates whether the arg was resolved as a named query/SQL file
 func (w *Workspace) GetQueryFromArg(arg string, params *modconfig.QueryParams) (string, error) {
+	// check if this is a control
+	if control, ok := w.GetControl(arg); ok {
+		// copy control SQL into arg and continue resolution
+		arg = typeHelpers.SafeString(control.SQL)
+	}
+
 	// 1) is this a named query
 	if namedQuery, ok := w.GetQuery(arg); ok {
 		sql, err := namedQuery.GetExecuteSQL(params)
@@ -505,10 +511,6 @@ func (w *Workspace) GetQueryFromArg(arg string, params *modconfig.QueryParams) (
 			return "", fmt.Errorf("GetQueryFromArg failed for value %s: %v", arg, err)
 		}
 		return sql, nil
-	}
-	// check if this is a control
-	if control, ok := w.GetControl(arg); ok {
-		return typeHelpers.SafeString(control.SQL), nil
 	}
 
 	// 	2) is this a file
