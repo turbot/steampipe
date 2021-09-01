@@ -2,7 +2,7 @@ benchmark "check_plugin_crash_benchmark" {
   title         = "Benchmark to test the plugin crash bug while running controls"
   children = [
     control.plugin_chaos_test_1,
-#    control.plugin_crash_test,
+    control.plugin_crash_test,
     control.plugin_chaos_test_2
   ]
 }
