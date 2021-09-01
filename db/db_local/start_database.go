@@ -108,6 +108,13 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 			fmt.Println(p.Cmdline())
 		}
 
+		infoFile, err := os.OpenFile(runningInfoFilePath(), os.O_RDONLY, 0600)
+		if os.IsNotExist(err) {
+			fmt.Println("*** NO INFO FILE ***")
+		} else {
+			fmt.Println(ioutil.ReadAll(infoFile))
+		}
+
 		return ServiceFailedToStart, fmt.Errorf("cannot listen on port %d", constants.Bold(port))
 	}
 
