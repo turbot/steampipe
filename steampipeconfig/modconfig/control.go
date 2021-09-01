@@ -67,28 +67,6 @@ func (c *Control) String() string {
 		types.SafeString(c.SQL),
 		strings.Join(parents, "\n    "))
 
-	//if c.Params != nil && len(*c.Params) > 0 {
-	//	// build ordered list of param names
-	//	var paramNames []string
-	//	for name := range *c.Params {
-	//		paramNames = append(paramNames, name)
-	//	}
-	//	sort.Strings(paramNames)
-	//	var paramStrs = make([]string, len(*c.Params))
-	//
-	//	for i, name := range paramNames {
-	//		paramStrs[i] = fmt.Sprintf("%s = %s", name, (*c.Params)[name])
-	//	}
-	//	res += fmt.Sprintf("Params:\n\t%s", strings.Join(paramStrs, "\n\t"))
-	//}
-	//if c.ParamsList != nil && len(*c.ParamsList) > 0 {
-	//	var paramStrs = make([]string, len(*c.ParamsList))
-	//
-	//	for i, v := range *c.ParamsList {
-	//		paramStrs[i] = fmt.Sprintf("%d: %s", i, v)
-	//	}
-	//	res += fmt.Sprintf("ParamsList:\n\t%s", strings.Join(paramStrs, "\n\t"))
-	//}
 	return res
 }
 
