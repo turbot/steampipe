@@ -399,7 +399,10 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 	// in case of a named query call with params, parse the where clause
 	queryName, params, err := parse.ParsePreparedStatementInvocation(query)
 	if err != nil {
-		return "", err
+		// if we failed to poarse the query as a prepared statement invocation, just return the raw query to execute
+		log.Printf("[TRACE] ParsePreparedStatementInvocation returned error, executing query as raw SQL: %v", err)
+		return query, nil
+
 	}
 	namedQuery, isNamedQuery := c.workspace().GetQuery(queryName)
 
