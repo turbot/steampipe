@@ -12,7 +12,6 @@ import (
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/workspace"
 )
 
@@ -205,14 +204,12 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTree
 // This is used to implement the 'where' control filtering
 func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereClause string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
-	// in case of a named query call with params, parse the where clause
-	queryName, paramsString := parse.ParsePreparedStatementInvocation(whereClause)
-	query, err := e.workspace.GetQueryFromArg(queryName, paramsString)
+	query, err := e.workspace.ResolveQueryAndArgs(whereClause)
 	if err != nil {
 		return nil, err
 	}
 	// did we in fact resolve a named query, or just return the 'name' as the query
-	isNamedQuery := query != queryName
+	isNamedQuery := query != whereClause
 
 	// if the query is NOT a named query, we need to construct a full query by adding a select
 	if !isNamedQuery {

@@ -2,7 +2,6 @@ package parse
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -19,25 +18,26 @@ import (
 //
 // 2) named params
 // query.my_prepared_statement(my_param1 => 'test', my_param2 => 'test2')
-func ParsePreparedStatementInvocation(arg string) (string, *modconfig.QueryArgs) {
+func ParsePreparedStatementInvocation(arg string) (string, *modconfig.QueryArgs, error) {
 	// TODO strip non printing chars
 	params := &modconfig.QueryArgs{}
+
+	// only parse args for named query or named control invocation
+	if !(strings.HasPrefix(arg, "query.") || strings.HasPrefix(arg, "control.")) {
+		return arg, params, nil
+	}
+
 	arg = strings.TrimSpace(arg)
 	query := arg
+	var err error
 	openBracketIdx := strings.Index(arg, "(")
 	closeBracketIdx := strings.LastIndex(arg, ")")
 	if openBracketIdx != -1 && closeBracketIdx == len(arg)-1 {
 		paramsString := arg[openBracketIdx+1 : len(arg)-1]
-		var err error
 		params, err = parseParams(paramsString)
-		if err == nil {
-			query = strings.TrimSpace(arg[:openBracketIdx])
-		} else {
-			// if we failed to parse the query as a prepared statement invocation, just return the raw query to execute
-			log.Printf("[TRACE] ParsePreparedStatementInvocation returned error, executing query as raw SQL: %v", err)
-		}
+		query = strings.TrimSpace(arg[:openBracketIdx])
 	}
-	return query, params
+	return query, params, err
 }
 
 // parse the actual params string, i.e. the contents of the bracket
@@ -57,7 +57,8 @@ func parseParams(paramsString string) (*modconfig.QueryArgs, error) {
 	// split on comma to get each param string (taking quotes and brackets into account)
 	paramsList, err := splitParamString(paramsString)
 	if err != nil {
-		return nil, err
+		// return empty result, even if we have an error
+		return res, err
 	}
 
 	// first check for named parameters
@@ -68,11 +69,9 @@ func parseParams(paramsString string) (*modconfig.QueryArgs, error) {
 	if res.Empty() {
 		// no named params - fall back on positional
 		res.ArgsList, err = parsePositionalParams(paramsList)
-		if err != nil {
-			return nil, err
-		}
 	}
-	return res, nil
+	// return empty result, even if we have an error
+	return res, err
 }
 
 func splitParamString(paramsString string) ([]string, error) {

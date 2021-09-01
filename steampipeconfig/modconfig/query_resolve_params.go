@@ -25,6 +25,9 @@ func (d ParamDef) String() string {
 }
 
 func (q *Query) ResolveParams(params *QueryArgs) (string, error) {
+	if params == nil {
+		return "", nil
+	}
 	var paramStrs, missingParams []string
 	var err error
 	if len(params.Args) > 0 {

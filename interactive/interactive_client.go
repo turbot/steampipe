@@ -24,7 +24,6 @@ import (
 	"github.com/turbot/steampipe/query/metaquery"
 	"github.com/turbot/steampipe/query/queryhistory"
 	"github.com/turbot/steampipe/query/queryresult"
-	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
 )
@@ -360,13 +359,12 @@ func (c *InteractiveClient) executor(line string) {
 }
 
 func (c *InteractiveClient) getQuery(line string) (string, error) {
-
 	// if it's an empty line, then we don't need to do anything
 	if line == "" {
 		return "", nil
 	}
 
-	// wait fore initialisation to complete so we can acces the workspace
+	// wait fore initialisation to complete so we can access the workspace
 	if !c.isInitialised() {
 		// create a context used purely to detect cancellation during initialisation
 		// this will also set c.cancelActiveQuery
@@ -394,32 +392,19 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 	c.interactiveBuffer = append(c.interactiveBuffer, line)
 
 	// expand the buffer out into 'query'
-	query := strings.Join(c.interactiveBuffer, "\n")
+	queryString := strings.Join(c.interactiveBuffer, "\n")
 
 	// in case of a named query call with params, parse the where clause
-	queryName, params := parse.ParsePreparedStatementInvocation(query)
-	namedQuery, isNamedQuery := c.workspace().GetQuery(queryName)
+	query, err := c.workspace().ResolveQueryAndArgs(queryString)
+	if err != nil {
+		return "", err
+	}
+	isNamedQuery := query != queryString
 
 	// if it is a multiline query, execute even without `;`
-	if isNamedQuery {
-		var err error
-		query, err = namedQuery.GetExecuteSQL(params)
-		if err != nil {
-			return "", err
-		}
-	} else {
+	if !isNamedQuery {
 		// should we execute?
-		if !c.shouldExecute(query) {
-			return "", nil
-		}
-	}
-
-	control, isControl := c.workspace().GetControl(query)
-	if isControl {
-		query = *control.SQL
-	} else {
-		// should we execute?
-		if !c.shouldExecute(query) {
+		if !c.shouldExecute(queryString) {
 			return "", nil
 		}
 	}

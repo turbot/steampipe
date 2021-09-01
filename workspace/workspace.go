@@ -482,9 +482,7 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, error) {
 
 	var queries []string
 	for _, arg := range args {
-		// in case of a named query call with params, parse the where clause
-		queryName, params := parse.ParsePreparedStatementInvocation(arg)
-		query, err := w.GetQueryFromArg(queryName, params)
+		query, err := w.ResolveQueryAndArgs(arg)
 		if err != nil {
 			return nil, err
 		}
@@ -495,39 +493,48 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, error) {
 	return queries, nil
 }
 
-// GetQueryFromArg attempts to resolve 'arg' to a query
-// the second return value indicates whether the arg was resolved as a named query/SQL file
-func (w *Workspace) GetQueryFromArg(arg string, params *modconfig.QueryArgs) (string, error) {
-	// check if this is a control
-	if control, ok := w.GetControl(arg); ok {
-		// copy control SQL into arg and continue resolution
-		arg = typeHelpers.SafeString(control.SQL)
+// ResolveQueryAndArgs attempts to resolve 'arg' to a query and query args
+func (w *Workspace) ResolveQueryAndArgs(arg string) (string, error) {
+	// in case of a named query call with params, parse the where clause
+	queryName, params, err := parse.ParsePreparedStatementInvocation(arg)
+	if err != nil {
+		return "", err
 	}
 
-	// 1) is this a named query
-	if namedQuery, ok := w.GetQuery(arg); ok {
+	return w.ResolveQuery(queryName, params)
+}
+
+func (w *Workspace) ResolveQuery(query string, params *modconfig.QueryArgs) (string, error) {
+	// 1) check if this is a control
+	if control, ok := w.GetControl(query); ok {
+		// copy control SQL into arg and continue resolution
+		query = typeHelpers.SafeString(control.SQL)
+	}
+
+	// 2) is this a named query
+	if namedQuery, ok := w.GetQuery(query); ok {
 		sql, err := namedQuery.GetExecuteSQL(params)
 		if err != nil {
-			return "", fmt.Errorf("GetQueryFromArg failed for value %s: %v", arg, err)
+			return "", fmt.Errorf("ResolveQueryAndArgs failed for value %s: %v", query, err)
 		}
 		return sql, nil
 	}
 
-	// 	2) is this a file
-	fileQuery, fileExists, err := w.getQueryFromFile(arg)
+	// 	3) is this a file
+	fileQuery, fileExists, err := w.getQueryFromFile(query)
 	if fileExists {
 		if err != nil {
-			return "", fmt.Errorf("GetQueryFromArg failed: error opening file '%s': %v", arg, err)
+			return "", fmt.Errorf("ResolveQueryAndArgs failed: error opening file '%s': %v", query, err)
 		}
 		if len(fileQuery) == 0 {
-			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", arg))
+			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", query))
 			// (just return the empty string - it will be filtered above)
 		}
 		return fileQuery, nil
 	}
 
-	// 3) just use the arg string as is and assume it is valid SQL
-	return arg, nil
+	// 4) just use the query string as is and assume it is valid SQL
+	return query, nil
 }
 
 func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
