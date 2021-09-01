@@ -56,7 +56,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 # Check that when disabled in environment, we do not perform HTTP requests for update checks, 
 # but we perform other scheduled operations
-@test "scheduled task run - no update check when disabled in ENV - TEST DISABLED" {
+#@test "scheduled task run - no update check when disabled in ENV - TEST DISABLED" {
 #  # set the `lastChecked` date in the update-check.json file to a past date
 #  echo $(cat $STEAMPIPE_INSTALL_DIR/internal/update-check.json| jq '.lastChecked="2021-04-10T17:53:40+05:30"') > $STEAMPIPE_INSTALL_DIR/internal/update-check.json
 #  
@@ -85,4 +85,4 @@ load "$LIB_BATS_SUPPORT/load.bash"
 #  # verify that the last check time was not updated.
 #  assert_equal "$(echo $checkFileContent | jq '.lastChecked')" "$(echo $newCheckFileContent | jq '.lastChecked')"
 #
-}
+#}

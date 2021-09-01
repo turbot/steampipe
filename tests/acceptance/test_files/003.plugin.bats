@@ -11,7 +11,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
 }
 
-@test "steampipe plugin uninstall" {
-    run steampipe plugin uninstall
-    assert_success
-}
+#@test "steampipe plugin uninstall" {
+#    run steampipe plugin uninstall
+#    assert_success
+#}
