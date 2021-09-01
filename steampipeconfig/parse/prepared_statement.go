@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -18,23 +19,25 @@ import (
 //
 // 2) named params
 // query.my_prepared_statement(my_param1 => 'test', my_param2 => 'test2')
-func ParsePreparedStatementInvocation(arg string) (string, *modconfig.QueryParams, error) {
+func ParsePreparedStatementInvocation(arg string) (string, *modconfig.QueryParams) {
 	// TODO strip non printing chars
 	params := &modconfig.QueryParams{}
 	arg = strings.TrimSpace(arg)
-	queryName := arg
+	query := arg
 	openBracketIdx := strings.Index(arg, "(")
 	closeBracketIdx := strings.LastIndex(arg, ")")
 	if openBracketIdx != -1 && closeBracketIdx == len(arg)-1 {
 		paramsString := arg[openBracketIdx+1 : len(arg)-1]
 		var err error
 		params, err = parseParams(paramsString)
-		if err != nil {
-			return "", nil, err
+		if err == nil {
+			query = strings.TrimSpace(arg[:openBracketIdx])
+		} else {
+			// if we failed to parse the query as a prepared statement invocation, just return the raw query to execute
+			log.Printf("[TRACE] ParsePreparedStatementInvocation returned error, executing query as raw SQL: %v", err)
 		}
-		queryName = strings.TrimSpace(arg[:openBracketIdx])
 	}
-	return queryName, params, nil
+	return query, params
 }
 
 // parse the actual params string, i.e. the contents of the bracket
