@@ -65,3 +65,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query --output json "select from_qual_column from chaos_transforms where id=2"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_13.json)"
 }
+
+@test "select * from chaos_cache_check" {
+  run steampipe query --output json "select * from chaos_cache_check"
+  assert_success
+}
