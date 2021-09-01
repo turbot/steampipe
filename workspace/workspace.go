@@ -483,10 +483,7 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, error) {
 	var queries []string
 	for _, arg := range args {
 		// in case of a named query call with params, parse the where clause
-		queryName, params, err := parse.ParsePreparedStatementInvocation(arg)
-		if err != nil {
-			return nil, err
-		}
+		queryName, params := parse.ParsePreparedStatementInvocation(arg)
 		query, err := w.GetQueryFromArg(queryName, params)
 		if err != nil {
 			return nil, err
