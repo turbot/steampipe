@@ -511,16 +511,28 @@ func (w *Workspace) ResolveQueryAndArgs(arg string) (string, error) {
 	return w.ResolveQuery(queryName, args)
 }
 
-func (w *Workspace) ResolveQuery(query string, params *modconfig.QueryArgs) (string, error) {
+func (w *Workspace) ResolveQuery(query string, args *modconfig.QueryArgs) (string, error) {
 	// 1) check if this is a control
 	if control, ok := w.GetControl(query); ok {
+
+		if args == nil || args.Empty() {
+			// set args to control args (which may also be nil!)
+			args = control.Args
+		} else {
+			// so command line args were provided
+			// check if the control supports them (it will NOT is it specifies a 'query' property)
+			if control.Query != nil {
+				return "nil", fmt.Errorf("%s defines a query property and so does not support command line arguments", control.FullName)
+			}
+		}
+
 		// copy control SQL into arg and continue resolution
 		query = typeHelpers.SafeString(control.SQL)
 	}
 
 	// 2) is this a named query
 	if namedQuery, ok := w.GetQuery(query); ok {
-		sql, err := namedQuery.GetExecuteSQL(params)
+		sql, err := namedQuery.GetExecuteSQL(args)
 		if err != nil {
 			return "", fmt.Errorf("ResolveQueryAndArgs failed for value %s: %v", query, err)
 		}
