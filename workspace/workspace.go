@@ -495,13 +495,20 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, error) {
 
 // ResolveQueryAndArgs attempts to resolve 'arg' to a query and query args
 func (w *Workspace) ResolveQueryAndArgs(arg string) (string, error) {
-	// in case of a named query call with params, parse the where clause
-	queryName, params, err := parse.ParsePreparedStatementInvocation(arg)
-	if err != nil {
-		return "", err
+	var queryName string
+	var args *modconfig.QueryArgs
+	var err error
+
+	// only parse args for named query or named control invocation
+	if isNamedQueryOrControl(arg) {
+		// in case of a named query call with params, parse the where clause
+		queryName, args, err = parse.ParsePreparedStatementInvocation(arg)
+		if err != nil {
+			return "", err
+		}
 	}
 
-	return w.ResolveQuery(queryName, params)
+	return w.ResolveQuery(queryName, args)
 }
 
 func (w *Workspace) ResolveQuery(query string, params *modconfig.QueryArgs) (string, error) {
@@ -533,7 +540,12 @@ func (w *Workspace) ResolveQuery(query string, params *modconfig.QueryArgs) (str
 		return fileQuery, nil
 	}
 
-	// 4) just use the query string as is and assume it is valid SQL
+	// 4) so we have not managed to resolve this - if it looks like a named query or control, return an error
+	if isNamedQueryOrControl(query) {
+		return "", fmt.Errorf("'%s' not found in workspace", query)
+	}
+
+	// 5) just use the query string as is and assume it is valid SQL
 	return query, nil
 }
 
@@ -556,4 +568,9 @@ func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
 	}
 
 	return string(fileBytes), true, nil
+}
+
+// does this resource name look like a control or query
+func isNamedQueryOrControl(name string) bool {
+	return strings.HasPrefix(name, "query.") || strings.HasPrefix(name, "control.")
 }

@@ -22,11 +22,6 @@ func ParsePreparedStatementInvocation(arg string) (string, *modconfig.QueryArgs,
 	// TODO strip non printing chars
 	params := &modconfig.QueryArgs{}
 
-	// only parse args for named query or named control invocation
-	if !(strings.HasPrefix(arg, "query.") || strings.HasPrefix(arg, "control.")) {
-		return arg, params, nil
-	}
-
 	arg = strings.TrimSpace(arg)
 	query := arg
 	var err error
