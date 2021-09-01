@@ -116,7 +116,7 @@ var testCasesParsePreparedStatementInvocation = map[string]parsePreparedStatemen
 
 func TestParsePreparedStatementInvocation(t *testing.T) {
 	for name, test := range testCasesParsePreparedStatementInvocation {
-		queryName, params := ParsePreparedStatementInvocation(test.input)
+		queryName, params, _ := ParsePreparedStatementInvocation(test.input)
 
 		if queryName != test.expected.queryName || !test.expected.params.Equals(params) {
 			fmt.Printf("")

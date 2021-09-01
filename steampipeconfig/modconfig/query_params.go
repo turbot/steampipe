@@ -15,6 +15,9 @@ func NewQueryArgs() *QueryArgs {
 }
 
 func (q *QueryArgs) Equals(other *QueryArgs) bool {
+	if other == nil {
+		return false
+	}
 	if q.Empty() {
 		return other.Empty()
 	}
