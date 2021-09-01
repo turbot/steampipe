@@ -7,18 +7,10 @@ control "c1"{
 control "c2"{
     title ="C2"
     description = "THIS IS CONTROL 2"
-    sql = "select 'ok' as status, 'foo' as resource, concat($1::text, $2::jsonb, $3::text) as reason"
-    param "foo"{
-        description = "p1"
-        default = "default_control "
-    }
-    param "bar"{
-        description = "p2"
-        default = "because_def "
-    }
-    param "bill"{
-        description = "p3"
-        default = "string"
+    query = query.q1
+    args = {
+        "p1" = "control2 "
+        "p3" = "a reason"
     }
 }
 
