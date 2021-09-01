@@ -497,7 +497,7 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, error) {
 
 // GetQueryFromArg attempts to resolve 'arg' to a query
 // the second return value indicates whether the arg was resolved as a named query/SQL file
-func (w *Workspace) GetQueryFromArg(arg string, params *modconfig.QueryParams) (string, error) {
+func (w *Workspace) GetQueryFromArg(arg string, params *modconfig.QueryArgs) (string, error) {
 	// check if this is a control
 	if control, ok := w.GetControl(arg); ok {
 		// copy control SQL into arg and continue resolution

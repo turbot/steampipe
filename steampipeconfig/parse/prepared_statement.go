@@ -19,9 +19,9 @@ import (
 //
 // 2) named params
 // query.my_prepared_statement(my_param1 => 'test', my_param2 => 'test2')
-func ParsePreparedStatementInvocation(arg string) (string, *modconfig.QueryParams) {
+func ParsePreparedStatementInvocation(arg string) (string, *modconfig.QueryArgs) {
 	// TODO strip non printing chars
-	params := &modconfig.QueryParams{}
+	params := &modconfig.QueryArgs{}
 	arg = strings.TrimSpace(arg)
 	query := arg
 	openBracketIdx := strings.Index(arg, "(")
@@ -48,8 +48,8 @@ func ParsePreparedStatementInvocation(arg string) (string, *modconfig.QueryParam
 //
 // 2) named params
 // my_param1 => 'val1', my_param2 => 'val2'
-func parseParams(paramsString string) (*modconfig.QueryParams, error) {
-	res := modconfig.NewQueryParams()
+func parseParams(paramsString string) (*modconfig.QueryArgs, error) {
+	res := modconfig.NewQueryArgs()
 	if len(paramsString) == 0 {
 		return res, nil
 	}
@@ -61,13 +61,13 @@ func parseParams(paramsString string) (*modconfig.QueryParams, error) {
 	}
 
 	// first check for named parameters
-	res.Params, err = parseNamedParams(paramsList)
+	res.Args, err = parseNamedParams(paramsList)
 	if err != nil {
 		return nil, err
 	}
 	if res.Empty() {
 		// no named params - fall back on positional
-		res.ParamsList, err = parsePositionalParams(paramsList)
+		res.ArgsList, err = parsePositionalParams(paramsList)
 		if err != nil {
 			return nil, err
 		}

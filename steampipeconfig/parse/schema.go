@@ -127,7 +127,7 @@ var ControlBlockSchema = &hcl.BodySchema{
 		{Name: "query"},
 		{Name: "tags"},
 		{Name: "title"},
-		{Name: "params"},
+		{Name: "args"},
 	},
 }
 

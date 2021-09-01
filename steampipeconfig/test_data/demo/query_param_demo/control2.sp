@@ -6,6 +6,6 @@ variable "prohibited_instance_types" {
 
 control "array_param" {
     title       = "EC2 Instances xlarge and bigger"
-    params  = [ var.prohibited_instance_types ]
+    args  = [ var.prohibited_instance_types ]
     query         = query.q2
 }

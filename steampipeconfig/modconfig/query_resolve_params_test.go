@@ -7,22 +7,22 @@ import (
 )
 
 type resolveParamsTest struct {
-	params    *QueryParams
+	params    *QueryArgs
 	paramDefs []*ParamDef
 	expected  interface{}
 }
 
 var testCasesResolveParams = map[string]resolveParamsTest{
 	"positional params no defs": {
-		params: &QueryParams{
-			ParamsList: []string{"val1", "val2"},
+		params: &QueryArgs{
+			ArgsList: []string{"val1", "val2"},
 		},
 		paramDefs: nil,
 		expected:  "(array['val1','val2'])",
 	},
 	"named params no defs": {
-		params: &QueryParams{
-			Params: map[string]string{
+		params: &QueryArgs{
+			Args: map[string]string{
 				"p1": "val1",
 				"p2": "val2",
 			},
@@ -31,8 +31,8 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 		expected:  "ERROR",
 	},
 	"named params with defs": {
-		params: &QueryParams{
-			Params: map[string]string{
+		params: &QueryArgs{
+			Args: map[string]string{
 				"p1": "val1",
 				"p2": "val2",
 			},
@@ -44,8 +44,8 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 		expected: "(array['val1','val2'])",
 	},
 	"partial named params with defs and defaults": {
-		params: &QueryParams{
-			Params: map[string]string{
+		params: &QueryArgs{
+			Args: map[string]string{
 				"p1": "val1",
 			},
 		},
@@ -56,8 +56,8 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 		expected: "(array['val1','def_val2'])",
 	},
 	"partial positional params with defs and defaults": {
-		params: &QueryParams{
-			ParamsList: []string{"val1"},
+		params: &QueryArgs{
+			ArgsList: []string{"val1"},
 		},
 		paramDefs: []*ParamDef{
 			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
@@ -67,8 +67,8 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	},
 	"partial positional params with defs and unmatched defaults": {
 		// only a default for first param, which is populated from the provided positional param
-		params: &QueryParams{
-			ParamsList: []string{"val1"},
+		params: &QueryArgs{
+			ArgsList: []string{"val1"},
 		},
 		paramDefs: []*ParamDef{
 			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
@@ -78,8 +78,8 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	},
 	"partial named params with defs and unmatched defaults": {
 		// only a default for first param, which is populated from the provided positional param
-		params: &QueryParams{
-			Params: map[string]string{
+		params: &QueryArgs{
+			Args: map[string]string{
 				"p1": "val1",
 			},
 		},
@@ -90,9 +90,9 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 		expected: "ERROR",
 	},
 	"positional and named params": {
-		params: &QueryParams{
-			ParamsList: []string{"val1", "val2"},
-			Params: map[string]string{
+		params: &QueryArgs{
+			ArgsList: []string{"val1", "val2"},
+			Args: map[string]string{
 				"p1": "val1",
 				"p2": "val2",
 			},

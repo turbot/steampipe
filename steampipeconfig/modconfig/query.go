@@ -129,7 +129,7 @@ func (q *Query) AddReference(reference string) {
 }
 
 // GetExecuteSQL returns the SQL to run this query as a prepared statement
-func (q *Query) GetExecuteSQL(params *QueryParams) (string, error) {
+func (q *Query) GetExecuteSQL(params *QueryArgs) (string, error) {
 	paramsString, err := q.ResolveParams(params)
 	if err != nil {
 		return "", err

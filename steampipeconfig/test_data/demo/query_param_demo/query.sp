@@ -14,11 +14,11 @@ query "q1"{
     }
     param "p2"{
         description = "p2"
-        default = ["default_because_${var.v1} ", 1]
+        default = "because_def "
     }
     param "p3"{
         description = "p3"
-        default = 100
+        default = "string"
     }
 }
 
@@ -26,4 +26,7 @@ query "q1"{
 query "q2" {
     title       = "EC2 Instances xlarge and bigger"
     sql = "select 'ok' as status, 'foo' as resource, $1::jsonb->1 as reason"
+    param "p1"{
+        description = "p1"
+    }
 }

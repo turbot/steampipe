@@ -24,12 +24,12 @@ type Control struct {
 	Tags             *map[string]string `cty:"tags"  column:"tags,jsonb"`
 	Title            *string            `cty:"title"  column:"title,text"`
 	Query            *Query
-	// parameters
-	// params may be specified by either a map of named parameters or as a list of positional parameters
-	// we apply special decode logic to convert the params block into a QueryParams object
-	// with either a param map or list assigned
+	// args
+	// arguments may be specified by either a map of named args or as a list of positional args
+	// we apply special decode logic to convert the params block into a QueryArgs object
+	// with either an args map or list assigned
 	// TODO CTY and REFLECTION TABLES?
-	Params *QueryParams
+	Args *QueryArgs
 
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
@@ -45,7 +45,7 @@ func NewControl(block *hcl.Block) *Control {
 		ShortName: block.Labels[0],
 		FullName:  fmt.Sprintf("control.%s", block.Labels[0]),
 		DeclRange: block.DefRange,
-		Params:    NewQueryParams(),
+		Args:      NewQueryArgs(),
 	}
 	return control
 }

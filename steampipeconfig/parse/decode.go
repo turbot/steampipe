@@ -377,9 +377,9 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Title)
 		diags = append(diags, valDiags...)
 	}
-	if attr, exists := content.Attributes["params"]; exists {
-		if params, diags := decodeControlParams(attr, runCtx.EvalCtx, c.FullName); !diags.HasErrors() {
-			c.Params = params
+	if attr, exists := content.Attributes["args"]; exists {
+		if params, diags := decodeControlArgs(attr, runCtx.EvalCtx, c.FullName); !diags.HasErrors() {
+			c.Args = params
 		}
 	}
 
@@ -398,8 +398,8 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 
 }
 
-func decodeControlParams(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName string) (*modconfig.QueryParams, hcl.Diagnostics) {
-	var params = modconfig.NewQueryParams()
+func decodeControlArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName string) (*modconfig.QueryArgs, hcl.Diagnostics) {
+	var params = modconfig.NewQueryArgs()
 	v, diags := attr.Expr.Value(evalCtx)
 	if diags.HasErrors() {
 		return nil, diags
@@ -410,9 +410,9 @@ func decodeControlParams(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlN
 
 	switch {
 	case ty.IsObjectType():
-		params.Params, err = ctyObjectToPostgresMap(v)
+		params.Args, err = ctyObjectToPostgresMap(v)
 	case ty.IsTupleType():
-		params.ParamsList, err = ctyTupleToPostgresArray(v)
+		params.ArgsList, err = ctyTupleToPostgresArray(v)
 	default:
 		err = fmt.Errorf("'params' property must be either a map or an array")
 	}

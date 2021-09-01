@@ -24,10 +24,10 @@ func (d ParamDef) String() string {
 	return fmt.Sprintf("Name: %s, Description: %s, Default: %s", d.Name, typehelpers.SafeString(d.Description), typehelpers.SafeString(d.Default))
 }
 
-func (q *Query) ResolveParams(params *QueryParams) (string, error) {
+func (q *Query) ResolveParams(params *QueryArgs) (string, error) {
 	var paramStrs, missingParams []string
 	var err error
-	if len(params.Params) > 0 {
+	if len(params.Args) > 0 {
 		// do params contain named params?
 		paramStrs, missingParams, err = q.resolveNamedParameters(params)
 	} else {
@@ -58,16 +58,16 @@ func (q *Query) ResolveParams(params *QueryParams) (string, error) {
 	return fmt.Sprintf("(%s)", strings.Join(paramStrs, ",")), err
 }
 
-func (q *Query) resolveNamedParameters(params *QueryParams) (paramStrs []string, missingParams []string, err error) {
+func (q *Query) resolveNamedParameters(params *QueryArgs) (paramStrs []string, missingParams []string, err error) {
 	// if query params contains both positional and named params, error out
-	if len(params.ParamsList) > 0 {
+	if len(params.ArgsList) > 0 {
 		err = fmt.Errorf("ResolveParams failed for %s - params data contain both positional and named parameters", q.FullName)
 		return
 	}
 	// so params contain named params - if this query has no param defs, error out
-	if len(q.ParamsDefs) < len(params.Params) {
+	if len(q.ParamsDefs) < len(params.Args) {
 		err = fmt.Errorf("ResolveParams failed for %s - params data contain %d named parameters but this query %d parameter definitions",
-			q.FullName, len(params.Params), len(q.ParamsDefs))
+			q.FullName, len(params.Args), len(q.ParamsDefs))
 		return
 	}
 
@@ -79,7 +79,7 @@ func (q *Query) resolveNamedParameters(params *QueryParams) (paramStrs []string,
 		defaultValue := typehelpers.SafeString(def.Default)
 
 		// can we resolve a value for this param?
-		if val, ok := params.Params[def.Name]; ok {
+		if val, ok := params.Args[def.Name]; ok {
 			paramStrs[i] = val
 		} else if defaultValue != "" {
 			paramStrs[i] = defaultValue
@@ -92,16 +92,16 @@ func (q *Query) resolveNamedParameters(params *QueryParams) (paramStrs []string,
 	return paramStrs, missingParams, nil
 }
 
-func (q *Query) resolvePositionalParameters(params *QueryParams) (paramStrs []string, missingParams []string, err error) {
+func (q *Query) resolvePositionalParameters(params *QueryArgs) (paramStrs []string, missingParams []string, err error) {
 	// if query params contains both positional and named params, error out
-	if len(params.Params) > 0 {
+	if len(params.Args) > 0 {
 		err = fmt.Errorf("ResolveParams failed for %s - params data contain both positional and named parameters", q.FullName)
 		return
 	}
 
 	// if no param defs are defined, just use the given values
 	if len(q.ParamsDefs) == 0 {
-		paramStrs = params.ParamsList
+		paramStrs = params.ArgsList
 		return
 	}
 
@@ -112,8 +112,8 @@ func (q *Query) resolvePositionalParameters(params *QueryParams) (paramStrs []st
 	for i, def := range q.ParamsDefs {
 		defaultValue := typehelpers.SafeString(def.Default)
 
-		if i < len(params.ParamsList) {
-			paramStrs[i] = params.ParamsList[i]
+		if i < len(params.ArgsList) {
+			paramStrs[i] = params.ArgsList[i]
 		} else if defaultValue != "" {
 			// so we have run out of provided params - is there a default?
 			paramStrs[i] = defaultValue

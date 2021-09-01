@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
+//func CreatePreparedStatements(ctx context.Context, queryMap map[string]*modconfig.Query, controlMap map[string]*modconfig.Control, client Client) error {
 func CreatePreparedStatements(ctx context.Context, queryMap map[string]*modconfig.Query, client Client) error {
 	utils.LogTime("db.CreatePreparedStatements start")
 	defer utils.LogTime("db.CreatePreparedStatements end")
@@ -28,6 +29,23 @@ func CreatePreparedStatements(ctx context.Context, queryMap map[string]*modconfi
 			return fmt.Errorf("failed to create prepared statements table %s: %v", name, err)
 		}
 	}
+
+	//for name, control := range controlMap {
+	//	// query map contains long and short names for controls - avoid dupes
+	//	if !strings.HasPrefix(name, "control.") ||
+	//		// do not create prepared statements for controls which reference another query
+	//		control.Query != nil {
+	//		continue
+	//	}
+	//	// remove trailing semicolons from sql as this breaks the prepare statement
+	//	rawSql := strings.TrimRight(strings.TrimSpace(typehelpers.SafeString(query.SQL)), ";")
+	//	sql := fmt.Sprintf("PREPARE %s AS (\n%s\n)", query.ShortName, rawSql)
+	//	// execute the query, passing 'true' to disable the spinner
+	//	_, err := client.ExecuteSync(ctx, sql, true)
+	//	if err != nil {
+	//		return fmt.Errorf("failed to create prepared statements table %s: %v", name, err)
+	//	}
+	//}
 
 	// return context error - this enables calling code to respond to cancellation
 	return ctx.Err()
