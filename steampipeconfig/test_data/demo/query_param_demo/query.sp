@@ -25,5 +25,5 @@ query "q1"{
 
 query "q2" {
     title       = "EC2 Instances xlarge and bigger"
-    sql = "select 'ok' as status, 'foo' as resource, $1::json->1 as reason"
+    sql = "select 'ok' as status, 'foo' as resource, $1::jsonb->1 as reason"
 }

@@ -59,7 +59,7 @@ func ctyToPostgresString(v cty.Value) (valStr string, err error) {
 		var json string
 		// wrap as postgres string
 		if json, err = ctyToJSON(v); err == nil {
-			valStr = fmt.Sprintf("'%s'", json)
+			valStr = fmt.Sprintf("'%s'::jsonb", json)
 		}
 
 	}
