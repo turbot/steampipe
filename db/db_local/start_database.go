@@ -103,6 +103,11 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	}
 
 	if err := isPortBindable(port); err != nil {
+		processes, _ := psutils.Processes()
+		for _, p := range processes {
+			fmt.Println(p.Cmdline())
+		}
+
 		return ServiceFailedToStart, fmt.Errorf("cannot listen on port %d", constants.Bold(port))
 	}
 
