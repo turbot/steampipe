@@ -144,9 +144,7 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 	defer utils.LogTime("startPostgresProcess end")
 
 	logChannel := make(chan string, 1000)
-	defer func() {
-		close(logChannel)
-	}()
+	defer close(logChannel)
 
 	listenAddresses := "localhost"
 
@@ -225,21 +223,7 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 		return err
 	}
 
-	go func() {
-		for {
-			logLine := <-logChannel
-			if len(strings.TrimSpace(logLine)) == 0 {
-				continue
-			}
-			log.Printf("[TRACE] SERVICE: %s\n", logLine)
-			if strings.Contains(logLine, "database system is shut down") {
-				break
-			}
-			if strings.Contains(logLine, "database system is ready to accept connections") {
-				break
-			}
-		}
-	}()
+	go traceoutServiceLogs(logChannel)
 
 	// get the password file
 	passwords, err := getPasswords()
@@ -281,6 +265,22 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 	connection.Close()
 
 	return nil
+}
+
+func traceoutServiceLogs(logChannel chan string) {
+	for {
+		logLine := <-logChannel
+		if len(strings.TrimSpace(logLine)) == 0 {
+			continue
+		}
+		log.Printf("[TRACE] SERVICE: %s\n", logLine)
+		if strings.Contains(logLine, "database system is shut down") {
+			break
+		}
+		if strings.Contains(logLine, "database system is ready to accept connections") {
+			break
+		}
+	}
 }
 
 func setupLogCollector(postgresCmd *exec.Cmd, sendChannel chan string) (func(), error) {
