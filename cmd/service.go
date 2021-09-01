@@ -410,7 +410,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 
 	switch status {
 	case local_db.ServiceStopped:
-		fmt.Printf("Steampipe database service stopped [port %d]\n", info.Port)
+		fmt.Println("Steampipe database service stopped")
 	case local_db.ServiceNotRunning:
 		fmt.Println("Service is not running")
 	case db_local.ServiceStopFailed:
