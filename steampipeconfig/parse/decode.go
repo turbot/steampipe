@@ -249,7 +249,7 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 		diags = append(diags, valDiags...)
 	}
 	for _, block := range content.Blocks {
-		if block.Type == "params" {
+		if block.Type == "param" {
 			if paramDef, valDiags := decodeParamDef(block, runCtx, q.FullName); !diags.HasErrors() {
 				q.ParamsDefs = append(q.ParamsDefs, paramDef)
 			} else {

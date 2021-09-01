@@ -143,7 +143,7 @@ var QueryBlockSchema = &hcl.BodySchema{
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type:       "params",
+			Type:       "param",
 			LabelNames: []string{"name"},
 		},
 	},
