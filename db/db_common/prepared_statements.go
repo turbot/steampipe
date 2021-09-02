@@ -3,15 +3,16 @@ package db_common
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
-func CreatePreparedStatements(ctx context.Context, workspace WorkspaceResourceProvider, client Client) error {
-	queryMap := workspace.GetQueryMap()
-	controlMap := workspace.GetControlMap()
+func CreatePreparedStatements(ctx context.Context, queryMap map[string]*modconfig.Query, controlMap map[string]*modconfig.Control, client Client) error {
+	log.Printf("[TRACE] CreatePreparedStatements")
 
 	utils.LogTime("db.CreatePreparedStatements start")
 	defer utils.LogTime("db.CreatePreparedStatements end")
@@ -57,39 +58,37 @@ func CreatePreparedStatements(ctx context.Context, workspace WorkspaceResourcePr
 }
 
 // UpdatePreparedStatements first attempts to deallocate all prepared statements in workspace, then recreates them
-func UpdatePreparedStatements(ctx context.Context, workspace WorkspaceResourceProvider, client Client) error {
-	queryMap := workspace.GetQueryMap()
-	controlMap := workspace.GetControlMap()
+func UpdatePreparedStatements(ctx context.Context, queryMap map[string]*modconfig.Query, controlMap map[string]*modconfig.Control, client Client) error {
+	log.Printf("[TRACE] UpdatePreparedStatements")
+
 	utils.LogTime("db.UpdatePreparedStatements start")
 	defer utils.LogTime("db.UpdatePreparedStatements end")
 
+	var sql []string
 	for name, query := range queryMap {
 		// query map contains long and short names for queries - avoid dupes
 		if !strings.HasPrefix(name, "query.") {
 			continue
 		}
-		sql := fmt.Sprintf("DEALLOCATE %s ", query.PreparedStatementName())
-		// execute the query, passing 'true' to disable the spinner
-		// ignore errors
-		client.ExecuteSync(ctx, sql, true)
+		sql = append(sql, fmt.Sprintf("DEALLOCATE %s ", query.PreparedStatementName()))
 	}
+
 	for name, control := range controlMap {
 		// query map contains long and short names for controls - avoid dupes
-		if !strings.HasPrefix(name, "control.") ||
-			// do not create prepared statements for controls which reference another query
-			control.Query != nil {
+		if !strings.HasPrefix(name, "control.") {
 			continue
 		}
+		// do not create prepared statements for controls which reference another query
 		if control.Query != nil {
 			continue
 		}
-		sql := fmt.Sprintf("DEALLOCATE %s ", control.PreparedStatementName())
-		// execute the query, passing 'true' to disable the spinner
-		// ignore errors
-		client.ExecuteSync(ctx, sql, true)
+		sql = append(sql, fmt.Sprintf("DEALLOCATE %s ", control.PreparedStatementName()))
 	}
+	// execute the query, passing 'true' to disable the spinner
+	// ignore errors
+	client.ExecuteSync(ctx, strings.Join(sql, "\n"), true)
 
 	// now recreate them
-	return CreatePreparedStatements(ctx, workspace, client)
+	return CreatePreparedStatements(ctx, queryMap, controlMap, client)
 
 }

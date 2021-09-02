@@ -24,7 +24,6 @@ func (w *Workspace) RegisterReportEventHandler(handler reportevents.ReportEventH
 func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsnotify.Event) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
-
 	// we build a list of diffs for panels and workspaces so store the old ones
 	// TODO - same for all resources??
 	prevPanels := w.getPanelMap()
@@ -48,7 +47,7 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 
 	// todo detect differences and only refresh if necessary
 	db_common.UpdateMetadataTables(w.GetResourceMaps(), client)
-	db_common.UpdatePreparedStatements(context.Background(), w, client)
+	db_common.UpdatePreparedStatements(context.Background(), w.QueryMap, w.ControlMap, client)
 
 	w.raiseReportChangedEvents(w.getPanelMap(), prevPanels, w.getReportMap(), prevReports)
 }
