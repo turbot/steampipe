@@ -3,6 +3,7 @@ package local_db
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -154,6 +155,22 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 		listenAddresses = "*"
 	}
 
+	// Apply default settings in conf files
+	err := ioutil.WriteFile(getPostgresqlConfLocation(), []byte(constants.PostgresqlConfContent), 0600)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(getSteampipeConfLocation(), []byte(constants.SteampipeConfContent), 0600)
+	if err != nil {
+		return err
+	}
+
+	// create the postgresql.conf.d location, don't fail if it errors
+	err = os.MkdirAll(getPostgresqlConfDLocation(), 0700)
+	if err != nil {
+		return err
+	}
+
 	postgresCmd := exec.Command(
 		getPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port if free to listen to
@@ -164,37 +181,9 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 		// the APPNAME is hardcoded to be steampipe.
 		"-c", fmt.Sprintf("application_name=%s", constants.APPNAME),
 		"-c", fmt.Sprintf("cluster_name=%s", constants.APPNAME),
-		"-c", "autovacuum=off",
-		"-c", "bgwriter_lru_maxpages=0",
-		"-c", "effective-cache-size=64kB",
-		"-c", "fsync=off",
-		"-c", "full_page_writes=off",
-		"-c", "maintenance-work-mem=1024kB",
-		"-c", "password_encryption=scram-sha-256",
-		"-c", "random-page-cost=0.01",
-		"-c", "seq-page-cost=0.01",
-		// If the shared buffers are too small then large tables in memory can create
-		// "no unpinned buffers available" errors.
-		// "-c", "shared-buffers=128kB",
-		// If synchronous_commit=off then the setup process can fail because the
-		// installation of the foreign server is not committed before the DB shutsdown.
-		// Steampipe does very few commits in general, so leaving this on will have
-		// very little impact on performance.
-		// "-c", "synchronous_commit=off",
-		"-c", "temp-buffers=800kB",
-		"-c", "timezone=UTC",
-		"-c", "track_activities=off",
-		"-c", "track_counts=off",
-		"-c", "wal-buffers=32kB",
-		"-c", "work-mem=64kB",
-		"-c", "jit=off",
-		// postgres log collection
-		"-c", "log_statement=all",
-		"-c", "log_min_duration_statement=2000",
-		"-c", "logging_collector=on",
-		"-c", "log_min_error_statement=error",
+
+		// log directory
 		"-c", fmt.Sprintf("log_directory=%s", constants.LogDir()),
-		"-c", fmt.Sprintf("log_filename=%s", "database-%Y-%m-%d.log"),
 
 		// If ssl is off  it doesnot matter what we pass in the ssl_cert_file and ssl_key_file
 		// SSL will only get validated if the ssl is on

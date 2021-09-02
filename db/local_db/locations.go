@@ -75,6 +75,18 @@ func getPgHbaConfLocation() string {
 	return filepath.Join(getDataLocation(), "pg_hba.conf")
 }
 
+func getPostgresqlConfLocation() string {
+	return filepath.Join(getDataLocation(), "postgresql.conf")
+}
+
+func getPostgresqlConfDLocation() string {
+	return filepath.Join(getDataLocation(), "postgresql.conf.d")
+}
+
+func getSteampipeConfLocation() string {
+	return filepath.Join(getDataLocation(), "steampipe.conf")
+}
+
 func getPasswordFileLocation() string {
 	return filepath.Join(getDatabaseLocation(), ".passwd")
 }

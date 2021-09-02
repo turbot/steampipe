@@ -254,6 +254,7 @@ func initDatabase() error {
 		return runError
 	}
 
+	// intentionally overwriting existing pg_hba.conf
 	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(constants.PgHbaContent), 0600)
 }
 
