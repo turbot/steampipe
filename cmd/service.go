@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_local"
+	"github.com/turbot/steampipe/db/local_db"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
@@ -400,13 +401,13 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		status, _ = db_local.StopDB(false, constants.InvokerService, spinner)
 	}
 
+	status, err = local_db.StopDB(force, constants.InvokerService, spinner)
+
+	display.StopSpinner(spinner)
 	if err != nil {
-		display.StopSpinner(spinner)
 		utils.ShowError(err)
 		return
 	}
-
-	display.StopSpinner(spinner)
 
 	switch status {
 	case local_db.ServiceStopped:
