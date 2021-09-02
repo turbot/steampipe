@@ -73,6 +73,10 @@ func InitCmd() {
 
 	AddCommands()
 
+	// disable auto completion generation, since we don't want to support
+	// powershell yet - and there's no way to disable powershell in the default generator
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
+
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -137,10 +141,13 @@ func setInstallDir() {
 
 func AddCommands() {
 	// explicitly initialise commands here rather than in init functions to allow us to handle errors from the config load
-	rootCmd.AddCommand(pluginCmd())
-	rootCmd.AddCommand(queryCmd())
-	rootCmd.AddCommand(checkCmd())
-	rootCmd.AddCommand(serviceCmd())
+	rootCmd.AddCommand(
+		pluginCmd(),
+		queryCmd(),
+		checkCmd(),
+		serviceCmd(),
+		generateCompletionScriptsCmd(),
+	)
 }
 
 func Execute() int {
