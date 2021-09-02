@@ -337,22 +337,21 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 		diags = append(diags, valDiags...)
 	}
 	if attr, exists := content.Attributes["sql"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SQL)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["query"]; exists {
 		// either Query or SQL property may be set -  if Query property already set, error
-		if c.Query != nil {
+		if c.SQL != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", c.FullName),
 				Subject:  &attr.Range,
 			})
 		} else {
-			valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SQL)
+			valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Query)
 			diags = append(diags, valDiags...)
 		}
-
-	}
-	if attr, exists := content.Attributes["query"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Query)
-		diags = append(diags, valDiags...)
 	}
 
 	if attr, exists := content.Attributes["tags"]; exists {

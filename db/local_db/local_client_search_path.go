@@ -46,9 +46,10 @@ func (c *LocalClient) SetClientSearchPath() error {
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 
 	// HACK reopen db client so we take into account recent changes to service search path
-	if err := c.refreshDbClient(); err != nil {
-		return err
-	}
+	// TODO this breaks prepared statements so we cannot do it - find another way
+	//if err := c.refreshDbClient(); err != nil {
+	//	return err
+	//}
 
 	// if a search path was passed, add 'internal' to the end
 	if len(searchPath) > 0 {

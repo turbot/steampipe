@@ -34,11 +34,10 @@ func CreatePreparedStatements(ctx context.Context, queryMap map[string]*modconfi
 
 	for name, control := range controlMap {
 		// query map contains long and short names for controls - avoid dupes
-		if !strings.HasPrefix(name, "control.") ||
-			// do not create prepared statements for controls which reference another query
-			control.Query != nil {
+		if !strings.HasPrefix(name, "control.") {
 			continue
 		}
+		// only create prepared statements for controls with inline SQL
 		if control.SQL == nil {
 			continue
 		}

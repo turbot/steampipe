@@ -115,13 +115,14 @@ func (c *LocalClient) createTransaction(ctx context.Context, retryOnTimeout bool
 	case <-doneChan:
 	case <-time.After(time.Second * 5):
 		log.Printf("[TRACE] timed out creating a transaction")
-		if retryOnTimeout {
-			log.Printf("[TRACE] refresh the client and retry")
-			// refresh the db client to try to fix the issue
-			c.refreshDbClient()
-			// recurse back into this function, passing 'retryOnTimeout=false' to prevent further recursion
-			return c.createTransaction(ctx, false)
-		}
+		//if retryOnTimeout {
+		//	log.Printf("[TRACE] refresh the client and retry")
+		//	// refresh the db client to try to fix the issue
+		// TODO this breaks session scoped iutems such as prepared statements
+		//	//c.refreshDbClient()
+		//	// recurse back into this function, passing 'retryOnTimeout=false' to prevent further recursion
+		//	return c.createTransaction(ctx, false)
+		//}
 
 		err = fmt.Errorf("error creating transaction - please restart Steampipe")
 	}
