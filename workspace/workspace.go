@@ -494,26 +494,25 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, error) {
 }
 
 // ResolveQueryAndArgs attempts to resolve 'arg' to a query and query args
-func (w *Workspace) ResolveQueryAndArgs(arg string) (string, error) {
-	var queryName string
+func (w *Workspace) ResolveQueryAndArgs(sqlString string) (string, error) {
 	var args *modconfig.QueryArgs
 	var err error
 
 	// only parse args for named query or named control invocation
-	if isNamedQueryOrControl(arg) {
+	if isNamedQueryOrControl(sqlString) {
 		// in case of a named query call with params, parse the where clause
-		queryName, args, err = parse.ParsePreparedStatementInvocation(arg)
+		sqlString, args, err = parse.ParsePreparedStatementInvocation(sqlString)
 		if err != nil {
 			return "", err
 		}
 	}
 
-	return w.ResolveQuery(queryName, args)
+	return w.ResolveQuery(sqlString, args)
 }
 
-func (w *Workspace) ResolveQuery(query string, args *modconfig.QueryArgs) (string, error) {
+func (w *Workspace) ResolveQuery(sqlString string, args *modconfig.QueryArgs) (string, error) {
 	// 1) check if this is a control
-	if control, ok := w.GetControl(query); ok {
+	if control, ok := w.GetControl(sqlString); ok {
 
 		if args == nil || args.Empty() {
 			// set args to control args (which may also be nil!)
@@ -527,38 +526,38 @@ func (w *Workspace) ResolveQuery(query string, args *modconfig.QueryArgs) (strin
 		}
 
 		// copy control SQL into arg and continue resolution
-		query = typeHelpers.SafeString(control.SQL)
+		sqlString = typeHelpers.SafeString(control.SQL)
 	}
 
 	// 2) is this a named query
-	if namedQuery, ok := w.GetQuery(query); ok {
+	if namedQuery, ok := w.GetQuery(sqlString); ok {
 		sql, err := namedQuery.GetExecuteSQL(args)
 		if err != nil {
-			return "", fmt.Errorf("ResolveQueryAndArgs failed for value %s: %v", query, err)
+			return "", fmt.Errorf("ResolveQueryAndArgs failed for value %s: %v", sqlString, err)
 		}
 		return sql, nil
 	}
 
 	// 	3) is this a file
-	fileQuery, fileExists, err := w.getQueryFromFile(query)
+	fileQuery, fileExists, err := w.getQueryFromFile(sqlString)
 	if fileExists {
 		if err != nil {
-			return "", fmt.Errorf("ResolveQueryAndArgs failed: error opening file '%s': %v", query, err)
+			return "", fmt.Errorf("ResolveQueryAndArgs failed: error opening file '%s': %v", sqlString, err)
 		}
 		if len(fileQuery) == 0 {
-			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", query))
+			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", sqlString))
 			// (just return the empty string - it will be filtered above)
 		}
 		return fileQuery, nil
 	}
 
 	// 4) so we have not managed to resolve this - if it looks like a named query or control, return an error
-	if isNamedQueryOrControl(query) {
-		return "", fmt.Errorf("'%s' not found in workspace", query)
+	if isNamedQueryOrControl(sqlString) {
+		return "", fmt.Errorf("'%s' not found in workspace", sqlString)
 	}
 
 	// 5) just use the query string as is and assume it is valid SQL
-	return query, nil
+	return sqlString, nil
 }
 
 func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
