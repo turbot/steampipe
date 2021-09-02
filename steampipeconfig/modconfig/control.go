@@ -29,7 +29,8 @@ type Control struct {
 	// we apply special decode logic to convert the params block into a QueryArgs object
 	// with either an args map or list assigned
 	// TODO CTY and REFLECTION TABLES?
-	Args *QueryArgs
+	Args   *QueryArgs
+	Params []*ParamDef
 
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
@@ -147,19 +148,6 @@ func (c *Control) CtyValue() (cty.Value, error) {
 // OnDecoded implements HclResource
 func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
-// OnDecoded implements HclResource
-func (c *Control) SetSQL(sql string, block *hcl.Block) hcl.Diagnostics {
-	// if both query and SQL are set, raise an error
-	if typehelpers.SafeString(c.SQL) != "" {
-		return hcl.Diagnostics{&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", c.FullName),
-			Subject:  &block.DefRange,
-		}}
-	}
-	return nil
-}
-
 // AddReference implements HclResource
 func (c *Control) AddReference(reference string) {
 	c.References = append(c.References, reference)
@@ -173,4 +161,14 @@ func (c *Control) GetMetadata() *ResourceMetadata {
 // SetMetadata implements ResourceWithMetadata
 func (c *Control) SetMetadata(metadata *ResourceMetadata) {
 	c.metadata = metadata
+}
+
+// GetParams implements PreparedStatementProvider
+func (c *Control) GetParams() []*ParamDef {
+	return c.Params
+}
+
+// PreparedStatementName implements PreparedStatementProvider
+func (c *Control) PreparedStatementName() string {
+	return preparedStatementName(c)
 }

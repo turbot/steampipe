@@ -3,6 +3,7 @@ package workspace
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
-	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/report/reportevents"
@@ -498,9 +498,8 @@ func (w *Workspace) ResolveQueryAndArgs(sqlString string) (string, error) {
 	var args *modconfig.QueryArgs
 	var err error
 
-	// only parse args for named query or named control invocation
+	// if this looks like a named query or named control invocation, parse the sql string for arguments
 	if isNamedQueryOrControl(sqlString) {
-		// in case of a named query call with params, parse the where clause
 		sqlString, args, err = parse.ParsePreparedStatementInvocation(sqlString)
 		if err != nil {
 			return "", err
@@ -511,27 +510,36 @@ func (w *Workspace) ResolveQueryAndArgs(sqlString string) (string, error) {
 }
 
 func (w *Workspace) ResolveQuery(sqlString string, args *modconfig.QueryArgs) (string, error) {
+	log.Printf("[TRACE] ResolveQuery %s args %s", sqlString, args)
 	// 1) check if this is a control
 	if control, ok := w.GetControl(sqlString); ok {
+		log.Printf("[TRACE] query string is a control: %s", control.FullName)
 
 		if args == nil || args.Empty() {
 			// set args to control args (which may also be nil!)
 			args = control.Args
+			log.Printf("[TRACE] using control args: %s", args)
 		} else {
 			// so command line args were provided
 			// check if the control supports them (it will NOT is it specifies a 'query' property)
 			if control.Query != nil {
 				return "nil", fmt.Errorf("%s defines a query property and so does not support command line arguments", control.FullName)
 			}
+			log.Printf("[TRACE] using command line args: %s", args)
 		}
 
-		// copy control SQL into arg and continue resolution
-		sqlString = typeHelpers.SafeString(control.SQL)
+		// copy control SQL into query and continue resolution
+		var err error
+		sqlString, err = w.ResolveControlQuery(control)
+		if err != nil {
+			return "", err
+		}
+		log.Printf("[TRACE] resolved control query: %s", sqlString)
 	}
 
 	// 2) is this a named query
 	if namedQuery, ok := w.GetQuery(sqlString); ok {
-		sql, err := namedQuery.GetExecuteSQL(args)
+		sql, err := modconfig.GetPreparedStatementExecuteSQL(namedQuery, args)
 		if err != nil {
 			return "", fmt.Errorf("ResolveQueryAndArgs failed for value %s: %v", sqlString, err)
 		}
@@ -558,6 +566,40 @@ func (w *Workspace) ResolveQuery(sqlString string, args *modconfig.QueryArgs) (s
 
 	// 5) just use the query string as is and assume it is valid SQL
 	return sqlString, nil
+}
+
+// ResolveControlQuery resolves the query for the given Control
+func (w *Workspace) ResolveControlQuery(control *modconfig.Control) (string, error) {
+	log.Printf("[TRACE] ResolveControlQuery for %s", control.FullName)
+
+	// verify we have either SQL or a Query defined
+	if control.SQL == nil && control.Query == nil {
+		// this should never happen as we should catch it in the parsing stage
+		return "", fmt.Errorf("%s must define either a 'sql' property or a 'query' property", control.FullName)
+	}
+
+	// set the source for the query - this will either be the control itself or any named query the control refers to
+	// either via its SQL property (passing a query name) or Query property (using a reference to a query object)
+	// default to using the 'Query' property
+	var source modconfig.PreparedStatementProvider = control.Query
+
+	// if the control has SQL set, use that
+	if control.SQL != nil {
+		log.Printf("[TRACE] control defines inline SQL")
+		// if the control SQL refers to a named query, this is the same as if the control 'Query' property is set
+		if namedQuery, ok := w.GetQuery(*control.SQL); ok {
+			// in this case, it is NOT valid for the control to define its own Param definitions
+			if control.Params != nil {
+				return "", fmt.Errorf("%s has an 'SQL' property which refers to %s, so it cannot define 'param' blocks", control.FullName, namedQuery.FullName)
+			}
+			source = namedQuery
+		} else {
+			// so the control sql is NOT a named query - set the source to be the control
+			source = control
+		}
+	}
+
+	return modconfig.GetPreparedStatementExecuteSQL(source, control.Args)
 }
 
 func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {

@@ -123,7 +123,7 @@ func init() {
 						Title:       toStringPointer("Q1"),
 						Description: toStringPointer("THIS IS QUERY 1"),
 						SQL:         toStringPointer("select 1"),
-						ParamsDefs: []*modconfig.ParamDef{
+						Params: []*modconfig.ParamDef{
 							{Name: "p1",
 								Description: utils.ToStringPointer("desc"),
 								Default:     utils.ToStringPointer("I am default"),
@@ -514,7 +514,6 @@ var testCasesLoadResourceNames = map[string]loadResourceNamesTest{
 		},
 	},
 }
-
 
 func TestLoadModResourceNames(t *testing.T) {
 	for name, test := range testCasesLoadResourceNames {

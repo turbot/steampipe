@@ -129,6 +129,12 @@ var ControlBlockSchema = &hcl.BodySchema{
 		{Name: "title"},
 		{Name: "args"},
 	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "param",
+			LabelNames: []string{"name"},
+		},
+	},
 }
 
 var QueryBlockSchema = &hcl.BodySchema{

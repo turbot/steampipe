@@ -93,8 +93,8 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 	// update the current running control in the Progress renderer
 	r.executionTree.progress.OnControlStart(control)
 
-	// resolve the query parameter of the control
-	query, err := r.executionTree.workspace.ResolveQuery(typehelpers.SafeString(control.SQL), control.Args)
+	// resolve the control query
+	query, err := r.executionTree.workspace.ResolveControlQuery(control)
 	if err != nil {
 		r.SetError(err)
 		return

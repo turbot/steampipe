@@ -200,7 +200,6 @@ func initialiseCheck() *checkInitData {
 	}
 
 	// load workspace
-
 	initData.workspace, err = loadWorkspacePromptingForVariables(ctx)
 	if err != nil {
 		if !utils.IsCancelledError(err) {
@@ -239,7 +238,7 @@ func initialiseCheck() *checkInitData {
 	}
 
 	// create the prepared statements
-	initData.result.Error = db_common.CreatePreparedStatements(ctx, initData.workspace.GetQueryMap(), initData.client)
+	initData.result.Error = db_common.CreatePreparedStatements(ctx, initData.workspace, initData.client)
 
 	return initData
 }

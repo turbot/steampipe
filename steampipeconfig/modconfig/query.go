@@ -15,18 +15,18 @@ import (
 
 // Query is a struct representing the Query resource
 type Query struct {
-	ShortName string
+	ShortName string `cty:"short_name"`
 	FullName  string `cty:"name"`
 
-	Description      *string            `cty:"description" hcl:"description" column:"description,text"`
-	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	SearchPath       *string            `cty:"search_path" hcl:"search_path" column:"search_path,text"`
-	SearchPathPrefix *string            `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
+	Description      *string            `cty:"description" column:"description,text"`
+	Documentation    *string            `cty:"documentation"  column:"documentation,text"`
+	SearchPath       *string            `cty:"search_path"column:"search_path,text"`
+	SearchPathPrefix *string            `cty:"search_path_prefix" column:"search_path_prefix,text"`
 	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
 	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
 	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
 
-	ParamsDefs []*ParamDef `hcl:"params,block"`
+	Params []*ParamDef `cty:"params"`
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
 
@@ -56,9 +56,9 @@ func (q *Query) String() string {
 `, q.FullName, types.SafeString(q.Title), types.SafeString(q.Description), types.SafeString(q.SQL))
 
 	// add param defs if there are any
-	if len(q.ParamsDefs) > 0 {
-		var paramDefsStr = make([]string, len(q.ParamsDefs))
-		for i, def := range q.ParamsDefs {
+	if len(q.Params) > 0 {
+		var paramDefsStr = make([]string, len(q.Params))
+		for i, def := range q.Params {
 			paramDefsStr[i] = def.String()
 		}
 		res += fmt.Sprintf("ParamDefs:\n\t%s\n  ", strings.Join(paramDefsStr, "\n\t"))
@@ -128,12 +128,12 @@ func (q *Query) AddReference(reference string) {
 	q.References = append(q.References, reference)
 }
 
-// GetExecuteSQL returns the SQL to run this query as a prepared statement
-func (q *Query) GetExecuteSQL(params *QueryArgs) (string, error) {
-	paramsString, err := q.ResolveParams(params)
-	if err != nil {
-		return "", err
-	}
-	executeString := fmt.Sprintf("execute %s%s", q.ShortName, paramsString)
-	return executeString, nil
+// GetParams implements PreparedStatementProvider
+func (q *Query) GetParams() []*ParamDef {
+	return q.Params
+}
+
+// PreparedStatementName implements PreparedStatementProvider
+func (q *Query) PreparedStatementName() string {
+	return preparedStatementName(q)
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/go-kit/helpers"
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
 	"github.com/turbot/steampipe/utils"
@@ -45,11 +44,10 @@ func decode(runCtx *RunContext, opts *ParseModOptions) hcl.Diagnostics {
 		}
 		// check name is valid
 		moreDiags := validateName(block)
-		if diags.HasErrors() {
+		if moreDiags.HasErrors() {
 			diags = append(diags, moreDiags...)
 			continue
 		}
-
 		switch block.Type {
 		case modconfig.BlockTypeLocals:
 			// special case decode logic for locals
@@ -250,8 +248,8 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 	}
 	for _, block := range content.Blocks {
 		if block.Type == "param" {
-			if paramDef, valDiags := decodeParamDef(block, runCtx, q.FullName); !diags.HasErrors() {
-				q.ParamsDefs = append(q.ParamsDefs, paramDef)
+			if param, valDiags := decodeParam(block, runCtx, q.FullName); !diags.HasErrors() {
+				q.Params = append(q.Params, param)
 			} else {
 				diags = append(diags, valDiags...)
 			}
@@ -272,7 +270,7 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 	return q, res
 }
 
-func decodeParamDef(block *hcl.Block, runCtx *RunContext, queryName string) (*modconfig.ParamDef, hcl.Diagnostics) {
+func decodeParam(block *hcl.Block, runCtx *RunContext, queryName string) (*modconfig.ParamDef, hcl.Diagnostics) {
 	def := modconfig.NewParamDef(block)
 
 	content, diags := block.Body.Content(ParamDefBlockSchema)
@@ -286,6 +284,7 @@ func decodeParamDef(block *hcl.Block, runCtx *RunContext, queryName string) (*mo
 		if diags.HasErrors() {
 			return nil, diags
 		}
+		// convert the raw default into a postgres representation
 		if valStr, err := ctyToPostgresString(v); err == nil {
 			def.Default = utils.ToStringPointer(valStr)
 		} else {
@@ -354,21 +353,8 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 	if attr, exists := content.Attributes["query"]; exists {
 		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Query)
 		diags = append(diags, valDiags...)
-		if !valDiags.HasErrors() {
-			// either Query or SQL property may be set - if SQL property already set, error
-			if typehelpers.SafeString(c.SQL) != "" {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", c.FullName),
-					Subject:  &attr.Range,
-				})
-			} else {
-				// set SQL to the query NAME
-				c.SQL = utils.ToStringPointer(c.Query.FullName)
-			}
-		}
-
 	}
+
 	if attr, exists := content.Attributes["tags"]; exists {
 		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Tags)
 		diags = append(diags, valDiags...)
@@ -383,9 +369,35 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 		}
 	}
 
+	for _, block := range content.Blocks {
+		if block.Type == "param" {
+			// param block cannot be set if a query property is set - it is only valid if inline SQL ids defined
+			if c.Query != nil {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  fmt.Sprintf("%s has 'query' property set so cannot define param blocks", c.FullName),
+					Subject:  &block.DefRange,
+				})
+			}
+			if paramDef, valDiags := decodeParam(block, runCtx, c.FullName); !diags.HasErrors() {
+				c.Params = append(c.Params, paramDef)
+			} else {
+				diags = append(diags, valDiags...)
+			}
+		}
+	}
+
+	// verify the control has either a query or a sql attribute
+	if c.Query == nil && c.SQL == nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s must define either a 'sql' property or a 'query' property", c.FullName),
+			Subject:  &block.DefRange,
+		})
+	}
+
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
-
 	// call post-decode hook
 	if res.Success() {
 		if diags := c.OnDecoded(block); diags.HasErrors() {
