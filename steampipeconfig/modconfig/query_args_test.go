@@ -15,7 +15,7 @@ type resolveParamsTest struct {
 var testCasesResolveParams = map[string]resolveParamsTest{
 	"positional params no defs": {
 		args: &QueryArgs{
-			ArgsList: []string{"val1", "val2"},
+			ArgsList: []string{"'val1'", "'val2'"},
 		},
 		paramDefs: nil,
 		expected:  "('val1','val2')",
@@ -23,8 +23,8 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	"named params no defs": {
 		args: &QueryArgs{
 			Args: map[string]string{
-				"p1": "val1",
-				"p2": "val2",
+				"p1": "'val1'",
+				"p2": "'val2'",
 			},
 		},
 		paramDefs: nil,
@@ -33,8 +33,8 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	"named params with defs": {
 		args: &QueryArgs{
 			Args: map[string]string{
-				"p1": "val1",
-				"p2": "val2",
+				"p1": "'val1'",
+				"p2": "'val2'",
 			},
 		},
 		paramDefs: []*ParamDef{
@@ -46,22 +46,22 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	"partial named params with defs and defaults": {
 		args: &QueryArgs{
 			Args: map[string]string{
-				"p1": "val1",
+				"p1": "'val1'",
 			},
 		},
 		paramDefs: []*ParamDef{
-			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
-			{Name: "p2", Default: utils.ToStringPointer("def_val2")},
+			{Name: "p1", Default: utils.ToStringPointer("'def_val1'")},
+			{Name: "p2", Default: utils.ToStringPointer("'def_val2'")},
 		},
 		expected: "('val1','def_val2')",
 	},
 	"partial positional params with defs and defaults": {
 		args: &QueryArgs{
-			ArgsList: []string{"val1"},
+			ArgsList: []string{"'val1'"},
 		},
 		paramDefs: []*ParamDef{
-			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
-			{Name: "p2", Default: utils.ToStringPointer("def_val2")},
+			{Name: "p1", Default: utils.ToStringPointer("'def_val1'")},
+			{Name: "p2", Default: utils.ToStringPointer("'def_val2'")},
 		},
 		expected: "('val1','def_val2')",
 	},
@@ -102,7 +102,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	},
 }
 
-func TestResolveParams(t *testing.T) {
+func TestResolveAsString(t *testing.T) {
 	for name, test := range testCasesResolveParams {
 		query := &Query{Params: test.paramDefs}
 		res, err := test.args.ResolveAsString(query)
