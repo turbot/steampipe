@@ -402,7 +402,6 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	}
 
 	status, err = local_db.StopDB(force, constants.InvokerService, spinner)
-
 	display.StopSpinner(spinner)
 	if err != nil {
 		utils.ShowError(err)
