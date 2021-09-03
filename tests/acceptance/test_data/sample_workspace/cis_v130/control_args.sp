@@ -2,9 +2,11 @@ benchmark "query_and_control_parameters_benchmark" {
   title         = "Benchmark to test the query and control parameter functionalities in steampipe"
   children = [
     control.query_params_with_defaults_and_no_args,
-    control.query_params_with_defaults_and_some_args,
+    control.query_params_with_defaults_and_some_named_args,
+    control.query_params_with_defaults_and_some_positional_args,
     control.query_params_with_no_defaults_and_no_args,
-    control.query_params_with_no_defaults_with_args,
+    control.query_params_with_no_defaults_with_named_args,
+    control.query_params_with_no_defaults_with_positional_args,
     control.query_params_array_with_default,
     control.query_params_map_with_default,
     control.query_params_invalid_arg_syntax
@@ -16,12 +18,18 @@ control "query_params_with_defaults_and_no_args" {
   query = query.query_params_with_all_defaults
 }
 
-control "query_params_with_defaults_and_some_args" {
-  title = "Control to test query param functionality with defaults(and some args passed in query)"
+control "query_params_with_defaults_and_some_named_args" {
+  title = "Control to test query param functionality with defaults(and some named args passed in query)"
   query = query.query_params_with_all_defaults
   args = {
-    "p2" = "command_parameter_2 "
+    "p2" = "command_parameter_2"
   }
+}
+
+control "query_params_with_defaults_and_some_positional_args" {
+  title = "Control to test query param functionality with defaults(and some positional args passed in query)"
+  query = query.query_params_with_all_defaults
+  args = [  "command_parameter_1" ]
 }
 
 control "query_params_with_no_defaults_and_no_args" {
@@ -29,14 +37,20 @@ control "query_params_with_no_defaults_and_no_args" {
   query = query.query_params_with_no_defaults
 }
 
-control "query_params_with_no_defaults_with_args" {
+control "query_params_with_no_defaults_with_named_args" {
   title = "Control to test query param functionality with no defaults(and args passed in query)"
   query = query.query_params_with_no_defaults
   args = {
-    "p1" = "command_parameter_1 "
-    "p2" = "command_parameter_2 "
+    "p1" = "command_parameter_1"
+    "p2" = "command_parameter_2"
     "p3" = "command_parameter_3"
   }
+}
+
+control "query_params_with_no_defaults_with_positional_args" {
+  title = "Control to test query param functionality with no defaults(and positional args passed in query)"
+  query = query.query_params_with_no_defaults
+  args = [  "command_parameter_1", "command_parameter_2","command_parameter_3" ]
 }
 
 control "query_params_array_with_default" {
@@ -57,8 +71,9 @@ control "query_params_invalid_arg_syntax" {
   }
 }
 
-control "control_args_array_with_no_defaults" {
-  title = "Control to test the control args functionality with no defaults(arguments passed)"
-  query = query.query_params_with_all_defaults
+control "query_inline_sql_from_control" {
+  title = "Control to test the inline sql functionality within a control"
+  sql = "select 'ok' as status, 'steampipe' as resource, concat($1::text, ' ', $2::text, ' ', $3::text) as reason"
+  
 }
 

@@ -1,13 +1,13 @@
 query "query_params_with_all_defaults"{
   description = "query 1 - 3 params all with defaults"
-  sql = "select 'ok' as status, 'steampipe' as resource, concat($1::text, $2::text, $3::text) as reason"
+  sql = "select 'ok' as status, 'steampipe' as resource, concat($1::text, ' ', $2::text, ' ', $3::text) as reason"
   param "p1"{
     description = "First parameter"
-    default = "default_parameter_1 "
+    default = "default_parameter_1"
   }
   param "p2"{
     description = "Second parameter"
-    default = "default_parameter_2 "
+    default = "default_parameter_2"
   }
   param "p3"{
     description = "Third parameter"
@@ -17,7 +17,7 @@ query "query_params_with_all_defaults"{
 
 query "query_params_with_no_defaults"{
   description = "query 1 - 3 params with no defaults"
-  sql = "select 'ok' as status, 'steampipe' as resource, concat($1::text, $2::text, $3::text) as reason"
+  sql = "select 'ok' as status, 'steampipe' as resource, concat($1::text, ' ', $2::text, ' ', $3::text) as reason"
   param "p1"{
     description = "First parameter"
   }

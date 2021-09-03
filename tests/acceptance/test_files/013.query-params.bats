@@ -13,9 +13,19 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$content" '"default_parameter_1 default_parameter_2 default_parameter_3"'
 }
 
-@test "query with default params and some params passed through CLI" {
+@test "query with default params and some positional params passed through CLI" {
   cd $WORKSPACE_DIR
-  run steampipe query "query.query_params_with_all_defaults(\"command_param_1 \")" --output json
+  run steampipe query "query.query_params_with_all_defaults(\"command_param_1\")" --output json
+
+  # store the reason field in `content`
+  content=$(echo $output | jq '.[].reason')
+
+  assert_equal "$content" '"command_param_1 default_parameter_2 default_parameter_3"'
+}
+
+@test "query with default params and some named params passed through CLI" {
+  cd $WORKSPACE_DIR
+  run steampipe query "query.query_params_with_all_defaults(p1 => \"command_param_1\")" --output json
 
   # store the reason field in `content`
   content=$(echo $output | jq '.[].reason')
@@ -33,7 +43,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "query with no default params and all params passed through CLI" {
   cd $WORKSPACE_DIR
-  run steampipe query "query.query_params_with_all_defaults(\"command_param_1 \",\"command_param_2 \",\"command_param_3\")" --output json
+  run steampipe query "query.query_params_with_all_defaults(\"command_param_1\",\"command_param_2\",\"command_param_3\")" --output json
 
   # store the reason field in `content`
   content=$(echo $output | jq '.[].reason')
@@ -41,14 +51,14 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$content" '"command_param_1 command_param_2 command_param_3"'
 }
 
-@test "query specific array index from param" {
-  cd $WORKSPACE_DIR
-  run steampipe query query.query_array_params_with_default --output json
+@test "query specific array index from param - DISABLED" {
+  # cd $WORKSPACE_DIR
+  # run steampipe query query.query_array_params_with_default --output json
 
-  # store the reason field in `content`
-  content=$(echo $output | jq '.[].reason')
+  # # store the reason field in `content`
+  # content=$(echo $output | jq '.[].reason')
 
-  assert_equal "$content" '"default_p1_element_02"'
+  # assert_equal "$content" '"default_p1_element_02"'
 }
 
 @test "query specific property from map param" {
@@ -82,14 +92,25 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f output.json
 }
 
-@test "control with default params and some args passed in control" {
+@test "control with default params and some named args passed in control" {
   cd $WORKSPACE_DIR
-  run steampipe check control.query_params_with_defaults_and_some_args --export=output.json
+  run steampipe check control.query_params_with_defaults_and_some_named_args --export=output.json
 
   # store the reason field in `content`
   content=$(cat output.json | jq '.controls[0].results[0].reason')
 
   assert_equal "$content" '"default_parameter_1 command_parameter_2 default_parameter_3"'
+  rm -f output.json
+}
+
+@test "control with default params and some positional args passed in control" {
+  cd $WORKSPACE_DIR
+  run steampipe check control.query_params_with_defaults_and_some_positional_args --export=output.json
+
+  # store the reason field in `content`
+  content=$(cat output.json | jq '.controls[0].results[0].reason')
+
+  assert_equal "$content" '"command_parameter_1 default_parameter_2 default_parameter_3"'
   rm -f output.json
 }
 
@@ -104,7 +125,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "control with no default params and all args passed in control" {
   cd $WORKSPACE_DIR
-  run steampipe check control.query_params_with_no_defaults_with_args --export=output.json
+  run steampipe check control.query_params_with_no_defaults_with_named_args --export=output.json
 
   # store the reason field in `content`
   content=$(cat output.json | jq '.controls[0].results[0].reason')
@@ -113,15 +134,15 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f output.json
 }
 
-@test "control to access specific array index from param" {
-  cd $WORKSPACE_DIR
-  run steampipe check control.query_params_array_with_default --export=output.json
+@test "control to access specific array index from param - DISABLED" {
+  # cd $WORKSPACE_DIR
+  # run steampipe check control.query_params_array_with_default --export=output.json
 
-  # store the reason field in `content`
-  content=$(cat output.json | jq '.controls[0].results[0].reason')
+  # # store the reason field in `content`
+  # content=$(cat output.json | jq '.controls[0].results[0].reason')
 
-  assert_equal "$content" '"default_p1_element_02"'
-  rm -f output.json
+  # assert_equal "$content" '"default_p1_element_02"'
+  # rm -f output.json
 }
 
 @test "control to access specific property from map" {
