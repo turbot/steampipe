@@ -166,10 +166,7 @@ func (q *Query) SetMetadata(metadata *ResourceMetadata) {
 }
 
 // OnDecoded implements HclResource
-func (q *Query) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	q.preparedStamementName = preparedStatementName(q)
-	return nil
-}
+func (q *Query) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
 func (q *Query) AddReference(reference string) {
@@ -183,5 +180,9 @@ func (q *Query) GetParams() []*ParamDef {
 
 // PreparedStatementName implements PreparedStatementProvider
 func (q *Query) PreparedStatementName() string {
+	// lazy load
+	if q.preparedStamementName == "" {
+		q.preparedStamementName = preparedStatementName(q)
+	}
 	return q.preparedStamementName
 }

@@ -220,12 +220,7 @@ func (c *Control) CtyValue() (cty.Value, error) {
 }
 
 // OnDecoded implements HclResource
-func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	if c.SQL != nil {
-		c.preparedStamementName = preparedStatementName(c)
-	}
-	return nil
-}
+func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
 func (c *Control) AddReference(reference string) {
@@ -249,5 +244,9 @@ func (c *Control) GetParams() []*ParamDef {
 
 // PreparedStatementName implements PreparedStatementProvider
 func (c *Control) PreparedStatementName() string {
+	// lazy load
+	if c.preparedStamementName == "" {
+		c.preparedStamementName = preparedStatementName(c)
+	}
 	return c.preparedStamementName
 }

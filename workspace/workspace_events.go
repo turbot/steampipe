@@ -24,12 +24,13 @@ func (w *Workspace) RegisterReportEventHandler(handler reportevents.ReportEventH
 func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsnotify.Event) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
-	// we build a list of diffs for panels and workspaces so store the old ones
-	// TODO - same for all resources??
+
+	// store prev resources so we can detect diffs
 	prevPanels := w.getPanelMap()
 	prevReports := w.getReportMap()
-
 	prevResourceMaps := w.GetResourceMaps()
+
+	// now reload the workspace
 	err := w.loadWorkspaceMod()
 	if err != nil {
 		// check the existing watcher error - if we are already in an error state, do not show error
