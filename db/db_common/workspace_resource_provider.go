@@ -8,7 +8,7 @@ import (
 // - provided to avoid db needing a reference to workspace
 type WorkspaceResourceProvider interface {
 	GetQueryMap() map[string]*modconfig.Query
-	GetQuery(queryName string) (*modconfig.Query, bool)
+	ResolveQueryAndArgs(arg string) (string, error)
 	GetControlMap() map[string]*modconfig.Control
 	GetControl(controlName string) (*modconfig.Control, bool)
 	SetupWatcher(client Client, onError func(err error)) error

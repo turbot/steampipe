@@ -1,6 +1,8 @@
 package workspace
 
 import (
+	"context"
+
 	"github.com/turbot/steampipe/db/db_common"
 
 	"github.com/fsnotify/fsnotify"
@@ -23,11 +25,12 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	// we build a list of diffs for panels and workspaces so store the old ones
-	// TODO - same for all resources??
+	// store prev resources so we can detect diffs
 	prevPanels := w.getPanelMap()
 	prevReports := w.getReportMap()
+	prevResourceMaps := w.GetResourceMaps()
 
+	// now reload the workspace
 	err := w.loadWorkspaceMod()
 	if err != nil {
 		// check the existing watcher error - if we are already in an error state, do not show error
@@ -43,10 +46,12 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 
 	// clear watcher error
 	w.watcherError = nil
-
-	// todo detect differences and only refresh if necessary
-	db_common.UpdateMetadataTables(w.GetResourceMaps(), client)
-
+	resourceMaps := w.GetResourceMaps()
+	// if resources have changed, update metadata tables and prepared statements
+	if !prevResourceMaps.Equals(resourceMaps) {
+		db_common.UpdateMetadataTables(resourceMaps, client)
+		db_common.UpdatePreparedStatements(context.Background(), resourceMaps, client)
+	}
 	w.raiseReportChangedEvents(w.getPanelMap(), prevPanels, w.getReportMap(), prevReports)
 }
 

@@ -33,3 +33,9 @@ func StringHash(s string) uint32 {
 	h.Write([]byte(s))
 	return h.Sum32()
 }
+
+func GetMD5Hash(text string) string {
+	hash := md5.Sum([]byte(text))
+	h := hex.EncodeToString(hash[:])
+	return h
+}

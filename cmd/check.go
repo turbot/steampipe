@@ -200,7 +200,6 @@ func initialiseCheck() *checkInitData {
 	}
 
 	// load workspace
-
 	initData.workspace, err = loadWorkspacePromptingForVariables(ctx)
 	if err != nil {
 		if !utils.IsCancelledError(err) {
@@ -232,7 +231,14 @@ func initialiseCheck() *checkInitData {
 	initData.result.AddWarnings(refreshResult.Warnings...)
 
 	// populate the reflection tables
-	initData.result.Error = db_common.CreateMetadataTables(ctx, initData.workspace.GetResourceMaps(), initData.client)
+	err = db_common.CreateMetadataTables(ctx, initData.workspace.GetResourceMaps(), initData.client)
+	if err != nil {
+		initData.result.Error = err
+		return initData
+	}
+
+	// create the prepared statements
+	initData.result.Error = db_common.CreatePreparedStatements(ctx, initData.workspace.GetResourceMaps(), initData.client)
 
 	return initData
 }

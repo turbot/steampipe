@@ -11,14 +11,17 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
+// the actual mod loading logic is tested more thoroughly in TestLoadMod (steampipeconfig/load_mod_test.go)
+// this test is primarily to verify the QueryMap building
 type loadWorkspaceTest struct {
 	source   string
 	expected interface{}
 }
 
 var toStringPointer = utils.ToStringPointer
+var m3alias = "m3"
 
-var m3alias, testCasesLoadWorkspace = "m3", map[string]loadWorkspaceTest{
+var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 	"single mod": {
 		source: "test_data/w_1",
 		expected: &Workspace{
@@ -90,8 +93,7 @@ var m3alias, testCasesLoadWorkspace = "m3", map[string]loadWorkspaceTest{
 			},
 		}},
 	},
-} // the actual mod loading logic is tested more thoroughly in TestLoadMod (steampipeconfig/load_mod_test.go)
-// this test is primarily to verify the QueryMap building
+}
 
 func TestLoadWorkspace(t *testing.T) {
 	for name, test := range testCasesLoadWorkspace {

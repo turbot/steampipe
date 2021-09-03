@@ -3,6 +3,7 @@ package workspace
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -129,6 +130,9 @@ func (w *Workspace) Close() {
 	}
 }
 
+// access functions
+// NOTE: all access functions lock 'loadLock' - this is to avoid conflicts with th efile watcher
+
 func (w *Workspace) GetQueryMap() map[string]*modconfig.Query {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
@@ -180,6 +184,8 @@ func (w *Workspace) GetChildControls() []*modconfig.Control {
 	return result
 }
 
+// GetResourceMaps returns all resource maps
+// NOTE: this function DOES NOT LOCK the load lock so should only be called in a context where the file watcher is not running
 func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 	workspaceMap := &modconfig.WorkspaceResourceMaps{
 		ModMap:       make(map[string]*modconfig.Mod),
@@ -331,7 +337,7 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 		res[longName] = q
 	}
 
-	// for mode dependencies, add queries keyed by long name only
+	// for mod dependencies, add queries keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
 			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.ShortName), q.ShortName)
@@ -470,4 +476,159 @@ func (w *Workspace) getReportMap() map[string]*modconfig.Report {
 		reports[p.Name()] = p
 	}
 	return reports
+}
+
+// GetQueriesFromArgs retrieves queries from args
+//
+// For each arg check if it is a named query or a file, before falling back to treating it as sql
+func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, error) {
+	utils.LogTime("execute.GetQueriesFromArgs start")
+	defer utils.LogTime("execute.GetQueriesFromArgs end")
+
+	var queries []string
+	for _, arg := range args {
+		query, err := w.ResolveQueryAndArgs(arg)
+		if err != nil {
+			return nil, err
+		}
+		if len(query) > 0 {
+			queries = append(queries, query)
+		}
+	}
+	return queries, nil
+}
+
+// ResolveQueryAndArgs attempts to resolve 'arg' to a query and query args
+func (w *Workspace) ResolveQueryAndArgs(sqlString string) (string, error) {
+	var args *modconfig.QueryArgs
+	var err error
+
+	// if this looks like a named query or named control invocation, parse the sql string for arguments
+	if isNamedQueryOrControl(sqlString) {
+		sqlString, args, err = parse.ParsePreparedStatementInvocation(sqlString)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return w.ResolveQuery(sqlString, args)
+}
+
+func (w *Workspace) ResolveQuery(sqlString string, args *modconfig.QueryArgs) (string, error) {
+	log.Printf("[TRACE] ResolveQuery %s args %s", sqlString, args)
+	// 1) check if this is a control
+	if control, ok := w.GetControl(sqlString); ok {
+		log.Printf("[TRACE] query string is a control: %s", control.FullName)
+
+		if args == nil || args.Empty() {
+			// set args to control args (which may also be nil!)
+			args = control.Args
+			log.Printf("[TRACE] using control args: %s", args)
+		} else {
+			// so command line args were provided
+			// check if the control supports them (it will NOT is it specifies a 'query' property)
+			if control.Query != nil {
+				return "nil", fmt.Errorf("%s defines a query property and so does not support command line arguments", control.FullName)
+			}
+			log.Printf("[TRACE] using command line args: %s", args)
+		}
+
+		// copy control SQL into query and continue resolution
+		var err error
+		sqlString, err = w.ResolveControlQuery(control)
+		if err != nil {
+			return "", err
+		}
+		log.Printf("[TRACE] resolved control query: %s", sqlString)
+	}
+
+	// 2) is this a named query
+	if namedQuery, ok := w.GetQuery(sqlString); ok {
+		sql, err := modconfig.GetPreparedStatementExecuteSQL(namedQuery, args)
+		if err != nil {
+			return "", fmt.Errorf("ResolveQueryAndArgs failed for value %s: %v", sqlString, err)
+		}
+		return sql, nil
+	}
+
+	// 	3) is this a file
+	fileQuery, fileExists, err := w.getQueryFromFile(sqlString)
+	if fileExists {
+		if err != nil {
+			return "", fmt.Errorf("ResolveQueryAndArgs failed: error opening file '%s': %v", sqlString, err)
+		}
+		if len(fileQuery) == 0 {
+			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", sqlString))
+			// (just return the empty string - it will be filtered above)
+		}
+		return fileQuery, nil
+	}
+
+	// 4) so we have not managed to resolve this - if it looks like a named query or control, return an error
+	if isNamedQueryOrControl(sqlString) {
+		return "", fmt.Errorf("'%s' not found in workspace", sqlString)
+	}
+
+	// 5) just use the query string as is and assume it is valid SQL
+	return sqlString, nil
+}
+
+// ResolveControlQuery resolves the query for the given Control
+func (w *Workspace) ResolveControlQuery(control *modconfig.Control) (string, error) {
+	log.Printf("[TRACE] ResolveControlQuery for %s", control.FullName)
+
+	// verify we have either SQL or a Query defined
+	if control.SQL == nil && control.Query == nil {
+		// this should never happen as we should catch it in the parsing stage
+		return "", fmt.Errorf("%s must define either a 'sql' property or a 'query' property", control.FullName)
+	}
+
+	// set the source for the query - this will either be the control itself or any named query the control refers to
+	// either via its SQL property (passing a query name) or Query property (using a reference to a query object)
+	// default to using the 'Query' property
+	var source modconfig.PreparedStatementProvider = control.Query
+
+	// if the control has SQL set, use that
+	if control.SQL != nil {
+		log.Printf("[TRACE] control defines inline SQL")
+		// if the control SQL refers to a named query, this is the same as if the control 'Query' property is set
+		if namedQuery, ok := w.GetQuery(*control.SQL); ok {
+			// in this case, it is NOT valid for the control to define its own Param definitions
+			if control.Params != nil {
+				return "", fmt.Errorf("%s has an 'SQL' property which refers to %s, so it cannot define 'param' blocks", control.FullName, namedQuery.FullName)
+			}
+			source = namedQuery
+		} else {
+			// so the control sql is NOT a named query - set the source to be the control
+			source = control
+		}
+	}
+
+	return modconfig.GetPreparedStatementExecuteSQL(source, control.Args)
+}
+
+func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
+	// get absolute filename
+	path, err := filepath.Abs(filename)
+	if err != nil {
+		return "", false, nil
+	}
+	// does it exist?
+	if _, err := os.Stat(path); err != nil {
+		// if this gives any error, return not exist. we may get a not found or a path too long for example
+		return "", false, nil
+	}
+
+	// read file
+	fileBytes, err := os.ReadFile(path)
+	if err != nil {
+		return "", true, err
+	}
+
+	return string(fileBytes), true, nil
+}
+
+// does this resource name look like a control or query
+func isNamedQueryOrControl(name string) bool {
+	return strings.HasPrefix(name, "query.") || strings.HasPrefix(name, "control.")
 }

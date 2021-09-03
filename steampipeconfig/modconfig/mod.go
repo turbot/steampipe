@@ -56,21 +56,6 @@ type Mod struct {
 	metadata *ResourceMetadata
 }
 
-func (m *Mod) ParseRequiredPluginVersions() error {
-	if m.Requires != nil {
-		requiredPluginVersions := m.Requires.Plugins
-
-		for _, v := range requiredPluginVersions {
-			err := v.parseProperties()
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-	return nil
-}
-
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	return &Mod{
 		ShortName:  shortName,
@@ -84,6 +69,139 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		ModPath:    modPath,
 		DeclRange:  defRange,
 	}
+}
+
+func (m *Mod) Equals(other *Mod) bool {
+	res := m.ShortName == other.ShortName &&
+		m.FullName == other.FullName &&
+		typehelpers.SafeString(m.Color) == typehelpers.SafeString(other.Color) &&
+		typehelpers.SafeString(m.Description) == typehelpers.SafeString(other.Description) &&
+		typehelpers.SafeString(m.Documentation) == typehelpers.SafeString(other.Documentation) &&
+		typehelpers.SafeString(m.Icon) == typehelpers.SafeString(other.Icon) &&
+		typehelpers.SafeString(m.Title) == typehelpers.SafeString(other.Title)
+	if !res {
+		return res
+	}
+	// categories
+	if m.Categories == nil {
+		if other.Categories != nil {
+			return false
+		}
+	} else {
+		// we have categories
+		if other.Categories == nil {
+			return false
+		}
+
+		if len(*m.Categories) != len(*other.Categories) {
+			return false
+		}
+		for i, c := range *m.Categories {
+			if (*other.Categories)[i] != c {
+				return false
+			}
+		}
+	}
+	// tags
+	if m.Tags == nil {
+		if other.Tags != nil {
+			return false
+		}
+	} else {
+		// we have tags
+		if other.Tags == nil {
+			return false
+		}
+		for k, v := range *m.Tags {
+			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
+				return false
+			}
+		}
+	}
+
+	// controls
+	for k := range m.Controls {
+		if _, ok := other.Controls[k]; !ok {
+			return false
+		}
+	}
+	for k := range m.Queries {
+		if _, ok := other.Queries[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.Queries {
+		if _, ok := m.Queries[k]; !ok {
+			return false
+		}
+	}
+	// queries
+	for k := range other.Controls {
+		if _, ok := m.Controls[k]; !ok {
+			return false
+		}
+	}
+	// benchmarks
+	for k := range m.Benchmarks {
+		if _, ok := other.Benchmarks[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.Benchmarks {
+		if _, ok := m.Benchmarks[k]; !ok {
+			return false
+		}
+	}
+	// reports
+	for k := range m.Reports {
+		if _, ok := other.Reports[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.Reports {
+		if _, ok := m.Reports[k]; !ok {
+			return false
+		}
+	}
+	// panels
+	for k := range m.Panels {
+		if _, ok := other.Panels[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.Panels {
+		if _, ok := m.Panels[k]; !ok {
+			return false
+		}
+	}
+	// variables
+	for k := range m.Variables {
+		if _, ok := other.Variables[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.Variables {
+		if _, ok := m.Variables[k]; !ok {
+			return false
+		}
+	}
+	return true
+
+}
+
+func (m *Mod) ParseRequiredPluginVersions() error {
+	if m.Requires != nil {
+		requiredPluginVersions := m.Requires.Plugins
+
+		for _, v := range requiredPluginVersions {
+			err := v.parseProperties()
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	return nil
 }
 
 // CreateDefaultMod creates a default mod created for a workspace with no mod definition
@@ -109,7 +227,6 @@ func (m *Mod) String() string {
 		queryNames = append(queryNames, name)
 	}
 	sort.Strings(queryNames)
-
 	var queryStrings []string
 	for _, name := range queryNames {
 		queryStrings = append(queryStrings, m.Queries[name].String())

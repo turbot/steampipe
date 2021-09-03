@@ -134,7 +134,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 	}
 
 	// do a partial decode
-	content, moreDiags := body.Content(parse.ConfigSchema)
+	content, moreDiags := body.Content(parse.ConfigBlockSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 		return plugin.DiagsToError("Failed to load config", diags)

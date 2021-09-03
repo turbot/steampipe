@@ -318,12 +318,15 @@ func (c *InteractiveClient) executor(line string) {
 	c.afterClose = AfterPromptCloseRestart
 
 	line = strings.TrimSpace(line)
+	// store the history (the raw line which was entered)
+	// we want to store even if we fail to resolve a query
+	c.interactiveQueryHistory.Put(line)
+
 	query, err := c.getQuery(line)
 	if query == "" {
 		if err != nil {
-			// if there was an error other than cancellation, quit
 			if !utils.IsCancelledError(err) {
-				c.afterClose = AfterPromptCloseExit
+				utils.ShowError(err)
 			}
 			// restart the prompt
 			c.restartInteractiveSession()
@@ -351,20 +354,17 @@ func (c *InteractiveClient) executor(line string) {
 		}
 	}
 
-	// store the history (the raw line which was entered)
-	c.interactiveQueryHistory.Put(line)
 	// restart the prompt
 	c.restartInteractiveSession()
 }
 
 func (c *InteractiveClient) getQuery(line string) (string, error) {
-
 	// if it's an empty line, then we don't need to do anything
 	if line == "" {
 		return "", nil
 	}
 
-	// wait fore initialisation to complete so we can acces the workspace
+	// wait fore initialisation to complete so we can access the workspace
 	if !c.isInitialised() {
 		// create a context used purely to detect cancellation during initialisation
 		// this will also set c.cancelActiveQuery
@@ -392,26 +392,19 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 	c.interactiveBuffer = append(c.interactiveBuffer, line)
 
 	// expand the buffer out into 'query'
-	query := strings.Join(c.interactiveBuffer, "\n")
+	queryString := strings.Join(c.interactiveBuffer, "\n")
 
-	namedQuery, isNamedQuery := c.workspace().GetQuery(query)
+	// in case of a named query call with params, parse the where clause
+	query, err := c.workspace().ResolveQueryAndArgs(queryString)
+	if err != nil {
+		return "", err
+	}
+	isNamedQuery := query != queryString
 
 	// if it is a multiline query, execute even without `;`
-	if isNamedQuery {
-		query = *namedQuery.SQL
-	} else {
+	if !isNamedQuery {
 		// should we execute?
-		if !c.shouldExecute(query) {
-			return "", nil
-		}
-	}
-
-	control, isControl := c.workspace().GetControl(query)
-	if isControl {
-		query = *control.SQL
-	} else {
-		// should we execute?
-		if !c.shouldExecute(query) {
+		if !c.shouldExecute(queryString) {
 			return "", nil
 		}
 	}

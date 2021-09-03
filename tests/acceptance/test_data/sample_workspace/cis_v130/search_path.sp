@@ -43,7 +43,7 @@ control "search_path_test_5" {
   title         = "Control to test search path functionality when entered through control"
   description   = "Control to test search path functionality when entered through control."
   sql           = query.search_path_2.sql
-  search_path   = "a,b,c"
+  search_path   = "chaos,b,c"
   severity      = "high"
 }
 

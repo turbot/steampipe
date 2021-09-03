@@ -5,34 +5,78 @@ import (
 	"io/ioutil"
 	"log"
 	"path/filepath"
-
-	"github.com/zclconf/go-cty/cty"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-
 	"github.com/turbot/go-kit/types"
-
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // Query is a struct representing the Query resource
 type Query struct {
-	ShortName string
+	ShortName string `cty:"short_name"`
 	FullName  string `cty:"name"`
 
-	Description      *string            `cty:"description" hcl:"description" column:"description,text"`
-	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
+	Description      *string            `cty:"description" column:"description,text"`
+	Documentation    *string            `cty:"documentation"  column:"documentation,text"`
+	SearchPath       *string            `cty:"search_path"column:"search_path,text"`
+	SearchPathPrefix *string            `cty:"search_path_prefix" column:"search_path_prefix,text"`
 	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
-	SearchPath       *string            `cty:"search_path" hcl:"search_path" column:"search_path,text"`
-	SearchPathPrefix *string            `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
+	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
 	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
 
+	Params []*ParamDef `cty:"params"`
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
 
-	DeclRange hcl.Range
-	metadata  *ResourceMetadata
+	DeclRange             hcl.Range
+	metadata              *ResourceMetadata
+	preparedStamementName string
+}
+
+func (q *Query) Equals(other *Query) bool {
+	res := q.ShortName == other.ShortName &&
+		q.FullName == other.FullName &&
+		typehelpers.SafeString(q.Description) == typehelpers.SafeString(other.Description) &&
+		typehelpers.SafeString(q.Documentation) == typehelpers.SafeString(other.Documentation) &&
+		typehelpers.SafeString(q.SearchPath) == typehelpers.SafeString(other.SearchPath) &&
+		typehelpers.SafeString(q.SearchPathPrefix) == typehelpers.SafeString(other.SearchPathPrefix) &&
+		typehelpers.SafeString(q.SQL) == typehelpers.SafeString(other.SQL) &&
+		typehelpers.SafeString(q.Title) == typehelpers.SafeString(other.Title)
+	if !res {
+		return res
+	}
+
+	// tags
+	if q.Tags == nil {
+		if other.Tags != nil {
+			return false
+		}
+	} else {
+		// we have tags
+		if other.Tags == nil {
+			return false
+		}
+		for k, v := range *q.Tags {
+			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
+				return false
+			}
+		}
+	}
+
+	// params
+	if len(q.Params) != len(other.Params) {
+		return false
+	}
+	for i, p := range q.Params {
+		if !p.Equals(other.Params[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func NewQuery(block *hcl.Block) *Query {
@@ -48,13 +92,23 @@ func (q *Query) CtyValue() (cty.Value, error) {
 }
 
 func (q *Query) String() string {
-	return fmt.Sprintf(`
+	res := fmt.Sprintf(`
   -----
   Name: %s
   Title: %s
   Description: %s
   SQL: %s
 `, q.FullName, types.SafeString(q.Title), types.SafeString(q.Description), types.SafeString(q.SQL))
+
+	// add param defs if there are any
+	if len(q.Params) > 0 {
+		var paramDefsStr = make([]string, len(q.Params))
+		for i, def := range q.Params {
+			paramDefsStr[i] = def.String()
+		}
+		res += fmt.Sprintf("ParamDefs:\n\t%s\n  ", strings.Join(paramDefsStr, "\n\t"))
+	}
+	return res
 }
 
 // QueryFromFile :: factory function
@@ -117,4 +171,18 @@ func (q *Query) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 // AddReference implements HclResource
 func (q *Query) AddReference(reference string) {
 	q.References = append(q.References, reference)
+}
+
+// GetParams implements PreparedStatementProvider
+func (q *Query) GetParams() []*ParamDef {
+	return q.Params
+}
+
+// PreparedStatementName implements PreparedStatementProvider
+func (q *Query) PreparedStatementName() string {
+	// lazy load
+	if q.preparedStamementName == "" {
+		q.preparedStamementName = preparedStatementName(q)
+	}
+	return q.preparedStamementName
 }

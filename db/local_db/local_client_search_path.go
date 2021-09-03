@@ -45,11 +45,6 @@ func (c *LocalClient) SetClientSearchPath() error {
 	searchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 
-	// HACK reopen db client so we take into account recent changes to service search path
-	if err := c.refreshDbClient(); err != nil {
-		return err
-	}
-
 	// if a search path was passed, add 'internal' to the end
 	if len(searchPath) > 0 {
 		// add 'internal' schema as last schema in the search path
@@ -57,7 +52,10 @@ func (c *LocalClient) SetClientSearchPath() error {
 	} else {
 		// so no search path was set in config
 		// in this case we need to load the existing service search path
-		searchPath, _ = c.GetCurrentSearchPath()
+		var err error
+		if searchPath, err = getCurrentSearchPath(); err != nil {
+			return err
+		}
 	}
 
 	// add in the prefix if present
@@ -71,11 +69,22 @@ func (c *LocalClient) SetClientSearchPath() error {
 
 	// now construct and execute the query
 	q := fmt.Sprintf("set search_path to %s", strings.Join(searchPath, ","))
-	_, err := c.ExecuteSync(context.Background(), q, false)
+	_, err := c.ExecuteSync(context.Background(), q, true)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func getCurrentSearchPath() ([]string, error) {
+	// NOTE: create a new client to do this so we respond to any recent changes in service search path
+	// (as the service search path may have changed  after creating client 'c', e.g. if connections have changed)
+	c, err := NewLocalClient(constants.InvokerService)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+	return c.GetCurrentSearchPath()
 }
 
 // SetServiceSearchPath sets the search path for the db service (by setting it on the steampipe user)
@@ -104,7 +113,7 @@ func (c *LocalClient) SetServiceSearchPath() error {
 		constants.DatabaseUser,
 		strings.Join(searchPath, ","),
 	)
-	_, err := c.ExecuteSync(context.Background(), query, false)
+	_, err := c.ExecuteSync(context.Background(), query, true)
 	return err
 }
 

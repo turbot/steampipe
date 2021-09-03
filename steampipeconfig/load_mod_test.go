@@ -109,6 +109,96 @@ func init() {
 				},
 			},
 		},
+		"query_with_paramdefs": {
+			source: "test_data/mods/query_with_paramdefs",
+			expected: &modconfig.Mod{
+				ShortName:   "m1",
+				FullName:    "mod.m1",
+				Title:       toStringPointer("M1"),
+				Description: toStringPointer("THIS IS M1"),
+				Queries: map[string]*modconfig.Query{
+					"q1": {
+						ShortName:   "q1",
+						FullName:    "query.q1",
+						Title:       toStringPointer("Q1"),
+						Description: toStringPointer("THIS IS QUERY 1"),
+						SQL:         toStringPointer("select 1"),
+						Params: []*modconfig.ParamDef{
+							{Name: "p1",
+								Description: utils.ToStringPointer("desc"),
+								Default:     utils.ToStringPointer("I am default"),
+							},
+							{Name: "p2",
+								Description: utils.ToStringPointer("desc 2"),
+								Default:     utils.ToStringPointer("I am default 2"),
+							},
+						},
+					},
+				},
+			},
+		},
+		"query_with_paramdefs_control_with_positional_params": {
+			source: "test_data/mods/query_with_paramdefs_control_with_positional_params",
+			expected: `Name: mod.m1
+Title: M1
+Description: THIS IS M1 
+Version: 
+Queries: 
+
+  -----
+  Name: query.q1
+  Title: Q1
+  Description: THIS IS QUERY 1
+  SQL: select 1
+ParamDefs:
+	Name: p1, Description: desc, Default: I am default
+	Name: p2, Description: desc 2, Default: I am default 2
+  
+Controls: 
+
+  -----
+  Name: control.c1
+  Title: C1
+  Description: THIS IS CONTROL 1
+  SQL: select 'ok' as status, 'foo' as resource, 'bar' as reason
+  Parents: mod.m1
+ParamsList:
+	0: val1
+	1: val2
+Benchmarks: 
+`,
+		},
+		"query_with_paramdefs_control_with_named_params": {
+			source: "test_data/mods/query_with_paramdefs_control_with_named_params",
+			expected: `Name: mod.m1
+Title: M1
+Description: THIS IS M1 
+Version: 
+Queries: 
+
+  -----
+  Name: query.q1
+  Title: Q1
+  Description: THIS IS QUERY 1
+  SQL: select 1
+ParamDefs:
+	Name: p1, Description: desc, Default: I am default
+	Name: p2, Description: desc 2, Default: I am default 2
+  
+Controls: 
+
+  -----
+  Name: control.c1
+  Title: C1
+  Description: THIS IS CONTROL 1
+  SQL: select 'ok' as status, 'foo' as resource, 'bar' as reason
+  Parents: mod.m1
+Params:
+	p1 = val1
+	p2 = val2
+Benchmarks: 
+`,
+		},
 		"single_mod_one_query_one_control": {
 			source: "test_data/mods/single_mod_one_query_one_control",
 			expected: `Name: mod.m1
@@ -271,18 +361,17 @@ Benchmarks:
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
 				Queries: map[string]*modconfig.Query{
-					"q2": {
-						ShortName: "q2",
-						FullName:  "query.q2",
-						SQL:       toStringPointer("select 2"),
-					},
-					// TODO investigate why pseudo resources have no "query." at start of key
 					"query.q1": {
 						ShortName:   "q1",
 						FullName:    "query.q1",
 						Title:       toStringPointer("Q1"),
 						Description: toStringPointer("THIS IS QUERY 1"),
 						SQL:         toStringPointer("select 1"),
+					},
+					"query.q2": {
+						ShortName: "q2",
+						FullName:  "query.q2",
+						SQL:       toStringPointer("select 2"),
 					},
 				},
 			},
@@ -425,7 +514,6 @@ var testCasesLoadResourceNames = map[string]loadResourceNamesTest{
 		},
 	},
 }
-
 
 func TestLoadModResourceNames(t *testing.T) {
 	for name, test := range testCasesLoadResourceNames {

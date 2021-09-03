@@ -5,33 +5,41 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zclconf/go-cty/cty"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // Control is a struct representing the Control resource
 type Control struct {
 	ShortName        string
 	FullName         string             `cty:"name"`
-	Description      *string            `cty:"description" hcl:"description" column:"description,text"`
-	Documentation    *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	SearchPath       *string            `cty:"search_path" hcl:"search_path" column:"search_path,text"`
-	SearchPathPrefix *string            `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
-	Severity         *string            `cty:"severity" hcl:"severity" column:"severity,text"`
-	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
-	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
-	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
+	Description      *string            `cty:"description" column:"description,text"`
+	Documentation    *string            `cty:"documentation"  column:"documentation,text"`
+	SearchPath       *string            `cty:"search_path"  column:"search_path,text"`
+	SearchPathPrefix *string            `cty:"search_path_prefix"  column:"search_path_prefix,text"`
+	Severity         *string            `cty:"severity"  column:"severity,text"`
+	SQL              *string            `cty:"sql"  column:"sql,text"`
+	Tags             *map[string]string `cty:"tags"  column:"tags,jsonb"`
+	Title            *string            `cty:"title"  column:"title,text"`
+	Query            *Query
+	// args
+	// arguments may be specified by either a map of named args or as a list of positional args
+	// we apply special decode logic to convert the params block into a QueryArgs object
+	// with either an args map or list assigned
+	// TODO CTY and REFLECTION TABLES?
+	Args   *QueryArgs
+	Params []*ParamDef
 
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
 
 	DeclRange hcl.Range
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents               []ModTreeItem
+	metadata              *ResourceMetadata
+	preparedStamementName string
 }
 
 func NewControl(block *hcl.Block) *Control {
@@ -39,14 +47,88 @@ func NewControl(block *hcl.Block) *Control {
 		ShortName: block.Labels[0],
 		FullName:  fmt.Sprintf("control.%s", block.Labels[0]),
 		DeclRange: block.DefRange,
+		Args:      NewQueryArgs(),
 	}
 	return control
+}
+
+func (c *Control) Equals(other *Control) bool {
+	res := c.ShortName == other.ShortName &&
+		c.FullName == other.FullName &&
+		typehelpers.SafeString(c.Description) == typehelpers.SafeString(other.Description) &&
+		typehelpers.SafeString(c.Documentation) == typehelpers.SafeString(other.Documentation) &&
+		typehelpers.SafeString(c.SearchPath) == typehelpers.SafeString(other.SearchPath) &&
+		typehelpers.SafeString(c.SearchPathPrefix) == typehelpers.SafeString(other.SearchPathPrefix) &&
+		typehelpers.SafeString(c.Severity) == typehelpers.SafeString(other.Severity) &&
+		typehelpers.SafeString(c.SQL) == typehelpers.SafeString(other.SQL) &&
+		typehelpers.SafeString(c.Title) == typehelpers.SafeString(other.Title)
+	if !res {
+		return res
+	}
+	// tags
+	if c.Tags == nil {
+		if other.Tags != nil {
+			return false
+		}
+	} else {
+		// we have tags
+		if other.Tags == nil {
+			return false
+		}
+		for k, v := range *c.Tags {
+			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
+				return false
+			}
+		}
+	}
+
+	// args
+	if c.Args == nil {
+		if other.Args != nil {
+			return false
+		}
+	} else {
+		// we have args
+		if other.Args == nil {
+			return false
+		}
+		if !c.Args.Equals(other.Args) {
+			return false
+		}
+	}
+
+	// query
+	if c.Query == nil {
+		if other.Query != nil {
+			return false
+		}
+	} else {
+		// we have a query
+		if other.Query == nil {
+			return false
+		}
+		if !c.Query.Equals(other.Query) {
+			return false
+		}
+	}
+
+	// params
+	if len(c.Params) != len(other.Params) {
+		return false
+	}
+	for i, p := range c.Params {
+		if !p.Equals(other.Params[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (c *Control) String() string {
 	// build list of parents's names
 	parents := c.GetParentNames()
-	return fmt.Sprintf(`
+	res := fmt.Sprintf(`
   -----
   Name: %s
   Title: %s
@@ -59,6 +141,8 @@ func (c *Control) String() string {
 		types.SafeString(c.Description),
 		types.SafeString(c.SQL),
 		strings.Join(parents, "\n    "))
+
+	return res
 }
 
 func (c *Control) GetParentNames() []string {
@@ -151,4 +235,18 @@ func (c *Control) GetMetadata() *ResourceMetadata {
 // SetMetadata implements ResourceWithMetadata
 func (c *Control) SetMetadata(metadata *ResourceMetadata) {
 	c.metadata = metadata
+}
+
+// GetParams implements PreparedStatementProvider
+func (c *Control) GetParams() []*ParamDef {
+	return c.Params
+}
+
+// PreparedStatementName implements PreparedStatementProvider
+func (c *Control) PreparedStatementName() string {
+	// lazy load
+	if c.preparedStamementName == "" {
+		c.preparedStamementName = preparedStatementName(c)
+	}
+	return c.preparedStamementName
 }

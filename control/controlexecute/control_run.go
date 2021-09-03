@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/viper"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/query/queryexecute"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -94,8 +93,12 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 	// update the current running control in the Progress renderer
 	r.executionTree.progress.OnControlStart(control)
 
-	// resolve the query parameter of the control
-	query, _ := queryexecute.GetQueryFromArg(typehelpers.SafeString(control.SQL), r.executionTree.workspace)
+	// resolve the control query
+	query, err := r.executionTree.workspace.ResolveControlQuery(control)
+	if err != nil {
+		r.SetError(err)
+		return
+	}
 	if query == "" {
 		r.SetError(fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typehelpers.SafeString(control.SQL)))
 		return

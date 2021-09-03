@@ -5,7 +5,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-var ConfigSchema = &hcl.BodySchema{
+var ConfigBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
@@ -19,7 +19,7 @@ var ConfigSchema = &hcl.BodySchema{
 	},
 }
 
-var ConnectionSchema = &hcl.BodySchema{
+var ConnectionBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name:     "plugin",
@@ -40,8 +40,8 @@ var ConnectionSchema = &hcl.BodySchema{
 	},
 }
 
-// ModFileSchema :: top level schema for all mod resources
-var ModFileSchema = &hcl.BodySchema{
+// ModBlockSchema :: top level schema for all mod resources
+var ModBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
@@ -78,7 +78,7 @@ var ModFileSchema = &hcl.BodySchema{
 	},
 }
 
-var PanelSchema = &hcl.BodySchema{
+var PanelBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "title"},
 		{Name: "text"},
@@ -100,7 +100,7 @@ var PanelSchema = &hcl.BodySchema{
 	},
 }
 
-var ReportSchema = &hcl.BodySchema{
+var ReportBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "title"},
 	},
@@ -113,5 +113,50 @@ var ReportSchema = &hcl.BodySchema{
 			Type:       "report",
 			LabelNames: []string{"type"},
 		},
+	},
+}
+
+var ControlBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "description"},
+		{Name: "documentation"},
+		{Name: "search_path"},
+		{Name: "search_path_prefix"},
+		{Name: "severity"},
+		{Name: "sql"},
+		{Name: "query"},
+		{Name: "tags"},
+		{Name: "title"},
+		{Name: "args"},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "param",
+			LabelNames: []string{"name"},
+		},
+	},
+}
+
+var QueryBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "description"},
+		{Name: "documentation"},
+		{Name: "search_path"},
+		{Name: "search_path_prefix"},
+		{Name: "sql"},
+		{Name: "tags"},
+		{Name: "title"},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "param",
+			LabelNames: []string{"name"},
+		},
+	},
+}
+var ParamDefBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "description"},
+		{Name: "default"},
 	},
 }

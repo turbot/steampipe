@@ -45,3 +45,10 @@ type ResourceWithMetadata interface {
 	GetMetadata() *ResourceMetadata
 	SetMetadata(metadata *ResourceMetadata)
 }
+
+// PreparedStatementProvider must be implenented by resources which supports prepared statements, i.e. Control and Query
+type PreparedStatementProvider interface {
+	Name() string
+	GetParams() []*ParamDef
+	PreparedStatementName() string
+}
