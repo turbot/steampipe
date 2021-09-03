@@ -28,7 +28,8 @@ func CreatePreparedStatements(ctx context.Context, queryMap map[string]*modconfi
 		// execute the query, passing 'true' to disable the spinner
 		_, err := client.ExecuteSync(ctx, sql, true)
 		if err != nil {
-			return fmt.Errorf("failed to create prepared statements table %s: %v", name, err)
+			log.Printf("[TRACE] failed to create prepared statement for %s: %v", name, err)
+			return fmt.Errorf("failed to create prepared statement for %s: %v", name, err)
 		}
 	}
 
@@ -48,7 +49,8 @@ func CreatePreparedStatements(ctx context.Context, queryMap map[string]*modconfi
 		// execute the query, passing 'true' to disable the spinner
 		_, err := client.ExecuteSync(ctx, sql, true)
 		if err != nil {
-			return fmt.Errorf("failed to create prepared statements table %s: %v", name, err)
+			log.Printf("[TRACE] failed to create prepared statement for %s: %v", name, err)
+			return fmt.Errorf("failed to create prepared statements for %s: %v", name, err)
 		}
 	}
 
@@ -69,7 +71,7 @@ func UpdatePreparedStatements(ctx context.Context, queryMap map[string]*modconfi
 		if !strings.HasPrefix(name, "query.") {
 			continue
 		}
-		sql = append(sql, fmt.Sprintf("DEALLOCATE %s ", query.PreparedStatementName()))
+		sql = append(sql, fmt.Sprintf("DEALLOCATE %s;", query.PreparedStatementName()))
 	}
 
 	for name, control := range controlMap {
@@ -81,11 +83,16 @@ func UpdatePreparedStatements(ctx context.Context, queryMap map[string]*modconfi
 		if control.Query != nil {
 			continue
 		}
-		sql = append(sql, fmt.Sprintf("DEALLOCATE %s ", control.PreparedStatementName()))
+		sql = append(sql, fmt.Sprintf("DEALLOCATE %s;", control.PreparedStatementName()))
 	}
 	// execute the query, passing 'true' to disable the spinner
 	// ignore errors
-	client.ExecuteSync(ctx, strings.Join(sql, "\n"), true)
+	s := strings.Join(sql, "\n")
+	_, err := client.ExecuteSync(ctx, s, true)
+	if err != nil {
+		log.Printf("[TRACE] failed to update prepared statements - deallocate returned error %v", err)
+		return err
+	}
 
 	// now recreate them
 	return CreatePreparedStatements(ctx, queryMap, controlMap, client)
