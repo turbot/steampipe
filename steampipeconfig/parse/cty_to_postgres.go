@@ -32,7 +32,6 @@ func ctyObjectToMapOfPgStrings(val cty.Value) (map[string]string, error) {
 }
 
 // convert a cty value into a postgres representation of the value
-// NOTE: all non-primitives are converted to JSONB
 func ctyToPostgresString(v cty.Value) (valStr string, err error) {
 	ty := v.Type()
 	switch {
