@@ -178,6 +178,17 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f output.json
 }
 
+@test "control with inline sql with positional args passed in control" {
+  cd $WORKSPACE_DIR
+  run steampipe check control.query_inline_sql_from_control_with_positional_args --export=output.json
+
+  # store the reason field in `content`
+  content=$(cat output.json | jq '.controls[0].results[0].reason')
+
+  assert_equal "$content" '"command_parameter_1 command_parameter_2 default_parameter_3"'
+  rm -f output.json
+}
+
 @test "control with inline sql with no args passed in control" {
   cd $WORKSPACE_DIR
   run steampipe check control.query_inline_sql_from_control_with_no_args --export=output.json
