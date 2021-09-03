@@ -17,6 +17,9 @@ type QueryArgs struct {
 }
 
 func (q *QueryArgs) String() string {
+	if q == nil {
+		return "Nil"
+	}
 	if len(q.ArgsList) > 0 {
 		return fmt.Sprintf("Args list: %s", strings.Join(q.ArgsList, ","))
 	}

@@ -114,17 +114,6 @@ func (c *LocalClient) LoadSchema() {
 	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
 }
 
-// close and reopen db client
-func (c *LocalClient) refreshDbClient() error {
-	c.dbClient.Close()
-	db, err := createSteampipeDbClient()
-	if err != nil {
-		return err
-	}
-	c.dbClient = db
-	return nil
-}
-
 func createSteampipeDbClient() (*sql.DB, error) {
 	utils.LogTime("db.createSteampipeDbClient start")
 	defer utils.LogTime("db.createSteampipeDbClient end")
