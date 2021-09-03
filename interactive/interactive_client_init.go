@@ -61,7 +61,8 @@ func (c *InteractiveClient) waitForInitData(ctx context.Context) error {
 			return ctx.Err()
 		case <-ticker.C:
 			if c.isInitialised() {
-				return nil
+				// if there was an error in initialisation, return it
+				return c.initData.Result.Error
 			}
 		case <-time.After(initTimeout):
 			return fmt.Errorf("timed out waiting for initialisation to complete")

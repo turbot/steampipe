@@ -1,29 +1,9 @@
-query "expired_access_keys" {
+query "bad_query" {
     sql = <<-EOT
-
-    select
-      akas ->> 0 as resource,
-      case
-          when create_date > NOW() - ($1 || ' days')::interval then 'ok'
-          else 'alarm'
-      end as status,
-      access_key_id || 'for user ' || user_name || ' is ' || age(create_date) || ' old.' as reason,
-      region,
-      account_id
-    from
-      aws_iam_access_key
+    this is invalid
 
   EOT
-    param "max_days" {
-        description = "The maximum number of days a key is allowed to exist after it is created."
-        default     = 90
-    }
-}
-
-control "expired_access_keys" {
-    title       = "Expired IAM Access Keys"
-    query       = query.expired_access_keys
-    args        = {
-        "max_days"   = 365
+    param "tag_keys" {
+        default     = "true"
     }
 }
