@@ -13,6 +13,7 @@ export LIB_BATS_SUPPORT=$MY_PATH/lib/bats-support
 export TEST_DATA_DIR=$MY_PATH/test_data/templates
 export SRC_DATA_DIR=$MY_PATH/test_data/source_files
 export WORKSPACE_DIR=$MY_PATH/test_data/sample_workspace
+export BAD_TEST_MOD_DIR=$MY_PATH/test_data/bad_test_mod
 
 # Must have these commands for the test suite to run
 declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch")
