@@ -9,7 +9,9 @@ benchmark "query_and_control_parameters_benchmark" {
     control.query_params_with_no_defaults_with_positional_args,
     control.query_params_array_with_default,
     control.query_params_map_with_default,
-    control.query_params_invalid_arg_syntax
+    control.query_params_invalid_arg_syntax,
+    control.query_inline_sql_from_control_with_named_args,
+    control.query_inline_sql_from_control_with_no_args
   ]
 }
 
@@ -71,9 +73,40 @@ control "query_params_invalid_arg_syntax" {
   }
 }
 
-control "query_inline_sql_from_control" {
+control "query_inline_sql_from_control_with_named_args" {
   title = "Control to test the inline sql functionality within a control"
   sql = "select 'ok' as status, 'steampipe' as resource, concat($1::text, ' ', $2::text, ' ', $3::text) as reason"
-  
-}
+  param "p1"{
+        description = "p1"
+        default = "default_parameter_1"
+    }
+    param "p2"{
+        description = "p2"
+        default = "default_parameter_2"
+    }
+    param "p3"{
+        description = "p3"
+        default = "default_parameter_3"
+    }
+    args = {
+        "p1" = "command_parameter_1"
+        "p3" = "command_parameter_3"
+    }
+  }
 
+control "query_inline_sql_from_control_with_no_args" {
+  title = "Control to test the inline sql functionality within a control"
+  sql = "select 'ok' as status, 'steampipe' as resource, concat($1::text, ' ', $2::text, ' ', $3::text) as reason"
+  param "p1"{
+        description = "p1"
+        default = "default_parameter_1"
+    }
+    param "p2"{
+        description = "p2"
+        default = "default_parameter_2"
+    }
+    param "p3"{
+        description = "p3"
+        default = "default_parameter_3"
+    }
+  }

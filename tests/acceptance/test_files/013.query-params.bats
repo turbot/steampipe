@@ -166,3 +166,25 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # should return an error `invalid input syntax for type json`, so the results should be empty
   assert_equal "$content" ""
 }
+
+@test "control with inline sql with named args passed in control" {
+  cd $WORKSPACE_DIR
+  run steampipe check control.query_inline_sql_from_control_with_named_args --export=output.json
+
+  # store the reason field in `content`
+  content=$(cat output.json | jq '.controls[0].results[0].reason')
+
+  assert_equal "$content" '"command_parameter_1 default_parameter_2 command_parameter_3"'
+  rm -f output.json
+}
+
+@test "control with inline sql with no args passed in control" {
+  cd $WORKSPACE_DIR
+  run steampipe check control.query_inline_sql_from_control_with_no_args --export=output.json
+
+  # store the reason field in `content`
+  content=$(cat output.json | jq '.controls[0].results[0].reason')
+
+  assert_equal "$content" '"default_parameter_1 default_parameter_2 default_parameter_3"'
+  rm -f output.json
+}
