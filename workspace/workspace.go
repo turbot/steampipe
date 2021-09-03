@@ -130,6 +130,9 @@ func (w *Workspace) Close() {
 	}
 }
 
+// access functions
+// NOTE: all access functions lock 'loadLock' - this is to avoid conflicts with th efile watcher
+
 func (w *Workspace) GetQueryMap() map[string]*modconfig.Query {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
@@ -181,6 +184,8 @@ func (w *Workspace) GetChildControls() []*modconfig.Control {
 	return result
 }
 
+// GetResourceMaps returns all resource maps
+// NOTE: this function DOES NOT LOCK the load lock so should only be called in a context where the file watcher is not running
 func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 	workspaceMap := &modconfig.WorkspaceResourceMaps{
 		ModMap:       make(map[string]*modconfig.Mod),

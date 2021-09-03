@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -30,8 +31,52 @@ type Query struct {
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
 
-	DeclRange hcl.Range
-	metadata  *ResourceMetadata
+	DeclRange             hcl.Range
+	metadata              *ResourceMetadata
+	preparedStamementName string
+}
+
+func (q *Query) Equals(other *Query) bool {
+	res := q.ShortName == other.ShortName &&
+		q.FullName == other.FullName &&
+		typehelpers.SafeString(q.Description) == typehelpers.SafeString(other.Description) &&
+		typehelpers.SafeString(q.Documentation) == typehelpers.SafeString(other.Documentation) &&
+		typehelpers.SafeString(q.SearchPath) == typehelpers.SafeString(other.SearchPath) &&
+		typehelpers.SafeString(q.SearchPathPrefix) == typehelpers.SafeString(other.SearchPathPrefix) &&
+		typehelpers.SafeString(q.SQL) == typehelpers.SafeString(other.SQL) &&
+		typehelpers.SafeString(q.Title) == typehelpers.SafeString(other.Title)
+	if !res {
+		return res
+	}
+
+	// tags
+	if q.Tags == nil {
+		if other.Tags != nil {
+			return false
+		}
+	} else {
+		// we have tags
+		if other.Tags == nil {
+			return false
+		}
+		for k, v := range *q.Tags {
+			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
+				return false
+			}
+		}
+	}
+
+	// params
+	if len(q.Params) != len(other.Params) {
+		return false
+	}
+	for i, p := range q.Params {
+		if !p.Equals(other.Params[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func NewQuery(block *hcl.Block) *Query {
@@ -121,7 +166,10 @@ func (q *Query) SetMetadata(metadata *ResourceMetadata) {
 }
 
 // OnDecoded implements HclResource
-func (q *Query) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+func (q *Query) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	q.preparedStamementName = preparedStatementName(q)
+	return nil
+}
 
 // AddReference implements HclResource
 func (q *Query) AddReference(reference string) {
@@ -135,5 +183,5 @@ func (q *Query) GetParams() []*ParamDef {
 
 // PreparedStatementName implements PreparedStatementProvider
 func (q *Query) PreparedStatementName() string {
-	return preparedStatementName(q)
+	return q.preparedStamementName
 }

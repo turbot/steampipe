@@ -29,6 +29,7 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 	prevPanels := w.getPanelMap()
 	prevReports := w.getReportMap()
 
+	prevResourceMaps := w.GetResourceMaps()
 	err := w.loadWorkspaceMod()
 	if err != nil {
 		// check the existing watcher error - if we are already in an error state, do not show error
@@ -44,11 +45,12 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 
 	// clear watcher error
 	w.watcherError = nil
-
-	// todo detect differences and only refresh if necessary
-	db_common.UpdateMetadataTables(w.GetResourceMaps(), client)
-	db_common.UpdatePreparedStatements(context.Background(), w.QueryMap, w.ControlMap, client)
-
+	resourceMaps := w.GetResourceMaps()
+	// if resources have changed, update metadata tables and prepared statements
+	if !prevResourceMaps.Equals(resourceMaps) {
+		db_common.UpdateMetadataTables(resourceMaps, client)
+		db_common.UpdatePreparedStatements(context.Background(), resourceMaps, client)
+	}
 	w.raiseReportChangedEvents(w.getPanelMap(), prevPanels, w.getReportMap(), prevReports)
 }
 

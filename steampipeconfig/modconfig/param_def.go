@@ -21,3 +21,9 @@ func NewParamDef(block *hcl.Block) *ParamDef {
 func (d ParamDef) String() string {
 	return fmt.Sprintf("Name: %s, Description: %s, Default: %s", d.Name, typehelpers.SafeString(d.Description), typehelpers.SafeString(d.Default))
 }
+
+func (d ParamDef) Equals(other *ParamDef) bool {
+	return d.Name == other.Name &&
+		typehelpers.SafeString(d.Description) == typehelpers.SafeString(other.Description) &&
+		typehelpers.SafeString(d.Default) == typehelpers.SafeString(other.Default)
+}

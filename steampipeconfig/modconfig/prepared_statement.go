@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 	"log"
+
+	"github.com/turbot/steampipe/utils"
 )
 
 const preparesStatementQuerySuffix = "_psq"
@@ -31,10 +33,15 @@ func preparedStatementName(source PreparedStatementProvider) string {
 		name = t.ShortName
 		suffix = preparesStatementControlSuffix
 	}
-	maxNameLength := 64 - len(suffix)
+	maxNameLength := 63 - len(suffix)
 	nameLength := len(name)
 	if nameLength > maxNameLength {
-		nameLength = maxNameLength
+		// if the name is longer than the max length, truncate it and add a truncated hash
+		// NOTE: as we are truncating the hash there is a theoretical possibility of name clash
+		// however as this only applies for very long control/query names, it's considered an acceptable risk
+		suffix = fmt.Sprintf("_%s", utils.GetMD5Hash(name)[:8])
+		nameLength = 63 - len(suffix)
 	}
-	return fmt.Sprintf("%s%s", name[:nameLength], suffix)
+	res := fmt.Sprintf("%s%s", name[:nameLength], suffix)
+	return res
 }

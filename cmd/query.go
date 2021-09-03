@@ -211,7 +211,7 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 
 		utils.LogTime("cmd.getQueryInitDataAsync CreatePreparedStatements")
 
-		initData.Result.Error = db_common.CreatePreparedStatements(ctx, workspace.GetQueryMap(), workspace.GetControlMap(), client)
+		initData.Result.Error = db_common.CreatePreparedStatements(ctx, workspace.GetResourceMaps(), client)
 	}()
 }
 

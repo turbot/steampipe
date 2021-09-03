@@ -11,13 +11,13 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func CreatePreparedStatements(ctx context.Context, queryMap map[string]*modconfig.Query, controlMap map[string]*modconfig.Control, client Client) error {
+func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.WorkspaceResourceMaps, client Client) error {
 	log.Printf("[TRACE] CreatePreparedStatements")
 
 	utils.LogTime("db.CreatePreparedStatements start")
 	defer utils.LogTime("db.CreatePreparedStatements end")
 
-	for name, query := range queryMap {
+	for name, query := range resourceMaps.QueryMap {
 		// query map contains long and short names for queries - avoid dupes
 		if !strings.HasPrefix(name, "query.") {
 			continue
@@ -33,7 +33,7 @@ func CreatePreparedStatements(ctx context.Context, queryMap map[string]*modconfi
 		}
 	}
 
-	for name, control := range controlMap {
+	for name, control := range resourceMaps.ControlMap {
 		// query map contains long and short names for controls - avoid dupes
 		if !strings.HasPrefix(name, "control.") {
 			continue
@@ -59,22 +59,21 @@ func CreatePreparedStatements(ctx context.Context, queryMap map[string]*modconfi
 }
 
 // UpdatePreparedStatements first attempts to deallocate all prepared statements in workspace, then recreates them
-func UpdatePreparedStatements(ctx context.Context, queryMap map[string]*modconfig.Query, controlMap map[string]*modconfig.Control, client Client) error {
+func UpdatePreparedStatements(ctx context.Context, resourceMaps *modconfig.WorkspaceResourceMaps, client Client) error {
 	log.Printf("[TRACE] UpdatePreparedStatements")
 
 	utils.LogTime("db.UpdatePreparedStatements start")
 	defer utils.LogTime("db.UpdatePreparedStatements end")
 
 	var sql []string
-	for name, query := range queryMap {
+	for name, query := range resourceMaps.QueryMap {
 		// query map contains long and short names for queries - avoid dupes
 		if !strings.HasPrefix(name, "query.") {
 			continue
 		}
 		sql = append(sql, fmt.Sprintf("DEALLOCATE %s;", query.PreparedStatementName()))
 	}
-
-	for name, control := range controlMap {
+	for name, control := range resourceMaps.ControlMap {
 		// query map contains long and short names for controls - avoid dupes
 		if !strings.HasPrefix(name, "control.") {
 			continue
@@ -85,8 +84,8 @@ func UpdatePreparedStatements(ctx context.Context, queryMap map[string]*modconfi
 		}
 		sql = append(sql, fmt.Sprintf("DEALLOCATE %s;", control.PreparedStatementName()))
 	}
+
 	// execute the query, passing 'true' to disable the spinner
-	// ignore errors
 	s := strings.Join(sql, "\n")
 	_, err := client.ExecuteSync(ctx, s, true)
 	if err != nil {
@@ -95,6 +94,6 @@ func UpdatePreparedStatements(ctx context.Context, queryMap map[string]*modconfi
 	}
 
 	// now recreate them
-	return CreatePreparedStatements(ctx, queryMap, controlMap, client)
+	return CreatePreparedStatements(ctx, resourceMaps, client)
 
 }

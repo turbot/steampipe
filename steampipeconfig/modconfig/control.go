@@ -37,8 +37,9 @@ type Control struct {
 
 	DeclRange hcl.Range
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents               []ModTreeItem
+	metadata              *ResourceMetadata
+	preparedStamementName string
 }
 
 func NewControl(block *hcl.Block) *Control {
@@ -49,6 +50,79 @@ func NewControl(block *hcl.Block) *Control {
 		Args:      NewQueryArgs(),
 	}
 	return control
+}
+
+func (c *Control) Equals(other *Control) bool {
+	res := c.ShortName == other.ShortName &&
+		c.FullName == other.FullName &&
+		typehelpers.SafeString(c.Description) == typehelpers.SafeString(other.Description) &&
+		typehelpers.SafeString(c.Documentation) == typehelpers.SafeString(other.Documentation) &&
+		typehelpers.SafeString(c.SearchPath) == typehelpers.SafeString(other.SearchPath) &&
+		typehelpers.SafeString(c.SearchPathPrefix) == typehelpers.SafeString(other.SearchPathPrefix) &&
+		typehelpers.SafeString(c.Severity) == typehelpers.SafeString(other.Severity) &&
+		typehelpers.SafeString(c.SQL) == typehelpers.SafeString(other.SQL) &&
+		typehelpers.SafeString(c.Title) == typehelpers.SafeString(other.Title)
+	if !res {
+		return res
+	}
+	// tags
+	if c.Tags == nil {
+		if other.Tags != nil {
+			return false
+		}
+	} else {
+		// we have tags
+		if other.Tags == nil {
+			return false
+		}
+		for k, v := range *c.Tags {
+			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
+				return false
+			}
+		}
+	}
+
+	// args
+	if c.Args == nil {
+		if other.Args != nil {
+			return false
+		}
+	} else {
+		// we have args
+		if other.Args == nil {
+			return false
+		}
+		if !c.Args.Equals(other.Args) {
+			return false
+		}
+	}
+
+	// query
+	if c.Query == nil {
+		if other.Query != nil {
+			return false
+		}
+	} else {
+		// we have a query
+		if other.Query == nil {
+			return false
+		}
+		if !c.Query.Equals(other.Query) {
+			return false
+		}
+	}
+
+	// params
+	if len(c.Params) != len(other.Params) {
+		return false
+	}
+	for i, p := range c.Params {
+		if !p.Equals(other.Params[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (c *Control) String() string {
@@ -146,7 +220,12 @@ func (c *Control) CtyValue() (cty.Value, error) {
 }
 
 // OnDecoded implements HclResource
-func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	if c.SQL != nil {
+		c.preparedStamementName = preparedStatementName(c)
+	}
+	return nil
+}
 
 // AddReference implements HclResource
 func (c *Control) AddReference(reference string) {
@@ -170,5 +249,5 @@ func (c *Control) GetParams() []*ParamDef {
 
 // PreparedStatementName implements PreparedStatementProvider
 func (c *Control) PreparedStatementName() string {
-	return preparedStatementName(c)
+	return c.preparedStamementName
 }
