@@ -325,11 +325,7 @@ func (c *InteractiveClient) executor(line string) {
 	query, err := c.getQuery(line)
 	if query == "" {
 		if err != nil {
-			if !utils.IsCancelledError(err) {
-				utils.ShowError(err)
-			}
-			// restart the prompt
-			c.restartInteractiveSession()
+			utils.ShowError(utils.HandleCancelError(err))
 		}
 		return
 	}
@@ -381,7 +377,6 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 			// if it failed, report error and quit
 			close(initDoneChan)
 			display.StopSpinner(sp)
-			utils.ShowError(utils.HandleCancelError(err))
 			return "", err
 		}
 		close(initDoneChan)
@@ -397,7 +392,9 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 	// in case of a named query call with params, parse the where clause
 	query, err := c.workspace().ResolveQueryAndArgs(queryString)
 	if err != nil {
-		return "", err
+		// if we fail to resolve, show error but do not return it - we want to stay in the prompt
+		utils.ShowError(err)
+		return "", nil
 	}
 	isNamedQuery := query != queryString
 
