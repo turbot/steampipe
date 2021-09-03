@@ -2,13 +2,14 @@ package parse
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 	"github.com/zclconf/go-cty/cty/json"
 )
 
-func ctyObjectToPostgresMap(val cty.Value) (map[string]string, error) {
+func ctyObjectToMapOfPgStrings(val cty.Value) (map[string]string, error) {
 	res := make(map[string]string)
 	it := val.ElementIterator()
 	for it.Next() {
@@ -34,6 +35,18 @@ func ctyObjectToPostgresMap(val cty.Value) (map[string]string, error) {
 // NOTE: all non-primitives are converted to JSONB
 func ctyToPostgresString(v cty.Value) (valStr string, err error) {
 	ty := v.Type()
+	switch {
+	case ty.IsTupleType(), ty.IsListType():
+		{
+
+			var array []string
+			if array, err = ctyTupleToArrayOfPgStrings(v); err == nil {
+				valStr = fmt.Sprintf("array[%s]", strings.Join(array, ","))
+			}
+			return
+		}
+	}
+
 	switch ty {
 	case cty.Bool:
 		var target bool
@@ -51,12 +64,12 @@ func ctyToPostgresString(v cty.Value) (valStr string, err error) {
 				valStr = fmt.Sprintf("%d", target)
 			}
 		}
-
 	case cty.String:
 		var target string
 		if err := gocty.FromCtyValue(v, &target); err == nil {
 			valStr = fmt.Sprintf("'%s'", target)
 		}
+
 	default:
 		var json string
 		// wrap as postgres string
@@ -88,7 +101,7 @@ func ctyToJSON(val cty.Value) (string, error) {
 
 }
 
-func ctyTupleToPostgresArray(val cty.Value) ([]string, error) {
+func ctyTupleToArrayOfPgStrings(val cty.Value) ([]string, error) {
 	var res []string
 	it := val.ElementIterator()
 	for it.Next() {

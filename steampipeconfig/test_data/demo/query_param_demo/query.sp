@@ -30,3 +30,10 @@ query "q2" {
         description = "p1"
     }
 }
+
+query "q3" {
+    sql = "select * from chaos_all_column_types where string_column like any($1)"
+    param "p1"{
+        default = ["stringValuesomething-13","stringValuesomething-7"]
+    }
+}

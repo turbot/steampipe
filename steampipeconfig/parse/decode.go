@@ -421,9 +421,9 @@ func decodeControlArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlNam
 
 	switch {
 	case ty.IsObjectType():
-		params.Args, err = ctyObjectToPostgresMap(v)
+		params.Args, err = ctyObjectToMapOfPgStrings(v)
 	case ty.IsTupleType():
-		params.ArgsList, err = ctyTupleToPostgresArray(v)
+		params.ArgsList, err = ctyTupleToArrayOfPgStrings(v)
 	default:
 		err = fmt.Errorf("'params' property must be either a map or an array")
 	}
