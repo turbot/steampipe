@@ -12,7 +12,7 @@ type MappableResource interface {
 	// It returns the resource, and the raw file data
 	InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error)
 	Name() string
-
+	SetMod(*Mod)
 	GetMetadata() *ResourceMetadata
 	SetMetadata(*ResourceMetadata)
 }
