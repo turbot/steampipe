@@ -120,13 +120,20 @@ func (c *RunContext) BlocksToDecode() (hcl.Blocks, error) {
 		return c.blocks, nil
 	}
 
+	// NOTE: a block may appear more than once in unresolved blocks
+	// if it defines muleiple unresolved resources, e.g a locals block
+
+	// make a map of blocks we have already included
+	blocksMap := make(map[*unresolvedBlock]bool)
 	var blocksToDecode hcl.Blocks
 	for _, name := range depOrder {
 		// depOrder is all the blocks required to resolve dependencies.
 		// if this one is unparsed, added to list
 		block, ok := c.UnresolvedBlocks[name]
-		if ok {
+		if ok && !blocksMap[block] {
 			blocksToDecode = append(blocksToDecode, block.Block)
+			// add to map
+			blocksMap[block] = true
 		}
 	}
 	return blocksToDecode, nil
