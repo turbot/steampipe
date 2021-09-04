@@ -334,14 +334,14 @@ func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
 	return nil
 }
 
-func (m *Mod) AddResource(resource HclResource, block *hcl.Block) hcl.Diagnostics {
+func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	switch r := resource.(type) {
+	switch r := item.(type) {
 	case *Query:
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Queries[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(resource, block))
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
 			break
 		}
 		m.Queries[name] = r
@@ -350,7 +350,7 @@ func (m *Mod) AddResource(resource HclResource, block *hcl.Block) hcl.Diagnostic
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Controls[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(resource, block))
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
 			break
 		}
 		m.Controls[name] = r
@@ -359,7 +359,7 @@ func (m *Mod) AddResource(resource HclResource, block *hcl.Block) hcl.Diagnostic
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Benchmarks[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(resource, block))
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
 			break
 		} else {
 			m.Benchmarks[name] = r
@@ -369,7 +369,7 @@ func (m *Mod) AddResource(resource HclResource, block *hcl.Block) hcl.Diagnostic
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Panels[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(resource, block))
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
 			break
 		} else {
 			m.Panels[name] = r
@@ -379,7 +379,7 @@ func (m *Mod) AddResource(resource HclResource, block *hcl.Block) hcl.Diagnostic
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Reports[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(resource, block))
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
 			break
 		} else {
 			m.Reports[name] = r
@@ -389,7 +389,7 @@ func (m *Mod) AddResource(resource HclResource, block *hcl.Block) hcl.Diagnostic
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Variables[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(resource, block))
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
 			break
 		} else {
 			m.Variables[name] = r
