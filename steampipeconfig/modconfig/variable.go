@@ -20,6 +20,8 @@ type Variable struct {
 	DescriptionSet bool
 	//SensitiveSet   bool
 
+	Mod *Mod
+
 	ParsingMode var_config.VariableParsingMode
 	DeclRange   hcl.Range
 
@@ -61,6 +63,11 @@ func (v *Variable) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
 func (v *Variable) AddReference(string) {}
+
+// SetMod implements HclResource
+func (v *Variable) SetMod(mod *Mod) {
+	v.Mod = mod
+}
 
 // CtyValue implements HclResource
 func (v *Variable) CtyValue() (cty.Value, error) {

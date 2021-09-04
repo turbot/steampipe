@@ -28,6 +28,7 @@ type Panel struct {
 	Panels  []*Panel
 
 	DeclRange hcl.Range
+	Mod       *Mod `cty:"mod" column:"mod,text"`
 
 	parents  []ModTreeItem
 	metadata *ResourceMetadata
@@ -95,6 +96,11 @@ func (p *Panel) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 // AddReference implements HclResource
 func (p *Panel) AddReference(reference string) {
 	// TODO
+}
+
+// SetMod implements HclResource
+func (p *Panel) SetMod(mod *Mod) {
+	p.Mod = mod
 }
 
 // AddChild implements ModTreeItem

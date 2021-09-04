@@ -37,6 +37,7 @@ type HclResource interface {
 	CtyValue() (cty.Value, error)
 	OnDecoded(*hcl.Block) hcl.Diagnostics
 	AddReference(reference string)
+	SetMod(*Mod)
 }
 
 // ResourceWithMetadata must be implenented by resources which supports reflection metadata
@@ -46,9 +47,10 @@ type ResourceWithMetadata interface {
 	SetMetadata(metadata *ResourceMetadata)
 }
 
-// PreparedStatementProvider must be implenented by resources which supports prepared statements, i.e. Control and Query
+// PreparedStatementProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
 type PreparedStatementProvider interface {
 	Name() string
+	ModName() string
 	GetParams() []*ParamDef
 	PreparedStatementName() string
 }

@@ -32,6 +32,7 @@ type Benchmark struct {
 
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
+	Mod        *Mod     `cty:"mod" column:"mod,text"`
 
 	ChildNameStrings []string `column:"children,jsonb"`
 	DeclRange        hcl.Range
@@ -84,6 +85,11 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 // AddReference implements HclResource
 func (b *Benchmark) AddReference(reference string) {
 	b.References = append(b.References, reference)
+}
+
+// SetMod implements HclResource
+func (b *Benchmark) SetMod(mod *Mod) {
+	b.Mod = mod
 }
 
 func (b *Benchmark) String() string {

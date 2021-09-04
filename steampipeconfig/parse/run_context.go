@@ -219,6 +219,8 @@ func (c *RunContext) AddResource(resource modconfig.HclResource, block *hcl.Bloc
 	// rebuild the eval context
 	c.buildEvalContext()
 
+	// set mod pointer on hcl resource
+	resource.SetMod(c.Mod)
 	// add resource to mod - this will fail if the mod already has a resource with the same name
 	return c.Mod.AddResource(resource, block)
 }
@@ -249,6 +251,7 @@ func (c *RunContext) storeResourceInCtyMap(resource modconfig.HclResource, block
 
 	typeString := parsedName.TypeString()
 	variablesForType, ok := c.variables[typeString]
+
 	if !ok {
 		variablesForType = make(map[string]cty.Value)
 	}

@@ -14,8 +14,8 @@ type Local struct {
 
 	Value     cty.Value
 	DeclRange hcl.Range
-
-	metadata *ResourceMetadata
+	Mod       *Mod `cty:"mod" column:"mod,text"`
+	metadata  *ResourceMetadata
 }
 
 func NewLocal(name string, val cty.Value, declRange hcl.Range) *Local {
@@ -47,6 +47,11 @@ func (l *Local) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
 func (l *Local) AddReference(string) {}
+
+// SetMod implements HclResource
+func (l *Local) SetMod(mod *Mod) {
+	l.Mod = mod
+}
 
 // CtyValue implements HclResource
 func (l *Local) CtyValue() (cty.Value, error) {

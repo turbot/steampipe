@@ -17,6 +17,8 @@ type Report struct {
 	Reports []*Report //`hcl:"report,block"`
 	Panels  []*Panel  //`hcl:"panel,block"`
 
+	Mod *Mod `cty:"mod" column:"mod,text"`
+
 	DeclRange hcl.Range
 
 	parents  []ModTreeItem
@@ -54,6 +56,11 @@ func (r *Report) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 // AddReference implements HclResource
 func (r *Report) AddReference(reference string) {
 	// TODO
+}
+
+// SetMod implements HclResource
+func (r *Report) SetMod(mod *Mod) {
+	r.Mod = mod
 }
 
 // AddChild implements ModTreeItem

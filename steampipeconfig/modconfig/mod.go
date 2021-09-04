@@ -488,6 +488,9 @@ func (m *Mod) AddReference(reference string) {
 	m.References = append(m.References, reference)
 }
 
+// SetMod implements HclResource
+func (m *Mod) SetMod(*Mod) {}
+
 // GetMetadata implements ResourceWithMetadata
 func (m *Mod) GetMetadata() *ResourceMetadata {
 	return m.metadata

@@ -22,6 +22,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 		if !strings.HasPrefix(name, "query.") {
 			continue
 		}
+
 		// remove trailing semicolons from sql as this breaks the prepare statement
 		rawSql := strings.TrimRight(strings.TrimSpace(typehelpers.SafeString(query.SQL)), ";")
 		sql := fmt.Sprintf("PREPARE %s AS (\n%s\n)", query.PreparedStatementName(), rawSql)
