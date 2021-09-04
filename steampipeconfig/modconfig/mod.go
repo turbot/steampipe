@@ -46,6 +46,7 @@ type Mod struct {
 	Reports    map[string]*Report
 	Panels     map[string]*Panel
 	Variables  map[string]*Variable
+	Locals     map[string]*Local
 	// list of benchmark names, sorted alphabetically
 	benchmarksOrdered []string
 
@@ -66,6 +67,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Reports:    make(map[string]*Report),
 		Panels:     make(map[string]*Panel),
 		Variables:  make(map[string]*Variable),
+		Locals:     make(map[string]*Local),
 		ModPath:    modPath,
 		DeclRange:  defRange,
 	}
@@ -182,6 +184,17 @@ func (m *Mod) Equals(other *Mod) bool {
 	}
 	for k := range other.Variables {
 		if _, ok := m.Variables[k]; !ok {
+			return false
+		}
+	}
+	// locals
+	for k := range m.Locals {
+		if _, ok := other.Locals[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.Locals {
+		if _, ok := m.Locals[k]; !ok {
 			return false
 		}
 	}
@@ -392,6 +405,15 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 			break
 		} else {
 			m.Variables[name] = r
+		}
+	case *Local:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.Locals[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			break
+		} else {
+			m.Locals[name] = r
 		}
 	}
 	return diags
