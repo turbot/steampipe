@@ -104,6 +104,9 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 			duplicates = append(duplicates, r.Name())
 			continue
 		}
+		// set mod pointer on pseudo resource
+		r.SetMod(mod)
+		// add pseudo resource to mod
 		mod.AddPseudoResource(r)
 	}
 	if len(duplicates) > 0 {

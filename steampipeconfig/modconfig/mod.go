@@ -18,7 +18,7 @@ const defaultModName = "local"
 
 // Mod is a struct representing a Mod resource
 type Mod struct {
-	ShortName string `hcl:"name,label"`
+	ShortName string `cty:"short_name" hcl:"name,label"`
 	FullName  string `cty:"name"`
 
 	// attributes
@@ -335,9 +335,6 @@ func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
 }
 
 func (m *Mod) AddResource(resource HclResource, block *hcl.Block) hcl.Diagnostics {
-	// set mod pointer on hcl resource
-	resource.SetMod(m)
-
 	var diags hcl.Diagnostics
 	switch r := resource.(type) {
 	case *Query:
@@ -468,9 +465,6 @@ func (m *Mod) GetPaths() []NodePath {
 // A pseudo resource ids a resource created by loading a content file (e.g. a SQL file),
 // rather than parsing a HCL definition
 func (m *Mod) AddPseudoResource(resource MappableResource) {
-	// set mod pointer on pseudo resource
-	resource.SetMod(m)
-
 	switch r := resource.(type) {
 	case *Query:
 		// check there is not already a query with the same name
