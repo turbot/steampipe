@@ -22,10 +22,9 @@ func GetPreparedStatementExecuteSQL(source PreparedStatementProvider, args *Quer
 	return executeString, nil
 }
 
-// return the prepared statement name for the given source
 func preparedStatementName(source PreparedStatementProvider) string {
 	var name, suffix string
-
+	prefix := fmt.Sprintf("%s_", source.ModName())
 	switch t := source.(type) {
 	case *Query:
 		name = t.ShortName
@@ -34,7 +33,7 @@ func preparedStatementName(source PreparedStatementProvider) string {
 		name = t.ShortName
 		suffix = preparesStatementControlSuffix
 	}
-	preparedStatementName := name + suffix
+	preparedStatementName := fmt.Sprintf("%s%s%s", prefix, name, suffix)
 
 	// is this name too long?
 	if len(preparedStatementName) > maxPreparedStatementNameLength {
@@ -45,8 +44,9 @@ func preparedStatementName(source PreparedStatementProvider) string {
 		suffix = fmt.Sprintf("_%s", utils.GetMD5Hash(name + suffix)[:8])
 
 		// rebuild the name -  determine how much of the original name to include
-		nameLength := 63 - len(suffix)
-		preparedStatementName = fmt.Sprintf("%s%s", name[:nameLength], suffix)
+		nameLength := maxPreparedStatementNameLength - (len(prefix) + len(suffix))
+
+		preparedStatementName = fmt.Sprintf("%s%s%s", prefix, name[:nameLength], suffix)
 	}
 	return preparedStatementName
 }

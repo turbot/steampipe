@@ -218,6 +218,9 @@ func (c *RunContext) buildEvalContext() {
 
 // AddResource :: store this resource as a variable to be added to the eval context
 func (c *RunContext) AddResource(resource modconfig.HclResource, block *hcl.Block) hcl.Diagnostics {
+	// set mod pointer on hcl resource
+	resource.SetMod(c.Mod)
+
 	diagnostics := c.storeResourceInCtyMap(resource, block)
 	if diagnostics.HasErrors() {
 		return diagnostics
@@ -232,7 +235,6 @@ func (c *RunContext) AddResource(resource modconfig.HclResource, block *hcl.Bloc
 
 // update the cached cty value for the given resource, as long as itr does not already exist
 func (c *RunContext) storeResourceInCtyMap(resource modconfig.HclResource, block *hcl.Block) hcl.Diagnostics {
-
 	// add resource to variable map
 	ctyValue, err := resource.CtyValue()
 	if err != nil {
@@ -256,6 +258,7 @@ func (c *RunContext) storeResourceInCtyMap(resource modconfig.HclResource, block
 
 	typeString := parsedName.TypeString()
 	variablesForType, ok := c.variables[typeString]
+
 	if !ok {
 		variablesForType = make(map[string]cty.Value)
 	}

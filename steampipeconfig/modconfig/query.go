@@ -30,6 +30,7 @@ type Query struct {
 	Params []*ParamDef `cty:"params"`
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
+	Mod        *Mod     `cty:"mod"`
 
 	DeclRange             hcl.Range
 	metadata              *ResourceMetadata
@@ -173,6 +174,11 @@ func (q *Query) AddReference(reference string) {
 	q.References = append(q.References, reference)
 }
 
+// SetMod implements HclResource
+func (q *Query) SetMod(mod *Mod) {
+	q.Mod = mod
+}
+
 // GetParams implements PreparedStatementProvider
 func (q *Query) GetParams() []*ParamDef {
 	return q.Params
@@ -185,4 +191,9 @@ func (q *Query) PreparedStatementName() string {
 		q.preparedStamementName = preparedStatementName(q)
 	}
 	return q.preparedStamementName
+}
+
+// ModName implements PreparedStatementProvider
+func (q *Query) ModName() string {
+	return q.Mod.ShortName
 }

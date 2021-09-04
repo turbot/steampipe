@@ -28,12 +28,12 @@ type Control struct {
 	// arguments may be specified by either a map of named args or as a list of positional args
 	// we apply special decode logic to convert the params block into a QueryArgs object
 	// with either an args map or list assigned
-	// TODO CTY and REFLECTION TABLES?
-	Args   *QueryArgs
-	Params []*ParamDef
+	Args   *QueryArgs  `cty:"args"`
+	Params []*ParamDef `cty:"params"`
 
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
+	Mod        *Mod     `cty:"mod"`
 
 	DeclRange hcl.Range
 
@@ -227,6 +227,11 @@ func (c *Control) AddReference(reference string) {
 	c.References = append(c.References, reference)
 }
 
+// SetMod implements HclResource
+func (c *Control) SetMod(mod *Mod) {
+	c.Mod = mod
+}
+
 // GetMetadata implements ResourceWithMetadata
 func (c *Control) GetMetadata() *ResourceMetadata {
 	return c.metadata
@@ -249,4 +254,9 @@ func (c *Control) PreparedStatementName() string {
 		c.preparedStamementName = preparedStatementName(c)
 	}
 	return c.preparedStamementName
+}
+
+// ModName implements PreparedStatementProvider
+func (c *Control) ModName() string {
+	return c.Mod.ShortName
 }

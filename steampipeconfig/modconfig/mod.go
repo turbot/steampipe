@@ -18,7 +18,7 @@ const defaultModName = "local"
 
 // Mod is a struct representing a Mod resource
 type Mod struct {
-	ShortName string `hcl:"name,label"`
+	ShortName string `cty:"short_name" hcl:"name,label"`
 	FullName  string `cty:"name"`
 
 	// attributes
@@ -377,6 +377,7 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		} else {
 			m.Benchmarks[name] = r
 		}
+
 	case *Panel:
 		name := r.Name()
 		// check for dupes
@@ -509,6 +510,9 @@ func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 func (m *Mod) AddReference(reference string) {
 	m.References = append(m.References, reference)
 }
+
+// SetMod implements HclResource
+func (m *Mod) SetMod(*Mod) {}
 
 // GetMetadata implements ResourceWithMetadata
 func (m *Mod) GetMetadata() *ResourceMetadata {
