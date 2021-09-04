@@ -28,7 +28,7 @@ type Panel struct {
 	Panels  []*Panel
 
 	DeclRange hcl.Range
-	Mod       *Mod `cty:"mod" column:"mod,text"`
+	Mod       *Mod `cty:"mod"`
 
 	parents  []ModTreeItem
 	metadata *ResourceMetadata

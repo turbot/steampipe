@@ -17,7 +17,7 @@ type Report struct {
 	Reports []*Report //`hcl:"report,block"`
 	Panels  []*Panel  //`hcl:"panel,block"`
 
-	Mod *Mod `cty:"mod" column:"mod,text"`
+	Mod *Mod `cty:"mod"`
 
 	DeclRange hcl.Range
 

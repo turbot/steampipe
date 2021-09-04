@@ -14,7 +14,7 @@ type Local struct {
 
 	Value     cty.Value
 	DeclRange hcl.Range
-	Mod       *Mod `cty:"mod" column:"mod,text"`
+	Mod       *Mod `cty:"mod"`
 	metadata  *ResourceMetadata
 }
 

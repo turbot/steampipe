@@ -32,7 +32,7 @@ type Benchmark struct {
 
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
-	Mod        *Mod     `cty:"mod" column:"mod,text"`
+	Mod        *Mod     `cty:"mod"`
 
 	ChildNameStrings []string `column:"children,jsonb"`
 	DeclRange        hcl.Range
