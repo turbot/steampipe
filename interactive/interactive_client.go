@@ -320,7 +320,7 @@ func (c *InteractiveClient) executor(line string) {
 	line = strings.TrimSpace(line)
 	// store the history (the raw line which was entered)
 	// we want to store even if we fail to resolve a query
-	c.interactiveQueryHistory.Put(line)
+	c.interactiveQueryHistory.Push(line)
 
 	query, err := c.getQuery(line)
 	if query == "" {

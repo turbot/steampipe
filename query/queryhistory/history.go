@@ -20,8 +20,8 @@ func New() *QueryHistory {
 	return history
 }
 
-// Put :: add to the history queue; trim to maxHistorySize if necessary
-func (q *QueryHistory) Put(query string) {
+// Push :: add to the history queue; trim to maxHistorySize if necessary
+func (q *QueryHistory) Push(query string) {
 
 	// do a strict compare to see if we have this same exact query as the most recent history item
 	if len(q.history) > 0 && q.history[len(q.history)-1] == query {
