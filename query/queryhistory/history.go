@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/turbot/steampipe/constants"
 )
@@ -22,9 +23,13 @@ func New() *QueryHistory {
 
 // Push :: add to the history queue; trim to maxHistorySize if necessary
 func (q *QueryHistory) Push(query string) {
+	if len(strings.TrimSpace(query)) == 0 {
+		// do not store a blank query
+		return
+	}
 
 	// do a strict compare to see if we have this same exact query as the most recent history item
-	if len(q.history) > 0 && q.history[len(q.history)-1] == query {
+	if lastElement := q.Peek(); lastElement != nil && (*lastElement) == query {
 		return
 	}
 
@@ -36,6 +41,15 @@ func (q *QueryHistory) Push(query string) {
 
 	// append the new entry
 	q.history = append(q.history, query)
+}
+
+// Peek returns the last element of the history stack.
+// `nil` is there's no history
+func (q *QueryHistory) Peek() *string {
+	if len(q.history) == 0 {
+		return nil
+	}
+	return &q.history[len(q.history)-1]
 }
 
 // Persist :: persist the history to the filesystem
