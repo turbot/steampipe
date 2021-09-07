@@ -20,17 +20,18 @@ func generateCompletionScriptsCmd() *cobra.Command {
 		Long: `
 To load completions:
     Bash:
-        # To load for the current session
+        # To load for the current session, execute:
         $ source <(steampipe completion bash)
         
         # To load completions for every session, execute once:
-        # Linux:
+        # For Linux:
         $ steampipe completion bash > /etc/bash_completion.d/steampipe
         
-        # MacOS:
+        # For MacOS:
         $ steampipe completion bash > $(brew --prefix)/etc/bash_completion.d/steampipe
 		
-        # This script depends on the 'bash-completion' package. If it is not installed already, you can install it via your OS’s package manager.
+        # For MacOS, this script depends on the 'bash-completion' package. 
+		# If it is not installed already, you can install it via your OS’s package manager.
         
         # To install with 'homebrew':
         $ brew install bash-completion
@@ -40,16 +41,17 @@ To load completions:
 
     Zsh:
         # If shell completion is not already enabled in your environment,
-        # you will need to enable it.  You can execute the following once:
+        # you will need to enable it.
+		# To enable completion in your environment, execute:
         $ echo "autoload -U compinit; compinit" >> ~/.zshrc
         
         # To load completions for each session, execute once:
         $ steampipe completion zsh > "${fpath[1]}/steampipe"
         
         # You will need to start a new shell for this setup to take effect.
-        
+
     fish:
-        # To enable completion for the current session
+        # To enable completion for the current session:
         $ steampipe completion fish | source
         
         # To load completions for each session, execute once:
