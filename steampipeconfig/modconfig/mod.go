@@ -423,7 +423,7 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 func duplicateResourceDiagnostics(item HclResource, block *hcl.Block) *hcl.Diagnostic {
 	return &hcl.Diagnostic{
 		Severity: hcl.DiagError,
-		Summary:  fmt.Sprintf("mod defines more that one resource named %s", item.Name()),
+		Summary:  fmt.Sprintf("mod defines more than one resource named %s", item.Name()),
 		Subject:  &block.DefRange,
 	}
 }
