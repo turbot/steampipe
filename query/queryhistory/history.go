@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/turbot/steampipe/constants"
 )
@@ -13,18 +14,22 @@ type QueryHistory struct {
 	history []string
 }
 
-// New :: create and return a
+// New creates a new QueryHistory object
 func New() *QueryHistory {
 	history := new(QueryHistory)
 	history.load()
 	return history
 }
 
-// Put :: add to the history queue; trim to maxHistorySize if necessary
-func (q *QueryHistory) Put(query string) {
+// Push adds a string to the history queue trimming to maxHistorySize if necessary
+func (q *QueryHistory) Push(query string) {
+	if len(strings.TrimSpace(query)) == 0 {
+		// do not store a blank query
+		return
+	}
 
 	// do a strict compare to see if we have this same exact query as the most recent history item
-	if len(q.history) > 0 && q.history[len(q.history)-1] == query {
+	if lastElement := q.Peek(); lastElement != nil && (*lastElement) == query {
 		return
 	}
 
@@ -38,7 +43,16 @@ func (q *QueryHistory) Put(query string) {
 	q.history = append(q.history, query)
 }
 
-// Persist :: persist the history to the filesystem
+// Peek returns the last element of the history stack.
+// returns nil if there is no history
+func (q *QueryHistory) Peek() *string {
+	if len(q.history) == 0 {
+		return nil
+	}
+	return &q.history[len(q.history)-1]
+}
+
+// Persist writes the history to the filesystem
 func (q *QueryHistory) Persist() error {
 	var file *os.File
 	var err error
@@ -59,7 +73,7 @@ func (q *QueryHistory) Persist() error {
 	return jsonEncoder.Encode(q.history)
 }
 
-// Get :: return a copy of the current history
+// Get returns the full history
 func (q *QueryHistory) Get() []string {
 	return q.history
 }
