@@ -137,9 +137,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		startCancelHandler(cancel)
 		// set global exit code
 		exitCode = queryexecute.RunBatchSession(ctx, initDataChan)
-
 	}
-
 }
 
 func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspace, error) {
@@ -211,7 +209,14 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 
 		utils.LogTime("cmd.getQueryInitDataAsync CreatePreparedStatements")
 
-		initData.Result.Error = db_common.CreatePreparedStatements(ctx, workspace.GetResourceMaps(), client)
+		createPreparedStatements := true
+		if createPreparedStatementsEnv, exists := os.LookupEnv("SP_CREATE_PREPARED_STATEMENTS"); exists {
+			createPreparedStatements = strings.ToUpper(createPreparedStatementsEnv) == "TRUE"
+		}
+
+		if createPreparedStatements {
+			initData.Result.Error = db_common.CreatePreparedStatements(ctx, workspace.GetResourceMaps(), client)
+		}
 	}()
 }
 
