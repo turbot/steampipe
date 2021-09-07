@@ -546,7 +546,7 @@ func (w *Workspace) ResolveQuery(sqlString string, args *modconfig.QueryArgs) (s
 	if namedQuery, ok := w.GetQuery(sqlString); ok {
 		sql, err := modconfig.GetPreparedStatementExecuteSQL(namedQuery, args)
 		if err != nil {
-			return "", fmt.Errorf("ResolveQueryAndArgs failed for value %s: %v", sqlString, err)
+			return "", err
 		}
 		return sql, nil
 	}

@@ -7,7 +7,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// ExecuteQuery :: execute a single query. If shutdownAfterCompletion is true, shutdown the client after completion
+// ExecuteQuery executes a single query. If shutdownAfterCompletion is true, shutdown the client after completion
 func ExecuteQuery(ctx context.Context, queryString string, client Client) (*queryresult.ResultStreamer, error) {
 	utils.LogTime("db.ExecuteQuery start")
 	defer utils.LogTime("db.ExecuteQuery end")
