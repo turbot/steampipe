@@ -27,7 +27,7 @@ type Query struct {
 	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
 	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
 
-	Params []*ParamDef `cty:"params"`
+	Params []*ParamDef `cty:"params" column:"params,jsonb"`
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
 	Mod        *Mod     `cty:"mod"`

@@ -8,10 +8,10 @@ import (
 )
 
 type ParamDef struct {
-	Name        string  `cty:"name"`
-	Description *string `cty:"description" column:"description,text"`
-	RawDefault  interface{}
-	Default     *string `cty:"default" column:"default,text"`
+	Name        string      `cty:"name"`
+	Description *string     `cty:"description"`
+	RawDefault  interface{} `json:"-"`
+	Default     *string     `cty:"default"`
 }
 
 func NewParamDef(block *hcl.Block) *ParamDef {
