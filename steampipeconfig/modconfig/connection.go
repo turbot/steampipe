@@ -37,7 +37,15 @@ type Connection struct {
 	Config string
 
 	// options
-	Options *options.Connection
+	Options   *options.Connection
+	DeclRange hcl.Range
+}
+
+func NewConnection(block *hcl.Block) *Connection {
+	return &Connection{
+		Name:      block.Labels[0],
+		DeclRange: block.DefRange,
+	}
 }
 
 // SetOptions sets the options on the connection
