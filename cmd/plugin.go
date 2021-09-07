@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/ociinstaller"
@@ -509,27 +510,30 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 }
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
-func getPluginConnectionMap(ctx context.Context) (map[string][]string, error) {
-	client, err := db_local.GetLocalClient(constants.InvokerPlugin)
+func getPluginConnectionMap(ctx context.Context) (map[string][]plugin.ConnectionConfigRange, error) {
+	client, err := db.GetClient(constants.InvokerPlugin)
 	if err != nil {
 		return nil, err
 	}
 	defer client.Close()
 	res := client.RefreshConnectionAndSearchPaths()
 	if res.Error != nil {
-		return nil, fmt.Errorf("could not connect with steampipe service")
+		return nil, res.Error
 	}
 	// display any initialisation warnings
 	res.ShowWarnings()
 
-	pluginConnectionMap := map[string][]string{}
+	pluginConnectionMap := make(map[string][]plugin.ConnectionConfigRange)
 
-	for k, v := range *client.ConnectionMap() {
+	for _, v := range *client.ConnectionMap() {
 		_, found := pluginConnectionMap[v.Plugin]
 		if !found {
-			pluginConnectionMap[v.Plugin] = []string{}
+			pluginConnectionMap[v.Plugin] = []plugin.ConnectionConfigRange{}
 		}
-		pluginConnectionMap[v.Plugin] = append(pluginConnectionMap[v.Plugin], k)
+		pluginConnectionMap[v.Plugin] = append(pluginConnectionMap[v.Plugin], plugin.ConnectionConfigRange{
+			ConnectionName: v.ConnectionName,
+			DeclRange:      &v.DeclRange,
+		})
 	}
 	return pluginConnectionMap, nil
 }

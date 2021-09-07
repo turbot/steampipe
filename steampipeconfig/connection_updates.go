@@ -5,6 +5,7 @@ import (
 	"log"
 	"reflect"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
@@ -40,6 +41,7 @@ type ConnectionData struct {
 	ConnectionConfig string
 	// steampipe connection options
 	ConnectionOptions *options.Connection
+	DeclRange         hcl.Range
 }
 
 func (p ConnectionData) Equals(other *ConnectionData) bool {
@@ -153,6 +155,7 @@ func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (
 			CheckSum:         checksum,
 			ConnectionConfig: connection.Config,
 			ConnectionName:   connection.Name,
+			DeclRange:        connection.DeclRange,
 		}
 	}
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration end")

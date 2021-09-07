@@ -19,17 +19,14 @@ const (
 )
 
 // Remove removes an installed plugin
-func Remove(image string, pluginConnections map[string][]string) error {
+func Remove(image string, pluginConnections map[string][]ConnectionConfigRange) error {
 	spinner := display.ShowSpinner(fmt.Sprintf("Removing plugin %s", image))
 	defer display.StopSpinner(spinner)
 
 	fullPluginName := ociinstaller.NewSteampipeImageRef(image).DisplayImageRef()
 
 	// are any connections using this plugin???
-	conns, found := pluginConnections[fullPluginName]
-	if found {
-		return fmt.Errorf("there are active connections using it: '%s'", strings.Join(conns, ","))
-	}
+	conns, usageFound := pluginConnections[fullPluginName]
 
 	installedTo := filepath.Join(constants.PluginDir(), filepath.FromSlash(fullPluginName))
 	_, err := os.Stat(installedTo)
@@ -48,7 +45,27 @@ func Remove(image string, pluginConnections map[string][]string) error {
 		return err
 	}
 	delete(v.Plugins, fullPluginName)
-	return v.Save()
+	err = v.Save()
+
+	if usageFound {
+		display.StopSpinner(spinner)
+		str := []string{fmt.Sprintf("The following connections were using the '%s' plugin:\n", image)}
+		for _, conn := range conns {
+			str = append(
+				str,
+				fmt.Sprintf(
+					"\t* %s: %s\n",
+					conn.ConnectionName,
+					conn.DeclRange,
+				),
+			)
+		}
+		str = append(str, "Please remove these connections to continue using steampipe")
+		fmt.Println(strings.Join(str, "\n"))
+		fmt.Println()
+	}
+
+	return err
 }
 
 // Exists looks up the version file and reports whether a plugin is already installed
@@ -79,7 +96,7 @@ type PluginListItem struct {
 }
 
 // List returns all installed plugins
-func List(pluginConnectionMap map[string][]string) ([]PluginListItem, error) {
+func List(pluginConnectionMap map[string][]ConnectionConfigRange) ([]PluginListItem, error) {
 	var items []PluginListItem
 
 	var installedPlugins []string
@@ -113,7 +130,14 @@ func List(pluginConnectionMap map[string][]string) ([]PluginListItem, error) {
 			Version: version,
 		}
 		if pluginConnectionMap != nil {
-			item.Connections = pluginConnectionMap[plugin]
+			item.Connections = func() []string {
+				// extract only the connection names
+				conNames := []string{}
+				for _, y := range pluginConnectionMap[plugin] {
+					conNames = append(conNames, y.ConnectionName)
+				}
+				return conNames
+			}()
 		}
 		items = append(items, item)
 	}
