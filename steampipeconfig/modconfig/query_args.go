@@ -124,17 +124,27 @@ func (q *QueryArgs) resolveNamedParameters(source PreparedStatementProvider) (ar
 	argStrs = make([]string, len(params))
 
 	// iterate through each param def and resolve the value
+	// build a map of which args have been matched (used to validate all args have poaram defs)
+	argsWithParamDef := make(map[string]bool)
 	for i, def := range params {
 		defaultValue := typehelpers.SafeString(def.Default)
 
 		// can we resolve a value for this param?
 		if val, ok := q.Args[def.Name]; ok {
 			argStrs[i] = val
+			argsWithParamDef[def.Name] = true
 		} else if defaultValue != "" {
 			argStrs[i] = defaultValue
 		} else {
 			// no value provided and no default defined - add to missing list
 			missingParams = append(missingParams, def.Name)
+		}
+	}
+
+	// verify we have param defs for all provided args
+	for arg := range q.Args {
+		if _, ok := argsWithParamDef[arg]; !ok {
+			return nil, nil, fmt.Errorf("no parameter definition found for argument '%s'", arg)
 		}
 	}
 
