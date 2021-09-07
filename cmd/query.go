@@ -218,7 +218,7 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 // check env var to see if prepared statement creation has been disabled
 func shouldCreatePreparedStatements() bool {
 	createPreparedStatements := true
-	if createPreparedStatementsEnv, exists := os.LookupEnv("SP_CREATE_PREPARED_STATEMENTS"); exists {
+	if createPreparedStatementsEnv, exists := os.LookupEnv(constants.EnvCreatePreparedStatements); exists {
 		createPreparedStatements = strings.ToUpper(createPreparedStatementsEnv) == "TRUE"
 	}
 	return createPreparedStatements
