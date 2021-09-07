@@ -14,14 +14,14 @@ type QueryHistory struct {
 	history []string
 }
 
-// New :: create and return a
+// New creates a new QueryHistory object
 func New() *QueryHistory {
 	history := new(QueryHistory)
 	history.load()
 	return history
 }
 
-// Push :: add to the history queue; trim to maxHistorySize if necessary
+// Push adds a string to the history queue trimming to maxHistorySize if necessary
 func (q *QueryHistory) Push(query string) {
 	if len(strings.TrimSpace(query)) == 0 {
 		// do not store a blank query
@@ -44,7 +44,7 @@ func (q *QueryHistory) Push(query string) {
 }
 
 // Peek returns the last element of the history stack.
-// `nil` is there's no history
+// returns nil if there is no history
 func (q *QueryHistory) Peek() *string {
 	if len(q.history) == 0 {
 		return nil
@@ -52,7 +52,7 @@ func (q *QueryHistory) Peek() *string {
 	return &q.history[len(q.history)-1]
 }
 
-// Persist :: persist the history to the filesystem
+// Persist writes the history to the filesystem
 func (q *QueryHistory) Persist() error {
 	var file *os.File
 	var err error
@@ -73,7 +73,7 @@ func (q *QueryHistory) Persist() error {
 	return jsonEncoder.Encode(q.history)
 }
 
-// Get :: return a copy of the current history
+// Get returns the full history
 func (q *QueryHistory) Get() []string {
 	return q.history
 }
