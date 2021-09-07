@@ -3,10 +3,7 @@ package local_db
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
-
-	"github.com/turbot/steampipe/db/db_common"
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
@@ -14,16 +11,17 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// LocalClient wraps over `sql.DB` and gives an interface to the database
-type LocalClient struct {
-	dbClient       *sql.DB
-	schemaMetadata *schema.Metadata
-	connectionMap  *steampipeconfig.ConnectionMap
-	invoker        constants.Invoker
+// DbClient wraps over `sql.DB` and gives an interface to the database
+type DbClient struct {
+	dbClient         *sql.DB
+	schemaMetadata   *schema.Metadata
+	connectionMap    *steampipeconfig.ConnectionMap
+	invoker          constants.Invoker
+	connectionString string
 }
 
 // Close closes the connection to the database and shuts down the backend
-func (c *LocalClient) Close() error {
+func (c *DbClient) Close() error {
 	if c.dbClient != nil {
 		if err := c.dbClient.Close(); err != nil {
 			return err
@@ -35,7 +33,7 @@ func (c *LocalClient) Close() error {
 
 // NewLocalClient ensures that the database instance is running
 // and returns a `Client` to interact with it
-func NewLocalClient(invoker constants.Invoker) (*LocalClient, error) {
+func NewLocalClient(invoker constants.Invoker) (*DbClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
 
@@ -43,62 +41,53 @@ func NewLocalClient(invoker constants.Invoker) (*LocalClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := &LocalClient{
-		invoker: invoker,
+	client := &DbClient{
+		invoker:  invoker,
+		dbClient: db,
+		// setup a blank struct for the schema metadata
+		schemaMetadata: schema.NewMetadata(),
 	}
-	client.dbClient = db
-
-	// setup a blank struct for the schema metadata
-	client.schemaMetadata = schema.NewMetadata()
 
 	client.LoadSchema()
 
 	return client, nil
 }
 
-func (c *LocalClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConnectionResult {
-	res := c.RefreshConnections()
-	if res.Error != nil {
-		return res
-	}
-	if err := refreshFunctions(); err != nil {
-		res.Error = err
-		return res
-	}
+func NewDbClient(invoker constants.Invoker, connectionString string) (*DbClient, error) {
+	utils.LogTime("db.NewLocalClient start")
+	defer utils.LogTime("db.NewLocalClient end")
 
-	// load the connection state and cache it!
-	connectionMap, err := steampipeconfig.GetConnectionState(c.schemaMetadata.GetSchemas())
+	db, err := createDbClientWithConnectionString(connectionString)
 	if err != nil {
-		res.Error = err
-		return res
+		return nil, err
 	}
-	c.connectionMap = &connectionMap
-	// set service search path first - client may fall back to using it
-	if err := c.SetServiceSearchPath(); err != nil {
-		res.Error = err
-		return res
+	client := &DbClient{
+		invoker:  invoker,
+		dbClient: db,
+		// setup a blank struct for the schema metadata
+		schemaMetadata: schema.NewMetadata(),
 	}
-	if err := c.SetClientSearchPath(); err != nil {
-		res.Error = err
-		return res
-	}
+	client.LoadSchema()
 
-	return res
+	return client, nil
+}
+
+func (c *DbClient) IsLocal() bool {
+	return c.connectionString == ""
 }
 
 // SchemaMetadata returns the latest schema metadata
-func (c *LocalClient) SchemaMetadata() *schema.Metadata {
+func (c *DbClient) SchemaMetadata() *schema.Metadata {
 	return c.schemaMetadata
 }
 
 // ConnectionMap returns the latest connection map
-func (c *LocalClient) ConnectionMap() *steampipeconfig.ConnectionMap {
+func (c *DbClient) ConnectionMap() *steampipeconfig.ConnectionMap {
 	return c.connectionMap
 }
 
 // LoadSchema retrieves both the raw query result and a sanitised version in list form
-// todo share this between local and remote client - make a function not a method??
-func (c *LocalClient) LoadSchema() {
+func (c *DbClient) LoadSchema() {
 	utils.LogTime("db.LoadSchema start")
 	defer utils.LogTime("db.LoadSchema end")
 
@@ -112,59 +101,6 @@ func (c *LocalClient) LoadSchema() {
 
 	c.schemaMetadata.Schemas = metadata.Schemas
 	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
-}
-
-func createSteampipeDbClient() (*sql.DB, error) {
-	utils.LogTime("db.createSteampipeDbClient start")
-	defer utils.LogTime("db.createSteampipeDbClient end")
-
-	return createDbClient(constants.DatabaseName, constants.DatabaseUser)
-}
-
-func createRootDbClient() (*sql.DB, error) {
-	utils.LogTime("db.createSteampipeRootDbClient start")
-	defer utils.LogTime("db.createSteampipeRootDbClient end")
-
-	return createDbClient(constants.DatabaseName, constants.DatabaseSuperUser)
-}
-
-func createDbClient(dbname string, username string) (*sql.DB, error) {
-	utils.LogTime("db.createDbClient start")
-	utils.LogTime(fmt.Sprintf("to %s with %s", dbname, username))
-	defer utils.LogTime("db.createDbClient end")
-
-	log.Println("[TRACE] createDbClient")
-	info, err := GetStatus()
-
-	if err != nil {
-		return nil, err
-	}
-
-	if info == nil {
-		return nil, fmt.Errorf("steampipe service is not running")
-	}
-
-	// Connect to the database using the first listen address, which is usually localhost
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", info.Listen[0], info.Port, username, dbname, SslMode())
-
-	log.Println("[TRACE] status: ", info)
-	log.Println("[TRACE] Connection string: ", psqlInfo)
-
-	// connect to the database using the postgres driver
-	utils.LogTime("db.createDbClient connection open start")
-	db, err := sql.Open("postgres", psqlInfo)
-	db.SetMaxOpenConns(1)
-	utils.LogTime("db.createDbClient connection open end")
-
-	if err != nil {
-		return nil, err
-	}
-
-	if waitForConnection(db) {
-		return db, nil
-	}
-
-	return nil, fmt.Errorf("could not establish connection with database")
 }
 
 func executeSqlAsRoot(statements ...string) ([]sql.Result, error) {
@@ -207,7 +143,7 @@ func waitForConnection(conn *sql.DB) bool {
 	}
 }
 
-func (c *LocalClient) getSchemaFromDB() (*sql.Rows, error) {
+func (c *DbClient) getSchemaFromDB() (*sql.Rows, error) {
 	utils.LogTime("db.getSchemaFromDB start")
 	defer utils.LogTime("db.getSchemaFromDB end")
 

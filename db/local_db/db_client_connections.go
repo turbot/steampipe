@@ -12,10 +12,47 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
+func (c *DbClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConnectionResult {
+	if !c.IsLocal() {
+		return &db_common.RefreshConnectionResult{}
+	}
+	res := c.RefreshConnections()
+	if res.Error != nil {
+		return res
+	}
+	if err := refreshFunctions(); err != nil {
+		res.Error = err
+		return res
+	}
+
+	// load the connection state and cache it!
+	connectionMap, err := steampipeconfig.GetConnectionState(c.schemaMetadata.GetSchemas())
+	if err != nil {
+		res.Error = err
+		return res
+	}
+	c.connectionMap = &connectionMap
+	// set service search path first - client may fall back to using it
+	if err := c.SetServiceSearchPath(); err != nil {
+		res.Error = err
+		return res
+	}
+	if err := c.SetClientSearchPath(); err != nil {
+		res.Error = err
+		return res
+	}
+
+	return res
+}
+
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func (c *LocalClient) RefreshConnections() *db_common.RefreshConnectionResult {
+func (c *DbClient) RefreshConnections() *db_common.RefreshConnectionResult {
+	if !c.IsLocal() {
+		return &db_common.RefreshConnectionResult{}
+	}
+
 	res := &db_common.RefreshConnectionResult{}
 	utils.LogTime("db.RefreshConnections start")
 	defer utils.LogTime("db.RefreshConnections end")
@@ -94,7 +131,7 @@ func (c *LocalClient) RefreshConnections() *db_common.RefreshConnectionResult {
 
 }
 
-func (c *LocalClient) updateConnectionMap() error {
+func (c *DbClient) updateConnectionMap() error {
 	// load the connection state and cache it!
 	log.Println("[TRACE]", "retrieving connection map")
 	connectionMap, err := steampipeconfig.GetConnectionState(c.schemaMetadata.GetSchemas())

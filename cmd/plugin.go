@@ -434,7 +434,7 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 		steampipeconfig.Config = config
 	}
 
-	client, err := db.GetClient(constants.InvokerPlugin)
+	client, err := db.GetLocalClient(constants.InvokerPlugin)
 	if err != nil {
 		return err
 	}
@@ -511,7 +511,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
 func getPluginConnectionMap(ctx context.Context) (map[string][]string, error) {
-	client, err := db.GetClient(constants.InvokerPlugin)
+	client, err := db.GetLocalClient(constants.InvokerPlugin)
 	if err != nil {
 		return nil, err
 	}
