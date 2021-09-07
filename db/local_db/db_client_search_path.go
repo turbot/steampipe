@@ -16,7 +16,7 @@ import (
 
 // GetCurrentSearchPath implements DbClient
 // query the database to get the current search path
-func (c *LocalClient) GetCurrentSearchPath() ([]string, error) {
+func (c *DbClient) GetCurrentSearchPath() ([]string, error) {
 	var currentSearchPath []string
 	var pathAsString string
 	row := c.dbClient.QueryRow("show search_path")
@@ -41,7 +41,7 @@ func (c *LocalClient) GetCurrentSearchPath() ([]string, error) {
 //sets the search path for this session
 // if either a search-path or search-path-prefix is set in config, set the search path
 // (otherwise fall back to user search path)
-func (c *LocalClient) SetSessionSearchPath() error {
+func (c *DbClient) SetSessionSearchPath() error {
 	searchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 
@@ -91,7 +91,7 @@ func getCurrentSearchPath() ([]string, error) {
 
 // SetUserSearchPath sets the search path for the db service
 // do this wy finding all users assigned to the role steampipe_users and set their search path
-func (c *LocalClient) SetUserSearchPath() error {
+func (c *DbClient) SetUserSearchPath() error {
 	log.Println("[Trace] SetUserSearchPath")
 	var searchPath []string
 
@@ -141,7 +141,7 @@ func (c *LocalClient) SetUserSearchPath() error {
 	return nil
 }
 
-func (c *LocalClient) addSearchPathPrefix(searchPathPrefix []string, searchPath []string) []string {
+func (c *DbClient) addSearchPathPrefix(searchPathPrefix []string, searchPath []string) []string {
 	if len(searchPathPrefix) > 0 {
 		prefixedSearchPath := searchPathPrefix
 		for _, p := range searchPath {
@@ -155,7 +155,7 @@ func (c *LocalClient) addSearchPathPrefix(searchPathPrefix []string, searchPath 
 }
 
 // build default search path from the connection schemas, bookended with public and internal
-func (c *LocalClient) getDefaultSearchPath() []string {
+func (c *DbClient) getDefaultSearchPath() []string {
 	searchPath := c.schemaMetadata.GetSchemas()
 	sort.Strings(searchPath)
 	// add the 'public' schema as the first schema in the search_path. This makes it

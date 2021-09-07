@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"strings"
 
+	"github.com/turbot/steampipe/db/local_db"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -67,6 +69,7 @@ Examples:
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").
+		AddStringFlag(constants.ArgConnectionString, "", "", "Database connection string").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.").
 		AddBoolFlag(constants.ArgWatch, "", true, "Watch SQL files in the current workspace (works only in interactive mode)").
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
@@ -175,7 +178,13 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 		}()
 
 		// get a db client
-		client, err := db.GetClient(constants.InvokerQuery)
+		var client db_common.Client
+		var err error
+		if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
+			client, err = local_db.NewDbClient(constants.InvokerQuery, connectionString)
+		} else {
+			client, err = db.GetLocalClient(constants.InvokerQuery)
+		}
 		if err != nil {
 			initData.Result.Error = err
 			return

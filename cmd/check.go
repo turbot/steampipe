@@ -216,7 +216,7 @@ func initialiseCheck() *checkInitData {
 	}
 
 	// get a client
-	client, err := db.GetClient(constants.InvokerCheck)
+	client, err := db.GetLocalClient(constants.InvokerCheck)
 	if err != nil {
 		initData.result.Error = err
 		return initData

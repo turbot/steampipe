@@ -19,7 +19,7 @@ import (
 
 // ExecuteSync implements DbClient
 // execute a query against this client and wait for the result
-func (c *LocalClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
+func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	result, err := c.Execute(ctx, query, disableSpinner)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (c *LocalClient) ExecuteSync(ctx context.Context, query string, disableSpin
 // Bear in mind that whenever ExecuteQuery is called, the returned `queryresult.Result` MUST be fully read -
 // otherwise the transaction is left open, which will block the connection and will prevent subsequent communications
 // with the service
-func (c *LocalClient) Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
+func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
 	if query == "" {
 		return &queryresult.Result{}, nil
 	}
@@ -101,7 +101,7 @@ func (c *LocalClient) Execute(ctx context.Context, query string, disableSpinner 
 }
 
 // createTransaction, with a timeout - this may be required if the db client becomes unresponsive
-func (c *LocalClient) createTransaction(ctx context.Context) (tx *sql.Tx, err error) {
+func (c *DbClient) createTransaction(ctx context.Context) (tx *sql.Tx, err error) {
 	doneChan := make(chan bool)
 	go func() {
 		tx, err = c.dbClient.BeginTx(ctx, nil)
@@ -122,7 +122,7 @@ func (c *LocalClient) createTransaction(ctx context.Context) (tx *sql.Tx, err er
 
 // run query in a goroutine, so we can check for cancellation
 // in case the client becomes unresponsive and does not respect context cancellation
-func (c *LocalClient) startQuery(ctx context.Context, query string, tx *sql.Tx) (rows *sql.Rows, err error) {
+func (c *DbClient) startQuery(ctx context.Context, query string, tx *sql.Tx) (rows *sql.Rows, err error) {
 	doneChan := make(chan bool)
 
 	go func() {
@@ -139,7 +139,7 @@ func (c *LocalClient) startQuery(ctx context.Context, query string, tx *sql.Tx) 
 	return
 }
 
-func (c *LocalClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result, activeSpinner *spinner.Spinner) {
+func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result, activeSpinner *spinner.Spinner) {
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
 		// we are done fetching results. time for display. remove the spinner

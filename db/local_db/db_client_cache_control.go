@@ -6,7 +6,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 )
 
-func (c *LocalClient) executeCacheCommand(controlCommand string) error {
+func (c *DbClient) executeCacheCommand(controlCommand string) error {
 	_, err := c.dbClient.Exec(fmt.Sprintf(
 		"insert into %s.%s (%s) values ('%s')",
 		constants.CommandSchema,
@@ -17,14 +17,14 @@ func (c *LocalClient) executeCacheCommand(controlCommand string) error {
 	return err
 }
 
-func (c *LocalClient) CacheOn() error {
+func (c *DbClient) CacheOn() error {
 	return c.executeCacheCommand(constants.CommandCacheOn)
 }
 
-func (c *LocalClient) CacheOff() error {
+func (c *DbClient) CacheOff() error {
 	return c.executeCacheCommand(constants.CommandCacheOff)
 }
 
-func (c *LocalClient) CacheClear() error {
+func (c *DbClient) CacheClear() error {
 	return c.executeCacheCommand(constants.CommandCacheClear)
 }

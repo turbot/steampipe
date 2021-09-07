@@ -6,7 +6,7 @@ import (
 	"github.com/turbot/steampipe/db/local_db"
 )
 
-func GetClient(invoker constants.Invoker) (db_common.Client, error) {
+func GetLocalClient(invoker constants.Invoker) (db_common.Client, error) {
 	// start db if necessary
 	err := local_db.EnsureDbAndStartService(invoker)
 	if err != nil {

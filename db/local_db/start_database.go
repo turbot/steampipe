@@ -54,7 +54,7 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
 
-	var client *LocalClient
+	var client *DbClient
 
 	defer func() {
 		if r := recover(); r != nil {
