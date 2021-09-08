@@ -12,7 +12,7 @@ import (
 )
 
 // GetTableAutoCompleteSuggestions :: derives and returns tables for typeahead
-func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *steampipeconfig.ConnectionMap) []prompt.Suggest {
+func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *steampipeconfig.ConnectionDataMap) []prompt.Suggest {
 	var s []prompt.Suggest
 
 	// schema names

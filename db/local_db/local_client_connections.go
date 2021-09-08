@@ -107,7 +107,7 @@ func (c *LocalClient) updateConnectionMap() error {
 	return nil
 }
 
-func getConnectionPlugins(updates steampipeconfig.ConnectionMap) ([]*steampipeconfig.ConnectionPlugin, *db_common.RefreshConnectionResult) {
+func getConnectionPlugins(updates steampipeconfig.ConnectionDataMap) ([]*steampipeconfig.ConnectionPlugin, *db_common.RefreshConnectionResult) {
 	res := &db_common.RefreshConnectionResult{}
 	var connectionPlugins []*steampipeconfig.ConnectionPlugin
 
@@ -152,7 +152,7 @@ func getConnectionPluginAsync(connectionName string, connectionData *steampipeco
 	p.Plugin.Client.Kill()
 }
 
-func getSchemaQueries(updates steampipeconfig.ConnectionMap, failures []*steampipeconfig.ValidationFailure) []string {
+func getSchemaQueries(updates steampipeconfig.ConnectionDataMap, failures []*steampipeconfig.ValidationFailure) []string {
 	var schemaQueries []string
 	for connectionName, plugin := range updates {
 		remoteSchema := steampipeconfig.PluginFQNToSchemaName(plugin.Plugin)

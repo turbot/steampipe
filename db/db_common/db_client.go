@@ -26,6 +26,6 @@ type Client interface {
 
 	// RemoteClient will have empty implementations
 
-	ConnectionMap() *steampipeconfig.ConnectionMap
+	ConnectionMap() *steampipeconfig.ConnectionDataMap
 	RefreshConnectionAndSearchPaths() *RefreshConnectionResult
 }

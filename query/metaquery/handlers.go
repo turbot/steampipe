@@ -34,7 +34,7 @@ type HandlerInput struct {
 	Query       string
 	Executor    QueryExecutor
 	Schema      *schema.Metadata
-	Connections *steampipeconfig.ConnectionMap
+	Connections *steampipeconfig.ConnectionDataMap
 	Prompt      *prompt.Prompt
 	ClosePrompt func()
 }
