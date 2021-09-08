@@ -62,7 +62,7 @@ func NewWatcher(opts *WatcherOptions) (*FileWatcher, error) {
 		return nil, err
 	}
 
-	baseExclude := []string{"**/.*"}
+	baseExclude := []string{}
 	// create the watcher
 	watcher := &FileWatcher{
 		watch:           watch,
