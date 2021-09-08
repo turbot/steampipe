@@ -9,6 +9,14 @@ type WorkspaceResourceMaps struct {
 	BenchmarkMap map[string]*Benchmark
 }
 
+func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
+	return &WorkspaceResourceMaps{
+		ModMap:       make(map[string]*Mod),
+		QueryMap:     make(map[string]*Query),
+		ControlMap:   make(map[string]*Control),
+		BenchmarkMap: make(map[string]*Benchmark),
+	}
+}
 func (m WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 	for name, mod := range m.ModMap {
 		if otherMod, ok := other.ModMap[name]; !ok {
@@ -48,4 +56,17 @@ func (m WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 		}
 	}
 	return true
+}
+
+func (m WorkspaceResourceMaps) AddPreparedStatementProvider(provider PreparedStatementProvider) {
+	switch p := provider.(type) {
+	case *Query:
+		if p != nil {
+			m.QueryMap[p.FullName] = p
+		}
+	case *Control:
+		if p != nil {
+			m.ControlMap[p.FullName] = p
+		}
+	}
 }

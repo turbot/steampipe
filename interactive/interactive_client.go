@@ -390,7 +390,7 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 	queryString := strings.Join(c.interactiveBuffer, "\n")
 
 	// in case of a named query call with params, parse the where clause
-	query, err := c.workspace().ResolveQueryAndArgs(queryString)
+	query, _, err := c.workspace().ResolveQueryAndArgs(queryString)
 	if err != nil {
 		// if we fail to resolve, show error but do not return it - we want to stay in the prompt
 		utils.ShowError(err)

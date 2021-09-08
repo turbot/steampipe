@@ -79,24 +79,6 @@ Examples:
 	return cmd
 }
 
-// getPipedStdinData reads the Standard Input and returns the available data as a string
-// if and only if the data was piped to the process
-func getPipedStdinData() string {
-	fi, err := os.Stdin.Stat()
-	if err != nil {
-		utils.ShowWarning("could not fetch information about STDIN")
-		return ""
-	}
-	stdinData := ""
-	if (fi.Mode()&os.ModeCharDevice) == 0 && fi.Size() > 0 {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			stdinData = fmt.Sprintf("%s%s", stdinData, scanner.Text())
-		}
-	}
-	return stdinData
-}
-
 func runQueryCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runQueryCmd start")
 
@@ -140,6 +122,24 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	}
 
+}
+
+// getPipedStdinData reads the Standard Input and returns the available data as a string
+// if and only if the data was piped to the process
+func getPipedStdinData() string {
+	fi, err := os.Stdin.Stat()
+	if err != nil {
+		utils.ShowWarning("could not fetch information about STDIN")
+		return ""
+	}
+	stdinData := ""
+	if (fi.Mode()&os.ModeCharDevice) == 0 && fi.Size() > 0 {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			stdinData = fmt.Sprintf("%s%s", stdinData, scanner.Text())
+		}
+	}
+	return stdinData
 }
 
 func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspace, error) {
@@ -189,11 +189,13 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 		initData.Workspace = workspace
 
 		// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-		initData.Queries, err = workspace.GetQueriesFromArgs(args)
+		queries, preparedStatementProviders, err := workspace.GetQueriesFromArgs(args)
 		if err != nil {
 			initData.Result.Error = err
 			return
 		}
+		initData.Queries = queries
+		initData.PreparedStatementProviders = preparedStatementProviders
 
 		res := client.RefreshConnectionAndSearchPaths()
 		if res.Error != nil {

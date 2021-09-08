@@ -7,7 +7,7 @@ import (
 // WorkspaceResourceProvider :: interface encapsulating named query searching capability
 // - provided to avoid db needing a reference to workspace
 type WorkspaceResourceProvider interface {
-	ResolveQueryAndArgs(arg string) (string, error)
+	ResolveQueryAndArgs(arg string) (string, modconfig.PreparedStatementProvider, error)
 	GetQueryMap() map[string]*modconfig.Query
 	GetControlMap() map[string]*modconfig.Control
 	GetResourceMaps() *modconfig.WorkspaceResourceMaps
