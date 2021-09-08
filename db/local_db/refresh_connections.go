@@ -12,6 +12,7 @@ func RefreshConnectionAndSearchPaths(invoker constants.Invoker) error {
 	if err != nil {
 		return err
 	}
+	defer client.Close()
 	refreshResult = client.RefreshConnectionAndSearchPaths()
 	// display any initialisation warnings
 	refreshResult.ShowWarnings()
