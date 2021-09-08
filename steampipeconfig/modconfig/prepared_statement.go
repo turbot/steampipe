@@ -30,6 +30,7 @@ func preparedStatementName(source PreparedStatementProvider) string {
 	str := fmt.Sprintf("%v", source)
 	hash := utils.GetMD5Hash(str)[:4]
 
+	// build suffix using a char to indicate control or query, and the truncated hash
 	switch t := source.(type) {
 	case *Query:
 		name = t.ShortName
@@ -39,13 +40,14 @@ func preparedStatementName(source PreparedStatementProvider) string {
 		suffix = preparesStatementControlSuffix + hash
 	}
 
+	// truncate the name if necessary
 	nameLength := len(name)
 	maxNameLength := maxPreparedStatementNameLength - (len(prefix) + len(suffix))
 	if nameLength > maxNameLength {
 		nameLength = maxNameLength
 	}
 
+	// construct the name
 	preparedStatementName := fmt.Sprintf("%s%s%s", prefix, name[:nameLength], suffix)
-
 	return preparedStatementName
 }
