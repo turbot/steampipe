@@ -40,7 +40,6 @@ func includeBashHelp(base string) string {
 
 	if runtime.GOOS == "darwin" {
 		buildUp = fmt.Sprintf(`%s
-
     # This script depends on the 'bash-completion' package.
     # If it is not installed already, you can install it via your OS’s package manager.
     
