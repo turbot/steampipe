@@ -97,8 +97,6 @@ func includeFishHelp(base string) string {
 }
 
 func completionHelp(cmd *cobra.Command, args []string) {
-	fmt.Println(runtime.GOOS)
-
 	helpString := "To load completions:"
 	helpString = includeBashHelp(helpString)
 	helpString = includeZshHelp(helpString)
