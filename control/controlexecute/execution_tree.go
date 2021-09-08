@@ -204,7 +204,7 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTree
 // This is used to implement the 'where' control filtering
 func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereClause string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
-	query, err := e.workspace.ResolveQueryAndArgs(whereClause)
+	query, _, err := e.workspace.ResolveQueryAndArgs(whereClause)
 	if err != nil {
 		return nil, err
 	}

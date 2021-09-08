@@ -45,6 +45,10 @@ func RunBatchSession(ctx context.Context, initDataChan chan *db_common.QueryInit
 	// display any initialisation messages/warnings
 	initData.Result.DisplayMessages()
 
+	// create any necessary prepared statements
+	err := db_common.CreatePreparedStatements(context.Background(), initData.PreparedStatementProviders, initData.Client)
+	utils.FailOnError(err)
+
 	failures := 0
 	if len(initData.Queries) > 0 {
 		// if we have resolved any queries, run them
