@@ -61,47 +61,6 @@ func (c *Connection) String() string {
 	return fmt.Sprintf("\n----\nName: %s\nPlugin: %s\nConfig:\n%s\nOptions:\n%s\n", c.Name, c.Plugin, c.Config, c.Options.String())
 }
 
-func (c *Connection) Equals(other *Connection) bool {
-	// connections
-	if len(c.Connections) != len(other.Connections) {
-		return false
-	}
-	for k, child := range c.Connections {
-		if otherChild, ok := other.Connections[k]; !ok {
-			return false
-		} else {
-			if !child.Equals(otherChild) {
-				return false
-			}
-		}
-	}
-	// options
-	if c.Options != nil {
-		if other.Options == nil {
-			return false
-		}
-		if !c.Options.Equals(other.Options) {
-			return false
-		}
-	} else if other.Options != nil {
-		return false
-	}
-
-	// connection names
-	if len(c.ConnectionNames) != len(other.ConnectionNames) {
-		return false
-	}
-	for i, name := range c.ConnectionNames {
-		if other.ConnectionNames[i] != name {
-			return false
-		}
-	}
-	return c.Name == other.Name &&
-		c.Plugin == other.Plugin &&
-		c.Type == other.Type &&
-		c.Config == other.Config
-}
-
 // Validate verifies the Type property is valid,
 // if this is an aggregator connection, there must be at least one child, and no duplicates
 // if this is NOT an aggregator, there must be no children
