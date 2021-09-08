@@ -65,7 +65,7 @@ func (c *LocalClient) RefreshConnectionAndSearchPaths() (res *db_common.RefreshC
 		res.Error = err
 		return
 	}
-	if res.UpdatedConnections {
+	if res.UpdatedConnections || c.connectionMap == nil {
 		// load the connection state and cache it!
 		connectionMap, err := steampipeconfig.GetConnectionState(c.schemaMetadata.GetSchemas())
 		if err != nil {
