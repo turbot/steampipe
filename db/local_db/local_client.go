@@ -18,7 +18,7 @@ import (
 type LocalClient struct {
 	dbClient       *sql.DB
 	schemaMetadata *schema.Metadata
-	connectionMap  *steampipeconfig.ConnectionMap
+	connectionMap  *steampipeconfig.ConnectionDataMap
 	invoker        constants.Invoker
 }
 
@@ -92,7 +92,7 @@ func (c *LocalClient) SchemaMetadata() *schema.Metadata {
 }
 
 // ConnectionMap returns the latest connection map
-func (c *LocalClient) ConnectionMap() *steampipeconfig.ConnectionMap {
+func (c *LocalClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
 	return c.connectionMap
 }
 

@@ -26,9 +26,9 @@ func (v ValidationFailure) String() string {
 	)
 }
 
-func ValidatePlugins(updates ConnectionMap, plugins []*ConnectionPlugin) ([]*ValidationFailure, ConnectionMap, []*ConnectionPlugin) {
+func ValidatePlugins(updates ConnectionDataMap, plugins []*ConnectionPlugin) ([]*ValidationFailure, ConnectionDataMap, []*ConnectionPlugin) {
 	var validatedPlugins []*ConnectionPlugin
-	var validatedUpdates = ConnectionMap{}
+	var validatedUpdates = ConnectionDataMap{}
 
 	var validationFailures []*ValidationFailure
 	for _, p := range plugins {

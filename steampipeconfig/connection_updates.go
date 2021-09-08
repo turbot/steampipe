@@ -5,25 +5,24 @@ import (
 	"reflect"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
 	"github.com/turbot/steampipe/utils"
 )
 
 type ConnectionUpdates struct {
-	Update         ConnectionMap
-	Delete         ConnectionMap
+	Update         ConnectionDataMap
+	Delete         ConnectionDataMap
 	MissingPlugins []string
 	// the connections which will exist after the update
-	RequiredConnections ConnectionMap
+	RequiredConnections ConnectionDataMap
 }
 
 func newConnectionUpdates() *ConnectionUpdates {
 	return &ConnectionUpdates{
-		Update:              ConnectionMap{},
-		Delete:              ConnectionMap{},
+		Update:              ConnectionDataMap{},
+		Delete:              ConnectionDataMap{},
 		MissingPlugins:      []string{},
-		RequiredConnections: ConnectionMap{},
+		RequiredConnections: ConnectionDataMap{},
 	}
 }
 
@@ -54,9 +53,9 @@ func (p ConnectionData) Equals(other *ConnectionData) bool {
 		reflect.DeepEqual(p.ConnectionConfig, other.ConnectionConfig)
 }
 
-type ConnectionMap map[string]*ConnectionData
+type ConnectionDataMap map[string]*ConnectionData
 
-func (m ConnectionMap) Equals(other ConnectionMap) bool {
+func (m ConnectionDataMap) Equals(other ConnectionDataMap) bool {
 	if m != nil && other == nil {
 		return false
 	}
@@ -78,7 +77,7 @@ func (m ConnectionMap) Equals(other ConnectionMap) bool {
 }
 
 // GetConnectionsToUpdate :: returns updates to be made to the database to sync with connection config
-func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*modconfig.Connection) (*ConnectionUpdates, error) {
+func GetConnectionsToUpdate(schemas []string, connectionConfig ConnectionMap) (*ConnectionUpdates, error) {
 	utils.LogTime("steampipeconfig.GetConnectionsToUpdate start")
 	defer utils.LogTime("steampipeconfig.GetConnectionsToUpdate end")
 
@@ -118,11 +117,11 @@ func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*modco
 }
 
 // load and parse the connection config
-func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (ConnectionMap, []string, error) {
+func getRequiredConnections(connectionConfig ConnectionMap) (ConnectionDataMap, []string, error) {
 	utils.LogTime("steampipeconfig.getRequiredConnections start")
 	defer utils.LogTime("steampipeconfig.getRequiredConnections end")
 
-	requiredConnections := ConnectionMap{}
+	requiredConnections := ConnectionDataMap{}
 	var missingPlugins []string
 
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration start")

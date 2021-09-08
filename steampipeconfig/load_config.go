@@ -13,7 +13,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
@@ -28,10 +27,25 @@ func LoadSteampipeConfig(workspacePath string, commandName string) (*SteampipeCo
 	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
 
 	_ = ensureDefaultConfigFile(constants.ConfigDir())
-	config, err := newSteampipeConfig(workspacePath, commandName)
+	config, err := loadSteampipeConfig(workspacePath, commandName)
 	if err != nil {
 		return nil, err
 	}
+	return config, nil
+}
+
+// LoadConnectionConfig loads the conneciton config but not the workspace options options
+func LoadConnectionConfig() (*SteampipeConfig, error) {
+	utils.LogTime("steampipeconfig.LoadSteampipeConfig start")
+	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
+	// load config from the installation folder -  load all spc files from config directory
+	include := filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension})
+	loadOptions := &loadConfigOptions{include: include}
+	config := NewSteampipeConfig("")
+	if err := loadConfig(constants.ConfigDir(), config, loadOptions); err != nil {
+		return nil, err
+	}
+
 	return config, nil
 }
 
@@ -46,9 +60,9 @@ func ensureDefaultConfigFile(configFolder string) error {
 	return nil
 }
 
-func newSteampipeConfig(workspacePath string, commandName string) (steampipeConfig *SteampipeConfig, err error) {
-	utils.LogTime("steampipeconfig.newSteampipeConfig start")
-	defer utils.LogTime("steampipeconfig.newSteampipeConfig end")
+func loadSteampipeConfig(workspacePath string, commandName string) (steampipeConfig *SteampipeConfig, err error) {
+	utils.LogTime("steampipeconfig.loadSteampipeConfig start")
+	defer utils.LogTime("steampipeconfig.loadSteampipeConfig end")
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -56,10 +70,7 @@ func newSteampipeConfig(workspacePath string, commandName string) (steampipeConf
 		}
 	}()
 
-	steampipeConfig = &SteampipeConfig{
-		Connections: make(map[string]*modconfig.Connection),
-		commandName: commandName,
-	}
+	steampipeConfig = NewSteampipeConfig(commandName)
 
 	// load config from the installation folder -  load all spc files from config directory
 	include := filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension})
