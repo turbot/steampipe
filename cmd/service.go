@@ -193,7 +193,9 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		client, err := local_db.NewLocalClient(constants.InvokerService)
 		utils.FailOnError(err)
 
-		local_db.RefreshConnectionAndSearchPaths(client)
+		err = local_db.RefreshConnectionAndSearchPaths(client)
+		// close client rather than deferring as we may be blocking
+		client.Close()
 		utils.FailOnError(err)
 
 		info, _ = local_db.GetStatus()
@@ -320,6 +322,7 @@ to force a restart.
 
 	client, err := local_db.NewLocalClient(constants.InvokerService)
 	utils.FailOnError(err)
+	defer client.Close()
 
 	err = local_db.RefreshConnectionAndSearchPaths(client)
 	utils.FailOnError(err)
