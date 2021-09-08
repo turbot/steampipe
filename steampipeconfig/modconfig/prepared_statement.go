@@ -27,8 +27,6 @@ func preparedStatementName(source PreparedStatementProvider) string {
 	prefix := fmt.Sprintf("%s_", source.ModName())
 
 	// build the hash of the source object and take first 4 bytes
-	// NOTE: as we are truncating the hash there is a theoretical possibility of name clash
-	// however as this only applies for very long control/query names, it's considered an acceptable risk
 	str := fmt.Sprintf("%v", source)
 	hash := utils.GetMD5Hash(str)[:4]
 
