@@ -36,17 +36,7 @@ func LoadSteampipeConfig(workspacePath string, commandName string) (*SteampipeCo
 
 // LoadConnectionConfig loads the conneciton config but not the workspace options options
 func LoadConnectionConfig() (*SteampipeConfig, error) {
-	utils.LogTime("steampipeconfig.LoadSteampipeConfig start")
-	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
-	// load config from the installation folder -  load all spc files from config directory
-	include := filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension})
-	loadOptions := &loadConfigOptions{include: include}
-	config := NewSteampipeConfig("")
-	if err := loadConfig(constants.ConfigDir(), config, loadOptions); err != nil {
-		return nil, err
-	}
-
-	return config, nil
+	return LoadSteampipeConfig("", "")
 }
 
 func ensureDefaultConfigFile(configFolder string) error {
