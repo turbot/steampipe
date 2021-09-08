@@ -41,16 +41,15 @@ func includeBashHelp(base string) string {
 	if runtime.GOOS == "darwin" {
 		buildUp = fmt.Sprintf(`%s
 
-		# This script depends on the 'bash-completion' package.
-		# If it is not installed already, you can install it via your OS’s package manager.
-		
-		# To install with 'homebrew':
-		$ brew install bash-completion
-		
-		# Once installed, to edit your '.bash_profile' file, execute the following:
-		$ echo "[ -f $(brew --prefix)/etc/bash_completion ] && . $(brew --prefix)/etc/bash_completion" >> ~/.bash_profile
-
-		$ steampipe completion bash > $(brew --prefix)/etc/bash_completion.d/steampipe
+    # This script depends on the 'bash-completion' package.
+    # If it is not installed already, you can install it via your OS’s package manager.
+    
+    # To install with 'homebrew':
+    $ brew install bash-completion
+    
+    # Once installed, to edit your '.bash_profile' file, execute the following:
+    $ echo "[ -f $(brew --prefix)/etc/bash_completion ] && . $(brew --prefix)/etc/bash_completion" >> ~/.bash_profile
+    $ steampipe completion bash > $(brew --prefix)/etc/bash_completion.d/steampipe
 `, buildUp)
 	} else if runtime.GOOS == "linux" {
 		buildUp = fmt.Sprintf(`%s
