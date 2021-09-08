@@ -16,8 +16,8 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
@@ -216,7 +216,7 @@ func initialiseCheck() *checkInitData {
 	}
 
 	// get a client
-	client, err := db.GetLocalClient(constants.InvokerCheck)
+	client, err := db_local.GetLocalClient(constants.InvokerCheck)
 	if err != nil {
 		initData.result.Error = err
 		return initData

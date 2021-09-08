@@ -1,9 +1,10 @@
-package local_db
+package db_local
 
 import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
@@ -13,17 +14,17 @@ func createSteampipeDbClient() (*sql.DB, error) {
 	utils.LogTime("db.createSteampipeDbClient start")
 	defer utils.LogTime("db.createSteampipeDbClient end")
 
-	return createDbClient(constants.DatabaseName, constants.DatabaseUser)
+	return createLocalDbClient(constants.DatabaseName, constants.DatabaseUser)
 }
 
 func createRootDbClient() (*sql.DB, error) {
 	utils.LogTime("db.createSteampipeRootDbClient start")
-	defer utils.LogTime("db.createSteampipeRootDbClient end")
+	defer utils.LogTime("db™.createSteampipeRootDbClient end")
 
-	return createDbClient(constants.DatabaseName, constants.DatabaseSuperUser)
+	return createLocalDbClient(constants.DatabaseName, constants.DatabaseSuperUser)
 }
 
-func createDbClient(dbname string, username string) (*sql.DB, error) {
+func createLocalDbClient(dbname string, username string) (*sql.DB, error) {
 	utils.LogTime("db.createDbClient start")
 	utils.LogTime(fmt.Sprintf("to %s with %s", dbname, username))
 	defer utils.LogTime("db.createDbClient end")
@@ -62,23 +63,24 @@ func createDbClient(dbname string, username string) (*sql.DB, error) {
 	return nil, fmt.Errorf("could not establish connection with database")
 }
 
-func createDbClientWithConnectionString(connectionString string) (*sql.DB, error) {
+// waits for the db to start accepting connections and returns true
+// returns false if the dbClient does not start within a stipulated time,
+func waitForConnection(conn *sql.DB) bool {
+	utils.LogTime("db.waitForConnection start")
+	defer utils.LogTime("db.waitForConnection end")
 
-	utils.LogTime("db.createDbClientWithConnectionString start")
-	defer utils.LogTime("db.createDbClient end")
-
-	log.Println("[TRACE] createDbClient")
-
-	// TODO add in username and password
-	db, err := sql.Open("postgres", connectionString)
-	if err != nil {
-		return nil, err
+	pingTimer := time.NewTicker(10 * time.Millisecond)
+	timeoutAt := time.After(5 * time.Second)
+	defer pingTimer.Stop()
+	for {
+		select {
+		case <-pingTimer.C:
+			pingErr := conn.Ping()
+			if pingErr == nil {
+				return true
+			}
+		case <-timeoutAt:
+			return false
+		}
 	}
-
-	// NEEDED?
-	if waitForConnection(db) {
-		return db, nil
-	}
-
-	return nil, fmt.Errorf("could not establish connection with database")
 }

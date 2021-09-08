@@ -1,22 +1,132 @@
-package local_db
+package db_local
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/turbot/steampipe/query/queryresult"
+
+	"github.com/spf13/viper"
+
+	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
 
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
-func (c *DbClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConnectionResult {
-	if !c.IsLocal() {
-		return &db_common.RefreshConnectionResult{}
+// LocalDbClient wraps over DbClient
+type LocalDbClient struct {
+	client        *db_client.DbClient
+	invoker       constants.Invoker
+	connectionMap *steampipeconfig.ConnectionMap
+}
+
+// GetLocalClient starts service if needed and creates a new LocalDbClient
+func GetLocalClient(invoker constants.Invoker) (db_common.Client, error) {
+	// start db if necessary
+	err := EnsureDbAndStartService(invoker)
+	if err != nil {
+		return nil, err
 	}
-	res := c.RefreshConnections()
+
+	client, err := NewLocalClient(invoker)
+	if err != nil {
+		ShutdownService(invoker)
+	}
+	// NOTE:  client shutdown will shutdown service (if invoker matches)
+	return client, nil
+}
+
+// NewLocalClient ensures that the database instance is running
+// and returns a `Client` to interact with it
+func NewLocalClient(invoker constants.Invoker) (*LocalDbClient, error) {
+	utils.LogTime("db.NewLocalClient start")
+	defer utils.LogTime("db.NewLocalClient end")
+
+	db, err := createSteampipeDbClient()
+	if err != nil {
+		return nil, err
+	}
+	dbClient, err := db_client.NewDbClientFromSqlClient(db)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LocalDbClient{client: dbClient, invoker: invoker}, nil
+}
+
+// Close implements Client
+// close the connection to the database and shuts down the backend
+func (c *LocalDbClient) Close() error {
+	if c.client != nil {
+		if err := c.client.Close(); err != nil {
+			return err
+		}
+	}
+	ShutdownService(c.invoker)
+	return nil
+}
+
+// SchemaMetadata implements Client
+func (c *LocalDbClient) SchemaMetadata() *schema.Metadata {
+	return c.client.SchemaMetadata()
+}
+
+func (c *LocalDbClient) ConnectionMap() *steampipeconfig.ConnectionMap {
+	return c.connectionMap
+}
+
+// LoadSchema  implements Client
+func (c *LocalDbClient) LoadSchema() {
+	c.client.LoadSchema()
+}
+
+// ExecuteSync implements Client
+func (c *LocalDbClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
+	return c.client.ExecuteSync(ctx, query, disableSpinner)
+}
+
+// Execute implements Client
+func (c *LocalDbClient) Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
+	return c.client.Execute(ctx, query, disableSpinner)
+}
+
+// CacheOn implements Client
+func (c *LocalDbClient) CacheOn() error {
+	return c.client.CacheOn()
+}
+
+// CacheOff implements Client
+func (c *LocalDbClient) CacheOff() error {
+	return c.client.CacheOff()
+}
+
+// CacheClear implements Client
+func (c *LocalDbClient) CacheClear() error {
+	return c.client.CacheClear()
+}
+
+// GetCurrentSearchPath implements Client
+func (c *LocalDbClient) GetCurrentSearchPath() ([]string, error) {
+	return c.client.GetCurrentSearchPath()
+}
+
+// SetClientSearchPath implements Client
+func (c *LocalDbClient) SetClientSearchPath(currentSearchPath ...string) error {
+	return c.client.SetClientSearchPath(currentSearchPath...)
+}
+
+// local only functions
+
+func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConnectionResult {
+	res := c.refreshConnections()
 	if res.Error != nil {
 		return res
 	}
@@ -26,18 +136,25 @@ func (c *DbClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConnectio
 	}
 
 	// load the connection state and cache it!
-	connectionMap, err := steampipeconfig.GetConnectionState(c.schemaMetadata.GetSchemas())
+	connectionMap, err := steampipeconfig.GetConnectionState(c.SchemaMetadata().GetSchemas())
 	if err != nil {
 		res.Error = err
 		return res
 	}
 	c.connectionMap = &connectionMap
 	// set service search path first - client may fall back to using it
-	if err := c.SetServiceSearchPath(); err != nil {
+	if err := c.setServiceSearchPath(); err != nil {
 		res.Error = err
 		return res
 	}
-	if err := c.SetClientSearchPath(); err != nil {
+
+	// get current search path, creating a new client to ensure we pick up recent changes
+	currentSearchPath, err := c.getCurrentSearchPath()
+	if err != nil {
+		res.Error = err
+		return res
+	}
+	if err := c.SetClientSearchPath(currentSearchPath...); err != nil {
 		res.Error = err
 		return res
 	}
@@ -45,23 +162,77 @@ func (c *DbClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConnectio
 	return res
 }
 
+// setServiceSearchPath sets the search path for the db service (by setting it on the steampipe user)
+func (c *LocalDbClient) setServiceSearchPath() error {
+	var searchPath []string
+
+	// is there a service search path in the config?
+	// check ConfigKeyDatabaseSearchPath config (this is the value specified in the database config)
+	if viper.IsSet(constants.ConfigKeyDatabaseSearchPath) {
+		searchPath = viper.GetStringSlice(constants.ConfigKeyDatabaseSearchPath)
+		// add 'internal' schema as last schema in the search path
+		searchPath = append(searchPath, constants.FunctionSchema)
+	} else {
+		// no config set - set service search path to default
+		searchPath = c.getDefaultSearchPath()
+	}
+
+	// escape the schema names
+	searchPath = db_common.PgEscapeSearchPath(searchPath)
+
+	log.Println("[TRACE] setting service search path to", searchPath)
+
+	// TODO set for the steampipe users ROLE, instead of steampipe user
+	// now construct and execute the query
+	query := fmt.Sprintf(
+		"alter user %s set search_path to %s;",
+		constants.DatabaseUser,
+		strings.Join(searchPath, ","),
+	)
+	_, err := c.client.ExecuteSync(context.Background(), query, true)
+	return err
+}
+
+// build default search path from the connection schemas, bookended with public and internal
+func (c *LocalDbClient) getDefaultSearchPath() []string {
+	searchPath := c.SchemaMetadata().GetSchemas()
+	sort.Strings(searchPath)
+	// add the 'public' schema as the first schema in the search_path. This makes it
+	// easier for users to build and work with their own tables, and since it's normally
+	// empty, doesn't make using steampipe tables any more difficult.
+	searchPath = append([]string{"public"}, searchPath...)
+	// add 'internal' schema as last schema in the search path
+	searchPath = append(searchPath, constants.FunctionSchema)
+
+	return searchPath
+}
+
+// create a new local client and load the current search path
+func (c *LocalDbClient) getCurrentSearchPath() ([]string, error) {
+	// NOTE: create a new client to do this, so we respond to any recent changes in service search path
+	// (as the service search path may have changed  after creating client 'c', e.g. if connections have changed)
+	newClient, err := NewLocalClient(constants.InvokerService)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+	return newClient.client.GetCurrentSearchPath()
+}
+
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func (c *DbClient) RefreshConnections() *db_common.RefreshConnectionResult {
-	if !c.IsLocal() {
-		return &db_common.RefreshConnectionResult{}
-	}
+func (c *LocalDbClient) refreshConnections() *db_common.RefreshConnectionResult {
 
 	res := &db_common.RefreshConnectionResult{}
-	utils.LogTime("db.RefreshConnections start")
-	defer utils.LogTime("db.RefreshConnections end")
+	utils.LogTime("db.refreshConnections start")
+	defer utils.LogTime("db.refreshConnections end")
 
 	// load required connection from global config
 	requiredConnections := steampipeconfig.Config.Connections
 
 	// first get a list of all existing schemas
-	schemas := c.schemaMetadata.GetSchemas()
+	schemas := c.client.SchemaMetadata().GetSchemas()
 
 	// refresh the connection state file - the removes any connections which do not exist in the list of current schema
 	updates, err := steampipeconfig.GetConnectionsToUpdate(schemas, requiredConnections)
@@ -69,7 +240,7 @@ func (c *DbClient) RefreshConnections() *db_common.RefreshConnectionResult {
 		res.Error = err
 		return res
 	}
-	log.Printf("[TRACE] RefreshConnections, updates: %+v\n", updates)
+	log.Printf("[TRACE] refreshConnections, updates: %+v\n", updates)
 
 	missingCount := len(updates.MissingPlugins)
 	if missingCount > 0 {
@@ -131,10 +302,10 @@ func (c *DbClient) RefreshConnections() *db_common.RefreshConnectionResult {
 
 }
 
-func (c *DbClient) updateConnectionMap() error {
+func (c *LocalDbClient) updateConnectionMap() error {
 	// load the connection state and cache it!
 	log.Println("[TRACE]", "retrieving connection map")
-	connectionMap, err := steampipeconfig.GetConnectionState(c.schemaMetadata.GetSchemas())
+	connectionMap, err := steampipeconfig.GetConnectionState(c.client.SchemaMetadata().GetSchemas())
 	if err != nil {
 		return err
 	}

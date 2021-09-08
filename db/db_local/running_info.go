@@ -1,4 +1,4 @@
-package local_db
+package db_local
 
 import (
 	"encoding/json"
@@ -11,8 +11,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// RunningDBInstanceInfo :: contains data about the running process
-// and it's credentials
+// RunningDBInstanceInfo contains data about the running process and it's credentials
 type RunningDBInstanceInfo struct {
 	Pid        int
 	Port       int

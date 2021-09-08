@@ -9,14 +9,14 @@ import (
 	"os/signal"
 	"strings"
 
-	"github.com/turbot/steampipe/db/local_db"
+	"github.com/turbot/steampipe/db/db_client"
+	"github.com/turbot/steampipe/db/db_local"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/interactive"
 	"github.com/turbot/steampipe/query/queryexecute"
@@ -181,9 +181,9 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 		var client db_common.Client
 		var err error
 		if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-			client, err = local_db.NewDbClient(constants.InvokerQuery, connectionString)
+			client, err = db_client.NewDbClient(connectionString)
 		} else {
-			client, err = db.GetLocalClient(constants.InvokerQuery)
+			client, err = db_local.GetLocalClient(constants.InvokerQuery)
 		}
 		if err != nil {
 			initData.Result.Error = err

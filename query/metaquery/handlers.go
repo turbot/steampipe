@@ -22,7 +22,7 @@ var commonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.Cmd
 
 // QueryExecutor :: this is a container interface which allows us to call into the db/Client object
 type QueryExecutor interface {
-	SetClientSearchPath() error
+	SetClientSearchPath(...string) error
 	GetCurrentSearchPath() ([]string, error)
 	CacheOn() error
 	CacheOff() error

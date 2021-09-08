@@ -1,8 +1,9 @@
-package local_db
+package db_client
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -17,7 +18,7 @@ import (
 	"golang.org/x/text/message"
 )
 
-// ExecuteSync implements DbClient
+// ExecuteSync implements Client
 // execute a query against this client and wait for the result
 func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	result, err := c.Execute(ctx, query, disableSpinner)
@@ -36,7 +37,7 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner
 	return syncResult, nil
 }
 
-// Execute  implements DbClient
+// Execute  implements Client
 // execute the provided query against the Database in the given context.Context
 // Bear in mind that whenever ExecuteQuery is called, the returned `queryresult.Result` MUST be fully read -
 // otherwise the transaction is left open, which will block the connection and will prevent subsequent communications
@@ -209,6 +210,28 @@ func readRow(rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]inter
 		return nil, utils.HandleCancelError(err)
 	}
 	return populateRow(columnValues, colTypes), nil
+}
+
+func populateRow(columnValues []interface{}, colTypes []*sql.ColumnType) []interface{} {
+	result := make([]interface{}, len(columnValues))
+	for i, columnValue := range columnValues {
+		if columnValue != nil {
+			colType := colTypes[i]
+			dbType := colType.DatabaseTypeName()
+			switch dbType {
+			case "JSON", "JSONB":
+				var val interface{}
+				if err := json.Unmarshal(columnValue.([]byte), &val); err != nil {
+					// what???
+					// TODO how to handle error
+				}
+				result[i] = val
+			default:
+				result[i] = columnValue
+			}
+		}
+	}
+	return result
 }
 
 func humanizeRowCount(count int) string {
