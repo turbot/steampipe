@@ -8,8 +8,8 @@ import (
 )
 
 const maxPreparedStatementNameLength = 63
-const preparesStatementQuerySuffix = "_psq"
-const preparesStatementControlSuffix = "_psc"
+const preparesStatementQuerySuffix = "_q"
+const preparesStatementControlSuffix = "_c"
 
 // GetPreparedStatementExecuteSQL return the SQLs to run the query as a prepared statement
 func GetPreparedStatementExecuteSQL(source PreparedStatementProvider, args *QueryArgs) (string, error) {
@@ -25,28 +25,29 @@ func GetPreparedStatementExecuteSQL(source PreparedStatementProvider, args *Quer
 func preparedStatementName(source PreparedStatementProvider) string {
 	var name, suffix string
 	prefix := fmt.Sprintf("%s_", source.ModName())
+
+	// build the hash of the source object and take first 4 bytes
+	str := fmt.Sprintf("%v", source)
+	hash := utils.GetMD5Hash(str)[:4]
+
+	// build suffix using a char to indicate control or query, and the truncated hash
 	switch t := source.(type) {
 	case *Query:
 		name = t.ShortName
-		suffix = preparesStatementQuerySuffix
+		suffix = preparesStatementQuerySuffix + hash
 	case *Control:
 		name = t.ShortName
-		suffix = preparesStatementControlSuffix
+		suffix = preparesStatementControlSuffix + hash
 	}
-	preparedStatementName := fmt.Sprintf("%s%s%s", prefix, name, suffix)
 
-	// is this name too long?
-	if len(preparedStatementName) > maxPreparedStatementNameLength {
-		// if the name is longer than the max length, truncate it and add a truncated hash
-		// NOTE: as we are truncating the hash there is a theoretical possibility of name clash
-		// however as this only applies for very long control/query names, it's considered an acceptable risk
-		// NOTE 2: hash the name WITH the suffix to avoid clashed between controls and queries with the same long name
-		suffix = fmt.Sprintf("_%s", utils.GetMD5Hash(name + suffix)[:8])
-
-		// rebuild the name -  determine how much of the original name to include
-		nameLength := maxPreparedStatementNameLength - (len(prefix) + len(suffix))
-
-		preparedStatementName = fmt.Sprintf("%s%s%s", prefix, name[:nameLength], suffix)
+	// truncate the name if necessary
+	nameLength := len(name)
+	maxNameLength := maxPreparedStatementNameLength - (len(prefix) + len(suffix))
+	if nameLength > maxNameLength {
+		nameLength = maxNameLength
 	}
+
+	// construct the name
+	preparedStatementName := fmt.Sprintf("%s%s%s", prefix, name[:nameLength], suffix)
 	return preparedStatementName
 }
