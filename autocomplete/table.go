@@ -26,8 +26,7 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 	pluginSchemaMap := map[string]bool{}
 
 	for schemaName, schemaDetails := range schema.Schemas {
-
-		isTemporarySchema := (schemaName == schema.TemporarySchemaName)
+		isTemporarySchema := schemaName == schema.TemporarySchemaName
 
 		// when the `schema.Schemas` map is built, it is built from the configured connections and `public`
 		// all other schema are ignored. Refer to Client.loadSchema()
