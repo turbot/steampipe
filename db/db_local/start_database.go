@@ -1,4 +1,4 @@
-package local_db
+package db_local
 
 import (
 	"fmt"
@@ -54,8 +54,6 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
 
-	var client *DbClient
-
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
@@ -65,10 +63,6 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 			if startResult == ServiceStarted {
 				StopDB(false, invoker, nil)
 			}
-		}
-
-		if client != nil {
-			client.Close()
 		}
 	}()
 	info, err := GetStatus()
@@ -248,7 +242,7 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 		return err
 	}
 
-	connection, err := createDbClient("postgres", constants.DatabaseSuperUser)
+	connection, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
 	if err != nil {
 		postgresCmd.Process.Kill()
 		return err

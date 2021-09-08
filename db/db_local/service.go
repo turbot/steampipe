@@ -1,14 +1,15 @@
-package local_db
+package db_local
 
 import (
 	"log"
+	"os"
 
 	"github.com/turbot/steampipe/constants"
 
 	"github.com/turbot/steampipe/utils"
 )
 
-// EnsureDbAndStartService :: ensure db is installed and start service if necessary
+// EnsureDbAndStartService ensures db is installed and starts service if necessary
 func EnsureDbAndStartService(invoker constants.Invoker) error {
 	utils.LogTime("db.EnsureDbAndStartService start")
 	defer utils.LogTime("db.EnsureDbAndStartService end")
@@ -40,4 +41,34 @@ func EnsureDbAndStartService(invoker constants.Invoker) error {
 		return ensureCommandSchema()
 	}
 	return nil
+}
+
+// GetStatus checks that the db instance is running and returns its details
+func GetStatus() (*RunningDBInstanceInfo, error) {
+	utils.LogTime("db.GetStatus start")
+	defer utils.LogTime("db.GetStatus end")
+
+	info, err := loadRunningInstanceInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	if info == nil {
+		log.Println("[TRACE] GetRunStatus - loadRunningInstanceInfo returned nil ")
+		// we do not have a info file
+		return nil, nil
+	}
+
+	pidExists, err := PidExists(info.Pid)
+	if err != nil {
+		return nil, err
+	}
+	if !pidExists {
+		log.Printf("[TRACE] GetRunStatus - pid %v does not exist\n", info.Pid)
+		// nothing to do here
+		os.Remove(runningInfoFilePath())
+		return nil, nil
+	}
+
+	return info, nil
 }

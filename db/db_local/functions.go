@@ -1,4 +1,4 @@
-package local_db
+package db_local
 
 import (
 	"fmt"

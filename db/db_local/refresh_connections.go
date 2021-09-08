@@ -1,4 +1,4 @@
-package local_db
+package db_local
 
 // RefreshConnectionAndSearchPaths creates a local client and refreshed connections and search paths
 func RefreshConnectionAndSearchPaths(client *LocalClient) error {

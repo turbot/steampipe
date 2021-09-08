@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/db/local_db"
+	"github.com/turbot/steampipe/db/db_local"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -55,7 +55,7 @@ func (r *Runner) Run() {
 		}, &waitGroup)
 
 		// remove log files older than 7 days
-		runJobAsync(func() { local_db.TrimLogs() }, &waitGroup)
+		runJobAsync(func() { db_local.TrimLogs() }, &waitGroup)
 
 		// wait for all jobs to complete
 		waitGroup.Wait()

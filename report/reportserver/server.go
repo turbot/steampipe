@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/turbot/steampipe/db"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/db/db_local"
 	"gopkg.in/olahol/melody.v1"
 
 	"github.com/turbot/go-kit/types"
@@ -47,7 +46,7 @@ type ReportClientInfo struct {
 }
 
 func NewServer(ctx context.Context) (*Server, error) {
-	dbClient, err := db.GetLocalClient(constants.InvokerReport)
+	dbClient, err := db_local.GetLocalClient(constants.InvokerReport)
 	if err != nil {
 		return nil, err
 	}

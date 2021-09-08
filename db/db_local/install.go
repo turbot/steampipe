@@ -1,4 +1,4 @@
-package local_db
+package db_local
 
 import (
 	"fmt"
@@ -127,6 +127,53 @@ func PrepareDb(spinner *spinner.Spinner) error {
 		}
 	}
 	return nil
+}
+
+// IsInstalled checks and reports whether the embedded database is installed and setup
+func IsInstalled() bool {
+	utils.LogTime("db.IsInstalled start")
+	defer utils.LogTime("db.IsInstalled end")
+
+	// check that both postgres binary and initdb binary exist
+	// and are executable by us
+
+	if _, err := os.Stat(getInitDbBinaryExecutablePath()); os.IsNotExist(err) {
+		return false
+	}
+
+	if _, err := os.Stat(getPostgresBinaryExecutablePath()); os.IsNotExist(err) {
+		return false
+	}
+
+	if _, err := os.Stat(getFDWBinaryLocation()); os.IsNotExist(err) {
+		return false
+	}
+
+	fdwSQLFile, fdwControlFile := getFDWSQLAndControlLocation()
+
+	if _, err := os.Stat(fdwSQLFile); os.IsNotExist(err) {
+		return false
+	}
+	if _, err := os.Stat(fdwControlFile); os.IsNotExist(err) {
+		return false
+	}
+
+	// TO DO:
+	// 	- move this out ot this function - make the "upgrade" optional
+	// 	- add function to get the latest digest
+	// // get the signature of the binary
+	// // we do this by having a signature file
+	// // which stores the md5 hash of the URL we downloaded
+	// // from and then comparing that against the has of the
+	// // URL we have  in the constants
+	// installedSignature := getInstalledBinarySignature()
+	// desiredSignature := get
+
+	// if installedSignature != desiredSignature {
+	// 	return true
+	// }
+
+	return true
 }
 
 func fdwNeedsUpdate() bool {
@@ -262,7 +309,7 @@ func installSteampipeDatabaseAndUser(steampipePassword string, rootPassword stri
 	utils.LogTime("db.installSteampipeDatabase start")
 	defer utils.LogTime("db.installSteampipeDatabase end")
 
-	rawClient, err := createDbClient("postgres", constants.DatabaseSuperUser)
+	rawClient, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
 	if err != nil {
 		return err
 	}
@@ -351,54 +398,6 @@ func installForeignServer() error {
 	}
 	_, err := executeSqlAsRoot(statements...)
 	return err
-}
-
-// IsInstalled :: checks and reports whether the embedded database is installed and setup
-// IsInstalled checks and reports whether the embedded database is installed and setup
-func IsInstalled() bool {
-	utils.LogTime("db.IsInstalled start")
-	defer utils.LogTime("db.IsInstalled end")
-
-	// check that both postgres binary and initdb binary exist
-	// and are executable by us
-
-	if _, err := os.Stat(getInitDbBinaryExecutablePath()); os.IsNotExist(err) {
-		return false
-	}
-
-	if _, err := os.Stat(getPostgresBinaryExecutablePath()); os.IsNotExist(err) {
-		return false
-	}
-
-	if _, err := os.Stat(getFDWBinaryLocation()); os.IsNotExist(err) {
-		return false
-	}
-
-	fdwSQLFile, fdwControlFile := getFDWSQLAndControlLocation()
-
-	if _, err := os.Stat(fdwSQLFile); os.IsNotExist(err) {
-		return false
-	}
-	if _, err := os.Stat(fdwControlFile); os.IsNotExist(err) {
-		return false
-	}
-
-	// TO DO:
-	// 	- move this out ot this function - make the "upgrade" optional
-	// 	- add function to get the latest digest
-	// // get the signature of the binary
-	// // we do this by having a signature file
-	// // which stores the md5 hash of the URL we downloaded
-	// // from and then comparing that against the has of the
-	// // URL we have  in the constants
-	// installedSignature := getInstalledBinarySignature()
-	// desiredSignature := get
-
-	// if installedSignature != desiredSignature {
-	// 	return true
-	// }
-
-	return true
 }
 
 func updateDownloadedBinarySignature() error {

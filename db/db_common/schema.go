@@ -1,4 +1,4 @@
-package local_db
+package db_common
 
 import (
 	"database/sql"
@@ -21,7 +21,7 @@ type schemaRecord struct {
 	TableDescription  string
 }
 
-func buildSchemaMetadata(rows *sql.Rows) (*schema.Metadata, error) {
+func BuildSchemaMetadata(rows *sql.Rows) (*schema.Metadata, error) {
 	utils.LogTime("db.buildSchemaMetadata start")
 	defer utils.LogTime("db.buildSchemaMetadata end")
 
