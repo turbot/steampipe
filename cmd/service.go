@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/steampipe/steampipeconfig"
+	"github.com/turbot/steampipe/workspace"
 
 	"github.com/turbot/steampipe/db/local_db"
 
@@ -179,9 +179,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	} else {
 		// start db, refreshing connections
 		status, err := local_db.StartDB(cmdconfig.DatabasePort(), listen, invoker)
-		if err != nil {
-			utils.FailOnError(err)
-		}
+		utils.FailOnError(err)
 
 		if status == local_db.ServiceFailedToStart {
 			utils.ShowError(fmt.Errorf("steampipe service failed to start"))
@@ -189,11 +187,15 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 
 		if status == local_db.ServiceAlreadyRunning {
-			utils.FailOnError(fmt.Errorf("steampipe service is already running"))
+			panic("steampipe service is already running")
 		}
-		if err := local_db.RefreshConnectionAndSearchPaths(invoker); err != nil {
-			utils.FailOnError(err)
-		}
+
+		client, err := local_db.NewLocalClient(constants.InvokerService)
+		utils.FailOnError(err)
+
+		local_db.RefreshConnectionAndSearchPaths(client)
+		utils.FailOnError(err)
+
 		info, _ = local_db.GetStatus()
 	}
 	printStatus(info)
@@ -204,13 +206,13 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 }
 
 func runServiceInForeground(invoker constants.Invoker) {
+
 	fmt.Println("Hit Ctrl+C to stop the service")
 
 	sigIntChannel := make(chan os.Signal, 1)
 	signal.Notify(sigIntChannel, os.Interrupt)
 
 	checkTimer := time.NewTicker(100 * time.Millisecond)
-	connectionPollTimer := time.NewTicker(1 * time.Second)
 	defer checkTimer.Stop()
 
 	client, err := local_db.NewLocalClient(invoker)
@@ -218,6 +220,9 @@ func runServiceInForeground(invoker constants.Invoker) {
 		utils.ShowError(err)
 		return
 	}
+
+	connectionWatcher, err := workspace.NewConnectionWatcher(client, func(error) {})
+	defer connectionWatcher.Close()
 
 	var lastCtrlC time.Time
 
@@ -252,18 +257,6 @@ func runServiceInForeground(invoker constants.Invoker) {
 				fmt.Println("Service stopped")
 				return
 			}
-			// get the current status
-		case <-connectionPollTimer.C:
-			// TODO add new function to just load connection config, not options
-			config, err := steampipeconfig.LoadSteampipeConfig("", "")
-			if err != nil {
-				utils.ShowError(err)
-				continue
-			}
-			steampipeconfig.Config = config
-			refreshResult := client.RefreshConnectionAndSearchPaths()
-			// display any initialisation warnings
-			refreshResult.ShowWarnings()
 		}
 	}
 
@@ -325,9 +318,11 @@ to force a restart.
 		return
 	}
 
-	if err := local_db.RefreshConnectionAndSearchPaths(constants.InvokerService); err != nil {
-		utils.FailOnError(err)
-	}
+	client, err := local_db.NewLocalClient(constants.InvokerService)
+	utils.FailOnError(err)
+
+	err = local_db.RefreshConnectionAndSearchPaths(client)
+	utils.FailOnError(err)
 
 	fmt.Println("Steampipe service restarted")
 

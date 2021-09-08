@@ -95,7 +95,7 @@ func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(erro
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
-		Exclude:     w.exclusions,
+		Exclude:     append(w.exclusions, "**/.*"),
 		ListFlag:    w.listFlag,
 		// we should look into passing the callback function into the underlying watcher
 		// we need to analyze the kind of errors that come out from the watcher and
@@ -424,7 +424,8 @@ func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig
 }
 
 func (w *Workspace) loadExclusions() error {
-	w.exclusions = []string{}
+	// default to ignoring hidden files and folders
+	w.exclusions = []string{"**/.*"}
 
 	ignorePath := filepath.Join(w.Path, constants.WorkspaceIgnoreFile)
 	file, err := os.Open(ignorePath)
