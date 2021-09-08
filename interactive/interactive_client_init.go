@@ -32,13 +32,23 @@ func (c *InteractiveClient) readInitDataStream() {
 		return
 	}
 
+	// now create prepared statements
 	log.Printf("[TRACE] readInitDataStream - data has arrived")
+
+	log.Printf("[TRACE] creating prepared statements")
+	utils.LogTime("cmd.getQueryInitDataAsync CreatePreparedStatements")
+
+	initData.Result.Error = db_common.CreatePreparedStatements(context.Background(), c.workspace().GetResourceMaps(), c.client())
+	if initData.Result.Error != nil {
+		c.initResultChan <- initData.Result
+		return
+	}
 
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
 		// provide an explicit error handler which re-renders the prompt after displaying the error
-		err := c.initData.Workspace.SetupWatcher(c.initData.Client, c.workspaceWatcherErrorHandler)
-		initData.Result.Error = err
+		initData.Result.Error = c.initData.Workspace.SetupWatcher(c.initData.Client, c.workspaceWatcherErrorHandler)
+
 	}
 	c.initResultChan <- initData.Result
 }
