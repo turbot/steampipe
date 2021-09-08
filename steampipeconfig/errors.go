@@ -9,6 +9,9 @@ import (
 )
 
 func HandleGrpcError(err error, connection, call string) error {
+	if err == nil {
+		return nil
+	}
 	// if this is a not implemented error we silently swallow it
 	status, ok := status.FromError(err)
 	if !ok {
