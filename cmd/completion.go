@@ -88,11 +88,15 @@ func completionHelp(cmd *cobra.Command, args []string) {
 	helpString := ""
 
 	if runtime.GOOS == "darwin" {
-		helpString = `Note: Completions must be enabled in your environment. Please refer to: https://blah/path/
+		helpString = `
+Note: Completions must be enabled in your environment. Please refer to: https://steampipe.io/docs/reference/cli-args#steampipe-completion
 	
-To load completions:`
+To load completions:
+`
 	} else if runtime.GOOS == "linux" {
-		helpString = "To load completions:"
+		helpString = `
+To load completions:
+`
 	}
 
 	helpString = includeBashHelp(helpString)
