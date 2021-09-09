@@ -16,7 +16,9 @@ _Bug fixes_
 * Fix for delay in `loading results` spinner showing, caused by asyncronous initialisation. ([#671](https://github.com/turbot/steampipe/issues/671))
 * Fix for missing `control_description`, `control_title` in `csv` output of `check` command. ([#739](https://github.com/turbot/steampipe/issues/739))
 * Fix for `0` exit code even if `service start` fails. ([#762](https://github.com/turbot/steampipe/issues/762))
-* Fix issue where configs refering to unavailable plugin will display incorrect error message. ([#796](https://github.com/turbot/steampipe/issues/796))
+* Fix issue where configs referring to unavailable plugin will display incorrect error message. ([#796](https://github.com/turbot/steampipe/issues/796))
+* Mod parsing now raises an error if duplicate locals are found. ([#846](https://github.com/turbot/steampipe/issues/846))
+* Fix JSON data with '\u0000' resulting in Postgres error "unsupported Unicode escape sequence". ([#93](https://github.com/turbot/steampipe-postgres-fdw/issues/93))
 
 ## v0.7.3 [2021-08-18]
 _Bug fixes_
