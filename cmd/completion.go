@@ -7,13 +7,12 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/utils"
 )
 
 func generateCompletionScriptsCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:                   "completion [bash|zsh|fish]",
-		Args:                  cobra.ExactValidArgs(1),
+		Args:                  cobra.ArbitraryArgs,
 		DisableFlagsInUseLine: true,
 		ValidArgs:             []string{"bash", "zsh", "fish"},
 		Run:                   runGenCompletionScriptsCmd,
@@ -33,26 +32,22 @@ func generateCompletionScriptsCmd() *cobra.Command {
 func includeBashHelp(base string) string {
 	buildUp := base
 	buildUp = fmt.Sprintf(`%s
-  Bash:
-    # To load for the current session, execute:
-    $ source <(steampipe completion bash)
-`, buildUp)
+  Bash:`, buildUp)
 
 	if runtime.GOOS == "darwin" {
 		buildUp = fmt.Sprintf(`%s
-    # This script depends on the 'bash-completion' package.
-    # If it is not installed already, you can install it via your OS’s package manager.
-    
-    # To install with 'homebrew':
-    $ brew install bash-completion
-    
-    # Once installed, to edit your '.bash_profile' file, execute the following:
-    $ echo "[ -f $(brew --prefix)/etc/bash_completion ] && . $(brew --prefix)/etc/bash_completion" >> ~/.bash_profile
+    # Load for the current session:
+    $ source <(steampipe completion bash)
+		
+    # Load for every session (requires shell restart):
     $ steampipe completion bash > $(brew --prefix)/etc/bash_completion.d/steampipe
 `, buildUp)
 	} else if runtime.GOOS == "linux" {
 		buildUp = fmt.Sprintf(`%s
-    # To load completions for every session, execute once:
+    # Load for the current session:
+    $ source <(steampipe completion bash)
+
+    # Load for every session (requires shell restart):
     $ steampipe completion bash > /etc/bash_completion.d/steampipe
 	`, buildUp)
 	}
@@ -66,15 +61,8 @@ func includeZshHelp(base string) string {
 	if runtime.GOOS == "darwin" {
 		buildUp = fmt.Sprintf(`%s
   Zsh:
-    # If shell completion is not already enabled in your environment, you will need to enable it.
-
-    # To enable completion in your environment, execute:
-    $ echo "autoload -U compinit; compinit" >> ~/.zshrc
-    
-    # To load completions for each session, execute once:
+    # Load for every session (requires shell restart):
     $ steampipe completion zsh > "${fpath[1]}/steampipe"
-    
-    # You will need to start a new shell for this setup to take effect.
 `, buildUp)
 	}
 
@@ -86,10 +74,10 @@ func includeFishHelp(base string) string {
 
 	buildUp = fmt.Sprintf(`%s
   fish:
-    # To enable completion for the current session:
+    # Load for the current session:
     $ steampipe completion fish | source
     
-    # To load completions for each session, execute once:
+    # Load for every session (requires shell restart):
     $ steampipe completion fish > ~/.config/fish/completions/steampipe.fish
 	`, buildUp)
 
@@ -97,7 +85,16 @@ func includeFishHelp(base string) string {
 }
 
 func completionHelp(cmd *cobra.Command, args []string) {
-	helpString := "To load completions:"
+	helpString := ""
+
+	if runtime.GOOS == "darwin" {
+		helpString = `Note: Completions must be enabled in your environment. Please refer to: https://blah/path/
+	
+To load completions:`
+	} else if runtime.GOOS == "linux" {
+		helpString = "To load completions:"
+	}
+
 	helpString = includeBashHelp(helpString)
 	helpString = includeZshHelp(helpString)
 	helpString = includeFishHelp(helpString)
@@ -107,6 +104,11 @@ func completionHelp(cmd *cobra.Command, args []string) {
 }
 
 func runGenCompletionScriptsCmd(cmd *cobra.Command, args []string) {
+	if len(args) != 1 {
+		completionHelp(cmd, args)
+		return
+	}
+
 	completionFor := args[0]
 
 	switch completionFor {
@@ -117,6 +119,6 @@ func runGenCompletionScriptsCmd(cmd *cobra.Command, args []string) {
 	case "fish":
 		cmd.Root().GenFishCompletion(os.Stdout, false)
 	default:
-		utils.ShowError(fmt.Errorf("completion for '%s' is not supported yet", completionFor))
+		completionHelp(cmd, args)
 	}
 }
