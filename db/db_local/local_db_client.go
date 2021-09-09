@@ -215,7 +215,7 @@ func (c *LocalDbClient) getCurrentSearchPath() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
+
 	return newClient.client.GetCurrentSearchPath()
 }
 
