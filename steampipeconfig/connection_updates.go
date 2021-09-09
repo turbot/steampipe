@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
 	"github.com/turbot/steampipe/utils"
 )
@@ -77,7 +78,7 @@ func (m ConnectionDataMap) Equals(other ConnectionDataMap) bool {
 }
 
 // GetConnectionsToUpdate :: returns updates to be made to the database to sync with connection config
-func GetConnectionsToUpdate(schemas []string, connectionConfig ConnectionMap) (*ConnectionUpdates, error) {
+func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*modconfig.Connection) (*ConnectionUpdates, error) {
 	utils.LogTime("steampipeconfig.GetConnectionsToUpdate start")
 	defer utils.LogTime("steampipeconfig.GetConnectionsToUpdate end")
 
@@ -117,7 +118,7 @@ func GetConnectionsToUpdate(schemas []string, connectionConfig ConnectionMap) (*
 }
 
 // load and parse the connection config
-func getRequiredConnections(connectionConfig ConnectionMap) (ConnectionDataMap, []string, error) {
+func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (ConnectionDataMap, []string, error) {
 	utils.LogTime("steampipeconfig.getRequiredConnections start")
 	defer utils.LogTime("steampipeconfig.getRequiredConnections end")
 

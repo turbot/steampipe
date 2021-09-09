@@ -187,7 +187,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 
 		if status == local_db.ServiceAlreadyRunning {
-			panic("steampipe service is already running")
+			utils.FailOnError(fmt.Errorf("steampipe service is already running"))
 		}
 
 		client, err := local_db.NewLocalClient(constants.InvokerService)
@@ -208,7 +208,6 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 }
 
 func runServiceInForeground(invoker constants.Invoker) {
-
 	fmt.Println("Hit Ctrl+C to stop the service")
 
 	sigIntChannel := make(chan os.Signal, 1)
@@ -224,12 +223,21 @@ func runServiceInForeground(invoker constants.Invoker) {
 	}
 
 	connectionWatcher, err := workspace.NewConnectionWatcher(client, func(error) {})
-	defer connectionWatcher.Close()
 
 	var lastCtrlC time.Time
 
 	for {
 		select {
+		case <-checkTimer.C:
+			// get the current status
+			newInfo, err := local_db.GetStatus()
+			if err != nil {
+				continue
+			}
+			if newInfo == nil {
+				fmt.Println("Service stopped")
+				return
+			}
 		case <-sigIntChannel:
 			fmt.Print("\r")
 			count, err := local_db.GetCountOfConnectedClients()
@@ -247,18 +255,11 @@ func runServiceInForeground(invoker constants.Invoker) {
 			fmt.Println("Stopping service")
 			// close our client
 			client.Close()
+			// close the connection watcher
+			connectionWatcher.Close()
 			local_db.StopDB(false, invoker, nil)
 			fmt.Println("Service Stopped")
 			return
-		case <-checkTimer.C:
-			newInfo, err := local_db.GetStatus()
-			if err != nil {
-				continue
-			}
-			if newInfo == nil {
-				fmt.Println("Service stopped")
-				return
-			}
 		}
 	}
 

@@ -19,7 +19,7 @@ import (
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
 type SteampipeConfig struct {
 	// map of connection name to partially parsed connection config
-	Connections ConnectionMap
+	Connections map[string]*modconfig.Connection
 
 	// Steampipe options
 	DefaultConnectionOptions *options.Connection
@@ -31,7 +31,7 @@ type SteampipeConfig struct {
 
 func NewSteampipeConfig(commandName string) *SteampipeConfig {
 	return &SteampipeConfig{
-		Connections: make(ConnectionMap),
+		Connections: make(map[string]*modconfig.Connection),
 		commandName: commandName,
 	}
 }

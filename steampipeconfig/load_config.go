@@ -34,7 +34,8 @@ func LoadSteampipeConfig(workspacePath string, commandName string) (*SteampipeCo
 	return config, nil
 }
 
-// LoadConnectionConfig loads the conneciton config but not the workspace options options
+// LoadConnectionConfig loads the connection config but not the workspace options
+// this is called by the fdw
 func LoadConnectionConfig() (*SteampipeConfig, error) {
 	return LoadSteampipeConfig("", "")
 }
@@ -69,12 +70,7 @@ func loadSteampipeConfig(workspacePath string, commandName string) (steampipeCon
 		return nil, err
 	}
 
-	// At present, this function is used both by steampipe to load connection config AND options,
-	// and by the fdw to load just the conneciton config
-	// when the fdw calls itr, it will NOT pass a workspace path
-	// TODO refactor this to enable loading connection config only for FDW
-
-	// now load config from the workspace folder
+	// now load config from the workspace folder, if provided
 	// this has precedence and so will overwrite any config which has already been set
 	// check workspace folder exists
 	if workspacePath != "" {
