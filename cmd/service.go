@@ -189,7 +189,9 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		if status == db_local.ServiceAlreadyRunning {
 			utils.FailOnError(fmt.Errorf("steampipe service is already running"))
 		}
+
 		if err := db_local.RefreshConnectionAndSearchPaths(invoker); err != nil {
+			db_local.StopDB(false, constants.InvokerService, nil)
 			utils.FailOnError(err)
 		}
 		info, _ = db_local.GetStatus()

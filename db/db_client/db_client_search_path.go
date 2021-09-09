@@ -48,11 +48,10 @@ func (c *DbClient) SetClientSearchPath(currentSearchPath ...string) error {
 		// add 'internal' schema as last schema in the search path
 		searchPath = append(searchPath, constants.FunctionSchema)
 	} else {
-		// so no search path was set in config - use the current
+		// so no search path was set in config - use the current search poath
 
 		// if this function is called from local db client, it will pass in the current search path
 		// we must do this as the local client will reload the service search path
-
 		if len(currentSearchPath) == 0 {
 			// no current search path was passed in - fetch it
 			var err error
@@ -60,6 +59,7 @@ func (c *DbClient) SetClientSearchPath(currentSearchPath ...string) error {
 				return err
 			}
 		}
+		searchPath = currentSearchPath
 	}
 
 	// add in the prefix if present
