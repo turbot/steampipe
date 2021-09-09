@@ -1,5 +1,5 @@
-## v0.8.0 [TBD]
-
+## v0.8.0 [2021-09-09]
+_What's new?_
 * Add HCL support for variables. ([#754](https://github.com/turbot/steampipe/issues/754))
 * Add HCL support for passing parameters to queries. ([#802](https://github.com/turbot/steampipe/issues/802))
 * Add `completion` command providing completion support for bash, zshell and fish. ([#481](https://github.com/turbot/steampipe/issues/481))
