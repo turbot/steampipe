@@ -59,12 +59,15 @@ func NewLocalClient(invoker constants.Invoker) (*LocalDbClient, error) {
 		return nil, err
 	}
 
-	return &LocalDbClient{client: dbClient, invoker: invoker}, nil
+	c := &LocalDbClient{client: dbClient, invoker: invoker}
+	log.Printf("[TRACE] created local client %p", c)
+	return c, nil
 }
 
 // Close implements Client
 // close the connection to the database and shuts down the backend
 func (c *LocalDbClient) Close() error {
+	log.Printf("[TRACE] close local client %p", c)
 	if c.client != nil {
 		if err := c.client.Close(); err != nil {
 			return err
@@ -215,7 +218,7 @@ func (c *LocalDbClient) getCurrentSearchPath() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	defer newClient.Close()
 	return newClient.client.GetCurrentSearchPath()
 }
 
