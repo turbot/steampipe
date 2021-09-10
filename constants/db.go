@@ -18,6 +18,7 @@ const (
 	DatabaseSuperUser   = "root"
 	DatabaseUser        = "steampipe"
 	DatabaseName        = "steampipe"
+	DatabaseUsersRole   = "steampipe_users"
 )
 
 // constants for installing db and fdw images
