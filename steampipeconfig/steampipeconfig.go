@@ -16,7 +16,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/options"
 )
 
-// SteampipeConfig :: Connection map and Steampipe settings
+// SteampipeConfig is a struct to hold Connection map and Steampipe options
 type SteampipeConfig struct {
 	// map of connection name to partially parsed connection config
 	Connections map[string]*modconfig.Connection
@@ -27,6 +27,13 @@ type SteampipeConfig struct {
 	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
 	commandName              string
+}
+
+func NewSteampipeConfig(commandName string) *SteampipeConfig {
+	return &SteampipeConfig{
+		Connections: make(map[string]*modconfig.Connection),
+		commandName: commandName,
+	}
 }
 
 func (c *SteampipeConfig) Validate() error {
@@ -188,6 +195,7 @@ func (c *SteampipeConfig) GetConnectionOptions(connectionName string) *options.C
 		result.CacheTTL = connection.Options.CacheTTL
 	}
 	return result
+
 }
 
 func (c *SteampipeConfig) String() string {

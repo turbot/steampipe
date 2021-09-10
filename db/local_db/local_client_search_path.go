@@ -7,11 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/steampipe/db/db_common"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/query/queryresult"
 )
 
 // GetCurrentSearchPath implements DbClient
@@ -37,11 +37,11 @@ func (c *LocalClient) GetCurrentSearchPath() ([]string, error) {
 	return currentSearchPath, nil
 }
 
-// SetClientSearchPath implements DbClient
-//sets the search path for this client
+// SetSessionSearchPath implements DbClient
+//sets the search path for this session
 // if either a search-path or search-path-prefix is set in config, set the search path
-// (otherwise fall back to service search path)
-func (c *LocalClient) SetClientSearchPath() error {
+// (otherwise fall back to user search path)
+func (c *LocalClient) SetSessionSearchPath() error {
 	searchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 
@@ -51,7 +51,7 @@ func (c *LocalClient) SetClientSearchPath() error {
 		searchPath = append(searchPath, constants.FunctionSchema)
 	} else {
 		// so no search path was set in config
-		// in this case we need to load the existing service search path
+		// in this case we need to load the existing user search path
 		var err error
 		if searchPath, err = getCurrentSearchPath(); err != nil {
 			return err
@@ -67,6 +67,8 @@ func (c *LocalClient) SetClientSearchPath() error {
 	// escape the schema
 	searchPath = escapeSearchPath(searchPath)
 
+	log.Println("[TRACE] setting session search path to", searchPath)
+
 	// now construct and execute the query
 	q := fmt.Sprintf("set search_path to %s", strings.Join(searchPath, ","))
 	_, err := c.ExecuteSync(context.Background(), q, true)
@@ -77,8 +79,8 @@ func (c *LocalClient) SetClientSearchPath() error {
 }
 
 func getCurrentSearchPath() ([]string, error) {
-	// NOTE: create a new client to do this so we respond to any recent changes in service search path
-	// (as the service search path may have changed  after creating client 'c', e.g. if connections have changed)
+	// NOTE: create a new client to do this so we respond to any recent changes in user search path
+	// (as the user search path may have changed  after creating client 'c', e.g. if connections have changed)
 	c, err := NewLocalClient(constants.InvokerService)
 	if err != nil {
 		return nil, err
@@ -87,34 +89,56 @@ func getCurrentSearchPath() ([]string, error) {
 	return c.GetCurrentSearchPath()
 }
 
-// SetServiceSearchPath sets the search path for the db service (by setting it on the steampipe user)
-func (c *LocalClient) SetServiceSearchPath() error {
+// SetUserSearchPath sets the search path for the db service
+// do this wy finding all users assigned to the role steampipe_users and set their search path
+func (c *LocalClient) SetUserSearchPath() error {
+	log.Println("[Trace] SetUserSearchPath")
 	var searchPath []string
 
-	// is there a service search path in the config?
+	// is there a user search path in the config?
 	// check ConfigKeyDatabaseSearchPath config (this is the value specified in the database config)
 	if viper.IsSet(constants.ConfigKeyDatabaseSearchPath) {
 		searchPath = viper.GetStringSlice(constants.ConfigKeyDatabaseSearchPath)
 		// add 'internal' schema as last schema in the search path
 		searchPath = append(searchPath, constants.FunctionSchema)
 	} else {
-		// no config set - set service search path to default
+		// no config set - set user search path to default
 		searchPath = c.getDefaultSearchPath()
 	}
 
 	// escape the schema names
 	searchPath = escapeSearchPath(searchPath)
 
-	log.Println("[TRACE] setting service search path to", searchPath)
+	log.Println("[TRACE] setting user search path to", searchPath)
 
-	// now construct and execute the query
-	query := fmt.Sprintf(
-		"alter user %s set search_path to %s;",
-		constants.DatabaseUser,
-		strings.Join(searchPath, ","),
-	)
-	_, err := c.ExecuteSync(context.Background(), query, true)
-	return err
+	// get all roles which are a member of steampipe_users
+	query := fmt.Sprintf(`select usename from pg_user where pg_has_role(usename, '%s', 'member')`, constants.DatabaseUsersRole)
+	res, err := c.ExecuteSync(context.Background(), query, true)
+	if err != nil {
+		return err
+	}
+
+	// set the search path for all these roles
+	var queries []string
+	for _, row := range res.Rows {
+		rowResult := row.(*queryresult.RowResult)
+		user := string(rowResult.Data[0].([]uint8))
+		if user == "root" {
+			continue
+		}
+		queries = append(queries, fmt.Sprintf(
+			"alter user %s set search_path to %s;",
+			user,
+			strings.Join(searchPath, ","),
+		))
+	}
+	query = strings.Join(queries, "\n")
+	log.Printf("[TRACE] user search path sql: %s", query)
+	_, err = executeSqlAsRoot(query)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *LocalClient) addSearchPathPrefix(searchPathPrefix []string, searchPath []string) []string {

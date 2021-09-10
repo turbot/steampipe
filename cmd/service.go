@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/turbot/steampipe/workspace"
+
 	"github.com/turbot/steampipe/db/local_db"
 
 	psutils "github.com/shirou/gopsutil/process"
@@ -177,9 +179,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	} else {
 		// start db, refreshing connections
 		status, err := local_db.StartDB(cmdconfig.DatabasePort(), listen, invoker)
-		if err != nil {
-			utils.FailOnError(err)
-		}
+		utils.FailOnError(err)
 
 		if status == local_db.ServiceFailedToStart {
 			utils.ShowError(fmt.Errorf("steampipe service failed to start"))
@@ -189,56 +189,80 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		if status == local_db.ServiceAlreadyRunning {
 			utils.FailOnError(fmt.Errorf("steampipe service is already running"))
 		}
-		if err := local_db.RefreshConnectionAndSearchPaths(invoker); err != nil {
-			utils.FailOnError(err)
-		}
+
+		client, err := local_db.NewLocalClient(constants.InvokerService)
+		utils.FailOnError(err)
+
+		err = local_db.RefreshConnectionAndSearchPaths(client)
+		// close client rather than deferring as we may be blocking
+		client.Close()
+		utils.FailOnError(err)
+
 		info, _ = local_db.GetStatus()
 	}
 	printStatus(info)
 
 	if viper.GetBool(constants.ArgForeground) {
-		fmt.Println("Hit Ctrl+C to stop the service")
+		runServiceInForeground(invoker)
+	}
+}
 
-		sigIntChannel := make(chan os.Signal, 1)
-		signal.Notify(sigIntChannel, os.Interrupt)
+func runServiceInForeground(invoker constants.Invoker) {
+	fmt.Println("Hit Ctrl+C to stop the service")
 
-		checkTimer := time.NewTicker(100 * time.Millisecond)
-		defer checkTimer.Stop()
+	sigIntChannel := make(chan os.Signal, 1)
+	signal.Notify(sigIntChannel, os.Interrupt)
 
-		var lastCtrlC time.Time
+	checkTimer := time.NewTicker(100 * time.Millisecond)
+	defer checkTimer.Stop()
 
-		for {
-			select {
-			case <-checkTimer.C:
-				// get the current status
-				newInfo, err := local_db.GetStatus()
-				if err != nil {
-					continue
-				}
-				if newInfo == nil {
-					fmt.Println("Service stopped")
-					return
-				}
-			case <-sigIntChannel:
-				fmt.Print("\r")
-				count, err := local_db.GetCountOfConnectedClients()
-				if err != nil {
-					return
-				}
-				if count > 0 {
-					if lastCtrlC.IsZero() || time.Since(lastCtrlC) > 30*time.Second {
-						lastCtrlC = time.Now()
-						fmt.Println(buildForegroundClientsConnectedMsg())
-						continue
-					}
-				}
-				fmt.Println("Stopping service")
-				local_db.StopDB(false, invoker, nil)
-				fmt.Println("Service Stopped")
+	client, err := local_db.NewLocalClient(invoker)
+	if err != nil {
+		utils.ShowError(err)
+		return
+	}
+
+	connectionWatcher, err := workspace.NewConnectionWatcher(client, func(error) {})
+
+	var lastCtrlC time.Time
+
+	for {
+		select {
+		case <-checkTimer.C:
+			// get the current status
+			newInfo, err := local_db.GetStatus()
+			if err != nil {
+				continue
+			}
+			if newInfo == nil {
+				fmt.Println("Service stopped")
 				return
 			}
+		case <-sigIntChannel:
+			fmt.Print("\r")
+			count, err := local_db.GetCountOfConnectedClients()
+			if err != nil {
+				return
+			}
+			// we know there will be at least 1 client (ours)
+			if count > 1 {
+				if lastCtrlC.IsZero() || time.Since(lastCtrlC) > 30*time.Second {
+					lastCtrlC = time.Now()
+					fmt.Println(buildForegroundClientsConnectedMsg())
+					continue
+				}
+			}
+			fmt.Println("Stopping service")
+			// close our client
+			client.Close()
+			// close the connection watcher
+			connectionWatcher.Close()
+			local_db.StopDB(false, invoker, nil)
+			fmt.Println("Service Stopped")
+			return
 		}
 	}
+
 }
 
 func runServiceRestartCmd(cmd *cobra.Command, args []string) {
@@ -297,9 +321,12 @@ to force a restart.
 		return
 	}
 
-	if err := local_db.RefreshConnectionAndSearchPaths(constants.InvokerService); err != nil {
-		utils.FailOnError(err)
-	}
+	client, err := local_db.NewLocalClient(constants.InvokerService)
+	utils.FailOnError(err)
+	defer client.Close()
+
+	err = local_db.RefreshConnectionAndSearchPaths(client)
+	utils.FailOnError(err)
 
 	fmt.Println("Steampipe service restarted")
 

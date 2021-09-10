@@ -13,7 +13,7 @@ import (
 type CompleterInput struct {
 	Query       string
 	Schema      *schema.Metadata
-	Connections *steampipeconfig.ConnectionMap
+	Connections *steampipeconfig.ConnectionDataMap
 }
 
 func (h *CompleterInput) args() []string {

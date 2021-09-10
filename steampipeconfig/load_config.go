@@ -13,7 +13,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
@@ -22,17 +21,23 @@ import (
 var Config *SteampipeConfig
 var defaultConfigFileName = "default.spc"
 
-// LoadSteampipeConfig :: load the HCL config and parse into the global Config variable
+// LoadSteampipeConfig loads the HCL connection config and workspace options
 func LoadSteampipeConfig(workspacePath string, commandName string) (*SteampipeConfig, error) {
 	utils.LogTime("steampipeconfig.LoadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
 
 	_ = ensureDefaultConfigFile(constants.ConfigDir())
-	config, err := newSteampipeConfig(workspacePath, commandName)
+	config, err := loadSteampipeConfig(workspacePath, commandName)
 	if err != nil {
 		return nil, err
 	}
 	return config, nil
+}
+
+// LoadConnectionConfig loads the connection config but not the workspace options
+// this is called by the fdw
+func LoadConnectionConfig() (*SteampipeConfig, error) {
+	return LoadSteampipeConfig("", "")
 }
 
 func ensureDefaultConfigFile(configFolder string) error {
@@ -46,9 +51,9 @@ func ensureDefaultConfigFile(configFolder string) error {
 	return nil
 }
 
-func newSteampipeConfig(workspacePath string, commandName string) (steampipeConfig *SteampipeConfig, err error) {
-	utils.LogTime("steampipeconfig.newSteampipeConfig start")
-	defer utils.LogTime("steampipeconfig.newSteampipeConfig end")
+func loadSteampipeConfig(workspacePath string, commandName string) (steampipeConfig *SteampipeConfig, err error) {
+	utils.LogTime("steampipeconfig.loadSteampipeConfig start")
+	defer utils.LogTime("steampipeconfig.loadSteampipeConfig end")
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -56,10 +61,7 @@ func newSteampipeConfig(workspacePath string, commandName string) (steampipeConf
 		}
 	}()
 
-	steampipeConfig = &SteampipeConfig{
-		Connections: make(map[string]*modconfig.Connection),
-		commandName: commandName,
-	}
+	steampipeConfig = NewSteampipeConfig(commandName)
 
 	// load config from the installation folder -  load all spc files from config directory
 	include := filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension})
@@ -68,12 +70,7 @@ func newSteampipeConfig(workspacePath string, commandName string) (steampipeConf
 		return nil, err
 	}
 
-	// At present, this function is used both by steampipe to load connection config AND options,
-	// and by the fdw to load just the conneciton config
-	// when the fdw calls itr, it will NOT pass a workspace path
-	// TODO refactor this to enable loading connection config only for FDW
-
-	// now load config from the workspace folder
+	// now load config from the workspace folder, if provided
 	// this has precedence and so will overwrite any config which has already been set
 	// check workspace folder exists
 	if workspacePath != "" {

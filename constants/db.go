@@ -18,12 +18,13 @@ const (
 	DatabaseSuperUser   = "root"
 	DatabaseUser        = "steampipe"
 	DatabaseName        = "steampipe"
+	DatabaseUsersRole   = "steampipe_users"
 )
 
 // constants for installing db and fdw images
 const (
 	DatabaseVersion = "12.1.0"
-	FdwVersion      = "0.2.2"
+	FdwVersion      = "0.3.0-dev.0"
 
 	// DefaultEmbeddedPostgresImage :: The 12.1.0 image uses the older jar format 12.1.0-v2 is the same version of postgres,
 	// just packaged as gzipped tar files (consistent with oras, faster to unzip).  Once everyone is

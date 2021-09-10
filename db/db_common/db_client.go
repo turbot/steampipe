@@ -12,7 +12,7 @@ import (
 type Client interface {
 	Close() error
 	GetCurrentSearchPath() ([]string, error)
-	SetClientSearchPath() error
+	SetSessionSearchPath() error
 	ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error)
 	Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error)
 	SchemaMetadata() *schema.Metadata
@@ -26,6 +26,6 @@ type Client interface {
 
 	// RemoteClient will have empty implementations
 
-	ConnectionMap() *steampipeconfig.ConnectionMap
+	ConnectionMap() *steampipeconfig.ConnectionDataMap
 	RefreshConnectionAndSearchPaths() *RefreshConnectionResult
 }

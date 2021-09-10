@@ -264,7 +264,7 @@ func TestLoadConfig(t *testing.T) {
 		constants.SteampipeDir = steampipeDir
 
 		// now load config
-		config, err := newSteampipeConfig(workspaceDir, "")
+		config, err := loadSteampipeConfig(workspaceDir, "")
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf("Test: '%s'' FAILED with unexpected error: %v", name, err)

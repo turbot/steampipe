@@ -36,12 +36,18 @@ func FailOnErrorWithMessage(err error, message string) {
 }
 
 func ShowError(err error) {
+	if err == nil {
+		return
+	}
 	err = HandleCancelError(err)
 	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, TransformErrorToSteampipe(err))
 }
 
 // ShowErrorWithMessage displays the given error nicely with the given message
 func ShowErrorWithMessage(err error, message string) {
+	if err == nil {
+		return
+	}
 	err = HandleCancelError(err)
 	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, TransformErrorToSteampipe(err))
 }
@@ -50,6 +56,9 @@ func ShowErrorWithMessage(err error, message string) {
 // with all the unnecessary information that comes from the
 // drivers and libraries
 func TransformErrorToSteampipe(err error) error {
+	if err == nil {
+		return err
+	}
 	// transform to a context
 	err = HandleCancelError(err)
 
