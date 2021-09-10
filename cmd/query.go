@@ -69,7 +69,7 @@ Examples:
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").
-		AddStringFlag(constants.ArgConnectionString, "", "", "Database connection string").
+		AddStringFlag(constants.ArgConnectionString, "", "", "Database connection string - used to connect to remote database instead of running database locally").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.").
 		AddBoolFlag(constants.ArgWatch, "", true, "Watch SQL files in the current workspace (works only in interactive mode)").
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a query session (comma-separated)").

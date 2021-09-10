@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/steampipe/db/db_client"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -73,6 +75,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "text", "Select the console output format. Possible values are json, text, brief, none").
+		AddStringFlag(constants.ArgConnectionString, "", "", "Database connection string - used to connect to remote database instead of running database locally").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports check time.").
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
@@ -216,7 +219,13 @@ func initialiseCheck() *checkInitData {
 	}
 
 	// get a client
-	client, err := db_local.GetLocalClient(constants.InvokerCheck)
+	var client db_common.Client
+	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
+		client, err = db_client.NewDbClient(connectionString)
+	} else {
+		client, err = db_local.GetLocalClient(constants.InvokerQuery)
+	}
+
 	if err != nil {
 		initData.result.Error = err
 		return initData
