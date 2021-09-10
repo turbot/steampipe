@@ -109,13 +109,13 @@ func (c *LocalClient) SetServiceSearchPath() error {
 
 	log.Println("[TRACE] setting service search path to", searchPath)
 
+	// now construct and execute the query
 	query := fmt.Sprintf(
-		"alter role %s set search_path to %s;",
-		constants.DatabaseUsersRole,
+		"alter user %s set search_path to %s;",
+		constants.DatabaseUser,
 		strings.Join(searchPath, ","),
 	)
-	// create root client
-	_, err := executeSqlAsRoot(query)
+	_, err := c.ExecuteSync(context.Background(), query, true)
 	return err
 }
 
