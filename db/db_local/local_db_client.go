@@ -188,11 +188,12 @@ func (c *LocalDbClient) setServiceSearchPath() error {
 	// TODO set for the steampipe users ROLE, instead of steampipe user
 	// now construct and execute the query
 	query := fmt.Sprintf(
-		"alter user %s set search_path to %s;",
-		constants.DatabaseUser,
+		"alter role %s set search_path to %s;",
+		constants.DatabaseUsersRole,
 		strings.Join(searchPath, ","),
 	)
-	_, err := c.client.ExecuteSync(context.Background(), query, true)
+	// create root client
+	_, err := executeSqlAsRoot(query)
 	return err
 }
 
