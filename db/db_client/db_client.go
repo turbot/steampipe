@@ -59,9 +59,9 @@ func (c *DbClient) SchemaMetadata() *schema.Metadata {
 	return c.schemaMetadata
 }
 
-func (c *DbClient) ConnectionMap() *steampipeconfig.ConnectionMap {
+func (c *DbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
 	// TODO how to we get connections for remote DB
-	return &steampipeconfig.ConnectionMap{}
+	return &steampipeconfig.ConnectionDataMap{}
 }
 
 // LoadSchema implements Client

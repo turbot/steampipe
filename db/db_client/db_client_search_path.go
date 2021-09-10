@@ -35,11 +35,11 @@ func (c *DbClient) GetCurrentSearchPath() ([]string, error) {
 	return currentSearchPath, nil
 }
 
-// SetClientSearchPath implements Client
+// SetSessionSearchPath implements Client
 // sets the search path for this client
 // if either a search-path or search-path-prefix is set in config, set the search path
 // (otherwise fall back to service search path)
-func (c *DbClient) SetClientSearchPath(currentSearchPath ...string) error {
+func (c *DbClient) SetSessionSearchPath(currentSearchPath ...string) error {
 	searchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 

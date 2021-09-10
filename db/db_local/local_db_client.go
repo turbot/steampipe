@@ -25,7 +25,7 @@ import (
 type LocalDbClient struct {
 	client        *db_client.DbClient
 	invoker       constants.Invoker
-	connectionMap *steampipeconfig.ConnectionMap
+	connectionMap *steampipeconfig.ConnectionDataMap
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
@@ -82,7 +82,7 @@ func (c *LocalDbClient) SchemaMetadata() *schema.Metadata {
 	return c.client.SchemaMetadata()
 }
 
-func (c *LocalDbClient) ConnectionMap() *steampipeconfig.ConnectionMap {
+func (c *LocalDbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
 	return c.connectionMap
 }
 
@@ -121,9 +121,9 @@ func (c *LocalDbClient) GetCurrentSearchPath() ([]string, error) {
 	return c.client.GetCurrentSearchPath()
 }
 
-// SetClientSearchPath implements Client
-func (c *LocalDbClient) SetClientSearchPath(currentSearchPath ...string) error {
-	return c.client.SetClientSearchPath(currentSearchPath...)
+// SetSessionSearchPath implements Client
+func (c *LocalDbClient) SetSessionSearchPath(currentSearchPath ...string) error {
+	return c.client.SetSessionSearchPath(currentSearchPath...)
 }
 
 // local only functions
@@ -157,7 +157,7 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConn
 		res.Error = err
 		return res
 	}
-	if err := c.SetClientSearchPath(currentSearchPath...); err != nil {
+	if err := c.SetSessionSearchPath(currentSearchPath...); err != nil {
 		res.Error = err
 		return res
 	}

@@ -2,21 +2,22 @@ package cmd
 
 import (
 	"fmt"
+
 	"os"
 	"os/signal"
 	"strings"
 	"time"
 
-	"github.com/turbot/steampipe/db/db_local"
-	"github.com/turbot/steampipe/workspace"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/workspace"
 )
 
 // serviceCmd :: Service management commands
@@ -178,7 +179,6 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		status, err := db_local.StartDB(cmdconfig.DatabasePort(), listen, invoker)
 		utils.FailOnError(err)
 
-
 		if status == db_local.ServiceFailedToStart {
 			utils.ShowError(fmt.Errorf("steampipe service failed to start"))
 			return
@@ -188,13 +188,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 			utils.FailOnError(fmt.Errorf("steampipe service is already running"))
 		}
 
-		client, err := local_db.NewLocalClient(constants.InvokerService)
-		utils.FailOnError(err)
-
-
-		err := db_local.RefreshConnectionAndSearchPaths(client)
-		// close client rather than deferring as we may be blocking
-		client.Close()
+		err = db_local.RefreshConnectionAndSearchPaths(invoker)
 
 		if err != nil {
 			db_local.StopDB(false, constants.InvokerService, nil)
@@ -218,54 +212,46 @@ func runServiceInForeground(invoker constants.Invoker) {
 	checkTimer := time.NewTicker(100 * time.Millisecond)
 	defer checkTimer.Stop()
 
-	client, err := local_db.NewLocalClient(invoker)
-	if err != nil {
-		utils.ShowError(err)
-		return
-	}
-
-	connectionWatcher, err := workspace.NewConnectionWatcher(client, func(error) {})
-
+	connectionWatcher, err := workspace.NewConnectionWatcher(invoker, func(error) {})
+	utils.FailOnError(err)
 	var lastCtrlC time.Time
 
-		for {
-			select {
-			case <-checkTimer.C:
-				// get the current status
-				newInfo, err := db_local.GetStatus()
-				if err != nil {
-					continue
-				}
-				if newInfo == nil {
-					fmt.Println("Service stopped")
-					return
-				}
-			case <-sigIntChannel:
-				fmt.Print("\r")
-				count, err := db_local.GetCountOfConnectedClients()
-				if err != nil {
-					return
-				}
-				// we know there will be at least 1 client (ours)
-				if count > 1 {
-					if lastCtrlC.IsZero() || time.Since(lastCtrlC) > 30*time.Second {
-						lastCtrlC = time.Now()
-						fmt.Println(buildForegroundClientsConnectedMsg())
-						continue
-					}
-				}
-				fmt.Println("Stopping service")
-				// close our client
-				client.Close()
-				// close the connection watcher
-				connectionWatcher.Close()
-				local_db.StopDB(false, invoker, nil)
-				fmt.Println("Service Stopped")
+	for {
+		select {
+		case <-checkTimer.C:
+			// get the current status
+			newInfo, err := db_local.GetStatus()
+			if err != nil {
+				continue
+			}
+			if newInfo == nil {
+				fmt.Println("Service stopped")
 				return
 			}
+		case <-sigIntChannel:
+			fmt.Print("\r")
+			count, err := db_local.GetCountOfConnectedClients()
+			if err != nil {
+				return
+			}
+
+			// we know there will be at least 1 client (connectionWatcher)
+			if count > 1 {
+				if lastCtrlC.IsZero() || time.Since(lastCtrlC) > 30*time.Second {
+					lastCtrlC = time.Now()
+					fmt.Println(buildForegroundClientsConnectedMsg())
+					continue
+				}
+			}
+			// close the connection watcher
+			connectionWatcher.Close()
+			fmt.Println("Stopping service")
+
+			db_local.StopDB(false, invoker, nil)
+			fmt.Println("Service Stopped")
+			return
 		}
 	}
-
 }
 
 func runServiceRestartCmd(cmd *cobra.Command, args []string) {
@@ -319,11 +305,7 @@ to force a restart.
 		return
 	}
 
-	client, err := db_local.NewLocalClient(constants.InvokerService)
-	utils.FailOnError(err)
-	defer client.Close()
-
-	err = db_local.RefreshConnectionAndSearchPaths(client)
+	err = db_local.RefreshConnectionAndSearchPaths(constants.InvokerService)
 	utils.FailOnError(err)
 	fmt.Println("Steampipe service restarted")
 

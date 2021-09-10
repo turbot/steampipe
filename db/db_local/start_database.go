@@ -40,7 +40,6 @@ const (
 )
 
 // IsValid is a validator for StartListenType known values
-
 func (slt StartListenType) IsValid() error {
 	switch slt {
 	case ListenTypeNetwork, ListenTypeLocal:
