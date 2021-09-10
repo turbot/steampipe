@@ -73,16 +73,19 @@ func (c *LocalClient) RefreshConnectionAndSearchPaths() (res *db_common.RefreshC
 			return
 		}
 		c.connectionMap = &connectionMap
-		// set service search path first - client may fall back to using it
-		if err := c.SetServiceSearchPath(); err != nil {
-			res.Error = err
-			return
-		}
-		if err := c.SetClientSearchPath(); err != nil {
-			res.Error = err
-			return
-		}
 	}
+	// NOTE: set user search path even if there is no connectionm change - this is in case users have been added,
+	// to ensure we set their search path
+	// set user search path first - client may fall back to using it
+	if err := c.SetUserSearchPath(); err != nil {
+		res.Error = err
+		return
+	}
+	if err := c.SetSessionSearchPath(); err != nil {
+		res.Error = err
+		return
+	}
+
 	return
 }
 

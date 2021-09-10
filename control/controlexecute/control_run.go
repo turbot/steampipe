@@ -122,7 +122,7 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 			viper.Set(constants.ArgSearchPathPrefix, strings.Split(*control.SearchPathPrefix, ","))
 		}
 
-		client.SetClientSearchPath()
+		client.SetSessionSearchPath()
 	}
 
 	shouldBeDoneBy := time.Now().Add(240 * time.Second)
@@ -165,7 +165,7 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 			// the search path was modified. Reset it!
 			viper.Set(constants.ArgSearchPath, originalConfiguredSearchPath)
 			viper.Set(constants.ArgSearchPathPrefix, originalConfiguredSearchPathPrefix)
-			client.SetClientSearchPath()
+			client.SetSessionSearchPath()
 		}
 		close(gatherDoneChan)
 	}()

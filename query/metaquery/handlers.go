@@ -22,7 +22,7 @@ var commonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.Cmd
 
 // QueryExecutor :: this is a container interface which allows us to call into the db/Client object
 type QueryExecutor interface {
-	SetClientSearchPath() error
+	SetSessionSearchPath() error
 	GetCurrentSearchPath() ([]string, error)
 	CacheOn() error
 	CacheOff() error
@@ -91,7 +91,7 @@ func setOrGetSearchPath(input *HandlerInput) error {
 
 		// now that the viper is set, call back into the client (exposed via QueryExecutor) which
 		// already knows how to setup the search_paths with the viper values
-		return input.Executor.SetClientSearchPath()
+		return input.Executor.SetSessionSearchPath()
 	}
 	return nil
 }
@@ -108,7 +108,7 @@ func setSearchPathPrefix(input *HandlerInput) error {
 
 	// now that the viper is set, call back into the client (exposed via QueryExecutor) which
 	// already knows how to setup the search_paths with the viper values
-	return input.Executor.SetClientSearchPath()
+	return input.Executor.SetSessionSearchPath()
 }
 
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
