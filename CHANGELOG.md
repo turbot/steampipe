@@ -1,3 +1,10 @@
+## v0.8.1 [2021-09-12]
+_Bug fixes_
+* Disable database log polling, which was causing high CPU usage. ([#885](https://github.com/turbot/steampipe/issues/885))
+* Fix null reference exception for certain `is null` queries. ([#97](https://github.com/turbot/steampipe-postgres-fdw/issues/97)) 
+* Add support for CIDROID type when converting Postgres datums to qual values. ([#54](https://github.com/turbot/steampipe-postgres-fdw/issues/54))
+* Fix autocomplete casing for .cache metacommands. ([#875](https://github.com/turbot/steampipe/issues/875))
+
 ## v0.8.0 [2021-09-09]
 _What's new?_
 * Add HCL support for variables. ([#754](https://github.com/turbot/steampipe/issues/754))
