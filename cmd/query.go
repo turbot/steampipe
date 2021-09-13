@@ -9,15 +9,14 @@ import (
 	"os/signal"
 	"strings"
 
-	"github.com/turbot/steampipe/db/db_client"
-	"github.com/turbot/steampipe/db/db_local"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/interactive"
 	"github.com/turbot/steampipe/query/queryexecute"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -99,6 +98,8 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 
 	err := validateConnectionStringArgs()
+	utils.FailOnError(err)
+
 	// enable spinner only in interactive mode
 	interactiveMode := len(args) == 0
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, interactiveMode)
@@ -139,17 +140,24 @@ func validateConnectionStringArgs() error {
 		return nil
 	}
 
-	if viper.GetString(constants.ArgDatabase) == "" {
+	var database, apiKey string
+	if database = viper.GetString(constants.ArgDatabase); database == "" {
 		// no database set - so no connection string
 		return nil
 	}
 
 	// so database was set - api key must be set as well
-	if viper.GetString(constants.ArgAPIKey) == "" {
+	if apiKey = viper.GetString(constants.ArgAPIKey); apiKey == "" {
 		return fmt.Errorf("if %s is passed then %s must be set", constants.ArgDatabase, constants.ArgAPIKey)
 	}
 
 	// so we have a database ands an api key - try to retrieve the connection string and set it in viper
+
+	connectionString, err := db_common.GetConnectionString(database, apiKey)
+	if err != nil {
+		return err
+	}
+	viper.Set(constants.ArgConnectionString, connectionString)
 
 	return nil
 }

@@ -193,6 +193,9 @@ func initialiseCheck() *checkInitData {
 		return initData
 	}
 
+	err = validateConnectionStringArgs()
+	utils.FailOnError(err)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	startCancelHandler(cancel)
 	initData.ctx = ctx
