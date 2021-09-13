@@ -21,14 +21,14 @@ import (
 type StopStatus int
 
 const (
-	// ServiceStopped :: StopStatus - service was stopped.
+	// ServiceStopped indicates service was stopped.
 	// start from 10 to prevent confusion with int zero-value
 	ServiceStopped StopStatus = iota + 10
-	// ServiceNotRunning :: StopStatus - service was not running
+	// ServiceNotRunning indicates service was not running
 	ServiceNotRunning
-	// ServiceStopFailed :: StopStatus - service could not be stopped
+	// ServiceStopFailed indicates service could not be stopped
 	ServiceStopFailed
-	// ServiceStopTimedOut :: StopStatus - service stop attempt timed out
+	// ServiceStopTimedOut indicates service stop attempt timed out
 	ServiceStopTimedOut
 )
 
