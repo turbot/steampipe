@@ -33,6 +33,8 @@ const (
 	ArgVariable                = "var"
 	ArgVarFile                 = "var-file"
 	ArgConnectionString        = "connection-string"
+	ArgDatabase                = "database"
+	ArgAPIKey                  = "api-key"
 )
 
 /// metaquery mode arguments

@@ -8,14 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/steampipe/query/queryresult"
-
 	"github.com/spf13/viper"
-
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
-
-	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
