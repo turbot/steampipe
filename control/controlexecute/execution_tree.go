@@ -200,7 +200,7 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTree
 	return nil, fmt.Errorf("no controls found matching argument '%s'", arg)
 }
 
-// Get a map of control names from the reflection table steampipe_control
+// Get a map of control names from the introspection table steampipe_control
 // This is used to implement the 'where' control filtering
 func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereClause string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
@@ -213,7 +213,7 @@ func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereC
 
 	// if the query is NOT a named query, we need to construct a full query by adding a select
 	if !isNamedQuery {
-		query = fmt.Sprintf("select resource_name from %s where %s", constants.ReflectionTableControl, whereClause)
+		query = fmt.Sprintf("select resource_name from %s where %s", constants.IntrospectionTableControl, whereClause)
 	}
 
 	res, err := e.client.ExecuteSync(ctx, query, false)

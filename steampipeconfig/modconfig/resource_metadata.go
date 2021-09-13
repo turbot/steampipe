@@ -1,7 +1,7 @@
 package modconfig
 
 // ResourceMetadata ius a struct containing additional data
-// about each resource, used to populate the reflection tables
+// about each resource, used to populate the introspection tables
 type ResourceMetadata struct {
 	ResourceName string `column:"resource_name,text"`
 	// mod name in the format mod.<modName>@<version?

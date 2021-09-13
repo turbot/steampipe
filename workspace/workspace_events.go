@@ -47,12 +47,12 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 	// clear watcher error
 	w.watcherError = nil
 	resourceMaps := w.GetResourceMaps()
-	// if resources have changed, update metadata tables and prepared statements
+	// if resources have changed, update introspection tables and prepared statements
 	if !prevResourceMaps.Equals(resourceMaps) {
 		// first update prepared statements
 		db_common.UpdatePreparedStatements(context.Background(), resourceMaps, client)
 		// then update the introspection tables
-		db_common.UpdateMetadataTables(resourceMaps, client)
+		db_common.UpdateIntrospectionTables(resourceMaps, client)
 	}
 	w.raiseReportChangedEvents(w.getPanelMap(), prevPanels, w.getReportMap(), prevReports)
 }

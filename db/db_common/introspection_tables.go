@@ -14,12 +14,12 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// TagColumn :: tag used to specify the column name and type in the reflection tables
+// TagColumn is the tag used to specify the column name and type in the introspection tables
 const TagColumn = "column"
 
-func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, client Client) error {
-	utils.LogTime("db.UpdateMetadataTables start")
-	defer utils.LogTime("db.UpdateMetadataTables end")
+func UpdateIntrospectionTables(workspaceResources *modconfig.WorkspaceResourceMaps, client Client) error {
+	utils.LogTime("db.UpdateIntrospectionTables start")
+	defer utils.LogTime("db.UpdateIntrospectionTables end")
 
 	// get the create sql for each table type
 	clearSql := getClearTablesSql()
@@ -31,14 +31,14 @@ func UpdateMetadataTables(workspaceResources *modconfig.WorkspaceResourceMaps, c
 	// execute the query, passing 'true' to disable the spinner
 	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"), true)
 	if err != nil {
-		return fmt.Errorf("failed to update reflection tables: %v", err)
+		return fmt.Errorf("failed to update introspection tables: %v", err)
 	}
 	return nil
 }
 
-func CreateMetadataTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, client Client) error {
-	utils.LogTime("db.CreateMetadataTables start")
-	defer utils.LogTime("db.CreateMetadataTables end")
+func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, client Client) error {
+	utils.LogTime("db.CreateIntrospectionTables start")
+	defer utils.LogTime("db.CreateIntrospectionTables end")
 
 	// get the sql for columns which every table has
 	commonColumnSql := getColumnDefinitions(modconfig.ResourceMetadata{})
@@ -53,7 +53,7 @@ func CreateMetadataTables(ctx context.Context, workspaceResources *modconfig.Wor
 	// execute the query, passing 'true' to disable the spinner
 	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"), true)
 	if err != nil {
-		return fmt.Errorf("failed to create reflection tables: %v", err)
+		return fmt.Errorf("failed to create introspection tables: %v", err)
 	}
 	client.LoadSchema()
 
@@ -63,16 +63,16 @@ func CreateMetadataTables(ctx context.Context, workspaceResources *modconfig.Wor
 
 func getCreateTablesSql(commonColumnSql []string) string {
 	var createSql []string
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.ReflectionTableControl, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.ReflectionTableQuery, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.ReflectionTableBenchmark, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.ReflectionTableMod, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.IntrospectionTableControl, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.IntrospectionTableQuery, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
 
 func getClearTablesSql() string {
 	var clearSql []string
-	for _, t := range constants.ReflectionTableNames() {
+	for _, t := range constants.IntrospectionTableNames() {
 		clearSql = append(clearSql, fmt.Sprintf("delete from %s;", t))
 	}
 	return strings.Join(clearSql, "\n")
@@ -87,25 +87,25 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	for _, control := range workspaceResources.ControlMap {
 		if _, added := resourcesAdded[control.Name()]; !added {
 			resourcesAdded[control.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.ReflectionTableControl))
+			insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.IntrospectionTableControl))
 		}
 	}
 	for _, query := range workspaceResources.QueryMap {
 		if _, added := resourcesAdded[query.Name()]; !added {
 			resourcesAdded[query.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.ReflectionTableQuery))
+			insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.IntrospectionTableQuery))
 		}
 	}
 	for _, benchmark := range workspaceResources.BenchmarkMap {
 		if _, added := resourcesAdded[benchmark.Name()]; !added {
 			resourcesAdded[benchmark.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.ReflectionTableBenchmark))
+			insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.IntrospectionTableBenchmark))
 		}
 	}
 	for _, mod := range workspaceResources.ModMap {
 		if _, added := resourcesAdded[mod.Name()]; !added {
 			resourcesAdded[mod.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.ReflectionTableMod))
+			insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.IntrospectionTableMod))
 		}
 	}
 
@@ -157,7 +157,6 @@ func getColumnTagValues(field reflect.StructField) (string, string, bool) {
 }
 
 func getTableInsertSqlForResource(item modconfig.ResourceWithMetadata, tableName string) string {
-
 	// for each item there is core reflection data (i.e. reflection resource all items have)
 	// and item specific reflection data
 	// get the core reflection data values

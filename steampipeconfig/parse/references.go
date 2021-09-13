@@ -15,7 +15,7 @@ var referenceBlockTypes = []string{
 	modconfig.BlockTypeBenchmark,
 	"local"}
 
-// AddReferences  populates the 'References' resource field, used for the metadata tables
+// AddReferences populates the 'References' resource field, used for the introspection tables
 func AddReferences(resource modconfig.HclResource, block *hcl.Block) {
 	for _, attr := range block.Body.(*hclsyntax.Body).Attributes {
 		for _, v := range attr.Expr.Variables() {
