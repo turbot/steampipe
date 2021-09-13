@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -258,10 +257,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 
 	currentServiceStatus, err := local_db.GetStatus()
 
-	if err != nil {
-		utils.FailOnError(errors.New("could not retrieve service status"))
-		return
-	}
+	utils.FailOnError(err)
 
 	if currentServiceStatus == nil {
 		fmt.Println("steampipe database service is not running")
@@ -270,9 +266,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 
 	stopStatus, err := local_db.StopDB(viper.GetBool(constants.ArgForce), constants.InvokerService, nil)
 
-	if err != nil {
-		utils.FailOnErrorWithMessage(err, "could not stop current instance")
-	}
+	utils.FailOnErrorWithMessage(err, "could not stop current instance")
 
 	if stopStatus != local_db.ServiceStopped {
 		fmt.Println(`

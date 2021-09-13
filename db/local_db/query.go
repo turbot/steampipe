@@ -1,7 +1,6 @@
 package local_db
 
 import (
-	"errors"
 	"log"
 
 	"github.com/turbot/steampipe/constants"
@@ -22,7 +21,7 @@ func EnsureDbAndStartService(invoker constants.Invoker) error {
 
 	status, err := GetStatus()
 	if err != nil {
-		return errors.New("could not retrieve service status")
+		return err
 	}
 
 	if status == nil {
