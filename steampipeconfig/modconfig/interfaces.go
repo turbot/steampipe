@@ -52,5 +52,5 @@ type PreparedStatementProvider interface {
 	Name() string
 	ModName() string
 	GetParams() []*ParamDef
-	PreparedStatementName() string
+	GetPreparedStatementName() string
 }

@@ -39,7 +39,7 @@ type Control struct {
 
 	parents               []ModTreeItem
 	metadata              *ResourceMetadata
-	preparedStamementName string
+	PreparedStatementName string `column:"prepared_statement_name,text"`
 }
 
 func NewControl(block *hcl.Block) *Control {
@@ -248,12 +248,12 @@ func (c *Control) GetParams() []*ParamDef {
 }
 
 // PreparedStatementName implements PreparedStatementProvider
-func (c *Control) PreparedStatementName() string {
+func (c *Control) GetPreparedStatementName() string {
 	// lazy load
-	if c.preparedStamementName == "" {
-		c.preparedStamementName = preparedStatementName(c)
+	if c.PreparedStatementName == "" {
+		c.PreparedStatementName = preparedStatementName(c)
 	}
-	return c.preparedStamementName
+	return c.PreparedStatementName
 }
 
 // ModName implements PreparedStatementProvider

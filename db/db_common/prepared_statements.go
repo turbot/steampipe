@@ -25,7 +25,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 
 		// remove trailing semicolons from sql as this breaks the prepare statement
 		rawSql := strings.TrimRight(strings.TrimSpace(typehelpers.SafeString(query.SQL)), ";")
-		sql := fmt.Sprintf("PREPARE %s AS (\n%s\n)", query.PreparedStatementName(), rawSql)
+		sql := fmt.Sprintf("PREPARE %s AS (\n%s\n)", query.GetPreparedStatementName(), rawSql)
 		// execute the query, passing 'true' to disable the spinner
 		_, err := client.ExecuteSync(ctx, sql, true)
 		if err != nil {
@@ -46,7 +46,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 
 		// remove trailing semicolons from sql as this breaks the prepare statement
 		rawSql := strings.TrimRight(strings.TrimSpace(typehelpers.SafeString(control.SQL)), ";")
-		sql := fmt.Sprintf("PREPARE %s AS (\n%s\n)", control.PreparedStatementName(), rawSql)
+		sql := fmt.Sprintf("PREPARE %s AS (\n%s\n)", control.GetPreparedStatementName(), rawSql)
 		// execute the query, passing 'true' to disable the spinner
 		_, err := client.ExecuteSync(ctx, sql, true)
 		if err != nil {
@@ -72,7 +72,7 @@ func UpdatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 		if !strings.HasPrefix(name, "query.") {
 			continue
 		}
-		sql = append(sql, fmt.Sprintf("DEALLOCATE %s;", query.PreparedStatementName()))
+		sql = append(sql, fmt.Sprintf("DEALLOCATE %s;", query.GetPreparedStatementName()))
 	}
 	for name, control := range resourceMaps.ControlMap {
 		// query map contains long and short names for controls - avoid dupes
@@ -83,7 +83,7 @@ func UpdatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 		if control.Query != nil {
 			continue
 		}
-		sql = append(sql, fmt.Sprintf("DEALLOCATE %s;", control.PreparedStatementName()))
+		sql = append(sql, fmt.Sprintf("DEALLOCATE %s;", control.GetPreparedStatementName()))
 	}
 
 	// execute the query, passing 'true' to disable the spinner
