@@ -21,13 +21,14 @@ import (
 type StopStatus int
 
 const (
-	// ServiceStopped :: StopStatus - service was stopped
-	ServiceStopped StopStatus = iota
-	// ServiceNotRunning :: StopStatus - service was not running
+	// ServiceStopped indicates service was stopped.
+	// start from 10 to prevent confusion with int zero-value
+	ServiceStopped StopStatus = iota + 10
+	// ServiceNotRunning indicates service was not running
 	ServiceNotRunning
-	// ServiceStopFailed :: StopStatus - service could not be stopped
+	// ServiceStopFailed indicates service could not be stopped
 	ServiceStopFailed
-	// ServiceStopTimedOut :: StopStatus - service stop attempt timed out
+	// ServiceStopTimedOut indicates service stop attempt timed out
 	ServiceStopTimedOut
 )
 
@@ -89,17 +90,16 @@ func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (St
 		// so that the next time it starts,
 		// all previous instances are nuked
 		defer os.Remove(runningInfoFilePath())
-	}
-	info, err := GetStatus()
-	if err != nil {
-		return ServiceStopFailed, err
-	}
 
-	if force {
 		// check if we have a process from another install-dir
 		display.UpdateSpinnerMessage(spinner, "Checking for running instances...")
 		killInstanceIfAny()
 		return ServiceStopped, nil
+	}
+
+	info, err := GetStatus()
+	if err != nil {
+		return ServiceStopFailed, err
 	}
 
 	if info == nil {
@@ -201,6 +201,7 @@ func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 			}
 			return true
 		case <-timeoutAt:
+			checkTimer.Stop()
 			return false
 		}
 	}

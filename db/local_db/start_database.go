@@ -346,17 +346,6 @@ func FindAllSteampipePostgresInstances() ([]*psutils.Process, error) {
 	return instances, nil
 }
 
-func findSteampipePostgresInstance() *psutils.Process {
-	allProcesses, _ := psutils.Processes()
-	for _, p := range allProcesses {
-		cmdLine, _ := p.CmdlineSlice()
-		if isSteampipePostgresProcess(cmdLine) {
-			return p
-		}
-	}
-	return nil
-}
-
 func isSteampipePostgresProcess(cmdline []string) bool {
 	if len(cmdline) < 1 {
 		return false
@@ -366,20 +355,6 @@ func isSteampipePostgresProcess(cmdline []string) bool {
 		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", constants.APPNAME))
 	}
 	return false
-}
-
-func killProcessTree(p *psutils.Process) error {
-	// find it's children
-	children, err := p.Children()
-	if err != nil {
-		return err
-	}
-	for _, child := range children {
-		// and kill them first
-		killProcessTree(child)
-	}
-	p.Kill()
-	return nil
 }
 
 func localAddresses() ([]string, error) {

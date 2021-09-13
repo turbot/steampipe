@@ -71,6 +71,10 @@ func getFDWSQLAndControlLocation() (string, string) {
 	return sqlLocation, controlLocation
 }
 
+func getPostmasterPidLocation() string {
+	return filepath.Join(getDataLocation(), "postmaster.pid")
+}
+
 func getPgHbaConfLocation() string {
 	return filepath.Join(getDataLocation(), "pg_hba.conf")
 }
