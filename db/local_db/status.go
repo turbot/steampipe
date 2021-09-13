@@ -44,7 +44,13 @@ func GetStatus() (*RunningDBInstanceInfo, error) {
 }
 
 // errorIfUnknownService returns an error if it can find a `postmaster.pid` in the `INSTALL_DIR`
-// and the PID recorded in the found `postmaster.pid` is running - nil otherwise
+// and the PID recorded in the found `postmaster.pid` is running - nil otherwise.
+//
+// This is because, this function is called when we cannot find the steampipe service state file.
+//
+// No steampipe state file indicates that the service is not running, so, if the service
+// is running without us knowing about it, then it's an irrecoverable state
+//
 func errorIfUnknownService() error {
 	// no postmaster.pid, we are good
 	if !helpers.FileExists(getPostmasterPidLocation()) {
