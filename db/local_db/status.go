@@ -43,8 +43,8 @@ func GetStatus() (*RunningDBInstanceInfo, error) {
 	return info, nil
 }
 
-// errorIfUnknownService errors if it can find a `postmaster.pid` in the `INSTALL_DIR`
-// and the PID recorded in the found `postmaster.pid` is running
+// errorIfUnknownService returns an error if it can find a `postmaster.pid` in the `INSTALL_DIR`
+// and the PID recorded in the found `postmaster.pid` is running - nil otherwise
 func errorIfUnknownService() error {
 	// no postmaster.pid, we are good
 	if !helpers.FileExists(getPostmasterPidLocation()) {
@@ -61,6 +61,12 @@ func errorIfUnknownService() error {
 	lines := strings.FieldsFunc(string(fileContent), func(r rune) bool {
 		return r == '\n'
 	})
+
+	// make sure that there's split up content
+	if len(lines) == 0 {
+		return nil
+	}
+
 	// extract it
 	pid, err := strconv.ParseInt(lines[0], 10, 64)
 	if err != nil {
@@ -74,8 +80,13 @@ func errorIfUnknownService() error {
 	}
 	if exists {
 		// if it does, then somehow we don't know about it. Error out
-		return fmt.Errorf("service is running in an unknown state [%d] - try killing it with %s", pid, constants.Bold("steampipe service stop --force"))
+		return fmt.Errorf("service is running in an unknown state [PID: %d] - try killing it with %s", pid, constants.Bold("steampipe service stop --force"))
 	}
+
+	// the pid does not exist
+	// this can confuse postgres as per https://postgresapp.com/documentation/troubleshooting.html
+	// delete it
+	os.Remove(getPostmasterPidLocation())
 
 	// this must be a stale file left over by PG. Ignore
 	return nil
