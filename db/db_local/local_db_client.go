@@ -115,7 +115,14 @@ func (c *LocalDbClient) CacheClear() error {
 
 // GetCurrentSearchPath implements Client
 func (c *LocalDbClient) GetCurrentSearchPath() ([]string, error) {
-	return c.client.GetCurrentSearchPath()
+	// NOTE: create a new client to do this, so we respond to any recent changes in user search path
+	// (as the user search path may have changed  after creating client 'c', e.g. if connections have changed)
+	newClient, err := NewLocalClient(constants.InvokerService)
+	if err != nil {
+		return nil, err
+	}
+	defer newClient.Close()
+	return newClient.client.GetCurrentSearchPath()
 }
 
 // SetSessionSearchPath implements Client
@@ -149,7 +156,7 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConn
 	}
 
 	// get current search path, creating a new client to ensure we pick up recent changes
-	currentSearchPath, err := c.getCurrentSearchPath()
+	currentSearchPath, err := c.GetCurrentSearchPath()
 	if err != nil {
 		res.Error = err
 		return res
@@ -226,18 +233,6 @@ func (c *LocalDbClient) getDefaultSearchPath() []string {
 	searchPath = append(searchPath, constants.FunctionSchema)
 
 	return searchPath
-}
-
-// create a new local client and load the current search path
-func (c *LocalDbClient) getCurrentSearchPath() ([]string, error) {
-	// NOTE: create a new client to do this, so we respond to any recent changes in user search path
-	// (as the user search path may have changed  after creating client 'c', e.g. if connections have changed)
-	newClient, err := NewLocalClient(constants.InvokerService)
-	if err != nil {
-		return nil, err
-	}
-	defer newClient.Close()
-	return newClient.client.GetCurrentSearchPath()
 }
 
 // RefreshConnections loads required connections from config

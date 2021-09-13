@@ -225,7 +225,7 @@ func initialiseCheck() *checkInitData {
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		client, err = db_client.NewDbClient(connectionString)
 	} else {
-		client, err = db_local.GetLocalClient(constants.InvokerQuery)
+		client, err = db_local.GetLocalClient(constants.InvokerCheck)
 	}
 
 	if err != nil {
