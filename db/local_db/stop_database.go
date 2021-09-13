@@ -65,16 +65,23 @@ func ShutdownService(invoker constants.Invoker) {
 		}
 	}
 }
+
+// GetCountOfConnectedClients returns the number of clients currently connected to the service
 func GetCountOfConnectedClients() (int, error) {
 	rootClient, err := createRootDbClient()
 	if err != nil {
 		return -1, err
 	}
-	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and application_name='steampipe' and backend_type='client backend';")
-	count := 0
-	row.Scan(&count)
-	rootClient.Close()
-	return (count - 1 /* deduct the existing client */), nil
+	clientCount := 0
+
+	// get the total number of clients
+	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend';")
+	row.Scan(&clientCount)
+
+	// clientCount can never be zero, since the client we are using to run the query
+	// counts as a client
+
+	return (clientCount - 1 /* deduct the existing client */), rootClient.Close()
 }
 
 // StopDB :: search and stop the running instance. Does nothing if an instance was not found
