@@ -26,19 +26,20 @@ func preparedStatementName(source PreparedStatementProvider) string {
 	var name, suffix string
 	prefix := fmt.Sprintf("%s_", source.ModName())
 
-	// build the hash of the source object and take first 4 bytes
-	str := fmt.Sprintf("%v", source)
-	hash := utils.GetMD5Hash(str)[:4]
-
 	// build suffix using a char to indicate control or query, and the truncated hash
 	switch t := source.(type) {
 	case *Query:
 		name = t.ShortName
-		suffix = preparesStatementQuerySuffix + hash
+		suffix = preparesStatementQuerySuffix
 	case *Control:
 		name = t.ShortName
-		suffix = preparesStatementControlSuffix + hash
+		suffix = preparesStatementControlSuffix
 	}
+	// build the hash from the query/control name, mod name and suffix and take the first 4 bytes
+	str := fmt.Sprintf("%s%s%s", source.Name(), source.ModName(), suffix)
+	hash := utils.GetMD5Hash(str)[:4]
+	// add hash to suffix
+	suffix += hash
 
 	// truncate the name if necessary
 	nameLength := len(name)
