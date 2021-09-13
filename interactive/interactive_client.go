@@ -327,6 +327,8 @@ func (c *InteractiveClient) executor(line string) {
 		if err != nil {
 			utils.ShowError(utils.HandleCancelError(err))
 		}
+		// restart the prompt
+		c.restartInteractiveSession()
 		return
 	}
 
