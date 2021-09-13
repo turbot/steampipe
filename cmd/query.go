@@ -69,7 +69,7 @@ Examples:
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").
 		AddStringFlag(constants.ArgConnectionString, "", "", "Database connection string - used to connect to remote database instead of running database locally").
-		AddStringFlag(constants.ArgDatabase, "", "", "The remote database to connect to. If specified, api-key must also be passed").
+		AddStringFlag(constants.ArgDatabase, "", "", "The remote database to connect to - if specified, api-key must also be passed").
 		AddStringFlag(constants.ArgAPIKey, "", "", "The steampipe cloud api-key to use to retrieve database details").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.").
 		AddBoolFlag(constants.ArgWatch, "", true, "Watch SQL files in the current workspace (works only in interactive mode)").

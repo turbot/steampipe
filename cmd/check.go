@@ -76,13 +76,13 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "text", "Select the console output format. Possible values are json, text, brief, none").
 		AddStringFlag(constants.ArgConnectionString, "", "", "Database connection string - used to connect to remote database instead of running database locally").
-		AddStringFlag(constants.ArgDatabase, "", "", "The remote database to connect to. If specified, api-key must also be passed").
+		AddStringFlag(constants.ArgDatabase, "", "", "The remote database to connect to - if specified, api-key must also be passed").
 		AddStringFlag(constants.ArgAPIKey, "", "", "The steampipe cloud api-key to use to retrieve database details").
-		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports check time.").
+		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports check time").
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
 		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme, which determines the color scheme for the 'text' control output. Possible values are light, dark, plain").
-		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to files. Multiple exports are allowed.").
+		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to files - multiple exports are allowed").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
 		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them").
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls. Cannot be used with '--tag'").
