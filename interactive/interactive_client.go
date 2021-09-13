@@ -448,7 +448,6 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 }
 
 func (c *InteractiveClient) restartInteractiveSession() {
-	log.Printf("[TRACE] restartInteractiveSession")
 	// empty the buffer
 	c.interactiveBuffer = []string{}
 	// restart the prompt

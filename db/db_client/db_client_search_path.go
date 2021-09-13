@@ -38,7 +38,7 @@ func (c *DbClient) GetCurrentSearchPath() ([]string, error) {
 // SetSessionSearchPath implements Client
 // sets the search path for this client
 // if either a search-path or search-path-prefix is set in config, set the search path
-// (otherwise fall back to service search path)
+// (otherwise fall back to user search path)
 func (c *DbClient) SetSessionSearchPath(currentSearchPath ...string) error {
 	searchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
@@ -51,7 +51,7 @@ func (c *DbClient) SetSessionSearchPath(currentSearchPath ...string) error {
 		// so no search path was set in config - use the current search poath
 
 		// if this function is called from local db client, it will pass in the current search path
-		// we must do this as the local client will reload the service search path
+		// we must do this as the local client will reload the user search path
 		if len(currentSearchPath) == 0 {
 			// no current search path was passed in - fetch it
 			var err error
