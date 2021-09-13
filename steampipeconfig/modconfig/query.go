@@ -34,7 +34,7 @@ type Query struct {
 
 	DeclRange             hcl.Range
 	metadata              *ResourceMetadata
-	preparedStamementName string
+	PreparedStatementName string `column:"prepared_statement_name,text"`
 }
 
 func (q *Query) Equals(other *Query) bool {
@@ -184,13 +184,13 @@ func (q *Query) GetParams() []*ParamDef {
 	return q.Params
 }
 
-// PreparedStatementName implements PreparedStatementProvider
-func (q *Query) PreparedStatementName() string {
+// GetPreparedStatementName implements PreparedStatementProvider
+func (q *Query) GetPreparedStatementName() string {
 	// lazy load
-	if q.preparedStamementName == "" {
-		q.preparedStamementName = preparedStatementName(q)
+	if q.PreparedStatementName == "" {
+		q.PreparedStatementName = preparedStatementName(q)
 	}
-	return q.preparedStamementName
+	return q.PreparedStatementName
 }
 
 // ModName implements PreparedStatementProvider

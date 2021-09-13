@@ -180,6 +180,7 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 			initData.Result.Error = err
 			return
 		}
+		initData.Client = client
 
 		// check if the required plugins are installed
 		if err := workspace.CheckRequiredPluginsInstalled(); err != nil {
@@ -195,7 +196,25 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 			return
 		}
 		initData.Queries = queries
-		initData.PreparedStatementProviders = preparedStatementProviders
+
+		// create prepared statements
+		// if queries were provided as args, only create any prepared statement providers required for these queries
+		// if no queries were provided on commandline, we will be running an interactive session
+		// so create prepared statements for all controls and queries in the workspace
+		if len(queries) == 0 {
+			preparedStatementProviders = workspace.GetResourceMaps()
+		}
+
+		log.Printf("[TRACE] creating prepared statements")
+		utils.LogTime("getQueryInitDataAsync CreatePreparedStatements")
+
+		err = db_common.CreatePreparedStatements(context.Background(), preparedStatementProviders, initData.Client)
+		if err != nil {
+			initData.Result.Error = err
+			return
+		}
+
+		utils.LogTime("getQueryInitDataAsync finished CreatePreparedStatements")
 
 		res := client.RefreshConnectionAndSearchPaths()
 		if res.Error != nil {
@@ -204,13 +223,11 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 		}
 		initData.Result.AddWarnings(res.Warnings...)
 
-		initData.Client = client
 		// populate the reflection tables
 		if err = db_common.CreateMetadataTables(ctx, workspace.GetResourceMaps(), client); err != nil {
 			initData.Result.Error = err
 			return
 		}
-
 	}()
 }
 

@@ -17,7 +17,7 @@ func GetPreparedStatementExecuteSQL(source PreparedStatementProvider, args *Quer
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve args for %s: %s", source.Name(), err.Error())
 	}
-	executeString := fmt.Sprintf("execute %s%s", source.PreparedStatementName(), paramsString)
+	executeString := fmt.Sprintf("execute %s%s", source.GetPreparedStatementName(), paramsString)
 	log.Printf("[TRACE] GetPreparedStatementExecuteSQL source: %s, sql: %s, args: %s", source.Name(), executeString, args)
 	return executeString, nil
 }

@@ -230,15 +230,19 @@ func initialiseCheck() *checkInitData {
 	}
 	initData.result.AddWarnings(refreshResult.Warnings...)
 
+	// create the prepared statements
+	err = db_common.CreatePreparedStatements(ctx, initData.workspace.GetResourceMaps(), initData.client)
+	if err != nil {
+		initData.result.Error = err
+		return initData
+	}
+
 	// populate the reflection tables
 	err = db_common.CreateMetadataTables(ctx, initData.workspace.GetResourceMaps(), initData.client)
 	if err != nil {
 		initData.result.Error = err
 		return initData
 	}
-
-	// create the prepared statements
-	initData.result.Error = db_common.CreatePreparedStatements(ctx, initData.workspace.GetResourceMaps(), initData.client)
 
 	return initData
 }
