@@ -73,16 +73,16 @@ var ReservedConnectionNames = []string{
 	FunctionSchema,
 }
 
-// reflection table names
+// introspection table names
 const (
-	ReflectionTableQuery     = "steampipe_query"
-	ReflectionTableControl   = "steampipe_control"
-	ReflectionTableBenchmark = "steampipe_benchmark"
-	ReflectionTableMod       = "steampipe_mod"
+	IntrospectionTableQuery     = "steampipe_query"
+	IntrospectionTableControl   = "steampipe_control"
+	IntrospectionTableBenchmark = "steampipe_benchmark"
+	IntrospectionTableMod       = "steampipe_mod"
 )
 
-func ReflectionTableNames() []string {
-	return []string{ReflectionTableControl, ReflectionTableBenchmark, ReflectionTableQuery, ReflectionTableMod}
+func IntrospectionTableNames() []string {
+	return []string{IntrospectionTableControl, IntrospectionTableBenchmark, IntrospectionTableQuery, IntrospectionTableMod}
 }
 
 // Invoker is a pseudoEnum for the command/operation which starts the service

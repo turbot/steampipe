@@ -223,8 +223,8 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 		}
 		initData.Result.AddWarnings(res.Warnings...)
 
-		// populate the reflection tables
-		if err = db_common.CreateMetadataTables(ctx, workspace.GetResourceMaps(), client); err != nil {
+		// populate the introspection tables
+		if err = db_common.CreateIntrospectionTables(ctx, workspace.GetResourceMaps(), client); err != nil {
 			initData.Result.Error = err
 			return
 		}

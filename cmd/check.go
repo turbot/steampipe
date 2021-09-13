@@ -237,8 +237,8 @@ func initialiseCheck() *checkInitData {
 		return initData
 	}
 
-	// populate the reflection tables
-	err = db_common.CreateMetadataTables(ctx, initData.workspace.GetResourceMaps(), initData.client)
+	// populate the introspection tables
+	err = db_common.CreateIntrospectionTables(ctx, initData.workspace.GetResourceMaps(), initData.client)
 	if err != nil {
 		initData.result.Error = err
 		return initData
