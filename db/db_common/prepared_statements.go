@@ -19,6 +19,9 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 
 	// first get the SQL to create all prepared statements
 	sqlMap := GetPreparedStatementsSQL(resourceMaps)
+	if len(sqlMap) == 0 {
+		return nil
+	}
 	// first try to run the whole thing in one query
 	var queries []string
 	for _, q := range sqlMap {

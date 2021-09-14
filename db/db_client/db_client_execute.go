@@ -21,6 +21,10 @@ import (
 // ExecuteSync implements Client
 // execute a query against this client and wait for the result
 func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
+	if query == "" {
+		return &queryresult.SyncQueryResult{}, nil
+	}
+
 	result, err := c.Execute(ctx, query, disableSpinner)
 	if err != nil {
 		return nil, err
@@ -44,7 +48,7 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner
 // with the service
 func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
 	if query == "" {
-		return &queryresult.Result{}, nil
+		return queryresult.NewQueryResult(nil), nil
 	}
 	startTime := time.Now()
 	// channel to flag to spinner that the query has run
