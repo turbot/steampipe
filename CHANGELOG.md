@@ -1,6 +1,10 @@
+## v0.8.2 [2021-09-14]
+_Bug fixes_
+* Fix nil pointer error when running a fully qualified query (i.e. including mod name). ([#902](https://github.com/turbot/steampipe/issues/902))
+
 ## v0.8.1 [2021-09-12]
 _Bug fixes_
-* Disable database log polling, which was causing high CPU usage. ([#885](https://github.com/turbot/steampipe/issues/885))
+* Disable database log polling, which was causing high CPU usage. 
 * Fix null reference exception for certain `is null` queries. ([#97](https://github.com/turbot/steampipe-postgres-fdw/issues/97)) 
 * Add support for CIDROID type when converting Postgres datums to qual values. ([#54](https://github.com/turbot/steampipe-postgres-fdw/issues/54))
 * Fix autocomplete casing for .cache metacommands. ([#875](https://github.com/turbot/steampipe/issues/875))
