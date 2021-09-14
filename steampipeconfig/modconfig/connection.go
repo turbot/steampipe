@@ -44,7 +44,7 @@ type Connection struct {
 func NewConnection(block *hcl.Block) *Connection {
 	return &Connection{
 		Name:      block.Labels[0],
-		DeclRange: block.DefRange,
+		DeclRange: block.TypeRange,
 	}
 }
 
