@@ -29,12 +29,11 @@ type Query struct {
 
 	Params []*ParamDef `cty:"params" column:"params,jsonb"`
 	// list of all block referenced by the resource
-	References []string `column:"refs,jsonb"`
-	Mod        *Mod     `cty:"mod"`
-
-	DeclRange             hcl.Range
+	References            []string  `column:"refs,jsonb"`
+	Mod                   *Mod      `cty:"mod"`
+	DeclRange             hcl.Range `column:"decl_range,text"`
+	PreparedStatementName string    `column:"prepared_statement_name,text"`
 	metadata              *ResourceMetadata
-	PreparedStatementName string `column:"prepared_statement_name,text"`
 }
 
 func (q *Query) Equals(other *Query) bool {

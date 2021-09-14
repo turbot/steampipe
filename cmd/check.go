@@ -219,7 +219,7 @@ func initialiseCheck() *checkInitData {
 
 	// check if the required plugins are installed
 	initData.result.Error = initData.workspace.CheckRequiredPluginsInstalled()
-	if len(initData.workspace.ControlMap) == 0 {
+	if len(initData.workspace.Controls) == 0 {
 		initData.result.AddWarnings("no controls found in current workspace")
 	}
 

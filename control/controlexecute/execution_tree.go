@@ -167,7 +167,7 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTree
 	if arg == "all" {
 		//
 		// build list of all workspace mods - these will act as root items
-		for _, m := range e.workspace.ModMap {
+		for _, m := range e.workspace.Mods {
 			res = append(res, m)
 		}
 		return res, nil
@@ -183,17 +183,17 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTree
 	switch name.ItemType {
 	case modconfig.BlockTypeControl:
 		// check whether the arg is a control name
-		if control, ok := e.workspace.ControlMap[arg]; ok {
+		if control, ok := e.workspace.Controls[arg]; ok {
 			return []modconfig.ModTreeItem{control}, nil
 		}
 	case modconfig.BlockTypeBenchmark:
 		// look in the workspace control group map for this control group
-		if benchmark, ok := e.workspace.BenchmarkMap[arg]; ok {
+		if benchmark, ok := e.workspace.Benchmarks[arg]; ok {
 			return []modconfig.ModTreeItem{benchmark}, nil
 		}
 	case modconfig.BlockTypeMod:
 		// get all controls for the mod
-		if mod, ok := e.workspace.ModMap[arg]; ok {
+		if mod, ok := e.workspace.Mods[arg]; ok {
 			return []modconfig.ModTreeItem{mod}, nil
 		}
 	}

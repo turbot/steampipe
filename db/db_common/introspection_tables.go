@@ -67,6 +67,7 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.IntrospectionTableQuery, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
 
@@ -84,28 +85,34 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	// the maps will have the same resource keyed by long and short name - avoid dupes
 	resourcesAdded := make(map[string]bool)
 
-	for _, control := range workspaceResources.ControlMap {
+	for _, control := range workspaceResources.Controls {
 		if _, added := resourcesAdded[control.Name()]; !added {
 			resourcesAdded[control.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.IntrospectionTableControl))
 		}
 	}
-	for _, query := range workspaceResources.QueryMap {
+	for _, query := range workspaceResources.Queries {
 		if _, added := resourcesAdded[query.Name()]; !added {
 			resourcesAdded[query.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.IntrospectionTableQuery))
 		}
 	}
-	for _, benchmark := range workspaceResources.BenchmarkMap {
+	for _, benchmark := range workspaceResources.Benchmarks {
 		if _, added := resourcesAdded[benchmark.Name()]; !added {
 			resourcesAdded[benchmark.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.IntrospectionTableBenchmark))
 		}
 	}
-	for _, mod := range workspaceResources.ModMap {
+	for _, mod := range workspaceResources.Mods {
 		if _, added := resourcesAdded[mod.Name()]; !added {
 			resourcesAdded[mod.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.IntrospectionTableMod))
+		}
+	}
+	for _, variable := range workspaceResources.Variables {
+		if _, added := resourcesAdded[variable.Name()]; !added {
+			resourcesAdded[variable.Name()] = true
+			insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
 		}
 	}
 

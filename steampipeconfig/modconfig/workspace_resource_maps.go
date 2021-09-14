@@ -3,55 +3,81 @@ package modconfig
 // WorkspaceResourceMaps is a struct containing maps of all mod resource types
 // This is provided to avoid db needing to reference workspace package
 type WorkspaceResourceMaps struct {
-	ModMap       map[string]*Mod
-	QueryMap     map[string]*Query
-	ControlMap   map[string]*Control
-	BenchmarkMap map[string]*Benchmark
+	Mods       map[string]*Mod
+	Queries    map[string]*Query
+	Controls   map[string]*Control
+	Benchmarks map[string]*Benchmark
+	Variables  map[string]*Variable
 }
 
 func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
 	return &WorkspaceResourceMaps{
-		ModMap:       make(map[string]*Mod),
-		QueryMap:     make(map[string]*Query),
-		ControlMap:   make(map[string]*Control),
-		BenchmarkMap: make(map[string]*Benchmark),
+		Mods:       make(map[string]*Mod),
+		Queries:    make(map[string]*Query),
+		Controls:   make(map[string]*Control),
+		Benchmarks: make(map[string]*Benchmark),
+		Variables:  make(map[string]*Variable),
 	}
 }
 func (m WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
-	for name, mod := range m.ModMap {
-		if otherMod, ok := other.ModMap[name]; !ok {
+	for name, mod := range m.Mods {
+		if otherMod, ok := other.Mods[name]; !ok {
 			return false
 		} else if !mod.Equals(otherMod) {
 			return false
 		}
 	}
-	for name := range other.ModMap {
-		if _, ok := m.ModMap[name]; !ok {
+	for name := range other.Mods {
+		if _, ok := m.Mods[name]; !ok {
 			return false
 		}
 	}
-	for name, control := range m.ControlMap {
-		if otherControl, ok := other.ControlMap[name]; !ok {
-			return false
-		} else if !control.Equals(otherControl) {
-			return false
-		}
-	}
-	for name := range other.ControlMap {
-		if _, ok := m.ControlMap[name]; !ok {
-			return false
-		}
-	}
-	for name, query := range m.QueryMap {
-		if otherQuery, ok := other.QueryMap[name]; !ok {
+	for name, query := range m.Queries {
+		if otherQuery, ok := other.Queries[name]; !ok {
 			return false
 		} else if !query.Equals(otherQuery) {
 			return false
 		}
 	}
 
-	for name := range other.QueryMap {
-		if _, ok := m.QueryMap[name]; !ok {
+	for name := range other.Queries {
+		if _, ok := m.Queries[name]; !ok {
+			return false
+		}
+	}
+	for name, control := range m.Controls {
+		if otherControl, ok := other.Controls[name]; !ok {
+			return false
+		} else if !control.Equals(otherControl) {
+			return false
+		}
+	}
+	for name := range other.Controls {
+		if _, ok := m.Controls[name]; !ok {
+			return false
+		}
+	}
+	for name, benchmark := range m.Benchmarks {
+		if otherBenchmark, ok := other.Benchmarks[name]; !ok {
+			return false
+		} else if !benchmark.Equals(otherBenchmark) {
+			return false
+		}
+	}
+	for name := range other.Benchmarks {
+		if _, ok := m.Benchmarks[name]; !ok {
+			return false
+		}
+	}
+	for name, variable := range m.Variables {
+		if otherVariable, ok := other.Variables[name]; !ok {
+			return false
+		} else if !variable.Equals(otherVariable) {
+			return false
+		}
+	}
+	for name := range other.Variables {
+		if _, ok := m.Variables[name]; !ok {
 			return false
 		}
 	}
@@ -62,11 +88,11 @@ func (m WorkspaceResourceMaps) AddPreparedStatementProvider(provider PreparedSta
 	switch p := provider.(type) {
 	case *Query:
 		if p != nil {
-			m.QueryMap[p.FullName] = p
+			m.Queries[p.FullName] = p
 		}
 	case *Control:
 		if p != nil {
-			m.ControlMap[p.FullName] = p
+			m.Controls[p.FullName] = p
 		}
 	}
 }
