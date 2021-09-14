@@ -22,11 +22,12 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
 
-	// TODO - add creds into connection string
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
 		return nil, err
 	}
+	// limit to a single connection as we rely on session scoped data - temp tables and prepared statements
+	db.SetMaxOpenConns(1)
 	return NewDbClientFromSqlClient(db)
 }
 

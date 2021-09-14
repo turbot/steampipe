@@ -17,6 +17,33 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 	utils.LogTime("db.CreatePreparedStatements start")
 	defer utils.LogTime("db.CreatePreparedStatements end")
 
+	// first get the SQL to create all prepared statements
+	sqlMap := GetPreparedStatementsSQL(resourceMaps)
+	// first try to run the whole thing in one query
+	var queries []string
+	for _, q := range sqlMap {
+		queries = append(queries, q)
+	}
+
+	// execute the query, passing 'true' to disable the spinner
+	_, err := client.ExecuteSync(ctx, strings.Join(queries, ";\n"), true)
+
+	// if there was an error - we would like to know which query or control failed, so try to create them one by one
+	if err != nil {
+		for name, sql := range sqlMap {
+			if _, err := client.ExecuteSync(ctx, sql, true); err != nil {
+				return fmt.Errorf("failed to create prepared statement for %s: %v", name, err)
+			}
+		}
+	}
+
+	// return context error - this enables calling code to respond to cancellation
+	return ctx.Err()
+}
+
+func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map[string]string {
+	// make map of resource name to create SQL
+	sqlMap := make(map[string]string)
 	for name, query := range resourceMaps.QueryMap {
 		// query map contains long and short names for queries - avoid dupes
 		if !strings.HasPrefix(name, "query.") {
@@ -25,13 +52,8 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 
 		// remove trailing semicolons from sql as this breaks the prepare statement
 		rawSql := strings.TrimRight(strings.TrimSpace(typehelpers.SafeString(query.SQL)), ";")
-		sql := fmt.Sprintf("PREPARE %s AS (\n%s\n)", query.GetPreparedStatementName(), rawSql)
-		// execute the query, passing 'true' to disable the spinner
-		_, err := client.ExecuteSync(ctx, sql, true)
-		if err != nil {
-			log.Printf("[TRACE] failed to create prepared statement for %s: %v", name, err)
-			return fmt.Errorf("failed to create prepared statement for %s: %v", name, err)
-		}
+		preparedStatementName := query.GetPreparedStatementName()
+		sqlMap[name] = fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
 	}
 
 	for name, control := range resourceMaps.ControlMap {
@@ -46,17 +68,12 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 
 		// remove trailing semicolons from sql as this breaks the prepare statement
 		rawSql := strings.TrimRight(strings.TrimSpace(typehelpers.SafeString(control.SQL)), ";")
-		sql := fmt.Sprintf("PREPARE %s AS (\n%s\n)", control.GetPreparedStatementName(), rawSql)
-		// execute the query, passing 'true' to disable the spinner
-		_, err := client.ExecuteSync(ctx, sql, true)
-		if err != nil {
-			log.Printf("[TRACE] failed to create prepared statement for %s: %v", name, err)
-			return fmt.Errorf("failed to create prepared statements for %s: %v", name, err)
-		}
+		preparedStatementName := control.GetPreparedStatementName()
+		sqlMap[name] = fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
 	}
 
-	// return context error - this enables calling code to respond to cancellation
-	return ctx.Err()
+	return sqlMap
+
 }
 
 // UpdatePreparedStatements first attempts to deallocate all prepared statements in workspace, then recreates them
