@@ -34,7 +34,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 	// if there was an error - we would like to know which query or control failed, so try to create them one by one
 	if err != nil {
 		for name, sql := range sqlMap {
-			if _, err := client.ExecuteSync(ctx, sql, true); err != nil {
+			if _, err = client.ExecuteSync(ctx, sql, true); err != nil {
 				return fmt.Errorf("failed to create prepared statement for %s: %v", name, err)
 			}
 		}
