@@ -49,18 +49,19 @@ func Remove(image string, pluginConnections map[string][]ConnectionConfigRange) 
 
 	if usageFound {
 		display.StopSpinner(spinner)
-		str := []string{fmt.Sprintf("The following connections were using the '%s' plugin:\n", image)}
+		str := []string{fmt.Sprintf("\nThe following files have steampipe connections using the '%s' plugin:\n", image)}
 		for _, conn := range conns {
 			str = append(
 				str,
 				fmt.Sprintf(
-					"\t* %s: %s\n",
+					"\t* '%s' in %s, line %d",
 					conn.ConnectionName,
-					conn.DeclRange,
+					conn.DeclRange.Filename,
+					conn.DeclRange.Start.Line,
 				),
 			)
 		}
-		str = append(str, "Please remove these connections to continue using steampipe")
+		str = append(str, "\nPlease remove them to continue using steampipe")
 		fmt.Println(strings.Join(str, "\n"))
 		fmt.Println()
 	}
