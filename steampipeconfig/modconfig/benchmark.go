@@ -34,8 +34,8 @@ type Benchmark struct {
 	References []string `column:"refs,jsonb"`
 	Mod        *Mod     `cty:"mod"`
 
-	ChildNameStrings []string `column:"children,jsonb"`
-	DeclRange        hcl.Range
+	ChildNameStrings []string  `column:"children,jsonb"`
+	DeclRange        hcl.Range `column:"decl_range,text"`
 
 	parents  []ModTreeItem
 	children []ModTreeItem
@@ -48,6 +48,44 @@ func NewBenchmark(block *hcl.Block) *Benchmark {
 		FullName:  fmt.Sprintf("benchmark.%s", block.Labels[0]),
 		DeclRange: block.DefRange,
 	}
+}
+
+func (b *Benchmark) Equals(other *Benchmark) bool {
+	res := b.ShortName == other.ShortName &&
+		b.FullName == other.FullName &&
+		typehelpers.SafeString(b.Description) == typehelpers.SafeString(other.Description) &&
+		typehelpers.SafeString(b.Documentation) == typehelpers.SafeString(other.Documentation) &&
+		typehelpers.SafeString(b.Title) == typehelpers.SafeString(other.Title)
+	if !res {
+		return res
+	}
+	// tags
+	if b.Tags == nil {
+		if other.Tags != nil {
+			return false
+		}
+	} else {
+		// we have tags
+		if other.Tags == nil {
+			return false
+		}
+		for k, v := range *b.Tags {
+			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
+				return false
+			}
+		}
+	}
+
+	if len(b.ChildNameStrings) != len(other.ChildNameStrings) {
+		return false
+	}
+
+	myChildNames := b.ChildNameStrings
+	sort.Strings(myChildNames)
+	otherChildNames := other.ChildNameStrings
+	sort.Strings(otherChildNames)
+	return strings.Join(myChildNames, ",") == strings.Join(otherChildNames, ",")
+
 }
 
 // CtyValue implements HclResource

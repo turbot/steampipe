@@ -15,7 +15,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func (w *Workspace) getAllVariables() (input_vars.InputValues, error) {
+func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
 	opts := &parse.ParseModOptions{
 		Flags: parse.CreateDefaultMod,
 		ListOptions: &filehelpers.ListOptions{
@@ -38,10 +38,31 @@ func (w *Workspace) getAllVariables() (input_vars.InputValues, error) {
 	if err := validateVariables(variableMap, inputVariables); err != nil {
 		return nil, err
 	}
+
+	// now update the variables map with the input values
+	for name, inputValue := range inputVariables {
+		variable := variableMap[name]
+		valueString, err := parse.CtyToJSON(inputValue.Value)
+		if err != nil {
+			return nil, err
+		}
+		defaultString, err := parse.CtyToJSON(variable.Default)
+		if err != nil {
+			return nil, err
+		}
+		variable.SetInputValue(
+			inputValue.Value,
+			valueString,
+			defaultString,
+			variable.Type.FriendlyName(),
+			inputValue.SourceTypeString(),
+			inputValue.SourceRange.ToHCL())
+	}
+
 	// parse all hcl files in the workspace folder (non recursively) and either parse or create a mod
 	// it is valid for 0 or 1 mod to be defined (if no mod is defined, create a default one)
 	// populate mod with all hcl resources we parse
-	return inputVariables, nil
+	return variableMap, nil
 }
 
 func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable) (input_vars.InputValues, error) {

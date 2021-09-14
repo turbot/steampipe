@@ -51,7 +51,7 @@ type Mod struct {
 	benchmarksOrdered []string
 
 	ModPath   string
-	DeclRange hcl.Range
+	DeclRange hcl.Range `column:"decl_range,text"`
 
 	children []ModTreeItem
 	metadata *ResourceMetadata

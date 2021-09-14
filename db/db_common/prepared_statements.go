@@ -47,7 +47,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map[string]string {
 	// make map of resource name to create SQL
 	sqlMap := make(map[string]string)
-	for name, query := range resourceMaps.QueryMap {
+	for name, query := range resourceMaps.Queries {
 		// query map contains long and short names for queries - avoid dupes
 		if !strings.HasPrefix(name, "query.") {
 			continue
@@ -59,7 +59,7 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 		sqlMap[name] = fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
 	}
 
-	for name, control := range resourceMaps.ControlMap {
+	for name, control := range resourceMaps.Controls {
 		// query map contains long and short names for controls - avoid dupes
 		if !strings.HasPrefix(name, "control.") {
 			continue
@@ -87,14 +87,14 @@ func UpdatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 	defer utils.LogTime("db.UpdatePreparedStatements end")
 
 	var sql []string
-	for name, query := range resourceMaps.QueryMap {
+	for name, query := range resourceMaps.Queries {
 		// query map contains long and short names for queries - avoid dupes
 		if !strings.HasPrefix(name, "query.") {
 			continue
 		}
 		sql = append(sql, fmt.Sprintf("DEALLOCATE %s;", query.GetPreparedStatementName()))
 	}
-	for name, control := range resourceMaps.ControlMap {
+	for name, control := range resourceMaps.Controls {
 		// query map contains long and short names for controls - avoid dupes
 		if !strings.HasPrefix(name, "control.") {
 			continue

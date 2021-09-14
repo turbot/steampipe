@@ -79,6 +79,7 @@ const (
 	IntrospectionTableControl   = "steampipe_control"
 	IntrospectionTableBenchmark = "steampipe_benchmark"
 	IntrospectionTableMod       = "steampipe_mod"
+	IntrospectionTableVariable  = "steampipe_variable"
 )
 
 func IntrospectionTableNames() []string {

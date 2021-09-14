@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/zclconf/go-cty/cty"
+
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
@@ -26,12 +28,13 @@ type Workspace struct {
 	Mod  *modconfig.Mod
 
 	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
-	QueryMap     map[string]*modconfig.Query
-	ControlMap   map[string]*modconfig.Control
-	BenchmarkMap map[string]*modconfig.Benchmark
-	ModMap       map[string]*modconfig.Mod
-	ReportMap    map[string]*modconfig.Report
-	PanelMap     map[string]*modconfig.Panel
+	Queries    map[string]*modconfig.Query
+	Controls   map[string]*modconfig.Control
+	Benchmarks map[string]*modconfig.Benchmark
+	Mods       map[string]*modconfig.Mod
+	Reports    map[string]*modconfig.Report
+	Panels     map[string]*modconfig.Panel
+	Variables  map[string]*modconfig.Variable
 
 	watcher    *utils.FileWatcher
 	loadLock   sync.Mutex
@@ -137,14 +140,14 @@ func (w *Workspace) GetQueryMap() map[string]*modconfig.Query {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	return w.QueryMap
+	return w.Queries
 }
 
 func (w *Workspace) GetQuery(queryName string) (*modconfig.Query, bool) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	if query, ok := w.QueryMap[queryName]; ok {
+	if query, ok := w.Queries[queryName]; ok {
 		return query, true
 	}
 	return nil, false
@@ -154,14 +157,14 @@ func (w *Workspace) GetControlMap() map[string]*modconfig.Control {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	return w.ControlMap
+	return w.Controls
 }
 
 func (w *Workspace) GetControl(controlName string) (*modconfig.Control, bool) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	if control, ok := w.ControlMap[controlName]; ok {
+	if control, ok := w.Controls[controlName]; ok {
 		return control, true
 	}
 	return nil, false
@@ -175,7 +178,7 @@ func (w *Workspace) GetChildControls() []*modconfig.Control {
 	// the workspace resource maps have duplicate entries, keyed by long and short name.
 	// keep track of which controls we have identified in order to avoid dupes
 	controlsMatched := make(map[string]bool)
-	for _, c := range w.ControlMap {
+	for _, c := range w.Controls {
 		if _, alreadyMatched := controlsMatched[c.Name()]; !alreadyMatched {
 			controlsMatched[c.Name()] = true
 			result = append(result, c)
@@ -188,14 +191,15 @@ func (w *Workspace) GetChildControls() []*modconfig.Control {
 // NOTE: this function DOES NOT LOCK the load lock so should only be called in a context where the file watcher is not running
 func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 	workspaceMap := &modconfig.WorkspaceResourceMaps{
-		ModMap:       make(map[string]*modconfig.Mod),
-		QueryMap:     w.QueryMap,
-		ControlMap:   w.ControlMap,
-		BenchmarkMap: w.BenchmarkMap,
+		Mods:       make(map[string]*modconfig.Mod),
+		Queries:    w.Queries,
+		Controls:   w.Controls,
+		Benchmarks: w.Benchmarks,
+		Variables:  w.Variables,
 	}
 	// TODO add in all mod dependencies
 	if !w.Mod.IsDefaultMod() {
-		workspaceMap.ModMap[w.Mod.Name()] = w.Mod
+		workspaceMap.Mods[w.Mod.Name()] = w.Mod
 	}
 
 	return workspaceMap
@@ -209,13 +213,13 @@ func (w *Workspace) GetMod(modName string) *modconfig.Mod {
 		return w.Mod
 	}
 	// try workspace mod dependencies
-	return w.ModMap[modName]
+	return w.Mods[modName]
 }
 
-// Mods returns a flat list of all mods - the workspace mod and depdnency mods
-func (w *Workspace) Mods() []*modconfig.Mod {
+// ModList returns a flat list of all mods - the workspace mod and depdnency mods
+func (w *Workspace) ModList() []*modconfig.Mod {
 	var res = []*modconfig.Mod{w.Mod}
-	for _, m := range w.ModMap {
+	for _, m := range w.Mods {
 		res = append(res, m)
 	}
 	return res
@@ -223,12 +227,12 @@ func (w *Workspace) Mods() []*modconfig.Mod {
 
 // clear all resource maps
 func (w *Workspace) reset() {
-	w.QueryMap = make(map[string]*modconfig.Query)
-	w.ControlMap = make(map[string]*modconfig.Control)
-	w.BenchmarkMap = make(map[string]*modconfig.Benchmark)
-	w.ModMap = make(map[string]*modconfig.Mod)
-	w.ReportMap = make(map[string]*modconfig.Report)
-	w.PanelMap = make(map[string]*modconfig.Panel)
+	w.Queries = make(map[string]*modconfig.Query)
+	w.Controls = make(map[string]*modconfig.Control)
+	w.Benchmarks = make(map[string]*modconfig.Benchmark)
+	w.Mods = make(map[string]*modconfig.Mod)
+	w.Reports = make(map[string]*modconfig.Report)
+	w.Panels = make(map[string]*modconfig.Panel)
 }
 
 // determine whether to load files recursively or just from the top level folder
@@ -246,13 +250,15 @@ func (w *Workspace) setListFlag() {
 }
 
 func (w *Workspace) loadWorkspaceMod() error {
+	// clear all resource maps
+	w.reset()
+
 	inputVariables, err := w.getAllVariables()
 	if err != nil {
 		return err
 	}
 
-	// clear all resource maps
-	w.reset()
+	w.Variables = inputVariables
 
 	// build options used to load workspace
 	// set flags to create pseudo resources and a default mod if needed
@@ -263,7 +269,7 @@ func (w *Workspace) loadWorkspaceMod() error {
 			Flags:   w.listFlag,
 			Exclude: w.exclusions,
 		},
-		Variables: inputVariables.JustValues(),
+		Variables: w.VariableValueMap(),
 	}
 
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
@@ -279,15 +285,24 @@ func (w *Workspace) loadWorkspaceMod() error {
 		return err
 	}
 
-	w.QueryMap = w.buildQueryMap(modMap)
-	w.ControlMap = w.buildControlMap(modMap)
-	w.BenchmarkMap = w.buildBenchmarkMap(modMap)
-	w.ReportMap = w.buildReportMap(modMap)
-	w.PanelMap = w.buildPanelMap(modMap)
-	w.ModMap = modMap
+	w.Queries = w.buildQueryMap(modMap)
+	w.Controls = w.buildControlMap(modMap)
+	w.Benchmarks = w.buildBenchmarkMap(modMap)
+	w.Reports = w.buildReportMap(modMap)
+	w.Panels = w.buildPanelMap(modMap)
+	w.Mods = modMap
 
 	return nil
 }
+
+func (w *Workspace) VariableValueMap() map[string]cty.Value {
+	ret := make(map[string]cty.Value, len(w.Variables))
+	for k, v := range w.Variables {
+		ret[k] = v.Value
+	}
+	return ret
+}
+
 func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
 	// build options used to load workspace
 	// set flags to create pseudo resources and a default mod if needed
@@ -330,14 +345,14 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Query)
 
-	// for LOCAL queries, add map entries keyed by both short name: query.<shortName> and  long name: <modName>.query.<shortName?
+	// for LOCAL resources, add map entries keyed by both short name: query.<shortName> and  long name: <modName>.query.<shortName?
 	for _, q := range w.Mod.Queries {
 		res[q.Name()] = q
 		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.ShortName), q.ShortName)
 		res[longName] = q
 	}
 
-	// for mod dependencies, add queries keyed by long name only
+	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
 			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.ShortName), q.ShortName)
@@ -351,13 +366,13 @@ func (w *Workspace) buildControlMap(modMap modconfig.ModMap) map[string]*modconf
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Control)
 
-	// for LOCAL controls, add map entries keyed by both short name: control.<shortName> and  long name: <modName>.control.<shortName?
+	// for LOCAL resources, add map entries keyed by both short name: control.<shortName> and  long name: <modName>.control.<shortName?
 	for _, c := range w.Mod.Controls {
 		res[c.Name()] = c
 		res[c.QualifiedName()] = c
 	}
 
-	// for mode dependencies, add queries keyed by long name only
+	// for mode dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, c := range mod.Controls {
 			res[c.QualifiedName()] = c
@@ -370,13 +385,13 @@ func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) map[string]*modco
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Benchmark)
 
-	// for LOCAL controls, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
+	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
 	for _, c := range w.Mod.Benchmarks {
 		res[c.Name()] = c
 		res[c.QualifiedName()] = c
 	}
 
-	// for mod dependencies, add queries keyed by long name only
+	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, c := range mod.Benchmarks {
 			res[c.QualifiedName()] = c
@@ -389,13 +404,13 @@ func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfi
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Report)
 
-	// for LOCAL reports, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
+	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
 	for _, r := range w.Mod.Reports {
 		res[r.Name()] = r
 		res[r.QualifiedName()] = r
 	}
 
-	// for mod dependencies, add queries keyed by long name only
+	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, r := range mod.Reports {
 			res[r.QualifiedName()] = r
@@ -408,13 +423,13 @@ func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Panel)
 
-	// for LOCAL panels, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
+	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
 	for _, r := range w.Mod.Panels {
 		res[r.Name()] = r
 		res[r.QualifiedName()] = r
 	}
 
-	// for mod dependencies, add queries keyed by long name only
+	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, p := range mod.Panels {
 			res[p.QualifiedName()] = p
@@ -458,8 +473,8 @@ func (w *Workspace) loadExclusions() error {
 // return a map of all unique panels, keyed by name
 // not we cannot just use PanelMap as this contains duplicates (qualified and unqualified version)
 func (w *Workspace) getPanelMap() map[string]*modconfig.Panel {
-	panels := make(map[string]*modconfig.Panel, len(w.PanelMap))
-	for _, p := range w.PanelMap {
+	panels := make(map[string]*modconfig.Panel, len(w.Panels))
+	for _, p := range w.Panels {
 		// refetch the name property to avoid duplicates
 		// (as we save resources with qualified and unqualified name)
 		panels[p.Name()] = p
@@ -468,10 +483,10 @@ func (w *Workspace) getPanelMap() map[string]*modconfig.Panel {
 }
 
 // return a map of all unique reports, keyed by name
-// not we cannot just use ReportMap as this contains duplicates (qualified and unqualified version)
+// not we cannot just use Reports as this contains duplicates (qualified and unqualified version)
 func (w *Workspace) getReportMap() map[string]*modconfig.Report {
-	reports := make(map[string]*modconfig.Report, len(w.ReportMap))
-	for _, p := range w.ReportMap {
+	reports := make(map[string]*modconfig.Report, len(w.Reports))
+	for _, p := range w.Reports {
 		// refetch the name property to avoid duplicates
 		// (as we save resources with qualified and unqualified name)
 		reports[p.Name()] = p
