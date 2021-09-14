@@ -3,11 +3,8 @@ package db_local
 import (
 	"bufio"
 	"fmt"
-<<<<<<< HEAD
 	"io/ioutil"
-=======
 	"log"
->>>>>>> ae207b74 (startup logs on TRACE output)
 	"net"
 	"os"
 	"os/exec"
@@ -143,9 +140,6 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 	utils.LogTime("startPostgresProcess start")
 	defer utils.LogTime("startPostgresProcess end")
 
-	logChannel := make(chan string, 1000)
-	defer close(logChannel)
-
 	listenAddresses := "localhost"
 
 	if listen == ListenTypeNetwork {
@@ -212,11 +206,16 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 		Foreground: false,
 	}
 
-	stopCollectionFn, err := setupLogCollector(postgresCmd, logChannel)
+	// create a channel with a big buffer, so that it doesn't choke
+	logChannel := make(chan string, 1000)
+	stopCollectionCallback, err := setupLogCollector(postgresCmd, logChannel)
 	if err != nil {
 		return err
 	}
-	defer stopCollectionFn()
+	defer func() {
+		stopCollectionCallback()
+		close(logChannel)
+	}()
 
 	err = postgresCmd.Start()
 	if err != nil {
@@ -268,16 +267,12 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 }
 
 func traceoutServiceLogs(logChannel chan string) {
-	for {
-		logLine := <-logChannel
+	for logLine := range logChannel {
 		if len(strings.TrimSpace(logLine)) == 0 {
 			continue
 		}
 		log.Printf("[TRACE] SERVICE: %s\n", logLine)
-		if strings.Contains(logLine, "database system is shut down") {
-			break
-		}
-		if strings.Contains(logLine, "database system is ready to accept connections") {
+		if strings.Contains(logLine, "Future log output will appear in") {
 			break
 		}
 	}
@@ -293,7 +288,6 @@ func setupLogCollector(postgresCmd *exec.Cmd, sendChannel chan string) (func(), 
 		return nil, err
 	}
 	closeFunction := func() {
-		log.Printf("[TRACE] Stop log collection\n")
 		stdoutPipe.Close()
 		stderrPipe.Close()
 	}
