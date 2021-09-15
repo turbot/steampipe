@@ -137,7 +137,7 @@ func validateConnectionStringArgs() error {
 		if database != "" {
 			return fmt.Errorf("only one of env vars %s and %s may be set", constants.EnvConnectionString, constants.EnvDatabase)
 		}
-		// so only connection string was passed - all ok
+		// so only connection string env var was set. ThHis will already have been put into viper so just return
 		return nil
 	}
 
