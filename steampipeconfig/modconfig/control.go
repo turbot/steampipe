@@ -32,9 +32,9 @@ type Control struct {
 	Params []*ParamDef `cty:"params" column:"params,jsonb"`
 
 	// list of all block referenced by the resource
-	References []string  `column:"refs,jsonb"`
-	Mod        *Mod      `cty:"mod"`
-	DeclRange  hcl.Range `column:"decl_range,text"`
+	References []string `column:"refs,jsonb"`
+	Mod        *Mod     `cty:"mod"`
+	DeclRange  hcl.Range
 
 	parents               []ModTreeItem
 	metadata              *ResourceMetadata

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -13,23 +14,22 @@ type Variable struct {
 	ShortName string
 	FullName  string `column:"name,text"`
 
-	Description    string `column:"description,text"`
-	Default        cty.Value
-	Type           cty.Type
+	Description    string    `column:"description,text"`
+	Default        cty.Value `column:"default_value,jsonb"`
+	Type           cty.Type  `column:"var_type,text"`
 	DescriptionSet bool
 
-	// set after value resolution
-	Value            cty.Value
-	ValueSourceType  string    `column:"value_source,text"`
-	ValueSourceRange hcl.Range `column:"value_source_range,text"`
-	DeclRange        hcl.Range `column:"decl_range,text"`
-	ParsingMode      var_config.VariableParsingMode
-	Mod              *Mod
+	// set after value resolution `column:"value,jsonb"`
+	Value                      cty.Value
+	ValueSourceType            string `column:"value_source,text"`
+	ValueSourceFileName        string `column:"value_source_file_name,text"`
+	ValueSourceStartLineNumber int    `column:"value_source_start_line_number,integer"`
+	ValueSourceEndLineNumber   int    `column:"value_source_end_line_number,integer"`
+	DeclRange                  hcl.Range
+	ParsingMode                var_config.VariableParsingMode
+	Mod                        *Mod
 
-	metadata      *ResourceMetadata
-	ValueString   string `column:"value,jsonb"`
-	TypeString    string `column:"var_type,text"`
-	DefaultString string `column:"default_value,jsonb"`
+	metadata *ResourceMetadata
 }
 
 func NewVariable(v *var_config.Variable) *Variable {
@@ -95,13 +95,10 @@ func (v *Variable) Required() bool {
 	return v.Default == cty.NilVal
 }
 
-func (v *Variable) SetInputValue(value cty.Value, valueString, defaultValueString, varTypeString, sourceType string, sourceRange hcl.Range) {
+func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange tfdiags.SourceRange) {
 	v.Value = value
 	v.ValueSourceType = sourceType
-	v.ValueSourceRange = sourceRange
-
-	// also generate string values for default and value and type
-	v.ValueString = valueString
-	v.TypeString = varTypeString
-	v.DefaultString = defaultValueString
+	v.ValueSourceFileName = sourceRange.Filename
+	v.ValueSourceStartLineNumber = sourceRange.Start.Line
+	v.ValueSourceEndLineNumber = sourceRange.End.Line
 }

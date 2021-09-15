@@ -42,21 +42,10 @@ func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
 	// now update the variables map with the input values
 	for name, inputValue := range inputVariables {
 		variable := variableMap[name]
-		valueString, err := parse.CtyToJSON(inputValue.Value)
-		if err != nil {
-			return nil, err
-		}
-		defaultString, err := parse.CtyToJSON(variable.Default)
-		if err != nil {
-			return nil, err
-		}
 		variable.SetInputValue(
 			inputValue.Value,
-			valueString,
-			defaultString,
-			variable.Type.FriendlyName(),
 			inputValue.SourceTypeString(),
-			inputValue.SourceRange.ToHCL())
+			inputValue.SourceRange)
 	}
 
 	// parse all hcl files in the workspace folder (non recursively) and either parse or create a mod
@@ -120,7 +109,7 @@ func identifyMissingVariables(existing map[string]input_vars.UnparsedVariableVal
 		return needed[i].Name() < needed[j].Name()
 	})
 	if len(needed) > 0 {
-		return modconfig.MissingVariableError{needed}
+		return modconfig.MissingVariableError{MissingVariables: needed}
 	}
 	return nil
 
