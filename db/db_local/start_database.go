@@ -12,7 +12,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
@@ -209,21 +208,19 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 
 	// create a channel with a big buffer, so that it doesn't choke
 	logChannel := make(chan string, 1000)
-	stopCollectionCallback, err := setupLogCollector(postgresCmd, logChannel)
-	if err != nil {
-		return err
+	if stopListenCallback, err := setupLogCollector(postgresCmd, logChannel); err == nil {
+		defer func() {
+			stopListenCallback()
+		}()
+		go traceoutServiceLogs(logChannel)
+	} else {
+		log.Println("[TRACE] Warning: Could not attach to service logs")
 	}
-	defer func() {
-		stopCollectionCallback()
-		close(logChannel)
-	}()
 
 	err = postgresCmd.Start()
 	if err != nil {
 		return err
 	}
-
-	go traceoutServiceLogs(logChannel)
 
 	// get the password file
 	passwords, err := getPasswords()
@@ -269,10 +266,6 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 
 func traceoutServiceLogs(logChannel chan string) {
 	for logLine := range logChannel {
-		time.Sleep(10 * time.Millisecond)
-		if len(strings.TrimSpace(logLine)) == 0 {
-			continue
-		}
 		log.Printf("[TRACE] SERVICE: %s\n", logLine)
 		if strings.Contains(logLine, "Future log output will appear in") {
 			break
@@ -280,7 +273,7 @@ func traceoutServiceLogs(logChannel chan string) {
 	}
 }
 
-func setupLogCollector(postgresCmd *exec.Cmd, sendChannel chan string) (func(), error) {
+func setupLogCollector(postgresCmd *exec.Cmd, publishChannel chan string) (func(), error) {
 	stdoutPipe, err := postgresCmd.StdoutPipe()
 	if err != nil {
 		return nil, err
@@ -292,6 +285,9 @@ func setupLogCollector(postgresCmd *exec.Cmd, sendChannel chan string) (func(), 
 	closeFunction := func() {
 		stdoutPipe.Close()
 		stderrPipe.Close()
+
+		// always close from the sender
+		close(publishChannel)
 	}
 	stdoutScanner := bufio.NewScanner(stdoutPipe)
 	stderrScanner := bufio.NewScanner(stderrPipe)
@@ -301,13 +297,19 @@ func setupLogCollector(postgresCmd *exec.Cmd, sendChannel chan string) (func(), 
 
 	go func() {
 		for stdoutScanner.Scan() {
-			sendChannel <- stdoutScanner.Text()
+			line := stdoutScanner.Text()
+			if len(line) > 0 {
+				publishChannel <- line
+			}
 		}
 	}()
 
 	go func() {
 		for stderrScanner.Scan() {
-			sendChannel <- stderrScanner.Text()
+			line := stderrScanner.Text()
+			if len(line) > 0 {
+				publishChannel <- line
+			}
 		}
 	}()
 
