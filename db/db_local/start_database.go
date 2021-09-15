@@ -208,9 +208,9 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 
 	// create a channel with a big buffer, so that it doesn't choke
 	logChannel := make(chan string, 1000)
-	if stopListenCallback, err := setupLogCollector(postgresCmd, logChannel); err == nil {
+	if stopListenFn, err := setupLogCollector(postgresCmd, logChannel); err == nil {
 		defer func() {
-			stopListenCallback()
+			stopListenFn()
 		}()
 		go traceoutServiceLogs(logChannel)
 	} else {
