@@ -9,41 +9,7 @@ import (
 	"github.com/zclconf/go-cty/cty/json"
 )
 
-// CtyToString converts a cty value into a string
-func CtyToString(v cty.Value) (valStr string, err error) {
-	if v.IsNull() {
-		return "", nil
-	}
-	ty := v.Type()
-
-	switch ty {
-	case cty.Bool:
-		var target bool
-		if err = gocty.FromCtyValue(v, &target); err == nil {
-			valStr = fmt.Sprintf("%v", target)
-		}
-	case cty.Number:
-		var target int
-		if err = gocty.FromCtyValue(v, &target); err == nil {
-			valStr = fmt.Sprintf("%d", target)
-			return
-		} else {
-			var targetf float64
-			if err = gocty.FromCtyValue(v, &targetf); err == nil {
-				valStr = fmt.Sprintf("%d", target)
-			}
-		}
-	case cty.String:
-		err = gocty.FromCtyValue(v, &valStr)
-	default:
-		// represent as JSON
-		valStr, err = CtyToJSON(v)
-	}
-
-	return valStr, err
-}
-
-// convert a cty value into a postgres representation of the value
+// CtyToPostgresString convert a cty value into a postgres representation of the value
 func CtyToPostgresString(v cty.Value) (valStr string, err error) {
 	ty := v.Type()
 	switch {
