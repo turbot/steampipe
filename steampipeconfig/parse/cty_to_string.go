@@ -9,8 +9,28 @@ import (
 	"github.com/zclconf/go-cty/cty/json"
 )
 
-// CtyToPostgresString convert a cty value into a postgres representation of the value
-func CtyToPostgresString(v cty.Value) (valStr string, err error) {
+// CtyToJSON converts a cty value to it;s JSON representation
+func CtyToJSON(val cty.Value) (string, error) {
+
+	if !val.IsWhollyKnown() {
+		return "", fmt.Errorf("cannot serialize unknown values")
+	}
+
+	if val.IsNull() {
+		return "{}", nil
+	}
+
+	buf, err := json.Marshal(val, val.Type())
+	if err != nil {
+		return "", err
+	}
+
+	return string(buf), nil
+
+}
+
+// ctyToPostgresString convert a cty value into a postgres representation of the value
+func ctyToPostgresString(v cty.Value) (valStr string, err error) {
 	ty := v.Type()
 	switch {
 	case ty.IsTupleType(), ty.IsListType():
@@ -59,32 +79,13 @@ func CtyToPostgresString(v cty.Value) (valStr string, err error) {
 	return valStr, err
 }
 
-func CtyToJSON(val cty.Value) (string, error) {
-
-	if !val.IsWhollyKnown() {
-		return "", fmt.Errorf("cannot serialize unknown values")
-	}
-
-	if val.IsNull() {
-		return "{}", nil
-	}
-
-	buf, err := json.Marshal(val, val.Type())
-	if err != nil {
-		return "", err
-	}
-
-	return string(buf), nil
-
-}
-
 func ctyTupleToArrayOfPgStrings(val cty.Value) ([]string, error) {
 	var res []string
 	it := val.ElementIterator()
 	for it.Next() {
 		_, v := it.Element()
 		// decode the value into a postgres compatible
-		valStr, err := CtyToPostgresString(v)
+		valStr, err := ctyToPostgresString(v)
 		if err != nil {
 			return nil, err
 		}
@@ -105,7 +106,7 @@ func ctyObjectToMapOfPgStrings(val cty.Value) (map[string]string, error) {
 		gocty.FromCtyValue(k, &key)
 
 		// decode the value into a postgres compatible
-		valStr, err := CtyToPostgresString(v)
+		valStr, err := ctyToPostgresString(v)
 		if err != nil {
 			err := fmt.Errorf("invalid value provided for param '%s': %v", key, err)
 			return nil, err
