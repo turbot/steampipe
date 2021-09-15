@@ -208,7 +208,8 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 
 	// create a channel with a big buffer, so that it doesn't choke
 	logChannel := make(chan string, 1000)
-	if stopListenFn, err := setupLogCollector(postgresCmd, logChannel); err == nil {
+	stopListenFn, err := setupLogCollector(postgresCmd, logChannel)
+	if err == nil {
 		defer func() {
 			stopListenFn()
 		}()
