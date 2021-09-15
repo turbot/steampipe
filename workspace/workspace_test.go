@@ -41,7 +41,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 					},
 				},
 			},
-			QueryMap: map[string]*modconfig.Query{
+			Queries: map[string]*modconfig.Query{
 				"w_1.query.localq1": {
 					ShortName: "localq1", Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
 				},

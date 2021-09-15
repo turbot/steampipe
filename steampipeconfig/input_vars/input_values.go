@@ -57,13 +57,6 @@ const (
 	// ValueFromInput indicates that the value was provided at an interactive
 	// input prompt.
 	ValueFromInput ValueSourceType = 'I'
-
-	// ValueFromPlan indicates that the value was retrieved from a stored plan.
-	ValueFromPlan ValueSourceType = 'P'
-
-	// ValueFromCaller indicates that the value was explicitly overridden by
-	// a caller to Context.SetVariable after the context was constructed.
-	ValueFromCaller ValueSourceType = 'S'
 )
 
 func (v *InputValue) GoString() string {
@@ -71,6 +64,25 @@ func (v *InputValue) GoString() string {
 		return fmt.Sprintf("&InputValue{Value: %#v, SourceType: %#v, SourceRange: %#v}", v.Value, v.SourceType, v.SourceRange)
 	} else {
 		return fmt.Sprintf("&InputValue{Value: %#v, SourceType: %#v}", v.Value, v.SourceType)
+	}
+}
+
+func (v *InputValue) SourceTypeString() string {
+	switch v.SourceType {
+	case ValueFromConfig:
+		return "config"
+	case ValueFromAutoFile:
+		return "auto file"
+	case ValueFromNamedFile:
+		return "name file"
+	case ValueFromCLIArg:
+		return "CLI arg"
+	case ValueFromEnvVar:
+		return "env var"
+	case ValueFromInput:
+		return "user input"
+	default:
+		return "unknown"
 	}
 }
 

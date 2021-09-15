@@ -34,8 +34,7 @@ type Control struct {
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
 	Mod        *Mod     `cty:"mod"`
-
-	DeclRange hcl.Range
+	DeclRange  hcl.Range
 
 	parents               []ModTreeItem
 	metadata              *ResourceMetadata

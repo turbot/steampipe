@@ -11,7 +11,9 @@ import (
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // TagColumn is the tag used to specify the column name and type in the introspection tables
@@ -67,6 +69,7 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.IntrospectionTableQuery, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
 
@@ -84,28 +87,34 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	// the maps will have the same resource keyed by long and short name - avoid dupes
 	resourcesAdded := make(map[string]bool)
 
-	for _, control := range workspaceResources.ControlMap {
+	for _, control := range workspaceResources.Controls {
 		if _, added := resourcesAdded[control.Name()]; !added {
 			resourcesAdded[control.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.IntrospectionTableControl))
 		}
 	}
-	for _, query := range workspaceResources.QueryMap {
+	for _, query := range workspaceResources.Queries {
 		if _, added := resourcesAdded[query.Name()]; !added {
 			resourcesAdded[query.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.IntrospectionTableQuery))
 		}
 	}
-	for _, benchmark := range workspaceResources.BenchmarkMap {
+	for _, benchmark := range workspaceResources.Benchmarks {
 		if _, added := resourcesAdded[benchmark.Name()]; !added {
 			resourcesAdded[benchmark.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.IntrospectionTableBenchmark))
 		}
 	}
-	for _, mod := range workspaceResources.ModMap {
+	for _, mod := range workspaceResources.Mods {
 		if _, added := resourcesAdded[mod.Name()]; !added {
 			resourcesAdded[mod.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.IntrospectionTableMod))
+		}
+	}
+	for _, variable := range workspaceResources.Variables {
+		if _, added := resourcesAdded[variable.Name()]; !added {
+			resourcesAdded[variable.Name()] = true
+			insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
 		}
 	}
 
@@ -131,29 +140,15 @@ func getColumnDefinitions(item interface{}) []string {
 		fieldName := val.Type().Field(i).Name
 		field, _ := t.FieldByName(fieldName)
 
-		column, columnType, ok := getColumnTagValues(field)
+		columnTag, ok := newColumnTag(field)
 		if !ok {
 			continue
 		}
 
-		columnDef = append(columnDef, fmt.Sprintf("  %s  %s", column, columnType))
+		columnDef = append(columnDef, fmt.Sprintf("  %s  %s", columnTag.Column, columnTag.ColumnType))
 
 	}
 	return columnDef
-}
-
-func getColumnTagValues(field reflect.StructField) (string, string, bool) {
-	columnTag, ok := field.Tag.Lookup(TagColumn)
-	if !ok {
-		return "", "", false
-	}
-	split := strings.Split(columnTag, ",")
-	if len(split) != 2 {
-		return "", "", false
-	}
-	column := split[0]
-	columnType := split[1]
-	return column, columnType, true
 }
 
 func getTableInsertSqlForResource(item modconfig.ResourceWithMetadata, tableName string) string {
@@ -187,7 +182,7 @@ func getColumnValues(item interface{}) ([]string, []string) {
 		fieldName := val.Type().Field(i).Name
 		field, _ := t.FieldByName(fieldName)
 
-		column, columnType, ok := getColumnTagValues(field)
+		columnTag, ok := newColumnTag(field)
 		if !ok {
 			continue
 		}
@@ -200,18 +195,39 @@ func getColumnValues(item interface{}) ([]string, []string) {
 			continue
 		}
 
-		// pgValue escapes values, and for json columns, converts them into escaped JSON
+		// formatIntrospectionTableValue escapes values, and for json columns, converts them into escaped JSON
 		// ignore JSON conversion errors - trust that array values read from hcl will be convertable
-		formattedValue, _ := pgValue(value, columnType)
+		formattedValue, _ := formatIntrospectionTableValue(value, columnTag)
 		values = append(values, formattedValue)
-		columns = append(columns, column)
+		columns = append(columns, columnTag.Column)
 	}
 	return values, columns
 }
 
 // convert the value into a postgres format value which can used in an insert statement
-func pgValue(item interface{}, columnsType string) (string, error) {
-	switch columnsType {
+func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (string, error) {
+	// special handling for cty.Type and cty.Value data
+	switch t := item.(type) {
+	// if the item is a cty value, we always represent it as json
+	case cty.Value:
+		if columnTag.ColumnType != "jsonb" {
+			return "nil", fmt.Errorf("data for column %s is of type cty.Value so column type should be 'jsonb' but is actually %s", columnTag.Column, columnTag.ColumnType)
+		}
+		str, err := parse.CtyToJSON(t)
+		if err != nil {
+			return "", err
+		}
+		return PgEscapeString(str), nil
+	case cty.Type:
+		// if the item is a cty value, we always represent it as json
+		if columnTag.ColumnType != "text" {
+			return "nil", fmt.Errorf("data for column %s is of type cty.Type so column type should be 'text' but is actually %s", columnTag.Column, columnTag.ColumnType)
+		}
+		return PgEscapeString(t.FriendlyName()), nil
+	}
+
+	//
+	switch columnTag.ColumnType {
 	case "jsonb":
 		jsonBytes, err := json.Marshal(reflect.ValueOf(item).Interface())
 		if err != nil {
@@ -220,7 +236,10 @@ func pgValue(item interface{}, columnsType string) (string, error) {
 
 		res := PgEscapeString(fmt.Sprintf(`%s`, string(jsonBytes)))
 		return res, nil
+	case "integer", "numeric", "decimal", "boolean":
+		return typeHelpers.ToString(item), nil
 	default:
+		// for string column, escape the data
 		return PgEscapeString(typeHelpers.ToString(item)), nil
 	}
 }

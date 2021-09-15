@@ -3,13 +3,11 @@ package input_vars
 import (
 	"fmt"
 
-	"github.com/zclconf/go-cty/cty"
-
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/tfdiags"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // UnparsedVariableValue represents a variable value provided by the caller
