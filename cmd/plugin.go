@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/steampipe/db"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
@@ -434,7 +433,7 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 		steampipeconfig.Config = config
 	}
 
-	client, err := db.GetClient(constants.InvokerPlugin)
+	client, err := db_local.GetLocalClient(constants.InvokerPlugin)
 	if err != nil {
 		return err
 	}
@@ -511,7 +510,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
 func getPluginConnectionMap(ctx context.Context) (map[string][]string, error) {
-	client, err := db.GetClient(constants.InvokerPlugin)
+	client, err := db_local.GetLocalClient(constants.InvokerPlugin)
 	if err != nil {
 		return nil, err
 	}

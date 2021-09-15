@@ -3,6 +3,8 @@ package workspace
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/db/db_local"
+
 	"github.com/turbot/steampipe/steampipeconfig"
 
 	"github.com/fsnotify/fsnotify"
@@ -16,10 +18,18 @@ type ConnectionWatcher struct {
 	fileWatcherErrorHandler func(error)
 	watcherError            error
 	watcher                 *utils.FileWatcher
+	client                  db_common.Client
 }
 
-func NewConnectionWatcher(client db_common.Client, errorHandler func(error)) (*ConnectionWatcher, error) {
-	w := &ConnectionWatcher{}
+func NewConnectionWatcher(invoker constants.Invoker, errorHandler func(error)) (*ConnectionWatcher, error) {
+	client, err := db_local.NewLocalClient(invoker)
+	if err != nil {
+		return nil, err
+	}
+
+	w := &ConnectionWatcher{
+		client: client,
+	}
 
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{constants.ConfigDir()},
@@ -27,7 +37,7 @@ func NewConnectionWatcher(client db_common.Client, errorHandler func(error)) (*C
 		ListFlag:    filehelpers.FilesRecursive,
 
 		OnChange: func(events []fsnotify.Event) {
-			w.handleFileWatcherEvent(client, events)
+			w.handleFileWatcherEvent(events)
 		},
 	}
 	watcher, err := utils.NewWatcher(watcherOptions)
@@ -49,16 +59,15 @@ func NewConnectionWatcher(client db_common.Client, errorHandler func(error)) (*C
 	return w, nil
 }
 
-func (w *ConnectionWatcher) handleFileWatcherEvent(client db_common.Client, events []fsnotify.Event) {
-	// TODO add new function to just load connection config, not options
-	config, err := steampipeconfig.LoadSteampipeConfig("", "")
+func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
+	config, err := steampipeconfig.LoadConnectionConfig()
 	if err != nil {
 		fmt.Println()
 		utils.ShowError(err)
 		return
 	}
 	steampipeconfig.Config = config
-	refreshResult := client.RefreshConnectionAndSearchPaths()
+	refreshResult := w.client.RefreshConnectionAndSearchPaths()
 	if refreshResult.Error != nil {
 		fmt.Println()
 		utils.ShowError(refreshResult.Error)
@@ -69,5 +78,6 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(client db_common.Client, even
 }
 
 func (w *ConnectionWatcher) Close() {
+	w.client.Close()
 	w.watcher.Close()
 }

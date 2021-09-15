@@ -31,7 +31,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
    assert_output --partial 'Panic'
 }
 
-@test "select error from chaos_transform_error" {
+@test "select error from chaos_transform_errors" {
   run steampipe query "select error from chaos_transform_errors"
   assert_output --partial 'TRANSFORM ERROR'
 }

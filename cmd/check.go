@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/steampipe/db/db_client"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -16,8 +18,8 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
-	"github.com/turbot/steampipe/db"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
@@ -73,11 +75,11 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "text", "Select the console output format. Possible values are json, text, brief, none").
-		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports check time.").
+		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports check time").
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
 		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme, which determines the color scheme for the 'text' control output. Possible values are light, dark, plain").
-		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to files. Multiple exports are allowed.").
+		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to files - multiple exports are allowed").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
 		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them").
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls. Cannot be used with '--tag'").
@@ -188,6 +190,9 @@ func initialiseCheck() *checkInitData {
 		return initData
 	}
 
+	err = validateConnectionStringArgs()
+	utils.FailOnError(err)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	startCancelHandler(cancel)
 	initData.ctx = ctx
@@ -216,7 +221,13 @@ func initialiseCheck() *checkInitData {
 	}
 
 	// get a client
-	client, err := db.GetClient(constants.InvokerCheck)
+	var client db_common.Client
+	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
+		client, err = db_client.NewDbClient(connectionString)
+	} else {
+		client, err = db_local.GetLocalClient(constants.InvokerCheck)
+	}
+
 	if err != nil {
 		initData.result.Error = err
 		return initData

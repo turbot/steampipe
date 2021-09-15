@@ -14,8 +14,9 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db"
+	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/interactive"
 	"github.com/turbot/steampipe/query/queryexecute"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -93,6 +94,9 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		args = append(args, stdinData)
 	}
 
+	err := validateConnectionStringArgs()
+	utils.FailOnError(err)
+
 	// enable spinner only in interactive mode
 	interactiveMode := len(args) == 0
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, interactiveMode)
@@ -122,6 +126,40 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	}
 
+}
+
+func validateConnectionStringArgs() error {
+	connectionString := os.Getenv(constants.EnvConnectionString)
+	database := os.Getenv(constants.EnvDatabase)
+	apiKey := os.Getenv(constants.EnvAPIKey)
+
+	if connectionString != "" {
+		if database != "" {
+			return fmt.Errorf("only one of env vars %s and %s may be set", constants.EnvConnectionString, constants.EnvDatabase)
+		}
+		// so only connection string env var was set. ThHis will already have been put into viper so just return
+		return nil
+	}
+
+	if database == "" {
+		// no database set - so no connection string
+		return nil
+	}
+
+	// so database was set - api key must be set as well
+	if apiKey == "" {
+		return fmt.Errorf("if %s is set %s must be set", constants.EnvDatabase, constants.EnvAPIKey)
+	}
+
+	// so we have a database ands an api key - try to retrieve the connection string and set it in viper
+
+	connectionString, err := db_common.GetConnectionString(database, apiKey)
+	if err != nil {
+		return err
+	}
+	viper.Set(constants.ArgConnectionString, connectionString)
+
+	return nil
 }
 
 // getPipedStdinData reads the Standard Input and returns the available data as a string
@@ -175,7 +213,13 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 		}()
 
 		// get a db client
-		client, err := db.GetClient(constants.InvokerQuery)
+		var client db_common.Client
+		var err error
+		if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
+			client, err = db_client.NewDbClient(connectionString)
+		} else {
+			client, err = db_local.GetLocalClient(constants.InvokerQuery)
+		}
 		if err != nil {
 			initData.Result.Error = err
 			return

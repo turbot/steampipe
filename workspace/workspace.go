@@ -95,7 +95,7 @@ func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(erro
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
-		Exclude:     append(w.exclusions, "**/.*"),
+		Exclude:     w.exclusions,
 		ListFlag:    w.listFlag,
 		// we should look into passing the callback function into the underlying watcher
 		// we need to analyze the kind of errors that come out from the watcher and

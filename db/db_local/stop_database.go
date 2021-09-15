@@ -1,4 +1,4 @@
-package local_db
+package db_local
 
 import (
 	"fmt"
@@ -39,31 +39,35 @@ func ShutdownService(invoker constants.Invoker) {
 
 	status, _ := GetStatus()
 
-	// is the service running?
-	if status != nil {
-		if status.Invoker == constants.InvokerService {
-			// if the service was invoked by `steampipe service`,
-			// then we don't shut it down
-			return
-		}
-
-		count, _ := GetCountOfConnectedClients()
-
-		if count > 0 {
-			// there are other clients connected to the database
-			// we can't stop the DB.
-			return
-		}
-
-		// we can shutdown the database
-		status, err := StopDB(false, invoker, nil)
-		if err != nil {
-			utils.ShowError(err)
-		}
-		if status != ServiceStopped {
-			StopDB(true, invoker, nil)
-		}
+	// if the service is not running or it was invoked by `steampipe service`,
+	// then we don't shut it down
+	if status == nil || status.Invoker == constants.InvokerService {
+		return
 	}
+
+	// how many clients are connected
+	count, _ := GetCountOfConnectedClients()
+	if count > 0 {
+		// there are other clients connected to the database
+		// we can't stop the DB.
+		return
+	}
+
+	// we can shut down the database
+	stopStatus, err := StopDB(false, invoker, nil)
+	if err != nil {
+		utils.ShowError(err)
+	}
+	if stopStatus == ServiceStopped {
+		return
+	}
+
+	// shutdown failed - try to force stop
+	_, err = StopDB(true, invoker, nil)
+	if err != nil {
+		utils.ShowError(err)
+	}
+
 }
 
 // GetCountOfConnectedClients returns the number of clients currently connected to the service
@@ -84,7 +88,7 @@ func GetCountOfConnectedClients() (int, error) {
 	return (clientCount - 1 /* deduct the existing client */), rootClient.Close()
 }
 
-// StopDB :: search and stop the running instance. Does nothing if an instance was not found
+// StopDB searches for and stops the running instance. Does nothing if an instance was not found
 func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (StopStatus, error) {
 	log.Println("[TRACE] StopDB", force)
 

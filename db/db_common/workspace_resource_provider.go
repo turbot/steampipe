@@ -4,8 +4,8 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// WorkspaceResourceProvider :: interface encapsulating named query searching capability
-// - provided to avoid db needing a reference to workspace
+// WorkspaceResourceProvider is an interface encapsulating workspace functionality
+// - provided to avoid db needing a reference to Workspace
 type WorkspaceResourceProvider interface {
 	ResolveQueryAndArgs(arg string) (string, modconfig.PreparedStatementProvider, error)
 	GetQueryMap() map[string]*modconfig.Query
