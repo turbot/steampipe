@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
@@ -268,6 +269,7 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 
 func traceoutServiceLogs(logChannel chan string) {
 	for logLine := range logChannel {
+		time.Sleep(10 * time.Millisecond)
 		if len(strings.TrimSpace(logLine)) == 0 {
 			continue
 		}
