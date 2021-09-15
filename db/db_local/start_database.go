@@ -214,6 +214,9 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 		}()
 		go traceoutServiceLogs(logChannel)
 	} else {
+		// this is a convenience and therefore, we shouldn't error out if we
+		// are not able to capture the logs.
+		// instead, log to TRACE that we couldn't and continue
 		log.Println("[TRACE] Warning: Could not attach to service logs")
 	}
 
