@@ -34,8 +34,8 @@ type Benchmark struct {
 	References []string `column:"refs,jsonb"`
 	Mod        *Mod     `cty:"mod"`
 
-	ChildNameStrings []string  `column:"children,jsonb"`
-	DeclRange        hcl.Range `column:"decl_range,text"`
+	ChildNameStrings []string `column:"children,jsonb"`
+	DeclRange        hcl.Range
 
 	parents  []ModTreeItem
 	children []ModTreeItem
