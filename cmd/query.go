@@ -68,9 +68,6 @@ Examples:
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").
-		AddStringFlag(constants.ArgConnectionString, "", "", "Database connection string - used to connect to remote database instead of running database locally").
-		AddStringFlag(constants.ArgDatabase, "", "", "The remote database to connect to - if specified, api-key must also be passed").
-		AddStringFlag(constants.ArgAPIKey, "", "", "The steampipe cloud api-key to use to retrieve database details").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports query time.").
 		AddBoolFlag(constants.ArgWatch, "", true, "Watch SQL files in the current workspace (works only in interactive mode)").
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
@@ -132,23 +129,26 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 }
 
 func validateConnectionStringArgs() error {
-	if viper.Get(constants.ArgConnectionString) != "" {
-		if viper.GetString(constants.ArgDatabase) != "" {
-			return fmt.Errorf("only one of %s and %s may be set", constants.ArgConnectionString, constants.ArgDatabase)
+	connectionString := os.Getenv(constants.EnvConnectionString)
+	database := os.Getenv(constants.EnvDatabase)
+	apiKey := os.Getenv(constants.EnvAPIKey)
+
+	if connectionString != "" {
+		if database != "" {
+			return fmt.Errorf("only one of env vars %s and %s may be set", constants.EnvConnectionString, constants.EnvDatabase)
 		}
 		// so only connection string was passed - all ok
 		return nil
 	}
 
-	var database, apiKey string
-	if database = viper.GetString(constants.ArgDatabase); database == "" {
+	if database == "" {
 		// no database set - so no connection string
 		return nil
 	}
 
 	// so database was set - api key must be set as well
-	if apiKey = viper.GetString(constants.ArgAPIKey); apiKey == "" {
-		return fmt.Errorf("if %s is passed then %s must be set", constants.ArgDatabase, constants.ArgAPIKey)
+	if apiKey == "" {
+		return fmt.Errorf("if %s is set %s must be set", constants.EnvDatabase, constants.EnvAPIKey)
 	}
 
 	// so we have a database ands an api key - try to retrieve the connection string and set it in viper
