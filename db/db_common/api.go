@@ -42,7 +42,11 @@ func GetActor(bearer string, client *http.Client) (string, error) {
 		return "", err
 	}
 
-	return resp["handle"].(string), nil
+	handle, ok := resp["handle"].(string)
+	if !ok {
+		return "", fmt.Errorf("failed to read handle from Steampipe Cloud API")
+	}
+	return handle, nil
 }
 
 func GetPassword(userHandle, bearer string, client *http.Client) (string, error) {
@@ -52,7 +56,11 @@ func GetPassword(userHandle, bearer string, client *http.Client) (string, error)
 		return "", err
 	}
 
-	return resp["$password"].(string), nil
+	password, ok := resp["$password"].(string)
+	if !ok {
+		return "", fmt.Errorf("failed to read password from Steampipe Cloud API")
+	}
+	return password, nil
 }
 
 func GetWorkspaceHost(userHandle, workspaceHandle, bearer string, client *http.Client) (string, string, error) {
@@ -62,7 +70,15 @@ func GetWorkspaceHost(userHandle, workspaceHandle, bearer string, client *http.C
 		return "", "", err
 	}
 
-	return resp["host"].(string), resp["rand_string"].(string), nil
+	host, ok := resp["host"].(string)
+	if !ok {
+		return "", "", fmt.Errorf("failed to read workspace data from Steampipe Cloud API")
+	}
+	randString, ok := resp["rand_string"].(string)
+	if !ok {
+		return "", "", fmt.Errorf("failed to read workspace data from Steampipe Cloud API")
+	}
+	return host, randString, nil
 }
 
 func fetchAPIData(url, bearer string, client *http.Client) (map[string]interface{}, error) {
