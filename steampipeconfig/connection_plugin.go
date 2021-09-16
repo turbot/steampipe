@@ -4,6 +4,8 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/steampipe-plugin-sdk/grpc"
@@ -91,7 +93,7 @@ func CreateConnectionPlugin(input *ConnectionPluginInput) (*ConnectionPlugin, er
 		Client: client,
 		Stub:   p,
 	}
-	if err = setConnectionConfig(connectionName, connectionConfig, err, pluginClient); err != nil {
+	if err = SetConnectionConfig(connectionName, connectionConfig, pluginClient); err != nil {
 		pluginClient.Client.Kill()
 		return nil, err
 	}
@@ -114,19 +116,19 @@ func CreateConnectionPlugin(input *ConnectionPluginInput) (*ConnectionPlugin, er
 	return c, nil
 }
 
-// send the connection config to the plugin
-func setConnectionConfig(connectionName string, connectionConfig string, err error, pluginClient *grpc.PluginClient) error {
-	// set the connection config
+// SetConnectionConfig sends the connection config and steampipe metadata to the plugin
+func SetConnectionConfig(connectionName string, connectionConfig string, pluginClient *grpc.PluginClient) error {
+	// fetch the steampipe metadata
 	req := proto.SetConnectionConfigRequest{
-		ConnectionName:   connectionName,
-		ConnectionConfig: connectionConfig,
+		ConnectionName:    connectionName,
+		ConnectionConfig:  connectionConfig,
+		SteampipeMetadata: constants.GetSteampipeMetadata(),
 	}
-	_, err = pluginClient.Stub.SetConnectionConfig(&req)
+
+	_, err := pluginClient.Stub.SetConnectionConfig(&req)
 	if err != nil {
-
-		// create a new cleaner error
+		// create a new cleaner error, ignoring Not Implemented errors for backwards compatibility
 		return HandleGrpcError(err, connectionName, "SetConnectionConfig")
-
 	}
 	return nil
 }

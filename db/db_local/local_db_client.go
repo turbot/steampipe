@@ -272,7 +272,6 @@ func (c *LocalDbClient) refreshConnections() *db_common.RefreshConnectionResult 
 	numUpdates := len(updates.Update)
 	log.Printf("[TRACE] RefreshConnections: num updates %d", numUpdates)
 	if numUpdates > 0 {
-
 		// first instantiate connection plugins for all updates (reuse 'res' defined above)
 		var connectionPlugins []*steampipeconfig.ConnectionPlugin
 		connectionPlugins, res = getConnectionPlugins(updates.Update)
