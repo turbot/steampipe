@@ -1,8 +1,10 @@
 package db_local
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -204,6 +206,21 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 		Foreground: false,
 	}
 
+	// create a channel with a big buffer, so that it doesn't choke
+	logChannel := make(chan string, 1000)
+	stopListenFn, err := setupLogCollector(postgresCmd, logChannel)
+	if err == nil {
+		defer func() {
+			stopListenFn()
+		}()
+		go traceoutServiceLogs(logChannel)
+	} else {
+		// this is a convenience and therefore, we shouldn't error out if we
+		// are not able to capture the logs.
+		// instead, log to TRACE that we couldn't and continue
+		log.Println("[TRACE] Warning: Could not attach to service logs")
+	}
+
 	err = postgresCmd.Start()
 	if err != nil {
 		return err
@@ -249,6 +266,58 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 	connection.Close()
 
 	return nil
+}
+
+func traceoutServiceLogs(logChannel chan string) {
+	for logLine := range logChannel {
+		log.Printf("[TRACE] SERVICE: %s\n", logLine)
+		if strings.Contains(logLine, "Future log output will appear in") {
+			break
+		}
+	}
+}
+
+func setupLogCollector(postgresCmd *exec.Cmd, publishChannel chan string) (func(), error) {
+	stdoutPipe, err := postgresCmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	stderrPipe, err := postgresCmd.StderrPipe()
+	if err != nil {
+		return nil, err
+	}
+	closeFunction := func() {
+		stdoutPipe.Close()
+		stderrPipe.Close()
+
+		// always close from the sender
+		close(publishChannel)
+	}
+	stdoutScanner := bufio.NewScanner(stdoutPipe)
+	stderrScanner := bufio.NewScanner(stderrPipe)
+
+	stdoutScanner.Split(bufio.ScanLines)
+	stderrScanner.Split(bufio.ScanLines)
+
+	go func() {
+		for stdoutScanner.Scan() {
+			line := stdoutScanner.Text()
+			if len(line) > 0 {
+				publishChannel <- line
+			}
+		}
+	}()
+
+	go func() {
+		for stderrScanner.Scan() {
+			line := stderrScanner.Text()
+			if len(line) > 0 {
+				publishChannel <- line
+			}
+		}
+	}()
+
+	return closeFunction, nil
 }
 
 // ensures that the `steampipe` fdw server exists
