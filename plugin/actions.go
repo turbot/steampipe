@@ -26,7 +26,7 @@ func Remove(image string, pluginConnections map[string][]ConnectionConfigRange) 
 	fullPluginName := ociinstaller.NewSteampipeImageRef(image).DisplayImageRef()
 
 	// are any connections using this plugin???
-	conns, usageFound := pluginConnections[fullPluginName]
+	conns := pluginConnections[fullPluginName]
 
 	installedTo := filepath.Join(constants.PluginDir(), filepath.FromSlash(fullPluginName))
 	_, err := os.Stat(installedTo)
@@ -47,7 +47,7 @@ func Remove(image string, pluginConnections map[string][]ConnectionConfigRange) 
 	delete(v.Plugins, fullPluginName)
 	err = v.Save()
 
-	if usageFound {
+	if len(conns) > 0 {
 		display.StopSpinner(spinner)
 		str := []string{fmt.Sprintf("\nThe following files have steampipe connections using the '%s' plugin:\n", image)}
 		for _, conn := range conns {
