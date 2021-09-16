@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -101,7 +100,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
-			debug.PrintStack()
 		}
 
 		if initData.client != nil {
