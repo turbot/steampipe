@@ -126,8 +126,8 @@ func (c *DbClient) getSchemaFromDB() (*sql.Rows, error) {
 }
 
 // RefreshConnectionAndSearchPaths implements Client
-// it does nothing for DbClient
-// - this functionality is only supported for local client
+// base db client does not refresh connections, it just sets searhc path
+// (only local db client refreshed connections)
 func (c *DbClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConnectionResult {
 	res := &db_common.RefreshConnectionResult{}
 	if err := c.SetSessionSearchPath(); err != nil {
