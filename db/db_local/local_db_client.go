@@ -360,13 +360,7 @@ func getConnectionPlugins(updates steampipeconfig.ConnectionDataMap) ([]*steampi
 }
 
 func getConnectionPluginAsync(connectionName string, connectionData *steampipeconfig.ConnectionData, pluginChan chan *steampipeconfig.ConnectionPlugin, errorChan chan error) {
-	opts := &steampipeconfig.ConnectionPluginInput{
-		ConnectionName:    connectionName,
-		PluginName:        connectionData.Plugin,
-		ConnectionOptions: connectionData.ConnectionOptions,
-		ConnectionConfig:  connectionData.ConnectionConfig,
-		DisableLogger:     true}
-	p, err := steampipeconfig.CreateConnectionPlugin(opts)
+	p, err := steampipeconfig.CreateConnectionPlugin(connectionData.Connection, true)
 	if err != nil {
 		errorChan <- err
 		return
