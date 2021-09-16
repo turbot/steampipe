@@ -170,7 +170,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	// We need to Render the prompt here to make sure that it
 	//comes back
 	// after the messages have been displayed
-	//c.interactivePrompt.Render()
+	c.interactivePrompt.Render()
 }
 
 // ClosePrompt cancels the running prompt, setting the action to take after close
