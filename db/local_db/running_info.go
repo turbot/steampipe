@@ -1,6 +1,7 @@
 package local_db
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -26,6 +27,21 @@ type RunningDBInstanceInfo struct {
 
 func (r *RunningDBInstanceInfo) Save() error {
 	return saveRunningInstanceInfo(r)
+}
+
+func (r *RunningDBInstanceInfo) String() string {
+	writeBuffer := bytes.NewBufferString("")
+	jsonEncoder := json.NewEncoder(writeBuffer)
+
+	// redact the password from the string, so that it doesn't get printed
+	// this should not affect the state file, since we use a json.Marshal there
+	p := r.Password
+	r.Password = "XXXX-XXXX-XXXX"
+
+	jsonEncoder.SetIndent("", "")
+	jsonEncoder.Encode(r)
+	r.Password = p
+	return writeBuffer.String()
 }
 
 func saveRunningInstanceInfo(info *RunningDBInstanceInfo) error {

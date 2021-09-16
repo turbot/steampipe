@@ -274,7 +274,7 @@ Service stop failed.
 
 Try using:
 	steampipe service restart --force
-		
+
 to force a restart.
 		`)
 		return
@@ -398,7 +398,11 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 
 	switch status {
 	case local_db.ServiceStopped:
-		fmt.Println("Steampipe database service stopped")
+		if info != nil {
+			fmt.Printf("Steampipe database service stopped [port %d]\n", info.Port)
+		} else {
+			fmt.Println("Steampipe database service stopped")
+		}
 	case local_db.ServiceNotRunning:
 		fmt.Println("Service is not running")
 	case local_db.ServiceStopFailed:
@@ -409,7 +413,7 @@ Service stop operation timed-out.
 
 This is probably because other clients are connected to the database service.
 
-Disconnect all clients, or use	
+Disconnect all clients, or use
 	steampipe service stop --force
 
 to force a shutdown
@@ -479,32 +483,30 @@ func printStatus(info *local_db.RunningDBInstanceInfo) {
 
 	if info.Invoker == constants.InvokerService {
 		msg := `
-Steampipe database service is now running:
+Steampipe service is running:
 
-	Host(s):  %v
-	Port:     %v
-	Database: %v
-	User:     %v
-	Password: %v
-	SSL:      %v
+  Host(s):  %v
+  Port:     %v
+  Database: %v
+  User:     %v
+  Password: %v
 
 Connection string:
 
-	postgres://%v:%v@%v:%v/%v?sslmode=%v
+  postgres://%v:%v@%v:%v/%v
 
-Managing Steampipe service:
+Managing the Steampipe service:
 
-	# Get status of the service
-	steampipe service status
-	
-	# Restart the service
-	steampipe service restart
+  # Get status of the service
+  steampipe service status
 
-	# Stop the service
-	steampipe service stop
-	
+  # Restart the service
+  steampipe service restart
+
+  # Stop the service
+  steampipe service stop
 `
-		statusMessage = fmt.Sprintf(msg, strings.Join(info.Listen, ", "), info.Port, info.Database, info.User, info.Password, local_db.SslStatus(), info.User, info.Password, info.Listen[0], info.Port, info.Database, local_db.SslMode())
+		statusMessage = fmt.Sprintf(msg, strings.Join(info.Listen, ", "), info.Port, info.Database, info.User, info.Password, info.User, info.Password, info.Listen[0], info.Port, info.Database)
 	} else {
 		msg := `
 Steampipe service was started for an active %s session. The service will exit when all active sessions exit.
@@ -548,7 +550,7 @@ To force stop the service, use %s
 }
 
 func buildForegroundClientsConnectedMsg() string {
-	return `    
+	return `
 Not shutting down service as there as clients connected.
 
 To force shutdown, press Ctrl+C again
