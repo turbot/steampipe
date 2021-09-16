@@ -27,6 +27,7 @@ func DecodeConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.
 		return nil, diags
 	}
 	connection.Plugin = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
+	connection.PluginShortName = pluginName
 
 	if connectionContent.Attributes["type"] != nil {
 		var connectionType string
