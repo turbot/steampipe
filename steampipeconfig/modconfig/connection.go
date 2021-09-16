@@ -23,7 +23,9 @@ const (
 type Connection struct {
 	// connection name
 	Name string
-	// Name of plugin
+	// The name of plugin as mentioned in config
+	PluginShortName string
+	// The fully qualified name of the plugin. derived from the short name
 	Plugin string
 	// Type - supported values: "aggregator"
 	Type string
