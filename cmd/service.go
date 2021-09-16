@@ -495,7 +495,7 @@ func printStatus(info *db_local.RunningDBInstanceInfo) {
 
 	if info.Invoker == constants.InvokerService {
 		msg := `
-Steampipe service is now running:
+Steampipe service is running:
 
   Host(s):  %v
   Port:     %v
@@ -518,7 +518,7 @@ Managing the Steampipe service:
   # Stop the service
   steampipe service stop
 `
-		statusMessage = fmt.Sprintf(msg, strings.Join(info.Listen, ", "), info.Port, info.Database, info.User, info.Password, db_local.SslStatus(), info.User, info.Password, info.Listen[0], info.Port, info.Database, db_local.SslMode())
+		statusMessage = fmt.Sprintf(msg, strings.Join(info.Listen, ", "), info.Port, info.Database, info.User, info.Password, info.User, info.Password, info.Listen[0], info.Port, info.Database)
 	} else {
 		msg := `
 Steampipe service was started for an active %s session. The service will exit when all active sessions exit.
