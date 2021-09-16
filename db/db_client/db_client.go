@@ -129,5 +129,9 @@ func (c *DbClient) getSchemaFromDB() (*sql.Rows, error) {
 // it does nothing for DbClient
 // - this functionality is only supported for local client
 func (c *DbClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConnectionResult {
-	return &db_common.RefreshConnectionResult{}
+	res := &db_common.RefreshConnectionResult{}
+	if err := c.SetSessionSearchPath(); err != nil {
+		res.Error = err
+	}
+	return res
 }
