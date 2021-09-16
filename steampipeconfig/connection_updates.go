@@ -35,6 +35,8 @@ type ConnectionData struct {
 	Plugin string `yaml:"plugin"`
 	// the checksum of the plugin file
 	CheckSum string `yaml:"checkSum"`
+	// the underlying connection object
+	Connection *modconfig.Connection `json:"-"`
 	// connection name
 	ConnectionName string
 	// connection data (unparsed)
@@ -44,7 +46,7 @@ type ConnectionData struct {
 	DeclRange         hcl.Range
 }
 
-func (p ConnectionData) Equals(other *ConnectionData) bool {
+func (p *ConnectionData) Equals(other *ConnectionData) bool {
 	connectionOptionsEqual := (p.ConnectionOptions == nil) == (other.ConnectionOptions == nil)
 	if p.ConnectionOptions != nil {
 		connectionOptionsEqual = p.ConnectionOptions.Equals(other.ConnectionOptions)
@@ -132,7 +134,7 @@ func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (
 	// populate checksum for each referenced plugin
 	for name, connection := range connectionConfig {
 		remoteSchema := connection.Plugin
-		pluginPath, err := GetPluginPath(remoteSchema)
+		pluginPath, err := GetPluginPath(connection)
 		if err != nil {
 			err := fmt.Errorf("failed to load connection '%s': %v\n%s", connection.Name, err, connection.DeclRange)
 			return nil, nil, err
@@ -153,6 +155,7 @@ func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (
 		requiredConnections[name] = &ConnectionData{
 			Plugin:           remoteSchema,
 			CheckSum:         checksum,
+			Connection:       connection,
 			ConnectionConfig: connection.Config,
 			ConnectionName:   connection.Name,
 			DeclRange:        connection.DeclRange,
