@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	pluginshared "github.com/turbot/steampipe-plugin-sdk/grpc/shared"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
 )
 
@@ -24,25 +25,14 @@ type ConnectionPlugin struct {
 	Schema            *proto.Schema
 }
 
-// ConnectionPluginInput :: struct used as input to CreateConnectionPlugin
-// - it contains all details necessary to instantiate a ConnectionPlugin
-type ConnectionPluginInput struct {
-	ConnectionName    string
-	PluginName        string
-	ConnectionConfig  string
-	ConnectionOptions *options.Connection
-	DisableLogger     bool
-}
-
 // CreateConnectionPlugin :: instantiate a plugin for a connection, fetch schema and send connection config
-func CreateConnectionPlugin(input *ConnectionPluginInput) (*ConnectionPlugin, error) {
-	remoteSchema := input.PluginName
-	connectionName := input.ConnectionName
-	connectionConfig := input.ConnectionConfig
-	disableLogger := input.DisableLogger
-	conectionOptions := input.ConnectionOptions
+func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool) (*ConnectionPlugin, error) {
+	remoteSchema := connection.Plugin
+	connectionName := connection.Name
+	connectionConfig := connection.Config
+	conectionOptions := connection.Options
 
-	pluginPath, err := GetPluginPath(remoteSchema)
+	pluginPath, err := GetPluginPath(connection)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +100,8 @@ func CreateConnectionPlugin(input *ConnectionPluginInput) (*ConnectionPlugin, er
 		ConnectionOptions: conectionOptions,
 		PluginName:        remoteSchema,
 		Plugin:            pluginClient,
-		Schema:            schema}
+		Schema:            schema,
+	}
 	return c, nil
 }
 
