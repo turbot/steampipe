@@ -1,6 +1,10 @@
 package modconfig
 
 import (
+	"fmt"
+
+	typehelpers "github.com/turbot/go-kit/types"
+
 	"github.com/hashicorp/hcl/v2"
 
 	"github.com/turbot/go-kit/helpers"
@@ -8,19 +12,17 @@ import (
 
 type ModVersion struct {
 	// the fully qualified mod name, e.g. github.com/turbot/mod1
-	// TODO think about names
-	ShortName string `hcl:"name,label"`
-	FullName  string `cty:"name"`
-
-	Version   string    `cty:"version" hcl:"version"`
-	Alias     *string   `cty:"alias" hcl:"alias,optional"`
-	DeclRange hcl.Range `json:"-"`
+	Name      string  `cty:"name" hcl:"name,label"`
+	Version   string  `cty:"version" hcl:"version"`
+	Alias     *string `cty:"alias" hcl:"alias,optional"`
+	DeclRange hcl.Range
 }
 
-// Name returns Name@Version
-func (m *ModVersion) Name() string {
-	// TODO what about mod version in name?
-	return m.FullName
+func (m *ModVersion) FullName() string {
+	if m.HasVersion() {
+		return fmt.Sprintf("%s@%s", m.Name, m.Version)
+	}
+	return m.Name
 }
 
 // HasVersion returns whether the mod has a version specified, or is the latest
@@ -30,5 +32,8 @@ func (m *ModVersion) HasVersion() bool {
 }
 
 func (m *ModVersion) String() string {
-	return m.Name()
+	if alias := typehelpers.SafeString(m.Alias); alias != "" {
+		return fmt.Sprintf("mod %s (%s)", m.FullName(), alias)
+	}
+	return fmt.Sprintf("mod %s", m.FullName())
 }

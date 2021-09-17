@@ -32,7 +32,7 @@ func (p *PluginVersion) ShortName() string {
 }
 
 func (p *PluginVersion) String() string {
-	return p.FullName()
+	return fmt.Sprintf("plugin %s", p.FullName())
 }
 
 // parse the version and name properties

@@ -423,6 +423,40 @@ Benchmarks:
 			source:   "test_data/mods/two_mods",
 			expected: "ERROR",
 		},
+		"requires_single_simple": {
+			source: "test_data/mods/requires_single_versioned",
+			expected: &modconfig.Mod{
+				ShortName: "m1",
+				FullName:  "mod.m1",
+				Requires: &modconfig.Requires{
+					Steampipe: "v0.8.0",
+					Mods: []*modconfig.ModVersion{
+						{
+							Name:    "github.com/turbot/aws-core",
+							Version: "v1.0",
+						},
+					},
+				},
+			},
+		},
+		"requires_single_simple_aliased": {
+			source: "test_data/mods/requires_single_versioned_aliased",
+			expected: &modconfig.Mod{
+				ShortName: "m1",
+				FullName:  "mod.m1",
+				Requires: &modconfig.Requires{
+					Steampipe: "v0.8.0",
+					Mods: []*modconfig.ModVersion{
+						{
+							Name:    "github.com/turbot/aws-core",
+							Version: "v1.0",
+							Alias:   utils.ToStringPointer("core"),
+						},
+					},
+				},
+			},
+		},
+	}
 	}
 }
 
