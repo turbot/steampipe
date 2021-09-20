@@ -1,7 +1,9 @@
 
 variable "prohibited_instance_types" {
-    type    = list(string)
-    default = ["%4xl","%8xl","%12xl","%16xl","%24xl","%32xl","%.metal"]
+    type    = map
+    default = {
+        a = "foo"
+    }
 }
 
 control "array_param" {

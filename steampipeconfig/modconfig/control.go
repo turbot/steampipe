@@ -141,6 +141,19 @@ func (c *Control) String() string {
 		types.SafeString(c.SQL),
 		strings.Join(parents, "\n    "))
 
+	// add param defs if there are any
+	if len(c.Params) > 0 {
+		var paramDefsStr = make([]string, len(c.Params))
+		for i, def := range c.Params {
+			paramDefsStr[i] = def.String()
+		}
+		res += fmt.Sprintf("Params:\n\t%s\n  ", strings.Join(paramDefsStr, "\n\t"))
+	}
+
+	// add args
+	if c.Args != nil && !c.Args.Empty() {
+		res += fmt.Sprintf("Args:\n\t%s\n  ", c.Args)
+	}
 	return res
 }
 

@@ -106,7 +106,7 @@ func (q *Query) String() string {
 		for i, def := range q.Params {
 			paramDefsStr[i] = def.String()
 		}
-		res += fmt.Sprintf("ParamDefs:\n\t%s\n  ", strings.Join(paramDefsStr, "\n\t"))
+		res += fmt.Sprintf("Params:\n\t%s\n  ", strings.Join(paramDefsStr, "\n\t"))
 	}
 	return res
 }

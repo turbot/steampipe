@@ -126,47 +126,16 @@ func init() {
 						Params: []*modconfig.ParamDef{
 							{Name: "p1",
 								Description: utils.ToStringPointer("desc"),
-								Default:     utils.ToStringPointer("I am default"),
+								Default:     utils.ToStringPointer("'I am default'"),
 							},
 							{Name: "p2",
 								Description: utils.ToStringPointer("desc 2"),
-								Default:     utils.ToStringPointer("I am default 2"),
+								Default:     utils.ToStringPointer("'I am default 2'"),
 							},
 						},
 					},
 				},
 			},
-		},
-		"query_with_paramdefs_control_with_positional_params": {
-			source: "test_data/mods/query_with_paramdefs_control_with_positional_params",
-			expected: `Name: mod.m1
-Title: M1
-Description: THIS IS M1 
-Version: 
-Queries: 
-
-  -----
-  Name: query.q1
-  Title: Q1
-  Description: THIS IS QUERY 1
-  SQL: select 1
-ParamDefs:
-	Name: p1, Description: desc, Default: I am default
-	Name: p2, Description: desc 2, Default: I am default 2
-  
-Controls: 
-
-  -----
-  Name: control.c1
-  Title: C1
-  Description: THIS IS CONTROL 1
-  SQL: select 'ok' as status, 'foo' as resource, 'bar' as reason
-  Parents: mod.m1
-ParamsList:
-	0: val1
-	1: val2
-Benchmarks: 
-`,
 		},
 		"query_with_paramdefs_control_with_named_params": {
 			source: "test_data/mods/query_with_paramdefs_control_with_named_params",
@@ -181,9 +150,9 @@ Queries:
   Title: Q1
   Description: THIS IS QUERY 1
   SQL: select 1
-ParamDefs:
-	Name: p1, Description: desc, Default: I am default
-	Name: p2, Description: desc 2, Default: I am default 2
+Params:
+	Name: p1, Description: desc, Default: 'I am default'
+	Name: p2, Description: desc 2, Default: 'I am default 2'
   
 Controls: 
 
@@ -194,8 +163,11 @@ Controls:
   SQL: select 'ok' as status, 'foo' as resource, 'bar' as reason
   Parents: mod.m1
 Params:
-	p1 = val1
-	p2 = val2
+	Name: p1, Description: , Default: 'val1'
+	Name: p2, Description: , Default: 'val2'
+  Args:
+	Args list: 'my val1','my val 2'
+  
 Benchmarks: 
 `,
 		},

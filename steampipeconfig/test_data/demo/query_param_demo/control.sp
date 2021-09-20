@@ -24,7 +24,7 @@ control "c3"{
 control "c4"{
     title ="C4"
     description = "THIS IS CONTROL 4"
-    sql = "select 'ok' as status, 'foo' as resource, concat($1::text, $2::text, $2::text) as reason"
+    sql = "select 'ok' as status, 'foo' as resource, concat($1::text, $2::text, $3::text) as reason"
     param "p1"{
         description = "p1"
         default = "c_default_control "
@@ -92,4 +92,26 @@ control "c5_this_is_a_very_long_name_no_even_longer_than_that_really_really_long
         description = "p3"
         default = "c_string"
     }
+}
+
+
+control "control_with_param_defauls_and_args"{
+    title ="C5"
+    description = "THIS IS CONTROL 5"
+    sql = "select 'ok' as status, 'foo' as resource, concat($1::text, $2::text, $3::text) as reason"
+    param "p1"{
+        description = "p1"
+        default = "c_default_control "
+    }
+    param "p2"{
+        description = "p2"
+        default = "c_because_def "
+    }
+    param "p3"{
+        description = "p3"
+        default = "c_string"
+    }
+//    args  = {
+//        p1 = "arg_control"
+//    }
 }
