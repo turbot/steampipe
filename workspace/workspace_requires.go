@@ -59,7 +59,7 @@ func (w *Workspace) getRequiredPlugins() map[string]*version.Version {
 		requiredPluginVersions := w.Mod.Requires.Plugins
 		requiredVersion := make(map[string]*version.Version)
 		for _, pluginVersion := range requiredPluginVersions {
-			requiredVersion[pluginVersion.ShortName()] = pluginVersion.ParsedVersion
+			requiredVersion[pluginVersion.ShortName()] = pluginVersion.Version
 		}
 		return requiredVersion
 	}

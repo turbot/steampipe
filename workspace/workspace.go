@@ -214,13 +214,20 @@ func (w *Workspace) GetMod(modName string) *modconfig.Mod {
 	return w.Mods[modName]
 }
 
-// ModList returns a flat list of all mods - the workspace mod and depdnency mods
+// ModList returns a flat list of all mods - the workspace mod and depednency mods
 func (w *Workspace) ModList() []*modconfig.Mod {
 	var res = []*modconfig.Mod{w.Mod}
 	for _, m := range w.Mods {
 		res = append(res, m)
 	}
 	return res
+}
+
+// SaveWorkspaceMod searialises the workspace mode to <workspace path?.mod.sp
+func (w *Workspace) SaveWorkspaceMod() error {
+	// TODO
+
+	return nil
 }
 
 // clear all resource maps
