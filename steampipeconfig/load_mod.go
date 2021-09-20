@@ -74,9 +74,7 @@ func parseMod(modPath string, pseudoResources []modconfig.MappableResource, opts
 	if err != nil {
 		return nil, err
 	}
-	// parse any required plugin versions which the mod specifies
-	// NOTE: this sets the ParsedVersion property on the PluginVersion objects
-	err = mod.ParseRequiredPluginVersions()
+
 	return mod, err
 }
 

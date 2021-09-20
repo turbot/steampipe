@@ -212,21 +212,6 @@ func (m *Mod) Equals(other *Mod) bool {
 
 }
 
-func (m *Mod) ParseRequiredPluginVersions() error {
-	if m.Requires != nil {
-		requiredPluginVersions := m.Requires.Plugins
-
-		for _, v := range requiredPluginVersions {
-			err := v.parseProperties()
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-	return nil
-}
-
 // CreateDefaultMod creates a default mod created for a workspace with no mod definition
 func CreateDefaultMod(modPath string) *Mod {
 	m := NewMod(defaultModName, modPath, hcl.Range{})
@@ -284,8 +269,8 @@ func (m *Mod) String() string {
 	var requiresStrings []string
 	var requiresString string
 	if m.Requires != nil {
-		if m.Requires.Steampipe != "" {
-			requiresStrings = append(requiresStrings, fmt.Sprintf("Steampipe %s", m.Requires.Steampipe))
+		if m.Requires.SteampipeVersionString != "" {
+			requiresStrings = append(requiresStrings, fmt.Sprintf("Steampipe %s", m.Requires.SteampipeVersionString))
 		}
 		for _, m := range m.Requires.Mods {
 			requiresStrings = append(requiresStrings, m.String())
@@ -536,7 +521,14 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 }
 
 // OnDecoded implements HclResource
-func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics {
+
+	// initialise our Requires
+	if m.Requires == nil {
+		return nil
+	}
+	return m.Requires.Initialise()
+}
 
 // AddReference implements HclResource
 func (m *Mod) AddReference(ref ResourceReference) {
