@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 const (
@@ -19,7 +20,7 @@ const (
 )
 
 // Remove removes an installed plugin
-func Remove(image string, pluginConnections map[string][]ConnectionConfigRange) error {
+func Remove(image string, pluginConnections map[string][]modconfig.Connection) error {
 	spinner := display.ShowSpinner(fmt.Sprintf("Removing plugin %s", image))
 	defer display.StopSpinner(spinner)
 
@@ -55,7 +56,7 @@ func Remove(image string, pluginConnections map[string][]ConnectionConfigRange) 
 				str,
 				fmt.Sprintf(
 					"\t* '%s' in %s, line %d",
-					conn.ConnectionName,
+					conn.Name,
 					conn.DeclRange.Filename,
 					conn.DeclRange.Start.Line,
 				),
@@ -97,7 +98,7 @@ type PluginListItem struct {
 }
 
 // List returns all installed plugins
-func List(pluginConnectionMap map[string][]ConnectionConfigRange) ([]PluginListItem, error) {
+func List(pluginConnectionMap map[string][]modconfig.Connection) ([]PluginListItem, error) {
 	var items []PluginListItem
 
 	var installedPlugins []string
@@ -135,7 +136,7 @@ func List(pluginConnectionMap map[string][]ConnectionConfigRange) ([]PluginListI
 				// extract only the connection names
 				conNames := []string{}
 				for _, y := range pluginConnectionMap[plugin] {
-					conNames = append(conNames, y.ConnectionName)
+					conNames = append(conNames, y.Name)
 				}
 				return conNames
 			}()
