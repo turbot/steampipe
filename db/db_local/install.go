@@ -237,7 +237,6 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Generating database passwords...")
-	// Try for passwords of the form dbC-3Ji-d04d
 	steampipePassword, err := readPassword()
 	if err != nil {
 		display.StopSpinner(spinner)
