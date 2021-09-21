@@ -24,7 +24,10 @@ func writePasswordFile(password string) error {
 func readPassword() (string, error) {
 	if !helpers.FileExists(getPasswordFileLocation()) {
 		p := generatePassword()
-		return p, writePasswordFile(p)
+		if err := writePasswordFile(p); err != nil {
+			return "", err
+		}
+		return p, nil
 	}
 	contentBytes, err := ioutil.ReadFile(getPasswordFileLocation())
 	if err != nil {
