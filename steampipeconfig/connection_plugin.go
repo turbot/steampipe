@@ -114,15 +114,14 @@ func CreateConnectionPlugin(input *ConnectionPluginInput) (*ConnectionPlugin, er
 	return c, nil
 }
 
-// SetConnectionConfig sends the connection config and steampipe metadata to the plugin
+// SetConnectionConfig sends the connection config
 func SetConnectionConfig(connectionName string, connectionConfig string, pluginClient *grpc.PluginClient) error {
-	// fetch the steampipe metadata
-	req := proto.SetConnectionConfigRequest{
+	req := &proto.SetConnectionConfigRequest{
 		ConnectionName:   connectionName,
 		ConnectionConfig: connectionConfig,
 	}
 
-	_, err := pluginClient.Stub.SetConnectionConfig(&req)
+	_, err := pluginClient.Stub.SetConnectionConfig(req)
 	if err != nil {
 		// create a new cleaner error, ignoring Not Implemented errors for backwards compatibility
 		return HandleGrpcError(err, connectionName, "SetConnectionConfig")
