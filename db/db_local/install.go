@@ -237,7 +237,7 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Generating database passwords...")
-	steampipePassword, err := readPassword()
+	steampipePassword, err := readPasswordFile()
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] readPassword failed: %v", err)

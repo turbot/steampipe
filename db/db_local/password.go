@@ -21,7 +21,7 @@ func writePasswordFile(password string) error {
 	return ioutil.WriteFile(getPasswordFileLocation(), []byte(password), 0600)
 }
 
-func readPassword() (string, error) {
+func readPasswordFile() (string, error) {
 	if !helpers.FileExists(getPasswordFileLocation()) {
 		p := generatePassword()
 		if err := writePasswordFile(p); err != nil {
