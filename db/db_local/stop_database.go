@@ -138,16 +138,17 @@ func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (St
 }
 
 /**
-	Postgres has two more levels of shutdown:
-		* SIGTERM	- Smart ShutdownService    	:  Wait for children to end normally - exit self
-		* SIGINT	- Fast ShutdownService      	:  SIGTERM children, causing them to abort current
-											:  transations and exit - wait for children to exit -
-											:  exit self
-		* SIGQUIT	- Immediate ShutdownService 	:  SIGQUIT children - wait at most 5 seconds,
-											   send SIGKILL to children - exit self immediately
+	Postgres has three levels of shutdown:
+
+	* SIGTERM   - Smart Shutdown	 :  Wait for children to end normally - exit self
+	* SIGINT    - Fast Shutdown      :  SIGTERM children, causing them to abort current
+									    transations and exit - wait for children to exit -
+									    exit self
+	* SIGQUIT   - Immediate Shutdown :  SIGQUIT children - wait at most 5 seconds,
+									    send SIGKILL to children - exit self immediately
 
 	Postgres recommended shutdown is to send a SIGTERM - which initiates
-	a Smart-ShutdownService sequence.
+	a Smart-Shutdown sequence.
 
 	IMPORTANT:
 	As per documentation, it is best not to use SIGKILL
