@@ -9,6 +9,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # find the query time
   QUERY_TIME=$(time (run steampipe query "select * from chaos.chaos_cache_check where id=0" >/dev/null 2>&1) 2>&1)
   echo $QUERY_TIME
+  echo $TIME_TO_QUERY
 
   # check whether time to query is less than 2 seconds(This value can be changed)
   assert_equal "$(echo $QUERY_TIME '<' $TIME_TO_QUERY | bc -l)" "1"

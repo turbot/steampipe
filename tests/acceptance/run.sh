@@ -19,6 +19,7 @@ export TEST_DATA_DIR=$MY_PATH/test_data/templates
 export SRC_DATA_DIR=$MY_PATH/test_data/source_files
 export WORKSPACE_DIR=$MY_PATH/test_data/sample_workspace
 export BAD_TEST_MOD_DIR=$MY_PATH/test_data/failure_test_mod
+export TIME_TO_QUERY=$TIME_TO_QUERY
 
 # Must have these commands for the test suite to run
 declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch")
@@ -47,4 +48,4 @@ fi
 
 echo "Running with STEAMPIPE_INSTALL_DIR set to $STEAMPIPE_INSTALL_DIR"
 
-bats --tap $MY_PATH/test_files
+bats --tap $MY_PATH/test_files/015*
