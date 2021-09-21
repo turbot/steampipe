@@ -214,7 +214,7 @@ func (w *Workspace) GetMod(modName string) *modconfig.Mod {
 	return w.Mods[modName]
 }
 
-// ModList returns a flat list of all mods - the workspace mod and depednency mods
+// ModList returns a flat list of all mods - the workspace mod and depenfency mods
 func (w *Workspace) ModList() []*modconfig.Mod {
 	var res = []*modconfig.Mod{w.Mod}
 	for _, m := range w.Mods {
