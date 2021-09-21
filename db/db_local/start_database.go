@@ -190,7 +190,7 @@ func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoke
 	}
 
 	// get the password from the password file
-	password, err := readPassword()
+	password, err := readPasswordFile()
 	if err != nil {
 		return err
 	}
@@ -202,22 +202,7 @@ func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoke
 		password = viper.GetString(constants.ArgServicePassword)
 	}
 
-	runningInfo := new(RunningDBInstanceInfo)
-	runningInfo.Pid = postgresCmd.Process.Pid
-	runningInfo.Port = port
-	runningInfo.User = constants.DatabaseUser
-	runningInfo.Password = password
-	runningInfo.Database = constants.DatabaseName
-	runningInfo.ListenType = listen
-	runningInfo.Invoker = invoker
-	runningInfo.Listen = constants.DatabaseListenAddresses
-
-	if listen == ListenTypeNetwork {
-		addrs, _ := localAddresses()
-		runningInfo.Listen = append(runningInfo.Listen, addrs...)
-	}
-	err = runningInfo.Save()
-
+	err = createRunningInfo(postgresCmd, port, password, listen, invoker)
 	if err != nil {
 		postgresCmd.Process.Kill()
 		return err
@@ -229,7 +214,7 @@ func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoke
 		return err
 	}
 
-	err = connectAndSetupPermissions(invoker, password)
+	err = setupServicePassword(invoker, password)
 	if err != nil {
 		postgresCmd.Process.Kill()
 		return err
@@ -237,7 +222,7 @@ func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoke
 	return nil
 }
 
-func connectAndSetupPermissions(invoker constants.Invoker, password string) error {
+func setupServicePassword(invoker constants.Invoker, password string) error {
 	connection, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
 	if err != nil {
 		return err
@@ -250,6 +235,24 @@ func connectAndSetupPermissions(invoker constants.Invoker, password string) erro
 		_, err = connection.Exec(fmt.Sprintf(`alter user steampipe with password '%s'`, password))
 	}
 	return err
+}
+
+func createRunningInfo(cmd *exec.Cmd, port int, password string, listen StartListenType, invoker constants.Invoker) error {
+	runningInfo := new(RunningDBInstanceInfo)
+	runningInfo.Pid = cmd.Process.Pid
+	runningInfo.Port = port
+	runningInfo.User = constants.DatabaseUser
+	runningInfo.Password = password
+	runningInfo.Database = constants.DatabaseName
+	runningInfo.ListenType = listen
+	runningInfo.Invoker = invoker
+	runningInfo.Listen = constants.DatabaseListenAddresses
+
+	if listen == ListenTypeNetwork {
+		addrs, _ := localAddresses()
+		runningInfo.Listen = append(runningInfo.Listen, addrs...)
+	}
+	return runningInfo.Save()
 }
 
 func createCmd(port int, listenAddresses string) *exec.Cmd {
