@@ -222,6 +222,25 @@ func writePGConf() error {
 	return nil
 }
 
+func writePGConf() error {
+	// Apply default settings in conf files
+	err := ioutil.WriteFile(getPostgresqlConfLocation(), []byte(constants.PostgresqlConfContent), 0600)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(getSteampipeConfLocation(), []byte(constants.SteampipeConfContent), 0600)
+	if err != nil {
+		return err
+	}
+
+	// create the postgresql.conf.d location, don't fail if it errors
+	err = os.MkdirAll(getPostgresqlConfDLocation(), 0700)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func createRunningInfo(cmd *exec.Cmd, port int, password string, listen StartListenType, invoker constants.Invoker) error {
 	runningInfo := new(RunningDBInstanceInfo)
 	runningInfo.Pid = cmd.Process.Pid
