@@ -6,6 +6,11 @@ then
   MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized  
 fi
 
+if [[ ! ${TIME_TO_QUERY} ]];
+then
+  TIME_TO_QUERY=2
+fi
+
 # set this to the source file for development
 export BATS_PATH=$MY_PATH/lib/bats/bin/bats
 export LIB_BATS_ASSERT=$MY_PATH/lib/bats-assert

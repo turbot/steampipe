@@ -11,5 +11,5 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $QUERY_TIME
 
   # check whether time to query is less than 2 seconds(This value can be changed)
-  assert_equal "$(echo $QUERY_TIME '<' 2 | bc -l)" "1"
+  assert_equal "$(echo $QUERY_TIME '<' $TIME_TO_QUERY | bc -l)" "1"
 }
