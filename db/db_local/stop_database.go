@@ -89,19 +89,19 @@ func GetCountOfConnectedClients() (int, error) {
 }
 
 // StopDB searches for and stops the running instance. Does nothing if an instance was not found
-func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (StopStatus, error) {
+func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (status StopStatus, e error) {
 	log.Println("[TRACE] StopDB", force)
 
 	utils.LogTime("db.StopDB start")
-	defer utils.LogTime("db.StopDB end")
+
+	defer func() {
+		if e == nil {
+			os.Remove(runningInfoFilePath())
+		}
+		utils.LogTime("db.StopDB end")
+	}()
 
 	if force {
-		// remove this file regardless of whether
-		// we could stop the service or not
-		// so that the next time it starts,
-		// all previous instances are nuked
-		defer os.Remove(runningInfoFilePath())
-
 		// check if we have a process from another install-dir
 		display.UpdateSpinnerMessage(spinner, "Checking for running instances...")
 		killInstanceIfAny()
