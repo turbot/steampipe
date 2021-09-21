@@ -26,7 +26,7 @@ func readPassword() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(contentBytes), nil
+	return strings.TrimSpace(string(contentBytes)), nil
 }
 
 func generatePassword() string {
