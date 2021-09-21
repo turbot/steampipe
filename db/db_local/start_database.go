@@ -140,25 +140,6 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	return ServiceStarted, err
 }
 
-func writePGConf() error {
-	// Apply default settings in conf files
-	err := ioutil.WriteFile(getPostgresqlConfLocation(), []byte(constants.PostgresqlConfContent), 0600)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(getSteampipeConfLocation(), []byte(constants.SteampipeConfContent), 0600)
-	if err != nil {
-		return err
-	}
-
-	// create the postgresql.conf.d location, don't fail if it errors
-	err = os.MkdirAll(getPostgresqlConfDLocation(), 0700)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // startPostgresProcessAndSetPassword starts the postgres process and writes out the state file
 // after it is convinced that the process is started and is accepting connections
 func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoker constants.Invoker) (e error) {
@@ -235,6 +216,25 @@ func setupServicePassword(invoker constants.Invoker, password string) error {
 		_, err = connection.Exec(fmt.Sprintf(`alter user steampipe with password '%s'`, password))
 	}
 	return err
+}
+
+func writePGConf() error {
+	// Apply default settings in conf files
+	err := ioutil.WriteFile(getPostgresqlConfLocation(), []byte(constants.PostgresqlConfContent), 0600)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(getSteampipeConfLocation(), []byte(constants.SteampipeConfContent), 0600)
+	if err != nil {
+		return err
+	}
+
+	// create the postgresql.conf.d location, don't fail if it errors
+	err = os.MkdirAll(getPostgresqlConfDLocation(), 0700)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func createRunningInfo(cmd *exec.Cmd, port int, password string, listen StartListenType, invoker constants.Invoker) error {
