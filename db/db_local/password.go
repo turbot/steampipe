@@ -17,10 +17,14 @@ type Passwords struct {
 	Steampipe string
 }
 
+func writePasswordFile(password string) error {
+	return ioutil.WriteFile(getPasswordFileLocation(), []byte(password), 0600)
+}
+
 func readPassword() (string, error) {
 	if !helpers.FileExists(getPasswordFileLocation()) {
 		p := generatePassword()
-		return p, ioutil.WriteFile(getPasswordFileLocation(), []byte(p), 0600)
+		return p, writePasswordFile(p)
 	}
 	contentBytes, err := ioutil.ReadFile(getPasswordFileLocation())
 	if err != nil {
@@ -51,7 +55,7 @@ func migrateLegacyPasswordFile() error {
 			return err
 		}
 		os.Remove(getLegacyPasswordFileLocation())
-		return ioutil.WriteFile(getPasswordFileLocation(), []byte(p.Steampipe), 0600)
+		return writePasswordFile(p.Steampipe)
 	}
 	return nil
 }
