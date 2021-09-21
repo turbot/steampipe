@@ -364,6 +364,7 @@ func getConnectionPluginAsync(connectionName string, connectionData *steampipeco
 		ConnectionName:    connectionName,
 		PluginName:        connectionData.Plugin,
 		ConnectionOptions: connectionData.ConnectionOptions,
+		ConnectionConfig:  connectionData.ConnectionConfig,
 		DisableLogger:     true}
 	p, err := steampipeconfig.CreateConnectionPlugin(opts)
 	if err != nil {
