@@ -58,11 +58,14 @@ echo "Downloading from $steampipe_uri"
 if command -v wget >/dev/null; then
 	# because --show-progress was introduced in 1.16.
 	wget --help | grep -q '\--showprogress' && _FORCE_PROGRESS_BAR="--no-verbose --show-progress" || _FORCE_PROGRESS_BAR=""
-	if ! wget --progress=bar:force:noscroll $_FORCE_PROGRESS_BAR -O "$zip_location" "$steampipe_uri"; then
+	# prefer an IPv4 connection, since github.com does not handle IPv6 connections properly.
+	# Refer: https://github.com/turbot/steampipe/issues/861
+	if ! wget --prefer-family=IPv4 --progress=bar:force:noscroll $_FORCE_PROGRESS_BAR -O "$zip_location" "$steampipe_uri"; then
         echo "Could not find version $1"
         exit 1
     fi
 elif command -v curl >/dev/null; then
+	# curl uses HappyEyeball for connections, therefore, no preference is required
     if ! curl --fail --location --progress-bar --output "$zip_location" "$steampipe_uri"; then
         echo "Could not find version $1"
         exit 1
