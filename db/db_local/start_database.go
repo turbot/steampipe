@@ -182,6 +182,77 @@ func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoke
 		return err
 	}
 
+	postgresCmd := createCmd(port, listenAddresses)
+	setupLogCollection(postgresCmd)
+	err := postgresCmd.Start()
+	if err != nil {
+		return err
+	}
+
+	// get the password from the password file
+	password, err := readPassword()
+	if err != nil {
+		return err
+	}
+
+	// if a password was set through the `STEAMPIPE_DATABASE_PASSWORD` environment variable
+	// or through the `--database-password` cmdline flag, then use that for this session
+	// instead of the default one
+	if viper.IsSet(constants.ArgServicePassword) {
+		password = viper.GetString(constants.ArgServicePassword)
+	}
+
+	runningInfo := new(RunningDBInstanceInfo)
+	runningInfo.Pid = postgresCmd.Process.Pid
+	runningInfo.Port = port
+	runningInfo.User = constants.DatabaseUser
+	runningInfo.Password = password
+	runningInfo.Database = constants.DatabaseName
+	runningInfo.ListenType = listen
+	runningInfo.Invoker = invoker
+	runningInfo.Listen = constants.DatabaseListenAddresses
+
+	if listen == ListenTypeNetwork {
+		addrs, _ := localAddresses()
+		runningInfo.Listen = append(runningInfo.Listen, addrs...)
+	}
+	err = runningInfo.Save()
+
+	if err != nil {
+		postgresCmd.Process.Kill()
+		return err
+	}
+
+	err = postgresCmd.Process.Release()
+	if err != nil {
+		postgresCmd.Process.Kill()
+		return err
+	}
+
+	err = connectAndSetupPermissions(invoker, password)
+	if err != nil {
+		postgresCmd.Process.Kill()
+		return err
+	}
+	return nil
+}
+
+func connectAndSetupPermissions(invoker constants.Invoker, password string) error {
+	connection, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
+	if err != nil {
+		return err
+	}
+	defer connection.Close()
+
+	if invoker != constants.InvokerInstaller {
+		// set the password on the database
+		// we can't do this during installation, since the 'steampipe` user isn't setup yet
+		_, err = connection.Exec(fmt.Sprintf(`alter user steampipe with password '%s'`, password))
+	}
+	return err
+}
+
+func createCmd(port int, listenAddresses string) *exec.Cmd {
 	postgresCmd := exec.Command(
 		getPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port if free to listen to
@@ -226,9 +297,13 @@ func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoke
 		Foreground: false,
 	}
 
+	return postgresCmd
+}
+
+func setupLogCollection(cmd *exec.Cmd) {
 	// create a channel with a big buffer, so that it doesn't choke
 	logChannel := make(chan string, 1000)
-	stopListenFn, err := setupLogCollector(postgresCmd, logChannel)
+	stopListenFn, err := setupLogCollector(cmd, logChannel)
 	if err == nil {
 		defer func() {
 			stopListenFn()
@@ -240,62 +315,6 @@ func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoke
 		// instead, log to TRACE that we couldn't and continue
 		log.Println("[TRACE] Warning: Could not attach to service logs")
 	}
-
-	err = postgresCmd.Start()
-	if err != nil {
-		return err
-	}
-
-	// get the password from the password file
-	password, err := readPassword()
-	if err != nil {
-		return err
-	}
-	if viper.IsSet(constants.ArgServicePassword) {
-		password = viper.GetString(constants.ArgServicePassword)
-	}
-
-	runningInfo := new(RunningDBInstanceInfo)
-	runningInfo.Pid = postgresCmd.Process.Pid
-	runningInfo.Port = port
-	runningInfo.User = constants.DatabaseUser
-	runningInfo.Password = password
-	runningInfo.Database = constants.DatabaseName
-	runningInfo.ListenType = listen
-	runningInfo.Invoker = invoker
-	runningInfo.Listen = constants.DatabaseListenAddresses
-
-	if listen == ListenTypeNetwork {
-		addrs, _ := localAddresses()
-		runningInfo.Listen = append(runningInfo.Listen, addrs...)
-	}
-	err = runningInfo.Save()
-
-	if err != nil {
-		postgresCmd.Process.Kill()
-		return err
-	}
-
-	err = postgresCmd.Process.Release()
-	if err != nil {
-		postgresCmd.Process.Kill()
-		return err
-	}
-
-	connection, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
-	if err != nil {
-		postgresCmd.Process.Kill()
-		return err
-	}
-	defer connection.Close()
-
-	if invoker != constants.InvokerInstaller {
-		// set the password on the database
-		// we can't do this during installation, since the 'steampipe` user isn't setup yet
-		_, err = connection.Exec(fmt.Sprintf(`alter user steampipe with password '%s'`, password))
-	}
-
-	return err
 }
 
 func traceoutServiceLogs(logChannel chan string) {
