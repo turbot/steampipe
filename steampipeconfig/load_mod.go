@@ -31,9 +31,6 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 		}
 	}()
 
-	if opts == nil {
-		opts = parse.NewParseModOptions()
-	}
 	// verify the mod folder exists
 	if _, err := os.Stat(modPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("mod folder %s does not exist", modPath)
@@ -43,10 +40,7 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 	if err != nil {
 		return nil, err
 	}
-	// if we have not set the root mod, this must be the root mod
-	if opts.RootMod == nil {
-		opts.RootMod = mod
-	}
+
 	// first load the mod dependencies
 	if err := loadModDependencies(mod, opts); err != nil {
 		return nil, err
@@ -64,7 +58,7 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 
 	// now parse the mod, passing the pseudo resources
 	// load the raw data
-	mod, err = parseMod(modPath, pseudoResources, opts)
+	mod, err = loadAndParseModData(modPath, pseudoResources, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -121,8 +115,9 @@ func loadModDependency(modDependency *modconfig.ModVersion, opts *parse.ParseMod
 		return err
 	}
 
-	// set the version on the mod
+	// set the version and dependency path of the mod
 	mod.Version = version
+	mod.ModDependencyPath = modDependency.Name
 
 	return err
 
@@ -159,7 +154,7 @@ func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder s
 
 }
 
-func parseMod(modPath string, pseudoResources []modconfig.MappableResource, opts *parse.ParseModOptions) (*modconfig.Mod, error) {
+func loadAndParseModData(modPath string, pseudoResources []modconfig.MappableResource, opts *parse.ParseModOptions) (*modconfig.Mod, error) {
 	// if inclusions are not already set, build list of all filepaths we need to parse/load
 	// NOTE: pseudo resource creation is already handler - we just need to look for .sp files
 	if len(opts.ListOptions.Include) == 0 {

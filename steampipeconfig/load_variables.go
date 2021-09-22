@@ -27,7 +27,7 @@ func LoadVariables(workspacePath string, opts *parse.ParseModOptions) (variables
 	}
 
 	// now parse the mod
-	mod, err := parseMod(workspacePath, nil, opts)
+	mod, err := loadAndParseModData(workspacePath, nil, opts)
 	if err != nil {
 		return nil, err
 	}

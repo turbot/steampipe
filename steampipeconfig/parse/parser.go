@@ -101,13 +101,9 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 
 	// create parse options
 	opts := &ParseModOptions{
-		RootMod: mod,
+		RunCtx: NewRunContext(content, fileData, nil),
 	}
-	runCtx, diags := NewRunContext(opts.RootMod, content, fileData, nil)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to create run context", diags)
-	}
-	opts.RunCtx = runCtx
+	opts.RunCtx.AddMod(mod)
 
 	// now decode
 	diags = decode(opts)
@@ -193,32 +189,16 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	// add pseudo resources to the mod
 	addPseudoResourcesToMod(pseudoResources, hclResources, mod)
 
-	// TODO not lovely that we set this in 2 places - here and LoadMod
-	// if we have not set the root mod, this must be the root mod
-	// (this is only needed if we are loading the workspace definition or variables
-	// - if this is being called from LoadMod the RootMod will already be set)
-	if opts.RootMod == nil {
-		opts.RootMod = mod
-	}
 	// if we do not already have one, create run context to handle dependency resolution
 	if opts.RunCtx == nil {
-		runCtx, diags := NewRunContext(opts.RootMod, content, fileData, opts.Variables)
-		if diags.HasErrors() {
-			return nil, plugin.DiagsToError("Failed to create run context", diags)
-		}
-		opts.RunCtx = runCtx
+		opts.RunCtx = NewRunContext(content, fileData, opts.Variables)
 	}
 
-	// if this mod is NOT the root mod, add to run context
-	if mod.FilePath != opts.RunCtx.CurrentMod.FilePath {
-		// set the current mod
-		opts.RunCtx.CurrentMod = mod
-		// add this mod to run context - this it to ensure all pseudo resources get added
-		opts.RunCtx.AddMod(mod)
-	}
+	// add this mod to run context - this it to ensure all pseudo resources get added
+	opts.RunCtx.AddMod(mod)
 
 	// perform initial decode to get dependencies
-	// (if there are no depdnencies, this is all that is needed)
+	// (if there are no dependencies, this is all that is needed)
 	diags = decode(opts)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
