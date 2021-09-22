@@ -132,9 +132,8 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResourc
 	var resource modconfig.HclResource
 	switch block.Type {
 	case modconfig.BlockTypeMod:
-		// runCtx may already contain the shell mod
+		// runCtx already contains the shell mod
 		resource = runCtx.RootMod
-
 	case modconfig.BlockTypeQuery:
 		resource = modconfig.NewQuery(block)
 	case modconfig.BlockTypeControl:
@@ -540,6 +539,13 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 			diags = addResourceMetadata(resource, block, runCtx, diags, resourceWithMetadata)
 		}
 
+		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
+		if _, ok := resource.(*modconfig.Mod); !ok {
+			resource.SetMod(runCtx.CurrentMod)
+			// add resource to mod - this will fail if the mod already has a resource with the same name
+			moreDiags := runCtx.CurrentMod.AddResource(resource)
+			diags = append(diags, moreDiags...)
+		}
 		// add resource into the run context
 		moreDiags := runCtx.AddResource(resource)
 		diags = append(diags, moreDiags...)

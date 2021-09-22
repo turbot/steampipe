@@ -89,18 +89,38 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
 	}
 
-	for _, block := range content.Blocks {
-		if block.Type == modconfig.BlockTypeMod {
-			mod := modconfig.NewMod(block.Labels[0], modPath, block.DefRange)
-			diags := gohcl.DecodeBody(block.Body, nil, mod)
-			if diags.HasErrors() {
-				return nil, plugin.DiagsToError("Failed to decode mod hcl file", diags)
-			}
-			return mod, nil
-		}
+	// load the shell mod
+	_, mod, err := loadShellModAndMappableResourceNames(modPath, content)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, fmt.Errorf("no mod definition found in %s", modPath)
+	if mod == nil {
+		return nil, fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
+	}
+
+	// create parse options
+	opts := &ParseModOptions{
+		RootMod: mod,
+	}
+	runCtx, diags := NewRunContext(opts.RootMod, content, fileData, nil)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to create run context", diags)
+	}
+	opts.RunCtx = runCtx
+
+	// now decode
+	diags = decode(opts)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to decode mod hcl file", diags)
+	}
+
+	// we failed to resolve dependencies
+	if !opts.RunCtx.EvalComplete() {
+		return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", opts.RunCtx.FormatDependencies())
+	}
+
+	return mod, nil
 }
 
 // parse a yaml file into a hcl.File object
@@ -193,7 +213,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	if mod.FilePath != opts.RunCtx.CurrentMod.FilePath {
 		// set the current mod
 		opts.RunCtx.CurrentMod = mod
-		// add this mod to run context
+		// add this mod to run context - this it to ensure all pseudo resources get added
 		opts.RunCtx.AddMod(mod)
 	}
 
