@@ -41,12 +41,12 @@ nfpms:
 snapshot:
   name_template: '{{ .Version }}'
 
-snapcrafts:
-  - id: "steampipe"
-    builds: ['steampipe']
-    description: "Use SQL to instantly query your cloud services (AWS, Azure, GCP and more). Open source CLI. No DB required."
-    summary: "Snap package"
-    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+# snapcrafts:
+#   - id: "steampipe"
+#     builds: ['steampipe']
+#     description: "Use SQL to instantly query your cloud services (AWS, Azure, GCP and more). Open source CLI. No DB required."
+#     summary: "Snap package"
+#     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
   name_template: 'checksums.txt'
