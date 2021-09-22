@@ -253,7 +253,17 @@ func (c *RunContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.D
 		}}
 	}
 
+	// if there is a mod name, we need to add the fully specified and non fully specified version
 	typeString := parsedName.TypeString()
+	c.addVariable(typeString, parsedName.Name, ctyValue)
+	// remove this resource from unparsed blocks
+	if _, ok := c.UnresolvedBlocks[resource.Name()]; ok {
+		delete(c.UnresolvedBlocks, resource.Name())
+	}
+	return nil
+}
+
+func (c *RunContext) addVariable(typeString string, key string, value cty.Value) {
 	variablesForType, ok := c.variables[typeString]
 
 	if !ok {
@@ -262,15 +272,10 @@ func (c *RunContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.D
 	// DO NOT update the cached cty values if the value already exists
 	// this can happen in the case of variables where we initialise the context with values read from file
 	// or passed on the command line,
-	if _, ok := variablesForType[parsedName.Name]; !ok {
-		variablesForType[parsedName.Name] = ctyValue
+	if _, ok := variablesForType[key]; !ok {
+		variablesForType[key] = value
 		c.variables[typeString] = variablesForType
 	}
-	// remove this resource from unparsed blocks
-	if _, ok := c.UnresolvedBlocks[resource.Name()]; ok {
-		delete(c.UnresolvedBlocks, resource.Name())
-	}
-	return nil
 }
 
 // AddMod is used to add a mod with any resources to the eval context
