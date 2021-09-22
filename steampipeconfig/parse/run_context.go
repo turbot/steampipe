@@ -45,13 +45,10 @@ type RunContext struct {
 	blocks  hcl.Blocks
 }
 
-func NewRunContext(rootMod *modconfig.Mod, content *hcl.BodyContent, fileData map[string][]byte, inputVariables map[string]cty.Value) (*RunContext, hcl.Diagnostics) {
+func NewRunContext(content *hcl.BodyContent, fileData map[string][]byte, inputVariables map[string]cty.Value) *RunContext {
 	c := &RunContext{
-		RootMod:          rootMod,
-		CurrentMod:       rootMod,
 		FileData:         fileData,
 		UnresolvedBlocks: make(map[string]*unresolvedBlock),
-
 		referenceValues: map[string]ReferenceTypeValueMap{
 			"local": make(ReferenceTypeValueMap),
 		},
@@ -69,10 +66,47 @@ func NewRunContext(rootMod *modconfig.Mod, content *hcl.BodyContent, fileData ma
 	// add enums to the variables which may be referenced from within the hcl
 	c.addSteampipeEnums()
 
-	// add root mod to the eval context - this is done to ensure any pseudo resources are present
-	diags := c.AddMod(rootMod)
+	return c
+}
 
-	return c, diags
+// AddMod is used to add a mod with any resources to the eval context
+// - in practice this will be a shell mod with just pseudo resources - other resources will be added as they are parsed
+func (c *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
+	// if no root mod is set, set it now
+	if c.RootMod == nil {
+		c.RootMod = mod
+	}
+	c.CurrentMod = mod
+
+	var diags hcl.Diagnostics
+
+	moreDiags := c.storeResourceInCtyMap(mod)
+	diags = append(diags, moreDiags...)
+	// add mod resources
+	for _, q := range mod.Queries {
+		moreDiags := c.storeResourceInCtyMap(q)
+		diags = append(diags, moreDiags...)
+	}
+	for _, q := range mod.Controls {
+		moreDiags := c.storeResourceInCtyMap(q)
+		diags = append(diags, moreDiags...)
+	}
+	for _, q := range mod.Locals {
+		moreDiags := c.storeResourceInCtyMap(q)
+		diags = append(diags, moreDiags...)
+	}
+	for _, q := range mod.Reports {
+		moreDiags := c.storeResourceInCtyMap(q)
+		diags = append(diags, moreDiags...)
+	}
+	for _, q := range mod.Panels {
+		moreDiags := c.storeResourceInCtyMap(q)
+		diags = append(diags, moreDiags...)
+	}
+
+	// rebuild the eval context from the ctyMap
+	c.EvalCtx = c.ctyMapToEvalContext()
+	return diags
 }
 
 func (c *RunContext) ClearDependencies() {
@@ -332,46 +366,6 @@ func (c *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	}
 
 	return nil
-}
-
-// AddMod is used to add a mod with any resources to the eval context
-// - in practice this will be a shell mod with just pseudo resources - other resources will be added as they are parsed
-func (c *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
-	// if no root mod is set, set it now
-	if c.RootMod == nil {
-		c.RootMod = mod
-	}
-	c.CurrentMod = mod
-
-	var diags hcl.Diagnostics
-
-	moreDiags := c.storeResourceInCtyMap(mod)
-	diags = append(diags, moreDiags...)
-	// add mod resources
-	for _, q := range mod.Queries {
-		moreDiags := c.storeResourceInCtyMap(q)
-		diags = append(diags, moreDiags...)
-	}
-	for _, q := range mod.Controls {
-		moreDiags := c.storeResourceInCtyMap(q)
-		diags = append(diags, moreDiags...)
-	}
-	for _, q := range mod.Locals {
-		moreDiags := c.storeResourceInCtyMap(q)
-		diags = append(diags, moreDiags...)
-	}
-	for _, q := range mod.Reports {
-		moreDiags := c.storeResourceInCtyMap(q)
-		diags = append(diags, moreDiags...)
-	}
-	for _, q := range mod.Panels {
-		moreDiags := c.storeResourceInCtyMap(q)
-		diags = append(diags, moreDiags...)
-	}
-
-	// rebuild the eval context from the ctyMap
-	c.EvalCtx = c.ctyMapToEvalContext()
-	return diags
 }
 
 func (c *RunContext) FormatDependencies() string {

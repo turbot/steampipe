@@ -9,8 +9,6 @@ import (
 	"os/signal"
 	"strings"
 
-	"github.com/turbot/steampipe/steampipeconfig/parse"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -20,7 +18,6 @@ import (
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/interactive"
-	"github.com/turbot/steampipe/mod_installer"
 	"github.com/turbot/steampipe/query/queryexecute"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -189,12 +186,12 @@ func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
 	// install workspace dependencies
 	// load the modfile only
 	// TODO do we need to care about variables?? probably?
-	mod, err := parse.ParseModDefinition(workspacePath)
-	if err != nil {
-		return nil, err
-	}
-	installer := mod_installer.NewModInstaller(workspacePath)
-	installer.InstallModDependencies(mod)
+	//mod, err := parse.ParseModDefinition(workspacePath)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//installer := mod_installer.NewModInstaller(workspacePath)
+	//installer.InstallModDependencies(mod)
 
 	w, err := workspace.Load(workspacePath)
 	if err == nil {
