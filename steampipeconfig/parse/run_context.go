@@ -28,26 +28,34 @@ func (b unresolvedBlock) String() string {
 	return strings.Join(depStrings, "\n")
 }
 
+// ReferenceTypeValueMap is a map of reference value maps, keyed by type
+type ReferenceTypeValueMap map[string]map[string]cty.Value
+
 type RunContext struct {
 	RootMod          *modconfig.Mod
 	CurrentMod       *modconfig.Mod
 	UnresolvedBlocks map[string]*unresolvedBlock
 	FileData         map[string][]byte
 	dependencyGraph  *topsort.Graph
-	// store any objects which are dependency targets
-	variables map[string]map[string]cty.Value
-	EvalCtx   *hcl.EvalContext
-	blocks    hcl.Blocks
+	// map of ReferenceTypeValueMaps keyed by mod
+	// NOTE: all values from root mod are keyed with "local"
+	referenceValues map[string]ReferenceTypeValueMap
+
+	EvalCtx *hcl.EvalContext
+	blocks  hcl.Blocks
 }
 
 func NewRunContext(rootMod *modconfig.Mod, content *hcl.BodyContent, fileData map[string][]byte, inputVariables map[string]cty.Value) (*RunContext, hcl.Diagnostics) {
 	c := &RunContext{
 		RootMod:          rootMod,
+		CurrentMod:       rootMod,
 		FileData:         fileData,
 		UnresolvedBlocks: make(map[string]*unresolvedBlock),
 
-		variables: make(map[string]map[string]cty.Value),
-		blocks:    content.Blocks,
+		referenceValues: map[string]ReferenceTypeValueMap{
+			"local": make(ReferenceTypeValueMap),
+		},
+		blocks: content.Blocks,
 	}
 	// add root node - this will depend on all other nodes
 	c.dependencyGraph = c.newDependencyGraph()
@@ -55,14 +63,14 @@ func NewRunContext(rootMod *modconfig.Mod, content *hcl.BodyContent, fileData ma
 	// add steampipe variables to the local variables
 	if inputVariables != nil {
 		// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
-		c.variables["var"] = inputVariables
+		c.referenceValues["local"]["var"] = inputVariables
 	}
-
-	// add root mod to the eval context - this is done to ensure any pseudo resources are present
-	diags := c.AddMod(rootMod)
 
 	// add enums to the variables which may be referenced from within the hcl
 	c.addSteampipeEnums()
+
+	// add root mod to the eval context - this is done to ensure any pseudo resources are present
+	diags := c.AddMod(rootMod)
 
 	return c, diags
 }
@@ -145,9 +153,9 @@ func (c *RunContext) EvalComplete() bool {
 	return len(c.UnresolvedBlocks) == 0
 }
 
-// add enums to the variables which may be referenced from within the hcl
+// add enums to the referenceValues which may be referenced from within the hcl
 func (c *RunContext) addSteampipeEnums() {
-	c.variables["steampipe"] = map[string]cty.Value{
+	c.referenceValues["local"]["steampipe"] = map[string]cty.Value{
 		"panel": cty.ObjectVal(map[string]cty.Value{
 			"markdown":         cty.StringVal("steampipe.panel.markdown"),
 			"barchart":         cty.StringVal("steampipe.panel.barchart"),
@@ -207,10 +215,24 @@ func (c *RunContext) getDependencyOrder() ([]string, error) {
 func (c *RunContext) ctyMapToEvalContext() *hcl.EvalContext {
 	// convert variables to cty values
 	variables := make(map[string]cty.Value)
-	for k, v := range c.variables {
+
+	// first add local values
+	for k, v := range c.referenceValues["local"] {
 		variables[k] = cty.ObjectVal(v)
 	}
-	// create evaluation context
+	// now for each mod add all the values
+	for mod, modMap := range c.referenceValues {
+		// mod map is map[string]map[string]cty.Value
+		// for each element (i.e. map[string]cty.Value) convert to cty object
+		refTypeMap := make(map[string]cty.Value)
+		for refType, typeValueMap := range modMap {
+			refTypeMap[refType] = cty.ObjectVal(typeValueMap)
+		}
+		// now convert the cty map to a cty object
+		variables[mod] = cty.ObjectVal(refTypeMap)
+	}
+
+	//create evaluation context
 	return &hcl.EvalContext{
 		Variables: variables,
 		Functions: ContextFunctions(c.RootMod.FilePath),
@@ -218,10 +240,31 @@ func (c *RunContext) ctyMapToEvalContext() *hcl.EvalContext {
 }
 
 // AddResource stores this resource as a variable to be added to the eval context. It alse
-func (c *RunContext) AddResource(resource modconfig.HclResource, mod *modconfig.Mod) hcl.Diagnostics {
-	diagnostics := c.storeResourceInCtyMap(resource)
-	if diagnostics.HasErrors() {
-		return diagnostics
+func (c *RunContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics {
+	// if this is a mod and we have no root mod, we must be loading a mod defintion - set it now
+	if mod, ok := resource.(*modconfig.Mod); ok {
+		if c.RootMod == nil {
+			c.RootMod = mod
+		}
+	} else {
+
+		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
+		// runCtx MUST have a current mod set
+		if c.CurrentMod == nil {
+			// should never happen
+			panic("trying to add resource to run context with no current mod")
+		}
+		resource.SetMod(c.CurrentMod)
+		// add resource to mod - this will fail if the mod already has a resource with the same name
+		diags := c.CurrentMod.AddResource(resource)
+		if diags.HasErrors() {
+			return diags
+		}
+	}
+
+	diags := c.storeResourceInCtyMap(resource)
+	if diags.HasErrors() {
+		return diags
 	}
 
 	// rebuild the eval context
@@ -243,6 +286,19 @@ func (c *RunContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.D
 		}}
 	}
 
+	// add into the reference value map
+	if diags := c.addReferenceValue(resource, ctyValue); diags.HasErrors() {
+		return diags
+	}
+
+	// remove this resource from unparsed blocks
+	if _, ok := c.UnresolvedBlocks[resource.Name()]; ok {
+		delete(c.UnresolvedBlocks, resource.Name())
+	}
+	return nil
+}
+
+func (c *RunContext) addReferenceValue(resource modconfig.HclResource, value cty.Value) hcl.Diagnostics {
 	parsedName, err := modconfig.ParseResourceName(resource.Name())
 	if err != nil {
 		return hcl.Diagnostics{&hcl.Diagnostic{
@@ -253,35 +309,50 @@ func (c *RunContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.D
 		}}
 	}
 
-	// if there is a mod name, we need to add the fully specified and non fully specified version
-	typeString := parsedName.TypeString()
-	c.addVariable(typeString, parsedName.Name, ctyValue)
-	// remove this resource from unparsed blocks
-	if _, ok := c.UnresolvedBlocks[resource.Name()]; ok {
-		delete(c.UnresolvedBlocks, resource.Name())
+	// TODO VALIDATE MOD NAME CLASHES?
+	// TODO MOD RESERVED NAMES
+	// TODO HANDLE ALIASES
+
+	key := parsedName.Name
+	typeString := parsedName.ItemType
+
+	// the resource name will not have a mod - but the run context knows which mod we are parsing
+
+	mod := c.CurrentMod
+
+	modName := mod.ShortName
+	if mod.FilePath == c.RootMod.FilePath {
+		modName = "local"
 	}
-	return nil
-}
-
-func (c *RunContext) addVariable(typeString string, key string, value cty.Value) {
-	variablesForType, ok := c.variables[typeString]
-
+	variablesForMod, ok := c.referenceValues[modName]
+	// do we have a map of reference values for this dep mod?
 	if !ok {
+		// no - create one
+		variablesForMod = make(ReferenceTypeValueMap)
+		c.referenceValues[modName] = variablesForMod
+	}
+	// do we have a map of reference values for this type
+	variablesForType, ok := variablesForMod[typeString]
+	if !ok {
+		// no - create one
 		variablesForType = make(map[string]cty.Value)
 	}
+
 	// DO NOT update the cached cty values if the value already exists
 	// this can happen in the case of variables where we initialise the context with values read from file
-	// or passed on the command line,
+	// or passed on the command line,	// does this item exist in the map
 	if _, ok := variablesForType[key]; !ok {
 		variablesForType[key] = value
-		c.variables[typeString] = variablesForType
+		variablesForMod[typeString] = variablesForType
+		c.referenceValues[modName] = variablesForMod
 	}
+
+	return nil
 }
 
 // AddMod is used to add a mod with any resources to the eval context
 // - in practice this will be a shell mod with just pseudo resources - other resources will be added as they are parsed
 func (c *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
-
 	var diags hcl.Diagnostics
 
 	moreDiags := c.storeResourceInCtyMap(mod)
@@ -309,7 +380,7 @@ func (c *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	}
 
 	// rebuild the eval context from the ctyMap
-	c.ctyMapToEvalContext()
+	c.EvalCtx = c.ctyMapToEvalContext()
 	return diags
 }
 
