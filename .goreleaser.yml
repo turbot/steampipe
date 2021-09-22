@@ -38,6 +38,9 @@ nfpms:
     rpm:
       summary: "Use SQL to instantly query your cloud services (AWS, Azure, GCP and more). Open source CLI. No DB required."
 
+snapshot:
+  name_template: '{{ .Version }}-SNAPSHOT'
+
 snapcrafts:
   - id: "steampipe"
     builds: ['steampipe']
