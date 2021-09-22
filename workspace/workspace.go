@@ -275,6 +275,8 @@ func (w *Workspace) loadWorkspaceMod() error {
 			Exclude: w.exclusions,
 		},
 		Variables: variableValueMap,
+		ModInstallationPath: constants.WorkspaceModPath(w.Path),
+		LoadedMods:          make(modconfig.ModMap),
 	}
 
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
@@ -283,19 +285,12 @@ func (w *Workspace) loadWorkspaceMod() error {
 	}
 	w.Mod = m
 
-	// now load all mods in the workspace
-	modsPath := constants.WorkspaceModPath(w.Path)
-	modMap, err := w.loadModDependencies(modsPath)
-	if err != nil {
-		return err
-	}
-
-	w.Queries = w.buildQueryMap(modMap)
-	w.Controls = w.buildControlMap(modMap)
-	w.Benchmarks = w.buildBenchmarkMap(modMap)
-	w.Reports = w.buildReportMap(modMap)
-	w.Panels = w.buildPanelMap(modMap)
-	w.Mods = modMap
+	w.Queries = w.buildQueryMap(opts.LoadedMods)
+	w.Controls = w.buildControlMap(opts.LoadedMods)
+	w.Benchmarks = w.buildBenchmarkMap(opts.LoadedMods)
+	w.Reports = w.buildReportMap(opts.LoadedMods)
+	w.Panels = w.buildPanelMap(opts.LoadedMods)
+	w.Mods = opts.LoadedMods
 	// now update variables with their usage - populate the UsedBy property
 	m.SetReferencedBy()
 	// set variables on workspace
@@ -331,16 +326,17 @@ func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, 
 	return workspaceResourceNames, nil
 }
 
-// load resource names for all dependencies of workspace mod
-func (w *Workspace) loadModDependencies(modsFolder string) (modconfig.ModMap, error) {
-	var res = modconfig.ModMap{
-		w.Mod.Name(): w.Mod,
-	}
-	if err := steampipeconfig.LoadModDependencies(w.Mod, modsFolder, res, false); err != nil {
-		return nil, err
-	}
-	return res, nil
-}
+//
+//// load resource names for all dependencies of workspace mod
+//func (w *Workspace) loadModDependencies(modsFolder string) (modconfig.ModMap, error) {
+//	var res = modconfig.ModMap{
+//		w.Mod.Name(): w.Mod,
+//	}
+//	if err := steampipeconfig.LoadModDependencies(w.Mod, modsFolder, res, false); err != nil {
+//		return nil, err
+//	}
+//	return res, nil
+//}
 
 func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig.Query {
 	//  build a list of long and short names for these queries

@@ -107,6 +107,16 @@ func (p *Panel) SetMod(mod *Mod) {
 	p.Mod = mod
 }
 
+// GetMod implements HclResource
+func (p *Panel) GetMod() *Mod {
+	return p.Mod
+}
+
+// GetDeclRange implements HclResource
+func (p *Panel) GetDeclRange() *hcl.Range {
+	return &p.DeclRange
+}
+
 // AddChild implements ModTreeItem
 func (p *Panel) AddChild(child ModTreeItem) error {
 	switch c := child.(type) {

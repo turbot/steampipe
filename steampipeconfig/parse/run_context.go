@@ -29,7 +29,8 @@ func (b unresolvedBlock) String() string {
 }
 
 type RunContext struct {
-	Mod              *modconfig.Mod
+	RootMod          *modconfig.Mod
+	CurrentMod       *modconfig.Mod
 	UnresolvedBlocks map[string]*unresolvedBlock
 	FileData         map[string][]byte
 	dependencyGraph  *topsort.Graph
@@ -39,9 +40,9 @@ type RunContext struct {
 	blocks    hcl.Blocks
 }
 
-func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[string][]byte, inputVariables map[string]cty.Value) (*RunContext, hcl.Diagnostics) {
+func NewRunContext(rootMod *modconfig.Mod, content *hcl.BodyContent, fileData map[string][]byte, inputVariables map[string]cty.Value) (*RunContext, hcl.Diagnostics) {
 	c := &RunContext{
-		Mod:              mod,
+		RootMod:          rootMod,
 		FileData:         fileData,
 		UnresolvedBlocks: make(map[string]*unresolvedBlock),
 
@@ -57,10 +58,10 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 		c.variables["var"] = inputVariables
 	}
 
-	// add mod and any existing mod resources to the variables
-	// NOTE: this will build the eval context
-	diags := c.addModToEvalCtx()
+	// add root mod to the eval context - this is done to ensure any pseudo resources are present
+	diags := c.AddMod(rootMod)
 
+	// add enums to the variables which may be referenced from within the hcl
 	c.addSteampipeEnums()
 
 	return c, diags
@@ -203,38 +204,34 @@ func (c *RunContext) getDependencyOrder() ([]string, error) {
 }
 
 // eval functions
-func (c *RunContext) buildEvalContext() {
+func (c *RunContext) ctyMapToEvalContext() *hcl.EvalContext {
 	// convert variables to cty values
 	variables := make(map[string]cty.Value)
 	for k, v := range c.variables {
 		variables[k] = cty.ObjectVal(v)
 	}
 	// create evaluation context
-	c.EvalCtx = &hcl.EvalContext{
+	return &hcl.EvalContext{
 		Variables: variables,
-		Functions: ContextFunctions(c.Mod.ModPath),
+		Functions: ContextFunctions(c.RootMod.FilePath),
 	}
 }
 
-// AddResource :: store this resource as a variable to be added to the eval context
-func (c *RunContext) AddResource(resource modconfig.HclResource, block *hcl.Block) hcl.Diagnostics {
-	// set mod pointer on hcl resource
-	resource.SetMod(c.Mod)
-
-	diagnostics := c.storeResourceInCtyMap(resource, block)
+// AddResource stores this resource as a variable to be added to the eval context. It alse
+func (c *RunContext) AddResource(resource modconfig.HclResource, mod *modconfig.Mod) hcl.Diagnostics {
+	diagnostics := c.storeResourceInCtyMap(resource)
 	if diagnostics.HasErrors() {
 		return diagnostics
 	}
 
 	// rebuild the eval context
-	c.buildEvalContext()
+	c.EvalCtx = c.ctyMapToEvalContext()
 
-	// add resource to mod - this will fail if the mod already has a resource with the same name
-	return c.Mod.AddResource(resource, block)
+	return nil
 }
 
 // update the cached cty value for the given resource, as long as itr does not already exist
-func (c *RunContext) storeResourceInCtyMap(resource modconfig.HclResource, block *hcl.Block) hcl.Diagnostics {
+func (c *RunContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.Diagnostics {
 	// add resource to variable map
 	ctyValue, err := resource.CtyValue()
 	if err != nil {
@@ -242,7 +239,7 @@ func (c *RunContext) storeResourceInCtyMap(resource modconfig.HclResource, block
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("failed to convert resource '%s'to its cty value", resource.Name()),
 			Detail:   err.Error(),
-			Subject:  &block.DefRange,
+			Subject:  resource.GetDeclRange(),
 		}}
 	}
 
@@ -250,9 +247,9 @@ func (c *RunContext) storeResourceInCtyMap(resource modconfig.HclResource, block
 	if err != nil {
 		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("failed to parse resourece name %s", resource.Name()),
+			Summary:  fmt.Sprintf("failed to parse resource name %s", resource.Name()),
 			Detail:   err.Error(),
-			Subject:  &block.DefRange,
+			Subject:  resource.GetDeclRange(),
 		}}
 	}
 
@@ -276,24 +273,38 @@ func (c *RunContext) storeResourceInCtyMap(resource modconfig.HclResource, block
 	return nil
 }
 
-func (c *RunContext) addModToEvalCtx() hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	// create empty block to pass
-	block := &hcl.Block{}
+// AddMod is used to add a mod with any resources to the eval context
+// - in practice this will be a shell mod with just pseudo resources - other resources will be added as they are parsed
+func (c *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 
-	moreDiags := c.storeResourceInCtyMap(c.Mod, block)
-	if moreDiags.HasErrors() {
+	var diags hcl.Diagnostics
+
+	moreDiags := c.storeResourceInCtyMap(mod)
+	diags = append(diags, moreDiags...)
+	// add mod resources
+	for _, q := range mod.Queries {
+		moreDiags := c.storeResourceInCtyMap(q)
 		diags = append(diags, moreDiags...)
 	}
-	// add all mappable resources to variables
-	for _, q := range c.Mod.Queries {
-		moreDiags := c.storeResourceInCtyMap(q, block)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
+	for _, q := range mod.Controls {
+		moreDiags := c.storeResourceInCtyMap(q)
+		diags = append(diags, moreDiags...)
 	}
+	for _, q := range mod.Locals {
+		moreDiags := c.storeResourceInCtyMap(q)
+		diags = append(diags, moreDiags...)
+	}
+	for _, q := range mod.Reports {
+		moreDiags := c.storeResourceInCtyMap(q)
+		diags = append(diags, moreDiags...)
+	}
+	for _, q := range mod.Panels {
+		moreDiags := c.storeResourceInCtyMap(q)
+		diags = append(diags, moreDiags...)
+	}
+
 	// rebuild the eval context from the ctyMap
-	c.buildEvalContext()
+	c.ctyMapToEvalContext()
 	return diags
 }
 

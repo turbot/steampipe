@@ -69,6 +69,16 @@ func (r *Report) SetMod(mod *Mod) {
 	r.Mod = mod
 }
 
+// GetMod implements HclResource
+func (r *Report) GetMod() *Mod {
+	return r.Mod
+}
+
+// GetDeclRange implements HclResource
+func (r *Report) GetDeclRange() *hcl.Range {
+	return &r.DeclRange
+}
+
 // AddChild implements ModTreeItem
 func (r *Report) AddChild(child ModTreeItem) error {
 	switch c := child.(type) {

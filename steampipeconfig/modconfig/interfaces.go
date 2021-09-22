@@ -40,6 +40,8 @@ type HclResource interface {
 	AddReferencedBy(referencedBy ResourceReference)
 	ReferencesResource(ResourceReference) bool
 	SetMod(*Mod)
+	GetMod() *Mod
+	GetDeclRange() *hcl.Range
 }
 
 // ResourceWithMetadata must be implenented by resources which supports reflection metadata

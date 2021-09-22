@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	goVersion "github.com/hashicorp/go-version"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -18,8 +20,14 @@ const defaultModName = "local"
 
 // Mod is a struct representing a Mod resource
 type Mod struct {
+	// ShortName is the mod name, e.g. azure_thrifty
 	ShortName string `cty:"short_name" hcl:"name,label"`
-	FullName  string `cty:"name"`
+	// FullName is the mod name prefixed with 'mod', e.g. mod.azure_thrifty
+	FullName string `cty:"name"`
+	// ModPath is the fully qualified mod name, which can be used to 'require'  the mod,
+	// e.g. github.com/turbot/steampipe-mod-azure-thrifty
+	// This is only set if the mod is installed as a dependency
+	ModPath string `cty:"mod_path"`
 
 	// attributes
 	Categories    *[]string          `cty:"categories" hcl:"categories" column:"categories,jsonb"`
@@ -41,8 +49,7 @@ type Mod struct {
 	Requires  *Requires  `hcl:"requires,block"`
 	OpenGraph *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
 
-	// TODO do we need this?
-	Version *string
+	Version *goVersion.Version
 
 	Queries    map[string]*Query
 	Controls   map[string]*Control
@@ -58,7 +65,8 @@ type Mod struct {
 	// list of benchmark names, sorted alphabetically
 	benchmarksOrdered []string
 
-	ModPath   string
+	// FilePath is the installation location of the mod
+	FilePath  string
 	DeclRange hcl.Range
 
 	children []ModTreeItem
@@ -67,17 +75,17 @@ type Mod struct {
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	return &Mod{
-		ShortName:     shortName,
-		FullName:      fmt.Sprintf("mod.%s", shortName),
-		Queries:       make(map[string]*Query),
-		Controls:      make(map[string]*Control),
-		Benchmarks:    make(map[string]*Benchmark),
-		Reports:       make(map[string]*Report),
-		Panels:        make(map[string]*Panel),
-		Variables:     make(map[string]*Variable),
-		Locals:        make(map[string]*Local),
-		ModPath:       modPath,
-		DeclRange:     defRange,
+		ShortName:  shortName,
+		FullName:   fmt.Sprintf("mod.%s", shortName),
+		Queries:    make(map[string]*Query),
+		Controls:   make(map[string]*Control),
+		Benchmarks: make(map[string]*Benchmark),
+		Reports:    make(map[string]*Report),
+		Panels:     make(map[string]*Panel),
+		Variables:  make(map[string]*Variable),
+		Locals:     make(map[string]*Local),
+		FilePath:   modPath,
+		DeclRange:  defRange,
 		referencesMap: make(map[ResourceReference]bool),
 		AllResources:  make(map[ResourceReference]HclResource),
 	}
@@ -359,14 +367,14 @@ func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
 	return nil
 }
 
-func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
+func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	switch r := item.(type) {
 	case *Query:
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Queries[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			diags = append(diags, duplicateResourceDiagnostics(item))
 			break
 		}
 		m.Queries[name] = r
@@ -375,7 +383,7 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Controls[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			diags = append(diags, duplicateResourceDiagnostics(item))
 			break
 		}
 		m.Controls[name] = r
@@ -388,7 +396,7 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Benchmarks[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			diags = append(diags, duplicateResourceDiagnostics(item))
 			break
 		} else {
 			m.Benchmarks[name] = r
@@ -398,7 +406,7 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Panels[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			diags = append(diags, duplicateResourceDiagnostics(item))
 			break
 		} else {
 			m.Panels[name] = r
@@ -408,7 +416,7 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Reports[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			diags = append(diags, duplicateResourceDiagnostics(item))
 			break
 		} else {
 			m.Reports[name] = r
@@ -418,16 +426,17 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Variables[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			diags = append(diags, duplicateResourceDiagnostics(item))
 			break
 		} else {
 			m.Variables[name] = r
 		}
+
 	case *Local:
 		name := r.Name()
 		// check for dupes
 		if _, ok := m.Locals[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item, block))
+			diags = append(diags, duplicateResourceDiagnostics(item))
 			break
 		} else {
 			m.Locals[name] = r
@@ -437,11 +446,11 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 	return diags
 }
 
-func duplicateResourceDiagnostics(item HclResource, block *hcl.Block) *hcl.Diagnostic {
+func duplicateResourceDiagnostics(item HclResource) *hcl.Diagnostic {
 	return &hcl.Diagnostic{
 		Severity: hcl.DiagError,
 		Summary:  fmt.Sprintf("mod defines more than one resource named %s", item.Name()),
-		Subject:  &block.DefRange,
+		Subject:  item.GetDeclRange(),
 	}
 }
 
@@ -463,7 +472,6 @@ func (m *Mod) GetParents() []ModTreeItem {
 
 // Name implements ModTreeItem, HclResource
 func (m *Mod) Name() string {
-
 	if m.Version == nil {
 		return m.FullName
 	}
@@ -548,6 +556,16 @@ func (m *Mod) ReferencesResource(ref ResourceReference) bool {
 
 // SetMod implements HclResource
 func (m *Mod) SetMod(*Mod) {}
+
+// GetMod implements HclResource
+func (m *Mod) GetMod() *Mod {
+	return nil
+}
+
+// GetDeclRange implements HclResource
+func (m *Mod) GetDeclRange() *hcl.Range {
+	return &m.DeclRange
+}
 
 // GetMetadata implements ResourceWithMetadata
 func (m *Mod) GetMetadata() *ResourceMetadata {

@@ -1,19 +1,14 @@
-package mod_deps
+package mod_installer
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
 
-	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/steampipeconfig"
-	"github.com/turbot/steampipe/steampipeconfig/parse"
-
-	"github.com/go-git/go-git/v5/plumbing"
-
-	"github.com/turbot/steampipe/workspace"
+	"github.com/turbot/steampipe/constants"
 
 	git "github.com/go-git/go-git/v5"
+	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -69,119 +64,104 @@ MOD INSTA
 */
 
 type ModInstaller struct {
-	Workspace *workspace.Workspace
-	ModsDir   string
+	ModsDir string
 }
 
-func NewModInstaller(workspace *workspace.Workspace) *ModInstaller {
+func NewModInstaller(workspacePath string) *ModInstaller {
 	return &ModInstaller{
-		Workspace: workspace,
-		ModsDir:   filepath.Join(workspace.Path, ".steampipe/mods"),
+		ModsDir: constants.WorkspaceModPath(workspacePath),
 	}
 }
 
 // InstallModDependencies installs all dependencies of the mod
 func (i *ModInstaller) InstallModDependencies(mod *modconfig.Mod) error {
+	dependencyMap := make(map[string]*ResolvedModRef)
+	return i.installModDependenciesRecursively(mod, dependencyMap)
+}
+
+func (i *ModInstaller) installModDependenciesRecursively(mod *modconfig.Mod, dependencyMap map[string]*ResolvedModRef) error {
 	if mod.Requires == nil {
 		return nil
 	}
 
+	// first check our Steampipe version is sufficient
 	if err := mod.Requires.ValidateSteampipeVersion(mod.Name()); err != nil {
 		return err
 	}
-	// reset our dependency map
-	dependencyMap := make(map[string]*ResolvedModRef)
 
 	var errors []error
-
-	for _, dep := range mod.Requires.Mods {
-		// gather dependencies for this mod
-		// NOTE - this mutates dependency map
+	for _, modVersion := range mod.Requires.Mods {
 		// get a resolved mod ref for this mod version
-		resolvedRef, err := i.GetModRefForVersion(dep)
+		resolvedRef, err := i.GetModRefForVersion(modVersion)
 		if err != nil {
-			return fmt.Errorf("dependency %s %s cannot be satisfied: %s", mod.Name, dep.VersionString, err.Error())
+			return fmt.Errorf("dependency %s %s cannot be satisfied: %s", mod.Name, modVersion.VersionString, err.Error())
 		}
 
-		if err := i.GatherDependencies(resolvedRef, dependencyMap); err != nil {
+		// install this mod
+		// NOTE - this mutates dependency map
+		if err := i.installDependency(resolvedRef, dependencyMap); err != nil {
 			errors = append(errors, err)
 		}
 	}
-	if len(errors) > 0 {
-		return utils.CombineErrorsWithPrefix(fmt.Sprintf("%d dependencies failed to install", len(errors)), errors...)
-	}
 
-	// so now i.DependencyMap contains all dependencies - install them
-	return i.installDependencies(dependencyMap)
+	return utils.CombineErrorsWithPrefix(fmt.Sprintf("%d dependencies failed to install", len(errors)), errors...)
 }
 
-func (i *ModInstaller) GatherDependencies(modRef *ResolvedModRef, dependencyMap map[string]*ResolvedModRef) error {
+//func (i *ModInstaller) GatherDependencies(modRef *ResolvedModRef, dependencyMap map[string]*ResolvedModRef) error {
+//
+//	modRequires, err := i.GetModRequires(modRef)
+//	if err != nil {
+//		return err
+//	}
+//	if modRequires == nil {
+//		return nil
+//	}
+//
+//	if err := modRequires.ValidateSteampipeVersion(modRef.Name); err != nil {
+//		return err
+//	}
+//
+//	var errors []error
+//	// for each dependency see whether it is already satisfied
+//	for _, dep := range modRequires.Mods {
+//
+//		// have we already identified a dependency for this mod see if it satisfies this requirement
+//		if modRef, ok := dependencyMap[dep.Name]; ok {
+//			if modRef.Version.GreaterThanOrEqual(dep.VersionConstraint) {
+//				continue
+//			}
+//		}
+//		// so either this dependency is not in the dependency map
+//		// or the version in the map does not satisfy the requirement
+//		// see if we can add this version (this checks replacements and workspace lock)
+//		resolvedRef, err := i.GetModRefForVersion(dep)
+//		if err != nil {
+//			errors = append(errors, fmt.Errorf("dependency %s %s cannot be satisfied: %s", dep.Name, dep.VersionString, err.Error()))
+//			continue
+//		}
+//		dependencyMap[dep.Name] = resolvedRef
+//
+//		// gather dependencies for this dep
+//		if err := i.GatherDependencies(resolvedRef, dependencyMap); err != nil {
+//			errors = append(errors, err)
+//		}
+//
+//	}
+//	return utils.CombineErrors(errors...)
+//}
 
-	modRequires, err := i.GetModRequires(modRef)
-	if err != nil {
-		return err
-	}
-	if modRequires == nil {
-		return nil
-	}
-
-	if err := modRequires.ValidateSteampipeVersion(modRef.Name); err != nil {
-		return err
-	}
-
-	var errors []error
-	// for each dependency see whether it is already satisfied
-	for _, dep := range modRequires.Mods {
-
-		// have we already identified a dependency for this mod see if it satisfies this requirement
-		if modRef, ok := dependencyMap[dep.Name]; ok {
-			if modRef.Version.GreaterThanOrEqual(dep.Version) {
-				continue
-			}
-		}
-		// so either this dependency is not in the dependency map
-		// or the version in the map does not satisfy the requirement
-		// see if we can add this version (this checks replacements and workspace lock)
-		resolvedRef, err := i.GetModRefForVersion(dep)
-		if err != nil {
-			errors = append(errors, fmt.Errorf("dependency %s %s cannot be satisfied: %s", dep.Name, dep.VersionString, err.Error()))
-			continue
-		}
-		dependencyMap[dep.Name] = resolvedRef
-
-		// gather dependencies for this dep
-		if err := i.GatherDependencies(resolvedRef, dependencyMap); err != nil {
-			errors = append(errors, err)
-		}
-
-	}
-	return utils.CombineErrors(errors...)
-}
-
-func (i *ModInstaller) GetModRequires(modRef *ResolvedModRef) (*modconfig.Requires, error) {
-
-	if err := i.installDependency(modRef); err != nil {
-		return nil, err
-	}
-
-	// build options used to load workspace
-	// set flags to create pseudo resources and a default mod if needed
-	opts := &parse.ParseModOptions{
-
-		ListOptions: &filehelpers.ListOptions{
-			// listFlag specifies whether to load files recursively
-			Flags: filehelpers.FilesFlat,
-			// ignore hidden files and folders
-			Exclude: []string{"**/.*"},
-		},
-	}
-
-	m, err := steampipeconfig.LoadMod(filepath.Join(i.ModsDir, modRef.Name), opts)
-	if err != nil {
-		return nil, err
-	}
-	return m.Requires, nil
-}
+//func (i *ModInstaller) GetModRequires(modRef *ResolvedModRef) (*modconfig.Requires, error) {
+//	modPath, err := i.installDependency(modRef, nil)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	m, err := steampipeconfig.LoadModDefinition(modPath)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return m.Requires, nil
+//}
 
 func (i *ModInstaller) GetModRefForVersion(modVersion *modconfig.ModVersion) (*ResolvedModRef, error) {
 
@@ -201,53 +181,65 @@ func (i *ModInstaller) GetModRefForVersion(modVersion *modconfig.ModVersion) (*R
 
 func (i *ModInstaller) getLatestCompatibleVersionFromGithub(modVersion *modconfig.ModVersion) (*ResolvedModRef, error) {
 	// TODO for now assume the mod is specified with a full version
-	return &ResolvedModRef{
-		Name:         modVersion.Name,
-		GitReference: plumbing.NewBranchReferenceName(modVersion.VersionString),
-		Version:      modVersion.Version,
-		raw:          modVersion.VersionString,
-	}, nil
+	return NewResolvedModRef(modVersion)
 }
 
-func (i *ModInstaller) installDependencies(dependencyMap map[string]*ResolvedModRef) error {
-
-	var errors []error
-	for _, dep := range dependencyMap {
-		if err := i.installDependency(dep); err != nil {
-			errors = append(errors, err)
+func (i *ModInstaller) installDependency(dependency *ResolvedModRef, dependencyMap map[string]*ResolvedModRef) error {
+	// have we already installed a mod which satisfies this dependency
+	if modRef, ok := dependencyMap[dependency.Name]; ok {
+		if modRef.Version.GreaterThanOrEqual(dependency.Version) {
+			return nil
 		}
 	}
-	return utils.CombineErrors(errors...)
-}
 
-func (i *ModInstaller) installDependency(dependency *ResolvedModRef) error {
+	// add this dependency into the map (if we fail to install,m the whole installation process will terminate,
+	// so no need to check for errors
+	dependencyMap[dependency.Name] = dependency
+
+	var modPath string
 	if dependency.FilePath != "" {
 		// if there is a file path, verify it exists
 		if _, err := os.Stat(dependency.FilePath); os.IsNotExist(err) {
 			return fmt.Errorf("dependency %s file path %s does not exist", dependency.Name, dependency.FilePath)
 		}
-		return nil
+		modPath = dependency.FilePath
+	} else {
+		modPath = filepath.Join(i.ModsDir, dependency.FullName())
+		if err := i.installDependencyFromGit(dependency, modPath); err != nil {
+			return err
+		}
 	}
+	// no load the installed mod and install _its_ dependencies
+	mod, err := steampipeconfig.LoadModDefinition(modPath)
+	if err != nil {
+		return err
+	}
+	return i.installModDependenciesRecursively(mod, dependencyMap)
 
-	return i.installDependencyFromGit(dependency)
 }
 
-func (i *ModInstaller) installDependencyFromGit(dependency *ResolvedModRef) error {
+func (i *ModInstaller) installDependencyFromGit(dependency *ResolvedModRef, installPath string) error {
 	// ensure mod directory exists - create if necessary
 	if err := os.MkdirAll(i.ModsDir, os.ModePerm); err != nil {
 		return err
 	}
-	// TODO if the repo is clones, just switch to the approriate branch/tag
+	// TODO if the repo is cloned, just switch to the approriate branch/tag
+	// TODO HACK FOR NOW
+
 	// if it fails, try pulling
 
-	// ig
-
 	// get the mod from git
-	_, err := git.PlainClone(i.ModsDir, false, &git.CloneOptions{
-		URL:           dependency.Name,
-		Progress:      os.Stdout,
-		ReferenceName: dependency.GitReference,
-	})
+
+	gitUrl := fmt.Sprintf("https://%s", dependency.Name)
+	_, err := git.PlainClone(installPath,
+		false,
+		&git.CloneOptions{
+			URL:           gitUrl,
+			Progress:      os.Stdout,
+			ReferenceName: dependency.GitReference,
+			Depth:         1,
+			SingleBranch:  true,
+		})
 
 	return err
 }

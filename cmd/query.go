@@ -181,7 +181,19 @@ func getPipedStdinData() string {
 }
 
 func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspace, error) {
-	w, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+	workspacePath := viper.GetString(constants.ArgWorkspace)
+	// HACK
+	// install workspace dependencies
+	// load the modfile only
+	// TODO do we need to care about variables?? probably?
+	//mod, err := steampipeconfig.LoadModDefinition(workspacePath)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//installer := mod_installer.NewModInstaller(workspacePath)
+	//installer.InstallModDependencies(mod)
+
+	w, err := workspace.Load(workspacePath)
 	if err == nil {
 		return w, nil
 	}
@@ -196,7 +208,7 @@ func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
 		return nil, err
 	}
 	// ok we should have all variables now - reload workspace
-	return workspace.Load(viper.GetString(constants.ArgWorkspace))
+	return workspace.Load(workspacePath)
 }
 
 func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initDataChan chan *db_common.QueryInitData, args []string) {

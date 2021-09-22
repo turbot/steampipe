@@ -14,11 +14,18 @@ import (
 
 type ModVersion struct {
 	// the fully qualified mod name, e.g. github.com/turbot/mod1
-	Name          string `cty:"name" hcl:"name,label"`
-	VersionString string `cty:"version" hcl:"version"`
-	Version       *goVersion.Version
+	Name          string  `cty:"name" hcl:"name,label"`
+	VersionString string  `cty:"version" hcl:"version"`
 	Alias         *string `cty:"alias" hcl:"alias,optional"`
-	DeclRange     hcl.Range
+
+	// only one of VersionConstraint, Branch and FilePath will be set
+	VersionConstraint *goVersion.Version
+	// the branch to use
+	Branch string
+	// the local file location to use
+	FilePath string
+
+	DeclRange hcl.Range
 }
 
 func (m *ModVersion) FullName() string {
@@ -44,15 +51,19 @@ func (m *ModVersion) String() string {
 // Initialise parses the version and name properties
 func (m *ModVersion) Initialise() hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	if version, err := goVersion.NewVersion(strings.TrimPrefix(m.VersionString, "v")); err != nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("invalid mod version %s", m.VersionString),
-			Subject:  &m.DeclRange,
-		})
-	} else {
-		m.Version = version
+
+	if strings.HasPrefix(m.VersionString, "file:") {
+		m.FilePath = m.VersionString
+		return diags
 	}
+	// does the version parse as a semver version
+	if v, err := goVersion.NewVersion(m.VersionString); err == nil {
+		m.VersionConstraint = v
+		return diags
+	}
+
+	// otherwise assume it is a branch
+	m.Branch = m.VersionString
 
 	return diags
 }
