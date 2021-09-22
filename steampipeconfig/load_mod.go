@@ -20,18 +20,6 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/parse"
 )
 
-// LoadModDefinition parses the mod.sp file only
-// TODO do we need to think about variables?
-func LoadModDefinition(modPath string) (mod *modconfig.Mod, err error) {
-	return parseMod(modPath,
-		nil,
-		&parse.ParseModOptions{
-			ListOptions: &filehelpers.ListOptions{
-				Flags:   filehelpers.FilesFlat,
-				Include: []string{"**/mod.sp"},
-			}})
-}
-
 // LoadMod parses all hcl files in modPath and returns a single mod
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
@@ -51,7 +39,7 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 		return nil, fmt.Errorf("mod folder %s does not exist", modPath)
 	}
 
-	mod, err = LoadModDefinition(modPath)
+	mod, err = parse.ParseModDefinition(modPath)
 	if err != nil {
 		return nil, err
 	}

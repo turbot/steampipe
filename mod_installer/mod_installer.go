@@ -8,8 +8,8 @@ import (
 	"github.com/turbot/steampipe/constants"
 
 	git "github.com/go-git/go-git/v5"
-	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -156,7 +156,7 @@ func (i *ModInstaller) installModDependenciesRecursively(mod *modconfig.Mod, dep
 //		return nil, err
 //	}
 //
-//	m, err := steampipeconfig.LoadModDefinition(modPath)
+//	m, err := parse.ParseModDefinition(modPath)
 //	if err != nil {
 //		return nil, err
 //	}
@@ -210,7 +210,7 @@ func (i *ModInstaller) installDependency(dependency *ResolvedModRef, dependencyM
 		}
 	}
 	// no load the installed mod and install _its_ dependencies
-	mod, err := steampipeconfig.LoadModDefinition(modPath)
+	mod, err := parse.ParseModDefinition(modPath)
 	if err != nil {
 		return err
 	}

@@ -24,10 +24,10 @@ type Mod struct {
 	ShortName string `cty:"short_name" hcl:"name,label"`
 	// FullName is the mod name prefixed with 'mod', e.g. mod.azure_thrifty
 	FullName string `cty:"name"`
-	// ModPath is the fully qualified mod name, which can be used to 'require'  the mod,
+	// ModDependencyPath is the fully qualified mod name, which can be used to 'require'  the mod,
 	// e.g. github.com/turbot/steampipe-mod-azure-thrifty
 	// This is only set if the mod is installed as a dependency
-	ModPath string `cty:"mod_path"`
+	ModDependencyPath string `cty:"mod_dependency_path"`
 
 	// attributes
 	Categories    *[]string          `cty:"categories" hcl:"categories" column:"categories,jsonb"`
@@ -73,7 +73,7 @@ type Mod struct {
 	metadata *ResourceMetadata
 }
 
-func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
+func NewMod(shortName, filePath string, defRange hcl.Range) *Mod {
 	return &Mod{
 		ShortName:  shortName,
 		FullName:   fmt.Sprintf("mod.%s", shortName),
@@ -84,7 +84,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Panels:     make(map[string]*Panel),
 		Variables:  make(map[string]*Variable),
 		Locals:     make(map[string]*Local),
-		FilePath:   modPath,
+		FilePath:   filePath,
 		DeclRange:  defRange,
 		referencesMap: make(map[ResourceReference]bool),
 		AllResources:  make(map[ResourceReference]HclResource),

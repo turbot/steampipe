@@ -30,6 +30,7 @@ type ParseModOptions struct {
 	BlockTypes []string
 	RunCtx     *RunContext
 	// the root mod which is being parsed
+	// TODO only need it here as when we set it from LoadMod we do not have a runCtx yet
 	RootMod *modconfig.Mod
 }
 
