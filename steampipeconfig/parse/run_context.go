@@ -242,29 +242,13 @@ func (c *RunContext) ctyMapToEvalContext() *hcl.EvalContext {
 // AddResource stores this resource as a variable to be added to the eval context. It alse
 func (c *RunContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics {
 	// if this is a mod and we have no root mod, we must be loading a mod defintion - set it now
-	if mod, ok := resource.(*modconfig.Mod); ok {
-		if c.RootMod == nil {
-			c.RootMod = mod
-		}
-	} else {
-
-		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
-		// runCtx MUST have a current mod set
-		if c.CurrentMod == nil {
-			// should never happen
-			panic("trying to add resource to run context with no current mod")
-		}
-		resource.SetMod(c.CurrentMod)
-		// add resource to mod - this will fail if the mod already has a resource with the same name
-		diags := c.CurrentMod.AddResource(resource)
-		if diags.HasErrors() {
-			return diags
-		}
+	if mod, ok := resource.(*modconfig.Mod); ok && c.RootMod == nil {
+		c.RootMod = mod
 	}
 
-	diags := c.storeResourceInCtyMap(resource)
-	if diags.HasErrors() {
-		return diags
+	diagnostics := c.storeResourceInCtyMap(resource)
+	if diagnostics.HasErrors() {
+		return diagnostics
 	}
 
 	// rebuild the eval context
@@ -353,6 +337,12 @@ func (c *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 // AddMod is used to add a mod with any resources to the eval context
 // - in practice this will be a shell mod with just pseudo resources - other resources will be added as they are parsed
 func (c *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
+	// if no root mod is set, set it now
+	if c.RootMod == nil {
+		c.RootMod = mod
+	}
+	c.CurrentMod = mod
+
 	var diags hcl.Diagnostics
 
 	moreDiags := c.storeResourceInCtyMap(mod)
