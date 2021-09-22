@@ -92,9 +92,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f output.json
 }
 
-@test "control with default params and some named args passed in control" {
+@test "control with default params and partial named args passed in control" {
   cd $WORKSPACE_DIR
-  run steampipe check control.query_params_with_defaults_and_some_named_args --export=output.json
+  run steampipe check control.query_params_with_defaults_and_partial_named_args --export=output.json
 
   # store the reason field in `content`
   content=$(cat output.json | jq '.controls[0].results[0].reason')
@@ -103,14 +103,36 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f output.json
 }
 
-@test "control with default params and some positional args passed in control" {
+@test "control with default params and partial positional args passed in control" {
   cd $WORKSPACE_DIR
-  run steampipe check control.query_params_with_defaults_and_some_positional_args --export=output.json
+  run steampipe check control.query_params_with_defaults_and_partial_positional_args --export=output.json
 
   # store the reason field in `content`
   content=$(cat output.json | jq '.controls[0].results[0].reason')
 
   assert_equal "$content" '"command_parameter_1 default_parameter_2 default_parameter_3"'
+  rm -f output.json
+}
+
+@test "control with default params and all named args passed in control" {
+  cd $WORKSPACE_DIR
+  run steampipe check control.query_params_with_defaults_and_all_named_args --export=output.json
+
+  # store the reason field in `content`
+  content=$(cat output.json | jq '.controls[0].results[0].reason')
+
+  assert_equal "$content" '"command_parameter_1 command_parameter_2 command_parameter_3"'
+  rm -f output.json
+}
+
+@test "control with default params and all positional args passed in control" {
+  cd $WORKSPACE_DIR
+  run steampipe check control.query_params_with_defaults_and_all_positional_args --export=output.json
+
+  # store the reason field in `content`
+  content=$(cat output.json | jq '.controls[0].results[0].reason')
+
+  assert_equal "$content" '"command_parameter_1 command_parameter_2 command_parameter_3"'
   rm -f output.json
 }
 
@@ -167,9 +189,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$content" ""
 }
 
-@test "control with inline sql with named args passed in control" {
+@test "control with inline sql with partial named args passed in control" {
   cd $WORKSPACE_DIR
-  run steampipe check control.query_inline_sql_from_control_with_named_args --export=output.json
+  run steampipe check control.query_inline_sql_from_control_with_partial_named_args --export=output.json
 
   # store the reason field in `content`
   content=$(cat output.json | jq '.controls[0].results[0].reason')
@@ -178,9 +200,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f output.json
 }
 
-@test "control with inline sql with positional args passed in control" {
+@test "control with inline sql with partial positional args passed in control" {
   cd $WORKSPACE_DIR
-  run steampipe check control.query_inline_sql_from_control_with_positional_args --export=output.json
+  run steampipe check control.query_inline_sql_from_control_with_partial_positional_args --export=output.json
 
   # store the reason field in `content`
   content=$(cat output.json | jq '.controls[0].results[0].reason')
@@ -197,5 +219,27 @@ load "$LIB_BATS_SUPPORT/load.bash"
   content=$(cat output.json | jq '.controls[0].results[0].reason')
 
   assert_equal "$content" '"default_parameter_1 default_parameter_2 default_parameter_3"'
+  rm -f output.json
+}
+
+@test "control with inline sql with all named args passed in control" {
+  cd $WORKSPACE_DIR
+  run steampipe check control.query_inline_sql_from_control_with_all_named_args --export=output.json
+
+  # store the reason field in `content`
+  content=$(cat output.json | jq '.controls[0].results[0].reason')
+
+  assert_equal "$content" '"command_parameter_1 command_parameter_2 command_parameter_3"'
+  rm -f output.json
+}
+
+@test "control with inline sql with all positional args passed in control" {
+  cd $WORKSPACE_DIR
+  run steampipe check control.query_inline_sql_from_control_with_all_positional_args --export=output.json
+
+  # store the reason field in `content`
+  content=$(cat output.json | jq '.controls[0].results[0].reason')
+
+  assert_equal "$content" '"command_parameter_1 command_parameter_2 command_parameter_3"'
   rm -f output.json
 }

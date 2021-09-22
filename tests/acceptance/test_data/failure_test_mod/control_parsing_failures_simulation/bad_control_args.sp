@@ -3,7 +3,10 @@ benchmark "control_parsing_failures_simulation" {
   children = [
     control.control_fail_with_no_query_no_sql,
     control.control_fail_with_both_query_and_sql,
-    control.control_fail_with_params_and_query
+    control.control_fail_with_params_and_query,
+    control.control_fail_with_query_with_no_def_and_named_args_passed,
+    control.control_fail_with_insufficient_positional_args_passed,
+    control.control_fail_with_insufficient_named_args_passed
   ]
 }
 
@@ -34,5 +37,33 @@ control "control_fail_with_params_and_query" {
   param "p3"{
     description = "Third parameter"
     default = "default_parameter_3"
+  }
+}
+
+control "control_fail_with_query_with_no_def_and_named_args_passed" {
+  title = "Control to simulate parsing failure for control(control refers to a query with no param definitions and some named arguments passed)"
+  description = "Control referring to a query with no param definitions"
+  query = query.query_with_no_param_defs
+  args = {
+    "p1" = "command_parameter_1"
+    "p2" = "command_parameter_2"
+    "p3" = "command_parameter_3"
+  }
+}
+
+control "control_fail_with_insufficient_positional_args_passed" {
+  title = "Control fail with insufficient positional args passed"
+  description = "Control to simulate parsing failure for control(control refers to a query with no param defaults and partial positional arguments passed)"
+  query = query.query_with_param_defs_no_defaults
+  args = [ "command_argument_1", "command_argument_2" ]
+}
+
+control "control_fail_with_insufficient_named_args_passed" {
+  title = "Control fail with insufficient positional args passed"
+  description = "Control to simulate parsing failure for control(control refers to a query with no param defaults and partial positional arguments passed)"
+  query = query.query_with_param_defs_no_defaults
+  args = {
+    "p1" = "command_parameter_1"
+    "p2" = "command_parameter_2"
   }
 }
