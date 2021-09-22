@@ -261,6 +261,16 @@ func (c *Control) SetMod(mod *Mod) {
 	c.Mod = mod
 }
 
+// GetMod implements HclResource
+func (c *Control) GetMod() *Mod {
+	return c.Mod
+}
+
+// GetDeclRange implements HclResource
+func (c *Control) GetDeclRange() *hcl.Range {
+	return &c.DeclRange
+}
+
 // GetMetadata implements ResourceWithMetadata
 func (c *Control) GetMetadata() *ResourceMetadata {
 	return c.metadata

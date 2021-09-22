@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/parse"
 )
 
+// LoadVariables loads the workspace mod, only processing variables blocks
 func LoadVariables(workspacePath string, opts *parse.ParseModOptions) (variables map[string]*modconfig.Variable, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -25,15 +26,14 @@ func LoadVariables(workspacePath string, opts *parse.ParseModOptions) (variables
 		return nil, fmt.Errorf("source folder %s does not exist", workspacePath)
 	}
 
-	// now parse the mod, passing the pseudo resources
-	// load the raw data
+	// now parse the mod
 	mod, err := parseMod(workspacePath, nil, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO look into naming consistency
-	// TACTICAL - as the tf derived code builds a map keyes by the short variable name, do the same
+	// TACTICAL - as the tf derived code builds a map keyed by the short variable name, do the same
 	res := make(map[string]*modconfig.Variable)
 	for k, v := range mod.Variables {
 		name := strings.Split(k, ".")[1]

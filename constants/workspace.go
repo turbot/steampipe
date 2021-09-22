@@ -6,8 +6,8 @@ import (
 
 // mod related constants
 const (
-	WorkspaceModDir         = "mods"
 	WorkspaceDataDir        = ".steampipe"
+	WorkspaceModDir         = "mods"
 	WorkspaceConfigFileName = "workspace.spc"
 	WorkspaceIgnoreFile     = ".steampipeignore"
 	WorkspaceDefaultModName = "local"

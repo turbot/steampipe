@@ -195,6 +195,16 @@ func (q *Query) SetMod(mod *Mod) {
 	q.Mod = mod
 }
 
+// GetMod implements HclResource
+func (q *Query) GetMod() *Mod {
+	return q.Mod
+}
+
+// GetDeclRange implements HclResource
+func (q *Query) GetDeclRange() *hcl.Range {
+	return &q.DeclRange
+}
+
 // GetParams implements PreparedStatementProvider
 func (q *Query) GetParams() []*ParamDef {
 	return q.Params

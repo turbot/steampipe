@@ -46,5 +46,9 @@ func (r *Requires) Initialise() hcl.Diagnostics {
 		moreDiags := p.Initialise()
 		diags = append(diags, moreDiags...)
 	}
+	for _, m := range r.Mods {
+		moreDiags := m.Initialise()
+		diags = append(diags, moreDiags...)
+	}
 	return diags
 }

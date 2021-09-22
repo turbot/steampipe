@@ -59,7 +59,17 @@ func (l *Local) SetMod(mod *Mod) {
 	l.Mod = mod
 }
 
+// GetMod implements HclResource
+func (l *Local) GetMod() *Mod {
+	return l.Mod
+}
+
 // CtyValue implements HclResource
 func (l *Local) CtyValue() (cty.Value, error) {
 	return l.Value, nil
+}
+
+// GetDeclRange implements HclResource
+func (l *Local) GetDeclRange() *hcl.Range {
+	return &l.DeclRange
 }

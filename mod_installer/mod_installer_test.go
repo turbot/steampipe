@@ -1,4 +1,4 @@
-package mod_deps
+package mod_installer
 
 type ModInstaller struct {
 	Workspace Workspace

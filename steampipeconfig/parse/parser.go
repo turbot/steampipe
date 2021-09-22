@@ -116,27 +116,13 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	// maps to store the parse resources
 	var mod *modconfig.Mod
 
-	// 1) get names of all resources defined in hcl which may also be created as pseudo resources
-	hclResources := make(map[string]bool)
-
-	for _, block := range content.Blocks {
-		// if this is a mod, build a shell mod struct (with just the name populated)
-		switch block.Type {
-		case modconfig.BlockTypeMod:
-			// if there is more than one mod, fail
-			if mod != nil {
-				return nil, fmt.Errorf("more than 1 mod definition found in %s", modPath)
-			}
-			mod = modconfig.NewMod(block.Labels[0], modPath, block.DefRange)
-		case modconfig.BlockTypeQuery:
-			// for any mappable resource, store the resource name
-			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
-			hclResources[name] = true
-		}
-		// TODO PANEL
+	// get names of all resources defined in hcl which may also be created as pseudo resources
+	hclResources, mod, err := loadShellModAndMappableResourceNames(modPath, content, mod)
+	if err != nil {
+		return nil, err
 	}
 
-	// 2) create mod if needed
+	// create mod if needed
 	if mod == nil {
 		// should we create a default mod?
 		if !opts.CreateDefaultMod() {
@@ -147,7 +133,61 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		mod = modconfig.CreateDefaultMod(modPath)
 	}
 
-	// 3) add pseudo resources to the mod
+	// add pseudo resources to the mod
+	addPseudoResourcesToMod(pseudoResources, hclResources, mod)
+
+	// TODO not lovely that we set this in 2 places - here and LoadMod
+	// if we have not set the root mod, this must be the root mod
+	// (this is only needed if we are loading the workspace definition or variables
+	// - if this is being called from LoadMod the RootMod will already be set)
+	if opts.RootMod == nil {
+		opts.RootMod = mod
+	}
+	// if we do not already have one, create run context to handle dependency resolution
+	if opts.RunCtx == nil {
+		runCtx, diags := NewRunContext(opts.RootMod, content, fileData, opts.Variables)
+		if diags.HasErrors() {
+			return nil, plugin.DiagsToError("Failed to create run context", diags)
+		}
+		opts.RunCtx = runCtx
+	}
+
+	// set the current mod
+	opts.RunCtx.CurrentMod = mod
+	// add this mod to run context
+	opts.RunCtx.AddMod(mod)
+
+	// perform initial decode to get dependencies
+	// (if there are no depdnencies, this is all that is needed)
+	diags = decode(opts)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
+	}
+
+	// if eval is not complete, there must be dependencies - run again in dependency order
+	// (no need to do anything else here, this should be handled when building the eval context)
+	if !opts.RunCtx.EvalComplete() {
+		diags = decode(opts)
+		if diags.HasErrors() {
+			return nil, plugin.DiagsToError("Failed to parse all mod hcl files", diags)
+		}
+
+		// we failed to resolve dependencies
+		if !opts.RunCtx.EvalComplete() {
+			return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", opts.RunCtx.FormatDependencies())
+		}
+	}
+
+	// now tell mod to build tree of controls.
+	// NOTE: this also builds the sorted benchmark list
+	if err := mod.BuildResourceTree(); err != nil {
+		return nil, err
+	}
+
+	return mod, nil
+}
+
+func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclResources map[string]bool, mod *modconfig.Mod) {
 	var duplicates []string
 	for _, r := range pseudoResources {
 		// is there a hcl resource with the same name as this pseudo resource - it takes precedence
@@ -164,40 +204,30 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	if len(duplicates) > 0 {
 		log.Printf("[TRACE] %d files were not converted into resources as hcl resources of same name are defined: %v", len(duplicates), duplicates)
 	}
+}
 
-	// create run context to handle dependency resolution
-	runCtx, diags := NewRunContext(mod, content, fileData, opts.Variables)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to create run context", diags)
-	}
+// get names of all resources defined in hcl which may also be created as pseudo resources
+// if we find a mod block, build a shell mod
+func loadShellModAndMappableResourceNames(modPath string, content *hcl.BodyContent, mod *modconfig.Mod) (map[string]bool, *modconfig.Mod, error) {
+	hclResources := make(map[string]bool)
 
-	// perform initial decode to get dependencies
-	diags = decode(runCtx, opts)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
-	}
-
-	// if eval is not complete, there must be dependencies - run again in dependency order
-	// (no need to do anything else here, this should be handled when building the eval context)
-	if !runCtx.EvalComplete() {
-		diags = decode(runCtx, opts)
-		if diags.HasErrors() {
-			return nil, plugin.DiagsToError("Failed to parse all mod hcl files", diags)
+	for _, block := range content.Blocks {
+		// if this is a mod, build a shell mod struct (with just the name populated)
+		switch block.Type {
+		case modconfig.BlockTypeMod:
+			// if there is more than one mod, fail
+			if mod != nil {
+				return nil, nil, fmt.Errorf("more than 1 mod definition found in %s", modPath)
+			}
+			mod = modconfig.NewMod(block.Labels[0], modPath, block.DefRange)
+		case modconfig.BlockTypeQuery:
+			// for any mappable resource, store the resource name
+			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
+			hclResources[name] = true
 		}
-
-		// we failed to resolve dependencies
-		if !runCtx.EvalComplete() {
-			return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", runCtx.FormatDependencies())
-		}
+		// TODO PANEL
 	}
-
-	// now tell mod to build tree of controls.
-	// NOTE: this also builds the sorted benchmark list
-	if err := mod.BuildResourceTree(); err != nil {
-		return nil, err
-	}
-
-	return mod, nil
+	return hclResources, mod, nil
 }
 
 // ParseModResourceNames parses all source hcl files for the mod path and associated resources,

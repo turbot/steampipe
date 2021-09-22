@@ -94,9 +94,19 @@ func (v *Variable) SetMod(mod *Mod) {
 	v.Mod = mod
 }
 
+// GetMod implements HclResource
+func (v *Variable) GetMod() *Mod {
+	return v.Mod
+}
+
 // CtyValue implements HclResource
 func (v *Variable) CtyValue() (cty.Value, error) {
 	return v.Default, nil
+}
+
+// GetDeclRange implements HclResource
+func (v *Variable) GetDeclRange() *hcl.Range {
+	return &v.DeclRange
 }
 
 // Required returns true if this variable is required to be set by the caller,

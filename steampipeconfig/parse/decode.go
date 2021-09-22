@@ -23,7 +23,8 @@ var missingVariableErrors = []string{
 	"Missing map element",
 }
 
-func decode(runCtx *RunContext, opts *ParseModOptions) hcl.Diagnostics {
+func decode(opts *ParseModOptions) hcl.Diagnostics {
+	runCtx := opts.RunCtx
 	var diags hcl.Diagnostics
 
 	// build list of blocks to decode
@@ -132,7 +133,7 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResourc
 	switch block.Type {
 	case modconfig.BlockTypeMod:
 		// runCtx already contains the shell mod
-		resource = runCtx.Mod
+		resource = runCtx.RootMod
 	case modconfig.BlockTypeQuery:
 		resource = modconfig.NewQuery(block)
 	case modconfig.BlockTypeControl:
@@ -537,11 +538,18 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
 			diags = addResourceMetadata(resource, block, runCtx, diags, resourceWithMetadata)
 		}
-		// add resource into the run context
-		moreDiags := runCtx.AddResource(resource, block)
-		if moreDiags.HasErrors() {
+
+		// if resource is not a mod,  set mod pointer on hcl resource
+		if _, ok := resource.(*modconfig.Mod); !ok {
+			resource.SetMod(runCtx.CurrentMod)
+			// add resource to mod - this will fail if the mod already has a resource with the same name
+			moreDiags := runCtx.CurrentMod.AddResource(resource)
 			diags = append(diags, moreDiags...)
 		}
+		// add resource into the run context
+		moreDiags := runCtx.AddResource(resource, runCtx.RootMod)
+		diags = append(diags, moreDiags...)
+
 	} else {
 		if res.Diags.HasErrors() {
 			diags = append(diags, res.Diags...)
@@ -556,7 +564,7 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 }
 
 func addResourceMetadata(resource modconfig.HclResource, block *hcl.Block, runCtx *RunContext, diags hcl.Diagnostics, resourceWithMetadata modconfig.ResourceWithMetadata) hcl.Diagnostics {
-	metadata, err := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.Mod)
+	metadata, err := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.RootMod)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,

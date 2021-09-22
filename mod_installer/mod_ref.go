@@ -1,4 +1,4 @@
-package mod_deps
+package mod_installer
 
 import (
 	"fmt"
