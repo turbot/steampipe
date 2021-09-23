@@ -24,19 +24,10 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      - uses: google-github-actions/setup-gcloud@v0.2.1
-        with:
-          service_account_key: ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
-          project_id: ${{ env.PROJECT_ID }}
-
-      - run: gcloud config list
-
-      - run: gcloud components install beta
-
-      - name: Upload rpm and deb packages to artifact registry
-        run: |
-          gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm
-          gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb
+      # - uses: google-github-actions/setup-gcloud@v0.2.1
+      #   with:
+      #     service_account_key: ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
+      #     project_id: ${{ env.PROJECT_ID }}
 
       # - name: Unshallow
       #   run: git fetch
@@ -80,16 +71,23 @@ jobs:
       #     path: ~/artifacts/darwin.zip
       #     if-no-files-found: error
 
-      # - name: Setup GCP application credentials and install gcloud CLI
-      #   env:
-      #     GCP_APPLICATION_CREDENTIALS: ${{secrets.STEAMPIPE_REGISTRY_SA_KEY}}
-      #   run: |
-      #     echo "$GCP_APPLICATION_CREDENTIALS"
-      #     echo "$GCP_APPLICATION_CREDENTIALS" > /tmp/gcp-application-creds.json
-      #     cat /tmp/gcp-application-creds.json
-      #     curl https://sdk.cloud.google.com | sh
-      #     gcloud config set project steampipe
-      #     gcloud auth activate-service-account --key-file /tmp/gcp-application-creds.json
+      - name: Setup GCP application credentials and install gcloud CLI
+        env:
+          GCP_APPLICATION_CREDENTIALS: ${{secrets.STEAMPIPE_REGISTRY_SA_KEY}}
+        run: |
+          echo "$GCP_APPLICATION_CREDENTIALS" > /tmp/gcp-application-creds.json
+          curl https://sdk.cloud.google.com | sh
+          gcloud config set project steampipe
+          gcloud auth activate-service-account --key-file /tmp/gcp-application-creds.json
+
+      - run: gcloud config list
+
+      - run: gcloud components install beta
+
+      - name: Upload rpm and deb packages to artifact registry
+        run: |
+          gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm
+          gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb
 
   # acceptance_test:
   #   name: Acceptance tests
