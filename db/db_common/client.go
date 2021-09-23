@@ -9,6 +9,8 @@ import (
 	"github.com/turbot/steampipe/schema"
 )
 
+type EnsureSessionStateCallback = func(context.Context, Client) error
+
 type Client interface {
 	Close() error
 	LoadSchema()
@@ -25,6 +27,8 @@ type Client interface {
 	CacheOn() error
 	CacheOff() error
 	CacheClear() error
+
+	SetEnsureSessionStateFunc(EnsureSessionStateCallback)
 
 	// remote client will have empty implementation
 
