@@ -76,7 +76,7 @@ jobs:
           GCP_APPLICATION_CREDENTIALS: ${{secrets.STEAMPIPE_REGISTRY_SA_KEY}}
         run: |
           echo "$GCP_APPLICATION_CREDENTIALS" > /tmp/gcp-application-creds.json
-          curl https://sdk.cloud.google.com | sh
+          curl https://sdk.cloud.google.com
           gcloud config set project steampipe
           gcloud auth activate-service-account --key-file /tmp/gcp-application-creds.json
 
