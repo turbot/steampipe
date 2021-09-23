@@ -168,19 +168,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup gcloud CLI
-        uses: google-github-actions/setup-gcloud@v0.2.0
-        with:
-          service_account_key: ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
-          project_id: ${{ env.PROJECT_ID }}
+      - name: Setup GCP application credentials and install gcloud CLI
+        env:
+          GCP_APPLICATION_CREDENTIALS: ${{secrets.STEAMPIPE_REGISTRY_SA_KEY}}
+        run: |
+          echo "$GCP_APPLICATION_CREDENTIALS" | base64 --decode > /tmp/gcp-application-creds.json
+          curl https://sdk.cloud.google.com
+          gcloud config set project steampipe
+          gcloud auth activate-service-account --key-file /tmp/gcp-application-creds.json
 
       - run: gcloud config list
 
       - run: gcloud components install beta
-
-      - run: gcloud components install alpha --quiet
-
-      - run: gcloud config set project steampipe
 
       - name: Upload rpm and deb packages to artifact registry
         run: |
