@@ -107,62 +107,6 @@ func (i *ModInstaller) installModDependenciesRecursively(mod *modconfig.Mod, dep
 	return utils.CombineErrorsWithPrefix(fmt.Sprintf("%d dependencies failed to install", len(errors)), errors...)
 }
 
-//func (i *ModInstaller) GatherDependencies(modRef *ResolvedModRef, dependencyMap map[string]*ResolvedModRef) error {
-//
-//	modRequires, err := i.GetModRequires(modRef)
-//	if err != nil {
-//		return err
-//	}
-//	if modRequires == nil {
-//		return nil
-//	}
-//
-//	if err := modRequires.ValidateSteampipeVersion(modRef.Name); err != nil {
-//		return err
-//	}
-//
-//	var errors []error
-//	// for each dependency see whether it is already satisfied
-//	for _, dep := range modRequires.Mods {
-//
-//		// have we already identified a dependency for this mod see if it satisfies this requirement
-//		if modRef, ok := dependencyMap[dep.Name]; ok {
-//			if modRef.Version.GreaterThanOrEqual(dep.VersionConstraint) {
-//				continue
-//			}
-//		}
-//		// so either this dependency is not in the dependency map
-//		// or the version in the map does not satisfy the requirement
-//		// see if we can add this version (this checks replacements and workspace lock)
-//		resolvedRef, err := i.GetModRefForVersion(dep)
-//		if err != nil {
-//			errors = append(errors, fmt.Errorf("dependency %s %s cannot be satisfied: %s", dep.Name, dep.VersionString, err.Error()))
-//			continue
-//		}
-//		dependencyMap[dep.Name] = resolvedRef
-//
-//		// gather dependencies for this dep
-//		if err := i.GatherDependencies(resolvedRef, dependencyMap); err != nil {
-//			errors = append(errors, err)
-//		}
-//
-//	}
-//	return utils.CombineErrors(errors...)
-//}
-
-//func (i *ModInstaller) GetModRequires(modRef *ResolvedModRef) (*modconfig.Requires, error) {
-//	modPath, err := i.installDependency(modRef, nil)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	m, err := parse.ParseModDefinition(modPath)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return m.Requires, nil
-//}
-
 func (i *ModInstaller) GetModRefForVersion(modVersion *modconfig.ModVersion) (*ResolvedModRef, error) {
 
 	// TODO check whether the lock file contains this dependency and if so
@@ -234,8 +178,8 @@ func (i *ModInstaller) installDependencyFromGit(dependency *ResolvedModRef, inst
 	_, err := git.PlainClone(installPath,
 		false,
 		&git.CloneOptions{
-			URL:           gitUrl,
-			Progress:      os.Stdout,
+			URL: gitUrl,
+			//Progress:      os.Stdout,
 			ReferenceName: dependency.GitReference,
 			Depth:         1,
 			SingleBranch:  true,
