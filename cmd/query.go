@@ -18,10 +18,8 @@ import (
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/interactive"
-	"github.com/turbot/steampipe/mod_installer"
 	"github.com/turbot/steampipe/query/queryexecute"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -184,16 +182,6 @@ func getPipedStdinData() string {
 
 func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspace, error) {
 	workspacePath := viper.GetString(constants.ArgWorkspace)
-	// HACK
-	// install workspace dependencies
-	// load the modfile only
-	// TODO do we need to care about variables?? probably?
-	mod, err := parse.ParseModDefinition(workspacePath)
-	if err != nil {
-		return nil, err
-	}
-	installer := mod_installer.NewModInstaller(workspacePath)
-	installer.InstallModDependencies(mod)
 
 	w, err := workspace.Load(workspacePath)
 	if err == nil {

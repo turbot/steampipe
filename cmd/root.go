@@ -146,6 +146,7 @@ func AddCommands() {
 		queryCmd(),
 		checkCmd(),
 		serviceCmd(),
+		installCmd(),
 		generateCompletionScriptsCmd(),
 	)
 }
