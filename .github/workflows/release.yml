@@ -12,6 +12,7 @@ on:
 env:
   PROJECT_ID: steampipe
   STEAMPIPE_UPDATE_CHECK: false
+  GCP_APPLICATION_CREDENTIALS: ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
 
 jobs:
   goreleaser:
@@ -26,7 +27,7 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v0.2.1
         with:
-          service_account_key: ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
+          service_account_key: ${{ env.GCP_APPLICATION_CREDENTIALS }}
           project_id: ${{ env.PROJECT_ID }}
 
       - run: gcloud config list
