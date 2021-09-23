@@ -48,8 +48,8 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 	// make map of resource name to create SQL
 	sqlMap := make(map[string]string)
 	for name, query := range resourceMaps.Queries {
-		// query map contains long and short names for queries - avoid dupes
-		if !strings.HasPrefix(name, "query.") {
+		// query map contains long and short names for queries - only use long names
+		if strings.HasPrefix(name, "query.") {
 			continue
 		}
 
@@ -60,8 +60,8 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 	}
 
 	for name, control := range resourceMaps.Controls {
-		// query map contains long and short names for controls - avoid dupes
-		if !strings.HasPrefix(name, "control.") {
+		// query map contains long and short names for controls - only use long names
+		if strings.HasPrefix(name, "control.") {
 			continue
 		}
 		// only create prepared statements for controls with inline SQL

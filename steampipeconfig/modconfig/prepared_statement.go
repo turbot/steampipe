@@ -36,7 +36,7 @@ func preparedStatementName(source PreparedStatementProvider) string {
 		suffix = preparesStatementControlSuffix
 	}
 	// build the hash from the query/control name, mod name and suffix and take the first 4 bytes
-	str := fmt.Sprintf("%s%s%s", source.Name(), source.ModName(), suffix)
+	str := fmt.Sprintf("%s%s%s", prefix, name, suffix)
 	hash := utils.GetMD5Hash(str)[:4]
 	// add hash to suffix
 	suffix += hash

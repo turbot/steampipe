@@ -32,6 +32,7 @@ func (b unresolvedBlock) String() string {
 type ReferenceTypeValueMap map[string]map[string]cty.Value
 
 type RunContext struct {
+	// we only store the root mod so we can tell whether a given mod should be treated as "local"
 	RootMod          *modconfig.Mod
 	CurrentMod       *modconfig.Mod
 	UnresolvedBlocks map[string]*unresolvedBlock
@@ -45,23 +46,15 @@ type RunContext struct {
 	blocks  hcl.Blocks
 }
 
-func NewRunContext(content *hcl.BodyContent, fileData map[string][]byte, inputVariables map[string]cty.Value) *RunContext {
+func NewRunContext() *RunContext {
 	c := &RunContext{
-		FileData:         fileData,
 		UnresolvedBlocks: make(map[string]*unresolvedBlock),
 		referenceValues: map[string]ReferenceTypeValueMap{
 			"local": make(ReferenceTypeValueMap),
 		},
-		blocks: content.Blocks,
 	}
 	// add root node - this will depend on all other nodes
 	c.dependencyGraph = c.newDependencyGraph()
-
-	// add steampipe variables to the local variables
-	if inputVariables != nil {
-		// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
-		c.referenceValues["local"]["var"] = inputVariables
-	}
 
 	// add enums to the variables which may be referenced from within the hcl
 	c.addSteampipeEnums()
@@ -69,14 +62,26 @@ func NewRunContext(content *hcl.BodyContent, fileData map[string][]byte, inputVa
 	return c
 }
 
-// AddMod is used to add a mod with any resources to the eval context
+func (c *RunContext) AddVariables(inputVariables map[string]cty.Value) {
+	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
+	c.referenceValues["local"]["var"] = inputVariables
+}
+
+// AddMod is used to add a mod with any pseudo resources to the eval context
 // - in practice this will be a shell mod with just pseudo resources - other resources will be added as they are parsed
-func (c *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
-	// if no root mod is set, set it now
+func (c *RunContext) AddMod(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[string][]byte) hcl.Diagnostics {
+	if len(c.UnresolvedBlocks) > 0 {
+		// should never happen
+		panic("calling SetContent on runContext but there are unresolved blocks from a previous parse")
+	}
+	// if root mod is not set, set it now
+	// NOTE this will only be called for LoadVariables which does not set RootMod
 	if c.RootMod == nil {
 		c.RootMod = mod
 	}
 	c.CurrentMod = mod
+	c.FileData = fileData
+	c.blocks = content.Blocks
 
 	var diags hcl.Diagnostics
 
@@ -275,11 +280,6 @@ func (c *RunContext) ctyMapToEvalContext() *hcl.EvalContext {
 
 // AddResource stores this resource as a variable to be added to the eval context. It alse
 func (c *RunContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics {
-	// if this is a mod and we have no root mod, we must be loading a mod defintion - set it now
-	if mod, ok := resource.(*modconfig.Mod); ok && c.RootMod == nil {
-		c.RootMod = mod
-	}
-
 	diagnostics := c.storeResourceInCtyMap(resource)
 	if diagnostics.HasErrors() {
 		return diagnostics

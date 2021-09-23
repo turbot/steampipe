@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	filehelpers "github.com/turbot/go-kit/files"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
@@ -100,10 +102,8 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 	}
 
 	// create parse options
-	opts := &ParseModOptions{
-		RunCtx: NewRunContext(content, fileData, nil),
-	}
-	opts.RunCtx.AddMod(mod)
+	opts := NewParseModOptions(0, &filehelpers.ListOptions{})
+	opts.RunCtx.AddMod(mod, content, fileData)
 
 	// now decode
 	diags = decode(opts)
@@ -189,13 +189,8 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	// add pseudo resources to the mod
 	addPseudoResourcesToMod(pseudoResources, hclResources, mod)
 
-	// if we do not already have one, create run context to handle dependency resolution
-	if opts.RunCtx == nil {
-		opts.RunCtx = NewRunContext(content, fileData, opts.Variables)
-	}
-
 	// add this mod to run context - this it to ensure all pseudo resources get added
-	opts.RunCtx.AddMod(mod)
+	opts.RunCtx.AddMod(mod, content, fileData)
 
 	// perform initial decode to get dependencies
 	// (if there are no dependencies, this is all that is needed)
