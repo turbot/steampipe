@@ -10,8 +10,6 @@ on:
         required: true
 
 env:
-  YUM_REPO: us-yum.pkg.dev/steampipe/steampipe-yum-repo
-  APT_REPO: us-apt.pkg.dev/steampipe/steampipe-apt-repo
   STEAMPIPE_UPDATE_CHECK: false
 
 jobs:
@@ -170,15 +168,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@v0.2.0
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v0.2.0
         with:
           service_account_key: ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
           project_id: ${{ env.PROJECT_ID }}
-
-      - run: gcloud config list
-
-      - run: gcloud components install beta
+        run: |
+          gcloud config list
+          gcloud components install beta
+          gcloud auth login
+          gcloud config set account steampipe
 
       - name: Upload rpm and deb packages to artifact registry
         run: |
