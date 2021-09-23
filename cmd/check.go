@@ -241,19 +241,13 @@ func initialiseCheck() *checkInitData {
 	}
 	initData.result.AddWarnings(refreshResult.Warnings...)
 
-	// create the prepared statements
-	err = db_common.CreatePreparedStatements(ctx, initData.workspace.GetResourceMaps(), initData.client)
-	if err != nil {
-		initData.result.Error = err
-		return initData
-	}
+	// setup the session
+	workspace.EnsureServiceState(context.Background(), initData.workspace.GetResourceMaps(), initData.client)
 
-	// populate the introspection tables
-	err = db_common.CreateIntrospectionTables(ctx, initData.workspace.GetResourceMaps(), initData.client)
-	if err != nil {
-		initData.result.Error = err
-		return initData
-	}
+	// register as callback to use when reconnection or errors occur
+	initData.client.SetEnsureSessionStateFunc(func(ctx context.Context, client db_common.Client) error {
+		return workspace.EnsureServiceState(ctx, initData.workspace.GetResourceMaps(), client)
+	})
 
 	return initData
 }

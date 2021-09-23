@@ -199,7 +199,7 @@ func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
 	return workspace.Load(viper.GetString(constants.ArgWorkspace))
 }
 
-func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, initDataChan chan *db_common.QueryInitData, args []string) {
+func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initDataChan chan *db_common.QueryInitData, args []string) {
 	go func() {
 		utils.LogTime("cmd.getQueryInitDataAsync start")
 		defer utils.LogTime("cmd.getQueryInitDataAsync end")
@@ -227,14 +227,14 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 		initData.Client = client
 
 		// check if the required plugins are installed
-		if err := workspace.CheckRequiredPluginsInstalled(); err != nil {
+		if err := w.CheckRequiredPluginsInstalled(); err != nil {
 			initData.Result.Error = err
 			return
 		}
-		initData.Workspace = workspace
+		initData.Workspace = w
 
 		// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-		queries, preparedStatementProviders, err := workspace.GetQueriesFromArgs(args)
+		queries, preparedStatementProviders, err := w.GetQueriesFromArgs(args)
 		if err != nil {
 			initData.Result.Error = err
 			return
@@ -246,19 +246,8 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 		// if no queries were provided on commandline, we will be running an interactive session
 		// so create prepared statements for all controls and queries in the workspace
 		if len(queries) == 0 {
-			preparedStatementProviders = workspace.GetResourceMaps()
+			preparedStatementProviders = w.GetResourceMaps()
 		}
-
-		log.Printf("[TRACE] creating prepared statements")
-		utils.LogTime("getQueryInitDataAsync CreatePreparedStatements")
-
-		err = db_common.CreatePreparedStatements(context.Background(), preparedStatementProviders, initData.Client)
-		if err != nil {
-			initData.Result.Error = err
-			return
-		}
-
-		utils.LogTime("getQueryInitDataAsync finished CreatePreparedStatements")
 
 		res := client.RefreshConnectionAndSearchPaths()
 		if res.Error != nil {
@@ -267,11 +256,13 @@ func getQueryInitDataAsync(ctx context.Context, workspace *workspace.Workspace, 
 		}
 		initData.Result.AddWarnings(res.Warnings...)
 
-		// populate the introspection tables
-		if err = db_common.CreateIntrospectionTables(ctx, workspace.GetResourceMaps(), client); err != nil {
-			initData.Result.Error = err
-			return
-		}
+		// setup for the first time
+		workspace.EnsureServiceState(context.Background(), preparedStatementProviders, initData.Client)
+
+		// register as callback to use when reconnection or errors occur
+		initData.Client.SetEnsureSessionStateFunc(func(ctx context.Context, client db_common.Client) error {
+			return workspace.EnsureServiceState(ctx, preparedStatementProviders, client)
+		})
 	}()
 }
 
