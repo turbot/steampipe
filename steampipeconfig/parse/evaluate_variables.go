@@ -1,40 +1,36 @@
-package workspace
+package parse
 
 import (
 	"fmt"
 	"sort"
+	"strings"
+
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
-	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/input_vars"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
-func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
-	opts := parse.NewParseModOptions(parse.CreateDefaultMod, &filehelpers.ListOptions{
-		// listFlag specifies whether to load files recursively
-		Flags:   w.listFlag,
-		Exclude: w.exclusions,
-	})
-
-	variableMap, err := steampipeconfig.LoadVariables(w.Path, opts)
-	if err != nil {
-		return nil, err
+func EvaluateVariables(m *modconfig.Mod) error {
+	// TACTICAL - as the tf derived code builds a map keyed by the short variable name, do the same
+	variableMap := make(map[string]*modconfig.Variable)
+	for k, v := range m.Variables {
+		name := strings.Split(k, ".")[1]
+		variableMap[name] = v
 	}
 
 	// if there is a steampipe variables file, load it
-	inputVariables, err := w.getInputVariables(variableMap)
+	inputVariables, err := getInputVariables(variableMap, m.ModPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := validateVariables(variableMap, inputVariables); err != nil {
-		return nil, err
+		return err
 	}
 
 	// now update the variables map with the input values
@@ -46,14 +42,15 @@ func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
 			inputValue.SourceRange)
 	}
 
-	return variableMap, nil
+	// as the variables are stored by pointer, the mod variables map has been updated too
+	return nil
 }
 
-func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable) (input_vars.InputValues, error) {
+func getInputVariables(variableMap map[string]*modconfig.Variable, modPath string) (input_vars.InputValues, error) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
-	inputValuesUnparsed, diags := input_vars.CollectVariableValues(w.Path, variableFileArgs, variableArgs)
+	inputValuesUnparsed, diags := input_vars.CollectVariableValues(modPath, variableFileArgs, variableArgs)
 	if diags.HasErrors() {
 		return nil, diags.Err()
 	}
@@ -107,5 +104,13 @@ func identifyMissingVariables(existing map[string]input_vars.UnparsedVariableVal
 		return modconfig.MissingVariableError{MissingVariables: needed}
 	}
 	return nil
+}
 
+// VariableValueMap converts Variables map into cty value map
+func VariableValueMap(variableMap map[string]*modconfig.Variable) map[string]cty.Value {
+	ret := make(map[string]cty.Value, len(variableMap))
+	for k, v := range variableMap {
+		ret[k] = v.Value
+	}
+	return ret
 }

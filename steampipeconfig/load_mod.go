@@ -61,9 +61,27 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 		}
 	}
 
-	// now parse the mod, passing the pseudo resources
-	// load the raw data
-	mod, err = loadAndParseModData(modPath, pseudoResources, opts)
+	// if inclusions are not already set, build list of all filepaths we need to parse/load
+	// NOTE: pseudo resource creation is already handler - we just need to look for .sp files
+	if len(opts.ListOptions.Include) == 0 {
+		opts.ListOptions.Include = filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension})
+	}
+
+	// get the source files
+	sourcePaths, err := getSourcePaths(modPath, opts)
+	if err != nil {
+		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
+		return nil, err
+	}
+
+	// load the raw file data
+	fileData, diags := parse.LoadFileData(sourcePaths...)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to load all mod files", diags)
+	}
+
+	// parse all hcl files.
+	mod, err = parse.ParseMod(modPath, fileData, pseudoResources, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -157,32 +175,6 @@ func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder s
 
 	return "", nil, fmt.Errorf("mod dependency %s is not installed", modDependency.Name)
 
-}
-
-func loadAndParseModData(modPath string, pseudoResources []modconfig.MappableResource, opts *parse.ParseModOptions) (*modconfig.Mod, error) {
-	// if inclusions are not already set, build list of all filepaths we need to parse/load
-	// NOTE: pseudo resource creation is already handler - we just need to look for .sp files
-	if len(opts.ListOptions.Include) == 0 {
-		opts.ListOptions.Include = filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension})
-	}
-	sourcePaths, err := getSourcePaths(modPath, opts)
-	if err != nil {
-		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
-		return nil, err
-	}
-
-	fileData, diags := parse.LoadFileData(sourcePaths...)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load all mod files", diags)
-	}
-
-	// parse all hcl files.
-	mod, err := parse.ParseMod(modPath, fileData, pseudoResources, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	return mod, err
 }
 
 // LoadModResourceNames parses all hcl files in modPath and returns the names of all resources

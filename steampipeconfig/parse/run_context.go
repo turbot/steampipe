@@ -274,7 +274,7 @@ func (c *RunContext) ctyMapToEvalContext() *hcl.EvalContext {
 	//create evaluation context
 	return &hcl.EvalContext{
 		Variables: variables,
-		Functions: ContextFunctions(c.RootMod.FilePath),
+		Functions: ContextFunctions(c.RootMod.ModPath),
 	}
 }
 
@@ -339,7 +339,7 @@ func (c *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	mod := c.CurrentMod
 
 	modName := mod.ShortName
-	if mod.FilePath == c.RootMod.FilePath {
+	if mod.ModPath == c.RootMod.ModPath {
 		modName = "local"
 	}
 	variablesForMod, ok := c.referenceValues[modName]

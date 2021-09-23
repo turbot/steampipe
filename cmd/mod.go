@@ -64,6 +64,7 @@ func runModInstallCmd(*cobra.Command, []string) {
 	// load the modfile only
 	mod, err := parse.ParseModDefinition(workspacePath)
 	utils.FailOnError(err)
+
 	installer := mod_installer.NewModInstaller(workspacePath)
 	err = installer.InstallModDependencies(mod)
 	fmt.Println(installer.InstallReport())
