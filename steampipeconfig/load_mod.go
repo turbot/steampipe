@@ -41,6 +41,11 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 		return nil, err
 	}
 
+	// if the RunContext does not have a root mod set, we must be the top of the mod tree - set it now
+	if opts.RunCtx.RootMod == nil {
+		opts.RunCtx.RootMod = mod
+	}
+
 	// first load the mod dependencies
 	if err := loadModDependencies(mod, opts); err != nil {
 		return nil, err
@@ -63,11 +68,7 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 		return nil, err
 	}
 
-	// update loaded mods
-	// TODO this is wrong - need modPath??
-	opts.LoadedMods[mod.Name()] = mod
-
-	return
+	return mod, err
 }
 
 func loadModDependencies(mod *modconfig.Mod, opts *parse.ParseModOptions) error {
@@ -75,8 +76,9 @@ func loadModDependencies(mod *modconfig.Mod, opts *parse.ParseModOptions) error 
 	var errors []error
 	if mod.Requires != nil {
 		for _, dependencyMod := range mod.Requires.Mods {
+			// TODO sort out name of loaded mods
 			// have we already loaded a mod which satisfied this
-			if loadedMod, ok := opts.LoadedMods[dependencyMod.Name]; ok {
+			if loadedMod, ok := opts.LoadedDependencyMods[dependencyMod.Name]; ok {
 				if loadedMod.Version.GreaterThanOrEqual(dependencyMod.VersionConstraint) {
 					continue
 				}
@@ -118,6 +120,9 @@ func loadModDependency(modDependency *modconfig.ModVersion, opts *parse.ParseMod
 	// set the version and dependency path of the mod
 	mod.Version = version
 	mod.ModDependencyPath = modDependency.Name
+
+	// update loaded dependency mods
+	opts.LoadedDependencyMods[modDependency.Name] = mod
 
 	return err
 

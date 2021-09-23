@@ -132,8 +132,8 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResourc
 	var resource modconfig.HclResource
 	switch block.Type {
 	case modconfig.BlockTypeMod:
-		// runCtx already contains the shell mod
-		resource = runCtx.RootMod
+		// runCtx already contains the current mod
+		resource = runCtx.CurrentMod
 	case modconfig.BlockTypeQuery:
 		resource = modconfig.NewQuery(block)
 	case modconfig.BlockTypeControl:
@@ -564,7 +564,7 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 }
 
 func addResourceMetadata(resource modconfig.HclResource, block *hcl.Block, runCtx *RunContext, diags hcl.Diagnostics, resourceWithMetadata modconfig.ResourceWithMetadata) hcl.Diagnostics {
-	metadata, err := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.RootMod)
+	metadata, err := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.CurrentMod)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,

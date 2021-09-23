@@ -4,7 +4,6 @@ import (
 	goVersion "github.com/hashicorp/go-version"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/zclconf/go-cty/cty"
 )
 
 type ParseModFlag uint32
@@ -12,7 +11,6 @@ type ParseModFlag uint32
 const (
 	CreateDefaultMod ParseModFlag = 1 << iota
 	CreatePseudoResources
-	LoadDependencies
 )
 
 type InstalledMod struct {
@@ -21,11 +19,10 @@ type InstalledMod struct {
 }
 
 type ParseModOptions struct {
-	Flags               ParseModFlag
-	ListOptions         *filehelpers.ListOptions
-	Variables           map[string]cty.Value
-	LoadedMods          modconfig.ModMap
-	ModInstallationPath string
+	Flags                ParseModFlag
+	ListOptions          *filehelpers.ListOptions
+	LoadedDependencyMods modconfig.ModMap
+	ModInstallationPath  string
 	// if set, only decode these blocks
 	BlockTypes []string
 	RunCtx     *RunContext
@@ -34,9 +31,12 @@ type ParseModOptions struct {
 	//RootMod *modconfig.Mod
 }
 
-func NewParseModOptions() *ParseModOptions {
+func NewParseModOptions(flags ParseModFlag, listOptions *filehelpers.ListOptions) *ParseModOptions {
 	return &ParseModOptions{
-		LoadedMods: make(modconfig.ModMap),
+		Flags:                flags,
+		ListOptions:          listOptions,
+		LoadedDependencyMods: make(modconfig.ModMap),
+		RunCtx:               NewRunContext(),
 	}
 }
 
@@ -46,8 +46,4 @@ func (o *ParseModOptions) CreateDefaultMod() bool {
 
 func (o *ParseModOptions) CreatePseudoResources() bool {
 	return o.Flags&CreatePseudoResources == CreatePseudoResources
-}
-
-func (o *ParseModOptions) LoadDependencies() bool {
-	return o.Flags&LoadDependencies == LoadDependencies
 }

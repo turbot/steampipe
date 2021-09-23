@@ -16,14 +16,12 @@ import (
 )
 
 func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
-	opts := &parse.ParseModOptions{
-		Flags: parse.CreateDefaultMod,
-		ListOptions: &filehelpers.ListOptions{
-			// listFlag specifies whether to load files recursively
-			Flags:   w.listFlag,
-			Exclude: w.exclusions,
-		},
-	}
+	opts := parse.NewParseModOptions(parse.CreateDefaultMod, &filehelpers.ListOptions{
+		// listFlag specifies whether to load files recursively
+		Flags:   w.listFlag,
+		Exclude: w.exclusions,
+	})
+
 	variableMap, err := steampipeconfig.LoadVariables(w.Path, opts)
 	if err != nil {
 		return nil, err
@@ -48,9 +46,6 @@ func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
 			inputValue.SourceRange)
 	}
 
-	// parse all hcl files in the workspace folder (non recursively) and either parse or create a mod
-	// it is valid for 0 or 1 mod to be defined (if no mod is defined, create a default one)
-	// populate mod with all hcl resources we parse
 	return variableMap, nil
 }
 
