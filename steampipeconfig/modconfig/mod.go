@@ -65,8 +65,8 @@ type Mod struct {
 	// list of benchmark names, sorted alphabetically
 	benchmarksOrdered []string
 
-	// FilePath is the installation location of the mod
-	FilePath  string
+	// ModPath is the installation location of the mod
+	ModPath   string
 	DeclRange hcl.Range
 
 	children []ModTreeItem
@@ -84,7 +84,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Panels:     make(map[string]*Panel),
 		Variables:  make(map[string]*Variable),
 		Locals:     make(map[string]*Local),
-		FilePath:   modPath,
+		ModPath:    modPath,
 		DeclRange:  defRange,
 		referencesMap: make(map[ResourceReference]bool),
 		AllResources:  make(map[ResourceReference]HclResource),

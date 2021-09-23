@@ -72,8 +72,9 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 
 	// if there is no mod at this location, return error
 	modFilePath := filepath.Join(modPath, "mod.sp")
-	if _, err := os.Stat(modPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("no mod file found in %s", modPath)
+	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
+		// there is no mod file - just create a default
+		return modconfig.CreateDefaultMod(modPath), nil
 	}
 	fileData, diags := LoadFileData(modFilePath)
 	if diags.HasErrors() {
@@ -200,8 +201,15 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	}
 
 	// if eval is not complete, there must be dependencies - run again in dependency order
-	// (no need to do anything else here, this should be handled when building the eval context)
 	if !opts.RunCtx.EvalComplete() {
+
+		// TODO test for deps
+		// evaluate the variables
+		if err := EvaluateVariables(mod); err != nil {
+			return nil, err
+		}
+		opts.RunCtx.AddVariables(VariableValueMap(mod.Variables))
+
 		diags = decode(opts)
 		if diags.HasErrors() {
 			return nil, plugin.DiagsToError("Failed to parse all mod hcl files", diags)

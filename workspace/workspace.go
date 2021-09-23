@@ -292,6 +292,7 @@ m, err := steampipeconfig.LoadMod(w.Path, opts)
 	w.Benchmarks = w.buildBenchmarkMap(opts.LoadedDependencyMods)
 	w.Reports = w.buildReportMap(opts.LoadedDependencyMods)
 	w.Panels = w.buildPanelMap(opts.LoadedDependencyMods)
+	//w.Variables = w.buildVariableMap(opts.LoadedDependencyMods)
 	// todo what to  key mod map with
 	w.Mods = opts.LoadedDependencyMods
 	// todo what to  key mod map with
