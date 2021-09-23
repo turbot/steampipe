@@ -527,6 +527,113 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 	return diags
 }
 
+//func extractReferences(block *hcl.Block, runCtx *RunContext) (map[string]hcl.Traversal, hcl.Diagnostics) {
+//
+//	res := make(map[string]hcl.Traversal)
+//	for _, attr := range block.a
+//
+//	if !hclsyntax.ValidIdentifier(c.ShortName) {
+//		diags = append(diags, &hcl.Diagnostic{
+//			Severity: hcl.DiagError,
+//			Summary:  "Invalid control name",
+//			Detail:   badIdentifierDetail,
+//			Subject:  &block.LabelRanges[0],
+//		})
+//	}
+//
+//	if attr, exists := content.Attributes["description"]; exists {
+//		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Description)
+//		diags = append(diags, valDiags...)
+//	}
+//	if attr, exists := content.Attributes["documentation"]; exists {
+//		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Documentation)
+//		diags = append(diags, valDiags...)
+//	}
+//	if attr, exists := content.Attributes["search_path"]; exists {
+//		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SearchPath)
+//		diags = append(diags, valDiags...)
+//	}
+//	if attr, exists := content.Attributes["search_path_prefix"]; exists {
+//		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SearchPathPrefix)
+//		diags = append(diags, valDiags...)
+//	}
+//	if attr, exists := content.Attributes["severity"]; exists {
+//		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Severity)
+//		diags = append(diags, valDiags...)
+//	}
+//	if attr, exists := content.Attributes["sql"]; exists {
+//		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SQL)
+//		diags = append(diags, valDiags...)
+//	}
+//	if attr, exists := content.Attributes["query"]; exists {
+//		// either Query or SQL property may be set -  if Query property already set, error
+//		if c.SQL != nil {
+//			diags = append(diags, &hcl.Diagnostic{
+//				Severity: hcl.DiagError,
+//				Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", c.FullName),
+//				Subject:  &attr.Range,
+//			})
+//		} else {
+//			valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Query)
+//			diags = append(diags, valDiags...)
+//		}
+//	}
+//
+//	if attr, exists := content.Attributes["tags"]; exists {
+//		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Tags)
+//		diags = append(diags, valDiags...)
+//	}
+//	if attr, exists := content.Attributes["title"]; exists {
+//		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Title)
+//		diags = append(diags, valDiags...)
+//	}
+//	if attr, exists := content.Attributes["args"]; exists {
+//		if params, diags := decodeControlArgs(attr, runCtx.EvalCtx, c.FullName); !diags.HasErrors() {
+//			c.Args = params
+//		}
+//	}
+//
+//	for _, block := range content.Blocks {
+//		if block.Type == "param" {
+//			// param block cannot be set if a query property is set - it is only valid if inline SQL ids defined
+//			if c.Query != nil {
+//				diags = append(diags, &hcl.Diagnostic{
+//					Severity: hcl.DiagError,
+//					Summary:  fmt.Sprintf("%s has 'query' property set so cannot define param blocks", c.FullName),
+//					Subject:  &block.DefRange,
+//				})
+//			}
+//			if paramDef, valDiags := decodeParam(block, runCtx, c.FullName); !diags.HasErrors() {
+//				c.Params = append(c.Params, paramDef)
+//			} else {
+//				diags = append(diags, valDiags...)
+//			}
+//		}
+//	}
+//
+//	// verify the control has either a query or a sql attribute
+//	if c.Query == nil && c.SQL == nil {
+//		diags = append(diags, &hcl.Diagnostic{
+//			Severity: hcl.DiagError,
+//			Summary:  fmt.Sprintf("%s must define either a 'sql' property or a 'query' property", c.FullName),
+//			Subject:  &block.DefRange,
+//		})
+//	}
+//
+//	// handle any resulting diags, which may specify dependencies
+//	res.handleDecodeDiags(diags)
+//	// call post-decode hook
+//	if res.Success() {
+//		if diags := c.OnDecoded(block); diags.HasErrors() {
+//			res.addDiags(diags)
+//		}
+//		AddReferences(c, block)
+//	}
+//
+//	return c, res
+//
+//}
+
 // handleDecodeResult
 // if decode was successful:
 // - generate and set resource metadata

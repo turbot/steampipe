@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/turbot/steampipe/constants"
 
@@ -64,7 +65,8 @@ MOD INSTA
 */
 
 type ModInstaller struct {
-	ModsDir string
+	ModsDir               string
+	InstalledDependencies []*ResolvedModRef
 }
 
 func NewModInstaller(workspacePath string) *ModInstaller {
@@ -158,8 +160,12 @@ func (i *ModInstaller) installDependency(dependency *ResolvedModRef, dependencyM
 	if err != nil {
 		return err
 	}
-	return i.installModDependenciesRecursively(mod, dependencyMap)
-
+	err = i.installModDependenciesRecursively(mod, dependencyMap)
+	// if we succeeded, update our list
+	if err == nil {
+		i.InstalledDependencies = append(i.InstalledDependencies, dependency)
+	}
+	return err
 }
 
 func (i *ModInstaller) installDependencyFromGit(dependency *ResolvedModRef, installPath string) error {
@@ -186,4 +192,16 @@ func (i *ModInstaller) installDependencyFromGit(dependency *ResolvedModRef, inst
 		})
 
 	return err
+}
+
+func (i *ModInstaller) InstallReport() string {
+	if len(i.InstalledDependencies) == 0 {
+		return "No dependencies installed"
+	}
+	strs := make([]string, len(i.InstalledDependencies))
+	for idx, dep := range i.InstalledDependencies {
+		strs[idx] = dep.FullName()
+	}
+	return fmt.Sprintf("\nInstalled %d dependencies:\n  - %s\n", len(i.InstalledDependencies), strings.Join(strs, "\n  - "))
+
 }

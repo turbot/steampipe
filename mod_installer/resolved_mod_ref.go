@@ -53,6 +53,7 @@ func (r *ResolvedModRef) SetGitReference(modVersion *modconfig.ModVersion) {
 	r.Version = modVersion.VersionConstraint
 }
 
+// FullName returns name in the format <dependency name>@v<dependencyVersion>
 func (r *ResolvedModRef) FullName() string {
 	segments := r.Version.Segments()
 	return fmt.Sprintf("%s@v%d.%d", r.Name, segments[0], segments[1])
