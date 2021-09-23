@@ -21,6 +21,9 @@ func writePasswordFile(password string) error {
 	return ioutil.WriteFile(getPasswordFileLocation(), []byte(password), 0600)
 }
 
+// readPasswordFile reads the password file and returns it contents.
+// the the password file could not be found, then it generates a new
+// password and writes it to the password file, before returning it
 func readPasswordFile() (string, error) {
 	if !helpers.FileExists(getPasswordFileLocation()) {
 		p := generatePassword()
