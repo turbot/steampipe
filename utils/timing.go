@@ -43,6 +43,9 @@ func LogTime(operation string) {
 	Timing = append(Timing, timeLog{time.Now(), elapsed, cumulative, operation})
 }
 
+func Trace(operation string) string { LogTime(fmt.Sprintf("%s start", operation)); return operation }
+func UnTrace(operation string)      { LogTime(fmt.Sprintf("%s end", operation)) }
+
 func DisplayProfileData() {
 	if shouldProfile() {
 		fmt.Println("Timing")
