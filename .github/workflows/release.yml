@@ -180,9 +180,7 @@ jobs:
 
       - run: gcloud components install alpha --quiet
 
-      - run: gcloud auth login
-
-      - run: gcloud config set account steampipe
+      - run: gcloud config set project steampipe
 
       - name: Upload rpm and deb packages to artifact registry
         run: |
