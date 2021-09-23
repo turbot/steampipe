@@ -72,7 +72,7 @@ jobs:
           echo "$GCP_APPLICATION_CREDENTIALS"
           echo "$GCP_APPLICATION_CREDENTIALS" > /tmp/gcp-application-creds.json
           cat /tmp/gcp-application-creds.json
-          curl https://sdk.cloud.google.com
+          curl https://sdk.cloud.google.com | sh
           gcloud config set project steampipe
           gcloud auth activate-service-account --key-file /tmp/gcp-application-creds.json
 
