@@ -35,7 +35,7 @@ jobs:
       - run: gcloud components install beta
 
       - run: |
-          echo "$GCP_APPLICATION_CREDENTIALS" utf-8 --decode > /tmp/gcp-application-creds.json
+          echo "$GCP_APPLICATION_CREDENTIALS" > /tmp/gcp-application-creds.json
           gcloud auth activate-service-account --key-file /tmp/gcp-application-creds.json
 
       - name: Upload rpm and deb packages to artifact registry
