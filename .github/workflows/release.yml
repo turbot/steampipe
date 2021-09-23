@@ -173,11 +173,16 @@ jobs:
         with:
           service_account_key: ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
           project_id: ${{ env.PROJECT_ID }}
-        run: |
-          gcloud config list
-          gcloud components install beta
-          gcloud auth login
-          gcloud config set account steampipe
+
+      - run: gcloud config list
+
+      - run: gcloud components install beta
+
+      - run: gcloud components install alpha --quiet
+
+      - run: gcloud auth login
+
+      - run: gcloud config set account steampipe
 
       - name: Upload rpm and deb packages to artifact registry
         run: |
