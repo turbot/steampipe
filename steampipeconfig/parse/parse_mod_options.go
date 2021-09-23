@@ -31,9 +31,10 @@ type ParseModOptions struct {
 	//RootMod *modconfig.Mod
 }
 
-func NewParseModOptions(flags ParseModFlag, listOptions *filehelpers.ListOptions) *ParseModOptions {
+func NewParseModOptions(flags ParseModFlag, modInstallationPath string, listOptions *filehelpers.ListOptions) *ParseModOptions {
 	return &ParseModOptions{
 		Flags:                flags,
+		ModInstallationPath:  modInstallationPath,
 		ListOptions:          listOptions,
 		LoadedDependencyMods: make(modconfig.ModMap),
 		RunCtx:               NewRunContext(),

@@ -74,8 +74,7 @@ func (c *RunContext) AddMod(mod *modconfig.Mod, content *hcl.BodyContent, fileDa
 		// should never happen
 		panic("calling SetContent on runContext but there are unresolved blocks from a previous parse")
 	}
-	// if root mod is not set, set it now
-	// NOTE this will only be called for LoadVariables which does not set RootMod
+
 	if c.RootMod == nil {
 		c.RootMod = mod
 	}
