@@ -36,17 +36,18 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 		return nil, fmt.Errorf("mod folder %s does not exist", modPath)
 	}
 
+	// load the mod definition to get the dependencies
 	mod, err = parse.ParseModDefinition(modPath)
 	if err != nil {
 		return nil, err
 	}
 
-	// if the RunContext does not have a root mod set, we must be the top of the mod tree - set it now
+	// if the RunContext does not have a root mod set, we must be the top of the mod dependency tree - set it now
 	if opts.RunCtx.RootMod == nil {
 		opts.RunCtx.RootMod = mod
 	}
 
-	// first load the mod dependencies
+	// load the mod dependencies
 	if err := loadModDependencies(mod, opts); err != nil {
 		return nil, err
 	}
@@ -61,14 +62,8 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 		}
 	}
 
-	// if inclusions are not already set, build list of all filepaths we need to parse/load
-	// NOTE: pseudo resource creation is already handler - we just need to look for .sp files
-	if len(opts.ListOptions.Include) == 0 {
-		opts.ListOptions.Include = filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension})
-	}
-
 	// get the source files
-	sourcePaths, err := getSourcePaths(modPath, opts)
+	sourcePaths, err := getSourcePaths(modPath, opts.ListOptions)
 	if err != nil {
 		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
 		return nil, err
@@ -207,10 +202,7 @@ func LoadModResourceNames(modPath string, opts *parse.ParseModOptions) (resource
 		}
 	}
 
-	// build list of all filepaths we need to parse/load
-	// NOTE: pseudo resource creation is handled separately below
-	opts.ListOptions.Include = filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension})
-	sourcePaths, err := getSourcePaths(modPath, opts)
+	sourcePaths, err := getSourcePaths(modPath, opts.ListOptions)
 	if err != nil {
 		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
 		return nil, err
@@ -238,8 +230,8 @@ func GetModFileExtensions() []string {
 // this will include hcl files (with .sp extension)
 // as well as any other files with extensions that have been registered for pseudo resource creation
 // (see steampipeconfig/modconfig/resource_type_map.go)
-func getSourcePaths(modPath string, opts *parse.ParseModOptions) ([]string, error) {
-	sourcePaths, err := filehelpers.ListFiles(modPath, opts.ListOptions)
+func getSourcePaths(modPath string, listOpts *filehelpers.ListOptions) ([]string, error) {
+	sourcePaths, err := filehelpers.ListFiles(modPath, listOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -248,15 +240,14 @@ func getSourcePaths(modPath string, opts *parse.ParseModOptions) ([]string, erro
 
 // create pseudo-resources for any files whose extensions are registered
 func createPseudoResources(modPath string, opts *parse.ParseModOptions) ([]modconfig.MappableResource, error) {
-	// avoid mutating the passed in options
-	prevListIncludeOptions := opts.ListOptions.Include
-	defer func() {
-		opts.ListOptions.Include = prevListIncludeOptions
-	}()
-
+	// create list options to find pseudo resources
+	listOpts := &filehelpers.ListOptions{
+		Flags:   opts.ListOptions.Flags,
+		Include: filehelpers.InclusionsFromExtensions(modconfig.RegisteredFileExtensions()),
+		Exclude: opts.ListOptions.Exclude,
+	}
 	// list all registered files
-	opts.ListOptions.Include = filehelpers.InclusionsFromExtensions(modconfig.RegisteredFileExtensions())
-	sourcePaths, err := getSourcePaths(modPath, opts)
+	sourcePaths, err := getSourcePaths(modPath, listOpts)
 	if err != nil {
 		return nil, err
 	}

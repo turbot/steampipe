@@ -275,7 +275,7 @@ func (w *Workspace) loadWorkspaceMod() error {
 	variableValueMap := modconfig.VariableValueMap(inputVariables)
 
 	// build options used to load workspace
-	opts := w.getLoadModOptions()
+	opts := w.getParseModOptions()
 	// add variables to runcontext
 	opts.RunCtx.AddVariables(w.VariableValueMap())
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
@@ -304,7 +304,7 @@ func (w *Workspace) loadWorkspaceMod() error {
 
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
-func (w *Workspace) getLoadModOptions() *parse.ParseModOptions {
+func (w *Workspace) getParseModOptions() *parse.ParseModOptions {
 	opts := parse.NewParseModOptions(
 		parse.CreatePseudoResources|parse.CreateDefaultMod,
 		w.ModInstallationPath,
@@ -312,6 +312,8 @@ func (w *Workspace) getLoadModOptions() *parse.ParseModOptions {
 			// listFlag specifies whether to load files recursively
 			Flags:   w.listFlag,
 			Exclude: w.exclusions,
+			// only load .sp files
+			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 		})
 	return opts
 }
@@ -326,15 +328,7 @@ func (w *Workspace) VariableValueMap() map[string]cty.Value {
 
 func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
 	// build options used to load workspace
-	// set flags to create pseudo resources and a default mod if needed
-	opts := &parse.ParseModOptions{
-		Flags: parse.CreatePseudoResources | parse.CreateDefaultMod,
-		ListOptions: &filehelpers.ListOptions{
-			// listFlag specifies whether to load files recursively
-			Flags:   w.listFlag,
-			Exclude: w.exclusions,
-		},
-	}
+	opts := w.getParseModOptions()
 
 	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, opts)
 	if err != nil {
