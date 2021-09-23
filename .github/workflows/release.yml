@@ -10,6 +10,8 @@ on:
         required: true
 
 env:
+  YUM_REPO: us-yum.pkg.dev/steampipe/steampipe-yum-repo
+  APT_REPO: us-apt.pkg.dev/steampipe/steampipe-apt-repo
   STEAMPIPE_UPDATE_CHECK: false
 
 jobs:
@@ -167,6 +169,21 @@ jobs:
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Setup gcloud CLI
+      - uses: google-github-actions/setup-gcloud@v0.2.0
+        with:
+          service_account_key: ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
+          project_id: ${{ env.PROJECT_ID }}
+
+      - run: gcloud config list
+
+      - run: gcloud components install beta
+
+      - name: Upload rpm and deb packages to artifact registry
+        run: |
+          gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm
+          gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb
 
   clean_up:
     # let's clean up the artifacts.
