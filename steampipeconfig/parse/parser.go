@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/hashicorp/hcl/v2/gohcl"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -72,9 +72,8 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 
 	// if there is no mod at this location, return error
 	modFilePath := filepath.Join(modPath, "mod.sp")
-	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
-		// there is no mod file - just create a default
-		return modconfig.CreateDefaultMod(modPath), nil
+	if _, err := os.Stat(modPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("no mod file found in %s", modPath)
 	}
 	fileData, diags := LoadFileData(modFilePath)
 	if diags.HasErrors() {
@@ -92,32 +91,22 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
 	}
 
-	// load the shell mod
-	_, mod, err := loadShellModAndMappableResourceNames(modPath, content)
-	if err != nil {
-		return nil, err
+	for _, block := range content.Blocks {
+		if block.Type == modconfig.BlockTypeMod {
+			mod := modconfig.NewMod(block.Labels[0], modPath, block.DefRange)
+			diags := gohcl.DecodeBody(block.Body, nil, mod)
+			if diags.HasErrors() {
+				return nil, plugin.DiagsToError("Failed to decode mod hcl file", diags)
+			}
+			// call decode callback
+			if err := mod.OnDecoded(block); err != nil {
+				return nil, err
+			}
+			return mod, nil
+		}
 	}
 
-	if mod == nil {
-		return nil, fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
-	}
-
-	// create parse options
-	opts := NewParseModOptions(0, &filehelpers.ListOptions{})
-	opts.RunCtx.AddMod(mod, content, fileData)
-
-	// now decode
-	diags = decode(opts)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to decode mod hcl file", diags)
-	}
-
-	// we failed to resolve dependencies
-	if !opts.RunCtx.EvalComplete() {
-		return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", opts.RunCtx.FormatDependencies())
-	}
-
-	return mod, nil
+	return nil, fmt.Errorf("no mod definition found in %s", modPath)
 }
 
 // parse a yaml file into a hcl.File object
@@ -202,13 +191,6 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 
 	// if eval is not complete, there must be dependencies - run again in dependency order
 	if !opts.RunCtx.EvalComplete() {
-
-		// TODO test for deps
-		// evaluate the variables
-		if err := EvaluateVariables(mod); err != nil {
-			return nil, err
-		}
-		opts.RunCtx.AddVariables(VariableValueMap(mod.Variables))
 
 		diags = decode(opts)
 		if diags.HasErrors() {

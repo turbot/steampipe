@@ -90,11 +90,10 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 }
 
 func loadModDependencies(mod *modconfig.Mod, opts *parse.ParseModOptions) error {
-
 	var errors []error
+
 	if mod.Requires != nil {
 		for _, dependencyMod := range mod.Requires.Mods {
-			// TODO sort out name of loaded mods
 			// have we already loaded a mod which satisfied this
 			if loadedMod, ok := opts.LoadedDependencyMods[dependencyMod.Name]; ok {
 				if loadedMod.Version.GreaterThanOrEqual(dependencyMod.VersionConstraint) {
@@ -179,6 +178,7 @@ func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder s
 
 // LoadModResourceNames parses all hcl files in modPath and returns the names of all resources
 func LoadModResourceNames(modPath string, opts *parse.ParseModOptions) (resources *modconfig.WorkspaceResources, err error) {
+	// TODO support dependencies
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
