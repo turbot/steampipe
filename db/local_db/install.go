@@ -190,19 +190,17 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Generating database passwords...")
-	// Try for passwords of the form dbC-3Ji-d04d
-	steampipePassword := generatePassword()
-	rootPassword := generatePassword()
-	// write the passwords that were generated
-	err = writePasswordFile(steampipePassword, rootPassword)
+	steampipePassword, err := readPasswordFile()
 	if err != nil {
 		display.StopSpinner(spinner)
-		log.Printf("[TRACE] writePasswordFile failed: %v", err)
+		log.Printf("[TRACE] readPassword failed: %v", err)
 		return fmt.Errorf("Generating database passwords... FAILED!")
 	}
+	// we will generate and lock with an ephemereal root password
+	rootPassword := generatePassword()
 
 	display.UpdateSpinnerMessage(spinner, "Starting database...")
-	err = startPostgresProcess(constants.DatabaseDefaultPort, ListenTypeLocal, constants.InvokerInstaller)
+	err = startPostgresProcessAndSetPassword(constants.DatabaseDefaultPort, ListenTypeLocal, constants.InvokerInstaller)
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] startPostgresProcess failed: %v", err)
@@ -293,7 +291,7 @@ func installSteampipeDatabaseAndUser(steampipePassword string, rootPassword stri
 		`grant all on database steampipe to root`,
 
 		// The root user gets a password which will be used later on to connect
-		fmt.Sprintf(`alter user root with password '%s'`, rootPassword),
+		fmt.Sprintf(`alter user root with password '%s'`, generatePassword()),
 
 		//
 		// PERMISSIONS
@@ -317,10 +315,8 @@ func installSteampipeDatabaseAndUser(steampipePassword string, rootPassword stri
 		// Allow the steampipe user to manage temporary tables
 		`grant temporary on database steampipe to steampipe_users`,
 
-		// Set a random, complex password for the steampipe user. Done as a separate
-		// step from the create for clarity and reuse.
-		// TODO: need a complex random password here, that is available for sharing with the user when the do steampipe service
-		fmt.Sprintf(`alter user steampipe with password '%s'`, steampipePassword),
+		// No need to set a password to the 'steampipe' user
+		// The password gets set on every service start
 
 		// Allow steampipe the privileges of steampipe_users.
 		`grant steampipe_users to steampipe`,

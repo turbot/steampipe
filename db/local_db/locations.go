@@ -91,6 +91,10 @@ func getSteampipeConfLocation() string {
 	return filepath.Join(getDataLocation(), "steampipe.conf")
 }
 
-func getPasswordFileLocation() string {
+func getLegacyPasswordFileLocation() string {
 	return filepath.Join(getDatabaseLocation(), ".passwd")
+}
+
+func getPasswordFileLocation() string {
+	return filepath.Join(constants.InternalDir(), ".passwd")
 }
