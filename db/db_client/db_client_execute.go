@@ -139,8 +139,9 @@ func (c *DbClient) startQuery(ctx context.Context, query string, tx *sql.Tx) (ro
 	doneChan := make(chan bool)
 	defer func() {
 		if err != nil {
-			// do this with a Background context, since the passed in context
-			// may have expired
+			// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
+			// restore the session data - prepared statements and introspection tables
+			// (do this with a Background context, since the passed in context may have expired)
 			c.ensureServiceState(context.Background())
 		}
 	}()

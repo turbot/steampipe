@@ -107,7 +107,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	}
 	c.dbClient = db
 
-	// make sure that this new session is setup with the session
+	// setup the session data - prepared statements and introspection tables
 	c.ensureServiceState(ctx)
 
 	return nil
