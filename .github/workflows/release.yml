@@ -36,6 +36,8 @@ jobs:
 
       - run: gcloud config set account github-action-push-artifacts@steampipe.iam.gserviceaccount.com
 
+      - run: gcloud auth activate-service-account github-action-push-artifacts@steampipe.iam.gserviceaccount.com
+
       - name: Upload rpm and deb packages to artifact registry
         run: |
           gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm --project steampipe
