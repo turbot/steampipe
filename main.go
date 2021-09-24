@@ -13,6 +13,8 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
+// Remember to remove this line
+
 var Logger hclog.Logger
 
 func main() {
