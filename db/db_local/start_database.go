@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	psutils "github.com/shirou/gopsutil/process"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
@@ -27,7 +28,8 @@ type StartListenType string
 
 const (
 	// ServiceStarted :: StartResult - Service was started
-	ServiceStarted StartResult = iota
+	// start from 10 to prevent confusion with int zero-value
+	ServiceStarted StartResult = iota + 1
 	// ServiceAlreadyRunning :: StartResult - Service was already running
 	ServiceAlreadyRunning
 	// ServiceFailedToStart :: StartResult - Could not start service
@@ -108,8 +110,12 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 		return ServiceFailedToStart, fmt.Errorf("cannot listen on port %d", constants.Bold(port))
 	}
 
+	if err := migrateLegacyPasswordFile(); err != nil {
+		return ServiceFailedToStart, err
+	}
+
 	utils.LogTime("postgresCmd start")
-	err = startPostgresProcess(port, listen, invoker)
+	err = startPostgresProcessAndSetPassword(port, listen, invoker)
 	if err != nil {
 		return ServiceFailedToStart, err
 	}
@@ -134,11 +140,18 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	return ServiceStarted, err
 }
 
-// startPostgresProcess starts the postgres process and writes out the state file
+// startPostgresProcessAndSetPassword starts the postgres process and writes out the state file
 // after it is convinced that the process is started and is accepting connections
-func startPostgresProcess(port int, listen StartListenType, invoker constants.Invoker) error {
+func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoker constants.Invoker) (e error) {
 	utils.LogTime("startPostgresProcess start")
 	defer utils.LogTime("startPostgresProcess end")
+
+	defer func() {
+		if e != nil {
+			// remove the state file if we are going back with an error
+			removeRunningInstanceInfo()
+		}
+	}()
 
 	listenAddresses := "localhost"
 
@@ -146,6 +159,51 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 		listenAddresses = "*"
 	}
 
+	if err := writePGConf(); err != nil {
+		return err
+	}
+
+	postgresCmd := createCmd(port, listenAddresses)
+	setupLogCollection(postgresCmd)
+	err := postgresCmd.Start()
+	if err != nil {
+		return err
+	}
+
+	// get the password from the password file
+	password, err := readPasswordFile()
+	if err != nil {
+		return err
+	}
+
+	// if a password was set through the `STEAMPIPE_DATABASE_PASSWORD` environment variable
+	// or through the `--database-password` cmdline flag, then use that for this session
+	// instead of the default one
+	if viper.IsSet(constants.ArgServicePassword) {
+		password = viper.GetString(constants.ArgServicePassword)
+	}
+
+	err = createRunningInfo(postgresCmd, port, password, listen, invoker)
+	if err != nil {
+		postgresCmd.Process.Kill()
+		return err
+	}
+
+	err = postgresCmd.Process.Release()
+	if err != nil {
+		postgresCmd.Process.Kill()
+		return err
+	}
+
+	err = setupServicePassword(invoker, password)
+	if err != nil {
+		postgresCmd.Process.Kill()
+		return err
+	}
+	return nil
+}
+
+func writePGConf() error {
 	// Apply default settings in conf files
 	err := ioutil.WriteFile(getPostgresqlConfLocation(), []byte(constants.PostgresqlConfContent), 0600)
 	if err != nil {
@@ -161,7 +219,10 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
+func createCmd(port int, listenAddresses string) *exec.Cmd {
 	postgresCmd := exec.Command(
 		getPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port if free to listen to
@@ -206,9 +267,13 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 		Foreground: false,
 	}
 
+	return postgresCmd
+}
+
+func setupLogCollection(cmd *exec.Cmd) {
 	// create a channel with a big buffer, so that it doesn't choke
 	logChannel := make(chan string, 1000)
-	stopListenFn, err := setupLogCollector(postgresCmd, logChannel)
+	stopListenFn, err := setupLogCollector(cmd, logChannel)
 	if err == nil {
 		defer func() {
 			stopListenFn()
@@ -220,52 +285,24 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 		// instead, log to TRACE that we couldn't and continue
 		log.Println("[TRACE] Warning: Could not attach to service logs")
 	}
+}
 
-	err = postgresCmd.Start()
-	if err != nil {
-		return err
-	}
-
-	// get the password file
-	passwords, err := getPasswords()
-	if err != nil {
-		return err
-	}
-
+func createRunningInfo(cmd *exec.Cmd, port int, password string, listen StartListenType, invoker constants.Invoker) error {
 	runningInfo := new(RunningDBInstanceInfo)
-	runningInfo.Pid = postgresCmd.Process.Pid
+	runningInfo.Pid = cmd.Process.Pid
 	runningInfo.Port = port
 	runningInfo.User = constants.DatabaseUser
-	runningInfo.Password = passwords.Steampipe
+	runningInfo.Password = password
 	runningInfo.Database = constants.DatabaseName
 	runningInfo.ListenType = listen
 	runningInfo.Invoker = invoker
-
 	runningInfo.Listen = constants.DatabaseListenAddresses
+
 	if listen == ListenTypeNetwork {
 		addrs, _ := localAddresses()
 		runningInfo.Listen = append(runningInfo.Listen, addrs...)
 	}
-	err = runningInfo.Save()
-	if err != nil {
-		postgresCmd.Process.Kill()
-		return err
-	}
-
-	err = postgresCmd.Process.Release()
-	if err != nil {
-		postgresCmd.Process.Kill()
-		return err
-	}
-
-	connection, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
-	if err != nil {
-		postgresCmd.Process.Kill()
-		return err
-	}
-	connection.Close()
-
-	return nil
+	return runningInfo.Save()
 }
 
 func traceoutServiceLogs(logChannel chan string) {
@@ -275,6 +312,21 @@ func traceoutServiceLogs(logChannel chan string) {
 			break
 		}
 	}
+}
+
+func setupServicePassword(invoker constants.Invoker, password string) error {
+	connection, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
+	if err != nil {
+		return err
+	}
+	defer connection.Close()
+
+	if invoker != constants.InvokerInstaller {
+		// set the password on the database
+		// we can't do this during installation, since the 'steampipe` user isn't setup yet
+		_, err = connection.Exec(fmt.Sprintf(`alter user steampipe with password '%s'`, password))
+	}
+	return err
 }
 
 func setupLogCollector(postgresCmd *exec.Cmd, publishChannel chan string) (func(), error) {
