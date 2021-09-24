@@ -29,7 +29,7 @@ type StartListenType string
 const (
 	// ServiceStarted :: StartResult - Service was started
 	// start from 10 to prevent confusion with int zero-value
-	ServiceStarted StartResult = iota + 10
+	ServiceStarted StartResult = iota + 1
 	// ServiceAlreadyRunning :: StartResult - Service was already running
 	ServiceAlreadyRunning
 	// ServiceFailedToStart :: StartResult - Could not start service
