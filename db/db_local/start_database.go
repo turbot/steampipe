@@ -203,21 +203,6 @@ func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoke
 	return nil
 }
 
-func setupServicePassword(invoker constants.Invoker, password string) error {
-	connection, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
-	if err != nil {
-		return err
-	}
-	defer connection.Close()
-
-	if invoker != constants.InvokerInstaller {
-		// set the password on the database
-		// we can't do this during installation, since the 'steampipe` user isn't setup yet
-		_, err = connection.Exec(fmt.Sprintf(`alter user steampipe with password '%s'`, password))
-	}
-	return err
-}
-
 func writePGConf() error {
 	// Apply default settings in conf files
 	err := ioutil.WriteFile(getPostgresqlConfLocation(), []byte(constants.PostgresqlConfContent), 0600)
@@ -235,24 +220,6 @@ func writePGConf() error {
 		return err
 	}
 	return nil
-}
-
-func createRunningInfo(cmd *exec.Cmd, port int, password string, listen StartListenType, invoker constants.Invoker) error {
-	runningInfo := new(RunningDBInstanceInfo)
-	runningInfo.Pid = cmd.Process.Pid
-	runningInfo.Port = port
-	runningInfo.User = constants.DatabaseUser
-	runningInfo.Password = password
-	runningInfo.Database = constants.DatabaseName
-	runningInfo.ListenType = listen
-	runningInfo.Invoker = invoker
-	runningInfo.Listen = constants.DatabaseListenAddresses
-
-	if listen == ListenTypeNetwork {
-		addrs, _ := localAddresses()
-		runningInfo.Listen = append(runningInfo.Listen, addrs...)
-	}
-	return runningInfo.Save()
 }
 
 func createCmd(port int, listenAddresses string) *exec.Cmd {
@@ -320,6 +287,24 @@ func setupLogCollection(cmd *exec.Cmd) {
 	}
 }
 
+func createRunningInfo(cmd *exec.Cmd, port int, password string, listen StartListenType, invoker constants.Invoker) error {
+	runningInfo := new(RunningDBInstanceInfo)
+	runningInfo.Pid = cmd.Process.Pid
+	runningInfo.Port = port
+	runningInfo.User = constants.DatabaseUser
+	runningInfo.Password = password
+	runningInfo.Database = constants.DatabaseName
+	runningInfo.ListenType = listen
+	runningInfo.Invoker = invoker
+	runningInfo.Listen = constants.DatabaseListenAddresses
+
+	if listen == ListenTypeNetwork {
+		addrs, _ := localAddresses()
+		runningInfo.Listen = append(runningInfo.Listen, addrs...)
+	}
+	return runningInfo.Save()
+}
+
 func traceoutServiceLogs(logChannel chan string) {
 	for logLine := range logChannel {
 		log.Printf("[TRACE] SERVICE: %s\n", logLine)
@@ -327,6 +312,21 @@ func traceoutServiceLogs(logChannel chan string) {
 			break
 		}
 	}
+}
+
+func setupServicePassword(invoker constants.Invoker, password string) error {
+	connection, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
+	if err != nil {
+		return err
+	}
+	defer connection.Close()
+
+	if invoker != constants.InvokerInstaller {
+		// set the password on the database
+		// we can't do this during installation, since the 'steampipe` user isn't setup yet
+		_, err = connection.Exec(fmt.Sprintf(`alter user steampipe with password '%s'`, password))
+	}
+	return err
 }
 
 func setupLogCollector(postgresCmd *exec.Cmd, publishChannel chan string) (func(), error) {

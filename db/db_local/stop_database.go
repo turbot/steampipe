@@ -34,8 +34,8 @@ const (
 
 // ShutdownService stops the database instance if the given `invoker` matches
 func ShutdownService(invoker constants.Invoker) {
-	utils.LogTime("db.ShutdownService start")
-	defer utils.LogTime("db.ShutdownService end")
+	utils.LogTime("db_local.ShutdownService start")
+	defer utils.LogTime("db_local.ShutdownService end")
 
 	status, _ := GetStatus()
 
@@ -76,29 +76,28 @@ func GetCountOfConnectedClients() (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	clientCount := 0
+	defer rootClient.Close()
 
-	// get the total number of clients
+	clientCount := 0
+	// get the total number of connected clients
 	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend';")
 	row.Scan(&clientCount)
 
 	// clientCount can never be zero, since the client we are using to run the query
 	// counts as a client
-
-	return (clientCount - 1 /* deduct the existing client */), rootClient.Close()
+	return (clientCount - 1 /* deduct the existing we used to query the count */), nil
 }
 
 // StopDB searches for and stops the running instance. Does nothing if an instance was not found
 func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (status StopStatus, e error) {
 	log.Println("[TRACE] StopDB", force)
-
-	utils.LogTime("db.StopDB start")
+	utils.LogTime("db_local.StopDB start")
 
 	defer func() {
 		if e == nil {
 			os.Remove(runningInfoFilePath())
 		}
-		utils.LogTime("db.StopDB end")
+		utils.LogTime("db_local.StopDB end")
 	}()
 
 	if force {
@@ -163,6 +162,9 @@ func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (st
 	the sequence is there only as a backup.
 **/
 func doThreeStepPostgresExit(process *psutils.Process) error {
+	utils.LogTime("db_local.doThreeStepPostgresExit start")
+	defer utils.LogTime("db_local.doThreeStepPostgresExit end")
+
 	var err error
 	var exitSuccessful bool
 
@@ -201,6 +203,9 @@ func doThreeStepPostgresExit(process *psutils.Process) error {
 }
 
 func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
+	utils.LogTime("db_local.waitForProcessExit start")
+	defer utils.LogTime("db_local.waitForProcessExit end")
+
 	checkTimer := time.NewTicker(50 * time.Millisecond)
 	timeoutAt := time.After(waitFor)
 
@@ -220,6 +225,9 @@ func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 }
 
 func getPrintableProcessDetails(process *psutils.Process, indent int) string {
+	utils.LogTime("db_local.getPrintableProcessDetails start")
+	defer utils.LogTime("db_local.getPrintableProcessDetails end")
+
 	indentString := strings.Repeat("  ", indent)
 	appendTo := []string{}
 
