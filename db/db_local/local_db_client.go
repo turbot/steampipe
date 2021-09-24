@@ -47,11 +47,11 @@ func NewLocalClient(invoker constants.Invoker) (*LocalDbClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
 
-	db, err := createSteampipeDbClient()
+	connString, err := getLocalSteampipeConnectionString()
 	if err != nil {
 		return nil, err
 	}
-	dbClient, err := db_client.NewDbClientFromSqlClient(db)
+	dbClient, err := db_client.NewDbClient(connString)
 	if err != nil {
 		return nil, err
 	}
@@ -72,6 +72,11 @@ func (c *LocalDbClient) Close() error {
 	}
 	ShutdownService(c.invoker)
 	return nil
+}
+
+// EnsureSessionState implements Client
+func (c *LocalDbClient) SetEnsureSessionStateFunc(f db_common.EnsureSessionStateCallback) {
+	c.client.SetEnsureSessionStateFunc(f)
 }
 
 // SchemaMetadata implements Client

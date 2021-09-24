@@ -1,47 +1,59 @@
 package db_client
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig"
 
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/utils"
 )
 
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
-	dbClient       *sql.DB
-	schemaMetadata *schema.Metadata
+	connectionString  string
+	ensureSessionFunc db_common.EnsureSessionStateCallback
+	dbClient          *sql.DB
+	schemaMetadata    *schema.Metadata
 }
 
 func NewDbClient(connectionString string) (*DbClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
-
-	db, err := sql.Open("postgres", connectionString)
+	db, err := establishConnection(connectionString)
 	if err != nil {
 		return nil, err
 	}
-	// limit to a single connection as we rely on session scoped data - temp tables and prepared statements
-	db.SetMaxOpenConns(1)
-	return NewDbClientFromSqlClient(db)
-}
-
-// NewDbClientFromSqlClient creates a DbClient from an existing sql.DB client
-// used by LocalDbClient
-func NewDbClientFromSqlClient(db *sql.DB) (*DbClient, error) {
 	client := &DbClient{
 		dbClient: db,
 		// set up a blank struct for the schema metadata
 		schemaMetadata: schema.NewMetadata(),
 	}
+	client.connectionString = connectionString
 	client.LoadSchema()
 
 	return client, nil
+}
+
+func establishConnection(connStr string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return nil, err
+	}
+	// limit to a single connection as we rely on session scoped data - temp tables and prepared statements
+	db.SetMaxOpenConns(1)
+	if db_common.WaitForConnection(db) {
+		return db, nil
+	}
+	return nil, fmt.Errorf("could not establish connection")
+}
+
+func (c *DbClient) SetEnsureSessionStateFunc(f db_common.EnsureSessionStateCallback) {
+	c.ensureSessionFunc = f
 }
 
 // Close implements Client
@@ -81,6 +93,31 @@ func (c *DbClient) LoadSchema() {
 
 	c.schemaMetadata.Schemas = metadata.Schemas
 	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
+}
+
+// refreshDbClient terminates the current connection and opens up a new connection to the service.
+func (c *DbClient) refreshDbClient(ctx context.Context) error {
+	err := c.dbClient.Close()
+	if err != nil {
+		return err
+	}
+	db, err := establishConnection(c.connectionString)
+	if err != nil {
+		return err
+	}
+	c.dbClient = db
+
+	// setup the session data - prepared statements and introspection tables
+	c.ensureServiceState(ctx)
+
+	return nil
+}
+
+func (c *DbClient) ensureServiceState(ctx context.Context) error {
+	if c.ensureSessionFunc != nil {
+		return c.ensureSessionFunc(ctx, c)
+	}
+	return nil
 }
 
 func (c *DbClient) getSchemaFromDB() (*sql.Rows, error) {
@@ -127,7 +164,7 @@ func (c *DbClient) getSchemaFromDB() (*sql.Rows, error) {
 
 // RefreshConnectionAndSearchPaths implements Client
 func (c *DbClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConnectionResult {
-    	// base db client does not refresh connections, it just sets search path
+	// base db client does not refresh connections, it just sets search path
 	// (only local db client refreshed connections)
 	res := &db_common.RefreshConnectionResult{}
 	if err := c.SetSessionSearchPath(); err != nil {

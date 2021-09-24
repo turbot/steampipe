@@ -73,7 +73,7 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 	}
 
 	// begin a transaction
-	tx, err = c.createTransaction(ctx)
+	tx, err = c.createTransaction(ctx, true)
 	if err != nil {
 		return
 	}
@@ -106,7 +106,7 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 }
 
 // createTransaction, with a timeout - this may be required if the db client becomes unresponsive
-func (c *DbClient) createTransaction(ctx context.Context) (tx *sql.Tx, err error) {
+func (c *DbClient) createTransaction(ctx context.Context, retryOnTimeout bool) (tx *sql.Tx, err error) {
 	doneChan := make(chan bool)
 	go func() {
 		tx, err = c.dbClient.BeginTx(ctx, nil)
@@ -120,6 +120,14 @@ func (c *DbClient) createTransaction(ctx context.Context) (tx *sql.Tx, err error
 	case <-doneChan:
 	case <-time.After(time.Second * 5):
 		log.Printf("[TRACE] timed out creating a transaction")
+		if retryOnTimeout {
+			log.Printf("[TRACE] refresh the client and retry")
+			// refresh the db client to try to fix the issue
+			c.refreshDbClient(ctx)
+
+			// recurse back into this function, passing 'retryOnTimeout=false' to prevent further recursion
+			return c.createTransaction(ctx, false)
+		}
 		err = fmt.Errorf("error creating transaction - please restart Steampipe")
 	}
 	return
@@ -129,7 +137,14 @@ func (c *DbClient) createTransaction(ctx context.Context) (tx *sql.Tx, err error
 // in case the client becomes unresponsive and does not respect context cancellation
 func (c *DbClient) startQuery(ctx context.Context, query string, tx *sql.Tx) (rows *sql.Rows, err error) {
 	doneChan := make(chan bool)
-
+	defer func() {
+		if err != nil {
+			// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
+			// restore the session data - prepared statements and introspection tables
+			// (do this with a Background context, since the passed in context may have expired)
+			c.ensureServiceState(context.Background())
+		}
+	}()
 	go func() {
 		// start asynchronous query
 		rows, err = tx.QueryContext(ctx, query)
