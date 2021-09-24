@@ -29,6 +29,7 @@ jobs:
           service_account_key: ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
           project_id: ${{ env.PROJECT_ID }}
           export_default_credentials: true
+          credentials_file_path: ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
 
       - run: gcloud config list
 
