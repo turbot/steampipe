@@ -52,6 +52,10 @@ func (c *LocalClient) Execute(ctx context.Context, query string, disableSpinner 
 
 	defer func() {
 		if err != nil {
+			// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
+			// restore the session data - prepared statements and introspection tables
+			// (do this with a Background context, since the passed in context may have expired)
+			c.ensureServiceState(context.Background())
 			// stop spinner in case of error
 			display.StopSpinner(spinner)
 			// error - rollback transaction if we have one
@@ -68,7 +72,7 @@ func (c *LocalClient) Execute(ctx context.Context, query string, disableSpinner 
 	}
 
 	// begin a transaction
-	tx, err = c.createTransaction(ctx)
+	tx, err = c.createTransaction(ctx, true)
 	if err != nil {
 		return
 	}
@@ -101,7 +105,7 @@ func (c *LocalClient) Execute(ctx context.Context, query string, disableSpinner 
 }
 
 // createTransaction, with a timeout - this may be required if the db client becomes unresponsive
-func (c *LocalClient) createTransaction(ctx context.Context) (tx *sql.Tx, err error) {
+func (c *LocalClient) createTransaction(ctx context.Context, retryOnTimeout bool) (tx *sql.Tx, err error) {
 	doneChan := make(chan bool)
 	go func() {
 		tx, err = c.dbClient.BeginTx(ctx, nil)
@@ -115,9 +119,42 @@ func (c *LocalClient) createTransaction(ctx context.Context) (tx *sql.Tx, err er
 	case <-doneChan:
 	case <-time.After(time.Second * 5):
 		log.Printf("[TRACE] timed out creating a transaction")
+		if retryOnTimeout {
+			log.Printf("[TRACE] refresh the client and retry")
+			// refresh the db client to try to fix the issue
+			c.refreshDbClient(ctx)
+
+			// recurse back into this function, passing 'retryOnTimeout=false' to prevent further recursion
+			return c.createTransaction(ctx, false)
+		}
 		err = fmt.Errorf("error creating transaction - please restart Steampipe")
 	}
 	return
+}
+
+// refreshDbClient terminates the current connection and opens up a new connection to the service.
+func (c *LocalClient) refreshDbClient(ctx context.Context) error {
+	err := c.dbClient.Close()
+	if err != nil {
+		return err
+	}
+	db, err := establishConnection(c.connectionString)
+	if err != nil {
+		return err
+	}
+	c.dbClient = db
+
+	// setup the session data - prepared statements and introspection tables
+	c.ensureServiceState(ctx)
+
+	return nil
+}
+
+func (c *LocalClient) ensureServiceState(ctx context.Context) error {
+	if c.ensureSessionFunc != nil {
+		return c.ensureSessionFunc(ctx, c)
+	}
+	return nil
 }
 
 // run query in a goroutine, so we can check for cancellation

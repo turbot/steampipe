@@ -16,10 +16,12 @@ import (
 
 // LocalClient wraps over `sql.DB` and gives an interface to the database
 type LocalClient struct {
-	dbClient       *sql.DB
-	schemaMetadata *schema.Metadata
-	connectionMap  *steampipeconfig.ConnectionMap
-	invoker        constants.Invoker
+	connectionString  string
+	ensureSessionFunc db_common.EnsureSessionStateCallback
+	dbClient          *sql.DB
+	schemaMetadata    *schema.Metadata
+	connectionMap     *steampipeconfig.ConnectionMap
+	invoker           constants.Invoker
 }
 
 // Close closes the connection to the database and shuts down the backend
@@ -38,13 +40,17 @@ func (c *LocalClient) Close() error {
 func NewLocalClient(invoker constants.Invoker) (*LocalClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
-
-	db, err := createSteampipeDbClient()
+	cStr, err := getLocalServiceConnectionString()
+	if err != nil {
+		return nil, err
+	}
+	db, err := establishConnection(cStr)
 	if err != nil {
 		return nil, err
 	}
 	client := &LocalClient{
-		invoker: invoker,
+		invoker:          invoker,
+		connectionString: cStr,
 	}
 	client.dbClient = db
 
@@ -112,6 +118,26 @@ func (c *LocalClient) LoadSchema() {
 
 	c.schemaMetadata.Schemas = metadata.Schemas
 	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
+}
+
+func getLocalServiceConnectionString() (string, error) {
+	utils.LogTime("local_db.getLocalServiceConnectionString start")
+	defer utils.LogTime("local_db.getLocalServiceConnectionString end")
+
+	log.Println("[TRACE] getLocalServiceConnectionString")
+	info, err := GetStatus()
+
+	if err != nil {
+		return "", err
+	}
+
+	if info == nil {
+		return "", fmt.Errorf("steampipe service is not running")
+	}
+
+	// Connect to the database using the first listen address, which is usually localhost
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", info.Listen[0], info.Port, constants.DatabaseUser, constants.DatabaseName, SslMode())
+	return psqlInfo, nil
 }
 
 func createSteampipeDbClient() (*sql.DB, error) {
@@ -247,4 +273,21 @@ func (c *LocalClient) getSchemaFromDB() (*sql.Rows, error) {
 `
 	// we do NOT want to fetch the command schema
 	return c.dbClient.Query(fmt.Sprintf(query, constants.CommandSchema))
+}
+
+func establishConnection(connStr string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return nil, err
+	}
+	// limit to a single connection as we rely on session scoped data - temp tables and prepared statements
+	db.SetMaxOpenConns(1)
+	if db_common.WaitForConnection(db) {
+		return db, nil
+	}
+	return nil, fmt.Errorf("could not establish connection")
+}
+
+func (c *LocalClient) SetEnsureSessionStateFunc(f db_common.EnsureSessionStateCallback) {
+	c.ensureSessionFunc = f
 }
