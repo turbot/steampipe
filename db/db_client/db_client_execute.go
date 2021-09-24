@@ -123,14 +123,8 @@ func (c *DbClient) createTransaction(ctx context.Context, retryOnTimeout bool) (
 		if retryOnTimeout {
 			log.Printf("[TRACE] refresh the client and retry")
 			// refresh the db client to try to fix the issue
-			c.refreshDbClient()
+			c.refreshDbClient(ctx)
 
-			// make sure that this new session is setup with the session
-			if c.ensureSessionFunc != nil {
-				if err := c.ensureSessionFunc(ctx, c); err != nil {
-					return nil, utils.PrefixError(err, "error ensuring session state")
-				}
-			}
 			// recurse back into this function, passing 'retryOnTimeout=false' to prevent further recursion
 			return c.createTransaction(ctx, false)
 		}
@@ -144,10 +138,10 @@ func (c *DbClient) createTransaction(ctx context.Context, retryOnTimeout bool) (
 func (c *DbClient) startQuery(ctx context.Context, query string, tx *sql.Tx) (rows *sql.Rows, err error) {
 	doneChan := make(chan bool)
 	defer func() {
-		if err != nil && c.ensureSessionFunc != nil {
+		if err != nil {
 			// do this with a Background context, since the passed in context
 			// may have expired
-			c.ensureSessionFunc(context.Background(), c)
+			c.ensureServiceState(context.Background())
 		}
 	}()
 	go func() {

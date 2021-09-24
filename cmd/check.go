@@ -241,10 +241,12 @@ func initialiseCheck() *checkInitData {
 	}
 	initData.result.AddWarnings(refreshResult.Warnings...)
 
-	// setup the session
+	// setup the session data - prepared statements and introspection tables
 	workspace.EnsureServiceState(context.Background(), initData.workspace.GetResourceMaps(), initData.client)
 
-	// register as callback to use when reconnection or errors occur
+	// register EnsureServiceState as a callback on the client.
+	// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
+	// so our client object calls this callback to restore the session data
 	initData.client.SetEnsureSessionStateFunc(func(ctx context.Context, client db_common.Client) error {
 		return workspace.EnsureServiceState(ctx, initData.workspace.GetResourceMaps(), client)
 	})

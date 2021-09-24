@@ -13,14 +13,12 @@ import (
 func getLocalSteampipeConnectionString() (string, error) {
 	utils.LogTime("db.createDbClient start")
 	defer utils.LogTime("db.createDbClient end")
-
 	log.Println("[TRACE] createDbClient")
-	info, err := GetStatus()
 
+	info, err := GetStatus()
 	if err != nil {
 		return "", err
 	}
-
 	if info == nil {
 		return "", fmt.Errorf("steampipe service is not running")
 	}

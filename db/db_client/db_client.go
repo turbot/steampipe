@@ -1,6 +1,7 @@
 package db_client
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -94,7 +95,8 @@ func (c *DbClient) LoadSchema() {
 	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
 }
 
-func (c *DbClient) refreshDbClient() error {
+// refreshDbClient terminates the current connection and opens up a new connection to the service.
+func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	err := c.dbClient.Close()
 	if err != nil {
 		return err
@@ -104,6 +106,17 @@ func (c *DbClient) refreshDbClient() error {
 		return err
 	}
 	c.dbClient = db
+
+	// make sure that this new session is setup with the session
+	c.ensureServiceState(ctx)
+
+	return nil
+}
+
+func (c *DbClient) ensureServiceState(ctx context.Context) error {
+	if c.ensureSessionFunc != nil {
+		return c.ensureSessionFunc(ctx, c)
+	}
 	return nil
 }
 
