@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
@@ -14,7 +13,6 @@ import (
 // and prepared statements are available in the database
 func EnsureServiceState(ctx context.Context, preparedStatementProviders *modconfig.WorkspaceResourceMaps, client db_common.Client) error {
 	defer utils.UnTrace(utils.Trace("workspace.EnsureServiceState"))
-	fmt.Println("Ensure")
 	// check if introspection tables are there.
 	// only execute if not
 	result, err := client.ExecuteSync(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema LIKE 'pg_temp%' AND table_name='steampipe_mod' ", true)

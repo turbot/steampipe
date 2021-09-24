@@ -95,8 +95,10 @@ func (c *DbClient) LoadSchema() {
 }
 
 func (c *DbClient) refreshDbClient() error {
-	fmt.Println("refresing")
-	c.dbClient.Close()
+	err := c.dbClient.Close()
+	if err != nil {
+		return err
+	}
 	db, err := establishConnection(c.connectionString)
 	if err != nil {
 		return err
