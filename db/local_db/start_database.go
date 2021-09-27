@@ -201,10 +201,14 @@ func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoke
 		return err
 	}
 
-	err = setupServicePassword(invoker, password)
-	if err != nil {
-		postgresCmd.Process.Kill()
-		return err
+	// set the password on the database
+	// we can't do this during installation, since the 'steampipe` user isn't setup yet
+	if invoker != constants.InvokerInstaller {
+		err = setupServicePassword(invoker, password)
+		if err != nil {
+			postgresCmd.Process.Kill()
+			return err
+		}
 	}
 	return nil
 }
@@ -346,11 +350,7 @@ func setupServicePassword(invoker constants.Invoker, password string) error {
 	}
 	defer connection.Close()
 
-	if invoker != constants.InvokerInstaller {
-		// set the password on the database
-		// we can't do this during installation, since the 'steampipe` user isn't setup yet
-		_, err = connection.Exec(fmt.Sprintf(`alter user steampipe with password '%s'`, password))
-	}
+	_, err = connection.Exec(fmt.Sprintf(`alter user steampipe with password '%s'`, password))
 	return err
 }
 

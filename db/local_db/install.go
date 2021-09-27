@@ -190,14 +190,12 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Generating database passwords...")
-	steampipePassword, err := readPasswordFile()
+	_, err = readPasswordFile()
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] readPassword failed: %v", err)
 		return fmt.Errorf("Generating database passwords... FAILED!")
 	}
-	// we will generate and lock with an ephemereal root password
-	rootPassword := generatePassword()
 
 	display.UpdateSpinnerMessage(spinner, "Starting database...")
 	err = startPostgresProcessAndSetPassword(constants.DatabaseDefaultPort, ListenTypeLocal, constants.InvokerInstaller)
@@ -208,7 +206,7 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring database...")
-	err = installSteampipeDatabaseAndUser(steampipePassword, rootPassword)
+	err = installSteampipeDatabaseAndUser()
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] installSteampipeDatabaseAndUser failed: %v", err)
@@ -256,7 +254,7 @@ func initDatabase() error {
 	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(constants.PgHbaContent), 0600)
 }
 
-func installSteampipeDatabaseAndUser(steampipePassword string, rootPassword string) error {
+func installSteampipeDatabaseAndUser() error {
 	utils.LogTime("db.installSteampipeDatabase start")
 	defer utils.LogTime("db.installSteampipeDatabase end")
 
@@ -290,7 +288,8 @@ func installSteampipeDatabaseAndUser(steampipePassword string, rootPassword stri
 		// configure and manage it properly.
 		`grant all on database steampipe to root`,
 
-		// The root user gets a password which will be used later on to connect
+		// The root user gets an ephemereal password - we will never connect from remove with root
+		// for local, 'pg_hba.conf' has implicit trust
 		fmt.Sprintf(`alter user root with password '%s'`, generatePassword()),
 
 		//
