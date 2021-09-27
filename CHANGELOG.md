@@ -1,3 +1,19 @@
+## v0.8.3 [2021-09-28]
+
+_What's new?_
+* Update `service start` command to support `database-password` arg and `STEAMPIPE_DATABASE_PASSWORD` environment variable, to allow a custom password to be used when running in service mode. ([#725](https://github.com/turbot/steampipe/issues/725))
+* Small updates to output of `steampipe service` commands.  ([#812](https://github.com/turbot/steampipe/issues/812))
+* Add support for piping `stdout` and `stderr` from `service start` to the `TRACE log`.  ([#810](https://github.com/turbot/steampipe/issues/810))
+
+_Bug fixes_
+* Update Docker image to remove password file. ([#957](https://github.com/turbot/steampipe/issues/957))
+* Fix filewatching to ensure prepared statements are correctly created and updated to reflect SQL file changes. ([#901](https://github.com/turbot/steampipe/issues/901))
+* Ensure session data is restored after a SQL client error. Reset SQL client after a failure to create a transaction. ([#939](https://github.com/turbot/steampipe/issues/939))
+* Fix service lifecycle management issues when state file is deleted while service is running. ([#872](https://github.com/turbot/steampipe/issues/872))
+* Fix issue where `service stop` shuts down service even if non-Steampipe clients are connected. ([#887](https://github.com/turbot/steampipe/issues/887))
+* Fix connection config not being passed when instantiating plugins to retrieve their schema. This resulted in descriptions not being shown for dynamic tables dynamic tables. ([#932](https://github.com/turbot/steampipe/issues/932))
+* Fix issue where `install.sh` fails for IPv6 enabled system. ([#861](https://github.com/turbot/steampipe/issues/861))
+
 ## v0.8.2 [2021-09-14]
 _Bug fixes_
 * Fix nil pointer error when running a fully qualified query (i.e. including mod name). ([#902](https://github.com/turbot/steampipe/issues/902))
