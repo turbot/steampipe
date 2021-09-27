@@ -36,10 +36,20 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 		return nil, fmt.Errorf("mod folder %s does not exist", modPath)
 	}
 
-	// load the mod definition to get the dependencies
-	mod, err = parse.ParseModDefinition(modPath)
-	if err != nil {
-		return nil, err
+	if parse.ModfileExists(modPath) {
+		// load the mod definition to get the dependencies
+		mod, err = parse.ParseModDefinition(modPath)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// so there is no mod file - should we create a default?
+		if !opts.CreateDefaultMod() {
+			// CreateDefaultMod flag NOT set - fail
+			return nil, fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
+		}
+		// just create a default mod
+		mod = modconfig.CreateDefaultMod(modPath)
 	}
 
 	// if the RunContext does not have a root mod set, we must be the top of the mod dependency tree - set it now

@@ -66,13 +66,22 @@ func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	return hcl.MergeFiles(parsedConfigFiles), diags
 }
 
+func ModfileExists(modPath string) bool {
+	modFilePath := filepath.Join(modPath, "mod.sp")
+	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 // ParseModDefinition parses the modfile only
+// it is expected the callign code wil lhave verified the existence of the modfile by calling ModfileExists
 func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 	// TODO think about variables
 
 	// if there is no mod at this location, return error
 	modFilePath := filepath.Join(modPath, "mod.sp")
-	if _, err := os.Stat(modPath); os.IsNotExist(err) {
+	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("no mod file found in %s", modPath)
 	}
 	fileData, diags := LoadFileData(modFilePath)
@@ -147,6 +156,7 @@ func parseYamlFile(filename string) (*hcl.File, hcl.Diagnostics) {
 }
 
 // ParseMod parses all source hcl files for the mod path and associated resources, and returns the mod object
+// NOTE: the mod definition has already been parsed (or a default created) and is in opts.RunCtx.RootMod
 func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modconfig.MappableResource, opts *ParseModOptions) (*modconfig.Mod, error) {
 	body, diags := ParseHclFiles(fileData)
 	if diags.HasErrors() {
@@ -159,21 +169,14 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
 	}
 
+	mod := opts.RunCtx.RootMod
+	if mod == nil {
+		return nil, fmt.Errorf("ParseMod called with no Root Mod set in RunContext")
+	}
 	// get names of all resources defined in hcl which may also be created as pseudo resources
-	hclResources, mod, err := loadShellModAndMappableResourceNames(modPath, content)
+	hclResources, err := loadMappableResourceNames(modPath, content)
 	if err != nil {
 		return nil, err
-	}
-
-	// create mod if needed
-	if mod == nil {
-		// should we create a default mod?
-		if !opts.CreateDefaultMod() {
-			// CreateDefaultMod flag NOT set - fail
-			return nil, fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
-		}
-		// just create a default mod
-		mod = modconfig.CreateDefaultMod(modPath)
 	}
 
 	// add pseudo resources to the mod
@@ -233,20 +236,13 @@ func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclRe
 
 // get names of all resources defined in hcl which may also be created as pseudo resources
 // if we find a mod block, build a shell mod
-func loadShellModAndMappableResourceNames(modPath string, content *hcl.BodyContent) (map[string]bool, *modconfig.Mod, error) {
-	var mod *modconfig.Mod
+func loadMappableResourceNames(modPath string, content *hcl.BodyContent) (map[string]bool, error) {
 	hclResources := make(map[string]bool)
 
+	// TODO update thei to not have a single hardcoded pseudo resource type
 	for _, block := range content.Blocks {
 		// if this is a mod, build a shell mod struct (with just the name populated)
 		switch block.Type {
-		case modconfig.BlockTypeMod:
-			// if there is more than one mod, fail
-			if mod != nil {
-				return nil, nil, fmt.Errorf("more than 1 mod definition found in %s", modPath)
-			}
-			mod = modconfig.NewMod(block.Labels[0], modPath, block.DefRange)
-
 		case modconfig.BlockTypeQuery:
 			// for any mappable resource, store the resource name
 			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
@@ -254,7 +250,7 @@ func loadShellModAndMappableResourceNames(modPath string, content *hcl.BodyConte
 		}
 		// TODO PANEL
 	}
-	return hclResources, mod, nil
+	return hclResources, nil
 }
 
 // ParseModResourceNames parses all source hcl files for the mod path and associated resources,
