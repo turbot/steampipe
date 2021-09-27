@@ -157,7 +157,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	if info != nil {
 		if info.Invoker == constants.InvokerService {
-			fmt.Println("Service is already running")
+			fmt.Println("Steampipe service is already running.")
 			return
 		}
 
@@ -226,7 +226,7 @@ func runServiceInForeground(invoker constants.Invoker) {
 				continue
 			}
 			if newInfo == nil {
-				fmt.Println("Service stopped")
+				fmt.Println("Steampipe service stopped.")
 				return
 			}
 		case <-sigIntChannel:
@@ -246,10 +246,10 @@ func runServiceInForeground(invoker constants.Invoker) {
 			}
 			// close the connection watcher
 			connectionWatcher.Close()
-			fmt.Println("Stopping service")
+			fmt.Println("Stopping Steampipe service.")
 
 			db_local.StopDB(false, invoker, nil)
-			fmt.Println("Service Stopped")
+			fmt.Println("Steampipe service stopped.")
 			return
 		}
 	}
@@ -275,7 +275,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnError(err)
 
 	if currentServiceStatus == nil {
-		fmt.Println("steampipe database service is not running")
+		fmt.Println("Steampipe service is not running.")
 		return
 	}
 
@@ -306,13 +306,13 @@ to force a restart.
 	}
 
 	if status == db_local.ServiceFailedToStart {
-		fmt.Println("Steampipe service was stopped, but failed to start")
+		fmt.Println("Steampipe service was stopped, but failed to restart.")
 		return
 	}
 
 	err = db_local.RefreshConnectionAndSearchPaths(constants.InvokerService)
 	utils.FailOnError(err)
-	fmt.Println("Steampipe service restarted")
+	fmt.Println("Steampipe service restarted.")
 
 	if info, err := db_local.GetStatus(); err != nil {
 		printStatus(info)
@@ -330,18 +330,18 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	if !db_local.IsInstalled() {
-		fmt.Println("Steampipe database service is NOT installed")
+		fmt.Println("Steampipe service is not installed.")
 		return
 	}
 	if viper.GetBool(constants.ArgAll) {
 		showAllStatus()
 	} else {
 		if info, err := db_local.GetStatus(); err != nil {
-			utils.ShowError(fmt.Errorf("could not get Steampipe database service status"))
+			utils.ShowError(fmt.Errorf("could not get Steampipe service status"))
 		} else if info != nil {
 			printStatus(info)
 		} else {
-			fmt.Println("Steampipe database service is NOT running")
+			fmt.Println("Steampipe service is running.")
 		}
 	}
 }
@@ -376,11 +376,11 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		info, err = db_local.GetStatus()
 		if err != nil {
 			display.StopSpinner(spinner)
-			utils.FailOnErrorWithMessage(err, "could not stop service")
+			utils.FailOnErrorWithMessage(err, "could not stop Steampipe service")
 		}
 		if info == nil {
 			display.StopSpinner(spinner)
-			fmt.Println("Service is not running")
+			fmt.Println("Steampipe service is not running.")
 			return
 		}
 		if info.Invoker != constants.InvokerService {
@@ -416,14 +416,14 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	switch status {
 	case db_local.ServiceStopped:
 		if info != nil {
-			fmt.Printf("Steampipe database service stopped [port %d]\n", info.Port)
+			fmt.Printf("Steampipe service stopped [port %d].\n", info.Port)
 		} else {
-			fmt.Println("Steampipe database service stopped")
+			fmt.Println("Steampipe service stopped.")
 		}
 	case db_local.ServiceNotRunning:
-		fmt.Println("Service is not running")
+		fmt.Println("Steampipe service is not running.")
 	case db_local.ServiceStopFailed:
-		fmt.Println("Could not stop service")
+		fmt.Println("Could not stop Steampipe service.")
 	case db_local.ServiceStopTimedOut:
 		fmt.Println(`
 Service stop operation timed-out.
@@ -433,7 +433,7 @@ This is probably because other clients are connected to the database service.
 Disconnect all clients, or use
 	steampipe service stop --force
 
-to force a shutdown
+to force a shutdown.
 		`)
 
 	}
@@ -457,7 +457,7 @@ func showAllStatus() {
 	}
 
 	if len(processes) == 0 {
-		fmt.Println("There are no steampipe services running")
+		fmt.Println("There are no steampipe services running.")
 		return
 	}
 	headers := []string{"PID", "Install Directory", "Port", "Listen"}
@@ -570,6 +570,6 @@ func buildForegroundClientsConnectedMsg() string {
 	return `
 Not shutting down service as there as clients connected.
 
-To force shutdown, press Ctrl+C again
+To force shutdown, press Ctrl+C again.
 	`
 }
