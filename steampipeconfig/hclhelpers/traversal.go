@@ -26,11 +26,16 @@ func ResourceNameFromTraversal(resource string, traversal hcl.Traversal) (string
 	traversalString := TraversalAsString(traversal)
 	split := strings.Split(traversalString, ".")
 
-	// the resource reference  will be of the form
+	// the resource reference will be of the form
+	// var.<var_name>
+	// or
 	// <resource_type>.<resource_name>.<property>
 	// or
 	// <mod_name>.<resource_type>.<resource_name>.<property>
 
+	if split[0] == "var" {
+		return strings.Join(split, "."), true
+	}
 	if split[0] == resource && len(split) >= 2 {
 		return strings.Join(split[:2], "."), true
 	}
