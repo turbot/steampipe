@@ -268,5 +268,5 @@ func (b *Benchmark) Name() string {
 
 // QualifiedName returns the name in format: '<modName>.control.<shortName>'
 func (b *Benchmark) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", b.metadata.ModShortName, b.FullName)
+	return fmt.Sprintf("%s.%s", b.metadata.ModName, b.FullName)
 }

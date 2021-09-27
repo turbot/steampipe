@@ -158,7 +158,7 @@ func (q *Query) Name() string {
 
 // QualifiedName returns the name in format: '<modName>.control.<shortName>'
 func (q *Query) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", q.metadata.ModShortName, q.FullName)
+	return fmt.Sprintf("%s.%s", q.metadata.ModName, q.FullName)
 }
 
 // GetMetadata implements ResourceWithMetadata

@@ -62,7 +62,7 @@ func (v *Variable) Name() string {
 
 // QualifiedName returns the name in format: '<modName>.var.<shortName>'
 func (v *Variable) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", v.metadata.ModShortName, v.FullName)
+	return fmt.Sprintf("%s.%s", v.metadata.ModName, v.FullName)
 }
 
 // GetMetadata implements ResourceWithMetadata

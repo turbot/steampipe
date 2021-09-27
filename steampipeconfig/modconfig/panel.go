@@ -87,7 +87,7 @@ func (p *Panel) Name() string {
 
 // QualifiedName returns the name in format: '<modName>.panel.<shortName>'
 func (p *Panel) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", p.metadata.ModShortName, p.FullName)
+	return fmt.Sprintf("%s.%s", p.metadata.ModName, p.FullName)
 }
 
 // OnDecoded implements HclResource
