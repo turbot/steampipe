@@ -9,6 +9,8 @@ import (
 	"github.com/turbot/steampipe/query/queryresult"
 )
 
+type EnsureSessionStateCallback = func(context.Context, Client) error
+
 type Client interface {
 	Close() error
 	GetCurrentSearchPath() ([]string, error)
@@ -23,6 +25,8 @@ type Client interface {
 
 	// todo share this between locan and remote client?
 	LoadSchema()
+
+	SetEnsureSessionStateFunc(EnsureSessionStateCallback)
 
 	// RemoteClient will have empty implementations
 

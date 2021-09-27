@@ -230,15 +230,15 @@ func initialiseCheck() *checkInitData {
 	}
 	initData.result.AddWarnings(refreshResult.Warnings...)
 
-	// populate the reflection tables
-	err = db_common.CreateMetadataTables(ctx, initData.workspace.GetResourceMaps(), initData.client)
-	if err != nil {
-		initData.result.Error = err
-		return initData
-	}
+	// setup the session data - prepared statements and introspection tables
+	initData.result.Error = workspace.EnsureServiceState(context.Background(), initData.workspace.GetResourceMaps(), initData.client)
 
-	// create the prepared statements
-	initData.result.Error = db_common.CreatePreparedStatements(ctx, initData.workspace.GetResourceMaps(), initData.client)
+	// register EnsureServiceState as a callback on the client.
+	// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
+	// so our client object calls this callback to restore the session data
+	initData.client.SetEnsureSessionStateFunc(func(ctx context.Context, client db_common.Client) error {
+		return workspace.EnsureServiceState(ctx, initData.workspace.GetResourceMaps(), client)
+	})
 
 	return initData
 }
