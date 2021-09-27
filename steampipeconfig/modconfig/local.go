@@ -48,6 +48,12 @@ func (l *Local) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 // AddReference implements HclResource
 func (l *Local) AddReference(string) {}
 
+// ReferencesResource implements HclResource
+func (l *Local) ReferencesResource(string) bool { return false }
+
+// AddReferencedBy implements HclResource
+func (l *Local) AddReferencedBy(reference string) {}
+
 // SetMod implements HclResource
 func (l *Local) SetMod(mod *Mod) {
 	l.Mod = mod

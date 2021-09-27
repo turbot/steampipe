@@ -37,6 +37,9 @@ type HclResource interface {
 	CtyValue() (cty.Value, error)
 	OnDecoded(*hcl.Block) hcl.Diagnostics
 	AddReference(reference string)
+	AddReferencedBy(referencedBy string)
+	ReferencesResource(string) bool
+
 	SetMod(*Mod)
 }
 

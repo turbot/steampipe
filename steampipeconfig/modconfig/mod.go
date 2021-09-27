@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/zclconf/go-cty/cty"
@@ -33,6 +32,10 @@ type Mod struct {
 
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
+	// references stored as a map for easy checking
+	referencesMap map[string]bool
+	// list of resource names who reference this resource
+	ReferencedBy []string `column:"referenced_by,jsonb"`
 
 	// blocks
 	Requires  *Requires  `hcl:"requires,block"`
@@ -48,6 +51,10 @@ type Mod struct {
 	Panels     map[string]*Panel
 	Variables  map[string]*Variable
 	Locals     map[string]*Local
+
+	// flat list of all resources
+	AllResources []HclResource
+
 	// list of benchmark names, sorted alphabetically
 	benchmarksOrdered []string
 
@@ -60,17 +67,18 @@ type Mod struct {
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	return &Mod{
-		ShortName:  shortName,
-		FullName:   fmt.Sprintf("mod.%s", shortName),
-		Queries:    make(map[string]*Query),
-		Controls:   make(map[string]*Control),
-		Benchmarks: make(map[string]*Benchmark),
-		Reports:    make(map[string]*Report),
-		Panels:     make(map[string]*Panel),
-		Variables:  make(map[string]*Variable),
-		Locals:     make(map[string]*Local),
-		ModPath:    modPath,
-		DeclRange:  defRange,
+		ShortName:     shortName,
+		FullName:      fmt.Sprintf("mod.%s", shortName),
+		Queries:       make(map[string]*Query),
+		Controls:      make(map[string]*Control),
+		Benchmarks:    make(map[string]*Benchmark),
+		Reports:       make(map[string]*Report),
+		Panels:        make(map[string]*Panel),
+		Variables:     make(map[string]*Variable),
+		Locals:        make(map[string]*Local),
+		ModPath:       modPath,
+		DeclRange:     defRange,
+		referencesMap: make(map[string]bool),
 	}
 }
 
@@ -418,6 +426,7 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 			m.Locals[name] = r
 		}
 	}
+	m.AllResources = append(m.AllResources, item)
 	return diags
 }
 
@@ -510,6 +519,17 @@ func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 // AddReference implements HclResource
 func (m *Mod) AddReference(reference string) {
 	m.References = append(m.References, reference)
+	m.referencesMap[reference] = true
+}
+
+// AddReferencedBy implements HclResource
+func (m *Mod) AddReferencedBy(reference string) {
+	m.ReferencedBy = append(m.ReferencedBy, reference)
+}
+
+// ReferencesResource implements HclResource
+func (m *Mod) ReferencesResource(name string) bool {
+	return m.referencesMap[name]
 }
 
 // SetMod implements HclResource
@@ -575,22 +595,11 @@ func (m *Mod) GetChildControls() []*Control {
 // SetVariableUsage updates the UsedBy property for all variables
 // to contain a list of all resources which reference that variable
 func (m *Mod) SetVariableUsage() {
-	for _, v := range m.Variables {
-		for _, c := range m.Controls {
-			if helpers.StringSliceContains(c.References, v.Name()) {
-				v.UsedBy = append(v.UsedBy, c.Name())
+	for _, reference := range m.AllResources {
+		for _, referrer := range m.AllResources {
+			if referrer.ReferencesResource(reference.Name()) {
+				reference.AddReferencedBy(referrer.Name())
 			}
 		}
-		for _, q := range m.Queries {
-			if helpers.StringSliceContains(q.References, v.Name()) {
-				v.UsedBy = append(v.UsedBy, q.Name())
-			}
-		}
-		for _, b := range m.Benchmarks {
-			if helpers.StringSliceContains(b.References, v.Name()) {
-				v.UsedBy = append(v.UsedBy, b.Name())
-			}
-		}
-		// TODO Reports and Panels
 	}
 }

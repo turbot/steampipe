@@ -30,8 +30,8 @@ type Variable struct {
 	Mod                        *Mod
 
 	// list of resource names who use this variable
-	UsedBy   []string `column:"used_by,jsonb"`
-	metadata *ResourceMetadata
+	ReferencedBy []string `column:"referenced_by,jsonb"`
+	metadata     *ResourceMetadata
 }
 
 func NewVariable(v *var_config.Variable) *Variable {
@@ -80,6 +80,14 @@ func (v *Variable) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
 func (v *Variable) AddReference(string) {}
+
+// AddReferencedBy implements HclResource
+func (v *Variable) AddReferencedBy(reference string) {
+	v.ReferencedBy = append(v.ReferencedBy, reference)
+}
+
+// ReferencesResource implements HclResource
+func (v *Variable) ReferencesResource(string) bool { return false }
 
 // SetMod implements HclResource
 func (v *Variable) SetMod(mod *Mod) {

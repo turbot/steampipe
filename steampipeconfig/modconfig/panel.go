@@ -98,6 +98,12 @@ func (p *Panel) AddReference(reference string) {
 	// TODO
 }
 
+// AddReferencedBy implements HclResource
+func (p *Panel) AddReferencedBy(reference string) {}
+
+// ReferencesResource implements HclResource
+func (p *Panel) ReferencesResource(name string) bool { return false }
+
 // SetMod implements HclResource
 func (p *Panel) SetMod(mod *Mod) {
 	p.Mod = mod

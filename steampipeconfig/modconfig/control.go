@@ -33,8 +33,13 @@ type Control struct {
 
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
-	Mod        *Mod     `cty:"mod"`
-	DeclRange  hcl.Range
+	// references stored as a map for easy checking
+	referencesMap map[string]bool
+	// list of resource names who reference this resource
+	ReferencedBy []string `column:"referenced_by,jsonb"`
+
+	Mod       *Mod `cty:"mod"`
+	DeclRange hcl.Range
 
 	parents               []ModTreeItem
 	metadata              *ResourceMetadata
@@ -43,10 +48,11 @@ type Control struct {
 
 func NewControl(block *hcl.Block) *Control {
 	control := &Control{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("control.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
-		Args:      NewQueryArgs(),
+		ShortName:     block.Labels[0],
+		FullName:      fmt.Sprintf("control.%s", block.Labels[0]),
+		DeclRange:     block.DefRange,
+		Args:          NewQueryArgs(),
+		referencesMap: make(map[string]bool),
 	}
 	return control
 }
@@ -237,6 +243,17 @@ func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 // AddReference implements HclResource
 func (c *Control) AddReference(reference string) {
 	c.References = append(c.References, reference)
+	c.referencesMap[reference] = true
+}
+
+// AddReferencedBy implements HclResource
+func (c *Control) AddReferencedBy(reference string) {
+	c.ReferencedBy = append(c.ReferencedBy, reference)
+}
+
+// ReferencesResource implements HclResource
+func (c *Control) ReferencesResource(name string) bool {
+	return c.referencesMap[name]
 }
 
 // SetMod implements HclResource
