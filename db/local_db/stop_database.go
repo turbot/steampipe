@@ -23,7 +23,7 @@ type StopStatus int
 const (
 	// ServiceStopped indicates service was stopped.
 	// start from 10 to prevent confusion with int zero-value
-	ServiceStopped StopStatus = iota + 10
+	ServiceStopped StopStatus = iota + 1
 	// ServiceNotRunning indicates service was not running
 	ServiceNotRunning
 	// ServiceStopFailed indicates service could not be stopped
@@ -34,8 +34,8 @@ const (
 
 // ShutdownService stops the database instance if the given `invoker` matches
 func ShutdownService(invoker constants.Invoker) {
-	utils.LogTime("db.ShutdownService start")
-	defer utils.LogTime("db.ShutdownService end")
+	utils.LogTime("db_local.ShutdownService start")
+	defer utils.LogTime("db_local.ShutdownService end")
 
 	status, _ := GetStatus()
 
@@ -72,32 +72,31 @@ func GetCountOfConnectedClients() (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	clientCount := 0
+	defer rootClient.Close()
 
-	// get the total number of clients
+	clientCount := 0
+	// get the total number of connected clients
 	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend';")
 	row.Scan(&clientCount)
 
 	// clientCount can never be zero, since the client we are using to run the query
 	// counts as a client
-
-	return (clientCount - 1 /* deduct the existing client */), rootClient.Close()
+	return (clientCount - 1 /* deduct the existing we used to query the count */), nil
 }
 
-// StopDB :: search and stop the running instance. Does nothing if an instance was not found
-func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (StopStatus, error) {
+// StopDB searches for and stops the running instance. Does nothing if an instance was not found
+func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (status StopStatus, e error) {
 	log.Println("[TRACE] StopDB", force)
+	utils.LogTime("db_local.StopDB start")
 
-	utils.LogTime("db.StopDB start")
-	defer utils.LogTime("db.StopDB end")
+	defer func() {
+		if e == nil {
+			os.Remove(runningInfoFilePath())
+		}
+		utils.LogTime("db_local.StopDB end")
+	}()
 
 	if force {
-		// remove this file regardless of whether
-		// we could stop the service or not
-		// so that the next time it starts,
-		// all previous instances are nuked
-		defer os.Remove(runningInfoFilePath())
-
 		// check if we have a process from another install-dir
 		display.UpdateSpinnerMessage(spinner, "Checking for running instances...")
 		killInstanceIfAny()
@@ -134,16 +133,17 @@ func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (St
 }
 
 /**
-	Postgres has two more levels of shutdown:
-		* SIGTERM	- Smart ShutdownService    	:  Wait for children to end normally - exit self
-		* SIGINT	- Fast ShutdownService      	:  SIGTERM children, causing them to abort current
-											:  transations and exit - wait for children to exit -
-											:  exit self
-		* SIGQUIT	- Immediate ShutdownService 	:  SIGQUIT children - wait at most 5 seconds,
-											   send SIGKILL to children - exit self immediately
+	Postgres has three levels of shutdown:
+
+	* SIGTERM   - Smart Shutdown	 :  Wait for children to end normally - exit self
+	* SIGINT    - Fast Shutdown      :  SIGTERM children, causing them to abort current
+									    transations and exit - wait for children to exit -
+									    exit self
+	* SIGQUIT   - Immediate Shutdown :  SIGQUIT children - wait at most 5 seconds,
+									    send SIGKILL to children - exit self immediately
 
 	Postgres recommended shutdown is to send a SIGTERM - which initiates
-	a Smart-ShutdownService sequence.
+	a Smart-Shutdown sequence.
 
 	IMPORTANT:
 	As per documentation, it is best not to use SIGKILL
@@ -158,6 +158,9 @@ func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (St
 	the sequence is there only as a backup.
 **/
 func doThreeStepPostgresExit(process *psutils.Process) error {
+	utils.LogTime("db_local.doThreeStepPostgresExit start")
+	defer utils.LogTime("db_local.doThreeStepPostgresExit end")
+
 	var err error
 	var exitSuccessful bool
 
@@ -196,6 +199,9 @@ func doThreeStepPostgresExit(process *psutils.Process) error {
 }
 
 func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
+	utils.LogTime("db_local.waitForProcessExit start")
+	defer utils.LogTime("db_local.waitForProcessExit end")
+
 	checkTimer := time.NewTicker(50 * time.Millisecond)
 	timeoutAt := time.After(waitFor)
 
@@ -215,6 +221,9 @@ func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 }
 
 func getPrintableProcessDetails(process *psutils.Process, indent int) string {
+	utils.LogTime("db_local.getPrintableProcessDetails start")
+	defer utils.LogTime("db_local.getPrintableProcessDetails end")
+
 	indentString := strings.Repeat("  ", indent)
 	appendTo := []string{}
 
