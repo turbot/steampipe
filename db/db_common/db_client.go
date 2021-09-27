@@ -26,7 +26,7 @@ type Client interface {
 	// todo share this between locan and remote client?
 	LoadSchema()
 
-	SetEnsureSessionStateFunc(EnsureSessionStateCallback)
+	SetEnsureSessionDataFunc(EnsureSessionStateCallback)
 
 	// RemoteClient will have empty implementations
 

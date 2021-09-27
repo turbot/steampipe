@@ -288,8 +288,8 @@ func establishConnection(connectionString string) (*sql.DB, error) {
 	return nil, fmt.Errorf("could not establish connection")
 }
 
-// SetEnsureSessionStateFunc sets the callback function which setups the session data - prepared statements and introspection tables
+// SetEnsureSessionDataFunc sets the callback function which setups the session data - prepared statements and introspection tables
 // this will be called when there is a client error/timeout
-func (c *LocalClient) SetEnsureSessionStateFunc(f db_common.EnsureSessionStateCallback) {
+func (c *LocalClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallback) {
 	c.ensureSessionFunc = f
 }
