@@ -33,4 +33,5 @@ func EnsureSessionData(ctx context.Context, source *SessionDataSource, client db
 		}
 	}
 	return nil
+
 }
