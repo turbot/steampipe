@@ -9,8 +9,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zclconf/go-cty/cty"
-
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
@@ -258,7 +256,7 @@ func (w *Workspace) loadWorkspaceMod() error {
 		return err
 	}
 
-	w.Variables = inputVariables
+	variableValueMap := modconfig.VariableValueMap(inputVariables)
 
 	// build options used to load workspace
 	// set flags to create pseudo resources and a default mod if needed
@@ -269,7 +267,7 @@ func (w *Workspace) loadWorkspaceMod() error {
 			Flags:   w.listFlag,
 			Exclude: w.exclusions,
 		},
-		Variables: w.VariableValueMap(),
+		Variables: variableValueMap,
 	}
 
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
@@ -291,16 +289,12 @@ func (w *Workspace) loadWorkspaceMod() error {
 	w.Reports = w.buildReportMap(modMap)
 	w.Panels = w.buildPanelMap(modMap)
 	w.Mods = modMap
+	// now update variables with their usage - populate the UsedBy property
+	m.SetVariableUsage()
+	// set variables on workspace
+	w.Variables = m.Variables
 
 	return nil
-}
-
-func (w *Workspace) VariableValueMap() map[string]cty.Value {
-	ret := make(map[string]cty.Value, len(w.Variables))
-	for k, v := range w.Variables {
-		ret[k] = v.Value
-	}
-	return ret
 }
 
 func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {

@@ -32,8 +32,12 @@ type Benchmark struct {
 
 	// list of all block referenced by the resource
 	References []string `column:"refs,jsonb"`
-	Mod        *Mod     `cty:"mod"`
+	// references stored as a map for easy checking
+	referencesMap map[string]bool
+	// list of resource names who reference this resource
+	ReferencedBy []string `column:"referenced_by,jsonb"`
 
+	Mod              *Mod     `cty:"mod"`
 	ChildNameStrings []string `column:"children,jsonb"`
 	DeclRange        hcl.Range
 
@@ -44,9 +48,10 @@ type Benchmark struct {
 
 func NewBenchmark(block *hcl.Block) *Benchmark {
 	return &Benchmark{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("benchmark.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
+		ShortName:     block.Labels[0],
+		FullName:      fmt.Sprintf("benchmark.%s", block.Labels[0]),
+		DeclRange:     block.DefRange,
+		referencesMap: make(map[string]bool),
 	}
 }
 
@@ -123,6 +128,17 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 // AddReference implements HclResource
 func (b *Benchmark) AddReference(reference string) {
 	b.References = append(b.References, reference)
+	b.referencesMap[reference] = true
+}
+
+// AddReferencedBy implements HclResource
+func (b *Benchmark) AddReferencedBy(reference string) {
+	b.ReferencedBy = append(b.ReferencedBy, reference)
+}
+
+// ReferencesResource implements HclResource
+func (b *Benchmark) ReferencesResource(name string) bool {
+	return b.referencesMap[name]
 }
 
 // SetMod implements HclResource
