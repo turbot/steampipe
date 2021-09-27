@@ -122,12 +122,15 @@ func (c *LocalClient) createTransaction(ctx context.Context, retryOnTimeout bool
 		if retryOnTimeout {
 			log.Printf("[TRACE] refresh the client and retry")
 			// refresh the db client to try to fix the issue
-			c.refreshDbClient(ctx)
+			if e := c.refreshDbClient(ctx); e != nil {
+				log.Printf("[TRACE] error refreshing the client: %v", e)
+				err = fmt.Errorf("error creating transaction - please restart Steampipe")
+				return
+			}
 
 			// recurse back into this function, passing 'retryOnTimeout=false' to prevent further recursion
 			return c.createTransaction(ctx, false)
 		}
-		err = fmt.Errorf("error creating transaction - please restart Steampipe")
 	}
 	return
 }
@@ -145,9 +148,7 @@ func (c *LocalClient) refreshDbClient(ctx context.Context) error {
 	c.dbClient = db
 
 	// setup the session data - prepared statements and introspection tables
-	c.ensureServiceState(ctx)
-
-	return nil
+	return c.ensureServiceState(ctx)
 }
 
 func (c *LocalClient) ensureServiceState(ctx context.Context) error {

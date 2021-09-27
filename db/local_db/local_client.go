@@ -40,17 +40,17 @@ func (c *LocalClient) Close() error {
 func NewLocalClient(invoker constants.Invoker) (*LocalClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
-	cStr, err := getLocalServiceConnectionString()
+	connectionString, err := getLocalServiceConnectionString()
 	if err != nil {
 		return nil, err
 	}
-	db, err := establishConnection(cStr)
+	db, err := establishConnection(connectionString)
 	if err != nil {
 		return nil, err
 	}
 	client := &LocalClient{
 		invoker:          invoker,
-		connectionString: cStr,
+		connectionString: connectionString,
 	}
 	client.dbClient = db
 
@@ -275,8 +275,8 @@ func (c *LocalClient) getSchemaFromDB() (*sql.Rows, error) {
 	return c.dbClient.Query(fmt.Sprintf(query, constants.CommandSchema))
 }
 
-func establishConnection(connStr string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", connStr)
+func establishConnection(connectionString string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
 		return nil, err
 	}
@@ -288,6 +288,8 @@ func establishConnection(connStr string) (*sql.DB, error) {
 	return nil, fmt.Errorf("could not establish connection")
 }
 
+// SetEnsureSessionStateFunc sets the callback function which setups the session data - prepared statements and introspection tables
+// this will be called when there is a client error/timeout
 func (c *LocalClient) SetEnsureSessionStateFunc(f db_common.EnsureSessionStateCallback) {
 	c.ensureSessionFunc = f
 }
