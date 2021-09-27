@@ -28,7 +28,7 @@ type Client interface {
 	CacheOff() error
 	CacheClear() error
 
-	SetEnsureSessionStateFunc(EnsureSessionStateCallback)
+	SetEnsureSessionDataFunc(EnsureSessionStateCallback)
 
 	// remote client will have empty implementation
 

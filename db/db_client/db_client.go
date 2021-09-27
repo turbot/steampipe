@@ -52,7 +52,7 @@ func establishConnection(connStr string) (*sql.DB, error) {
 	return nil, fmt.Errorf("could not establish connection")
 }
 
-func (c *DbClient) SetEnsureSessionStateFunc(f db_common.EnsureSessionStateCallback) {
+func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallback) {
 	c.ensureSessionFunc = f
 }
 

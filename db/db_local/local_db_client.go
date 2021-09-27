@@ -75,8 +75,8 @@ func (c *LocalDbClient) Close() error {
 }
 
 // EnsureSessionState implements Client
-func (c *LocalDbClient) SetEnsureSessionStateFunc(f db_common.EnsureSessionStateCallback) {
-	c.client.SetEnsureSessionStateFunc(f)
+func (c *LocalDbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallback) {
+	c.client.SetEnsureSessionDataFunc(f)
 }
 
 // SchemaMetadata implements Client
