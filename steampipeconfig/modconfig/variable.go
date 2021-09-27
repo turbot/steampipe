@@ -29,6 +29,8 @@ type Variable struct {
 	ParsingMode                var_config.VariableParsingMode
 	Mod                        *Mod
 
+	// list of resource names who use this variable
+	UsedBy   []string `column:"used_by,jsonb"`
 	metadata *ResourceMetadata
 }
 
@@ -101,4 +103,13 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 	v.ValueSourceFileName = sourceRange.Filename
 	v.ValueSourceStartLineNumber = sourceRange.Start.Line
 	v.ValueSourceEndLineNumber = sourceRange.End.Line
+}
+
+// VariableValueMap converts a map of variables to a map of the underlying cty value
+func VariableValueMap(variables map[string]*Variable) map[string]cty.Value {
+	ret := make(map[string]cty.Value, len(variables))
+	for k, v := range variables {
+		ret[k] = v.Value
+	}
+	return ret
 }

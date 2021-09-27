@@ -250,6 +250,8 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 		if block.Type == "param" {
 			if param, valDiags := decodeParam(block, runCtx, q.FullName); !diags.HasErrors() {
 				q.Params = append(q.Params, param)
+				// update references
+				AddReferences(q, block)
 			} else {
 				diags = append(diags, valDiags...)
 			}
@@ -380,6 +382,8 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 			}
 			if paramDef, valDiags := decodeParam(block, runCtx, c.FullName); !diags.HasErrors() {
 				c.Params = append(c.Params, paramDef)
+				// update references
+				AddReferences(c, block)
 			} else {
 				diags = append(diags, valDiags...)
 			}

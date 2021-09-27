@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/zclconf/go-cty/cty"
@@ -569,4 +570,27 @@ func (m *Mod) GetChildControls() []*Control {
 		res = append(res, control)
 	}
 	return res
+}
+
+// SetVariableUsage updates the UsedBy property for all variables
+// to contain a list of all resources which reference that variable
+func (m *Mod) SetVariableUsage() {
+	for _, v := range m.Variables {
+		for _, c := range m.Controls {
+			if helpers.StringSliceContains(c.References, v.Name()) {
+				v.UsedBy = append(v.UsedBy, c.Name())
+			}
+		}
+		for _, q := range m.Queries {
+			if helpers.StringSliceContains(q.References, v.Name()) {
+				v.UsedBy = append(v.UsedBy, q.Name())
+			}
+		}
+		for _, b := range m.Benchmarks {
+			if helpers.StringSliceContains(b.References, v.Name()) {
+				v.UsedBy = append(v.UsedBy, b.Name())
+			}
+		}
+		// TODO Reports and Panels
+	}
 }
