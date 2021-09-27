@@ -47,7 +47,7 @@ func (r *Report) Name() string {
 
 // QualifiedName returns the name in format: '<modName>.report.<shortName>'
 func (r *Report) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", r.metadata.ModShortName, r.FullName)
+	return fmt.Sprintf("%s.%s", r.metadata.ModName, r.FullName)
 }
 
 // OnDecoded implements HclResource

@@ -176,7 +176,10 @@ func createPseudoResources(modPath string, opts *parse.ParseModOptions) ([]modco
 			continue
 		}
 		if resource != nil {
-			metadata := getPseudoResourceMetadata(resource.Name(), path, fileData)
+			metadata, err := getPseudoResourceMetadata(resource.Name(), path, fileData)
+			if err != nil {
+				return nil, err
+			}
 			resource.SetMetadata(metadata)
 			res = append(res, resource)
 		}
@@ -192,13 +195,19 @@ func createPseudoResources(modPath string, opts *parse.ParseModOptions) ([]modco
 	return res, nil
 }
 
-func getPseudoResourceMetadata(name string, path string, fileData []byte) *modconfig.ResourceMetadata {
+func getPseudoResourceMetadata(resourceName string, path string, fileData []byte) (*modconfig.ResourceMetadata, error) {
 	sourceDefinition := string(fileData)
 	split := strings.Split(sourceDefinition, "\n")
 	lineCount := len(split)
 
+	// convert the name into a short name
+	parsedName, err := modconfig.ParseResourceName(resourceName)
+	if err != nil {
+		return nil, err
+	}
+
 	m := &modconfig.ResourceMetadata{
-		ResourceName:     name,
+		ResourceName:     parsedName.Name,
 		FileName:         path,
 		StartLineNumber:  1,
 		EndLineNumber:    lineCount,
@@ -206,5 +215,5 @@ func getPseudoResourceMetadata(name string, path string, fileData []byte) *modco
 		SourceDefinition: sourceDefinition,
 	}
 
-	return m
+	return m, nil
 }

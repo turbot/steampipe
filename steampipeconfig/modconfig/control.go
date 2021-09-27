@@ -212,7 +212,7 @@ func (c *Control) Name() string {
 
 // QualifiedName returns the name in format: '<modName>.control.<shortName>'
 func (c *Control) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", c.metadata.ModShortName, c.FullName)
+	return fmt.Sprintf("%s.%s", c.metadata.ModName, c.FullName)
 }
 
 // GetPaths implements ModTreeItem
