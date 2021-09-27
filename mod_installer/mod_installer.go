@@ -2,6 +2,7 @@ package mod_installer
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -156,6 +157,11 @@ func (i *ModInstaller) installDependency(dependency *ResolvedModRef, dependencyM
 		}
 	}
 	// no load the installed mod and install _its_ dependencies
+	if !parse.ModfileExists(modPath) {
+		log.Printf("[TRACE] dependency %s does not define a mod defintion - so there are no dependencies to install", dependency.Name)
+		return nil
+	}
+
 	mod, err := parse.ParseModDefinition(modPath)
 	if err != nil {
 		return err

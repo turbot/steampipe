@@ -61,6 +61,10 @@ func runModInstallCmd(*cobra.Command, []string) {
 	// install workspace dependencies
 	// TODO do we need to care about variables?? probably?
 
+	if !parse.ModfileExists(workspacePath) {
+		fmt.Println("No mod file found, so there are no dependencies to install")
+		return
+	}
 	// load the modfile only
 	mod, err := parse.ParseModDefinition(workspacePath)
 	utils.FailOnError(err)
