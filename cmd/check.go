@@ -242,7 +242,11 @@ func initialiseCheck() *checkInitData {
 	initData.result.AddWarnings(refreshResult.Warnings...)
 
 	// setup the session data - prepared statements and introspection tables
-	workspace.EnsureServiceState(context.Background(), initData.workspace.GetResourceMaps(), initData.client)
+	err = workspace.EnsureServiceState(context.Background(), initData.workspace.GetResourceMaps(), initData.client)
+	if err != nil {
+		initData.result.Error = err
+		return initData
+	}
 
 	// register EnsureServiceState as a callback on the client.
 	// if the underlying SQL client has certain errors (for example context expiry) it will reset the session

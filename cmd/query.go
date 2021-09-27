@@ -257,8 +257,11 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 		initData.Result.AddWarnings(res.Warnings...)
 
 		// setup the session data - prepared statements and introspection tables
-		workspace.EnsureServiceState(context.Background(), preparedStatementProviders, initData.Client)
-
+		err = workspace.EnsureServiceState(context.Background(), preparedStatementProviders, initData.Client)
+		if err != nil {
+			initData.Result.Error = err
+			return
+		}
 		// register EnsureServiceState as a callback on the client.
 		// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 		// so our client object calls this callback to restore the session data
