@@ -285,10 +285,7 @@ func setupLogCollection(cmd *exec.Cmd) {
 	logChannel := make(chan string, 1000)
 	stopListenFn, err := setupLogCollector(cmd, logChannel)
 	if err == nil {
-		defer func() {
-			stopListenFn()
-		}()
-		go traceoutServiceLogs(logChannel)
+		go traceoutServiceLogs(logChannel, stopListenFn)
 	} else {
 		// this is a convenience and therefore, we shouldn't error out if we
 		// are not able to capture the logs.
@@ -334,10 +331,11 @@ func createRunningInfo(cmd *exec.Cmd, port int, password string, listen StartLis
 	return nil
 }
 
-func traceoutServiceLogs(logChannel chan string) {
+func traceoutServiceLogs(logChannel chan string, stopLogStreamFn func()) {
 	for logLine := range logChannel {
 		log.Printf("[TRACE] SERVICE: %s\n", logLine)
 		if strings.Contains(logLine, "Future log output will appear in") {
+			stopLogStreamFn()
 			break
 		}
 	}
