@@ -11,7 +11,7 @@ import (
 
 type ParamDef struct {
 	ShortName   string      `cty:"name" json:"name"`
-	FullName    string      `cty:"name"`
+	FullName    string      `cty:"name" json:"-"`
 	Description *string     `cty:"description" json:"description"`
 	RawDefault  interface{} `json:"-"`
 	Default     *string     `cty:"default" json:"default"`
@@ -24,10 +24,10 @@ type ParamDef struct {
 	ReferencedBy []string `json:"referenced_by"`
 }
 
-func NewParamDef(block *hcl.Block) *ParamDef {
+func NewParamDef(block *hcl.Block, parent string) *ParamDef {
 	return &ParamDef{
 		ShortName:     block.Labels[0],
-		FullName:      fmt.Sprintf("query.%s", block.Labels[0]),
+		FullName:      fmt.Sprintf("%s.param.%s", parent, block.Labels[0]),
 		referencesMap: make(map[string]bool),
 	}
 }
