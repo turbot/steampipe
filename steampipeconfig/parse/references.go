@@ -13,6 +13,7 @@ var referenceBlockTypes = []string{
 	modconfig.BlockTypeQuery,
 	modconfig.BlockTypeControl,
 	modconfig.BlockTypeBenchmark,
+	modconfig.BlockTypeParam,
 	"local"}
 
 // AddReferences populates the 'References' resource field, used for the introspection tables

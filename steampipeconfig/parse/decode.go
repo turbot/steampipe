@@ -247,7 +247,7 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 		diags = append(diags, valDiags...)
 	}
 	for _, block := range content.Blocks {
-		if block.Type == "param" {
+		if block.Type == modconfig.BlockTypeParam {
 			if param, valDiags := decodeParam(block, runCtx, q.FullName); !diags.HasErrors() {
 				q.Params = append(q.Params, param)
 				// add references to param
@@ -371,7 +371,7 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 	}
 
 	for _, block := range content.Blocks {
-		if block.Type == "param" {
+		if block.Type == modconfig.BlockTypeParam {
 			// param block cannot be set if a query property is set - it is only valid if inline SQL ids defined
 			if c.Query != nil {
 				diags = append(diags, &hcl.Diagnostic{
