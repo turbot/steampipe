@@ -290,7 +290,7 @@ func (w *Workspace) loadWorkspaceMod() error {
 	w.Panels = w.buildPanelMap(modMap)
 	w.Mods = modMap
 	// now update variables with their usage - populate the UsedBy property
-	m.SetVariableUsage()
+	m.SetReferencedBy()
 	// set variables on workspace
 	w.Variables = m.Variables
 
