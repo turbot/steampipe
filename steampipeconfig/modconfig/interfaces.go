@@ -39,7 +39,6 @@ type HclResource interface {
 	AddReference(reference string)
 	AddReferencedBy(referencedBy string)
 	ReferencesResource(string) bool
-
 	SetMod(*Mod)
 }
 
