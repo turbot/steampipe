@@ -234,20 +234,12 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 		initData.Workspace = w
 
 		// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-		queries, preparedStatementProviders, err := w.GetQueriesFromArgs(args)
+		queries, preparedStatementSource, err := w.GetQueriesFromArgs(args)
 		if err != nil {
 			initData.Result.Error = err
 			return
 		}
 		initData.Queries = queries
-
-		// create prepared statements
-		// if queries were provided as args, only create any prepared statement providers required for these queries
-		// if no queries were provided on commandline, we will be running an interactive session
-		// so create prepared statements for all controls and queries in the workspace
-		if len(queries) == 0 {
-			preparedStatementProviders = w.GetResourceMaps()
-		}
 
 		res := client.RefreshConnectionAndSearchPaths()
 		if res.Error != nil {
@@ -256,15 +248,20 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 		}
 		initData.Result.AddWarnings(res.Warnings...)
 
-		// setup the session data - prepared statements and introspection tables
-		// create session data source
-		sessionDataSource := workspace.NewSessionDataSource(w.GetResourceMaps(), preparedStatementProviders)
-
+		// set up the session data - prepared statements and introspection tables
+		// this defaults to creating prepared statements for all queries
+		sessionDataSource := workspace.NewSessionDataSource(w.GetResourceMaps())
+		// if queries were provided as args, only create prepared statements required for these queries
+		if len(queries) > 0 {
+			log.Printf("[TRACE] only creating prepared statements for command line queries")
+			sessionDataSource.PreparedStatementSource = preparedStatementSource
+		}
 		err = workspace.EnsureSessionData(context.Background(), sessionDataSource, initData.Client)
 		if err != nil {
 			initData.Result.Error = err
 			return
 		}
+
 		// register EnsureSessionData as a callback on the client.
 		// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 		// so our client object calls this callback to restore the session data

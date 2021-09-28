@@ -24,11 +24,11 @@ func EnsureSessionData(ctx context.Context, source *SessionDataSource, client db
 
 	// if the steampipe_mod table is missing, assume we have no session data - go ahead and create it
 	if count == 0 {
-		err = db_common.CreatePreparedStatements(context.Background(), source.preparedStatementSource, client)
+		err = db_common.CreatePreparedStatements(context.Background(), source.PreparedStatementSource, client)
 		if err != nil {
 			return err
 		}
-		if err = db_common.CreateIntrospectionTables(ctx, source.introspectionTableSource, client); err != nil {
+		if err = db_common.CreateIntrospectionTables(ctx, source.IntrospectionTableSource, client); err != nil {
 			return err
 		}
 	}
