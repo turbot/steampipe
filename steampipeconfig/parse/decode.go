@@ -272,8 +272,8 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 	return q, res
 }
 
-func decodeParam(block *hcl.Block, runCtx *RunContext, queryName string) (*modconfig.ParamDef, hcl.Diagnostics) {
-	def := modconfig.NewParamDef(block)
+func decodeParam(block *hcl.Block, runCtx *RunContext, parentName string) (*modconfig.ParamDef, hcl.Diagnostics) {
+	def := modconfig.NewParamDef(block, parentName)
 
 	content, diags := block.Body.Content(ParamDefBlockSchema)
 
@@ -292,7 +292,7 @@ func decodeParam(block *hcl.Block, runCtx *RunContext, queryName string) (*modco
 		} else {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("%s has invalid parameter config", queryName),
+				Summary:  fmt.Sprintf("%s has invalid parameter config", parentName),
 				Detail:   err.Error(),
 				Subject:  &attr.Range,
 			})
