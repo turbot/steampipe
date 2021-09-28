@@ -80,7 +80,7 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 }
 
 // UpdatePreparedStatements first attempts to deallocate all prepared statements in workspace, then recreates them
-func UpdatePreparedStatements(ctx context.Context, prevResourceMaps *modconfig.WorkspaceResourceMaps, currentResourceMaps *modconfig.WorkspaceResourceMaps, client Client) error {
+func UpdatePreparedStatements(ctx context.Context, prevResourceMaps, currentResourceMaps *modconfig.WorkspaceResourceMaps, client Client) error {
 	log.Printf("[TRACE] UpdatePreparedStatements")
 
 	utils.LogTime("db.UpdatePreparedStatements start")
