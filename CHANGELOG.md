@@ -1,4 +1,4 @@
-## v0.8.3 [2021-09-27]
+## v0.8.3 [2021-09-28]
 
 _What's new?_
 * Update `service start` command to support `database-password` arg and `STEAMPIPE_DATABASE_PASSWORD` environment variable, to allow a custom password to be used when running in service mode. ([#725](https://github.com/turbot/steampipe/issues/725))
