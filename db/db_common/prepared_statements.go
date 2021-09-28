@@ -80,21 +80,21 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 }
 
 // UpdatePreparedStatements first attempts to deallocate all prepared statements in workspace, then recreates them
-func UpdatePreparedStatements(ctx context.Context, resourceMaps *modconfig.WorkspaceResourceMaps, client Client) error {
+func UpdatePreparedStatements(ctx context.Context, prevResourceMaps *modconfig.WorkspaceResourceMaps, currentResourceMaps *modconfig.WorkspaceResourceMaps, client Client) error {
 	log.Printf("[TRACE] UpdatePreparedStatements")
 
 	utils.LogTime("db.UpdatePreparedStatements start")
 	defer utils.LogTime("db.UpdatePreparedStatements end")
 
 	var sql []string
-	for name, query := range resourceMaps.Queries {
+	for name, query := range prevResourceMaps.Queries {
 		// query map contains long and short names for queries - avoid dupes
 		if !strings.HasPrefix(name, "query.") {
 			continue
 		}
 		sql = append(sql, fmt.Sprintf("DEALLOCATE %s;", query.GetPreparedStatementName()))
 	}
-	for name, control := range resourceMaps.Controls {
+	for name, control := range prevResourceMaps.Controls {
 		// query map contains long and short names for controls - avoid dupes
 		if !strings.HasPrefix(name, "control.") {
 			continue
@@ -115,6 +115,6 @@ func UpdatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 	}
 
 	// now recreate them
-	return CreatePreparedStatements(ctx, resourceMaps, client)
+	return CreatePreparedStatements(ctx, currentResourceMaps, client)
 
 }
