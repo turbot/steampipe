@@ -376,6 +376,10 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 			break
 		}
 		m.Controls[name] = r
+		// add params to all resources - this enablesa us to track references
+		for _, p := range r.Params {
+			m.AllResources = append(m.AllResources, p)
+		}
 
 	case *Benchmark:
 		name := r.Name()

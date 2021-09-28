@@ -12,8 +12,9 @@ import (
 // these may either be passed by name, in a map, or as a list of positional args
 // NOTE: if both are present the named parameters are used
 type QueryArgs struct {
-	Args     map[string]string `cty:"args"`
-	ArgsList []string          `cty:"args_list"`
+	Args       map[string]string `cty:"args" json:"args"`
+	ArgsList   []string          `cty:"args_list" json:"args_list"`
+	References []string          `cty:"refs" json:"refs"`
 }
 
 func (q *QueryArgs) String() string {
@@ -130,14 +131,14 @@ func (q *QueryArgs) resolveNamedParameters(source PreparedStatementProvider) (ar
 		defaultValue := typehelpers.SafeString(def.Default)
 
 		// can we resolve a value for this param?
-		if val, ok := q.Args[def.Name]; ok {
+		if val, ok := q.Args[def.ShortName]; ok {
 			argStrs[i] = val
-			argsWithParamDef[def.Name] = true
+			argsWithParamDef[def.ShortName] = true
 		} else if defaultValue != "" {
 			argStrs[i] = defaultValue
 		} else {
 			// no value provided and no default defined - add to missing list
-			missingParams = append(missingParams, def.Name)
+			missingParams = append(missingParams, def.ShortName)
 		}
 	}
 
@@ -178,7 +179,7 @@ func (q *QueryArgs) resolvePositionalParameters(source PreparedStatementProvider
 			argStrs[i] = defaultValue
 		} else {
 			// no value provided and no default defined - add to missing list
-			missingParams = append(missingParams, param.Name)
+			missingParams = append(missingParams, param.ShortName)
 		}
 	}
 	return
