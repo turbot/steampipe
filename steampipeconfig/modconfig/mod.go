@@ -596,13 +596,39 @@ func (m *Mod) GetChildControls() []*Control {
 	return res
 }
 
-// SetVariableUsage updates the UsedBy property for all variables
-// to contain a list of all resources which reference that variable
-func (m *Mod) SetVariableUsage() {
+// SetReferencedBy updates the ReferencedBy property for all resources
+func (m *Mod) SetReferencedBy() {
 	for _, reference := range m.AllResources {
-		for _, referrer := range m.AllResources {
-			if referrer.ReferencesResource(reference.Name()) {
-				reference.AddReferencedBy(referrer.Name())
+		m.setReferenceUsage(reference)
+
+		// if this resource is a control or query, iterate through all params and set their ReferencedBy
+		for _, param := range getResourceParams(reference) {
+			m.setReferenceUsage(param)
+		}
+	}
+}
+
+func getResourceParams(reference HclResource) []*ParamDef {
+	var params []*ParamDef
+	if q, ok := reference.(*Query); ok {
+		params = q.Params
+	} else if c, ok := reference.(*Control); ok {
+		params = c.Params
+	}
+	return params
+}
+
+func (m *Mod) setReferenceUsage(reference HclResource) {
+	// check every resource to see if it references 'reference'
+	for _, referrer := range m.AllResources {
+		if referrer.ReferencesResource(reference.Name()) {
+			reference.AddReferencedBy(referrer.Name())
+		}
+
+		// if this referrer a mod or control, check every param to see if IT references 'reference'
+		for _, param := range getResourceParams(referrer) {
+			if param.ReferencesResource(reference.Name()) {
+				reference.AddReferencedBy(param.Name())
 			}
 		}
 	}
