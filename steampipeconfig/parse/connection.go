@@ -12,14 +12,14 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-func ParseConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.Connection, hcl.Diagnostics) {
+func DecodeConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.Connection, hcl.Diagnostics) {
 	connectionContent, rest, diags := block.Body.PartialContent(ConnectionBlockSchema)
 	if diags.HasErrors() {
 		return nil, diags
 	}
 
 	// get connection name
-	connection := &modconfig.Connection{Name: block.Labels[0]}
+	connection := modconfig.NewConnection(block)
 
 	var pluginName string
 	diags = gohcl.DecodeExpression(connectionContent.Attributes["plugin"].Expr, nil, &pluginName)
@@ -27,6 +27,7 @@ func ParseConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.C
 		return nil, diags
 	}
 	connection.Plugin = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
+	connection.PluginShortName = pluginName
 
 	if connectionContent.Attributes["type"] != nil {
 		var connectionType string
@@ -50,7 +51,7 @@ func ParseConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.C
 		switch connectionBlock.Type {
 		case "options":
 			// if we already found settings, fail
-			opts, moreDiags := ParseOptions(connectionBlock)
+			opts, moreDiags := DecodeOptions(connectionBlock)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				break

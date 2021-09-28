@@ -1,9 +1,11 @@
 package steampipeconfig
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
@@ -33,15 +35,18 @@ type ConnectionData struct {
 	Plugin string `yaml:"plugin"`
 	// the checksum of the plugin file
 	CheckSum string `yaml:"checkSum"`
+	// the underlying connection object
+	Connection *modconfig.Connection `json:"-"`
 	// connection name
 	ConnectionName string
 	// connection data (unparsed)
 	ConnectionConfig string
 	// steampipe connection options
 	ConnectionOptions *options.Connection
+	DeclRange         hcl.Range
 }
 
-func (p ConnectionData) Equals(other *ConnectionData) bool {
+func (p *ConnectionData) Equals(other *ConnectionData) bool {
 	connectionOptionsEqual := (p.ConnectionOptions == nil) == (other.ConnectionOptions == nil)
 	if p.ConnectionOptions != nil {
 		connectionOptionsEqual = p.ConnectionOptions.Equals(other.ConnectionOptions)
@@ -127,16 +132,17 @@ func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (
 
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration start")
 	// populate checksum for each referenced plugin
-	for name, config := range connectionConfig {
-		remoteSchema := config.Plugin
-		pluginPath, err := GetPluginPath(remoteSchema)
+	for name, connection := range connectionConfig {
+		remoteSchema := connection.Plugin
+		pluginPath, err := GetPluginPath(connection)
 		if err != nil {
+			err := fmt.Errorf("failed to load connection '%s': %v\n%s", connection.Name, err, connection.DeclRange)
 			return nil, nil, err
 		}
 		// if plugin is not installed, the path will be returned as empty
 		if pluginPath == "" {
-			if !helpers.StringSliceContains(missingPlugins, config.Plugin) {
-				missingPlugins = append(missingPlugins, config.Plugin)
+			if !helpers.StringSliceContains(missingPlugins, connection.Plugin) {
+				missingPlugins = append(missingPlugins, connection.Plugin)
 			}
 			continue
 		}
@@ -149,8 +155,10 @@ func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (
 		requiredConnections[name] = &ConnectionData{
 			Plugin:           remoteSchema,
 			CheckSum:         checksum,
-			ConnectionConfig: config.Config,
-			ConnectionName:   config.Name,
+			Connection:       connection,
+			ConnectionConfig: connection.Config,
+			ConnectionName:   connection.Name,
+			DeclRange:        connection.DeclRange,
 		}
 	}
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration end")

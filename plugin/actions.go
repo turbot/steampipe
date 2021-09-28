@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 const (
@@ -19,17 +20,14 @@ const (
 )
 
 // Remove removes an installed plugin
-func Remove(image string, pluginConnections map[string][]string) error {
+func Remove(image string, pluginConnections map[string][]modconfig.Connection) error {
 	spinner := display.ShowSpinner(fmt.Sprintf("Removing plugin %s", image))
 	defer display.StopSpinner(spinner)
 
 	fullPluginName := ociinstaller.NewSteampipeImageRef(image).DisplayImageRef()
 
 	// are any connections using this plugin???
-	conns, found := pluginConnections[fullPluginName]
-	if found {
-		return fmt.Errorf("there are active connections using it: '%s'", strings.Join(conns, ","))
-	}
+	conns := pluginConnections[fullPluginName]
 
 	installedTo := filepath.Join(constants.PluginDir(), filepath.FromSlash(fullPluginName))
 	_, err := os.Stat(installedTo)
@@ -48,7 +46,28 @@ func Remove(image string, pluginConnections map[string][]string) error {
 		return err
 	}
 	delete(v.Plugins, fullPluginName)
-	return v.Save()
+	err = v.Save()
+
+	if len(conns) > 0 {
+		display.StopSpinner(spinner)
+		str := []string{fmt.Sprintf("\nThe following files have steampipe connections using the '%s' plugin:\n", image)}
+		for _, conn := range conns {
+			str = append(
+				str,
+				fmt.Sprintf(
+					"\t* '%s' in %s, line %d",
+					conn.Name,
+					conn.DeclRange.Filename,
+					conn.DeclRange.Start.Line,
+				),
+			)
+		}
+		str = append(str, "\nPlease remove them to continue using steampipe")
+		fmt.Println(strings.Join(str, "\n"))
+		fmt.Println()
+	}
+
+	return err
 }
 
 // Exists looks up the version file and reports whether a plugin is already installed
@@ -79,7 +98,7 @@ type PluginListItem struct {
 }
 
 // List returns all installed plugins
-func List(pluginConnectionMap map[string][]string) ([]PluginListItem, error) {
+func List(pluginConnectionMap map[string][]modconfig.Connection) ([]PluginListItem, error) {
 	var items []PluginListItem
 
 	var installedPlugins []string
@@ -113,7 +132,14 @@ func List(pluginConnectionMap map[string][]string) ([]PluginListItem, error) {
 			Version: version,
 		}
 		if pluginConnectionMap != nil {
-			item.Connections = pluginConnectionMap[plugin]
+			item.Connections = func() []string {
+				// extract only the connection names
+				conNames := []string{}
+				for _, y := range pluginConnectionMap[plugin] {
+					conNames = append(conNames, y.Name)
+				}
+				return conNames
+			}()
 		}
 		items = append(items, item)
 	}

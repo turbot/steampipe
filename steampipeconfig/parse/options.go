@@ -8,7 +8,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/options"
 )
 
-func ParseOptions(block *hcl.Block) (options.Options, hcl.Diagnostics) {
+func DecodeOptions(block *hcl.Block) (options.Options, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var dest options.Options
 	switch block.Labels[0] {

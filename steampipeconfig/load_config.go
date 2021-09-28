@@ -145,7 +145,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 	for _, block := range content.Blocks {
 		switch block.Type {
 		case "connection":
-			connection, moreDiags := parse.ParseConnection(block, fileData)
+			connection, moreDiags := parse.DecodeConnection(block, fileData)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				continue
@@ -164,7 +164,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
 				return err
 			}
-			options, moreDiags := parse.ParseOptions(block)
+			options, moreDiags := parse.DecodeOptions(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				continue

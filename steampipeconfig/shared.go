@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 
 	"github.com/turbot/steampipe/constants"
@@ -33,7 +34,8 @@ func trimSchemaName(pluginFQN string) string {
 	return pluginFQN[:maxSchemaNameLength-9]
 }
 
-func GetPluginPath(remoteSchema string) (string, error) {
+func GetPluginPath(connection *modconfig.Connection) (string, error) {
+	remoteSchema := connection.Plugin
 	// the fully qualified name of the plugin is the relative path of the folder containing the plugin
 	// calculate absolute folder path
 	pluginFolder := filepath.Join(constants.PluginDir(), remoteSchema)
@@ -45,7 +47,7 @@ func GetPluginPath(remoteSchema string) (string, error) {
 		if pluginFolder, err = findPluginFolder(remoteSchema); err != nil {
 			return "", err
 		} else if pluginFolder == "" {
-			return "", fmt.Errorf("no plugin installed matching schema %s", remoteSchema)
+			return "", fmt.Errorf("no plugin installed matching %s", connection.PluginShortName)
 		}
 	}
 
