@@ -26,8 +26,9 @@ type ParamDef struct {
 
 func NewParamDef(block *hcl.Block) *ParamDef {
 	return &ParamDef{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("query.%s", block.Labels[0]),
+		ShortName:     block.Labels[0],
+		FullName:      fmt.Sprintf("query.%s", block.Labels[0]),
+		referencesMap: make(map[string]bool),
 	}
 }
 
