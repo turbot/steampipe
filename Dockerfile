@@ -33,6 +33,8 @@ RUN steampipe --version
 # Run steampipe query to install db and fdw (they are installed on the first run)
 RUN steampipe query "select * from steampipe_mod"
 
+RUN rm -f /home/steampipe/.steampipe/internal/.passwd
+
 EXPOSE 9193
 COPY docker-entrypoint.sh /usr/local/bin
 ENTRYPOINT [ "docker-entrypoint.sh" ]
