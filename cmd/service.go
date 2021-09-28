@@ -61,7 +61,7 @@ connection from any Postgres compatible database client.`,
 		// for now default listen address to empty so we fall back to the default of the deprecated arg
 		AddStringFlag(constants.ArgListenAddress, "", string(local_db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)").
 		AddStringFlag(constants.ArgListenAddressDeprecated, "", string(local_db.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)", cmdconfig.FlagOptions.Deprecated(constants.ArgListenAddress)).
-		AddStringFlag(constants.ArgServicePassword, "", "", "Set a service password for this session").
+		AddStringFlag(constants.ArgServicePassword, "", "", "Set the database password for this session").
 		// foreground enables the service to run in the foreground - till exit
 		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
 		// Hidden flags for internal use
