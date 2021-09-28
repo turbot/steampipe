@@ -10,7 +10,7 @@ query "q1"{
     sql = "select 'ok' as status, 'foo' as resource, concat($1::text, $2::text, $3::text) as reason"
     param "p1"{
         description = "p1"
-        default = "default_control "
+        default = var.v1
     }
     param "p2"{
         description = "p2"
