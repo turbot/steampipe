@@ -32,11 +32,11 @@ type Control struct {
 	Params []*ParamDef `cty:"params" column:"params,jsonb"`
 
 	// list of all block referenced by the resource
-	References []string `column:"refs,jsonb"`
+	References []ResourceReference `column:"refs,jsonb"`
 	// references stored as a map for easy checking
-	referencesMap map[string]bool
+	referencesMap map[ResourceReference]bool
 	// list of resource names who reference this resource
-	ReferencedBy []string `column:"referenced_by,jsonb"`
+	ReferencedBy []ResourceReference `column:"referenced_by,jsonb"`
 
 	Mod       *Mod `cty:"mod"`
 	DeclRange hcl.Range
@@ -52,7 +52,7 @@ func NewControl(block *hcl.Block) *Control {
 		FullName:      fmt.Sprintf("control.%s", block.Labels[0]),
 		DeclRange:     block.DefRange,
 		Args:          NewQueryArgs(),
-		referencesMap: make(map[string]bool),
+		referencesMap: make(map[ResourceReference]bool),
 	}
 	return control
 }
@@ -216,6 +216,11 @@ func (c *Control) Name() string {
 	return c.FullName
 }
 
+// Parent implements HclResource
+func (c *Control) Parent() string {
+	return c.metadata.ModFullName
+}
+
 // QualifiedName returns the name in format: '<modName>.control.<shortName>'
 func (c *Control) QualifiedName() string {
 	return fmt.Sprintf("%s.%s", c.metadata.ModName, c.FullName)
@@ -241,19 +246,19 @@ func (c *Control) CtyValue() (cty.Value, error) {
 func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
-func (c *Control) AddReference(reference string) {
-	c.References = append(c.References, reference)
-	c.referencesMap[reference] = true
+func (c *Control) AddReference(ref ResourceReference) {
+	c.References = append(c.References, ref)
+	c.referencesMap[ref] = true
 }
 
 // AddReferencedBy implements HclResource
-func (c *Control) AddReferencedBy(reference string) {
-	c.ReferencedBy = append(c.ReferencedBy, reference)
+func (c *Control) AddReferencedBy(ref ResourceReference) {
+	c.ReferencedBy = append(c.ReferencedBy, ref)
 }
 
 // ReferencesResource implements HclResource
-func (c *Control) ReferencesResource(name string) bool {
-	return c.referencesMap[name]
+func (c *Control) ReferencesResource(ref ResourceReference) bool {
+	return c.referencesMap[ref]
 }
 
 // SetMod implements HclResource
@@ -276,7 +281,7 @@ func (c *Control) GetParams() []*ParamDef {
 	return c.Params
 }
 
-// PreparedStatementName implements PreparedStatementProvider
+// GetPreparedStatementName implements PreparedStatementProvider
 func (c *Control) GetPreparedStatementName() string {
 	// lazy load
 	if c.PreparedStatementName == "" {

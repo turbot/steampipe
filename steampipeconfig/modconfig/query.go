@@ -29,11 +29,11 @@ type Query struct {
 
 	Params []*ParamDef `cty:"params" column:"params,jsonb"`
 	// list of all block referenced by the resource
-	References []string `column:"refs,jsonb"`
+	References []ResourceReference `column:"refs,jsonb"`
 	// references stored as a map for easy checking
-	referencesMap map[string]bool
+	referencesMap map[ResourceReference]bool
 	// list of resource names who reference this resource
-	ReferencedBy []string `column:"referenced_by,jsonb"`
+	ReferencedBy []ResourceReference `column:"referenced_by,jsonb"`
 
 	Mod                   *Mod `cty:"mod"`
 	DeclRange             hcl.Range
@@ -89,7 +89,7 @@ func NewQuery(block *hcl.Block) *Query {
 		ShortName:     block.Labels[0],
 		FullName:      fmt.Sprintf("query.%s", block.Labels[0]),
 		DeclRange:     block.DefRange,
-		referencesMap: make(map[string]bool),
+		referencesMap: make(map[ResourceReference]bool),
 	}
 }
 
@@ -161,6 +161,11 @@ func (q *Query) QualifiedName() string {
 	return fmt.Sprintf("%s.%s", q.metadata.ModName, q.FullName)
 }
 
+// Parent implements HclResource
+func (q *Query) Parent() string {
+	return q.metadata.ModFullName
+}
+
 // GetMetadata implements ResourceWithMetadata
 func (q *Query) GetMetadata() *ResourceMetadata {
 	return q.metadata
@@ -175,19 +180,19 @@ func (q *Query) SetMetadata(metadata *ResourceMetadata) {
 func (q *Query) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
-func (q *Query) AddReference(reference string) {
-	q.References = append(q.References, reference)
-	q.referencesMap[reference] = true
+func (q *Query) AddReference(ref ResourceReference) {
+	q.References = append(q.References, ref)
+	q.referencesMap[ref] = true
 }
 
 // AddReferencedBy implements HclResource
-func (q *Query) AddReferencedBy(reference string) {
-	q.ReferencedBy = append(q.ReferencedBy, reference)
+func (q *Query) AddReferencedBy(ref ResourceReference) {
+	q.ReferencedBy = append(q.ReferencedBy, ref)
 }
 
 // ReferencesResource implements HclResource
-func (q *Query) ReferencesResource(name string) bool {
-	return q.referencesMap[name]
+func (q *Query) ReferencesResource(ref ResourceReference) bool {
+	return q.referencesMap[ref]
 }
 
 // SetMod implements HclResource

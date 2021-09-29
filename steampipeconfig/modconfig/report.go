@@ -54,15 +54,15 @@ func (r *Report) QualifiedName() string {
 func (r *Report) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
-func (r *Report) AddReference(reference string) {
+func (r *Report) AddReference(ResourceReference) {
 	// TODO
 }
 
 // AddReferencedBy implements HclResource
-func (r *Report) AddReferencedBy(reference string) {}
+func (r *Report) AddReferencedBy(ResourceReference) {}
 
 // ReferencesResource implements HclResource
-func (r *Report) ReferencesResource(name string) bool { return false }
+func (r *Report) ReferencesResource(reference ResourceReference) bool { return false }
 
 // SetMod implements HclResource
 func (r *Report) SetMod(mod *Mod) {
@@ -136,6 +136,11 @@ func (r *Report) GetPaths() []NodePath {
 		}
 	}
 	return res
+}
+
+// Parent implements HclResource
+func (r *Report) Parent() string {
+	return r.metadata.ModFullName
 }
 
 // GetMetadata implements ResourceWithMetadata

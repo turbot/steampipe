@@ -17,18 +17,21 @@ type ParamDef struct {
 	Default     *string     `cty:"default" json:"default"`
 
 	// list of all block referenced by the resource
-	References []string `json:"refs"`
+	References []ResourceReference `json:"refs"`
 	// references stored as a map for easy checking
-	referencesMap map[string]bool
+	referencesMap map[ResourceReference]bool
 	// list of resource names who reference this resource
-	ReferencedBy []string `json:"referenced_by"`
+	ReferencedBy []ResourceReference `json:"referenced_by"`
+
+	parent string
 }
 
 func NewParamDef(block *hcl.Block, parent string) *ParamDef {
 	return &ParamDef{
 		ShortName:     block.Labels[0],
-		FullName:      fmt.Sprintf("%s.param.%s", parent, block.Labels[0]),
-		referencesMap: make(map[string]bool),
+		FullName:      fmt.Sprintf("param.%s", block.Labels[0]),
+		referencesMap: make(map[ResourceReference]bool),
+		parent:        parent,
 	}
 }
 
@@ -52,23 +55,28 @@ func (p *ParamDef) Name() string {
 	return p.FullName
 }
 
+// Parent implements HclResource
+func (p *ParamDef) Parent() string {
+	return p.parent
+}
+
 // OnDecoded implements HclResource
 func (p *ParamDef) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
-func (p *ParamDef) AddReference(reference string) {
-	p.References = append(p.References, reference)
-	p.referencesMap[reference] = true
+func (p *ParamDef) AddReference(ref ResourceReference) {
+	p.References = append(p.References, ref)
+	p.referencesMap[ref] = true
 }
 
 // AddReferencedBy implements HclResource
-func (p *ParamDef) AddReferencedBy(reference string) {
-	p.ReferencedBy = append(p.ReferencedBy, reference)
+func (p *ParamDef) AddReferencedBy(ref ResourceReference) {
+	p.ReferencedBy = append(p.ReferencedBy, ref)
 }
 
 // ReferencesResource implements HclResource
-func (p *ParamDef) ReferencesResource(name string) bool {
-	return p.referencesMap[name]
+func (p *ParamDef) ReferencesResource(ref ResourceReference) bool {
+	return p.referencesMap[ref]
 }
 
 // SetMod implements HclResource

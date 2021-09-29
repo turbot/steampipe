@@ -30,7 +30,7 @@ type Variable struct {
 	Mod                        *Mod
 
 	// list of resource names who use this variable
-	ReferencedBy []string `column:"referenced_by,jsonb"`
+	ReferencedBy []ResourceReference `column:"referenced_by,jsonb"`
 	metadata     *ResourceMetadata
 }
 
@@ -65,6 +65,11 @@ func (v *Variable) QualifiedName() string {
 	return fmt.Sprintf("%s.%s", v.metadata.ModName, v.FullName)
 }
 
+// Parent implements HclResource
+func (v *Variable) Parent() string {
+	return v.metadata.ModFullName
+}
+
 // GetMetadata implements ResourceWithMetadata
 func (v *Variable) GetMetadata() *ResourceMetadata {
 	return v.metadata
@@ -79,15 +84,15 @@ func (v *Variable) SetMetadata(metadata *ResourceMetadata) {
 func (v *Variable) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
-func (v *Variable) AddReference(string) {}
+func (v *Variable) AddReference(ResourceReference) {}
 
 // AddReferencedBy implements HclResource
-func (v *Variable) AddReferencedBy(reference string) {
-	v.ReferencedBy = append(v.ReferencedBy, reference)
+func (v *Variable) AddReferencedBy(ref ResourceReference) {
+	v.ReferencedBy = append(v.ReferencedBy, ref)
 }
 
 // ReferencesResource implements HclResource
-func (v *Variable) ReferencesResource(string) bool { return false }
+func (v *Variable) ReferencesResource(ResourceReference) bool { return false }
 
 // SetMod implements HclResource
 func (v *Variable) SetMod(mod *Mod) {
