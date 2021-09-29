@@ -169,9 +169,9 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
 	}
 
-	mod := opts.RunCtx.RootMod
+	mod := opts.RunCtx.CurrentMod
 	if mod == nil {
-		return nil, fmt.Errorf("ParseMod called with no Root Mod set in RunContext")
+		return nil, fmt.Errorf("ParseMod called with no Current Mod set in RunContext")
 	}
 	// get names of all resources defined in hcl which may also be created as pseudo resources
 	hclResources, err := loadMappableResourceNames(modPath, content)
@@ -194,7 +194,6 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 
 	// if eval is not complete, there must be dependencies - run again in dependency order
 	if !opts.RunCtx.EvalComplete() {
-
 		diags = decode(opts)
 		if diags.HasErrors() {
 			return nil, plugin.DiagsToError("Failed to parse all mod hcl files", diags)
