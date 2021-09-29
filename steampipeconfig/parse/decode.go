@@ -23,8 +23,7 @@ var missingVariableErrors = []string{
 	"Missing map element",
 }
 
-func decode(opts *ParseModOptions) hcl.Diagnostics {
-	runCtx := opts.RunCtx
+func decode(runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 
 	// build list of blocks to decode
@@ -40,7 +39,7 @@ func decode(opts *ParseModOptions) hcl.Diagnostics {
 	}
 	for _, block := range blocks {
 		// if opts specifies block types, check whether this type is included
-		if len(opts.BlockTypes) > 0 && !helpers.StringSliceContains(opts.BlockTypes, block.Type) {
+		if len(runCtx.BlockTypes) > 0 && !helpers.StringSliceContains(runCtx.BlockTypes, block.Type) {
 			continue
 		}
 		// check name is valid

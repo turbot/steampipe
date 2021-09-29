@@ -162,7 +162,7 @@ func parseYamlFile(filename string) (*hcl.File, hcl.Diagnostics) {
 
 // ParseMod parses all source hcl files for the mod path and associated resources, and returns the mod object
 // NOTE: the mod definition has already been parsed (or a default created) and is in opts.RunCtx.RootMod
-func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modconfig.MappableResource, opts *ParseModOptions) (*modconfig.Mod, error) {
+func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modconfig.MappableResource, runCtx *RunContext) (*modconfig.Mod, error) {
 	body, diags := ParseHclFiles(fileData)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
@@ -174,7 +174,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
 	}
 
-	mod := opts.RunCtx.CurrentMod
+	mod := runCtx.CurrentMod
 	if mod == nil {
 		return nil, fmt.Errorf("ParseMod called with no Current Mod set in RunContext")
 	}
@@ -188,25 +188,25 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	addPseudoResourcesToMod(pseudoResources, hclResources, mod)
 
 	// add this mod to run context - this it to ensure all pseudo resources get added
-	opts.RunCtx.AddMod(mod, content, fileData)
+	runCtx.AddMod(mod, content, fileData)
 
 	// perform initial decode to get dependencies
 	// (if there are no dependencies, this is all that is needed)
-	diags = decode(opts)
+	diags = decode(runCtx)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
 	}
 
 	// if eval is not complete, there must be dependencies - run again in dependency order
-	if !opts.RunCtx.EvalComplete() {
-		diags = decode(opts)
+	if !runCtx.EvalComplete() {
+		diags = decode(runCtx)
 		if diags.HasErrors() {
 			return nil, plugin.DiagsToError("Failed to parse all mod hcl files", diags)
 		}
 
 		// we failed to resolve dependencies
-		if !opts.RunCtx.EvalComplete() {
-			return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", opts.RunCtx.FormatDependencies())
+		if !runCtx.EvalComplete() {
+			return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", runCtx.FormatDependencies())
 		}
 	}
 

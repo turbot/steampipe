@@ -24,7 +24,7 @@ import (
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, err error) {
+func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
@@ -44,7 +44,7 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 		}
 	} else {
 		// so there is no mod file - should we create a default?
-		if !opts.CreateDefaultMod() {
+		if !runCtx.CreateDefaultMod() {
 			// CreateDefaultMod flag NOT set - fail
 			return nil, fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
 		}
@@ -53,29 +53,29 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 	}
 
 	// if the RunContext does not have a root mod set, we must be the top of the mod dependency tree - set it now
-	if opts.RunCtx.RootMod == nil {
-		opts.RunCtx.RootMod = mod
+	if runCtx.RootMod == nil {
+		runCtx.RootMod = mod
 	}
 
 	// load the mod dependencies
-	if err := loadModDependencies(mod, opts); err != nil {
+	if err := loadModDependencies(mod, runCtx); err != nil {
 		return nil, err
 	}
 	// now we have loaded dependencies, set the current mod on the run context
-	opts.RunCtx.CurrentMod = mod
+	runCtx.CurrentMod = mod
 
 	// if flag is set, create pseudo resources by mapping files
 	var pseudoResources []modconfig.MappableResource
-	if opts.CreatePseudoResources() {
+	if runCtx.CreatePseudoResources() {
 		// now execute any pseudo-resource creations based on file mappings
-		pseudoResources, err = createPseudoResources(modPath, opts)
+		pseudoResources, err = createPseudoResources(modPath, runCtx)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// get the source files
-	sourcePaths, err := getSourcePaths(modPath, opts.ListOptions)
+	sourcePaths, err := getSourcePaths(modPath, runCtx.ListOptions)
 	if err != nil {
 		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
 		return nil, err
@@ -88,7 +88,7 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 	}
 
 	// parse all hcl files.
-	mod, err = parse.ParseMod(modPath, fileData, pseudoResources, opts)
+	mod, err = parse.ParseMod(modPath, fileData, pseudoResources, runCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -96,18 +96,18 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 	return mod, err
 }
 
-func loadModDependencies(mod *modconfig.Mod, opts *parse.ParseModOptions) error {
+func loadModDependencies(mod *modconfig.Mod, runCtx *parse.RunContext) error {
 	var errors []error
 
 	if mod.Requires != nil {
 		for _, dependencyMod := range mod.Requires.Mods {
 			// have we already loaded a mod which satisfied this
-			if loadedMod, ok := opts.LoadedDependencyMods[dependencyMod.Name]; ok {
+			if loadedMod, ok := runCtx.LoadedDependencyMods[dependencyMod.Name]; ok {
 				if loadedMod.Version.GreaterThanOrEqual(dependencyMod.VersionConstraint) {
 					continue
 				}
 			}
-			if err := loadModDependency(dependencyMod, opts); err != nil {
+			if err := loadModDependency(dependencyMod, runCtx); err != nil {
 				errors = append(errors, err)
 			}
 		}
@@ -115,7 +115,7 @@ func loadModDependencies(mod *modconfig.Mod, opts *parse.ParseModOptions) error 
 	return utils.CombineErrors(errors...)
 }
 
-func loadModDependency(modDependency *modconfig.ModVersion, opts *parse.ParseModOptions) error {
+func loadModDependency(modDependency *modconfig.ModVersion, runCtx *parse.RunContext) error {
 	// dependency mods are installed to <mod path>/<mod nam>@version
 	// for example workspace_folder/.steampipe/mods/github.com/turbot/steampipe-mod-aws-compliance@v1.0
 
@@ -123,7 +123,7 @@ func loadModDependency(modDependency *modconfig.ModVersion, opts *parse.ParseMod
 	// for each folder we parse the mod name and version and determine whether it meets the version constraint
 
 	// we need to iterate through all mods in the parent folder and find one that sarifies requirements
-	parentFolder := filepath.Dir(filepath.Join(opts.ModInstallationPath, modDependency.Name))
+	parentFolder := filepath.Dir(filepath.Join(runCtx.ModInstallationPath, modDependency.Name))
 	// get th elast segment of mod name
 
 	dependencyPath, version, err := findInstalledDependency(modDependency, parentFolder)
@@ -132,11 +132,11 @@ func loadModDependency(modDependency *modconfig.ModVersion, opts *parse.ParseMod
 	}
 
 	// we need to modify the ListOptions to ensure we include hidden files - these are excluded by default
-	prevExclusions := opts.ListOptions.Exclude
-	opts.ListOptions.Exclude = nil
-	defer func() { opts.ListOptions.Exclude = prevExclusions }()
+	prevExclusions := runCtx.ListOptions.Exclude
+	runCtx.ListOptions.Exclude = nil
+	defer func() { runCtx.ListOptions.Exclude = prevExclusions }()
 
-	mod, err := LoadMod(dependencyPath, opts)
+	mod, err := LoadMod(dependencyPath, runCtx)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func loadModDependency(modDependency *modconfig.ModVersion, opts *parse.ParseMod
 	mod.ModDependencyPath = modDependency.Name
 
 	// update loaded dependency mods
-	opts.LoadedDependencyMods[modDependency.Name] = mod
+	runCtx.LoadedDependencyMods[modDependency.Name] = mod
 
 	return err
 
@@ -184,7 +184,7 @@ func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder s
 }
 
 // LoadModResourceNames parses all hcl files in modPath and returns the names of all resources
-func LoadModResourceNames(modPath string, opts *parse.ParseModOptions) (resources *modconfig.WorkspaceResources, err error) {
+func LoadModResourceNames(modPath string, runCtx *parse.RunContext) (resources *modconfig.WorkspaceResources, err error) {
 	// TODO support dependencies
 	defer func() {
 		if r := recover(); r != nil {
@@ -193,8 +193,8 @@ func LoadModResourceNames(modPath string, opts *parse.ParseModOptions) (resource
 	}()
 
 	resources = modconfig.NewWorkspaceResources()
-	if opts == nil {
-		opts = &parse.ParseModOptions{}
+	if runCtx == nil {
+		runCtx = &parse.RunContext{}
 	}
 	// verify the mod folder exists
 	if _, err := os.Stat(modPath); os.IsNotExist(err) {
@@ -202,7 +202,7 @@ func LoadModResourceNames(modPath string, opts *parse.ParseModOptions) (resource
 	}
 
 	// now execute any pseudo-resource creations based on file mappings
-	pseudoResources, err := createPseudoResources(modPath, opts)
+	pseudoResources, err := createPseudoResources(modPath, runCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func LoadModResourceNames(modPath string, opts *parse.ParseModOptions) (resource
 		}
 	}
 
-	sourcePaths, err := getSourcePaths(modPath, opts.ListOptions)
+	sourcePaths, err := getSourcePaths(modPath, runCtx.ListOptions)
 	if err != nil {
 		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
 		return nil, err
@@ -251,12 +251,12 @@ func getSourcePaths(modPath string, listOpts *filehelpers.ListOptions) ([]string
 }
 
 // create pseudo-resources for any files whose extensions are registered
-func createPseudoResources(modPath string, opts *parse.ParseModOptions) ([]modconfig.MappableResource, error) {
+func createPseudoResources(modPath string, runCtx *parse.RunContext) ([]modconfig.MappableResource, error) {
 	// create list options to find pseudo resources
 	listOpts := &filehelpers.ListOptions{
-		Flags:   opts.ListOptions.Flags,
+		Flags:   runCtx.ListOptions.Flags,
 		Include: filehelpers.InclusionsFromExtensions(modconfig.RegisteredFileExtensions()),
-		Exclude: opts.ListOptions.Exclude,
+		Exclude: runCtx.ListOptions.Exclude,
 	}
 	// list all registered files
 	sourcePaths, err := getSourcePaths(modPath, listOpts)
