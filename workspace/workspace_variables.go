@@ -16,10 +16,10 @@ import (
 
 func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
 	// build options used to load workspace
-	opts := w.getParseModOptions()
+	runCtx := w.getRunContext()
 	// only load variables blocks
-	opts.BlockTypes = []string{modconfig.BlockTypeVariable}
-	mod, err := steampipeconfig.LoadMod(w.Path, opts)
+	runCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
+	mod, err := steampipeconfig.LoadMod(w.Path, runCtx)
 	if err != nil {
 		return nil, err
 	}

@@ -266,28 +266,28 @@ func (w *Workspace) loadWorkspaceMod() error {
 
 	variableValueMap := modconfig.VariableValueMap(inputVariables)
 
-	// build options used to load workspace
-	opts := w.getParseModOptions()
+	// build run context which we use to load the workspace
+	runCtx := w.getRunContext()
 	// add variables to runContext
-	opts.RunCtx.AddVariables(variableValueMap)
+	runCtx.AddVariables(variableValueMap)
 
 	// now load the mod
-	m, err := steampipeconfig.LoadMod(w.Path, opts)
+	m, err := steampipeconfig.LoadMod(w.Path, runCtx)
 	if err != nil {
 		return err
 	}
 
 	// now set workspace properties
 	w.Mod = m
-	w.Queries = w.buildQueryMap(opts.LoadedDependencyMods)
-	w.Controls = w.buildControlMap(opts.LoadedDependencyMods)
-	w.Benchmarks = w.buildBenchmarkMap(opts.LoadedDependencyMods)
-	w.Reports = w.buildReportMap(opts.LoadedDependencyMods)
-	w.Panels = w.buildPanelMap(opts.LoadedDependencyMods)
+	w.Queries = w.buildQueryMap(runCtx.LoadedDependencyMods)
+	w.Controls = w.buildControlMap(runCtx.LoadedDependencyMods)
+	w.Benchmarks = w.buildBenchmarkMap(runCtx.LoadedDependencyMods)
+	w.Reports = w.buildReportMap(runCtx.LoadedDependencyMods)
+	w.Panels = w.buildPanelMap(runCtx.LoadedDependencyMods)
 	// set variables on workspace
 	w.Variables = m.Variables
 	// todo what to key mod map with
-	w.Mods = opts.LoadedDependencyMods
+	w.Mods = runCtx.LoadedDependencyMods
 
 	// now update resources 'ReferencedBy' property
 	m.SetReferencedBy()
@@ -297,10 +297,10 @@ func (w *Workspace) loadWorkspaceMod() error {
 
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
-func (w *Workspace) getParseModOptions() *parse.ParseModOptions {
-	opts := parse.NewParseModOptions(
-		parse.CreatePseudoResources|parse.CreateDefaultMod,
+func (w *Workspace) getRunContext() *parse.RunContext {
+	return parse.NewRunContext(
 		w.Path,
+		parse.CreatePseudoResources|parse.CreateDefaultMod,
 		&filehelpers.ListOptions{
 			// listFlag specifies whether to load files recursively
 			Flags:   w.listFlag,
@@ -308,12 +308,11 @@ func (w *Workspace) getParseModOptions() *parse.ParseModOptions {
 			// only load .sp files
 			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 		})
-	return opts
 }
 
 func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
 	// build options used to load workspace
-	opts := w.getParseModOptions()
+	opts := w.getRunContext()
 
 	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, opts)
 	if err != nil {
