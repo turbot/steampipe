@@ -14,24 +14,12 @@ import (
 
 const rootDependencyNode = "rootDependencyNode"
 
-type unresolvedBlock struct {
-	Name         string
-	Block        *hcl.Block
-	Dependencies []*dependency
-}
-
-func (b unresolvedBlock) String() string {
-	depStrings := make([]string, len(b.Dependencies))
-	for i, dep := range b.Dependencies {
-		depStrings[i] = fmt.Sprintf(`%s -> %s`, b.Name, dep.String())
-	}
-	return strings.Join(depStrings, "\n")
-}
-
+// TODO better comment on this stuff
 // ReferenceTypeValueMap is a map of reference value maps, keyed by type
 type ReferenceTypeValueMap map[string]map[string]cty.Value
 
 type RunContext struct {
+	WorkspaceDir string
 	// we only store the root mod so we can tell whether a given mod should be treated as "local"
 	RootMod          *modconfig.Mod
 	CurrentMod       *modconfig.Mod
@@ -46,8 +34,9 @@ type RunContext struct {
 	blocks  hcl.Blocks
 }
 
-func NewRunContext() *RunContext {
+func NewRunContext(workspaceDir string) *RunContext {
 	c := &RunContext{
+		WorkspaceDir:     workspaceDir,
 		UnresolvedBlocks: make(map[string]*unresolvedBlock),
 		referenceValues: map[string]ReferenceTypeValueMap{
 			"local": make(ReferenceTypeValueMap),
@@ -58,7 +47,7 @@ func NewRunContext() *RunContext {
 
 	// add enums to the variables which may be referenced from within the hcl
 	c.addSteampipeEnums()
-
+	c.buildEvalContext()
 	return c
 }
 
@@ -104,8 +93,8 @@ func (c *RunContext) AddMod(mod *modconfig.Mod, content *hcl.BodyContent, fileDa
 		diags = append(diags, moreDiags...)
 	}
 
-	// rebuild the eval context from the ctyMap
-	c.EvalCtx = c.ctyMapToEvalContext()
+	// rebuild the eval context
+	c.buildEvalContext()
 	return diags
 }
 
@@ -246,16 +235,19 @@ func (c *RunContext) getDependencyOrder() ([]string, error) {
 }
 
 // eval functions
-func (c *RunContext) ctyMapToEvalContext() *hcl.EvalContext {
+func (c *RunContext) buildEvalContext() {
 	// convert variables to cty values
 	variables := make(map[string]cty.Value)
 
-	// first add local values
-	for k, v := range c.referenceValues["local"] {
-		variables[k] = cty.ObjectVal(v)
-	}
 	// now for each mod add all the values
 	for mod, modMap := range c.referenceValues {
+		if mod == "local" {
+			for k, v := range modMap {
+				variables[k] = cty.ObjectVal(v)
+			}
+			continue
+		}
+
 		// mod map is map[string]map[string]cty.Value
 		// for each element (i.e. map[string]cty.Value) convert to cty object
 		refTypeMap := make(map[string]cty.Value)
@@ -267,9 +259,9 @@ func (c *RunContext) ctyMapToEvalContext() *hcl.EvalContext {
 	}
 
 	//create evaluation context
-	return &hcl.EvalContext{
+	c.EvalCtx = &hcl.EvalContext{
 		Variables: variables,
-		Functions: ContextFunctions(c.RootMod.ModPath),
+		Functions: ContextFunctions(c.WorkspaceDir),
 	}
 }
 
@@ -281,7 +273,7 @@ func (c *RunContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics
 	}
 
 	// rebuild the eval context
-	c.EvalCtx = c.ctyMapToEvalContext()
+	c.buildEvalContext()
 
 	return nil
 }

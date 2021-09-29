@@ -3,6 +3,7 @@ package parse
 import (
 	goVersion "github.com/hashicorp/go-version"
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -19,25 +20,22 @@ type InstalledMod struct {
 }
 
 type ParseModOptions struct {
+	RunCtx               *RunContext
 	Flags                ParseModFlag
 	ListOptions          *filehelpers.ListOptions
 	LoadedDependencyMods modconfig.ModMap
 	ModInstallationPath  string
 	// if set, only decode these blocks
 	BlockTypes []string
-	RunCtx     *RunContext
-	// the root mod which is being parsed
-	// TODO only need it here as when we set it from LoadMod we do not have a runCtx yet
-	//RootMod *modconfig.Mod
 }
 
-func NewParseModOptions(flags ParseModFlag, modInstallationPath string, listOptions *filehelpers.ListOptions) *ParseModOptions {
+func NewParseModOptions(flags ParseModFlag, workspacePath string, listOptions *filehelpers.ListOptions) *ParseModOptions {
 	return &ParseModOptions{
 		Flags:                flags,
-		ModInstallationPath:  modInstallationPath,
+		ModInstallationPath:  constants.WorkspaceModPath(workspacePath),
 		ListOptions:          listOptions,
 		LoadedDependencyMods: make(modconfig.ModMap),
-		RunCtx:               NewRunContext(),
+		RunCtx:               NewRunContext(workspacePath),
 	}
 }
 
