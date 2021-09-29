@@ -5,8 +5,8 @@ import (
 )
 
 type ResourceReference struct {
-	Name   string `json:"name"`
-	Parent string `json:"parent,omitempty"`
+	Name   string `cty:"name" json:"name"`
+	Parent string `cty:"parent" json:"parent,omitempty"`
 }
 
 func NewResourceReference(reference HclResource) ResourceReference {
