@@ -32,6 +32,11 @@ func (l *Local) Name() string {
 	return l.FullName
 }
 
+// Parent implements HclResource
+func (l *Local) Parent() string {
+	return l.metadata.ModFullName
+}
+
 // GetMetadata implements ResourceWithMetadata
 func (l *Local) GetMetadata() *ResourceMetadata {
 	return l.metadata
@@ -46,13 +51,13 @@ func (l *Local) SetMetadata(metadata *ResourceMetadata) {
 func (l *Local) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
-func (l *Local) AddReference(string) {}
+func (l *Local) AddReference(ResourceReference) {}
 
 // ReferencesResource implements HclResource
-func (l *Local) ReferencesResource(string) bool { return false }
+func (l *Local) ReferencesResource(ResourceReference) bool { return false }
 
 // AddReferencedBy implements HclResource
-func (l *Local) AddReferencedBy(reference string) {}
+func (l *Local) AddReferencedBy(ResourceReference) {}
 
 // SetMod implements HclResource
 func (l *Local) SetMod(mod *Mod) {
