@@ -61,6 +61,8 @@ func LoadMod(modPath string, opts *parse.ParseModOptions) (mod *modconfig.Mod, e
 	if err := loadModDependencies(mod, opts); err != nil {
 		return nil, err
 	}
+	// now we have loaded dependencies, set the current mod on the run context
+	opts.RunCtx.CurrentMod = mod
 
 	// if flag is set, create pseudo resources by mapping files
 	var pseudoResources []modconfig.MappableResource

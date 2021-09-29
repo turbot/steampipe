@@ -75,10 +75,6 @@ func (c *RunContext) AddMod(mod *modconfig.Mod, content *hcl.BodyContent, fileDa
 		panic("calling SetContent on runContext but there are unresolved blocks from a previous parse")
 	}
 
-	if c.RootMod == nil {
-		c.RootMod = mod
-	}
-	c.CurrentMod = mod
 	c.FileData = fileData
 	c.blocks = content.Blocks
 

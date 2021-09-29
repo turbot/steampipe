@@ -271,6 +271,8 @@ func (w *Workspace) loadWorkspaceMod() error {
 	opts := w.getParseModOptions()
 	// add variables to runContext
 	opts.RunCtx.AddVariables(variableValueMap)
+
+	// now load the mod
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
 	if err != nil {
 		return err
