@@ -55,11 +55,6 @@ func (p *ParamDef) Name() string {
 	return p.FullName
 }
 
-// Parent implements HclResource
-func (p *ParamDef) Parent() string {
-	return p.parent
-}
-
 // OnDecoded implements HclResource
 func (p *ParamDef) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 

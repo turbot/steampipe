@@ -216,11 +216,6 @@ func (c *Control) Name() string {
 	return c.FullName
 }
 
-// Parent implements HclResource
-func (c *Control) Parent() string {
-	return c.metadata.ModFullName
-}
-
 // QualifiedName returns the name in format: '<modName>.control.<shortName>'
 func (c *Control) QualifiedName() string {
 	return fmt.Sprintf("%s.%s", c.metadata.ModName, c.FullName)

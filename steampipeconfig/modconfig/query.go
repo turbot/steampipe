@@ -161,11 +161,6 @@ func (q *Query) QualifiedName() string {
 	return fmt.Sprintf("%s.%s", q.metadata.ModName, q.FullName)
 }
 
-// Parent implements HclResource
-func (q *Query) Parent() string {
-	return q.metadata.ModFullName
-}
-
 // GetMetadata implements ResourceWithMetadata
 func (q *Query) GetMetadata() *ResourceMetadata {
 	return q.metadata

@@ -6,14 +6,18 @@ import (
 
 type ResourceReference struct {
 	Name   string `json:"name"`
-	Parent string `json:"parent"`
+	Parent string `json:"parent,omitempty"`
 }
 
 func NewResourceReference(reference HclResource) ResourceReference {
-	return ResourceReference{
-		Name:   reference.Name(),
-		Parent: reference.Parent(),
+	res := ResourceReference{
+		Name: reference.Name(),
 	}
+	// special case code for param - set the parent
+	if paramDef, ok := reference.(*ParamDef); ok {
+		res.Parent = paramDef.parent
+	}
+	return res
 }
 
 func (r ResourceReference) String() string {

@@ -34,7 +34,6 @@ type ModTreeItem interface {
 // HclResource must be implemented by resources defined in HCL
 type HclResource interface {
 	Name() string
-	Parent() string
 	CtyValue() (cty.Value, error)
 	OnDecoded(*hcl.Block) hcl.Diagnostics
 	AddReference(ref ResourceReference)
