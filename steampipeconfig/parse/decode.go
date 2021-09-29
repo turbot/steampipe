@@ -528,12 +528,6 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 	return diags
 }
 
-func extractReferences(block *hcl.Block, runCtx *RunContext) (map[string]hcl.Traversal, hcl.Diagnostics) {
-
-	return nil, nil
-
-}
-
 // handleDecodeResult
 // if decode was successful:
 // - generate and set resource metadata

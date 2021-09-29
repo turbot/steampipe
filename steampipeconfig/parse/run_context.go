@@ -28,9 +28,7 @@ const (
 type ReferenceTypeValueMap map[string]map[string]cty.Value
 
 type RunContext struct {
-	// we only store the root mod so we can tell whether a given mod should be treated as "local"
-	// TODO could we use workspace dir?
-	RootMod          *modconfig.Mod
+	// the mod which is currently being parsed
 	CurrentMod       *modconfig.Mod
 	UnresolvedBlocks map[string]*unresolvedBlock
 	FileData         map[string][]byte
@@ -206,6 +204,45 @@ func (r *RunContext) CreatePseudoResources() bool {
 	return r.Flags&CreatePseudoResources == CreatePseudoResources
 }
 
+// AddResource stores this resource as a variable to be added to the eval context. It alse
+func (r *RunContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics {
+	diagnostics := r.storeResourceInCtyMap(resource)
+	if diagnostics.HasErrors() {
+		return diagnostics
+	}
+
+	// rebuild the eval context
+	r.buildEvalContext()
+
+	return nil
+}
+
+func (r *RunContext) FormatDependencies() string {
+	// first get the dependency order
+	dependencyOrder, err := r.getDependencyOrder()
+	if err != nil {
+		return err.Error()
+	}
+	// build array of dependency strings - processes dependencies in reverse order for presentation reasons
+	numDeps := len(dependencyOrder)
+	depStrings := make([]string, numDeps)
+	for i := 0; i < len(dependencyOrder); i++ {
+		srcIdx := len(dependencyOrder) - i - 1
+		resourceName := dependencyOrder[srcIdx]
+		// find dependency
+		dep, ok := r.UnresolvedBlocks[resourceName]
+
+		if ok {
+			depStrings[i] = dep.String()
+		} else {
+			// this could happen if there is a dependency on a missing item
+			depStrings[i] = fmt.Sprintf("  MISSING: %s", resourceName)
+		}
+	}
+
+	return helpers.Tabify(strings.Join(depStrings, "\n"), "   ")
+}
+
 // add enums to the referenceValues which may be referenced from within the hcl
 func (r *RunContext) addSteampipeEnums() {
 	r.referenceValues["local"]["steampipe"] = map[string]cty.Value{
@@ -295,19 +332,6 @@ func (r *RunContext) buildEvalContext() {
 	}
 }
 
-// AddResource stores this resource as a variable to be added to the eval context. It alse
-func (r *RunContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics {
-	diagnostics := r.storeResourceInCtyMap(resource)
-	if diagnostics.HasErrors() {
-		return diagnostics
-	}
-
-	// rebuild the eval context
-	r.buildEvalContext()
-
-	return nil
-}
-
 // update the cached cty value for the given resource, as long as itr does not already exist
 func (r *RunContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.Diagnostics {
 	// add resource to variable map
@@ -356,7 +380,7 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	mod := r.CurrentMod
 
 	modName := mod.ShortName
-	if mod.ModPath == r.RootMod.ModPath {
+	if mod.ModPath == r.WorkspacePath {
 		modName = "local"
 	}
 	variablesForMod, ok := r.referenceValues[modName]
@@ -383,30 +407,4 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	}
 
 	return nil
-}
-
-func (r *RunContext) FormatDependencies() string {
-	// first get the dependency order
-	dependencyOrder, err := r.getDependencyOrder()
-	if err != nil {
-		return err.Error()
-	}
-	// build array of dependency strings - processes dependencies in reverse order for presentation reasons
-	numDeps := len(dependencyOrder)
-	depStrings := make([]string, numDeps)
-	for i := 0; i < len(dependencyOrder); i++ {
-		srcIdx := len(dependencyOrder) - i - 1
-		resourceName := dependencyOrder[srcIdx]
-		// find dependency
-		dep, ok := r.UnresolvedBlocks[resourceName]
-
-		if ok {
-			depStrings[i] = dep.String()
-		} else {
-			// this could happen if there is a dependency on a missing item
-			depStrings[i] = fmt.Sprintf("  MISSING: %s", resourceName)
-		}
-	}
-
-	return helpers.Tabify(strings.Join(depStrings, "\n"), "   ")
 }

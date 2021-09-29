@@ -52,11 +52,6 @@ func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err 
 		mod = modconfig.CreateDefaultMod(modPath)
 	}
 
-	// if the RunContext does not have a root mod set, we must be the top of the mod dependency tree - set it now
-	if runCtx.RootMod == nil {
-		runCtx.RootMod = mod
-	}
-
 	// load the mod dependencies
 	if err := loadModDependencies(mod, runCtx); err != nil {
 		return nil, err
