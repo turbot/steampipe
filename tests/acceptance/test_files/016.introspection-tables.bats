@@ -37,3 +37,39 @@ load "$LIB_BATS_SUPPORT/load.bash"
   fi
   assert_equal "$flag" "0"
 }
+
+@test "ensure the referenced_by column is populated correctly" {
+  cd $SIMPLE_MOD_DIR
+  run steampipe query "select * from steampipe_query" --output json
+
+  # extract the refs and the referenced_by
+  refs=$(echo $output | jq '.[].refs' | tr -d '[:space:]')
+  referenced_by=$(echo $output | jq '.[].referenced_by' | tr -d '[:space:]')
+
+  assert_equal "$refs" '["var.sample_var_1"]'
+  assert_equal "$referenced_by" '["control.sample_control_1"]'
+}
+
+@test "ensure the refs column includes variable references" {
+  cd $SIMPLE_MOD_DIR
+  run steampipe query "select * from steampipe_query" --output json
+
+  # extract the refs
+  refs=$(echo $output | jq '.[].refs' | tr -d '[:space:]')
+  echo $refs
+
+  # check if refs contains variables(start with "var.")
+  if [[ "$refs" == *"var."* ]];
+  then
+    flag=1
+  else
+    flag=0
+  fi
+  assert_equal "$flag" "1"
+}
+
+@test "introspection tables should get populated in query batch mode" {
+  cd $WORKSPACE_DIR
+  run steampipe query "select * from steampipe_query" --output json
+  assert_success
+}
