@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
+	"github.com/hashicorp/hcl/v2/json"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -18,6 +21,7 @@ func LoadFileData(paths ...string) (map[string][]byte, hcl.Diagnostics) {
 
 	for _, configPath := range paths {
 		data, err := ioutil.ReadFile(configPath)
+
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -36,7 +40,13 @@ func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	parser := hclparse.NewParser()
 	for configPath, data := range fileData {
-		file, moreDiags := parser.ParseHCL(data, configPath)
+		var file *hcl.File
+		var moreDiags hcl.Diagnostics
+		if filepath.Ext(configPath) == constants.JsonExtension {
+			file, moreDiags = json.ParseFile(configPath)
+		} else {
+			file, moreDiags = parser.ParseHCL(data, configPath)
+		}
 
 		if moreDiags.HasErrors() {
 			diags = append(diags, moreDiags...)

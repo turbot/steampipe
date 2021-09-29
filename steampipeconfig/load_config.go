@@ -64,7 +64,7 @@ func loadSteampipeConfig(workspacePath string, commandName string) (steampipeCon
 	steampipeConfig = NewSteampipeConfig(commandName)
 
 	// load config from the installation folder -  load all spc files from config directory
-	include := filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension})
+	include := filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension, constants.JsonExtension})
 	loadOptions := &loadConfigOptions{include: include}
 	if err := loadConfig(constants.ConfigDir(), steampipeConfig, loadOptions); err != nil {
 		return nil, err

@@ -8,4 +8,5 @@ const (
 	ModDataExtension       = ".sp"
 	VariablesExtension     = ".spvars"
 	AutoVariablesExtension = ".auto.spvars"
+	JsonExtension          = ".json"
 )
