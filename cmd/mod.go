@@ -14,7 +14,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// modCmd :: mod management commands
+// mod management commands
 func modCmd() *cobra.Command {
 
 	var cmd = &cobra.Command{
@@ -25,18 +25,17 @@ func modCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(modInstallCmd())
-	//cmd.AddCommand(modListCmd())
-	//cmd.AddCommand(modUninstallCmd())
-	//cmd.AddCommand(modUpdateCmd())
+	cmd.AddCommand(modGetCmd())
+	cmd.AddCommand(modListCmd())
+	cmd.AddCommand(modUpdateCmd())
 
 	return cmd
 }
 
-// modInstallCmd :: Install a mod
+// install
 func modInstallCmd() *cobra.Command {
 	var cmd = &cobra.Command{
-		Use:   "install [flags] [registry/org/]name[@version]",
-		Args:  cobra.ArbitraryArgs,
+		Use:   "install",
 		Run:   runModInstallCmd,
 		Short: "Install mod dependencies",
 		Long: `Install mod dependencies.
@@ -73,4 +72,85 @@ func runModInstallCmd(*cobra.Command, []string) {
 	err = installer.InstallModDependencies(mod)
 	fmt.Println(installer.InstallReport())
 	utils.FailOnError(err)
+}
+
+// get
+func modGetCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "get",
+		Run:   runModInstallCmd,
+		Short: "Install mod dependencies",
+		Long: `Install mod dependencies.
+`,
+	}
+
+	cmdconfig.OnCmd(cmd)
+	return cmd
+}
+
+func runModGetCmd(*cobra.Command, []string) {
+	utils.LogTime("cmd.runModGetCmd")
+	defer func() {
+		utils.LogTime("cmd.runModGetCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+		}
+	}()
+
+	//workspacePath := viper.GetString(constants.ArgWorkspace)
+
+}
+
+// list
+func modListCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "list",
+		Run:   runModInstallCmd,
+		Short: "Install mod dependencies",
+		Long: `Install mod dependencies.
+`,
+	}
+
+	cmdconfig.OnCmd(cmd)
+	return cmd
+}
+
+func runModListCmd(*cobra.Command, []string) {
+	utils.LogTime("cmd.runModListCmd")
+	defer func() {
+		utils.LogTime("cmd.runModListCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+		}
+	}()
+
+	//workspacePath := viper.ListString(constants.ArgWorkspace)
+
+}
+
+// update
+func modUpdateCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "update",
+		Run:   runModInstallCmd,
+		Short: "Install mod dependencies",
+		Long: `Install mod dependencies.
+`,
+	}
+
+	cmdconfig.OnCmd(cmd)
+	return cmd
+}
+
+func runModUpdateCmd(*cobra.Command, []string) {
+	utils.LogTime("cmd.runModUpdateCmd")
+	defer func() {
+		utils.LogTime("cmd.runModUpdateCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+		}
+	}()
+
+	//workspacePath := viper.UpdateString(constants.ArgWorkspace)
+
 }
