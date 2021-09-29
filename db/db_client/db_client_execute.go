@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -139,10 +140,11 @@ func (c *DbClient) startQuery(ctx context.Context, query string, tx *sql.Tx) (ro
 	doneChan := make(chan bool)
 	defer func() {
 		if err != nil {
-			// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
-			// restore the session data - prepared statements and introspection tables
-			// (do this with a Background context, since the passed in context may have expired)
-			c.ensureServiceState(context.Background())
+			if errors.Is(err, context.DeadlineExceeded) {
+				// if the context deadline has been exceeded, call refreshDbClient to create a new SQL client
+				// this will refresh the session data which will have been cleared by the SQL client error handling
+				c.refreshDbClient(context.Background())
+			}
 		}
 	}()
 	go func() {
