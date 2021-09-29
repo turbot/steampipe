@@ -65,11 +65,6 @@ func (v *Variable) QualifiedName() string {
 	return fmt.Sprintf("%s.%s", v.metadata.ModName, v.FullName)
 }
 
-// Parent implements HclResource
-func (v *Variable) Parent() string {
-	return v.metadata.ModFullName
-}
-
 // GetMetadata implements ResourceWithMetadata
 func (v *Variable) GetMetadata() *ResourceMetadata {
 	return v.metadata

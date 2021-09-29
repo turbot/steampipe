@@ -176,11 +176,6 @@ func (p *Panel) GetPaths() []NodePath {
 	return res
 }
 
-// Parent implements HclResource
-func (p *Panel) Parent() string {
-	return p.metadata.ModFullName
-}
-
 // GetMetadata implements ResourceWithMetadata
 func (p *Panel) GetMetadata() *ResourceMetadata {
 	return p.metadata

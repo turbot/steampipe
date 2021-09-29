@@ -138,11 +138,6 @@ func (r *Report) GetPaths() []NodePath {
 	return res
 }
 
-// Parent implements HclResource
-func (r *Report) Parent() string {
-	return r.metadata.ModFullName
-}
-
 // GetMetadata implements ResourceWithMetadata
 func (r *Report) GetMetadata() *ResourceMetadata {
 	return r.metadata
