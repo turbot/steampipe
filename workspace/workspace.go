@@ -264,20 +264,13 @@ func (w *Workspace) loadWorkspaceMod() error {
 	if err != nil {
 		return err
 	}
-	// set variables map on workspace
-	w.Variables = inputVariables
-
-	inputVariables, err := w.getAllVariables()
-	if err != nil {
-		return err
-	}
 
 	variableValueMap := modconfig.VariableValueMap(inputVariables)
 
 	// build options used to load workspace
 	opts := w.getParseModOptions()
-	// add variables to runcontext
-	opts.RunCtx.AddVariables(w.VariableValueMap())
+	// add variables to runContext
+	opts.RunCtx.AddVariables(variableValueMap)
 	m, err := steampipeconfig.LoadMod(w.Path, opts)
 	if err != nil {
 		return err
@@ -290,15 +283,14 @@ func (w *Workspace) loadWorkspaceMod() error {
 	w.Benchmarks = w.buildBenchmarkMap(opts.LoadedDependencyMods)
 	w.Reports = w.buildReportMap(opts.LoadedDependencyMods)
 	w.Panels = w.buildPanelMap(opts.LoadedDependencyMods)
-
-	// todo what to key mod map with
-	w.Mods = opts.LoadedDependencyMods
-	// todo what to  key mod map with
-	w.Mods = opts.LoadedDependencyMods
-	// now update variables with their usage - populate the UsedBy property
-	m.SetReferencedBy()
 	// set variables on workspace
 	w.Variables = m.Variables
+	// todo what to key mod map with
+	w.Mods = opts.LoadedDependencyMods
+
+	// now update resources 'ReferencedBy' property
+	m.SetReferencedBy()
+
 	return nil
 }
 
@@ -316,14 +308,6 @@ func (w *Workspace) getParseModOptions() *parse.ParseModOptions {
 			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 		})
 	return opts
-}
-
-func (w *Workspace) VariableValueMap() map[string]cty.Value {
-	ret := make(map[string]cty.Value, len(w.Variables))
-	for k, v := range w.Variables {
-		ret[k] = v.Value
-	}
-	return ret
 }
 
 func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {

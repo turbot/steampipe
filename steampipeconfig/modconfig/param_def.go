@@ -23,6 +23,8 @@ type ParamDef struct {
 	// list of resource names who reference this resource
 	ReferencedBy []ResourceReference `json:"referenced_by"`
 
+	DeclRange hcl.Range
+
 	parent string
 }
 
@@ -32,6 +34,7 @@ func NewParamDef(block *hcl.Block, parent string) *ParamDef {
 		FullName:      fmt.Sprintf("param.%s", block.Labels[0]),
 		referencesMap: make(map[ResourceReference]bool),
 		parent:        parent,
+		DeclRange:     block.DefRange,
 	}
 }
 
@@ -43,11 +46,6 @@ func (p ParamDef) Equals(other *ParamDef) bool {
 	return p.ShortName == other.ShortName &&
 		typehelpers.SafeString(p.Description) == typehelpers.SafeString(other.Description) &&
 		typehelpers.SafeString(p.Default) == typehelpers.SafeString(other.Default)
-}
-
-// CtyValue implements HclResource
-func (p *ParamDef) CtyValue() (cty.Value, error) {
-	return getCtyValue(p)
 }
 
 // Name implements HclResource
@@ -76,3 +74,16 @@ func (p *ParamDef) ReferencesResource(ref ResourceReference) bool {
 
 // SetMod implements HclResource
 func (p *ParamDef) SetMod(mod *Mod) {}
+
+// GetMod implements HclResource
+func (p *ParamDef) GetMod() *Mod { return nil }
+
+// GetDeclRange implements HclResource
+func (p *ParamDef) GetDeclRange() *hcl.Range {
+	return &p.DeclRange
+}
+
+// CtyValue implements HclResource
+func (p *ParamDef) CtyValue() (cty.Value, error) {
+	return getCtyValue(p)
+}
