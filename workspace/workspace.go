@@ -53,8 +53,7 @@ func Load(workspacePath string) (*Workspace, error) {
 
 	// create shell workspace
 	workspace := &Workspace{
-		Path:                workspacePath,
-		ModInstallationPath: constants.WorkspaceModPath(workspacePath),
+		Path: workspacePath,
 	}
 
 	// determine whether to load files recursively or just from the top level folder
@@ -301,7 +300,7 @@ func (w *Workspace) loadWorkspaceMod() error {
 func (w *Workspace) getParseModOptions() *parse.ParseModOptions {
 	opts := parse.NewParseModOptions(
 		parse.CreatePseudoResources|parse.CreateDefaultMod,
-		w.ModInstallationPath,
+		w.Path,
 		&filehelpers.ListOptions{
 			// listFlag specifies whether to load files recursively
 			Flags:   w.listFlag,

@@ -100,10 +100,15 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
 	}
 
+	// build an eval context containing functions
+	evalCtx := &hcl.EvalContext{
+		Functions: ContextFunctions(modPath),
+	}
+
 	for _, block := range content.Blocks {
 		if block.Type == modconfig.BlockTypeMod {
 			mod := modconfig.NewMod(block.Labels[0], modPath, block.DefRange)
-			diags := gohcl.DecodeBody(block.Body, nil, mod)
+			diags := gohcl.DecodeBody(block.Body, evalCtx, mod)
 			if diags.HasErrors() {
 				return nil, plugin.DiagsToError("Failed to decode mod hcl file", diags)
 			}
