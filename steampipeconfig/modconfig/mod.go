@@ -53,7 +53,7 @@ type Mod struct {
 	Locals     map[string]*Local
 
 	// flat list of all resources
-	AllResources []HclResource
+	AllResources map[ResourceReference]HclResource
 
 	// list of benchmark names, sorted alphabetically
 	benchmarksOrdered []string
@@ -79,6 +79,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		ModPath:       modPath,
 		DeclRange:     defRange,
 		referencesMap: make(map[ResourceReference]bool),
+		AllResources:  make(map[ResourceReference]HclResource),
 	}
 }
 
@@ -378,7 +379,7 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 		m.Controls[name] = r
 		// add params to all resources - this enablesa us to track references
 		for _, p := range r.Params {
-			m.AllResources = append(m.AllResources, p)
+			m.AllResources[NewResourceReference(p)] = p
 		}
 
 	case *Benchmark:
@@ -430,7 +431,7 @@ func (m *Mod) AddResource(item HclResource, block *hcl.Block) hcl.Diagnostics {
 			m.Locals[name] = r
 		}
 	}
-	m.AllResources = append(m.AllResources, item)
+	m.AllResources[NewResourceReference(item)] = item
 	return diags
 }
 
@@ -626,10 +627,10 @@ func getResourceParams(reference HclResource) []*ParamDef {
 func (m *Mod) setReferenceUsage(resource HclResource) {
 	ref := NewResourceReference(resource)
 	// check every resource to see if it references 'reference'
-	for _, referrer := range m.AllResources {
+	for referrerRef, referrer := range m.AllResources {
 
 		if referrer.ReferencesResource(ref) {
-			resource.AddReferencedBy(NewResourceReference(referrer))
+			resource.AddReferencedBy(referrerRef)
 		}
 
 		// if this referrer a mod or control, check every param to see if IT references 'reference'
