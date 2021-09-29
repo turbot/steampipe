@@ -3,6 +3,7 @@ package local_db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -52,15 +53,16 @@ func (c *LocalClient) Execute(ctx context.Context, query string, disableSpinner 
 
 	defer func() {
 		if err != nil {
-			// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
-			// restore the session data - prepared statements and introspection tables
-			// (do this with a Background context, since the passed in context may have expired)
-			c.ensureServiceState(context.Background())
 			// stop spinner in case of error
 			display.StopSpinner(spinner)
 			// error - rollback transaction if we have one
 			if tx != nil {
 				tx.Rollback()
+			}
+			if errors.Is(err, context.DeadlineExceeded) {
+				// if the context deadline has been exceeded, call refreshDbClient to create a new SQL client
+				// this will refresh the session data which will have been cleared by the SQL client error handling
+				c.refreshDbClient(context.Background())
 			}
 		}
 	}()
