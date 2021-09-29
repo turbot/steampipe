@@ -1,3 +1,6 @@
+## v0.8.4 [2021-09-29]
+* Update client error handling to only refresh session data for a 'context deadline exceeded' error. This avoids recursion in the error handling. ([#970](https://github.com/turbot/steampipe/issues/970))
+
 ## v0.8.3 [2021-09-28]
 
 _What's new?_
