@@ -31,11 +31,11 @@ type Mod struct {
 	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
 	// list of all block referenced by the resource
-	References []string `column:"refs,jsonb"`
+	References []ResourceReference `column:"refs,jsonb"`
 	// references stored as a map for easy checking
-	referencesMap map[string]bool
+	referencesMap map[ResourceReference]bool
 	// list of resource names who reference this resource
-	ReferencedBy []string `column:"referenced_by,jsonb"`
+	ReferencedBy []ResourceReference `column:"referenced_by,jsonb"`
 
 	// blocks
 	Requires  *Requires  `hcl:"requires,block"`
@@ -78,7 +78,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Locals:        make(map[string]*Local),
 		ModPath:       modPath,
 		DeclRange:     defRange,
-		referencesMap: make(map[string]bool),
+		referencesMap: make(map[ResourceReference]bool),
 	}
 }
 
@@ -521,23 +521,28 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
-func (m *Mod) AddReference(reference string) {
-	m.References = append(m.References, reference)
-	m.referencesMap[reference] = true
+func (m *Mod) AddReference(ref ResourceReference) {
+	m.References = append(m.References, ref)
+	m.referencesMap[ref] = true
 }
 
 // AddReferencedBy implements HclResource
-func (m *Mod) AddReferencedBy(reference string) {
-	m.ReferencedBy = append(m.ReferencedBy, reference)
+func (m *Mod) AddReferencedBy(ref ResourceReference) {
+	m.ReferencedBy = append(m.ReferencedBy, ref)
 }
 
 // ReferencesResource implements HclResource
-func (m *Mod) ReferencesResource(name string) bool {
-	return m.referencesMap[name]
+func (m *Mod) ReferencesResource(ref ResourceReference) bool {
+	return m.referencesMap[ref]
 }
 
 // SetMod implements HclResource
 func (m *Mod) SetMod(*Mod) {}
+
+// Parent implements HclResource
+func (m *Mod) Parent() string {
+	return ""
+}
 
 // GetMetadata implements ResourceWithMetadata
 func (m *Mod) GetMetadata() *ResourceMetadata {
@@ -618,17 +623,19 @@ func getResourceParams(reference HclResource) []*ParamDef {
 	return params
 }
 
-func (m *Mod) setReferenceUsage(reference HclResource) {
+func (m *Mod) setReferenceUsage(resource HclResource) {
+	ref := NewResourceReference(resource)
 	// check every resource to see if it references 'reference'
 	for _, referrer := range m.AllResources {
-		if referrer.ReferencesResource(reference.Name()) {
-			reference.AddReferencedBy(referrer.Name())
+
+		if referrer.ReferencesResource(ref) {
+			resource.AddReferencedBy(NewResourceReference(referrer))
 		}
 
 		// if this referrer a mod or control, check every param to see if IT references 'reference'
 		for _, param := range getResourceParams(referrer) {
-			if param.ReferencesResource(reference.Name()) {
-				reference.AddReferencedBy(param.Name())
+			if param.ReferencesResource(ref) {
+				resource.AddReferencedBy(NewResourceReference(param))
 			}
 		}
 	}

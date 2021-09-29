@@ -94,15 +94,13 @@ func (p *Panel) QualifiedName() string {
 func (p *Panel) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
-func (p *Panel) AddReference(reference string) {
-	// TODO
-}
+func (p *Panel) AddReference(ResourceReference) {}
 
 // AddReferencedBy implements HclResource
-func (p *Panel) AddReferencedBy(reference string) {}
+func (p *Panel) AddReferencedBy(ResourceReference) {}
 
 // ReferencesResource implements HclResource
-func (p *Panel) ReferencesResource(name string) bool { return false }
+func (p *Panel) ReferencesResource(reference ResourceReference) bool { return false }
 
 // SetMod implements HclResource
 func (p *Panel) SetMod(mod *Mod) {
@@ -176,6 +174,11 @@ func (p *Panel) GetPaths() []NodePath {
 		}
 	}
 	return res
+}
+
+// Parent implements HclResource
+func (p *Panel) Parent() string {
+	return p.metadata.ModFullName
 }
 
 // GetMetadata implements ResourceWithMetadata

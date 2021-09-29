@@ -22,7 +22,10 @@ func AddReferences(resource modconfig.HclResource, block *hcl.Block) {
 		for _, v := range attr.Expr.Variables() {
 			for _, blockType := range referenceBlockTypes {
 				if reference, ok := hclhelpers.ResourceNameFromTraversal(blockType, v); ok {
-					resource.AddReference(reference)
+					resource.AddReference(modconfig.ResourceReference{
+						Name:   reference,
+						Parent: resource.Parent(),
+					})
 					break
 				}
 			}
