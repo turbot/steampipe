@@ -121,7 +121,7 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 		if diags := resource.OnDecoded(block); diags.HasErrors() {
 			res.addDiags(diags)
 		}
-		AddReferences(resource, block)
+		AddReferences(resource, block, runCtx)
 	}
 	return resource, res
 }
@@ -251,7 +251,7 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 			if param, valDiags := decodeParam(block, runCtx, q.FullName); !diags.HasErrors() {
 				q.Params = append(q.Params, param)
 				// add references to param - set query as parent
-				AddReferences(param, block)
+				AddReferences(param, block, runCtx)
 			} else {
 				diags = append(diags, valDiags...)
 			}
@@ -266,7 +266,7 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 		if diags := q.OnDecoded(block); diags.HasErrors() {
 			res.addDiags(diags)
 		}
-		AddReferences(q, block)
+		AddReferences(q, block, runCtx)
 	}
 
 	return q, res
@@ -383,7 +383,7 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 			if paramDef, valDiags := decodeParam(block, runCtx, c.FullName); !diags.HasErrors() {
 				c.Params = append(c.Params, paramDef)
 				// update references on param (pass control as parent)
-				AddReferences(paramDef, block)
+				AddReferences(paramDef, block, runCtx)
 			} else {
 				diags = append(diags, valDiags...)
 			}
@@ -406,7 +406,7 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 		if diags := c.OnDecoded(block); diags.HasErrors() {
 			res.addDiags(diags)
 		}
-		AddReferences(c, block)
+		AddReferences(c, block, runCtx)
 	}
 
 	return c, res
