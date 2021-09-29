@@ -256,11 +256,6 @@ func (b *Benchmark) Name() string {
 	return b.FullName
 }
 
-// Parent implements HclResource
-func (b *Benchmark) Parent() string {
-	return b.metadata.ModFullName
-}
-
 // GetMetadata implements ResourceWithMetadata
 func (b *Benchmark) GetMetadata() *ResourceMetadata {
 	return b.metadata

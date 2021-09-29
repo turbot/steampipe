@@ -540,11 +540,6 @@ func (m *Mod) ReferencesResource(ref ResourceReference) bool {
 // SetMod implements HclResource
 func (m *Mod) SetMod(*Mod) {}
 
-// Parent implements HclResource
-func (m *Mod) Parent() string {
-	return ""
-}
-
 // GetMetadata implements ResourceWithMetadata
 func (m *Mod) GetMetadata() *ResourceMetadata {
 	return m.metadata

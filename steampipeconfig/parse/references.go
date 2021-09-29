@@ -17,29 +17,14 @@ var referenceBlockTypes = []string{
 	"local"}
 
 // AddReferences populates the 'References' resource field, used for the introspection tables
-func AddReferences(resource modconfig.HclResource, block *hcl.Block, runCtx *RunContext) {
+func AddReferences(resource modconfig.HclResource, block *hcl.Block) {
 	for _, attr := range block.Body.(*hclsyntax.Body).Attributes {
 		for _, v := range attr.Expr.Variables() {
 			for _, blockType := range referenceBlockTypes {
 				if referenceString, ok := hclhelpers.ResourceNameFromTraversal(blockType, v); ok {
-					// find this resource in the current mod
-					// build a potential resource reference
-					ref := modconfig.ResourceReference{
-						Name:   referenceString,
-						Parent: runCtx.Mod.FullName,
-					}
-					refResource, ok := runCtx.Mod.AllResources[ref]
-					if !ok {
-						break
-					}
-
-					// TODO consider refs in another mod
-					//parsedName, err := modconfig.ParseResourceName(reference)
-					//if parsedName.Mod != "" && parsedName.Mod != runCtx.Mod.ShortName{
-					//	break
-					//}
-
-					resource.AddReference(modconfig.NewResourceReference(refResource))
+					resource.AddReference(modconfig.ResourceReference{
+						Name: referenceString,
+					})
 					break
 				}
 			}

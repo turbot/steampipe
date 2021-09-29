@@ -32,11 +32,6 @@ func (l *Local) Name() string {
 	return l.FullName
 }
 
-// Parent implements HclResource
-func (l *Local) Parent() string {
-	return l.metadata.ModFullName
-}
-
 // GetMetadata implements ResourceWithMetadata
 func (l *Local) GetMetadata() *ResourceMetadata {
 	return l.metadata
