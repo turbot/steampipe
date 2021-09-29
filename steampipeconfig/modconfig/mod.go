@@ -75,17 +75,17 @@ type Mod struct {
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	return &Mod{
-		ShortName:  shortName,
-		FullName:   fmt.Sprintf("mod.%s", shortName),
-		Queries:    make(map[string]*Query),
-		Controls:   make(map[string]*Control),
-		Benchmarks: make(map[string]*Benchmark),
-		Reports:    make(map[string]*Report),
-		Panels:     make(map[string]*Panel),
-		Variables:  make(map[string]*Variable),
-		Locals:     make(map[string]*Local),
-		ModPath:    modPath,
-		DeclRange:  defRange,
+		ShortName:     shortName,
+		FullName:      fmt.Sprintf("mod.%s", shortName),
+		Queries:       make(map[string]*Query),
+		Controls:      make(map[string]*Control),
+		Benchmarks:    make(map[string]*Benchmark),
+		Reports:       make(map[string]*Report),
+		Panels:        make(map[string]*Panel),
+		Variables:     make(map[string]*Variable),
+		Locals:        make(map[string]*Local),
+		ModPath:       modPath,
+		DeclRange:     defRange,
 		referencesMap: make(map[ResourceReference]bool),
 		AllResources:  make(map[ResourceReference]HclResource),
 	}
