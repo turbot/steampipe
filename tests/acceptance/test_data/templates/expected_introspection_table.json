@@ -1,0 +1,42 @@
+[
+ {
+  "auto_generated": false,
+  "description": "query 1 - 3 params all with defaults",
+  "documentation": null,
+  "end_line_number": 23,
+  "file_name": "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/tests/acceptance/test_data/introspection_table_mod/query.sp",
+  "mod_name": "introspection_table_mod",
+  "params": [
+   {
+    "Default": "'steampipe_var'",
+    "Description": "p1",
+    "Name": "p1"
+   },
+   {
+    "Default": "'because_def '",
+    "Description": "p2",
+    "Name": "p2"
+   },
+   {
+    "Default": "'string'",
+    "Description": "p3",
+    "Name": "p3"
+   }
+  ],
+  "prepared_statement_name": "",
+  "referenced_by": [
+   "control.sample_control_1"
+  ],
+  "refs": [
+   "var.sample_var_1"
+  ],
+  "resource_name": "sample_query_1",
+  "search_path": null,
+  "search_path_prefix": null,
+  "source_definition": "query \"sample_query_1\"{\n    title =\"Q1\"\n    description = \"query 1 - 3 params all with defaults\"\n    sql = \"select 'ok' as status, 'steampipe' as resource, concat($1::text, $2::text, $3::text) as reason\"\n    param \"p1\"{\n        description = \"p1\"\n        default = var.sample_var_1\n    }\n    param \"p2\"{\n        description = \"p2\"\n        default = \"because_def \"\n    }\n    param \"p3\"{\n        description = \"p3\"\n        default = \"string\"\n    }\n}",
+  "sql": "select 'ok' as status, 'steampipe' as resource, concat($1::text, $2::text, $3::text) as reason",
+  "start_line_number": 7,
+  "tags": null,
+  "title": "Q1"
+ }
+]

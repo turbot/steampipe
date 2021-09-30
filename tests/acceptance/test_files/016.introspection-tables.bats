@@ -69,7 +69,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "introspection tables should get populated in query batch mode" {
-  cd $WORKSPACE_DIR
+  cd $SIMPLE_MOD_DIR
   run steampipe query "select * from steampipe_query" --output json
-  assert_success
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_introspection_table.json)"
 }
