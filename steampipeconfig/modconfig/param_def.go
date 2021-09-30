@@ -10,8 +10,8 @@ import (
 )
 
 type ParamDef struct {
-	ShortName   string      `cty:"name" json:"name"`
-	FullName    string      `cty:"name" json:"-"`
+	ShortName   string      `cty:"short_name" json:"name"`
+	FullName    string      `cty:"full_name" json:"-"`
 	Description *string     `cty:"description" json:"description"`
 	RawDefault  interface{} `json:"-"`
 	Default     *string     `cty:"default" json:"default"`
