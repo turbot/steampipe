@@ -15,7 +15,6 @@ type SummarySeverityRowRenderer struct {
 }
 
 func NewSummarySeverityRowRenderer(resultTree *controlexecute.ExecutionTree, width int, severity string) *SummarySeverityRowRenderer {
-	fmt.Println("NewSummarySeverityRowRenderer", width, severity)
 	return &SummarySeverityRowRenderer{
 		resultTree: resultTree,
 		width:      width,

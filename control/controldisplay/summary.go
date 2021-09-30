@@ -23,18 +23,15 @@ func NewSummaryRenderer(resultTree *controlexecute.ExecutionTree, width int) *Su
 func (r SummaryRenderer) Render() string {
 
 	criticalSeverityRow := NewSummarySeverityRowRenderer(r.resultTree, r.width, "critical").Render()
-	derivedWidth := helpers.PrintableLength(criticalSeverityRow) ///- 3 // why the magic number?
+	availableWidth := helpers.PrintableLength(criticalSeverityRow) ///- 3 // why the magic number?
 
-	highSeverityRow := NewSummarySeverityRowRenderer(r.resultTree, derivedWidth, "high").Render()
-	fmt.Println("high:", helpers.PrintableLength(highSeverityRow))
+	highSeverityRow := NewSummarySeverityRowRenderer(r.resultTree, availableWidth, "high").Render()
 
-	okStatusRow := NewSummaryStatusRowRenderer(r.resultTree, derivedWidth, "ok").Render()
-	skipStatusRow := NewSummaryStatusRowRenderer(r.resultTree, derivedWidth, "skip").Render()
-	infoStatusRow := NewSummaryStatusRowRenderer(r.resultTree, derivedWidth, "info").Render()
-	alarmStatusRow := NewSummaryStatusRowRenderer(r.resultTree, derivedWidth, "alarm").Render()
-	errorStatusRow := NewSummaryStatusRowRenderer(r.resultTree, derivedWidth, "error").Render()
-
-	fmt.Println(r.shouldRenderSeverities(r.resultTree.Root))
+	okStatusRow := NewSummaryStatusRowRenderer(r.resultTree, availableWidth, "ok").Render()
+	skipStatusRow := NewSummaryStatusRowRenderer(r.resultTree, availableWidth, "skip").Render()
+	infoStatusRow := NewSummaryStatusRowRenderer(r.resultTree, availableWidth, "info").Render()
+	alarmStatusRow := NewSummaryStatusRowRenderer(r.resultTree, availableWidth, "alarm").Render()
+	errorStatusRow := NewSummaryStatusRowRenderer(r.resultTree, availableWidth, "error").Render()
 
 	return fmt.Sprintf(
 		`
@@ -62,7 +59,7 @@ func (r SummaryRenderer) Render() string {
 		highSeverityRow,
 		criticalSeverityRow,
 
-		NewSummaryTotalRowRenderer(r.resultTree, derivedWidth).Render(),
+		NewSummaryTotalRowRenderer(r.resultTree, availableWidth).Render(),
 	)
 }
 
