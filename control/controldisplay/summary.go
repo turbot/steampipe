@@ -13,7 +13,6 @@ type SummaryRenderer struct {
 }
 
 func NewSummaryRenderer(resultTree *controlexecute.ExecutionTree, width int) *SummaryRenderer {
-	fmt.Println("Width:", width)
 	return &SummaryRenderer{
 		resultTree: resultTree,
 		width:      width,
