@@ -124,11 +124,11 @@ func init() {
 						Description: toStringPointer("THIS IS QUERY 1"),
 						SQL:         toStringPointer("select 1"),
 						Params: []*modconfig.ParamDef{
-							{Name: "p1",
+							{ShortName: "p1",
 								Description: utils.ToStringPointer("desc"),
 								Default:     utils.ToStringPointer("'I am default'"),
 							},
-							{Name: "p2",
+							{ShortName: "p2",
 								Description: utils.ToStringPointer("desc 2"),
 								Default:     utils.ToStringPointer("'I am default 2'"),
 							},
