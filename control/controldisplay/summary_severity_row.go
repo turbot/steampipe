@@ -57,6 +57,7 @@ func (r *SummarySeverityRowRenderer) Render() string {
 		withSevValueCount,
 		r.resultTree.Root.Summary.Status.FailedCount(), // not sure what this is
 		r.resultTree.Root.Summary.Status.TotalCount(),
+		false,
 	).Render()
 
 	graph := NewCounterGraphRenderer(

@@ -14,14 +14,17 @@ type CounterRenderer struct {
 
 	maxFailedControls int
 	maxTotalControls  int
+
+	addLeadingSpace bool
 }
 
-func NewCounterRenderer(failedControls, totalControls, maxFailedControls, maxTotalControls int) *CounterRenderer {
+func NewCounterRenderer(failedControls, totalControls, maxFailedControls, maxTotalControls int, addLeadingSpace bool) *CounterRenderer {
 	return &CounterRenderer{
 		failedControls:    failedControls,
 		totalControls:     totalControls,
 		maxFailedControls: maxFailedControls,
 		maxTotalControls:  maxTotalControls,
+		addLeadingSpace:   addLeadingSpace,
 	}
 }
 
@@ -49,6 +52,9 @@ func (r CounterRenderer) Render() string {
 
 	// calculate the width of the fails and total columns
 	failedWidth := len(maxFailedString)
+	if !r.addLeadingSpace {
+		failedWidth = len(failedString)
+	}
 	totalWidth := len(maxTotalString)
 
 	// build format string, specifying widths of failedString and totalString
