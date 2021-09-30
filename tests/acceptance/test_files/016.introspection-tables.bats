@@ -71,5 +71,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "introspection tables should get populated in query batch mode" {
   cd $SIMPLE_MOD_DIR
   run steampipe query "select * from steampipe_query" --output json
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_introspection_table.json)"
+
+  # extracting only description from the list, which is enough to prove that there is an output
+  description=$(echo $output | jq '.[].description')
+  assert_equal "$description" '"query 1 - 3 params all with defaults"'
 }
