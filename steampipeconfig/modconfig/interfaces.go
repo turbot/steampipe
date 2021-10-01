@@ -38,7 +38,7 @@ type HclResource interface {
 	OnDecoded(*hcl.Block) hcl.Diagnostics
 	AddReference(ref ResourceReference)
 	AddReferencedBy(referencedBy ResourceReference)
-	ReferencesResource(ResourceReference) bool
+	GetResourceReferences(HclResource) []ResourceReference
 	SetMod(*Mod)
 	GetMod() *Mod
 	GetDeclRange() *hcl.Range

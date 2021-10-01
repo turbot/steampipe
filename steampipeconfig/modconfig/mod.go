@@ -41,7 +41,7 @@ type Mod struct {
 	// list of all block referenced by the resource
 	References []ResourceReference `column:"refs,jsonb"`
 	// references stored as a map for easy checking
-	referencesMap map[ResourceReference]bool
+	referencesMap ResourceReferenceMap
 	// list of resource names who reference this resource
 	ReferencedBy []ResourceReference `column:"referenced_by,jsonb"`
 
@@ -86,7 +86,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Locals:        make(map[string]*Local),
 		ModPath:       modPath,
 		DeclRange:     defRange,
-		referencesMap: make(map[ResourceReference]bool),
+		referencesMap: make(ResourceReferenceMap),
 		AllResources:  make(map[string]HclResource),
 	}
 }
@@ -537,7 +537,7 @@ func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics {
 // AddReference implements HclResource
 func (m *Mod) AddReference(ref ResourceReference) {
 	m.References = append(m.References, ref)
-	m.referencesMap[ref] = true
+	m.referencesMap.Add(ref)
 }
 
 // AddReferencedBy implements HclResource
@@ -545,9 +545,9 @@ func (m *Mod) AddReferencedBy(ref ResourceReference) {
 	m.ReferencedBy = append(m.ReferencedBy, ref)
 }
 
-// ReferencesResource implements HclResource
-func (m *Mod) ReferencesResource(ref ResourceReference) bool {
-	return m.referencesMap[ref]
+// GetResourceReferences implements HclResource
+func (m *Mod) GetResourceReferences(resource HclResource) []ResourceReference {
+	return m.referencesMap[resource.Name()]
 }
 
 // SetMod implements HclResource
@@ -624,30 +624,21 @@ func (m *Mod) GetChildControls() []*Control {
 func (m *Mod) SetReferencedBy() {
 	for _, reference := range m.AllResources {
 		m.setReferenceUsage(reference)
-
-		// if this resource is a control or query, iterate through all params and set their ReferencedBy
-		for _, param := range getResourceParams(reference) {
-			m.setReferenceUsage(param)
-		}
 	}
 }
 
 func (m *Mod) setReferenceUsage(resource HclResource) {
-	//ref := NewResourceReference(resource)
-	//// check every resource to see if it references 'reference'
-	//for referrerRef, referrer := range m.AllResources {
-	//	if referrer.ReferencesResource(ref) {
-	//		resource.AddReferencedBy(referrerRef)
-	//	}
-	//}
-}
-
-func getResourceParams(reference HclResource) []*ParamDef {
-	var params []*ParamDef
-	if q, ok := reference.(*Query); ok {
-		params = q.Params
-	} else if c, ok := reference.(*Control); ok {
-		params = c.Params
+	// check every resource to see if it references 'reference'
+	for _, referrer := range m.AllResources {
+		refs := referrer.GetResourceReferences(resource)
+		// now create a copy of each of these refs, but with the name of the ref being the referrer, instead of the reference
+		for _, ref := range refs {
+			resource.AddReferencedBy(ResourceReference{
+				Name:      referrer.Name(),
+				BlockType: ref.BlockType,
+				BlockName: ref.BlockName,
+				Attribute: ref.Attribute,
+			})
+		}
 	}
-	return params
 }

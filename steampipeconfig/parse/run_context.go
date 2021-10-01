@@ -87,10 +87,14 @@ func VariableValueMap(variables map[string]*modconfig.Variable) map[string]cty.V
 	return ret
 }
 
+// AddVariables adds variables to the run context.
+// We load and evaluate variables before loading the workspace
 func (r *RunContext) AddVariables(inputVariables map[string]*modconfig.Variable) {
 	r.Variables = inputVariables
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
 	r.referenceValues["local"]["var"] = VariableValueMap(inputVariables)
+	// do not reload variables as we already have them
+	r.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 }
 
 // AddMod is used to add a mod with any pseudo resources to the eval context
@@ -139,7 +143,7 @@ func (r *RunContext) ShouldIncludeBlock(block *hcl.Block) bool {
 	if len(r.BlockTypes) > 0 && !helpers.StringSliceContains(r.BlockTypes, block.Type) {
 		return false
 	}
-	if len(r.BlockTypeExclusions) > 0 && helpers.StringSliceContains(r.BlockTypes, block.Type) {
+	if len(r.BlockTypeExclusions) > 0 && helpers.StringSliceContains(r.BlockTypeExclusions, block.Type) {
 		return false
 	}
 	return true

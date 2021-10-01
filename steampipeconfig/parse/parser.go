@@ -183,9 +183,9 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		return nil, err
 	}
 
-	// set variables on the mod
-	if runCtx.Variables != nil {
-		mod.Variables = runCtx.Variables
+	// if variables were passed in runcontext, add to the mod
+	for _, v := range runCtx.Variables {
+		mod.AddResource(v)
 	}
 
 	// add pseudo resources to the mod

@@ -384,8 +384,8 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 			}
 			if paramDef, valDiags := decodeParam(block, runCtx, c.FullName); !diags.HasErrors() {
 				c.Params = append(c.Params, paramDef)
-				// update references on param (pass control as parent)
-				AddReferences(paramDef, block)
+				// add and references contained in the param block to the control refs
+				AddReferences(c, block)
 			} else {
 				diags = append(diags, valDiags...)
 			}

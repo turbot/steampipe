@@ -48,8 +48,8 @@ func (l *Local) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 // AddReference implements HclResource
 func (l *Local) AddReference(ResourceReference) {}
 
-// ReferencesResource implements HclResource
-func (l *Local) ReferencesResource(ResourceReference) bool { return false }
+// GetResourceReferences implements HclResource
+func (l *Local) GetResourceReferences(HclResource) []ResourceReference { return nil }
 
 // AddReferencedBy implements HclResource
 func (l *Local) AddReferencedBy(ResourceReference) {}

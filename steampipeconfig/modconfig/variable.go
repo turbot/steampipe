@@ -86,8 +86,8 @@ func (v *Variable) AddReferencedBy(ref ResourceReference) {
 	v.ReferencedBy = append(v.ReferencedBy, ref)
 }
 
-// ReferencesResource implements HclResource
-func (v *Variable) ReferencesResource(ResourceReference) bool { return false }
+// GetResourceReferences implements HclResource
+func (v *Variable) GetResourceReferences(HclResource) []ResourceReference { return nil }
 
 // SetMod implements HclResource
 func (v *Variable) SetMod(mod *Mod) {
