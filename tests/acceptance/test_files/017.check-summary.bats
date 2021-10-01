@@ -6,8 +6,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $WORKSPACE_DIR
   run steampipe check benchmark.control_summary_benchmark --theme plain
 
-  # storing the content in a variable as a string or else test was failing
-  var=$(cat $TEST_DATA_DIR/expected_summary_output.txt)
+  echo $output
 
-  assert_equal "$var" "$(cat $TEST_DATA_DIR/expected_summary_output.txt)"
+  # TODO: Find a way to store the output in a file and match it with the 
+  # expected file. For now the work-around is to check whether the output
+  # contains `summary`
+  assert_output --partial 'Summary'
 }
