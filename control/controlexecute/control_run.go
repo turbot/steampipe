@@ -186,6 +186,10 @@ func (r *ControlRun) gatherResults() {
 			if row == nil {
 				// update the result group status with our status - this will be passed all the way up the execution tree
 				r.group.updateSummary(r.Summary)
+				if len(r.Severity) != 0 {
+					r.group.updateSeverityCounts(r.Severity, r.Summary)
+				}
+
 				// nil row means we are done
 				r.setRunStatus(ControlRunComplete)
 				return
