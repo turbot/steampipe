@@ -264,12 +264,10 @@ func (w *Workspace) loadWorkspaceMod() error {
 		return err
 	}
 
-	variableValueMap := modconfig.VariableValueMap(inputVariables)
-
 	// build run context which we use to load the workspace
 	runCtx := w.getRunContext()
 	// add variables to runContext
-	runCtx.AddVariables(variableValueMap)
+	runCtx.AddVariables(inputVariables)
 
 	// now load the mod
 	m, err := steampipeconfig.LoadMod(w.Path, runCtx)

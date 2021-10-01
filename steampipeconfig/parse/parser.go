@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/json"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
@@ -182,6 +181,11 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	hclResources, err := loadMappableResourceNames(modPath, content)
 	if err != nil {
 		return nil, err
+	}
+
+	// set variables on the mod
+	if runCtx.Variables != nil {
+		mod.Variables = runCtx.Variables
 	}
 
 	// add pseudo resources to the mod

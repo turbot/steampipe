@@ -46,12 +46,15 @@ type RunContext struct {
 	ModInstallationPath  string
 	// if set, only decode these blocks
 	BlockTypes []string
+	// if set, exclude these block types
+	BlockTypeExclusions []string
 
 	dependencyGraph *topsort.Graph
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
 	blocks          hcl.Blocks
+	Variables       map[string]*modconfig.Variable
 }
 
 func NewRunContext(workspacePath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
@@ -75,9 +78,19 @@ func NewRunContext(workspacePath string, flags ParseModFlag, listOptions *filehe
 	return c
 }
 
-func (r *RunContext) AddVariables(inputVariables map[string]cty.Value) {
+// VariableValueMap converts a map of variables to a map of the underlying cty value
+func VariableValueMap(variables map[string]*modconfig.Variable) map[string]cty.Value {
+	ret := make(map[string]cty.Value, len(variables))
+	for k, v := range variables {
+		ret[k] = v.Value
+	}
+	return ret
+}
+
+func (r *RunContext) AddVariables(inputVariables map[string]*modconfig.Variable) {
+	r.Variables = inputVariables
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
-	r.referenceValues["local"]["var"] = inputVariables
+	r.referenceValues["local"]["var"] = VariableValueMap(inputVariables)
 }
 
 // AddMod is used to add a mod with any pseudo resources to the eval context
@@ -120,6 +133,16 @@ func (r *RunContext) AddMod(mod *modconfig.Mod, content *hcl.BodyContent, fileDa
 	// rebuild the eval context
 	r.buildEvalContext()
 	return diags
+}
+
+func (r *RunContext) ShouldIncludeBlock(block *hcl.Block) bool {
+	if len(r.BlockTypes) > 0 && !helpers.StringSliceContains(r.BlockTypes, block.Type) {
+		return false
+	}
+	if len(r.BlockTypeExclusions) > 0 && helpers.StringSliceContains(r.BlockTypes, block.Type) {
+		return false
+	}
+	return true
 }
 
 func (r *RunContext) ClearDependencies() {

@@ -20,10 +20,13 @@ var referenceBlockTypes = []string{
 func AddReferences(resource modconfig.HclResource, block *hcl.Block) {
 	for _, attr := range block.Body.(*hclsyntax.Body).Attributes {
 		for _, v := range attr.Expr.Variables() {
-			for _, blockType := range referenceBlockTypes {
-				if referenceString, ok := hclhelpers.ResourceNameFromTraversal(blockType, v); ok {
+			for _, referenceBlockType := range referenceBlockTypes {
+				if referenceString, ok := hclhelpers.ResourceNameFromTraversal(referenceBlockType, v); ok {
 					resource.AddReference(modconfig.ResourceReference{
-						Name: referenceString,
+						Name:      referenceString,
+						BlockType: block.Type,
+						BlockName: block.Labels[0],
+						Attribute: attr.Name,
 					})
 					break
 				}

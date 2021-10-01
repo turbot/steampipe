@@ -60,7 +60,7 @@ type Mod struct {
 	Locals     map[string]*Local
 
 	// flat list of all resources
-	AllResources map[ResourceReference]HclResource
+	AllResources map[string]HclResource
 
 	// list of benchmark names, sorted alphabetically
 	benchmarksOrdered []string
@@ -87,7 +87,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		ModPath:       modPath,
 		DeclRange:     defRange,
 		referencesMap: make(map[ResourceReference]bool),
-		AllResources:  make(map[ResourceReference]HclResource),
+		AllResources:  make(map[string]HclResource),
 	}
 }
 
@@ -387,10 +387,6 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		}
 		m.Controls[name] = r
-		// add params to all resources - this enablesa us to track references
-		for _, p := range r.Params {
-			m.AllResources[NewResourceReference(p)] = p
-		}
 
 	case *Benchmark:
 		name := r.Name()
@@ -442,7 +438,7 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 			m.Locals[name] = r
 		}
 	}
-	m.AllResources[NewResourceReference(item)] = item
+	m.AllResources[item.Name()] = item
 	return diags
 }
 
@@ -636,6 +632,16 @@ func (m *Mod) SetReferencedBy() {
 	}
 }
 
+func (m *Mod) setReferenceUsage(resource HclResource) {
+	//ref := NewResourceReference(resource)
+	//// check every resource to see if it references 'reference'
+	//for referrerRef, referrer := range m.AllResources {
+	//	if referrer.ReferencesResource(ref) {
+	//		resource.AddReferencedBy(referrerRef)
+	//	}
+	//}
+}
+
 func getResourceParams(reference HclResource) []*ParamDef {
 	var params []*ParamDef
 	if q, ok := reference.(*Query); ok {
@@ -644,22 +650,4 @@ func getResourceParams(reference HclResource) []*ParamDef {
 		params = c.Params
 	}
 	return params
-}
-
-func (m *Mod) setReferenceUsage(resource HclResource) {
-	ref := NewResourceReference(resource)
-	// check every resource to see if it references 'reference'
-	for referrerRef, referrer := range m.AllResources {
-
-		if referrer.ReferencesResource(ref) {
-			resource.AddReferencedBy(referrerRef)
-		}
-
-		// if this referrer a mod or control, check every param to see if IT references 'reference'
-		for _, param := range getResourceParams(referrer) {
-			if param.ReferencesResource(ref) {
-				resource.AddReferencedBy(NewResourceReference(param))
-			}
-		}
-	}
 }

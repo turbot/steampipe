@@ -20,11 +20,11 @@ type Variable struct {
 	DescriptionSet bool
 
 	// set after value resolution `column:"value,jsonb"`
-	Value                      cty.Value
-	ValueSourceType            string `column:"value_source,text"`
-	ValueSourceFileName        string `column:"value_source_file_name,text"`
-	ValueSourceStartLineNumber int    `column:"value_source_start_line_number,integer"`
-	ValueSourceEndLineNumber   int    `column:"value_source_end_line_number,integer"`
+	Value                      cty.Value `column:"value,jsonb"`
+	ValueSourceType            string    `column:"value_source,text"`
+	ValueSourceFileName        string    `column:"value_source_file_name,text"`
+	ValueSourceStartLineNumber int       `column:"value_source_start_line_number,integer"`
+	ValueSourceEndLineNumber   int       `column:"value_source_end_line_number,integer"`
 	DeclRange                  hcl.Range
 	ParsingMode                var_config.VariableParsingMode
 	Mod                        *Mod
@@ -121,13 +121,4 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 	v.ValueSourceFileName = sourceRange.Filename
 	v.ValueSourceStartLineNumber = sourceRange.Start.Line
 	v.ValueSourceEndLineNumber = sourceRange.End.Line
-}
-
-// VariableValueMap converts a map of variables to a map of the underlying cty value
-func VariableValueMap(variables map[string]*Variable) map[string]cty.Value {
-	ret := make(map[string]cty.Value, len(variables))
-	for k, v := range variables {
-		ret[k] = v.Value
-	}
-	return ret
 }
