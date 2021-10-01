@@ -39,7 +39,7 @@ type RunContext struct {
 	blocks    hcl.Blocks
 }
 
-func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[string][]byte, inputVariables map[string]cty.Value) (*RunContext, hcl.Diagnostics) {
+func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[string][]byte, inputVariables map[string]*modconfig.Variable) (*RunContext, hcl.Diagnostics) {
 	c := &RunContext{
 		Mod:              mod,
 		FileData:         fileData,
@@ -54,7 +54,7 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 	// add steampipe variables to the local variables
 	if inputVariables != nil {
 		// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
-		c.variables["var"] = inputVariables
+		c.variables["var"] = VariableValueMap(inputVariables)
 	}
 
 	// add mod and any existing mod resources to the variables
@@ -64,6 +64,15 @@ func NewRunContext(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[st
 	c.addSteampipeEnums()
 
 	return c, diags
+}
+
+// VariableValueMap converts a map of variables to a map of the underlying cty value
+func VariableValueMap(variables map[string]*modconfig.Variable) map[string]cty.Value {
+	ret := make(map[string]cty.Value, len(variables))
+	for k, v := range variables {
+		ret[k] = v.Value
+	}
+	return ret
 }
 
 func (c *RunContext) ClearDependencies() {
@@ -121,7 +130,7 @@ func (c *RunContext) BlocksToDecode() (hcl.Blocks, error) {
 	}
 
 	// NOTE: a block may appear more than once in unresolved blocks
-	// if it defines muleiple unresolved resources, e.g a locals block
+	// if it defines multiple unresolved resources, e.g a locals block
 
 	// make a map of blocks we have already included, keyed by the block def range
 	blocksMap := make(map[string]bool)

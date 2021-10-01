@@ -256,8 +256,6 @@ func (w *Workspace) loadWorkspaceMod() error {
 		return err
 	}
 
-	variableValueMap := modconfig.VariableValueMap(inputVariables)
-
 	// build options used to load workspace
 	// set flags to create pseudo resources and a default mod if needed
 	opts := &parse.ParseModOptions{
@@ -267,7 +265,10 @@ func (w *Workspace) loadWorkspaceMod() error {
 			Flags:   w.listFlag,
 			Exclude: w.exclusions,
 		},
-		Variables: variableValueMap,
+
+		Variables: inputVariables,
+		// do not decode variables as we already have them
+		BlockTypeExclusions: []string{modconfig.BlockTypeVariable},
 	}
 
 	m, err := steampipeconfig.LoadMod(w.Path, opts)

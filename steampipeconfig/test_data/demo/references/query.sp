@@ -11,7 +11,7 @@ variable "v2"{
 
 query "q1"{
     title ="Q1"
-    description = "query 1 - 3 params all with defaults"
+    description = var.v1
     sql = "select 'ok' as status, 'foo' as resource, concat($1::text, $2::text, $3::text) as reason"
     param "p1"{
         description = "p1"

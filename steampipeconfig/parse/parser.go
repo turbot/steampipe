@@ -147,6 +147,11 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		mod = modconfig.CreateDefaultMod(modPath)
 	}
 
+	// set variables on the mod
+	if opts.Variables != nil {
+		mod.Variables = opts.Variables
+	}
+
 	// 3) add pseudo resources to the mod
 	var duplicates []string
 	for _, r := range pseudoResources {

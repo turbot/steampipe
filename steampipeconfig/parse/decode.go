@@ -39,7 +39,7 @@ func decode(runCtx *RunContext, opts *ParseModOptions) hcl.Diagnostics {
 	}
 	for _, block := range blocks {
 		// if opts specifies block types, check whether this type is included
-		if len(opts.BlockTypes) > 0 && !helpers.StringSliceContains(opts.BlockTypes, block.Type) {
+		if !opts.ShouldIncludeBlock(block) {
 			continue
 		}
 		// check name is valid
@@ -250,8 +250,8 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 		if block.Type == modconfig.BlockTypeParam {
 			if param, valDiags := decodeParam(block, runCtx, q.FullName); !diags.HasErrors() {
 				q.Params = append(q.Params, param)
-				// add references to param - set query as parent
-				AddReferences(param, block)
+				// also add references to query
+				AddReferences(q, block)
 			} else {
 				diags = append(diags, valDiags...)
 			}
