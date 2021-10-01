@@ -11,6 +11,8 @@ import (
 
 const PluginName = "steampipe_plugin_manager"
 
+// PluginMap is a ma of the plugins supported, _without the implementation_
+// this used to create a GRPC client
 var PluginMap = map[string]plugin.Plugin{
 	PluginName: &PluginManagerPlugin{},
 }
@@ -26,7 +28,7 @@ type PluginManager interface {
 	GetPlugin(req *pb.GetPluginRequest) (*pb.GetPluginResponse, error)
 }
 
-// This is the implementation of plugin.GRPCServer so we can serve/consume this.
+// PluginManagerPlugin is the implementation of plugin.GRPCServer so we can serve/consume this.
 type PluginManagerPlugin struct {
 	// GRPCPlugin must still implement the Stub interface
 	plugin.Plugin
@@ -40,7 +42,7 @@ func (p *PluginManagerPlugin) GRPCServer(_ *plugin.GRPCBroker, s *grpc.Server) e
 	return nil
 }
 
-// return a GRPCClient, called by Dispense
+// GRPCClient returns a GRPCClient, called by Dispense
 func (p *PluginManagerPlugin) GRPCClient(ctx context.Context, _ *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
 	return &GRPCClient{client: pb.NewPluginManagerClient(c), ctx: ctx}, nil
 }
