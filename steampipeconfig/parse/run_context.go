@@ -23,8 +23,12 @@ const (
 	CreatePseudoResources
 )
 
-// TODO better comment on this stuff
-// ReferenceTypeValueMap is a map of reference value maps, keyed by type
+/* ReferenceTypeValueMap is the raw data used to build the evaluation context
+When resolving hcl references like :
+- query.q1
+- var.v1
+- mod1.query.my_query.sql
+*/
 type ReferenceTypeValueMap map[string]map[string]cty.Value
 
 type RunContext struct {
