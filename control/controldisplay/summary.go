@@ -61,15 +61,3 @@ func (r SummaryRenderer) Render() string {
 		NewSummaryTotalRowRenderer(r.resultTree, availableWidth).Render(),
 	)
 }
-
-func (r SummaryRenderer) shouldRenderSeverities(group *controlexecute.ResultGroup) bool {
-	for _, subGroup := range group.Groups {
-		return r.shouldRenderSeverities(subGroup)
-	}
-	for _, run := range group.ControlRuns {
-		if len(run.Severity) != 0 {
-			return true
-		}
-	}
-	return false
-}
