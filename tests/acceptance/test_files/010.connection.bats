@@ -42,3 +42,33 @@ load "$LIB_BATS_SUPPORT/load.bash"
     # querying a steampipe table
     assert_failure
 }
+
+@test "steampipe json connection config" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos2.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
+
+    run steampipe query "select * from chaos4.chaos_cache_check"
+    assert_success
+}
+
+@test "steampipe should return an error for duplicate connection name" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
+
+    # this should fail because of duplicate connection name
+    run steampipe query "select * from chaos.chaos_cache_check"
+
+    assert_output --partial 'Error: duplicate connection name'
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos2.json
+}
+
+@test "steampipe yaml connection config" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos2.yml $STEAMPIPE_INSTALL_DIR/config/chaos3.yml
+
+    run steampipe query "select * from chaos5.chaos_cache_check"
+    assert_success
+}

@@ -2,12 +2,10 @@ package parse
 
 import (
 	"fmt"
-	"sort"
-	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
@@ -67,17 +65,31 @@ func DecodeConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.
 			})
 		}
 	}
-	// now build a string containing the hcl for all other connection config properties
-	restBody := rest.(*hclsyntax.Body)
-	var configProperties []string
-	for name, a := range restBody.Attributes {
-		// if this attribute does not appear in connectionContent, load the hcl string
-		if _, ok := connectionContent.Attributes[name]; !ok {
-			configProperties = append(configProperties, string(a.SrcRange.SliceBytes(fileData[a.SrcRange.Filename])))
-		}
+	// convert the remaining config to a hcl string to pass to the plugin
+	config, moreDiags := BodyToHclString(rest, connectionContent)
+	if moreDiags.HasErrors() {
+		diags = append(diags, moreDiags...)
+	} else {
+		connection.Config = config
 	}
-	sort.Strings(configProperties)
-	connection.Config = strings.Join(configProperties, "\n")
 
 	return connection, diags
+}
+
+func BodyToHclString(body hcl.Body, connectionContent *hcl.BodyContent) (string, hcl.Diagnostics) {
+	f := hclwrite.NewEmptyFile()
+	rootBody := f.Body()
+	attrs, diags := body.JustAttributes()
+	if diags.HasErrors() {
+		return "", diags
+	}
+	for name, attr := range attrs {
+		if _, ok := connectionContent.Attributes[name]; !ok {
+			val, moreDiags := attr.Expr.Value(nil)
+			diags = append(diags, moreDiags...)
+			rootBody.SetAttributeValue(name, val) // this is overwritten later
+		}
+	}
+
+	return string(f.Bytes()), diags
 }

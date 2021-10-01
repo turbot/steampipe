@@ -1,0 +1,5 @@
+connection:
+  chaos5:
+    plugin: chaos
+    regions:
+      - us-east-1

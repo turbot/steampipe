@@ -1,0 +1,12 @@
+{
+  "connection": 
+    {
+      "chaos4": 
+        {
+          "plugin": "chaos",
+          "regions": [
+            "us-east-1"
+          ]
+        }
+    }
+}

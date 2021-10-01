@@ -1,0 +1,26 @@
+{
+  "connection": 
+    {
+      "chaos": 
+        {
+          "plugin": "chaos",
+          "regions": [
+            "us-east-1"
+          ]
+        },
+      "chaos2": 
+        {
+          "plugin": "chaos",
+          "regions": [
+            "us-east-1"
+          ]
+        },
+      "chaos3": 
+        {
+          "plugin": "chaos",
+          "regions": [
+            "us-east-1"
+          ]
+        }
+    }
+}
