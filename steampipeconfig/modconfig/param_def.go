@@ -3,8 +3,6 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/zclconf/go-cty/cty"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 )
@@ -39,51 +37,11 @@ func NewParamDef(block *hcl.Block, parent string) *ParamDef {
 }
 
 func (p ParamDef) String() string {
-	return fmt.Sprintf("Name: %s, Description: %s, Default: %s", p.Name, typehelpers.SafeString(p.Description), typehelpers.SafeString(p.Default))
+	return fmt.Sprintf("Name: %s, Description: %s, Default: %s", p.FullName, typehelpers.SafeString(p.Description), typehelpers.SafeString(p.Default))
 }
 
 func (p ParamDef) Equals(other *ParamDef) bool {
 	return p.ShortName == other.ShortName &&
 		typehelpers.SafeString(p.Description) == typehelpers.SafeString(other.Description) &&
 		typehelpers.SafeString(p.Default) == typehelpers.SafeString(other.Default)
-}
-
-// Name implements HclResource
-func (p *ParamDef) Name() string {
-	return p.FullName
-}
-
-// OnDecoded implements HclResource
-func (p *ParamDef) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
-
-// AddReference implements HclResource
-func (p *ParamDef) AddReference(ref ResourceReference) {
-	p.References = append(p.References, ref)
-	p.referencesMap.Add(ref)
-}
-
-// AddReferencedBy implements HclResource
-//func (p *ParamDef)AddReferencedBy(ref ResourceReference) {
-//	p.ReferencedBy = append(p.ReferencedBy, ref)
-//}
-
-// GetResourceReferences implements HclResource
-//func (p *ParamDef) GetResourceReferences(resource HclResource) []ResourceReference {
-//	return p.referencesMap[resource.Name()]
-//}
-
-// SetMod implements HclResource
-//func (p *ParamDef) SetMod(mod *Mod) {}
-
-// GetMod implements HclResource
-func (p *ParamDef) GetMod() *Mod { return nil }
-
-// GetDeclRange implements HclResource
-func (p *ParamDef) GetDeclRange() *hcl.Range {
-	return &p.DeclRange
-}
-
-// CtyValue implements HclResource
-func (p *ParamDef) CtyValue() (cty.Value, error) {
-	return getCtyValue(p)
 }

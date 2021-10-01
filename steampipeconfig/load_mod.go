@@ -44,8 +44,8 @@ func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err 
 		}
 	} else {
 		// so there is no mod file - should we create a default?
-		if !runCtx.CreateDefaultMod() {
-			// CreateDefaultMod flag NOT set - fail
+		if !runCtx.ShouldCreateDefaultMod() {
+			// ShouldCreateDefaultMod flag NOT set - fail
 			return nil, fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
 		}
 		// just create a default mod

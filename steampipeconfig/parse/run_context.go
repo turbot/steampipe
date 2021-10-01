@@ -28,6 +28,8 @@ When resolving hcl references like :
 - query.q1
 - var.v1
 - mod1.query.my_query.sql
+
+ReferenceTypeValueMap is keyed  by resource type, then by resource name
 */
 type ReferenceTypeValueMap map[string]map[string]cty.Value
 
@@ -222,15 +224,17 @@ func (r *RunContext) BlocksToDecode() (hcl.Blocks, error) {
 	return blocksToDecode, nil
 }
 
-// EvalComplete :: Are all elements in the dependency tree fully evaluated
+// EvalComplete returns whether  all elements in the dependency tree fully evaluated
 func (r *RunContext) EvalComplete() bool {
 	return len(r.UnresolvedBlocks) == 0
 }
 
-func (r *RunContext) CreateDefaultMod() bool {
+// ShouldCreateDefaultMod returns whether the flag is set to create a default mod if no mod definition exists
+func (r *RunContext) ShouldCreateDefaultMod() bool {
 	return r.Flags&CreateDefaultMod == CreateDefaultMod
 }
 
+// CreatePseudoResources returns whether the flag is set to create pseudo resources
 func (r *RunContext) CreatePseudoResources() bool {
 	return r.Flags&CreatePseudoResources == CreatePseudoResources
 }

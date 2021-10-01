@@ -65,6 +65,7 @@ func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	return hcl.MergeFiles(parsedConfigFiles), diags
 }
 
+// ModfileExists returns whether a mod file exists at the specified path
 func ModfileExists(modPath string) bool {
 	modFilePath := filepath.Join(modPath, "mod.sp")
 	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
@@ -120,43 +121,6 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 	}
 
 	return nil, fmt.Errorf("no mod definition found in %s", modPath)
-}
-
-// parse a yaml file into a hcl.File object
-func parseYamlFile(filename string) (*hcl.File, hcl.Diagnostics) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, hcl.Diagnostics{
-			{
-				Severity: hcl.DiagError,
-				Summary:  "Failed to open file",
-				Detail:   fmt.Sprintf("The file %q could not be opened.", filename),
-			},
-		}
-	}
-	defer f.Close()
-
-	src, err := ioutil.ReadAll(f)
-	if err != nil {
-		return nil, hcl.Diagnostics{
-			{
-				Severity: hcl.DiagError,
-				Summary:  "Failed to read file",
-				Detail:   fmt.Sprintf("The file %q was opened, but an error occured while reading it.", filename),
-			},
-		}
-	}
-	jsonData, err := yaml.YAMLToJSON(src)
-	if err != nil {
-		return nil, hcl.Diagnostics{
-			{
-				Severity: hcl.DiagError,
-				Summary:  "Failed to read convert YAML to JSON",
-				Detail:   fmt.Sprintf("The file %q was opened, but an error occured while converting it to JSON.", filename),
-			},
-		}
-	}
-	return json.Parse(jsonData, filename)
 }
 
 // ParseMod parses all source hcl files for the mod path and associated resources, and returns the mod object
@@ -221,6 +185,43 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	}
 
 	return mod, nil
+}
+
+// parse a yaml file into a hcl.File object
+func parseYamlFile(filename string) (*hcl.File, hcl.Diagnostics) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, hcl.Diagnostics{
+			{
+				Severity: hcl.DiagError,
+				Summary:  "Failed to open file",
+				Detail:   fmt.Sprintf("The file %q could not be opened.", filename),
+			},
+		}
+	}
+	defer f.Close()
+
+	src, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, hcl.Diagnostics{
+			{
+				Severity: hcl.DiagError,
+				Summary:  "Failed to read file",
+				Detail:   fmt.Sprintf("The file %q was opened, but an error occured while reading it.", filename),
+			},
+		}
+	}
+	jsonData, err := yaml.YAMLToJSON(src)
+	if err != nil {
+		return nil, hcl.Diagnostics{
+			{
+				Severity: hcl.DiagError,
+				Summary:  "Failed to read convert YAML to JSON",
+				Detail:   fmt.Sprintf("The file %q was opened, but an error occured while converting it to JSON.", filename),
+			},
+		}
+	}
+	return json.Parse(jsonData, filename)
 }
 
 func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclResources map[string]bool, mod *modconfig.Mod) {
