@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 
 	"github.com/hashicorp/hcl/v2"
@@ -12,6 +13,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"sigs.k8s.io/yaml"
 )
 
 // LoadFileData builds a map of filepath to file data
@@ -42,8 +44,11 @@ func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	for configPath, data := range fileData {
 		var file *hcl.File
 		var moreDiags hcl.Diagnostics
-		if filepath.Ext(configPath) == constants.JsonExtension {
+		ext := filepath.Ext(configPath)
+		if ext == constants.JsonExtension {
 			file, moreDiags = json.ParseFile(configPath)
+		} else if constants.IsYamlExtension(ext) {
+			file, moreDiags = parseYamlFile(configPath)
 		} else {
 			file, moreDiags = parser.ParseHCL(data, configPath)
 		}
@@ -56,6 +61,43 @@ func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	}
 
 	return hcl.MergeFiles(parsedConfigFiles), diags
+}
+
+// parse a yaml file into a hcl.File object
+func parseYamlFile(filename string) (*hcl.File, hcl.Diagnostics) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, hcl.Diagnostics{
+			{
+				Severity: hcl.DiagError,
+				Summary:  "Failed to open file",
+				Detail:   fmt.Sprintf("The file %q could not be opened.", filename),
+			},
+		}
+	}
+	defer f.Close()
+
+	src, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, hcl.Diagnostics{
+			{
+				Severity: hcl.DiagError,
+				Summary:  "Failed to read file",
+				Detail:   fmt.Sprintf("The file %q was opened, but an error occured while reading it.", filename),
+			},
+		}
+	}
+	jsonData, err := yaml.YAMLToJSON(src)
+	if err != nil {
+		return nil, hcl.Diagnostics{
+			{
+				Severity: hcl.DiagError,
+				Summary:  "Failed to read convert YAML to JSON",
+				Detail:   fmt.Sprintf("The file %q was opened, but an error occured while converting it to JSON.", filename),
+			},
+		}
+	}
+	return json.Parse(jsonData, filename)
 }
 
 // ParseMod parses all source hcl files for the mod path and associated resources, and returns the mod object

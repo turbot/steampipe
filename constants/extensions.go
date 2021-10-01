@@ -1,5 +1,7 @@
 package constants
 
+import "github.com/turbot/go-kit/helpers"
+
 const (
 	PluginExtension        = ".plugin"
 	ConfigExtension        = ".spc"
@@ -10,3 +12,11 @@ const (
 	AutoVariablesExtension = ".auto.spvars"
 	JsonExtension          = ".json"
 )
+
+var YamlExtensions = []string{".yml", ".yaml"}
+
+var ConnectionConfigExtensions = append(YamlExtensions, ConfigExtension, JsonExtension)
+
+func IsYamlExtension(ext string) bool {
+	return helpers.StringSliceContains(YamlExtensions, ext)
+}
