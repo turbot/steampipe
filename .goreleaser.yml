@@ -38,6 +38,8 @@ nfpms:
     rpm:
       summary: "Use SQL to instantly query your cloud services (AWS, Azure, GCP and more). Open source CLI. No DB required."
 
+# it is necessary to specify the name_template of the snapshot, or else the snapshot gets created with
+# two dash(-) which results in a 500 error while downloading
 snapshot:
   name_template: '{{ .Version }}'
 
