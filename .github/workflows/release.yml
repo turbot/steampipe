@@ -179,9 +179,10 @@ jobs:
 
       - run: gcloud components install beta
 
-      - name: Upload rpm package to artifact registry
+      - name: Upload rpm and deb packages to artifact registry
         run: |
           gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm --project steampipe
+          gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb --project steampipe
 
   clean_up:
     # let's clean up the artifacts.
