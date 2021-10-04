@@ -32,8 +32,7 @@ func (r SummaryRenderer) Render() string {
 	alarmStatusRow := NewSummaryStatusRowRenderer(r.resultTree, availableWidth, "alarm").Render()
 	errorStatusRow := NewSummaryStatusRowRenderer(r.resultTree, availableWidth, "error").Render()
 
-	return fmt.Sprintf(
-		`
+	return fmt.Sprintf(`
  %s
  
  %s
@@ -48,16 +47,16 @@ func (r SummaryRenderer) Render() string {
  %s
 		`,
 		ControlColors.GroupTitle("Summary"),
-
+		// status summaries
 		okStatusRow,
 		skipStatusRow,
 		infoStatusRow,
 		alarmStatusRow,
 		errorStatusRow,
-
+		// severity summaries
 		highSeverityRow,
 		criticalSeverityRow,
-
+		// summary row
 		NewSummaryTotalRowRenderer(r.resultTree, availableWidth).Render(),
 	)
 }
