@@ -52,7 +52,7 @@ func (l *Local) AddReference(ResourceReference) {}
 func (l *Local) GetResourceReferences(HclResource) []ResourceReference { return nil }
 
 // AddReferencedBy implements HclResource
-func (l *Local) AddReferencedBy(ResourceReference) {}
+func (l *Local) AddReferencedBy([]ResourceReference) {}
 
 // SetMod implements HclResource
 func (l *Local) SetMod(mod *Mod) {

@@ -541,8 +541,8 @@ func (m *Mod) AddReference(ref ResourceReference) {
 }
 
 // AddReferencedBy implements HclResource
-func (m *Mod) AddReferencedBy(ref ResourceReference) {
-	m.ReferencedBy = append(m.ReferencedBy, ref)
+func (m *Mod) AddReferencedBy(refs []ResourceReference) {
+	m.ReferencedBy = append(m.ReferencedBy, refs...)
 }
 
 // GetResourceReferences implements HclResource
@@ -628,17 +628,9 @@ func (m *Mod) SetReferencedBy() {
 }
 
 func (m *Mod) setReferenceUsage(resource HclResource) {
-	// check every resource to see if it references 'reference'
+	// check every resource to get a list of references to 'resource
 	for _, referrer := range m.AllResources {
 		refs := referrer.GetResourceReferences(resource)
-		// now create a copy of each of these refs, but with the name of the ref being the referrer, instead of the reference
-		for _, ref := range refs {
-			resource.AddReferencedBy(ResourceReference{
-				Name:      referrer.Name(),
-				BlockType: ref.BlockType,
-				BlockName: ref.BlockName,
-				Attribute: ref.Attribute,
-			})
-		}
+		resource.AddReferencedBy(refs)
 	}
 }

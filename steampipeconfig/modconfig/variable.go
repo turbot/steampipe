@@ -82,8 +82,8 @@ func (v *Variable) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 func (v *Variable) AddReference(ResourceReference) {}
 
 // AddReferencedBy implements HclResource
-func (v *Variable) AddReferencedBy(ref ResourceReference) {
-	v.ReferencedBy = append(v.ReferencedBy, ref)
+func (v *Variable) AddReferencedBy(refs []ResourceReference) {
+	v.ReferencedBy = append(v.ReferencedBy, refs...)
 }
 
 // GetResourceReferences implements HclResource

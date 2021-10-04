@@ -247,8 +247,8 @@ func (c *Control) AddReference(ref ResourceReference) {
 }
 
 // AddReferencedBy implements HclResource
-func (c *Control) AddReferencedBy(ref ResourceReference) {
-	c.ReferencedBy = append(c.ReferencedBy, ref)
+func (c *Control) AddReferencedBy(refs []ResourceReference) {
+	c.ReferencedBy = append(c.ReferencedBy, refs...)
 }
 
 // GetResourceReferences implements HclResource

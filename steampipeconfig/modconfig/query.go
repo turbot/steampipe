@@ -181,8 +181,8 @@ func (q *Query) AddReference(ref ResourceReference) {
 }
 
 // AddReferencedBy implements HclResource
-func (q *Query) AddReferencedBy(ref ResourceReference) {
-	q.ReferencedBy = append(q.ReferencedBy, ref)
+func (q *Query) AddReferencedBy(refs []ResourceReference) {
+	q.ReferencedBy = append(q.ReferencedBy, refs...)
 }
 
 // GetResourceReferences implements HclResource

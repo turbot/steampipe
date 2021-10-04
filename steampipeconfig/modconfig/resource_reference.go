@@ -1,36 +1,25 @@
 package modconfig
 
 type ResourceReference struct {
-	Name      string `cty:"name" json:"name"`
-	BlockType string `cty:"block_type" json:"block_type"`
-	BlockName string `cty:"block_name" json:"block_name"`
-	Attribute string `cty:"attribute" json:"attribute"`
+	Ref          string `cty:"ref" json:"ref"`
+	ReferencedBy string `cty:"referenced_by" json:"referenced_by"`
+	BlockType    string `cty:"block_type" json:"block_type"`
+	BlockName    string `cty:"block_name" json:"block_name"`
+	Attribute    string `cty:"attribute" json:"attribute"`
 }
 
-// ResourceReferenceMap is a map of all the reference name to usages of that reference
-// for example the reference var.v1 might be referenced serveral times byt a resource
+// ResourceReferenceMap is a map of references keyed by 'ref'
+// THis is to handle the same same reference being made more than once by a resource
+// for example the reference var.v1 might be referenced several times
 type ResourceReferenceMap map[string][]ResourceReference
 
 func (m ResourceReferenceMap) Add(reference ResourceReference) {
-	refs, ok := m[reference.Name]
+	refs, ok := m[reference.Ref]
 	if !ok {
 		// if no ref instances, create an empty array
 		refs = []ResourceReference{}
 	}
 	// write back the updated array
-	m[reference.Name] = append(refs, reference)
+	m[reference.Ref] = append(refs, reference)
 
 }
-
-//
-//type ResourceReferenceList []ResourceReference
-//
-//
-//func (l ResourceReferenceList)ContainsResource(resource HclResource)bool{
-//	for _, ref := range l{
-//		if ref.MatchesResource(resource){
-//			return true
-//		}
-//	}
-//	return false
-//}

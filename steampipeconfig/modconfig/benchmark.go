@@ -137,8 +137,8 @@ func (b *Benchmark) AddReference(ref ResourceReference) {
 }
 
 // AddReferencedBy implements HclResource
-func (b *Benchmark) AddReferencedBy(ref ResourceReference) {
-	b.ReferencedBy = append(b.ReferencedBy, ref)
+func (b *Benchmark) AddReferencedBy(refs []ResourceReference) {
+	b.ReferencedBy = append(b.ReferencedBy, refs...)
 }
 
 // GetResourceReferences implements HclResource
