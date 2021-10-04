@@ -62,7 +62,7 @@ func (r *SummarySeverityRowRenderer) Render() string {
 		"%s%s%s%s",
 		severityStr,
 		space,
-		colorFunc(count),
-		colorFunc(graph),
+		count,
+		graph,
 	)
 }

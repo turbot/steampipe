@@ -62,7 +62,7 @@ func (r *SummaryStatusRowRenderer) Render() string {
 	return fmt.Sprintf(
 		"%s%s%s%s",
 		statusStr,
-		colorFunction(spacer.Render()),
+		spacer.Render(),
 		countString,
 		graph,
 	)
