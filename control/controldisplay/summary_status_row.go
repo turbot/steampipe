@@ -26,9 +26,9 @@ func NewSummaryStatusRowRenderer(resultTree *controlexecute.ExecutionTree, width
 }
 
 func (r *SummaryStatusRowRenderer) Render() string {
-	colorFunction := ControlColors.StatusColors[strings.ToLower(r.status)]
+	colorFunction := ControlColors.StatusColors[r.status]
 	count := -1
-	switch strings.ToLower(r.status) {
+	switch r.status {
 	case constants.ControlOk:
 		count = r.resultTree.Root.Summary.Status.Ok
 	case constants.ControlSkip:
