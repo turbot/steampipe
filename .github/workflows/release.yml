@@ -26,17 +26,13 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v0.2.0
         with:
-          service_account_key: ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
+          service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
           project_id: ${{ env.PROJECT_ID }}
           export_default_credentials: true
 
       - run: gcloud config list
 
       - run: gcloud components install beta
-
-      - run: gcloud config set account github-action-push-artifacts@steampipe.iam.gserviceaccount.com
-
-      - run: gcloud auth activate-service-account github-action-push-artifacts@steampipe.iam.gserviceaccount.com
 
       - name: Upload rpm and deb packages to artifact registry
         run: |
