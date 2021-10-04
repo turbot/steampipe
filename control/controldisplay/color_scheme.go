@@ -26,6 +26,11 @@ type ControlColorSchemaDefinition struct {
 	CountTotalAllPassed  string
 	CountGraphFail       string
 	CountGraphPass       string
+	CountGraphAlarm      string
+	CountGraphError      string
+	CountGraphInfo       string
+	CountGraphOK         string
+	CountGraphSkip       string
 	CountGraphBracket    string
 
 	// results
@@ -57,6 +62,11 @@ type ControlColorScheme struct {
 	CountTotalAllPassed  colorFunc
 	CountGraphFail       colorFunc
 	CountGraphPass       colorFunc
+	CountGraphAlarm      colorFunc
+	CountGraphError      colorFunc
+	CountGraphInfo       colorFunc
+	CountGraphOK         colorFunc
+	CountGraphSkip       colorFunc
 	CountGraphBracket    colorFunc
 	StatusAlarm          colorFunc
 	StatusError          colorFunc
@@ -74,6 +84,7 @@ type ControlColorScheme struct {
 
 	ReasonColors map[string]colorFunc
 	StatusColors map[string]colorFunc
+	GraphColors  map[string]colorFunc
 	UseColor     bool
 }
 
@@ -145,6 +156,13 @@ func (c *ControlColorScheme) Initialise(def *ControlColorSchemaDefinition) error
 		constants.ControlError: c.StatusError,
 		constants.ControlOk:    c.StatusOK,
 	}
+	c.GraphColors = map[string]colorFunc{
+		constants.ControlAlarm: c.CountGraphAlarm,
+		constants.ControlSkip:  c.CountGraphSkip,
+		constants.ControlInfo:  c.CountGraphInfo,
+		constants.ControlError: c.CountGraphError,
+		constants.ControlOk:    c.CountGraphOK,
+	}
 
 	c.UseColor = def.UseColor
 	return nil
@@ -170,6 +188,11 @@ var ColorSchemes = map[string]*ControlColorSchemaDefinition{
 		CountTotalAllPassed:  "bold-bright-green",
 		CountGraphFail:       "bright-red",
 		CountGraphPass:       "bright-green",
+		CountGraphAlarm:      "bright-red",
+		CountGraphError:      "bright-red",
+		CountGraphInfo:       "bright-cyan",
+		CountGraphOK:         "bright-green",
+		CountGraphSkip:       "gray3",
 		CountGraphBracket:    "gray2",
 		StatusAlarm:          "bold-bright-red",
 		StatusError:          "bold-bright-red",
@@ -197,6 +220,11 @@ var ColorSchemes = map[string]*ControlColorSchemaDefinition{
 		CountTotalAllPassed:  "bold-bright-green",
 		CountGraphFail:       "bright-red",
 		CountGraphPass:       "bright-green",
+		CountGraphAlarm:      "bright-red",
+		CountGraphError:      "bright-red",
+		CountGraphInfo:       "bright-cyan",
+		CountGraphOK:         "bright-green",
+		CountGraphSkip:       "gray3",
 		CountGraphBracket:    "gray4",
 		StatusAlarm:          "bold-bright-red",
 		StatusError:          "bold-bright-red",

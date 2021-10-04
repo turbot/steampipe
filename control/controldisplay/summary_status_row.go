@@ -26,7 +26,9 @@ func NewSummaryStatusRowRenderer(resultTree *controlexecute.ExecutionTree, width
 }
 
 func (r *SummaryStatusRowRenderer) Render() string {
-	colorFunction := ControlColors.StatusColors[r.status]
+	txtColorFunction := ControlColors.StatusColors[r.status]
+	graphColorFunction := ControlColors.GraphColors[r.status]
+
 	count := -1
 	switch r.status {
 	case constants.ControlOk:
@@ -44,18 +46,18 @@ func (r *SummaryStatusRowRenderer) Render() string {
 		// done by the executor. this is here for unit tests mostly
 		panic(fmt.Sprintf("unknown status: %s", r.status))
 	}
-	countString := r.getPrintableNumber(count, colorFunction)
+	countString := r.getPrintableNumber(count, txtColorFunction)
 
 	graph := NewCounterGraphRenderer(
 		count,
 		count,
 		r.resultTree.Root.Summary.Status.TotalCount(),
 		CounterGraphRendererOptions{
-			FailedColorFunc: colorFunction,
+			FailedColorFunc: graphColorFunction,
 		},
 	).Render()
 
-	statusStr := fmt.Sprintf("%s ", colorFunction(strings.ToUpper(r.status)))
+	statusStr := fmt.Sprintf("%s ", txtColorFunction(strings.ToUpper(r.status)))
 	spaceAvailableForSpacer := r.width - (helpers.PrintableLength(statusStr) + helpers.PrintableLength(countString) + helpers.PrintableLength(graph))
 	spacer := NewSpacerRenderer(spaceAvailableForSpacer)
 
