@@ -25,7 +25,7 @@ type ResultGroup struct {
 	Groups      []*ResultGroup    `json:"groups"`
 	ControlRuns []*ControlRun     `json:"controls"`
 
-	Severity map[string]StatusSummary `json:"severity_summary"`
+	Severity map[string]StatusSummary `json:"-"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ModTreeItem `json:"-"`

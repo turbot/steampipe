@@ -19,7 +19,7 @@ type CounterRenderer struct {
 	maxFailedControls int
 	maxTotalControls  int
 
-	options CounterRendererOptions
+	addLeadingSpace bool
 }
 
 func NewCounterRenderer(failedControls, totalControls, maxFailedControls, maxTotalControls int, options CounterRendererOptions) *CounterRenderer {
@@ -28,7 +28,7 @@ func NewCounterRenderer(failedControls, totalControls, maxFailedControls, maxTot
 		totalControls:     totalControls,
 		maxFailedControls: maxFailedControls,
 		maxTotalControls:  maxTotalControls,
-		options:           options,
+		addLeadingSpace:   options.AddLeadingSpace,
 	}
 }
 
@@ -56,7 +56,7 @@ func (r CounterRenderer) Render() string {
 
 	// calculate the width of the fails and total columns
 	failedWidth := len(maxFailedString)
-	if !r.options.AddLeadingSpace {
+	if !r.addLeadingSpace {
 		failedWidth = len(failedString)
 	}
 	totalWidth := len(maxTotalString)

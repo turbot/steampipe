@@ -14,7 +14,7 @@ type CounterGraphRenderer struct {
 	maxTotalControls int
 	segmentSize      float64
 
-	options CounterGraphRendererOptions
+	failedColorFunc colorFunc
 }
 
 type CounterGraphRendererOptions struct {
@@ -29,7 +29,7 @@ func NewCounterGraphRenderer(failedControls, totalControls, maxTotalControls int
 		// there are 10 segments - determine the value of each segment
 		segmentSize: float64(maxTotalControls) / 10.0,
 
-		options: options,
+		failedColorFunc: options.FailedColorFunc,
 	}
 	return renderer
 }
@@ -71,7 +71,7 @@ func (r CounterGraphRenderer) Render() string {
 func (r CounterGraphRenderer) buildGraphString(failSegments int, passSegments int, spaces int) string {
 	str := fmt.Sprintf("%s%s%s%s%s",
 		ControlColors.CountGraphBracket("["),
-		r.options.FailedColorFunc(strings.Repeat("=", failSegments)),
+		r.failedColorFunc(strings.Repeat("=", failSegments)),
 		ControlColors.CountGraphPass(strings.Repeat("=", passSegments)),
 		strings.Repeat(" ", spaces),
 		ControlColors.CountGraphBracket("]"))
