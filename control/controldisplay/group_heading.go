@@ -51,7 +51,7 @@ func (r GroupHeadingRenderer) Render() string {
 	var severityString, counterString, graphString string
 	if !isDryRun {
 		severityString = NewSeverityRenderer(r.severity).Render()
-		counterString = NewCounterRenderer(r.failedControls, r.totalControls, r.maxFailedControls, r.maxTotalControls, true).Render()
+		counterString = NewCounterRenderer(r.failedControls, r.totalControls, r.maxFailedControls, r.maxTotalControls, CounterRendererOptions{AddLeadingSpace: true}).Render()
 		graphString = NewCounterGraphRenderer(r.failedControls, r.totalControls, r.maxTotalControls, CounterGraphRendererOptions{FailedColorFunc: ControlColors.CountGraphFail}).Render()
 	}
 	severityWidth := helpers.PrintableLength(severityString)

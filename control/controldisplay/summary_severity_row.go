@@ -36,7 +36,9 @@ func (r *SummarySeverityRowRenderer) Render() string {
 		severitySummary.TotalCount(),
 		r.resultTree.Root.Summary.Status.FailedCount(), // not sure what this is
 		r.resultTree.Root.Summary.Status.TotalCount(),
-		false,
+		CounterRendererOptions{
+			AddLeadingSpace: false,
+		},
 	).Render()
 
 	graph := NewCounterGraphRenderer(

@@ -27,7 +27,9 @@ func (r *SummaryTotalRowRenderer) Render() string {
 		r.resultTree.Root.Summary.Status.TotalCount(),
 		r.resultTree.Root.Summary.Status.FailedCount(),
 		r.resultTree.Root.Summary.Status.TotalCount(),
-		false,
+		CounterRendererOptions{
+			AddLeadingSpace: false,
+		},
 	).Render()
 
 	graph := NewCounterGraphRenderer(

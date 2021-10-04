@@ -110,7 +110,7 @@ func TestCounter(t *testing.T) {
 	ControlColors = scheme
 
 	for name, test := range testCasesCounter() {
-		counter := NewCounterRenderer(test.failedControls, test.totalControls, test.maxFailedControls, test.maxTotalControls, true)
+		counter := NewCounterRenderer(test.failedControls, test.totalControls, test.maxFailedControls, test.maxTotalControls, CounterRendererOptions{AddLeadingSpace: true})
 		output := counter.Render()
 
 		if output != test.expected {
