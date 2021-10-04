@@ -38,7 +38,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$flag" "0"
 }
 
-@test "ensure the referenced_by column is populated correctly" {
+@test "ensure the refs and referenced_by column are populated correctly" {
   cd $SIMPLE_MOD_DIR
   run steampipe query "select * from steampipe_query" --output json
 
@@ -46,8 +46,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   refs=$(echo $output | jq '.[].refs' | tr -d '[:space:]')
   referenced_by=$(echo $output | jq '.[].referenced_by' | tr -d '[:space:]')
 
-  assert_equal "$refs" '["var.sample_var_1"]'
-  assert_equal "$referenced_by" '["control.sample_control_1"]'
+  assert_equal "$refs" '[{"attribute":"default","block_name":"p1","block_type":"param","ref":"var.sample_var_1","referenced_by":"query.sample_query_1"}]'
+  assert_equal "$referenced_by" '[{"attribute":"query","block_name":"sample_control_1","block_type":"control","ref":"query.sample_query_1","referenced_by":"control.sample_control_1"}]'
 }
 
 @test "ensure the refs column includes variable references" {
