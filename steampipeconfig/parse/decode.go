@@ -108,8 +108,6 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 
 // generic decode function for any resource we do not have custom decode logic for
 func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
-	//TODO remove this and use a schema for all blocks  so we can extract attributes to log the references
-
 	// get shell resource
 	resource := resourceForBlock(block, runCtx)
 

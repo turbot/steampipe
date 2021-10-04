@@ -403,9 +403,9 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 		}}
 	}
 
-	// TODO VALIDATE MOD NAME CLASHES?
-	// TODO MOD RESERVED NAMES
-	// TODO HANDLE ALIASES
+	// TODO validate mod name clashes
+	// TODO mod reserved names
+	// TODO handle aliases
 
 	key := parsedName.Name
 	typeString := parsedName.ItemType

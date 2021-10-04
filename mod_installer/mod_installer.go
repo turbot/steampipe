@@ -112,22 +112,23 @@ func (i *ModInstaller) installModDependenciesRecursively(mod *modconfig.Mod, dep
 
 func (i *ModInstaller) GetModRefForVersion(modVersion *modconfig.ModVersion) (*ResolvedModRef, error) {
 
-	// TODO check whether the lock file contains this dependency and if so
+	// NOTE check whether the lock file contains this dependency and if so
 	//  does the locked version satisy this version requirement
 	// return error if not
 
-	// TODO check whether we are replacing this version
-	// if so does the locked version satisy this version requirement
+	// NOTE check whether we are replacing this version
+	// if so does the locked version satisfy this version requirement
 	// return error if not
 
 	// so we need to resolve this mod version
-	// TODO  for now assume github
+
+	// NOTE for now assume github
 	// get the most recent minor version fo rthis major version from github
 	return i.getLatestCompatibleVersionFromGithub(modVersion)
 }
 
 func (i *ModInstaller) getLatestCompatibleVersionFromGithub(modVersion *modconfig.ModVersion) (*ResolvedModRef, error) {
-	// TODO for now assume the mod is specified with a full version
+	// NOTE for now assume the mod is specified with a full version
 	return NewResolvedModRef(modVersion)
 }
 
@@ -179,10 +180,8 @@ func (i *ModInstaller) installDependencyFromGit(dependency *ResolvedModRef, inst
 	if err := os.MkdirAll(i.ModsDir, os.ModePerm); err != nil {
 		return err
 	}
-	// TODO if the repo is cloned, just switch to the approriate branch/tag
-	// TODO HACK FOR NOW
 
-	// if it fails, try pulling
+	// NOTE: we need to check existing installed mods
 
 	// get the mod from git
 

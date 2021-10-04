@@ -29,7 +29,7 @@ func NewResolvedModRef(modVersion *modconfig.ModVersion) (*ResolvedModRef, error
 		FilePath: modVersion.FilePath,
 	}
 	if res.FilePath == "" {
-		// TODO we currently only support explicit (i.e. minor) versions
+		// NOTE we currently only support explicit (i.e. minor) versions
 		// if the mod version has either a version constraint or branch, set the git ref
 		res.SetGitReference(modVersion)
 	}
@@ -41,13 +41,15 @@ func (r *ResolvedModRef) SetGitReference(modVersion *modconfig.ModVersion) {
 
 	if modVersion.Branch != "" {
 		r.GitReference = plumbing.NewBranchReferenceName(modVersion.Branch)
-		// TODO set version from branch
+		// NOTE: we need to set version from branch
 		return
 	}
 
-	// so there is aversion constraint
-	// TODO if it is just a major constraint, we need to find the latest version in the major
+	// so there is a version constraint
+
+	// NOTE: if it is just a major constraint, we need to find the latest version in the major
 	// for now assume it is a full version
+
 	// NOTE: we cannot just ToString the version as we need the 'v' at the beginning
 	r.GitReference = plumbing.NewTagReferenceName(modVersion.VersionString)
 	r.Version = modVersion.VersionConstraint

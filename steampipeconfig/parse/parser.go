@@ -228,7 +228,7 @@ func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclRe
 	var duplicates []string
 	for _, r := range pseudoResources {
 		// is there a hcl resource with the same name as this pseudo resource - it takes precedence
-		// TODO CHECK FOR PSEUDO RESOURCE DUPES AND WARN
+		// TODO check for pseudo resource dupes and warn
 		if _, ok := hclResources[r.Name()]; ok {
 			duplicates = append(duplicates, r.Name())
 			continue
@@ -248,7 +248,7 @@ func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclRe
 func loadMappableResourceNames(modPath string, content *hcl.BodyContent) (map[string]bool, error) {
 	hclResources := make(map[string]bool)
 
-	// TODO update thei to not have a single hardcoded pseudo resource type
+	// TODO update this to not have a single hardcoded pseudo resource type
 	for _, block := range content.Blocks {
 		// if this is a mod, build a shell mod struct (with just the name populated)
 		switch block.Type {
@@ -257,7 +257,7 @@ func loadMappableResourceNames(modPath string, content *hcl.BodyContent) (map[st
 			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
 			hclResources[name] = true
 		}
-		// TODO PANEL
+		// TODO Panel
 	}
 	return hclResources, nil
 }
