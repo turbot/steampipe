@@ -42,7 +42,7 @@ func (r ResultRenderer) Render() string {
 	defer log.Println("[TRACE] end result render")
 
 	// in quiet mode, only render failures
-	if r.errorsOnly && !helpers.StringSliceContains([]string{string(controlexecute.ControlAlarm), string(controlexecute.ControlError)}, r.status) {
+	if r.errorsOnly && !helpers.StringSliceContains([]string{string(constants.ControlAlarm), string(constants.ControlError)}, r.status) {
 		return ""
 	}
 

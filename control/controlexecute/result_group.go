@@ -24,6 +24,9 @@ type ResultGroup struct {
 	Summary     GroupSummary      `json:"summary"`
 	Groups      []*ResultGroup    `json:"groups"`
 	ControlRuns []*ControlRun     `json:"controls"`
+
+	Severity map[string]StatusSummary `json:"-"`
+
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ModTreeItem `json:"-"`
 	Parent    *ResultGroup          `json:"-"`
@@ -112,6 +115,26 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 	r.Summary.Status.Error += summary.Error
 	if r.Parent != nil {
 		r.Parent.updateSummary(summary)
+	}
+}
+
+func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummary) {
+	if r.Severity == nil {
+		r.Severity = make(map[string]StatusSummary)
+	}
+	val, exists := r.Severity[severity]
+	if !exists {
+		val = StatusSummary{}
+	}
+	val.Alarm += summary.Alarm
+	val.Error += summary.Error
+	val.Info += summary.Info
+	val.Ok += summary.Ok
+	val.Skip += summary.Skip
+
+	r.Severity[severity] = val
+	if r.Parent != nil {
+		r.Parent.updateSeverityCounts(severity, summary)
 	}
 }
 

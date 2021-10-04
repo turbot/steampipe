@@ -7,17 +7,10 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
-)
-
-const (
-	ControlOk    = "ok"
-	ControlAlarm = "alarm"
-	ControlSkip  = "skip"
-	ControlInfo  = "info"
-	ControlError = "error"
 )
 
 // ResultRow is the result of a control execution for a single resource
@@ -75,7 +68,7 @@ func NewResultRow(control *modconfig.Control, row *queryresult.RowResult, colTyp
 }
 
 func IsValidControlStatus(status string) bool {
-	return helpers.StringSliceContains([]string{ControlOk, ControlAlarm, ControlInfo, ControlError, ControlSkip}, status)
+	return helpers.StringSliceContains([]string{constants.ControlOk, constants.ControlAlarm, constants.ControlInfo, constants.ControlError, constants.ControlSkip}, status)
 }
 
 func validateColumns(colTypes []*sql.ColumnType) error {

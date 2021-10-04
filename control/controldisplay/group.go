@@ -66,7 +66,7 @@ func (r GroupRenderer) blankLineIndent() string {
 	return r.childIndent()
 }
 
-// the indent got group heading
+// the indent for group heading
 func (r GroupRenderer) headingIndent() string {
 	// if this is the first displayed node, no indent
 	if r.parent == nil || r.parent.group.GroupId == controlexecute.RootResultGroupName {
@@ -136,7 +136,7 @@ func (r GroupRenderer) Render() string {
 }
 
 // for root result group, there will either be one or more groups, or one or more control runs
-// there will be no order specified so just lop through them
+// there will be no order specified so just loop through them
 func (r GroupRenderer) renderRootResultGroup() string {
 	var resultStrings = make([]string, len(r.group.Groups)+len(r.group.ControlRuns))
 	for i, group := range r.group.Groups {

@@ -8,20 +8,27 @@ import (
 	"golang.org/x/text/message"
 )
 
+type CounterRendererOptions struct {
+	AddLeadingSpace bool
+}
+
 type CounterRenderer struct {
 	failedControls int
 	totalControls  int
 
 	maxFailedControls int
 	maxTotalControls  int
+
+	addLeadingSpace bool
 }
 
-func NewCounterRenderer(failedControls, totalControls, maxFailedControls, maxTotalControls int) *CounterRenderer {
+func NewCounterRenderer(failedControls, totalControls, maxFailedControls, maxTotalControls int, options CounterRendererOptions) *CounterRenderer {
 	return &CounterRenderer{
 		failedControls:    failedControls,
 		totalControls:     totalControls,
 		maxFailedControls: maxFailedControls,
 		maxTotalControls:  maxTotalControls,
+		addLeadingSpace:   options.AddLeadingSpace,
 	}
 }
 
@@ -49,6 +56,9 @@ func (r CounterRenderer) Render() string {
 
 	// calculate the width of the fails and total columns
 	failedWidth := len(maxFailedString)
+	if !r.addLeadingSpace {
+		failedWidth = len(failedString)
+	}
 	totalWidth := len(maxTotalString)
 
 	// build format string, specifying widths of failedString and totalString

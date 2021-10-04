@@ -26,6 +26,11 @@ type ControlColorSchemaDefinition struct {
 	CountTotalAllPassed  string
 	CountGraphFail       string
 	CountGraphPass       string
+	CountGraphAlarm      string
+	CountGraphError      string
+	CountGraphInfo       string
+	CountGraphOK         string
+	CountGraphSkip       string
 	CountGraphBracket    string
 
 	// results
@@ -57,6 +62,11 @@ type ControlColorScheme struct {
 	CountTotalAllPassed  colorFunc
 	CountGraphFail       colorFunc
 	CountGraphPass       colorFunc
+	CountGraphAlarm      colorFunc
+	CountGraphError      colorFunc
+	CountGraphInfo       colorFunc
+	CountGraphOK         colorFunc
+	CountGraphSkip       colorFunc
 	CountGraphBracket    colorFunc
 	StatusAlarm          colorFunc
 	StatusError          colorFunc
@@ -74,6 +84,7 @@ type ControlColorScheme struct {
 
 	ReasonColors map[string]colorFunc
 	StatusColors map[string]colorFunc
+	GraphColors  map[string]colorFunc
 	UseColor     bool
 }
 
@@ -131,16 +142,28 @@ func (c *ControlColorScheme) Initialise(def *ControlColorSchemaDefinition) error
 			validationErrors)
 	}
 	// populate the color maps
-	c.ReasonColors["alarm"] = c.ReasonAlarm
-	c.ReasonColors["skip"] = c.ReasonSkip
-	c.ReasonColors["info"] = c.ReasonInfo
-	c.ReasonColors["error"] = c.ReasonError
-	c.ReasonColors["ok"] = c.ReasonOK
-	c.StatusColors["alarm"] = c.StatusAlarm
-	c.StatusColors["skip"] = c.StatusSkip
-	c.StatusColors["info"] = c.StatusInfo
-	c.StatusColors["error"] = c.StatusError
-	c.StatusColors["ok"] = c.StatusOK
+	c.ReasonColors = map[string]colorFunc{
+		constants.ControlAlarm: c.ReasonAlarm,
+		constants.ControlSkip:  c.ReasonSkip,
+		constants.ControlInfo:  c.ReasonInfo,
+		constants.ControlError: c.ReasonError,
+		constants.ControlOk:    c.ReasonOK,
+	}
+	c.StatusColors = map[string]colorFunc{
+		constants.ControlAlarm: c.StatusAlarm,
+		constants.ControlSkip:  c.StatusSkip,
+		constants.ControlInfo:  c.StatusInfo,
+		constants.ControlError: c.StatusError,
+		constants.ControlOk:    c.StatusOK,
+	}
+	c.GraphColors = map[string]colorFunc{
+		constants.ControlAlarm: c.CountGraphAlarm,
+		constants.ControlSkip:  c.CountGraphSkip,
+		constants.ControlInfo:  c.CountGraphInfo,
+		constants.ControlError: c.CountGraphError,
+		constants.ControlOk:    c.CountGraphOK,
+	}
+
 	c.UseColor = def.UseColor
 	return nil
 }
@@ -165,6 +188,11 @@ var ColorSchemes = map[string]*ControlColorSchemaDefinition{
 		CountTotalAllPassed:  "bold-bright-green",
 		CountGraphFail:       "bright-red",
 		CountGraphPass:       "bright-green",
+		CountGraphAlarm:      "bright-red",
+		CountGraphError:      "bright-red",
+		CountGraphInfo:       "bright-cyan",
+		CountGraphOK:         "bright-green",
+		CountGraphSkip:       "gray3",
 		CountGraphBracket:    "gray2",
 		StatusAlarm:          "bold-bright-red",
 		StatusError:          "bold-bright-red",
@@ -192,6 +220,11 @@ var ColorSchemes = map[string]*ControlColorSchemaDefinition{
 		CountTotalAllPassed:  "bold-bright-green",
 		CountGraphFail:       "bright-red",
 		CountGraphPass:       "bright-green",
+		CountGraphAlarm:      "bright-red",
+		CountGraphError:      "bright-red",
+		CountGraphInfo:       "bright-cyan",
+		CountGraphOK:         "bright-green",
+		CountGraphSkip:       "gray3",
 		CountGraphBracket:    "gray4",
 		StatusAlarm:          "bold-bright-red",
 		StatusError:          "bold-bright-red",

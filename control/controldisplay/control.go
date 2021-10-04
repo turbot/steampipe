@@ -56,8 +56,8 @@ func (r ControlRenderer) parentIndent() string {
 
 // indent before first result
 func (r ControlRenderer) preResultIndent() string {
-	// for dry run we show no results so do not add a '|' to indent
-	if viper.GetBool(constants.ArgDryRun) {
+	// when we do not have any rows, do not add a '|' to indent
+	if viper.GetBool(constants.ArgDryRun) || len(r.run.Rows) == 0 {
 		return r.parentIndent()
 	}
 	return r.parentIndent() + "| "

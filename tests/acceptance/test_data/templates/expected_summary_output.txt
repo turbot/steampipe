@@ -1,0 +1,92 @@
+
+Benchmark to test the check summary output in steampipe ........................................................................................................................... 35 / 60 [==========]
+| 
++ Sample control 1 ........................................................................................................................................................... HIGH  7 / 12 [===       ]
+| | 
+| OK   : ok 
+| ALARM: alarm 
+| OK   : ok 
+| ALARM: alarm 
+| ERROR: error 
+| ALARM: alarm 
+| INFO : info 
+| ALARM: alarm 
+| OK   : ok 
+| ALARM: alarm 
+| SKIP : skip 
+| ALARM: alarm 
+| 
++ Sample control 2 ....................................................................................................................................................... CRITICAL  7 / 12 [===       ]
+| | 
+| OK   : ok 
+| ALARM: alarm 
+| OK   : ok 
+| ALARM: alarm 
+| ERROR: error 
+| ALARM: alarm 
+| INFO : info 
+| ALARM: alarm 
+| OK   : ok 
+| ALARM: alarm 
+| SKIP : skip 
+| ALARM: alarm 
+| 
++ Sample control 3 ........................................................................................................................................................... HIGH  7 / 12 [===       ]
+| | 
+| OK   : ok 
+| ALARM: alarm 
+| OK   : ok 
+| ALARM: alarm 
+| ERROR: error 
+| ALARM: alarm 
+| INFO : info 
+| ALARM: alarm 
+| OK   : ok 
+| ALARM: alarm 
+| SKIP : skip 
+| ALARM: alarm 
+| 
++ Sample control 4 ....................................................................................................................................................... CRITICAL  7 / 12 [===       ]
+| | 
+| OK   : ok 
+| ALARM: alarm 
+| OK   : ok 
+| ALARM: alarm 
+| ERROR: error 
+| ALARM: alarm 
+| INFO : info 
+| ALARM: alarm 
+| OK   : ok 
+| ALARM: alarm 
+| SKIP : skip 
+| ALARM: alarm 
+| 
++ Sample control 5 ........................................................................................................................................................... HIGH  7 / 12 [===       ]
+  | 
+  OK   : ok 
+  ALARM: alarm 
+  OK   : ok 
+  ALARM: alarm 
+  ERROR: error 
+  ALARM: alarm 
+  INFO : info 
+  ALARM: alarm 
+  OK   : ok 
+  ALARM: alarm 
+  SKIP : skip 
+  ALARM: alarm 
+  
+
+ Summary
+ 
+ OK .............. 15 [===       ]
+ SKIP ............. 5 [=         ]
+ INFO ............. 5 [=         ]
+ ALARM ........... 30 [=====     ]
+ ERROR ............ 5 [=         ]
+ 
+ HIGH ....... 21 / 36 [======    ]
+ CRITICAL ... 14 / 24 [====      ]
+ 
+ TOTAL ...... 35 / 60 [==========]
+ 
