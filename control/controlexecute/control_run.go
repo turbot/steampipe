@@ -220,15 +220,15 @@ func (r *ControlRun) addResultRow(row *ResultRow) {
 
 	// update summary
 	switch row.Status {
-	case ControlOk:
+	case constants.ControlOk:
 		r.Summary.Ok++
-	case ControlAlarm:
+	case constants.ControlAlarm:
 		r.Summary.Alarm++
-	case ControlSkip:
+	case constants.ControlSkip:
 		r.Summary.Skip++
-	case ControlInfo:
+	case constants.ControlInfo:
 		r.Summary.Info++
-	case ControlError:
+	case constants.ControlError:
 		r.Summary.Error++
 	}
 }

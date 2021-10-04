@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -25,20 +26,23 @@ func NewSummaryStatusRowRenderer(resultTree *controlexecute.ExecutionTree, width
 }
 
 func (r *SummaryStatusRowRenderer) Render() string {
-
 	colorFunction := ControlColors.StatusColors[strings.ToLower(r.status)]
 	count := -1
-	switch r.status {
-	case "ok":
+	switch strings.ToLower(r.status) {
+	case constants.ControlOk:
 		count = r.resultTree.Root.Summary.Status.Ok
-	case "skip":
+	case constants.ControlSkip:
 		count = r.resultTree.Root.Summary.Status.Skip
-	case "info":
+	case constants.ControlInfo:
 		count = r.resultTree.Root.Summary.Status.Info
-	case "alarm":
+	case constants.ControlAlarm:
 		count = r.resultTree.Root.Summary.Status.Alarm
-	case "error":
+	case constants.ControlError:
 		count = r.resultTree.Root.Summary.Status.Error
+	default:
+		// we can safely panic here, since the status enum check should have been
+		// done by the executor. this is here for unit tests mostly
+		panic(fmt.Sprintf("unknown status: %s", r.status))
 	}
 	countString := r.getPrintableNumber(count, colorFunction)
 
@@ -63,6 +67,7 @@ func (r *SummaryStatusRowRenderer) Render() string {
 		graph,
 	)
 }
+
 func (r *SummaryStatusRowRenderer) getPrintableNumber(number int, cf colorFunc) string {
 	p := message.NewPrinter(language.English)
 	s := p.Sprintf("%d", number)

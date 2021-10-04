@@ -131,16 +131,21 @@ func (c *ControlColorScheme) Initialise(def *ControlColorSchemaDefinition) error
 			validationErrors)
 	}
 	// populate the color maps
-	c.ReasonColors["alarm"] = c.ReasonAlarm
-	c.ReasonColors["skip"] = c.ReasonSkip
-	c.ReasonColors["info"] = c.ReasonInfo
-	c.ReasonColors["error"] = c.ReasonError
-	c.ReasonColors["ok"] = c.ReasonOK
-	c.StatusColors["alarm"] = c.StatusAlarm
-	c.StatusColors["skip"] = c.StatusSkip
-	c.StatusColors["info"] = c.StatusInfo
-	c.StatusColors["error"] = c.StatusError
-	c.StatusColors["ok"] = c.StatusOK
+	c.ReasonColors = map[string]colorFunc{
+		constants.ControlAlarm: c.ReasonAlarm,
+		constants.ControlSkip:  c.ReasonSkip,
+		constants.ControlInfo:  c.ReasonInfo,
+		constants.ControlError: c.ReasonError,
+		constants.ControlOk:    c.ReasonOK,
+	}
+	c.StatusColors = map[string]colorFunc{
+		constants.ControlAlarm: c.StatusAlarm,
+		constants.ControlSkip:  c.StatusSkip,
+		constants.ControlInfo:  c.StatusInfo,
+		constants.ControlError: c.StatusError,
+		constants.ControlOk:    c.StatusOK,
+	}
+
 	c.UseColor = def.UseColor
 	return nil
 }

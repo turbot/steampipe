@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/control/controlexecute"
+	"github.com/turbot/steampipe/constants"
 )
 
 type ErrorRenderer struct {
@@ -28,7 +28,7 @@ func (r ErrorRenderer) Render() string {
 	log.Println("[TRACE] begin error render")
 	defer log.Println("[TRACE] end error render")
 
-	status := NewResultStatusRenderer(controlexecute.ControlError)
+	status := NewResultStatusRenderer(constants.ControlError)
 	statusString := status.Render()
 	statusWidth := helpers.PrintableLength(statusString)
 	formattedIndent := fmt.Sprintf("%s", ControlColors.Indent(r.indent))

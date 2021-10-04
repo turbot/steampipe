@@ -21,19 +21,19 @@ var childBenchmark2 = modconfig.Benchmark{}
 var desc = "Dummy control for unit testing"
 var title = "DummyControl"
 var c11 = modconfig.Control{
-	Title: &title,
+	Title:       &title,
 	Description: &desc,
-	}
+}
 var c12 = modconfig.Control{
-	Title: &title,
+	Title:       &title,
 	Description: &desc,
 }
 var c21 = modconfig.Control{
-	Title: &title,
+	Title:       &title,
 	Description: &desc,
 }
 var c22 = modconfig.Control{
-	Title: &title,
+	Title:       &title,
 	Description: &desc,
 }
 
@@ -66,7 +66,7 @@ var tree = &controlexecute.ExecutionTree{
 						Control: &c11,
 						Rows: []*controlexecute.ResultRow{
 							{
-								Status:     controlexecute.ControlAlarm,
+								Status:     constants.ControlAlarm,
 								Reason:     "is pretty insecure",
 								Resource:   "some other resource",
 								Dimensions: []controlexecute.Dimension{},
@@ -78,7 +78,7 @@ var tree = &controlexecute.ExecutionTree{
 						Control: &c12,
 						Rows: []*controlexecute.ResultRow{
 							{
-								Status:     controlexecute.ControlAlarm,
+								Status:     constants.ControlAlarm,
 								Reason:     "is pretty insecure",
 								Resource:   "some other resource",
 								Dimensions: []controlexecute.Dimension{},
@@ -95,7 +95,7 @@ var tree = &controlexecute.ExecutionTree{
 						Control: &c21,
 						Rows: []*controlexecute.ResultRow{
 							{
-								Status:     controlexecute.ControlAlarm,
+								Status:     constants.ControlAlarm,
 								Reason:     "is pretty insecure",
 								Resource:   "some other resource",
 								Dimensions: []controlexecute.Dimension{},
@@ -107,7 +107,7 @@ var tree = &controlexecute.ExecutionTree{
 						Control: &c22,
 						Rows: []*controlexecute.ResultRow{
 							{
-								Status:     controlexecute.ControlAlarm,
+								Status:     constants.ControlAlarm,
 								Reason:     "is pretty insecure",
 								Resource:   "some other resource",
 								Dimensions: []controlexecute.Dimension{},
