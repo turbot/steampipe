@@ -46,7 +46,9 @@ func (r *SummaryStatusRowRenderer) Render() string {
 		count,
 		count,
 		r.resultTree.Root.Summary.Status.TotalCount(),
-		colorFunction,
+		CounterGraphRendererOptions{
+			FailedColorFunc: colorFunction,
+		},
 	).Render()
 
 	statusStr := fmt.Sprintf("%s ", colorFunction(strings.ToUpper(r.status)))

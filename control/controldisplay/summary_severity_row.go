@@ -43,7 +43,9 @@ func (r *SummarySeverityRowRenderer) Render() string {
 		severitySummary.FailedCount(),
 		severitySummary.TotalCount(),
 		r.resultTree.Root.Summary.Status.TotalCount(),
-		ControlColors.CountGraphFail,
+		CounterGraphRendererOptions{
+			FailedColorFunc: ControlColors.CountGraphFail,
+		},
 	).Render()
 
 	spaceAvailable := r.width - (helpers.PrintableLength(severityStr) + helpers.PrintableLength(count) + helpers.PrintableLength(graph))

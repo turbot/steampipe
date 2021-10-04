@@ -34,7 +34,9 @@ func (r *SummaryTotalRowRenderer) Render() string {
 		r.resultTree.Root.Summary.Status.FailedCount(),
 		r.resultTree.Root.Summary.Status.TotalCount(),
 		r.resultTree.Root.Summary.Status.TotalCount(),
-		ControlColors.CountGraphFail,
+		CounterGraphRendererOptions{
+			FailedColorFunc: ControlColors.CountGraphFail,
+		},
 	).Render()
 
 	spaceWidth := r.width - (helpers.PrintableLength(head) + helpers.PrintableLength(count) + helpers.PrintableLength(graph))
