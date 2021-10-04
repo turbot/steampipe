@@ -8,8 +8,8 @@ import (
 )
 
 type ParamDef struct {
-	ShortName   string      `cty:"name" json:"name"`
-	FullName    string      `cty:"name" json:"-"`
+	Name        string      `cty:"name" json:"name"`
+	FullName    string      `cty:"full_name" json:"-"`
 	Description *string     `cty:"description" json:"description"`
 	RawDefault  interface{} `json:"-"`
 	Default     *string     `cty:"default" json:"default"`
@@ -28,7 +28,7 @@ type ParamDef struct {
 
 func NewParamDef(block *hcl.Block, parent string) *ParamDef {
 	return &ParamDef{
-		ShortName:     block.Labels[0],
+		Name:          block.Labels[0],
 		FullName:      fmt.Sprintf("param.%s", block.Labels[0]),
 		referencesMap: make(ResourceReferenceMap),
 		parent:        parent,
@@ -41,7 +41,7 @@ func (p ParamDef) String() string {
 }
 
 func (p ParamDef) Equals(other *ParamDef) bool {
-	return p.ShortName == other.ShortName &&
+	return p.Name == other.Name &&
 		typehelpers.SafeString(p.Description) == typehelpers.SafeString(other.Description) &&
 		typehelpers.SafeString(p.Default) == typehelpers.SafeString(other.Default)
 }

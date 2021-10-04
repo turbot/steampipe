@@ -23,7 +23,7 @@ type loadModTest struct {
 	expected interface{}
 }
 
-var loadWorkspaceOptions = &parse.ParseModOptions{
+var runCtx = &parse.RunContext{
 	Flags: parse.CreatePseudoResources | parse.CreateDefaultMod,
 	ListOptions: &filehelpers.ListOptions{
 		Exclude: []string{fmt.Sprintf("**/%s*", constants.WorkspaceDataDir)},
@@ -457,7 +457,6 @@ Benchmarks:
 			},
 		},
 	}
-	}
 }
 
 func TestLoadMod(t *testing.T) {
@@ -481,7 +480,7 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	os.Chdir(modPath)
 	// change back to original directory
 	defer os.Chdir(wd)
-	mod, err := LoadMod(modPath, loadWorkspaceOptions)
+	mod, err := LoadMod(modPath, runCtx)
 	if err != nil {
 		if test.expected != "ERROR" {
 			t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)
@@ -525,7 +524,7 @@ func TestLoadModResourceNames(t *testing.T) {
 	for name, test := range testCasesLoadResourceNames {
 
 		modPath, _ := filepath.Abs(test.source)
-		names, err := LoadModResourceNames(modPath, loadWorkspaceOptions)
+		names, err := LoadModResourceNames(modPath, runCtx)
 
 		if err != nil {
 			if test.expected != "ERROR" {

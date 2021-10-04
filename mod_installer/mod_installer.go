@@ -97,7 +97,7 @@ func (i *ModInstaller) installModDependenciesRecursively(mod *modconfig.Mod, dep
 		// get a resolved mod ref for this mod version
 		resolvedRef, err := i.GetModRefForVersion(modVersion)
 		if err != nil {
-			return fmt.Errorf("dependency %s %s cannot be satisfied: %s", mod.Name, modVersion.VersionString, err.Error())
+			return fmt.Errorf("dependency %s %s cannot be satisfied: %s", mod.Name(), modVersion.VersionString, err.Error())
 		}
 
 		// install this mod

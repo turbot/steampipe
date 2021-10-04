@@ -131,14 +131,14 @@ func (q *QueryArgs) resolveNamedParameters(source PreparedStatementProvider) (ar
 		defaultValue := typehelpers.SafeString(def.Default)
 
 		// can we resolve a value for this param?
-		if val, ok := q.Args[def.ShortName]; ok {
+		if val, ok := q.Args[def.Name]; ok {
 			argStrs[i] = val
-			argsWithParamDef[def.ShortName] = true
+			argsWithParamDef[def.Name] = true
 		} else if defaultValue != "" {
 			argStrs[i] = defaultValue
 		} else {
 			// no value provided and no default defined - add to missing list
-			missingParams = append(missingParams, def.ShortName)
+			missingParams = append(missingParams, def.Name)
 		}
 	}
 
@@ -179,7 +179,7 @@ func (q *QueryArgs) resolvePositionalParameters(source PreparedStatementProvider
 			argStrs[i] = defaultValue
 		} else {
 			// no value provided and no default defined - add to missing list
-			missingParams = append(missingParams, param.ShortName)
+			missingParams = append(missingParams, param.Name)
 		}
 	}
 	return
