@@ -32,7 +32,7 @@ nfpms:
       - rpm
     vendor: "steampipe.io"
     homepage: "https://steampipe.io/"
-    maintainer: "Turbot <puskar@turbot.com>"
+    maintainer: "Turbot Support <help@turbot.com>"
     description: "Use SQL to instantly query your cloud services (AWS, Azure, GCP and more). Open source CLI. No DB required."
     file_name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     rpm:
