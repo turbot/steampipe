@@ -47,7 +47,7 @@ func (p *ConnectionData) Equals(other *ConnectionData) bool {
 
 	return p.Plugin == other.Plugin &&
 		p.CheckSum == other.CheckSum &&
-		p.Connection == other.Connection
+		p.Connection.Equals(other.Connection)
 }
 
 type ConnectionDataMap map[string]*ConnectionData
