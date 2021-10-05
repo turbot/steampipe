@@ -58,10 +58,8 @@ connection from any Postgres compatible database client.`,
 		OnCmd(cmd).
 		// for now default port to -1 so we fall back to the default of the deprecated arg
 		AddIntFlag(constants.ArgPort, "", constants.DatabaseDefaultPort, "Database service port.").
-		AddIntFlag(constants.ArgPortDeprecated, "", constants.DatabaseDefaultPort, "Database service port.", cmdconfig.FlagOptions.Deprecated(constants.ArgPort)).
 		// for now default listen address to empty so we fall back to the default of the deprecated arg
 		AddStringFlag(constants.ArgListenAddress, "", string(db_local.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)").
-		AddStringFlag(constants.ArgListenAddressDeprecated, "", string(db_local.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)", cmdconfig.FlagOptions.Deprecated(constants.ArgListenAddress)).
 		AddStringFlag(constants.ArgServicePassword, "", "", "Set the database password for this session").
 		// foreground enables the service to run in the foreground - till exit
 		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
@@ -138,12 +136,12 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	port := cmdconfig.DatabasePort()
+	port := viper.GetInt(constants.ArgPort)
 	if port < 1 || port > 65535 {
 		panic("Invalid Port :: MUST be within range (1:65535)")
 	}
 
-	listen := db_local.StartListenType(cmdconfig.ListenAddress())
+	listen := db_local.StartListenType(viper.GetString(constants.ArgListenAddress))
 	utils.FailOnError(listen.IsValid())
 
 	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
@@ -177,7 +175,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	} else {
 		// start db, refreshing connections
-		status, err := db_local.StartDB(cmdconfig.DatabasePort(), listen, invoker)
+		status, err := db_local.StartDB(port, listen, invoker)
 		utils.FailOnError(err)
 
 		if status == db_local.ServiceFailedToStart {
