@@ -451,6 +451,42 @@ func TestGetConnectionsToUpdate(t *testing.T) {
 	}
 }
 
+type connectionDataEqual struct {
+	data1       *ConnectionData
+	data2       *ConnectionData
+	expectation bool
+}
+
+var data1 ConnectionData = ConnectionData{
+	Plugin:     "plugin",
+	CheckSum:   "checksum",
+	Connection: &modconfig.Connection{Name: "a"},
+}
+var data1_duplicate ConnectionData = ConnectionData{
+	Plugin:     "plugin",
+	CheckSum:   "checksum",
+	Connection: &modconfig.Connection{Name: "a"},
+}
+var data2 ConnectionData = ConnectionData{
+	Plugin:     "plugin2",
+	CheckSum:   "checksum2",
+	Connection: &modconfig.Connection{Name: "b"},
+}
+
+var connectionDataEqualCases map[string]connectionDataEqual = map[string]connectionDataEqual{
+	"expected_equal":     {data1: &data1, data2: &data1_duplicate, expectation: true},
+	"not_expected_equal": {data1: &data1, data2: &data2, expectation: false},
+}
+
+func TestConnectionsUpdateEqual(t *testing.T) {
+	for caseName, caseData := range connectionDataEqualCases {
+		isEqual := caseData.data1.Equals(caseData.data2)
+		if caseData.expectation != isEqual {
+			t.Errorf(`Test: '%s' FAILED: expected: %v, actual: %v`, caseName, caseData.expectation, isEqual)
+		}
+	}
+}
+
 func setup(test getConnectionsToUpdateTest) {
 
 	os.RemoveAll(constants.PluginDir())
