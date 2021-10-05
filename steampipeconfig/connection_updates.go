@@ -3,7 +3,6 @@ package steampipeconfig
 import (
 	"fmt"
 	"log"
-	"reflect"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -39,21 +38,16 @@ type ConnectionData struct {
 
 func (p *ConnectionData) Equals(other *ConnectionData) bool {
 	if p.Connection == nil || other.Connection == nil {
-		// this is data from an old connection file.
+		// if any one them has a `nil` Connection, then
+		// this is data from an old connection state file.
 		// return false, so that connections get refreshed
 		// and this file gets written in the new format in the process
 		return false
 	}
-	connectionOptionsEqual := (p.Connection.Options == nil) == (other.Connection.Options == nil)
-	if p.Connection.Options != nil {
-		connectionOptionsEqual = p.Connection.Options.Equals(other.Connection.Options)
-	}
 
 	return p.Plugin == other.Plugin &&
 		p.CheckSum == other.CheckSum &&
-		p.Connection.Name == other.Connection.Name &&
-		connectionOptionsEqual &&
-		reflect.DeepEqual(p.Connection.Config, other.Connection.Config)
+		p.Connection == other.Connection
 }
 
 type ConnectionDataMap map[string]*ConnectionData

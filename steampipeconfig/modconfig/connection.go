@@ -50,6 +50,17 @@ func NewConnection(block *hcl.Block) *Connection {
 	}
 }
 
+// Equals
+func (c *Connection) Equals(other *Connection) bool {
+	connectionOptionsEqual := (c.Options == nil) == (other.Options == nil)
+	if c.Options != nil {
+		connectionOptionsEqual = c.Options.Equals(other.Options)
+	}
+	return c.Name == other.Name &&
+		connectionOptionsEqual &&
+		reflect.DeepEqual(c.Config, other.Config)
+}
+
 // SetOptions sets the options on the connection
 // verify the options object is a valid options type (only options.Connection currently supported)
 func (c *Connection) SetOptions(opts options.Options, block *hcl.Block) hcl.Diagnostics {
