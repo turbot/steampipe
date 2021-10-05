@@ -5,10 +5,8 @@ import (
 	"log"
 	"reflect"
 
-	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/steampipeconfig/options"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -46,13 +44,16 @@ func (p *ConnectionData) Equals(other *ConnectionData) bool {
 		// and this file gets written in the new format in the process
 		return false
 	}
+	connectionOptionsEqual := (p.Connection.Options == nil) == (other.Connection.Options == nil)
+	if p.Connection.Options != nil {
+		connectionOptionsEqual = p.Connection.Options.Equals(other.Connection.Options)
 	}
 
 	return p.Plugin == other.Plugin &&
 		p.CheckSum == other.CheckSum &&
-		p.ConnectionName == other.ConnectionName &&
+		p.Connection.Name == other.Connection.Name &&
 		connectionOptionsEqual &&
-		reflect.DeepEqual(p.ConnectionConfig, other.ConnectionConfig)
+		reflect.DeepEqual(p.Connection.Config, other.Connection.Config)
 }
 
 type ConnectionDataMap map[string]*ConnectionData
@@ -149,12 +150,9 @@ func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (
 		}
 
 		requiredConnections[name] = &ConnectionData{
-			Plugin:           remoteSchema,
-			CheckSum:         checksum,
-			Connection:       connection,
-			ConnectionConfig: connection.Config,
-			ConnectionName:   connection.Name,
-			DeclRange:        connection.DeclRange,
+			Plugin:     remoteSchema,
+			CheckSum:   checksum,
+			Connection: connection,
 		}
 	}
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration end")
