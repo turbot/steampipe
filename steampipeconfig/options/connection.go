@@ -7,8 +7,9 @@ import (
 
 // options.Connection
 type Connection struct {
-	Cache    *bool `hcl:"cache"`
-	CacheTTL *int  `hcl:"cache_ttl"`
+	Cache         *bool `hcl:"cache"`
+	CacheTTL      *int  `hcl:"cache_ttl"`
+	DynamicSchema *bool `hcl:"dynamic_schema"`
 }
 
 func (c *Connection) ConfigMap() map[string]interface{} {
@@ -16,7 +17,7 @@ func (c *Connection) ConfigMap() map[string]interface{} {
 	return map[string]interface{}{}
 }
 
-// merge other options over the the top of this options object
+// Merge merges other options over the the top of this options object
 // i.e. if a property is set in otherOptions, it takes precedence
 func (c *Connection) Merge(otherOptions Options) {
 	switch o := otherOptions.(type) {
@@ -26,6 +27,9 @@ func (c *Connection) Merge(otherOptions Options) {
 		}
 		if o.CacheTTL != nil {
 			c.CacheTTL = o.CacheTTL
+		}
+		if o.DynamicSchema != nil {
+			c.DynamicSchema = o.DynamicSchema
 		}
 	}
 }
@@ -49,6 +53,11 @@ func (c *Connection) String() string {
 		str = append(str, "  CacheTTL: nil")
 	} else {
 		str = append(str, fmt.Sprintf("  CacheTTL: %d", *c.CacheTTL))
+	}
+	if c.DynamicSchema == nil {
+		str = append(str, "  DynamicSchema: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  DynamicSchema: %v", *c.DynamicSchema))
 	}
 	return strings.Join(str, "\n")
 }

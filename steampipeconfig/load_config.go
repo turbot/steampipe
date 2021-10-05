@@ -18,7 +18,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-var Config *SteampipeConfig
+var GlobalConfig *SteampipeConfig
 var defaultConfigFileName = "default.spc"
 
 // LoadSteampipeConfig loads the HCL connection config and workspace options

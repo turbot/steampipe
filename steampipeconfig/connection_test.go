@@ -431,7 +431,7 @@ func TestGetConnectionsToUpdate(t *testing.T) {
 		}
 		requiredConnections := config.Connections
 		// all tests assume connections a, b
-		res, err := GetConnectionsToUpdate([]string{"a", "b"}, requiredConnections)
+		res, err := GetConnectionsToUpdate([]string{"a", "b"}, requiredConnections, nil)
 
 		if err != nil && test.expected != "ERROR" {
 			continue

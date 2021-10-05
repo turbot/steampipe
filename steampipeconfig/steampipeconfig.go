@@ -53,7 +53,7 @@ func (c *SteampipeConfig) Validate() error {
 	return nil
 }
 
-// ConfigMap :: create a config map to pass to viper
+// ConfigMap creates a config map to pass to viper
 func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	res := map[string]interface{}{}
 

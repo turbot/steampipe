@@ -66,7 +66,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 		utils.ShowError(err)
 		return
 	}
-	steampipeconfig.Config = config
+	steampipeconfig.GlobalConfig = config
 	refreshResult := w.client.RefreshConnectionAndSearchPaths()
 	if refreshResult.Error != nil {
 		fmt.Println()

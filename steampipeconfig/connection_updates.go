@@ -3,6 +3,9 @@ package steampipeconfig
 import (
 	"fmt"
 	"log"
+	"strings"
+
+	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -34,6 +37,8 @@ type ConnectionData struct {
 	CheckSum string
 	// the underlying connection object
 	Connection *modconfig.Connection
+	// the hash of the connection schema
+	SchemaHash string
 }
 
 func (p *ConnectionData) Equals(other *ConnectionData) bool {
@@ -73,19 +78,24 @@ func (m ConnectionDataMap) Equals(other ConnectionDataMap) bool {
 	return true
 }
 
-// GetConnectionsToUpdate :: returns updates to be made to the database to sync with connection config
-func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*modconfig.Connection) (*ConnectionUpdates, error) {
+func (m ConnectionDataMap) ConnectionsWithDynamicSchema() ConnectionDataMap {
+	var res = make(ConnectionDataMap)
+	for name, c := range m {
+		if c.Connection.Options != nil && c.Connection.Options.DynamicSchema != nil && *c.Connection.Options.DynamicSchema {
+			res[name] = c
+		}
+	}
+	return res
+}
+
+// GetConnectionsToUpdate returns updates to be made to the database to sync with connection config
+func GetConnectionsToUpdate(schemas []string, requiredConnections ConnectionDataMap, missingPlugins []string, connectionsPluginsWithDynamicSchema []*ConnectionPlugin) (*ConnectionUpdates, error) {
 	utils.LogTime("steampipeconfig.GetConnectionsToUpdate start")
 	defer utils.LogTime("steampipeconfig.GetConnectionsToUpdate end")
 
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
 	connectionState, err := GetConnectionState(schemas)
-	if err != nil {
-		return nil, err
-	}
-
-	requiredConnections, missingPlugins, err := getRequiredConnections(connectionConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -103,18 +113,31 @@ func GetConnectionsToUpdate(schemas []string, connectionConfig map[string]*modco
 		}
 	}
 
-	// connections to delete
+	// connections to delete - any connection which is in connection state but NOT required connections
 	for connection, requiredPlugin := range connectionState {
 		if _, ok := requiredConnections[connection]; !ok {
 			log.Printf("[TRACE] connection %s is no longer required\n", connection)
 			result.Delete[connection] = requiredPlugin
 		}
 	}
+
+	// now for every connection with dynamic schema, check whether the schema we have just fetched
+	// matches the existing db schema
+	for _, c := range connectionsPluginsWithDynamicSchema {
+		schemaHash := pluginSchemaHash(c.Schema)
+		connectionData := requiredConnections[c.ConnectionName]
+		if connectionData.SchemaHash != schemaHash {
+			result.Update[c.ConnectionName] = connectionData
+			// update schema hash so it is persisted in the state
+			requiredConnections[c.ConnectionName].SchemaHash = schemaHash
+		}
+	}
+
 	return result, nil
 }
 
-// load and parse the connection config
-func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (ConnectionDataMap, []string, error) {
+// GetRequiredConnectionData loads and parses the connection config
+func GetRequiredConnectionData(connectionConfig map[string]*modconfig.Connection) (ConnectionDataMap, []string, error) {
 	utils.LogTime("steampipeconfig.getRequiredConnections start")
 	defer utils.LogTime("steampipeconfig.getRequiredConnections end")
 
@@ -152,4 +175,17 @@ func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration end")
 
 	return requiredConnections, missingPlugins, nil
+}
+
+func pluginSchemaHash(s *proto.Schema) string {
+	var str strings.Builder
+
+	for tableName, tableSchema := range s.Schema {
+		str.WriteString(tableName)
+		for _, c := range tableSchema.Columns {
+			str.WriteString(c.Name)
+			str.WriteString(fmt.Sprintf("%d", c.Type))
+		}
+	}
+	return utils.GetMD5Hash(str.String())
 }

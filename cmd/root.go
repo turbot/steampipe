@@ -104,10 +104,10 @@ func initGlobalConfig() {
 	config, err := steampipeconfig.LoadSteampipeConfig(workspace, cmd.Name())
 	utils.FailOnError(err)
 
-	steampipeconfig.Config = config
+	steampipeconfig.GlobalConfig = config
 
 	// set viper config defaults from config and env vars
-	cmdconfig.SetViperDefaults(steampipeconfig.Config)
+	cmdconfig.SetViperDefaults(steampipeconfig.GlobalConfig)
 }
 
 // CreateLogger :: create a hclog logger with the level specified by the SP_LOG env var
