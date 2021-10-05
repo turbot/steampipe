@@ -32,24 +32,20 @@ func newConnectionUpdates() *ConnectionUpdates {
 // ConnectionData is a struct containing all details for a connection - the plugin name and checksum, the connection config and options
 type ConnectionData struct {
 	// the fully qualified name of the plugin
-	Plugin string `yaml:"plugin"`
+	Plugin string
 	// the checksum of the plugin file
-	CheckSum string `yaml:"checkSum"`
+	CheckSum string
 	// the underlying connection object
-	Connection *modconfig.Connection `json:"-"`
-	// connection name
-	ConnectionName string
-	// connection data (unparsed)
-	ConnectionConfig string
-	// steampipe connection options
-	ConnectionOptions *options.Connection
-	DeclRange         hcl.Range
+	Connection *modconfig.Connection
 }
 
 func (p *ConnectionData) Equals(other *ConnectionData) bool {
-	connectionOptionsEqual := (p.ConnectionOptions == nil) == (other.ConnectionOptions == nil)
-	if p.ConnectionOptions != nil {
-		connectionOptionsEqual = p.ConnectionOptions.Equals(other.ConnectionOptions)
+	if p.Connection == nil || other.Connection == nil {
+		// this is data from an old connection file.
+		// return false, so that connections get refreshed
+		// and this file gets written in the new format in the process
+		return false
+	}
 	}
 
 	return p.Plugin == other.Plugin &&
