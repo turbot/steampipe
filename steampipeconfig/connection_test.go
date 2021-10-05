@@ -10,6 +10,7 @@ import (
 
 	"github.com/otiai10/copy"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -33,16 +34,16 @@ var testCasesGetConnectionsToUpdate = map[string]getConnectionsToUpdateTest{
 `},
 		current: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{}, Delete: ConnectionDataMap{}, RequiredConnections: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 		}},
 	},
@@ -58,26 +59,26 @@ connection "b" {
 `},
 		current: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "b",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "b"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{}, Delete: ConnectionDataMap{}, RequiredConnections: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "b",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "b"},
 			},
 		}},
 	},
@@ -93,26 +94,26 @@ connection "b" {
 	`},
 		current: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:       connectionTest2Checksum,
-				ConnectionName: "b",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:   connectionTest2Checksum,
+				Connection: &modconfig.Connection{Name: "b"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{}, Delete: ConnectionDataMap{}, RequiredConnections: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:       connectionTest2Checksum,
-				ConnectionName: "b",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:   connectionTest2Checksum,
+				Connection: &modconfig.Connection{Name: "b"},
 			},
 		}},
 	},
@@ -127,26 +128,26 @@ connection "b" {
 	`},
 		current: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "b",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "b"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{}, Delete: ConnectionDataMap{}, RequiredConnections: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "b",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "b"},
 			},
 		}},
 	},
@@ -161,26 +162,26 @@ connection "b" {
 	`},
 		current: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:       connectionTest2Checksum,
-				ConnectionName: "b",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:   connectionTest2Checksum,
+				Connection: &modconfig.Connection{Name: "b"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{}, Delete: ConnectionDataMap{}, RequiredConnections: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:       connectionTest2Checksum,
-				ConnectionName: "b",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:   connectionTest2Checksum,
+				Connection: &modconfig.Connection{Name: "b"},
 			},
 		}},
 	},
@@ -192,22 +193,22 @@ connection "b" {
 	`},
 		current: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       "xxxxxx",
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   "xxxxxx",
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 		}, Delete: ConnectionDataMap{}, RequiredConnections: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 		}},
 	},
@@ -224,39 +225,39 @@ connection "b" {
 	`},
 		current: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       "xxxxxx",
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   "xxxxxx",
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       "xxxxxx",
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   "xxxxxx",
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "b",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "b"},
 			},
 		},
 			Delete: ConnectionDataMap{},
 			RequiredConnections: ConnectionDataMap{
 				"a": {
-					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:       connectionTest1Checksum,
-					ConnectionName: "a",
+					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:   connectionTest1Checksum,
+					Connection: &modconfig.Connection{Name: "a"},
 				},
 				"b": {
-					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:       connectionTest1Checksum,
-					ConnectionName: "b",
+					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:   connectionTest1Checksum,
+					Connection: &modconfig.Connection{Name: "b"},
 				},
 			}},
 	},
@@ -272,38 +273,38 @@ connection "b" {
 	`},
 		current: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       "xxxxxx",
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   "xxxxxx",
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:       "xxxxxx",
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:   "xxxxxx",
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:       connectionTest2Checksum,
-				ConnectionName: "b",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:   connectionTest2Checksum,
+				Connection: &modconfig.Connection{Name: "b"},
 			},
 		}, Delete: ConnectionDataMap{},
 			RequiredConnections: ConnectionDataMap{
 				"a": {
-					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:       connectionTest1Checksum,
-					ConnectionName: "a",
+					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:   connectionTest1Checksum,
+					Connection: &modconfig.Connection{Name: "a"},
 				},
 				"b": {
-					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-					CheckSum:       connectionTest2Checksum,
-					ConnectionName: "b",
+					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+					CheckSum:   connectionTest2Checksum,
+					Connection: &modconfig.Connection{Name: "b"},
 				},
 			}},
 	},
@@ -318,39 +319,39 @@ connection "b" {
 	`},
 		current: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       "xxxxxx",
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   "xxxxxx",
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       "xxxxxx",
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   "xxxxxx",
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       connectionTest1Checksum,
-				ConnectionName: "b",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   connectionTest1Checksum,
+				Connection: &modconfig.Connection{Name: "b"},
 			},
 		},
 			Delete: ConnectionDataMap{},
 			RequiredConnections: ConnectionDataMap{
 				"a": {
-					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:       connectionTest1Checksum,
-					ConnectionName: "a",
+					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:   connectionTest1Checksum,
+					Connection: &modconfig.Connection{Name: "a"},
 				},
 				"b": {
-					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:       connectionTest1Checksum,
-					ConnectionName: "b",
+					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:   connectionTest1Checksum,
+					Connection: &modconfig.Connection{Name: "b"},
 				},
 			}},
 	},
@@ -365,40 +366,40 @@ connection "b" {
 	`},
 		current: ConnectionDataMap{
 			"a": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:       "xxxxxx",
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+				CheckSum:   "xxxxxx",
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
-				Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:       "xxxxxx",
-				ConnectionName: "a",
+				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+				CheckSum:   "xxxxxx",
+				Connection: &modconfig.Connection{Name: "a"},
 			},
 		},
 		expected: &ConnectionUpdates{
 			Update: ConnectionDataMap{
 				"a": {
-					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:       connectionTest1Checksum,
-					ConnectionName: "a",
+					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:   connectionTest1Checksum,
+					Connection: &modconfig.Connection{Name: "a"},
 				},
 				"b": {
-					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-					CheckSum:       connectionTest2Checksum,
-					ConnectionName: "b",
+					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+					CheckSum:   connectionTest2Checksum,
+					Connection: &modconfig.Connection{Name: "b"},
 				},
 			},
 			Delete: ConnectionDataMap{},
 			RequiredConnections: ConnectionDataMap{
 				"a": {
-					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:       connectionTest1Checksum,
-					ConnectionName: "a",
+					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+					CheckSum:   connectionTest1Checksum,
+					Connection: &modconfig.Connection{Name: "a"},
 				},
 				"b": {
-					Plugin:         "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-					CheckSum:       connectionTest2Checksum,
-					ConnectionName: "b",
+					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+					CheckSum:   connectionTest2Checksum,
+					Connection: &modconfig.Connection{Name: "b"},
 				},
 			}},
 	},
@@ -447,6 +448,42 @@ func TestGetConnectionsToUpdate(t *testing.T) {
 
 		fmt.Printf("\n\n'Test: %s' PASSED\n\n", name)
 		resetConfig(test)
+	}
+}
+
+type connectionDataEqual struct {
+	data1       *ConnectionData
+	data2       *ConnectionData
+	expectation bool
+}
+
+var data1 ConnectionData = ConnectionData{
+	Plugin:     "plugin",
+	CheckSum:   "checksum",
+	Connection: &modconfig.Connection{Name: "a"},
+}
+var data1_duplicate ConnectionData = ConnectionData{
+	Plugin:     "plugin",
+	CheckSum:   "checksum",
+	Connection: &modconfig.Connection{Name: "a"},
+}
+var data2 ConnectionData = ConnectionData{
+	Plugin:     "plugin2",
+	CheckSum:   "checksum2",
+	Connection: &modconfig.Connection{Name: "b"},
+}
+
+var connectionDataEqualCases map[string]connectionDataEqual = map[string]connectionDataEqual{
+	"expected_equal":     {data1: &data1, data2: &data1_duplicate, expectation: true},
+	"not_expected_equal": {data1: &data1, data2: &data2, expectation: false},
+}
+
+func TestConnectionsUpdateEqual(t *testing.T) {
+	for caseName, caseData := range connectionDataEqualCases {
+		isEqual := caseData.data1.Equals(caseData.data2)
+		if caseData.expectation != isEqual {
+			t.Errorf(`Test: '%s' FAILED: expected: %v, actual: %v`, caseName, caseData.expectation, isEqual)
+		}
 	}
 }
 

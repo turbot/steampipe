@@ -3,12 +3,9 @@ package steampipeconfig
 import (
 	"fmt"
 	"log"
-	"reflect"
 
-	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/steampipeconfig/options"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -32,31 +29,25 @@ func newConnectionUpdates() *ConnectionUpdates {
 // ConnectionData is a struct containing all details for a connection - the plugin name and checksum, the connection config and options
 type ConnectionData struct {
 	// the fully qualified name of the plugin
-	Plugin string `yaml:"plugin"`
+	Plugin string
 	// the checksum of the plugin file
-	CheckSum string `yaml:"checkSum"`
+	CheckSum string
 	// the underlying connection object
-	Connection *modconfig.Connection `json:"-"`
-	// connection name
-	ConnectionName string
-	// connection data (unparsed)
-	ConnectionConfig string
-	// steampipe connection options
-	ConnectionOptions *options.Connection
-	DeclRange         hcl.Range
+	Connection *modconfig.Connection
 }
 
 func (p *ConnectionData) Equals(other *ConnectionData) bool {
-	connectionOptionsEqual := (p.ConnectionOptions == nil) == (other.ConnectionOptions == nil)
-	if p.ConnectionOptions != nil {
-		connectionOptionsEqual = p.ConnectionOptions.Equals(other.ConnectionOptions)
+	if p.Connection == nil || other.Connection == nil {
+		// if any one them has a `nil` Connection, then
+		// this is data from an old connection state file.
+		// return false, so that connections get refreshed
+		// and this file gets written in the new format in the process
+		return false
 	}
 
 	return p.Plugin == other.Plugin &&
 		p.CheckSum == other.CheckSum &&
-		p.ConnectionName == other.ConnectionName &&
-		connectionOptionsEqual &&
-		reflect.DeepEqual(p.ConnectionConfig, other.ConnectionConfig)
+		p.Connection.Equals(other.Connection)
 }
 
 type ConnectionDataMap map[string]*ConnectionData
@@ -153,12 +144,9 @@ func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (
 		}
 
 		requiredConnections[name] = &ConnectionData{
-			Plugin:           remoteSchema,
-			CheckSum:         checksum,
-			Connection:       connection,
-			ConnectionConfig: connection.Config,
-			ConnectionName:   connection.Name,
-			DeclRange:        connection.DeclRange,
+			Plugin:     remoteSchema,
+			CheckSum:   checksum,
+			Connection: connection,
 		}
 	}
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration end")
