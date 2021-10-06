@@ -115,24 +115,24 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	}
 
 	utils.LogTime("postgresCmd start")
-	err = startPostgresProcessAndSetPassword(port, listen, invoker)
+	databaseName, err := startPostgresProcessAndSetPassword(port, listen, invoker)
 	if err != nil {
 		return ServiceFailedToStart, err
 	}
 	utils.LogTime("postgresCmd end")
 
-	err = ensureSteampipeServer()
+	err = ensureSteampipeServer(databaseName)
 	if err != nil {
 		// there was a problem with the installation
 		return ServiceFailedToStart, err
 	}
 
-	err = ensureTempTablePermissions()
+	err = ensureTempTablePermissions(databaseName)
 	if err != nil {
 		return ServiceFailedToStart, err
 	}
 	// ensure the db contains command schema
-	err = ensureCommandSchema()
+	err = ensureCommandSchema(databaseName)
 	if err != nil {
 		return ServiceFailedToStart, err
 	}
@@ -142,7 +142,7 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 
 // startPostgresProcessAndSetPassword starts the postgres process and writes out the state file
 // after it is convinced that the process is started and is accepting connections
-func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoker constants.Invoker) (e error) {
+func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoker constants.Invoker) (datName string, e error) {
 	utils.LogTime("startPostgresProcess start")
 	defer utils.LogTime("startPostgresProcess end")
 
@@ -160,20 +160,20 @@ func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoke
 	}
 
 	if err := writePGConf(); err != nil {
-		return err
+		return "", err
 	}
 
 	postgresCmd := createCmd(port, listenAddresses)
 	setupLogCollection(postgresCmd)
 	err := postgresCmd.Start()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// get the password from the password file
 	password, err := readPasswordFile()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// if a password was set through the `STEAMPIPE_DATABASE_PASSWORD` environment variable
@@ -183,24 +183,68 @@ func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoke
 		password = viper.GetString(constants.ArgServicePassword)
 	}
 
-	err = createRunningInfo(postgresCmd, port, password, listen, invoker)
+	// create a *RunningInfo with empty DBName
+	// we need this to connect to the service using 'root'
+	// which we will use to retrieve the name of the installed database
+	err = createRunningInfo(postgresCmd, port, "", password, listen, invoker)
 	if err != nil {
 		postgresCmd.Process.Kill()
-		return err
+		return "", err
+	}
+
+	// connect to the service and retrieve the database name
+	datName, err = retrieveDatabaseNameFromService(invoker)
+	if err != nil {
+		postgresCmd.Process.Kill()
+		return "", err
+	}
+	if len(datName) == 0 && invoker != constants.InvokerInstaller {
+		postgresCmd.Process.Kill()
+		return "", fmt.Errorf("could not find database to connect to")
+	}
+	err = updateDBNameInRunningInfo(datName)
+	if err != nil {
+		postgresCmd.Process.Kill()
+		return "", err
 	}
 
 	err = postgresCmd.Process.Release()
 	if err != nil {
 		postgresCmd.Process.Kill()
-		return err
+		return "", err
 	}
 
 	err = setupServicePassword(invoker, password)
 	if err != nil {
 		postgresCmd.Process.Kill()
-		return err
+		return "", err
 	}
-	return nil
+	return datName, nil
+}
+
+func retrieveDatabaseNameFromService(invoker constants.Invoker) (string, error) {
+	if invoker == constants.InvokerInstaller {
+		// don't do anything if this is an installer invoked service
+		// the database hasn't been installed yet
+		return "", nil
+	}
+	connection, err := createRootDbClient()
+	if err != nil {
+		return "", err
+	}
+	defer connection.Close()
+
+	// set the password on the database
+	// we can't do this during installation, since the 'steampipe` user isn't setup yet
+	out := connection.QueryRow("select datname from pg_database where datistemplate=false AND datname <> 'postgres';")
+
+	var databaseName string
+	err = out.Scan(&databaseName)
+	if err != nil {
+		return "", err
+	}
+
+	return databaseName, nil
 }
 
 func writePGConf() error {
@@ -220,6 +264,33 @@ func writePGConf() error {
 		return err
 	}
 	return nil
+}
+
+func updateDBNameInRunningInfo(datName string) error {
+	runningInfo, err := loadRunningInstanceInfo()
+	if err != nil {
+		return err
+	}
+	runningInfo.Database = datName
+	return runningInfo.Save()
+}
+
+func createRunningInfo(cmd *exec.Cmd, port int, dbName string, password string, listen StartListenType, invoker constants.Invoker) error {
+	runningInfo := new(RunningDBInstanceInfo)
+	runningInfo.Pid = cmd.Process.Pid
+	runningInfo.Port = port
+	runningInfo.User = constants.DatabaseUser
+	runningInfo.Password = password
+	runningInfo.Database = dbName
+	runningInfo.ListenType = listen
+	runningInfo.Invoker = invoker
+	runningInfo.Listen = constants.DatabaseListenAddresses
+
+	if listen == ListenTypeNetwork {
+		addrs, _ := localAddresses()
+		runningInfo.Listen = append(runningInfo.Listen, addrs...)
+	}
+	return runningInfo.Save()
 }
 
 func createCmd(port int, listenAddresses string) *exec.Cmd {
@@ -282,24 +353,6 @@ func setupLogCollection(cmd *exec.Cmd) {
 		// instead, log to TRACE that we couldn't and continue
 		log.Println("[TRACE] Warning: Could not attach to service logs")
 	}
-}
-
-func createRunningInfo(cmd *exec.Cmd, port int, password string, listen StartListenType, invoker constants.Invoker) error {
-	runningInfo := new(RunningDBInstanceInfo)
-	runningInfo.Pid = cmd.Process.Pid
-	runningInfo.Port = port
-	runningInfo.User = constants.DatabaseUser
-	runningInfo.Password = password
-	runningInfo.Database = constants.DatabaseName
-	runningInfo.ListenType = listen
-	runningInfo.Invoker = invoker
-	runningInfo.Listen = constants.DatabaseListenAddresses
-
-	if listen == ListenTypeNetwork {
-		addrs, _ := localAddresses()
-		runningInfo.Listen = append(runningInfo.Listen, addrs...)
-	}
-	return runningInfo.Save()
 }
 
 func traceoutServiceLogs(logChannel chan string, stopLogStreamFn func()) {
@@ -372,8 +425,8 @@ func setupLogCollector(postgresCmd *exec.Cmd, publishChannel chan string) (func(
 
 // ensures that the `steampipe` fdw server exists
 // checks for it - (re)install FDW and creates server if it doesn't
-func ensureSteampipeServer() error {
-	rootClient, err := createRootDbClient()
+func ensureSteampipeServer(dbName string) error {
+	rootClient, err := createLocalDbClient(dbName, constants.DatabaseSuperUser)
 	if err != nil {
 		return err
 	}
@@ -383,30 +436,44 @@ func ensureSteampipeServer() error {
 	err = out.Scan(&serverName)
 	// if there is an error, we need to reinstall the foreign server
 	if err != nil {
-		return installForeignServer()
+		return installForeignServer(dbName)
 	}
 	return nil
 }
 
 // create the command schema and grant insert permission
-func ensureCommandSchema() error {
-	if _, err := executeSqlAsRoot(updateConnectionQuery(constants.CommandSchema, constants.CommandSchema)...); err != nil {
+func ensureCommandSchema(dbName string) error {
+	commandSchemaStatements := updateConnectionQuery(constants.CommandSchema, constants.CommandSchema)
+	commandSchemaStatements = append(
+		commandSchemaStatements,
+		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CacheCommandTable),
+	)
+	rootClient, err := createLocalDbClient(dbName, constants.DatabaseSuperUser)
+	if err != nil {
 		return err
 	}
-	_, err := executeSqlAsRoot(fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CacheCommandTable))
+	defer rootClient.Close()
 
+	for _, statement := range commandSchemaStatements {
+		// NOTE: This may print a password to the log file, but it doesn't matter
+		// since the password is stored in a config file anyway.
+		log.Println("[TRACE] Install database: ", statement)
+		if _, err := rootClient.Exec(statement); err != nil {
+			return err
+		}
+	}
 	return err
 }
 
 // ensures that the `steampipe_users` role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
-func ensureTempTablePermissions() error {
-	rootClient, err := createRootDbClient()
+func ensureTempTablePermissions(dbName string) error {
+	rootClient, err := createLocalDbClient(dbName, constants.DatabaseSuperUser)
 	if err != nil {
 		return err
 	}
 	defer rootClient.Close()
-	_, err = rootClient.Exec("grant temporary on database steampipe to steampipe_users")
+	_, err = rootClient.Exec(fmt.Sprintf("grant temporary on database %s to %s", dbName, constants.DatabaseUser))
 	if err != nil {
 		return err
 	}

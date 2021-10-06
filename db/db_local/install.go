@@ -236,26 +236,25 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 		return fmt.Errorf("Initializing database... FAILED!")
 	}
 
-	display.UpdateSpinnerMessage(spinner, "Generating database passwords...")
-	steampipePassword, err := readPasswordFile()
-	if err != nil {
-		display.StopSpinner(spinner)
-		log.Printf("[TRACE] readPassword failed: %v", err)
-		return fmt.Errorf("Generating database passwords... FAILED!")
-	}
-	// we will generate and lock with an ephemereal root password
-	rootPassword := generatePassword()
-
 	display.UpdateSpinnerMessage(spinner, "Starting database...")
-	err = startPostgresProcessAndSetPassword(constants.DatabaseDefaultPort, ListenTypeLocal, constants.InvokerInstaller)
+	_, err = startPostgresProcessAndSetPassword(constants.DatabaseDefaultPort, ListenTypeLocal, constants.InvokerInstaller)
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] startPostgresProcess failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")
 	}
 
+	display.UpdateSpinnerMessage(spinner, "Generating database passwords...")
+	// generate a password file for use later
+	_, err = readPasswordFile()
+	if err != nil {
+		display.StopSpinner(spinner)
+		log.Printf("[TRACE] readPassword failed: %v", err)
+		return fmt.Errorf("Generating database passwords... FAILED!")
+	}
+
 	display.UpdateSpinnerMessage(spinner, "Configuring database...")
-	err = installSteampipeDatabaseAndUser(steampipePassword, rootPassword)
+	dbName, err := installDatabaseAndSetupPermissions()
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] installSteampipeDatabaseAndUser failed: %v", err)
@@ -263,7 +262,7 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring Steampipe...")
-	err = installForeignServer()
+	err = installForeignServer(dbName)
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] installForeignServer failed: %v", err)
@@ -299,22 +298,29 @@ func initDatabase() error {
 		return runError
 	}
 
-	// intentionally overwriting existing pg_hba.conf
-	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(constants.PgHbaContent), 0600)
+	// intentionally overwriting existing pg_hba.conf with a minimal config which only allows root
+	// so that we can setup the database and permissions
+	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(constants.MinimalPgHbaContent), 0600)
 }
 
-func installSteampipeDatabaseAndUser(steampipePassword string, rootPassword string) error {
+func installDatabaseAndSetupPermissions() (string, error) {
 	utils.LogTime("db.installSteampipeDatabase start")
 	defer utils.LogTime("db.installSteampipeDatabase end")
 
 	rawClient, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	defer func() {
 		rawClient.Close()
 	}()
+
+	databaseName := constants.DatabaseName
+	if dbName, exists := os.LookupEnv(constants.EnvInstallDatabase); exists && len(dbName) > 0 {
+		databaseName = dbName
+	}
+	log.Println("[TRACE] installing database with name", databaseName)
 
 	statements := []string{
 
@@ -327,15 +333,15 @@ func installSteampipeDatabaseAndUser(steampipePassword string, rootPassword stri
 		`revoke all privileges on schema public from public`,
 
 		// Create the steampipe database, used to hold all steampipe tables, views and data.
-		`create database steampipe`,
+		fmt.Sprintf(`create database %s`, databaseName),
 
 		// Restrict permissions from general users to the steampipe database. We add them
 		// back progressively to allow appropriate read only access.
-		`revoke all on database steampipe from public`,
+		fmt.Sprintf("revoke all on database %s from public", databaseName),
 
 		// The root user gets full rights to the steampipe database, ensuring we can actually
 		// configure and manage it properly.
-		`grant all on database steampipe to root`,
+		fmt.Sprintf("grant all on database %s to root", databaseName),
 
 		// The root user gets a password which will be used later on to connect
 		fmt.Sprintf(`alter user root with password '%s'`, generatePassword()),
@@ -350,40 +356,56 @@ func installSteampipeDatabaseAndUser(steampipePassword string, rootPassword stri
 		// Create a role to represent all steampipe_users in the database.
 		// Grants and permissions can be managed on this role independent
 		// of the actual users in the system, giving us flexibility.
-		`create role steampipe_users`,
+		fmt.Sprintf(`create role %s`, constants.DatabaseUsersRole),
 
 		// Allow the steampipe user access to the steampipe database only
-		`grant connect on database steampipe to steampipe_users`,
+		fmt.Sprintf("grant connect on database %s to %s", databaseName, constants.DatabaseUsersRole),
 
 		// Create the steampipe user. By default they do not have superuser, createdb
 		// or createrole permissions.
-		`create user steampipe`,
+		fmt.Sprintf("create user %s", constants.DatabaseUser),
 
 		// Allow the steampipe user to manage temporary tables
-		`grant temporary on database steampipe to steampipe_users`,
+		fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUsersRole),
 
 		// No need to set a password to the 'steampipe' user
 		// The password gets set on every service start
 
 		// Allow steampipe the privileges of steampipe_users.
-		`grant steampipe_users to steampipe`,
+		fmt.Sprintf("grant %s to %s", constants.DatabaseUsersRole, constants.DatabaseUser),
 	}
-
 	for _, statement := range statements {
 		// NOTE: This may print a password to the log file, but it doesn't matter
 		// since the password is stored in a config file anyway.
-		log.Println("[TRACE] Install steampipe database: ", statement)
+		log.Println("[TRACE] Install database: ", statement)
 		if _, err := rawClient.Exec(statement); err != nil {
-			return err
+			return databaseName, err
 		}
 	}
-
-	return nil
+	err = updateDBNameInRunningInfo(databaseName)
+	if err != nil {
+		return databaseName, err
+	}
+	return databaseName, writePgHbaContent(databaseName, constants.DatabaseUser)
 }
 
-func installForeignServer() error {
+func writePgHbaContent(databaseName string, username string) error {
+	content := fmt.Sprintf(constants.PgHbaTemplate, databaseName, username)
+	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(content), 0600)
+}
+
+func installForeignServer(dbName string) error {
 	utils.LogTime("db.installForeignServer start")
 	defer utils.LogTime("db.installForeignServer end")
+
+	rawClient, err := createLocalDbClient(dbName, constants.DatabaseSuperUser)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		rawClient.Close()
+	}()
 
 	statements := []string{
 		// Install the FDW. The name must match the binary file.
@@ -392,7 +414,16 @@ func installForeignServer() error {
 		// Use steampipe for the server name, it's simplest
 		`create server "steampipe" foreign data wrapper "steampipe_postgres_fdw"`,
 	}
-	_, err := executeSqlAsRoot(statements...)
+
+	for _, statement := range statements {
+		// NOTE: This may print a password to the log file, but it doesn't matter
+		// since the password is stored in a config file anyway.
+		log.Println("[TRACE] Install Foreign Server: ", statement)
+		if _, err := rawClient.Exec(statement); err != nil {
+			return err
+		}
+	}
+
 	return err
 }
 
@@ -408,13 +439,13 @@ func updateDownloadedBinarySignature() error {
 	return ioutil.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)
 }
 
-func getInstalledBinarySignature() string {
-	sigBytes, err := ioutil.ReadFile(getDBSignatureLocation())
-	sig := ""
-	if os.IsNotExist(err) {
-		sig = ""
-	} else {
-		sig = string(sigBytes)
-	}
-	return sig
-}
+// func getInstalledBinarySignature() string {
+// 	sigBytes, err := ioutil.ReadFile(getDBSignatureLocation())
+// 	sig := ""
+// 	if os.IsNotExist(err) {
+// 		sig = ""
+// 	} else {
+// 		sig = string(sigBytes)
+// 	}
+// 	return sig
+// }
