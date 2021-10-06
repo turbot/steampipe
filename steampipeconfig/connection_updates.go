@@ -3,9 +3,6 @@ package steampipeconfig
 import (
 	"fmt"
 	"log"
-	"strings"
-
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -89,7 +86,7 @@ func (m ConnectionDataMap) ConnectionsWithDynamicSchema() ConnectionDataMap {
 }
 
 // GetConnectionsToUpdate returns updates to be made to the database to sync with connection config
-func GetConnectionsToUpdate(schemas []string, requiredConnections ConnectionDataMap, missingPlugins []string, connectionsPluginsWithDynamicSchema map[string]*ConnectionPlugin) (*ConnectionUpdates, error) {
+func GetConnectionsToUpdate(schemas []string, requiredConnections ConnectionDataMap, missingPlugins []string, dynamicSchemaHashMap map[string]string) (*ConnectionUpdates, error) {
 	utils.LogTime("steampipeconfig.GetConnectionsToUpdate start")
 	defer utils.LogTime("steampipeconfig.GetConnectionsToUpdate end")
 
@@ -125,13 +122,12 @@ func GetConnectionsToUpdate(schemas []string, requiredConnections ConnectionData
 
 	// now for every connection with dynamic schema, check whether the schema we have just fetched
 	// matches the existing db schema
-	for _, c := range connectionsPluginsWithDynamicSchema {
-		schemaHash := pluginSchemaHash(c.Schema)
-		connectionData := requiredConnections[c.ConnectionName]
-		if connectionData.SchemaHash != schemaHash {
-			result.Update[c.ConnectionName] = connectionData
-			// update schema hash so it is persisted in the state
-			requiredConnections[c.ConnectionName].SchemaHash = schemaHash
+	for name, requiredHash := range dynamicSchemaHashMap {
+		// get the connection data from the loaded connection state
+		connectionData, ok := connectionState[name]
+		// if the connection exists in the state, does the schemas hash match?
+		if ok && connectionData.SchemaHash != requiredHash {
+			result.Update[name] = connectionData
 		}
 	}
 
@@ -177,17 +173,4 @@ func GetRequiredConnectionData(connectionConfig map[string]*modconfig.Connection
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration end")
 
 	return requiredConnections, missingPlugins, nil
-}
-
-func pluginSchemaHash(s *proto.Schema) string {
-	var str strings.Builder
-
-	for tableName, tableSchema := range s.Schema {
-		str.WriteString(tableName)
-		for _, c := range tableSchema.Columns {
-			str.WriteString(c.Name)
-			str.WriteString(fmt.Sprintf("%d", c.Type))
-		}
-	}
-	return utils.GetMD5Hash(str.String())
 }

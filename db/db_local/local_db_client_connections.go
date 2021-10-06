@@ -3,9 +3,11 @@ package db_local
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
@@ -35,13 +37,12 @@ func (c *LocalDbClient) refreshConnections() *db_common.RefreshConnectionResult 
 
 	// for any connections with dynamic schema, we need to reload their schema
 	// instantiate connection plugins for all connections with dynamic schema - this will retrieve their current schema
-	var connectionsWithDynamicSchema = requiredConnectionData.ConnectionsWithDynamicSchema()
-	connectionsPluginsWithDynamicSchema, res := getConnectionPlugins(connectionsWithDynamicSchema, nil)
+	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, res := getSchemaHashesForDynamicSchemas(requiredConnectionData)
 	if res.Error != nil {
 		return res
 	}
 
-	updates, err := steampipeconfig.GetConnectionsToUpdate(schemas, requiredConnectionData, missingPlugins, connectionsPluginsWithDynamicSchema)
+	updates, err := steampipeconfig.GetConnectionsToUpdate(schemas, requiredConnectionData, missingPlugins, dynamicSchemaHashMap)
 	if err != nil {
 		res.Error = err
 		return res
@@ -110,6 +111,21 @@ func (c *LocalDbClient) refreshConnections() *db_common.RefreshConnectionResult 
 
 }
 
+func getSchemaHashesForDynamicSchemas(requiredConnectionData steampipeconfig.ConnectionDataMap) (map[string]string, map[string]*steampipeconfig.ConnectionPlugin, *db_common.RefreshConnectionResult) {
+	var connectionsWithDynamicSchema = requiredConnectionData.ConnectionsWithDynamicSchema()
+	connectionsPluginsWithDynamicSchema, res := getConnectionPlugins(connectionsWithDynamicSchema, nil)
+	hashMap := make(map[string]string)
+	for name, c := range connectionsPluginsWithDynamicSchema {
+		// update schema hash stored in required connections so it is persisted in the state ius updates are made
+		schemaHash := pluginSchemaHash(c.Schema)
+		hashMap[name] = schemaHash
+		// NOTE: also update the requiredConnectionData with the schema hash
+		// - so it gets serialised to connection state is we need ot make updates
+		requiredConnectionData[name].SchemaHash = schemaHash
+	}
+	return hashMap, connectionsPluginsWithDynamicSchema, res
+}
+
 func (c *LocalDbClient) updateConnectionMap() error {
 	// load the connection state and cache it!
 	log.Println("[TRACE]", "retrieving connection map")
@@ -124,6 +140,9 @@ func (c *LocalDbClient) updateConnectionMap() error {
 }
 
 func getConnectionPlugins(requiredConnections steampipeconfig.ConnectionDataMap, alreadyLoaded map[string]*steampipeconfig.ConnectionPlugin) (map[string]*steampipeconfig.ConnectionPlugin, *db_common.RefreshConnectionResult) {
+	if alreadyLoaded == nil {
+		alreadyLoaded = make(map[string]*steampipeconfig.ConnectionPlugin)
+	}
 	res := &db_common.RefreshConnectionResult{}
 	// initialise result to the plugins we have already loaded
 	var connectionPlugins = alreadyLoaded
@@ -137,7 +156,7 @@ func getConnectionPlugins(requiredConnections steampipeconfig.ConnectionDataMap,
 		// if we have NOT already loaded this plugin, do so
 		if _, ok := alreadyLoaded[connectionName]; !ok {
 			// instantiate the connection plugin, and retrieve schema
-			go getConnectionPluginAsync(connectionName, connectionData, pluginChan, errorChan)
+			go getConnectionPluginAsync(connectionData, pluginChan, errorChan)
 		}
 	}
 
@@ -156,7 +175,7 @@ func getConnectionPlugins(requiredConnections steampipeconfig.ConnectionDataMap,
 	return connectionPlugins, res
 }
 
-func getConnectionPluginAsync(connectionName string, connectionData *steampipeconfig.ConnectionData, pluginChan chan *steampipeconfig.ConnectionPlugin, errorChan chan error) {
+func getConnectionPluginAsync(connectionData *steampipeconfig.ConnectionData, pluginChan chan *steampipeconfig.ConnectionPlugin, errorChan chan error) {
 	p, err := steampipeconfig.CreateConnectionPlugin(connectionData.Connection, true)
 	if err != nil {
 		errorChan <- err
@@ -261,4 +280,29 @@ func executeConnectionQueries(schemaQueries []string, updates *steampipeconfig.C
 		return err
 	}
 	return nil
+}
+
+func pluginSchemaHash(s *proto.Schema) string {
+	var sb strings.Builder
+
+	// build ordered list of tables
+	var tables = make([]string, len(s.Schema))
+	idx := 0
+	for tableName := range s.Schema {
+		tables[idx] = tableName
+		idx++
+	}
+	sort.Strings(tables)
+
+	// now build  a string from the ordered table schemas
+	for _, tableName := range tables {
+		sb.WriteString(tableName)
+		tableSchema := s.Schema[tableName]
+		for _, c := range tableSchema.Columns {
+			sb.WriteString(c.Name)
+			sb.WriteString(fmt.Sprintf("%d", c.Type))
+		}
+	}
+	str := sb.String()
+	return utils.GetMD5Hash(str)
 }
