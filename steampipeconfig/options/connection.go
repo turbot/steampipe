@@ -8,9 +8,8 @@ import (
 // Connection is a struct representing connection options
 // json tags needed as this is stored in the connection state file
 type Connection struct {
-	Cache         *bool `hcl:"cache" json:"Cache,omitempty"`
-	CacheTTL      *int  `hcl:"cache_ttl" json:"CacheTTL,omitempty"`
-	DynamicSchema *bool `hcl:"dynamic_schema"json:"DynamicSchema,omitempty"`
+	Cache    *bool `hcl:"cache" json:"Cache,omitempty"`
+	CacheTTL *int  `hcl:"cache_ttl" json:"CacheTTL,omitempty"`
 }
 
 func (c *Connection) ConfigMap() map[string]interface{} {
@@ -28,9 +27,6 @@ func (c *Connection) Merge(otherOptions Options) {
 		}
 		if o.CacheTTL != nil {
 			c.CacheTTL = o.CacheTTL
-		}
-		if o.DynamicSchema != nil {
-			c.DynamicSchema = o.DynamicSchema
 		}
 	}
 }
@@ -53,11 +49,6 @@ func (c *Connection) String() string {
 		str = append(str, "  CacheTTL: nil")
 	} else {
 		str = append(str, fmt.Sprintf("  CacheTTL: %d", *c.CacheTTL))
-	}
-	if c.DynamicSchema == nil {
-		str = append(str, "  DynamicSchema: nil")
-	} else {
-		str = append(str, fmt.Sprintf("  DynamicSchema: %v", *c.DynamicSchema))
 	}
 	return strings.Join(str, "\n")
 }

@@ -163,10 +163,10 @@ func (c *DbClient) getSchemaFromDB() (*sql.Rows, error) {
 }
 
 // RefreshConnectionAndSearchPaths implements Client
-func (c *DbClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConnectionResult {
+func (c *DbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult {
 	// base db client does not refresh connections, it just sets search path
 	// (only local db client refreshed connections)
-	res := &db_common.RefreshConnectionResult{}
+	res := &steampipeconfig.RefreshConnectionResult{}
 	if err := c.SetSessionSearchPath(); err != nil {
 		res.Error = err
 	}

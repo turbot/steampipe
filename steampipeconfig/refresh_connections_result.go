@@ -1,4 +1,4 @@
-package db_common
+package steampipeconfig
 
 import "fmt"
 
@@ -13,4 +13,17 @@ func (r *RefreshConnectionResult) ShowWarnings() {
 	for _, w := range r.Warnings {
 		fmt.Println(w)
 	}
+}
+
+func (r *RefreshConnectionResult) Merge(other *RefreshConnectionResult) {
+	if other == nil {
+		return
+	}
+	if other.UpdatedConnections {
+		r.UpdatedConnections = other.UpdatedConnections
+	}
+	if other.Error != nil {
+		r.Error = other.Error
+	}
+	r.Warnings = append(other.Warnings)
 }

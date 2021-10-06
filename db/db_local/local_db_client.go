@@ -136,7 +136,7 @@ func (c *LocalDbClient) SetSessionSearchPath(currentSearchPath ...string) error 
 
 // local only functions
 
-func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *db_common.RefreshConnectionResult {
+func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult {
 	res := c.refreshConnections()
 	if res.Error != nil {
 		return res

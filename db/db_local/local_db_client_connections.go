@@ -3,11 +3,8 @@ package db_local
 import (
 	"fmt"
 	"log"
-	"sort"
 	"strings"
-	"time"
 
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
@@ -16,91 +13,68 @@ import (
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func (c *LocalDbClient) refreshConnections() *db_common.RefreshConnectionResult {
-	res := &db_common.RefreshConnectionResult{}
+func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionResult {
+	res := &steampipeconfig.RefreshConnectionResult{}
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
-	// load required connection from global config
-	requiredConnections := steampipeconfig.GlobalConfig.Connections
-
-	// first get a list of all existing schemas
-	schemas := c.client.SchemaMetadata().GetSchemas()
-
 	// build connection data for all required connections
-	// (this is the conneciton with the required plugin and it's checkum
-	requiredConnectionData, missingPlugins, err := steampipeconfig.GetRequiredConnectionData(requiredConnections)
+	// (this is the connection with the required plugin and it's checkum)
+	requiredConnectionData, missingPlugins, err := steampipeconfig.NewConnectionDataMap(steampipeconfig.GlobalConfig.Connections)
 	if err != nil {
 		res.Error = err
 		return res
 	}
 
-	// for any connections with dynamic schema, we need to reload their schema
-	// instantiate connection plugins for all connections with dynamic schema - this will retrieve their current schema
-	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, res := getSchemaHashesForDynamicSchemas(requiredConnectionData)
+	// get a list of all existing schema names
+	schemaNames := c.client.SchemaMetadata().GetSchemas()
+
+	// determine any necessary connection updates
+	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(requiredConnectionData, schemaNames, missingPlugins)
 	if res.Error != nil {
 		return res
 	}
 
-	updates, err := steampipeconfig.GetConnectionsToUpdate(schemas, requiredConnectionData, missingPlugins, dynamicSchemaHashMap)
-	if err != nil {
-		res.Error = err
-		return res
-	}
-	log.Printf("[TRACE] refreshConnections, updates: %+v\n", updates)
+	log.Printf("[TRACE] refreshConnections, updates: %+v\n", connectionUpdates)
 
-	missingCount := len(updates.MissingPlugins)
+	// if any plugins are missing, error for now but we could prompt for an install
+	missingCount := len(connectionUpdates.MissingPlugins)
 	if missingCount > 0 {
-		// if any plugins are missing, error for now but we could prompt for an install
 		res.Error = fmt.Errorf("%d %s referenced in the connection config not installed: \n  %v",
 			missingCount,
 			utils.Pluralize("plugin", missingCount),
-			strings.Join(updates.MissingPlugins, "\n  "))
+			strings.Join(connectionUpdates.MissingPlugins, "\n  "))
 		return res
 	}
 
-	var connectionQueries []string
-	numUpdates := len(updates.Update)
-	log.Printf("[TRACE] RefreshConnections: num updates %d", numUpdates)
-	if numUpdates > 0 {
-		// first instantiate connection plugins for all updates
-		var connectionPlugins map[string]*steampipeconfig.ConnectionPlugin
-		// NOTE - we may have already created some connection plugins (if they have dynamic schema)
-		// - pass in the list of connection plugins we have already loaded
-		// NOTE - reuse 'res' defined above
-		connectionPlugins, res = getConnectionPlugins(updates.Update, connectionsPluginsWithDynamicSchema)
-		if res.Error != nil {
-			return res
-		}
-
-		// find any plugins which use a newer sdk version than steampipe.
-		validationFailures, validatedUpdates, validatedPlugins := steampipeconfig.ValidatePlugins(updates.Update, connectionPlugins)
-		if len(validationFailures) > 0 {
-			res.Warnings = append(res.Warnings, steampipeconfig.BuildValidationWarningString(validationFailures))
-		}
-
-		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
-		connectionQueries = getSchemaQueries(validatedUpdates, validationFailures)
-		// add comments queries for validated connections
-		connectionQueries = append(connectionQueries, getCommentQueries(validatedPlugins)...)
+	// now build list of necessary queries to perform the update
+	connectionQueries, otherRes := c.buildConnectionUpdateQueries(connectionUpdates, connectionUpdates.ConnectionPlugins)
+	// merge results into local results
+	res.Merge(otherRes)
+	if res.Error != nil {
+		return res
 	}
 
-	for c := range updates.Delete {
-		log.Printf("[TRACE] delete connection %s\n ", c)
-		connectionQueries = append(connectionQueries, deleteConnectionQuery(c)...)
-	}
-
+	// if there are no connection queries, we are done
 	if len(connectionQueries) == 0 {
 		return res
 	}
 
+	// so there ARE connections to update
+
 	// execute the connection queries
-	if err = executeConnectionQueries(connectionQueries, updates); err != nil {
+	if err = executeConnectionQueries(connectionQueries); err != nil {
 		res.Error = err
 		return res
 	}
 
-	// so there ARE connections to update
+	// now serialise the connection state
+	// update required connections with the schema mode from the connection state and schema hash from the hash map
+	err = steampipeconfig.SaveConnectionState(connectionUpdates.RequiredConnectionState)
+	if err != nil {
+		res.Error = err
+		return res
+	}
 
 	// reload the database schemas, since they have changed - otherwise we wouldn't be here
 	log.Println("[TRACE] RefreshConnections: reloading schema")
@@ -111,19 +85,32 @@ func (c *LocalDbClient) refreshConnections() *db_common.RefreshConnectionResult 
 
 }
 
-func getSchemaHashesForDynamicSchemas(requiredConnectionData steampipeconfig.ConnectionDataMap) (map[string]string, map[string]*steampipeconfig.ConnectionPlugin, *db_common.RefreshConnectionResult) {
-	var connectionsWithDynamicSchema = requiredConnectionData.ConnectionsWithDynamicSchema()
-	connectionsPluginsWithDynamicSchema, res := getConnectionPlugins(connectionsWithDynamicSchema, nil)
-	hashMap := make(map[string]string)
-	for name, c := range connectionsPluginsWithDynamicSchema {
-		// update schema hash stored in required connections so it is persisted in the state ius updates are made
-		schemaHash := pluginSchemaHash(c.Schema)
-		hashMap[name] = schemaHash
-		// NOTE: also update the requiredConnectionData with the schema hash
-		// - so it gets serialised to connection state is we need ot make updates
-		requiredConnectionData[name].SchemaHash = schemaHash
+func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampipeconfig.ConnectionUpdates, connectionPlugins map[string]*steampipeconfig.ConnectionPlugin) ([]string, *steampipeconfig.RefreshConnectionResult) {
+	var connectionQueries []string
+	var res *steampipeconfig.RefreshConnectionResult
+	numUpdates := len(connectionUpdates.Update)
+
+	log.Printf("[TRACE] buildConnectionUpdateQueries: num updates %d", numUpdates)
+
+	if numUpdates > 0 {
+
+		// find any plugins which use a newer sdk version than steampipe.
+		validationFailures, validatedUpdates, validatedPlugins := steampipeconfig.ValidatePlugins(connectionUpdates.Update, connectionPlugins)
+		if len(validationFailures) > 0 {
+			res.Warnings = append(res.Warnings, steampipeconfig.BuildValidationWarningString(validationFailures))
+		}
+
+		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
+		connectionQueries = getSchemaQueries(validatedUpdates, validationFailures)
+		// add comments queries for validated connections
+		connectionQueries = append(connectionQueries, getCommentQueries(validatedPlugins)...)
 	}
-	return hashMap, connectionsPluginsWithDynamicSchema, res
+
+	for c := range connectionUpdates.Delete {
+		log.Printf("[TRACE] delete connection %s\n ", c)
+		connectionQueries = append(connectionQueries, deleteConnectionQuery(c)...)
+	}
+	return connectionQueries, res
 }
 
 func (c *LocalDbClient) updateConnectionMap() error {
@@ -137,53 +124,6 @@ func (c *LocalDbClient) updateConnectionMap() error {
 	c.connectionMap = &connectionMap
 
 	return nil
-}
-
-func getConnectionPlugins(requiredConnections steampipeconfig.ConnectionDataMap, alreadyLoaded map[string]*steampipeconfig.ConnectionPlugin) (map[string]*steampipeconfig.ConnectionPlugin, *db_common.RefreshConnectionResult) {
-	if alreadyLoaded == nil {
-		alreadyLoaded = make(map[string]*steampipeconfig.ConnectionPlugin)
-	}
-	res := &db_common.RefreshConnectionResult{}
-	// initialise result to the plugins we have already loaded
-	var connectionPlugins = alreadyLoaded
-
-	// create channels buffered to hold all updates
-	numPluginsToCreate := len(requiredConnections) - len(alreadyLoaded)
-	var pluginChan = make(chan *steampipeconfig.ConnectionPlugin, numPluginsToCreate)
-	var errorChan = make(chan error, numPluginsToCreate)
-
-	for connectionName, connectionData := range requiredConnections {
-		// if we have NOT already loaded this plugin, do so
-		if _, ok := alreadyLoaded[connectionName]; !ok {
-			// instantiate the connection plugin, and retrieve schema
-			go getConnectionPluginAsync(connectionData, pluginChan, errorChan)
-		}
-	}
-
-	for i := 0; i < numPluginsToCreate; i++ {
-		select {
-		case err := <-errorChan:
-			log.Println("[TRACE] get connections err chan select - adding warning", "error", err)
-			res.Warnings = append(res.Warnings, err.Error())
-		case p := <-pluginChan:
-			connectionPlugins[p.ConnectionName] = p
-		case <-time.After(10 * time.Second):
-			res.Error = fmt.Errorf("timed out retrieving schema from plugins")
-			return nil, res
-		}
-	}
-	return connectionPlugins, res
-}
-
-func getConnectionPluginAsync(connectionData *steampipeconfig.ConnectionData, pluginChan chan *steampipeconfig.ConnectionPlugin, errorChan chan error) {
-	p, err := steampipeconfig.CreateConnectionPlugin(connectionData.Connection, true)
-	if err != nil {
-		errorChan <- err
-		return
-	}
-	pluginChan <- p
-
-	p.Plugin.Client.Kill()
 }
 
 func getSchemaQueries(updates steampipeconfig.ConnectionDataMap, failures []*steampipeconfig.ValidationFailure) []string {
@@ -267,42 +207,12 @@ func deleteConnectionQuery(name string) []string {
 	}
 }
 
-func executeConnectionQueries(schemaQueries []string, updates *steampipeconfig.ConnectionUpdates) error {
+func executeConnectionQueries(schemaQueries []string) error {
 	log.Printf("[TRACE] there are connections to update\n")
 	_, err := executeSqlAsRoot(schemaQueries...)
 	if err != nil {
 		return err
 	}
 
-	// now update the state file
-	err = steampipeconfig.SaveConnectionState(updates.RequiredConnections)
-	if err != nil {
-		return err
-	}
 	return nil
-}
-
-func pluginSchemaHash(s *proto.Schema) string {
-	var sb strings.Builder
-
-	// build ordered list of tables
-	var tables = make([]string, len(s.Schema))
-	idx := 0
-	for tableName := range s.Schema {
-		tables[idx] = tableName
-		idx++
-	}
-	sort.Strings(tables)
-
-	// now build  a string from the ordered table schemas
-	for _, tableName := range tables {
-		sb.WriteString(tableName)
-		tableSchema := s.Schema[tableName]
-		for _, c := range tableSchema.Columns {
-			sb.WriteString(c.Name)
-			sb.WriteString(fmt.Sprintf("%d", c.Type))
-		}
-	}
-	str := sb.String()
-	return utils.GetMD5Hash(str)
 }
