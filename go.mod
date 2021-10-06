@@ -18,7 +18,7 @@ require (
 	github.com/deislabs/oras v0.8.1
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
-	github.com/evanphx/json-patch v4.2.0+incompatible
+	github.com/evanphx/json-patch v4.11.0+incompatible
 	github.com/fatih/color v1.9.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/gertd/go-pluralize v0.1.7
