@@ -19,8 +19,8 @@ require (
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/evanphx/json-patch v4.2.0+incompatible
-	github.com/fatih/color v1.7.0
-	github.com/fsnotify/fsnotify v1.4.9
+	github.com/fatih/color v1.9.0
+	github.com/fsnotify/fsnotify v1.5.1
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.7.2
@@ -53,7 +53,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.8.1
+	github.com/spf13/viper v1.9.0
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
 	github.com/turbot/go-kit v0.2.2-0.20210730122803-1ecb35c27e98
 	github.com/turbot/steampipe-plugin-sdk v1.3.0
@@ -64,7 +64,6 @@ require (
 	golang.org/x/net v0.0.0-20211005215030-d2e5035098b3 // indirect
 	golang.org/x/sys v0.0.0-20211004093028-2c5d950f24ef // indirect
 	golang.org/x/text v0.3.7
-	golang.org/x/tools v0.1.5 // indirect
 	google.golang.org/genproto v0.0.0-20211005153810-c76a74d43a8e // indirect
 	google.golang.org/grpc v1.41.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
