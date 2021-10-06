@@ -18,19 +18,11 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
-	// build connection data for all required connections
-	// (this is the connection with the required plugin and it's checkum)
-	requiredConnectionData, missingPlugins, err := steampipeconfig.NewConnectionDataMap(steampipeconfig.GlobalConfig.Connections)
-	if err != nil {
-		res.Error = err
-		return res
-	}
-
 	// get a list of all existing schema names
 	schemaNames := c.client.SchemaMetadata().GetSchemas()
 
 	// determine any necessary connection updates
-	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(requiredConnectionData, schemaNames, missingPlugins)
+	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(schemaNames)
 	if res.Error != nil {
 		return res
 	}
@@ -63,15 +55,14 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 	// so there ARE connections to update
 
 	// execute the connection queries
-	if err = executeConnectionQueries(connectionQueries); err != nil {
+	if err := executeConnectionQueries(connectionQueries); err != nil {
 		res.Error = err
 		return res
 	}
 
 	// now serialise the connection state
 	// update required connections with the schema mode from the connection state and schema hash from the hash map
-	err = steampipeconfig.SaveConnectionState(connectionUpdates.RequiredConnectionState)
-	if err != nil {
+	if err := steampipeconfig.SaveConnectionState(connectionUpdates.RequiredConnectionState); err != nil {
 		res.Error = err
 		return res
 	}

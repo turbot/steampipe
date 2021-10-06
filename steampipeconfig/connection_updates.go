@@ -24,9 +24,17 @@ type ConnectionUpdates struct {
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
-func NewConnectionUpdates(requiredConnectionState ConnectionDataMap, schemaNames, missingPlugins []string) (*ConnectionUpdates, *RefreshConnectionResult) {
+func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshConnectionResult) {
 	utils.LogTime("NewConnectionUpdates start")
 	defer utils.LogTime("NewConnectionUpdates end")
+
+	res := &RefreshConnectionResult{}
+	// build connection data for all required connections
+	requiredConnectionState, missingPlugins, err := NewConnectionDataMap(GlobalConfig.Connections)
+	if err != nil {
+		res.Error = err
+		return nil, res
+	}
 
 	updates := &ConnectionUpdates{
 		Update:                  ConnectionDataMap{},
@@ -34,7 +42,6 @@ func NewConnectionUpdates(requiredConnectionState ConnectionDataMap, schemaNames
 		MissingPlugins:          missingPlugins,
 		RequiredConnectionState: requiredConnectionState,
 	}
-	res := &RefreshConnectionResult{}
 
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
@@ -98,6 +105,33 @@ func NewConnectionUpdates(requiredConnectionState ConnectionDataMap, schemaNames
 	updates.updateRequiredStateWithSchemaProperties(dynamicSchemaHashMap)
 
 	return updates, res
+}
+
+// update requiredConnections - set the schema hash and schema mode for all elements of RequiredConnectionState
+// default to the existing state, but if anm update is required, get the updated value
+func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMap map[string]string) {
+	// we only need to update connections which are being updated
+	for k, v := range u.RequiredConnectionState {
+		if currentConectionState, ok := u.currentConnectionState[k]; ok {
+			v.SchemaHash = currentConectionState.SchemaHash
+			v.SchemaMode = currentConectionState.SchemaMode
+		}
+		// if the schemaHashMap contains this connection, use that value
+		if schemaHash, ok := schemaHashMap[k]; ok {
+			v.SchemaHash = schemaHash
+		}
+		// have we loaded a conneciton plugin for this connection
+		// - if so us the schema mode from the schema  it has loaded
+		if connectionPlugin, ok := u.ConnectionPlugins[k]; ok {
+			v.SchemaMode = connectionPlugin.Schema.Mode
+			// if the schema hash is still not set, calculate the value from the conneciton plugin schema
+			// this will happen the first time we load a plugin
+			if v.SchemaHash == "" {
+				v.SchemaHash = pluginSchemaHash(connectionPlugin.Schema)
+			}
+		}
+
+	}
 }
 
 func getConnectionPlugins(requiredConnections ConnectionDataMap, alreadyLoaded map[string]*ConnectionPlugin) (map[string]*ConnectionPlugin, *RefreshConnectionResult) {
@@ -204,31 +238,4 @@ func pluginSchemaHash(s *proto.Schema) string {
 	}
 	str := sb.String()
 	return utils.GetMD5Hash(str)
-}
-
-// update requiredConnections - set the schema hash and schema mode for all elements of RequiredConnectionState
-// default to the existing state, but if anm update is required, get the updated value
-func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMap map[string]string) {
-	// we only need to update connections which are being updated
-	for k, v := range u.RequiredConnectionState {
-		if currentConectionState, ok := u.currentConnectionState[k]; ok {
-			v.SchemaHash = currentConectionState.SchemaHash
-			v.SchemaMode = currentConectionState.SchemaMode
-		}
-		// if the schemaHashMap contains this connection, use that value
-		if schemaHash, ok := schemaHashMap[k]; ok {
-			v.SchemaHash = schemaHash
-		}
-		// have we loaded a conneciton plugin for this connection
-		// - if so us the schema mode from the schema  it has loaded
-		if connectionPlugin, ok := u.ConnectionPlugins[k]; ok {
-			v.SchemaMode = connectionPlugin.Schema.Mode
-			// if the schema hash is still not set, calculate the value from the conneciton plugin schema
-			// this will happen the first time we load a plugin
-			if v.SchemaHash == "" {
-				v.SchemaHash = pluginSchemaHash(connectionPlugin.Schema)
-			}
-		}
-
-	}
 }
