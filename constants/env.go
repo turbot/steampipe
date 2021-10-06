@@ -5,6 +5,7 @@ const (
 	EnvUpdateCheck      = "STEAMPIPE_UPDATE_CHECK"
 	EnvInstallDir       = "STEAMPIPE_INSTALL_DIR"
 	EnvConnectionString = "STEAMPIPE_CONNECTION_STRING"
+	EnvInstallDatabase  = "STEAMPIPE_INSTALL_DATABASE"
 	EnvDatabase         = "STEAMPIPE_DATABASE"
 	EnvAPIKey           = "STEAMPIPE_API_KEY"
 	EnvServicePassword  = "STEAMPIPE_DATABASE_PASSWORD"
