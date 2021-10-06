@@ -12,7 +12,7 @@ require (
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/briandowns/spinner v1.11.1
-	github.com/c-bata/go-prompt v0.2.5
+	github.com/c-bata/go-prompt v0.2.6
 	github.com/containerd/containerd v1.4.11
 	github.com/containerd/continuity v0.2.0 // indirect
 	github.com/deislabs/oras v0.8.1
