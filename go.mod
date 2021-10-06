@@ -5,19 +5,21 @@ go 1.16
 require (
 	github.com/Machiel/slugify v1.0.1
 	github.com/Microsoft/go-winio v0.5.0 // indirect
-	github.com/Microsoft/hcsshim v0.8.14 // indirect
+	github.com/Microsoft/hcsshim v0.8.22 // indirect
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/ahmetb/go-linq v3.0.0+incompatible
 	github.com/alecthomas/chroma v0.9.2
 	github.com/bgentry/speakeasy v0.1.0
+	github.com/bits-and-blooms/bitset v1.2.1 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/briandowns/spinner v1.11.1
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/containerd/cgroups v1.0.1 // indirect
-	github.com/containerd/containerd v1.4.8
-	github.com/containerd/continuity v0.1.0 // indirect
+	github.com/containerd/containerd v1.4.11
+	github.com/containerd/continuity v0.2.0 // indirect
 	github.com/deislabs/oras v0.8.1
 	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/evanphx/json-patch v4.2.0+incompatible
@@ -27,6 +29,7 @@ require (
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.7.2
 	github.com/go-ole/go-ole v1.2.5 // indirect
+	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-cleanhttp v0.5.1
@@ -46,6 +49,8 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/opencontainers/image-spec v1.0.1
+	github.com/opencontainers/runc v1.0.2 // indirect
+	github.com/opencontainers/selinux v1.8.5 // indirect
 	github.com/otiai10/copy v1.2.0
 	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
@@ -62,11 +67,12 @@ require (
 	github.com/ulikunitz/xz v0.5.8
 	github.com/zclconf/go-cty v1.8.2
 	github.com/zclconf/go-cty-yaml v1.0.2
-	golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985 // indirect
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
-	golang.org/x/text v0.3.6
-	google.golang.org/genproto v0.0.0-20210728212813-7823e685a01f // indirect
-	google.golang.org/grpc v1.39.0
+	golang.org/x/net v0.0.0-20211005215030-d2e5035098b3 // indirect
+	golang.org/x/sys v0.0.0-20211004093028-2c5d950f24ef // indirect
+	golang.org/x/text v0.3.7
+	golang.org/x/tools v0.1.5 // indirect
+	google.golang.org/genproto v0.0.0-20211005153810-c76a74d43a8e // indirect
+	google.golang.org/grpc v1.41.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
 	gotest.tools/v3 v3.0.3 // indirect
