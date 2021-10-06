@@ -289,9 +289,6 @@ func (w *Workspace) loadWorkspaceMod() error {
 	// todo what to key mod map with
 	w.Mods = runCtx.LoadedDependencyMods
 
-	// now update resources 'ReferencedBy' property
-	m.SetReferencedBy()
-
 	return nil
 }
 

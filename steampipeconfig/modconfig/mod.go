@@ -38,12 +38,8 @@ type Mod struct {
 	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
 	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
-	// list of all block referenced by the resource
-	References []*ResourceReference `column:"refs,jsonb"`
-	// references stored as a map for easy checking
-	referencesMap ResourceReferenceMap
-	// list of resource names who reference this resource
-	ReferencedBy []*ResourceReference `column:"referenced_by,jsonb"`
+	// list of all blocks referenced by the resource
+	References []*ResourceReference
 
 	// blocks
 	Requires  *Requires  `hcl:"requires,block"`
@@ -75,19 +71,18 @@ type Mod struct {
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	return &Mod{
-		ShortName:     shortName,
-		FullName:      fmt.Sprintf("mod.%s", shortName),
-		Queries:       make(map[string]*Query),
-		Controls:      make(map[string]*Control),
-		Benchmarks:    make(map[string]*Benchmark),
-		Reports:       make(map[string]*Report),
-		Panels:        make(map[string]*Panel),
-		Variables:     make(map[string]*Variable),
-		Locals:        make(map[string]*Local),
-		ModPath:       modPath,
-		DeclRange:     defRange,
-		referencesMap: make(ResourceReferenceMap),
-		AllResources:  make(map[string]HclResource),
+		ShortName:    shortName,
+		FullName:     fmt.Sprintf("mod.%s", shortName),
+		Queries:      make(map[string]*Query),
+		Controls:     make(map[string]*Control),
+		Benchmarks:   make(map[string]*Benchmark),
+		Reports:      make(map[string]*Report),
+		Panels:       make(map[string]*Panel),
+		Variables:    make(map[string]*Variable),
+		Locals:       make(map[string]*Local),
+		ModPath:      modPath,
+		DeclRange:    defRange,
+		AllResources: make(map[string]HclResource),
 	}
 }
 
@@ -537,17 +532,6 @@ func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics {
 // AddReference implements HclResource
 func (m *Mod) AddReference(ref *ResourceReference) {
 	m.References = append(m.References, ref)
-	m.referencesMap.Add(ref)
-}
-
-// AddReferencedBy implements HclResource
-func (m *Mod) AddReferencedBy(refs []*ResourceReference) {
-	m.ReferencedBy = append(m.ReferencedBy, refs...)
-}
-
-// GetResourceReferences implements HclResource
-func (m *Mod) GetResourceReferences(resource HclResource) []*ResourceReference {
-	return m.referencesMap[resource.Name()]
 }
 
 // SetMod implements HclResource
@@ -618,19 +602,4 @@ func (m *Mod) GetChildControls() []*Control {
 		res = append(res, control)
 	}
 	return res
-}
-
-// SetReferencedBy updates the ReferencedBy property for all resources
-func (m *Mod) SetReferencedBy() {
-	for _, reference := range m.AllResources {
-		m.setReferenceUsage(reference)
-	}
-}
-
-func (m *Mod) setReferenceUsage(resource HclResource) {
-	// check every resource to get a list of references to 'resource
-	for _, referrer := range m.AllResources {
-		refs := referrer.GetResourceReferences(resource)
-		resource.AddReferencedBy(refs)
-	}
 }

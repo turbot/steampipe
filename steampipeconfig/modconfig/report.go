@@ -58,12 +58,6 @@ func (r *Report) AddReference(*ResourceReference) {
 	// TODO
 }
 
-// AddReferencedBy implements HclResource
-func (r *Report) AddReferencedBy([]*ResourceReference) {}
-
-// GetResourceReferences implements HclResource
-func (r *Report) GetResourceReferences(HclResource) []*ResourceReference { return nil }
-
 // SetMod implements HclResource
 func (r *Report) SetMod(mod *Mod) {
 	r.Mod = mod

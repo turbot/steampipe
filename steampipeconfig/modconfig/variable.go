@@ -29,9 +29,7 @@ type Variable struct {
 	ParsingMode                var_config.VariableParsingMode
 	Mod                        *Mod
 
-	// list of resource names who use this variable
-	ReferencedBy []*ResourceReference `column:"referenced_by,jsonb"`
-	metadata     *ResourceMetadata
+	metadata *ResourceMetadata
 }
 
 func NewVariable(v *var_config.Variable) *Variable {
@@ -80,14 +78,6 @@ func (v *Variable) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
 func (v *Variable) AddReference(*ResourceReference) {}
-
-// AddReferencedBy implements HclResource
-func (v *Variable) AddReferencedBy(refs []*ResourceReference) {
-	v.ReferencedBy = append(v.ReferencedBy, refs...)
-}
-
-// GetResourceReferences implements HclResource
-func (v *Variable) GetResourceReferences(HclResource) []*ResourceReference { return nil }
 
 // SetMod implements HclResource
 func (v *Variable) SetMod(mod *Mod) {

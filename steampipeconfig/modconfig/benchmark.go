@@ -31,11 +31,7 @@ type Benchmark struct {
 	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
 	// list of all block referenced by the resource
-	References []*ResourceReference `column:"refs,jsonb"`
-	// references stored as a map for easy checking
-	referencesMap ResourceReferenceMap
-	// list of resource names who reference this resource
-	ReferencedBy []*ResourceReference `column:"referenced_by,jsonb"`
+	References []*ResourceReference
 
 	Mod              *Mod     `cty:"mod"`
 	ChildNameStrings []string `column:"children,jsonb"`
@@ -48,10 +44,9 @@ type Benchmark struct {
 
 func NewBenchmark(block *hcl.Block) *Benchmark {
 	return &Benchmark{
-		ShortName:     block.Labels[0],
-		FullName:      fmt.Sprintf("benchmark.%s", block.Labels[0]),
-		DeclRange:     block.DefRange,
-		referencesMap: make(ResourceReferenceMap),
+		ShortName: block.Labels[0],
+		FullName:  fmt.Sprintf("benchmark.%s", block.Labels[0]),
+		DeclRange: block.DefRange,
 	}
 }
 
@@ -132,17 +127,6 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 // AddReference implements HclResource
 func (b *Benchmark) AddReference(ref *ResourceReference) {
 	b.References = append(b.References, ref)
-	b.referencesMap.Add(ref)
-}
-
-// AddReferencedBy implements HclResource
-func (b *Benchmark) AddReferencedBy(refs []*ResourceReference) {
-	b.ReferencedBy = append(b.ReferencedBy, refs...)
-}
-
-// GetResourceReferences implements HclResource
-func (b *Benchmark) GetResourceReferences(resource HclResource) []*ResourceReference {
-	return b.referencesMap[resource.Name()]
 }
 
 // SetMod implements HclResource
