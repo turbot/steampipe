@@ -12,9 +12,9 @@ import (
 // these may either be passed by name, in a map, or as a list of positional args
 // NOTE: if both are present the named parameters are used
 type QueryArgs struct {
-	Args       map[string]string   `cty:"args" json:"args"`
-	ArgsList   []string            `cty:"args_list" json:"args_list"`
-	References []ResourceReference `cty:"refs" json:"refs"`
+	Args       map[string]string    `cty:"args" json:"args"`
+	ArgsList   []string             `cty:"args_list" json:"args_list"`
+	References []*ResourceReference `cty:"refs" json:"refs"`
 }
 
 func (q *QueryArgs) String() string {

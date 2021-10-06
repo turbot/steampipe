@@ -31,11 +31,11 @@ type Benchmark struct {
 	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
 	// list of all block referenced by the resource
-	References []ResourceReference `column:"refs,jsonb"`
+	References []*ResourceReference `column:"refs,jsonb"`
 	// references stored as a map for easy checking
 	referencesMap ResourceReferenceMap
 	// list of resource names who reference this resource
-	ReferencedBy []ResourceReference `column:"referenced_by,jsonb"`
+	ReferencedBy []*ResourceReference `column:"referenced_by,jsonb"`
 
 	Mod              *Mod     `cty:"mod"`
 	ChildNameStrings []string `column:"children,jsonb"`
@@ -90,7 +90,6 @@ func (b *Benchmark) Equals(other *Benchmark) bool {
 	otherChildNames := other.ChildNameStrings
 	sort.Strings(otherChildNames)
 	return strings.Join(myChildNames, ",") == strings.Join(otherChildNames, ",")
-
 }
 
 // CtyValue implements HclResource
@@ -131,18 +130,18 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 }
 
 // AddReference implements HclResource
-func (b *Benchmark) AddReference(ref ResourceReference) {
+func (b *Benchmark) AddReference(ref *ResourceReference) {
 	b.References = append(b.References, ref)
 	b.referencesMap.Add(ref)
 }
 
 // AddReferencedBy implements HclResource
-func (b *Benchmark) AddReferencedBy(refs []ResourceReference) {
+func (b *Benchmark) AddReferencedBy(refs []*ResourceReference) {
 	b.ReferencedBy = append(b.ReferencedBy, refs...)
 }
 
 // GetResourceReferences implements HclResource
-func (b *Benchmark) GetResourceReferences(resource HclResource) []ResourceReference {
+func (b *Benchmark) GetResourceReferences(resource HclResource) []*ResourceReference {
 	return b.referencesMap[resource.Name()]
 }
 

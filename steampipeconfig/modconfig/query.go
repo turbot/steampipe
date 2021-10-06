@@ -29,11 +29,11 @@ type Query struct {
 
 	Params []*ParamDef `cty:"params" column:"params,jsonb"`
 	// list of all block referenced by the resource
-	References []ResourceReference `column:"refs,jsonb"`
+	References []*ResourceReference `column:"refs,jsonb"`
 	// references stored as a map for easy checking
 	referencesMap ResourceReferenceMap
 	// list of resource names who reference this resource
-	ReferencedBy []ResourceReference `column:"referenced_by,jsonb"`
+	ReferencedBy []*ResourceReference `column:"referenced_by,jsonb"`
 
 	Mod                   *Mod `cty:"mod"`
 	DeclRange             hcl.Range
@@ -175,18 +175,18 @@ func (q *Query) SetMetadata(metadata *ResourceMetadata) {
 func (q *Query) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
-func (q *Query) AddReference(ref ResourceReference) {
+func (q *Query) AddReference(ref *ResourceReference) {
 	q.References = append(q.References, ref)
 	q.referencesMap.Add(ref)
 }
 
 // AddReferencedBy implements HclResource
-func (q *Query) AddReferencedBy(refs []ResourceReference) {
+func (q *Query) AddReferencedBy(refs []*ResourceReference) {
 	q.ReferencedBy = append(q.ReferencedBy, refs...)
 }
 
 // GetResourceReferences implements HclResource
-func (q *Query) GetResourceReferences(resource HclResource) []ResourceReference {
+func (q *Query) GetResourceReferences(resource HclResource) []*ResourceReference {
 	return q.referencesMap[resource.Name()]
 }
 

@@ -39,11 +39,11 @@ type Mod struct {
 	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
 	// list of all block referenced by the resource
-	References []ResourceReference `column:"refs,jsonb"`
+	References []*ResourceReference `column:"refs,jsonb"`
 	// references stored as a map for easy checking
 	referencesMap ResourceReferenceMap
 	// list of resource names who reference this resource
-	ReferencedBy []ResourceReference `column:"referenced_by,jsonb"`
+	ReferencedBy []*ResourceReference `column:"referenced_by,jsonb"`
 
 	// blocks
 	Requires  *Requires  `hcl:"requires,block"`
@@ -535,18 +535,18 @@ func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics {
 }
 
 // AddReference implements HclResource
-func (m *Mod) AddReference(ref ResourceReference) {
+func (m *Mod) AddReference(ref *ResourceReference) {
 	m.References = append(m.References, ref)
 	m.referencesMap.Add(ref)
 }
 
 // AddReferencedBy implements HclResource
-func (m *Mod) AddReferencedBy(refs []ResourceReference) {
+func (m *Mod) AddReferencedBy(refs []*ResourceReference) {
 	m.ReferencedBy = append(m.ReferencedBy, refs...)
 }
 
 // GetResourceReferences implements HclResource
-func (m *Mod) GetResourceReferences(resource HclResource) []ResourceReference {
+func (m *Mod) GetResourceReferences(resource HclResource) []*ResourceReference {
 	return m.referencesMap[resource.Name()]
 }
 

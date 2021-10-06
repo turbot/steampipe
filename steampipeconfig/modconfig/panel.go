@@ -94,13 +94,13 @@ func (p *Panel) QualifiedName() string {
 func (p *Panel) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
-func (p *Panel) AddReference(ResourceReference) {}
+func (p *Panel) AddReference(*ResourceReference) {}
 
 // AddReferencedBy implements HclResource
-func (p *Panel) AddReferencedBy([]ResourceReference) {}
+func (p *Panel) AddReferencedBy([]*ResourceReference) {}
 
 // GetResourceReferences implements HclResource
-func (p *Panel) GetResourceReferences(HclResource) []ResourceReference { return nil }
+func (p *Panel) GetResourceReferences(HclResource) []*ResourceReference { return nil }
 
 // SetMod implements HclResource
 func (p *Panel) SetMod(mod *Mod) {

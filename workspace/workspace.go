@@ -196,6 +196,8 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 		Benchmarks: w.Benchmarks,
 		Variables:  w.Variables,
 	}
+	workspaceMap.PopulateReferences()
+
 	// TODO add in all mod dependencies
 	if !w.Mod.IsDefaultMod() {
 		workspaceMap.Mods[w.Mod.Name()] = w.Mod

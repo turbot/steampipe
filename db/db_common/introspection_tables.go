@@ -70,6 +70,7 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
 
@@ -117,12 +118,18 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 			insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
 		}
 	}
+	for _, reference := range workspaceResources.References {
+		if _, added := resourcesAdded[reference.Name()]; !added {
+			resourcesAdded[reference.Name()] = true
+			insertSql = append(insertSql, getTableInsertSqlForResource(reference, constants.IntrospectionTableReference))
+		}
+	}
 
 	return strings.Join(insertSql, "\n")
 }
 
 func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnSql []string) string {
-	columnDefinitions := append(commonColumnSql, getColumnDefinitions(s)...)
+	columnDefinitions := append(getColumnDefinitions(s), commonColumnSql...)
 
 	tableSql := fmt.Sprintf(`create temp table %s (
 %s
@@ -226,7 +233,6 @@ func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (stri
 		return PgEscapeString(t.FriendlyName()), nil
 	}
 
-	//
 	switch columnTag.ColumnType {
 	case "jsonb":
 		jsonBytes, err := json.Marshal(reflect.ValueOf(item).Interface())

@@ -15,11 +15,11 @@ type ParamDef struct {
 	Default     *string     `cty:"default" json:"default"`
 
 	// list of all block referenced by the resource
-	References []ResourceReference `json:"refs"`
+	References []*ResourceReference `json:"refs"`
 	// references stored as a map for easy checking
 	referencesMap ResourceReferenceMap
 	// list of resource names who reference this resource
-	ReferencedBy []ResourceReference `json:"referenced_by"`
+	ReferencedBy []*ResourceReference `json:"referenced_by"`
 
 	DeclRange hcl.Range
 

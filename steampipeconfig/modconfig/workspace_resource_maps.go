@@ -8,6 +8,7 @@ type WorkspaceResourceMaps struct {
 	Controls   map[string]*Control
 	Benchmarks map[string]*Benchmark
 	Variables  map[string]*Variable
+	References map[string]*ResourceReference
 }
 
 func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
@@ -17,9 +18,10 @@ func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
 		Controls:   make(map[string]*Control),
 		Benchmarks: make(map[string]*Benchmark),
 		Variables:  make(map[string]*Variable),
+		References: make(map[string]*ResourceReference),
 	}
 }
-func (m WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
+func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 	for name, mod := range m.Mods {
 		if otherMod, ok := other.Mods[name]; !ok {
 			return false
@@ -81,10 +83,23 @@ func (m WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
+	for name, reference := range m.References {
+		if otherReference, ok := other.References[name]; !ok {
+			return false
+		} else if !reference.Equals(otherReference) {
+			return false
+		}
+	}
+	for name := range other.References {
+		if _, ok := m.References[name]; !ok {
+			return false
+		}
+	}
+
 	return true
 }
 
-func (m WorkspaceResourceMaps) AddPreparedStatementProvider(provider PreparedStatementProvider) {
+func (m *WorkspaceResourceMaps) AddPreparedStatementProvider(provider PreparedStatementProvider) {
 	switch p := provider.(type) {
 	case *Query:
 		if p != nil {
@@ -93,6 +108,33 @@ func (m WorkspaceResourceMaps) AddPreparedStatementProvider(provider PreparedSta
 	case *Control:
 		if p != nil {
 			m.Controls[p.FullName] = p
+		}
+	}
+}
+
+func (m *WorkspaceResourceMaps) PopulateReferences() {
+	m.References = make(map[string]*ResourceReference)
+	for _, mod := range m.Mods {
+		for _, ref := range mod.References {
+			m.References[ref.String()] = ref
+		}
+	}
+
+	for _, query := range m.Queries {
+		for _, ref := range query.References {
+			m.References[ref.String()] = ref
+		}
+	}
+
+	for _, control := range m.Controls {
+		for _, ref := range control.References {
+			m.References[ref.String()] = ref
+		}
+	}
+
+	for _, benchmark := range m.Benchmarks {
+		for _, ref := range benchmark.References {
+			m.References[ref.String()] = ref
 		}
 	}
 }

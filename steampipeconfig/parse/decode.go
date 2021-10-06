@@ -121,7 +121,9 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 		if diags := resource.OnDecoded(block); diags.HasErrors() {
 			res.addDiags(diags)
 		}
-		AddReferences(resource, block)
+		if diags := AddReferences(resource, block, runCtx); diags.HasErrors() {
+			res.addDiags(diags)
+		}
 	}
 	return resource, res
 }
@@ -248,13 +250,14 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 	}
 	for _, block := range content.Blocks {
 		if block.Type == modconfig.BlockTypeParam {
-			if param, valDiags := decodeParam(block, runCtx, q.FullName); !diags.HasErrors() {
+			param, moreDiags := decodeParam(block, runCtx, q.FullName)
+			if !moreDiags.HasErrors() {
 				q.Params = append(q.Params, param)
 				// also add references to query
-				AddReferences(q, block)
-			} else {
-				diags = append(diags, valDiags...)
+				moreDiags = AddReferences(q, block, runCtx)
 			}
+			diags = append(diags, moreDiags...)
+
 		}
 	}
 
@@ -266,7 +269,9 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 		if diags := q.OnDecoded(block); diags.HasErrors() {
 			res.addDiags(diags)
 		}
-		AddReferences(q, block)
+		if diags := AddReferences(q, block, runCtx); diags.HasErrors() {
+			res.addDiags(diags)
+		}
 	}
 
 	return q, res
@@ -380,13 +385,13 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 					Subject:  &block.DefRange,
 				})
 			}
-			if paramDef, valDiags := decodeParam(block, runCtx, c.FullName); !diags.HasErrors() {
+			paramDef, moreDiags := decodeParam(block, runCtx, c.FullName)
+			if !moreDiags.HasErrors() {
 				c.Params = append(c.Params, paramDef)
 				// add and references contained in the param block to the control refs
-				AddReferences(c, block)
-			} else {
-				diags = append(diags, valDiags...)
+				moreDiags = AddReferences(c, block, runCtx)
 			}
+			diags = append(diags, moreDiags...)
 		}
 	}
 
@@ -406,7 +411,9 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 		if diags := c.OnDecoded(block); diags.HasErrors() {
 			res.addDiags(diags)
 		}
-		AddReferences(c, block)
+		if diags := AddReferences(c, block, runCtx); diags.HasErrors() {
+			res.addDiags(diags)
+		}
 	}
 
 	return c, res
@@ -535,7 +542,8 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 	if res.Success() {
 		// if resource supports metadata, save it
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
-			diags = addResourceMetadata(resource, block, runCtx, diags, resourceWithMetadata)
+			body := block.Body.(*hclsyntax.Body)
+			diags = addResourceMetadata(resourceWithMetadata, body.SrcRange, runCtx)
 		}
 
 		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
@@ -562,13 +570,14 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 	return res.Diags
 }
 
-func addResourceMetadata(resource modconfig.HclResource, block *hcl.Block, runCtx *RunContext, diags hcl.Diagnostics, resourceWithMetadata modconfig.ResourceWithMetadata) hcl.Diagnostics {
-	metadata, err := GetMetadataForParsedResource(resource.Name(), block, runCtx.FileData, runCtx.CurrentMod)
+func addResourceMetadata(resourceWithMetadata modconfig.ResourceWithMetadata, srcRange hcl.Range, runCtx *RunContext) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	metadata, err := GetMetadataForParsedResource(resourceWithMetadata.Name(), srcRange, runCtx.FileData, runCtx.CurrentMod)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  err.Error(),
-			Subject:  &block.DefRange,
+			Subject:  &srcRange,
 		})
 	} else {
 		resourceWithMetadata.SetMetadata(metadata)
