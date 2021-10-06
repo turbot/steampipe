@@ -282,7 +282,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if len(plugins) > 0 && cmdconfig.Viper().GetBool("all") {
-		// we can't allow update and install at the same time
+		// we can't allow update and install at the same time 
 		fmt.Println()
 		utils.ShowError(fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`")))
 		fmt.Println()
