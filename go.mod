@@ -46,6 +46,7 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/mattn/go-isatty v0.0.12
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/miekg/dns v1.1.25 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/olekukonko/tablewriter v0.0.4
@@ -68,6 +69,7 @@ require (
 	github.com/ulikunitz/xz v0.5.8
 	github.com/zclconf/go-cty v1.8.2
 	github.com/zclconf/go-cty-yaml v1.0.2
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20211005215030-d2e5035098b3 // indirect
 	golang.org/x/sys v0.0.0-20211004093028-2c5d950f24ef // indirect
 	golang.org/x/text v0.3.7
