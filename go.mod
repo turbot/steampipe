@@ -6,7 +6,7 @@ require (
 	github.com/Machiel/slugify v1.0.1
 	github.com/Microsoft/go-winio v0.5.0 // indirect
 	github.com/Microsoft/hcsshim v0.8.22 // indirect
-	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
+	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/ahmetb/go-linq v3.0.0+incompatible
 	github.com/alecthomas/chroma v0.9.2
 	github.com/bgentry/speakeasy v0.1.0
@@ -24,7 +24,6 @@ require (
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.7.2
-	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2 // indirect
