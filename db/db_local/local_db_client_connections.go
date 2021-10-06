@@ -25,16 +25,18 @@ func (c *LocalDbClient) refreshConnections() *db_common.RefreshConnectionResult 
 	// first get a list of all existing schemas
 	schemas := c.client.SchemaMetadata().GetSchemas()
 
-	// refresh the connection state file - the removes any connections which do not exist in the list of current schema
+	// build connection data for all required connections
+	// (this is the conneciton with the required plugin and it's checkum
 	requiredConnectionData, missingPlugins, err := steampipeconfig.GetRequiredConnectionData(requiredConnections)
 	if err != nil {
 		res.Error = err
 		return res
 	}
+
 	// for any connections with dynamic schema, we need to reload their schema
 	// instantiate connection plugins for all connections with dynamic schema - this will retrieve their current schema
 	var connectionsWithDynamicSchema = requiredConnectionData.ConnectionsWithDynamicSchema()
-	connectionsPluginsWithDynamicSchema, res := getConnectionPlugins(connectionsWithDynamicSchema)
+	connectionsPluginsWithDynamicSchema, res := getConnectionPlugins(connectionsWithDynamicSchema, nil)
 	if res.Error != nil {
 		return res
 	}
@@ -60,9 +62,12 @@ func (c *LocalDbClient) refreshConnections() *db_common.RefreshConnectionResult 
 	numUpdates := len(updates.Update)
 	log.Printf("[TRACE] RefreshConnections: num updates %d", numUpdates)
 	if numUpdates > 0 {
-		// first instantiate connection plugins for all updates (reuse 'res' defined above)
-		var connectionPlugins []*steampipeconfig.ConnectionPlugin
-		connectionPlugins, res = getConnectionPlugins(updates.Update)
+		// first instantiate connection plugins for all updates
+		var connectionPlugins map[string]*steampipeconfig.ConnectionPlugin
+		// NOTE - we may have already created some connection plugins (if they have dynamic schema)
+		// - pass in the list of connection plugins we have already loaded
+		// NOTE - reuse 'res' defined above
+		connectionPlugins, res = getConnectionPlugins(updates.Update, connectionsPluginsWithDynamicSchema)
 		if res.Error != nil {
 			return res
 		}
@@ -118,27 +123,31 @@ func (c *LocalDbClient) updateConnectionMap() error {
 	return nil
 }
 
-func getConnectionPlugins(updates steampipeconfig.ConnectionDataMap) ([]*steampipeconfig.ConnectionPlugin, *db_common.RefreshConnectionResult) {
+func getConnectionPlugins(requiredConnections steampipeconfig.ConnectionDataMap, alreadyLoaded map[string]*steampipeconfig.ConnectionPlugin) (map[string]*steampipeconfig.ConnectionPlugin, *db_common.RefreshConnectionResult) {
 	res := &db_common.RefreshConnectionResult{}
-	var connectionPlugins []*steampipeconfig.ConnectionPlugin
+	// initialise result to the plugins we have already loaded
+	var connectionPlugins = alreadyLoaded
 
 	// create channels buffered to hold all updates
-	numUpdates := len(updates)
-	var pluginChan = make(chan *steampipeconfig.ConnectionPlugin, numUpdates)
-	var errorChan = make(chan error, numUpdates)
+	numPluginsToCreate := len(requiredConnections) - len(alreadyLoaded)
+	var pluginChan = make(chan *steampipeconfig.ConnectionPlugin, numPluginsToCreate)
+	var errorChan = make(chan error, numPluginsToCreate)
 
-	for connectionName, connectionData := range updates {
-		// instantiate the connection plugin, and retrieve schema
-		go getConnectionPluginAsync(connectionName, connectionData, pluginChan, errorChan)
+	for connectionName, connectionData := range requiredConnections {
+		// if we have NOT already loaded this plugin, do so
+		if _, ok := alreadyLoaded[connectionName]; !ok {
+			// instantiate the connection plugin, and retrieve schema
+			go getConnectionPluginAsync(connectionName, connectionData, pluginChan, errorChan)
+		}
 	}
 
-	for i := 0; i < numUpdates; i++ {
+	for i := 0; i < numPluginsToCreate; i++ {
 		select {
 		case err := <-errorChan:
 			log.Println("[TRACE] get connections err chan select - adding warning", "error", err)
 			res.Warnings = append(res.Warnings, err.Error())
 		case p := <-pluginChan:
-			connectionPlugins = append(connectionPlugins, p)
+			connectionPlugins[p.ConnectionName] = p
 		case <-time.After(10 * time.Second):
 			res.Error = fmt.Errorf("timed out retrieving schema from plugins")
 			return nil, res

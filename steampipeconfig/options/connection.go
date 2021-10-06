@@ -5,11 +5,12 @@ import (
 	"strings"
 )
 
-// options.Connection
+// Connection is a struct representing connection options
+// json tags needed as this is stored in the connection state file
 type Connection struct {
-	Cache         *bool `hcl:"cache"`
-	CacheTTL      *int  `hcl:"cache_ttl"`
-	DynamicSchema *bool `hcl:"dynamic_schema"`
+	Cache         *bool `hcl:"cache" json:"Cache,omitempty"`
+	CacheTTL      *int  `hcl:"cache_ttl" json:"CacheTTL,omitempty"`
+	DynamicSchema *bool `hcl:"dynamic_schema"json:"DynamicSchema,omitempty"`
 }
 
 func (c *Connection) ConfigMap() map[string]interface{} {
@@ -35,8 +36,7 @@ func (c *Connection) Merge(otherOptions Options) {
 }
 
 func (c *Connection) Equals(other *Connection) bool {
-	return c.Cache == other.Cache &&
-		*c.CacheTTL == *other.CacheTTL
+	return c.String() == other.String()
 }
 
 func (c *Connection) String() string {

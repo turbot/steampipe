@@ -29,7 +29,9 @@ func newConnectionUpdates() *ConnectionUpdates {
 	}
 }
 
-// ConnectionData is a struct containing all details for a connection - the plugin name and checksum, the connection config and options
+// ConnectionData is a struct containing all details for a connection
+// - the plugin name and checksum, the connection config and options
+// json tags needed as this is stored in the connection state file
 type ConnectionData struct {
 	// the fully qualified name of the plugin
 	Plugin string
@@ -38,15 +40,13 @@ type ConnectionData struct {
 	// the underlying connection object
 	Connection *modconfig.Connection
 	// the hash of the connection schema
-	SchemaHash string
+	SchemaHash string `json:"SchemaHash,omitempty"`
 }
 
 func (p *ConnectionData) Equals(other *ConnectionData) bool {
 	if p.Connection == nil || other.Connection == nil {
-		// if any one them has a `nil` Connection, then
-		// this is data from an old connection state file.
-		// return false, so that connections get refreshed
-		// and this file gets written in the new format in the process
+		// if either object has a nil Connection, then it may be data from an old connection state file
+		// return false, so that connections get refreshed and this file gets written in the new format in the process
 		return false
 	}
 
@@ -89,7 +89,7 @@ func (m ConnectionDataMap) ConnectionsWithDynamicSchema() ConnectionDataMap {
 }
 
 // GetConnectionsToUpdate returns updates to be made to the database to sync with connection config
-func GetConnectionsToUpdate(schemas []string, requiredConnections ConnectionDataMap, missingPlugins []string, connectionsPluginsWithDynamicSchema []*ConnectionPlugin) (*ConnectionUpdates, error) {
+func GetConnectionsToUpdate(schemas []string, requiredConnections ConnectionDataMap, missingPlugins []string, connectionsPluginsWithDynamicSchema map[string]*ConnectionPlugin) (*ConnectionUpdates, error) {
 	utils.LogTime("steampipeconfig.GetConnectionsToUpdate start")
 	defer utils.LogTime("steampipeconfig.GetConnectionsToUpdate end")
 
@@ -105,11 +105,13 @@ func GetConnectionsToUpdate(schemas []string, requiredConnections ConnectionData
 	result.RequiredConnections = requiredConnections
 
 	// connections to create/update
-	for connection, requiredPlugin := range requiredConnections {
-		current, ok := connectionState[connection]
-		if !ok || !current.Equals(requiredPlugin) {
-			log.Printf("[TRACE] connection %s is out of date or missing\n", connection)
-			result.Update[connection] = requiredPlugin
+	for name, requiredConnectionData := range requiredConnections {
+		// check whether this connection exists in the state
+		currentConnectionData, ok := connectionState[name]
+		// if it does not exist, or is not equal, add to updates
+		if !ok || !currentConnectionData.Equals(requiredConnectionData) {
+			log.Printf("[TRACE] connection %s is out of date or missing\n", name)
+			result.Update[name] = requiredConnectionData
 		}
 	}
 
