@@ -32,6 +32,27 @@ load "$LIB_BATS_SUPPORT/load.bash"
 #     steampipe service stop
 # }
 
+@test "custom database name" {
+  # Set the STEAMPIPE_INSTALL_DATABASE env variable
+  export STEAMPIPE_INSTALL_DATABASE="custom_db_name"
+  
+  target_install_directory=$(mktemp -d)
+  
+  # Start the service
+  run steampipe service start --install-dir $target_install_directory
+  
+  # Extract password from the state file
+  state_file_db_name=$(cat $target_install_directory/internal/steampipe.json | jq .Database)
+  echo $state_file_db_name
+  
+  # Both should be equal
+  assert_equal "$state_file_db_name" "\"custom_db_name\""
+  
+  run steampipe service stop --install-dir $target_install_directory
+  
+  rm -rf $target_install_directory
+}
+
 @test "steampipe service stop should not trigger daily checks and tasks" {
     run steampipe service start
 
