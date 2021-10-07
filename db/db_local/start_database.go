@@ -184,36 +184,30 @@ func startPostgresProcessAndSetup(port int, listen StartListenType, invoker cons
 	// which we will use to retrieve the name of the installed database
 	err = createRunningInfo(postgresCmd, port, "", password, listen, invoker)
 	if err != nil {
-		// postgresCmd.Process.Kill()
 		return "", err
 	}
 
 	// connect to the service and retrieve the database name
 	databaseName, err = retrieveDatabaseNameFromService(invoker)
 	if err != nil {
-		// postgresCmd.Process.Kill()
 		return "", err
 	}
 	if len(databaseName) == 0 && invoker != constants.InvokerInstaller {
-		// postgresCmd.Process.Kill()
 		return "", fmt.Errorf("could not find database to connect to")
 	}
 	err = updateDatabaseNameInRunningInfo(databaseName)
 	if err != nil {
-		// postgresCmd.Process.Kill()
 		return "", err
 	}
 
 	err = setupServicePassword(invoker, password)
 	if err != nil {
-		// postgresCmd.Process.Kill()
 		return "", err
 	}
 
 	// release the process - let the OS adopt it, so that we can exit
 	err = postgresCmd.Process.Release()
 	if err != nil {
-		// postgresCmd.Process.Kill()
 		return "", err
 	}
 
