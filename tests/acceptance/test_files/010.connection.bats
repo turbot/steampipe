@@ -102,3 +102,76 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 }
+
+@test "steampipe check options config is being parsed and used(cache=true; hcl)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+
+    # cache functionality check since cache=true in options
+    cd $WORKSPACE_DIR
+    run steampipe check benchmark.check_cache_benchmark --output json
+    echo $output
+    # store the date in the resource field in `content`
+    content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
+    echo $content
+
+    run steampipe check benchmark.check_cache_benchmark --output json
+    echo $output
+    # store the date in the resource field in `new_content`
+    new_content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
+    echo $new_content
+
+    # verify that `content` and `new_content` are the same
+    assert_equal "$new_content" "$content"
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+}
+
+@test "steampipe check options config is being parsed and used(cache=true; yml)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+
+    # cache functionality check since cache=true in options
+    cd $WORKSPACE_DIR
+    run steampipe check benchmark.check_cache_benchmark --output json
+    echo $output
+    # store the date in the resource field in `content`
+    content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
+    echo $content
+
+    run steampipe check benchmark.check_cache_benchmark --output json
+    echo $output
+    # store the date in the resource field in `new_content`
+    new_content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
+    echo $new_content
+
+    # verify that `content` and `new_content` are the same
+    assert_equal "$new_content" "$content"
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+}
+
+@test "steampipe check options config is being parsed and used(cache=true; json)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+
+    # cache functionality check since cache=true in options
+    cd $WORKSPACE_DIR
+    run steampipe check benchmark.check_cache_benchmark --output json
+    echo $output
+    # store the date in the resource field in `content`
+    content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
+    echo $content
+
+    run steampipe check benchmark.check_cache_benchmark --output json
+    echo $output
+    # store the date in the resource field in `new_content`
+    new_content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
+    echo $new_content
+
+    # verify that `content` and `new_content` are the same
+    assert_equal "$new_content" "$content"
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+}
+
