@@ -158,21 +158,6 @@ func IsInstalled() bool {
 		return false
 	}
 
-	// TO DO:
-	// 	- move this out ot this function - make the "upgrade" optional
-	// 	- add function to get the latest digest
-	// // get the signature of the binary
-	// // we do this by having a signature file
-	// // which stores the md5 hash of the URL we downloaded
-	// // from and then comparing that against the has of the
-	// // URL we have  in the constants
-	// installedSignature := getInstalledBinarySignature()
-	// desiredSignature := get
-
-	// if installedSignature != desiredSignature {
-	// 	return true
-	// }
-
 	return true
 }
 
@@ -237,7 +222,7 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Starting database...")
-	_, err = startPostgresProcessAndSetPassword(constants.DatabaseDefaultPort, ListenTypeLocal, constants.InvokerInstaller)
+	_, err = startPostgresProcessAndSetup(constants.DatabaseDefaultPort, ListenTypeLocal, constants.InvokerInstaller)
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] startPostgresProcess failed: %v", err)
@@ -253,8 +238,16 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 		return fmt.Errorf("Generating database passwords... FAILED!")
 	}
 
+	// resolve the name of the database that is to be installed
+	// use the application constant as default
+	databaseName := constants.DatabaseName
+	if envValue, exists := os.LookupEnv(constants.EnvInstallDatabase); exists && len(envValue) > 0 {
+		// use whatever is supplied, if available
+		databaseName = envValue
+	}
+
 	display.UpdateSpinnerMessage(spinner, "Configuring database...")
-	dbName, err := installDatabaseAndSetupPermissions()
+	err = installDatabaseAndSetupPermissions(databaseName)
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] installSteampipeDatabaseAndUser failed: %v", err)
@@ -262,7 +255,7 @@ func doInit(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring Steampipe...")
-	err = installForeignServer(dbName)
+	err = installForeignServer(databaseName)
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] installForeignServer failed: %v", err)
@@ -303,23 +296,19 @@ func initDatabase() error {
 	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(constants.MinimalPgHbaContent), 0600)
 }
 
-func installDatabaseAndSetupPermissions() (string, error) {
+func installDatabaseAndSetupPermissions(databaseName string) error {
 	utils.LogTime("db.installSteampipeDatabase start")
 	defer utils.LogTime("db.installSteampipeDatabase end")
 
 	rawClient, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	defer func() {
 		rawClient.Close()
 	}()
 
-	databaseName := constants.DatabaseName
-	if dbName, exists := os.LookupEnv(constants.EnvInstallDatabase); exists && len(dbName) > 0 {
-		databaseName = dbName
-	}
 	log.Println("[TRACE] installing database with name", databaseName)
 
 	statements := []string{
@@ -379,14 +368,14 @@ func installDatabaseAndSetupPermissions() (string, error) {
 		// since the password is stored in a config file anyway.
 		log.Println("[TRACE] Install database: ", statement)
 		if _, err := rawClient.Exec(statement); err != nil {
-			return databaseName, err
+			return err
 		}
 	}
-	err = updateDBNameInRunningInfo(databaseName)
+	err = updateDatabaseNameInRunningInfo(databaseName)
 	if err != nil {
-		return databaseName, err
+		return err
 	}
-	return databaseName, writePgHbaContent(databaseName, constants.DatabaseUser)
+	return writePgHbaContent(databaseName, constants.DatabaseUser)
 }
 
 func writePgHbaContent(databaseName string, username string) error {
@@ -394,11 +383,11 @@ func writePgHbaContent(databaseName string, username string) error {
 	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(content), 0600)
 }
 
-func installForeignServer(dbName string) error {
+func installForeignServer(databaseName string) error {
 	utils.LogTime("db.installForeignServer start")
 	defer utils.LogTime("db.installForeignServer end")
 
-	rawClient, err := createLocalDbClient(dbName, constants.DatabaseSuperUser)
+	rawClient, err := createLocalDbClient(databaseName, constants.DatabaseSuperUser)
 	if err != nil {
 		return err
 	}
@@ -438,14 +427,3 @@ func updateDownloadedBinarySignature() error {
 	installedSignature := fmt.Sprintf("%s|%s", versionInfo.EmbeddedDB.ImageDigest, versionInfo.FdwExtension.ImageDigest)
 	return ioutil.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)
 }
-
-// func getInstalledBinarySignature() string {
-// 	sigBytes, err := ioutil.ReadFile(getDBSignatureLocation())
-// 	sig := ""
-// 	if os.IsNotExist(err) {
-// 		sig = ""
-// 	} else {
-// 		sig = string(sigBytes)
-// 	}
-// 	return sig
-// }

@@ -43,7 +43,7 @@ func createRootDbClient() (*sql.DB, error) {
 // the provided username
 // if the database is not provided, then it fallsback to the default database in the service
 // that was created during installation.
-func createLocalDbClient(dbname string, username string) (*sql.DB, error) {
+func createLocalDbClient(databaseName string, username string) (*sql.DB, error) {
 	utils.LogTime("db.createDbClient start")
 	defer utils.LogTime("db.createDbClient end")
 
@@ -57,16 +57,16 @@ func createLocalDbClient(dbname string, username string) (*sql.DB, error) {
 		return nil, fmt.Errorf("steampipe service is not running")
 	}
 
-	if len(dbname) == 0 {
-		dbname = info.Database
+	if len(databaseName) == 0 {
+		databaseName = info.Database
 	}
 	// if we still don't have it, fallback to default "postgres"
-	if len(dbname) == 0 {
-		dbname = "postgres"
+	if len(databaseName) == 0 {
+		databaseName = "postgres"
 	}
 
 	// Connect to the database using the first listen address, which is usually localhost
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", info.Listen[0], info.Port, username, dbname, SslMode())
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", info.Listen[0], info.Port, username, databaseName, SslMode())
 
 	log.Println("[TRACE] status: ", info)
 	log.Println("[TRACE] Connection string: ", psqlInfo)

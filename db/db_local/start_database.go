@@ -115,7 +115,7 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	}
 
 	utils.LogTime("postgresCmd start")
-	databaseName, err := startPostgresProcessAndSetPassword(port, listen, invoker)
+	databaseName, err := startPostgresProcessAndSetup(port, listen, invoker)
 	if err != nil {
 		return ServiceFailedToStart, err
 	}
@@ -140,32 +140,28 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	return ServiceStarted, err
 }
 
-// startPostgresProcessAndSetPassword starts the postgres process and writes out the state file
+// startPostgresProcessAndSetup starts the postgres process and writes out the state file
 // after it is convinced that the process is started and is accepting connections
-func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoker constants.Invoker) (datName string, e error) {
+func startPostgresProcessAndSetup(port int, listen StartListenType, invoker constants.Invoker) (databaseName string, e error) {
 	utils.LogTime("startPostgresProcess start")
 	defer utils.LogTime("startPostgresProcess end")
+
+	var postgresCmd *exec.Cmd
 
 	defer func() {
 		if e != nil {
 			// remove the state file if we are going back with an error
 			removeRunningInstanceInfo()
+			// we are going back with an error
+			// if the process was started,
+			if postgresCmd != nil && postgresCmd.Process != nil {
+				// kill it
+				postgresCmd.Process.Kill()
+			}
 		}
 	}()
 
-	listenAddresses := "localhost"
-
-	if listen == ListenTypeNetwork {
-		listenAddresses = "*"
-	}
-
-	if err := writePGConf(); err != nil {
-		return "", err
-	}
-
-	postgresCmd := createCmd(port, listenAddresses)
-	setupLogCollection(postgresCmd)
-	err := postgresCmd.Start()
+	postgresCmd, err := startPostgresProcess(port, listen, invoker)
 	if err != nil {
 		return "", err
 	}
@@ -188,38 +184,61 @@ func startPostgresProcessAndSetPassword(port int, listen StartListenType, invoke
 	// which we will use to retrieve the name of the installed database
 	err = createRunningInfo(postgresCmd, port, "", password, listen, invoker)
 	if err != nil {
-		postgresCmd.Process.Kill()
+		// postgresCmd.Process.Kill()
 		return "", err
 	}
 
 	// connect to the service and retrieve the database name
-	datName, err = retrieveDatabaseNameFromService(invoker)
+	databaseName, err = retrieveDatabaseNameFromService(invoker)
 	if err != nil {
-		postgresCmd.Process.Kill()
+		// postgresCmd.Process.Kill()
 		return "", err
 	}
-	if len(datName) == 0 && invoker != constants.InvokerInstaller {
-		postgresCmd.Process.Kill()
+	if len(databaseName) == 0 && invoker != constants.InvokerInstaller {
+		// postgresCmd.Process.Kill()
 		return "", fmt.Errorf("could not find database to connect to")
 	}
-	err = updateDBNameInRunningInfo(datName)
+	err = updateDatabaseNameInRunningInfo(databaseName)
 	if err != nil {
-		postgresCmd.Process.Kill()
-		return "", err
-	}
-
-	err = postgresCmd.Process.Release()
-	if err != nil {
-		postgresCmd.Process.Kill()
+		// postgresCmd.Process.Kill()
 		return "", err
 	}
 
 	err = setupServicePassword(invoker, password)
 	if err != nil {
-		postgresCmd.Process.Kill()
+		// postgresCmd.Process.Kill()
 		return "", err
 	}
-	return datName, nil
+
+	// release the process - let the OS adopt it, so that we can exit
+	err = postgresCmd.Process.Release()
+	if err != nil {
+		// postgresCmd.Process.Kill()
+		return "", err
+	}
+
+	return databaseName, nil
+}
+
+func startPostgresProcess(port int, listen StartListenType, invoker constants.Invoker) (*exec.Cmd, error) {
+	listenAddresses := "localhost"
+
+	if listen == ListenTypeNetwork {
+		listenAddresses = "*"
+	}
+
+	if err := writePGConf(); err != nil {
+		return nil, err
+	}
+
+	postgresCmd := createCmd(port, listenAddresses)
+	setupLogCollection(postgresCmd)
+	err := postgresCmd.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	return postgresCmd, nil
 }
 
 func retrieveDatabaseNameFromService(invoker constants.Invoker) (string, error) {
@@ -266,22 +285,22 @@ func writePGConf() error {
 	return nil
 }
 
-func updateDBNameInRunningInfo(datName string) error {
+func updateDatabaseNameInRunningInfo(databaseName string) error {
 	runningInfo, err := loadRunningInstanceInfo()
 	if err != nil {
 		return err
 	}
-	runningInfo.Database = datName
+	runningInfo.Database = databaseName
 	return runningInfo.Save()
 }
 
-func createRunningInfo(cmd *exec.Cmd, port int, dbName string, password string, listen StartListenType, invoker constants.Invoker) error {
+func createRunningInfo(cmd *exec.Cmd, port int, databaseName string, password string, listen StartListenType, invoker constants.Invoker) error {
 	runningInfo := new(RunningDBInstanceInfo)
 	runningInfo.Pid = cmd.Process.Pid
 	runningInfo.Port = port
 	runningInfo.User = constants.DatabaseUser
 	runningInfo.Password = password
-	runningInfo.Database = dbName
+	runningInfo.Database = databaseName
 	runningInfo.ListenType = listen
 	runningInfo.Invoker = invoker
 	runningInfo.Listen = constants.DatabaseListenAddresses
@@ -425,8 +444,8 @@ func setupLogCollector(postgresCmd *exec.Cmd, publishChannel chan string) (func(
 
 // ensures that the `steampipe` fdw server exists
 // checks for it - (re)install FDW and creates server if it doesn't
-func ensureSteampipeServer(dbName string) error {
-	rootClient, err := createLocalDbClient(dbName, constants.DatabaseSuperUser)
+func ensureSteampipeServer(databaseName string) error {
+	rootClient, err := createLocalDbClient(databaseName, constants.DatabaseSuperUser)
 	if err != nil {
 		return err
 	}
@@ -436,19 +455,19 @@ func ensureSteampipeServer(dbName string) error {
 	err = out.Scan(&serverName)
 	// if there is an error, we need to reinstall the foreign server
 	if err != nil {
-		return installForeignServer(dbName)
+		return installForeignServer(databaseName)
 	}
 	return nil
 }
 
 // create the command schema and grant insert permission
-func ensureCommandSchema(dbName string) error {
+func ensureCommandSchema(databaseName string) error {
 	commandSchemaStatements := updateConnectionQuery(constants.CommandSchema, constants.CommandSchema)
 	commandSchemaStatements = append(
 		commandSchemaStatements,
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CacheCommandTable),
 	)
-	rootClient, err := createLocalDbClient(dbName, constants.DatabaseSuperUser)
+	rootClient, err := createLocalDbClient(databaseName, constants.DatabaseSuperUser)
 	if err != nil {
 		return err
 	}
@@ -467,13 +486,13 @@ func ensureCommandSchema(dbName string) error {
 
 // ensures that the `steampipe_users` role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
-func ensureTempTablePermissions(dbName string) error {
-	rootClient, err := createLocalDbClient(dbName, constants.DatabaseSuperUser)
+func ensureTempTablePermissions(databaseName string) error {
+	rootClient, err := createLocalDbClient(databaseName, constants.DatabaseSuperUser)
 	if err != nil {
 		return err
 	}
 	defer rootClient.Close()
-	_, err = rootClient.Exec(fmt.Sprintf("grant temporary on database %s to %s", dbName, constants.DatabaseUser))
+	_, err = rootClient.Exec(fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
 	if err != nil {
 		return err
 	}
