@@ -1,6 +1,6 @@
 {
   "connection": {
-    "chaos5": {
+    "chaos6": {
       "plugin": "chaos",
       "regions": [
         "us-east-1",

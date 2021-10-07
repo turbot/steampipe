@@ -110,14 +110,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # cache functionality check since cache=true in options
     cd $WORKSPACE_DIR
-    run steampipe check benchmark.check_cache_benchmark --output json
-    echo $output
+    run steampipe check control.cache_test_2 --output json
     # store the date in the resource field in `content`
     content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
     echo $content
 
-    run steampipe check benchmark.check_cache_benchmark --output json
-    echo $output
+    run steampipe check control.cache_test_2 --output json
     # store the date in the resource field in `new_content`
     new_content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
     echo $new_content
@@ -134,14 +132,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # cache functionality check since cache=true in options
     cd $WORKSPACE_DIR
-    run steampipe check benchmark.check_cache_benchmark --output json
-    echo $output
+    run steampipe check control.cache_test_2 --output json
     # store the date in the resource field in `content`
     content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
     echo $content
 
-    run steampipe check benchmark.check_cache_benchmark --output json
-    echo $output
+    run steampipe check control.cache_test_2 --output json
     # store the date in the resource field in `new_content`
     new_content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
     echo $new_content
@@ -158,14 +154,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # cache functionality check since cache=true in options
     cd $WORKSPACE_DIR
-    run steampipe check benchmark.check_cache_benchmark --output json
-    echo $output
+    run steampipe check control.cache_test_2 --output json
     # store the date in the resource field in `content`
     content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
     echo $content
 
-    run steampipe check benchmark.check_cache_benchmark --output json
-    echo $output
+    run steampipe check control.cache_test_2 --output json
     # store the date in the resource field in `new_content`
     new_content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
     echo $new_content
@@ -174,4 +168,3 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_equal "$new_content" "$content"
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 }
-
