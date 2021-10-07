@@ -40,7 +40,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 	}
 
 	// now build list of necessary queries to perform the update
-	connectionQueries, otherRes := c.buildConnectionUpdateQueries(connectionUpdates, connectionUpdates.ConnectionPlugins)
+	connectionQueries, otherRes := c.buildConnectionUpdateQueries(connectionUpdates)
 	// merge results into local results
 	res.Merge(otherRes)
 	if res.Error != nil {
@@ -76,7 +76,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 
 }
 
-func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampipeconfig.ConnectionUpdates, connectionPlugins map[string]*steampipeconfig.ConnectionPlugin) ([]string, *steampipeconfig.RefreshConnectionResult) {
+func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampipeconfig.ConnectionUpdates) ([]string, *steampipeconfig.RefreshConnectionResult) {
 	var connectionQueries []string
 	var res *steampipeconfig.RefreshConnectionResult
 	numUpdates := len(connectionUpdates.Update)
@@ -86,7 +86,7 @@ func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampip
 	if numUpdates > 0 {
 
 		// find any plugins which use a newer sdk version than steampipe.
-		validationFailures, validatedUpdates, validatedPlugins := steampipeconfig.ValidatePlugins(connectionUpdates.Update, connectionPlugins)
+		validationFailures, validatedUpdates, validatedPlugins := steampipeconfig.ValidatePlugins(connectionUpdates.Update, connectionUpdates.ConnectionPlugins)
 		if len(validationFailures) > 0 {
 			res.Warnings = append(res.Warnings, steampipeconfig.BuildValidationWarningString(validationFailures))
 		}

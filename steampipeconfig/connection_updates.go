@@ -93,7 +93,7 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
 	// - pass in the list of connection plugins we have already loaded
 
-	connectionPlugins, otherRes := getConnectionPlugins(updates.Update, connectionsPluginsWithDynamicSchema)
+	connectionPlugins, otherRes := createConnectionPlugins(updates.Update, connectionsPluginsWithDynamicSchema)
 	// merge results into local results
 	res.Merge(otherRes)
 	if res.Error != nil {
@@ -120,7 +120,7 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 		if schemaHash, ok := schemaHashMap[k]; ok {
 			v.SchemaHash = schemaHash
 		}
-		// have we loaded a conneciton plugin for this connection
+		// have we loaded a connection plugin for this connection
 		// - if so us the schema mode from the schema  it has loaded
 		if connectionPlugin, ok := u.ConnectionPlugins[k]; ok {
 			v.SchemaMode = connectionPlugin.Schema.Mode
@@ -134,7 +134,7 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 	}
 }
 
-func getConnectionPlugins(requiredConnections ConnectionDataMap, alreadyLoaded map[string]*ConnectionPlugin) (map[string]*ConnectionPlugin, *RefreshConnectionResult) {
+func createConnectionPlugins(requiredConnections ConnectionDataMap, alreadyLoaded map[string]*ConnectionPlugin) (map[string]*ConnectionPlugin, *RefreshConnectionResult) {
 	if alreadyLoaded == nil {
 		alreadyLoaded = make(map[string]*ConnectionPlugin)
 	}
@@ -205,7 +205,7 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 		}
 	}
 
-	connectionsPluginsWithDynamicSchema, res := getConnectionPlugins(connectionsWithDynamicSchema, nil)
+	connectionsPluginsWithDynamicSchema, res := createConnectionPlugins(connectionsWithDynamicSchema, nil)
 	hashMap := make(map[string]string)
 	for name, c := range connectionsPluginsWithDynamicSchema {
 		// update schema hash stored in required connections so it is persisted in the state ius updates are made
