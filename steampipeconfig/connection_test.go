@@ -429,19 +429,19 @@ func TestGetConnectionsToUpdate(t *testing.T) {
 		if config == nil {
 			t.Fatalf("Could not load config")
 		}
-		requiredConnections := config.Connections
+		GlobalConfig = config
 		// all tests assume connections a, b
-		res, err := NewConnectionUpdates([]string{"a", "b"}, requiredConnections, nil, nil)
+		updates, res := NewConnectionUpdates([]string{"a", "b"})
 
-		if err != nil && test.expected != "ERROR" {
+		if res.Error != nil && test.expected != "ERROR" {
 			continue
 			t.Fatalf("NewConnectionUpdates failed with unexpected error: %v", err)
 		}
 
 		expectedUpdates := test.expected.(*ConnectionUpdates)
-		if !res.RequiredConnectionState.Equals(expectedUpdates.RequiredConnectionState) ||
-			!res.Update.Equals(expectedUpdates.Update) ||
-			!res.Delete.Equals(expectedUpdates.Delete) {
+		if !updates.RequiredConnectionState.Equals(expectedUpdates.RequiredConnectionState) ||
+			!updates.Update.Equals(expectedUpdates.Update) ||
+			!updates.Delete.Equals(expectedUpdates.Delete) {
 			t.Errorf(`Test: '%s'' FAILED`, name)
 
 		}
