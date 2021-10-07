@@ -72,3 +72,33 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run steampipe query "select * from chaos5.chaos_cache_check"
     assert_success
 }
+
+@test "steampipe test connection config with options(hcl)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+
+    run steampipe query "select * from chaos6.chaos_cache_check"
+    assert_success
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+}
+
+@test "steampipe test connection config with options(yml)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+
+    run steampipe query "select * from chaos6.chaos_cache_check"
+    assert_success
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+}
+
+@test "steampipe test connection config with options(json)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+
+    run steampipe query "select * from chaos6.chaos_cache_check"
+    assert_success
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+}
