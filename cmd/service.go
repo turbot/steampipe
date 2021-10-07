@@ -339,7 +339,7 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 		} else if info != nil {
 			printStatus(info)
 		} else {
-			fmt.Println("Steampipe service is running.")
+			fmt.Println("Steampipe service is not running.")
 		}
 	}
 }
