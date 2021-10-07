@@ -24,8 +24,8 @@ var PgHbaTemplate string = `
 # * Access is restricted to samehost
 # * Future - access via SSL only (remove host line)
 #
-hostssl	all root samehost trust
-host 	all root samehost trust
+hostssl all root samehost trust
+host    all root samehost trust
 
 # All user queries (steampipe query, steampipe service etc.) are run as the
 # steampipe user. The steampipe user is restricted in access to the steampipe
@@ -39,7 +39,7 @@ host 	all root samehost trust
 # * Future - access via SSL only (remove host line)
 #
 hostssl %[1]s %[2]s samehost trust
-host 	%[1]s %[2]s samehost trust
+host    %[1]s %[2]s samehost trust
 hostssl %[1]s %[2]s all scram-sha-256
-host 	%[1]s %[2]s all scram-sha-256
+host    %[1]s %[2]s all scram-sha-256
 `
