@@ -109,19 +109,20 @@ load "$LIB_BATS_SUPPORT/load.bash"
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
     # cache functionality check since cache=true in options
-    cd $WORKSPACE_DIR
-    run steampipe check control.cache_test_2 --output json
+    run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
     # store the date in the resource field in `content`
-    content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
+    content=$(echo $output | jq '.[0].time_now')
     echo $content
 
-    run steampipe check control.cache_test_2 --output json
+    run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
+    echo $output
     # store the date in the resource field in `new_content`
-    new_content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
+    new_content=$(echo $output | jq '.[0].time_now')
     echo $new_content
 
     # verify that `content` and `new_content` are the same
     assert_equal "$new_content" "$content"
+
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 }
 
@@ -132,18 +133,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # cache functionality check since cache=true in options
     cd $WORKSPACE_DIR
-    run steampipe check control.cache_test_2 --output json
+    run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
+    echo $output
     # store the date in the resource field in `content`
-    content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
+    content=$(echo $output | jq '.[0].time_now')
     echo $content
 
-    run steampipe check control.cache_test_2 --output json
+    run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
+    echo $output
     # store the date in the resource field in `new_content`
-    new_content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
+    new_content=$(echo $output | jq '.[0].time_now')
     echo $new_content
 
     # verify that `content` and `new_content` are the same
     assert_equal "$new_content" "$content"
+    
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 }
 
@@ -154,17 +158,20 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # cache functionality check since cache=true in options
     cd $WORKSPACE_DIR
-    run steampipe check control.cache_test_2 --output json
+    run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
+    echo $output
     # store the date in the resource field in `content`
-    content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
+    content=$(echo $output | jq '.[0].time_now')
     echo $content
 
-    run steampipe check control.cache_test_2 --output json
+    run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
+    echo $output
     # store the date in the resource field in `new_content`
-    new_content=$(cat $output | jq '.groups[0].controls[0].results[0].resource')
+    new_content=$(echo $output | jq '.[0].time_now')
     echo $new_content
 
     # verify that `content` and `new_content` are the same
     assert_equal "$new_content" "$content"
+
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 }
