@@ -1,3 +1,9 @@
+## v0.8.5 [2021-10-07]
+
+_Bug fixes_
+* Fix handling of null unicode chars in JSON fields. ([#102](https://github.com/turbot/steampipe-postgres-fdw/issues/102))
+* Fix issue where queries with a`limit` clause not always listing all results. Only pass the limit to the plugin if all quals are supported by plugin `key columns`. [#103](https://github.com/turbot/steampipe-postgres-fdw/issues/103))
+
 ## v0.8.4 [2021-09-29]
 * Update client error handling to only refresh session data for a 'context deadline exceeded' error. This avoids recursion in the error handling. ([#970](https://github.com/turbot/steampipe/issues/970))
 
