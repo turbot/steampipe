@@ -103,75 +103,75 @@ load "$LIB_BATS_SUPPORT/load.bash"
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 }
 
-@test "steampipe check options config is being parsed and used(cache=true; hcl)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
-    cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+@test "steampipe check options config is being parsed and used(cache=true; hcl) DISABLED" {
+    # run steampipe plugin install chaos
+    # run steampipe plugin install steampipe
+    # cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
-    # cache functionality check since cache=true in options
-    run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
-    # store the date in the resource field in `content`
-    content=$(echo $output | jq '.[0].time_now')
-    echo $content
+    # # cache functionality check since cache=true in options
+    # run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
+    # # store the date in the resource field in `content`
+    # content=$(echo $output | jq '.[0].time_now')
+    # echo $content
 
-    run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
-    echo $output
-    # store the date in the resource field in `new_content`
-    new_content=$(echo $output | jq '.[0].time_now')
-    echo $new_content
+    # run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
+    # echo $output
+    # # store the date in the resource field in `new_content`
+    # new_content=$(echo $output | jq '.[0].time_now')
+    # echo $new_content
 
-    # verify that `content` and `new_content` are the same
-    assert_equal "$new_content" "$content"
+    # # verify that `content` and `new_content` are the same
+    # assert_equal "$new_content" "$content"
 
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+    # rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 }
 
-@test "steampipe check options config is being parsed and used(cache=true; yml)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
-    cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+@test "steampipe check options config is being parsed and used(cache=true; yml) DISABLED" {
+    # run steampipe plugin install chaos
+    # run steampipe plugin install steampipe
+    # cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
-    # cache functionality check since cache=true in options
-    cd $WORKSPACE_DIR
-    run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
-    echo $output
-    # store the date in the resource field in `content`
-    content=$(echo $output | jq '.[0].time_now')
-    echo $content
+    # # cache functionality check since cache=true in options
+    # cd $WORKSPACE_DIR
+    # run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
+    # echo $output
+    # # store the date in the resource field in `content`
+    # content=$(echo $output | jq '.[0].time_now')
+    # echo $content
 
-    run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
-    echo $output
-    # store the date in the resource field in `new_content`
-    new_content=$(echo $output | jq '.[0].time_now')
-    echo $new_content
+    # run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
+    # echo $output
+    # # store the date in the resource field in `new_content`
+    # new_content=$(echo $output | jq '.[0].time_now')
+    # echo $new_content
 
-    # verify that `content` and `new_content` are the same
-    assert_equal "$new_content" "$content"
+    # # verify that `content` and `new_content` are the same
+    # assert_equal "$new_content" "$content"
     
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+    # rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 }
 
-@test "steampipe check options config is being parsed and used(cache=true; json)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
-    cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+@test "steampipe check options config is being parsed and used(cache=true; json) DISABLED" {
+    # run steampipe plugin install chaos
+    # run steampipe plugin install steampipe
+    # cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
-    # cache functionality check since cache=true in options
-    cd $WORKSPACE_DIR
-    run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
-    echo $output
-    # store the date in the resource field in `content`
-    content=$(echo $output | jq '.[0].time_now')
-    echo $content
+    # # cache functionality check since cache=true in options
+    # cd $WORKSPACE_DIR
+    # run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
+    # echo $output
+    # # store the date in the resource field in `content`
+    # content=$(echo $output | jq '.[0].time_now')
+    # echo $content
 
-    run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
-    echo $output
-    # store the date in the resource field in `new_content`
-    new_content=$(echo $output | jq '.[0].time_now')
-    echo $new_content
+    # run steampipe query "select * from chaos6.chaos_cache_check where id=0" --output json
+    # echo $output
+    # # store the date in the resource field in `new_content`
+    # new_content=$(echo $output | jq '.[0].time_now')
+    # echo $new_content
 
-    # verify that `content` and `new_content` are the same
-    assert_equal "$new_content" "$content"
+    # # verify that `content` and `new_content` are the same
+    # assert_equal "$new_content" "$content"
 
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+    # rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 }
