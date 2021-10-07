@@ -19,7 +19,7 @@ import (
 
 func SslMode() string {
 	certExists := helpers.FileExists(filepath.Join(getDataLocation(), constants.ServerCert))
-	privateKeyExists := helpers.FileExists(filepath.Join(getDataLocation(), constants.ServerKey))
+	privateKeyExists := helpers.FileExists(filepath.Join(getDataLocation(), constants.ServerCertKey))
 	if certExists && privateKeyExists {
 		return "require"
 	}
@@ -38,12 +38,11 @@ func writeCertFile(filePath string, cert string) error {
 	return ioutil.WriteFile(filePath, []byte(cert), 0600)
 }
 
-func generateSelfSignedCertificate() (err error) {
-
+func ensureSelfSignedCertificate() (err error) {
 	// Check if the file exists if the file exists then do not generate the cert and key
 	// Generate the certificate if there is no existing certificate
 	certExists := helpers.FileExists(filepath.Join(getDataLocation(), constants.ServerCert))
-	privateKeyExists := helpers.FileExists(filepath.Join(getDataLocation(), constants.ServerKey))
+	privateKeyExists := helpers.FileExists(filepath.Join(getDataLocation(), constants.ServerCertKey))
 
 	if certExists && privateKeyExists {
 		return nil
@@ -76,7 +75,7 @@ func generateSelfSignedCertificate() (err error) {
 
 	pem.Encode(certPem, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
 
-	if err := writeCertFile(filepath.Join(getDataLocation(), constants.RootCert), certPem.String()); err != nil {
+	if err := writeCertFile(getRootCertLocation(), certPem.String()); err != nil {
 		log.Println("[INFO] Failed to save the certificate")
 		return err
 	}
@@ -115,7 +114,7 @@ func generateSelfSignedCertificate() (err error) {
 		Bytes: serverCertBytes,
 	})
 
-	if err := writeCertFile(filepath.Join(getDataLocation(), constants.ServerCert), serverCertPem.String()); err != nil {
+	if err := writeCertFile(getServerCertLocation(), serverCertPem.String()); err != nil {
 		log.Println("[INFO] Failed to save server certificate")
 		return err
 	}
@@ -127,7 +126,7 @@ func generateSelfSignedCertificate() (err error) {
 		Bytes: x509.MarshalPKCS1PrivateKey(serverPrivKey),
 	})
 
-	if err := writeCertFile(filepath.Join(getDataLocation(), constants.ServerKey), serverPrivKeyPem.String()); err != nil {
+	if err := writeCertFile(getServerCertKeyLocation(), serverPrivKeyPem.String()); err != nil {
 		log.Println("[INFO] Failed to save server private key")
 		return err
 	}

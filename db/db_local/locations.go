@@ -46,6 +46,17 @@ func getDataLocation() string {
 	}
 	return loc
 }
+func getRootCertLocation() string {
+	return filepath.Join(getDataLocation(), constants.RootCert)
+}
+
+func getServerCertLocation() string {
+	return filepath.Join(getDataLocation(), constants.ServerCert)
+}
+
+func getServerCertKeyLocation() string {
+	return filepath.Join(getDataLocation(), constants.ServerCertKey)
+}
 
 func getInitDbBinaryExecutablePath() string {
 	return filepath.Join(getDatabaseLocation(), "bin", platform.Paths.InitDbExecutable)

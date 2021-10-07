@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -56,6 +55,7 @@ func (slt StartListenType) IsValid() error {
 func StartDB(port int, listen StartListenType, invoker constants.Invoker) (startResult StartResult, err error) {
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
+	var postgresCmd *exec.Cmd
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -66,90 +66,6 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 			if startResult == ServiceStarted {
 				StopDB(false, invoker, nil)
 			}
-		}
-	}()
-	info, err := GetStatus()
-
-	if err != nil {
-		return ServiceFailedToStart, err
-	}
-
-	if info != nil {
-		// check whether the stated PID actually exists
-		processRunning, err := PidExists(info.Pid)
-		if err != nil {
-			return ServiceFailedToStart, err
-		}
-
-		// Process with declared PID exists.
-		// Check if the service was started by another `service` command
-		// if not, throw an error.
-		if processRunning {
-			if info.Invoker != constants.InvokerService {
-				return ServiceAlreadyRunning, fmt.Errorf("You have a %s session open. Close this session before running %s.\nTo force kill all existing sessions, run %s", constants.Bold(fmt.Sprintf("steampipe %s", info.Invoker)), constants.Bold("steampipe service start"), constants.Bold("steampipe service stop --force"))
-			}
-			return ServiceAlreadyRunning, nil
-		}
-	}
-
-	// we need to start the process
-
-	// remove the stale info file, ignoring errors - will overwrite anyway
-	_ = removeRunningInstanceInfo()
-
-	if err := utils.EnsureDirectoryPermission(getDataLocation()); err != nil {
-		return ServiceFailedToStart, fmt.Errorf("%s does not have the necessary permissions to start the service", getDataLocation())
-	}
-
-	// Generate the certificate if it fails then set the ssl to off
-	if err := generateSelfSignedCertificate(); err != nil {
-		utils.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
-	}
-
-	if err := isPortBindable(port); err != nil {
-		return ServiceFailedToStart, fmt.Errorf("cannot listen on port %d", constants.Bold(port))
-	}
-
-	if err := migrateLegacyPasswordFile(); err != nil {
-		return ServiceFailedToStart, err
-	}
-
-	utils.LogTime("postgresCmd start")
-	databaseName, err := startPostgresProcessAndSetup(port, listen, invoker)
-	if err != nil {
-		return ServiceFailedToStart, err
-	}
-	utils.LogTime("postgresCmd end")
-
-	err = ensureSteampipeServer(databaseName)
-	if err != nil {
-		// there was a problem with the installation
-		return ServiceFailedToStart, err
-	}
-
-	err = ensureTempTablePermissions(databaseName)
-	if err != nil {
-		return ServiceFailedToStart, err
-	}
-	// ensure the db contains command schema
-	err = ensureCommandSchema(databaseName)
-	if err != nil {
-		return ServiceFailedToStart, err
-	}
-
-	return ServiceStarted, err
-}
-
-// startPostgresProcessAndSetup starts the postgres process and writes out the state file
-// after it is convinced that the process is started and is accepting connections
-func startPostgresProcessAndSetup(port int, listen StartListenType, invoker constants.Invoker) (databaseName string, e error) {
-	utils.LogTime("startPostgresProcess start")
-	defer utils.LogTime("startPostgresProcess end")
-
-	var postgresCmd *exec.Cmd
-
-	defer func() {
-		if e != nil {
 			// remove the state file if we are going back with an error
 			removeRunningInstanceInfo()
 			// we are going back with an error
@@ -161,11 +77,159 @@ func startPostgresProcessAndSetup(port int, listen StartListenType, invoker cons
 		}
 	}()
 
-	postgresCmd, err := startPostgresProcess(port, listen, invoker)
+	// remove the stale info file, ignoring errors - will overwrite anyway
+	_ = removeRunningInstanceInfo()
+
+	if err := utils.EnsureDirectoryPermission(getDataLocation()); err != nil {
+		return ServiceFailedToStart, fmt.Errorf("%s does not have the necessary permissions to start the service", getDataLocation())
+	}
+
+	// Generate the certificate if it fails then set the ssl to off
+	if err := ensureSelfSignedCertificate(); err != nil {
+		utils.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
+	}
+
+	if err := isPortBindable(port); err != nil {
+		return ServiceFailedToStart, fmt.Errorf("cannot listen on port %d", constants.Bold(port))
+	}
+
+	if err := migrateLegacyPasswordFile(); err != nil {
+		return ServiceFailedToStart, err
+	}
+
+	password, err := getPassword()
+	if err != nil {
+		return ServiceFailedToStart, err
+	}
+
+	postgresCmd, err = startPostgresProcess(port, listen, invoker)
+	if err != nil {
+		return ServiceFailedToStart, err
+	}
+
+	// create a *RunningInfo with empty DBName
+	// we need this to connect to the service using 'root'
+	// which we will use to retrieve the name of the installed database
+	err = createRunningInfo(postgresCmd, port, "", password, listen, invoker)
+	if err != nil {
+		return ServiceFailedToStart, err
+	}
+
+	databaseName, err := getDatabaseName()
+	if err != nil {
+		return ServiceFailedToStart, err
+	}
+
+	err = updateDatabaseNameInRunningInfo(databaseName)
+	if err != nil {
+		return ServiceFailedToStart, err
+	}
+
+	err = setupServicePassword(invoker, password)
+	if err != nil {
+		return ServiceFailedToStart, err
+	}
+
+	// release the process - let the OS adopt it, so that we can exit
+	// DO AT END? IN DEFER?
+	err = postgresCmd.Process.Release()
+	if err != nil {
+		return ServiceFailedToStart, err
+	}
+
+	utils.LogTime("postgresCmd end")
+
+	// ensure the foreign server exists in the database
+	err = ensureSteampipeServer(databaseName)
+	if err != nil {
+		// there was a problem with the installation
+		return ServiceFailedToStart, err
+	}
+
+	err = ensureTempTablePermissions(databaseName)
+	if err != nil {
+		return ServiceFailedToStart, err
+	}
+
+	// ensure the db contains command schema
+	err = ensureCommandSchema(databaseName)
+	if err != nil {
+		return ServiceFailedToStart, err
+	}
+
+	return ServiceStarted, err
+}
+
+// startPostgresProcessAndSetup starts the postgres process and writes out the state file
+// after it is convinced that the process is started and is accepting connections
+//func startPostgresProcessAndSetup(port int, listen StartListenType, invoker constants.Invoker) (databaseName string, e error) {
+//	utils.LogTime("startPostgresProcess start")
+//	defer utils.LogTime("startPostgresProcess end")
+//
+//	var postgresCmd *exec.Cmd
+//
+//	//defer func() {
+//	//	if e != nil {
+//	//		// remove the state file if we are going back with an error
+//	//		removeRunningInstanceInfo()
+//	//		// we are going back with an error
+//	//		// if the process was started,
+//	//		if postgresCmd != nil && postgresCmd.Process != nil {
+//	//			// kill it
+//	//			postgresCmd.Process.Kill()
+//	//		}
+//	//	}
+//	//}()
+//
+//	//postgresCmd, err := startPostgresProcess(port, listen, invoker)
+//	//if err != nil {
+//	//	return "", err
+//	//}
+//	//
+//
+//
+//	//// create a *RunningInfo with empty DBName
+//	//// we need this to connect to the service using 'root'
+//	//// which we will use to retrieve the name of the installed database
+//	//err = createRunningInfo(postgresCmd, port, "", password, listen, invoker)
+//	//if err != nil {
+//	//	return "", err
+//	//}
+//
+//	//databaseName, err := getDatabaseName()
+//	//if err != nil {
+//	//	return "", err
+//	//}
+//	//err = updateDatabaseNameInRunningInfo(databaseName)
+//	//return databaseName, "", nil, false
+//
+//	//err = setupServicePassword(invoker, password)
+//	//if err != nil {
+//	//	return "", err
+//	//}
+//	//
+//	//// release the process - let the OS adopt it, so that we can exit
+//	//err = postgresCmd.Process.Release()
+//	//if err != nil {
+//	//	return "", err
+//	//}
+//
+//	return databaseName, nil
+//}
+
+func getDatabaseName() (string, error) {
+	// connect to the service and retrieve the database name
+	databaseName, err := retrieveDatabaseNameFromService()
 	if err != nil {
 		return "", err
 	}
+	if len(databaseName) == 0 {
+		return "", fmt.Errorf("could not find database to connect to")
+	}
+	return databaseName, nil
+}
 
+func getPassword() (string, error) {
 	// get the password from the password file
 	password, err := readPasswordFile()
 	if err != nil {
@@ -178,40 +242,7 @@ func startPostgresProcessAndSetup(port int, listen StartListenType, invoker cons
 	if viper.IsSet(constants.ArgServicePassword) {
 		password = viper.GetString(constants.ArgServicePassword)
 	}
-
-	// create a *RunningInfo with empty DBName
-	// we need this to connect to the service using 'root'
-	// which we will use to retrieve the name of the installed database
-	err = createRunningInfo(postgresCmd, port, "", password, listen, invoker)
-	if err != nil {
-		return "", err
-	}
-
-	// connect to the service and retrieve the database name
-	databaseName, err = retrieveDatabaseNameFromService(invoker)
-	if err != nil {
-		return "", err
-	}
-	if len(databaseName) == 0 && invoker != constants.InvokerInstaller {
-		return "", fmt.Errorf("could not find database to connect to")
-	}
-	err = updateDatabaseNameInRunningInfo(databaseName)
-	if err != nil {
-		return "", err
-	}
-
-	err = setupServicePassword(invoker, password)
-	if err != nil {
-		return "", err
-	}
-
-	// release the process - let the OS adopt it, so that we can exit
-	err = postgresCmd.Process.Release()
-	if err != nil {
-		return "", err
-	}
-
-	return databaseName, nil
+	return password, nil
 }
 
 func startPostgresProcess(port int, listen StartListenType, invoker constants.Invoker) (*exec.Cmd, error) {
@@ -226,6 +257,7 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 	}
 
 	postgresCmd := createCmd(port, listenAddresses)
+
 	setupLogCollection(postgresCmd)
 	err := postgresCmd.Start()
 	if err != nil {
@@ -235,12 +267,7 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 	return postgresCmd, nil
 }
 
-func retrieveDatabaseNameFromService(invoker constants.Invoker) (string, error) {
-	if invoker == constants.InvokerInstaller {
-		// don't do anything if this is an installer invoked service
-		// the database hasn't been installed yet
-		return "", nil
-	}
+func retrieveDatabaseNameFromService() (string, error) {
 	connection, err := createRootDbClient()
 	if err != nil {
 		return "", err
@@ -324,8 +351,8 @@ func createCmd(port int, listenAddresses string) *exec.Cmd {
 		// If ssl is off  it doesnot matter what we pass in the ssl_cert_file and ssl_key_file
 		// SSL will only get validated if the ssl is on
 		"-c", fmt.Sprintf("ssl=%s", SslStatus()),
-		"-c", fmt.Sprintf("ssl_cert_file=%s", filepath.Join(getDataLocation(), constants.ServerCert)),
-		"-c", fmt.Sprintf("ssl_key_file=%s", filepath.Join(getDataLocation(), constants.ServerKey)),
+		"-c", fmt.Sprintf("ssl_cert_file=%s", getServerCertLocation()),
+		"-c", fmt.Sprintf("ssl_key_file=%s", getServerCertKeyLocation()),
 
 		// Data Directory
 		"-D", getDataLocation())
