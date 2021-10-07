@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -66,7 +67,7 @@ func DecodeConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.
 		}
 	}
 	// convert the remaining config to a hcl string to pass to the plugin
-	config, moreDiags := BodyToHclString(rest, connectionContent)
+	config, moreDiags := pluginConnectionConfigToHclString(rest, connectionContent)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 	} else {
@@ -76,17 +77,56 @@ func DecodeConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.
 	return connection, diags
 }
 
-func BodyToHclString(body hcl.Body, connectionContent *hcl.BodyContent) (string, hcl.Diagnostics) {
+// build a hcl string with all attributes in the conneciton config which are NOT specified in the coneciton block schema
+// this is passed to the plugin who will validate and parse it
+func pluginConnectionConfigToHclString(body hcl.Body, connectionContent *hcl.BodyContent) (string, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
 	f := hclwrite.NewEmptyFile()
 	rootBody := f.Body()
-	attrs, diags := body.JustAttributes()
-	if diags.HasErrors() {
-		return "", diags
+
+	// this is a bit messy
+	// we want to extract the attributes which are NOT in the connection block schema
+	// the body passed in here is the 'rest' result returned from a partial decode, meaning all attributes and blocks
+	// in the schema are marked as 'hidden'
+
+	// body.JustAttributes() returns all attributes which are not hidden (i.e. all attributes NOT in the schema)
+	//
+	// however when calling JustAttributes for a hcl body, it will fail if there are any blocks
+	// therefore this code will fail for hcl connection config which has any child blocks (e.g  connection options)
+	//
+	// it does work however for a json body as this implementation treats blocks as attributes,
+	// so the options block is treated as a hidden attribute and excluded
+	// we therefore need to treaty hcl and json body separately
+
+	// store map of attribute expressions
+	attrExpressionMap := make(map[string]hcl.Expression)
+
+	if hclBody, ok := body.(*hclsyntax.Body); ok {
+		// if we can cast to a hcl body, read all the attributes and manually exclude those which are in the schema
+		for name, attr := range hclBody.Attributes {
+			// exclude attributes we have already handled
+			if _, ok := connectionContent.Attributes[name]; !ok {
+				attrExpressionMap[name] = attr.Expr
+			}
+		}
+	} else {
+		// so the body was not hcl - we assume it is json
+		// try to call JustAttributes
+		attrs, diags := body.JustAttributes()
+		if diags.HasErrors() {
+			return "", diags
+		}
+		// the attributes returned will only be the ones not in the schema, i.e. we do not need to filter them ourselves
+		for name, attr := range attrs {
+			attrExpressionMap[name] = attr.Expr
+		}
 	}
-	for name, attr := range attrs {
-		if _, ok := connectionContent.Attributes[name]; !ok {
-			val, moreDiags := attr.Expr.Value(nil)
+
+	for name, expr := range attrExpressionMap {
+		val, moreDiags := expr.Value(nil)
+		if moreDiags.HasErrors() {
 			diags = append(diags, moreDiags...)
+		} else {
 			rootBody.SetAttributeValue(name, val) // this is overwritten later
 		}
 	}
