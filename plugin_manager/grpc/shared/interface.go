@@ -9,6 +9,12 @@ import (
 	"google.golang.org/grpc"
 )
 
+const PluginName = "steampipe_plugin_manager"
+
+var PluginMap = map[string]plugin.Plugin{
+	PluginName: &PluginManagerPlugin{},
+}
+
 // Handshake is a common handshake that is shared by plugin and host.
 var Handshake = plugin.HandshakeConfig{
 	MagicCookieKey:   "PLUGIN_MANAGER_MAGIC_COOKIE",
