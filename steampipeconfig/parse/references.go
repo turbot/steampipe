@@ -24,11 +24,11 @@ func AddReferences(resource modconfig.HclResource, block *hcl.Block, runCtx *Run
 			for _, referenceBlockType := range referenceBlockTypes {
 				if referenceString, ok := hclhelpers.ResourceNameFromTraversal(referenceBlockType, v); ok {
 					reference := &modconfig.ResourceReference{
-						Ref:          referenceString,
-						ReferencedBy: resource.Name(),
-						BlockType:    block.Type,
-						BlockName:    block.Labels[0],
-						Attribute:    attr.Name,
+						To:        referenceString,
+						From:      resource.Name(),
+						BlockType: block.Type,
+						BlockName: block.Labels[0],
+						Attribute: attr.Name,
 					}
 					moreDiags := addResourceMetadata(reference, attr.SrcRange, runCtx)
 					diags = append(diags, moreDiags...)

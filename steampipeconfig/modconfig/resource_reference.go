@@ -2,16 +2,17 @@ package modconfig
 
 import (
 	"fmt"
-	"strings"
+
+	"github.com/turbot/steampipe/utils"
 )
 
 type ResourceReference struct {
-	Ref          string `cty:"ref" column:"ref,text"`
-	ReferencedBy string `cty:"referenced_by" column:"referenced_by,text"`
-	BlockType    string `cty:"block_type" column:"block_type,text"`
-	BlockName    string `cty:"block_name" column:"block_name,text"`
-	Attribute    string `cty:"attribute" column:"attribute,text"`
-	metadata     *ResourceMetadata
+	To        string `cty:"reference_to" column:"reference_to,text"`
+	From      string `cty:"reference_from" column:"reference_from,text"`
+	BlockType string `cty:"from_block_type" column:"from_block_type,text"`
+	BlockName string `cty:"from_block_name" column:"from_block_name,text"`
+	Attribute string `cty:"from_attribute" column:"from_attribute,text"`
+	metadata  *ResourceMetadata
 }
 
 // ResourceReferenceMap is a map of references keyed by 'ref'
@@ -20,17 +21,22 @@ type ResourceReference struct {
 type ResourceReferenceMap map[string][]*ResourceReference
 
 func (m ResourceReferenceMap) Add(reference *ResourceReference) {
-	refs, ok := m[reference.Ref]
+	refs, ok := m[reference.To]
 	if !ok {
 		// if no ref instances, create an empty array
 		refs = []*ResourceReference{}
 	}
 	// write back the updated array
-	m[reference.Ref] = append(refs, reference)
+	m[reference.To] = append(refs, reference)
 }
 
 func (r *ResourceReference) String() string {
-	return fmt.Sprintf("%s_%s_%s_%s_%s", r.ReferencedBy, r.BlockType, r.BlockName, r.Attribute, r.Ref)
+	return fmt.Sprintf("To: %s\nFrom: %s\nBlockType: %s\nBlockName: %s\nAttribute: %s",
+		r.To,
+		r.From,
+		r.BlockType,
+		r.BlockName,
+		r.Attribute)
 }
 
 func (r *ResourceReference) Equals(other *ResourceReference) bool {
@@ -38,8 +44,11 @@ func (r *ResourceReference) Equals(other *ResourceReference) bool {
 }
 
 // Name implements ResourceWithMetadata
+// the name must start with the 'resource type' as we parse it and use just the 'name' segment
 func (r *ResourceReference) Name() string {
-	return fmt.Sprintf("ref.%s", strings.Replace(r.String(), ".", "_", -1))
+	hash := utils.GetMD5Hash(r.String())[:8]
+	str := fmt.Sprintf("ref.%s", hash)
+	return str
 }
 
 // GetMetadata implements ResourceWithMetadata
