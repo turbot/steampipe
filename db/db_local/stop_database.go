@@ -72,7 +72,7 @@ func ShutdownService(invoker constants.Invoker) {
 
 // GetCountOfConnectedClients returns the number of clients currently connected to the service
 func GetCountOfConnectedClients() (int, error) {
-	rootClient, err := createRootDbClient()
+	rootClient, err := createLocalDbClient("", constants.DatabaseSuperUser)
 	if err != nil {
 		return -1, err
 	}

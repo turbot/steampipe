@@ -268,7 +268,7 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 }
 
 func retrieveDatabaseNameFromService() (string, error) {
-	connection, err := createRootDbClient()
+	connection, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
 	if err != nil {
 		return "", err
 	}

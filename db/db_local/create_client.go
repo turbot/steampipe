@@ -29,19 +29,9 @@ func getLocalSteampipeConnectionString() (string, error) {
 	return psqlInfo, nil
 }
 
-// createRootDbClient connects as a superuser to the
-// installed database, if available, otherwise to the default
-// "postgres" database
-func createRootDbClient() (*sql.DB, error) {
-	utils.LogTime("db.createSteampipeRootDbClient start")
-	defer utils.LogTime("db™.createSteampipeRootDbClient end")
-
-	return createLocalDbClient("", constants.DatabaseSuperUser)
-}
-
 // createLocalDbClient connects and returns a connection to the given database using
 // the provided username
-// if the database is not provided, then it fallsback to the default database in the service
+// if the database is not provided (empty), it connects to the default database in the service
 // that was created during installation.
 func createLocalDbClient(databaseName string, username string) (*sql.DB, error) {
 	utils.LogTime("db.createDbClient start")
