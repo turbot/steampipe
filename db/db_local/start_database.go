@@ -480,7 +480,7 @@ func ensureSteampipeServer(databaseName string) error {
 	err = out.Scan(&serverName)
 	// if there is an error, we need to reinstall the foreign server
 	if err != nil {
-		return installForeignServer(databaseName)
+		return installForeignServer(databaseName, rootClient)
 	}
 	return nil
 }
