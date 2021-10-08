@@ -91,6 +91,8 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	db_local.StartPluginManager()
+
 	if stdinData := getPipedStdinData(); len(stdinData) > 0 {
 		args = append(args, stdinData)
 	}
