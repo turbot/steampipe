@@ -5,7 +5,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $SIMPLE_MOD_DIR
   run steampipe query "select * from steampipe_query" --export=output.json
   
-  # extract the first mod_name from the list
+  # extract the first mod_name from the list 
   mod_name=$(cat output.json | jq '.[0].mod_name')
 
   # check if mod_name starts with "mod."
