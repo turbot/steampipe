@@ -225,7 +225,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_equal "$flag" "0"
     
     rm -f output.json
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.spc
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.yml
 }
 
 @test "steampipe check regions in connection config is being parsed and used(hcl)" {
