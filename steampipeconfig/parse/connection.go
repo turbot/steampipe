@@ -3,8 +3,6 @@ package parse
 import (
 	"fmt"
 
-	"github.com/hashicorp/hcl/v2/hclsyntax"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
