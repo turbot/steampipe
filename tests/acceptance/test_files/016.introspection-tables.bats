@@ -40,25 +40,24 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f output.json
 }
 
-@test "ensure the refs and referenced_by column are populated correctly" {
+@test "ensure the refs and referenced_by columns are populated correctly" {
   cd $SIMPLE_MOD_DIR
-  run steampipe query "select * from steampipe_reference" --export=output.json
+  run steampipe query "select * from steampipe_reference" --output json
 
   # extract the refs and the referenced_by
-  refs=$(cat output.json | jq '.[0].ref')
-  referenced_by=$(cat output.json | jq '.[0].referenced_by')
+  refs=$(echo $output | jq '.[0].ref')
+  referenced_by=$(echo $output | jq '.[0].referenced_by')
 
   assert_equal "$refs" '"var.sample_var_1"'
   assert_equal "$referenced_by" '"query.sample_query_1"'
-  rm -f output.json
 }
 
 @test "ensure the refs column includes variable references" {
   cd $SIMPLE_MOD_DIR
-  run steampipe query "select * from steampipe_reference" --export=output.json
+  run steampipe query "select * from steampipe_reference" --output json
 
   # extract the refs
-  refs=$(cat output.json | jq '.[0].ref')
+  refs=$(echo $output | jq '.[0].ref')
   echo $refs
 
   # check if refs contains variables(start with "var.")
@@ -69,15 +68,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
     flag=0
   fi
   assert_equal "$flag" "1"
-  rm -f output.json
 }
 
 @test "introspection tables should get populated in query batch mode" {
   cd $SIMPLE_MOD_DIR
-  run steampipe query "select * from steampipe_query" --export=output.json
+  run steampipe query "select * from steampipe_query" --output json
 
   # extracting only description from the list, which is enough to prove that there is an output
-  description=$(cat output.json | jq '.[].description')
+  description=$(echo $output | jq '.[].description')
   assert_equal "$description" '"query 1 - 3 params all with defaults"'
-  rm -f output.json
 }
