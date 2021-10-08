@@ -97,7 +97,7 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 		return ServiceFailedToStart, err
 	}
 
-	password, err := getPassword()
+	password, err := resolvePassword()
 	if err != nil {
 		return ServiceFailedToStart, err
 	}
@@ -115,7 +115,7 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 		return ServiceFailedToStart, err
 	}
 
-	databaseName, err := getDatabaseName()
+	databaseName, err := getDatabaseName(port)
 	if err != nil {
 		return ServiceFailedToStart, err
 	}
@@ -125,13 +125,12 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 		return ServiceFailedToStart, err
 	}
 
-	err = setupServicePassword(invoker, password)
+	err = setServicePassword(password)
 	if err != nil {
 		return ServiceFailedToStart, err
 	}
 
 	// release the process - let the OS adopt it, so that we can exit
-	// DO AT END? IN DEFER?
 	err = postgresCmd.Process.Release()
 	if err != nil {
 		return ServiceFailedToStart, err
@@ -160,66 +159,9 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	return ServiceStarted, err
 }
 
-// startPostgresProcessAndSetup starts the postgres process and writes out the state file
-// after it is convinced that the process is started and is accepting connections
-//func startPostgresProcessAndSetup(port int, listen StartListenType, invoker constants.Invoker) (databaseName string, e error) {
-//	utils.LogTime("startPostgresProcess start")
-//	defer utils.LogTime("startPostgresProcess end")
-//
-//	var postgresCmd *exec.Cmd
-//
-//	//defer func() {
-//	//	if e != nil {
-//	//		// remove the state file if we are going back with an error
-//	//		removeRunningInstanceInfo()
-//	//		// we are going back with an error
-//	//		// if the process was started,
-//	//		if postgresCmd != nil && postgresCmd.Process != nil {
-//	//			// kill it
-//	//			postgresCmd.Process.Kill()
-//	//		}
-//	//	}
-//	//}()
-//
-//	//postgresCmd, err := startPostgresProcess(port, listen, invoker)
-//	//if err != nil {
-//	//	return "", err
-//	//}
-//	//
-//
-//
-//	//// create a *RunningInfo with empty DBName
-//	//// we need this to connect to the service using 'root'
-//	//// which we will use to retrieve the name of the installed database
-//	//err = createRunningInfo(postgresCmd, port, "", password, listen, invoker)
-//	//if err != nil {
-//	//	return "", err
-//	//}
-//
-//	//databaseName, err := getDatabaseName()
-//	//if err != nil {
-//	//	return "", err
-//	//}
-//	//err = updateDatabaseNameInRunningInfo(databaseName)
-//	//return databaseName, "", nil, false
-//
-//	//err = setupServicePassword(invoker, password)
-//	//if err != nil {
-//	//	return "", err
-//	//}
-//	//
-//	//// release the process - let the OS adopt it, so that we can exit
-//	//err = postgresCmd.Process.Release()
-//	//if err != nil {
-//	//	return "", err
-//	//}
-//
-//	return databaseName, nil
-//}
-
-func getDatabaseName() (string, error) {
-	// connect to the service and retrieve the database name
-	databaseName, err := retrieveDatabaseNameFromService()
+// getDatabaseName connects to the service and retrieves the database name
+func getDatabaseName(port int) (string, error) {
+	databaseName, err := retrieveDatabaseNameFromService(port)
 	if err != nil {
 		return "", err
 	}
@@ -229,7 +171,7 @@ func getDatabaseName() (string, error) {
 	return databaseName, nil
 }
 
-func getPassword() (string, error) {
+func resolvePassword() (string, error) {
 	// get the password from the password file
 	password, err := readPasswordFile()
 	if err != nil {
@@ -267,15 +209,13 @@ func startPostgresProcess(port int, listen StartListenType, invoker constants.In
 	return postgresCmd, nil
 }
 
-func retrieveDatabaseNameFromService() (string, error) {
-	connection, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
+func retrieveDatabaseNameFromService(port int) (string, error) {
+	connection, err := createMaintenanceClient(port)
 	if err != nil {
 		return "", err
 	}
 	defer connection.Close()
 
-	// set the password on the database
-	// we can't do this during installation, since the 'steampipe` user isn't setup yet
 	out := connection.QueryRow("select datname from pg_database where datistemplate=false AND datname <> 'postgres';")
 
 	var databaseName string
@@ -403,18 +343,13 @@ func traceoutServiceLogs(logChannel chan string, stopLogStreamFn func()) {
 	}
 }
 
-func setupServicePassword(invoker constants.Invoker, password string) error {
+func setServicePassword(password string) error {
 	connection, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
 	if err != nil {
 		return err
 	}
 	defer connection.Close()
-
-	if invoker != constants.InvokerInstaller {
-		// set the password on the database
-		// we can't do this during installation, since the 'steampipe` user isn't setup yet
-		_, err = connection.Exec(fmt.Sprintf(`alter user steampipe with password '%s'`, password))
-	}
+	_, err = connection.Exec(fmt.Sprintf(`alter user steampipe with password '%s'`, password))
 	return err
 }
 

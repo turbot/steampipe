@@ -240,7 +240,7 @@ func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Connection to database...")
-	client, err := connectToService(port)
+	client, err := createMaintenanceClient(port)
 	if err != nil {
 		display.StopSpinner(spinner)
 		return fmt.Errorf("Connection to database... FAILED!")
@@ -295,7 +295,9 @@ func resolveDatabaseName() string {
 	return databaseName
 }
 
-func connectToService(port int) (*sql.DB, error) {
+// createMaintenanceClient connects to the postgres server using the
+// maintenance database and superuser
+func createMaintenanceClient(port int) (*sql.DB, error) {
 	psqlInfo := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
 
 	log.Println("[TRACE] Connection string: ", psqlInfo)
@@ -447,9 +449,8 @@ func installDatabaseWithPermissions(databaseName string, rawClient *sql.DB) erro
 		fmt.Sprintf("grant %s to %s", constants.DatabaseUsersRole, constants.DatabaseUser),
 	}
 	for _, statement := range statements {
-		// NOTE: This may print a password to the log file, but it doesn't matter
-		// since the password is stored in a config file anyway.
-		log.Println("[TRACE] Install database: ", statement)
+		// not logging here, since the password may get logged
+		// we don't want that
 		if _, err := rawClient.Exec(statement); err != nil {
 			return err
 		}

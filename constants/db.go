@@ -96,8 +96,6 @@ const (
 	InvokerQuery = "query"
 	// InvokerCheck is set when invoked by check command
 	InvokerCheck = "check"
-	// InvokerInstaller is set when when invoked by the installer
-	InvokerInstaller = "installer"
 	// InvokerPlugin is set when invoked by a plugin command
 	InvokerPlugin = "plugin"
 	// InvokerReport is set when invoked by report command
@@ -107,8 +105,8 @@ const (
 // IsValid is a validator for Invoker known values
 func (i Invoker) IsValid() error {
 	switch i {
-	case InvokerService, InvokerQuery, InvokerCheck, InvokerInstaller, InvokerPlugin, InvokerReport:
+	case InvokerService, InvokerQuery, InvokerCheck, InvokerPlugin, InvokerReport:
 		return nil
 	}
-	return fmt.Errorf("Invalid invoker. Can be one of '%v', '%v', '%v', '%v', '%v' or '%v' ", InvokerService, InvokerQuery, InvokerInstaller, InvokerPlugin, InvokerCheck, InvokerReport)
+	return fmt.Errorf("invalid invoker. Can be one of '%v', '%v', '%v', '%v' or '%v' ", InvokerService, InvokerQuery, InvokerPlugin, InvokerCheck, InvokerReport)
 }
