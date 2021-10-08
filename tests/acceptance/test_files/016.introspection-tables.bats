@@ -38,19 +38,19 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$flag" "0"
 }
 
-@test "ensure the refs and referenced_by columns are populated correctly" {
+@test "ensure the reference_to and reference_from columns are populated correctly" {
   cd $SIMPLE_MOD_DIR
   run steampipe query "select * from steampipe_reference" --output json
 
   # extract the refs and the referenced_by
   refs=$(echo $output | jq '.[0].reference_to')
-  referenced_by=$(echo $output | jq '.[0].referenced_by')
+  referenced_by=$(echo $output | jq '.[0].reference_from')
 
   assert_equal "$refs" '"var.sample_var_1"'
   assert_equal "$referenced_by" '"query.sample_query_1"'
 }
 
-@test "ensure the refs column includes variable references" {
+@test "ensure the reference_to column includes variable references" {
   cd $SIMPLE_MOD_DIR
   run steampipe query "select * from steampipe_reference" --output json
 
