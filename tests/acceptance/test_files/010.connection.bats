@@ -72,3 +72,203 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run steampipe query "select * from chaos5.chaos_cache_check"
     assert_success
 }
+
+@test "steampipe test connection config with options(hcl)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+
+    run steampipe query "select * from chaos6.chaos_cache_check"
+    assert_success
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+}
+
+@test "steampipe test connection config with options(yml)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+
+    run steampipe query "select * from chaos6.chaos_cache_check"
+    assert_success
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+}
+
+@test "steampipe test connection config with options(json)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+
+    run steampipe query "select * from chaos6.chaos_cache_check"
+    assert_success
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+}
+
+@test "steampipe check options config is being parsed and used(cache=true; hcl)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+
+    # cache functionality check since cache=true in options
+    cd $CONFIG_PARSING_TEST_MOD
+    run steampipe check benchmark.config_parsing_benchmark --export=output.json
+
+    # store the date from 1st control in `content`
+    content=$(cat output.json | jq '.groups[].controls[0].results[0].resource')
+    # store the date from 2nd control in `new_content`
+    new_content=$(cat output.json | jq '.groups[].controls[1].results[0].resource')
+    echo $content
+    echo $new_content
+
+    # verify that `content` and `new_content` are the same
+    assert_equal "$new_content" "$content"
+    
+    rm -f output.json
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+}
+
+@test "steampipe check options config is being parsed and used(cache=true; yml)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+
+    # cache functionality check since cache=true in options
+    cd $CONFIG_PARSING_TEST_MOD
+    run steampipe check benchmark.config_parsing_benchmark --export=output.json
+
+    # store the date from 1st control in `content`
+    content=$(cat output.json | jq '.groups[].controls[0].results[0].resource')
+    # store the date from 2nd control in `new_content`
+    new_content=$(cat output.json | jq '.groups[].controls[1].results[0].resource')
+    echo $content
+    echo $new_content
+
+    # verify that `content` and `new_content` are the same
+    assert_equal "$new_content" "$content"
+    
+    rm -f output.json
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+}
+
+@test "steampipe check options config is being parsed and used(cache=true; json)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+
+    # cache functionality check since cache=true in options
+    cd $CONFIG_PARSING_TEST_MOD
+    run steampipe check benchmark.config_parsing_benchmark --export=output.json
+
+    # store the date from 1st control in `content`
+    content=$(cat output.json | jq '.groups[].controls[0].results[0].resource')
+    # store the date from 2nd control in `new_content`
+    new_content=$(cat output.json | jq '.groups[].controls[1].results[0].resource')
+    echo $content
+    echo $new_content
+
+    # verify that `content` and `new_content` are the same
+    assert_equal "$new_content" "$content"
+    
+    rm -f output.json
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+}
+
+@test "steampipe check options config is being parsed and used(cache=false; hcl)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options_2.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.spc
+
+    # cache functionality check since cache=false in options
+    cd $CONFIG_PARSING_TEST_MOD
+    run steampipe check benchmark.config_parsing_benchmark --export=output.json
+
+    # store the date from 1st control in `content`
+    content=$(cat output.json | jq '.groups[].controls[0].results[0].resource')
+    # store the date from 2nd control in `new_content`
+    new_content=$(cat output.json | jq '.groups[].controls[1].results[0].resource')
+    echo $content
+    echo $new_content
+
+    # verify that `content` and `new_content` are not the same
+    if [[ "$content" == "$new_content" ]]; then
+        flag=1
+    else
+        flag=0
+    fi
+    assert_equal "$flag" "0"
+
+    rm -f output.json
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.spc
+}
+
+@test "steampipe check options config is being parsed and used(cache=false; yml)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options_2.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.yml
+
+    # cache functionality check since cache=false in options
+    cd $CONFIG_PARSING_TEST_MOD
+    run steampipe check benchmark.config_parsing_benchmark --export=output.json
+
+    # store the date from 1st control in `content`
+    content=$(cat output.json | jq '.groups[].controls[0].results[0].resource')
+    # store the date from 2nd control in `new_content`
+    new_content=$(cat output.json | jq '.groups[].controls[1].results[0].resource')
+    echo $content
+    echo $new_content
+
+    # verify that `content` and `new_content` are not the same
+    if [[ "$content" == "$new_content" ]]; then
+        flag=1
+    else
+        flag=0
+    fi
+    assert_equal "$flag" "0"
+    
+    rm -f output.json
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.yml
+}
+
+@test "steampipe check regions in connection config is being parsed and used(hcl)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+
+    # check regions in connection config is being parsed and used
+    run steampipe query "select * from chaos6.chaos_regions order by id" --output json
+    result=$(echo $output | tr -d '[:space:]')
+
+    # check output
+    assert_equal "$result" '[{"id":0,"region_name":"us-east-1"},{"id":3,"region_name":"us-west-2"}]'
+
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+}
+
+@test "steampipe check regions in connection config is being parsed and used(yml)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+
+    # check regions in connection config is being parsed and used
+    run steampipe query "select * from chaos6.chaos_regions order by id" --output json
+    result=$(echo $output | tr -d '[:space:]')
+
+    # check output
+    assert_equal "$result" '[{"id":0,"region_name":"us-east-1"},{"id":3,"region_name":"us-west-2"}]'
+
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+}
+
+@test "steampipe check regions in connection config is being parsed and used(json)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+
+    # check regions in connection config is being parsed and used
+    run steampipe query "select * from chaos6.chaos_regions order by id" --output json
+    result=$(echo $output | tr -d '[:space:]')
+
+    # check output
+    assert_equal "$result" '[{"id":0,"region_name":"us-east-1"},{"id":3,"region_name":"us-west-2"}]'
+
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+}
