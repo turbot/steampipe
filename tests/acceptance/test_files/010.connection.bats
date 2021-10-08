@@ -227,3 +227,48 @@ load "$LIB_BATS_SUPPORT/load.bash"
     rm -f output.json
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.spc
 }
+
+@test "steampipe check regions in connection config is being parsed and used(hcl)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+
+    # check regions in connection config is being parsed and used
+    run steampipe query "select * from chaos6.chaos_regions order by id" --output json
+    result=$(echo $output | tr -d '[:space:]')
+
+    # check output
+    assert_equal "$result" '[{"id":0,"region_name":"us-east-1"},{"id":3,"region_name":"us-west-2"}]'
+
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+}
+
+@test "steampipe check regions in connection config is being parsed and used(yml)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+
+    # check regions in connection config is being parsed and used
+    run steampipe query "select * from chaos6.chaos_regions order by id" --output json
+    result=$(echo $output | tr -d '[:space:]')
+
+    # check output
+    assert_equal "$result" '[{"id":0,"region_name":"us-east-1"},{"id":3,"region_name":"us-west-2"}]'
+
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+}
+
+@test "steampipe check regions in connection config is being parsed and used(json)" {
+    run steampipe plugin install chaos
+    run steampipe plugin install steampipe
+    cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+
+    # check regions in connection config is being parsed and used
+    run steampipe query "select * from chaos6.chaos_regions order by id" --output json
+    result=$(echo $output | tr -d '[:space:]')
+
+    # check output
+    assert_equal "$result" '[{"id":0,"region_name":"us-east-1"},{"id":3,"region_name":"us-west-2"}]'
+
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+}
