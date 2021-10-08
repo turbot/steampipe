@@ -382,9 +382,7 @@ func createCmd(port int, listenAddresses string) *exec.Cmd {
 }
 
 func setupLogCollection(cmd *exec.Cmd) {
-	// create a channel with a big buffer, so that it doesn't choke
-	logChannel := make(chan string, 1000)
-	stopListenFn, err := setupLogCollector(cmd, logChannel)
+	logChannel, stopListenFn, err := setupLogCollector(cmd)
 	if err == nil {
 		go traceoutServiceLogs(logChannel, stopListenFn)
 	} else {
@@ -420,16 +418,19 @@ func setupServicePassword(invoker constants.Invoker, password string) error {
 	return err
 }
 
-func setupLogCollector(postgresCmd *exec.Cmd, publishChannel chan string) (func(), error) {
+func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
+	var publishChannel chan string
+
 	stdoutPipe, err := postgresCmd.StdoutPipe()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	stderrPipe, err := postgresCmd.StderrPipe()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	closeFunction := func() {
+		// close the sources to make sure they don't send anymore data
 		stdoutPipe.Close()
 		stderrPipe.Close()
 
@@ -441,6 +442,9 @@ func setupLogCollector(postgresCmd *exec.Cmd, publishChannel chan string) (func(
 
 	stdoutScanner.Split(bufio.ScanLines)
 	stderrScanner.Split(bufio.ScanLines)
+
+	// create a channel with a big buffer, so that it doesn't choke
+	publishChannel = make(chan string, 1000)
 
 	go func() {
 		for stdoutScanner.Scan() {
@@ -460,7 +464,7 @@ func setupLogCollector(postgresCmd *exec.Cmd, publishChannel chan string) (func(
 		}
 	}()
 
-	return closeFunction, nil
+	return publishChannel, closeFunction, nil
 }
 
 // ensures that the `steampipe` fdw server exists
