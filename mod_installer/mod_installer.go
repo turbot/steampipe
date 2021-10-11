@@ -59,10 +59,6 @@ mod 2 require a@<branch>
 
 -> how do we detect if the file version satisfied constraints of a - check branch?
 
-Checking whethr version is satisfied
-
-
-MOD INSTA
 */
 
 type ModInstaller struct {
