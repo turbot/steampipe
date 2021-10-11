@@ -17,29 +17,25 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// StopStatus :: pseudoEnum for service stop result
+// StopStatus is a pseudoEnum for service stop result
 type StopStatus int
 
 const (
-	// ServiceStopped indicates service was stopped.
-	// start from 10 to prevent confusion with int zero-value
+	// start from 1 to prevent confusion with int zero-value
 	ServiceStopped StopStatus = iota + 1
-	// ServiceNotRunning indicates service was not running
 	ServiceNotRunning
-	// ServiceStopFailed indicates service could not be stopped
 	ServiceStopFailed
-	// ServiceStopTimedOut indicates service stop attempt timed out
 	ServiceStopTimedOut
 )
 
-// ShutdownService stops the database instance if the given `invoker` matches
+// ShutdownService stops the database instance if the given 'invoker' matches
 func ShutdownService(invoker constants.Invoker) {
 	utils.LogTime("db_local.ShutdownService start")
 	defer utils.LogTime("db_local.ShutdownService end")
 
 	status, _ := GetStatus()
 
-	// if the service is not running or it was invoked by `steampipe service`,
+	// if the service is not running or it was invoked by 'steampipe service',
 	// then we don't shut it down
 	if status == nil || status.Invoker == constants.InvokerService {
 		return
@@ -72,7 +68,7 @@ func ShutdownService(invoker constants.Invoker) {
 
 // GetCountOfConnectedClients returns the number of clients currently connected to the service
 func GetCountOfConnectedClients() (int, error) {
-	rootClient, err := createRootDbClient()
+	rootClient, err := createLocalDbClient(&CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return -1, err
 	}
@@ -83,9 +79,9 @@ func GetCountOfConnectedClients() (int, error) {
 	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend';")
 	row.Scan(&clientCount)
 
-	// clientCount can never be zero, since the client we are using to run the query
-	// counts as a client
-	return (clientCount - 1 /* deduct the existing we used to query the count */), nil
+	// clientCount can never be zero, since the client we are using to run the query counts as a client
+	// deduct 1 to allow for the client we used to query the count
+	return clientCount - 1, nil
 }
 
 // StopDB searches for and stops the running instance. Does nothing if an instance was not found

@@ -25,7 +25,11 @@ type RunningDBInstanceInfo struct {
 }
 
 func (r *RunningDBInstanceInfo) Save() error {
-	return saveRunningInstanceInfo(r)
+	if content, err := json.Marshal(r); err != nil {
+		return err
+	} else {
+		return ioutil.WriteFile(runningInfoFilePath(), content, 0644)
+	}
 }
 
 func (r *RunningDBInstanceInfo) String() string {
@@ -41,14 +45,6 @@ func (r *RunningDBInstanceInfo) String() string {
 	jsonEncoder.Encode(r)
 	r.Password = p
 	return writeBuffer.String()
-}
-
-func saveRunningInstanceInfo(info *RunningDBInstanceInfo) error {
-	if content, err := json.Marshal(info); err != nil {
-		return err
-	} else {
-		return ioutil.WriteFile(runningInfoFilePath(), content, 0644)
-	}
 }
 
 func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {

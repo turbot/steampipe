@@ -30,7 +30,7 @@ func refreshFunctions() error {
 
 	queries := []string{
 		fmt.Sprintf(`create schema if not exists %s;`, constants.FunctionSchema),
-		fmt.Sprintf(`grant usage on schema %s to steampipe_users;`, constants.FunctionSchema),
+		fmt.Sprintf(`grant usage on schema %s to %s;`, constants.FunctionSchema, constants.DatabaseUsersRole),
 	}
 	queries = append(queries, getFunctionAddStrings(constants.Functions)...)
 	if _, err := executeSqlAsRoot(queries...); err != nil {

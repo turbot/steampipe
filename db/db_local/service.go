@@ -14,7 +14,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// EnsureDbAndStartService ensures db is installed and starts service if necessary
+// EnsureDbAndStartService ensures database is installed and starts service if necessary
 func EnsureDbAndStartService(invoker constants.Invoker) error {
 	utils.LogTime("db.EnsureDbAndStartService start")
 	defer utils.LogTime("db.EnsureDbAndStartService end")
@@ -43,12 +43,12 @@ func EnsureDbAndStartService(invoker constants.Invoker) error {
 		// so db is already running - ensure it contains command schema
 		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
 		// and upgrades to this version - we need to ensure we create the command schema
-		return ensureCommandSchema()
+		return ensureCommandSchema(status.Database)
 	}
 	return nil
 }
 
-// GetStatus :: check that the db instance is running and returns it's details
+// GetStatus checks that the database instance is running and returns its details
 func GetStatus() (*RunningDBInstanceInfo, error) {
 	utils.LogTime("db.GetStatus start")
 	defer utils.LogTime("db.GetStatus end")
