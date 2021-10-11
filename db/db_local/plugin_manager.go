@@ -26,11 +26,12 @@ func StartPluginManager() error {
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
 	})
+	client.Start()
 
 	reattach := client.ReattachConfig()
 
 	// now attach using this reaattach config
-	reattachedClient := plugin.NewClient(&plugin.ClientConfig{
+	plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: pluginshared.Handshake,
 		Plugins:         pluginshared.PluginMap,
 		Reattach:        reattach,
@@ -39,7 +40,7 @@ func StartPluginManager() error {
 	})
 
 	// Connect via RPC
-	rpcClient, err := reattachedClient.Client()
+	rpcClient, err := client.Client()
 	if err != nil {
 		fmt.Println("Error:", err.Error())
 		os.Exit(1)

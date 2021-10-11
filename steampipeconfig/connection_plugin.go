@@ -89,7 +89,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 	schemaResponse, err := pluginClient.Stub.GetSchema(&proto.GetSchemaRequest{})
 	if err != nil {
 		pluginClient.Client.Kill()
-		return nil, HandleGrpcError(err, connectionName, "GetSchema")
+		return nil, HandleGrpcError(err, connectionName, "getSchema")
 	}
 	schema := schemaResponse.Schema
 
