@@ -14,7 +14,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// EnsureDbAndStartService ensures db is installed and starts service if necessary
+// EnsureDbAndStartService ensures database is installed and starts service if necessary
 func EnsureDbAndStartService(invoker constants.Invoker) error {
 	utils.LogTime("db.EnsureDbAndStartService start")
 	defer utils.LogTime("db.EnsureDbAndStartService end")
@@ -48,7 +48,7 @@ func EnsureDbAndStartService(invoker constants.Invoker) error {
 	return nil
 }
 
-// GetStatus :: check that the db instance is running and returns it's details
+// GetStatus checks that the database instance is running and returns its details
 func GetStatus() (*RunningDBInstanceInfo, error) {
 	utils.LogTime("db.GetStatus start")
 	defer utils.LogTime("db.GetStatus end")

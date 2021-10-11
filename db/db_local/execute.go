@@ -8,7 +8,7 @@ import (
 
 func executeSqlAsRoot(statements ...string) ([]sql.Result, error) {
 	var results []sql.Result
-	rootClient, err := createLocalDbClient("", constants.DatabaseSuperUser)
+	rootClient, err := createLocalDbClient(&CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}

@@ -19,26 +19,23 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// StartResult :: pseudoEnum for outcomes of Start
+// StartResult is a pseudoEnum for outcomes of Start
 type StartResult int
 
 // StartListenType is a pseudoEnum of network binding for postgres
 type StartListenType string
 
 const (
-	// ServiceStarted :: StartResult - Service was started
 	// start from 10 to prevent confusion with int zero-value
 	ServiceStarted StartResult = iota + 1
-	// ServiceAlreadyRunning :: StartResult - Service was already running
 	ServiceAlreadyRunning
-	// ServiceFailedToStart :: StartResult - Could not start service
 	ServiceFailedToStart
 )
 
 const (
-	// ListenTypeNetwork :: StartListenType - bind to all known interfaces
+	// ListenTypeNetwork - bind to all known interfaces
 	ListenTypeNetwork StartListenType = "network"
-	// ListenTypeLocal :: StartListenType - bind to localhost only
+	// ListenTypeLocal - bind to localhost only
 	ListenTypeLocal = "local"
 )
 
@@ -107,9 +104,8 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 		return ServiceFailedToStart, err
 	}
 
-	// create a *RunningInfo with empty DBName
-	// we need this to connect to the service using 'root'
-	// which we will use to retrieve the name of the installed database
+	// create a RunningInfo with empty database name
+	// we need this to connect to the service using 'root', required retrieve the name of the installed database
 	err = createRunningInfo(postgresCmd, port, "", password, listen, invoker)
 	if err != nil {
 		return ServiceFailedToStart, err
@@ -344,7 +340,7 @@ func traceoutServiceLogs(logChannel chan string, stopLogStreamFn func()) {
 }
 
 func setServicePassword(password string) error {
-	connection, err := createLocalDbClient("postgres", constants.DatabaseSuperUser)
+	connection, err := createLocalDbClient(&CreateDbOptions{DatabaseName: "postgres", Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
@@ -402,10 +398,10 @@ func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
 	return publishChannel, closeFunction, nil
 }
 
-// ensures that the `steampipe` fdw server exists
-// checks for it - (re)install FDW and creates server if it doesn't
+// ensures that the 'steampipe' foreign server exists
+//  (re)install FDW and creates server if it doesn't
 func ensureSteampipeServer(databaseName string) error {
-	rootClient, err := createLocalDbClient(databaseName, constants.DatabaseSuperUser)
+	rootClient, err := createLocalDbClient(&CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
@@ -427,16 +423,13 @@ func ensureCommandSchema(databaseName string) error {
 		commandSchemaStatements,
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CacheCommandTable),
 	)
-	rootClient, err := createLocalDbClient(databaseName, constants.DatabaseSuperUser)
+	rootClient, err := createLocalDbClient(&CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
 	defer rootClient.Close()
 
 	for _, statement := range commandSchemaStatements {
-		// NOTE: This may print a password to the log file, but it doesn't matter
-		// since the password is stored in a config file anyway.
-		log.Println("[TRACE] Install database: ", statement)
 		if _, err := rootClient.Exec(statement); err != nil {
 			return err
 		}
@@ -444,10 +437,10 @@ func ensureCommandSchema(databaseName string) error {
 	return err
 }
 
-// ensures that the `steampipe_users` role has permissions to work with temporary tables
+// ensures that the 'steampipe_users' role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
 func ensureTempTablePermissions(databaseName string) error {
-	rootClient, err := createLocalDbClient(databaseName, constants.DatabaseSuperUser)
+	rootClient, err := createLocalDbClient(&CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}

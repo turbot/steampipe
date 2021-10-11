@@ -29,34 +29,38 @@ func getLocalSteampipeConnectionString() (string, error) {
 	return psqlInfo, nil
 }
 
+type CreateDbOptions struct {
+	DatabaseName, Username string
+}
+
 // createLocalDbClient connects and returns a connection to the given database using
 // the provided username
 // if the database is not provided (empty), it connects to the default database in the service
 // that was created during installation.
-func createLocalDbClient(databaseName string, username string) (*sql.DB, error) {
+func createLocalDbClient(opts *CreateDbOptions) (*sql.DB, error) {
 	utils.LogTime("db.createDbClient start")
 	defer utils.LogTime("db.createDbClient end")
 
+	// load the db status
 	info, err := GetStatus()
-
 	if err != nil {
 		return nil, err
 	}
-
 	if info == nil {
 		return nil, fmt.Errorf("steampipe service is not running")
 	}
 
-	if len(databaseName) == 0 {
-		databaseName = info.Database
+	// if no database name is passed, deduce it from the db status
+	if len(opts.DatabaseName) == 0 {
+		opts.DatabaseName = info.Database
 	}
 	// if we still don't have it, fallback to default "postgres"
-	if len(databaseName) == 0 {
-		databaseName = "postgres"
+	if len(opts.DatabaseName) == 0 {
+		opts.DatabaseName = "postgres"
 	}
 
 	// Connect to the database using the first listen address, which is usually localhost
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", info.Listen[0], info.Port, username, databaseName, SslMode())
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", info.Listen[0], info.Port, opts.Username, opts.DatabaseName, SslMode())
 
 	log.Println("[TRACE] status: ", info)
 	log.Println("[TRACE] Connection string: ", psqlInfo)
