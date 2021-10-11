@@ -12,7 +12,7 @@ type PluginManager struct {
 	pb.UnimplementedPluginManagerServer
 }
 
-func (m PluginManager) GetPlugin(req *pb.GetPluginRequest) (resp *pb.GetPluginResponse, err error) {
+func (m *PluginManager) GetPlugin(req *pb.GetPluginRequest) (resp *pb.GetPluginResponse, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
@@ -25,8 +25,8 @@ func (m PluginManager) GetPlugin(req *pb.GetPluginRequest) (resp *pb.GetPluginRe
 	}, nil
 }
 
-func (m PluginManager) Serve() {
-	// create a plugin mapo, using ourselves as the implementation
+func (m *PluginManager) Serve() {
+	// create a plugin map, using ourselves as the implementation
 	pluginMap := map[string]plugin.Plugin{
 		pluginshared.PluginName: &pluginshared.PluginManagerPlugin{Impl: m},
 	}

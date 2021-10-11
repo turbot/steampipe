@@ -91,7 +91,7 @@ func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (st
 
 	defer func() {
 		if e == nil {
-			os.Remove(runningInfoFilePath())
+			os.Remove(constants.RunningInfoFilePath())
 		}
 		utils.LogTime("db_local.StopDB end")
 	}()
@@ -208,7 +208,7 @@ func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 	for {
 		select {
 		case <-checkTimer.C:
-			pEx, _ := PidExists(int(process.Pid))
+			pEx, _ := utils.PidExists(int(process.Pid))
 			if pEx {
 				continue
 			}
