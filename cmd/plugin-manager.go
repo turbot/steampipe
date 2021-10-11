@@ -19,5 +19,6 @@ func pluginManagerCmd() *cobra.Command {
 }
 
 func runPluginManagerCmd(cmd *cobra.Command, args []string) {
-	plugin_manager.PluginManager{}.Serve()
+	manager := &plugin_manager.PluginManager{}
+	manager.Serve()
 }

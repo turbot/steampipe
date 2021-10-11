@@ -64,14 +64,14 @@ func GetStatus() (*RunningDBInstanceInfo, error) {
 		return nil, errorIfUnknownService()
 	}
 
-	pidExists, err := PidExists(info.Pid)
+	pidExists, err := utils.PidExists(info.Pid)
 	if err != nil {
 		return nil, err
 	}
 	if !pidExists {
 		log.Printf("[TRACE] GetRunStatus - pid %v does not exist\n", info.Pid)
 		// nothing to do here
-		os.Remove(runningInfoFilePath())
+		os.Remove(constants.RunningInfoFilePath())
 		return nil, nil
 	}
 
@@ -115,7 +115,7 @@ func errorIfUnknownService() error {
 	}
 
 	// check if a process with that PID exists
-	exists, err := PidExists(int(pid))
+	exists, err := utils.PidExists(int(pid))
 	if err != nil {
 		return err
 	}

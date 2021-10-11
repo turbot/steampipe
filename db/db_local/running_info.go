@@ -24,7 +24,7 @@ type RunningDBInstanceInfo struct {
 }
 
 func (r *RunningDBInstanceInfo) Save() error {
-	content, err := json.Marshal(info)
+	content, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		return err
 	}

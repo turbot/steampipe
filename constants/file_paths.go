@@ -14,6 +14,7 @@ const (
 	ConnectionsStateFileName    = "connection.json"
 	versionFileName             = "versions.json"
 	databaseRunningInfoFileName = "steampipe.json"
+	pluginManagerStateFileName  = "plugin_manager.json"
 )
 
 var SteampipeDir string
@@ -92,4 +93,8 @@ func DatabaseVersionFilePath() string {
 
 func RunningInfoFilePath() string {
 	return filepath.Join(InternalDir(), databaseRunningInfoFileName)
+}
+
+func PluginManagerStateFilePath() string {
+	return filepath.Join(InternalDir(), pluginManagerStateFileName)
 }
