@@ -1,4 +1,4 @@
-package main
+package plugin_manager
 
 import (
 	"github.com/hashicorp/go-plugin"

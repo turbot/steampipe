@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
@@ -25,11 +24,12 @@ type RunningDBInstanceInfo struct {
 }
 
 func (r *RunningDBInstanceInfo) Save() error {
-	if content, err := json.Marshal(r); err != nil {
+	content, err := json.Marshal(info)
+	if err != nil {
 		return err
-	} else {
-		return ioutil.WriteFile(runningInfoFilePath(), content, 0644)
 	}
+	return ioutil.WriteFile(constants.RunningInfoFilePath(), content, 0644)
+
 }
 
 func (r *RunningDBInstanceInfo) String() string {
@@ -51,11 +51,11 @@ func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
 	utils.LogTime("db.loadRunningInstanceInfo start")
 	defer utils.LogTime("db.loadRunningInstanceInfo end")
 
-	if !helpers.FileExists(runningInfoFilePath()) {
+	if !helpers.FileExists(constants.RunningInfoFilePath()) {
 		return nil, nil
 	}
 
-	fileContent, err := ioutil.ReadFile(runningInfoFilePath())
+	fileContent, err := ioutil.ReadFile(constants.RunningInfoFilePath())
 	if err != nil {
 		return nil, err
 	}
@@ -68,9 +68,5 @@ func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
 }
 
 func removeRunningInstanceInfo() error {
-	return os.Remove(runningInfoFilePath())
-}
-
-func runningInfoFilePath() string {
-	return filepath.Join(constants.InternalDir(), "steampipe.json")
+	return os.Remove(constants.RunningInfoFilePath())
 }

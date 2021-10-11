@@ -149,6 +149,7 @@ func AddCommands() {
 		checkCmd(),
 		serviceCmd(),
 		generateCompletionScriptsCmd(),
+		pluginManagerCmd(),
 	)
 }
 
