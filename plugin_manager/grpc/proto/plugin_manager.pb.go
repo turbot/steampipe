@@ -387,7 +387,7 @@ func _PluginManager_GetPlugin_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: "/proto.PluginManager/GetPlugin",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PluginManagerServer).GetPlugin(ctx, req.(*GetPluginRequest))
+		return srv.(PluginManagerServer).GetPlugin(ctx, req.(*GetPluginRequest))5
 	}
 	return interceptor(ctx, in, info, handler)
 }

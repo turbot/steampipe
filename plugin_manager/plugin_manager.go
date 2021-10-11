@@ -16,5 +16,9 @@ func (m PluginManager) GetPlugin(req *pb.GetPluginRequest) (resp *pb.GetPluginRe
 			err = helpers.ToError(r)
 		}
 	}()
-	return nil, nil
+	return &pb.GetPluginResponse{
+		Protocol:        "FOO",
+		ProtocolVersion: 0,
+		Pid:             1234,
+	}, nil
 }
