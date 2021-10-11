@@ -26,5 +26,6 @@ type GRPCServer struct {
 }
 
 func (m *GRPCServer) GetPlugin(_ context.Context, req *pb.GetPluginRequest) (*pb.GetPluginResponse, error) {
+	//log.Printf("[WARN] _PluginManager_GetPlugin_Handler")
 	return m.Impl.GetPlugin(req)
 }

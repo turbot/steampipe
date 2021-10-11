@@ -8,6 +8,7 @@ package proto
 
 import (
 	context "context"
+	"log"
 	reflect "reflect"
 	sync "sync"
 
@@ -379,6 +380,9 @@ func _PluginManager_GetPlugin_Handler(srv interface{}, ctx context.Context, dec 
 	if err := dec(in); err != nil {
 		return nil, err
 	}
+
+	log.Printf("[WARN] _PluginManager_GetPlugin_Handler %v", srv)
+
 	if interceptor == nil {
 		return srv.(PluginManagerServer).GetPlugin(ctx, in)
 	}
@@ -387,7 +391,7 @@ func _PluginManager_GetPlugin_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: "/proto.PluginManager/GetPlugin",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PluginManagerServer).GetPlugin(ctx, req.(*GetPluginRequest))5
+		return srv.(PluginManagerServer).GetPlugin(ctx, req.(*GetPluginRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -404,3 +408,19 @@ var _PluginManager_serviceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "plugin_manager.proto",
 }
+
+//
+//// NewLogger creates a hclog logger with the level specified by the SP_LOG env var
+//func NewLogger(options *hclog.LoggerOptions) hclog.Logger {
+//	if options.Level == hclog.NoLevel {
+//		level := "DEBUG"
+//		if options == nil {
+//			options = &hclog.LoggerOptions{}
+//		}
+//		options.Level = hclog.LevelFromString(level)
+//	}
+//	if options.Output == nil {
+//		options.Output = os.Stderr
+//	}
+//	return hclog.New(options)
+//}

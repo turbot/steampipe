@@ -35,6 +35,7 @@ type PluginManagerPlugin struct {
 }
 
 func (p *PluginManagerPlugin) GRPCServer(_ *plugin.GRPCBroker, s *grpc.Server) error {
+	//fmt.Println("GRPCServer")
 	pb.RegisterPluginManagerServer(s, &GRPCServer{Impl: p.Impl})
 	return nil
 }

@@ -2,8 +2,6 @@ package db_local
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 
@@ -15,7 +13,7 @@ import (
 
 func StartPluginManager() error {
 	// We don't want to see the plugin logs.
-	log.SetOutput(ioutil.Discard)
+	//log.SetOutput(ioutil.Discard)
 
 	// launch the plugin manager the plugin process.
 	// TODO pass config path or set connection config
