@@ -54,19 +54,23 @@ func (r *Report) QualifiedName() string {
 func (r *Report) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
-func (r *Report) AddReference(reference string) {
+func (r *Report) AddReference(*ResourceReference) {
 	// TODO
 }
-
-// AddReferencedBy implements HclResource
-func (r *Report) AddReferencedBy(reference string) {}
-
-// ReferencesResource implements HclResource
-func (r *Report) ReferencesResource(name string) bool { return false }
 
 // SetMod implements HclResource
 func (r *Report) SetMod(mod *Mod) {
 	r.Mod = mod
+}
+
+// GetMod implements HclResource
+func (r *Report) GetMod() *Mod {
+	return r.Mod
+}
+
+// GetDeclRange implements HclResource
+func (r *Report) GetDeclRange() *hcl.Range {
+	return &r.DeclRange
 }
 
 // AddChild implements ModTreeItem

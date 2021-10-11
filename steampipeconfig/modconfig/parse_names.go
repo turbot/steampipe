@@ -14,16 +14,13 @@ const (
 	BlockTypePanel     = "panel"
 	BlockTypeLocals    = "locals"
 	BlockTypeVariable  = "variable"
+	BlockTypeParam     = "param"
 )
 
 type ParsedResourceName struct {
 	Mod      string
 	ItemType string
 	Name     string
-}
-
-func (m *ParsedResourceName) TypeString() string {
-	return string(m.ItemType)
 }
 
 type ParsedPropertyPath struct {

@@ -22,8 +22,9 @@ import (
 )
 
 type Workspace struct {
-	Path string
-	Mod  *modconfig.Mod
+	Path                string
+	ModInstallationPath string
+	Mod                 *modconfig.Mod
 
 	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
 	Queries    map[string]*modconfig.Query
@@ -195,6 +196,8 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 		Benchmarks: w.Benchmarks,
 		Variables:  w.Variables,
 	}
+	workspaceMap.PopulateReferences()
+
 	// TODO add in all mod dependencies
 	if !w.Mod.IsDefaultMod() {
 		workspaceMap.Mods[w.Mod.Name()] = w.Mod
@@ -214,13 +217,20 @@ func (w *Workspace) GetMod(modName string) *modconfig.Mod {
 	return w.Mods[modName]
 }
 
-// ModList returns a flat list of all mods - the workspace mod and depdnency mods
+// ModList returns a flat list of all mods - the workspace mod and depenfency mods
 func (w *Workspace) ModList() []*modconfig.Mod {
 	var res = []*modconfig.Mod{w.Mod}
 	for _, m := range w.Mods {
 		res = append(res, m)
 	}
 	return res
+}
+
+// SaveWorkspaceMod searialises the workspace mode to <workspace path?.mod.sp
+func (w *Workspace) SaveWorkspaceMod() error {
+	// TODO
+
+	return nil
 }
 
 // clear all resource maps
@@ -250,64 +260,56 @@ func (w *Workspace) setListFlag() {
 func (w *Workspace) loadWorkspaceMod() error {
 	// clear all resource maps
 	w.reset()
-
+	// load and evaluate all variables
 	inputVariables, err := w.getAllVariables()
 	if err != nil {
 		return err
 	}
 
-	variableValueMap := modconfig.VariableValueMap(inputVariables)
+	// build run context which we use to load the workspace
+	runCtx := w.getRunContext()
+	// add variables to runContext
+	runCtx.AddVariables(inputVariables)
 
-	// build options used to load workspace
-	// set flags to create pseudo resources and a default mod if needed
-	opts := &parse.ParseModOptions{
-		Flags: parse.CreatePseudoResources | parse.CreateDefaultMod,
-		ListOptions: &filehelpers.ListOptions{
-			// listFlag specifies whether to load files recursively
-			Flags:   w.listFlag,
-			Exclude: w.exclusions,
-		},
-		Variables: variableValueMap,
-	}
-
-	m, err := steampipeconfig.LoadMod(w.Path, opts)
+	// now load the mod
+	m, err := steampipeconfig.LoadMod(w.Path, runCtx)
 	if err != nil {
 		return err
 	}
+
+	// now set workspace properties
 	w.Mod = m
-
-	// now load all mods in the workspace
-	modsPath := constants.WorkspaceModPath(w.Path)
-	modMap, err := w.loadModDependencies(modsPath)
-	if err != nil {
-		return err
-	}
-
-	w.Queries = w.buildQueryMap(modMap)
-	w.Controls = w.buildControlMap(modMap)
-	w.Benchmarks = w.buildBenchmarkMap(modMap)
-	w.Reports = w.buildReportMap(modMap)
-	w.Panels = w.buildPanelMap(modMap)
-	w.Mods = modMap
-	// now update variables with their usage - populate the UsedBy property
-	m.SetVariableUsage()
+	w.Queries = w.buildQueryMap(runCtx.LoadedDependencyMods)
+	w.Controls = w.buildControlMap(runCtx.LoadedDependencyMods)
+	w.Benchmarks = w.buildBenchmarkMap(runCtx.LoadedDependencyMods)
+	w.Reports = w.buildReportMap(runCtx.LoadedDependencyMods)
+	w.Panels = w.buildPanelMap(runCtx.LoadedDependencyMods)
 	// set variables on workspace
 	w.Variables = m.Variables
+	// todo what to key mod map with
+	w.Mods = runCtx.LoadedDependencyMods
 
 	return nil
 }
 
-func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
-	// build options used to load workspace
-	// set flags to create pseudo resources and a default mod if needed
-	opts := &parse.ParseModOptions{
-		Flags: parse.CreatePseudoResources | parse.CreateDefaultMod,
-		ListOptions: &filehelpers.ListOptions{
+// build options used to load workspace
+// set flags to create pseudo resources and a default mod if needed
+func (w *Workspace) getRunContext() *parse.RunContext {
+	return parse.NewRunContext(
+		w.Path,
+		parse.CreatePseudoResources|parse.CreateDefaultMod,
+		&filehelpers.ListOptions{
 			// listFlag specifies whether to load files recursively
 			Flags:   w.listFlag,
 			Exclude: w.exclusions,
-		},
-	}
+			// only load .sp files
+			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
+		})
+}
+
+func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
+	// build options used to load workspace
+	opts := w.getRunContext()
 
 	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, opts)
 	if err != nil {
@@ -324,23 +326,13 @@ func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, 
 	return workspaceResourceNames, nil
 }
 
-// load resource names for all dependencies of workspace mod
-func (w *Workspace) loadModDependencies(modsFolder string) (modconfig.ModMap, error) {
-	var res = modconfig.ModMap{
-		w.Mod.Name(): w.Mod,
-	}
-	if err := steampipeconfig.LoadModDependencies(w.Mod, modsFolder, res, false); err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
 func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig.Query {
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Query)
 
 	// for LOCAL resources, add map entries keyed by both short name: query.<shortName> and  long name: <modName>.query.<shortName?
 	for _, q := range w.Mod.Queries {
+		// add 'local' alias
 		res[q.Name()] = q
 		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.ShortName), q.ShortName)
 		res[longName] = q
@@ -349,8 +341,7 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
-			longName := fmt.Sprintf("%s.query.%s", types.SafeString(mod.ShortName), q.ShortName)
-			res[longName] = q
+			res[q.QualifiedName()] = q
 		}
 	}
 	return res
@@ -380,9 +371,9 @@ func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) map[string]*modco
 	var res = make(map[string]*modconfig.Benchmark)
 
 	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
-	for _, c := range w.Mod.Benchmarks {
-		res[c.Name()] = c
-		res[c.QualifiedName()] = c
+	for _, b := range w.Mod.Benchmarks {
+		res[b.Name()] = b
+		res[b.QualifiedName()] = b
 	}
 
 	// for mod dependencies, add resources keyed by long name only
@@ -418,9 +409,10 @@ func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig
 	var res = make(map[string]*modconfig.Panel)
 
 	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
-	for _, r := range w.Mod.Panels {
-		res[r.Name()] = r
-		res[r.QualifiedName()] = r
+	for _, p := range w.Mod.Panels {
+		res[fmt.Sprintf("local.%s", p.Name())] = p
+		res[p.Name()] = p
+		res[p.QualifiedName()] = p
 	}
 
 	// for mod dependencies, add resources keyed by long name only

@@ -28,12 +28,8 @@ type Query struct {
 	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
 
 	Params []*ParamDef `cty:"params" column:"params,jsonb"`
-	// list of all block referenced by the resource
-	References []string `column:"refs,jsonb"`
-	// references stored as a map for easy checking
-	referencesMap map[string]bool
-	// list of resource names who reference this resource
-	ReferencedBy []string `column:"referenced_by,jsonb"`
+	// list of all blocks referenced by the resource
+	References []*ResourceReference
 
 	Mod                   *Mod `cty:"mod"`
 	DeclRange             hcl.Range
@@ -86,10 +82,9 @@ func (q *Query) Equals(other *Query) bool {
 
 func NewQuery(block *hcl.Block) *Query {
 	return &Query{
-		ShortName:     block.Labels[0],
-		FullName:      fmt.Sprintf("query.%s", block.Labels[0]),
-		DeclRange:     block.DefRange,
-		referencesMap: make(map[string]bool),
+		ShortName: block.Labels[0],
+		FullName:  fmt.Sprintf("query.%s", block.Labels[0]),
+		DeclRange: block.DefRange,
 	}
 }
 
@@ -175,24 +170,23 @@ func (q *Query) SetMetadata(metadata *ResourceMetadata) {
 func (q *Query) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
-func (q *Query) AddReference(reference string) {
-	q.References = append(q.References, reference)
-	q.referencesMap[reference] = true
-}
-
-// AddReferencedBy implements HclResource
-func (q *Query) AddReferencedBy(reference string) {
-	q.ReferencedBy = append(q.ReferencedBy, reference)
-}
-
-// ReferencesResource implements HclResource
-func (q *Query) ReferencesResource(name string) bool {
-	return q.referencesMap[name]
+func (q *Query) AddReference(ref *ResourceReference) {
+	q.References = append(q.References, ref)
 }
 
 // SetMod implements HclResource
 func (q *Query) SetMod(mod *Mod) {
 	q.Mod = mod
+}
+
+// GetMod implements HclResource
+func (q *Query) GetMod() *Mod {
+	return q.Mod
+}
+
+// GetDeclRange implements HclResource
+func (q *Query) GetDeclRange() *hcl.Range {
+	return &q.DeclRange
 }
 
 // GetParams implements PreparedStatementProvider

@@ -13,18 +13,30 @@ var referenceBlockTypes = []string{
 	modconfig.BlockTypeQuery,
 	modconfig.BlockTypeControl,
 	modconfig.BlockTypeBenchmark,
+	modconfig.BlockTypeParam,
 	"local"}
 
 // AddReferences populates the 'References' resource field, used for the introspection tables
-func AddReferences(resource modconfig.HclResource, block *hcl.Block) {
+func AddReferences(resource modconfig.HclResource, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
+	var diags hcl.Diagnostics
 	for _, attr := range block.Body.(*hclsyntax.Body).Attributes {
 		for _, v := range attr.Expr.Variables() {
-			for _, blockType := range referenceBlockTypes {
-				if reference, ok := hclhelpers.ResourceNameFromTraversal(blockType, v); ok {
+			for _, referenceBlockType := range referenceBlockTypes {
+				if referenceString, ok := hclhelpers.ResourceNameFromTraversal(referenceBlockType, v); ok {
+					reference := &modconfig.ResourceReference{
+						To:        referenceString,
+						From:      resource.Name(),
+						BlockType: block.Type,
+						BlockName: block.Labels[0],
+						Attribute: attr.Name,
+					}
+					moreDiags := addResourceMetadata(reference, attr.SrcRange, runCtx)
+					diags = append(diags, moreDiags...)
 					resource.AddReference(reference)
 					break
 				}
 			}
 		}
 	}
+	return diags
 }

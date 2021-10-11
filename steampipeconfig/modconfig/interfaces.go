@@ -36,11 +36,10 @@ type HclResource interface {
 	Name() string
 	CtyValue() (cty.Value, error)
 	OnDecoded(*hcl.Block) hcl.Diagnostics
-	AddReference(reference string)
-	AddReferencedBy(referencedBy string)
-	ReferencesResource(string) bool
-
+	AddReference(ref *ResourceReference)
 	SetMod(*Mod)
+	GetMod() *Mod
+	GetDeclRange() *hcl.Range
 }
 
 // ResourceWithMetadata must be implenented by resources which supports reflection metadata

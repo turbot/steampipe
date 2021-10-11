@@ -8,22 +8,34 @@ import (
 )
 
 type ParamDef struct {
-	Name        string      `cty:"name"`
-	Description *string     `cty:"description"`
+	Name        string      `cty:"name" json:"name"`
+	FullName    string      `cty:"full_name" json:"-"`
+	Description *string     `cty:"description" json:"description"`
 	RawDefault  interface{} `json:"-"`
-	Default     *string     `cty:"default"`
+	Default     *string     `cty:"default" json:"default"`
+
+	// list of all blocks referenced by the resource
+	References []*ResourceReference
+	DeclRange  hcl.Range
+
+	parent string
 }
 
-func NewParamDef(block *hcl.Block) *ParamDef {
-	return &ParamDef{Name: block.Labels[0]}
+func NewParamDef(block *hcl.Block, parent string) *ParamDef {
+	return &ParamDef{
+		Name:      block.Labels[0],
+		FullName:  fmt.Sprintf("param.%s", block.Labels[0]),
+		parent:    parent,
+		DeclRange: block.DefRange,
+	}
 }
 
-func (d ParamDef) String() string {
-	return fmt.Sprintf("Name: %s, Description: %s, Default: %s", d.Name, typehelpers.SafeString(d.Description), typehelpers.SafeString(d.Default))
+func (p ParamDef) String() string {
+	return fmt.Sprintf("Name: %s, Description: %s, Default: %s", p.FullName, typehelpers.SafeString(p.Description), typehelpers.SafeString(p.Default))
 }
 
-func (d ParamDef) Equals(other *ParamDef) bool {
-	return d.Name == other.Name &&
-		typehelpers.SafeString(d.Description) == typehelpers.SafeString(other.Description) &&
-		typehelpers.SafeString(d.Default) == typehelpers.SafeString(other.Default)
+func (p ParamDef) Equals(other *ParamDef) bool {
+	return p.Name == other.Name &&
+		typehelpers.SafeString(p.Description) == typehelpers.SafeString(other.Description) &&
+		typehelpers.SafeString(p.Default) == typehelpers.SafeString(other.Default)
 }

@@ -46,20 +46,24 @@ func (l *Local) SetMetadata(metadata *ResourceMetadata) {
 func (l *Local) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
-func (l *Local) AddReference(string) {}
-
-// ReferencesResource implements HclResource
-func (l *Local) ReferencesResource(string) bool { return false }
-
-// AddReferencedBy implements HclResource
-func (l *Local) AddReferencedBy(reference string) {}
+func (l *Local) AddReference(*ResourceReference) {}
 
 // SetMod implements HclResource
 func (l *Local) SetMod(mod *Mod) {
 	l.Mod = mod
 }
 
+// GetMod implements HclResource
+func (l *Local) GetMod() *Mod {
+	return l.Mod
+}
+
 // CtyValue implements HclResource
 func (l *Local) CtyValue() (cty.Value, error) {
 	return l.Value, nil
+}
+
+// GetDeclRange implements HclResource
+func (l *Local) GetDeclRange() *hcl.Range {
+	return &l.DeclRange
 }

@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/hashicorp/hcl/v2/gohcl"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/json"
@@ -63,6 +65,128 @@ func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	return hcl.MergeFiles(parsedConfigFiles), diags
 }
 
+// ModfileExists returns whether a mod file exists at the specified path
+func ModfileExists(modPath string) bool {
+	modFilePath := filepath.Join(modPath, "mod.sp")
+	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
+// ParseModDefinition parses the modfile only
+// it is expected the callign code wil lhave verified the existence of the modfile by calling ModfileExists
+func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
+	// TODO think about variables
+
+	// if there is no mod at this location, return error
+	modFilePath := filepath.Join(modPath, "mod.sp")
+	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("no mod file found in %s", modPath)
+	}
+	fileData, diags := LoadFileData(modFilePath)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to load mod files", diags)
+	}
+
+	body, diags := ParseHclFiles(fileData)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
+	}
+
+	content, moreDiags := body.Content(ModBlockSchema)
+	if moreDiags.HasErrors() {
+		diags = append(diags, moreDiags...)
+		return nil, plugin.DiagsToError("Failed to load mod", diags)
+	}
+
+	// build an eval context containing functions
+	evalCtx := &hcl.EvalContext{
+		Functions: ContextFunctions(modPath),
+	}
+
+	for _, block := range content.Blocks {
+		if block.Type == modconfig.BlockTypeMod {
+			mod := modconfig.NewMod(block.Labels[0], modPath, block.DefRange)
+			diags := gohcl.DecodeBody(block.Body, evalCtx, mod)
+			if diags.HasErrors() {
+				return nil, plugin.DiagsToError("Failed to decode mod hcl file", diags)
+			}
+			// call decode callback
+			if err := mod.OnDecoded(block); err != nil {
+				return nil, err
+			}
+			return mod, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no mod definition found in %s", modPath)
+}
+
+// ParseMod parses all source hcl files for the mod path and associated resources, and returns the mod object
+// NOTE: the mod definition has already been parsed (or a default created) and is in opts.RunCtx.RootMod
+func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modconfig.MappableResource, runCtx *RunContext) (*modconfig.Mod, error) {
+	body, diags := ParseHclFiles(fileData)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
+	}
+
+	content, moreDiags := body.Content(ModBlockSchema)
+	if moreDiags.HasErrors() {
+		diags = append(diags, moreDiags...)
+		return nil, plugin.DiagsToError("Failed to load mod", diags)
+	}
+
+	mod := runCtx.CurrentMod
+	if mod == nil {
+		return nil, fmt.Errorf("ParseMod called with no Current Mod set in RunContext")
+	}
+	// get names of all resources defined in hcl which may also be created as pseudo resources
+	hclResources, err := loadMappableResourceNames(modPath, content)
+	if err != nil {
+		return nil, err
+	}
+
+	// if variables were passed in runcontext, add to the mod
+	for _, v := range runCtx.Variables {
+		mod.AddResource(v)
+	}
+
+	// add pseudo resources to the mod
+	addPseudoResourcesToMod(pseudoResources, hclResources, mod)
+
+	// add this mod to run context - this it to ensure all pseudo resources get added
+	runCtx.AddMod(mod, content, fileData)
+
+	// perform initial decode to get dependencies
+	// (if there are no dependencies, this is all that is needed)
+	diags = decode(runCtx)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
+	}
+
+	// if eval is not complete, there must be dependencies - run again in dependency order
+	if !runCtx.EvalComplete() {
+		diags = decode(runCtx)
+		if diags.HasErrors() {
+			return nil, plugin.DiagsToError("Failed to parse all mod hcl files", diags)
+		}
+
+		// we failed to resolve dependencies
+		if !runCtx.EvalComplete() {
+			return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", runCtx.FormatDependencies())
+		}
+	}
+
+	// now tell mod to build tree of controls.
+	// NOTE: this also builds the sorted benchmark list
+	if err := mod.BuildResourceTree(); err != nil {
+		return nil, err
+	}
+
+	return mod, nil
+}
+
 // parse a yaml file into a hcl.File object
 func parseYamlFile(filename string) (*hcl.File, hcl.Diagnostics) {
 	f, err := os.Open(filename)
@@ -100,58 +224,11 @@ func parseYamlFile(filename string) (*hcl.File, hcl.Diagnostics) {
 	return json.Parse(jsonData, filename)
 }
 
-// ParseMod parses all source hcl files for the mod path and associated resources, and returns the mod object
-func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modconfig.MappableResource, opts *ParseModOptions) (*modconfig.Mod, error) {
-	body, diags := ParseHclFiles(fileData)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
-	}
-
-	content, moreDiags := body.Content(ModBlockSchema)
-	if moreDiags.HasErrors() {
-		diags = append(diags, moreDiags...)
-		return nil, plugin.DiagsToError("Failed to load mod", diags)
-	}
-
-	// maps to store the parse resources
-	var mod *modconfig.Mod
-
-	// 1) get names of all resources defined in hcl which may also be created as pseudo resources
-	hclResources := make(map[string]bool)
-
-	for _, block := range content.Blocks {
-		// if this is a mod, build a shell mod struct (with just the name populated)
-		switch block.Type {
-		case modconfig.BlockTypeMod:
-			// if there is more than one mod, fail
-			if mod != nil {
-				return nil, fmt.Errorf("more than 1 mod definition found in %s", modPath)
-			}
-			mod = modconfig.NewMod(block.Labels[0], modPath, block.DefRange)
-		case modconfig.BlockTypeQuery:
-			// for any mappable resource, store the resource name
-			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
-			hclResources[name] = true
-		}
-		// TODO PANEL
-	}
-
-	// 2) create mod if needed
-	if mod == nil {
-		// should we create a default mod?
-		if !opts.CreateDefaultMod() {
-			// CreateDefaultMod flag NOT set - fail
-			return nil, fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
-		}
-		// just create a default mod
-		mod = modconfig.CreateDefaultMod(modPath)
-	}
-
-	// 3) add pseudo resources to the mod
+func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclResources map[string]bool, mod *modconfig.Mod) {
 	var duplicates []string
 	for _, r := range pseudoResources {
 		// is there a hcl resource with the same name as this pseudo resource - it takes precedence
-		// TODO CHECK FOR PSEUDO RESOURCE DUPES AND WARN
+		// TODO check for pseudo resource dupes and warn
 		if _, ok := hclResources[r.Name()]; ok {
 			duplicates = append(duplicates, r.Name())
 			continue
@@ -164,40 +241,25 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	if len(duplicates) > 0 {
 		log.Printf("[TRACE] %d files were not converted into resources as hcl resources of same name are defined: %v", len(duplicates), duplicates)
 	}
+}
 
-	// create run context to handle dependency resolution
-	runCtx, diags := NewRunContext(mod, content, fileData, opts.Variables)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to create run context", diags)
-	}
+// get names of all resources defined in hcl which may also be created as pseudo resources
+// if we find a mod block, build a shell mod
+func loadMappableResourceNames(modPath string, content *hcl.BodyContent) (map[string]bool, error) {
+	hclResources := make(map[string]bool)
 
-	// perform initial decode to get dependencies
-	diags = decode(runCtx, opts)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
-	}
-
-	// if eval is not complete, there must be dependencies - run again in dependency order
-	// (no need to do anything else here, this should be handled when building the eval context)
-	if !runCtx.EvalComplete() {
-		diags = decode(runCtx, opts)
-		if diags.HasErrors() {
-			return nil, plugin.DiagsToError("Failed to parse all mod hcl files", diags)
+	// TODO update this to not have a single hardcoded pseudo resource type
+	for _, block := range content.Blocks {
+		// if this is a mod, build a shell mod struct (with just the name populated)
+		switch block.Type {
+		case modconfig.BlockTypeQuery:
+			// for any mappable resource, store the resource name
+			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
+			hclResources[name] = true
 		}
-
-		// we failed to resolve dependencies
-		if !runCtx.EvalComplete() {
-			return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", runCtx.FormatDependencies())
-		}
+		// TODO Panel
 	}
-
-	// now tell mod to build tree of controls.
-	// NOTE: this also builds the sorted benchmark list
-	if err := mod.BuildResourceTree(); err != nil {
-		return nil, err
-	}
-
-	return mod, nil
+	return hclResources, nil
 }
 
 // ParseModResourceNames parses all source hcl files for the mod path and associated resources,

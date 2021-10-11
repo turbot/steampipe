@@ -3,30 +3,32 @@ package workspace
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
-	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/input_vars"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
 )
 
 func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
-	opts := &parse.ParseModOptions{
-		Flags: parse.CreateDefaultMod,
-		ListOptions: &filehelpers.ListOptions{
-			// listFlag specifies whether to load files recursively
-			Flags:   w.listFlag,
-			Exclude: w.exclusions,
-		},
-	}
-	variableMap, err := steampipeconfig.LoadVariables(w.Path, opts)
+	// build options used to load workspace
+	runCtx := w.getRunContext()
+	// only load variables blocks
+	runCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
+	mod, err := steampipeconfig.LoadMod(w.Path, runCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	// TACTICAL - as the tf derived code builds a map keyed by the short variable name, do the same
+	variableMap := make(map[string]*modconfig.Variable)
+	for k, v := range mod.Variables {
+		name := strings.Split(k, ".")[1]
+		variableMap[name] = v
 	}
 
 	// if there is a steampipe variables file, load it
@@ -48,9 +50,6 @@ func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
 			inputValue.SourceRange)
 	}
 
-	// parse all hcl files in the workspace folder (non recursively) and either parse or create a mod
-	// it is valid for 0 or 1 mod to be defined (if no mod is defined, create a default one)
-	// populate mod with all hcl resources we parse
 	return variableMap, nil
 }
 

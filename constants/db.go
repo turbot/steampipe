@@ -80,10 +80,11 @@ const (
 	IntrospectionTableBenchmark = "steampipe_benchmark"
 	IntrospectionTableMod       = "steampipe_mod"
 	IntrospectionTableVariable  = "steampipe_variable"
+	IntrospectionTableReference = "steampipe_reference"
 )
 
 func IntrospectionTableNames() []string {
-	return []string{IntrospectionTableControl, IntrospectionTableBenchmark, IntrospectionTableQuery, IntrospectionTableMod}
+	return []string{IntrospectionTableControl, IntrospectionTableBenchmark, IntrospectionTableQuery, IntrospectionTableMod, IntrospectionTableVariable, IntrospectionTableReference}
 }
 
 // Invoker is a pseudoEnum for the command/operation which starts the service

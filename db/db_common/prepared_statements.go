@@ -47,21 +47,21 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map[string]string {
 	// make map of resource name to create SQL
 	sqlMap := make(map[string]string)
-	for name, query := range resourceMaps.Queries {
-		// query map contains long and short names for queries - avoid dupes
-		if !strings.HasPrefix(name, "query.") {
+	for _, query := range resourceMaps.Queries {
+		// query map contains long and short names for queries - have we already created this query
+		if _, ok := sqlMap[query.FullName]; ok {
 			continue
 		}
 
 		// remove trailing semicolons from sql as this breaks the prepare statement
 		rawSql := strings.TrimRight(strings.TrimSpace(typehelpers.SafeString(query.SQL)), ";")
 		preparedStatementName := query.GetPreparedStatementName()
-		sqlMap[name] = fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
+		sqlMap[query.FullName] = fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
 	}
 
-	for name, control := range resourceMaps.Controls {
-		// query map contains long and short names for controls - avoid dupes
-		if !strings.HasPrefix(name, "control.") {
+	for _, control := range resourceMaps.Controls {
+		// query map contains long and short names for queries - have we already created this query
+		if _, ok := sqlMap[control.FullName]; ok {
 			continue
 		}
 		// only create prepared statements for controls with inline SQL
@@ -72,7 +72,7 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 		// remove trailing semicolons from sql as this breaks the prepare statement
 		rawSql := strings.TrimRight(strings.TrimSpace(typehelpers.SafeString(control.SQL)), ";")
 		preparedStatementName := control.GetPreparedStatementName()
-		sqlMap[name] = fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
+		sqlMap[control.FullName] = fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
 	}
 
 	return sqlMap

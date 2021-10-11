@@ -31,11 +31,7 @@ type Benchmark struct {
 	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
 
 	// list of all block referenced by the resource
-	References []string `column:"refs,jsonb"`
-	// references stored as a map for easy checking
-	referencesMap map[string]bool
-	// list of resource names who reference this resource
-	ReferencedBy []string `column:"referenced_by,jsonb"`
+	References []*ResourceReference
 
 	Mod              *Mod     `cty:"mod"`
 	ChildNameStrings []string `column:"children,jsonb"`
@@ -48,10 +44,9 @@ type Benchmark struct {
 
 func NewBenchmark(block *hcl.Block) *Benchmark {
 	return &Benchmark{
-		ShortName:     block.Labels[0],
-		FullName:      fmt.Sprintf("benchmark.%s", block.Labels[0]),
-		DeclRange:     block.DefRange,
-		referencesMap: make(map[string]bool),
+		ShortName: block.Labels[0],
+		FullName:  fmt.Sprintf("benchmark.%s", block.Labels[0]),
+		DeclRange: block.DefRange,
 	}
 }
 
@@ -90,12 +85,16 @@ func (b *Benchmark) Equals(other *Benchmark) bool {
 	otherChildNames := other.ChildNameStrings
 	sort.Strings(otherChildNames)
 	return strings.Join(myChildNames, ",") == strings.Join(otherChildNames, ",")
-
 }
 
 // CtyValue implements HclResource
 func (b *Benchmark) CtyValue() (cty.Value, error) {
 	return getCtyValue(b)
+}
+
+// GetDeclRange implements HclResource
+func (b *Benchmark) GetDeclRange() *hcl.Range {
+	return &b.DeclRange
 }
 
 // OnDecoded implements HclResource
@@ -126,24 +125,18 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 }
 
 // AddReference implements HclResource
-func (b *Benchmark) AddReference(reference string) {
-	b.References = append(b.References, reference)
-	b.referencesMap[reference] = true
-}
-
-// AddReferencedBy implements HclResource
-func (b *Benchmark) AddReferencedBy(reference string) {
-	b.ReferencedBy = append(b.ReferencedBy, reference)
-}
-
-// ReferencesResource implements HclResource
-func (b *Benchmark) ReferencesResource(name string) bool {
-	return b.referencesMap[name]
+func (b *Benchmark) AddReference(ref *ResourceReference) {
+	b.References = append(b.References, ref)
 }
 
 // SetMod implements HclResource
 func (b *Benchmark) SetMod(mod *Mod) {
 	b.Mod = mod
+}
+
+// GetMod implements HclResource
+func (b *Benchmark) GetMod() *Mod {
+	return b.Mod
 }
 
 func (b *Benchmark) String() string {
@@ -250,6 +243,12 @@ func (b *Benchmark) GetPaths() []NodePath {
 	return res
 }
 
+// Name implements ModTreeItem, HclResource, ResourceWithMetadata
+// return name in format: 'control.<shortName>'
+func (b *Benchmark) Name() string {
+	return b.FullName
+}
+
 // GetMetadata implements ResourceWithMetadata
 func (b *Benchmark) GetMetadata() *ResourceMetadata {
 	return b.metadata
@@ -258,12 +257,6 @@ func (b *Benchmark) GetMetadata() *ResourceMetadata {
 // SetMetadata implements ResourceWithMetadata
 func (b *Benchmark) SetMetadata(metadata *ResourceMetadata) {
 	b.metadata = metadata
-}
-
-// Name implements ModTreeItem, HclResource, ResourceWithMetadata
-// return name in format: 'control.<shortName>'
-func (b *Benchmark) Name() string {
-	return b.FullName
 }
 
 // QualifiedName returns the name in format: '<modName>.control.<shortName>'

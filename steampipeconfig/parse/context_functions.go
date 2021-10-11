@@ -11,7 +11,7 @@ import (
 
 // from `github.com/hashicorp/terraform/lang/functions.go`
 
-// ContextFunctions :: returns the set of functions that should be used to when evaluating expressions
+// ContextFunctions returns the set of functions that should be used to when evaluating expressions
 func ContextFunctions(workspaceDir string) map[string]function.Function {
 
 	ctxFuncs := map[string]function.Function{

@@ -2,8 +2,9 @@ package modconfig
 
 import (
 	"fmt"
+	"strings"
 
-	version "github.com/hashicorp/go-version"
+	goVersion "github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/ociinstaller"
 )
@@ -12,8 +13,8 @@ type PluginVersion struct {
 	// the plugin name, as specified in the mod requires block. , e.g. turbot/mod1, aws
 	RawName string `cty:"name" hcl:"name,label"`
 	// the version STREAM, can be either a major or minor version stream i.e. 1 or 1.1
-	Version       string           `cty:"version" hcl:"version,optional"`
-	ParsedVersion *version.Version `json:"-"`
+	VersionString string `cty:"version" hcl:"version,optional"`
+	Version       *goVersion.Version
 	// the org and name which are parsed from the raw name
 	Org       string
 	Name      string
@@ -21,10 +22,10 @@ type PluginVersion struct {
 }
 
 func (p *PluginVersion) FullName() string {
-	if p.Version == "" {
+	if p.VersionString == "" {
 		return p.ShortName()
 	}
-	return fmt.Sprintf("%s@%s", p.ShortName(), p.Version)
+	return fmt.Sprintf("%s@%s", p.ShortName(), p.VersionString)
 }
 
 func (p *PluginVersion) ShortName() string {
@@ -32,18 +33,24 @@ func (p *PluginVersion) ShortName() string {
 }
 
 func (p *PluginVersion) String() string {
-	return p.FullName()
+	return fmt.Sprintf("plugin %s", p.FullName())
 }
 
-// parse the version and name properties
-func (p *PluginVersion) parseProperties() error {
-	v, err := version.NewVersion(p.Version)
-
-	if err != nil {
-		return err
+// Initialise parses the version and name properties
+func (p *PluginVersion) Initialise() hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	if version, err := goVersion.NewVersion(strings.TrimPrefix(p.VersionString, "v")); err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("invalid plugin version %s", p.VersionString),
+			Subject:  &p.DeclRange,
+		})
+	} else {
+		p.Version = version
 	}
-	p.ParsedVersion = v
+
 	// parse plugin name
 	p.Org, p.Name, _ = ociinstaller.NewSteampipeImageRef(p.RawName).GetOrgNameAndStream()
-	return nil
+
+	return diags
 }

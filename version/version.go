@@ -26,20 +26,20 @@ var steampipeVersion = "0.9.0"
 // such as "dev" (in development), "beta", "rc1", etc.
 var prerelease = "dev.0"
 
-// semVer is an instance of version.Version. This has the secondary
+// Version is an instance of version.Version. This has the secondary
 // benefit of verifying during tests and init time that our version is a
 // proper semantic version, which should always be the case.
-var semVer *goVersion.Version
+var Version *goVersion.Version
 
 func init() {
 	versionString := steampipeVersion
 	if prerelease != "" {
 		versionString = fmt.Sprintf("%s-%s", steampipeVersion, prerelease)
 	}
-	semVer = goVersion.Must(goVersion.NewVersion(versionString))
+	Version = goVersion.Must(goVersion.NewVersion(versionString))
 }
 
 // String returns the complete version string, including prerelease
 func String() string {
-	return semVer.String()
+	return Version.String()
 }

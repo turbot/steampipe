@@ -24,6 +24,7 @@ require (
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.7.2
+	github.com/go-git/go-git/v5 v5.4.2
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2 // indirect
@@ -55,8 +56,8 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.9.0
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
-	github.com/turbot/go-kit v0.2.2-0.20210730122803-1ecb35c27e98
-	github.com/turbot/steampipe-plugin-sdk v1.3.0
+	github.com/turbot/go-kit v0.3.0
+	github.com/turbot/steampipe-plugin-sdk v1.6.2
 	github.com/ulikunitz/xz v0.5.8
 	github.com/zclconf/go-cty v1.8.2
 	github.com/zclconf/go-cty-yaml v1.0.2
@@ -66,12 +67,9 @@ require (
 	golang.org/x/text v0.3.7
 	google.golang.org/genproto v0.0.0-20211005153810-c76a74d43a8e // indirect
 	google.golang.org/grpc v1.41.0
-	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
 	rsc.io/letsencrypt v0.0.3 // indirect
 	sigs.k8s.io/yaml v1.1.0
 )
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20210830083819-c872df2bdcc9
-
-replace github.com/turbot/steampipe-plugin-sdk => github.com/turbot/steampipe-plugin-sdk v1.5.1-0.20210827170319-ff928325577c
