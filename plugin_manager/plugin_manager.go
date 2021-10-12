@@ -2,6 +2,7 @@ package plugin_manager
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"sync"
@@ -27,8 +28,7 @@ type RunningPlugin struct {
 type PluginManager struct {
 	pb.UnimplementedPluginManagerServer
 
-	Plugins        map[string]*RunningPlugin
-	InvalidPlugins map[string]*RunningPlugin
+	Plugins map[string]*RunningPlugin
 
 	configDir        string
 	mut              sync.Mutex
@@ -39,7 +39,6 @@ func NewPluginManager(connectionConfig map[string]*pb.ConnectionConfig) *PluginM
 	return &PluginManager{
 		connectionConfig: connectionConfig,
 		Plugins:          make(map[string]*RunningPlugin),
-		InvalidPlugins:   make(map[string]*RunningPlugin),
 	}
 
 }
@@ -68,16 +67,28 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 		}
 	}()
 
+	log.Printf("[WARN] ****************** PluginManager Get %s\n", req.Connection)
+
 	// is this plugin already running
 	if plugin, ok := m.Plugins[req.Connection]; ok {
-		// inc the ref count
-		plugin.refCount++
-		// return the reattach config
-		return &pb.GetResponse{
-			Reattach: plugin.reattach,
-		}, nil
+		log.Printf("[WARN] ****************** found in map %v", m.Plugins)
+
+		// check the pid exists
+		exists, _ := utils.PidExists(int(plugin.reattach.Pid))
+		if exists {
+			// inc the ref count
+			plugin.refCount++
+			// return the reattach config
+			return &pb.GetResponse{
+				Reattach: plugin.reattach,
+			}, nil
+		}
+		log.Printf("[WARN] plugin pid %d for connection '%s' found in plugin map but does not exist", plugin.reattach.Pid, req.Connection)
+		// so there is an entry in the map but it does not exist - remove from the map
+		delete(m.Plugins, req.Connection)
 	}
 
+	log.Printf("[WARN] ****************** NOT found in map %v", m.Plugins)
 	// so we need to start the plugin
 	reattach, err := m.startPlugin(req)
 	if err != nil {
@@ -107,16 +118,7 @@ func (m *PluginManager) Release(req *pb.ReleaseRequest) (resp *pb.ReleaseRespons
 	}()
 
 	// first look for plugin in map of valid plugins
-	foundPlugin, err := m.decrementPluginUsage(req, m.Plugins)
-	if err != nil {
-		return nil, err
-	}
-	if foundPlugin {
-		return &pb.ReleaseResponse{}, nil
-	}
-
-	// now try invalid plugins
-	foundPlugin, err = m.decrementPluginUsage(req, m.InvalidPlugins)
+	foundPlugin, err := m.decrementPluginUsage(req)
 	if err != nil {
 		return nil, err
 	}
@@ -126,17 +128,6 @@ func (m *PluginManager) Release(req *pb.ReleaseRequest) (resp *pb.ReleaseRespons
 
 	// we could not find the plugin
 	return nil, fmt.Errorf("no plugin found for connection %s, pid %s")
-}
-
-func (m *PluginManager) Reload(req *pb.ReloadRequest) (resp *pb.ReloadResponse, err error) {
-	m.mut.Lock()
-	defer func() {
-		m.mut.Unlock()
-		if r := recover(); r != nil {
-			err = helpers.ToError(r)
-		}
-	}()
-	return nil, nil
 }
 
 func (m *PluginManager) SetConnectionConfigMap(req *pb.SetConnectionConfigMapRequest) (resp *pb.SetConnectionConfigMapResponse, err error) {
@@ -211,23 +202,8 @@ func (m *PluginManager) startPlugin(req *pb.GetRequest) (*pb.ReattachConfig, err
 	return pb.NewReattachConfig(reattach), nil
 }
 
-//func (m *PluginManager) SetConnectionConfigMap(connectionName string, connectionConfig string, client *sdkgrpc.PluginClient) error {
-//	req := &proto.SetConnectionConfigMapRequest{
-//		ConnectionName:   connectionName,
-//		ConnectionConfig: connectionConfig,
-//	}
-//
-//	_, err := client.Stub.SetConnectionConfigMap(req)
-//	if err != nil {
-//		// create a new cleaner error, ignoring Not Implemented errors for backwards compatibility
-//		return utils.HandleGrpcError(err, connectionName, "SetConnectionConfigMap")
-//	}
-//	return nil
-//
-//}
-
-func (m *PluginManager) decrementPluginUsage(req *pb.ReleaseRequest, mp map[string]*RunningPlugin) (bool, error) {
-	if plugin, ok := mp[req.Connection]; ok {
+func (m *PluginManager) decrementPluginUsage(req *pb.ReleaseRequest) (bool, error) {
+	if plugin, ok := m.Plugins[req.Connection]; ok {
 		// we found a plugin for this connection name - check the pid
 		if plugin.reattach.Pid == req.Pid {
 			plugin.refCount--
@@ -251,10 +227,9 @@ func (m *PluginManager) decrementPluginUsage(req *pb.ReleaseRequest, mp map[stri
 }
 
 func (m *PluginManager) killPlugin(pid int64) error {
-	process, err := os.FindProcess(int(pid))
+	process, err := utils.FindProcess(int(pid))
 	if err != nil {
 		return err
 	}
 	return process.Kill()
-
 }

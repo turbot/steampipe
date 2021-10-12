@@ -9,8 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/db/db_client"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -18,9 +16,11 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
+	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -118,8 +118,9 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 		if initData.workspace != nil {
 			initData.workspace.Close()
-
 		}
+		// stop plugin manager (if it is running)
+		plugin_manager.Stop()
 	}()
 
 	// verify we have an argument
@@ -202,11 +203,20 @@ func initialiseCheck() *checkInitData {
 	}
 
 	err = validateConnectionStringArgs()
-	utils.FailOnError(err)
+	if err != nil {
+		initData.result.Error = err
+		return initData
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	startCancelHandler(cancel)
 	initData.ctx = ctx
+
+	// start plugin manager
+	if err := plugin_manager.Start(); err != nil {
+		initData.result.Error = fmt.Errorf("failed to start plugin manager: %s", err)
+		return initData
+	}
 
 	// set color schema
 	err = initialiseColorScheme()

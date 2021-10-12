@@ -3,14 +3,13 @@ package steampipeconfig
 import (
 	"log"
 
-	"github.com/turbot/steampipe/plugin_manager"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/grpc"
 	sdkpb "github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	sdkpluginshared "github.com/turbot/steampipe-plugin-sdk/grpc/shared"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
+	"github.com/turbot/steampipe/plugin_manager"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
@@ -37,12 +36,12 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 
 	log.Printf("[TRACE] CreateConnectionPlugin connection: '%s', pluginName: '%s'", connectionName, pluginName)
 
-	plugin_manager.Start()
 	pluginManager, err := plugin_manager.GetPluginManager()
+	// run locally - for debugging
 	//pluginManager, err := getPluginManager()
-	//if err != nil {
-	//	return nil, err
-	//}
+	if err != nil {
+		return nil, err
+	}
 
 	getResponse, err := pluginManager.Get(&pb.GetRequest{Connection: connectionName, DisableLogger: disableLogger})
 	if err != nil {

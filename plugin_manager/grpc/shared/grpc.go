@@ -27,10 +27,6 @@ func (c *GRPCClient) SetConnectionConfigMap(req *pb.SetConnectionConfigMapReques
 	return c.client.SetConnectionConfigMap(c.ctx, req)
 }
 
-func (c *GRPCClient) Reload(req *pb.ReloadRequest) (*pb.ReloadResponse, error) {
-	return c.client.Reload(c.ctx, req)
-}
-
 func (c *GRPCClient) Shutdown(req *pb.ShutdownRequest) (*pb.ShutdownResponse, error) {
 	return c.client.Shutdown(c.ctx, req)
 }
@@ -51,9 +47,6 @@ func (m *GRPCServer) Release(_ context.Context, req *pb.ReleaseRequest) (*pb.Rel
 
 func (m *GRPCServer) SetConnectionConfigMap(_ context.Context, req *pb.SetConnectionConfigMapRequest) (*pb.SetConnectionConfigMapResponse, error) {
 	return m.Impl.SetConnectionConfigMap(req)
-}
-func (m *GRPCServer) Reload(_ context.Context, req *pb.ReloadRequest) (*pb.ReloadResponse, error) {
-	return m.Impl.Reload(req)
 }
 
 func (m *GRPCServer) Shutdown(_ context.Context, req *pb.ShutdownRequest) (*pb.ShutdownResponse, error) {
