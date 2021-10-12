@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"os"
@@ -257,17 +258,12 @@ func initialiseCheck() *checkInitData {
 	// setup the session data - prepared statements and introspection tables
 	// create session data source - for check command, we create prepared statements for ALL queries
 	sessionDataSource := workspace.NewSessionDataSource(initData.workspace.GetResourceMaps())
-	err = workspace.EnsureSessionData(context.Background(), sessionDataSource, initData.client)
-	if err != nil {
-		initData.result.Error = err
-		return initData
-	}
 
 	// register EnsureSessionData as a callback on the client.
 	// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 	// so our client object calls this callback to restore the session data
-	initData.client.SetEnsureSessionDataFunc(func(ctx context.Context, client db_common.Client) error {
-		return workspace.EnsureSessionData(ctx, sessionDataSource, client)
+	initData.client.SetEnsureSessionDataFunc(func(ctx context.Context, conn *sql.Conn) error {
+		return workspace.EnsureSessionData(ctx, sessionDataSource, conn)
 	})
 
 	return initData
