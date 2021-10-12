@@ -92,6 +92,10 @@ func (c *LocalDbClient) LoadSchema() {
 	c.client.LoadSchema()
 }
 
+func (c *LocalDbClient) RefreshSessions(ctx context.Context) error {
+	return c.client.RefreshSessions(ctx)
+}
+
 // ExecuteSync implements Client
 func (c *LocalDbClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	return c.client.ExecuteSync(ctx, query, disableSpinner)

@@ -95,6 +95,10 @@ func (c *DbClient) LoadSchema() {
 	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
 }
 
+// RefreshSessions terminates the current connections.
+func (c *DbClient) RefreshSessions(ctx context.Context) error {
+	return c.refreshDbClient(ctx)
+}
 // refreshDbClient terminates the current connection and opens up a new connection to the service.
 func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	err := c.dbClient.Close()
