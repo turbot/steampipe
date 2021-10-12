@@ -2,7 +2,7 @@ package plugin_manager
 
 import (
 	"fmt"
-	"os"
+	"log"
 	"os/exec"
 
 	"github.com/hashicorp/go-plugin"
@@ -50,6 +50,7 @@ func GetPluginManager() (pluginshared.PluginManager, error) {
 	// try to load the reattach config
 	reattach, err := loadReattachConfig(true)
 	if err != nil {
+		log.Printf("[TRACE] failed to load plugin manager reattach config: %s", err.Error())
 		return nil, err
 	}
 	// if we did not load it and there was no error, it means the plugin manager is not running
@@ -69,15 +70,15 @@ func GetPluginManager() (pluginshared.PluginManager, error) {
 	// connect via RPC
 	rpcClient, err := newClient.Client()
 	if err != nil {
-		fmt.Println("Error:", err.Error())
-		os.Exit(1)
+		log.Printf("[TRACE] failed to connect to plugin manager: %s", err.Error())
+		return nil, err
 	}
 
 	// request the plugin
 	raw, err := rpcClient.Dispense(pluginshared.PluginName)
 	if err != nil {
-		fmt.Println("Error:", err.Error())
-		os.Exit(1)
+		log.Printf("[TRACE] failed to retreive to plugin manager from running plugin process: %s", err.Error())
+		return nil, err
 	}
 
 	// cast to correct type

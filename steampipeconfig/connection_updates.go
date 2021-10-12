@@ -7,6 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/turbot/steampipe/plugin_manager"
+
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/utils"
@@ -106,6 +110,48 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 
 	return updates, res
 }
+
+//  TODO FROM PLUGIN MANAGER
+//func getRequiredConnections(connectionConfig map[string]*modconfig.Connection) (ConnectionDataMap, []string, error) {
+//	utils.LogTime("steampipeconfig.getRequiredConnections start")
+//	defer utils.LogTime("steampipeconfig.getRequiredConnections end")
+//
+//	requiredConnections := ConnectionDataMap{}
+//	var missingPlugins []string
+//
+//	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration start")
+//	// populate checksum for each referenced plugin
+//	for name, connection := range connectionConfig {
+//		remoteSchema := connection.Plugin
+//		pluginPath, err := plugin_manager.GetPluginPath(connection.Plugin, connection.PluginShortName)
+//		if err != nil {
+//			err := fmt.Errorf("failed to load connection '%s': %v\n%s", connection.Name, err, connection.DeclRange)
+//			return nil, nil, err
+//		}
+//		// if plugin is not installed, the path will be returned as empty
+//		if pluginPath == "" {
+//			if !helpers.StringSliceContains(missingPlugins, connection.Plugin) {
+//				missingPlugins = append(missingPlugins, connection.Plugin)
+//			}
+//			continue
+//		}
+//
+//		checksum, err := utils.FileHash(pluginPath)
+//		if err != nil {
+//			return nil, nil, err
+//		}
+//
+//		requiredConnections[name] = &ConnectionData{
+//			Plugin:     remoteSchema,
+//			CheckSum:   checksum,
+//			Connection: connection,
+//		}
+//	}
+//	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration end")
+//
+//	return requiredConnections, missingPlugins, nil
+//}
+
 
 // update requiredConnections - set the schema hash and schema mode for all elements of RequiredConnectionState
 // default to the existing state, but if anm update is required, get the updated value

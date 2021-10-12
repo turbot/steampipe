@@ -15,8 +15,24 @@ type GRPCClient struct {
 	ctx context.Context
 }
 
-func (c *GRPCClient) GetPlugin(req *pb.GetPluginRequest) (*pb.GetPluginResponse, error) {
-	return c.client.GetPlugin(c.ctx, req)
+func (c *GRPCClient) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
+	return c.client.Get(c.ctx, req)
+}
+
+func (c *GRPCClient) Release(req *pb.ReleaseRequest) (*pb.ReleaseResponse, error) {
+	return c.client.Release(c.ctx, req)
+}
+
+func (c *GRPCClient) SetConnectionConfigMap(req *pb.SetConnectionConfigMapRequest) (*pb.SetConnectionConfigMapResponse, error) {
+	return c.client.SetConnectionConfigMap(c.ctx, req)
+}
+
+func (c *GRPCClient) Reload(req *pb.ReloadRequest) (*pb.ReloadResponse, error) {
+	return c.client.Reload(c.ctx, req)
+}
+
+func (c *GRPCClient) Shutdown(req *pb.ShutdownRequest) (*pb.ShutdownResponse, error) {
+	return c.client.Shutdown(c.ctx, req)
 }
 
 // GRPCServer is the gRPC server that GRPCClient talks to.
@@ -25,7 +41,21 @@ type GRPCServer struct {
 	Impl PluginManager
 }
 
-func (m *GRPCServer) GetPlugin(_ context.Context, req *pb.GetPluginRequest) (*pb.GetPluginResponse, error) {
-	//log.Printf("[WARN] _PluginManager_GetPlugin_Handler")
-	return m.Impl.GetPlugin(req)
+func (m *GRPCServer) Get(_ context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
+	return m.Impl.Get(req)
+}
+
+func (m *GRPCServer) Release(_ context.Context, req *pb.ReleaseRequest) (*pb.ReleaseResponse, error) {
+	return m.Impl.Release(req)
+}
+
+func (m *GRPCServer) SetConnectionConfigMap(_ context.Context, req *pb.SetConnectionConfigMapRequest) (*pb.SetConnectionConfigMapResponse, error) {
+	return m.Impl.SetConnectionConfigMap(req)
+}
+func (m *GRPCServer) Reload(_ context.Context, req *pb.ReloadRequest) (*pb.ReloadResponse, error) {
+	return m.Impl.Reload(req)
+}
+
+func (m *GRPCServer) Shutdown(_ context.Context, req *pb.ShutdownRequest) (*pb.ShutdownResponse, error) {
+	return m.Impl.Shutdown(req)
 }

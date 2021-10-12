@@ -1,17 +1,20 @@
 package steampipeconfig
 
 import (
-	"os"
-	"os/exec"
+	"log"
+
+	"github.com/turbot/steampipe/plugin_manager"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/steampipe-plugin-sdk/grpc"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	pluginshared "github.com/turbot/steampipe-plugin-sdk/grpc/shared"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/grpc"
+	sdkpb "github.com/turbot/steampipe-plugin-sdk/grpc/proto"
+	sdkpluginshared "github.com/turbot/steampipe-plugin-sdk/grpc/shared"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
+	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
+	"github.com/turbot/steampipe/utils"
 )
 
 // ConnectionPlugin :: structure representing an instance of a plugin
@@ -21,75 +24,51 @@ type ConnectionPlugin struct {
 	ConnectionConfig  string
 	ConnectionOptions *options.Connection
 	PluginName        string
-	Plugin            *grpc.PluginClient
-	Schema            *proto.Schema
+	Plugin            *sdkgrpc.PluginClient
+	Schema            *sdkpb.Schema
 }
 
 // CreateConnectionPlugin :: instantiate a plugin for a connection, fetch schema and send connection config
 func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool) (*ConnectionPlugin, error) {
-	remoteSchema := connection.Plugin
+	pluginName := connection.Plugin
 	connectionName := connection.Name
 	connectionConfig := connection.Config
-	conectionOptions := connection.Options
+	connectionOptions := connection.Options
 
-	pluginPath, err := GetPluginPath(connection)
+	log.Printf("[TRACE] CreateConnectionPlugin connection: '%s', pluginName: '%s'", connectionName, pluginName)
+
+	plugin_manager.Start()
+	pluginManager, err := plugin_manager.GetPluginManager()
+	//pluginManager, err := getPluginManager()
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	getResponse, err := pluginManager.Get(&pb.GetRequest{Connection: connectionName, DisableLogger: disableLogger})
 	if err != nil {
+		log.Printf("[TRACE] plugin manager failed to get reattach config for connection '%s': %s", connectionName, err)
 		return nil, err
 	}
+
+	log.Printf("[TRACE] plugin manager returned reconnect config for connection '%s' - pid %d",
+		connectionName, getResponse.Reattach.Pid)
 
 	// launch the plugin process.
-	// create the plugin map
-	pluginMap := map[string]plugin.Plugin{
-		remoteSchema: &pluginshared.WrapperPlugin{},
-	}
-	loggOpts := &hclog.LoggerOptions{Name: "plugin"}
-	// avoid logging if the plugin is being invoked by refreshConnections
-	if disableLogger {
-		loggOpts.Exclude = func(hclog.Level, string, ...interface{}) bool { return true }
-	}
-	logger := logging.NewLogger(loggOpts)
-
-	cmd := exec.Command(pluginPath)
-	// pass env to command
-	cmd.Env = os.Environ()
-	client := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig: pluginshared.Handshake,
-		Plugins:         pluginMap,
-		// this failed when running from extension
-		//Cmd:              exec.Command("sh", "-c", pluginPath),
-		Cmd:              cmd,
-		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
-		Logger:           logger,
-	})
-
-	// Connect via RPC
-	rpcClient, err := client.Client()
+	pluginClient, err := attachToPlugin(getResponse, pluginName, disableLogger)
 	if err != nil {
+		log.Printf("[TRACE] failed to attach to plugin for connection '%s' - pid %d : %s",
+			connectionName, getResponse.Reattach.Pid, err)
 		return nil, err
-	}
-
-	// Request the plugin
-	raw, err := rpcClient.Dispense(remoteSchema)
-	if err != nil {
-		return nil, err
-	}
-	// We should have a stub plugin now
-	p := raw.(pluginshared.WrapperPluginClient)
-	pluginClient := &grpc.PluginClient{
-		Name:   remoteSchema,
-		Path:   pluginPath,
-		Client: client,
-		Stub:   p,
 	}
 	if err = SetConnectionConfig(connectionName, connectionConfig, pluginClient); err != nil {
 		pluginClient.Client.Kill()
 		return nil, err
 	}
 
-	schemaResponse, err := pluginClient.Stub.GetSchema(&proto.GetSchemaRequest{})
+	schemaResponse, err := pluginClient.Stub.GetSchema(&sdkpb.GetSchemaRequest{})
 	if err != nil {
 		pluginClient.Client.Kill()
-		return nil, HandleGrpcError(err, connectionName, "getSchema")
+		return nil, utils.HandleGrpcError(err, connectionName, "getSchema")
 	}
 	schema := schemaResponse.Schema
 
@@ -97,17 +76,76 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 	c := &ConnectionPlugin{
 		ConnectionName:    connectionName,
 		ConnectionConfig:  connectionConfig,
-		ConnectionOptions: conectionOptions,
-		PluginName:        remoteSchema,
+		ConnectionOptions: connectionOptions,
+		PluginName:        pluginName,
 		Plugin:            pluginClient,
 		Schema:            schema,
 	}
 	return c, nil
 }
 
+func attachToPlugin(getResponse *pb.GetResponse, pluginName string, disableLogger bool) (*sdkgrpc.PluginClient, error) {
+	// create the plugin map
+	pluginMap := map[string]plugin.Plugin{
+		pluginName: &sdkpluginshared.WrapperPlugin{},
+	}
+	// avoid logging if the plugin is being invoked by refreshConnections
+	loggOpts := &hclog.LoggerOptions{Name: "plugin"}
+	if disableLogger {
+		loggOpts.Exclude = func(hclog.Level, string, ...interface{}) bool { return true }
+	}
+	logger := logging.NewLogger(loggOpts)
+
+	// create grpc client
+	client := plugin.NewClient(&plugin.ClientConfig{
+		HandshakeConfig:  sdkpluginshared.Handshake,
+		Plugins:          pluginMap,
+		Reattach:         getResponse.Reattach.Convert(),
+		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
+		Logger:           logger,
+	})
+
+	// connect via RPC
+	rpcClient, err := client.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	// request the plugin
+	raw, err := rpcClient.Dispense(pluginName)
+	if err != nil {
+		return nil, err
+	}
+	// we should have a stub plugin now
+	p := raw.(sdkpluginshared.WrapperPluginClient)
+	pluginClient := &sdkgrpc.PluginClient{
+		Name:   pluginName,
+		Client: client,
+		Stub:   p,
+	}
+	return pluginClient, nil
+}
+
+func getPluginManager() (*plugin_manager.PluginManager, error) {
+	steampipeConfig, err := LoadConnectionConfig()
+	if err != nil {
+		return nil, err
+	}
+	// build config map
+	configMap := make(map[string]*pb.ConnectionConfig)
+	for k, v := range steampipeConfig.Connections {
+		configMap[k] = &pb.ConnectionConfig{
+			Plugin:          v.Plugin,
+			PluginShortName: v.PluginShortName,
+			Config:          v.Config,
+		}
+	}
+	return plugin_manager.NewPluginManager(configMap), nil
+}
+
 // SetConnectionConfig sends the connection config
-func SetConnectionConfig(connectionName string, connectionConfig string, pluginClient *grpc.PluginClient) error {
-	req := &proto.SetConnectionConfigRequest{
+func SetConnectionConfig(connectionName string, connectionConfig string, pluginClient *sdkgrpc.PluginClient) error {
+	req := &sdkpb.SetConnectionConfigRequest{
 		ConnectionName:   connectionName,
 		ConnectionConfig: connectionConfig,
 	}
@@ -115,7 +153,7 @@ func SetConnectionConfig(connectionName string, connectionConfig string, pluginC
 	_, err := pluginClient.Stub.SetConnectionConfig(req)
 	if err != nil {
 		// create a new cleaner error, ignoring Not Implemented errors for backwards compatibility
-		return HandleGrpcError(err, connectionName, "SetConnectionConfig")
+		return utils.HandleGrpcError(err, connectionName, "SetConnectionConfig")
 	}
 	return nil
 }

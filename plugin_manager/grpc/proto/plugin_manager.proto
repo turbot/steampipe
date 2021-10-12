@@ -6,21 +6,60 @@ package proto;
 
 // Interface exported by the server.
 service PluginManager {
-  rpc GetPlugin(GetPluginRequest) returns (GetPluginResponse) {}
+  rpc Get(GetRequest) returns (GetResponse) {}
+  rpc Release(ReleaseRequest) returns (ReleaseResponse) {}
+  rpc SetConnectionConfigMap(SetConnectionConfigMapRequest) returns (SetConnectionConfigMapResponse) {}
+  rpc Reload(ReloadRequest) returns (ReloadResponse) {}
+  rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {}
 }
 
-message GetPluginRequest {
+message GetRequest {
   string connection = 1;
+  bool disable_logger=2;
 }
 
-message GetPluginResponse {
-  string Protocol        =1;
-  int64  ProtocolVersion =2;
-  NetAddr Addr           = 3;
-  int64 Pid              =4;
+message GetResponse {
+  ReattachConfig reattach = 1;
+}
+
+message ReleaseRequest {
+  string connection = 1;
+  int64 pid         = 2;
+}
+
+message ReleaseResponse{}
+
+message SetConnectionConfigMapRequest{
+  map<string, ConnectionConfig> configMap = 1;
+}
+
+message SetConnectionConfigMapResponse{}
+
+message ReloadRequest {
+  string connection = 1;
+  int64 pid         = 2;
+}
+
+message ReloadResponse {
+  ReattachConfig reattach = 1;
+}
+message ShutdownRequest {}
+message ShutdownResponse {}
+
+message ReattachConfig {
+  string protocol         = 1;
+  int64  protocol_version = 2;
+  NetAddr addr            = 3;
+  int64 pid               = 4;
 }
 
 message NetAddr {
   string Network = 1; // name of the network (for example, "tcp", "udp")
   string Address = 2; // string form of address (for example, "192.0.2.1:25", "[2001:db8::1]:80")
+}
+message ConnectionConfig {
+  string plugin = 1;
+  string plugin_short_name = 2;
+  string config = 3;
+
 }
