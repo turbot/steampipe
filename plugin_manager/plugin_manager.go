@@ -19,16 +19,11 @@ import (
 	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
 )
 
-type RunningPlugin struct {
-	reattach *pb.ReattachConfig
-	refCount int
-}
-
 // PluginManager is the real implementation of grpc.PluginManager
 type PluginManager struct {
 	pb.UnimplementedPluginManagerServer
 
-	Plugins map[string]*RunningPlugin
+	Plugins map[string]*pb.ReattachConfig
 
 	configDir        string
 	mut              sync.Mutex
@@ -38,7 +33,7 @@ type PluginManager struct {
 func NewPluginManager(connectionConfig map[string]*pb.ConnectionConfig) *PluginManager {
 	return &PluginManager{
 		connectionConfig: connectionConfig,
-		Plugins:          make(map[string]*RunningPlugin),
+		Plugins:          make(map[string]*pb.ReattachConfig),
 	}
 
 }
@@ -67,28 +62,26 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 		}
 	}()
 
-	log.Printf("[WARN] ****************** PluginManager Get %s\n", req.Connection)
+	log.Printf("[WARN] ****************** PluginManager %p Get connection '%s'\n", m, req.Connection)
 
 	// is this plugin already running
 	if plugin, ok := m.Plugins[req.Connection]; ok {
-		log.Printf("[WARN] ****************** found in map %v", m.Plugins)
+		log.Printf("[TRACE] found '%s' in map %v", req.Connection, m.Plugins)
 
 		// check the pid exists
-		exists, _ := utils.PidExists(int(plugin.reattach.Pid))
+		exists, _ := utils.PidExists(int(plugin.Pid))
 		if exists {
-			// inc the ref count
-			plugin.refCount++
 			// return the reattach config
 			return &pb.GetResponse{
-				Reattach: plugin.reattach,
+				Reattach: plugin,
 			}, nil
 		}
-		log.Printf("[WARN] plugin pid %d for connection '%s' found in plugin map but does not exist", plugin.reattach.Pid, req.Connection)
+		log.Printf("[WARN] plugin pid %d for connection '%s' found in plugin map but does not exist - removing from map", plugin.Pid, req.Connection)
 		// so there is an entry in the map but it does not exist - remove from the map
 		delete(m.Plugins, req.Connection)
 	}
 
-	log.Printf("[WARN] ****************** NOT found in map %v", m.Plugins)
+	log.Printf("[TRACE] '%s' NOT found in map %v - starting", req.Connection, m.Plugins)
 	// so we need to start the plugin
 	reattach, err := m.startPlugin(req)
 	if err != nil {
@@ -96,38 +89,13 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 	}
 
 	// store the reattach config in our map
-	m.Plugins[req.Connection] = &RunningPlugin{
-		reattach: reattach,
-		refCount: 1,
-	}
+	m.Plugins[req.Connection] = reattach
 
 	// and return
 	return &pb.GetResponse{
 		Reattach: reattach,
 	}, nil
 
-}
-
-func (m *PluginManager) Release(req *pb.ReleaseRequest) (resp *pb.ReleaseResponse, err error) {
-	m.mut.Lock()
-	defer func() {
-		m.mut.Unlock()
-		if r := recover(); r != nil {
-			err = helpers.ToError(r)
-		}
-	}()
-
-	// first look for plugin in map of valid plugins
-	foundPlugin, err := m.decrementPluginUsage(req)
-	if err != nil {
-		return nil, err
-	}
-	if foundPlugin {
-		return &pb.ReleaseResponse{}, nil
-	}
-
-	// we could not find the plugin
-	return nil, fmt.Errorf("no plugin found for connection %s, pid %s")
 }
 
 func (m *PluginManager) SetConnectionConfigMap(req *pb.SetConnectionConfigMapRequest) (resp *pb.SetConnectionConfigMapResponse, err error) {
@@ -153,7 +121,7 @@ func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResp
 
 	var errs []error
 	for _, p := range m.Plugins {
-		err = m.killPlugin(p.reattach.Pid)
+		err = m.killPlugin(p.Pid)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -200,30 +168,6 @@ func (m *PluginManager) startPlugin(req *pb.GetRequest) (*pb.ReattachConfig, err
 	}
 	reattach := client.ReattachConfig()
 	return pb.NewReattachConfig(reattach), nil
-}
-
-func (m *PluginManager) decrementPluginUsage(req *pb.ReleaseRequest) (bool, error) {
-	if plugin, ok := m.Plugins[req.Connection]; ok {
-		// we found a plugin for this connection name - check the pid
-		if plugin.reattach.Pid == req.Pid {
-			plugin.refCount--
-			if plugin.refCount == 0 {
-				// terminate the plugin
-				err := m.killPlugin(plugin.reattach.Pid)
-				if err != nil {
-					return false, err
-				}
-				// remove from the map
-				delete(m.Plugins, req.Connection)
-			} else {
-				m.Plugins[req.Connection] = plugin
-			}
-			// we found the plugin
-			return true, nil
-		}
-	}
-	// we did not find the plugin
-	return false, nil
 }
 
 func (m *PluginManager) killPlugin(pid int64) error {
