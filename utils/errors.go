@@ -4,8 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/fatih/color"
 	"github.com/shiena/ansicolor"
@@ -120,4 +124,23 @@ func CombineErrors(errors ...error) error {
 
 func PrefixError(err error, prefix string) error {
 	return fmt.Errorf("%s: %s\n", prefix, TransformErrorToSteampipe(err).Error())
+}
+
+func HandleGrpcError(err error, connection, call string) error {
+	if err == nil {
+		return nil
+	}
+	// if this is a not implemented error we silently swallow it
+	status, ok := status.FromError(err)
+	if !ok {
+		return err
+	}
+
+	// ignore unimplemented error
+	if status.Code() == codes.Unimplemented {
+		log.Printf("[TRACE] connection '%s' returned 'Unimplemented' error for call '%s' - plugin version does not support this call", connection, call)
+		return nil
+	}
+
+	return errors.New(status.Message())
 }

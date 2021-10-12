@@ -6,17 +6,17 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
+	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
+	"github.com/turbot/steampipe/utils"
 )
 
 type pluginManagerState struct {
 	Protocol        plugin.Protocol
 	ProtocolVersion int
-	Addr            *SimpleAddr
+	Addr            *pb.SimpleAddr
 	Pid             int
 }
 
@@ -24,7 +24,7 @@ func newPluginManagerState(reattach *plugin.ReattachConfig) *pluginManagerState 
 	return &pluginManagerState{
 		Protocol:        reattach.Protocol,
 		ProtocolVersion: reattach.ProtocolVersion,
-		Addr:            NewSimpleAddr(reattach.Addr),
+		Addr:            pb.NewSimpleAddr(reattach.Addr),
 		Pid:             reattach.Pid,
 	}
 }

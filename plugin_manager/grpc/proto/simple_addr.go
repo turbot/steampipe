@@ -1,4 +1,4 @@
-package plugin_manager
+package proto
 
 import "net"
 
