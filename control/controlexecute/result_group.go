@@ -3,9 +3,11 @@ package controlexecute
 import (
 	"context"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/turbot/steampipe/db/db_common"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -25,6 +27,10 @@ type ResultGroup struct {
 	Groups      []*ResultGroup    `json:"groups"`
 	ControlRuns []*ControlRun     `json:"controls"`
 
+	Severity map[string]StatusSummary `json:"-"`
+
+	summaryUpdateLock *sync.Mutex
+
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ModTreeItem `json:"-"`
 	Parent    *ResultGroup          `json:"-"`
@@ -43,10 +49,11 @@ func NewGroupSummary() *GroupSummary {
 // NewRootResultGroup creates a ResultGroup to act as the root node of a control execution tree
 func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.ModTreeItem) *ResultGroup {
 	root := &ResultGroup{
-		GroupId: RootResultGroupName,
-		Groups:  []*ResultGroup{},
-		Tags:    make(map[string]string),
-		Summary: NewGroupSummary(),
+		GroupId:           RootResultGroupName,
+		Groups:            []*ResultGroup{},
+		Tags:              make(map[string]string),
+		Summary:           NewGroupSummary(),
+		summaryUpdateLock: new(sync.Mutex),
 	}
 	for _, item := range rootItems {
 		// if root item is a benchmark, create new result group with root as parent
@@ -65,14 +72,15 @@ func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.Mod
 // NewResultGroup creates a result group from a ModTreeItem
 func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ModTreeItem, parent *ResultGroup) *ResultGroup {
 	group := &ResultGroup{
-		GroupId:     treeItem.Name(),
-		Title:       treeItem.GetTitle(),
-		Description: treeItem.GetDescription(),
-		Tags:        treeItem.GetTags(),
-		GroupItem:   treeItem,
-		Parent:      parent,
-		Groups:      []*ResultGroup{},
-		Summary:     NewGroupSummary(),
+		GroupId:           treeItem.Name(),
+		Title:             treeItem.GetTitle(),
+		Description:       treeItem.GetDescription(),
+		Tags:              treeItem.GetTags(),
+		GroupItem:         treeItem,
+		Parent:            parent,
+		Groups:            []*ResultGroup{},
+		Summary:           NewGroupSummary(),
+		summaryUpdateLock: new(sync.Mutex),
 	}
 	// add child groups for children which are benchmarks
 	for _, c := range treeItem.GetChildren() {
@@ -113,6 +121,9 @@ func (r *ResultGroup) AddResult(run *ControlRun) {
 }
 
 func (r *ResultGroup) updateSummary(summary StatusSummary) {
+	r.summaryUpdateLock.Lock()
+	defer r.summaryUpdateLock.Unlock()
+
 	r.Summary.Status.Skip += summary.Skip
 	r.Summary.Status.Alarm += summary.Alarm
 	r.Summary.Status.Info += summary.Info
@@ -124,7 +135,13 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 }
 
 func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummary) {
-	val, exists := r.Summary.Severity[severity]
+	r.summaryUpdateLock.Lock()
+	defer r.summaryUpdateLock.Unlock()
+
+	if r.Severity == nil {
+		r.Severity = make(map[string]StatusSummary)
+	}
+	val, exists := r.Severity[severity]
 	if !exists {
 		val = StatusSummary{}
 	}
@@ -140,7 +157,7 @@ func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummar
 	}
 }
 
-func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client) int {
+func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, semaphore *semaphore.Weighted) int {
 	log.Printf("[TRACE] begin ResultGroup.Execute: %s\n", r.GroupId)
 	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
 
@@ -159,14 +176,22 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client) int 
 			if viper.GetBool(constants.ArgDryRun) {
 				controlRun.Skip()
 			} else {
-				controlRun.Start(ctx, client)
-				failures += controlRun.Summary.Alarm
-				failures += controlRun.Summary.Error
+				err := semaphore.Acquire(ctx, 1)
+				if err != nil {
+					controlRun.SetError(err)
+					continue
+				}
+				go func() {
+					controlRun.Start(ctx, client)
+					failures += controlRun.Summary.Alarm
+					failures += controlRun.Summary.Error
+					semaphore.Release(1)
+				}()
 			}
 		}
 	}
 	for _, child := range r.Groups {
-		failures += child.Execute(ctx, client)
+		failures += child.Execute(ctx, client, semaphore)
 	}
 
 	r.Duration = time.Since(startTime)

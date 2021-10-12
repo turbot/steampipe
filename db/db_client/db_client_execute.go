@@ -73,8 +73,13 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 		spinner = display.ShowSpinner("Loading results...")
 	}
 
+	session, err := c.createSession(ctx)
+	if err != nil {
+		return
+	}
+
 	// begin a transaction
-	tx, err = c.createTransaction(ctx, true)
+	tx, err = c.createTransaction(ctx, session, true)
 	if err != nil {
 		return
 	}
@@ -101,16 +106,49 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 		c.readRows(ctx, startTime, rows, result, spinner)
 		// commit transaction
 		tx.Commit()
+		// return the session to the pool
+		session.Close()
 	}()
 
 	return result, nil
 }
 
+func (c *DbClient) createSession(ctx context.Context) (*sql.Conn, error) {
+	c.sessionCreateLock.Lock()
+	defer c.sessionCreateLock.Unlock()
+
+	conn, err := c.dbClient.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if _, ensured := c.ensuredConnectionsMap[conn]; !ensured {
+		stat := SessionStats{CreationTime: time.Now(), EnsureStartTime: time.Now(), EnsureEndTime: time.Now(), LastUsedTime: time.Now()}
+		if c.ensureSessionFunc == nil {
+			return conn, nil
+		}
+
+		if c.ensureSessionFunc != nil {
+			stat.EnsureStartTime = time.Now()
+			c.ensureSessionFunc(ctx, conn)
+			stat.EnsureEndTime = time.Now()
+		}
+
+		c.ensuredConnectionsMap[conn] = stat
+		return conn, nil
+	}
+
+	stat := c.ensuredConnectionsMap[conn]
+	stat.LastUsedTime = time.Now()
+	c.ensuredConnectionsMap[conn] = stat
+
+	return conn, nil
+}
+
 // createTransaction, with a timeout - this may be required if the db client becomes unresponsive
-func (c *DbClient) createTransaction(ctx context.Context, retryOnTimeout bool) (tx *sql.Tx, err error) {
+func (c *DbClient) createTransaction(ctx context.Context, fromSession *sql.Conn, retryOnTimeout bool) (tx *sql.Tx, err error) {
 	doneChan := make(chan bool)
 	go func() {
-		tx, err = c.dbClient.BeginTx(ctx, nil)
+		tx, err = fromSession.BeginTx(ctx, nil)
 		if err != nil {
 			err = utils.PrefixError(err, "error creating transaction")
 		}
@@ -127,7 +165,7 @@ func (c *DbClient) createTransaction(ctx context.Context, retryOnTimeout bool) (
 			c.refreshDbClient(ctx)
 
 			// recurse back into this function, passing 'retryOnTimeout=false' to prevent further recursion
-			return c.createTransaction(ctx, false)
+			return c.createTransaction(ctx, fromSession, false)
 		}
 		err = fmt.Errorf("error creating transaction - please restart Steampipe")
 	}
