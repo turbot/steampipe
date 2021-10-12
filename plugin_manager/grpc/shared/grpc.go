@@ -19,10 +19,6 @@ func (c *GRPCClient) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 	return c.client.Get(c.ctx, req)
 }
 
-func (c *GRPCClient) Release(req *pb.ReleaseRequest) (*pb.ReleaseResponse, error) {
-	return c.client.Release(c.ctx, req)
-}
-
 func (c *GRPCClient) SetConnectionConfigMap(req *pb.SetConnectionConfigMapRequest) (*pb.SetConnectionConfigMapResponse, error) {
 	return c.client.SetConnectionConfigMap(c.ctx, req)
 }
@@ -39,10 +35,6 @@ type GRPCServer struct {
 
 func (m *GRPCServer) Get(_ context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
 	return m.Impl.Get(req)
-}
-
-func (m *GRPCServer) Release(_ context.Context, req *pb.ReleaseRequest) (*pb.ReleaseResponse, error) {
-	return m.Impl.Release(req)
 }
 
 func (m *GRPCServer) SetConnectionConfigMap(_ context.Context, req *pb.SetConnectionConfigMapRequest) (*pb.SetConnectionConfigMapResponse, error) {
