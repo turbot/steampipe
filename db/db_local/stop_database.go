@@ -8,10 +8,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/turbot/steampipe/constants"
-
 	"github.com/briandowns/spinner"
 	psutils "github.com/shirou/gopsutil/process"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
 
 	"github.com/turbot/steampipe/utils"

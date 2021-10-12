@@ -27,7 +27,6 @@ var Handshake = plugin.HandshakeConfig{
 type PluginManager interface {
 	Get(req *pb.GetRequest) (*pb.GetResponse, error)
 	Release(req *pb.ReleaseRequest) (*pb.ReleaseResponse, error)
-	Reload(req *pb.ReloadRequest) (*pb.ReloadResponse, error)
 	SetConnectionConfigMap(req *pb.SetConnectionConfigMapRequest) (*pb.SetConnectionConfigMapResponse, error)
 	Shutdown(req *pb.ShutdownRequest) (*pb.ShutdownResponse, error)
 }

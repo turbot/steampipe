@@ -7,12 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/steampipe/plugin_manager"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -178,7 +177,7 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.Refre
 // SetUserSearchPath sets the search path for the all steampipe users of the db service
 // do this wy finding all users assigned to the role steampipe_users and set their search path
 func (c *LocalDbClient) setUserSearchPath() error {
-	log.Println("[Trace] SetUserSearchPath")
+	log.Println("[TRACE] SetUserSearchPath")
 	var searchPath []string
 
 	// is there a user search path in the config?
@@ -240,12 +239,11 @@ func (c *LocalDbClient) getDefaultSearchPath() []string {
 
 	return searchPath
 }
-// TODO plugin_manager version - check for diffs and apply to new file
+//// TODO plugin_manager version - check for diffs and apply to new file
 //// RefreshConnections loads required connections from config
 //// and update the database schema and search path to reflect the required connections
 //// return whether any changes have been made
 //func (c *LocalDbClient) refreshConnections() *db_common.RefreshConnectionResult {
-//
 //	res := &db_common.RefreshConnectionResult{}
 //	utils.LogTime("db.refreshConnections start")
 //	defer utils.LogTime("db.refreshConnections end")

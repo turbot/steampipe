@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"github.com/hashicorp/go-plugin"
@@ -63,12 +64,26 @@ func (s *pluginManagerState) verifyServiceRunning() (bool, error) {
 	return true, nil
 }
 
+// kill the plugin manager process and delete the state
+func (s *pluginManagerState) kill() error {
+
+	process, err := utils.FindProcess(s.Pid)
+	if err != nil {
+		return err
+	}
+	// kill the plugin manager process
+	process.Kill()
+	// delete the state file as we have shutdown the plugin manager
+	return s.delete()
+}
+
 func (s *pluginManagerState) delete() error {
 	return os.Remove(constants.PluginManagerStateFilePath())
 }
 
-func loadReattachConfig(verify bool) (*plugin.ReattachConfig, error) {
+func loadPluginManagerState(verify bool) (*pluginManagerState, error) {
 	if !helpers.FileExists(constants.PluginManagerStateFilePath()) {
+		log.Printf("[TRACE] plugin manager state file not found")
 		return nil, nil
 	}
 
@@ -84,11 +99,13 @@ func loadReattachConfig(verify bool) (*plugin.ReattachConfig, error) {
 
 	if verify {
 		if running, err := s.verifyServiceRunning(); err != nil {
+			log.Printf("[TRACE] plugin manager is running, pid %d", s.Pid)
 			return nil, err
 		} else if !running {
+			log.Printf("[TRACE] plugin manager state file exists but pid %d is not running", s.Pid)
 			return nil, nil
 		}
 
 	}
-	return s.reattachConfig(), nil
+	return s, nil
 }
