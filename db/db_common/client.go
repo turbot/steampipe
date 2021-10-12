@@ -2,6 +2,7 @@ package db_common
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/turbot/steampipe/steampipeconfig"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/turbot/steampipe/schema"
 )
 
-type EnsureSessionStateCallback = func(context.Context, Client) error
+type EnsureSessionStateCallback = func(context.Context, *sql.Conn) error
 
 type Client interface {
 	Close() error
@@ -29,7 +30,7 @@ type Client interface {
 	CacheClear() error
 
 	SetEnsureSessionDataFunc(EnsureSessionStateCallback)
-
+	RefreshSessions(ctx context.Context) error
 	// remote client will have empty implementation
 
 	RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult
