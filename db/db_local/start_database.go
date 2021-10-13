@@ -309,6 +309,7 @@ func createCmd(port int, listenAddresses string) *exec.Cmd {
 		postgresCmd.Env = append(os.Environ(), fmt.Sprintf("OPENSSL_CONF=%s", constants.SslConfDir))
 	}
 
+	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	postgresCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid:    true,
 		Foreground: false,

@@ -3,12 +3,12 @@ package plugin_manager
 import (
 	"fmt"
 	"log"
-	"os"
 	"os/exec"
+	"syscall"
+	"time"
 
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 
-	"github.com/hashicorp/go-plugin"
 	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
 )
 
@@ -21,34 +21,51 @@ func Start() error {
 		return err
 	}
 	if state != nil {
-		log.Printf("[TRACE] plugin manager Start() found previous instance of plugin manager still running - stopping it")
-
+		log.Printf("[WARN] ******************** plugin manager Start() found previous instance of plugin manager still running - stopping it")
+		// stop the current instance
 		if err := stop(state); err != nil {
-			log.Printf("[WARN] failed to stop previous instance of plugin manager: %s", err)
+			log.Printf("[WARN] ******************** failed to stop previous instance of plugin manager: %s", err)
 			return err
 		}
 	}
+	return start()
+}
 
-	// we want to see the plugin manaer log
-	log.SetOutput(os.Stdout)
+// start plugin manager, without checking it is already running
+func start() error {
+	pluginManagerCmd := exec.Command("steampipe", "start-plugin-manager")
+	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	err := pluginManagerCmd.Start()
+	time.Sleep(5 * time.Second)
+	return err
 
-	// launch the plugin manager the plugin process.
-	// TODO pass config path or set connection config
-	client := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig: pluginshared.Handshake,
-		Plugins:         pluginshared.PluginMap,
-		Cmd:             exec.Command("sh", "-c", "steampipe plugin-manager"),
-		AllowedProtocols: []plugin.Protocol{
-			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
-	})
-	if _, err := client.Start(); err != nil {
-		return err
-	}
-
-	state = newPluginManagerState(client.ReattachConfig())
-
-	// now save the state
-	return state.save()
+	//// we want to see the plugin manager log
+	//log.SetOutput(os.Stdout)
+	//
+	//// create command which will run steampipe in plugin-manager mode
+	//pluginManagerCmd := exec.Command("steampipe", "plugin-manager", "--spawn")
+	//// set attributes on the command to ensure the process is not shutdown when its parent terminates
+	//pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
+	//	Setpgid:    true,
+	//	Foreground: false,
+	//}
+	//// launch the plugin manager the plugin process.
+	//client := plugin.NewClient(&plugin.ClientConfig{
+	//	HandshakeConfig: pluginshared.Handshake,
+	//	Plugins:         pluginshared.PluginMap,
+	//	Cmd:             pluginManagerCmd,
+	//	AllowedProtocols: []plugin.Protocol{
+	//		plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
+	//})
+	//if _, err := client.Start(); err != nil {
+	//	return err
+	//}
+	//
+	//// create a plugin manager state
+	//state := NewPluginManagerState(client.ReattachConfig())
+	//
+	//// now Save the state
+	//return state.Save()
 }
 
 func Stop() error {
@@ -65,7 +82,7 @@ func Stop() error {
 }
 
 func stop(state *pluginManagerState) error {
-	pluginManager, err := attachToPluginManager(state)
+	pluginManager, err := NewPluginManagerClientWithRetries(state)
 	if err != nil {
 		return err
 	}
@@ -84,6 +101,7 @@ func stop(state *pluginManagerState) error {
 
 // GetPluginManager connects to a running plugin manager
 func GetPluginManager() (pluginshared.PluginManager, error) {
+	log.Printf("[WARN] ******************** GetPluginManager")
 	return getPluginManager(true)
 }
 
@@ -96,10 +114,10 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	}
 	// if we did not load it and there was no error, it means the plugin manager is not running
 	if state == nil {
-		log.Printf("[TRACE] GetPluginManager called but plugin manager not running - calling Start()")
+		log.Printf("[WARN] GetPluginManager called but plugin manager not running - calling Start()")
 		if startIfNeeded {
 			// start the plugin manager
-			if err := Start(); err != nil {
+			if err := start(); err != nil {
 				return nil, err
 			}
 			// recurse in, setting startIfNeeded to false to avoid further recursion on failure
@@ -109,39 +127,5 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 		return nil, fmt.Errorf("plugin manager is not running")
 	}
 
-	pluginManager, err := attachToPluginManager(state)
-	if err != nil {
-		return nil, err
-	}
-
-	return pluginManager, nil
-}
-
-func attachToPluginManager(state *pluginManagerState) (pluginshared.PluginManager, error) {
-	// construct a client using this reaattach config
-	newClient := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig: pluginshared.Handshake,
-		Plugins:         pluginshared.PluginMap,
-		Reattach:        state.reattachConfig(),
-		AllowedProtocols: []plugin.Protocol{
-			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
-	})
-
-	// connect via RPC
-	rpcClient, err := newClient.Client()
-	if err != nil {
-		log.Printf("[TRACE] failed to connect to plugin manager: %s", err.Error())
-		return nil, err
-	}
-
-	// request the plugin
-	raw, err := rpcClient.Dispense(pluginshared.PluginName)
-	if err != nil {
-		log.Printf("[TRACE] failed to retreive to plugin manager from running plugin process: %s", err.Error())
-		return nil, err
-	}
-
-	// cast to correct type
-	pluginManager := raw.(pluginshared.PluginManager)
-	return pluginManager, nil
+	return NewPluginManagerClientWithRetries(state)
 }

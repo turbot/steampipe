@@ -30,11 +30,12 @@ type ConnectionPlugin struct {
 // CreateConnectionPlugin :: instantiate a plugin for a connection, fetch schema and send connection config
 func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool) (*ConnectionPlugin, error) {
 	pluginName := connection.Plugin
+
 	connectionName := connection.Name
 	connectionConfig := connection.Config
 	connectionOptions := connection.Options
 
-	log.Printf("[TRACE] CreateConnectionPlugin connection: '%s', pluginName: '%s'", connectionName, pluginName)
+	log.Printf("[WARN] CreateConnectionPlugin connection: '%s', pluginName: '%s'", connectionName, pluginName)
 
 	pluginManager, err := plugin_manager.GetPluginManager()
 	// run locally - for debugging
@@ -42,20 +43,21 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("[WARN] got plugin manager")
 
 	getResponse, err := pluginManager.Get(&pb.GetRequest{Connection: connectionName, DisableLogger: disableLogger})
 	if err != nil {
-		log.Printf("[TRACE] plugin manager failed to get reattach config for connection '%s': %s", connectionName, err)
+		log.Printf("[WARN] plugin manager failed to get reattach config for connection '%s': %s", connectionName, err)
 		return nil, err
 	}
 
-	log.Printf("[TRACE] plugin manager returned reconnect config for connection '%s' - pid %d",
+	log.Printf("[WARN] plugin manager returned reconnect config for connection '%s' - pid %d",
 		connectionName, getResponse.Reattach.Pid)
 
 	// launch the plugin process.
 	pluginClient, err := attachToPlugin(getResponse, pluginName, disableLogger)
 	if err != nil {
-		log.Printf("[TRACE] failed to attach to plugin for connection '%s' - pid %d : %s",
+		log.Printf("[WARN] failed to attach to plugin for connection '%s' - pid %d : %s",
 			connectionName, getResponse.Reattach.Pid, err)
 		return nil, err
 	}

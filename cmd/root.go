@@ -114,7 +114,6 @@ func initGlobalConfig() {
 
 // CreateLogger :: create a hclog logger with the level specified by the SP_LOG env var
 func createLogger() {
-	// TODO GET FROM VIPER
 	level := logging.LogLevel()
 
 	options := &hclog.LoggerOptions{Name: "steampipe", Level: hclog.LevelFromString(level)}
@@ -150,6 +149,7 @@ func AddCommands() {
 		serviceCmd(),
 		generateCompletionScriptsCmd(),
 		pluginManagerCmd(),
+		startPluginManagerCmd(),
 	)
 }
 
