@@ -18,7 +18,9 @@ import (
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/interactive"
-	"github.com/turbot/steampipe/plugin_manager"
+
+	//"github.com/turbot/steampipe/plugin_manager"
+	//pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	"github.com/turbot/steampipe/query/queryexecute"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -88,13 +90,17 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("cmd.runQueryCmd end")
 
-		// stop plugin manager (if it is running)
-		plugin_manager.Stop()
-
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
 	}()
+
+	//client, err := plugin_manager.GetPluginManager()
+	//utils.FailOnError(err)
+	//res, err := client.Get(&pb.GetRequest{Connection: "aws"})
+	//utils.FailOnError(err)
+	//fmt.Println(res)
+	//return
 
 	if stdinData := getPipedStdinData(); len(stdinData) > 0 {
 		args = append(args, stdinData)
@@ -215,12 +221,6 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 			initDataChan <- initData
 			close(initDataChan)
 		}()
-
-		// start plugin manager
-		if err := plugin_manager.Start(); err != nil {
-			initData.Result.Error = fmt.Errorf("failed to start plugin manager: %s", err)
-			return
-		}
 
 		// get a db client
 		var client db_common.Client

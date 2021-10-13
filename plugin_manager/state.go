@@ -21,7 +21,7 @@ type pluginManagerState struct {
 	Pid             int
 }
 
-func newPluginManagerState(reattach *plugin.ReattachConfig) *pluginManagerState {
+func NewPluginManagerState(reattach *plugin.ReattachConfig) *pluginManagerState {
 	return &pluginManagerState{
 		Protocol:        reattach.Protocol,
 		ProtocolVersion: reattach.ProtocolVersion,
@@ -39,7 +39,7 @@ func (s *pluginManagerState) reattachConfig() *plugin.ReattachConfig {
 	}
 }
 
-func (s *pluginManagerState) save() error {
+func (s *pluginManagerState) Save() error {
 	content, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return err
@@ -99,10 +99,10 @@ func loadPluginManagerState(verify bool) (*pluginManagerState, error) {
 
 	if verify {
 		if running, err := s.verifyServiceRunning(); err != nil {
-			log.Printf("[TRACE] plugin manager is running, pid %d", s.Pid)
+			log.Printf("[WARN] plugin manager is running, pid %d", s.Pid)
 			return nil, err
 		} else if !running {
-			log.Printf("[TRACE] plugin manager state file exists but pid %d is not running", s.Pid)
+			log.Printf("[WARN] plugin manager state file exists but pid %d is not running - deleting file", s.Pid)
 			return nil, nil
 		}
 

@@ -137,7 +137,7 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 	queryResult, err := client.Execute(ctx, query, false)
 	if err != nil {
 		// is this an rpc EOF error - meaning that the plugin somehow crashed
-		if strings.Contains(err.Error(), constants.PluginCrashErrorSubString) {
+		if constants.IsGRPCConnectivityError(err) {
 			if r.attempts > constants.MaxControlRunAttempts {
 				// if exceeded max retries, give up
 				r.SetError(err)
