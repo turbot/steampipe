@@ -3,10 +3,11 @@ package plugin_manager
 import (
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"syscall"
-	"time"
 
+	"github.com/hashicorp/go-plugin"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 
 	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
@@ -33,39 +34,39 @@ func Start() error {
 
 // start plugin manager, without checking it is already running
 func start() error {
-	pluginManagerCmd := exec.Command("steampipe", "start-plugin-manager")
-	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	err := pluginManagerCmd.Start()
-	time.Sleep(5 * time.Second)
-	return err
+	//pluginManagerCmd := exec.Command("steampipe", "start-plugin-manager")
+	//pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	//err := pluginManagerCmd.Start()
+	//time.Sleep(5 * time.Second)
+	//return err
 
-	//// we want to see the plugin manager log
-	//log.SetOutput(os.Stdout)
-	//
-	//// create command which will run steampipe in plugin-manager mode
-	//pluginManagerCmd := exec.Command("steampipe", "plugin-manager", "--spawn")
-	//// set attributes on the command to ensure the process is not shutdown when its parent terminates
-	//pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
-	//	Setpgid:    true,
-	//	Foreground: false,
-	//}
-	//// launch the plugin manager the plugin process.
-	//client := plugin.NewClient(&plugin.ClientConfig{
-	//	HandshakeConfig: pluginshared.Handshake,
-	//	Plugins:         pluginshared.PluginMap,
-	//	Cmd:             pluginManagerCmd,
-	//	AllowedProtocols: []plugin.Protocol{
-	//		plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
-	//})
-	//if _, err := client.Start(); err != nil {
-	//	return err
-	//}
-	//
-	//// create a plugin manager state
-	//state := NewPluginManagerState(client.ReattachConfig())
-	//
-	//// now Save the state
-	//return state.Save()
+	// we want to see the plugin manager log
+	log.SetOutput(os.Stdout)
+
+	// create command which will run steampipe in plugin-manager mode
+	pluginManagerCmd := exec.Command("steampipe", "start-plugin-manager")
+	// set attributes on the command to ensure the process is not shutdown when its parent terminates
+	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid:    true,
+		Foreground: false,
+	}
+	// launch the plugin manager the plugin process.
+	client := plugin.NewClient(&plugin.ClientConfig{
+		HandshakeConfig: pluginshared.Handshake,
+		Plugins:         pluginshared.PluginMap,
+		Cmd:             pluginManagerCmd,
+		AllowedProtocols: []plugin.Protocol{
+			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
+	})
+	if _, err := client.Start(); err != nil {
+		return err
+	}
+
+	// create a plugin manager state
+	state := NewPluginManagerState(client.ReattachConfig())
+
+	// now Save the state
+	return state.Save()
 }
 
 func Stop() error {

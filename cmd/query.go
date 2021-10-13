@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"strings"
 
+	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -18,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/interactive"
+	"github.com/turbot/steampipe/plugin_manager"
 
 	//"github.com/turbot/steampipe/plugin_manager"
 	//pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
@@ -95,18 +98,18 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	//client, err := plugin_manager.GetPluginManager()
-	//utils.FailOnError(err)
-	//res, err := client.Get(&pb.GetRequest{Connection: "aws"})
-	//utils.FailOnError(err)
-	//fmt.Println(res)
-	//return
+	client, err := plugin_manager.GetPluginManager()
+	utils.FailOnError(err)
+	res, err := client.Get(&pb.GetRequest{Connection: "aws"})
+	utils.FailOnError(err)
+	fmt.Println(res)
+	return
 
 	if stdinData := getPipedStdinData(); len(stdinData) > 0 {
 		args = append(args, stdinData)
 	}
 
-	err := validateConnectionStringArgs()
+	err = validateConnectionStringArgs()
 	utils.FailOnError(err)
 
 	// enable spinner only in interactive mode
