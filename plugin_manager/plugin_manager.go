@@ -64,9 +64,9 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 	}()
 
 	log.Printf("[WARN] ****************** PluginManager %p Get connection '%s', plugins %+v\n", m, req.Connection, m.Plugins)
-	return &pb.GetResponse{
-		Reattach: &pb.ReattachConfig{Protocol: "TEST"},
-	}, nil
+	//return &pb.GetResponse{
+	//	Reattach: &pb.ReattachConfig{Protocol: "TEST"},
+	//}, nil
 
 	// is this plugin already running
 	if plugin, ok := m.Plugins[req.Connection]; ok {
