@@ -7,12 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/steampipe/constants"
-	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
-
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/plugin_manager"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -85,23 +82,26 @@ func runStartPluginManagerCmd(cmd *cobra.Command, args []string) {
 
 	// create command which will run steampipe in plugin-manager mode
 	pluginManagerCmd := exec.Command("steampipe", "plugin-manager")
-	// launch the plugin manager the plugin process.
-	client := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig: pluginshared.Handshake,
-		Plugins:         pluginshared.PluginMap,
-		Cmd:             pluginManagerCmd,
-		AllowedProtocols: []plugin.Protocol{
-			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
-	})
-	_, err := client.Start()
-	utils.FailOnError(err)
+	pluginManagerCmd.Stdout = os.Stdout
+	pluginManagerCmd.Start()
 
-	// create a plugin manager state
-	state := plugin_manager.NewPluginManagerState(client.ReattachConfig())
-
-	// now save the state
-	err = state.Save()
-	utils.FailOnError(err)
+	//// launch the plugin manager the plugin process.
+	//client := plugin.NewClient(&plugin.ClientConfig{
+	//	HandshakeConfig: pluginshared.Handshake,
+	//	Plugins:         pluginshared.PluginMap,
+	//	Cmd:             pluginManagerCmd,
+	//	AllowedProtocols: []plugin.Protocol{
+	//		plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
+	//})
+	//_, err := client.Start()
+	//utils.FailOnError(err)
+	//
+	//// create a plugin manager state
+	//state := plugin_manager.NewPluginManagerState(client.ReattachConfig())
+	//
+	//// now save the state
+	//err = state.Save()
+	//utils.FailOnError(err)
 
 	// wait to be killed
 	sigchan := make(chan os.Signal, 1)
@@ -111,9 +111,9 @@ func runStartPluginManagerCmd(cmd *cobra.Command, args []string) {
 		syscall.SIGTERM,
 		syscall.SIGQUIT)
 	<-sigchan
-	log.Println("[WARN] OOK1")
 
 	// kill our child
+	// NOTE we will not do this if kill -9 is run
 	pluginManagerCmd.Process.Kill()
 
 }
