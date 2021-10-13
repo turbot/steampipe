@@ -371,6 +371,7 @@ func (c *LocalDbClient) getDefaultSearchPath() []string {
 //	}
 //	pluginChan <- p
 //
+//	// TODO why are we doing this
 //	p.Plugin.Client.Kill()
 //}
 //
@@ -456,7 +457,7 @@ func (c *LocalDbClient) getDefaultSearchPath() []string {
 //}
 //
 //func executeConnectionQueries(schemaQueries []string, updates *steampipeconfig.ConnectionUpdates) error {
-//	log.Printf("[TRACE] there are connections to update\n")
+//	log.Printf("[TRACE] executeConnectionQueries\n")
 //	_, err := executeSqlAsRoot(schemaQueries...)
 //	if err != nil {
 //		return err
