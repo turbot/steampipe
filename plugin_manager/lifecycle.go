@@ -96,7 +96,7 @@ func stop(state *pluginManagerState) error {
 
 // GetPluginManager connects to a running plugin manager
 func GetPluginManager() (pluginshared.PluginManager, error) {
-	log.Printf("[WARN] ******************** GetPluginManager ************")
+	log.Printf("[WARN] ******************** GetPluginManager")
 	return getPluginManager(true)
 }
 
@@ -122,6 +122,5 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 		// not retrying - just fail
 		return nil, fmt.Errorf("plugin manager is not running")
 	}
-	log.Printf("[WARN] ((((((((((((((GOT STATE))))))))))))))")
 	return NewPluginManagerClientWithRetries(state)
 }
