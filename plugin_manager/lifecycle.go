@@ -3,7 +3,6 @@ package plugin_manager
 import (
 	"fmt"
 	"log"
-	"os"
 	"os/exec"
 	"syscall"
 
@@ -34,21 +33,16 @@ func Start() error {
 
 // start plugin manager, without checking it is already running
 func start() error {
-	//pluginManagerCmd := exec.Command("steampipe", "start-plugin-manager")
-	//pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	//err := pluginManagerCmd.Start()
-	//time.Sleep(5 * time.Second)
-	//return err
 
-	// we want to see the plugin manager log
-	log.SetOutput(os.Stdout)
+	// TODO configure log
 
-	// create command which will run steampipe in plugin-manager mode
+	// create command which will start plugin-manager
+	// we have to spawn a separate process to do this so the plugin process itself is not an orphan
+	// TODO more detail about this
 	pluginManagerCmd := exec.Command("steampipe", "start-plugin-manager")
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid:    true,
-		Foreground: false,
+		Setpgid: true,
 	}
 	// launch the plugin manager the plugin process.
 	client := plugin.NewClient(&plugin.ClientConfig{
@@ -102,7 +96,7 @@ func stop(state *pluginManagerState) error {
 
 // GetPluginManager connects to a running plugin manager
 func GetPluginManager() (pluginshared.PluginManager, error) {
-	log.Printf("[WARN] ******************** GetPluginManager")
+	log.Printf("[WARN] ******************** GetPluginManager ************")
 	return getPluginManager(true)
 }
 
@@ -115,8 +109,9 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	}
 	// if we did not load it and there was no error, it means the plugin manager is not running
 	if state == nil {
-		log.Printf("[WARN] GetPluginManager called but plugin manager not running - calling Start()")
+		log.Printf("[WARN] GetPluginManager called but plugin manager not running")
 		if startIfNeeded {
+			log.Printf("[WARN] calling Start()")
 			// start the plugin manager
 			if err := start(); err != nil {
 				return nil, err
@@ -127,6 +122,6 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 		// not retrying - just fail
 		return nil, fmt.Errorf("plugin manager is not running")
 	}
-
+	log.Printf("[WARN] ((((((((((((((GOT STATE))))))))))))))")
 	return NewPluginManagerClientWithRetries(state)
 }
