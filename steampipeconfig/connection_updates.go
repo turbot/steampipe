@@ -7,9 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/steampipe/plugin_manager"
-
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"

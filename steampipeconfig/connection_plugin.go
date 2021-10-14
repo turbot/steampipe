@@ -6,31 +6,30 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/grpc"
-	sdkpb "github.com/turbot/steampipe-plugin-sdk/grpc/proto"
+	pbsdk "github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	sdkpluginshared "github.com/turbot/steampipe-plugin-sdk/grpc/shared"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/plugin_manager"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
-	"github.com/turbot/steampipe/utils"
 )
 
-// ConnectionPlugin :: structure representing an instance of a plugin
-// NOTE: currently this corresponds to a single connection, i.e. we have 1 plugin instance per connection
+// ConnectionPlugin is a structure representing an instance of a plugin
+// NOTE: currently this corresponds to a single steampipe connection,
+// i.e. we have 1 plugin instance per steampipe connection
 type ConnectionPlugin struct {
 	ConnectionName    string
 	ConnectionConfig  string
 	ConnectionOptions *options.Connection
 	PluginName        string
 	Plugin            *sdkgrpc.PluginClient
-	Schema            *sdkpb.Schema
+	Schema            *pbsdk.Schema
 }
 
-// CreateConnectionPlugin :: instantiate a plugin for a connection, fetch schema and send connection config
+// CreateConnectionPlugin instantiates a plugin for a connection, fetches schema and sends connection config
 func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool) (*ConnectionPlugin, error) {
 	pluginName := connection.Plugin
-
 	connectionName := connection.Name
 	connectionConfig := connection.Config
 	connectionOptions := connection.Options
@@ -45,35 +44,42 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 	}
 	log.Printf("[WARN] got plugin manager")
 
+	// ask the plugin manager for the plugin reattach config
 	getResponse, err := pluginManager.Get(&pb.GetRequest{Connection: connectionName, DisableLogger: disableLogger})
 	if err != nil {
 		log.Printf("[WARN] plugin manager failed to get reattach config for connection '%s': %s", connectionName, err)
 		return nil, err
 	}
 
-	log.Printf("[WARN] plugin manager returned reconnect config for connection '%s' - pid %d",
+	log.Printf("[WARN] plugin manager returned reattach config for connection '%s' - pid %d",
 		connectionName, getResponse.Reattach.Pid)
 
-	// launch the plugin process.
-	pluginClient, err := attachToPlugin(getResponse, pluginName, disableLogger)
+	// attach to the plugin process
+	pluginClient, err := attachToPlugin(getResponse.Reattach.Convert(), pluginName, disableLogger)
 	if err != nil {
-		log.Printf("[WARN] failed to attach to plugin for connection '%s' - pid %d : %s",
+		log.Printf("[WARN] failed to attach to plugin for connection '%s' - pid %d: %s",
 			connectionName, getResponse.Reattach.Pid, err)
 		return nil, err
 	}
-	if err = SetConnectionConfig(connectionName, connectionConfig, pluginClient); err != nil {
+	// set the connection config
+	req := &pbsdk.SetConnectionConfigRequest{
+		ConnectionName:   connectionName,
+		ConnectionConfig: connectionConfig,
+	}
+
+	if err = pluginClient.SetConnectionConfig(req); err != nil {
 		pluginClient.Client.Kill()
 		return nil, err
 	}
 
-	schemaResponse, err := pluginClient.Stub.GetSchema(&sdkpb.GetSchemaRequest{})
+	// fetch the plugin schema
+	schema, err := pluginClient.GetSchema()
 	if err != nil {
 		pluginClient.Client.Kill()
-		return nil, utils.HandleGrpcError(err, connectionName, "getSchema")
+		return nil, err
 	}
-	schema := schemaResponse.Schema
 
-	// now create ConnectionPlugin object and add to map
+	// now create ConnectionPlugin object return
 	c := &ConnectionPlugin{
 		ConnectionName:    connectionName,
 		ConnectionConfig:  connectionConfig,
@@ -85,7 +91,8 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 	return c, nil
 }
 
-func attachToPlugin(getResponse *pb.GetResponse, pluginName string, disableLogger bool) (*sdkgrpc.PluginClient, error) {
+// use the reattach config to create a PluginClient for the plugin
+func attachToPlugin(reattach *plugin.ReattachConfig, pluginName string, disableLogger bool) (*sdkgrpc.PluginClient, error) {
 	// create the plugin map
 	pluginMap := map[string]plugin.Plugin{
 		pluginName: &sdkpluginshared.WrapperPlugin{},
@@ -101,7 +108,7 @@ func attachToPlugin(getResponse *pb.GetResponse, pluginName string, disableLogge
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig:  sdkpluginshared.Handshake,
 		Plugins:          pluginMap,
-		Reattach:         getResponse.Reattach.Convert(),
+		Reattach:         reattach,
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
 		Logger:           logger,
 	})
@@ -127,6 +134,7 @@ func attachToPlugin(getResponse *pb.GetResponse, pluginName string, disableLogge
 	return pluginClient, nil
 }
 
+// function used for debugging the plugin manager
 func getPluginManager() (*plugin_manager.PluginManager, error) {
 	steampipeConfig, err := LoadConnectionConfig()
 	if err != nil {
@@ -142,19 +150,4 @@ func getPluginManager() (*plugin_manager.PluginManager, error) {
 		}
 	}
 	return plugin_manager.NewPluginManager(configMap), nil
-}
-
-// SetConnectionConfig sends the connection config
-func SetConnectionConfig(connectionName string, connectionConfig string, pluginClient *sdkgrpc.PluginClient) error {
-	req := &sdkpb.SetConnectionConfigRequest{
-		ConnectionName:   connectionName,
-		ConnectionConfig: connectionConfig,
-	}
-
-	_, err := pluginClient.Stub.SetConnectionConfig(req)
-	if err != nil {
-		// create a new cleaner error, ignoring Not Implemented errors for backwards compatibility
-		return utils.HandleGrpcError(err, connectionName, "SetConnectionConfig")
-	}
-	return nil
 }
