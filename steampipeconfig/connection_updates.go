@@ -138,31 +138,28 @@ func createConnectionPlugins(requiredConnections ConnectionDataMap, alreadyLoade
 	if alreadyLoaded == nil {
 		alreadyLoaded = make(map[string]*ConnectionPlugin)
 	}
+	var connectionPlugins = make(map[string]*ConnectionPlugin)
 	res := &RefreshConnectionResult{}
 
-	// initialise result to the plugins we have already loaded
-	var connectionPlugins = alreadyLoaded
-
-	// do we have anything to do?
-	if len(requiredConnections) <= len(alreadyLoaded) {
-		return connectionPlugins, res
-	}
-
 	// create channels buffered to hold all updates
-	numPluginsToCreate := len(requiredConnections) - len(alreadyLoaded)
+	numConnectionPlugins := len(requiredConnections)
+	var pluginChan = make(chan *ConnectionPlugin, numConnectionPlugins)
+	var errorChan = make(chan error, numConnectionPlugins)
 
-	var pluginChan = make(chan *ConnectionPlugin, numPluginsToCreate)
-	var errorChan = make(chan error, numPluginsToCreate)
-
+	// keep track of how many plugins we are creating
+	pluginCount := 0
 	for connectionName, connectionData := range requiredConnections {
-		// if we have NOT already loaded this plugin, do so
-		if _, ok := alreadyLoaded[connectionName]; !ok {
+		// if we have already loaded this plugin, just send down the channel
+		if existingConnectionPlugin, ok := alreadyLoaded[connectionName]; ok {
+			pluginChan <- existingConnectionPlugin
+		} else {
+			pluginCount++
 			// instantiate the connection plugin, and retrieve schema
 			go getConnectionPluginAsync(connectionData, pluginChan, errorChan)
 		}
 	}
 
-	for i := 0; i < numPluginsToCreate; i++ {
+	for i := 0; i < numConnectionPlugins; i++ {
 		select {
 		case err := <-errorChan:
 			log.Println("[TRACE] get connections err chan select - adding warning", "error", err)
