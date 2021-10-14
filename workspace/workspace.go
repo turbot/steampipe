@@ -288,6 +288,8 @@ func (w *Workspace) loadWorkspaceMod() error {
 	w.Variables = m.Variables
 	// todo what to key mod map with
 	w.Mods = runCtx.LoadedDependencyMods
+	// NOTE: add in the workspace mod to the dependency mods
+	w.Mods[w.Mod.Name()] = w.Mod
 
 	return nil
 }
