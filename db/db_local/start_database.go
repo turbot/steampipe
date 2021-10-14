@@ -50,6 +50,7 @@ func (slt StartListenType) IsValid() error {
 
 // StartDB starts the database if not already running
 func StartDB(port int, listen StartListenType, invoker constants.Invoker) (startResult StartResult, err error) {
+	log.Printf("[WARN] StartDB invoker %s", invoker)
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
 	var postgresCmd *exec.Cmd
@@ -309,7 +310,7 @@ func createCmd(port int, listenAddresses string) *exec.Cmd {
 		postgresCmd.Env = append(os.Environ(), fmt.Sprintf("OPENSSL_CONF=%s", constants.SslConfDir))
 	}
 
-	// set attributes on the command to ensure the process is not shutdown when its parent terminates
+	// set group pgid attributes on the command to ensure the process is not shutdown when its parent terminates
 	postgresCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid:    true,
 		Foreground: false,
