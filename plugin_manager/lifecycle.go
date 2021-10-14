@@ -2,6 +2,7 @@ package plugin_manager
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os/exec"
 	"syscall"
@@ -33,8 +34,8 @@ func Start() error {
 
 // start plugin manager, without checking it is already running
 func start() error {
-
-	// TODO configure log
+	// We don't want to see the plugin logs.
+	log.SetOutput(ioutil.Discard)
 
 	// create command which will start plugin-manager
 	// we have to spawn a separate process to do this so the plugin process itself is not an orphan
