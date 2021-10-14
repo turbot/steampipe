@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"syscall"
 
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
@@ -71,8 +72,11 @@ func (s *pluginManagerState) kill() error {
 	if err != nil {
 		return err
 	}
-	// kill the plugin manager process
-	process.Kill()
+	// kill the plugin manager process by sending a SIGTERM (to give it a chance to clean up its children)
+	err = process.SendSignal(syscall.SIGTERM)
+	if err != nil {
+		return err
+	}
 	// delete the state file as we have shutdown the plugin manager
 	return s.delete()
 }

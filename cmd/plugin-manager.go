@@ -8,8 +8,8 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/plugin_manager"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -29,35 +29,15 @@ func pluginManagerCmd() *cobra.Command {
 }
 
 func runPluginManagerCmd(cmd *cobra.Command, args []string) {
-	steampipeConfig, err := steampipeconfig.LoadConnectionConfig()
-	if err != nil {
-		utils.ShowError(err)
+	if viper.GetBool("spawn") {
+		spawnPluginManager()
 		return
+	} else {
+		startPluginManager()
 	}
-	// build config map
-	configMap := make(map[string]*pb.ConnectionConfig)
-	for k, v := range steampipeConfig.Connections {
-		configMap[k] = &pb.ConnectionConfig{
-			Plugin:          v.Plugin,
-			PluginShortName: v.PluginShortName,
-			Config:          v.Config,
-		}
-	}
-	plugin_manager.NewPluginManager(configMap).Serve()
 }
 
-func startPluginManagerCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:    "start-plugin-manager",
-		Run:    runStartPluginManagerCmd,
-		Hidden: true,
-	}
-	cmdconfig.OnCmd(cmd).AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output")
-
-	return cmd
-}
-
-func runStartPluginManagerCmd(cmd *cobra.Command, args []string) {
+func spawnPluginManager() {
 	// we want to see the plugin manager log
 	log.SetOutput(os.Stdout)
 
@@ -78,5 +58,22 @@ func runStartPluginManagerCmd(cmd *cobra.Command, args []string) {
 	// kill our child
 	// NOTE we will not do this if kill -9 is run
 	pluginManagerCmd.Process.Kill()
+}
 
+func startPluginManager() {
+	steampipeConfig, err := steampipeconfig.LoadConnectionConfig()
+	if err != nil {
+		utils.ShowError(err)
+		return
+	}
+	// build config map
+	configMap := make(map[string]*pb.ConnectionConfig)
+	for k, v := range steampipeConfig.Connections {
+		configMap[k] = &pb.ConnectionConfig{
+			Plugin:          v.Plugin,
+			PluginShortName: v.PluginShortName,
+			Config:          v.Config,
+		}
+	}
+	plugin_manager.NewPluginManager(configMap).Serve()
 }
