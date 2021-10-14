@@ -13,7 +13,7 @@ import (
 	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
 )
 
-// Start instantiates the plugin manager and saves the state
+// Start loads the plugin manager state, stops any previous instance and instantiates a new the plugin manager
 func Start() error {
 	// try to load the plugin manager state
 	state, err := loadPluginManagerState(true)
@@ -64,6 +64,7 @@ func start() error {
 	return state.Save()
 }
 
+//Stop loads the plugin manager state and if a running instance is found, stop it
 func Stop() error {
 	// try to load the plugin manager state
 	state, err := loadPluginManagerState(true)
@@ -77,6 +78,7 @@ func Stop() error {
 	return stop(state)
 }
 
+// stop the running plugin manager instance
 func stop(state *pluginManagerState) error {
 	pluginManager, err := NewPluginManagerClientWithRetries(state)
 	if err != nil {
@@ -92,7 +94,6 @@ func stop(state *pluginManagerState) error {
 	return state.kill()
 
 	return err
-
 }
 
 // GetPluginManager connects to a running plugin manager
@@ -101,6 +102,9 @@ func GetPluginManager() (pluginshared.PluginManager, error) {
 	return getPluginManager(true)
 }
 
+// getPluginManager determines whether the plugin manager is running
+// if not,and if startIfNeeded is true, it starts the manager
+// it then returns a plugin manager client
 func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	// try to load the plugin manager state
 	state, err := loadPluginManagerState(true)

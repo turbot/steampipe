@@ -122,9 +122,6 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 		}
 	}()
 
-	log.Printf("[WARN] Shutdown")
-	return &pb.ShutdownResponse{}, nil
-
 	var errs []error
 	for _, p := range m.Plugins {
 		log.Printf("[WARN] kill %v", p)
