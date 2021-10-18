@@ -55,7 +55,7 @@ require (
 	github.com/spf13/viper v1.9.0
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
 	github.com/turbot/go-kit v0.3.0
-	github.com/turbot/steampipe-plugin-sdk v1.6.2
+	github.com/turbot/steampipe-plugin-sdk v1.7.0
 	github.com/ulikunitz/xz v0.5.8
 	github.com/zclconf/go-cty v1.8.2
 	github.com/zclconf/go-cty-yaml v1.0.2
@@ -73,5 +73,3 @@ require (
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20210830083819-c872df2bdcc9
 
-// schemamode
-replace github.com/turbot/steampipe-plugin-sdk => github.com/turbot/steampipe-plugin-sdk v1.6.3-0.20211008130330-3b06e80f00ee
