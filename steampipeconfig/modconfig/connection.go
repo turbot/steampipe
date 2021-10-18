@@ -51,7 +51,6 @@ func NewConnection(block *hcl.Block) *Connection {
 	}
 }
 
-// Equals
 func (c *Connection) Equals(other *Connection) bool {
 	connectionOptionsEqual := (c.Options == nil) == (other.Options == nil)
 	if c.Options != nil {
