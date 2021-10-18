@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
@@ -38,7 +39,10 @@ func loadConnectionStateFile() (ConnectionDataMap, error) {
 
 	err = json.Unmarshal(jsonFile, &connectionState)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing %s: %v", connectionStatePath, err)
+		log.Printf("[TRACE] error parsing %s: %v", connectionStatePath, err)
+		// If we fail to parse the state file, suppress the error and return an empty state
+		// This will force the connection to refresh
+		return make (ConnectionDataMap), nil
 	}
 
 	return connectionState, nil
