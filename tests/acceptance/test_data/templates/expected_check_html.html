@@ -1,1 +1,2691 @@
-<p>Title: Test Root Group</p>
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Steampipe Report</title>
+    <style>
+          
+ 
+html {
+  font-size: 12px;
+  font-family: sans-serif;
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+}
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+main,
+nav,
+section,
+summary {
+  display: block;
+}
+audio,
+canvas,
+progress,
+video {
+  display: inline-block;
+  vertical-align: baseline;
+}
+audio:not([controls]) {
+  display: none;
+  height: 0;
+}
+[hidden],
+template {
+  display: none;
+}
+a {
+  background: transparent;
+}
+a:active,
+a:hover {
+  outline: 0;
+}
+abbr[title] {
+  border-bottom: 1px dotted;
+}
+b,
+strong {
+  font-weight: bold;
+}
+dfn {
+  font-style: italic;
+}
+h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+}
+mark {
+  background: #ff0;
+  color: #000;
+}
+small {
+  font-size: 80%;
+}
+sub,
+sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+sup {
+  top: -0.5em;
+}
+sub {
+  bottom: -0.25em;
+}
+img {
+  border: 0;
+}
+svg:not(:root) {
+  overflow: hidden;
+}
+figure {
+  margin: 1em 40px;
+}
+hr {
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+  height: 0;
+}
+pre {
+  overflow: auto;
+}
+code,
+kbd,
+pre,
+samp {
+  font-family: monospace, monospace;
+  font-size: 1em;
+}
+button,
+input,
+optgroup,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+  margin: 0;
+}
+button {
+  overflow: visible;
+}
+button,
+select {
+  text-transform: none;
+}
+button,
+html input[type="button"],
+input[type="reset"],
+input[type="submit"] {
+  -webkit-appearance: button;
+  cursor: pointer;
+}
+button[disabled],
+html input[disabled] {
+  cursor: default;
+}
+button::-moz-focus-inner,
+input::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+input {
+  line-height: normal;
+}
+input[type="checkbox"],
+input[type="radio"] {
+  box-sizing: border-box;
+  padding: 0;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  height: auto;
+}
+input[type="search"] {
+  -webkit-appearance: textfield;
+  -moz-box-sizing: content-box;
+  -webkit-box-sizing: content-box;
+  box-sizing: content-box;
+}
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+fieldset {
+  border: 1px solid #c0c0c0;
+  margin: 0 2px;
+  padding: 0.35em 0.625em 0.75em;
+}
+legend {
+  border: 0;
+  padding: 0;
+}
+textarea {
+  overflow: auto;
+}
+optgroup {
+  font-weight: bold;
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+td,
+th {
+  padding: 0;
+}
+
+  
+          
+
+:root {
+  --color-background: #fff;
+  --color-foreground: #000;
+  --color-foreground-light: #666;
+
+  --color-link: #2645c5;
+
+  --color-error: #e00;
+  --color-warning: #f9a825;
+
+  --color-table-border: theme("colors.gray.200");
+  --color-table-divide: theme("colors.gray.200");
+  --color-table-head: theme("colors.steampipe-black");
+
+  --container-bgcolor: rgb(246, 248, 250);
+
+  --alarm-color: #801925;
+  --alarm-bgcolor: #f7d4d8;
+
+  --error-color: #801925;
+  --error-bgcolor: #f7d4d8;
+
+  --ok-color: #077151;
+  --ok-bgcolor: #cef2e7;
+
+  --info-color: #2f5f95;
+  --info-bgcolor: #dcecfe;
+
+  --skip-color: #949595;
+  --skip-bgcolor: #fdfefe;
+
+  --indent: 10px;
+  --status-separator: "•";
+  --status-separator-color: #000;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
+    Helvetica Neue, Arial, Noto Sans, Liberation Sans, sans-serif,
+    Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+  background-color: var(--container-bgcolor);
+}
+
+.brand {
+  border-bottom: 1px #ddd dotted;
+  margin-bottom: var(--indent);
+}
+
+.brand > img.logo {
+  width: 200px;
+  margin-top: var(--indent);
+  margin-bottom: var(--indent);
+  margin-right: var(--indent);
+  padding-right: var(--indent);
+  border-right: 1px solid #000;
+}
+
+.group {
+  padding-left: var(--indent);
+  border-left: 1px #ddd dotted;
+}
+
+.container {
+  padding: var(--indent);
+}
+
+.container > .group {
+  border-left: none;
+}
+
+.controls {
+  padding-left: var(--indent);
+  border-left: 1px #ddd dotted;
+}
+
+.group .controls > .control {
+  margin-bottom: var(--indent);
+}
+
+ 
+.group .controls > .control > div.run-error {
+  margin-left: var(--indent);
+  position: relative;
+  padding: 1rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  color: var(--color-error);
+  background-color: var(--error-bgcolor);
+}
+.group .controls > .control > div.run-error > span {
+  font-weight: bold;
+  margin-right: var(--indent);
+}
+ 
+
+ 
+.group .controls > .control > div.result-row {
+  margin-left: var(--indent);
+  position: relative;
+  padding: 1rem 1rem;
+   
+  border: 1px solid transparent;
+   
+  display: flex;
+  flex-direction: row;
+}
+.group .controls > .control > div.result-row > .status {
+  width: 10rem;
+  text-transform: uppercase;
+}
+
+.group .controls > .control > div.result-row > .reason-resource {
+  width: 50rem;
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+}
+
+.group .controls > .control > div.result-row > .dimension {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.group .controls > .control > div.result-row.alarm {
+  color: var(--alarm-color);
+  background-color: var(--alarm-bgcolor);
+}
+.group .controls > .control > div.result-row.error {
+  color: var(--error-color);
+  background-color: var(--error-bgcolor);
+}
+.group .controls > .control > div.result-row.ok {
+  color: var(--ok-color);
+  background-color: var(--ok-bgcolor);
+}
+.group .controls > .control > div.result-row.info {
+  color: var(--info-color);
+  background-color: var(--info-bgcolor);
+}
+.group .controls > .control > div.result-row.skip {
+  color: var(--skip-color);
+  background-color: var(--skip-bgcolor);
+}
+
+.group .controls > .control > div.result-row > span.status {
+  font-weight: bold;
+  margin-right: var(--indent);
+}
+.group .controls > .control > div.result-row > span.reason-resource {
+  font-weight: bold;
+  margin-right: var(--indent);
+}
+.group .controls > .control > div.result-row > span.dimension {
+  font-weight: bold;
+  margin-right: var(--indent);
+}
+ 
+
+.controls table td.status {
+  width: 10rem;
+  padding: 0.5rem;
+  text-transform: uppercase;
+}
+.controls table tr.alarm td {
+  color: var(--alarm-color);
+  background-color: var(--alarm-bgcolor);
+}
+.controls table tr.ok td {
+  color: var(--ok-color);
+  background-color: var(--ok-bgcolor);
+}
+.controls table tr.info td {
+  color: var(--info-color);
+  background-color: var(--info-bgcolor);
+}
+.controls table tr.skip td {
+  color: var(--skip-color);
+  background-color: var(--skip-bgcolor);
+}
+.controls table tr.error td {
+  color: var(--alarm-color);
+  background-color: var(--alarm-bgcolor);
+}
+.controls table td.resource-reason div {
+  width: 50rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.overview {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: var(--indent);
+}
+.overview > .title {
+  flex-grow: 1;
+}
+.summary {
+  font-weight: bold;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.summary > .status {
+  font-size: 1rem;
+}
+.summary > .status > span {
+  font-weight: normal;
+}
+
+.summary > .status::before {
+  content: var(--status-separator);
+  color: var(--status-separator-color);
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.summary > .status:nth-of-type(1)::before {
+  content: "";
+  margin-left: 0rem;
+}
+.summary > .status:last-of-type::after {
+  content: "";
+  margin-right: 0rem;
+}
+
+.summary .alarm {
+  color: var(--alarm-color);
+}
+
+.summary .ok {
+  color: var(--ok-color);
+}
+
+.summary .info {
+  color: var(--info-color);
+}
+
+.summary .skip {
+  color: var(--skip-color);
+}
+
+.summary .error {
+  color: var(--error-color);
+}
+
+  
+    </style>
+    <meta charset="UTF-8">
+    <link rel="icon" href="https://steampipe.io/favicon.svg" type="image/svg+xml" sizes="any">
+</head>
+
+<body>
+    <div class="container">
+        <div class="brand">
+            <img class="logo" src="https://steampipe.io/images/steampipe_logo_wordmark_color.svg"
+                alt="Steampipe Report" />
+        </div>
+        
+        
+        
+<section class="group">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">CIS v1.3.0</div>
+        
+<div class="summary">
+    <div class="status alarm">9 <span>alarm</span></div>
+    <div class="status ok">40 <span>ok</span> </div>
+    <div class="status info">3 <span>info</span> </div>
+    <div class="status error">1 <span>error</span> </div>
+    <div class="status skip">2 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    
+<section class="group">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1 Identity and Access Management</div>
+        
+<div class="summary">
+    <div class="status alarm">5 <span>alarm</span></div>
+    <div class="status ok">16 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">1 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    <div class="controls">
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.1 Maintain current contact details</div>
+        
+<div class="summary">
+    <div class="status alarm">1 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row alarm">
+        <div class="status">alarm</div>
+        <div class="reason-resource">
+            some other resource is pretty insecure
+        </div>
+        
+        <div class="dimension">partition 10000</div>
+        
+        <div class="dimension">us-east-2</div>
+        
+        <div class="dimension">3335354343537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.2 Ensure security contact information is registered</div>
+        
+<div class="summary">
+    <div class="status alarm">1 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row alarm">
+        <div class="status">alarm</div>
+        <div class="reason-resource">
+            some other resource is pretty insecure
+        </div>
+        
+        <div class="dimension">partition 10000</div>
+        
+        <div class="dimension">us-east-2</div>
+        
+        <div class="dimension">3335354343537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.3 Ensure security questions are registered in the AWS account</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.4 Ensure no root user account access key exists</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.5 Ensure MFA is enabled for the &#34;root user&#34; account</div>
+        
+<div class="summary">
+    <div class="status alarm">1 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row alarm">
+        <div class="status">alarm</div>
+        <div class="reason-resource">
+            some other resource is pretty insecure
+        </div>
+        
+        <div class="dimension">partition 10000</div>
+        
+        <div class="dimension">us-east-2</div>
+        
+        <div class="dimension">3335354343537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.6 Ensure hardware MFA is enabled for the &#34;root user&#34; account</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">1 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row error">
+        <div class="status">error</div>
+        <div class="reason-resource">
+            some messed up resource is in some sort of error state
+        </div>
+        
+        <div class="dimension">partition 20000</div>
+        
+        <div class="dimension">us-east-2</div>
+        
+        <div class="dimension">21323354343537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.7 Eliminate use of the root user for administrative and daily tasks</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.8 Ensure IAM password policy requires minimum length of 14 or greater</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.9 Ensure IAM password policy prevents password reuse</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.10 Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.11 Do not setup access keys during initial user setup for all IAM users that have a console password</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.12 Ensure credentials unused for 90 days or greater are disabled</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.13 Ensure there is only one active access key available for any single IAM user</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.14 Ensure access keys are rotated every 90 days or less</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.15 Ensure IAM Users Receive Permissions Only Through Groups</div>
+        
+<div class="summary">
+    <div class="status alarm">1 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row alarm">
+        <div class="status">alarm</div>
+        <div class="reason-resource">
+            some other resource is pretty insecure
+        </div>
+        
+        <div class="dimension">partition 10000</div>
+        
+        <div class="dimension">us-east-2</div>
+        
+        <div class="dimension">3335354343537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.16 Ensure IAM policies that allow full &#34;*:*&#34; administrative privileges are not attached</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.17 Ensure a support role has been created to manage incidents with AWS Support</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.18 Ensure IAM instance roles are used for AWS resource access from instances</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.19 Ensure that all the expired SSL/TLS certificates stored in AWS IAM are removed</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.20 Ensure that S3 Buckets are configured with &#39;Block public access (bucket settings)&#39;</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.21 Ensure that IAM Access analyzer is enabled</div>
+        
+<div class="summary">
+    <div class="status alarm">1 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row alarm">
+        <div class="status">alarm</div>
+        <div class="reason-resource">
+            some other resource is pretty insecure
+        </div>
+        
+        <div class="dimension">partition 10000</div>
+        
+        <div class="dimension">us-east-2</div>
+        
+        <div class="dimension">3335354343537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">1.22 Ensure IAM users are managed centrally via identity federation or AWS Organizations for multi-account environments</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+    </div>
+    
+    
+</section>
+
+    
+    
+<section class="group">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">2 Storage</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">2 <span>ok</span> </div>
+    <div class="status info">1 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    
+<section class="group">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">2.1 Simple Storage Service (S3)</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">1 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    <div class="controls">
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">2.1.1 Ensure all S3 buckets employ encryption-at-rest</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">2.1.2 Ensure S3 Bucket Policy allows HTTPS requests</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">1 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row info">
+        <div class="status">info</div>
+        <div class="reason-resource">
+            resource name just some info, thought you should know
+        </div>
+        
+        <div class="dimension">partition 20000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+    </div>
+    
+    
+</section>
+
+    
+    
+<section class="group">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">2.2 Elastic Compute Cloud (EC2)</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    <div class="controls">
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">2.2.1 Ensure EBS volume encryption is enabled</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+    </div>
+    
+    
+</section>
+
+    
+</section>
+
+    
+    
+<section class="group">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">3 Logging</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">11 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    <div class="controls">
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">3.1 Ensure CloudTrail is enabled in all regions</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">3.2 Ensure CloudTrail log file validation is enabled.</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">3.3 Ensure the S3 bucket used to store CloudTrail logs is not publicly accessible</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">3.4 Ensure CloudTrail trails are integrated with CloudWatch Logs</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">3.5 Ensure AWS Config is enabled in all regions</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">3.6 Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">3.7 Ensure CloudTrail logs are encrypted at rest using KMS CMKs</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">3.8 Ensure rotation for customer created CMKs is enabled</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">3.9 Ensure VPC flow logging is enabled in all VPCs</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">3.10 Ensure that Object-level logging for write events is enabled for S3 bucket</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">3.11 Ensure that Object-level logging for read events is enabled for S3 bucket</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+    </div>
+    
+    
+</section>
+
+    
+    
+<section class="group">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4 Monitoring</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">11 <span>ok</span> </div>
+    <div class="status info">2 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">2 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    <div class="controls">
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.1 Ensure a log metric filter and alarm exist for unauthorized API calls</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.2 Ensure a log metric filter and alarm exist for Management Console sign-in without MFA</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.3 Ensure a log metric filter and alarm exist for usage of &#34;root&#34; account</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">1 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row info">
+        <div class="status">info</div>
+        <div class="reason-resource">
+            resource name just some info, thought you should know
+        </div>
+        
+        <div class="dimension">partition 20000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.4 Ensure a log metric filter and alarm exist for IAM policy changes</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.5 Ensure a log metric filter and alarm exist for CloudTrail configuration changes</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.6 Ensure a log metric filter and alarm exist for AWS Management Console authentication failures</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">1 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row info">
+        <div class="status">info</div>
+        <div class="reason-resource">
+            resource name just some info, thought you should know
+        </div>
+        
+        <div class="dimension">partition 20000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.7 Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created CMKs</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.8 Ensure a log metric filter and alarm exist for S3 bucket policy changes</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.9 Ensure a log metric filter and alarm exist for AWS Config configuration changes</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">1 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row skip">
+        <div class="status">skip</div>
+        <div class="reason-resource">
+            resource name totally skipping this one
+        </div>
+        
+        <div class="dimension">partition 40000</div>
+        
+        <div class="dimension">us-east-4</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.10 Ensure a log metric filter and alarm exist for security group changes</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.11 Ensure a log metric filter and alarm exist for changes to Network Access Control Lists (NACL)</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.12 Ensure a log metric filter and alarm exist for changes to network gateways</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.13 Ensure a log metric filter and alarm exist for route table changes</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.14 Ensure a log metric filter and alarm exist for VPC changes</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">1 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row skip">
+        <div class="status">skip</div>
+        <div class="reason-resource">
+            resource name totally skipping this one
+        </div>
+        
+        <div class="dimension">partition 40000</div>
+        
+        <div class="dimension">us-east-4</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">4.15 Ensure a log metric filter and alarm exists for AWS Organizations changes</div>
+        
+<div class="summary">
+    <div class="status alarm">0 <span>alarm</span></div>
+    <div class="status ok">1 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row ok">
+        <div class="status">ok</div>
+        <div class="reason-resource">
+            resource name is totally secure and this is qa very very very very very long reason
+        </div>
+        
+        <div class="dimension">partition 30000</div>
+        
+        <div class="dimension">us-east-3</div>
+        
+        <div class="dimension">21323354377537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+    </div>
+    
+    
+</section>
+
+    
+    
+<section class="group">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">5 Networking</div>
+        
+<div class="summary">
+    <div class="status alarm">4 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    <div class="controls">
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">5.1 Ensure no Network ACLs allow ingress from 0.0.0.0/0 to remote server administration ports</div>
+        
+<div class="summary">
+    <div class="status alarm">1 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row alarm">
+        <div class="status">alarm</div>
+        <div class="reason-resource">
+            some other resource is pretty insecure
+        </div>
+        
+        <div class="dimension">partition 10000</div>
+        
+        <div class="dimension">us-east-2</div>
+        
+        <div class="dimension">3335354343537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">5.2 Ensure no security groups allow ingress from 0.0.0.0/0 to remote server administration ports</div>
+        
+<div class="summary">
+    <div class="status alarm">1 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row alarm">
+        <div class="status">alarm</div>
+        <div class="reason-resource">
+            some other resource is pretty insecure
+        </div>
+        
+        <div class="dimension">partition 10000</div>
+        
+        <div class="dimension">us-east-2</div>
+        
+        <div class="dimension">3335354343537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">5.3 Ensure the default security group of every VPC restricts all traffic</div>
+        
+<div class="summary">
+    <div class="status alarm">1 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row alarm">
+        <div class="status">alarm</div>
+        <div class="reason-resource">
+            some other resource is pretty insecure
+        </div>
+        
+        <div class="dimension">partition 10000</div>
+        
+        <div class="dimension">us-east-2</div>
+        
+        <div class="dimension">3335354343537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+        
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">5.4 Ensure routing tables for VPC peering are &#39;least access&#39;</div>
+        
+<div class="summary">
+    <div class="status alarm">1 <span>alarm</span></div>
+    <div class="status ok">0 <span>ok</span> </div>
+    <div class="status info">0 <span>info</span> </div>
+    <div class="status error">0 <span>error</span> </div>
+    <div class="status skip">0 <span>skip</span> </div>
+</div>
+
+    </header>
+    
+    
+    <div class="result-row alarm">
+        <div class="status">alarm</div>
+        <div class="reason-resource">
+            some other resource is pretty insecure
+        </div>
+        
+        <div class="dimension">partition 10000</div>
+        
+        <div class="dimension">us-east-2</div>
+        
+        <div class="dimension">3335354343537</div>
+        
+    </div>
+    
+    
+    
+    
+</div>
+
+        
+    </div>
+    
+    
+</section>
+
+    
+</section>
+
+        
+    </div>
+    <script>
+         
+
+if (window.console){
+    console.log("this is supposed to come up in the console");
+}
+
+ 
+    </script>
+</body>
+
+</html>
+
+
+
+
+
+
