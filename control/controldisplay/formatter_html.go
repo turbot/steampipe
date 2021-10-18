@@ -21,12 +21,11 @@ func (j *HTMLFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 	}
 	reader, writer := io.Pipe()
 	go func() {
-		res := t.Execute(writer, tree)
-		if res != nil {
+		if err := t.Execute(writer, tree); err != nil {
 			writer.CloseWithError(err)
-			return
+		} else {
+			writer.Close()
 		}
-		writer.Close()
 	}()
 	return reader, nil
 }

@@ -16,7 +16,7 @@ const (
 	OutputFormatBrief = "brief"
 	OutputFormatCSV   = "csv"
 	OutputFormatJSON  = "json"
-	OutputFormatHTML	= "html"
+	OutputFormatHTML  = "html"
 )
 
 var outputFormatters map[string]Formatter = map[string]Formatter{
@@ -54,7 +54,8 @@ type Formatter interface {
 func GetExportFormatter(exportFormat string) (Formatter, error) {
 	formatter, found := exportFormatters[exportFormat]
 	if !found {
-		return nil, fmt.Errorf("invalid export format '%s' - must be one of json,csv,html", exportFormat)
+		availableExportFormatters := strings.Join(GetStringKeysFromMap(exportFormatters), ", ")
+		return nil, fmt.Errorf("invalid export format '%s' - must be one of %s", exportFormat, availableExportFormatters)
 	}
 	return formatter, nil
 }
@@ -62,7 +63,8 @@ func GetExportFormatter(exportFormat string) (Formatter, error) {
 func GetOutputFormatter(outputFormat string) (Formatter, error) {
 	formatter, found := outputFormatters[outputFormat]
 	if !found {
-		return nil, fmt.Errorf("invalid output format '%s' - must be one of json,csv,text,brief,none", outputFormat)
+		availableOutputFormatters := strings.Join(GetStringKeysFromMap(outputFormatters), ", ")
+		return nil, fmt.Errorf("invalid output format '%s' - must be one of %s", outputFormat, availableOutputFormatters)
 	}
 	return formatter, nil
 }
@@ -77,6 +79,14 @@ func InferFormatFromExportFileName(filename string) (string, error) {
 		// up the formatter when it's to format
 		return "", fmt.Errorf("could not infer valid export format from filename '%s'", filename)
 	}
+}
+
+func GetStringKeysFromMap(src map[string]Formatter) []string {
+	keys := []string{}
+	for key := range src {
+		keys = append(keys, key)
+	}
+	return keys
 }
 
 // NullFormatter is to be used when no output is expected. It always returns a `io.Reader` which
