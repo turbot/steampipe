@@ -32,5 +32,5 @@ type Client interface {
 
 	// remote client will have empty implementation
 
-	RefreshConnectionAndSearchPaths() *RefreshConnectionResult
+	RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult
 }

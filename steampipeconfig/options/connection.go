@@ -5,10 +5,11 @@ import (
 	"strings"
 )
 
-// options.Connection
+// Connection is a struct representing connection options
+// json tags needed as this is stored in the connection state file
 type Connection struct {
-	Cache    *bool `hcl:"cache"`
-	CacheTTL *int  `hcl:"cache_ttl"`
+	Cache    *bool `hcl:"cache" json:"Cache,omitempty"`
+	CacheTTL *int  `hcl:"cache_ttl" json:"CacheTTL,omitempty"`
 }
 
 func (c *Connection) ConfigMap() map[string]interface{} {
@@ -16,7 +17,7 @@ func (c *Connection) ConfigMap() map[string]interface{} {
 	return map[string]interface{}{}
 }
 
-// merge other options over the the top of this options object
+// Merge merges other options over the the top of this options object
 // i.e. if a property is set in otherOptions, it takes precedence
 func (c *Connection) Merge(otherOptions Options) {
 	switch o := otherOptions.(type) {
@@ -31,8 +32,7 @@ func (c *Connection) Merge(otherOptions Options) {
 }
 
 func (c *Connection) Equals(other *Connection) bool {
-	return c.Cache == other.Cache &&
-		*c.CacheTTL == *other.CacheTTL
+	return c.String() == other.String()
 }
 
 func (c *Connection) String() string {

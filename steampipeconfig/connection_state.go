@@ -10,8 +10,8 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// GetConnectionState :: load connection state file, and remove any connections which do not exist in the db
-func GetConnectionState(schemas []string) (ConnectionDataMap, error) {
+// GetConnectionState loads the connection state file, and remove any connections which do not exist in the db
+func GetConnectionState(schemaNames []string) (ConnectionDataMap, error) {
 	utils.LogTime("steampipeconfig.GetConnectionState start")
 	defer utils.LogTime("steampipeconfig.GetConnectionState end")
 
@@ -20,7 +20,7 @@ func GetConnectionState(schemas []string) (ConnectionDataMap, error) {
 	if err != nil {
 		return nil, err
 	}
-	return pruneConnectionState(connectionState, schemas), nil
+	return pruneConnectionState(connectionState, schemaNames), nil
 }
 
 // load and parse the connection config
@@ -45,9 +45,9 @@ func loadConnectionStateFile() (ConnectionDataMap, error) {
 }
 
 // update connection map to remove any connections which do not exist in the list of given schemas
-func pruneConnectionState(connections ConnectionDataMap, schemas []string) ConnectionDataMap {
+func pruneConnectionState(connections ConnectionDataMap, schemaNames []string) ConnectionDataMap {
 	var actualConnectionState = make(ConnectionDataMap)
-	for _, connectionName := range schemas {
+	for _, connectionName := range schemaNames {
 		if connection, ok := connections[connectionName]; ok {
 			actualConnectionState[connectionName] = connection
 		}

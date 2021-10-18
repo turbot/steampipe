@@ -14,7 +14,7 @@ func NewMetadata() *Metadata {
 	}
 }
 
-// Metadata :: struct to represent the schema of the database
+// Metadata is a struct to represent the schema of the database
 type Metadata struct {
 	// map {schemaname, {map {tablename -> tableschema}}
 	Schemas map[string]map[string]TableSchema
@@ -24,7 +24,7 @@ type Metadata struct {
 	TemporarySchemaName string
 }
 
-// TableSchema :: contains the details of a single table in the schema
+// TableSchema contains the details of a single table in the schema
 type TableSchema struct {
 	// map {columnName -> columnschema}
 	Columns     map[string]ColumnSchema
@@ -33,7 +33,7 @@ type TableSchema struct {
 	Description string
 }
 
-// ColumnSchema :: contains the details of a single column in a table
+// ColumnSchema contains the details of a single column in a table
 type ColumnSchema struct {
 	ID          string
 	Name        string
@@ -43,7 +43,7 @@ type ColumnSchema struct {
 	Description string
 }
 
-// GetSchemas :: returns all foreign schema names
+// GetSchemas returns all foreign schema names
 func (m *Metadata) GetSchemas() []string {
 	schemas := []string{}
 	for schema := range m.Schemas {

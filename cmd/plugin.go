@@ -445,7 +445,7 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 		if err != nil {
 			return err
 		}
-		steampipeconfig.Config = config
+		steampipeconfig.GlobalConfig = config
 	}
 
 	client, err := db_local.GetLocalClient(constants.InvokerPlugin)
