@@ -129,35 +129,35 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 }
 
 func validateConnectionStringArgs() error {
-	connectionString := os.Getenv(constants.EnvConnectionString)
-	database := os.Getenv(constants.EnvDatabase)
+	databaseBackendConnectionString := os.Getenv(constants.EnvDatabaseBackendConnectionString)
+	databaseBackend := os.Getenv(constants.EnvDatabaseBackend)
 	apiKey := os.Getenv(constants.EnvAPIKey)
 
-	if connectionString != "" {
-		if database != "" {
-			return fmt.Errorf("only one of env vars %s and %s may be set", constants.EnvConnectionString, constants.EnvDatabase)
+	if databaseBackendConnectionString != "" {
+		if databaseBackend != "" {
+			return fmt.Errorf("only one of env vars %s and %s may be set", constants.EnvDatabaseBackendConnectionString, constants.EnvDatabaseBackend)
 		}
 		// so only connection string env var was set. ThHis will already have been put into viper so just return
 		return nil
 	}
 
-	if database == "" {
+	if databaseBackend == "" {
 		// no database set - so no connection string
 		return nil
 	}
 
 	// so database was set - api key must be set as well
 	if apiKey == "" {
-		return fmt.Errorf("if %s is set %s must be set", constants.EnvDatabase, constants.EnvAPIKey)
+		return fmt.Errorf("if %s is set %s must be set", constants.EnvDatabaseBackend, constants.EnvAPIKey)
 	}
 
 	// so we have a database ands an api key - try to retrieve the connection string and set it in viper
 
-	connectionString, err := db_common.GetConnectionString(database, apiKey)
+	databaseBackendConnectionString, err := db_common.GetConnectionString(databaseBackend, apiKey)
 	if err != nil {
 		return err
 	}
-	viper.Set(constants.ArgConnectionString, connectionString)
+	viper.Set(constants.ArgConnectionString, databaseBackendConnectionString)
 
 	return nil
 }

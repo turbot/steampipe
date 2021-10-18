@@ -2,13 +2,13 @@ package constants
 
 // Known Environment Variables
 const (
-	EnvUpdateCheck      = "STEAMPIPE_UPDATE_CHECK"
-	EnvInstallDir       = "STEAMPIPE_INSTALL_DIR"
-	EnvConnectionString = "STEAMPIPE_CONNECTION_STRING"
-	EnvInstallDatabase  = "STEAMPIPE_INITDB_DATABASE_NAME"
-	EnvDatabase         = "STEAMPIPE_DATABASE"
-	EnvAPIKey           = "STEAMPIPE_API_KEY"
-	EnvServicePassword  = "STEAMPIPE_DATABASE_PASSWORD"
+	EnvUpdateCheck                     = "STEAMPIPE_UPDATE_CHECK"
+	EnvInstallDir                      = "STEAMPIPE_INSTALL_DIR"
+	EnvInstallDatabase                 = "STEAMPIPE_INITDB_DATABASE_NAME"
+	EnvDatabaseBackendConnectionString = "STEAMPIPE_DATABASE_BACKEND_CONNECTION_STRING"
+	EnvDatabaseBackend                 = "STEAMPIPE_DATABASE_BACKEND"
+	EnvAPIKey                          = "STEAMPIPE_API_KEY"
+	EnvServicePassword                 = "STEAMPIPE_DATABASE_PASSWORD"
 	// EnvInputVarPrefix is the prefix for environment variables that represent values for input variables.
 	EnvInputVarPrefix = "SP_VAR_"
 )
