@@ -58,11 +58,7 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 			return nil, nil, err
 		}
 
-		requiredConnections[name] = &ConnectionData{
-			Plugin:     remoteSchema,
-			CheckSum:   checksum,
-			Connection: connection,
-		}
+		requiredConnections[name] = NewConnectionData(remoteSchema, checksum, connection)
 	}
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration end")
 
