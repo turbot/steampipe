@@ -129,35 +129,33 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 }
 
 func validateConnectionStringArgs() error {
-	databaseBackendConnectionString := os.Getenv(constants.EnvDatabaseBackendConnectionString)
-	databaseBackend := os.Getenv(constants.EnvDatabaseBackend)
-	apiKey := os.Getenv(constants.EnvAPIKey)
+	backendEnvVar, backendDefined := os.LookupEnv(constants.EnvDatabaseBackend)
 
-	if databaseBackendConnectionString != "" {
-		if databaseBackend != "" {
-			return fmt.Errorf("only one of env vars %s and %s may be set", constants.EnvDatabaseBackendConnectionString, constants.EnvDatabaseBackend)
-		}
-		// so only connection string env var was set. ThHis will already have been put into viper so just return
-		return nil
-	}
-
-	if databaseBackend == "" {
+	if !backendDefined {
 		// no database set - so no connection string
 		return nil
 	}
+	connectionString := backendEnvVar
 
-	// so database was set - api key must be set as well
-	if apiKey == "" {
-		return fmt.Errorf("if %s is set %s must be set", constants.EnvDatabaseBackend, constants.EnvAPIKey)
+	// so a backend was set - is it a connection string or a database name
+	if !strings.HasPrefix(backendEnvVar, "postgresql://") {
+		// it must be a database name - verify
+		apiKey, gotApiKey := os.LookupEnv(constants.EnvAPIKey)
+
+		// so database was set - api key must be set as well
+		if !gotApiKey {
+			return fmt.Errorf("if %s is set as a workspace name, %s must be set", constants.EnvDatabaseBackend, constants.EnvAPIKey)
+		}
+
+		// so we have a database ands an api key - try to retrieve the connection string and set it in viper
+		var err error
+		if connectionString, err = db_common.GetConnectionString(backendEnvVar, apiKey); err != nil {
+			return err
+		}
 	}
 
-	// so we have a database ands an api key - try to retrieve the connection string and set it in viper
-
-	databaseBackendConnectionString, err := db_common.GetConnectionString(databaseBackend, apiKey)
-	if err != nil {
-		return err
-	}
-	viper.Set(constants.ArgConnectionString, databaseBackendConnectionString)
+	// now set the connection string in viper
+	viper.Set(constants.ArgConnectionString, connectionString)
 
 	return nil
 }
