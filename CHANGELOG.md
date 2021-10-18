@@ -1,3 +1,21 @@
+## v0.9.0 [2021-10-24]
+_What's new?_
+* Add support for plugins with dynamic schema - reload plugin schema on startup. ([#1012](https://github.com/turbot/steampipe/issues/1012))
+* Add `steampipe_reference` introspection table. ([#972](https://github.com/turbot/steampipe/issues/972))
+* Add `steampipe_variable` reflection table. ([#859](https://github.com/turbot/steampipe/issues/859))
+* Add `check` summary in `table` output. ([#710](https://github.com/turbot/steampipe/issues/710))
+* Add support for setting a custom database name when installing. ([#936](https://github.com/turbot/steampipe/issues/936))
+* Support JSON and YAML connection config. ([#969](https://github.com/turbot/steampipe/issues/969))
+* Allow plugin uninstall even if there are active connections. ([#852](https://github.com/turbot/steampipe/issues/852))
+* Remove deprecated flags `--db-listen` and `--db-port` from service start. ([#582](https://github.com/turbot/steampipe/issues/582))
+
+_Bug fixes_
+* Plugin commands now exit with a non-zero code on error. ([#980](https://github.com/turbot/steampipe/issues/980))
+* Fix for incorrect message from service status when service is not running. ([#975](https://github.com/turbot/steampipe/issues/975))
+* Update introspection tables to ensure naming consistency - fix mods and pseudo resources to remove type prefix. ([#959](https://github.com/turbot/steampipe/issues/959))
+* Fix for plugin list failing with 'invalid memory address'. ([#984](https://github.com/turbot/steampipe/issues/984))
+
+
 ## v0.8.5 [2021-10-07]
 
 _Bug fixes_
@@ -5,13 +23,14 @@ _Bug fixes_
 * Fix issue where queries with a`limit` clause not always listing all results. Only pass the limit to the plugin if all quals are supported by plugin `key columns`. [#103](https://github.com/turbot/steampipe-postgres-fdw/issues/103))
 
 ## v0.8.4 [2021-09-29]
+_Bug fixes_
 * Update client error handling to only refresh session data for a 'context deadline exceeded' error. This avoids recursion in the error handling. ([#970](https://github.com/turbot/steampipe/issues/970))
 
 ## v0.8.3 [2021-09-28]
 
 _What's new?_
 * Update `service start` command to support `database-password` arg and `STEAMPIPE_DATABASE_PASSWORD` environment variable, to allow a custom password to be used when running in service mode. ([#725](https://github.com/turbot/steampipe/issues/725))
-* Small updates to output of `steampipe service` commands.  ([#812](https://github.com/turbot/steampipe/issues/812))
+* Small updates to output of `steampipe service` commands. ([#812](https://github.com/turbot/steampipe/issues/812))
 * Add support for piping `stdout` and `stderr` from `service start` to the `TRACE log`.  ([#810](https://github.com/turbot/steampipe/issues/810))
 
 _Bug fixes_
