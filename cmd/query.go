@@ -129,34 +129,30 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 }
 
 func validateConnectionStringArgs() error {
-	connectionString := os.Getenv(constants.EnvConnectionString)
-	database := os.Getenv(constants.EnvDatabase)
-	apiKey := os.Getenv(constants.EnvAPIKey)
+	backendEnvVar, backendDefined := os.LookupEnv(constants.EnvDatabaseBackend)
 
-	if connectionString != "" {
-		if database != "" {
-			return fmt.Errorf("only one of env vars %s and %s may be set", constants.EnvConnectionString, constants.EnvDatabase)
-		}
-		// so only connection string env var was set. ThHis will already have been put into viper so just return
-		return nil
-	}
-
-	if database == "" {
+	if !backendDefined {
 		// no database set - so no connection string
 		return nil
 	}
+	connectionString := backendEnvVar
 
-	// so database was set - api key must be set as well
-	if apiKey == "" {
-		return fmt.Errorf("if %s is set %s must be set", constants.EnvDatabase, constants.EnvAPIKey)
+	// so a backend was set - is it a connection string or a database name
+	if !strings.HasPrefix(backendEnvVar, "postgresql://") {
+		// it must be a database name - verify the cloud token was provided
+		cloudToken, gotCloudToken := os.LookupEnv(constants.EnvCloudToken)
+		if !gotCloudToken {
+			return fmt.Errorf("if %s is set as a workspace name, %s must be set", constants.EnvDatabaseBackend, constants.EnvCloudToken)
+		}
+
+		// so we have a database and a token - build the connection string and set it in viper
+		var err error
+		if connectionString, err = db_common.GetConnectionString(backendEnvVar, cloudToken); err != nil {
+			return err
+		}
 	}
 
-	// so we have a database ands an api key - try to retrieve the connection string and set it in viper
-
-	connectionString, err := db_common.GetConnectionString(database, apiKey)
-	if err != nil {
-		return err
-	}
+	// now set the connection string in viper
 	viper.Set(constants.ArgConnectionString, connectionString)
 
 	return nil

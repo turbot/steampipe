@@ -12,10 +12,9 @@ const actorAPI = "/api/v1/actor"
 const passwordAPIFormat = "/api/v1/user/%s/password"
 const workspaceAPIFormat = "/api/v1/user/%s/workspace/%s"
 
-func GetConnectionString(workspaceHandle, apiKey string) (string, error) {
-
-	// create a Bearer string by appending string access token
-	var bearer = "Bearer " + apiKey
+func GetConnectionString(workspaceHandle, token string) (string, error) {
+	// create a 'bearer' string by appending the access token
+	var bearer = "Bearer " + token
 
 	client := &http.Client{}
 
