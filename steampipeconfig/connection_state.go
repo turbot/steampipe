@@ -51,7 +51,6 @@ func loadConnectionStateFile() (ConnectionDataMap, error) {
 	// for example if there is an update to the Postgres schema building code)
 	for key, connectionData := range connectionState {
 		if connectionData.StructVersion < ConnectionDataStructVersion {
-			log.Printf("[TRACE] connection state for %s uses an old ConnectionData struct version - removing connection from the connection state to force a refresh", connectionData.Connection.Name)
 			delete(connectionState, key)
 		}
 	}
