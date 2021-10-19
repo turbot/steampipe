@@ -140,16 +140,16 @@ func validateConnectionStringArgs() error {
 	// so a backend was set - is it a connection string or a database name
 	if !strings.HasPrefix(backendEnvVar, "postgresql://") {
 		// it must be a database name - verify
-		apiKey, gotApiKey := os.LookupEnv(constants.EnvAPIKey)
+		cloudToken, gotCloudToken := os.LookupEnv(constants.EnvCloudToken)
 
 		// so database was set - api key must be set as well
-		if !gotApiKey {
-			return fmt.Errorf("if %s is set as a workspace name, %s must be set", constants.EnvDatabaseBackend, constants.EnvAPIKey)
+		if !gotCloudToken {
+			return fmt.Errorf("if %s is set as a workspace name, %s must be set", constants.EnvDatabaseBackend, constants.EnvCloudToken)
 		}
 
 		// so we have a database ands an api key - try to retrieve the connection string and set it in viper
 		var err error
-		if connectionString, err = db_common.GetConnectionString(backendEnvVar, apiKey); err != nil {
+		if connectionString, err = db_common.GetConnectionString(backendEnvVar, cloudToken); err != nil {
 			return err
 		}
 	}

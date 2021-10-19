@@ -6,7 +6,7 @@ const (
 	EnvInstallDir      = "STEAMPIPE_INSTALL_DIR"
 	EnvInstallDatabase = "STEAMPIPE_INITDB_DATABASE_NAME"
 	EnvDatabaseBackend = "STEAMPIPE_DATABASE_BACKEND"
-	EnvAPIKey          = "STEAMPIPE_API_KEY"
+	EnvCloudToken      = "STEAMPIPE_CLOUD_TOKEN"
 	EnvServicePassword = "STEAMPIPE_DATABASE_PASSWORD"
 	// EnvInputVarPrefix is the prefix for environment variables that represent values for input variables.
 	EnvInputVarPrefix = "SP_VAR_"
