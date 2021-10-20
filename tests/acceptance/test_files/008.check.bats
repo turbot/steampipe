@@ -51,3 +51,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f ./test.json
   cd -
 }
+
+@test "steampipe check cis_v130 - export html" {
+  cd $WORKSPACE_DIR
+  run steampipe check benchmark.cis_v130 --export=html:./test.html --progress=false
+  assert_equal "$(cat ./test.html)" "$(cat $TEST_DATA_DIR/expected_check_html.html)"
+  rm -f ./test.html
+  cd -
+}

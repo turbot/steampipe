@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"strings"
 
 	"github.com/turbot/steampipe/control/controlexecute"
 )
@@ -12,10 +11,16 @@ import (
 type JSONFormatter struct{}
 
 func (j *JSONFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
-	bytes, err := json.MarshalIndent(tree.Root, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	res := strings.NewReader(string(bytes))
-	return res, nil
+	reader, writer := io.Pipe()
+	encoder := json.NewEncoder(writer)
+	encoder.SetIndent(" ", " ")
+	go func() {
+		err := encoder.Encode(tree.Root)
+		if err != nil {
+			writer.CloseWithError(err)
+			return
+		}
+		writer.Close()
+	}()
+	return reader, nil
 }

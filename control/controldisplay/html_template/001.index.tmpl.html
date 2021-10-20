@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Steampipe Report</title>
+    <style>
+        /**
+       {{- template "normalize_css" -}}
+       **/
+        /**
+       {{- template "style_css" -}}
+       **/
+    </style>
+    <meta charset="UTF-8">
+    <link rel="icon" href="https://steampipe.io/favicon.svg" type="image/svg+xml" sizes="any">
+</head>
+
+<body>
+    <div class="container">
+        <div class="brand">
+            <img class="logo" src="https://steampipe.io/images/steampipe_logo_wordmark_color.svg"
+                alt="Steampipe Report" />
+        </div>
+        {{ if .Root.ControlRuns }}
+        <section class="group">
+            <div class="controls">
+                {{ range .Root.ControlRuns}}
+                {{ template "control_run_template" . }}
+                {{ end }}
+            </div>
+        </section>
+        {{ end }}
+        {{ range .Root.Groups }}
+        {{ template "group_template" . }}
+        {{ end }}
+    </div>
+    <script>
+        /**
+        {{- template "script" -}}
+         **/
+    </script>
+</body>
+
+</html>
+
+{{ define "summary" }}
+<div class="summary">
+    <div class="status alarm">{{ .Alarm }} <span>alarm</span></div>
+    <div class="status ok">{{ .Ok }} <span>ok</span> </div>
+    <div class="status info">{{ .Info }} <span>info</span> </div>
+    <div class="status error">{{ .Error }} <span>error</span> </div>
+    <div class="status skip">{{ .Skip }} <span>skip</span> </div>
+</div>
+{{ end }}
+
+{{ define "group_template"}}
+<section class="group">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">{{ .Title }}</div>
+        {{ template "summary" .Summary.Status }}
+    </header>
+    {{ if .ControlRuns }}
+    <div class="controls">
+        {{ range .ControlRuns}}
+        {{ template "control_run_template" . }}
+        {{ end }}
+    </div>
+    {{ end }}
+    {{ range .Groups }}
+    {{ template "group_template" . }}
+    {{ end }}
+</section>
+{{ end }}
+
+{{ define "control_run_template"}}
+<div class="control">
+    <header class="overview">
+        <div class="sep">&nbsp;</div>
+        <div class="title">{{ .Title }}</div>
+        {{ template "summary" .Summary }}
+    </header>
+    {{ if .GetError }}
+    <div class="run-error"><span>Error:</span>{{ .GetError }}</div>
+    {{ else }}
+    {{ range .Rows }}
+    <div class="result-row {{ .Status }}">
+        <div class="status">{{ .Status }}</div>
+        <div class="reason-resource">
+            {{ if ne .Resource "<nil>" }}{{ .Resource }}{{ end }} {{ .Reason }}
+        </div>
+        {{ range .Dimensions }}
+        <div class="dimension">{{ .Value }}</div>
+        {{ end }}
+    </div>
+    {{ end }}
+    <!-- end for range.Rows -->
+    {{ end }}
+    <!-- end for if-else block -->
+</div>
+{{ end }}

@@ -266,6 +266,22 @@ func TestCsvFormatter(t *testing.T) {
 	spacer := strings.TrimSpace(output)
 	if spacer != expectedCsvOutput {
 		t.Log(`"expected" is not equal to "output"`)
+		t.Logf(spacer)
+		t.FailNow()
+	}
+}
+
+const expectedHtmlOutput = `<p>Title: Test Root Group</p>`
+
+func TestHtmlFormatter(t *testing.T) {
+	f := new(HTMLFormatter)
+	reader, _ := f.Format(context.Background(), tree)
+	b := bytes.NewBufferString("")
+	_, _ = io.Copy(b, reader)
+	output := b.String()
+	if output != expectedHtmlOutput {
+		t.Log(`"expected" is not equal to "output"`)
+		t.Log(output)
 		t.FailNow()
 	}
 }

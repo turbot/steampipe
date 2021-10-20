@@ -48,6 +48,10 @@ jobs:
         run: |
           go test -timeout 30s -run github.com/turbot/steampipe ./...
 
+      - name: Run Unit Tests
+        run: |
+          go test -timeout 30s -run github.com/turbot/steampipe ./...
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
