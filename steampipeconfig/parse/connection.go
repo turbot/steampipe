@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -11,7 +12,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-func DecodeConnection(block *hcl.Block, fileData map[string][]byte) (*modconfig.Connection, hcl.Diagnostics) {
+func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics) {
 	connectionContent, rest, diags := block.Body.PartialContent(ConnectionBlockSchema)
 	if diags.HasErrors() {
 		return nil, diags
@@ -122,12 +123,22 @@ func pluginConnectionConfigToHclString(body hcl.Body, connectionContent *hcl.Bod
 		}
 	}
 
-	for name, expr := range attrExpressionMap {
+	// build ordered list attributes
+	// when we have generics we can add a GetOrderedMapKeys function
+	var keys = make([]string, len(attrExpressionMap))
+	i := 0
+	for k := range attrExpressionMap {
+		keys[i] = k
+		i++
+	}
+	sort.Strings(keys)
+	for _, name := range keys {
+		expr := attrExpressionMap[name]
 		val, moreDiags := expr.Value(nil)
 		if moreDiags.HasErrors() {
 			diags = append(diags, moreDiags...)
 		} else {
-			rootBody.SetAttributeValue(name, val) // this is overwritten later
+			rootBody.SetAttributeValue(name, val)
 		}
 	}
 
