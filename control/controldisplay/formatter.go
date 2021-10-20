@@ -23,12 +23,13 @@ func (m FormatterMap) keys() []string {
 }
 
 const (
-	OutputFormatNone  = "none"
-	OutputFormatText  = "text"
-	OutputFormatBrief = "brief"
-	OutputFormatCSV   = "csv"
-	OutputFormatJSON  = "json"
-	OutputFormatHTML  = "html"
+	OutputFormatNone     = "none"
+	OutputFormatText     = "text"
+	OutputFormatBrief    = "brief"
+	OutputFormatCSV      = "csv"
+	OutputFormatJSON     = "json"
+	OutputFormatHTML     = "html"
+	OutputFormatMarkdown = "markdown"
 )
 
 var outputFormatters FormatterMap = FormatterMap{
@@ -40,9 +41,10 @@ var outputFormatters FormatterMap = FormatterMap{
 }
 
 var exportFormatters FormatterMap = FormatterMap{
-	OutputFormatCSV:  &CSVFormatter{},
-	OutputFormatJSON: &JSONFormatter{},
-	OutputFormatHTML: &HTMLFormatter{},
+	OutputFormatCSV:      &CSVFormatter{},
+	OutputFormatJSON:     &JSONFormatter{},
+	OutputFormatHTML:     &HTMLFormatter{},
+	OutputFormatMarkdown: &MarkdownFormatter{},
 }
 
 type CheckExportTarget struct {
@@ -82,8 +84,14 @@ func GetOutputFormatter(outputFormat string) (Formatter, error) {
 func InferFormatFromExportFileName(filename string) (string, error) {
 	extension := strings.TrimPrefix(filepath.Ext(filename), ".")
 	switch extension {
-	case "csv", "json", "html":
-		return extension, nil
+	case "csv":
+		return OutputFormatCSV, nil
+	case "json":
+		return OutputFormatJSON, nil
+	case "html":
+		return OutputFormatHTML, nil
+	case "md", "markdown":
+		return OutputFormatMarkdown, nil
 	default:
 		// return blank, so that it fails when it looks
 		// up the formatter when it's to format

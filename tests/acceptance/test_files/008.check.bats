@@ -60,10 +60,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
-@test "steampipe check all" {
-  cd $CHECK_ALL_MOD
-  run steampipe check all --export=json:./test.json --progress=false
-  assert_equal "$(cat ./test.json)" "$(cat $TEST_DATA_DIR/expected_check_all.json)"
-  rm -f ./test.json
+@test "steampipe check cis_v130 - export markdown" {
+  cd $WORKSPACE_DIR
+  run steampipe check benchmark.cis_v130 --export=markdown:./test.md --progress=false
+  assert_equal "$(cat ./test.md)" "$(cat $TEST_DATA_DIR/expected_check_markdown.md)"
+  rm -f ./test.md
   cd -
 }
