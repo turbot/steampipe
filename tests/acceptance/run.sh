@@ -51,4 +51,4 @@ fi
 
 echo "Running with STEAMPIPE_INSTALL_DIR set to $STEAMPIPE_INSTALL_DIR"
 
-bats --tap $MY_PATH/test_files/018*
+bats --tap $MY_PATH/test_files
