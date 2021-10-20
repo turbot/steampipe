@@ -23,6 +23,7 @@ export TIME_TO_QUERY=$TIME_TO_QUERY
 export SIMPLE_MOD_DIR=$MY_PATH/test_data/introspection_table_mod
 export CONFIG_PARSING_TEST_MOD=$MY_PATH/test_data/config_parsing_test_mod
 export FILE_PATH=$MY_PATH
+export CHECK_ALL_MOD=$MY_PATH/test_data/check_all_mod
 
 # Must have these commands for the test suite to run
 declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch")
