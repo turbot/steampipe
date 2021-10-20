@@ -21,8 +21,9 @@ import (
 const CertIssuer = "steampipe.io"
 
 var (
-	CertExpiryTolerance = 30 * (24 * time.Hour)  // 30 days
-	CertValidityPeriod  = 180 * (24 * time.Hour) // 6 months
+	CertExpiryTolerance      = 180 * (24 * time.Hour) // 180 days
+	RootCertValidityPeriod   = 365 * (24 * time.Hour) // 1 year
+	ServerCertValidityPeriod = 365 * (24 * time.Hour) // 1 year
 )
 
 func ensureSelfSignedCertificate() (err error) {
@@ -77,6 +78,10 @@ func RemoveServiceCertificates() error {
 	return nil
 }
 
+// ValidateServiceCertificates checks that both the root and server certificates satisfy the following conditions:
+// * rootCertificate Subject CN is equal to CertIssuer (defined above)
+// * serverCertificate Issuer CN is equal to CertIssuer (defined above)
+// * both server and root certificates haven't expired or are about to expire
 func ValidateServiceCertificates() bool {
 	utils.LogTime("db_local.ValidateServiceCertificates start")
 	defer utils.LogTime("db_local.ValidateServiceCertificates end")
@@ -96,6 +101,7 @@ func ValidateServiceCertificates() bool {
 			isCerticateExpiring(serverCertificate)))
 }
 
+// isCerticateExpiring checks whether the certificate expires within a predefined CertExpiryTolerance period (defined above)
 func isCerticateExpiring(certificate *x509.Certificate) bool {
 	return certificate.NotAfter.Add(CertExpiryTolerance).After(time.Now())
 }
@@ -182,7 +188,7 @@ func generateServiceCertificates() error {
 		Subject:      caCertificateData.Subject,
 		Issuer:       caCertificateData.Subject,
 		NotBefore:    NOW,
-		NotAfter:     NOW.Add(CertValidityPeriod),
+		NotAfter:     NOW.Add(ServerCertValidityPeriod),
 	}
 
 	// Generate the server private key
