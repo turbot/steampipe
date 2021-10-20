@@ -1,0 +1,84 @@
+{
+  "group_id": "root_result_group",
+  "title": "",
+  "description": "",
+  "tags": {},
+  "summary": {
+   "status": {
+    "alarm": 1,
+    "ok": 1,
+    "info": 0,
+    "skip": 0,
+    "error": 0
+   }
+  },
+  "groups": [
+   {
+    "group_id": "mod.check_all_mod",
+    "title": "Steampipe check all test mod",
+    "description": "This is a simple mod used for testing the steampipe check all feature. This mod is needed in acceptance tests.",
+    "tags": {},
+    "summary": {
+     "status": {
+      "alarm": 1,
+      "ok": 1,
+      "info": 0,
+      "skip": 0,
+      "error": 0
+     }
+    },
+    "groups": [
+     {
+      "group_id": "benchmark.check_all",
+      "title": "Benchmark to test the steampipe check all functionality",
+      "description": "",
+      "tags": {},
+      "summary": {
+       "status": {
+        "alarm": 1,
+        "ok": 1,
+        "info": 0,
+        "skip": 0,
+        "error": 0
+       }
+      },
+      "groups": [],
+      "controls": [
+       {
+        "control_id": "control.check_1",
+        "description": "Control to verify steampipe check all functionality.",
+        "severity": "high",
+        "tags": {},
+        "title": "Control to verify steampipe check all functionality 1",
+        "results": [
+         {
+          "reason": "acceptance tests",
+          "resource": "steampipe",
+          "status": "ok",
+          "dimensions": null
+         }
+        ]
+       },
+       {
+        "control_id": "control.check_2",
+        "description": "Control to verify steampipe check all functionality.",
+        "severity": "critical",
+        "tags": {},
+        "title": "Control to verify steampipe check all functionality 2",
+        "results": [
+         {
+          "reason": "integration tests",
+          "resource": "turbot",
+          "status": "alarm",
+          "dimensions": null
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "controls": null
+   }
+  ],
+  "controls": null
+ }
