@@ -10,6 +10,18 @@ import (
 	"github.com/turbot/steampipe/control/controlexecute"
 )
 
+type FormatterMap map[string]Formatter
+
+func (m FormatterMap) keys() []string {
+	keys := make([]string, len(m))
+	i := 0
+	for key := range m {
+		keys[i] = key
+		i++
+	}
+	return keys
+}
+
 const (
 	OutputFormatNone  = "none"
 	OutputFormatText  = "text"
@@ -19,7 +31,7 @@ const (
 	OutputFormatHTML  = "html"
 )
 
-var outputFormatters map[string]Formatter = map[string]Formatter{
+var outputFormatters FormatterMap = FormatterMap{
 	OutputFormatNone:  &NullFormatter{},
 	OutputFormatCSV:   &CSVFormatter{},
 	OutputFormatJSON:  &JSONFormatter{},
@@ -27,7 +39,7 @@ var outputFormatters map[string]Formatter = map[string]Formatter{
 	OutputFormatBrief: &TextFormatter{},
 }
 
-var exportFormatters map[string]Formatter = map[string]Formatter{
+var exportFormatters FormatterMap = FormatterMap{
 	OutputFormatCSV:  &CSVFormatter{},
 	OutputFormatJSON: &JSONFormatter{},
 	OutputFormatHTML: &HTMLFormatter{},
@@ -54,8 +66,7 @@ type Formatter interface {
 func GetExportFormatter(exportFormat string) (Formatter, error) {
 	formatter, found := exportFormatters[exportFormat]
 	if !found {
-		availableExportFormatters := strings.Join(GetStringKeysFromMap(exportFormatters), ", ")
-		return nil, fmt.Errorf("invalid export format '%s' - must be one of %s", exportFormat, availableExportFormatters)
+		return nil, fmt.Errorf("invalid export format '%s' - must be one of %s", exportFormat, exportFormatters.keys())
 	}
 	return formatter, nil
 }
@@ -63,8 +74,7 @@ func GetExportFormatter(exportFormat string) (Formatter, error) {
 func GetOutputFormatter(outputFormat string) (Formatter, error) {
 	formatter, found := outputFormatters[outputFormat]
 	if !found {
-		availableOutputFormatters := strings.Join(GetStringKeysFromMap(outputFormatters), ", ")
-		return nil, fmt.Errorf("invalid output format '%s' - must be one of %s", outputFormat, availableOutputFormatters)
+		return nil, fmt.Errorf("invalid output format '%s' - must be one of %s", outputFormat, outputFormatters.keys())
 	}
 	return formatter, nil
 }
@@ -79,14 +89,6 @@ func InferFormatFromExportFileName(filename string) (string, error) {
 		// up the formatter when it's to format
 		return "", fmt.Errorf("could not infer valid export format from filename '%s'", filename)
 	}
-}
-
-func GetStringKeysFromMap(src map[string]Formatter) []string {
-	keys := []string{}
-	for key := range src {
-		keys = append(keys, key)
-	}
-	return keys
 }
 
 // NullFormatter is to be used when no output is expected. It always returns a `io.Reader` which
