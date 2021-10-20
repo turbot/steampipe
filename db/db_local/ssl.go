@@ -7,91 +7,182 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"math/big"
-	"path/filepath"
+	"os"
 	"time"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 )
 
-func SslMode() string {
-	certExists := helpers.FileExists(filepath.Join(getDataLocation(), constants.ServerCert))
-	privateKeyExists := helpers.FileExists(filepath.Join(getDataLocation(), constants.ServerCertKey))
+const CertIssuer = "steampipe.io"
+
+var (
+	CertExpiryTolerance = 30 * (24 * time.Hour)  // 30 days
+	CertValidityPeriod  = 180 * (24 * time.Hour) // 6 months
+)
+
+func ensureSelfSignedCertificate() (err error) {
+	// Check if the file exists if the file exists then do not generate the cert and key
+	// Generate the certificate if there is no existing certificate
+	certExists := helpers.FileExists(getServerCertLocation())
+	privateKeyExists := helpers.FileExists(getServerCertKeyLocation())
+
 	if certExists && privateKeyExists {
-		return "require"
+		return nil
 	}
-	return "disable"
+
+	return generateServiceCertificates()
 }
 
-func SslStatus() string {
-	status := SslMode()
+func sslStatus() string {
+	status := sslMode()
 	if status == "require" {
 		return "on"
 	}
 	return "off"
 }
 
-func writeCertFile(filePath string, cert string) error {
-	return ioutil.WriteFile(filePath, []byte(cert), 0600)
+func sslMode() string {
+	certExists := helpers.FileExists(getServerCertLocation())
+	privateKeyExists := helpers.FileExists(getServerCertKeyLocation())
+	if certExists && privateKeyExists {
+		return "require"
+	}
+	return "disable"
 }
 
-func ensureSelfSignedCertificate() (err error) {
-	// Check if the file exists if the file exists then do not generate the cert and key
-	// Generate the certificate if there is no existing certificate
-	certExists := helpers.FileExists(filepath.Join(getDataLocation(), constants.ServerCert))
-	privateKeyExists := helpers.FileExists(filepath.Join(getDataLocation(), constants.ServerCertKey))
+// CertificatesExist checks if the root and server certificate files exist
+func CertificatesExist() bool {
+	return helpers.FileExists(getRootCertLocation()) && helpers.FileExists(getServerCertLocation())
+}
 
-	if certExists && privateKeyExists {
-		return nil
+// RemoveServiceCertificates removes generated certificates so that they can be regenerated
+func RemoveServiceCertificates() error {
+	utils.LogTime("db_local.RemoveServiceCertificates start")
+	defer utils.LogTime("db_local.RemoveServiceCertificates end")
+
+	if err := os.Remove(getServerCertLocation()); err != nil {
+		return err
+	}
+	if err := os.Remove(getServerCertKeyLocation()); err != nil {
+		return err
+	}
+	if err := os.Remove(getRootCertLocation()); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ValidateServiceCertificates() bool {
+	utils.LogTime("db_local.ValidateServiceCertificates start")
+	defer utils.LogTime("db_local.ValidateServiceCertificates end")
+
+	rootCertificate, err := parseCertificateInLocation(getRootCertLocation())
+	if err != nil {
+		return false
+	}
+	serverCertificate, err := parseCertificateInLocation(getServerCertLocation())
+	if err != nil {
+		return false
 	}
 
-	// Create your own certificate authority
-	caPriv, err := rsa.GenerateKey(rand.Reader, 2048)
+	return ((rootCertificate.Subject.CommonName == CertIssuer) &&
+		(serverCertificate.Issuer.CommonName == CertIssuer) &&
+		(isCerticateExpiring(rootCertificate) ||
+			isCerticateExpiring(serverCertificate)))
+}
+
+func isCerticateExpiring(certificate *x509.Certificate) bool {
+	return certificate.NotAfter.Add(CertExpiryTolerance).After(time.Now())
+}
+
+func parseCertificateInLocation(location string) (*x509.Certificate, error) {
+	utils.LogTime("db_local.parseCertificateInLocation start")
+	defer utils.LogTime("db_local.parseCertificateInLocation end")
+
+	rootCertRaw, err := ioutil.ReadFile(getRootCertLocation())
+	if err != nil {
+		// if we can't read the certificate, then there's a problem with permissions
+		return nil, err
+	}
+	// decode the pem blocks
+	rootPemBlock, _ := pem.Decode(rootCertRaw)
+	if rootPemBlock == nil {
+		return nil, fmt.Errorf("could not decode PEM blocks from certificate at %s", location)
+	}
+	// parse the PEM Blocks to Certificates
+	return x509.ParseCertificate(rootPemBlock.Bytes)
+}
+
+func generateServiceCertificates() error {
+	utils.LogTime("db_local.generateServiceCertificates start")
+	defer utils.LogTime("db_local.generateServiceCertificates end")
+
+	// Create our own certificate authority
+	caPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		log.Println("[INFO] Private key creation failed for ca failed")
 		return err
 	}
 
+	NOW := time.Now()
+
 	// Certificate authority input
-	caInput := x509.Certificate{
+	caCertificateData := x509.Certificate{
 		SerialNumber:          big.NewInt(2020),
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().AddDate(3, 0, 0),
+		NotBefore:             NOW,
+		NotAfter:              NOW.Add(CertValidityPeriod),
+		Subject:               pkix.Name{CommonName: CertIssuer},
 		IsCA:                  true,
 		BasicConstraintsValid: true,
 	}
 
-	cert, err := x509.CreateCertificate(rand.Reader, &caInput, &caInput, &caPriv.PublicKey, caPriv)
-	// err = fmt.Errorf("Failed")
+	caCertificate, err := x509.CreateCertificate(rand.Reader, &caCertificateData, &caCertificateData, &caPrivateKey.PublicKey, caPrivateKey)
 	if err != nil {
 		log.Println("[INFO] Failed to create certificate")
 		return err
 	}
 
-	certPem := &bytes.Buffer{}
+	caCertificatePem := &bytes.Buffer{}
+	err = pem.Encode(caCertificatePem, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: caCertificate,
+	})
+	if err != nil {
+		log.Println("[INFO] Failed to encode to PEM")
+		return err
+	}
 
-	pem.Encode(certPem, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
-
-	if err := writeCertFile(getRootCertLocation(), certPem.String()); err != nil {
+	if err := writeCertFile(getRootCertLocation(), caCertificatePem.String()); err != nil {
 		log.Println("[INFO] Failed to save the certificate")
 		return err
 	}
 
-	privPem := new(bytes.Buffer)
-
-	pem.Encode(privPem, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(caPriv)})
+	caPrivateKeyPem := new(bytes.Buffer)
+	err = pem.Encode(caPrivateKeyPem, &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(caPrivateKey),
+	})
+	if err != nil {
+		log.Println("[INFO] Failed to encode to PEM for ca private key")
+		return err
+	}
+	if err := writeCertFile(getRootCertKeyLocation(), caPrivateKeyPem.String()); err != nil {
+		log.Println("[INFO] Failed to save root private key")
+		return err
+	}
 
 	// set up for server certificate
-	serverCertInput := &x509.Certificate{
+	serverCertificateData := x509.Certificate{
 		SerialNumber: big.NewInt(2019),
-		Subject: pkix.Name{
-			CommonName: string("localhost"),
-		},
-		NotBefore: time.Now(),
-		NotAfter:  time.Now().AddDate(3, 0, 0),
+		Subject:      caCertificateData.Subject,
+		Issuer:       caCertificateData.Subject,
+		NotBefore:    NOW,
+		NotAfter:     NOW.Add(CertValidityPeriod),
 	}
 
 	// Generate the server private key
@@ -100,7 +191,7 @@ func ensureSelfSignedCertificate() (err error) {
 		return err
 	}
 
-	serverCertBytes, err := x509.CreateCertificate(rand.Reader, serverCertInput, &caInput, &serverPrivKey.PublicKey, caPriv)
+	serverCertBytes, err := x509.CreateCertificate(rand.Reader, &serverCertificateData, &caCertificateData, &serverPrivKey.PublicKey, caPrivateKey)
 
 	if err != nil {
 		log.Println("[INFO] Failed to create server certificate")
@@ -109,11 +200,14 @@ func ensureSelfSignedCertificate() (err error) {
 
 	// Encode and save the server certificate
 	serverCertPem := new(bytes.Buffer)
-	pem.Encode(serverCertPem, &pem.Block{
+	err = pem.Encode(serverCertPem, &pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: serverCertBytes,
 	})
-
+	if err != nil {
+		log.Println("[INFO] Failed to encode to PEM for server certificate")
+		return err
+	}
 	if err := writeCertFile(getServerCertLocation(), serverCertPem.String()); err != nil {
 		log.Println("[INFO] Failed to save server certificate")
 		return err
@@ -121,15 +215,22 @@ func ensureSelfSignedCertificate() (err error) {
 
 	// Encode and save the server private key
 	serverPrivKeyPem := new(bytes.Buffer)
-	pem.Encode(serverPrivKeyPem, &pem.Block{
+	err = pem.Encode(serverPrivKeyPem, &pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(serverPrivKey),
 	})
-
+	if err != nil {
+		log.Println("[INFO] Failed to encode to PEM for server private key")
+		return err
+	}
 	if err := writeCertFile(getServerCertKeyLocation(), serverPrivKeyPem.String()); err != nil {
 		log.Println("[INFO] Failed to save server private key")
 		return err
 	}
 
 	return nil
+}
+
+func writeCertFile(filePath string, cert string) error {
+	return ioutil.WriteFile(filePath, []byte(cert), 0600)
 }
