@@ -24,7 +24,7 @@ func getLocalSteampipeConnectionString() (string, error) {
 	}
 
 	// Connect to the database using the first listen address, which is usually localhost
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", info.Listen[0], info.Port, constants.DatabaseUser, info.Database, SslMode())
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", info.Listen[0], info.Port, constants.DatabaseUser, info.Database, sslMode())
 
 	return psqlInfo, nil
 }
@@ -60,7 +60,7 @@ func createLocalDbClient(opts *CreateDbOptions) (*sql.DB, error) {
 	}
 
 	// Connect to the database using the first listen address, which is usually localhost
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", info.Listen[0], info.Port, opts.Username, opts.DatabaseName, SslMode())
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", info.Listen[0], info.Port, opts.Username, opts.DatabaseName, sslMode())
 
 	log.Println("[TRACE] status: ", info)
 	log.Println("[TRACE] Connection string: ", psqlInfo)
