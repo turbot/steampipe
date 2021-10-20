@@ -129,6 +129,7 @@ func (c *DbClient) createSession(ctx context.Context) (*sql.Conn, error) {
 
 		if c.ensureSessionFunc != nil {
 			stat.EnsureStartTime = time.Now()
+			fmt.Println("ensuresession")
 			c.ensureSessionFunc(ctx, conn)
 			stat.EnsureEndTime = time.Now()
 		}
