@@ -183,7 +183,7 @@ func getConnectionPluginAsync(connectionData *ConnectionData, pluginChan chan *C
 	}
 	pluginChan <- p
 
-	p.Plugin.Client.Kill()
+	p.PluginClient.Kill()
 }
 
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, *RefreshConnectionResult) {
@@ -205,7 +205,7 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 	connectionsPluginsWithDynamicSchema, res := createConnectionPlugins(connectionsWithDynamicSchema, nil)
 	hashMap := make(map[string]string)
 	for name, c := range connectionsPluginsWithDynamicSchema {
-		// update schema hash stored in required connections so it is persisted in the state ius updates are made
+		// update schema hash stored in required connections so it is persisted in the state if updates are made
 		schemaHash := pluginSchemaHash(c.Schema)
 		hashMap[name] = schemaHash
 	}

@@ -3,12 +3,9 @@ package steampipeconfig
 import (
 	"log"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/grpc"
 	pbsdk "github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	sdkpluginshared "github.com/turbot/steampipe-plugin-sdk/grpc/shared"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/plugin_manager"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -23,7 +20,7 @@ type ConnectionPlugin struct {
 	ConnectionConfig  string
 	ConnectionOptions *options.Connection
 	PluginName        string
-	Plugin            *sdkgrpc.PluginClient
+	PluginClient      *sdkgrpc.PluginClient
 	Schema            *pbsdk.Schema
 }
 
@@ -68,14 +65,14 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 	}
 
 	if err = pluginClient.SetConnectionConfig(req); err != nil {
-		pluginClient.Client.Kill()
+		pluginClient.Kill()
 		return nil, err
 	}
 
 	// fetch the plugin schema
 	schema, err := pluginClient.GetSchema()
 	if err != nil {
-		pluginClient.Client.Kill()
+		pluginClient.Kill()
 		return nil, err
 	}
 
@@ -85,7 +82,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 		ConnectionConfig:  connectionConfig,
 		ConnectionOptions: connectionOptions,
 		PluginName:        pluginName,
-		Plugin:            pluginClient,
+		PluginClient:      pluginClient,
 		Schema:            schema,
 	}
 	return c, nil
@@ -93,45 +90,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 
 // use the reattach config to create a PluginClient for the plugin
 func attachToPlugin(reattach *plugin.ReattachConfig, pluginName string, disableLogger bool) (*sdkgrpc.PluginClient, error) {
-	// create the plugin map
-	pluginMap := map[string]plugin.Plugin{
-		pluginName: &sdkpluginshared.WrapperPlugin{},
-	}
-	// avoid logging if the plugin is being invoked by refreshConnections
-	loggOpts := &hclog.LoggerOptions{Name: "plugin"}
-	if disableLogger {
-		loggOpts.Exclude = func(hclog.Level, string, ...interface{}) bool { return true }
-	}
-	logger := logging.NewLogger(loggOpts)
-
-	// create grpc client
-	client := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig:  sdkpluginshared.Handshake,
-		Plugins:          pluginMap,
-		Reattach:         reattach,
-		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
-		Logger:           logger,
-	})
-
-	// connect via RPC
-	rpcClient, err := client.Client()
-	if err != nil {
-		return nil, err
-	}
-
-	// request the plugin
-	raw, err := rpcClient.Dispense(pluginName)
-	if err != nil {
-		return nil, err
-	}
-	// we should have a stub plugin now
-	p := raw.(sdkpluginshared.WrapperPluginClient)
-	pluginClient := &sdkgrpc.PluginClient{
-		Name:   pluginName,
-		Client: client,
-		Stub:   p,
-	}
-	return pluginClient, nil
+	return sdkgrpc.NewPluginClient(reattach, pluginName, disableLogger)
 }
 
 // function used for debugging the plugin manager
