@@ -51,7 +51,7 @@ func (slt StartListenType) IsValid() error {
 
 // StartDB starts the database if not already running
 func StartDB(port int, listen StartListenType, invoker constants.Invoker) (startResult StartResult, err error) {
-	log.Printf("[WARN] StartDB invoker %s", invoker)
+	log.Printf("[TRACE] StartDB invoker %s", invoker)
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
 	var postgresCmd *exec.Cmd

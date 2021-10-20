@@ -86,7 +86,7 @@ func GetCountOfConnectedClients() (int, error) {
 
 // StopDB searches for and stops the running instance. Does nothing if an instance was not found
 func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (status StopStatus, e error) {
-	log.Printf("[WARN] StopDB invoker %s, force %v", invoker, force)
+	log.Printf("[TRACE] StopDB invoker %s, force %v", invoker, force)
 	utils.LogTime("db_local.StopDB start")
 
 	defer func() {
