@@ -91,14 +91,6 @@ func InferFormatFromExportFileName(filename string) (string, error) {
 	}
 }
 
-func GetStringKeysFromMap(src map[string]Formatter) []string {
-	keys := []string{}
-	for key := range src {
-		keys = append(keys, key)
-	}
-	return keys
-}
-
 // NullFormatter is to be used when no output is expected. It always returns a `io.Reader` which
 // reads an empty string
 type NullFormatter struct{}
