@@ -145,7 +145,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 	for _, block := range content.Blocks {
 		switch block.Type {
 		case "connection":
-			connection, moreDiags := parse.DecodeConnection(block, fileData)
+			connection, moreDiags := parse.DecodeConnection(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				continue
