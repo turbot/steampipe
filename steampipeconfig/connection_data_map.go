@@ -3,9 +3,8 @@ package steampipeconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/plugin_manager"
-
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
