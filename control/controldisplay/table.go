@@ -1,7 +1,7 @@
 package controldisplay
 
 import (
-	"bytes"
+	"strings"
 
 	"github.com/turbot/steampipe/control/controlexecute"
 )
@@ -26,13 +26,13 @@ func NewTableRenderer(resultTree *controlexecute.ExecutionTree, width int) *Tabl
 
 func (r TableRenderer) Render() string {
 	// the buffer to put the output data in
-	outbuf := bytes.NewBufferString("")
+	builder := strings.Builder{}
 
-	outbuf.WriteString(r.renderResult())
-	outbuf.WriteString("\n")
-	outbuf.WriteString(r.renderSummary())
+	builder.WriteString(r.renderResult())
+	builder.WriteString("\n")
+	builder.WriteString(r.renderSummary())
 
-	return outbuf.String()
+	return builder.String()
 }
 
 func (r TableRenderer) renderSummary() string {

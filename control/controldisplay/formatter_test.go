@@ -52,7 +52,7 @@ var tree = &controlexecute.ExecutionTree{
 		Parent:      nil,
 		Title:       "Test Root Group",
 		Description: "Description for test root group",
-		Summary: controlexecute.GroupSummary{
+		Summary: &controlexecute.GroupSummary{
 			Status: controlexecute.StatusSummary{
 				Alarm: 2,
 			},

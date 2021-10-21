@@ -23,18 +23,18 @@ func NewSummarySeverityRowRenderer(resultTree *controlexecute.ExecutionTree, wid
 }
 
 func (r *SummarySeverityRowRenderer) Render() string {
-	var severitySummary controlexecute.StatusSummary
-	if val, exists := r.resultTree.Root.Severity[r.severity]; exists {
-		severitySummary = val
+	severitySummary, exists := r.resultTree.Root.Summary.Severity[r.severity]
+	// if there are no items for this severity level, return empty string
+	if !exists {
+		return ""
 	}
-
 	colorFunc := ControlColors.Severity
 	severityStr := fmt.Sprintf("%s ", colorFunc(strings.ToUpper(r.severity)))
 
 	count := NewCounterRenderer(
 		severitySummary.FailedCount(),
 		severitySummary.TotalCount(),
-		r.resultTree.Root.Summary.Status.FailedCount(), // not sure what this is
+		r.resultTree.Root.Summary.Status.FailedCount(),
 		r.resultTree.Root.Summary.Status.TotalCount(),
 		CounterRendererOptions{
 			AddLeadingSpace: false,
