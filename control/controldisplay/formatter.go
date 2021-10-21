@@ -33,11 +33,13 @@ const (
 )
 
 var outputFormatters FormatterMap = FormatterMap{
-	OutputFormatNone:  &NullFormatter{},
-	OutputFormatCSV:   &CSVFormatter{},
-	OutputFormatJSON:  &JSONFormatter{},
-	OutputFormatText:  &TextFormatter{},
-	OutputFormatBrief: &TextFormatter{},
+	OutputFormatNone:     &NullFormatter{},
+	OutputFormatCSV:      &CSVFormatter{},
+	OutputFormatJSON:     &JSONFormatter{},
+	OutputFormatText:     &TextFormatter{},
+	OutputFormatBrief:    &TextFormatter{},
+	OutputFormatHTML:     &HTMLFormatter{},
+	OutputFormatMarkdown: &MarkdownFormatter{},
 }
 
 var exportFormatters FormatterMap = FormatterMap{
