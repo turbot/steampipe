@@ -8,4 +8,5 @@ const (
 	ConfigKeyActiveCommand         = "cmd"
 	ConfigKeyActiveCommandArgs     = "cmd_args"
 	ConfigInteractiveVariables     = "interactive_var"
+	ConfigShowCheckProgress        = "show_check_progress"
 )

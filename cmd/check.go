@@ -80,7 +80,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
 		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme, which determines the color scheme for the 'text' control output. Possible values are light, dark, plain").
 		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to files - multiple exports are allowed").
-		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
+		AddStringFlag(constants.ArgProgress, "", "auto", "Display control execution progress. Possible values are true, false and auto.").
 		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them").
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls. Cannot be used with '--tag'").
 		AddStringSliceFlag(constants.ArgTag, "", nil, "Key-Value pairs to filter controls based on the 'tags' property. To be provided as 'key=value'. Multiple can be given and are merged together. Cannot be used with '--where'").
@@ -214,6 +214,9 @@ func initialiseCheck() *checkInitData {
 		return initData
 	}
 
+	// check whether to display the progress bar
+	setShowProgress()
+
 	// check if the required plugins are installed
 	initData.result.Error = initData.workspace.CheckRequiredPluginsInstalled()
 	if len(initData.workspace.Controls) == 0 {
@@ -258,6 +261,23 @@ func initialiseCheck() *checkInitData {
 	})
 
 	return initData
+}
+
+func setShowProgress() {
+	switch strings.ToUpper(viper.GetString(constants.ArgProgress)) {
+	case "TRUE":
+		viper.Set(constants.ConfigShowCheckProgress, true)
+	case "FALSE":
+		viper.Set(constants.ConfigShowCheckProgress, false)
+	case "AUTO":
+		// check output format
+		outputFormat := strings.ToUpper(viper.GetString(constants.ArgOutput))
+		if outputFormat == "TEXT" || outputFormat == "BRIEF" {
+			viper.Set(constants.ConfigShowCheckProgress, true)
+		} else {
+			viper.Set(constants.ConfigShowCheckProgress, false)
+		}
+	}
 }
 
 func handleCheckInitResult(initData *checkInitData) bool {
@@ -328,7 +348,7 @@ func validateOutputFormat() error {
 	}
 	if outputFormat == controldisplay.OutputFormatNone {
 		// set progress to false
-		viper.Set(constants.ArgProgress, false)
+		viper.Set(constants.ConfigShowCheckProgress, false)
 	}
 	return nil
 }

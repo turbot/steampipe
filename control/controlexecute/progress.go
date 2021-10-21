@@ -28,7 +28,7 @@ func NewControlProgressRenderer(total int) *ControlProgressRenderer {
 	return &ControlProgressRenderer{
 		total:   total,
 		pending: total,
-		enabled: viper.GetBool(constants.ArgProgress)}
+		enabled: viper.GetBool(constants.ConfigShowCheckProgress)}
 }
 
 func (p *ControlProgressRenderer) Start() {
