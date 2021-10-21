@@ -83,7 +83,6 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 
 	// Generate the certificate if it fails then set the ssl to off
 	if err := ensureSelfSignedCertificate(); err != nil {
-
 		utils.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
 	}
 
