@@ -16,7 +16,7 @@
   --color-table-divide: theme("colors.gray.200");
   --color-table-head: theme("colors.steampipe-black");
 
-  --container-bgcolor: rgb(246, 248, 250);
+  --container-bgcolor: rgb(255, 255, 255);
 
   --alarm-color: #801925;
   --alarm-bgcolor: #f7d4d8;
@@ -55,7 +55,6 @@ body {
   margin-bottom: var(--indent);
   margin-right: var(--indent);
   padding-right: var(--indent);
-  border-right: 1px solid #000;
 }
 
 .group {
@@ -110,7 +109,7 @@ body {
 }
 .group .controls > .control > div.result-row > .status {
   width: 10rem;
-  text-transform: uppercase;
+  text-transform: capitalize;
 }
 
 .group .controls > .control > div.result-row > .reason-resource {
