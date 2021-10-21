@@ -21,11 +21,9 @@ type ResultGroup struct {
 	Title       string            `json:"title" csv:"title"`
 	Description string            `json:"description" csv:"description"`
 	Tags        map[string]string `json:"tags"`
-	Summary     GroupSummary      `json:"summary"`
+	Summary     *GroupSummary     `json:"summary"`
 	Groups      []*ResultGroup    `json:"groups"`
 	ControlRuns []*ControlRun     `json:"controls"`
-
-	Severity map[string]StatusSummary `json:"-"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ModTreeItem `json:"-"`
@@ -34,7 +32,12 @@ type ResultGroup struct {
 }
 
 type GroupSummary struct {
-	Status StatusSummary `json:"status"`
+	Status   StatusSummary            `json:"status"`
+	Severity map[string]StatusSummary `json:"-"`
+}
+
+func NewGroupSummary() *GroupSummary {
+	return &GroupSummary{Severity: make(map[string]StatusSummary)}
 }
 
 // NewRootResultGroup creates a ResultGroup to act as the root node of a control execution tree
@@ -43,6 +46,7 @@ func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.Mod
 		GroupId: RootResultGroupName,
 		Groups:  []*ResultGroup{},
 		Tags:    make(map[string]string),
+		Summary: NewGroupSummary(),
 	}
 	for _, item := range rootItems {
 		// if root item is a benchmark, create new result group with root as parent
@@ -68,6 +72,7 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ModTreeItem
 		GroupItem:   treeItem,
 		Parent:      parent,
 		Groups:      []*ResultGroup{},
+		Summary:     NewGroupSummary(),
 	}
 	// add child groups for children which are benchmarks
 	for _, c := range treeItem.GetChildren() {
@@ -119,10 +124,7 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 }
 
 func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummary) {
-	if r.Severity == nil {
-		r.Severity = make(map[string]StatusSummary)
-	}
-	val, exists := r.Severity[severity]
+	val, exists := r.Summary.Severity[severity]
 	if !exists {
 		val = StatusSummary{}
 	}
@@ -132,7 +134,7 @@ func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummar
 	val.Ok += summary.Ok
 	val.Skip += summary.Skip
 
-	r.Severity[severity] = val
+	r.Summary.Severity[severity] = val
 	if r.Parent != nil {
 		r.Parent.updateSeverityCounts(severity, summary)
 	}
