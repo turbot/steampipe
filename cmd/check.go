@@ -93,6 +93,9 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 	return cmd
 }
 
+// exitCode=1 For unknown errors resulting in panics
+// exitCode=2 For insufficient args
+
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
 	initData := &checkInitData{}
@@ -100,6 +103,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
+			exitCode = 1
 		}
 
 		if initData.client != nil {
@@ -307,6 +311,7 @@ func validateArgs(cmd *cobra.Command, args []string) bool {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
+		exitCode = 2
 		return false
 	}
 	return true
