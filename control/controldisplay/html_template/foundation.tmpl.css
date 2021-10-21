@@ -1,9 +1,6 @@
 /*
 {{ define "foundation_css" }}
 /*  */
-.test-class {
-  border: 1px solid #000;
-}
 /*
 {{ end }}
 /*  */
