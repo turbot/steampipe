@@ -1,22 +1,8 @@
 /*
 {{ define "style_css" }}
 /*  */
-
 :root {
-  --color-background: #fff;
-  --color-foreground: #000;
-  --color-foreground-light: #666;
-
-  --color-link: #2645c5;
-
-  --color-error: #e00;
-  --color-warning: #f9a825;
-
-  --color-table-border: theme("colors.gray.200");
-  --color-table-divide: theme("colors.gray.200");
-  --color-table-head: theme("colors.steampipe-black");
-
-  --container-bgcolor: rgb(255, 255, 255);
+  --container-bgcolor: #fff;
 
   --alarm-color: #801925;
   --alarm-bgcolor: #f7d4d8;
@@ -34,9 +20,12 @@
   --skip-bgcolor: #fdfefe;
 
   --indent: 10px;
+  --group-indent: 12px;
+  --control-indent: 12px;
   --status-separator: "•";
   --status-separator-color: #000;
 }
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
     Helvetica Neue, Arial, Noto Sans, Liberation Sans, sans-serif,
@@ -58,7 +47,7 @@ body {
 }
 
 .group {
-  padding-left: var(--indent);
+  padding-left: var(--group-indent);
   border-left: 1px #ddd dotted;
 }
 
@@ -71,30 +60,13 @@ body {
 }
 
 .controls {
-  padding-left: var(--indent);
+  padding-left: var(--control-indent);
   border-left: 1px #ddd dotted;
 }
 
 .group .controls > .control {
   margin-bottom: var(--indent);
 }
-
-/** ResultError **/
-.group .controls > .control > div.run-error {
-  margin-left: var(--indent);
-  position: relative;
-  padding: 1rem 1rem;
-  margin-bottom: 1rem;
-  border: 1px solid transparent;
-  border-radius: 0.25rem;
-  color: var(--color-error);
-  background-color: var(--error-bgcolor);
-}
-.group .controls > .control > div.run-error > span {
-  font-weight: bold;
-  margin-right: var(--indent);
-}
-/** ResultError **/
 
 /** ResultRow **/
 .group .controls > .control > div.result-row {
@@ -198,6 +170,7 @@ body {
 }
 .overview > .title {
   flex-grow: 1;
+  font-weight: 500;
 }
 .summary {
   font-weight: bold;
@@ -221,11 +194,11 @@ body {
 
 .summary > .status:nth-of-type(1)::before {
   content: "";
-  margin-left: 0rem;
+  margin-left: 0;
 }
 .summary > .status:last-of-type::after {
   content: "";
-  margin-right: 0rem;
+  margin-right: 0;
 }
 
 .summary .alarm {

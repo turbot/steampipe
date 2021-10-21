@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <title>Steampipe Report</title>
@@ -34,29 +34,23 @@
         {{ template "group_template" . }}
         {{ end }}
     </div>
-    <script>
-        /**
-        {{- template "script" -}}
-         **/
-    </script>
 </body>
 
 </html>
 
 {{ define "summary" }}
 <div class="summary">
-    <div class="status ok">{{ .Ok }} <span>ok</span> </div>
-    <div class="status skip">{{ .Skip }} <span>skip</span> </div>
-    <div class="status info">{{ .Info }} <span>info</span> </div>
-    <div class="status alarm">{{ .Alarm }} <span>alarm</span></div>
-    <div class="status error">{{ .Error }} <span>error</span> </div>
+    <div class="status ok">{{ .Ok }} <span>OK</span> </div>
+    <div class="status skip">{{ .Skip }} <span>Skip</span> </div>
+    <div class="status info">{{ .Info }} <span>Info</span> </div>
+    <div class="status alarm">{{ .Alarm }} <span>Alarm</span></div>
+    <div class="status error">{{ .Error }} <span>Error</span> </div>
 </div>
 {{ end }}
 
 {{ define "group_template"}}
 <section class="group">
     <header class="overview">
-        <div class="sep">&nbsp;</div>
         <div class="title">{{ .Title }}</div>
         {{ template "summary" .Summary.Status }}
     </header>
@@ -76,7 +70,6 @@
 {{ define "control_run_template"}}
 <div class="control">
     <header class="overview">
-        <div class="sep">&nbsp;</div>
         <div class="title">{{ .Title }}</div>
         {{ template "summary" .Summary }}
     </header>
