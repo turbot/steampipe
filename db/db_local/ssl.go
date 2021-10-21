@@ -141,7 +141,7 @@ func generateServiceCertificates() error {
 	caCertificateData := x509.Certificate{
 		SerialNumber:          big.NewInt(2020),
 		NotBefore:             NOW,
-		NotAfter:              NOW.Add(CertValidityPeriod),
+		NotAfter:              NOW.Add(ServerCertValidityPeriod),
 		Subject:               pkix.Name{CommonName: CertIssuer},
 		IsCA:                  true,
 		BasicConstraintsValid: true,
