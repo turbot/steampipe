@@ -8,18 +8,18 @@ load "$LIB_BATS_SUPPORT/load.bash"
   [ $status -ne 0 ]
 }
 
-@test "steampipe check fail with non-0 exit code" {
-  cd $WORKSPACE_DIR
-  # this benchmark doesn't exist, so check should fail with a non 0 exit code
-  run steampipe check benchmark.bench1
-  echo $status
-  [ $status -ne 0 ]
-}
-
 @test "steampipe check fail with insufficient arguments" {
   cd $WORKSPACE_DIR
   # this check should fail with a non 0 exit code, due to insufficient args
   run steampipe check
+  echo $status
+  [ $status -ne 0 ]
+}
+
+@test "steampipe check fail with non-0 exit code" {
+  cd $WORKSPACE_DIR
+  # this benchmark doesn't exist, so check should fail with a non 0 exit code
+  run steampipe check benchmark.bench1
   echo $status
   [ $status -ne 0 ]
 }
