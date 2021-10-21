@@ -12,13 +12,13 @@
        **/
     </style>
     <meta charset="UTF-8">
-    <link rel="icon" href="https://steampipe.io/favicon.svg" type="image/svg+xml" sizes="any">
+    <link rel="icon" href="{{ template "favicon"}}" type="image/svg+xml" sizes="any">
 </head>
 
 <body>
     <div class="container">
         <div class="brand">
-            <img class="logo" src="https://steampipe.io/images/steampipe_logo_wordmark_color.svg"
+            <img class="logo" src="{{ template "logo"}}"
                 alt="Steampipe Report" />
         </div>
         {{ if .Root.ControlRuns }}
@@ -45,11 +45,11 @@
 
 {{ define "summary" }}
 <div class="summary">
-    <div class="status alarm">{{ .Alarm }} <span>alarm</span></div>
     <div class="status ok">{{ .Ok }} <span>ok</span> </div>
-    <div class="status info">{{ .Info }} <span>info</span> </div>
-    <div class="status error">{{ .Error }} <span>error</span> </div>
     <div class="status skip">{{ .Skip }} <span>skip</span> </div>
+    <div class="status info">{{ .Info }} <span>info</span> </div>
+    <div class="status alarm">{{ .Alarm }} <span>alarm</span></div>
+    <div class="status error">{{ .Error }} <span>error</span> </div>
 </div>
 {{ end }}
 
@@ -87,7 +87,7 @@
     <div class="result-row {{ .Status }}">
         <div class="status">{{ .Status }}</div>
         <div class="reason-resource">
-            {{ if ne .Resource "<nil>" }}{{ .Resource }}{{ end }} {{ .Reason }}
+            {{ .Reason }}
         </div>
         {{ range .Dimensions }}
         <div class="dimension">{{ .Value }}</div>
