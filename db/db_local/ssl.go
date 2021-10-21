@@ -39,10 +39,7 @@ func RemoveServerCertificate() error {
 	if err := os.Remove(getServerCertLocation()); err != nil {
 		return err
 	}
-	if err := os.Remove(getServerCertKeyLocation()); err != nil {
-		return err
-	}
-	return nil
+	return os.Remove(getServerCertKeyLocation())
 }
 
 // RemoveAllCertificates removes root and server certificates so that they can be regenerated
@@ -50,17 +47,12 @@ func RemoveAllCertificates() error {
 	utils.LogTime("db_local.RemoveAllCertificates start")
 	defer utils.LogTime("db_local.RemoveAllCertificates end")
 
-	if err := os.Remove(getServerCertLocation()); err != nil {
-		return err
-	}
-	if err := os.Remove(getServerCertKeyLocation()); err != nil {
-		return err
-	}
+	// remove the root cert (but not key)
 	if err := os.Remove(getRootCertLocation()); err != nil {
 		return err
 	}
-	// do not remove root key
-	return nil
+	// remove the server cert and key
+	return RemoveServerCertificate()
 }
 
 // ValidateRootCertificate checks the root certificate exists, is not expired and has correct issuer
