@@ -21,9 +21,9 @@ import (
 const CertIssuer = "steampipe.io"
 
 var (
-	CertExpiryTolerance      = 180 * (24 * time.Hour) // 180 days
-	RootCertValidityPeriod   = 1 * time.Second        //5 * 365 * (24 * time.Hour) // 5 years
-	ServerCertValidityPeriod = 365 * (24 * time.Hour) // 1 year
+	CertExpiryTolerance      = 180 * (24 * time.Hour)     // 180 days
+	RootCertValidityPeriod   = 5 * 365 * (24 * time.Hour) // 5 years
+	ServerCertValidityPeriod = 365 * (24 * time.Hour)     // 1 year
 )
 
 // CertificatesExist checks if the root and server certificate and key files exist
