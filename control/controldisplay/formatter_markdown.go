@@ -56,3 +56,7 @@ func (j *MarkdownFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 	}()
 	return reader, nil
 }
+
+func (j *MarkdownFormatter) FileExtension() string {
+	return "md"
+}

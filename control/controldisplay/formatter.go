@@ -63,6 +63,7 @@ func NewCheckExportTarget(format string, file string, err error) CheckExportTarg
 
 type Formatter interface {
 	Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error)
+	FileExtension() string
 }
 
 func GetExportFormatter(exportFormat string) (Formatter, error) {
@@ -105,4 +106,8 @@ type NullFormatter struct{}
 
 func (j *NullFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	return strings.NewReader(""), nil
+}
+
+func (j *NullFormatter) FileExtension() string {
+	return "null"
 }
