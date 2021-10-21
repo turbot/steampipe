@@ -24,8 +24,14 @@ func (r SummaryRenderer) Render() string {
 	availableWidth := r.width
 
 	// first build the severity block - if it exists, it will be used to dictate the max width
-	severityBlock := NewSummarySeverityRenderer(r.resultTree, availableWidth, "ok").Render()
-	severityWidth := helpers.PrintableLength(severityBlock)
+	severityRows := NewSummarySeverityRenderer(r.resultTree, availableWidth).Render()
+	// now get the length of the longest row from the severity block (if any)
+	severityWidth := 0
+	for _, row := range severityRows {
+		if w := helpers.PrintableLength(row); w > severityWidth {
+			severityWidth = w
+		}
+	}
 	if severityWidth > 0 {
 		availableWidth = severityWidth
 	}
@@ -46,7 +52,6 @@ func (r SummaryRenderer) Render() string {
 	titleLine := fmt.Sprintf("%s\n", ControlColors.GroupTitle("Summary"))
 
 	// build the summary
-
 	var summaryLines = []string{
 		titleLine,
 		// status summaries
@@ -57,10 +62,9 @@ func (r SummaryRenderer) Render() string {
 		errorStatusRow,
 	}
 	// if there is a severity block, add it
-	if severityWidth > 0 {
-		summaryLines = append(summaryLines,
-			"", // blank line
-			severityBlock)
+	if len(severityRows) > 0 {
+		summaryLines = append(summaryLines, "") // blank line
+		summaryLines = append(summaryLines, severityRows...)
 	}
 	// now add the summary
 	summaryLines = append(summaryLines,

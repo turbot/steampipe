@@ -27,6 +27,10 @@ func (r *SummarySeverityRowRenderer) Render() string {
 	if !exists {
 		return ""
 	}
+	//var severitySummary controlexecute.StatusSummary
+	//if val, exists := r.resultTree.Root.Summary.Severity[r.severity]; exists {
+	//	severitySummary = val
+	//}
 
 	colorFunc := ControlColors.Severity
 	severityStr := fmt.Sprintf("%s ", colorFunc(strings.ToUpper(r.severity)))

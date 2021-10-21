@@ -1,8 +1,6 @@
 package controldisplay
 
 import (
-	"strings"
-
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/control/controlexecute"
 )
@@ -10,18 +8,16 @@ import (
 type SummarySeverityRenderer struct {
 	resultTree *controlexecute.ExecutionTree
 	width      int
-	severity   string
 }
 
-func NewSummarySeverityRenderer(resultTree *controlexecute.ExecutionTree, width int, severity string) *SummarySeverityRenderer {
+func NewSummarySeverityRenderer(resultTree *controlexecute.ExecutionTree, width int) *SummarySeverityRenderer {
 	return &SummarySeverityRenderer{
 		resultTree: resultTree,
 		width:      width,
-		severity:   severity,
 	}
 }
 
-func (r *SummarySeverityRenderer) Render() string {
+func (r *SummarySeverityRenderer) Render() []string {
 	availableWidth := r.width
 
 	// render the critical line
@@ -36,11 +32,6 @@ func (r *SummarySeverityRenderer) Render() string {
 	highSeverityRow := NewSummarySeverityRowRenderer(r.resultTree, availableWidth, "high").Render()
 	highWidth := helpers.PrintableLength(highSeverityRow)
 
-	// if there are no critical or high lines, return an empty string
-	if criticalWidth+highWidth == 0 {
-		return ""
-	}
-
 	// build the severity block
 	var strs []string
 	if criticalWidth > 0 {
@@ -49,5 +40,5 @@ func (r *SummarySeverityRenderer) Render() string {
 	if highWidth > 0 {
 		strs = append(strs, highSeverityRow)
 	}
-	return strings.Join(strs, "\n")
+	return strs
 }
