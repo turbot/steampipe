@@ -17,7 +17,7 @@ var testCasesTable = map[string]tableTest{
 		resultTree: &controlexecute.ExecutionTree{
 			Root: &controlexecute.ResultGroup{
 				GroupId: "3 Advanced",
-				Summary: controlexecute.GroupSummary{
+				Summary: &controlexecute.GroupSummary{
 					Status: controlexecute.StatusSummary{
 						Alarm: 1,
 						Ok:    100,
