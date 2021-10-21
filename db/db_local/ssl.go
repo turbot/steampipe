@@ -42,9 +42,6 @@ func RemoveServerCertificate() error {
 	if err := os.Remove(getServerCertKeyLocation()); err != nil {
 		return err
 	}
-	if err := os.Remove(getRootCertLocation()); err != nil {
-		return err
-	}
 	return nil
 }
 
