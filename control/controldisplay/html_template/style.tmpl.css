@@ -6,37 +6,69 @@
   --color-border-default: #30363d;
   --color-neutral-muted: #6f819433;
   --color-fg-muted: #8b949e;
+  --color-alarm: red;
+  --color-error: red;
+  --color-info: #2f5f95;
+  --color-ok: green;
+  --color-skip: #949595;
+}
+
+html {
+  font-size: 14px;
 }
 
 h1 {
-  padding-bottom: 0.3em;
+  margin-top: 8px;
+  margin-bottom: 8px;
   font-size: 2em;
-  border-bottom: 1px solid var(--color-border-muted);
 }
 
 h2 {
+  padding-top: 1em;
   padding-bottom: 0.3em;
   font-size: 1.5em;
   border-bottom: 1px solid var(--color-border-muted);
 }
 
 h3 {
+  padding-top: 0.75em;
   font-size: 1.25em;
+}
+
+h4 {
+  padding-top: 0.5em;
+  font-size: 1em;
 }
 
 .container {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
-    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   padding: 1em;
+}
+
+.header {
+  margin-bottom: 1em;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border-muted);
+}
+
+.header .title {
+  word-break: break-word;
+}
+
+.header .logo {
+  width: 200px;
+  margin-left: 10px;
 }
 
 table {
   display: block;
-  width: 100%;
   width: max-content;
   max-width: 100%;
   overflow: auto;
   margin-top: 0;
+  padding-top: 0.2em;
   margin-bottom: 16px;
 }
 
@@ -56,7 +88,7 @@ table tr {
 
 code {
   font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas,
-    Liberation Mono, monospace;
+  Liberation Mono, monospace;
   padding: 0.2em 0.4em;
   margin: 0;
   font-size: 85%;
@@ -69,6 +101,21 @@ blockquote {
   margin-left: 0;
   color: var(--color-fg-muted);
   border-left: 0.25em solid var(--color-border-default);
+}
+
+.summary-total-ok {
+  font-weight: 600;
+  color: var(--color-ok);
+}
+
+.summary-total-alarm {
+  font-weight: 600;
+  color: var(--color-alarm);
+}
+
+.summary-total-error {
+  font-weight: 600;
+  color: var(--color-alarm);
 }
 /*
 {{ end }}

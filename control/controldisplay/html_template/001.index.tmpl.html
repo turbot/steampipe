@@ -25,9 +25,9 @@
     {{ range .Root.Groups -}}
     {{ template "root_group_template" . -}}
     {{ end }}
-    <p><em>Report run at <code>{{ .StartTime.Format "2006-01-02 15:04:05" }}</code> using <a href="https://steampipe.io"
+    <footer><em>Report run at <code>{{ .StartTime.Format "2006-01-02 15:04:05" }}</code> using <a href="https://steampipe.io"
           rel="nofollow"><code>Steampipe {{ steampipeversion }}</code></a> in dir
-        <code>{{ workingdir }}</code>.</em></p>
+        <code>{{ workingdir }}</code>.</em></footer>
   </div>
 </body>
 
@@ -46,27 +46,27 @@
     <tr>
       <td>✅</td>
       <td>OK</td>
-      <td>{{ .Ok }}</td>
+      <td class="summary-total-ok">{{ .Ok }}</td>
     </tr>
     <tr>
       <td>⇨</td>
       <td>Skip</td>
-      <td>{{ .Skip }}</td>
+      <td class="summary-total-skip">{{ .Skip }}</td>
     </tr>
     <tr>
       <td>ℹ</td>
       <td>Info</td>
-      <td>{{ .Info }}</td>
+      <td class="summary-total-info">{{ .Info }}</td>
     </tr>
     <tr>
       <td>❌</td>
       <td>Alarm</td>
-      <td>{{ .Alarm }}</td>
+      <td class="summary-total-alarm">{{ .Alarm }}</td>
     </tr>
     <tr>
       <td>❗</td>
       <td>Error</td>
-      <td>{{ .Error }}</td>
+      <td class="summary-total-error">{{ .Error }}</td>
     </tr>
   </tbody>
 </table>
@@ -86,11 +86,11 @@
   </thead>
   <tbody>
     <tr>
-      <td>{{ .Ok }}</td>
-      <td>{{ .Skip }}</td>
-      <td>{{ .Info }}</td>
-      <td>{{ .Alarm }}</td>
-      <td>{{ .Error }}</td>
+      <td class="summary-total-ok">{{ .Ok }}</td>
+      <td class="summary-total-skip">{{ .Skip }}</td>
+      <td class="summary-total-info">{{ .Info }}</td>
+      <td class="summary-total-alarm">{{ .Alarm }}</td>
+      <td class="summary-total-error">{{ .Error }}</td>
       <td>{{ asstr .TotalCount }}</td>
     </tr>
   </tbody>
@@ -99,7 +99,10 @@
 
 {{ define "root_group_template"}}
 <section class="group">
-  <h1>{{ .Title }}</h1>
+  <div class="header">
+    <h1 class="title">{{ .Title }}</h1>
+    <img class="logo" src="{{ template "logo"}}" alt="Steampipe Report" />
+  </div>
   {{ template "root_summary" .Summary.Status }}
 
   {{ if .ControlRuns }}
@@ -134,11 +137,12 @@
 {{ define "control_run_template"}}
 <section class="control">
   <h3>{{ .Title }}</h3>
-  {{ template "summary" .Summary }}
 
   {{ if .Description }}
   <p><em>{{ .Description }}</em></p>
   {{ end }}
+
+  {{ template "summary" .Summary }}
 
   {{ if .GetError }}
   <blockquote>{{ .GetError }}</blockquote>
@@ -171,8 +175,8 @@
 
 {{ define "control_run_table_row_template" }}
 <tr>
-  <td>{{ statusicon .Status }}</td>
-  <td>{{ .Reason }}</td>
+  <td title="Resource: {{ .Resource }}">{{ statusicon .Status }}</td>
+  <td title="Resource: {{ .Resource }}">{{ .Reason }}</td>
   <td>
     {{ range .Dimensions }}
     <code>{{ .Value }}</code>
