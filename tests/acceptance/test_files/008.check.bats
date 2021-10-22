@@ -55,6 +55,15 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe check cis_v130 - export html" {
   cd $WORKSPACE_DIR
   run steampipe check benchmark.cis_v130 --export=html:./test.html --progress=false
+
+  # deleting the 833rd line since it contains a timestamp
+  # checking for OS type, since sed command is different for linux and OSX
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    run sed -i '.html' '4478d' ./test.html
+  else
+    run sed -i '4478d' ./test.html
+  fi
+  
   assert_equal "$(cat ./test.html)" "$(cat $TEST_DATA_DIR/expected_check_html.html)"
   rm -f ./test.html
   cd -
