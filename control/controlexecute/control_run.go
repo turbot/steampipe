@@ -45,7 +45,7 @@ type ControlRun struct {
 	Severity    string                  `json:"severity"`
 	Tags        map[string]string       `json:"tags"`
 	Title       string                  `json:"title"`
-	RowMap      map[string][]*ResultRow `json:"results"`
+	RowMap      map[string][]*ResultRow `json:"-"`
 	Rows        []*ResultRow            `json:"results"`
 
 	// the query result stream
