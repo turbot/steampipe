@@ -52,35 +52,46 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
-@test "steampipe check cis_v130 - export html" {
-  cd $WORKSPACE_DIR
-  run steampipe check benchmark.cis_v130 --export=html:./test.html --progress=false
+# @test "steampipe check cis_v130 - export html" {
+#   tmpdir=$(mktemp -d)
+#   cp $TEST_DATA_DIR/expected_check_html.html $tmpdir/expected.html
 
-  # deleting the 833rd line since it contains a timestamp
-  # checking for OS type, since sed command is different for linux and OSX
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i '.html' '4478d' ./test.html
-  else
-    run sed -i '4478d' ./test.html
-  fi
+#   cd $WORKSPACE_DIR
+#   run steampipe check benchmark.cis_v130 --export=html:$tmpdir/test.html --progress=false
+
+#   # checking for OS type, since sed command is different for linux and OSX
+#   if [[ "$OSTYPE" == "darwin"* ]]; then
+#     run sed -i '.html' '4478d' $tmpdir/test.html
+#     run sed -i '.html' '4478d' $tmpdir/expected.html
+#   else
+#     run sed -i '4478d' $tmpdir/test.html
+#     run sed -i '4478d' $tmpdir/expected.html
+#   fi
   
-  assert_equal "$(cat ./test.html)" "$(cat $TEST_DATA_DIR/expected_check_html.html)"
-  rm -f ./test.html
-  cd -
-}
+  
+#   assert_equal "$(cat $tmpdir/test.html)" "$(cat $tmpdir/expected.html)"
+#   rm -rf $tmpdir
+#   cd -
+# }
 
 @test "steampipe check cis_v130 - export markdown" {
-  cd $WORKSPACE_DIR
-  run steampipe check benchmark.cis_v130 --export=./test.md --progress=false
+  tmpdir=$(mktemp -d)
+  cp $TEST_DATA_DIR/expected_check_markdown.md $tmpdir/expected.md
 
-  # deleting the 833rd line since it contains a timestamp
+  cd $WORKSPACE_DIR
+  run steampipe check benchmark.cis_v130 --export=markdown:$tmpdir/test.md --progress=false
+
   # checking for OS type, since sed command is different for linux and OSX
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i '.md' '833d' ./test.md
+    run sed -i '.md' '834d' $tmpdir/test.md
+    run sed -i '.md' '834d' $tmpdir/expected.md
   else
-    run sed -i '833d' ./test.md
+    run sed -i '834d' $tmpdir/test.md
+    run sed -i '834d' $tmpdir/expected.md
   fi
-  assert_equal "$(cat ./test.md)" "$(cat $TEST_DATA_DIR/expected_check_markdown.md)"
-  rm -f ./test.m*
+  
+  
+  assert_equal "$(cat $tmpdir/test.md)" "$(cat $tmpdir/expected.md)"
+  rm -rf $tmpdir
   cd -
 }
