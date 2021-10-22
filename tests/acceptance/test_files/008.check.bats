@@ -62,7 +62,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe check cis_v130 - export markdown" {
   cd $WORKSPACE_DIR
-  run steampipe check benchmark.cis_v130 --export=markdown:./test.md --progress=false
+  run steampipe check benchmark.cis_v130 --export=./test.md --progress=false
 
   # deleting the 833rd line since it contains a timestamp
   # checking for OS type, since sed command is different for linux and OSX

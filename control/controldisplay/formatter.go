@@ -29,7 +29,7 @@ const (
 	OutputFormatCSV      = "csv"
 	OutputFormatJSON     = "json"
 	OutputFormatHTML     = "html"
-	OutputFormatMarkdown = "markdown"
+	OutputFormatMarkdown = "md"
 )
 
 var outputFormatters FormatterMap = FormatterMap{
