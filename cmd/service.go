@@ -37,7 +37,7 @@ connection from any Postgres compatible database client.`,
 	cmd.AddCommand(serviceStatusCmd())
 	cmd.AddCommand(serviceStopCmd())
 	cmd.AddCommand(serviceRestartCmd())
-	cmdconfig.OnCmd(cmd).AddBoolFlag("help", "h", false, "Help for service")
+	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, "h", false, "Help for service")
 	return cmd
 }
 
@@ -56,7 +56,7 @@ connection from any Postgres compatible database client.`,
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag("help", "h", false, "Help for service start").
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service start").
 		// for now default port to -1 so we fall back to the default of the deprecated arg
 		AddIntFlag(constants.ArgPort, "", constants.DatabaseDefaultPort, "Database service port.").
 		// for now default listen address to empty so we fall back to the default of the deprecated arg
@@ -83,7 +83,7 @@ Report current status of the Steampipe database service.`,
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag("help", "h", false, "Help for service status").
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service status").
 		AddBoolFlag(constants.ArgAll, "", false, "Bypasses the INSTALL_DIR and reports status of all running steampipe services")
 
 	return cmd
@@ -101,7 +101,7 @@ func serviceStopCmd() *cobra.Command {
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag("help", "h", false, "Help for service stop").
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service stop").
 		AddBoolFlag(constants.ArgForce, "", false, "Forces all services to shutdown, releasing all open connections and ports")
 
 	return cmd
@@ -119,7 +119,7 @@ func serviceRestartCmd() *cobra.Command {
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag("help", "h", false, "Help for service restart").
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service restart").
 		AddBoolFlag(constants.ArgForce, "", false, "Forces the service to restart, releasing all open connections and ports")
 
 	return cmd

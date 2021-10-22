@@ -55,7 +55,7 @@ Examples:
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag("help", "h", false, "Help for plugin")
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin")
 
 	return cmd
 }
@@ -85,7 +85,7 @@ Examples:
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag("help", "h", false, "Help for plugin install")
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin install")
 	return cmd
 }
 
@@ -116,7 +116,7 @@ Examples:
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag("all", "", false, "Update all plugins to its latest available version").
-		AddBoolFlag("help", "h", false, "Help for plugin update")
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin update")
 
 	return cmd
 }
@@ -145,7 +145,7 @@ Examples:
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag("outdated", "", false, "Check each plugin in the list for updates").
-		AddBoolFlag("help", "h", false, "Help for plugin list")
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin list")
 
 	return cmd
 }
@@ -172,7 +172,7 @@ Example:
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag("help", "h", false, "Help for plugin uninstall")
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin uninstall")
 
 	return cmd
 }

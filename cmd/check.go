@@ -73,7 +73,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers for csv and table output").
-		AddBoolFlag("help", "h", false, "Help for check").
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for check").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "text", "Select a console output format: brief, csv, html, json, markdown, text or none.").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports check time").
@@ -89,7 +89,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify The value of a variable").
-		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls. Cannot be used with '--tag'")
+		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')")
 
 	return cmd
 }

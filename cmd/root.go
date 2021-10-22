@@ -77,7 +77,7 @@ func InitCmd() {
 	// powershell yet - and there's no way to disable powershell in the default generator
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	cmdconfig.OnCmd(rootCmd).
-		AddBoolFlag("help", "h", false, "Help for steampipe").
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for steampipe").
 		AddBoolFlag("version", "v", false, "Version for steampipe")
 }
 

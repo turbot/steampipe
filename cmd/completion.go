@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/constants"
 )
 
 func generateCompletionScriptsCmd() *cobra.Command {
@@ -23,7 +24,7 @@ func generateCompletionScriptsCmd() *cobra.Command {
 
 	cmd.SetHelpFunc(completionHelp)
 
-	cmdconfig.OnCmd(cmd).AddBoolFlag("help", "h", false, "Help for completion")
+	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, "h", false, "Help for completion")
 
 	return cmd
 }
