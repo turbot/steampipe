@@ -3,8 +3,8 @@ package controldisplay
 import (
 	"context"
 	"embed"
-	"html/template"
 	"io"
+	"text/template"
 
 	"github.com/turbot/steampipe/control/controlexecute"
 )
@@ -15,7 +15,11 @@ type HTMLFormatter struct{}
 var templateFS embed.FS
 
 func (j *HTMLFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
-	t, err := template.ParseFS(templateFS, "html_template/*")
+	t, err := template.
+		New("001.index.tmpl.html").
+		Funcs(formatterTemplateFuncMap).
+		ParseFS(templateFS, "html_template/*")
+
 	if err != nil {
 		return nil, err
 	}
