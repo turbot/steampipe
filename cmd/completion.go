@@ -23,8 +23,7 @@ func generateCompletionScriptsCmd() *cobra.Command {
 
 	cmd.SetHelpFunc(completionHelp)
 
-	cmdconfig.
-		OnCmd(cmd)
+	cmdconfig.OnCmd(cmd).AddBoolFlag("help", "h", false, "Help for completion")
 
 	return cmd
 }

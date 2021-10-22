@@ -65,6 +65,7 @@ Examples:
 	// * In the future we may add --csv and --json flags as shortcuts for --output
 	cmdconfig.
 		OnCmd(cmd).
+		AddBoolFlag("help", "h", false, "Help for query").
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json or table").

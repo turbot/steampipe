@@ -24,7 +24,8 @@ func reportCmd() *cobra.Command {
 		Long:             `Run a report...TODO better description!`,
 	}
 
-	cmdconfig.OnCmd(cmd)
+	cmdconfig.OnCmd(cmd).
+		AddBoolFlag("help", "h", false, "Help for report")
 	return cmd
 }
 
