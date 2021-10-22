@@ -50,6 +50,10 @@ func getRootCertLocation() string {
 	return filepath.Join(getDataLocation(), constants.RootCert)
 }
 
+func getRootCertKeyLocation() string {
+	return filepath.Join(getDataLocation(), constants.RootCertKey)
+}
+
 func getServerCertLocation() string {
 	return filepath.Join(getDataLocation(), constants.ServerCert)
 }
