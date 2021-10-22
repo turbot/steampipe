@@ -29,3 +29,7 @@ func (j *HTMLFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 	}()
 	return reader, nil
 }
+
+func (j *HTMLFormatter) FileExtension() string {
+	return "html"
+}

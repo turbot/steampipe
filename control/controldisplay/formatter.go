@@ -33,11 +33,13 @@ const (
 )
 
 var outputFormatters FormatterMap = FormatterMap{
-	OutputFormatNone:  &NullFormatter{},
-	OutputFormatCSV:   &CSVFormatter{},
-	OutputFormatJSON:  &JSONFormatter{},
-	OutputFormatText:  &TextFormatter{},
-	OutputFormatBrief: &TextFormatter{},
+	OutputFormatNone:     &NullFormatter{},
+	OutputFormatCSV:      &CSVFormatter{},
+	OutputFormatJSON:     &JSONFormatter{},
+	OutputFormatText:     &TextFormatter{},
+	OutputFormatBrief:    &TextFormatter{},
+	OutputFormatHTML:     &HTMLFormatter{},
+	OutputFormatMarkdown: &MarkdownFormatter{},
 }
 
 var exportFormatters FormatterMap = FormatterMap{
@@ -63,6 +65,7 @@ func NewCheckExportTarget(format string, file string, err error) CheckExportTarg
 
 type Formatter interface {
 	Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error)
+	FileExtension() string
 }
 
 func GetExportFormatter(exportFormat string) (Formatter, error) {
@@ -82,19 +85,18 @@ func GetOutputFormatter(outputFormat string) (Formatter, error) {
 }
 
 func InferFormatFromExportFileName(filename string) (string, error) {
-	extension := strings.TrimPrefix(filepath.Ext(filename), ".")
+	extension := filepath.Ext(filename)
 	switch extension {
-	case "csv":
+	case ".csv":
 		return OutputFormatCSV, nil
-	case "json":
+	case ".json":
 		return OutputFormatJSON, nil
-	case "html":
+	case ".html", ".htm":
 		return OutputFormatHTML, nil
-	case "md", "markdown":
+	case ".md", ".markdown":
 		return OutputFormatMarkdown, nil
 	default:
-		// return blank, so that it fails when it looks
-		// up the formatter when it's to format
+		// could not infer format
 		return "", fmt.Errorf("could not infer valid export format from filename '%s'", filename)
 	}
 }
@@ -105,4 +107,9 @@ type NullFormatter struct{}
 
 func (j *NullFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	return strings.NewReader(""), nil
+}
+
+func (j *NullFormatter) FileExtension() string {
+	// will not be called
+	return ""
 }

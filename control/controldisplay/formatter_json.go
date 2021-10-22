@@ -24,3 +24,7 @@ func (j *JSONFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 	}()
 	return reader, nil
 }
+
+func (j *JSONFormatter) FileExtension() string {
+	return "json"
+}

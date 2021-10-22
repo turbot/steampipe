@@ -63,7 +63,15 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe check cis_v130 - export markdown" {
   cd $WORKSPACE_DIR
   run steampipe check benchmark.cis_v130 --export=markdown:./test.md --progress=false
+
+  # deleting the 833rd line since it contains a timestamp
+  # checking for OS type, since sed command is different for linux and OSX
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    run sed -i '.md' '833d' ./test.md
+  else
+    run sed -i '833d' ./test.md
+  fi
   assert_equal "$(cat ./test.md)" "$(cat $TEST_DATA_DIR/expected_check_markdown.md)"
-  rm -f ./test.md
+  rm -f ./test.m*
   cd -
 }

@@ -22,6 +22,10 @@ func (j *TextFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 	return res, nil
 }
 
+func (j *TextFormatter) FileExtension() string {
+	return "txt"
+}
+
 func (j *TextFormatter) getMaxCols(limitCol int) int {
 	maxCols, _, _ := gows.GetWinSize()
 	if maxCols > limitCol {

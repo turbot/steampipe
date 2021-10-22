@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -17,7 +18,9 @@ import (
 
 // ExecutionTree is a structure representing the control result hierarchy
 type ExecutionTree struct {
-	Root *ResultGroup
+	Root      *ResultGroup
+	StartTime time.Time
+	EndTime   time.Time
 
 	workspace *workspace.Workspace
 	client    db_common.Client
@@ -77,8 +80,13 @@ func (e *ExecutionTree) AddControl(control *modconfig.Control, group *ResultGrou
 func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) int {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
+	e.StartTime = time.Now()
 	e.progress.Start()
-	defer e.progress.Finish()
+
+	defer func() {
+		e.EndTime = time.Now()
+		e.progress.Finish()
+	}()
 	// just execute the root - it will traverse the tree
 	errors := e.Root.Execute(ctx, client)
 	// now build map of dimension property name to property value to color map

@@ -32,3 +32,7 @@ func (j *CSVFormatter) Format(_ context.Context, tree *controlexecute.ExecutionT
 	res := strings.NewReader(outBuffer.String())
 	return res, nil
 }
+
+func (j *CSVFormatter) FileExtension() string {
+	return "csv"
+}

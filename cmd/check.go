@@ -436,14 +436,14 @@ func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, err
 			format = parts[0]
 
 			// try to get an export formatter
-			if _, fmtError := controldisplay.GetExportFormatter(format); fmtError != nil {
+			if formatter, fmtError := controldisplay.GetExportFormatter(format); fmtError != nil {
 				// this is not a valid format. assume it is a file name
 				fileName = format
 				// now infer the format from the file name
 				format, targetError = controldisplay.InferFormatFromExportFileName(fileName)
 			} else {
 				// the format was valid, generate default filename
-				fileName = generateDefaultExportFileName(format, executing)
+				fileName = generateDefaultExportFileName(formatter, executing)
 			}
 		}
 		formats = append(formats, controldisplay.NewCheckExportTarget(format, fileName, targetError))
@@ -453,6 +453,6 @@ func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, err
 	return formats, err
 }
 
-func generateDefaultExportFileName(format string, executing string) string {
-	return fmt.Sprintf("%s-%s.%s", executing, time.Now().UTC().Format("20060102150405Z"), format)
+func generateDefaultExportFileName(formatter controldisplay.Formatter, executing string) string {
+	return fmt.Sprintf("%s-%s.%s", executing, time.Now().UTC().Format("20060102150405Z"), formatter.FileExtension())
 }
