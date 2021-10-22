@@ -2,93 +2,181 @@
 <html lang="en">
 
 <head>
-    <title>Steampipe Report</title>
-    <style>
-        /**
+  <title>Steampipe Report</title>
+  <style>
+    /**
        {{- template "normalize_css" -}}
        **/
-        /**
+    /**
        {{- template "style_css" -}}
        **/
-    </style>
-    <meta charset="UTF-8">
-    <link rel="icon" href="{{ template "favicon"}}" type="image/svg+xml" sizes="any">
+  </style>
+  <meta charset="UTF-8">
+  <link rel="icon" href='{{ template "favicon" }}' type="image/svg+xml" sizes="any">
 </head>
 
 <body>
-    <div class="container">
-        <div class="brand">
-            <img class="logo" src="{{ template "logo"}}"
-                alt="Steampipe Report" />
-        </div>
-        {{ if .Root.ControlRuns }}
-        <section class="group">
-            <div class="controls">
-                {{ range .Root.ControlRuns}}
-                {{ template "control_run_template" . }}
-                {{ end }}
-            </div>
-        </section>
-        {{ end }}
-        {{ range .Root.Groups }}
-        {{ template "group_template" . }}
-        {{ end }}
-    </div>
+  <div class="container">
+    {{/* we expect 0 or 1 root control runs */}}
+    {{ range .Root.ControlRuns -}}
+    {{ template "control_run_template" . -}}
+    {{ end }}
+    {{/* we expect 0 or 1 root groups */}}
+    {{ range .Root.Groups -}}
+    {{ template "root_group_template" . -}}
+    {{ end }}
+    <p><em>Report run at <code>{{ .StartTime.Format "2006-01-02 15:04:05" }}</code> using <a href="https://steampipe.io"
+          rel="nofollow"><code>Steampipe {{ steampipeversion }}</code></a> in dir
+        <code>{{ workingdir }}</code>.</em></p>
+  </div>
 </body>
 
 </html>
 
+{{ define "root_summary" }}
+<table role="table">
+  <thead>
+    <tr>
+      <th></th>
+      <th>TOTAL</th>
+      <th>{{ asstr .TotalCount }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>✅</td>
+      <td>OK</td>
+      <td>{{ .Ok }}</td>
+    </tr>
+    <tr>
+      <td>⇨</td>
+      <td>Skip</td>
+      <td>{{ .Skip }}</td>
+    </tr>
+    <tr>
+      <td>ℹ</td>
+      <td>Info</td>
+      <td>{{ .Info }}</td>
+    </tr>
+    <tr>
+      <td>❌</td>
+      <td>Alarm</td>
+      <td>{{ .Alarm }}</td>
+    </tr>
+    <tr>
+      <td>❗</td>
+      <td>Error</td>
+      <td>{{ .Error }}</td>
+    </tr>
+  </tbody>
+</table>
+{{ end }}
+
 {{ define "summary" }}
-<div class="summary">
-    <div class="status ok">{{ .Ok }} <span>OK</span> </div>
-    <div class="status skip">{{ .Skip }} <span>Skip</span> </div>
-    <div class="status info">{{ .Info }} <span>Info</span> </div>
-    <div class="status alarm">{{ .Alarm }} <span>Alarm</span></div>
-    <div class="status error">{{ .Error }} <span>Error</span> </div>
-</div>
+<table role="table">
+  <thead>
+    <tr>
+      <th>OK</th>
+      <th>Skip</th>
+      <th>Info</th>
+      <th>Alarm</th>
+      <th>Error</th>
+      <th>Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>{{ .Ok }}</td>
+      <td>{{ .Skip }}</td>
+      <td>{{ .Info }}</td>
+      <td>{{ .Alarm }}</td>
+      <td>{{ .Error }}</td>
+      <td>{{ asstr .TotalCount }}</td>
+    </tr>
+  </tbody>
+</table>
+{{ end }}
+
+{{ define "root_group_template"}}
+<section class="group">
+  <h1>{{ .Title }}</h1>
+  {{ template "root_summary" .Summary.Status }}
+
+  {{ if .ControlRuns }}
+  {{ range .ControlRuns}}
+  {{ template "control_run_template" . }}
+  {{ end }}
+  {{ end }}
+
+  {{ range .Groups }}
+  {{ template "group_template" . }}
+  {{ end }}
+</section>
 {{ end }}
 
 {{ define "group_template"}}
 <section class="group">
-    <header class="overview">
-        <div class="title">{{ .Title }}</div>
-        {{ template "summary" .Summary.Status }}
-    </header>
-    {{ if .ControlRuns }}
-    <div class="controls">
-        {{ range .ControlRuns}}
-        {{ template "control_run_template" . }}
-        {{ end }}
-    </div>
-    {{ end }}
-    {{ range .Groups }}
-    {{ template "group_template" . }}
-    {{ end }}
+  <h2>{{ .Title }}</h2>
+  {{ template "summary" .Summary.Status }}
+
+  {{ if .ControlRuns }}
+  {{ range .ControlRuns}}
+  {{ template "control_run_template" . }}
+  {{ end }}
+  {{ end }}
+
+  {{ range .Groups }}
+  {{ template "group_template" . }}
+  {{ end }}
 </section>
 {{ end }}
 
 {{ define "control_run_template"}}
-<div class="control">
-    <header class="overview">
-        <div class="title">{{ .Title }}</div>
-        {{ template "summary" .Summary }}
-    </header>
-    {{ if .GetError }}
-    <div class="run-error"><span>Error:</span>{{ .GetError }}</div>
-    {{ else }}
+<section class="control">
+  <h3>{{ .Title }}</h3>
+  {{ template "summary" .Summary }}
+
+  {{ if .Description }}
+  <p><em>{{ .Description }}</em></p>
+  {{ end }}
+
+  {{ if .GetError }}
+  <blockquote>{{ .GetError }}</blockquote>
+  {{ else }}
+  {{ $length := len .Rows }}
+  {{ if gt $length 0 }}
+  {{ template "control_run_table_template" . }}
+  {{ end }}
+  {{ end }}
+  <!-- end for if-else block -->
+</section>
+{{ end }}
+
+{{ define "control_run_table_template" }}
+<table role="table">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Reason</th>
+      <th>Dimensions</th>
+    </tr>
+  </thead>
+  <tbody>
     {{ range .Rows }}
-    <div class="result-row {{ .Status }}">
-        <div class="status">{{ .Status }}</div>
-        <div class="reason-resource">
-            {{ .Reason }}
-        </div>
-        {{ range .Dimensions }}
-        <div class="dimension">{{ .Value }}</div>
-        {{ end }}
-    </div>
+    {{ template "control_run_table_row_template" . }}
     {{ end }}
-    <!-- end for range.Rows -->
+  </tbody>
+</table>
+{{ end }}
+
+{{ define "control_run_table_row_template" }}
+<tr>
+  <td>{{ statusicon .Status }}</td>
+  <td>{{ .Reason }}</td>
+  <td>
+    {{ range .Dimensions }}
+    <code>{{ .Value }}</code>
     {{ end }}
-    <!-- end for if-else block -->
-</div>
+  </td>
+</tr>
 {{ end }}
