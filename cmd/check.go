@@ -41,6 +41,12 @@ type exportData struct {
 	waitGroup     *sync.WaitGroup
 }
 
+func (e *exportData) addErrors(err []error) {
+	e.errorsLock.Lock()
+	e.errors = append(e.errors, err...)
+	e.errorsLock.Unlock()
+}
+
 // checkCmd :: represents the check command
 func checkCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -161,8 +167,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.FailOnError(err)
 
 		if len(exportFormats) > 0 {
-			d := &exportData{executionTree: executionTree, exportFormats: exportFormats, errorsLock: &exportErrorsLock, errors: exportErrors, waitGroup: &exportWaitGroup}
-			exportCheckResult(ctx, d)
+			d := exportData{executionTree: executionTree, exportFormats: exportFormats, errorsLock: &exportErrorsLock, errors: exportErrors, waitGroup: &exportWaitGroup}
+			exportCheckResult(ctx, &d)
 		}
 
 		durations = append(durations, executionTree.Root.Duration)
@@ -286,10 +292,8 @@ func exportCheckResult(ctx context.Context, d *exportData) {
 	d.waitGroup.Add(1)
 	go func() {
 		err := exportControlResults(ctx, d.executionTree, d.exportFormats)
-		if err != nil {
-			d.errorsLock.Lock()
-			d.errors = append(d.errors, err...)
-			d.errorsLock.Unlock()
+		if len(err) > 0 {
+			d.addErrors(err)
 		}
 		d.waitGroup.Done()
 	}()
