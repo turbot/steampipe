@@ -9,6 +9,8 @@ _What's new?_
 * Add support for setting a custom database name when installing. ([#936](https://github.com/turbot/steampipe/issues/936))
 * Support JSON and YAML connection config. ([#969](https://github.com/turbot/steampipe/issues/969))
 * Allow plugin uninstall even if there are active connections. ([#852](https://github.com/turbot/steampipe/issues/852))
+* Control results are now ordered by status.  ([465](https://github.com/turbot/steampipe/issues/465))
+* Add support for SSL certificate validation and rotation. ([#1020](https://github.com/turbot/steampipe/issues/1020))
 * Remove deprecated flags `--db-listen` and `--db-port` from service start. ([#582](https://github.com/turbot/steampipe/issues/582))
 
 _Bug fixes_
