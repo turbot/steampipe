@@ -1,11 +1,11 @@
 ## v0.9.0 [2021-10-24]
 _What's new?_
 * Update `check` command to support `markdown` and `HTML` output. ([#480](https://github.com/turbot/steampipe/issues/480), [#1011](https://github.com/turbot/steampipe/issues/1011))
-* Update DateTime and Timestamp columns to use "timestamp with time zone", not "timestamp". ([#94](https://github.com/turbot/steampipe-postgres-fdw/issues/94))
 * Add support for plugins with dynamic schema - reload plugin schema on startup. ([#1012](https://github.com/turbot/steampipe/issues/1012))
 * Add `steampipe_reference` introspection table. ([#972](https://github.com/turbot/steampipe/issues/972))
 * Add `steampipe_variable` reflection table. ([#859](https://github.com/turbot/steampipe/issues/859))
 * Add `check` summary in `table` output. ([#710](https://github.com/turbot/steampipe/issues/710))
+* Update DateTime and Timestamp columns to use "timestamp with time zone", not "timestamp". ([#94](https://github.com/turbot/steampipe-postgres-fdw/issues/94))
 * Add support for setting a custom database name when installing. ([#936](https://github.com/turbot/steampipe/issues/936))
 * Support JSON and YAML connection config. ([#969](https://github.com/turbot/steampipe/issues/969))
 * Allow plugin uninstall even if there are active connections. ([#852](https://github.com/turbot/steampipe/issues/852))
