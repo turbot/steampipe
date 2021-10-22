@@ -27,7 +27,7 @@ Available Commands:
   update      Update one or more plugins
 
 Flags:
-  -h, --help   help for plugin
+  -h, --help   Help for plugin
 
 Global Flags:
       --install-dir string   Path to the Config Directory (defaults to ~/.steampipe) (default "~/.steampipe")

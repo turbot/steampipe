@@ -21,7 +21,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// pluginCmd :: Plugin management commands
+//  Plugin management commands
 func pluginCmd() *cobra.Command {
 
 	var cmd = &cobra.Command{
@@ -52,11 +52,12 @@ Examples:
 	cmd.AddCommand(pluginListCmd())
 	cmd.AddCommand(pluginUninstallCmd())
 	cmd.AddCommand(pluginUpdateCmd())
+	cmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for plugin")
 
 	return cmd
 }
 
-// pluginInstallCmd :: Install a plugin
+// Install a plugin
 func pluginInstallCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "install [flags] [registry/org/]name[@version]",
@@ -80,12 +81,12 @@ Examples:
 	}
 
 	cmdconfig.
-		OnCmd(cmd)
-
+		OnCmd(cmd).
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin install")
 	return cmd
 }
 
-// pluginUpdateCmd :: Update plugins
+// Update plugins
 func pluginUpdateCmd() *cobra.Command {
 
 	var cmd = &cobra.Command{
@@ -111,12 +112,13 @@ Examples:
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag("all", "", false, "Update all plugins to its latest available version")
+		AddBoolFlag("all", "", false, "Update all plugins to its latest available version").
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin update")
 
 	return cmd
 }
 
-// pluginListCmd :: List plugins
+// List plugins
 func pluginListCmd() *cobra.Command {
 
 	var cmd = &cobra.Command{
@@ -139,12 +141,13 @@ Examples:
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag("outdated", "", false, "Check each plugin in the list for updates")
+		AddBoolFlag("outdated", "", false, "Check each plugin in the list for updates").
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin list")
 
 	return cmd
 }
 
-// pluginUninstallCmd :: Uninstall a plugin
+// Uninstall a plugin
 func pluginUninstallCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "uninstall [flags] [registry/org/]name",
@@ -165,7 +168,8 @@ Example:
 `,
 	}
 
-	cmdconfig.OnCmd(cmd)
+	cmdconfig.OnCmd(cmd).
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin uninstall")
 
 	return cmd
 }
@@ -288,7 +292,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if len(plugins) > 0 && cmdconfig.Viper().GetBool("all") {
-		// we can't allow update and install at the same time 
+		// we can't allow update and install at the same time
 		fmt.Println()
 		utils.ShowError(fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`")))
 		fmt.Println()

@@ -49,7 +49,7 @@ func checkCmd() *cobra.Command {
 		Args:             cobra.ArbitraryArgs,
 		Run:              runCheckCmd,
 		Short:            "Execute one or more controls",
-		Long: `Execute one of more Steampipe benchmarks and controls.
+		Long: `Execute one or more Steampipe benchmarks and controls.
 
 You may specify one or more benchmarks or controls to run (separated by a space), or run 'steampipe check all' to run all controls in the workspace.`,
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -72,23 +72,24 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
+		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers for csv and table output").
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for check").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
-		AddStringFlag(constants.ArgOutput, "", "text", "Select the console output format. Possible values are json, text, brief, none").
+		AddStringFlag(constants.ArgOutput, "", "text", "Select a console output format: brief, csv, html, json, md, text or none.").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports check time").
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
-		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme, which determines the color scheme for the 'text' control output. Possible values are light, dark, plain").
-		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to files - multiple exports are allowed").
+		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme for 'text' output: light, dark or plain").
+		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to files in various output formats: csv, html, json or md").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
 		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them").
-		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause , or named query, used to filter controls. Cannot be used with '--tag'").
-		AddStringSliceFlag(constants.ArgTag, "", nil, "Key-Value pairs to filter controls based on the 'tags' property. To be provided as 'key=value'. Multiple can be given and are merged together. Cannot be used with '--where'").
-		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify a file containing variable values").
+		AddStringSliceFlag(constants.ArgTag, "", nil, "Filter controls based on their tag values ('--tag key=value')").
+		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify an .spvar file containing variable values").
 		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
-		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify The value of a variable")
+		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
+		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')")
 
 	return cmd
 }

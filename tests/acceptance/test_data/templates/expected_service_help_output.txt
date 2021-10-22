@@ -13,7 +13,7 @@ Available Commands:
   stop        Stop Steampipe service
 
 Flags:
-  -h, --help   help for service
+  -h, --help   Help for service
 
 Global Flags:
       --install-dir string   Path to the Config Directory (defaults to ~/.steampipe) (default "~/.steampipe")
