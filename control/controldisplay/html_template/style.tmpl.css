@@ -1,254 +1,130 @@
 /*
 {{ define "style_css" }}
 /*  */
-
 :root {
-  --color-background: #fff;
-  --color-foreground: #000;
-  --color-foreground-light: #666;
-
-  --color-link: #2645c5;
-
-  --color-error: #e00;
-  --color-warning: #f9a825;
-
-  --color-table-border: theme("colors.gray.200");
-  --color-table-divide: theme("colors.gray.200");
-  --color-table-head: theme("colors.steampipe-black");
-
-  --container-bgcolor: rgb(246, 248, 250);
-
-  --alarm-color: #801925;
-  --alarm-bgcolor: #f7d4d8;
-
-  --error-color: #801925;
-  --error-bgcolor: #f7d4d8;
-
-  --ok-color: #077151;
-  --ok-bgcolor: #cef2e7;
-
-  --info-color: #2f5f95;
-  --info-bgcolor: #dcecfe;
-
-  --skip-color: #949595;
-  --skip-bgcolor: #fdfefe;
-
-  --indent: 10px;
-  --status-separator: "•";
-  --status-separator-color: #000;
-}
-body {
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
-    Helvetica Neue, Arial, Noto Sans, Liberation Sans, sans-serif,
-    Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
-  background-color: var(--container-bgcolor);
+  --color-border-muted: #d8dee4;
+  --color-border-default: #30363d;
+  --color-neutral-muted: #6f819433;
+  --color-fg-muted: #8b949e;
+  --color-alarm: red;
+  --color-error: red;
+  --color-info: #2f5f95;
+  --color-ok: green;
+  --color-skip: #949595;
 }
 
-.brand {
-  border-bottom: 1px #ddd dotted;
-  margin-bottom: var(--indent);
+html {
+  font-size: 14px;
 }
 
-.brand > img.logo {
-  width: 200px;
-  margin-top: var(--indent);
-  margin-bottom: var(--indent);
-  margin-right: var(--indent);
-  padding-right: var(--indent);
-  border-right: 1px solid #000;
+h1 {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  font-size: 2em;
 }
 
-.group {
-  padding-left: var(--indent);
-  border-left: 1px #ddd dotted;
+h2 {
+  padding-top: 1em;
+  padding-bottom: 0.3em;
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--color-border-muted);
+}
+
+h3 {
+  padding-top: 0.75em;
+  font-size: 1.25em;
+}
+
+h4 {
+  padding-top: 0.5em;
+  font-size: 1em;
+}
+
+footer {
+  margin-top: 3em;
 }
 
 .container {
-  padding: var(--indent);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+  sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  padding: 1em;
 }
 
-.container > .group {
-  border-left: none;
-}
-
-.controls {
-  padding-left: var(--indent);
-  border-left: 1px #ddd dotted;
-}
-
-.group .controls > .control {
-  margin-bottom: var(--indent);
-}
-
-/** ResultError **/
-.group .controls > .control > div.run-error {
-  margin-left: var(--indent);
-  position: relative;
-  padding: 1rem 1rem;
-  margin-bottom: 1rem;
-  border: 1px solid transparent;
-  border-radius: 0.25rem;
-  color: var(--color-error);
-  background-color: var(--error-bgcolor);
-}
-.group .controls > .control > div.run-error > span {
-  font-weight: bold;
-  margin-right: var(--indent);
-}
-/** ResultError **/
-
-/** ResultRow **/
-.group .controls > .control > div.result-row {
-  margin-left: var(--indent);
-  position: relative;
-  padding: 1rem 1rem;
-  /* margin-bottom: 1rem; */
-  border: 1px solid transparent;
-  /* border-radius: 0.25rem; */
+.header {
+  margin-bottom: 1em;
   display: flex;
-  flex-direction: row;
-}
-.group .controls > .control > div.result-row > .status {
-  width: 10rem;
-  text-transform: uppercase;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border-muted);
 }
 
-.group .controls > .control > div.result-row > .reason-resource {
-  width: 50rem;
-  white-space: nowrap;
-  overflow-x: hidden;
-  text-overflow: ellipsis;
-  flex-grow: 1;
+.header .title {
+  word-break: break-word;
 }
 
-.group .controls > .control > div.result-row > .dimension {
-  margin-left: 0.5rem;
-  margin-right: 0.5rem;
-}
-
-.group .controls > .control > div.result-row.alarm {
-  color: var(--alarm-color);
-  background-color: var(--alarm-bgcolor);
-}
-.group .controls > .control > div.result-row.error {
-  color: var(--error-color);
-  background-color: var(--error-bgcolor);
-}
-.group .controls > .control > div.result-row.ok {
-  color: var(--ok-color);
-  background-color: var(--ok-bgcolor);
-}
-.group .controls > .control > div.result-row.info {
-  color: var(--info-color);
-  background-color: var(--info-bgcolor);
-}
-.group .controls > .control > div.result-row.skip {
-  color: var(--skip-color);
-  background-color: var(--skip-bgcolor);
-}
-
-.group .controls > .control > div.result-row > span.status {
-  font-weight: bold;
-  margin-right: var(--indent);
-}
-.group .controls > .control > div.result-row > span.reason-resource {
-  font-weight: bold;
-  margin-right: var(--indent);
-}
-.group .controls > .control > div.result-row > span.dimension {
-  font-weight: bold;
-  margin-right: var(--indent);
-}
-/** ResultRow **/
-
-.controls table td.status {
-  width: 10rem;
-  padding: 0.5rem;
-  text-transform: uppercase;
-}
-.controls table tr.alarm td {
-  color: var(--alarm-color);
-  background-color: var(--alarm-bgcolor);
-}
-.controls table tr.ok td {
-  color: var(--ok-color);
-  background-color: var(--ok-bgcolor);
-}
-.controls table tr.info td {
-  color: var(--info-color);
-  background-color: var(--info-bgcolor);
-}
-.controls table tr.skip td {
-  color: var(--skip-color);
-  background-color: var(--skip-bgcolor);
-}
-.controls table tr.error td {
-  color: var(--alarm-color);
-  background-color: var(--alarm-bgcolor);
-}
-.controls table td.resource-reason div {
-  width: 50rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.overview {
+.header a {
   display: flex;
-  flex-direction: row;
-  margin-bottom: var(--indent);
-}
-.overview > .title {
-  flex-grow: 1;
-}
-.summary {
-  font-weight: bold;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-}
-.summary > .status {
-  font-size: 1rem;
-}
-.summary > .status > span {
-  font-weight: normal;
 }
 
-.summary > .status::before {
-  content: var(--status-separator);
-  color: var(--status-separator-color);
-  margin-left: 0.5rem;
-  margin-right: 0.5rem;
+.header .logo {
+  width: 200px;
+  margin-left: 10px;
 }
 
-.summary > .status:nth-of-type(1)::before {
-  content: "";
-  margin-left: 0rem;
-}
-.summary > .status:last-of-type::after {
-  content: "";
-  margin-right: 0rem;
-}
-
-.summary .alarm {
-  color: var(--alarm-color);
+table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+  margin-top: 0;
+  padding-top: 0.2em;
+  margin-bottom: 16px;
 }
 
-.summary .ok {
-  color: var(--ok-color);
+table th,
+table td {
+  padding: 6px 13px;
+  border: 1px solid var(--color-border-muted);
 }
 
-.summary .info {
-  color: var(--info-color);
+table th {
+  font-weight: 600;
 }
 
-.summary .skip {
-  color: var(--skip-color);
+table tr {
+  border-top: 1px solid var(--color-border-muted);
 }
 
-.summary .error {
-  color: var(--error-color);
+code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas,
+  Liberation Mono, monospace;
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: var(--color-neutral-muted);
+  border-radius: 6px;
 }
 
+blockquote {
+  padding: 0 1em;
+  margin-left: 0;
+  color: var(--color-fg-muted);
+  border-left: 0.25em solid var(--color-border-default);
+}
+
+.summary-total-ok.highlight {
+  font-weight: 600;
+  color: var(--color-ok);
+}
+
+.summary-total-alarm.highlight {
+  font-weight: 600;
+  color: var(--color-alarm);
+}
+
+.summary-total-error.highlight {
+  font-weight: 600;
+  color: var(--color-alarm);
+}
 /*
 {{ end }}
 /*  */

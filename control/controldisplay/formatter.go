@@ -4,10 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
+	"text/template"
 
 	"github.com/turbot/steampipe/control/controlexecute"
+	"github.com/turbot/steampipe/version"
 )
 
 type FormatterMap map[string]Formatter
@@ -112,4 +116,55 @@ func (j *NullFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 func (j *NullFormatter) FileExtension() string {
 	// will not be called
 	return ""
+}
+
+var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
+	"steampipeversion": func() string { return version.String() },
+	"workingdir":       func() string { wd, _ := os.Getwd(); return wd },
+	"asstr":            func(i reflect.Value) string { return fmt.Sprintf("%v", i) },
+	"statusicon": func(status string) string {
+		switch strings.ToLower(status) {
+		case "ok":
+			return "✅"
+		case "skip":
+			return "⇨"
+		case "info":
+			return "ℹ"
+		case "alarm":
+			return "❌"
+		case "error":
+			return "❗"
+		}
+		return ""
+	},
+	"summarystatusclass": func(status string, total int) string {
+		switch strings.ToLower(status) {
+		case "ok":
+			if total > 0 {
+				return "summary-total-ok highlight"
+			}
+			return "summary-total-ok"
+		case "skip":
+			if total > 0 {
+				return "summary-total-skip highlight"
+			}
+			return "summary-total-skip"
+		case "info":
+			if total > 0 {
+				return "summary-total-info highlight"
+			}
+			return "summary-total-info"
+		case "alarm":
+			if total > 0 {
+				return "summary-total-alarm highlight"
+			}
+			return "summary-total-alarm"
+		case "error":
+			if total > 0 {
+				return "summary-total-error highlight"
+			}
+			return "summary-total-error"
+		}
+		return ""
+	},
 }
