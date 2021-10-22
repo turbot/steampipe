@@ -61,6 +61,10 @@ footer {
   word-break: break-word;
 }
 
+.header a {
+  display: flex;
+}
+
 .header .logo {
   width: 200px;
   margin-left: 10px;

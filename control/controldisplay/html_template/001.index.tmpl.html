@@ -101,7 +101,7 @@
 <section class="group">
   <div class="header">
     <h1 class="title">{{ .Title }}</h1>
-    <img class="logo" src="{{ template "logo"}}" alt="Steampipe Report" />
+    <a href="https://steampipe.io" rel="noopener noreferrer" target="_blank"><img class="logo" src="{{ template "logo"}}" alt="Steampipe Report" /></a>
   </div>
   {{ template "root_summary" .Summary.Status }}
 
@@ -152,7 +152,6 @@
   {{ template "control_run_table_template" . }}
   {{ end }}
   {{ end }}
-  <!-- end for if-else block -->
 </section>
 {{ end }}
 
