@@ -40,12 +40,13 @@ type ControlRun struct {
 	Duration time.Duration `json:"-"`
 
 	// the result
-	ControlId   string            `json:"control_id"`
-	Description string            `json:"description"`
-	Severity    string            `json:"severity"`
-	Tags        map[string]string `json:"tags"`
-	Title       string            `json:"title"`
-	Rows        []*ResultRow      `json:"results"`
+	ControlId   string                  `json:"control_id"`
+	Description string                  `json:"description"`
+	Severity    string                  `json:"severity"`
+	Tags        map[string]string       `json:"tags"`
+	Title       string                  `json:"title"`
+	RowMap      map[string][]*ResultRow `json:"results"`
+	Rows        []*ResultRow            `json:"results"`
 
 	// the query result stream
 	queryResult *queryresult.Result
@@ -66,7 +67,7 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 		Severity:    typehelpers.SafeString(control.Severity),
 		Title:       typehelpers.SafeString(control.Title),
 		Tags:        control.GetTags(),
-		Rows:        []*ResultRow{},
+		RowMap:      make(map[string][]*ResultRow),
 
 		executionTree: executionTree,
 		runStatus:     ControlRunReady,
@@ -192,6 +193,7 @@ func (r *ControlRun) gatherResults() {
 
 				// nil row means we are done
 				r.setRunStatus(ControlRunComplete)
+				r.createdOrderedResultRows()
 				return
 
 			}
@@ -211,12 +213,13 @@ func (r *ControlRun) gatherResults() {
 			return
 		}
 	}
+
 }
 
 // add the result row to our results and update the summary with the row status
 func (r *ControlRun) addResultRow(row *ResultRow) {
 	// update results
-	r.Rows = append(r.Rows, row)
+	r.RowMap[row.Status] = append(r.RowMap[row.Status], row)
 
 	// update summary
 	switch row.Status {
@@ -230,6 +233,14 @@ func (r *ControlRun) addResultRow(row *ResultRow) {
 		r.Summary.Info++
 	case constants.ControlError:
 		r.Summary.Error++
+	}
+}
+
+// populate ordered list of rows
+func (r *ControlRun) createdOrderedResultRows() {
+	statusOrder := []string{constants.ControlError, constants.ControlAlarm, constants.ControlInfo, constants.ControlOk, constants.ControlSkip}
+	for _, status := range statusOrder {
+		r.Rows = append(r.Rows, r.RowMap[status]...)
 	}
 }
 
