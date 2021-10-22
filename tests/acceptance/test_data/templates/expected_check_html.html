@@ -197,37 +197,73 @@ th {
   --color-border-default: #30363d;
   --color-neutral-muted: #6f819433;
   --color-fg-muted: #8b949e;
+  --color-alarm: red;
+  --color-error: red;
+  --color-info: #2f5f95;
+  --color-ok: green;
+  --color-skip: #949595;
+}
+
+html {
+  font-size: 14px;
 }
 
 h1 {
-  padding-bottom: 0.3em;
+  margin-top: 8px;
+  margin-bottom: 8px;
   font-size: 2em;
-  border-bottom: 1px solid var(--color-border-muted);
 }
 
 h2 {
+  padding-top: 1em;
   padding-bottom: 0.3em;
   font-size: 1.5em;
   border-bottom: 1px solid var(--color-border-muted);
 }
 
 h3 {
+  padding-top: 0.75em;
   font-size: 1.25em;
+}
+
+h4 {
+  padding-top: 0.5em;
+  font-size: 1em;
+}
+
+footer {
+  margin-top: 3em;
 }
 
 .container {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
-    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   padding: 1em;
+}
+
+.header {
+  margin-bottom: 1em;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border-muted);
+}
+
+.header .title {
+  word-break: break-word;
+}
+
+.header .logo {
+  width: 200px;
+  margin-left: 10px;
 }
 
 table {
   display: block;
-  width: 100%;
   width: max-content;
   max-width: 100%;
   overflow: auto;
   margin-top: 0;
+  padding-top: 0.2em;
   margin-bottom: 16px;
 }
 
@@ -247,7 +283,7 @@ table tr {
 
 code {
   font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas,
-    Liberation Mono, monospace;
+  Liberation Mono, monospace;
   padding: 0.2em 0.4em;
   margin: 0;
   font-size: 85%;
@@ -260,6 +296,21 @@ blockquote {
   margin-left: 0;
   color: var(--color-fg-muted);
   border-left: 0.25em solid var(--color-border-default);
+}
+
+.summary-total-ok.highlight {
+  font-weight: 600;
+  color: var(--color-ok);
+}
+
+.summary-total-alarm.highlight {
+  font-weight: 600;
+  color: var(--color-alarm);
+}
+
+.summary-total-error.highlight {
+  font-weight: 600;
+  color: var(--color-alarm);
 }
 /*
 **/
@@ -275,7 +326,10 @@ blockquote {
     
     
 <section class="group">
-  <h1>CIS v1.3.0</h1>
+  <div class="header">
+    <h1 class="title">CIS v1.3.0</h1>
+    <img class="logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMzQ3LjA5NCAyMDIuNTU5Ij48ZGVmcz48c3R5bGU+LmEsLmJ7ZmlsbDojMjIyMDE3O30uYSwuY3tmaWxsLXJ1bGU6ZXZlbm9kZDt9LmN7ZmlsbDojYzcyNTJkO308L3N0eWxlPjwvZGVmcz48cGF0aCBjbGFzcz0iYSIgZD0iTTEzMzMuMiwyMjQuMDUzaDg1Ljc2NFYxOTcuMDI3aC03OS4zNTVhNC4xMzcsNC4xMzcsMCwwLDEtNC4xMjQtNC4xMjN2LTUuNjdIMTM5OC44YTI0Ljc5LDI0Ljc5LDAsMCwwLDI0Ljc0NC0yNC43NDJWMTQ4LjEzMWEyNC43OTEsMjQuNzkxLDAsMCwwLTI0Ljc0NC0yNC43NDJIMTMzMy4yYTI0Ljc5MSwyNC43OTEsMCwwLDAtMjQuNzQ0LDI0Ljc0MnY1MS4xODFhMjQuNzksMjQuNzksMCwwLDAsMjQuNzQ0LDI0Ljc0MVptMi4yODUtNjMuODQ1VjE1NC41NGE0LjEyOSw0LjEyOSwwLDAsMSw0LjEyNC00LjEyM2g1Mi43ODhhNC4xMjksNC4xMjksMCwwLDEsNC4xMjQsNC4xMjN2MS41NDRhNC4xMyw0LjEzLDAsMCwxLTQuMTI0LDQuMTI0WiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTc2LjQ1MyAtNzIuMjIpIi8+PHBhdGggY2xhc3M9ImEiIGQ9Ik0xMjkzLjg1MSwxNzAuMTV2MjkuNzM5YTI0Ljc4OSwyNC43ODksMCwwLDEtMjQuNzQ1LDI0Ljc0aC02My4zMTl2MzAuOTc4aC0yNy4wMjFWMTQ4LjEzMWEyNC43ODcsMjQuNzg3LDAsMCwxLDI0Ljc0LTI0Ljc0Mmg2NS42YTI0Ljc5MSwyNC43OTEsMCwwLDEsMjQuNzQ1LDI0Ljc0MlYxNzAuMTVabS0zNi4wOCwyNy40NTNoNC45MzFhNC4xMzQsNC4xMzQsMCwwLDAsNC4xMjQtNC4xMjNWMTgwLjcwN2MwLS4yMjcsMC0uNDU3LDAtLjY5VjE3Ny44N2gwdi03LjcyaDB2LTIuMTQ0YzAtLjIzMywwLS40NjUsMC0uNjkyVjE1NC41NGE0LjEzNCw0LjEzNCwwLDAsMC00LjEyNC00LjEyM2gtNTIuNzg4YTQuMTMzLDQuMTMzLDAsMCwwLTQuMTIzLDQuMTIzdjEyLjc3NGMwLC4yMjcsMCwuNDU5LDAsLjY5MnYyLjE0NGgwbDAsMy44NiwwLDMuODZoMHYyLjE0N2wwLC41ODR2MTdoNTEuOThaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNzYuNDUzIC03Mi4yMikiLz48cmVjdCBjbGFzcz0iYiIgeD0iMTA2MC42NzciIHk9IjUxLjE2OSIgd2lkdGg9IjI3LjAyOSIgaGVpZ2h0PSIxMDAuNjg4Ii8+PHBhdGggY2xhc3M9ImEiIGQ9Ik0xMTIyLjUyNywxNzAuMTV2MjkuNzM5YTI0Ljc4OCwyNC43ODgsMCwwLDEtMjQuNzQ0LDI0Ljc0aC02My4zMTl2MzAuOTc4aC0yNy4wMjZWMTQ4LjEzMWEyNC43OTIsMjQuNzkyLDAsMCwxLDI0Ljc0NS0yNC43NDJoNjUuNmEyNC43OSwyNC43OSwwLDAsMSwyNC43NDQsMjQuNzQyVjE3MC4xNVpNMTA4Ni40NDQsMTk3LjZoNC45MzVhNC4xMzcsNC4xMzcsMCwwLDAsNC4xMjQtNC4xMjNWMTc3Ljg3aDB2LTcuNzJoMFYxNTQuNTRhNC4xMzcsNC4xMzcsMCwwLDAtNC4xMjQtNC4xMjNoLTUyLjc4OGE0LjEzNyw0LjEzNywwLDAsMC00LjEyNyw0LjEyM3YxNS42MWgwdjcuNzJoMFYxOTcuNmg1MS45OFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC03Ni40NTMgLTcyLjIyKSIvPjxwYXRoIGNsYXNzPSJhIiBkPSJNOTEyLjUxNiwxMjMuMzg5aDU1LjU3NmEyNC43OTEsMjQuNzkxLDAsMCwxLDI0Ljc0NCwyNC43NDJ2NzUuOTQ2SDk2NS44MVYxNzcuODdoMGwwLTkuODY0YzAtLjIzMywwLS40NjUsMC0uNjkyVjE1NC41NGE0LjEzNCw0LjEzNCwwLDAsMC00LjEyMy00LjEyM0g5MjYuMDN2NzMuNjZIODk5LjAwNXYtNzMuNjZIODYzLjM0OGE0LjEzNCw0LjEzNCwwLDAsMC00LjEyNCw0LjEyM3YxMi43NzRjMCwuMjI3LDAsLjQ1OSwwLC42OTJsMCw5Ljg2NGgwbDAsNDYuMjA3SDgzMi4yVjE0OC4xMzFhMjQuNzksMjQuNzksMCwwLDEsMjQuNzQtMjQuNzQyaDU1LjU3OFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC03Ni40NTMgLTcyLjIyKSIvPjxwYXRoIGNsYXNzPSJhIiBkPSJNNzkyLjg1MiwxMjMuMzg5SDcwNy4wODl2MjcuMDI4aDc5LjM1NGE0LjEzNSw0LjEzNSwwLDAsMSw0LjEyNCw0LjEyM3Y1LjY2OEg3MjcuMjQ5YTI0Ljc5MSwyNC43OTEsMCwwLDAtMjQuNzQ0LDI0Ljc0NnYxNC4zNThhMjQuNzg5LDI0Ljc4OSwwLDAsMCwyNC43NDQsMjQuNzQxaDY1LjZBMjQuNzkxLDI0Ljc5MSwwLDAsMCw4MTcuNiwxOTkuMzEyVjE0OC4xMzFhMjQuNzkyLDI0Ljc5MiwwLDAsMC0yNC43NDUtMjQuNzQyWm0tMi4yODUsNjMuODQ1djUuNjdhNC4xMjgsNC4xMjgsMCwwLDEtNC4xMjQsNC4xMjNINzMzLjY1NWE0LjEyOSw0LjEyOSwwLDAsMS00LjEyMy00LjEyM1YxOTEuMzZhNC4xMzEsNC4xMzEsMCwwLDEsNC4xMjMtNC4xMjZaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNzYuNDUzIC03Mi4yMikiLz48cGF0aCBjbGFzcz0iYSIgZD0iTTYwMS4xMzgsMjI0LjA1M0g2ODYuOVYxOTcuMDI3SDYwNy41NDJhNC4xMzcsNC4xMzcsMCwwLDEtNC4xMjQtNC4xMjN2LTUuNjdoNjMuMzJhMjQuNzksMjQuNzksMCwwLDAsMjQuNzQ0LTI0Ljc0MlYxNDguMTMxYTI0Ljc5MSwyNC43OTEsMCwwLDAtMjQuNzQ0LTI0Ljc0MmgtNjUuNmEyNC43OTEsMjQuNzkxLDAsMCwwLTI0Ljc0NywyNC43NDJ2NTEuMTgxYTI0Ljc5MSwyNC43OTEsMCwwLDAsMjQuNzQ3LDI0Ljc0MVptMi4yOC02My44NDVWMTU0LjU0YTQuMTMsNC4xMywwLDAsMSw0LjEyNC00LjEyM2g1Mi43OTJhNC4xMyw0LjEzLDAsMCwxLDQuMTIxLDQuMTIzdjEuNTQ0YTQuMTMxLDQuMTMxLDAsMCwxLTQuMTIxLDQuMTI0WiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTc2LjQ1MyAtNzIuMjIpIi8+PHBvbHlnb24gY2xhc3M9ImEiIHBvaW50cz0iMzg0Ljg4OSA1MS4xNjkgMzg0Ljg4OSA3OC4zMzggNDIxLjc4NiA3OC4zMzggNDIxLjc4NiAxNTEuODMyIDQ0OS40MzYgMTUxLjgzMiA0NDkuNDM2IDc4LjMzOCA0ODYuMzMxIDc4LjMzOCA0ODYuMzMxIDUxLjE2OSAzODQuODg5IDUxLjE2OSIvPjxwYXRoIGNsYXNzPSJhIiBkPSJNMzkwLjUyNiwxODcuMjM0aC0zMi44YTI0Ljc5LDI0Ljc5LDAsMCwxLTI0Ljc0NS0yNC43NDJWMTQ4LjEzMWEyNC43OTEsMjQuNzkxLDAsMCwxLDI0Ljc0NS0yNC43NDJoODkuMDA5djI3LjAyOGgtODIuNmE0LjEzLDQuMTMsMCwwLDAtNC4xMjQsNC4xMjN2MS41NDRhNC4xMzEsNC4xMzEsMCwwLDAsNC4xMjQsNC4xMjRoNjIuNDQzYTI0Ljc5MiwyNC43OTIsMCwwLDEsMjQuNzQyLDI0Ljc0NnYxNC4zNThhMjQuNzg5LDI0Ljc4OSwwLDAsMS0yNC43NDIsMjQuNzQxaC04OS4wMVYxOTcuMDI3aDgyLjZhNC4xMyw0LjEzLDAsMCwwLDQuMTIzLTQuMTIzVjE5MS4zNmE0LjEzMiw0LjEzMiwwLDAsMC00LjEyMy00LjEyNkgzOTAuNTI2WiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTc2LjQ1MyAtNzIuMjIpIi8+PHBhdGggY2xhc3M9ImEiIGQ9Ik0xNzAuNDI4LDIyMy43MjNoMGMzLjQyNCwzLjY3Myw4LjY1OSw1LjgxOSwxMS44NzMsMi42bDkuOTQ4LTkuOTUxLDM4LjMwNy0zOC4zYzYuMi02LjItNy41MjItMTkuODgtMTMuNy0xMy42OTNsLTE0LjE0LDE0LjEzNi43MzUuNzMuMDgzLjA4MWE0LjUsNC41LDAsMCwxLS4wODMsNi4yNjNsLS44MjQuODIzLTMuOTk0LDQtMy45LTMuOSwwLDAtMzAtMzAsLjAwNiwwLTMuOS0zLjkxLDQtMy45OTMuODI0LS44MjRhNC40OTIsNC40OTIsMCwwLDEsNi4yNTctLjA3OWwuMDgyLjA3OS43MzcuNzM0LDIxLjI1Mi0yMS4yNDhhMzguOTIsMzguOTIsMCwwLDEsNTQuOTMzLDBsMTguNzcxLDE4Ljc2N2EzOC45NTQsMzguOTU0LDAsMCwxLDAsNTQuOTM3bC00NS40MTYsNDUuNDE4TDIwNS4yLDI2My40NDJhMzguOTQ5LDM4Ljk0OSwwLDAsMS01NC45NDEsMGwtMjMuODI1LTIzLjgzMWE0Ny45Niw0Ny45NiwwLDAsMCw0MS41Mi0xMy40MTNaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNzYuNDUzIC03Mi4yMikiLz48cGF0aCBjbGFzcz0iYyIgZD0iTTE4NS4wMzMsMTIzLjI3NmwtLjAwNywwYy0zLjQyMS0zLjY3NS04LjY1Ni01LjgyNC0xMS44NzEtMi42MDhsLTkuOTQ3LDkuOTUtMzguMzA4LDM4LjNjLTYuMiw2LjIsNy41MjEsMTkuODgxLDEzLjcsMTMuN2wxNC4xNC0xNC4xNDItLjczMy0uNzI5LS4wODMtLjA4M2E0LjQ5Myw0LjQ5MywwLDAsMSwuMDgzLTYuMjYybC44MjQtLjgyMiwzLjk5My00LDMuOSwzLjksMCwwLDMwLDMwLS4wMDcsMCwzLjkwNSwzLjkwOC0zLjk5Miw0LS44My44MmE0LjQ5MSw0LjQ5MSwwLDAsMS02LjI1NC4wODFsLS4wODMtLjA4MS0uNzM0LS43MzUtMjEuMjUyLDIxLjI0NmEzOC45MTcsMzguOTE3LDAsMCwxLTU0LjkzNSwwTDg3Ljc4NiwyMDAuOTY3YTM4Ljk1NSwzOC45NTUsMCwwLDEsMC01NC45MzdMMTMzLjIsMTAwLjYxMWwxNy4wNTYtMTcuMDU1YTM4Ljk1NCwzOC45NTQsMCwwLDEsNTQuOTQxLDBsMjMuODI1LDIzLjgzMUE0Ny45NTUsNDcuOTU1LDAsMCwwLDE4Ny41MDYsMTIwLjhaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNzYuNDUzIC03Mi4yMikiLz48L3N2Zz4=" alt="Steampipe Report" />
+  </div>
   
 <table role="table">
   <thead>
@@ -289,27 +343,27 @@ blockquote {
     <tr>
       <td>✅</td>
       <td>OK</td>
-      <td>40</td>
+      <td class="summary-total-ok highlight">40</td>
     </tr>
     <tr>
       <td>⇨</td>
       <td>Skip</td>
-      <td>2</td>
+      <td class="summary-total-skip highlight">2</td>
     </tr>
     <tr>
       <td>ℹ</td>
       <td>Info</td>
-      <td>3</td>
+      <td class="summary-total-info highlight">3</td>
     </tr>
     <tr>
       <td>❌</td>
       <td>Alarm</td>
-      <td>9</td>
+      <td class="summary-total-alarm highlight">9</td>
     </tr>
     <tr>
       <td>❗</td>
       <td>Error</td>
-      <td>1</td>
+      <td class="summary-total-error highlight">1</td>
     </tr>
   </tbody>
 </table>
@@ -335,11 +389,11 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>16</td>
-      <td>0</td>
-      <td>0</td>
-      <td>5</td>
-      <td>1</td>
+      <td class="summary-total-ok highlight">16</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm highlight">5</td>
+      <td class="summary-total-error highlight">1</td>
       <td>22</td>
     </tr>
   </tbody>
@@ -351,6 +405,11 @@ blockquote {
   
 <section class="control">
   <h3>1.1 Maintain current contact details</h3>
+
+  
+  <p><em>Ensure contact email and telephone details for AWS accounts are current and map to more than one individual in your organization.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -365,20 +424,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm highlight">1</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Ensure contact email and telephone details for AWS accounts are current and map to more than one individual in your organization.</em></p>
-  
 
   
   
@@ -396,8 +451,8 @@ blockquote {
     
     
 <tr>
-  <td>❌</td>
-  <td>is pretty insecure</td>
+  <td title="Resource: some other resource">❌</td>
+  <td title="Resource: some other resource">is pretty insecure</td>
   <td>
     
     <code>partition 10000</code>
@@ -422,6 +477,11 @@ blockquote {
   
 <section class="control">
   <h3>1.2 Ensure security contact information is registered</h3>
+
+  
+  <p><em>AWS provides customers with the option of specifying the contact information for accounts security team. It is recommended that this information be provided.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -436,20 +496,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm highlight">1</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>AWS provides customers with the option of specifying the contact information for accounts security team. It is recommended that this information be provided.</em></p>
-  
 
   
   
@@ -467,8 +523,8 @@ blockquote {
     
     
 <tr>
-  <td>❌</td>
-  <td>is pretty insecure</td>
+  <td title="Resource: some other resource">❌</td>
+  <td title="Resource: some other resource">is pretty insecure</td>
   <td>
     
     <code>partition 10000</code>
@@ -493,6 +549,11 @@ blockquote {
   
 <section class="control">
   <h3>1.3 Ensure security questions are registered in the AWS account</h3>
+
+  
+  <p><em>The AWS support portal allows account owners to establish security questions that can be used to authenticate individuals calling AWS customer service for support. It is recommended that security questions be established.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -507,20 +568,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>The AWS support portal allows account owners to establish security questions that can be used to authenticate individuals calling AWS customer service for support. It is recommended that security questions be established.</em></p>
-  
 
   
   
@@ -538,8 +595,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -564,6 +621,11 @@ blockquote {
   
 <section class="control">
   <h3>1.4 Ensure no root user account access key exists</h3>
+
+  
+  <p><em>The root user account is the most privileged user in an AWS account. AWS Access Keys provide programmatic access to a given AWS account. It is recommended that all access keys associated with the root user account be removed.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -578,20 +640,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>The root user account is the most privileged user in an AWS account. AWS Access Keys provide programmatic access to a given AWS account. It is recommended that all access keys associated with the root user account be removed.</em></p>
-  
 
   
   
@@ -609,8 +667,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -635,6 +693,11 @@ blockquote {
   
 <section class="control">
   <h3>1.5 Ensure MFA is enabled for the "root user" account</h3>
+
+  
+  <p><em>The root user account is the most privileged user in an AWS account. Multi-factor Authentication (MFA) adds an extra layer of protection on top of a username and password. With MFA enabled, when a user signs in to an AWS website, they will be prompted for their username and password as well as for an authentication code from their AWS MFA device.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -649,20 +712,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm highlight">1</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>The root user account is the most privileged user in an AWS account. Multi-factor Authentication (MFA) adds an extra layer of protection on top of a username and password. With MFA enabled, when a user signs in to an AWS website, they will be prompted for their username and password as well as for an authentication code from their AWS MFA device.</em></p>
-  
 
   
   
@@ -680,8 +739,8 @@ blockquote {
     
     
 <tr>
-  <td>❌</td>
-  <td>is pretty insecure</td>
+  <td title="Resource: some other resource">❌</td>
+  <td title="Resource: some other resource">is pretty insecure</td>
   <td>
     
     <code>partition 10000</code>
@@ -706,6 +765,11 @@ blockquote {
   
 <section class="control">
   <h3>1.6 Ensure hardware MFA is enabled for the "root user" account</h3>
+
+  
+  <p><em>The root user account is the most privileged user in an AWS account. MFA adds an extra layer of protection on top of a user name and password. With MFA enabled, when a user signs in to an AWS website, they will be prompted for their user name and password as well as for an authentication code from their AWS MFA device. For Level 2, it is recommended that the root user account be protected with a hardware MFA.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -720,20 +784,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error highlight">1</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>The root user account is the most privileged user in an AWS account. MFA adds an extra layer of protection on top of a user name and password. With MFA enabled, when a user signs in to an AWS website, they will be prompted for their user name and password as well as for an authentication code from their AWS MFA device. For Level 2, it is recommended that the root user account be protected with a hardware MFA.</em></p>
-  
 
   
   
@@ -751,8 +811,8 @@ blockquote {
     
     
 <tr>
-  <td>❗</td>
-  <td>is in some sort of error state</td>
+  <td title="Resource: some messed up resource">❗</td>
+  <td title="Resource: some messed up resource">is in some sort of error state</td>
   <td>
     
     <code>partition 20000</code>
@@ -777,6 +837,11 @@ blockquote {
   
 <section class="control">
   <h3>1.7 Eliminate use of the root user for administrative and daily tasks</h3>
+
+  
+  <p><em>With the creation of an AWS account, a root user is created that cannot be disabled or deleted. That user has unrestricted access to and control over all resources in the AWS account. It is highly recommended that the use of this account be avoided for everyday tasks.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -791,20 +856,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>With the creation of an AWS account, a root user is created that cannot be disabled or deleted. That user has unrestricted access to and control over all resources in the AWS account. It is highly recommended that the use of this account be avoided for everyday tasks.</em></p>
-  
 
   
   
@@ -822,8 +883,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -848,6 +909,11 @@ blockquote {
   
 <section class="control">
   <h3>1.8 Ensure IAM password policy requires minimum length of 14 or greater</h3>
+
+  
+  <p><em>Password policies are, in part, used to enforce password complexity requirements. IAM password policies can be used to ensure password are at least a given length. It is recommended that the password policy require a minimum password length 14.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -862,20 +928,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Password policies are, in part, used to enforce password complexity requirements. IAM password policies can be used to ensure password are at least a given length. It is recommended that the password policy require a minimum password length 14.</em></p>
-  
 
   
   
@@ -893,8 +955,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -919,6 +981,11 @@ blockquote {
   
 <section class="control">
   <h3>1.9 Ensure IAM password policy prevents password reuse</h3>
+
+  
+  <p><em>IAM password policies can prevent the reuse of a given password by the same user. It is recommended that the password policy prevent the reuse of passwords.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -933,20 +1000,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>IAM password policies can prevent the reuse of a given password by the same user. It is recommended that the password policy prevent the reuse of passwords.</em></p>
-  
 
   
   
@@ -964,8 +1027,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -990,6 +1053,11 @@ blockquote {
   
 <section class="control">
   <h3>1.10 Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password</h3>
+
+  
+  <p><em>Multi-Factor Authentication (MFA) adds an extra layer of authentication assurance beyond traditional credentials. With MFA enabled, when a user signs in to the AWS Console, they will be prompted for their user name and password as well as for an authentication code from their physical or virtual MFA token. It is recommended that MFA be enabled for all accounts that have a console password.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1004,20 +1072,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Multi-Factor Authentication (MFA) adds an extra layer of authentication assurance beyond traditional credentials. With MFA enabled, when a user signs in to the AWS Console, they will be prompted for their user name and password as well as for an authentication code from their physical or virtual MFA token. It is recommended that MFA be enabled for all accounts that have a console password.</em></p>
-  
 
   
   
@@ -1035,8 +1099,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -1061,6 +1125,11 @@ blockquote {
   
 <section class="control">
   <h3>1.11 Do not setup access keys during initial user setup for all IAM users that have a console password</h3>
+
+  
+  <p><em>AWS console defaults to no check boxes selected when creating a new IAM user. When cerating the IAM User credentials you have to determine what type of access they require.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1075,20 +1144,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>AWS console defaults to no check boxes selected when creating a new IAM user. When cerating the IAM User credentials you have to determine what type of access they require.</em></p>
-  
 
   
   
@@ -1106,8 +1171,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -1132,6 +1197,11 @@ blockquote {
   
 <section class="control">
   <h3>1.12 Ensure credentials unused for 90 days or greater are disabled</h3>
+
+  
+  <p><em>AWS IAM users can access AWS resources using different types of credentials, such as passwords or access keys. It is recommended that all credentials that have been unused in 90 or greater days be deactivated or removed.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1146,20 +1216,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>AWS IAM users can access AWS resources using different types of credentials, such as passwords or access keys. It is recommended that all credentials that have been unused in 90 or greater days be deactivated or removed.</em></p>
-  
 
   
   
@@ -1177,8 +1243,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -1203,6 +1269,11 @@ blockquote {
   
 <section class="control">
   <h3>1.13 Ensure there is only one active access key available for any single IAM user</h3>
+
+  
+  <p><em>Access keys are long-term credentials for an IAM user or the AWS account root user. You can use access keys to sign programmatic requests to the AWS CLI or AWS API. One of the best ways to protect your account is to not allow users to have multiple access keys.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1217,20 +1288,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Access keys are long-term credentials for an IAM user or the AWS account root user. You can use access keys to sign programmatic requests to the AWS CLI or AWS API. One of the best ways to protect your account is to not allow users to have multiple access keys.</em></p>
-  
 
   
   
@@ -1248,8 +1315,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -1274,6 +1341,11 @@ blockquote {
   
 <section class="control">
   <h3>1.14 Ensure access keys are rotated every 90 days or less</h3>
+
+  
+  <p><em>Access keys consist of an access key ID and secret access key, which are used to sign programmatic requests that you make to AWS. AWS users need their own access keys to make programmatic calls to AWS from the AWS Command Line Interface (AWS CLI), Tools for Windows PowerShell, the AWS SDKs, or direct HTTP calls using the APIs for individual AWS services. It is recommended that all access keys be regularly rotated.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1288,20 +1360,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Access keys consist of an access key ID and secret access key, which are used to sign programmatic requests that you make to AWS. AWS users need their own access keys to make programmatic calls to AWS from the AWS Command Line Interface (AWS CLI), Tools for Windows PowerShell, the AWS SDKs, or direct HTTP calls using the APIs for individual AWS services. It is recommended that all access keys be regularly rotated.</em></p>
-  
 
   
   
@@ -1319,8 +1387,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -1345,6 +1413,11 @@ blockquote {
   
 <section class="control">
   <h3>1.15 Ensure IAM Users Receive Permissions Only Through Groups</h3>
+
+  
+  <p><em>IAM users are granted access to services, functions, and data through IAM policies. There are three ways to define policies for a user: 1) Edit the user policy directly, aka an inline, or user, policy; 2) attach a policy directly to a user; 3) add the user to an IAM group that has an attached policy.  Only the third implementation is recommended.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1359,20 +1432,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm highlight">1</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>IAM users are granted access to services, functions, and data through IAM policies. There are three ways to define policies for a user: 1) Edit the user policy directly, aka an inline, or user, policy; 2) attach a policy directly to a user; 3) add the user to an IAM group that has an attached policy.  Only the third implementation is recommended.</em></p>
-  
 
   
   
@@ -1390,8 +1459,8 @@ blockquote {
     
     
 <tr>
-  <td>❌</td>
-  <td>is pretty insecure</td>
+  <td title="Resource: some other resource">❌</td>
+  <td title="Resource: some other resource">is pretty insecure</td>
   <td>
     
     <code>partition 10000</code>
@@ -1416,6 +1485,11 @@ blockquote {
   
 <section class="control">
   <h3>1.16 Ensure IAM policies that allow full "*:*" administrative privileges are not attached</h3>
+
+  
+  <p><em>IAM policies are the means by which privileges are granted to users, groups, or roles. It is recommended and considered a standard security advice to grant least privilege -that is, granting only the permissions required to perform a task. Determine what users need to do and then craft policies for them that let the users perform only those tasks, instead of allowing full administrative privileges.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1430,20 +1504,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>IAM policies are the means by which privileges are granted to users, groups, or roles. It is recommended and considered a standard security advice to grant least privilege -that is, granting only the permissions required to perform a task. Determine what users need to do and then craft policies for them that let the users perform only those tasks, instead of allowing full administrative privileges.</em></p>
-  
 
   
   
@@ -1461,8 +1531,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -1487,6 +1557,11 @@ blockquote {
   
 <section class="control">
   <h3>1.17 Ensure a support role has been created to manage incidents with AWS Support</h3>
+
+  
+  <p><em>AWS provides a support center that can be used for incident notification and response, as well as technical support and customer services. Create an IAM Role to allow authorized users to manage incidents with AWS Support.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1501,20 +1576,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>AWS provides a support center that can be used for incident notification and response, as well as technical support and customer services. Create an IAM Role to allow authorized users to manage incidents with AWS Support.</em></p>
-  
 
   
   
@@ -1532,8 +1603,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -1558,6 +1629,11 @@ blockquote {
   
 <section class="control">
   <h3>1.18 Ensure IAM instance roles are used for AWS resource access from instances</h3>
+
+  
+  <p><em>AWS access from within AWS instances can be done by either encoding AWS keys into AWS API calls or by assigning the instance to a role which has an appropriate permissions policy for the required access. "AWS Access" means accessing the APIs of AWS in order to access AWS resources or manage AWS account resources.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1572,20 +1648,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>AWS access from within AWS instances can be done by either encoding AWS keys into AWS API calls or by assigning the instance to a role which has an appropriate permissions policy for the required access. "AWS Access" means accessing the APIs of AWS in order to access AWS resources or manage AWS account resources.</em></p>
-  
 
   
   
@@ -1603,8 +1675,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -1629,6 +1701,11 @@ blockquote {
   
 <section class="control">
   <h3>1.19 Ensure that all the expired SSL/TLS certificates stored in AWS IAM are removed</h3>
+
+  
+  <p><em>To enable HTTPS connections to your website or application in AWS, you need an SSL/TLS server certificate. You can use ACM or IAM to store and deploy server certificates. Use IAM as a certificate manager only when you must support HTTPS connections in a region that is not supported by ACM. IAM securely encrypts your private keys and stores the encrypted version in IAM SSL certificate storage. IAM supports deploying server certificates in all regions, but you must obtain your certificate from an external provider for use with AWS. You cannot upload an ACM certificate to IAM. Additionally, you cannot manage your certificates from the IAM Console.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1643,20 +1720,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>To enable HTTPS connections to your website or application in AWS, you need an SSL/TLS server certificate. You can use ACM or IAM to store and deploy server certificates. Use IAM as a certificate manager only when you must support HTTPS connections in a region that is not supported by ACM. IAM securely encrypts your private keys and stores the encrypted version in IAM SSL certificate storage. IAM supports deploying server certificates in all regions, but you must obtain your certificate from an external provider for use with AWS. You cannot upload an ACM certificate to IAM. Additionally, you cannot manage your certificates from the IAM Console.</em></p>
-  
 
   
   
@@ -1674,8 +1747,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -1700,6 +1773,11 @@ blockquote {
   
 <section class="control">
   <h3>1.20 Ensure that S3 Buckets are configured with 'Block public access (bucket settings)'</h3>
+
+  
+  <p><em>Amazon S3 provides Block public access (bucket settings) and Block public access (account settings) to help you manage public access to Amazon S3 resources. By default, S3 buckets and objects are created with public access disabled. However, an IAM principle with sufficient S3 permissions can enable public access at the bucket and/or object level. While enabled, Block public access (bucket settings) prevents an individual bucket, and its contained objects, from becoming publicly accessible. Similarly, Block public access (account settings) prevents all buckets, and contained objects, from becoming publicly accessible across the entire account.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1714,20 +1792,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Amazon S3 provides Block public access (bucket settings) and Block public access (account settings) to help you manage public access to Amazon S3 resources. By default, S3 buckets and objects are created with public access disabled. However, an IAM principle with sufficient S3 permissions can enable public access at the bucket and/or object level. While enabled, Block public access (bucket settings) prevents an individual bucket, and its contained objects, from becoming publicly accessible. Similarly, Block public access (account settings) prevents all buckets, and contained objects, from becoming publicly accessible across the entire account.</em></p>
-  
 
   
   
@@ -1745,8 +1819,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -1771,6 +1845,11 @@ blockquote {
   
 <section class="control">
   <h3>1.21 Ensure that IAM Access analyzer is enabled</h3>
+
+  
+  <p><em>Enable IAM Access analyzer for IAM policies about all resources. IAM Access Analyzer is a technology introduced at AWS reinvent 2019. After the Analyzer is enabled in IAM, scan results are displayed on the console showing the accessible resources. Scans show resources that other accounts and federated users can access, such as KMS keys and IAM roles. So the results allow you to determine if an unintended user is allowed, making it easier for administrators to monitor least privileges access.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1785,20 +1864,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm highlight">1</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Enable IAM Access analyzer for IAM policies about all resources. IAM Access Analyzer is a technology introduced at AWS reinvent 2019. After the Analyzer is enabled in IAM, scan results are displayed on the console showing the accessible resources. Scans show resources that other accounts and federated users can access, such as KMS keys and IAM roles. So the results allow you to determine if an unintended user is allowed, making it easier for administrators to monitor least privileges access.</em></p>
-  
 
   
   
@@ -1816,8 +1891,8 @@ blockquote {
     
     
 <tr>
-  <td>❌</td>
-  <td>is pretty insecure</td>
+  <td title="Resource: some other resource">❌</td>
+  <td title="Resource: some other resource">is pretty insecure</td>
   <td>
     
     <code>partition 10000</code>
@@ -1842,6 +1917,11 @@ blockquote {
   
 <section class="control">
   <h3>1.22 Ensure IAM users are managed centrally via identity federation or AWS Organizations for multi-account environments</h3>
+
+  
+  <p><em>In multi-account environments, IAM user centralization facilitates greater user control. User access beyond the initial account is then provide via role assumption. Centralization of users can be accomplished through federation with an external identity provider or through the use of AWS Organizations.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1856,20 +1936,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>In multi-account environments, IAM user centralization facilitates greater user control. User access beyond the initial account is then provide via role assumption. Centralization of users can be accomplished through federation with an external identity provider or through the use of AWS Organizations.</em></p>
-  
 
   
   
@@ -1887,8 +1963,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -1933,11 +2009,11 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>2</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">2</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info highlight">1</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>3</td>
     </tr>
   </tbody>
@@ -1964,11 +2040,11 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info highlight">1</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>2</td>
     </tr>
   </tbody>
@@ -1980,6 +2056,11 @@ blockquote {
   
 <section class="control">
   <h3>2.1.1 Ensure all S3 buckets employ encryption-at-rest</h3>
+
+  
+  <p><em>Amazon S3 provides a variety of no, or low, cost encryption options to protect data at rest.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -1994,20 +2075,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Amazon S3 provides a variety of no, or low, cost encryption options to protect data at rest.</em></p>
-  
 
   
   
@@ -2025,8 +2102,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -2051,6 +2128,11 @@ blockquote {
   
 <section class="control">
   <h3>2.1.2 Ensure S3 Bucket Policy allows HTTPS requests</h3>
+
+  
+  <p><em>At the Amazon S3 bucket level, you can configure permissions through a bucket policy making the objects accessible only through HTTPS.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -2065,20 +2147,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info highlight">1</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>At the Amazon S3 bucket level, you can configure permissions through a bucket policy making the objects accessible only through HTTPS.</em></p>
-  
 
   
   
@@ -2096,8 +2174,8 @@ blockquote {
     
     
 <tr>
-  <td>ℹ</td>
-  <td>just some info, thought you should know</td>
+  <td title="Resource: resource name">ℹ</td>
+  <td title="Resource: resource name">just some info, thought you should know</td>
   <td>
     
     <code>partition 20000</code>
@@ -2142,11 +2220,11 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
@@ -2158,6 +2236,11 @@ blockquote {
   
 <section class="control">
   <h3>2.2.1 Ensure EBS volume encryption is enabled</h3>
+
+  
+  <p><em>Elastic Compute Cloud (EC2) supports encryption at rest when using the Elastic Block Store (EBS) service. While disabled by default, forcing encryption at EBS volume creation is supported.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -2172,20 +2255,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Elastic Compute Cloud (EC2) supports encryption at rest when using the Elastic Block Store (EBS) service. While disabled by default, forcing encryption at EBS volume creation is supported.</em></p>
-  
 
   
   
@@ -2203,8 +2282,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -2252,11 +2331,11 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>11</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">11</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>11</td>
     </tr>
   </tbody>
@@ -2268,6 +2347,11 @@ blockquote {
   
 <section class="control">
   <h3>3.1 Ensure CloudTrail is enabled in all regions</h3>
+
+  
+  <p><em>AWS CloudTrail is a web service that records AWS API calls for your account and delivers log files to you. The recorded information includes the identity of the API caller, the time of the API call, the source IP address of the API caller, the request parameters, and the response elements returned by the AWS service. CloudTrail provides a history of AWS API calls for an account, including API calls made via the Management Console, SDKs, command line tools, and higher-level AWS services (such as CloudFormation).</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -2282,20 +2366,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>AWS CloudTrail is a web service that records AWS API calls for your account and delivers log files to you. The recorded information includes the identity of the API caller, the time of the API call, the source IP address of the API caller, the request parameters, and the response elements returned by the AWS service. CloudTrail provides a history of AWS API calls for an account, including API calls made via the Management Console, SDKs, command line tools, and higher-level AWS services (such as CloudFormation).</em></p>
-  
 
   
   
@@ -2313,8 +2393,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -2339,6 +2419,11 @@ blockquote {
   
 <section class="control">
   <h3>3.2 Ensure CloudTrail log file validation is enabled.</h3>
+
+  
+  <p><em>CloudTrail log file validation creates a digitally signed digest file containing a hash of each log that CloudTrail writes to S3. These digest files can be used to determine whether a log file was changed, deleted, or unchanged after CloudTrail delivered the log. It is recommended that file validation be enabled on all CloudTrails.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -2353,20 +2438,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>CloudTrail log file validation creates a digitally signed digest file containing a hash of each log that CloudTrail writes to S3. These digest files can be used to determine whether a log file was changed, deleted, or unchanged after CloudTrail delivered the log. It is recommended that file validation be enabled on all CloudTrails.</em></p>
-  
 
   
   
@@ -2384,8 +2465,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -2410,6 +2491,11 @@ blockquote {
   
 <section class="control">
   <h3>3.3 Ensure the S3 bucket used to store CloudTrail logs is not publicly accessible</h3>
+
+  
+  <p><em>CloudTrail logs a record of every API call made in your AWS account. These logs file are stored in an S3 bucket. It is recommended that the bucket policy or access control list (ACL) applied to the S3 bucket that CloudTrail logs to prevent public access to the CloudTrail logs.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -2424,20 +2510,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>CloudTrail logs a record of every API call made in your AWS account. These logs file are stored in an S3 bucket. It is recommended that the bucket policy or access control list (ACL) applied to the S3 bucket that CloudTrail logs to prevent public access to the CloudTrail logs.</em></p>
-  
 
   
   
@@ -2455,8 +2537,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -2481,6 +2563,11 @@ blockquote {
   
 <section class="control">
   <h3>3.4 Ensure CloudTrail trails are integrated with CloudWatch Logs</h3>
+
+  
+  <p><em>AWS CloudTrail is a web service that records AWS API calls made in a given AWS account. The recorded information includes the identity of the API caller, the time of the API call, the source IP address of the API caller, the request parameters, and the response elements returned by the AWS service. CloudTrail uses Amazon S3 for log file storage and delivery, so log files are stored durably. In addition to capturing CloudTrail logs within a specified S3 bucket for long term analysis, realtime analysis can be performed by configuring CloudTrail to send logs to CloudWatch Logs. For a trail that is enabled in all regions in an account, CloudTrail sends log files from all those regions to a CloudWatch Logs log group. It is recommended that CloudTrail logs be sent to CloudWatch Logs.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -2495,20 +2582,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>AWS CloudTrail is a web service that records AWS API calls made in a given AWS account. The recorded information includes the identity of the API caller, the time of the API call, the source IP address of the API caller, the request parameters, and the response elements returned by the AWS service. CloudTrail uses Amazon S3 for log file storage and delivery, so log files are stored durably. In addition to capturing CloudTrail logs within a specified S3 bucket for long term analysis, realtime analysis can be performed by configuring CloudTrail to send logs to CloudWatch Logs. For a trail that is enabled in all regions in an account, CloudTrail sends log files from all those regions to a CloudWatch Logs log group. It is recommended that CloudTrail logs be sent to CloudWatch Logs.</em></p>
-  
 
   
   
@@ -2526,8 +2609,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -2552,6 +2635,11 @@ blockquote {
   
 <section class="control">
   <h3>3.5 Ensure AWS Config is enabled in all regions</h3>
+
+  
+  <p><em>AWS Config is a web service that performs configuration management of supported AWS resources within your account and delivers log files to you. The recorded information includes the configuration item (AWS resource), relationships between configuration items (AWS resources), any configuration changes between resources. It is recommended to enable AWS Config be enabled in all regions.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -2566,20 +2654,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>AWS Config is a web service that performs configuration management of supported AWS resources within your account and delivers log files to you. The recorded information includes the configuration item (AWS resource), relationships between configuration items (AWS resources), any configuration changes between resources. It is recommended to enable AWS Config be enabled in all regions.</em></p>
-  
 
   
   
@@ -2597,8 +2681,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -2623,6 +2707,11 @@ blockquote {
   
 <section class="control">
   <h3>3.6 Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket</h3>
+
+  
+  <p><em>S3 Bucket Access Logging generates a log that contains access records for each request made to your S3 bucket. An access log record contains details about the request, such as the request type, the resources specified in the request worked, and the time and date the request was processed. It is recommended that bucket access logging be enabled on the CloudTrail S3 bucket.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -2637,20 +2726,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>S3 Bucket Access Logging generates a log that contains access records for each request made to your S3 bucket. An access log record contains details about the request, such as the request type, the resources specified in the request worked, and the time and date the request was processed. It is recommended that bucket access logging be enabled on the CloudTrail S3 bucket.</em></p>
-  
 
   
   
@@ -2668,8 +2753,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -2694,6 +2779,11 @@ blockquote {
   
 <section class="control">
   <h3>3.7 Ensure CloudTrail logs are encrypted at rest using KMS CMKs</h3>
+
+  
+  <p><em>AWS CloudTrail is a web service that records AWS API calls for an account and makes those logs available to users and resources in accordance with IAM policies. AWS Key Management Service (KMS) is a managed service that helps create and control the encryption keys used to encrypt account data, and uses Hardware Security Modules (HSMs) to protect the security of encryption keys. CloudTrail logs can be configured to leverage server side encryption (SSE) and KMS customer created master keys (CMK) to further protect CloudTrail logs. It is recommended that CloudTrail be configured to use SSE-KMS.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -2708,20 +2798,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>AWS CloudTrail is a web service that records AWS API calls for an account and makes those logs available to users and resources in accordance with IAM policies. AWS Key Management Service (KMS) is a managed service that helps create and control the encryption keys used to encrypt account data, and uses Hardware Security Modules (HSMs) to protect the security of encryption keys. CloudTrail logs can be configured to leverage server side encryption (SSE) and KMS customer created master keys (CMK) to further protect CloudTrail logs. It is recommended that CloudTrail be configured to use SSE-KMS.</em></p>
-  
 
   
   
@@ -2739,8 +2825,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -2765,6 +2851,11 @@ blockquote {
   
 <section class="control">
   <h3>3.8 Ensure rotation for customer created CMKs is enabled</h3>
+
+  
+  <p><em>AWS Key Management Service (KMS) allows customers to rotate the backing key which is key material stored within the KMS which is tied to the key ID of the Customer Created customer master key (CMK). It is the backing key that is used to perform cryptographic operations such as encryption and decryption. Automated key rotation currently retains all prior backing keys so that decryption of encrypted data can take place transparently. It is recommended that CMK key rotation be enabled.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -2779,20 +2870,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>AWS Key Management Service (KMS) allows customers to rotate the backing key which is key material stored within the KMS which is tied to the key ID of the Customer Created customer master key (CMK). It is the backing key that is used to perform cryptographic operations such as encryption and decryption. Automated key rotation currently retains all prior backing keys so that decryption of encrypted data can take place transparently. It is recommended that CMK key rotation be enabled.</em></p>
-  
 
   
   
@@ -2810,8 +2897,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -2836,6 +2923,11 @@ blockquote {
   
 <section class="control">
   <h3>3.9 Ensure VPC flow logging is enabled in all VPCs</h3>
+
+  
+  <p><em>VPC Flow Logs is a feature that enables you to capture information about the IP traffic going to and from network interfaces in your VPC. After you've created a flow log, you can view and retrieve its data in Amazon CloudWatch Logs. It is recommended that VPC Flow Logs be enabled for packet "Rejects" for VPCs.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -2850,20 +2942,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>VPC Flow Logs is a feature that enables you to capture information about the IP traffic going to and from network interfaces in your VPC. After you've created a flow log, you can view and retrieve its data in Amazon CloudWatch Logs. It is recommended that VPC Flow Logs be enabled for packet "Rejects" for VPCs.</em></p>
-  
 
   
   
@@ -2881,8 +2969,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -2907,6 +2995,11 @@ blockquote {
   
 <section class="control">
   <h3>3.10 Ensure that Object-level logging for write events is enabled for S3 bucket</h3>
+
+  
+  <p><em>S3 object-level API operations such as GetObject, DeleteObject, and PutObject are called data events. By default, CloudTrail trails don't log data events and so it is recommended to enable Object-level logging for S3 buckets.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -2921,20 +3014,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>S3 object-level API operations such as GetObject, DeleteObject, and PutObject are called data events. By default, CloudTrail trails don't log data events and so it is recommended to enable Object-level logging for S3 buckets.</em></p>
-  
 
   
   
@@ -2952,8 +3041,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -2978,6 +3067,11 @@ blockquote {
   
 <section class="control">
   <h3>3.11 Ensure that Object-level logging for read events is enabled for S3 bucket</h3>
+
+  
+  <p><em>S3 object-level API operations such as GetObject, DeleteObject, and PutObject are called data events. By default, CloudTrail trails don't log data events and so it is recommended to enable Object-level logging for S3 buckets.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -2992,20 +3086,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>S3 object-level API operations such as GetObject, DeleteObject, and PutObject are called data events. By default, CloudTrail trails don't log data events and so it is recommended to enable Object-level logging for S3 buckets.</em></p>
-  
 
   
   
@@ -3023,8 +3113,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -3069,11 +3159,11 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>11</td>
-      <td>2</td>
-      <td>2</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">11</td>
+      <td class="summary-total-skip highlight">2</td>
+      <td class="summary-total-info highlight">2</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>15</td>
     </tr>
   </tbody>
@@ -3085,6 +3175,11 @@ blockquote {
   
 <section class="control">
   <h3>4.1 Ensure a log metric filter and alarm exist for unauthorized API calls</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for unauthorized API calls.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -3099,20 +3194,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for unauthorized API calls.</em></p>
-  
 
   
   
@@ -3130,8 +3221,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -3156,6 +3247,11 @@ blockquote {
   
 <section class="control">
   <h3>4.2 Ensure a log metric filter and alarm exist for Management Console sign-in without MFA</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for console logins that are not protected by multi-factor authentication (MFA).</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -3170,20 +3266,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for console logins that are not protected by multi-factor authentication (MFA).</em></p>
-  
 
   
   
@@ -3201,8 +3293,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -3227,6 +3319,11 @@ blockquote {
   
 <section class="control">
   <h3>4.3 Ensure a log metric filter and alarm exist for usage of "root" account</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for root login attempts.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -3241,20 +3338,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info highlight">1</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for root login attempts.</em></p>
-  
 
   
   
@@ -3272,8 +3365,8 @@ blockquote {
     
     
 <tr>
-  <td>ℹ</td>
-  <td>just some info, thought you should know</td>
+  <td title="Resource: resource name">ℹ</td>
+  <td title="Resource: resource name">just some info, thought you should know</td>
   <td>
     
     <code>partition 20000</code>
@@ -3298,6 +3391,11 @@ blockquote {
   
 <section class="control">
   <h3>4.4 Ensure a log metric filter and alarm exist for IAM policy changes</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established changes made to Identity and Access Management (IAM) policies.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -3312,20 +3410,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established changes made to Identity and Access Management (IAM) policies.</em></p>
-  
 
   
   
@@ -3343,8 +3437,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -3369,6 +3463,11 @@ blockquote {
   
 <section class="control">
   <h3>4.5 Ensure a log metric filter and alarm exist for CloudTrail configuration changes</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for detecting changes to CloudTrail's configurations.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -3383,20 +3482,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for detecting changes to CloudTrail's configurations.</em></p>
-  
 
   
   
@@ -3414,8 +3509,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -3440,6 +3535,11 @@ blockquote {
   
 <section class="control">
   <h3>4.6 Ensure a log metric filter and alarm exist for AWS Management Console authentication failures</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for failed console authentication attempts.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -3454,20 +3554,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info highlight">1</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for failed console authentication attempts.</em></p>
-  
 
   
   
@@ -3485,8 +3581,8 @@ blockquote {
     
     
 <tr>
-  <td>ℹ</td>
-  <td>just some info, thought you should know</td>
+  <td title="Resource: resource name">ℹ</td>
+  <td title="Resource: resource name">just some info, thought you should know</td>
   <td>
     
     <code>partition 20000</code>
@@ -3511,6 +3607,11 @@ blockquote {
   
 <section class="control">
   <h3>4.7 Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created CMKs</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for customer created CMKs which have changed state to disabled or scheduled deletion.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -3525,20 +3626,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for customer created CMKs which have changed state to disabled or scheduled deletion.</em></p>
-  
 
   
   
@@ -3556,8 +3653,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -3582,6 +3679,11 @@ blockquote {
   
 <section class="control">
   <h3>4.8 Ensure a log metric filter and alarm exist for S3 bucket policy changes</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for changes to S3 bucket policies.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -3596,20 +3698,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for changes to S3 bucket policies.</em></p>
-  
 
   
   
@@ -3627,8 +3725,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -3653,6 +3751,11 @@ blockquote {
   
 <section class="control">
   <h3>4.9 Ensure a log metric filter and alarm exist for AWS Config configuration changes</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for detecting changes to CloudTrail's configurations.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -3667,20 +3770,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip highlight">1</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for detecting changes to CloudTrail's configurations.</em></p>
-  
 
   
   
@@ -3698,8 +3797,8 @@ blockquote {
     
     
 <tr>
-  <td>⇨</td>
-  <td>totally skipping this one</td>
+  <td title="Resource: resource name">⇨</td>
+  <td title="Resource: resource name">totally skipping this one</td>
   <td>
     
     <code>partition 40000</code>
@@ -3724,6 +3823,11 @@ blockquote {
   
 <section class="control">
   <h3>4.10 Ensure a log metric filter and alarm exist for security group changes</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. Security Groups are a stateful packet filter that controls ingress and egress traffic within a VPC. It is recommended that a metric filter and alarm be established for detecting changes to Security Groups.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -3738,20 +3842,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. Security Groups are a stateful packet filter that controls ingress and egress traffic within a VPC. It is recommended that a metric filter and alarm be established for detecting changes to Security Groups.</em></p>
-  
 
   
   
@@ -3769,8 +3869,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -3795,6 +3895,11 @@ blockquote {
   
 <section class="control">
   <h3>4.11 Ensure a log metric filter and alarm exist for changes to Network Access Control Lists (NACL)</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. NACLs are used as a stateless packet filter to control ingress and egress traffic for subnets within a VPC. It is recommended that a metric filter and alarm be established for changes made to NACLs.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -3809,20 +3914,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. NACLs are used as a stateless packet filter to control ingress and egress traffic for subnets within a VPC. It is recommended that a metric filter and alarm be established for changes made to NACLs.</em></p>
-  
 
   
   
@@ -3840,8 +3941,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -3866,6 +3967,11 @@ blockquote {
   
 <section class="control">
   <h3>4.12 Ensure a log metric filter and alarm exist for changes to network gateways</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. Network gateways are required to send/receive traffic to a destination outside of a VPC. It is recommended that a metric filter and alarm be established for changes to network gateways.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -3880,20 +3986,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. Network gateways are required to send/receive traffic to a destination outside of a VPC. It is recommended that a metric filter and alarm be established for changes to network gateways.</em></p>
-  
 
   
   
@@ -3911,8 +4013,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -3937,6 +4039,11 @@ blockquote {
   
 <section class="control">
   <h3>4.13 Ensure a log metric filter and alarm exist for route table changes</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. Routing tables are used to route network traffic between subnets and to network gateways. It is recommended that a metric filter and alarm be established for changes to route tables.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -3951,20 +4058,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. Routing tables are used to route network traffic between subnets and to network gateways. It is recommended that a metric filter and alarm be established for changes to route tables.</em></p>
-  
 
   
   
@@ -3982,8 +4085,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -4008,6 +4111,11 @@ blockquote {
   
 <section class="control">
   <h3>4.14 Ensure a log metric filter and alarm exist for VPC changes</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is possible to have more than 1 VPC within an account, in addition it is also possible to create a peer connection between 2 VPCs enabling network traffic to route between VPCs. It is recommended that a metric filter and alarm be established for changes made to VPCs.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -4022,20 +4130,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip highlight">1</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is possible to have more than 1 VPC within an account, in addition it is also possible to create a peer connection between 2 VPCs enabling network traffic to route between VPCs. It is recommended that a metric filter and alarm be established for changes made to VPCs.</em></p>
-  
 
   
   
@@ -4053,8 +4157,8 @@ blockquote {
     
     
 <tr>
-  <td>⇨</td>
-  <td>totally skipping this one</td>
+  <td title="Resource: resource name">⇨</td>
+  <td title="Resource: resource name">totally skipping this one</td>
   <td>
     
     <code>partition 40000</code>
@@ -4079,6 +4183,11 @@ blockquote {
   
 <section class="control">
   <h3>4.15 Ensure a log metric filter and alarm exists for AWS Organizations changes</h3>
+
+  
+  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for AWS Organizations changes made in the master AWS Account.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -4093,20 +4202,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td class="summary-total-ok highlight">1</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm">0</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for AWS Organizations changes made in the master AWS Account.</em></p>
-  
 
   
   
@@ -4124,8 +4229,8 @@ blockquote {
     
     
 <tr>
-  <td>✅</td>
-  <td>is totally secure and this is qa very very very very very long reason</td>
+  <td title="Resource: resource name">✅</td>
+  <td title="Resource: resource name">is totally secure and this is qa very very very very very long reason</td>
   <td>
     
     <code>partition 30000</code>
@@ -4170,11 +4275,11 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>4</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm highlight">4</td>
+      <td class="summary-total-error">0</td>
       <td>4</td>
     </tr>
   </tbody>
@@ -4186,6 +4291,11 @@ blockquote {
   
 <section class="control">
   <h3>5.1 Ensure no Network ACLs allow ingress from 0.0.0.0/0 to remote server administration ports</h3>
+
+  
+  <p><em>The Network Access Control List (NACL) function provide stateless filtering of ingress and egress network traffic to AWS resources. It is recommended that no NACL allows unrestricted ingress access to remote server administration ports, such as SSH to port 22 and RDP to port 3389.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -4200,20 +4310,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm highlight">1</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>The Network Access Control List (NACL) function provide stateless filtering of ingress and egress network traffic to AWS resources. It is recommended that no NACL allows unrestricted ingress access to remote server administration ports, such as SSH to port 22 and RDP to port 3389.</em></p>
-  
 
   
   
@@ -4231,8 +4337,8 @@ blockquote {
     
     
 <tr>
-  <td>❌</td>
-  <td>is pretty insecure</td>
+  <td title="Resource: some other resource">❌</td>
+  <td title="Resource: some other resource">is pretty insecure</td>
   <td>
     
     <code>partition 10000</code>
@@ -4257,6 +4363,11 @@ blockquote {
   
 <section class="control">
   <h3>5.2 Ensure no security groups allow ingress from 0.0.0.0/0 to remote server administration ports</h3>
+
+  
+  <p><em>Security groups provide stateful filtering of ingress and egress network traffic to AWS resources. It is recommended that no security group allows unrestricted ingress access to remote server administration ports, such as SSH to port 22 and RDP to port 3389.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -4271,20 +4382,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm highlight">1</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>Security groups provide stateful filtering of ingress and egress network traffic to AWS resources. It is recommended that no security group allows unrestricted ingress access to remote server administration ports, such as SSH to port 22 and RDP to port 3389.</em></p>
-  
 
   
   
@@ -4302,8 +4409,8 @@ blockquote {
     
     
 <tr>
-  <td>❌</td>
-  <td>is pretty insecure</td>
+  <td title="Resource: some other resource">❌</td>
+  <td title="Resource: some other resource">is pretty insecure</td>
   <td>
     
     <code>partition 10000</code>
@@ -4328,6 +4435,11 @@ blockquote {
   
 <section class="control">
   <h3>5.3 Ensure the default security group of every VPC restricts all traffic</h3>
+
+  
+  <p><em>A VPC comes with a default security group whose initial settings deny all inbound traffic, allow all outbound traffic, and allow all traffic between instances assigned to the security group. If you don't specify a security group when you launch an instance, the instance is automatically assigned to this default security group. Security groups provide stateful filtering of ingress/egress network traffic to AWS resources. It is recommended that the default security group restrict all traffic.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -4342,20 +4454,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm highlight">1</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>A VPC comes with a default security group whose initial settings deny all inbound traffic, allow all outbound traffic, and allow all traffic between instances assigned to the security group. If you don't specify a security group when you launch an instance, the instance is automatically assigned to this default security group. Security groups provide stateful filtering of ingress/egress network traffic to AWS resources. It is recommended that the default security group restrict all traffic.</em></p>
-  
 
   
   
@@ -4373,8 +4481,8 @@ blockquote {
     
     
 <tr>
-  <td>❌</td>
-  <td>is pretty insecure</td>
+  <td title="Resource: some other resource">❌</td>
+  <td title="Resource: some other resource">is pretty insecure</td>
   <td>
     
     <code>partition 10000</code>
@@ -4399,6 +4507,11 @@ blockquote {
   
 <section class="control">
   <h3>5.4 Ensure routing tables for VPC peering are 'least access'</h3>
+
+  
+  <p><em>A VPC comes with a default security group whose initial settings deny all inbound traffic, allow all outbound traffic, and allow all traffic between instances assigned to the security group. If you don't specify a security group when you launch an instance, the instance is automatically assigned to this default security group. Security groups provide stateful filtering of ingress/egress network traffic to AWS resources. It is recommended that the default security group restrict all traffic.</em></p>
+  
+
   
 <table role="table">
   <thead>
@@ -4413,20 +4526,16 @@ blockquote {
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
+      <td class="summary-total-ok">0</td>
+      <td class="summary-total-skip">0</td>
+      <td class="summary-total-info">0</td>
+      <td class="summary-total-alarm highlight">1</td>
+      <td class="summary-total-error">0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
 
-
-  
-  <p><em>A VPC comes with a default security group whose initial settings deny all inbound traffic, allow all outbound traffic, and allow all traffic between instances assigned to the security group. If you don't specify a security group when you launch an instance, the instance is automatically assigned to this default security group. Security groups provide stateful filtering of ingress/egress network traffic to AWS resources. It is recommended that the default security group restrict all traffic.</em></p>
-  
 
   
   
@@ -4444,8 +4553,8 @@ blockquote {
     
     
 <tr>
-  <td>❌</td>
-  <td>is pretty insecure</td>
+  <td title="Resource: some other resource">❌</td>
+  <td title="Resource: some other resource">is pretty insecure</td>
   <td>
     
     <code>partition 10000</code>
@@ -4475,7 +4584,9 @@ blockquote {
   
 </section>
 
-
+    <footer><em>Report run at <code>2021-10-22 21:01:10</code> using <a href="https://steampipe.io"
+          rel="nofollow"><code>Steampipe 0.9.0-rc.1</code></a> in dir
+        <code>/Users/binaeksarkar/work/sources/steampipe/tests/acceptance/test_data/sample_workspace</code>.</em></footer>
   </div>
 </body>
 
