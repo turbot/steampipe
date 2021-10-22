@@ -4,10 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
+	"text/template"
 
 	"github.com/turbot/steampipe/control/controlexecute"
+	"github.com/turbot/steampipe/version"
 )
 
 type FormatterMap map[string]Formatter
@@ -112,4 +116,25 @@ func (j *NullFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 func (j *NullFormatter) FileExtension() string {
 	// will not be called
 	return ""
+}
+
+var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
+	"steampipeversion": func() string { return version.String() },
+	"workingdir":       func() string { wd, _ := os.Getwd(); return wd },
+	"asstr":            func(i reflect.Value) string { return fmt.Sprintf("%v", i) },
+	"statusicon": func(status string) string {
+		switch strings.ToLower(status) {
+		case "ok":
+			return "✅"
+		case "skip":
+			return "⇨"
+		case "info":
+			return "ℹ"
+		case "alarm":
+			return "❌"
+		case "error":
+			return "❗"
+		}
+		return ""
+	},
 }
