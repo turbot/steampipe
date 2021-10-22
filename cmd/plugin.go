@@ -52,10 +52,7 @@ Examples:
 	cmd.AddCommand(pluginListCmd())
 	cmd.AddCommand(pluginUninstallCmd())
 	cmd.AddCommand(pluginUpdateCmd())
-
-	cmdconfig.
-		OnCmd(cmd).
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin")
+	cmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for plugin")
 
 	return cmd
 }

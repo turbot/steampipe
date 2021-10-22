@@ -76,9 +76,9 @@ func InitCmd() {
 	// disable auto completion generation, since we don't want to support
 	// powershell yet - and there's no way to disable powershell in the default generator
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
-	cmdconfig.OnCmd(rootCmd).
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for steampipe").
-		AddBoolFlag("version", "v", false, "Version for steampipe")
+	rootCmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for steampipe")
+	rootCmd.Flags().BoolP(constants.ArgVersion, "v", false, "Version for steampipe")
+
 }
 
 // initConfig reads in config file and ENV variables if set.

@@ -3,6 +3,7 @@ package constants
 // Argument name constants
 const (
 	ArgHelp             = "help"
+	ArgVersion          = "version"
 	ArgJSON             = "json"
 	ArgCSV              = "csv"
 	ArgTable            = "table"

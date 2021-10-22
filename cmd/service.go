@@ -37,7 +37,7 @@ connection from any Postgres compatible database client.`,
 	cmd.AddCommand(serviceStatusCmd())
 	cmd.AddCommand(serviceStopCmd())
 	cmd.AddCommand(serviceRestartCmd())
-	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, "h", false, "Help for service")
+	cmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for service")
 	return cmd
 }
 
