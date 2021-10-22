@@ -85,19 +85,18 @@ func GetOutputFormatter(outputFormat string) (Formatter, error) {
 }
 
 func InferFormatFromExportFileName(filename string) (string, error) {
-	extension := strings.TrimPrefix(filepath.Ext(filename), ".")
+	extension := filepath.Ext(filename)
 	switch extension {
-	case "csv":
+	case ".csv":
 		return OutputFormatCSV, nil
-	case "json":
+	case ".json":
 		return OutputFormatJSON, nil
-	case "html":
+	case ".html", ".htm":
 		return OutputFormatHTML, nil
-	case "md", "markdown":
+	case ".md", ".markdown":
 		return OutputFormatMarkdown, nil
 	default:
-		// return blank, so that it fails when it looks
-		// up the formatter when it's to format
+		// could not infer format
 		return "", fmt.Errorf("could not infer valid export format from filename '%s'", filename)
 	}
 }
@@ -111,5 +110,6 @@ func (j *NullFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 }
 
 func (j *NullFormatter) FileExtension() string {
-	return "null"
+	// will not be called
+	return ""
 }
