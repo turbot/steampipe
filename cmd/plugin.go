@@ -170,7 +170,7 @@ Example:
 	return cmd
 }
 
-// exitCode=1 For panics
+// exitCode=1 For unknown errors resulting in panics
 // exitCode=2 For insufficient/wrong arguments passed in the command
 // exitCode=3 For errors related to loading state, loading version data or an issue contacting
 // the update server.
