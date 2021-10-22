@@ -459,5 +459,7 @@ func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, err
 }
 
 func generateDefaultExportFileName(formatter controldisplay.Formatter, executing string) string {
-	return fmt.Sprintf("%s-%s.%s", executing, time.Now().UTC().Format("20060102150405Z"), formatter.FileExtension())
+	now := time.Now()
+	timeFormatted := fmt.Sprintf("%d%02d%02d-%02d%02d%02d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+	return fmt.Sprintf("%s-%s.%s", executing, timeFormatted, formatter.FileExtension())
 }
