@@ -77,7 +77,7 @@ Examples:
 		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
-		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify The value of a variable")
+		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable")
 	return cmd
 }
 
