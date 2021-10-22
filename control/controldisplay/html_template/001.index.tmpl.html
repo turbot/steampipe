@@ -44,27 +44,27 @@
   </thead>
   <tbody>
     <tr>
-      <td>✅</td>
+      <td class="align-center">✅</td>
       <td>OK</td>
       <td class="{{ summarystatusclass "ok" .Ok}}">{{ .Ok }}</td>
     </tr>
     <tr>
-      <td>⇨</td>
+      <td class="align-center">⇨</td>
       <td>Skip</td>
       <td class="{{ summarystatusclass "skip" .Skip}}">{{ .Skip }}</td>
     </tr>
     <tr>
-      <td>ℹ</td>
+      <td class="align-center">ℹ</td>
       <td>Info</td>
       <td class="{{ summarystatusclass "info" .Info}}">{{ .Info }}</td>
     </tr>
     <tr>
-      <td>❌</td>
+      <td class="align-center">❌</td>
       <td>Alarm</td>
       <td class="{{ summarystatusclass "alarm" .Alarm}}">{{ .Alarm }}</td>
     </tr>
     <tr>
-      <td>❗</td>
+      <td class="align-center">❗</td>
       <td>Error</td>
       <td class="{{ summarystatusclass "error" .Error}}">{{ .Error }}</td>
     </tr>
@@ -174,7 +174,7 @@
 
 {{ define "control_run_table_row_template" }}
 <tr>
-  <td title="Resource: {{ .Resource }}">{{ statusicon .Status }}</td>
+  <td class="align-center" title="Resource: {{ .Resource }}">{{ statusicon .Status }}</td>
   <td title="Resource: {{ .Resource }}">{{ .Reason }}</td>
   <td>
     {{ range .Dimensions }}
