@@ -64,12 +64,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $WORKSPACE_DIR
   run steampipe check benchmark.cis_v130 --export=./test.md --progress=false
 
-  # deleting the 833rd line since it contains a timestamp
+  # deleting the 779th line since it contains a timestamp
   # checking for OS type, since sed command is different for linux and OSX
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i '.md' '833d' ./test.md
+    run sed -i '.md' '779d' ./test.md
   else
-    run sed -i '833d' ./test.md
+    run sed -i '779d' ./test.md
   fi
   assert_equal "$(cat ./test.md)" "$(cat $TEST_DATA_DIR/expected_check_markdown.md)"
   rm -f ./test.m*
