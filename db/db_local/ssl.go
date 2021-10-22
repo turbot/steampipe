@@ -55,7 +55,7 @@ func RemoveAllCertificates() error {
 	return RemoveServerCertificate()
 }
 
-// ValidateRootCertificate checks the root certificate exists, is not expired and has correct issuer
+// ValidateRootCertificate checks the root certificate exists, is not expired and has correct Subject
 func ValidateRootCertificate() bool {
 	utils.LogTime("db_local.ValidateRootCertificates start")
 	defer utils.LogTime("db_local.ValidateRootCertificates end")
@@ -65,7 +65,7 @@ func ValidateRootCertificate() bool {
 		return false
 	}
 
-	return validateCertificate(rootCertificate)
+	return (rootCertificate.Subject.CommonName == CertIssuer) && isCerticateExpiring(rootCertificate)
 }
 
 // ValidateServerCertificate checks the server certificate exists, is not expired and has correct issuer
@@ -78,7 +78,7 @@ func ValidateServerCertificate() bool {
 		return false
 	}
 
-	return validateCertificate(serverCertificate)
+	return (serverCertificate.Issuer.CommonName == CertIssuer) && isCerticateExpiring(serverCertificate)
 }
 
 // if certificate or private key files do not exist, generate them
@@ -118,12 +118,6 @@ func rootCertificateAndKeyExists() bool {
 // serverCertificateAndKeyExist checks if the server certificate ands private key files exist
 func serverCertificateAndKeyExist() bool {
 	return helpers.FileExists(getServerCertLocation()) && helpers.FileExists(getServerCertKeyLocation())
-}
-
-// validateCertificate checks the given certificate is not expired
-// and has Subject CN is equal to CertIssuer (defined above)
-func validateCertificate(rootCertificate *x509.Certificate) bool {
-	return (rootCertificate.Subject.CommonName == CertIssuer) && isCerticateExpiring(rootCertificate)
 }
 
 // isCerticateExpiring checks whether the certificate expires within a predefined CertExpiryTolerance period (defined above)
