@@ -40,6 +40,10 @@ h4 {
   font-size: 1em;
 }
 
+footer {
+  margin-top: 3em;
+}
+
 .container {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
   sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
@@ -103,17 +107,17 @@ blockquote {
   border-left: 0.25em solid var(--color-border-default);
 }
 
-.summary-total-ok {
+.summary-total-ok.highlight {
   font-weight: 600;
   color: var(--color-ok);
 }
 
-.summary-total-alarm {
+.summary-total-alarm.highlight {
   font-weight: 600;
   color: var(--color-alarm);
 }
 
-.summary-total-error {
+.summary-total-error.highlight {
   font-weight: 600;
   color: var(--color-alarm);
 }
