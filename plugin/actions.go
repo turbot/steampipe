@@ -85,9 +85,8 @@ func Exists(plugin string) (bool, error) {
 }
 
 // Install installs a plugin in the local file system
-func Install(plugin string) (*ociinstaller.SteampipeImage, error) {
-	image, err := ociinstaller.InstallPlugin(plugin)
-	return image, err
+func Install(plugin string) (*ociinstaller.SteampipeImage, string, error) {
+	return ociinstaller.InstallPlugin(plugin)
 }
 
 // PluginListItem is a struct representing an item in the list of plugins

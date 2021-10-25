@@ -223,7 +223,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			continue
 		}
 		display.UpdateSpinnerMessage(spinner, fmt.Sprintf("Installing plugin: %s", p))
-		image, err := plugin.Install(p)
+		image, message, err := plugin.Install(p)
 		if err != nil {
 			msg := ""
 			if strings.HasSuffix(err.Error(), "not found") {
@@ -253,6 +253,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			Skipped:        false,
 			Plugin:         p,
 			DocURL:         docURL,
+			Message:        message,
 			Version:        versionString,
 			IsUpdateReport: false,
 		})
@@ -383,7 +384,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		}
 
 		spinner := display.ShowSpinner(fmt.Sprintf("Updating plugin %s...", report.CheckResponse.Name))
-		image, err := plugin.Install(report.Plugin.Name)
+		image, message, err := plugin.Install(report.Plugin.Name)
 		display.StopSpinner(spinner)
 		if err != nil {
 			msg := ""
@@ -397,6 +398,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 				Skipped:        true,
 				SkipReason:     msg,
 				IsUpdateReport: true,
+				Message:        message,
 			})
 			continue
 		}
