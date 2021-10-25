@@ -17,7 +17,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run steampipe plugin install chaos@0.0.6
     assert_output --partial 'chaos@0.0.6'
     run steampipe plugin uninstall chaos@0.0.6
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos.spc
 }
 
 @test "steampipe plugin install chaos(latest)" {
@@ -29,11 +28,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe plugin install chaos(spepcific version) should not create conn config file" {
-    # run steampipe plugin install chaos@0.0.6
-    # cd $STEAMPIPE_INSTALL_DIR/config
-    # run ls -al
-    # assert_output 
-    # run steampipe plugin uninstall chaos@0.0.6
+    run steampipe plugin install chaos@0.0.6
+    assert_output --partial "default config wasn't created because 'latest' wasn't installed"
+    run steampipe plugin uninstall chaos@0.0.6
 }
 
 @test "steampipe plugin install chaos(latest) should create conn config file" {
