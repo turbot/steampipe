@@ -89,6 +89,8 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 		return nil, err
 	}
 
+	// TODO ADD PLUGIN TO OUR STATE FILE - JUST SERIALISE THE Plugins map?
+
 	// store the reattach config in our map
 	m.Plugins[req.Connection] = reattach
 
