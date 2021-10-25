@@ -2,12 +2,13 @@ package plugin_manager
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os/exec"
 	"syscall"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/turbot/steampipe-plugin-sdk/logging"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 
 	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
@@ -17,10 +18,10 @@ import (
 func Start() error {
 	// try to load the plugin manager state
 	state, err := loadPluginManagerState(true)
-
 	if err != nil {
 		return err
 	}
+
 	if state != nil {
 		log.Printf("[WARN] ******************** plugin manager Start() found previous instance of plugin manager still running - stopping it")
 		// stop the current instance
@@ -35,7 +36,7 @@ func Start() error {
 // start plugin manager, without checking it is already running
 func start() error {
 	// We don't want to see the plugin logs.
-	log.SetOutput(ioutil.Discard)
+	//log.SetOutput(ioutil.Discard)
 
 	// create command which will start plugin-manager
 	// we have to spawn a separate process to do this so the plugin process itself is not an orphan
@@ -45,6 +46,10 @@ func start() error {
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
 	}
+
+	loggOpts := &hclog.LoggerOptions{Name: "plugin_manager"}
+	logger := logging.NewLogger(loggOpts)
+
 	// launch the plugin manager the plugin process.
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: pluginshared.Handshake,
@@ -52,6 +57,7 @@ func start() error {
 		Cmd:             pluginManagerCmd,
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
+		Logger: logger,
 	})
 	if _, err := client.Start(); err != nil {
 		return err

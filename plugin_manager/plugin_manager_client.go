@@ -3,7 +3,9 @@ package plugin_manager
 import (
 	"log"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/constants"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
@@ -31,6 +33,9 @@ func NewPluginManagerClientWithRetries(pluginManagerState *pluginManagerState) (
 }
 
 func (c *PluginManagerClientWithRetries) attachToPluginManager() error {
+	loggOpts := &hclog.LoggerOptions{Name: "plugin_manager"}
+	logger := logging.NewLogger(loggOpts)
+
 	// construct a client using the plugin manager reaattach config
 	newClient := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: pluginshared.Handshake,
@@ -38,6 +43,7 @@ func (c *PluginManagerClientWithRetries) attachToPluginManager() error {
 		Reattach:        c.pluginManagerState.reattachConfig(),
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
+		Logger: logger,
 	})
 
 	// connect via RPC
