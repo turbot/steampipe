@@ -33,7 +33,7 @@ func NewPluginManagerClientWithRetries(pluginManagerState *pluginManagerState) (
 }
 
 func (c *PluginManagerClientWithRetries) attachToPluginManager() error {
-	loggOpts := &hclog.LoggerOptions{Name: "plugin_manager"}
+	loggOpts := &hclog.LoggerOptions{Name: "plugin"}
 	logger := logging.NewLogger(loggOpts)
 
 	// construct a client using the plugin manager reaattach config

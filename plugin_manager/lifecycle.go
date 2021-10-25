@@ -47,7 +47,7 @@ func start() error {
 		Setpgid: true,
 	}
 
-	loggOpts := &hclog.LoggerOptions{Name: "plugin_manager"}
+	loggOpts := &hclog.LoggerOptions{Name: "plugin"}
 	logger := logging.NewLogger(loggOpts)
 
 	// launch the plugin manager the plugin process.
