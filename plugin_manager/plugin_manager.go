@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"sync"
-	"syscall"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
@@ -136,6 +135,9 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 }
 
 func (m *PluginManager) startPlugin(req *pb.GetRequest) (*pb.ReattachConfig, error) {
+
+	log.Printf("[WARN] startPlugin ********************\n")
+
 	// get connection config
 	connectionConfig, ok := m.connectionConfig[req.Connection]
 	if !ok {
@@ -154,18 +156,13 @@ func (m *PluginManager) startPlugin(req *pb.GetRequest) (*pb.ReattachConfig, err
 	}
 	loggOpts := &hclog.LoggerOptions{Name: "plugin"}
 	if req.DisableLogger {
-		loggOpts.Exclude = func(hclog.Level, string, ...interface{}) bool { return true }
+		//loggOpts.Exclude = func(hclog.Level, string, ...interface{}) bool { return true }
 	}
 	logger := logging.NewLogger(loggOpts)
 
 	cmd := exec.Command(pluginPath)
 	// pass env to command
 	cmd.Env = os.Environ()
-	// set attributes on the command to ensure the process is not shutdown when its parent terminates
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		//Setpgid:    true,
-		Foreground: false,
-	}
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig:  sdkpluginshared.Handshake,
 		Plugins:          pluginMap,
