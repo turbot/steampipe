@@ -18,6 +18,7 @@ type InstallReport struct {
 	Plugin         string
 	SkipReason     string
 	DocURL         string
+	Message        string
 	Version        string
 	IsUpdateReport bool
 }
@@ -51,6 +52,12 @@ func (i *InstallReport) installString() string {
 			thisReport = append(
 				thisReport,
 				fmt.Sprintf("Documentation:    %s", i.DocURL),
+			)
+		}
+		if len(i.Message) > 0 {
+			thisReport = append(
+				thisReport,
+				fmt.Sprintf("Message:          %s", i.Message),
 			)
 		}
 	}
