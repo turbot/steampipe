@@ -41,4 +41,5 @@ load "$LIB_BATS_SUPPORT/load.bash"
     cd $STEAMPIPE_INSTALL_DIR/config
     run ls -al
     assert_output --partial 'chaos.spc'
+    cd -
 }
