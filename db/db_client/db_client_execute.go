@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -51,10 +52,12 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 	if query == "" {
 		return queryresult.NewQueryResult(nil), nil
 	}
+
 	startTime := time.Now()
 	// channel to flag to spinner that the query has run
 	var spinner *spinner.Spinner
 	var tx *sql.Tx
+	var session *sql.Conn
 
 	defer func() {
 		if err != nil {
@@ -63,6 +66,10 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 			// error - rollback transaction if we have one
 			if tx != nil {
 				tx.Rollback()
+			}
+			// close and release the db connection, if we have one
+			if session != nil {
+				session.Close()
 			}
 		}
 	}()
@@ -73,7 +80,8 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 		spinner = display.ShowSpinner("Loading results...")
 	}
 
-	session, err := c.createSession(ctx)
+	// acquire a session
+	session, err = c.acquireSession(ctx)
 	if err != nil {
 		return
 	}
@@ -83,7 +91,7 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 	if err != nil {
 		return
 	}
-
+	fmt.Println("QUERY:", query)
 	// start query
 	var rows *sql.Rows
 	rows, err = c.startQuery(ctx, query, tx)
@@ -113,36 +121,71 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 	return result, nil
 }
 
-func (c *DbClient) createSession(ctx context.Context) (*sql.Conn, error) {
-	c.sessionCreateLock.Lock()
-	defer c.sessionCreateLock.Unlock()
+func (c *DbClient) setSearchPath(ctx context.Context, session *sql.Conn) error {
+	q := fmt.Sprintf("set search_path to %s", strings.Join(c.requiredSessionSearchPath, ","))
+	_, err := session.ExecContext(ctx, q)
+	return err
+}
 
+func (c *DbClient) acquireSession(ctx context.Context) (*sql.Conn, error) {
+	fmt.Println("acquiring session")
+	c.sessionAcquireLock.Lock()
+	defer c.sessionAcquireLock.Unlock()
+	requestTime := time.Now()
 	conn, err := c.dbClient.Conn(ctx)
+	requestDuration := time.Since(requestTime)
 	if err != nil {
 		return nil, err
 	}
-	if _, ensured := c.ensuredConnectionsMap[conn]; !ensured {
-		stat := SessionStats{CreationTime: time.Now(), EnsureStartTime: time.Now(), EnsureEndTime: time.Now(), LastUsedTime: time.Now()}
-		if c.ensureSessionFunc == nil {
-			return conn, nil
-		}
 
-		if c.ensureSessionFunc != nil {
-			stat.EnsureStartTime = time.Now()
-			fmt.Println("ensuresession")
-			c.ensureSessionFunc(ctx, conn)
-			stat.EnsureEndTime = time.Now()
-		}
-
-		c.ensuredConnectionsMap[conn] = stat
+	if c.ensureSessionFunc == nil {
+		// nothing to do here
+		fmt.Println("nothing to do")
 		return conn, nil
 	}
 
-	stat := c.ensuredConnectionsMap[conn]
-	stat.LastUsedTime = time.Now()
-	c.ensuredConnectionsMap[conn] = stat
+	backendPid, err := getBackendPid(ctx, conn)
+	if err != nil {
+		return nil, err
+	}
+
+	sessionStat, isInitialized := c.initializedSessions[backendPid]
+
+	if !isInitialized {
+		sessionStat := NewSessionStat()
+		c.ensureSessionFunc(ctx, conn)
+		sessionStat.Initialized = time.Now()
+		c.initializedSessions[backendPid] = sessionStat
+	}
+
+	if strings.Join(sessionStat.SearchPath, ",") != strings.Join(c.requiredSessionSearchPath, ",") {
+		if err := c.setSearchPath(ctx, conn); err != nil {
+			return nil, err
+		}
+		sessionStat.SearchPath = c.requiredSessionSearchPath
+	}
+
+	stat := c.initializedSessions[backendPid]
+	stat.LastUsed = time.Now()
+	stat.Waits = append(stat.Waits, requestDuration)
+	stat.UsedCount++
+	c.initializedSessions[backendPid] = stat
+
+	fmt.Println("BackendPid:", backendPid)
 
 	return conn, nil
+}
+
+func getBackendPid(ctx context.Context, connection *sql.Conn) (int64, error) {
+	var pid int64
+	rows, err := connection.QueryContext(ctx, "select pg_backend_pid()")
+	if err != nil {
+		return pid, err
+	}
+	rows.Next()
+	rows.Scan(&pid)
+	rows.Close()
+	return pid, nil
 }
 
 // createTransaction, with a timeout - this may be required if the db client becomes unresponsive

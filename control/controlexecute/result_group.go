@@ -2,6 +2,7 @@ package controlexecute
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -175,19 +176,33 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, sema
 		default:
 			if viper.GetBool(constants.ArgDryRun) {
 				controlRun.Skip()
-			} else {
-				err := semaphore.Acquire(ctx, 1)
-				if err != nil {
-					controlRun.SetError(err)
-					continue
-				}
-				go func() {
-					controlRun.Start(ctx, client)
-					failures += controlRun.Summary.Alarm
-					failures += controlRun.Summary.Error
-					semaphore.Release(1)
-				}()
+				continue
 			}
+
+			fmt.Println("\n>> waiting for semaphore lock", controlRun.ControlId)
+			err := semaphore.Acquire(ctx, 1)
+			if err != nil {
+				controlRun.SetError(err)
+				fmt.Println("\n>> error getting semaphore lock", controlRun.ControlId)
+				continue
+			}
+			fmt.Println("\n>> got semaphore lock", controlRun.ControlId)
+			go func(run *ControlRun) {
+				defer func() {
+					semaphore.Release(1)
+					fmt.Println("\n*** finished", run.ControlId)
+				}()
+				fmt.Println("\n** execute", run.ControlId)
+				run.Execute(ctx, client)
+
+				// TODO: put this \/ in a function
+				run.group.summaryUpdateLock.Lock()
+
+				failures += run.Summary.Alarm
+				failures += run.Summary.Error
+
+				run.group.summaryUpdateLock.Unlock()
+			}(controlRun)
 		}
 	}
 	for _, child := range r.Groups {

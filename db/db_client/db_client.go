@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -15,34 +14,28 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-type SessionStats struct {
-	CreationTime    time.Time
-	LastUsedTime    time.Time
-	EnsureStartTime time.Time
-	EnsureEndTime   time.Time
-}
-
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
-	connectionString      string
-	ensureSessionFunc     db_common.EnsureSessionStateCallback
-	sessionCreateLock     *sync.Mutex
-	dbClient              *sql.DB
-	ensuredConnectionsMap map[*sql.Conn]SessionStats
-	schemaMetadata        *schema.Metadata
+	connectionString          string
+	ensureSessionFunc         db_common.EnsureSessionStateCallback
+	sessionAcquireLock        *sync.Mutex
+	dbClient                  *sql.DB
+	initializedSessions       map[int64]SessionStats // a map keyed to the backend_pid in postgres
+	schemaMetadata            *schema.Metadata
+	requiredSessionSearchPath []string
 }
 
 func NewDbClient(connectionString string) (*DbClient, error) {
-	utils.LogTime("db.NewLocalClient start")
-	defer utils.LogTime("db.NewLocalClient end")
+	utils.LogTime("db_client.NewDbClient start")
+	defer utils.LogTime("db_client.NewDbClient end")
 	db, err := establishConnection(connectionString)
 	if err != nil {
 		return nil, err
 	}
 	client := &DbClient{
-		dbClient:              db,
-		sessionCreateLock:     new(sync.Mutex),
-		ensuredConnectionsMap: make(map[*sql.Conn]SessionStats),
+		dbClient:            db,
+		sessionAcquireLock:  new(sync.Mutex),
+		initializedSessions: make(map[int64]SessionStats),
 		// set up a blank struct for the schema metadata
 		schemaMetadata: schema.NewMetadata(),
 	}
@@ -53,12 +46,19 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 }
 
 func establishConnection(connStr string) (*sql.DB, error) {
+	utils.LogTime("db_client.establishConnection start")
+	defer utils.LogTime("db_client.establishConnection end")
+
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
 	}
-	// limit to a single connection as we rely on session scoped data - temp tables and prepared statements
-	db.SetMaxOpenConns(4)
+
+	maxSessions := 1
+
+	db.SetMaxOpenConns(maxSessions)
+	db.SetMaxIdleConns(maxSessions)
+
 	if db_common.WaitForConnection(db) {
 		return db, nil
 	}
@@ -73,14 +73,10 @@ func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallba
 // closes the connection to the database and shuts down the backend
 func (c *DbClient) Close() error {
 	if c.dbClient != nil {
-		stats := []SessionStats{}
-		for _, stat := range c.ensuredConnectionsMap {
-			stats = append(stats, stat)
-		}
-		fmt.Println(len(stats))
-		utils.DebugDumpJSON("SessionStat:", stats)
-
-		c.ensuredConnectionsMap = make(map[*sql.Conn]SessionStats)
+		// nil the map - so that we can't reuse it
+		utils.DebugDumpJSON("SessionStat:", c.initializedSessions)
+		fmt.Println("Uniques:", len(c.initializedSessions))
+		c.initializedSessions = nil
 		return c.dbClient.Close()
 	}
 
@@ -101,15 +97,15 @@ func (c *DbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
 // LoadSchema implements Client
 // retrieve both the raw query result and a sanitised version in list form
 func (c *DbClient) LoadSchema() {
-	utils.LogTime("db.LoadSchema start")
-	defer utils.LogTime("db.LoadSchema end")
+	utils.LogTime("db_client.LoadSchema start")
+	defer utils.LogTime("db_client.LoadSchema end")
 
 	connection, err := c.dbClient.Conn(context.Background())
 	utils.FailOnError(err)
+	defer connection.Close()
 
 	tablesResult, err := c.getSchemaFromDB(connection)
 	utils.FailOnError(err)
-
 	defer tablesResult.Close()
 
 	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
@@ -121,12 +117,18 @@ func (c *DbClient) LoadSchema() {
 
 // RefreshSessions terminates the current connections.
 func (c *DbClient) RefreshSessions(ctx context.Context) error {
+	utils.LogTime("db_client.RefreshSessions start")
+	defer utils.LogTime("db_client.RefreshSessions end")
+
 	return c.refreshDbClient(ctx)
 }
 
 // refreshDbClient terminates the current connection and opens up a new connection to the service.
 func (c *DbClient) refreshDbClient(ctx context.Context) error {
-	c.ensuredConnectionsMap = make(map[*sql.Conn]SessionStats)
+	utils.LogTime("db_client.refreshDbClient start")
+	defer utils.LogTime("db_client.refreshDbClient end")
+
+	c.initializedSessions = make(map[int64]SessionStats)
 	err := c.dbClient.Close()
 	if err != nil {
 		return err
@@ -141,8 +143,8 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 }
 
 func (c *DbClient) getSchemaFromDB(conn *sql.Conn) (*sql.Rows, error) {
-	utils.LogTime("db.getSchemaFromDB start")
-	defer utils.LogTime("db.getSchemaFromDB end")
+	utils.LogTime("db_client.getSchemaFromDB start")
+	defer utils.LogTime("db_client.getSchemaFromDB end")
 
 	query := `
 		SELECT 

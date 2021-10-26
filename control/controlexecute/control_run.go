@@ -81,7 +81,7 @@ func (r *ControlRun) Skip() {
 	r.setRunStatus(ControlRunComplete)
 }
 
-func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
+func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
 
@@ -123,6 +123,8 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 			viper.Set(constants.ArgSearchPathPrefix, strings.Split(*control.SearchPathPrefix, ","))
 		}
 
+		fmt.Println("\n##### Setting search path:", viper.GetStringSlice(constants.ArgSearchPath), viper.GetStringSlice(constants.ArgSearchPathPrefix), ":::", r.ControlId)
+
 		client.SetSessionSearchPath()
 	}
 
@@ -134,8 +136,11 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 	// context and its parent alive longer than necessary.
 	defer cancel()
 
+	r.executionTree.progress.OnControlExecuteStart()
 	queryResult, err := client.Execute(ctx, query, false)
 	if err != nil {
+		r.executionTree.progress.OnControlExecuteFinish()
+
 		// is this an rpc EOF error - meaning that the plugin somehow crashed
 		if constants.IsGRPCConnectivityError(err) {
 			if r.attempts > constants.MaxControlRunAttempts {
@@ -146,10 +151,13 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 			// set a log line in the database logs for convenience - pass 'true' to disable spinner
 			_, _ = client.ExecuteSync(ctx, "-- Retrying...", true)
 
+			// the control errored
+			r.executionTree.progress.OnControlError()
+
 			// recurse into this function to retry
 			// use the same context, so that we respect the timeout
 			r.attempts++
-			r.Start(ctx, client)
+			r.Execute(ctx, client)
 			return
 		}
 		r.SetError(err)
@@ -162,22 +170,27 @@ func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
 	gatherDoneChan := make(chan string)
 	go func() {
 		r.gatherResults()
-		if control.SearchPath != nil || control.SearchPathPrefix != nil {
-			// the search path was modified. Reset it!
-			viper.Set(constants.ArgSearchPath, originalConfiguredSearchPath)
-			viper.Set(constants.ArgSearchPathPrefix, originalConfiguredSearchPathPrefix)
-			client.SetSessionSearchPath()
-		}
 		close(gatherDoneChan)
 	}()
 
 	select {
 	case <-ctx.Done():
-		r.SetError(fmt.Errorf("control timed out"))
+		r.SetError(ctx.Err())
 	case <-gatherDoneChan:
 		// do nothing
 	}
+
+	// reset the search path
+	if control.SearchPath != nil || control.SearchPathPrefix != nil {
+		fmt.Println("\n##### Resetting search path:", originalConfiguredSearchPath, originalConfiguredSearchPathPrefix, ":::", r.ControlId)
+		// the search path was modified. Reset it!
+		viper.Set(constants.ArgSearchPath, originalConfiguredSearchPath)
+		viper.Set(constants.ArgSearchPathPrefix, originalConfiguredSearchPathPrefix)
+		client.SetSessionSearchPath()
+	}
+
 	r.Duration = time.Since(startTime)
+	r.executionTree.progress.OnControlExecuteFinish()
 }
 
 func (r *ControlRun) gatherResults() {
@@ -265,9 +278,9 @@ func (r *ControlRun) setRunStatus(status ControlRunStatus) {
 
 		// update Progress
 		if status == ControlRunError {
-			r.executionTree.progress.OnError()
+			r.executionTree.progress.OnControlError()
 		} else {
-			r.executionTree.progress.OnComplete()
+			r.executionTree.progress.OnControlComplete()
 		}
 
 		// TODO CANCEL QUERY IF NEEDED
