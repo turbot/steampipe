@@ -9,13 +9,13 @@ benchmark "check_all" {
 control "check_1" {
   title         = "Control to verify steampipe check all functionality 1"
   description   = "Control to verify steampipe check all functionality."
-  query           = query.query_1
+  query         = query.query_1
   severity      = "high"
 }
 
 control "check_2" {
   title         = "Control to verify steampipe check all functionality 2"
   description   = "Control to verify steampipe check all functionality."
-  query           = query.query_2
+  query         = query.query_2
   severity      = "critical"
 }
