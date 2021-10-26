@@ -3,6 +3,8 @@ package controldisplay
 import (
 	"strings"
 
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
 )
 
@@ -36,7 +38,12 @@ func (r TableRenderer) Render() string {
 }
 
 func (r TableRenderer) renderSummary() string {
-	return NewSummaryRenderer(r.resultTree, r.width).Render()
+	// no need to render the summary when the dry-run flag is set
+	if viper.GetBool(constants.ArgDryRun) {
+		return ""
+	} else {
+		return NewSummaryRenderer(r.resultTree, r.width).Render()
+	}
 }
 
 func (r TableRenderer) renderResult() string {
