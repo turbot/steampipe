@@ -38,8 +38,6 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 }
 
 func spawnPluginManager() {
-	// we want to see the plugin manager log
-	log.SetOutput(os.Stdout)
 
 	// create command which will run steampipe in plugin-manager mode
 	pluginManagerCmd := exec.Command("steampipe", "plugin-manager")
@@ -61,6 +59,14 @@ func spawnPluginManager() {
 }
 
 func startPluginManager() {
+
+	file, err := os.OpenFile("/tmp/info.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	log.SetOutput(file)
+
 	steampipeConfig, err := steampipeconfig.LoadConnectionConfig()
 	if err != nil {
 		utils.ShowError(err)

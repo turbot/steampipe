@@ -5,9 +5,9 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/grpc"
-	pbsdk "github.com/turbot/steampipe-plugin-sdk/grpc/proto"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"github.com/turbot/steampipe/plugin_manager"
-	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
+	"github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
 )
@@ -16,12 +16,13 @@ import (
 // NOTE: currently this corresponds to a single steampipe connection,
 // i.e. we have 1 plugin instance per steampipe connection
 type ConnectionPlugin struct {
-	ConnectionName    string
-	ConnectionConfig  string
-	ConnectionOptions *options.Connection
-	PluginName        string
-	PluginClient      *sdkgrpc.PluginClient
-	Schema            *pbsdk.Schema
+	ConnectionName      string
+	ConnectionConfig    string
+	ConnectionOptions   *options.Connection
+	PluginName          string
+	PluginClient        *sdkgrpc.PluginClient
+	Schema              *sdkproto.Schema
+	SupportedOperations *sdkproto.GetSupportedOperationsResponse
 }
 
 // CreateConnectionPlugin instantiates a plugin for a connection, fetches schema and sends connection config
@@ -42,7 +43,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 	log.Printf("[WARN] got plugin manager")
 
 	// ask the plugin manager for the plugin reattach config
-	getResponse, err := pluginManager.Get(&pb.GetRequest{Connection: connectionName, DisableLogger: disableLogger})
+	getResponse, err := pluginManager.Get(&proto.GetRequest{Connection: connectionName, DisableLogger: disableLogger})
 	if err != nil {
 		log.Printf("[WARN] plugin manager failed to get reattach config for connection '%s': %s", connectionName, err)
 		return nil, err
@@ -59,7 +60,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 		return nil, err
 	}
 	// set the connection config
-	req := &pbsdk.SetConnectionConfigRequest{
+	req := &sdkproto.SetConnectionConfigRequest{
 		ConnectionName:   connectionName,
 		ConnectionConfig: connectionConfig,
 	}
@@ -75,15 +76,22 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 		pluginClient.Kill()
 		return nil, err
 	}
+	// fetch the supported operations
+	supportedOperations, err := pluginClient.GetSupportedOperations()
+	// ignore errors  - just create an empty support structure if needed
+	if supportedOperations == nil {
+		supportedOperations = &sdkproto.GetSupportedOperationsResponse{}
+	}
 
 	// now create ConnectionPlugin object return
 	c := &ConnectionPlugin{
-		ConnectionName:    connectionName,
-		ConnectionConfig:  connectionConfig,
-		ConnectionOptions: connectionOptions,
-		PluginName:        pluginName,
-		PluginClient:      pluginClient,
-		Schema:            schema,
+		ConnectionName:      connectionName,
+		ConnectionConfig:    connectionConfig,
+		ConnectionOptions:   connectionOptions,
+		PluginName:          pluginName,
+		PluginClient:        pluginClient,
+		Schema:              schema,
+		SupportedOperations: supportedOperations,
 	}
 	return c, nil
 }
@@ -100,9 +108,9 @@ func getPluginManager() (*plugin_manager.PluginManager, error) {
 		return nil, err
 	}
 	// build config map
-	configMap := make(map[string]*pb.ConnectionConfig)
+	configMap := make(map[string]*proto.ConnectionConfig)
 	for k, v := range steampipeConfig.Connections {
-		configMap[k] = &pb.ConnectionConfig{
+		configMap[k] = &proto.ConnectionConfig{
 			Plugin:          v.Plugin,
 			PluginShortName: v.PluginShortName,
 			Config:          v.Config,
