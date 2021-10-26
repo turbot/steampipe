@@ -41,9 +41,8 @@ func (r TableRenderer) renderSummary() string {
 	// no need to render the summary when the dry-run flag is set
 	if viper.GetBool(constants.ArgDryRun) {
 		return ""
-	} else {
-		return NewSummaryRenderer(r.resultTree, r.width).Render()
 	}
+	return NewSummaryRenderer(r.resultTree, r.width).Render()
 }
 
 func (r TableRenderer) renderResult() string {
