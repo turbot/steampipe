@@ -42,11 +42,11 @@ func (c *DbClient) GetCurrentSearchPath() ([]string, error) {
 // sets the search path for this client
 // if either a search-path or search-path-prefix is set in config, set the search path
 // (otherwise fall back to user search path)
-func (c *DbClient) SetSessionSearchPath(currentSearchPath ...string) error {
+func (c *DbClient) SetSessionSearchPath(currentUserSearchPath ...string) error {
 	requiredSearchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 
-	searchPath, err := c.ContructSearchPath(requiredSearchPath, searchPathPrefix, currentSearchPath)
+	searchPath, err := c.ContructSearchPath(requiredSearchPath, searchPathPrefix, currentUserSearchPath)
 	if err != nil {
 		return err
 	}
@@ -60,24 +60,24 @@ func (c *DbClient) SetSessionSearchPath(currentSearchPath ...string) error {
 	return err
 }
 
-func (c *DbClient) ContructSearchPath(requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error) {
+func (c *DbClient) ContructSearchPath(requiredSearchPath []string, searchPathPrefix []string, currentUserSearchPath []string) ([]string, error) {
 	// if a search path was passed, add 'internal' to the end
 	if len(requiredSearchPath) > 0 {
 		// add 'internal' schema as last schema in the search path
 		requiredSearchPath = append(requiredSearchPath, constants.FunctionSchema)
 	} else {
-		// so no search path was set in config - use the current search poath
+		// so no search path was set in config - use the user search path
 
 		// if this function is called from local db client, it will pass in the current search path
 		// we must do this as the local client will reload the user search path
-		if len(currentSearchPath) == 0 {
+		if len(currentUserSearchPath) == 0 {
 			// no current search path was passed in - fetch it
 			var err error
-			if currentSearchPath, err = c.GetCurrentSearchPath(); err != nil {
+			if currentUserSearchPath, err = c.GetCurrentSearchPath(); err != nil {
 				return nil, err
 			}
 		}
-		requiredSearchPath = currentSearchPath
+		requiredSearchPath = currentUserSearchPath
 	}
 
 	// add in the prefix if present

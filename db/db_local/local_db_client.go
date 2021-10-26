@@ -123,19 +123,12 @@ func (c *LocalDbClient) CacheClear() error {
 
 // GetCurrentSearchPath implements Client
 func (c *LocalDbClient) GetCurrentSearchPath() ([]string, error) {
-	// NOTE: create a new client to do this, so we respond to any recent changes in user search path
-	// (as the user search path may have changed  after creating client 'c', e.g. if connections have changed)
-	newClient, err := NewLocalClient(constants.InvokerService)
-	if err != nil {
-		return nil, err
-	}
-	defer newClient.Close()
-	return newClient.client.GetCurrentSearchPath()
+	return c.client.GetCurrentSearchPath()
 }
 
 // SetSessionSearchPath implements Client
-func (c *LocalDbClient) SetSessionSearchPath(currentSearchPath ...string) error {
-	return c.client.SetSessionSearchPath(currentSearchPath...)
+func (c *LocalDbClient) SetSessionSearchPath(currentUserPath ...string) error {
+	return c.client.SetSessionSearchPath(currentUserPath...)
 }
 
 // local only functions
@@ -158,17 +151,12 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.Refre
 	}
 	c.connectionMap = &connectionMap
 	// set user search path first - client may fall back to using it
-	if err := c.setUserSearchPath(); err != nil {
-		res.Error = err
-		return res
-	}
-
-	// get current search path, creating a new client to ensure we pick up recent changes
-	currentSearchPath, err := c.GetCurrentSearchPath()
+	currentSearchPath, err := c.setUserSearchPath()
 	if err != nil {
 		res.Error = err
 		return res
 	}
+
 	if err := c.SetSessionSearchPath(currentSearchPath...); err != nil {
 		res.Error = err
 		return res
@@ -179,8 +167,8 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.Refre
 
 // SetUserSearchPath sets the search path for the all steampipe users of the db service
 // do this wy finding all users assigned to the role steampipe_users and set their search path
-func (c *LocalDbClient) setUserSearchPath() error {
-	log.Println("[TRACE] SetUserSearchPath")
+func (c *LocalDbClient) setUserSearchPath() ([]string, error) {
+	log.Println("[Trace] SetUserSearchPath")
 	var searchPath []string
 
 	// is there a user search path in the config?
@@ -195,7 +183,7 @@ func (c *LocalDbClient) setUserSearchPath() error {
 	}
 
 	// escape the schema names
-	searchPath = db_common.PgEscapeSearchPath(searchPath)
+	escapedSearchPath := db_common.PgEscapeSearchPath(searchPath)
 
 	log.Println("[TRACE] setting user search path to", searchPath)
 
@@ -203,7 +191,7 @@ func (c *LocalDbClient) setUserSearchPath() error {
 	query := fmt.Sprintf(`select usename from pg_user where pg_has_role(usename, '%s', 'member')`, constants.DatabaseUsersRole)
 	res, err := c.ExecuteSync(context.Background(), query, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// set the search path for all these roles
@@ -217,16 +205,16 @@ func (c *LocalDbClient) setUserSearchPath() error {
 		queries = append(queries, fmt.Sprintf(
 			"alter user %s set search_path to %s;",
 			user,
-			strings.Join(searchPath, ","),
+			strings.Join(escapedSearchPath, ","),
 		))
 	}
 	query = strings.Join(queries, "\n")
 	log.Printf("[TRACE] user search path sql: %s", query)
 	_, err = executeSqlAsRoot(query)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return searchPath, nil
 }
 
 // build default search path from the connection schemas, bookended with public and internal
