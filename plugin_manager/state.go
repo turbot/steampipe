@@ -67,7 +67,6 @@ func (s *pluginManagerState) verifyServiceRunning() (bool, error) {
 
 // kill the plugin manager process and delete the state
 func (s *pluginManagerState) kill() error {
-
 	process, err := utils.FindProcess(s.Pid)
 	if err != nil {
 		return err

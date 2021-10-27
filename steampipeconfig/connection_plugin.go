@@ -1,11 +1,14 @@
 package steampipeconfig
 
 import (
+	"io/ioutil"
 	"log"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -27,6 +30,9 @@ type ConnectionPlugin struct {
 
 // CreateConnectionPlugin instantiates a plugin for a connection, fetches schema and sends connection config
 func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool) (*ConnectionPlugin, error) {
+
+	// TODO remove disableLogger or get it working somehow
+
 	pluginName := connection.Plugin
 	connectionName := connection.Name
 	connectionConfig := connection.Config
@@ -43,7 +49,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 	log.Printf("[WARN] got plugin manager")
 
 	// ask the plugin manager for the plugin reattach config
-	getResponse, err := pluginManager.Get(&proto.GetRequest{Connection: connectionName, DisableLogger: disableLogger})
+	getResponse, err := pluginManager.Get(&proto.GetRequest{Connection: connectionName})
 	if err != nil {
 		log.Printf("[WARN] plugin manager failed to get reattach config for connection '%s': %s", connectionName, err)
 		return nil, err
@@ -53,7 +59,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 		connectionName, getResponse.Reattach.Pid)
 
 	// attach to the plugin process
-	pluginClient, err := attachToPlugin(getResponse.Reattach.Convert(), pluginName, disableLogger)
+	pluginClient, err := attachToPlugin(getResponse.Reattach.Convert(), pluginName)
 	if err != nil {
 		log.Printf("[WARN] failed to attach to plugin for connection '%s' - pid %d: %s",
 			connectionName, getResponse.Reattach.Pid, err)
@@ -97,8 +103,8 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 }
 
 // use the reattach config to create a PluginClient for the plugin
-func attachToPlugin(reattach *plugin.ReattachConfig, pluginName string, disableLogger bool) (*sdkgrpc.PluginClient, error) {
-	return sdkgrpc.NewPluginClient(reattach, pluginName, disableLogger)
+func attachToPlugin(reattach *plugin.ReattachConfig, pluginName string) (*sdkgrpc.PluginClient, error) {
+	return sdkgrpc.NewPluginClient(reattach, pluginName)
 }
 
 // function used for debugging the plugin manager
@@ -107,6 +113,11 @@ func getPluginManager() (*plugin_manager.PluginManager, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// discard logging from the plugin client (plugin logs will still flow through)
+	loggOpts := &hclog.LoggerOptions{Name: "plugin", Output: ioutil.Discard}
+	logger := logging.NewLogger(loggOpts)
+
 	// build config map
 	configMap := make(map[string]*proto.ConnectionConfig)
 	for k, v := range steampipeConfig.Connections {
@@ -116,5 +127,5 @@ func getPluginManager() (*plugin_manager.PluginManager, error) {
 			Config:          v.Config,
 		}
 	}
-	return plugin_manager.NewPluginManager(configMap), nil
+	return plugin_manager.NewPluginManager(configMap, logger), nil
 }

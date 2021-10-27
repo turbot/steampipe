@@ -13,7 +13,6 @@ service PluginManager {
 
 message GetRequest {
   string connection = 1;
-  bool disable_logger=2;
 }
 
 message GetResponse {
