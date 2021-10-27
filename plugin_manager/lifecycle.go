@@ -107,7 +107,6 @@ func stop(state *pluginManagerState) error {
 
 // GetPluginManager connects to a running plugin manager
 func GetPluginManager() (pluginshared.PluginManager, error) {
-	log.Printf("[WARN] ******************** GetPluginManager")
 	return getPluginManager(true)
 }
 

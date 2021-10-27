@@ -39,6 +39,9 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	}
 	logger := logging.NewLogger(&hclog.LoggerOptions{Output: f})
 	log.SetOutput(f)
+	//log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
+	//log.SetPrefix("")
+	//log.SetFlags(0)
 
 	steampipeConfig, err := steampipeconfig.LoadConnectionConfig()
 	if err != nil {

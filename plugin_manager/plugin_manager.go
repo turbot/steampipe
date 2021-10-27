@@ -64,7 +64,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 		}
 	}()
 
-	log.Printf("[WARN] ****************** PluginManager %p Get connection '%s', plugins %+v\n", m, req.Connection, m.Plugins)
+	log.Printf("[TRACE] PluginManager %p Get connection '%s', plugins %+v\n", m, req.Connection, m.Plugins)
 
 	// is this plugin already running
 	if p, ok := m.Plugins[req.Connection]; ok {
@@ -116,7 +116,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 	reattach := pb.NewReattachConfig(client.ReattachConfig())
 	m.Plugins[req.Connection] = runningPlugin{client: client, reattach: reattach}
 
-	log.Printf("[WARN] ****************** PluginManager %p Get complete", m)
+	log.Printf("[TRACE] PluginManager %p Get complete", m)
 
 	// and return
 	return &pb.GetResponse{Reattach: reattach}, nil
