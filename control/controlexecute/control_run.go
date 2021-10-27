@@ -31,7 +31,7 @@ const (
 // ControlRun is a struct representing a  a control run - will contain one or more result items (i.e. for one or more resources)
 type ControlRun struct {
 	runError   error  `json:"-"`
-	ErrorStack string `json:"error_stack"`
+	errorStack string `json:"-"`
 	// the number of attempts this control made to run
 	attempts int `json:"-"`
 	// the parent control
@@ -286,7 +286,7 @@ func (r *ControlRun) createdOrderedResultRows() {
 
 func (r *ControlRun) SetError(err error) {
 	r.runError = utils.TransformErrorToSteampipe(err)
-	r.ErrorStack = string(debug.Stack())
+	r.errorStack = string(debug.Stack())
 
 	// update error count
 	r.Summary.Error++
