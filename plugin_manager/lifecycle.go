@@ -6,6 +6,9 @@ import (
 	"os/exec"
 	"syscall"
 
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
@@ -40,8 +43,8 @@ func start() error {
 
 	// create command which will start plugin-manager
 	// we have to spawn a separate process to do this so the plugin process itself is not an orphan
-	// TODO more detail about this
-	pluginManagerCmd := exec.Command("steampipe", "plugin-manager", "--spawn")
+
+	pluginManagerCmd := exec.Command("steampipe", "daemon", "--install-dir", viper.GetString(constants.ArgInstallDir))
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
@@ -70,7 +73,7 @@ func start() error {
 	return state.Save()
 }
 
-//Stop loads the plugin manager state and if a running instance is found, stop it
+// Stop loads the plugin manager state and if a running instance is found, stop it
 func Stop() error {
 	// try to load the plugin manager state
 	state, err := loadPluginManagerState(true)
