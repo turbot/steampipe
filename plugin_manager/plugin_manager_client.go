@@ -3,11 +3,12 @@ package plugin_manager
 import (
 	"io/ioutil"
 	"log"
+	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/turbot/steampipe-plugin-sdk/grpc"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
-	"github.com/turbot/steampipe/constants"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
 )
@@ -84,11 +85,19 @@ func (c *PluginManagerClientWithRetries) Get(req *pb.GetRequest) (res *pb.GetRes
 }
 
 func (c *PluginManagerClientWithRetries) SetConnectionConfigMap(req *pb.SetConnectionConfigMapRequest) (res *pb.SetConnectionConfigMapResponse, err error) {
+	retried := false
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		res, err = c.manager.SetConnectionConfigMap(req)
 		if !c.ShouldRetry(err) {
+			if retried == true && err == nil {
+				log.Printf("[WARN] RETRY WORKED++++++++++++++++++++++++++\n")
+			}
 			break
 		}
+		log.Printf("[WARN] Execute RETRYING %v\n", err)
+		time.Sleep(20 * time.Millisecond)
+		retried = true
+		retried = true
 	}
 	return res, err
 }
@@ -104,5 +113,10 @@ func (c *PluginManagerClientWithRetries) Shutdown(req *pb.ShutdownRequest) (res 
 }
 
 func (c *PluginManagerClientWithRetries) ShouldRetry(err error) bool {
-	return constants.IsGRPCConnectivityError(err)
+	if err == nil {
+		return false
+	}
+	res := grpc.IsGRPCConnectivityError(err)
+	log.Printf("[WARN] ShouldRetry %s = %v\n", err.Error(), res)
+	return res
 }

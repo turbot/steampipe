@@ -16,12 +16,16 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
+type runningPlugin struct {
+	client   *plugin.Client
+	reattach *pb.ReattachConfig
+}
+
 // PluginManager is the real implementation of grpc.PluginManager
 type PluginManager struct {
 	pb.UnimplementedPluginManagerServer
 
-	Plugins map[string]*pb.ReattachConfig
-
+	Plugins          map[string]runningPlugin
 	configDir        string
 	mut              sync.Mutex
 	connectionConfig map[string]*pb.ConnectionConfig
@@ -32,7 +36,7 @@ func NewPluginManager(connectionConfig map[string]*pb.ConnectionConfig, logger h
 	return &PluginManager{
 		logger:           logger,
 		connectionConfig: connectionConfig,
-		Plugins:          make(map[string]*pb.ReattachConfig),
+		Plugins:          make(map[string]runningPlugin),
 	}
 }
 
@@ -63,40 +67,59 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 	log.Printf("[WARN] ****************** PluginManager %p Get connection '%s', plugins %+v\n", m, req.Connection, m.Plugins)
 
 	// is this plugin already running
-	if reattach, ok := m.Plugins[req.Connection]; ok {
-		log.Printf("[WARN] PluginManager %p found '%s' in map %v", m, req.Connection, m.Plugins)
-
-		// check the pid exists
+	if p, ok := m.Plugins[req.Connection]; ok {
+		reattach := p.reattach
+		// check the pid exists and the clien thas not exited (i.e. th eplugin has crashed)
 		exists, _ := utils.PidExists(int(reattach.Pid))
-		if exists {
+		exited := p.client.Exited()
+		if exists && !exited {
+			// so the plugin id good
+			log.Printf("[WARN] PluginManager %p found '%s' in map %v", m, req.Connection, m.Plugins)
+
 			// return the reattach config
 			return &pb.GetResponse{
 				Reattach: reattach,
 			}, nil
 		}
-		//log.Printf("[WARN] PluginManager %p plugin pid %d for connection '%s' found in plugin map but does not exist - removing from map", m, plugin.Pid, req.Connection)
-		// so there is an entry in the map but it does not exist - remove from the map
+
+		//  either the pid does not exist or the plugin has exited
+
+		// kill the client
+		p.client.Kill()
+		// remove from map
 		delete(m.Plugins, req.Connection)
+
+		// build log string
+		var reason string
+		if exited {
+			reason = "client has exited"
+			// TODO do we need to kill the PID?
+		} else {
+			reason = "pid does not exist"
+		}
+		log.Printf("[WARN] PluginManager %p plugin pid %d for connection '%s' found in plugin map but %s - killing client and removing from map", m, reattach.Pid, req.Connection, reason)
+
+	} else {
+		log.Printf("[WARN] PluginManager %p '%s' NOT found in map %v - starting", m, req.Connection, m.Plugins)
 	}
 
-	log.Printf("[WARN] PluginManager %p '%s' NOT found in map %v - starting", m, req.Connection, m.Plugins)
+	// fall through to plugin startup
 	// so we need to start the plugin
-	reattach, err := m.startPlugin(req)
+	client, err := m.startPlugin(req)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO ADD PLUGIN TO OUR STATE FILE - JUST SERIALISE THE Plugins map?
 
-	// store the reattach config in our map
-	m.Plugins[req.Connection] = reattach
+	// store the client to our map
+	reattach := pb.NewReattachConfig(client.ReattachConfig())
+	m.Plugins[req.Connection] = runningPlugin{client: client, reattach: reattach}
 
 	log.Printf("[WARN] ****************** PluginManager %p Get complete", m)
 
 	// and return
-	return &pb.GetResponse{
-		Reattach: reattach,
-	}, nil
+	return &pb.GetResponse{Reattach: reattach}, nil
 
 }
 
@@ -124,7 +147,7 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 	var errs []error
 	for _, p := range m.Plugins {
 		log.Printf("[WARN] kill %v", p)
-		err = m.killPlugin(p.Pid)
+		err = m.killPlugin(p.reattach.Pid)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -132,7 +155,7 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 	return &pb.ShutdownResponse{}, utils.CombineErrorsWithPrefix(fmt.Sprintf("failed to shutdown %d plugins", len(errs)), errs...)
 }
 
-func (m *PluginManager) startPlugin(req *pb.GetRequest) (*pb.ReattachConfig, error) {
+func (m *PluginManager) startPlugin(req *pb.GetRequest) (*plugin.Client, error) {
 
 	log.Printf("[WARN] startPlugin ********************\n")
 
@@ -167,9 +190,7 @@ func (m *PluginManager) startPlugin(req *pb.GetRequest) (*pb.ReattachConfig, err
 	if _, err := client.Start(); err != nil {
 		return nil, err
 	}
-	reattach := client.ReattachConfig()
-	return pb.NewReattachConfig(reattach), nil
-
+	return client, nil
 	/* hub did this
 
 	// loop as we may need to retry if the plugin exists in the map but has actually exited

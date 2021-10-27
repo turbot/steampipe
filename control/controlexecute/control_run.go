@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/steampipe-plugin-sdk/grpc"
+
 	"github.com/turbot/steampipe/db/db_common"
 
 	typehelpers "github.com/turbot/go-kit/types"
@@ -141,6 +143,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	startTime := time.Now()
 
 	dbSession, err := client.AcquireSession(ctx)
+	log.Printf("[TRACE] got session for: %s\n", r.Control.Name())
 	if err != nil {
 		r.SetError(err)
 		return
@@ -165,6 +168,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 		return
 	}
 
+	log.Printf("[TRACE] setting search path %s\n", control.Name())
 	r.setupSearchPath(ctx, dbSession, client)
 
 	shouldBeDoneBy := time.Now().Add(240 * time.Second)
@@ -175,13 +179,15 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	// context and its parent alive longer than necessary.
 	defer cancel()
 
+	log.Printf("[TRACE] control start %s\n", control.Name())
 	r.executionTree.progress.OnControlExecuteStart()
 	queryResult, err := client.ExecuteInSession(ctx, dbSession, query, false)
 	if err != nil {
 		r.executionTree.progress.OnControlExecuteFinish()
 
 		// is this an rpc EOF error - meaning that the plugin somehow crashed
-		if constants.IsGRPCConnectivityError(err) {
+		// TODO move this to the plugin client
+		if grpc.IsGRPCConnectivityError(err) {
 			if r.attempts > constants.MaxControlRunAttempts {
 				// if exceeded max retries, give up
 				r.SetError(err)
@@ -206,6 +212,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	gatherDoneChan := make(chan string)
 	go func() {
 		r.gatherResults()
+		// TODO close session here?
 		close(gatherDoneChan)
 	}()
 

@@ -2,7 +2,6 @@ package controldisplay
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -74,9 +73,6 @@ func (r ControlRenderer) postResultIndent() string {
 }
 
 func (r ControlRenderer) Render() string {
-	log.Println("[TRACE] begin control render")
-	defer log.Println("[TRACE] end control render")
-
 	var controlStrings []string
 	// use group heading renderer to render the control title and counts
 	controlHeadingRenderer := NewGroupHeadingRenderer(typehelpers.SafeString(r.run.Control.Title),

@@ -2,7 +2,6 @@ package controldisplay
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/turbot/go-kit/helpers"
 )
@@ -24,9 +23,6 @@ func NewResultReasonRenderer(status, reason string, width int) *ResultReasonRend
 // Render returns the reason, truncated to the max length if necessary
 // NOTE: adds a trailing space
 func (r ResultReasonRenderer) Render() string {
-	log.Println("[TRACE] begin result reason render")
-	defer log.Println("[TRACE] end result reason render")
-
 	// get the color for our status
 	colorFunc, ok := ControlColors.ReasonColors[r.status]
 	if !ok {
