@@ -8,15 +8,12 @@ import (
 	"sync"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
-
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
-	sdkpluginshared "github.com/turbot/steampipe-plugin-sdk/grpc/shared"
+	sdkshared "github.com/turbot/steampipe-plugin-sdk/grpc/shared"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
+	"github.com/turbot/steampipe/utils"
 )
 
 // PluginManager is the real implementation of grpc.PluginManager
@@ -28,14 +25,15 @@ type PluginManager struct {
 	configDir        string
 	mut              sync.Mutex
 	connectionConfig map[string]*pb.ConnectionConfig
+	logger           hclog.Logger
 }
 
-func NewPluginManager(connectionConfig map[string]*pb.ConnectionConfig) *PluginManager {
+func NewPluginManager(connectionConfig map[string]*pb.ConnectionConfig, logger hclog.Logger) *PluginManager {
 	return &PluginManager{
+		logger:           logger,
 		connectionConfig: connectionConfig,
 		Plugins:          make(map[string]*pb.ReattachConfig),
 	}
-
 }
 
 func (m *PluginManager) Serve() {
@@ -65,15 +63,15 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 	log.Printf("[WARN] ****************** PluginManager %p Get connection '%s', plugins %+v\n", m, req.Connection, m.Plugins)
 
 	// is this plugin already running
-	if plugin, ok := m.Plugins[req.Connection]; ok {
+	if reattach, ok := m.Plugins[req.Connection]; ok {
 		log.Printf("[WARN] PluginManager %p found '%s' in map %v", m, req.Connection, m.Plugins)
 
 		// check the pid exists
-		exists, _ := utils.PidExists(int(plugin.Pid))
+		exists, _ := utils.PidExists(int(reattach.Pid))
 		if exists {
 			// return the reattach config
 			return &pb.GetResponse{
-				Reattach: plugin,
+				Reattach: reattach,
 			}, nil
 		}
 		//log.Printf("[WARN] PluginManager %p plugin pid %d for connection '%s' found in plugin map but does not exist - removing from map", m, plugin.Pid, req.Connection)
@@ -152,23 +150,18 @@ func (m *PluginManager) startPlugin(req *pb.GetRequest) (*pb.ReattachConfig, err
 	// create the plugin map
 	pluginName := connectionConfig.Plugin
 	pluginMap := map[string]plugin.Plugin{
-		pluginName: &sdkpluginshared.WrapperPlugin{},
+		pluginName: &sdkshared.WrapperPlugin{},
 	}
-	loggOpts := &hclog.LoggerOptions{Name: "plugin"}
-	if req.DisableLogger {
-		//loggOpts.Exclude = func(hclog.Level, string, ...interface{}) bool { return true }
-	}
-	logger := logging.NewLogger(loggOpts)
 
 	cmd := exec.Command(pluginPath)
 	// pass env to command
 	cmd.Env = os.Environ()
 	client := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig:  sdkpluginshared.Handshake,
+		HandshakeConfig:  sdkshared.Handshake,
 		Plugins:          pluginMap,
 		Cmd:              cmd,
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
-		Logger:           logger,
+		Logger:           m.logger,
 	})
 
 	if _, err := client.Start(); err != nil {

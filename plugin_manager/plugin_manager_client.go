@@ -1,6 +1,7 @@
 package plugin_manager
 
 import (
+	"io/ioutil"
 	"log"
 
 	"github.com/hashicorp/go-hclog"
@@ -33,7 +34,8 @@ func NewPluginManagerClientWithRetries(pluginManagerState *pluginManagerState) (
 }
 
 func (c *PluginManagerClientWithRetries) attachToPluginManager() error {
-	loggOpts := &hclog.LoggerOptions{Name: "plugin"}
+	// discard logging from the plugin client (plugin logs will still flow through)
+	loggOpts := &hclog.LoggerOptions{Name: "plugin", Output: ioutil.Discard}
 	logger := logging.NewLogger(loggOpts)
 
 	// construct a client using the plugin manager reaattach config
