@@ -23,11 +23,23 @@ import (
 // ExecuteSync implements Client
 // execute a query against this client and wait for the result
 func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
+	// acquire a session
+	session, err := c.AcquireSession(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer session.Close()
+	return c.ExecuteSyncInSession(ctx, session, query, disableSpinner)
+}
+
+// ExecuteSync implements Client
+// execute a query against this client and wait for the result
+func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	if query == "" {
 		return &queryresult.SyncQueryResult{}, nil
 	}
 
-	result, err := c.Execute(ctx, query, disableSpinner)
+	result, err := c.ExecuteInSession(ctx, session, query, disableSpinner)
 	if err != nil {
 		return nil, err
 	}
@@ -49,6 +61,15 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner
 // otherwise the transaction is left open, which will block the connection and will prevent subsequent communications
 // with the service
 func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
+	// acquire a session
+	session, err := c.AcquireSession(ctx)
+	if err != nil {
+		return
+	}
+	return c.ExecuteInSession(ctx, session, query, disableSpinner)
+}
+
+func (c *DbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (res *queryresult.Result, err error) {
 	if query == "" {
 		return queryresult.NewQueryResult(nil), nil
 	}
@@ -57,7 +78,6 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 	// channel to flag to spinner that the query has run
 	var spinner *spinner.Spinner
 	var tx *sql.Tx
-	var session *sql.Conn
 
 	defer func() {
 		if err != nil {
@@ -80,18 +100,11 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 		spinner = display.ShowSpinner("Loading results...")
 	}
 
-	// acquire a session
-	session, err = c.acquireSession(ctx)
-	if err != nil {
-		return
-	}
-
 	// begin a transaction
 	tx, err = c.createTransaction(ctx, session, true)
 	if err != nil {
 		return
 	}
-	fmt.Println("QUERY:", query)
 	// start query
 	var rows *sql.Rows
 	rows, err = c.startQuery(ctx, query, tx)
@@ -127,10 +140,10 @@ func (c *DbClient) setSearchPath(ctx context.Context, session *sql.Conn) error {
 	return err
 }
 
-func (c *DbClient) acquireSession(ctx context.Context) (*sql.Conn, error) {
-	fmt.Println("acquiring session")
+func (c *DbClient) AcquireSession(ctx context.Context) (*sql.Conn, error) {
 	c.sessionAcquireLock.Lock()
 	defer c.sessionAcquireLock.Unlock()
+
 	requestTime := time.Now()
 	conn, err := c.dbClient.Conn(ctx)
 	requestDuration := time.Since(requestTime)
@@ -140,7 +153,6 @@ func (c *DbClient) acquireSession(ctx context.Context) (*sql.Conn, error) {
 
 	if c.ensureSessionFunc == nil {
 		// nothing to do here
-		fmt.Println("nothing to do")
 		return conn, nil
 	}
 
@@ -170,8 +182,6 @@ func (c *DbClient) acquireSession(ctx context.Context) (*sql.Conn, error) {
 	stat.Waits = append(stat.Waits, requestDuration)
 	stat.UsedCount++
 	c.initializedSessions[backendPid] = stat
-
-	fmt.Println("BackendPid:", backendPid)
 
 	return conn, nil
 }

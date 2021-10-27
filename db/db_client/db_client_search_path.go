@@ -25,16 +25,13 @@ func (c *DbClient) GetCurrentSearchPath() ([]string, error) {
 	if !ok {
 		return nil, fmt.Errorf("error during extracting the search path from service")
 	}
-	fmt.Println(pathAsString)
 	currentSearchPath = strings.Split(pathAsString, ",")
-	fmt.Println(currentSearchPath)
 	// unescape search path
 	for idx, p := range currentSearchPath {
 		p = strings.Join(strings.Split(p, "\""), "")
 		p = strings.TrimSpace(p)
 		currentSearchPath[idx] = p
 	}
-	fmt.Println(currentSearchPath)
 	return currentSearchPath, nil
 }
 

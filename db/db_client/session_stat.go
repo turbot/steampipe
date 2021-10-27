@@ -6,9 +6,9 @@ type SessionStats struct {
 	Created     time.Time
 	LastUsed    time.Time
 	Initialized time.Time
-	Waits       []time.Duration
 	UsedCount   int
-	SearchPath  []string
+	Waits       []time.Duration `json:"-"`
+	SearchPath  []string        `json:"-"`
 }
 
 func NewSessionStat() SessionStats {

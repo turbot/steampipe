@@ -89,16 +89,14 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 		e.progress.Finish()
 	}()
 
-	maxParallel := 1
-
 	// to limit the number of parallel controls go routines started
-	parallelismLock := semaphore.NewWeighted(int64(maxParallel))
+	parallelismLock := semaphore.NewWeighted(viper.GetInt64(constants.ArgMaxParallel))
 
 	// just execute the root - it will traverse the tree
 	errors := e.Root.Execute(ctx, client, parallelismLock)
 
 	// wait till we can acquire all semaphores - meaning that all runs have finished
-	parallelismLock.Acquire(ctx, int64(maxParallel))
+	parallelismLock.Acquire(ctx, viper.GetInt64(constants.ArgMaxParallel))
 
 	// now build map of dimension property name to property value to color map
 	e.DimensionColorGenerator, _ = NewDimensionColorGenerator(4, 27)

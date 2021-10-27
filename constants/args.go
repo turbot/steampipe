@@ -28,6 +28,7 @@ const (
 	ArgTheme             = "theme"
 	ArgProgress          = "progress"
 	ArgExport            = "export"
+	ArgMaxParallel       = "max-parallel"
 	ArgDryRun            = "dry-run"
 	ArgWhere             = "where"
 	ArgTag               = "tag"

@@ -2,15 +2,16 @@ package controlexecute
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/turbot/steampipe/db/db_common"
 
-	"github.com/spf13/viper"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/query/queryresult"
@@ -29,7 +30,8 @@ const (
 
 // ControlRun is a struct representing a  a control run - will contain one or more result items (i.e. for one or more resources)
 type ControlRun struct {
-	runError error `json:"-"`
+	runError   error  `json:"-"`
+	ErrorStack string `json:"error_stack"`
 	// the number of attempts this control made to run
 	attempts int `json:"-"`
 	// the parent control
@@ -81,11 +83,69 @@ func (r *ControlRun) Skip() {
 	r.setRunStatus(ControlRunComplete)
 }
 
+func (r *ControlRun) setupSearchPath(ctx context.Context, session *sql.Conn, client db_common.Client) error {
+	utils.LogTime("ControlRun.setupSearchPath start")
+	defer utils.LogTime("ControlRun.setupSearchPath end")
+
+	searchPath := []string{}
+	searchPathPrefix := []string{}
+
+	if r.Control.SearchPath == nil && r.Control.SearchPathPrefix == nil {
+		return nil
+	}
+	if r.Control.SearchPath != nil {
+		searchPath = strings.Split(*r.Control.SearchPath, ",")
+	}
+	if r.Control.SearchPathPrefix != nil {
+		searchPathPrefix = strings.Split(*r.Control.SearchPathPrefix, ",")
+	}
+
+	currentPath, err := r.getCurrentSearchPath(ctx, session)
+	if err != nil {
+		return err
+	}
+
+	newSearchPath, err := client.ContructSearchPath(searchPath, searchPathPrefix, currentPath)
+	if err != nil {
+		return err
+	}
+	q := fmt.Sprintf("set search_path to %s", strings.Join(newSearchPath, ","))
+	_, err = session.ExecContext(ctx, q)
+	return err
+}
+
+func (r *ControlRun) getCurrentSearchPath(ctx context.Context, session *sql.Conn) ([]string, error) {
+	utils.LogTime("ControlRun.getCurrentSearchPath start")
+	defer utils.LogTime("ControlRun.getCurrentSearchPath end")
+
+	row := session.QueryRowContext(ctx, "show search_path")
+	pathAsString := ""
+	err := row.Scan(&pathAsString)
+	if err != nil {
+		return nil, err
+	}
+	currentSearchPath := strings.Split(pathAsString, ",")
+	// unescape search path
+	for idx, p := range currentSearchPath {
+		p = strings.Join(strings.Split(p, "\""), "")
+		p = strings.TrimSpace(p)
+		currentSearchPath[idx] = p
+	}
+	return currentSearchPath, nil
+}
+
 func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
 
 	startTime := time.Now()
+
+	dbSession, err := client.AcquireSession(ctx)
+	if err != nil {
+		r.SetError(err)
+		return
+	}
+	defer dbSession.Close()
 
 	r.runStatus = ControlRunStarted
 
@@ -105,28 +165,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 		return
 	}
 
-	// set a log line in the database logs for convenience
-	// pass 'true' to disable spinner
-	_, _ = client.ExecuteSync(ctx, fmt.Sprintf("--- Executing %s", control.GetTitle()), true)
-
-	var originalConfiguredSearchPath []string
-	var originalConfiguredSearchPathPrefix []string
-
-	if control.SearchPath != nil || control.SearchPathPrefix != nil {
-		originalConfiguredSearchPath = viper.GetViper().GetStringSlice(constants.ArgSearchPath)
-		originalConfiguredSearchPathPrefix = viper.GetViper().GetStringSlice(constants.ArgSearchPathPrefix)
-
-		if control.SearchPath != nil {
-			viper.Set(constants.ArgSearchPath, strings.Split(*control.SearchPath, ","))
-		}
-		if control.SearchPathPrefix != nil {
-			viper.Set(constants.ArgSearchPathPrefix, strings.Split(*control.SearchPathPrefix, ","))
-		}
-
-		fmt.Println("\n##### Setting search path:", viper.GetStringSlice(constants.ArgSearchPath), viper.GetStringSlice(constants.ArgSearchPathPrefix), ":::", r.ControlId)
-
-		client.SetSessionSearchPath()
-	}
+	r.setupSearchPath(ctx, dbSession, client)
 
 	shouldBeDoneBy := time.Now().Add(240 * time.Second)
 	ctx, cancel := context.WithDeadline(ctx, shouldBeDoneBy)
@@ -137,7 +176,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	defer cancel()
 
 	r.executionTree.progress.OnControlExecuteStart()
-	queryResult, err := client.Execute(ctx, query, false)
+	queryResult, err := client.ExecuteInSession(ctx, dbSession, query, false)
 	if err != nil {
 		r.executionTree.progress.OnControlExecuteFinish()
 
@@ -148,9 +187,6 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 				r.SetError(err)
 				return
 			}
-			// set a log line in the database logs for convenience - pass 'true' to disable spinner
-			_, _ = client.ExecuteSync(ctx, "-- Retrying...", true)
-
 			// the control errored
 			r.executionTree.progress.OnControlError()
 
@@ -178,15 +214,6 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 		r.SetError(ctx.Err())
 	case <-gatherDoneChan:
 		// do nothing
-	}
-
-	// reset the search path
-	if control.SearchPath != nil || control.SearchPathPrefix != nil {
-		fmt.Println("\n##### Resetting search path:", originalConfiguredSearchPath, originalConfiguredSearchPathPrefix, ":::", r.ControlId)
-		// the search path was modified. Reset it!
-		viper.Set(constants.ArgSearchPath, originalConfiguredSearchPath)
-		viper.Set(constants.ArgSearchPathPrefix, originalConfiguredSearchPathPrefix)
-		client.SetSessionSearchPath()
 	}
 
 	r.Duration = time.Since(startTime)
@@ -259,6 +286,7 @@ func (r *ControlRun) createdOrderedResultRows() {
 
 func (r *ControlRun) SetError(err error) {
 	r.runError = utils.TransformErrorToSteampipe(err)
+	r.ErrorStack = string(debug.Stack())
 
 	// update error count
 	r.Summary.Error++

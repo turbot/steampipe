@@ -2,7 +2,6 @@ package controlexecute
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -158,7 +157,7 @@ func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummar
 	}
 }
 
-func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, semaphore *semaphore.Weighted) int {
+func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, parallelismLock *semaphore.Weighted) int {
 	log.Printf("[TRACE] begin ResultGroup.Execute: %s\n", r.GroupId)
 	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
 
@@ -168,45 +167,39 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, sema
 
 	startTime := time.Now()
 
-	var failures = 0
+	var failures int = 0
+
 	for _, controlRun := range r.ControlRuns {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			controlRun.SetError(ctx.Err())
-		default:
-			if viper.GetBool(constants.ArgDryRun) {
-				controlRun.Skip()
-				continue
-			}
-
-			fmt.Println("\n>> waiting for semaphore lock", controlRun.ControlId)
-			err := semaphore.Acquire(ctx, 1)
-			if err != nil {
-				controlRun.SetError(err)
-				fmt.Println("\n>> error getting semaphore lock", controlRun.ControlId)
-				continue
-			}
-			fmt.Println("\n>> got semaphore lock", controlRun.ControlId)
-			go func(run *ControlRun) {
-				defer func() {
-					semaphore.Release(1)
-					fmt.Println("\n*** finished", run.ControlId)
-				}()
-				fmt.Println("\n** execute", run.ControlId)
-				run.Execute(ctx, client)
-
-				// TODO: put this \/ in a function
-				run.group.summaryUpdateLock.Lock()
-
-				failures += run.Summary.Alarm
-				failures += run.Summary.Error
-
-				run.group.summaryUpdateLock.Unlock()
-			}(controlRun)
+			continue
 		}
+
+		if viper.GetBool(constants.ArgDryRun) {
+			controlRun.Skip()
+			continue
+		}
+
+		err := parallelismLock.Acquire(ctx, 1)
+		if err != nil {
+			controlRun.SetError(err)
+			continue
+		}
+
+		go func(run *ControlRun) {
+			defer func() {
+				// Release in defer, so that we don't retain the lock even if there's a panic inside
+				parallelismLock.Release(1)
+			}()
+			run.Execute(ctx, client)
+
+			run.group.summaryUpdateLock.Lock()
+			failures += (run.Summary.Alarm + run.Summary.Error)
+			run.group.summaryUpdateLock.Unlock()
+		}(controlRun)
 	}
 	for _, child := range r.Groups {
-		failures += child.Execute(ctx, client, semaphore)
+		failures += child.Execute(ctx, client, parallelismLock)
 	}
 
 	r.Duration = time.Since(startTime)

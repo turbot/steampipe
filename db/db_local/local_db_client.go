@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"sort"
@@ -96,9 +97,23 @@ func (c *LocalDbClient) RefreshSessions(ctx context.Context) error {
 	return c.client.RefreshSessions(ctx)
 }
 
+func (c *LocalDbClient) AcquireSession(ctx context.Context) (*sql.Conn, error) {
+	return c.client.AcquireSession(ctx)
+}
+
 // ExecuteSync implements Client
 func (c *LocalDbClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	return c.client.ExecuteSync(ctx, query, disableSpinner)
+}
+
+// ExecuteSync implements Client
+func (c *LocalDbClient) ExecuteSyncInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
+	return c.client.ExecuteSyncInSession(ctx, session, query, disableSpinner)
+}
+
+// Execute implements Client
+func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (res *queryresult.Result, err error) {
+	return c.client.ExecuteInSession(ctx, session, query, disableSpinner)
 }
 
 // Execute implements Client
@@ -129,6 +144,10 @@ func (c *LocalDbClient) GetCurrentSearchPath() ([]string, error) {
 // SetSessionSearchPath implements Client
 func (c *LocalDbClient) SetSessionSearchPath(currentUserPath ...string) error {
 	return c.client.SetSessionSearchPath(currentUserPath...)
+}
+
+func (c *LocalDbClient) ContructSearchPath(requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error) {
+	return c.client.ContructSearchPath(requiredSearchPath, searchPathPrefix, currentSearchPath)
 }
 
 // local only functions

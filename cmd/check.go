@@ -95,7 +95,8 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
-		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')")
+		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')").
+		AddIntFlag(constants.ArgMaxParallel, "", constants.MAX_PARALLELISM, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
 }

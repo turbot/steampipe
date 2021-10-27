@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig"
 
@@ -54,10 +55,17 @@ func establishConnection(connStr string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	maxSessions := 1
+	maxParallel := constants.MAX_PARALLELISM
+	if viper.IsSet(constants.ArgMaxParallel) {
+		maxParallel = viper.GetInt(constants.ArgMaxParallel)
+	}
 
-	db.SetMaxOpenConns(maxSessions)
-	db.SetMaxIdleConns(maxSessions)
+	db.SetMaxOpenConns(maxParallel)
+	db.SetMaxIdleConns(maxParallel)
+	// never close connection even if idle
+	db.SetConnMaxIdleTime(0)
+	// never close connection because of age
+	db.SetConnMaxLifetime(0)
 
 	if db_common.WaitForConnection(db) {
 		return db, nil
@@ -74,7 +82,6 @@ func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallba
 func (c *DbClient) Close() error {
 	if c.dbClient != nil {
 		// nil the map - so that we can't reuse it
-		utils.DebugDumpJSON("SessionStat:", c.initializedSessions)
 		fmt.Println("Uniques:", len(c.initializedSessions))
 		c.initializedSessions = nil
 		return c.dbClient.Close()
