@@ -1,7 +1,7 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
-@test "steampipe check check_rendering_benchmark" {
+@test "check check_rendering_benchmark" {
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check benchmark.control_check_rendering_benchmark
   assert_equal $status 12
