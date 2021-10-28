@@ -1,5 +1,5 @@
-benchmark "control_summary_and_check_benchmark" {
-  title = "Benchmark to test the check summary output and different output & export formats in steampipe"
+benchmark "control_check_rendering_benchmark" {
+  title = "Benchmark to test the different output & export formats and rendering in steampipe"
   children = [
     control.sample_control_mixed_results_1,
     control.sample_control_mixed_results_2
