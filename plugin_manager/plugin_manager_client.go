@@ -3,11 +3,9 @@ package plugin_manager
 import (
 	"io/ioutil"
 	"log"
-	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/steampipe-plugin-sdk/grpc"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
@@ -15,15 +13,14 @@ import (
 
 const maxRetries = 2
 
-// PluginManagerClientWithRetries is the client used by steampipe to access the plugin manager
-// it implements retries on the grpc calls
-type PluginManagerClientWithRetries struct {
+// PluginManagerClient is the client used by steampipe to access the plugin manager
+type PluginManagerClient struct {
 	manager            pluginshared.PluginManager
 	pluginManagerState *pluginManagerState
 }
 
-func NewPluginManagerClientWithRetries(pluginManagerState *pluginManagerState) (*PluginManagerClientWithRetries, error) {
-	res := &PluginManagerClientWithRetries{
+func NewPluginManagerClient(pluginManagerState *pluginManagerState) (*PluginManagerClient, error) {
+	res := &PluginManagerClient{
 		pluginManagerState: pluginManagerState,
 	}
 	err := res.attachToPluginManager()
@@ -34,7 +31,7 @@ func NewPluginManagerClientWithRetries(pluginManagerState *pluginManagerState) (
 	return res, nil
 }
 
-func (c *PluginManagerClientWithRetries) attachToPluginManager() error {
+func (c *PluginManagerClient) attachToPluginManager() error {
 	// discard logging from the plugin client (plugin logs will still flow through)
 	loggOpts := &hclog.LoggerOptions{Name: "plugin", Output: ioutil.Discard}
 	logger := logging.NewLogger(loggOpts)
@@ -69,54 +66,14 @@ func (c *PluginManagerClientWithRetries) attachToPluginManager() error {
 	return nil
 }
 
-func (c *PluginManagerClientWithRetries) Get(req *pb.GetRequest) (res *pb.GetResponse, err error) {
-	for attempt := 1; attempt <= maxRetries; attempt++ {
-		res, err = c.manager.Get(req)
-		if !c.ShouldRetry(err) {
-			break
-		}
-		// reattach to the plugin manager
-		err = c.attachToPluginManager()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, err
+func (c *PluginManagerClient) Get(req *pb.GetRequest) (res *pb.GetResponse, err error) {
+	return c.manager.Get(req)
 }
 
-func (c *PluginManagerClientWithRetries) SetConnectionConfigMap(req *pb.SetConnectionConfigMapRequest) (res *pb.SetConnectionConfigMapResponse, err error) {
-	retried := false
-	for attempt := 1; attempt <= maxRetries; attempt++ {
-		res, err = c.manager.SetConnectionConfigMap(req)
-		if !c.ShouldRetry(err) {
-			if retried == true && err == nil {
-				log.Printf("[WARN] RETRY WORKED++++++++++++++++++++++++++\n")
-			}
-			break
-		}
-		log.Printf("[WARN] Execute RETRYING %v\n", err)
-		time.Sleep(20 * time.Millisecond)
-		retried = true
-		retried = true
-	}
-	return res, err
+func (c *PluginManagerClient) SetConnectionConfigMap(req *pb.SetConnectionConfigMapRequest) (res *pb.SetConnectionConfigMapResponse, err error) {
+	return c.manager.SetConnectionConfigMap(req)
 }
 
-func (c *PluginManagerClientWithRetries) Shutdown(req *pb.ShutdownRequest) (res *pb.ShutdownResponse, err error) {
-	for attempt := 1; attempt <= maxRetries; attempt++ {
-		res, err = c.manager.Shutdown(req)
-		if !c.ShouldRetry(err) {
-			break
-		}
-	}
-	return res, err
-}
-
-func (c *PluginManagerClientWithRetries) ShouldRetry(err error) bool {
-	if err == nil {
-		return false
-	}
-	res := grpc.IsGRPCConnectivityError(err)
-	log.Printf("[WARN] ShouldRetry %s = %v\n", err.Error(), res)
-	return res
+func (c *PluginManagerClient) Shutdown(req *pb.ShutdownRequest) (res *pb.ShutdownResponse, err error) {
+	return c.manager.Shutdown(req)
 }

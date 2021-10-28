@@ -155,7 +155,7 @@ func createConnectionPlugins(requiredConnections ConnectionDataMap, alreadyLoade
 		} else {
 			pluginCount++
 			// instantiate the connection plugin, and retrieve schema
-			go getConnectionPluginAsync(connectionData, pluginChan, errorChan)
+			getConnectionPluginAsync(connectionData, pluginChan, errorChan)
 		}
 	}
 
@@ -176,14 +176,14 @@ func createConnectionPlugins(requiredConnections ConnectionDataMap, alreadyLoade
 }
 
 func getConnectionPluginAsync(connectionData *ConnectionData, pluginChan chan *ConnectionPlugin, errorChan chan error) {
-	p, err := CreateConnectionPlugin(connectionData.Connection, true)
-	if err != nil {
-		errorChan <- err
-		return
-	}
-	pluginChan <- p
-
-	p.PluginClient.Kill()
+	go func() {
+		p, err := CreateConnectionPlugin(connectionData.Connection, true)
+		if err != nil {
+			errorChan <- err
+			return
+		}
+		pluginChan <- p
+	}()
 }
 
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, *RefreshConnectionResult) {

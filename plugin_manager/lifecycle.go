@@ -38,9 +38,6 @@ func Start() error {
 
 // start plugin manager, without checking it is already running
 func start() error {
-	// We don't want to see the plugin logs.
-	//log.SetOutput(ioutil.Discard)
-
 	// create command which will start plugin-manager
 	// we have to spawn a separate process to do this so the plugin process itself is not an orphan
 
@@ -89,7 +86,7 @@ func Stop() error {
 
 // stop the running plugin manager instance
 func stop(state *pluginManagerState) error {
-	pluginManager, err := NewPluginManagerClientWithRetries(state)
+	pluginManager, err := NewPluginManagerClient(state)
 	if err != nil {
 		return err
 	}
@@ -135,5 +132,5 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 		// not retrying - just fail
 		return nil, fmt.Errorf("plugin manager is not running")
 	}
-	return NewPluginManagerClientWithRetries(state)
+	return NewPluginManagerClient(state)
 }
