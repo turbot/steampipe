@@ -1,5 +1,5 @@
 query "generic_query" {
-  description = "query to simulate control results, with rows conataining all possible statuses"
+  description = "parameterized query to simulate control results, with rows conataining all possible statuses"
   sql = query.gen_query.sql
   param "number_of_ok" {
     description = "Number of resources in OK"
