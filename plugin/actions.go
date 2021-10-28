@@ -85,7 +85,7 @@ func Exists(plugin string) (bool, error) {
 }
 
 // Install installs a plugin in the local file system
-func Install(plugin string) (*ociinstaller.SteampipeImage, string, error) {
+func Install(plugin string) *ociinstaller.InstallResult {
 	return ociinstaller.InstallPlugin(plugin)
 }
 

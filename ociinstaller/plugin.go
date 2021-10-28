@@ -12,49 +12,57 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// InstallPlugin :: Install a plugin from an OCI Image
-func InstallPlugin(imageRef string) (*SteampipeImage, string, error) {
+type InstallResult struct {
+	Image   *SteampipeImage
+	Warning string
+	Err     error
+}
+
+// InstallPlugin installs a plugin from an OCI Image
+func InstallPlugin(imageRef string) *InstallResult {
 	tempDir := NewTempDir(imageRef)
 	defer tempDir.Delete()
 
-	message := ""
+	res := &InstallResult{}
 
 	ref := NewSteampipeImageRef(imageRef)
 	imageDownloader := NewOciDownloader(context.Background())
 
 	image, err := imageDownloader.Download(ref.ActualImageRef(), "plugin", tempDir.Path)
 	if err != nil {
-		return nil, message, err
+		res.Err = err
+		return res
 	}
+	// assign image to result
+	res.Image = image
 
 	if err = installPluginBinary(image, tempDir.Path); err != nil {
-		return nil, message, fmt.Errorf("plugin installation failed: %s", err)
+		res.Err = fmt.Errorf("plugin installation failed: %s", err)
+		return res
 	}
 	if err = installPluginDocs(image, tempDir.Path); err != nil {
-		return nil, message, fmt.Errorf("plugin installation failed: %s", err)
+		res.Err = fmt.Errorf("plugin installation failed: %s", err)
+		return res
 	}
 
 	_, _, stream := ref.GetOrgNameAndStream()
-	if stream == "latest" {
-		if err = installPluginConfigFiles(image, tempDir.Path); err != nil {
-			return nil, message, fmt.Errorf("plugin installation failed: %s", err)
-		}
+	if err = installPluginConfigFiles(image, tempDir.Path); err != nil {
+		res.Err = fmt.Errorf("plugin installation failed: %s", err)
 	}
 
-	if err := updateVersionFilePlugin(image); err != nil {
-		return nil, message, err
+	if err := updatePluginVersionFile(image); err != nil {
+		res.Err = fmt.Errorf("plugin version file update failed: %s", err)
+		return res
 	}
 
-	// this is sample installation - do not return if there's an error
-	installedTo, configSampleInstallError := installPluginConfigSamples(image, tempDir.Path)
-	if stream != "latest" && configSampleInstallError == nil {
-		message = fmt.Sprintf("default config wasn't created because 'latest' wasn't installed - look at %s for a sample config file", installedTo)
+	if stream != "latest" {
+		res.Warning = fmt.Sprintf("you have installed a pinned version of the plugin - you must update the connection config to use this pinned version\n")
 	}
 
-	return image, message, nil
+	return res
 }
 
-func updateVersionFilePlugin(image *SteampipeImage) error {
+func updatePluginVersionFile(image *SteampipeImage) error {
 	timeNow := versionfile.FormatTime(time.Now())
 	v, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
@@ -114,26 +122,6 @@ func installPluginDocs(image *SteampipeImage, tempdir string) error {
 		return fmt.Errorf("could not copy %s to %s", sourcePath, destPath)
 	}
 	return nil
-}
-
-func installPluginConfigSamples(image *SteampipeImage, tempdir string) (string, error) {
-	installTo := pluginInstallDir(image.ImageRef)
-
-	// if ConfigFileDir is not set, then there are no config files.
-	if image.Plugin.ConfigFileDir == "" {
-		return "", nil
-	}
-
-	// install the docs
-	sourcePath := filepath.Join(tempdir, image.Plugin.ConfigFileDir)
-	destPath := filepath.Join(installTo, "configs")
-	if fileExists(destPath) {
-		os.RemoveAll(destPath)
-	}
-	if err := moveFolderWithinPartition(sourcePath, destPath); err != nil {
-		return "", fmt.Errorf("could not copy %s to %s", sourcePath, destPath)
-	}
-	return destPath, nil
 }
 
 func installPluginConfigFiles(image *SteampipeImage, tempdir string) error {

@@ -9,16 +9,16 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-const ALREADY_INSTALLED = "Already installed"
-const LATEST_ALREADY_INSTALLED = "Latest already installed"
-const NOT_INSTALLED = "Not installed"
+const AlreadyInstalled = "Already installed"
+const LatestAlreadyInstalled = "Latest already installed"
+const NotInstalled = "Not installed"
 
 type InstallReport struct {
 	Skipped        bool
 	Plugin         string
 	SkipReason     string
 	DocURL         string
-	Message        string
+	Warning        string
 	Version        string
 	IsUpdateReport bool
 }
@@ -54,10 +54,10 @@ func (i *InstallReport) installString() string {
 				fmt.Sprintf("Documentation:    %s", i.DocURL),
 			)
 		}
-		if len(i.Message) > 0 {
+		if len(i.Warning) > 0 {
 			thisReport = append(
 				thisReport,
-				fmt.Sprintf("Message:          %s", i.Message),
+				fmt.Sprintf("Warning:          %s", i.Warning),
 			)
 		}
 	}
@@ -73,7 +73,7 @@ func (i *InstallReport) String() string {
 	}
 }
 
-// Prints out the installation reports onto the console
+// PrintInstallReports displays the installation reports
 func PrintInstallReports(reports []InstallReport, isUpdateReport bool) {
 	installedOrUpdated := []InstallReport{}
 	canBeInstalled := []InstallReport{}
@@ -83,9 +83,9 @@ func PrintInstallReports(reports []InstallReport, isUpdateReport bool) {
 		report.IsUpdateReport = isUpdateReport
 		if !report.Skipped {
 			installedOrUpdated = append(installedOrUpdated, report)
-		} else if report.SkipReason == NOT_INSTALLED {
+		} else if report.SkipReason == NotInstalled {
 			canBeInstalled = append(canBeInstalled, report)
-		} else if report.SkipReason == ALREADY_INSTALLED {
+		} else if report.SkipReason == AlreadyInstalled {
 			canBeUpdated = append(canBeUpdated, report)
 		}
 	}
