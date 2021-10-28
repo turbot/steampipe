@@ -3,7 +3,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 # testing the check summary output feature in steampipe
 @test "check summary output" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check benchmark.control_summary_benchmark --theme plain
 
   echo $output

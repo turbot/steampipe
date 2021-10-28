@@ -4,7 +4,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 ############### QUERIES ###############
 
 @test "query with default params and no params passed through CLI" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe query query.query_params_with_all_defaults --output json
 
   # store the reason field in `content`
@@ -14,7 +14,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query with default params and some positional params passed through CLI" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe query "query.query_params_with_all_defaults(\"command_param_1\")" --output json
 
   # store the reason field in `content`
@@ -24,7 +24,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query with default params and some named params passed through CLI" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe query "query.query_params_with_all_defaults(p1 => \"command_param_1\")" --output json
 
   # store the reason field in `content`
@@ -34,7 +34,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query with no default params and no params passed through CLI" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe query query.query_params_with_no_defaults --output json
 
   # should return an error `failed to resolve value for 3 parameters`
@@ -42,7 +42,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query with no default params and all params passed through CLI" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe query "query.query_params_with_all_defaults(\"command_param_1\",\"command_param_2\",\"command_param_3\")" --output json
 
   # store the reason field in `content`
@@ -52,7 +52,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query specific array index from param - DISABLED" {
-  # cd $WORKSPACE_DIR
+  # cd $FUNCTIONALITY_TEST_MOD
   # run steampipe query query.query_array_params_with_default --output json
 
   # # store the reason field in `content`
@@ -62,7 +62,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query specific property from map param" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe query query.query_map_params_with_default --output json
 
   # store the reason field in `content`
@@ -72,7 +72,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query with invalid param syntax" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe query "query.query_map_params_with_default(\"foo \")" --output json
 
   # should return an error `invalid input syntax for type json`
@@ -82,7 +82,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 ############### CONTROLS ###############
 
 @test "control with default params and no args passed in control" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_params_with_defaults_and_no_args --export=output.json 
 
   # store the reason field in `content`
@@ -93,7 +93,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with default params and partial named args passed in control" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_params_with_defaults_and_partial_named_args --export=output.json
 
   # store the reason field in `content`
@@ -104,7 +104,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with default params and partial positional args passed in control" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_params_with_defaults_and_partial_positional_args --export=output.json
 
   # store the reason field in `content`
@@ -115,7 +115,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with default params and all named args passed in control" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_params_with_defaults_and_all_named_args --export=output.json
 
   # store the reason field in `content`
@@ -126,7 +126,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with default params and all positional args passed in control" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_params_with_defaults_and_all_positional_args --export=output.json
 
   # store the reason field in `content`
@@ -137,7 +137,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with no default params and no args passed in control" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_params_with_no_defaults_and_no_args --output json
 
   # should return an error `failed to resolve value for 3 parameters`
@@ -146,7 +146,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with no default params and all args passed in control" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_params_with_no_defaults_with_named_args --export=output.json
 
   # store the reason field in `content`
@@ -157,7 +157,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control to access specific array index from param - DISABLED" {
-  # cd $WORKSPACE_DIR
+  # cd $FUNCTIONALITY_TEST_MOD
   # run steampipe check control.query_params_array_with_default --export=output.json
 
   # # store the reason field in `content`
@@ -168,7 +168,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control to access specific property from map" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_params_map_with_default --export=output.json
 
   # store the reason field in `content`
@@ -179,7 +179,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with invaild args syntax passed in control" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_params_invalid_arg_syntax --output json
 
   # store the results field in `content`
@@ -190,7 +190,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with inline sql with partial named args passed in control" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_inline_sql_from_control_with_partial_named_args --export=output.json
 
   # store the reason field in `content`
@@ -201,7 +201,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with inline sql with partial positional args passed in control" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_inline_sql_from_control_with_partial_positional_args --export=output.json
 
   # store the reason field in `content`
@@ -212,7 +212,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with inline sql with no args passed in control" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_inline_sql_from_control_with_no_args --export=output.json
 
   # store the reason field in `content`
@@ -223,7 +223,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with inline sql with all named args passed in control" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_inline_sql_from_control_with_all_named_args --export=output.json
 
   # store the reason field in `content`
@@ -234,7 +234,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with inline sql with all positional args passed in control" {
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_inline_sql_from_control_with_all_positional_args --export=output.json
 
   # store the reason field in `content`

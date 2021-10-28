@@ -3,7 +3,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe cache functionality check ON" {
   run steampipe plugin install chaos
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
 
   run steampipe check benchmark.check_cache_benchmark --export=output.json
 
@@ -21,7 +21,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe cache functionality check OFF" {
   run steampipe plugin install chaos
-  cd $WORKSPACE_DIR
+  cd $FUNCTIONALITY_TEST_MOD
 
   # set the env variable to false
   export STEAMPIPE_CACHE=false

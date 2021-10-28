@@ -1,4 +1,4 @@
-mod "chaos_cache_test_mod"{
-  title = "Cache test mod"
-  description = "This is a simple mod used for testing the steampipe cache features. This mod will only run properly in acceptance tests."
+mod "config_parsing_test_mod"{
+  title = "Config parsing test mod"
+  description = "This is a simple mod used for testing the steampipe connection config parsing. This mod will only run properly in acceptance tests."
 }
