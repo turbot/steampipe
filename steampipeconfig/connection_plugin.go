@@ -3,6 +3,8 @@ package steampipeconfig
 import (
 	"io/ioutil"
 	"log"
+	"os"
+	"strings"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -11,6 +13,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/plugin_manager/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
 )
@@ -30,7 +33,6 @@ type ConnectionPlugin struct {
 
 // CreateConnectionPlugin instantiates a plugin for a connection, fetches schema and sends connection config
 func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool) (*ConnectionPlugin, error) {
-
 	// TODO remove disableLogger or get it working somehow
 
 	pluginName := connection.Plugin
@@ -40,9 +42,16 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 
 	log.Printf("[WARN] CreateConnectionPlugin connection: '%s', pluginName: '%s'", connectionName, pluginName)
 
-	pluginManager, err := plugin_manager.GetPluginManager()
-	// run locally - for debugging
-	//pluginManager, err := getPluginManager()
+	var pluginManager pluginshared.PluginManager
+	var err error
+	if env := os.Getenv("STEAMPIPE_PLUGIN_MANAGER_DEBUG"); strings.ToLower(env) == "true" {
+		// run plugin manager locally - for debugging
+		log.Printf("[WARN] running plugin manager in-process for debugging")
+		pluginManager, err = runPluginManagerInProcess()
+	} else {
+		pluginManager, err = plugin_manager.GetPluginManager()
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -72,14 +81,12 @@ func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool
 	}
 
 	if err = pluginClient.SetConnectionConfig(req); err != nil {
-		pluginClient.Kill()
 		return nil, err
 	}
 
 	// fetch the plugin schema
 	schema, err := pluginClient.GetSchema()
 	if err != nil {
-		pluginClient.Kill()
 		return nil, err
 	}
 	// fetch the supported operations
@@ -108,7 +115,7 @@ func attachToPlugin(reattach *plugin.ReattachConfig, pluginName string) (*sdkgrp
 }
 
 // function used for debugging the plugin manager
-func getPluginManager() (*plugin_manager.PluginManager, error) {
+func runPluginManagerInProcess() (*plugin_manager.PluginManager, error) {
 	steampipeConfig, err := LoadConnectionConfig()
 	if err != nil {
 		return nil, err

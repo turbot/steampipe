@@ -10,8 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe-plugin-sdk/grpc"
-
 	"github.com/turbot/steampipe/db/db_common"
 
 	typehelpers "github.com/turbot/go-kit/types"
@@ -35,7 +33,6 @@ type ControlRun struct {
 	runError   error  `json:"-"`
 	errorStack string `json:"-"`
 	// the number of attempts this control made to run
-	attempts int `json:"-"`
 	// the parent control
 	Control *modconfig.Control `json:"-"`
 	Summary StatusSummary      `json:"-"`
@@ -141,18 +138,32 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
 
 	startTime := time.Now()
+	control := r.Control
+	log.Printf("[TRACE] control start %s\n", control.Name())
+	r.executionTree.progress.OnControlExecuteStart()
 
+	// function to cleanup and update status after control run completion
+	defer func() {
+		r.executionTree.progress.OnControlExecuteFinish()
+		// update the result group status with our status - this will be passed all the way up the execution tree
+		r.group.updateSummary(r.Summary)
+		if len(r.Severity) != 0 {
+			r.group.updateSeverityCounts(r.Severity, r.Summary)
+		}
+		r.Duration = time.Since(startTime)
+	}()
+
+	// get a db connection
 	dbSession, err := client.AcquireSession(ctx)
 	log.Printf("[TRACE] got session for: %s\n", r.Control.Name())
 	if err != nil {
-		r.SetError(err)
+		r.SetError(fmt.Errorf("error acquiring database connection: %s", err.Error()))
 		return
 	}
 	defer dbSession.Close()
 
+	// set our status
 	r.runStatus = ControlRunStarted
-
-	control := r.Control
 
 	// update the current running control in the Progress renderer
 	r.executionTree.progress.OnControlStart(control)
@@ -160,7 +171,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	// resolve the control query
 	query, err := r.executionTree.workspace.ResolveControlQuery(control)
 	if err != nil {
-		r.SetError(err)
+		r.SetError(fmt.Errorf(`cannot run %s - failed to resolve query "%s": %s`, control.Name(), typehelpers.SafeString(control.SQL), err.Error()))
 		return
 	}
 	if query == "" {
@@ -173,35 +184,33 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 
 	shouldBeDoneBy := time.Now().Add(240 * time.Second)
 	ctx, cancel := context.WithDeadline(ctx, shouldBeDoneBy)
-
-	// Even though ctx will expire, it is good practice to call its
-	// cancellation function in any case. Not doing so may keep the
-	// context and its parent alive longer than necessary.
+	// Even though ctx will expire, it is good practice to call its cancellation function in any case.
+	// Not doing so may keep the context and its parent alive longer than necessary.
 	defer cancel()
 
-	log.Printf("[TRACE] control start %s\n", control.Name())
-	r.executionTree.progress.OnControlExecuteStart()
 	queryResult, err := client.ExecuteInSession(ctx, dbSession, query, false)
 	if err != nil {
-		r.executionTree.progress.OnControlExecuteFinish()
 
-		// is this an rpc EOF error - meaning that the plugin somehow crashed
-		// TODO move this to the plugin client
-		if grpc.IsGRPCConnectivityError(err) {
-			if r.attempts > constants.MaxControlRunAttempts {
-				// if exceeded max retries, give up
-				r.SetError(err)
-				return
-			}
-			// the control errored
-			r.executionTree.progress.OnControlError()
-
-			// recurse into this function to retry
-			// use the same context, so that we respect the timeout
-			r.attempts++
-			r.Execute(ctx, client)
-			return
-		}
+		//// is this an rpc EOF error - meaning that the plugin somehow crashed
+		//// TODO move this to the plugin client
+		//if grpc.IsGRPCConnectivityError(err) {
+		//	if r.attempts > constants.MaxControlRunAttempts {
+		//		// if exceeded max retries, give up
+		//		r.SetError(err)
+		//		return
+		//	}
+		//	// the control errored
+		//	r.executionTree.progress.OnControlError()
+		//
+		//	// recurse into this function to retry
+		//	// use the same context, so that we respect the timeout
+		//	r.attempts++
+		//	r.Execute(ctx, client)
+		//	return
+		//}
+		log.Printf("[TRACE] client.ExecuteInSession returned error %s", err.Error())
+		// set the run error status
+		// this updates the run summary error count and the progress error count
 		r.SetError(err)
 		return
 	}
@@ -217,39 +226,36 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	}()
 
 	select {
+	// check for cancellation
 	case <-ctx.Done():
 		r.SetError(ctx.Err())
 	case <-gatherDoneChan:
 		// do nothing
 	}
 
-	r.Duration = time.Since(startTime)
-	r.executionTree.progress.OnControlExecuteFinish()
 }
 
 func (r *ControlRun) gatherResults() {
 	for {
 		select {
 		case row := <-*r.queryResult.RowChan:
+			// nil row means control run is complete
 			if row == nil {
-				// update the result group status with our status - this will be passed all the way up the execution tree
-				r.group.updateSummary(r.Summary)
-				if len(r.Severity) != 0 {
-					r.group.updateSeverityCounts(r.Severity, r.Summary)
-				}
-
 				// nil row means we are done
 				r.setRunStatus(ControlRunComplete)
 				r.createdOrderedResultRows()
 				return
-
 			}
-			// got a result - send a ping over the channel so that the
-			// loop can check against the timeout
+			// if the row is in error then we terminate the run
 			if row.Error != nil {
+				// set error status and summary
 				r.SetError(row.Error)
+				// update the result group status with our status - this will be passed all the way up the execution tree
+				r.group.updateSummary(r.Summary)
 				return
 			}
+
+			// so all is ok - create another result row
 			result, err := NewResultRow(r.Control, row, r.queryResult.ColTypes)
 			if err != nil {
 				r.SetError(err)
@@ -292,6 +298,9 @@ func (r *ControlRun) createdOrderedResultRows() {
 }
 
 func (r *ControlRun) SetError(err error) {
+	if err == nil {
+		return
+	}
 	r.runError = utils.TransformErrorToSteampipe(err)
 	r.errorStack = string(debug.Stack())
 
@@ -310,7 +319,6 @@ func (r *ControlRun) setRunStatus(status ControlRunStatus) {
 	r.stateLock.Unlock()
 
 	if r.Finished() {
-
 		// update Progress
 		if status == ControlRunError {
 			r.executionTree.progress.OnControlError()

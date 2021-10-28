@@ -66,13 +66,19 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 
 	log.Printf("[TRACE] PluginManager %p Get connection '%s', plugins %+v\n", m, req.Connection, m.Plugins)
 
+	// reason for starting the plugin (if we need to
+	var reason string
+
 	// is this plugin already running
-	if p, ok := m.Plugins[req.Connection]; ok {
+	if p, ok := m.Plugins[req.Connection]; !ok {
+		reason = fmt.Sprintf("PluginManager %p '%s' NOT found in map %v - starting", m, req.Connection, m.Plugins)
+	} else {
+		// so we have the plugin in our map - does it exist
+
 		reattach := p.reattach
-		// check the pid exists and the clien thas not exited (i.e. th eplugin has crashed)
+		// check the pid exists
 		exists, _ := utils.PidExists(int(reattach.Pid))
-		exited := p.client.Exited()
-		if exists && !exited {
+		if exists {
 			// so the plugin id good
 			log.Printf("[WARN] PluginManager %p found '%s' in map %v", m, req.Connection, m.Plugins)
 
@@ -83,27 +89,15 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 		}
 
 		//  either the pid does not exist or the plugin has exited
-
-		// kill the client
-		p.client.Kill()
 		// remove from map
 		delete(m.Plugins, req.Connection)
-
-		// build log string
-		var reason string
-		if exited {
-			reason = "client has exited"
-			// TODO do we need to kill the PID?
-		} else {
-			reason = "pid does not exist"
-		}
-		log.Printf("[WARN] PluginManager %p plugin pid %d for connection '%s' found in plugin map but %s - killing client and removing from map", m, reattach.Pid, req.Connection, reason)
-
-	} else {
-		log.Printf("[WARN] PluginManager %p '%s' NOT found in map %v - starting", m, req.Connection, m.Plugins)
+		// update reason
+		reason = fmt.Sprintf("PluginManager %p plugin pid %d for connection '%s' found in plugin map but plugin process does not exist - removing from map", m, reattach.Pid, req.Connection)
 	}
 
 	// fall through to plugin startup
+	// log the startup reason
+	log.Printf("[WARN] %s", reason)
 	// so we need to start the plugin
 	client, err := m.startPlugin(req)
 	if err != nil {
@@ -144,20 +138,16 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 		}
 	}()
 
-	var errs []error
 	for _, p := range m.Plugins {
 		log.Printf("[WARN] kill %v", p)
-		err = m.killPlugin(p.reattach.Pid)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		p.client.Kill()
 	}
-	return &pb.ShutdownResponse{}, utils.CombineErrorsWithPrefix(fmt.Sprintf("failed to shutdown %d plugins", len(errs)), errs...)
+	return &pb.ShutdownResponse{}, nil
 }
 
 func (m *PluginManager) startPlugin(req *pb.GetRequest) (*plugin.Client, error) {
 
-	log.Printf("[WARN] startPlugin ********************\n")
+	log.Printf("[WARN] ************ start plugin %s ********************\n", req.Connection)
 
 	// get connection config
 	connectionConfig, ok := m.connectionConfig[req.Connection]
@@ -191,38 +181,4 @@ func (m *PluginManager) startPlugin(req *pb.GetRequest) (*plugin.Client, error) 
 		return nil, err
 	}
 	return client, nil
-	/* hub did this
-
-	// loop as we may need to retry if the plugin exists in the map but has actually exited
-	const maxAttempts = 3
-	for attempt := 1; attempt < maxAttempts; attempt++ {
-		// ask connection map to get or create this connection
-		c, err := h.connections.get(pluginFQN, connectionName)
-		if err != nil {
-			return nil, err
-		}
-
-		// make sure that the plugin is running
-		// (i.e. it has not crashed)
-		if !c.Plugin.Client.Exited() {
-			// it is running, return it
-			return c, nil
-		}
-
-		// remove connection from the connection map and kill the GRPC client
-		h.connections.removeAndKill(pluginFQN, connectionName)
-	}
-	*/
-}
-
-func (m *PluginManager) killPlugin(pid int64) error {
-	process, err := utils.FindProcess(int(pid))
-	if err != nil {
-		log.Printf("[WARN] error finding process %d", pid)
-		return err
-	}
-	if process == nil {
-		return nil
-	}
-	return process.Kill()
 }

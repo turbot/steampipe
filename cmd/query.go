@@ -25,7 +25,6 @@ import (
 	"github.com/turbot/steampipe/workspace"
 )
 
-// queryCmd :: represents the query command
 func queryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:              "query",

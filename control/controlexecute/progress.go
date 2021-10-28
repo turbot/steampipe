@@ -48,6 +48,7 @@ func (p *ControlProgressRenderer) OnControlExecuteStart() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	if p.enabled {
+		// increment the parallel execution count
 		p.executing++
 		display.UpdateSpinnerMessage(p.spinner, p.message())
 	}
@@ -57,6 +58,7 @@ func (p *ControlProgressRenderer) OnControlExecuteFinish() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	if p.enabled {
+		// decrement the parallel execution count
 		p.executing--
 		display.UpdateSpinnerMessage(p.spinner, p.message())
 	}
@@ -103,12 +105,13 @@ func (p *ControlProgressRenderer) Finish() {
 }
 
 func (p ControlProgressRenderer) message() string {
-	return fmt.Sprintf("Running %d of %d %s. (%d complete, %d pending, %d errors)",
-		p.executing,
+	return fmt.Sprintf("Running %d %s. (%d complete, %d pending, %d %s) [%d in parallel]",
 		p.total,
 		utils.Pluralize("control", p.total),
 		p.complete,
 		p.pending,
 		p.error,
+		utils.Pluralize("error", p.error),
+		p.executing,
 	)
 }

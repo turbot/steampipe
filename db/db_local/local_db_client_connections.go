@@ -28,8 +28,6 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 		return res
 	}
 
-	log.Printf("[TRACE] refreshConnections, updates: %+v\n", connectionUpdates)
-
 	// if any plugins are missing, error for now but we could prompt for an install
 	missingCount := len(connectionUpdates.MissingPlugins)
 	if missingCount > 0 {
@@ -54,6 +52,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 	}
 
 	// so there ARE connections to update
+	log.Printf("[WARN] refreshConnections, updates: %+v\n", connectionUpdates)
 
 	// execute the connection queries
 	if err := executeConnectionQueries(connectionQueries); err != nil {

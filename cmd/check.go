@@ -47,7 +47,6 @@ func (e *exportData) addErrors(err []error) {
 	e.errorsLock.Unlock()
 }
 
-// checkCmd :: represents the check command
 func checkCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:              "check [flags] [mod/benchmark/control/\"all\"]",

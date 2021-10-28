@@ -64,8 +64,9 @@ work_mem=64kB
 jit=off
 
 # postgres log collection
-log_statement=all
+log_statement=none
 log_min_duration_statement=2000
 logging_collector=on
 log_min_error_statement=error
+log_min_messages=info
 log_filename='database-%Y-%m-%d.log'`

@@ -1,3 +1,4 @@
+//go:build darwin || linux
 // +build darwin linux
 
 package utils
@@ -31,7 +32,7 @@ func FindProcess(targetPid int) (*psutils.Process, error) {
 
 	pids, err := psutils.Pids()
 	if err != nil {
-		return nil, fmt.Errorf("FAILED TO GET PIDS")
+		return nil, fmt.Errorf("failed to get pids")
 	}
 	for _, pid := range pids {
 		if targetPid == int(pid) {
@@ -43,7 +44,7 @@ func FindProcess(targetPid int) (*psutils.Process, error) {
 
 			status, err := process.Status()
 			if err != nil {
-				return nil, fmt.Errorf("FAILED TO GET STATUS")
+				return nil, fmt.Errorf("failed to get status")
 			}
 
 			if status == "Z" {

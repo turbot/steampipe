@@ -106,12 +106,12 @@ func (c *LocalDbClient) ExecuteSync(ctx context.Context, query string, disableSp
 	return c.client.ExecuteSync(ctx, query, disableSpinner)
 }
 
-// ExecuteSync implements Client
+// ExecuteSyncInSession implements Client
 func (c *LocalDbClient) ExecuteSyncInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	return c.client.ExecuteSyncInSession(ctx, session, query, disableSpinner)
 }
 
-// Execute implements Client
+// ExecuteInSession implements Client
 func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (res *queryresult.Result, err error) {
 	return c.client.ExecuteInSession(ctx, session, query, disableSpinner)
 }
