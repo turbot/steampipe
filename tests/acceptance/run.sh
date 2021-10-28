@@ -25,6 +25,7 @@ export CONFIG_PARSING_TEST_MOD=$MY_PATH/test_data/config_parsing_test_mod
 export FILE_PATH=$MY_PATH
 export CHECK_ALL_MOD=$MY_PATH/test_data/check_all_mod
 export FUNCTIONALITY_TEST_MOD=$MY_PATH/test_data/functionality_test_mod
+export CONTROL_RENDERING_TEST_MOD=$MY_PATH/test_data/control_rendering_test_mod
 
 # Must have these commands for the test suite to run
 declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch")

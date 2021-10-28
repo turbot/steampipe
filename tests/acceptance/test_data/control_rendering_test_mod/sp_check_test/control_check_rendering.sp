@@ -30,3 +30,13 @@ control "sample_control_mixed_results_2" {
     "number_of_alarm" = 5
   }
 }
+
+control "sample_control_all_alarms" {
+  title         = "Sample control with all resources in alarm"
+  description   = "Sample control that 5 ALARM"
+  query         = query.generic_query
+  severity      = "critical"
+  args = {
+    "number_of_alarm" = 15
+  }
+}
