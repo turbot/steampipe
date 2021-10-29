@@ -2,7 +2,8 @@ benchmark "control_check_rendering_benchmark" {
   title = "Benchmark to test the different output & export formats and rendering in steampipe"
   children = [
     control.sample_control_mixed_results_1,
-    control.sample_control_mixed_results_2
+    control.sample_control_mixed_results_2,
+    control.sample_control_all_alarms
   ]
 }
 
@@ -39,4 +40,11 @@ control "sample_control_all_alarms" {
   args = {
     "number_of_alarm" = 15
   }
+}
+
+control "sample_control_no_results" {
+  title         = "Sample control with no results"
+  description   = "Sample control with no results"
+  sql           = "select 1 as reason, 'ok' as status, 3 as resource"
+  severity      = "critical"
 }
