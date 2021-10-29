@@ -64,7 +64,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 		}
 	}()
 
-	log.Printf("[TRACE] PluginManager %p Get connection '%s', plugins %+v\n", m, req.Connection, m.Plugins)
+	log.Printf("[WARN] PluginManager Get connection '%s', plugins %+v\n", req.Connection, m.Plugins)
 
 	// reason for starting the plugin (if we need to
 	var reason string
@@ -80,7 +80,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 		exists, _ := utils.PidExists(int(reattach.Pid))
 		if exists {
 			// so the plugin id good
-			log.Printf("[WARN] PluginManager %p found '%s' in map %v", m, req.Connection, m.Plugins)
+			log.Printf("[WARN] PluginManager found '%s' in map %v", req.Connection, m.Plugins)
 
 			// return the reattach config
 			return &pb.GetResponse{
@@ -92,7 +92,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 		// remove from map
 		delete(m.Plugins, req.Connection)
 		// update reason
-		reason = fmt.Sprintf("PluginManager %p plugin pid %d for connection '%s' found in plugin map but plugin process does not exist - removing from map", m, reattach.Pid, req.Connection)
+		reason = fmt.Sprintf("PluginManager found pid %d for connection '%s' in plugin map but plugin process does not exist - killing client and removing from map", reattach.Pid, req.Connection)
 	}
 
 	// fall through to plugin startup
@@ -110,7 +110,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 	reattach := pb.NewReattachConfig(client.ReattachConfig())
 	m.Plugins[req.Connection] = runningPlugin{client: client, reattach: reattach}
 
-	log.Printf("[TRACE] PluginManager %p Get complete", m)
+	log.Printf("[WARN] PluginManager Get complete")
 
 	// and return
 	return &pb.GetResponse{Reattach: reattach}, nil
@@ -129,7 +129,10 @@ func (m *PluginManager) SetConnectionConfigMap(req *pb.SetConnectionConfigMapReq
 	return &pb.SetConnectionConfigMapResponse{}, nil
 }
 
-func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
+func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
+	log.Printf("[WARN] PluginManager Shutdown")
+	//log.Printf("[WARN] stack %s", req.Stack)
+
 	m.mut.Lock()
 	defer func() {
 		m.mut.Unlock()
@@ -139,7 +142,7 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 	}()
 
 	for _, p := range m.Plugins {
-		log.Printf("[WARN] kill %v", p)
+		log.Printf("[WARN] killing plugin %v", p)
 		p.client.Kill()
 	}
 	return &pb.ShutdownResponse{}, nil
@@ -174,7 +177,8 @@ func (m *PluginManager) startPlugin(req *pb.GetRequest) (*plugin.Client, error) 
 		Plugins:          pluginMap,
 		Cmd:              cmd,
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
-		Logger:           m.logger,
+		// pass our logger to the plugin client to ensure plugin logs end up in logfile
+		Logger: m.logger,
 	})
 
 	if _, err := client.Start(); err != nil {

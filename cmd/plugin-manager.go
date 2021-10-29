@@ -30,26 +30,14 @@ func pluginManagerCmd() *cobra.Command {
 }
 
 func runPluginManagerCmd(cmd *cobra.Command, args []string) {
-	logName := fmt.Sprintf("plugin-%s.log", time.Now().Format("2006-01-02"))
-	logPath := filepath.Join(constants.LogDir(), logName)
-	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		fmt.Printf("failed to open plugin manager log file: %s\n", err.Error())
-		os.Exit(1)
-	}
-	logger := logging.NewLogger(&hclog.LoggerOptions{Output: f})
-	log.SetOutput(f)
-	//log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
-	//log.SetPrefix("")
-	//log.SetFlags(0)
+	logger := createPluginManagerLog()
 
+	// build config map
 	steampipeConfig, err := steampipeconfig.LoadConnectionConfig()
 	if err != nil {
 		utils.ShowError(err)
 		os.Exit(1)
 	}
-
-	// build config map
 	configMap := make(map[string]*pb.ConnectionConfig)
 	for k, v := range steampipeConfig.Connections {
 		configMap[k] = &pb.ConnectionConfig{
@@ -59,4 +47,20 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 	plugin_manager.NewPluginManager(configMap, logger).Serve()
+	fmt.Printf("[WARN] DONE")
+}
+
+func createPluginManagerLog() hclog.Logger {
+	logName := fmt.Sprintf("plugin-%s.log", time.Now().Format("2006-01-02"))
+	logPath := filepath.Join(constants.LogDir(), logName)
+	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		fmt.Printf("failed to open plugin manager log file: %s\n", err.Error())
+		os.Exit(1)
+	}
+	logger := logging.NewLogger(&hclog.LoggerOptions{Output: f})
+	log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
+	log.SetPrefix("")
+	log.SetFlags(0)
+	return logger
 }

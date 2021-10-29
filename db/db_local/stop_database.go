@@ -98,6 +98,7 @@ func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (st
 		utils.LogTime("db_local.StopDB end")
 	}()
 
+	// TODO think about failures - we should shut down the service event if plugin manager does not stop
 	// stop the plugin manager
 	// this means it may be stopped even if we fail to stop the service - that is ok - we will restart it if needed
 	if err := plugin_manager.Stop(); err != nil {

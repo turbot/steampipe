@@ -24,7 +24,9 @@ message SetConnectionConfigMapRequest{
 
 message SetConnectionConfigMapResponse{}
 
-message ShutdownRequest {}
+message ShutdownRequest {
+  string stack = 1;
+}
 
 message ShutdownResponse {}
 

@@ -2,18 +2,17 @@ package plugin_manager
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os/exec"
 	"syscall"
 
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/constants"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
+	"github.com/turbot/steampipe/constants"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
-
 	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
 )
 
@@ -26,10 +25,10 @@ func Start() error {
 	}
 
 	if state != nil {
-		log.Printf("[WARN] ******************** plugin manager Start() found previous instance of plugin manager still running - stopping it")
+		log.Printf("[WARN] plugin manager Start() found previous instance of plugin manager still running - stopping it")
 		// stop the current instance
 		if err := stop(state); err != nil {
-			log.Printf("[WARN] ******************** failed to stop previous instance of plugin manager: %s", err)
+			log.Printf("[WARN] failed to stop previous instance of plugin manager: %s", err)
 			return err
 		}
 	}
@@ -47,10 +46,11 @@ func start() error {
 		Setpgid: true,
 	}
 
-	loggOpts := &hclog.LoggerOptions{Name: "plugin"}
-	logger := logging.NewLogger(loggOpts)
+	// discard logging from the plugin manager client (plugin manager logs will still flow through to the log file
+	// as this is set up in the pluginb manager)
+	logger := logging.NewLogger(&hclog.LoggerOptions{Name: "plugin", Output: ioutil.Discard})
 
-	// launch the plugin manager the plugin process.
+	// launch the plugin manager the plugin process
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: pluginshared.Handshake,
 		Plugins:         pluginshared.PluginMap,
@@ -66,7 +66,7 @@ func start() error {
 	// create a plugin manager state
 	state := NewPluginManagerState(client.ReattachConfig())
 
-	// now Save the state
+	// now save the state
 	return state.Save()
 }
 
@@ -86,16 +86,20 @@ func Stop() error {
 
 // stop the running plugin manager instance
 func stop(state *pluginManagerState) error {
+	log.Printf("[WARN] plugin manager stop")
 	pluginManager, err := NewPluginManagerClient(state)
 	if err != nil {
 		return err
 	}
 
+	log.Printf("[WARN] pluginManager.Shutdown")
 	// tell plugin manager to kill all plugins
 	_, err = pluginManager.Shutdown(&pb.ShutdownRequest{})
 	if err != nil {
 		return err
 	}
+
+	log.Printf("[WARN] state.kill")
 	// now kill the plugin manager
 	return state.kill()
 
@@ -114,7 +118,7 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	// try to load the plugin manager state
 	state, err := loadPluginManagerState(true)
 	if err != nil {
-		log.Printf("[TRACE] failed to load plugin manager state: %s", err.Error())
+		log.Printf("[WARN] failed to load plugin manager state: %s", err.Error())
 		return nil, err
 	}
 	// if we did not load it and there was no error, it means the plugin manager is not running
