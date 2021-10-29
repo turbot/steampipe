@@ -32,7 +32,7 @@ type ConnectionPlugin struct {
 }
 
 // CreateConnectionPlugin instantiates a plugin for a connection, fetches schema and sends connection config
-func CreateConnectionPlugin(connection *modconfig.Connection, disableLogger bool) (*ConnectionPlugin, error) {
+func CreateConnectionPlugin(connection *modconfig.Connection) (*ConnectionPlugin, error) {
 	// TODO remove disableLogger or get it working somehow
 
 	pluginName := connection.Plugin

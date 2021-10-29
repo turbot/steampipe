@@ -177,7 +177,7 @@ func createConnectionPlugins(requiredConnections ConnectionDataMap, alreadyLoade
 
 func getConnectionPluginAsync(connectionData *ConnectionData, pluginChan chan *ConnectionPlugin, errorChan chan error) {
 	go func() {
-		p, err := CreateConnectionPlugin(connectionData.Connection, true)
+		p, err := CreateConnectionPlugin(connectionData.Connection)
 		if err != nil {
 			errorChan <- err
 			return
