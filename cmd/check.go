@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -142,10 +143,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exportErrorsLock := sync.Mutex{}
 	exportWaitGroup := sync.WaitGroup{}
 	var durations []time.Duration
+	var slowestControls [][]*controlexecute.ControlRun
 
 	// treat each arg as a separate execution
 	for _, arg := range args {
-
 		if utils.IsContextCancelled(ctx) {
 			durations = append(durations, 0)
 			// skip over this arg, since the execution was cancelled
@@ -171,7 +172,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			exportCheckResult(ctx, &d)
 		}
 
-		durations = append(durations, executionTree.Root.Duration)
+		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))
+		slowestControls = append(slowestControls, findSlowestControlsInTree(executionTree, 3))
 	}
 
 	// wait for exports to complete
@@ -181,11 +183,22 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if shouldPrintTiming() {
-		printTiming(args, durations)
+		printTiming(args, durations, slowestControls)
 	}
 
 	// set global exit code
 	exitCode = failures
+}
+func findSlowestControlsInTree(e *controlexecute.ExecutionTree, n int) []*controlexecute.ControlRun {
+	sortedByDuration := make([]*controlexecute.ControlRun, len(e.ControlRuns()))
+	copy(sortedByDuration, e.ControlRuns())
+	sort.SliceStable(sortedByDuration, func(i, j int) bool {
+		return sortedByDuration[i].Duration > sortedByDuration[j].Duration
+	})
+	if len(sortedByDuration) < n {
+		return sortedByDuration
+	}
+	return sortedByDuration[:n]
 }
 
 func initialiseCheck() *checkInitData {
@@ -297,16 +310,30 @@ func exportCheckResult(ctx context.Context, d *exportData) {
 	}()
 }
 
-func printTiming(args []string, durations []time.Duration) {
-	headers := []string{"", "Duration"}
+func printTiming(args []string, durations []time.Duration, slowestControls [][]*controlexecute.ControlRun) {
+	headers := []string{"", "Duration", "Slowest Controls"}
 	var rows [][]string
 	for idx, arg := range args {
-		rows = append(rows, []string{arg, durations[idx].String()})
+		rows = append(
+			rows,
+			[]string{
+				arg,
+				durations[idx].String(),
+				getSlowestControlTimingCell(slowestControls[idx]),
+			},
+		)
 	}
 	// blank line after renderer output
 	fmt.Println()
 	fmt.Println("Timing:")
 	display.ShowWrappedTable(headers, rows, false)
+}
+func getSlowestControlTimingCell(runs []*controlexecute.ControlRun) string {
+	cellValue := ""
+	for _, v := range runs {
+		cellValue = fmt.Sprintf("%s* %s - %s\n", cellValue, v.Title, v.Duration)
+	}
+	return strings.TrimSpace(cellValue)
 }
 
 func validateArgs(cmd *cobra.Command, args []string) bool {
