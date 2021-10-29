@@ -10,6 +10,10 @@ import (
 	"github.com/turbot/steampipe/control/controlexecute"
 )
 
+const maximumSeverityRenderedLen = 8
+const minimumCounterRenderedLen = 8
+const minimumCounterGraphRenderedLen = 8
+
 type TextFormatter struct{}
 
 func (j *TextFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
@@ -24,7 +28,7 @@ func (j *TextFormatter) FileExtension() string {
 }
 
 func (j *TextFormatter) getMaxCols(depth int) int {
-	minimumWidthRequired := (depth * 2) + 8 /* severity */ + 6 /* counter */ + 12 /* counter graph */
+	minimumWidthRequired := (depth * 2) + maximumSeverityRenderedLen + minimumCounterRenderedLen + minimumCounterGraphRenderedLen
 	colRange := NewRange(minimumWidthRequired, 200)
 	maxCols, _, _ := gows.GetWinSize()
 	return colRange.Constrain(maxCols)
