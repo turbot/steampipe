@@ -17,16 +17,36 @@ type TableRenderer struct {
 	maxTotalControls  int
 }
 
-func NewTableRenderer(resultTree *controlexecute.ExecutionTree, width int) *TableRenderer {
+func NewTableRenderer(resultTree *controlexecute.ExecutionTree) *TableRenderer {
 	return &TableRenderer{
 		resultTree:        resultTree,
-		width:             width,
+		width:             -1,
 		maxFailedControls: resultTree.Root.Summary.Status.FailedCount(),
 		maxTotalControls:  resultTree.Root.Summary.Status.TotalCount(),
 	}
 }
 
-func (r TableRenderer) Render() string {
+func (r TableRenderer) MaxDepth() int {
+	return r.groupDepth(r.resultTree.Root, 0)
+}
+
+func (r TableRenderer) groupDepth(g *controlexecute.ResultGroup, myDepth int) int {
+	if len(g.Groups) == 0 {
+		return 0
+	}
+	maxDepth := 0
+	for _, subGroup := range g.Groups {
+		branchDepth := r.groupDepth(subGroup, myDepth+1)
+		if branchDepth > maxDepth {
+			maxDepth = branchDepth
+		}
+	}
+	return myDepth + maxDepth
+}
+
+func (r TableRenderer) Render(width int) string {
+	r.width = width
+
 	// the buffer to put the output data in
 	builder := strings.Builder{}
 
