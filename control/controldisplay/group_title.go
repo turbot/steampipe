@@ -25,8 +25,8 @@ func NewGroupTitleRenderer(title string, width int) *GroupTitleRenderer {
 // Render returns the title, truncated to the max length if necessary
 // NOTE: adds a trailing space
 func (r GroupTitleRenderer) Render() string {
-	// this should never happen, since the minimum width is set in the formatter
 	if r.width <= 0 {
+		// this should never happen, since the minimum width is set in the formatter
 		log.Printf("[WARN] group renderer has width of %d\n", r.width)
 		return ""
 	}
