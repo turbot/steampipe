@@ -63,6 +63,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe service start --install-dir $target_install_directory
   
   assert_failure
+  run steampipe service stop --force
 }
 
 @test "steampipe service stop should not trigger daily checks and tasks" {
