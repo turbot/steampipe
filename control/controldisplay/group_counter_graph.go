@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+const counterGraphSegments = 10
+
 type CounterGraphRenderer struct {
 	failedControls int
 	totalControls  int
@@ -27,7 +29,7 @@ func NewCounterGraphRenderer(failedControls, totalControls, maxTotalControls int
 		totalControls:    totalControls,
 		maxTotalControls: maxTotalControls,
 		// there are 10 segments - determine the value of each segment
-		segmentSize: float64(maxTotalControls) / 10.0,
+		segmentSize: float64(maxTotalControls) / float64(counterGraphSegments),
 
 		failedColorFunc: options.FailedColorFunc,
 	}
@@ -42,7 +44,7 @@ func (r CounterGraphRenderer) Render() string {
 
 	// if no controls have been run, return empty graph
 	if r.maxTotalControls == 0 {
-		return r.buildGraphString(0, 0, 10)
+		return r.buildGraphString(0, 0, counterGraphSegments)
 	}
 	// if each segment is 10 controls, count 1-10 => 1 segment, 11-20 => 2 segments
 	var failSegments int
@@ -60,11 +62,11 @@ func (r CounterGraphRenderer) Render() string {
 	// allow for pass being rounded down to zero
 	// if there are any successful runs, but there is no room for a successful bar,
 	// increment totalSegments to allow room
-	if passSegments == 0 && r.failedControls < r.totalControls && totalSegments < 10 {
+	if passSegments == 0 && r.failedControls < r.totalControls && totalSegments < counterGraphSegments {
 		passSegments++
 		totalSegments++
 	}
-	spaces := 10 - totalSegments
+	spaces := counterGraphSegments - totalSegments
 	return r.buildGraphString(failSegments, passSegments, spaces)
 }
 

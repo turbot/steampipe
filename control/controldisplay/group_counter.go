@@ -22,6 +22,10 @@ type CounterRenderer struct {
 	addLeadingSpace bool
 }
 
+func CounterRendererMinWidth() int {
+	return 8
+}
+
 func NewCounterRenderer(failedControls, totalControls, maxFailedControls, maxTotalControls int, options CounterRendererOptions) *CounterRenderer {
 	return &CounterRenderer{
 		failedControls:    failedControls,
@@ -40,8 +44,13 @@ The alignment depends on the maximum failed and maximum total parameters, as the
 "  1 /     4"
 "  1 / 1,020"
 
+minimum counter string is " n / m "
+
 // NOTE: adds a trailing space
 */
+
+const minimumCounterWidth = 7
+
 func (r CounterRenderer) Render() string {
 	log.Println("[TRACE] begin counter render")
 	defer log.Println("[TRACE] end counter render")

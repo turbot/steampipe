@@ -17,16 +17,44 @@ type TableRenderer struct {
 	maxTotalControls  int
 }
 
-func NewTableRenderer(resultTree *controlexecute.ExecutionTree, width int) *TableRenderer {
+func NewTableRenderer(resultTree *controlexecute.ExecutionTree) *TableRenderer {
 	return &TableRenderer{
 		resultTree:        resultTree,
-		width:             width,
 		maxFailedControls: resultTree.Root.Summary.Status.FailedCount(),
 		maxTotalControls:  resultTree.Root.Summary.Status.TotalCount(),
 	}
 }
 
-func (r TableRenderer) Render() string {
+// MinimumWidth is the width we require
+// It is determined by the left indent, title, severity, counter and counter graph
+func (r TableRenderer) MinimumWidth() int {
+	minimumWidthRequired := r.maxIndent() + minimumGroupTitleWidth + severityMaxLen + minimumCounterWidth + counterGraphSegments
+	return minimumWidthRequired
+}
+
+func (r TableRenderer) maxIndent() int {
+	depth := r.groupDepth(r.resultTree.Root, 0)
+	// each indent level is "| " or "+ " (2 characters)
+	return (depth * 2)
+}
+
+func (r TableRenderer) groupDepth(g *controlexecute.ResultGroup, myDepth int) int {
+	if len(g.Groups) == 0 {
+		return 0
+	}
+	maxDepth := 0
+	for _, subGroup := range g.Groups {
+		branchDepth := r.groupDepth(subGroup, myDepth+1)
+		if branchDepth > maxDepth {
+			maxDepth = branchDepth
+		}
+	}
+	return myDepth + maxDepth
+}
+
+func (r TableRenderer) Render(width int) string {
+	r.width = width
+
 	// the buffer to put the output data in
 	builder := strings.Builder{}
 

@@ -305,6 +305,8 @@ func printTiming(args []string, durations []time.Duration) {
 	for idx, arg := range args {
 		rows = append(rows, []string{arg, durations[idx].String()})
 	}
+	// blank line after renderer output
+	fmt.Println()
 	fmt.Println("Timing:")
 	display.ShowWrappedTable(headers, rows, false)
 }

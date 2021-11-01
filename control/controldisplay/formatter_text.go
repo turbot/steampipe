@@ -10,14 +10,14 @@ import (
 	"github.com/turbot/steampipe/control/controlexecute"
 )
 
-// limit text width
-const maxCols = 200
+const MaxColumns = 200
 
 type TextFormatter struct{}
 
 func (j *TextFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
-	maxCols := j.getMaxCols(maxCols)
-	renderedText := NewTableRenderer(tree, maxCols).Render()
+	renderer := NewTableRenderer(tree)
+	widthConstraint := NewRangeConstraint(renderer.MinimumWidth(), MaxColumns)
+	renderedText := renderer.Render(j.getMaxCols(widthConstraint))
 	res := strings.NewReader(fmt.Sprintf("\n%s\n", renderedText))
 	return res, nil
 }
@@ -26,10 +26,7 @@ func (j *TextFormatter) FileExtension() string {
 	return "txt"
 }
 
-func (j *TextFormatter) getMaxCols(limitCol int) int {
-	maxCols, _, _ := gows.GetWinSize()
-	if maxCols > limitCol {
-		maxCols = limitCol
-	}
-	return maxCols
+func (j *TextFormatter) getMaxCols(constraint RangeConstraint) int {
+	colsAvailable, _, _ := gows.GetWinSize()
+	return constraint.Constrain(colsAvailable)
 }

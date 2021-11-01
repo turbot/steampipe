@@ -8,6 +8,8 @@ import (
 	"github.com/turbot/go-kit/helpers"
 )
 
+const severityMaxLen = len("CRITICAL")
+
 type SeverityRenderer struct {
 	severity string
 }
