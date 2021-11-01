@@ -25,8 +25,17 @@ func NewTableRenderer(resultTree *controlexecute.ExecutionTree) *TableRenderer {
 	}
 }
 
-func (r TableRenderer) MaxDepth() int {
-	return r.groupDepth(r.resultTree.Root, 0)
+// MinimumWidth is the width we require
+// It is determined by the left indent, title, severity, counter and counter graph
+func (r TableRenderer) MinimumWidth() int {
+	minimumWidthRequired := r.maxIndent() + minimumGroupTitleWidth + severityMaxLen + minimumCounterWidth + counterGraphSegments
+	return minimumWidthRequired
+}
+
+func (r TableRenderer) maxIndent() int {
+	depth := r.groupDepth(r.resultTree.Root, 0)
+	// each indent level is "| " or "+ " (2 characters)
+	return (depth * 2)
 }
 
 func (r TableRenderer) groupDepth(g *controlexecute.ResultGroup, myDepth int) int {

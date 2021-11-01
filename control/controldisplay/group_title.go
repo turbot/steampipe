@@ -7,6 +7,9 @@ import (
 	"github.com/turbot/go-kit/helpers"
 )
 
+// There will always be a space after the title, even if the title is empty
+const minimumGroupTitleWidth = 1
+
 type GroupTitleRenderer struct {
 	title string
 	width int
@@ -25,6 +28,7 @@ func (r GroupTitleRenderer) Render() string {
 	log.Println("[TRACE] begin group title render")
 	defer log.Println("[TRACE] end group title render")
 
+	// this should never happen, since the minimum width is set in the formatter
 	if r.width <= 0 {
 		log.Printf("[WARN] group renderer has width of %d\n", r.width)
 		return ""
