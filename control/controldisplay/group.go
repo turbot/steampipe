@@ -110,6 +110,7 @@ func (r GroupRenderer) Render() string {
 	log.Printf("[TRACE] begin group render '%s'\n", r.group.GroupId)
 	defer log.Printf("[TRACE] end table render'%s'\n", r.group.GroupId)
 
+	// this should never happen since the minimum number of colums is set in the formatter
 	if r.width <= 0 {
 		log.Printf("[WARN] group renderer has width of %d\n", r.width)
 		return ""

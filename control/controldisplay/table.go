@@ -20,7 +20,6 @@ type TableRenderer struct {
 func NewTableRenderer(resultTree *controlexecute.ExecutionTree) *TableRenderer {
 	return &TableRenderer{
 		resultTree:        resultTree,
-		width:             -1,
 		maxFailedControls: resultTree.Root.Summary.Status.FailedCount(),
 		maxTotalControls:  resultTree.Root.Summary.Status.TotalCount(),
 	}

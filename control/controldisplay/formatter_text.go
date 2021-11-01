@@ -29,7 +29,7 @@ func (j *TextFormatter) FileExtension() string {
 
 func (j *TextFormatter) getMaxCols(depth int) int {
 	minimumWidthRequired := (depth * 2) + maximumSeverityRenderedLen + minimumCounterRenderedLen + minimumCounterGraphRenderedLen
-	colRange := NewRange(minimumWidthRequired, 200)
+	colRange := NewRangeConstraint(minimumWidthRequired, 200)
 	maxCols, _, _ := gows.GetWinSize()
 	return colRange.Constrain(maxCols)
 }

@@ -39,6 +39,7 @@ func (r GroupHeadingRenderer) Render() string {
 	log.Println("[TRACE] begin group heading render")
 	defer log.Println("[TRACE] end group heading render")
 
+	// this should never happen since the minimum number of colums is set in the formatter
 	if r.width <= 0 {
 		log.Printf("[WARN] group heading renderer has width of %d\n", r.width)
 		return ""
