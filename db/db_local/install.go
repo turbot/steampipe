@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 
 	"github.com/briandowns/spinner"
@@ -257,6 +258,12 @@ func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
 
 	// resolve the name of the database that is to be installed
 	databaseName := resolveDatabaseName()
+	// validate db name
+	firstCharacter := databaseName[0:1]
+	if strings.ToLower(firstCharacter) != databaseName[0:1] {
+		log.Printf("[TRACE] database name must start with either a lowercase character or a number")
+		return fmt.Errorf("Invalid database name... FAILED!")
+	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring database...")
 	err = installDatabaseWithPermissions(databaseName, client)
