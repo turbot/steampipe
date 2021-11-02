@@ -2,13 +2,13 @@ package db_client
 
 import "time"
 
+// SessionStats is a struct uses to store initialisation status for database sessions
 type SessionStats struct {
 	Created     time.Time
 	LastUsed    time.Time
 	Initialized time.Time
 	UsedCount   int
-	Waits       []time.Duration `json:"-"`
-	SearchPath  []string        `json:"-"`
+	SearchPath  []string `json:"-"`
 }
 
 func NewSessionStat() SessionStats {

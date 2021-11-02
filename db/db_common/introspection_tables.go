@@ -58,7 +58,6 @@ func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfi
 	if err != nil {
 		return fmt.Errorf("failed to create introspection tables: %v", err)
 	}
-	// client.LoadSchema()
 
 	// return context error - this enables calling code to respond to cancellation
 	return ctx.Err()

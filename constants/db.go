@@ -7,18 +7,17 @@ import (
 )
 
 // dbClient constants
-// TODO these should be configuration settings
 
 // DatabaseListenAddresses is an arrays is listen addresses which Steampipe accepts
 var DatabaseListenAddresses = []string{"localhost", "127.0.0.1"}
 
 const (
-	DatabaseHost        = "localhost"
-	DatabaseDefaultPort = 9193
-	DatabaseSuperUser   = "root"
-	DatabaseUser        = "steampipe"
-	DatabaseName        = "steampipe"
-	DatabaseUsersRole   = "steampipe_users"
+	DatabaseDefaultPort   = 9193
+	DatabaseSuperUser     = "root"
+	DatabaseUser          = "steampipe"
+	DatabaseName          = "steampipe"
+	DatabaseUsersRole     = "steampipe_users"
+	DefaultMaxConnections = 5
 )
 
 // constants for installing db and fdw images

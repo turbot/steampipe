@@ -285,8 +285,8 @@ func createCmd(port int, listenAddresses string) *exec.Cmd {
 		// NOTE: If quoted, the application name includes the quotes. Worried about
 		// having spaces in the APPNAME, but leaving it unquoted since currently
 		// the APPNAME is hardcoded to be steampipe.
-		"-c", fmt.Sprintf("application_name=%s", constants.APPNAME),
-		"-c", fmt.Sprintf("cluster_name=%s", constants.APPNAME),
+		"-c", fmt.Sprintf("application_name=%s", constants.AppName),
+		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
 
 		// log directory
 		"-c", fmt.Sprintf("log_directory=%s", constants.LogDir()),
@@ -511,7 +511,7 @@ func isSteampipePostgresProcess(cmdline []string) bool {
 	}
 	if strings.Contains(cmdline[0], "postgres") {
 		// this is a postgres process - but is it a steampipe service?
-		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", constants.APPNAME))
+		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", constants.AppName))
 	}
 	return false
 }

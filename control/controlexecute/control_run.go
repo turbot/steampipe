@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -30,9 +29,8 @@ const (
 
 // ControlRun is a struct representing a  a control run - will contain one or more result items (i.e. for one or more resources)
 type ControlRun struct {
-	runError   error  `json:"-"`
-	errorStack string `json:"-"`
-	// the number of attempts this control made to run
+	runError error `json:"-"`
+
 	// the parent control
 	Control *modconfig.Control `json:"-"`
 	Summary StatusSummary      `json:"-"`
@@ -191,23 +189,6 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	queryResult, err := client.ExecuteInSession(ctx, dbSession, query, false)
 	if err != nil {
 
-		//// is this an rpc EOF error - meaning that the plugin somehow crashed
-		//// TODO move this to the plugin client
-		//if grpc.IsGRPCConnectivityError(err) {
-		//	if r.attempts > constants.MaxControlRunAttempts {
-		//		// if exceeded max retries, give up
-		//		r.SetError(err)
-		//		return
-		//	}
-		//	// the control errored
-		//	r.executionTree.progress.OnControlError()
-		//
-		//	// recurse into this function to retry
-		//	// use the same context, so that we respect the timeout
-		//	r.attempts++
-		//	r.Execute(ctx, client)
-		//	return
-		//}
 		log.Printf("[TRACE] client.ExecuteInSession returned error %s", err.Error())
 		// set the run error status
 		// this updates the run summary error count and the progress error count
@@ -221,7 +202,6 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	gatherDoneChan := make(chan string)
 	go func() {
 		r.gatherResults()
-		// TODO close session here?
 		close(gatherDoneChan)
 	}()
 
@@ -302,7 +282,6 @@ func (r *ControlRun) SetError(err error) {
 		return
 	}
 	r.runError = utils.TransformErrorToSteampipe(err)
-	r.errorStack = string(debug.Stack())
 
 	// update error count
 	r.Summary.Error++

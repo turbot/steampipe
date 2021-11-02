@@ -2,6 +2,7 @@ package db_client
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -36,9 +37,10 @@ func (c *DbClient) GetCurrentSearchPath() ([]string, error) {
 }
 
 // SetSessionSearchPath implements Client
-// sets the search path for this client
 // if either a search-path or search-path-prefix is set in config, set the search path
 // (otherwise fall back to user search path)
+// this just sets the required search path for this client
+// - when creating a database session, we will actually set the searchPath
 func (c *DbClient) SetSessionSearchPath(currentUserSearchPath ...string) error {
 	requiredSearchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
@@ -81,6 +83,13 @@ func (c *DbClient) ContructSearchPath(requiredSearchPath []string, searchPathPre
 	requiredSearchPath = c.addSearchPathPrefix(searchPathPrefix, requiredSearchPath)
 
 	return requiredSearchPath, nil
+}
+
+// set search path for database session - this sets the search path for a database session to the required searchPath
+func (c *DbClient) setSessionSearchPathToRequired(ctx context.Context, session *sql.Conn) error {
+	q := fmt.Sprintf("set search_path to %s", strings.Join(c.requiredSessionSearchPath, ","))
+	_, err := session.ExecContext(ctx, q)
+	return err
 }
 
 func (c *DbClient) addSearchPathPrefix(searchPathPrefix []string, searchPath []string) []string {

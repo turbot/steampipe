@@ -52,7 +52,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 	}
 
 	// so there ARE connections to update
-	log.Printf("[WARN] refreshConnections, updates: %+v\n", connectionUpdates)
+	log.Printf("[TRACE] refreshConnections, %d updates\n", len(connectionQueries))
 
 	// execute the connection queries
 	if err := executeConnectionQueries(connectionQueries); err != nil {

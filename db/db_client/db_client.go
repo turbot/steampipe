@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -17,11 +18,13 @@ import (
 
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
-	connectionString          string
-	ensureSessionFunc         db_common.EnsureSessionStateCallback
-	sessionAcquireLock        *sync.Mutex
-	dbClient                  *sql.DB
-	initializedSessions       map[int64]SessionStats // a map keyed to the backend_pid in postgres
+	connectionString   string
+	ensureSessionFunc  db_common.EnsureSessionStateCallback
+	sessionAcquireLock *sync.Mutex
+	dbClient           *sql.DB
+	// map of database sessions, keyed to the backend_pid in postgres
+	// used to track whether a given session has been initialised
+	initializedSessions       map[int64]SessionStats
 	schemaMetadata            *schema.Metadata
 	requiredSessionSearchPath []string
 }
@@ -55,7 +58,7 @@ func establishConnection(connStr string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	maxParallel := constants.MAX_PARALLELISM
+	maxParallel := constants.DefaultMaxConnections
 	if viper.IsSet(constants.ArgMaxParallel) {
 		maxParallel = viper.GetInt(constants.ArgMaxParallel)
 	}
@@ -81,8 +84,8 @@ func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallba
 // closes the connection to the database and shuts down the backend
 func (c *DbClient) Close() error {
 	if c.dbClient != nil {
-		// nil the map - so that we can't reuse it
-		fmt.Println("Uniques:", len(c.initializedSessions))
+		// clear the map - so that we can't reuse it
+		log.Printf("[TRACE] Number of unique database sessions: %d\n", len(c.initializedSessions))
 		c.initializedSessions = nil
 		return c.dbClient.Close()
 	}
@@ -135,6 +138,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	utils.LogTime("db_client.refreshDbClient start")
 	defer utils.LogTime("db_client.refreshDbClient end")
 
+	// clear the initializedSessions map
 	c.initializedSessions = make(map[int64]SessionStats)
 	err := c.dbClient.Close()
 	if err != nil {

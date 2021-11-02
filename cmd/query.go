@@ -86,7 +86,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	defer func() {
 		utils.LogTime("cmd.runQueryCmd end")
-
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}

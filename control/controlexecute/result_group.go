@@ -19,22 +19,20 @@ const RootResultGroupName = "root_result_group"
 // ResultGroup is a struct representing a grouping of control results
 // It may correspond to a Benchmark, or some other arbitrary grouping
 type ResultGroup struct {
-	GroupId     string            `json:"group_id" csv:"group_id"`
-	Title       string            `json:"title" csv:"title"`
-	Description string            `json:"description" csv:"description"`
-	Tags        map[string]string `json:"tags"`
-	Summary     *GroupSummary     `json:"summary"`
-	Groups      []*ResultGroup    `json:"groups"`
-	ControlRuns []*ControlRun     `json:"controls"`
-
-	Severity map[string]StatusSummary `json:"-"`
-
-	summaryUpdateLock *sync.Mutex
+	GroupId     string                   `json:"group_id" csv:"group_id"`
+	Title       string                   `json:"title" csv:"title"`
+	Description string                   `json:"description" csv:"description"`
+	Tags        map[string]string        `json:"tags"`
+	Summary     *GroupSummary            `json:"summary"`
+	Groups      []*ResultGroup           `json:"groups"`
+	ControlRuns []*ControlRun            `json:"controls"`
+	Severity    map[string]StatusSummary `json:"-"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
-	GroupItem modconfig.ModTreeItem `json:"-"`
-	Parent    *ResultGroup          `json:"-"`
-	Duration  time.Duration         `json:"-"`
+	GroupItem         modconfig.ModTreeItem `json:"-"`
+	Parent            *ResultGroup          `json:"-"`
+	Duration          time.Duration         `json:"-"`
+	summaryUpdateLock *sync.Mutex
 }
 
 type GroupSummary struct {
@@ -53,6 +51,7 @@ func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.Mod
 		Groups:            []*ResultGroup{},
 		Tags:              make(map[string]string),
 		Summary:           NewGroupSummary(),
+		Severity:          make(map[string]StatusSummary),
 		summaryUpdateLock: new(sync.Mutex),
 	}
 	for _, item := range rootItems {
@@ -80,6 +79,7 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ModTreeItem
 		Parent:            parent,
 		Groups:            []*ResultGroup{},
 		Summary:           NewGroupSummary(),
+		Severity:          make(map[string]StatusSummary),
 		summaryUpdateLock: new(sync.Mutex),
 	}
 	// add child groups for children which are benchmarks
@@ -138,9 +138,6 @@ func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummar
 	r.summaryUpdateLock.Lock()
 	defer r.summaryUpdateLock.Unlock()
 
-	if r.Severity == nil {
-		r.Severity = make(map[string]StatusSummary)
-	}
 	val, exists := r.Severity[severity]
 	if !exists {
 		val = StatusSummary{}
@@ -161,13 +158,8 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 	log.Printf("[TRACE] begin ResultGroup.Execute: %s\n", r.GroupId)
 	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
 
-	// TODO consider executing in order specified in hcl?
-	// it may not matter, as we display results in order
-	// it is only an issue if there are dependencies, in which case we must run in dependency order
-
 	startTime := time.Now()
-
-	var failures int = 0
+	var failures = 0
 
 	for _, controlRun := range r.ControlRuns {
 		if ctx.Err() != nil {
@@ -203,7 +195,6 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 	}
 
 	r.Duration = time.Since(startTime)
-
 	return failures
 }
 

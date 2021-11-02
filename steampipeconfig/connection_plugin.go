@@ -33,14 +33,12 @@ type ConnectionPlugin struct {
 
 // CreateConnectionPlugin instantiates a plugin for a connection, fetches schema and sends connection config
 func CreateConnectionPlugin(connection *modconfig.Connection) (*ConnectionPlugin, error) {
-	// TODO remove disableLogger or get it working somehow
-
 	pluginName := connection.Plugin
 	connectionName := connection.Name
 	connectionConfig := connection.Config
 	connectionOptions := connection.Options
 
-	log.Printf("[WARN] CreateConnectionPlugin connection: '%s', pluginName: '%s'", connectionName, pluginName)
+	log.Printf("[TRACE] CreateConnectionPlugin connection: '%s', pluginName: '%s'", connectionName, pluginName)
 
 	var pluginManager pluginshared.PluginManager
 	var err error
@@ -55,7 +53,6 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (*ConnectionPlugin
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("[WARN] got plugin manager")
 
 	// ask the plugin manager for the plugin reattach config
 	getResponse, err := pluginManager.Get(&proto.GetRequest{Connection: connectionName})
@@ -64,7 +61,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (*ConnectionPlugin
 		return nil, err
 	}
 
-	log.Printf("[WARN] plugin manager returned reattach config for connection '%s' - pid %d",
+	log.Printf("[TRACE] plugin manager returned reattach config for connection '%s' - pid %d",
 		connectionName, getResponse.Reattach.Pid)
 
 	// attach to the plugin process
