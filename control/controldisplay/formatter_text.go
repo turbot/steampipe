@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/karrick/gows"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
 )
 
@@ -27,6 +29,11 @@ func (j *TextFormatter) FileExtension() string {
 }
 
 func (j *TextFormatter) getMaxCols(constraint RangeConstraint) int {
-	colsAvailable, _, _ := gows.GetWinSize()
+	var colsAvailable int
+	if viper.IsSet(constants.ArgCheckDisplayWidth) {
+		colsAvailable = viper.GetInt(constants.ArgCheckDisplayWidth)
+	} else {
+		colsAvailable, _, _ = gows.GetWinSize()
+	}
 	return constraint.Constrain(colsAvailable)
 }
