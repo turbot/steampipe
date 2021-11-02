@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"strings"
 	"sync"
 
 	"github.com/briandowns/spinner"
@@ -260,8 +259,17 @@ func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
 	databaseName := resolveDatabaseName()
 	// validate db name
 	firstCharacter := databaseName[0:1]
-	if strings.ToLower(firstCharacter) != databaseName[0:1] {
-		log.Printf("[TRACE] database name must start with either a lowercase character or a number")
+	var ascii int
+	for _, r := range databaseName {
+		ascii = int(r)
+		break
+	}
+	if firstCharacter == "_" {
+		log.Printf("[TRACE] valid database name: %s", databaseName)
+	} else if ascii >= 97 && ascii <= 122 {
+		log.Printf("[TRACE] valid database name: %s", databaseName)
+	} else {
+		log.Printf("[TRACE] database name must start with either a lowercase character or an underscore (_)")
 		return fmt.Errorf("Invalid database name... FAILED!")
 	}
 
