@@ -1,0 +1,30 @@
+
++ Sample control with all resources in alarm ......................... CRITICAL 15 / 15 [==========]
+  | 
+  ALARM: Resource does not satisfy condition ..................................................... 1
+  ALARM: Resource does not satisfy condition ..................................................... 2
+  ALARM: Resource does not satisfy condition ..................................................... 3
+  ALARM: Resource does not satisfy condition ..................................................... 4
+  ALARM: Resource does not satisfy condition ..................................................... 5
+  ALARM: Resource does not satisfy condition ..................................................... 6
+  ALARM: Resource does not satisfy condition ..................................................... 7
+  ALARM: Resource does not satisfy condition ..................................................... 8
+  ALARM: Resource does not satisfy condition ..................................................... 9
+  ALARM: Resource does not satisfy condition .................................................... 10
+  ALARM: Resource does not satisfy condition .................................................... 11
+  ALARM: Resource does not satisfy condition .................................................... 12
+  ALARM: Resource does not satisfy condition .................................................... 13
+  ALARM: Resource does not satisfy condition .................................................... 14
+  ALARM: Resource does not satisfy condition .................................................... 15
+  
+Summary
+
+OK ............... 0 [          ]
+SKIP ............. 0 [          ]
+INFO ............. 0 [          ]
+ALARM ........... 15 [==========]
+ERROR ............ 0 [          ]
+
+CRITICAL ... 15 / 15 [==========]
+
+TOTAL ...... 15 / 15 [==========]

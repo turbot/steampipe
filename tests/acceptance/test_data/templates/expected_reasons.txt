@@ -1,0 +1,19 @@
+
++ Control with long, short and unicode reasons ......................... CRITICAL 3 / 4 [==========]
+  | 
+  ERROR: error ❌ 
+  ALARM: alarm alarm alarm alarm alarm alarm alarm alarm alarm alarm alarm alarm alarm alarm alarm… 
+  ALARM: alarm alarm alarm alarm alarm alarm alarm alarm alarm alarm alarm alarm alarm alarm alarm… 
+  OK   : ok 
+  
+Summary
+
+OK ............. 1 [===       ]
+SKIP ........... 0 [          ]
+INFO ........... 0 [          ]
+ALARM .......... 2 [=====     ]
+ERROR .......... 1 [===       ]
+
+CRITICAL ... 3 / 4 [==========]
+
+TOTAL ...... 3 / 4 [==========]
