@@ -117,3 +117,4 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf ./test.md*
   cd -
 }
+
