@@ -78,10 +78,6 @@ func (e *ExecutionTree) AddControl(control *modconfig.Control, group *ResultGrou
 	}
 }
 
-func (e *ExecutionTree) ControlRuns() []*ControlRun {
-	return e.controlRuns
-}
-
 func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) int {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
