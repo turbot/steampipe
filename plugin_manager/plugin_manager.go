@@ -64,7 +64,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 		}
 	}()
 
-	log.Printf("[WARN] PluginManager Get connection '%s', plugins %+v\n", req.Connection, m.Plugins)
+	log.Printf("[TRACE] PluginManager Get connection '%s', plugins %+v\n", req.Connection, m.Plugins)
 
 	// reason for starting the plugin (if we need to
 	var reason string
@@ -80,7 +80,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 		exists, _ := utils.PidExists(int(reattach.Pid))
 		if exists {
 			// so the plugin id good
-			log.Printf("[WARN] PluginManager found '%s' in map %v", req.Connection, m.Plugins)
+			log.Printf("[TRACE] PluginManager found '%s' in map %v", req.Connection, m.Plugins)
 
 			// return the reattach config
 			return &pb.GetResponse{
@@ -97,7 +97,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 
 	// fall through to plugin startup
 	// log the startup reason
-	log.Printf("[WARN] %s", reason)
+	log.Printf("[TRACE] %s", reason)
 	// so we need to start the plugin
 	client, err := m.startPlugin(req)
 	if err != nil {
@@ -110,7 +110,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 	reattach := pb.NewReattachConfig(client.ReattachConfig())
 	m.Plugins[req.Connection] = runningPlugin{client: client, reattach: reattach}
 
-	log.Printf("[WARN] PluginManager Get complete")
+	log.Printf("[TRACE] PluginManager Get complete")
 
 	// and return
 	return &pb.GetResponse{Reattach: reattach}, nil
@@ -130,8 +130,7 @@ func (m *PluginManager) SetConnectionConfigMap(req *pb.SetConnectionConfigMapReq
 }
 
 func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
-	log.Printf("[WARN] PluginManager Shutdown")
-	//log.Printf("[WARN] stack %s", req.Stack)
+	log.Printf("[TRACE] PluginManager Shutdown")
 
 	m.mut.Lock()
 	defer func() {
@@ -142,7 +141,7 @@ func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResp
 	}()
 
 	for _, p := range m.Plugins {
-		log.Printf("[WARN] killing plugin %v", p)
+		log.Printf("[TRACE] killing plugin %v", p)
 		p.client.Kill()
 	}
 	return &pb.ShutdownResponse{}, nil
@@ -150,7 +149,7 @@ func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResp
 
 func (m *PluginManager) startPlugin(req *pb.GetRequest) (*plugin.Client, error) {
 
-	log.Printf("[WARN] ************ start plugin %s ********************\n", req.Connection)
+	log.Printf("[TRACE] ************ start plugin %s ********************\n", req.Connection)
 
 	// get connection config
 	connectionConfig, ok := m.connectionConfig[req.Connection]

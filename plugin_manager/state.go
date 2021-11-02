@@ -102,10 +102,10 @@ func loadPluginManagerState(verify bool) (*pluginManagerState, error) {
 
 	if verify {
 		if running, err := s.verifyServiceRunning(); err != nil {
-			log.Printf("[WARN] plugin manager is running, pid %d", s.Pid)
+			log.Printf("[TRACE] plugin manager is running, pid %d", s.Pid)
 			return nil, err
 		} else if !running {
-			log.Printf("[WARN] plugin manager state file exists but pid %d is not running - deleting file", s.Pid)
+			log.Printf("[TRACE] plugin manager state file exists but pid %d is not running - deleting file", s.Pid)
 			return nil, nil
 		}
 

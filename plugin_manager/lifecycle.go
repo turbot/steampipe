@@ -25,7 +25,7 @@ func Start() error {
 	}
 
 	if state != nil {
-		log.Printf("[WARN] plugin manager Start() found previous instance of plugin manager still running - stopping it")
+		log.Printf("[TRACE] plugin manager Start() found previous instance of plugin manager still running - stopping it")
 		// stop the current instance
 		if err := stop(state); err != nil {
 			log.Printf("[WARN] failed to stop previous instance of plugin manager: %s", err)
@@ -86,20 +86,20 @@ func Stop() error {
 
 // stop the running plugin manager instance
 func stop(state *pluginManagerState) error {
-	log.Printf("[WARN] plugin manager stop")
+	log.Printf("[TRACE] plugin manager stop")
 	pluginManager, err := NewPluginManagerClient(state)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("[WARN] pluginManager.Shutdown")
+	log.Printf("[TRACE] pluginManager.Shutdown")
 	// tell plugin manager to kill all plugins
 	_, err = pluginManager.Shutdown(&pb.ShutdownRequest{})
 	if err != nil {
 		return err
 	}
 
-	log.Printf("[WARN] state.kill")
+	log.Printf("[TRACE] pluginManager state.kill")
 	// now kill the plugin manager
 	return state.kill()
 
@@ -123,9 +123,9 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	}
 	// if we did not load it and there was no error, it means the plugin manager is not running
 	if state == nil {
-		log.Printf("[WARN] GetPluginManager called but plugin manager not running")
+		log.Printf("[TRACE] GetPluginManager called but plugin manager not running")
 		if startIfNeeded {
-			log.Printf("[WARN] calling Start()")
+			log.Printf("[TRACE] calling Start()")
 			// start the plugin manager
 			if err := start(); err != nil {
 				return nil, err
