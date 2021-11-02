@@ -29,11 +29,10 @@ func (j *TextFormatter) FileExtension() string {
 }
 
 func (j *TextFormatter) getMaxCols(constraint RangeConstraint) int {
-	var colsAvailable int
+	colsAvailable, _, _ := gows.GetWinSize()
+	// check if STEAMPIPE_CHECK_DISPLAY_WIDTH env variable is set
 	if viper.IsSet(constants.ArgCheckDisplayWidth) {
 		colsAvailable = viper.GetInt(constants.ArgCheckDisplayWidth)
-	} else {
-		colsAvailable, _, _ = gows.GetWinSize()
 	}
 	return constraint.Constrain(colsAvailable)
 }
