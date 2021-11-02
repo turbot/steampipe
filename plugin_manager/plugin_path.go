@@ -23,7 +23,7 @@ func GetPluginPath(plugin, pluginShortName string) (string, error) {
 	// - so search for a folder which when truncated would match the schema
 	if _, err := os.Stat(pluginFolder); os.IsNotExist(err) {
 		log.Printf("[TRACE] plugin path %s not found - searching for folder using hashed name\n", pluginFolder)
-		if pluginFolder, err = findPluginFolder(remoteSchema); err != nil {
+		if pluginFolder, err = FindPluginFolder(remoteSchema); err != nil {
 			return "", err
 		} else if pluginFolder == "" {
 			return "", fmt.Errorf("no plugin installed matching %s", pluginShortName)
@@ -68,7 +68,7 @@ func trimSchemaName(pluginFQN string) string {
 }
 
 // search for a folder which when hashed would match the schema
-func findPluginFolder(remoteSchema string) (string, error) {
+func FindPluginFolder(remoteSchema string) (string, error) {
 	pluginDir := constants.PluginDir()
 
 	// first try searching by prefix - trim the schema name

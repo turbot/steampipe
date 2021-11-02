@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/turbot/steampipe/plugin_manager"
+
 	"github.com/turbot/steampipe/constants"
 )
 
@@ -45,7 +47,7 @@ func TestFindPluginFolderTest(t *testing.T) {
 	setupFindPluginFolderTest(directories)
 	for name, test := range testCasesFindPluginFolderTest {
 
-		path, err := findPluginFolder(test.schema)
+		path, err := plugin_manager.FindPluginFolder(test.schema)
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)
