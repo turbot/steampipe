@@ -171,7 +171,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			exportCheckResult(ctx, &d)
 		}
 
-		durations = append(durations, executionTree.Root.Duration)
+		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))
 	}
 
 	// wait for exports to complete
