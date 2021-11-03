@@ -26,11 +26,10 @@ import (
 )
 
 type checkInitData struct {
-	ctx           context.Context
-	workspace     *workspace.Workspace
-	client        db_common.Client
-	dbInitialised bool
-	result        *db_common.InitResult
+	ctx       context.Context
+	workspace *workspace.Workspace
+	client    db_common.Client
+	result    *db_common.InitResult
 }
 
 type exportData struct {
