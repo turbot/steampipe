@@ -269,7 +269,7 @@ func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
 	} else if ascii >= 97 && ascii <= 122 {
 		log.Printf("[TRACE] valid database name: %s", databaseName)
 	} else {
-		return fmt.Errorf("Invalid database name: %s, must start with either a lowercase character or an underscore (_)", databaseName)
+		return fmt.Errorf("Invalid database name '%s'. Postgres database names must start with either a lowercase character or an underscore.", databaseName)
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring database...")
