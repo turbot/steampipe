@@ -93,16 +93,18 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 	parallelismLock := semaphore.NewWeighted(viper.GetInt64(constants.ArgMaxParallel))
 
 	// just execute the root - it will traverse the tree
-	errors := e.Root.Execute(ctx, client, parallelismLock)
+	e.Root.Execute(ctx, client, parallelismLock)
 
 	// wait till we can acquire all semaphores - meaning that all runs have finished
 	parallelismLock.Acquire(ctx, viper.GetInt64(constants.ArgMaxParallel))
+
+	failures := e.Root.Summary.Status.Alarm + e.Root.Summary.Status.Error
 
 	// now build map of dimension property name to property value to color map
 	e.DimensionColorGenerator, _ = NewDimensionColorGenerator(4, 27)
 	e.DimensionColorGenerator.populate(e)
 
-	return errors
+	return failures
 }
 
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {

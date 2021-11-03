@@ -154,12 +154,11 @@ func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummar
 	}
 }
 
-func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, parallelismLock *semaphore.Weighted) int {
+func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, parallelismLock *semaphore.Weighted) {
 	log.Printf("[TRACE] begin ResultGroup.Execute: %s\n", r.GroupId)
 	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
 
 	startTime := time.Now()
-	var failures = 0
 
 	for _, controlRun := range r.ControlRuns {
 		if ctx.Err() != nil {
@@ -184,18 +183,13 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 				parallelismLock.Release(1)
 			}()
 			run.Execute(ctx, client)
-
-			run.group.summaryUpdateLock.Lock()
-			failures += (run.Summary.Alarm + run.Summary.Error)
-			run.group.summaryUpdateLock.Unlock()
 		}(controlRun)
 	}
 	for _, child := range r.Groups {
-		failures += child.Execute(ctx, client, parallelismLock)
+		child.Execute(ctx, client, parallelismLock)
 	}
 
 	r.Duration = time.Since(startTime)
-	return failures
 }
 
 // GetGroupByName finds an immediate child ResultGroup with a specific name
