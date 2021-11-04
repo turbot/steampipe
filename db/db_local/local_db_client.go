@@ -37,8 +37,7 @@ func GetLocalClient(invoker constants.Invoker) (db_common.Client, error) {
 	if err != nil {
 		ShutdownService(invoker)
 	}
-	// NOTE:  client shutdown will shutdown service (if invoker matches)
-	return client, nil
+	return client, err
 }
 
 // NewLocalClient ensures that the database instance is running

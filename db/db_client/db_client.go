@@ -73,7 +73,7 @@ func establishConnection(connStr string) (*sql.DB, error) {
 	if err := db_common.WaitForConnection(db); err != nil {
 		return nil, err
 	}
-	return nil, fmt.Errorf("could not establish connection")
+	return db, nil
 }
 
 func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallback) {
