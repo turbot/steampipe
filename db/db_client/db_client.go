@@ -70,8 +70,8 @@ func establishConnection(connStr string) (*sql.DB, error) {
 	// never close connection because of age
 	db.SetConnMaxLifetime(0)
 
-	if db_common.WaitForConnection(db) {
-		return db, nil
+	if err := db_common.WaitForConnection(db); err != nil {
+		return nil, err
 	}
 	return nil, fmt.Errorf("could not establish connection")
 }
