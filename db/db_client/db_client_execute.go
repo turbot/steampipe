@@ -186,7 +186,8 @@ func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64,
 	retries := 0
 	var session *sql.Conn
 	var backendPid int64
-	err = retry.Do(ctx, retry.WithMaxRetries(10, backoff), func(ctx context.Context) error {
+	const getSessionMaxRetries = 10
+	err = retry.Do(ctx, retry.WithMaxRetries(getSessionMaxRetries, backoff), func(ctx context.Context) error {
 		session, err = c.dbClient.Conn(ctx)
 		if err != nil {
 			retries++
