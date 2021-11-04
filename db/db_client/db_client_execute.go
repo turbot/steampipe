@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
@@ -32,7 +33,7 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner
 	return c.ExecuteSyncInSession(ctx, session, query, disableSpinner)
 }
 
-// ExecuteSync implements Client
+// ExecuteSyncInSession implements Client
 // execute a query against this client and wait for the result
 func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	if query == "" {
@@ -140,19 +141,15 @@ func (c *DbClient) AcquireSession(ctx context.Context) (*sql.Conn, error) {
 	c.sessionAcquireLock.Lock()
 	defer c.sessionAcquireLock.Unlock()
 
-	session, err := c.dbClient.Conn(ctx)
+	// get a database conneciton and query its backend pid
+	// note - this will retry if the connection is bad
+	session, backendPid, err := c.getSessionWithRetries(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	if c.ensureSessionFunc == nil {
-		// nothing to do here
 		return session, nil
-	}
-
-	backendPid, err := getBackendPid(ctx, session)
-	if err != nil {
-		return nil, err
 	}
 
 	sessionStat, isInitialized := c.initializedSessions[backendPid]
@@ -178,6 +175,41 @@ func (c *DbClient) AcquireSession(ctx context.Context) (*sql.Conn, error) {
 	c.initializedSessions[backendPid] = sessionStat
 
 	return session, nil
+}
+
+func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64, error) {
+	backoff, err := retry.NewFibonacci(100 * time.Millisecond)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	retries := 0
+	var session *sql.Conn
+	var backendPid int64
+	err = retry.Do(ctx, retry.WithMaxRetries(10, backoff), func(ctx context.Context) error {
+		session, err = c.dbClient.Conn(ctx)
+		if err != nil {
+			retries++
+			return retry.RetryableError(err)
+		}
+		backendPid, err = getBackendPid(ctx, session)
+		if err != nil {
+			session.Close()
+			retries++
+			return retry.RetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		log.Printf("[WARN] AcquireSession failed after 10 retries: %s", err)
+		return nil, 0, err
+	}
+
+	if retries > 0 {
+		log.Printf("[TRACE] AcquireSession succeeded after %d retries", retries)
+	}
+	return session, backendPid, nil
 }
 
 // get the unique postgres identifier for a database session

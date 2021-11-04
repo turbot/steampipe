@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/briandowns/spinner"
@@ -22,7 +21,6 @@ type ControlProgressRenderer struct {
 	complete   int
 	error      int
 	spinner    *spinner.Spinner
-	current    string
 	enabled    bool
 	executing  int
 }
@@ -69,7 +67,6 @@ func (p *ControlProgressRenderer) OnControlStart(control *modconfig.Control) {
 	defer p.updateLock.Unlock()
 
 	if p.enabled {
-		p.current = typehelpers.SafeString("")
 		display.UpdateSpinnerMessage(p.spinner, p.message())
 	}
 }
