@@ -211,7 +211,7 @@ func LoadModResourceNames(modPath string, runCtx *parse.RunContext) (resources *
 
 	sourcePaths, err := getSourcePaths(modPath, runCtx.ListOptions)
 	if err != nil {
-		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
+		log.Printf("[WARN] LoadModResourceNames: failed to get mod file paths: %v\n", err)
 		return nil, err
 	}
 

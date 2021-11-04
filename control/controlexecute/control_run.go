@@ -2,6 +2,7 @@ package controlexecute
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"strings"
@@ -10,13 +11,14 @@ import (
 
 	"github.com/turbot/steampipe/db/db_common"
 
-	"github.com/spf13/viper"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
+
+const controlQueryTimeout = 240 * time.Second
 
 type ControlRunStatus uint32
 
@@ -30,8 +32,7 @@ const (
 // ControlRun is a struct representing a  a control run - will contain one or more result items (i.e. for one or more resources)
 type ControlRun struct {
 	runError error `json:"-"`
-	// the number of attempts this control made to run
-	attempts int `json:"-"`
+
 	// the parent control
 	Control *modconfig.Control `json:"-"`
 	Summary StatusSummary      `json:"-"`
@@ -81,128 +82,176 @@ func (r *ControlRun) Skip() {
 	r.setRunStatus(ControlRunComplete)
 }
 
-func (r *ControlRun) Start(ctx context.Context, client db_common.Client) {
+// set search path for this control run
+func (r *ControlRun) setSearchPath(ctx context.Context, session *sql.Conn, client db_common.Client) error {
+	utils.LogTime("ControlRun.setSearchPath start")
+	defer utils.LogTime("ControlRun.setSearchPath end")
+
+	searchPath := []string{}
+	searchPathPrefix := []string{}
+
+	if r.Control.SearchPath == nil && r.Control.SearchPathPrefix == nil {
+		return nil
+	}
+	if r.Control.SearchPath != nil {
+		searchPath = strings.Split(*r.Control.SearchPath, ",")
+	}
+	if r.Control.SearchPathPrefix != nil {
+		searchPathPrefix = strings.Split(*r.Control.SearchPathPrefix, ",")
+	}
+
+	currentPath, err := r.getCurrentSearchPath(ctx, session)
+	if err != nil {
+		return err
+	}
+
+	newSearchPath, err := client.ContructSearchPath(searchPath, searchPathPrefix, currentPath)
+	if err != nil {
+		return err
+	}
+
+	// no execute the SQL to actuall set the search path
+	q := fmt.Sprintf("set search_path to %s", strings.Join(newSearchPath, ","))
+	_, err = session.ExecContext(ctx, q)
+	return err
+}
+
+func (r *ControlRun) getCurrentSearchPath(ctx context.Context, session *sql.Conn) ([]string, error) {
+	utils.LogTime("ControlRun.getCurrentSearchPath start")
+	defer utils.LogTime("ControlRun.getCurrentSearchPath end")
+
+	row := session.QueryRowContext(ctx, "show search_path")
+	pathAsString := ""
+	err := row.Scan(&pathAsString)
+	if err != nil {
+		return nil, err
+	}
+	currentSearchPath := strings.Split(pathAsString, ",")
+	// unescape search path
+	for idx, p := range currentSearchPath {
+		p = strings.Join(strings.Split(p, "\""), "")
+		p = strings.TrimSpace(p)
+		currentSearchPath[idx] = p
+	}
+	return currentSearchPath, nil
+}
+
+func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
 
 	startTime := time.Now()
-
-	r.runStatus = ControlRunStarted
-
 	control := r.Control
+	log.Printf("[TRACE] control start %s\n", control.Name())
+	r.executionTree.progress.OnControlExecuteStart()
+
+	// function to cleanup and update status after control run completion
+	defer func() {
+		r.executionTree.progress.OnControlExecuteFinish()
+		// update the result group status with our status - this will be passed all the way up the execution tree
+		r.group.updateSummary(r.Summary)
+		if len(r.Severity) != 0 {
+			r.group.updateSeverityCounts(r.Severity, r.Summary)
+		}
+		r.Duration = time.Since(startTime)
+	}()
+
+	// get a db connection
+	dbSession, err := client.AcquireSession(ctx)
+	log.Printf("[TRACE] got session for: %s\n", r.Control.Name())
+	if err != nil {
+		r.SetError(fmt.Errorf("error acquiring database connection: %s", err.Error()))
+		return
+	}
+	defer dbSession.Close()
+
+	// set our status
+	r.runStatus = ControlRunStarted
 
 	// update the current running control in the Progress renderer
 	r.executionTree.progress.OnControlStart(control)
 
 	// resolve the control query
-	query, err := r.executionTree.workspace.ResolveControlQuery(control)
+	query, err := r.resolveControlQuery(err, control)
 	if err != nil {
 		r.SetError(err)
 		return
 	}
-	if query == "" {
-		r.SetError(fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typehelpers.SafeString(control.SQL)))
+
+	log.Printf("[TRACE] setting search path %s\n", control.Name())
+	if err := r.setSearchPath(ctx, dbSession, client); err != nil {
+		r.SetError(err)
 		return
 	}
 
-	// set a log line in the database logs for convenience
-	// pass 'true' to disable spinner
-	_, _ = client.ExecuteSync(ctx, fmt.Sprintf("--- Executing %s", control.GetTitle()), true)
-
-	var originalConfiguredSearchPath []string
-	var originalConfiguredSearchPathPrefix []string
-
-	if control.SearchPath != nil || control.SearchPathPrefix != nil {
-		originalConfiguredSearchPath = viper.GetViper().GetStringSlice(constants.ArgSearchPath)
-		originalConfiguredSearchPathPrefix = viper.GetViper().GetStringSlice(constants.ArgSearchPathPrefix)
-
-		if control.SearchPath != nil {
-			viper.Set(constants.ArgSearchPath, strings.Split(*control.SearchPath, ","))
-		}
-		if control.SearchPathPrefix != nil {
-			viper.Set(constants.ArgSearchPathPrefix, strings.Split(*control.SearchPathPrefix, ","))
-		}
-
-		client.SetSessionSearchPath()
-	}
-
-	shouldBeDoneBy := time.Now().Add(240 * time.Second)
+	// create a context with a deadline
+	shouldBeDoneBy := time.Now().Add(controlQueryTimeout)
 	ctx, cancel := context.WithDeadline(ctx, shouldBeDoneBy)
-
-	// Even though ctx will expire, it is good practice to call its
-	// cancellation function in any case. Not doing so may keep the
-	// context and its parent alive longer than necessary.
+	// Even though ctx will expire, it is good practice to call its cancellation function in any case.
 	defer cancel()
 
-	queryResult, err := client.Execute(ctx, query, false)
+	// execute the control query
+	queryResult, err := client.ExecuteInSession(ctx, dbSession, query, false)
 	if err != nil {
-		// is this an rpc EOF error - meaning that the plugin somehow crashed
-		if strings.Contains(err.Error(), constants.PluginCrashErrorSubString) {
-			if r.attempts > constants.MaxControlRunAttempts {
-				// if exceeded max retries, give up
-				r.SetError(err)
-				return
-			}
-			// set a log line in the database logs for convenience - pass 'true' to disable spinner
-			_, _ = client.ExecuteSync(ctx, "-- Retrying...", true)
-
-			// recurse into this function to retry
-			// use the same context, so that we respect the timeout
-			r.attempts++
-			r.Start(ctx, client)
-			return
-		}
+		log.Printf("[TRACE] client.ExecuteInSession returned error %s", err.Error())
 		r.SetError(err)
 		return
 	}
-	// validate required columns
 	r.queryResult = queryResult
 
+	// now wait for control completion
+	r.waitForResults(ctx)
+}
+
+func (r *ControlRun) resolveControlQuery(err error, control *modconfig.Control) (string, error) {
+	query, err := r.executionTree.workspace.ResolveControlQuery(control)
+	if err != nil {
+		return "", fmt.Errorf(`cannot run %s - failed to resolve query "%s": %s`, control.Name(), typehelpers.SafeString(control.SQL), err.Error())
+	}
+	if query == "" {
+		return "", fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typehelpers.SafeString(control.SQL))
+	}
+	return query, nil
+}
+
+func (r *ControlRun) waitForResults(ctx context.Context) {
 	// create a channel to which will be closed when gathering has been done
 	gatherDoneChan := make(chan string)
 	go func() {
 		r.gatherResults()
-		if control.SearchPath != nil || control.SearchPathPrefix != nil {
-			// the search path was modified. Reset it!
-			viper.Set(constants.ArgSearchPath, originalConfiguredSearchPath)
-			viper.Set(constants.ArgSearchPathPrefix, originalConfiguredSearchPathPrefix)
-			client.SetSessionSearchPath()
-		}
 		close(gatherDoneChan)
 	}()
 
 	select {
+	// check for cancellation
 	case <-ctx.Done():
-		r.SetError(fmt.Errorf("control timed out"))
+		r.SetError(ctx.Err())
 	case <-gatherDoneChan:
 		// do nothing
 	}
-	r.Duration = time.Since(startTime)
 }
 
 func (r *ControlRun) gatherResults() {
 	for {
 		select {
 		case row := <-*r.queryResult.RowChan:
+			// nil row means control run is complete
 			if row == nil {
-				// update the result group status with our status - this will be passed all the way up the execution tree
-				r.group.updateSummary(r.Summary)
-				if len(r.Severity) != 0 {
-					r.group.updateSeverityCounts(r.Severity, r.Summary)
-				}
-
 				// nil row means we are done
 				r.setRunStatus(ControlRunComplete)
 				r.createdOrderedResultRows()
 				return
-
 			}
-			// got a result - send a ping over the channel so that the
-			// loop can check against the timeout
+			// if the row is in error then we terminate the run
 			if row.Error != nil {
+				// set error status and summary
 				r.SetError(row.Error)
+				// update the result group status with our status - this will be passed all the way up the execution tree
+				r.group.updateSummary(r.Summary)
 				return
 			}
+
+			// so all is ok - create another result row
 			result, err := NewResultRow(r.Control, row, r.queryResult.ColTypes)
 			if err != nil {
 				r.SetError(err)
@@ -213,7 +262,6 @@ func (r *ControlRun) gatherResults() {
 			return
 		}
 	}
-
 }
 
 // add the result row to our results and update the summary with the row status
@@ -245,6 +293,9 @@ func (r *ControlRun) createdOrderedResultRows() {
 }
 
 func (r *ControlRun) SetError(err error) {
+	if err == nil {
+		return
+	}
 	r.runError = utils.TransformErrorToSteampipe(err)
 
 	// update error count
@@ -262,12 +313,11 @@ func (r *ControlRun) setRunStatus(status ControlRunStatus) {
 	r.stateLock.Unlock()
 
 	if r.Finished() {
-
 		// update Progress
 		if status == ControlRunError {
-			r.executionTree.progress.OnError()
+			r.executionTree.progress.OnControlError()
 		} else {
-			r.executionTree.progress.OnComplete()
+			r.executionTree.progress.OnControlComplete()
 		}
 
 		// TODO CANCEL QUERY IF NEEDED

@@ -3,9 +3,11 @@ package controlexecute
 import (
 	"context"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/turbot/steampipe/db/db_common"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -17,18 +19,20 @@ const RootResultGroupName = "root_result_group"
 // ResultGroup is a struct representing a grouping of control results
 // It may correspond to a Benchmark, or some other arbitrary grouping
 type ResultGroup struct {
-	GroupId     string            `json:"group_id" csv:"group_id"`
-	Title       string            `json:"title" csv:"title"`
-	Description string            `json:"description" csv:"description"`
-	Tags        map[string]string `json:"tags"`
-	Summary     *GroupSummary     `json:"summary"`
-	Groups      []*ResultGroup    `json:"groups"`
-	ControlRuns []*ControlRun     `json:"controls"`
+	GroupId     string                   `json:"group_id" csv:"group_id"`
+	Title       string                   `json:"title" csv:"title"`
+	Description string                   `json:"description" csv:"description"`
+	Tags        map[string]string        `json:"tags"`
+	Summary     *GroupSummary            `json:"summary"`
+	Groups      []*ResultGroup           `json:"groups"`
+	ControlRuns []*ControlRun            `json:"controls"`
+	Severity    map[string]StatusSummary `json:"-"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
-	GroupItem modconfig.ModTreeItem `json:"-"`
-	Parent    *ResultGroup          `json:"-"`
-	Duration  time.Duration         `json:"-"`
+	GroupItem         modconfig.ModTreeItem `json:"-"`
+	Parent            *ResultGroup          `json:"-"`
+	Duration          time.Duration         `json:"-"`
+	summaryUpdateLock *sync.Mutex
 }
 
 type GroupSummary struct {
@@ -43,10 +47,12 @@ func NewGroupSummary() *GroupSummary {
 // NewRootResultGroup creates a ResultGroup to act as the root node of a control execution tree
 func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.ModTreeItem) *ResultGroup {
 	root := &ResultGroup{
-		GroupId: RootResultGroupName,
-		Groups:  []*ResultGroup{},
-		Tags:    make(map[string]string),
-		Summary: NewGroupSummary(),
+		GroupId:           RootResultGroupName,
+		Groups:            []*ResultGroup{},
+		Tags:              make(map[string]string),
+		Summary:           NewGroupSummary(),
+		Severity:          make(map[string]StatusSummary),
+		summaryUpdateLock: new(sync.Mutex),
 	}
 	for _, item := range rootItems {
 		// if root item is a benchmark, create new result group with root as parent
@@ -65,14 +71,16 @@ func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.Mod
 // NewResultGroup creates a result group from a ModTreeItem
 func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ModTreeItem, parent *ResultGroup) *ResultGroup {
 	group := &ResultGroup{
-		GroupId:     treeItem.Name(),
-		Title:       treeItem.GetTitle(),
-		Description: treeItem.GetDescription(),
-		Tags:        treeItem.GetTags(),
-		GroupItem:   treeItem,
-		Parent:      parent,
-		Groups:      []*ResultGroup{},
-		Summary:     NewGroupSummary(),
+		GroupId:           treeItem.Name(),
+		Title:             treeItem.GetTitle(),
+		Description:       treeItem.GetDescription(),
+		Tags:              treeItem.GetTags(),
+		GroupItem:         treeItem,
+		Parent:            parent,
+		Groups:            []*ResultGroup{},
+		Summary:           NewGroupSummary(),
+		Severity:          make(map[string]StatusSummary),
+		summaryUpdateLock: new(sync.Mutex),
 	}
 	// add child groups for children which are benchmarks
 	for _, c := range treeItem.GetChildren() {
@@ -113,6 +121,9 @@ func (r *ResultGroup) AddResult(run *ControlRun) {
 }
 
 func (r *ResultGroup) updateSummary(summary StatusSummary) {
+	r.summaryUpdateLock.Lock()
+	defer r.summaryUpdateLock.Unlock()
+
 	r.Summary.Status.Skip += summary.Skip
 	r.Summary.Status.Alarm += summary.Alarm
 	r.Summary.Status.Info += summary.Info
@@ -124,7 +135,10 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 }
 
 func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummary) {
-	val, exists := r.Summary.Severity[severity]
+	r.summaryUpdateLock.Lock()
+	defer r.summaryUpdateLock.Unlock()
+
+	val, exists := r.Severity[severity]
 	if !exists {
 		val = StatusSummary{}
 	}
@@ -140,38 +154,42 @@ func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummar
 	}
 }
 
-func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client) int {
+func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, parallelismLock *semaphore.Weighted) {
 	log.Printf("[TRACE] begin ResultGroup.Execute: %s\n", r.GroupId)
 	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
 
-	// TODO consider executing in order specified in hcl?
-	// it may not matter, as we display results in order
-	// it is only an issue if there are dependencies, in which case we must run in dependency order
-
 	startTime := time.Now()
 
-	var failures = 0
 	for _, controlRun := range r.ControlRuns {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			controlRun.SetError(ctx.Err())
-		default:
-			if viper.GetBool(constants.ArgDryRun) {
-				controlRun.Skip()
-			} else {
-				controlRun.Start(ctx, client)
-				failures += controlRun.Summary.Alarm
-				failures += controlRun.Summary.Error
-			}
+			continue
 		}
+
+		if viper.GetBool(constants.ArgDryRun) {
+			controlRun.Skip()
+			continue
+		}
+
+		err := parallelismLock.Acquire(ctx, 1)
+		if err != nil {
+			controlRun.SetError(err)
+			continue
+		}
+
+		go func(run *ControlRun) {
+			defer func() {
+				// Release in defer, so that we don't retain the lock even if there's a panic inside
+				parallelismLock.Release(1)
+			}()
+			run.Execute(ctx, client)
+		}(controlRun)
 	}
 	for _, child := range r.Groups {
-		failures += child.Execute(ctx, client)
+		child.Execute(ctx, client, parallelismLock)
 	}
 
 	r.Duration = time.Since(startTime)
-
-	return failures
 }
 
 // GetGroupByName finds an immediate child ResultGroup with a specific name

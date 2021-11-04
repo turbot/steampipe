@@ -2,7 +2,6 @@ package controldisplay
 
 import (
 	"fmt"
-	"log"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -52,9 +51,6 @@ minimum counter string is " n / m "
 const minimumCounterWidth = 7
 
 func (r CounterRenderer) Render() string {
-	log.Println("[TRACE] begin counter render")
-	defer log.Println("[TRACE] end counter render")
-
 	p := message.NewPrinter(language.English)
 	// get strings for fails and total - format with commas for thousands
 	failedString := p.Sprintf("%d", r.failedControls)

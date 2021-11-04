@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -26,8 +27,6 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 	if res.Error != nil {
 		return res
 	}
-
-	log.Printf("[TRACE] refreshConnections, updates: %+v\n", connectionUpdates)
 
 	// if any plugins are missing, error for now but we could prompt for an install
 	missingCount := len(connectionUpdates.MissingPlugins)
@@ -53,6 +52,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 	}
 
 	// so there ARE connections to update
+	log.Printf("[TRACE] refreshConnections, %d updates\n", len(connectionQueries))
 
 	// execute the connection queries
 	if err := executeConnectionQueries(connectionQueries); err != nil {
@@ -120,7 +120,7 @@ func (c *LocalDbClient) updateConnectionMap() error {
 func getSchemaQueries(updates steampipeconfig.ConnectionDataMap, failures []*steampipeconfig.ValidationFailure) []string {
 	var schemaQueries []string
 	for connectionName, plugin := range updates {
-		remoteSchema := steampipeconfig.PluginFQNToSchemaName(plugin.Plugin)
+		remoteSchema := plugin_manager.PluginFQNToSchemaName(plugin.Plugin)
 		log.Printf("[TRACE] update connection %s, plugin Name %s, schema %s\n ", connectionName, plugin.Plugin, remoteSchema)
 		schemaQueries = append(schemaQueries, updateConnectionQuery(connectionName, remoteSchema)...)
 	}

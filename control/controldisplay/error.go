@@ -2,7 +2,6 @@ package controldisplay
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
@@ -25,9 +24,6 @@ func NewErrorRenderer(err error, width int, indent string) *ErrorRenderer {
 }
 
 func (r ErrorRenderer) Render() string {
-	log.Println("[TRACE] begin error render")
-	defer log.Println("[TRACE] end error render")
-
 	status := NewResultStatusRenderer(constants.ControlError)
 	statusString := status.Render()
 	statusWidth := helpers.PrintableLength(statusString)

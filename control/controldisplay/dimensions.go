@@ -26,10 +26,8 @@ func NewDimensionsRenderer(dimensions []controlexecute.Dimension, colorGenerator
 
 // Render returns the reason, truncated to the max length if necessary
 func (r DimensionsRenderer) Render() string {
-	log.Println("[TRACE] begin dimensions render")
-	defer log.Println("[TRACE] end dimensions render")
-
 	if r.width <= 0 {
+		// this should never happen, since the minimum width is set by the formatter
 		log.Printf("[WARN] dimensions renderer has width of %d\n", r.width)
 		return ""
 	}

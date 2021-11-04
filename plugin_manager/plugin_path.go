@@ -1,4 +1,4 @@
-package steampipeconfig
+package plugin_manager
 
 import (
 	"fmt"
@@ -7,35 +7,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 )
 
 const maxSchemaNameLength = 63
 
-// schemas in postgres are limited to 63 chars - the name may be longer than this, in which case trim the length
-// and add a hash to the end to make unique
-func PluginFQNToSchemaName(pluginFQN string) string {
-	if len(pluginFQN) < maxSchemaNameLength {
-		return pluginFQN
-	}
-
-	schemaName := trimSchemaName(pluginFQN) + fmt.Sprintf("-%x", utils.StringHash(pluginFQN))
-	return schemaName
-}
-
-func trimSchemaName(pluginFQN string) string {
-	if len(pluginFQN) < maxSchemaNameLength {
-		return pluginFQN
-	}
-
-	return pluginFQN[:maxSchemaNameLength-9]
-}
-
-func GetPluginPath(connection *modconfig.Connection) (string, error) {
-	remoteSchema := connection.Plugin
+func GetPluginPath(plugin, pluginShortName string) (string, error) {
+	remoteSchema := plugin
 	// the fully qualified name of the plugin is the relative path of the folder containing the plugin
 	// calculate absolute folder path
 	pluginFolder := filepath.Join(constants.PluginDir(), remoteSchema)
@@ -44,10 +23,10 @@ func GetPluginPath(connection *modconfig.Connection) (string, error) {
 	// - so search for a folder which when truncated would match the schema
 	if _, err := os.Stat(pluginFolder); os.IsNotExist(err) {
 		log.Printf("[TRACE] plugin path %s not found - searching for folder using hashed name\n", pluginFolder)
-		if pluginFolder, err = findPluginFolder(remoteSchema); err != nil {
+		if pluginFolder, err = FindPluginFolder(remoteSchema); err != nil {
 			return "", err
 		} else if pluginFolder == "" {
-			return "", fmt.Errorf("no plugin installed matching %s", connection.PluginShortName)
+			return "", fmt.Errorf("no plugin installed matching %s", pluginShortName)
 		}
 	}
 
@@ -69,8 +48,27 @@ func GetPluginPath(connection *modconfig.Connection) (string, error) {
 	return filepath.Join(pluginFolder, matches[0]), nil
 }
 
+// schemas in postgres are limited to 63 chars - the name may be longer than this, in which case trim the length
+// and add a hash to the end to make unique
+func PluginFQNToSchemaName(pluginFQN string) string {
+	if len(pluginFQN) < maxSchemaNameLength {
+		return pluginFQN
+	}
+
+	schemaName := trimSchemaName(pluginFQN) + fmt.Sprintf("-%x", utils.StringHash(pluginFQN))
+	return schemaName
+}
+
+func trimSchemaName(pluginFQN string) string {
+	if len(pluginFQN) < maxSchemaNameLength {
+		return pluginFQN
+	}
+
+	return pluginFQN[:maxSchemaNameLength-9]
+}
+
 // search for a folder which when hashed would match the schema
-func findPluginFolder(remoteSchema string) (string, error) {
+func FindPluginFolder(remoteSchema string) (string, error) {
 	pluginDir := constants.PluginDir()
 
 	// first try searching by prefix - trim the schema name
@@ -97,5 +95,4 @@ func findPluginFolder(remoteSchema string) (string, error) {
 	}
 
 	return "", nil
-
 }

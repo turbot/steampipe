@@ -1,10 +1,12 @@
+//go:build darwin || linux
 // +build darwin linux
 
-package db_local
+package utils
 
 import (
+	"fmt"
+
 	psutils "github.com/shirou/gopsutil/process"
-	"github.com/turbot/steampipe/utils"
 )
 
 // PidExists scans through the list of PIDs in the system
@@ -16,31 +18,41 @@ import (
 // implicit services
 //
 func PidExists(targetPid int) (bool, error) {
-	utils.LogTime("db.PidExists start")
-	defer utils.LogTime("db.PidExists end")
+	LogTime("PidExists start")
+	defer LogTime("PidExists end")
+
+	process, err := FindProcess(targetPid)
+	found := process != nil
+	return found, err
+}
+
+func FindProcess(targetPid int) (*psutils.Process, error) {
+	LogTime("FindProcess start")
+	defer LogTime("FindProcess end")
 
 	pids, err := psutils.Pids()
 	if err != nil {
-		return false, nil
+		return nil, fmt.Errorf("failed to get pids")
 	}
 	for _, pid := range pids {
 		if targetPid == int(pid) {
 			process, err := psutils.NewProcess(int32(targetPid))
 			if err != nil {
-				return true, nil
+				// is we fail to create a process for the pid, just treat it as if we can't find the process
+				return nil, nil
 			}
 
 			status, err := process.Status()
 			if err != nil {
-				return true, err
+				return nil, fmt.Errorf("failed to get status")
 			}
 
 			if status == "Z" {
 				// this means that postgres went away, but the process itself is still a zombie.
-				return false, nil
+				return nil, nil
 			}
-			return true, nil
+			return process, nil
 		}
 	}
-	return false, nil
+	return nil, nil
 }

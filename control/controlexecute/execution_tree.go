@@ -14,9 +14,10 @@ import (
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
+	"golang.org/x/sync/semaphore"
 )
 
-// ExecutionTree is a structure representing the control result hierarchy
+// ExecutionTree is a structure representing the control hierarchy
 type ExecutionTree struct {
 	Root      *ResultGroup
 	StartTime time.Time
@@ -33,7 +34,6 @@ type ExecutionTree struct {
 	controlRuns []*ControlRun
 }
 
-// NewExecutionTree creates a result group from a ModTreeItem
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg string) (*ExecutionTree, error) {
 	// now populate the ExecutionTree
 	executionTree := &ExecutionTree{
@@ -87,13 +87,23 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 		e.EndTime = time.Now()
 		e.progress.Finish()
 	}()
+
+	// to limit the number of parallel controls go routines started
+	parallelismLock := semaphore.NewWeighted(viper.GetInt64(constants.ArgMaxParallel))
+
 	// just execute the root - it will traverse the tree
-	errors := e.Root.Execute(ctx, client)
+	e.Root.Execute(ctx, client, parallelismLock)
+
+	// wait till we can acquire all semaphores - meaning that all runs have finished
+	parallelismLock.Acquire(ctx, viper.GetInt64(constants.ArgMaxParallel))
+
+	failures := e.Root.Summary.Status.Alarm + e.Root.Summary.Status.Error
+
 	// now build map of dimension property name to property value to color map
 	e.DimensionColorGenerator, _ = NewDimensionColorGenerator(4, 27)
 	e.DimensionColorGenerator.populate(e)
 
-	return errors
+	return failures
 }
 
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
@@ -252,7 +262,8 @@ func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereC
 }
 
 func (e *ExecutionTree) GetAllTags() []string {
-	tagColumnMap := make(map[string]bool) // to keep track which tags have been added as columns
+	// map keep track which tags have been added as columns
+	tagColumnMap := make(map[string]bool)
 	var tagColumns []string
 	for _, r := range e.controlRuns {
 		if r.Control.Tags != nil {

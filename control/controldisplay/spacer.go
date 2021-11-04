@@ -17,11 +17,8 @@ func NewSpacerRenderer(width int) *SpacerRenderer {
 // Render returns a divider string of format: "....... "
 // NOTE: adds a trailing space
 func (r SpacerRenderer) Render() string {
-	log.Println("[TRACE] begin spacer render")
-	defer log.Println("[TRACE] end spacer render")
-
-	// this should never happen, since the minimum width is set by the formatter
 	if r.width <= 0 {
+		// this should never happen, since the minimum width is set by the formatter
 		log.Printf("[WARN] spacer renderer has width of %d\n", r.width)
 		return ""
 	}

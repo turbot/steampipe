@@ -36,11 +36,8 @@ func NewGroupHeadingRenderer(title string, failed, total, maxFailed, maxTotal, w
 func (r GroupHeadingRenderer) Render() string {
 	isDryRun := viper.GetBool(constants.ArgDryRun)
 
-	log.Println("[TRACE] begin group heading render")
-	defer log.Println("[TRACE] end group heading render")
-
-	// this should never happen since the minimum number of colums is set in the formatter
 	if r.width <= 0 {
+		// this should never happen, since the minimum width is set by the formatter
 		log.Printf("[WARN] group heading renderer has width of %d\n", r.width)
 		return ""
 	}

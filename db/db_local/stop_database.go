@@ -8,11 +8,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/turbot/steampipe/constants"
-
 	"github.com/briandowns/spinner"
 	psutils "github.com/shirou/gopsutil/process"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/plugin_manager"
 
 	"github.com/turbot/steampipe/utils"
 )
@@ -67,7 +67,10 @@ func ShutdownService(invoker constants.Invoker) {
 }
 
 // GetCountOfConnectedClients returns the number of clients currently connected to the service
-func GetCountOfConnectedClients() (int, error) {
+func GetCountOfConnectedClients() (i int, e error) {
+	utils.LogTime("db_local.GetCountOfConnectedClients start")
+	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end:%d", i))
+
 	rootClient, err := createLocalDbClient(&CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return -1, err
@@ -78,23 +81,29 @@ func GetCountOfConnectedClients() (int, error) {
 	// get the total number of connected clients
 	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend';")
 	row.Scan(&clientCount)
-
 	// clientCount can never be zero, since the client we are using to run the query counts as a client
-	// deduct 1 to allow for the client we used to query the count
-	return clientCount - 1, nil
+	// deduct the open connections in the pool of this client
+	return clientCount - rootClient.Stats().OpenConnections, nil
 }
 
 // StopDB searches for and stops the running instance. Does nothing if an instance was not found
 func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (status StopStatus, e error) {
-	log.Println("[TRACE] StopDB", force)
+	log.Printf("[TRACE] StopDB invoker %s, force %v", invoker, force)
 	utils.LogTime("db_local.StopDB start")
 
 	defer func() {
 		if e == nil {
-			os.Remove(runningInfoFilePath())
+			os.Remove(constants.RunningInfoFilePath())
 		}
 		utils.LogTime("db_local.StopDB end")
 	}()
+
+	// TODO think about failures - we should shut down the service event if plugin manager does not stop
+	// stop the plugin manager
+	// this means it may be stopped even if we fail to stop the service - that is ok - we will restart it if needed
+	if err := plugin_manager.Stop(); err != nil {
+		return ServiceStopFailed, err
+	}
 
 	if force {
 		// check if we have a process from another install-dir
@@ -208,7 +217,7 @@ func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 	for {
 		select {
 		case <-checkTimer.C:
-			pEx, _ := PidExists(int(process.Pid))
+			pEx, _ := utils.PidExists(int(process.Pid))
 			if pEx {
 				continue
 			}

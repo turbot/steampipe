@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -50,6 +51,7 @@ func (slt StartListenType) IsValid() error {
 
 // StartDB starts the database if not already running
 func StartDB(port int, listen StartListenType, invoker constants.Invoker) (startResult StartResult, err error) {
+	log.Printf("[TRACE] StartDB invoker %s", invoker)
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
 	var postgresCmd *exec.Cmd
@@ -73,6 +75,11 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 			}
 		}
 	}()
+
+	// start the plugin manager
+	if err := plugin_manager.Start(); err != nil {
+		return ServiceFailedToStart, err
+	}
 
 	// remove the stale info file, ignoring errors - will overwrite anyway
 	_ = removeRunningInstanceInfo()
@@ -278,8 +285,8 @@ func createCmd(port int, listenAddresses string) *exec.Cmd {
 		// NOTE: If quoted, the application name includes the quotes. Worried about
 		// having spaces in the APPNAME, but leaving it unquoted since currently
 		// the APPNAME is hardcoded to be steampipe.
-		"-c", fmt.Sprintf("application_name=%s", constants.APPNAME),
-		"-c", fmt.Sprintf("cluster_name=%s", constants.APPNAME),
+		"-c", fmt.Sprintf("application_name=%s", constants.AppName),
+		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
 
 		// log directory
 		"-c", fmt.Sprintf("log_directory=%s", constants.LogDir()),
@@ -309,6 +316,7 @@ func createCmd(port int, listenAddresses string) *exec.Cmd {
 		postgresCmd.Env = append(os.Environ(), fmt.Sprintf("OPENSSL_CONF=%s", constants.SslConfDir))
 	}
 
+	// set group pgid attributes on the command to ensure the process is not shutdown when its parent terminates
 	postgresCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid:    true,
 		Foreground: false,
@@ -503,7 +511,7 @@ func isSteampipePostgresProcess(cmdline []string) bool {
 	}
 	if strings.Contains(cmdline[0], "postgres") {
 		// this is a postgres process - but is it a steampipe service?
-		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", constants.APPNAME))
+		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", constants.AppName))
 	}
 	return false
 }

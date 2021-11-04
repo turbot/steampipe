@@ -2,14 +2,13 @@ package cmd
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/turbot/steampipe/db/db_client"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -18,6 +17,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
+	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
@@ -26,11 +26,10 @@ import (
 )
 
 type checkInitData struct {
-	ctx           context.Context
-	workspace     *workspace.Workspace
-	client        db_common.Client
-	dbInitialised bool
-	result        *db_common.InitResult
+	ctx       context.Context
+	workspace *workspace.Workspace
+	client    db_common.Client
+	result    *db_common.InitResult
 }
 
 type exportData struct {
@@ -47,7 +46,6 @@ func (e *exportData) addErrors(err []error) {
 	e.errorsLock.Unlock()
 }
 
-// checkCmd :: represents the check command
 func checkCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:              "check [flags] [mod/benchmark/control/\"all\"]",
@@ -81,7 +79,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers for csv and table output").
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for check").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
-		AddStringFlag(constants.ArgOutput, "", "text", "Select a console output format: brief, csv, html, json, md, text or none.").
+		AddStringFlag(constants.ArgOutput, "", "text", "Select a console output format: brief, csv, html, json, md, text or none").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports check time").
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
@@ -95,7 +93,8 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
-		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')")
+		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')").
+		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
 }
@@ -118,7 +117,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 		if initData.workspace != nil {
 			initData.workspace.Close()
-
 		}
 	}()
 
@@ -145,7 +143,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// treat each arg as a separate execution
 	for _, arg := range args {
-
 		if utils.IsContextCancelled(ctx) {
 			durations = append(durations, 0)
 			// skip over this arg, since the execution was cancelled
@@ -171,7 +168,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			exportCheckResult(ctx, &d)
 		}
 
-		durations = append(durations, executionTree.Root.Duration)
+		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))
 	}
 
 	// wait for exports to complete
@@ -202,7 +199,10 @@ func initialiseCheck() *checkInitData {
 	}
 
 	err = validateConnectionStringArgs()
-	utils.FailOnError(err)
+	if err != nil {
+		initData.result.Error = err
+		return initData
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	startCancelHandler(cancel)
@@ -255,17 +255,12 @@ func initialiseCheck() *checkInitData {
 	// setup the session data - prepared statements and introspection tables
 	// create session data source - for check command, we create prepared statements for ALL queries
 	sessionDataSource := workspace.NewSessionDataSource(initData.workspace.GetResourceMaps())
-	err = workspace.EnsureSessionData(context.Background(), sessionDataSource, initData.client)
-	if err != nil {
-		initData.result.Error = err
-		return initData
-	}
 
 	// register EnsureSessionData as a callback on the client.
 	// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 	// so our client object calls this callback to restore the session data
-	initData.client.SetEnsureSessionDataFunc(func(ctx context.Context, client db_common.Client) error {
-		return workspace.EnsureSessionData(ctx, sessionDataSource, client)
+	initData.client.SetEnsureSessionDataFunc(func(ctx context.Context, conn *sql.Conn) error {
+		return workspace.EnsureSessionData(ctx, sessionDataSource, conn)
 	})
 
 	return initData

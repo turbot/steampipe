@@ -13,7 +13,6 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// reportCmd :: represents the report command
 func reportCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:              "report [report]",

@@ -155,7 +155,7 @@ func createConnectionPlugins(requiredConnections ConnectionDataMap, alreadyLoade
 		} else {
 			pluginCount++
 			// instantiate the connection plugin, and retrieve schema
-			go getConnectionPluginAsync(connectionData, pluginChan, errorChan)
+			getConnectionPluginAsync(connectionData, pluginChan, errorChan)
 		}
 	}
 
@@ -176,14 +176,14 @@ func createConnectionPlugins(requiredConnections ConnectionDataMap, alreadyLoade
 }
 
 func getConnectionPluginAsync(connectionData *ConnectionData, pluginChan chan *ConnectionPlugin, errorChan chan error) {
-	p, err := CreateConnectionPlugin(connectionData.Connection, true)
-	if err != nil {
-		errorChan <- err
-		return
-	}
-	pluginChan <- p
-
-	p.Plugin.Client.Kill()
+	go func() {
+		p, err := CreateConnectionPlugin(connectionData.Connection)
+		if err != nil {
+			errorChan <- err
+			return
+		}
+		pluginChan <- p
+	}()
 }
 
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, *RefreshConnectionResult) {
@@ -205,7 +205,7 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 	connectionsPluginsWithDynamicSchema, res := createConnectionPlugins(connectionsWithDynamicSchema, nil)
 	hashMap := make(map[string]string)
 	for name, c := range connectionsPluginsWithDynamicSchema {
-		// update schema hash stored in required connections so it is persisted in the state ius updates are made
+		// update schema hash stored in required connections so it is persisted in the state if updates are made
 		schemaHash := pluginSchemaHash(c.Schema)
 		hashMap[name] = schemaHash
 	}

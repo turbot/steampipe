@@ -2,5 +2,5 @@ package constants
 
 // Application constants
 const (
-	APPNAME = "steampipe"
+	AppName = "steampipe"
 )

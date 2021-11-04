@@ -2,7 +2,6 @@ package controldisplay
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"strings"
 )
@@ -37,9 +36,6 @@ func NewCounterGraphRenderer(failedControls, totalControls, maxTotalControls int
 }
 
 func (r CounterGraphRenderer) Render() string {
-	log.Println("[TRACE] begin counter graph render")
-	defer log.Println("[TRACE] end counter graph render")
-
 	// the graph has the format " [=======   ]"
 
 	// if no controls have been run, return empty graph

@@ -4,7 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
+	"sync"
 
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig"
 
@@ -15,21 +18,28 @@ import (
 
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
-	connectionString  string
-	ensureSessionFunc db_common.EnsureSessionStateCallback
-	dbClient          *sql.DB
-	schemaMetadata    *schema.Metadata
+	connectionString   string
+	ensureSessionFunc  db_common.EnsureSessionStateCallback
+	sessionAcquireLock *sync.Mutex
+	dbClient           *sql.DB
+	// map of database sessions, keyed to the backend_pid in postgres
+	// used to track whether a given session has been initialised
+	initializedSessions       map[int64]SessionStats
+	schemaMetadata            *schema.Metadata
+	requiredSessionSearchPath []string
 }
 
 func NewDbClient(connectionString string) (*DbClient, error) {
-	utils.LogTime("db.NewLocalClient start")
-	defer utils.LogTime("db.NewLocalClient end")
+	utils.LogTime("db_client.NewDbClient start")
+	defer utils.LogTime("db_client.NewDbClient end")
 	db, err := establishConnection(connectionString)
 	if err != nil {
 		return nil, err
 	}
 	client := &DbClient{
-		dbClient: db,
+		dbClient:            db,
+		sessionAcquireLock:  new(sync.Mutex),
+		initializedSessions: make(map[int64]SessionStats),
 		// set up a blank struct for the schema metadata
 		schemaMetadata: schema.NewMetadata(),
 	}
@@ -40,12 +50,26 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 }
 
 func establishConnection(connStr string) (*sql.DB, error) {
+	utils.LogTime("db_client.establishConnection start")
+	defer utils.LogTime("db_client.establishConnection end")
+
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
 	}
-	// limit to a single connection as we rely on session scoped data - temp tables and prepared statements
-	db.SetMaxOpenConns(1)
+
+	maxParallel := constants.DefaultMaxConnections
+	if viper.IsSet(constants.ArgMaxParallel) {
+		maxParallel = viper.GetInt(constants.ArgMaxParallel)
+	}
+
+	db.SetMaxOpenConns(maxParallel)
+	db.SetMaxIdleConns(maxParallel)
+	// never close connection even if idle
+	db.SetConnMaxIdleTime(0)
+	// never close connection because of age
+	db.SetConnMaxLifetime(0)
+
 	if db_common.WaitForConnection(db) {
 		return db, nil
 	}
@@ -60,6 +84,9 @@ func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallba
 // closes the connection to the database and shuts down the backend
 func (c *DbClient) Close() error {
 	if c.dbClient != nil {
+		// clear the map - so that we can't reuse it
+		log.Printf("[TRACE] Number of unique database sessions: %d\n", len(c.initializedSessions))
+		c.initializedSessions = nil
 		return c.dbClient.Close()
 	}
 
@@ -80,12 +107,15 @@ func (c *DbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
 // LoadSchema implements Client
 // retrieve both the raw query result and a sanitised version in list form
 func (c *DbClient) LoadSchema() {
-	utils.LogTime("db.LoadSchema start")
-	defer utils.LogTime("db.LoadSchema end")
+	utils.LogTime("db_client.LoadSchema start")
+	defer utils.LogTime("db_client.LoadSchema end")
 
-	tablesResult, err := c.getSchemaFromDB()
+	connection, err := c.dbClient.Conn(context.Background())
 	utils.FailOnError(err)
+	defer connection.Close()
 
+	tablesResult, err := c.getSchemaFromDB(connection)
+	utils.FailOnError(err)
 	defer tablesResult.Close()
 
 	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
@@ -95,8 +125,21 @@ func (c *DbClient) LoadSchema() {
 	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
 }
 
+// RefreshSessions terminates the current connections.
+func (c *DbClient) RefreshSessions(ctx context.Context) error {
+	utils.LogTime("db_client.RefreshSessions start")
+	defer utils.LogTime("db_client.RefreshSessions end")
+
+	return c.refreshDbClient(ctx)
+}
+
 // refreshDbClient terminates the current connection and opens up a new connection to the service.
 func (c *DbClient) refreshDbClient(ctx context.Context) error {
+	utils.LogTime("db_client.refreshDbClient start")
+	defer utils.LogTime("db_client.refreshDbClient end")
+
+	// clear the initializedSessions map
+	c.initializedSessions = make(map[int64]SessionStats)
 	err := c.dbClient.Close()
 	if err != nil {
 		return err
@@ -107,22 +150,12 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	}
 	c.dbClient = db
 
-	// setup the session data - prepared statements and introspection tables
-	c.ensureServiceState(ctx)
-
 	return nil
 }
 
-func (c *DbClient) ensureServiceState(ctx context.Context) error {
-	if c.ensureSessionFunc != nil {
-		return c.ensureSessionFunc(ctx, c)
-	}
-	return nil
-}
-
-func (c *DbClient) getSchemaFromDB() (*sql.Rows, error) {
-	utils.LogTime("db.getSchemaFromDB start")
-	defer utils.LogTime("db.getSchemaFromDB end")
+func (c *DbClient) getSchemaFromDB(conn *sql.Conn) (*sql.Rows, error) {
+	utils.LogTime("db_client.getSchemaFromDB start")
+	defer utils.LogTime("db_client.getSchemaFromDB end")
 
 	query := `
 		SELECT 
@@ -159,7 +192,7 @@ func (c *DbClient) getSchemaFromDB() (*sql.Rows, error) {
 			cols.table_schema, cols.table_name, cols.column_name;
 `
 	// we do NOT want to fetch the command schema
-	return c.dbClient.Query(fmt.Sprintf(query, constants.CommandSchema))
+	return conn.QueryContext(context.Background(), fmt.Sprintf(query, constants.CommandSchema))
 }
 
 // RefreshConnectionAndSearchPaths implements Client

@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -24,7 +25,6 @@ import (
 	"github.com/turbot/steampipe/workspace"
 )
 
-// queryCmd :: represents the query command
 func queryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:              "query",
@@ -255,17 +255,12 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 			log.Printf("[TRACE] only creating prepared statements for command line queries")
 			sessionDataSource.PreparedStatementSource = preparedStatementSource
 		}
-		err = workspace.EnsureSessionData(context.Background(), sessionDataSource, initData.Client)
-		if err != nil {
-			initData.Result.Error = err
-			return
-		}
 
 		// register EnsureSessionData as a callback on the client.
 		// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 		// so our client object calls this callback to restore the session data
-		initData.Client.SetEnsureSessionDataFunc(func(ctx context.Context, client db_common.Client) error {
-			return workspace.EnsureSessionData(ctx, sessionDataSource, client)
+		initData.Client.SetEnsureSessionDataFunc(func(ctx context.Context, session *sql.Conn) error {
+			return workspace.EnsureSessionData(ctx, sessionDataSource, session)
 		})
 	}()
 }

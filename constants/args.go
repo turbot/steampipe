@@ -28,6 +28,7 @@ const (
 	ArgTheme             = "theme"
 	ArgProgress          = "progress"
 	ArgExport            = "export"
+	ArgMaxParallel       = "max-parallel"
 	ArgDryRun            = "dry-run"
 	ArgWhere             = "where"
 	ArgTag               = "tag"
@@ -44,7 +45,7 @@ var ArgSeparator = ArgFromMetaquery(CmdSeparator)
 var ArgHeader = ArgFromMetaquery(CmdHeaders)
 var ArgMultiLine = ArgFromMetaquery(CmdMulti)
 
-// BoolToOnOff :: convert a boolean value onto the string "on" or "off"
+// BoolToOnOff converts a boolean value onto the string "on" or "off"
 func BoolToOnOff(val bool) string {
 	if val {
 		return ArgOn
@@ -52,7 +53,7 @@ func BoolToOnOff(val bool) string {
 	return ArgOff
 }
 
-// BoolToEnableDisable :: convert a boolean value onto the string "enable" or "disable"
+// BoolToEnableDisable converts a boolean value onto the string "enable" or "disable"
 func BoolToEnableDisable(val bool) string {
 	if val {
 		return "enable"

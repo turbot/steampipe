@@ -110,7 +110,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # cache functionality check since cache=true in options
     cd $CONFIG_PARSING_TEST_MOD
-    run steampipe check benchmark.config_parsing_benchmark --export=output.json
+    run steampipe check benchmark.config_parsing_benchmark --export=output.json --max-parallel 1
 
     # store the date from 1st control in `content`
     content=$(cat output.json | jq '.groups[].controls[0].results[0].resource')
@@ -133,7 +133,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # cache functionality check since cache=true in options
     cd $CONFIG_PARSING_TEST_MOD
-    run steampipe check benchmark.config_parsing_benchmark --export=output.json
+    run steampipe check benchmark.config_parsing_benchmark --export=output.json --max-parallel 1
 
     # store the date from 1st control in `content`
     content=$(cat output.json | jq '.groups[].controls[0].results[0].resource')
@@ -156,7 +156,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # cache functionality check since cache=true in options
     cd $CONFIG_PARSING_TEST_MOD
-    run steampipe check benchmark.config_parsing_benchmark --export=output.json
+    run steampipe check benchmark.config_parsing_benchmark --export=output.json --max-parallel 1
 
     # store the date from 1st control in `content`
     content=$(cat output.json | jq '.groups[].controls[0].results[0].resource')
@@ -179,7 +179,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # cache functionality check since cache=false in options
     cd $CONFIG_PARSING_TEST_MOD
-    run steampipe check benchmark.config_parsing_benchmark --export=output.json
+    run steampipe check benchmark.config_parsing_benchmark --export=output.json --max-parallel 1
 
     # store the date from 1st control in `content`
     content=$(cat output.json | jq '.groups[].controls[0].results[0].resource')
@@ -207,7 +207,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # cache functionality check since cache=false in options
     cd $CONFIG_PARSING_TEST_MOD
-    run steampipe check benchmark.config_parsing_benchmark --export=output.json
+    run steampipe check benchmark.config_parsing_benchmark --export=output.json --max-parallel 1
 
     # store the date from 1st control in `content`
     content=$(cat output.json | jq '.groups[].controls[0].results[0].resource')

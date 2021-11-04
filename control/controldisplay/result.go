@@ -2,7 +2,6 @@ package controldisplay
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -38,9 +37,6 @@ func NewResultRenderer(status, reason string, dimensions []controlexecute.Dimens
 }
 
 func (r ResultRenderer) Render() string {
-	log.Println("[TRACE] begin result render")
-	defer log.Println("[TRACE] end result render")
-
 	// in quiet mode, only render failures
 	if r.errorsOnly && !helpers.StringSliceContains([]string{string(constants.ControlAlarm), string(constants.ControlError)}, r.status) {
 		return ""
