@@ -64,6 +64,7 @@ func Load(workspacePath string) (*Workspace, error) {
 		return nil, err
 	}
 
+	// load the workspace mod
 	if err := workspace.loadWorkspaceMod(); err != nil {
 		return nil, err
 	}
