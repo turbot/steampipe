@@ -6,16 +6,16 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/hashicorp/go-version"
 	"github.com/turbot/steampipe/constants"
-
-	version "github.com/hashicorp/go-version"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/plugin"
+	"github.com/turbot/steampipe/steampipeconfig"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
 func (w *Workspace) CheckRequiredPluginsInstalled() error {
-
 	// get the list of all installed plugins
 	installedPlugins, err := w.getInstalledPlugins()
 	if err != nil {
@@ -25,32 +25,32 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 	// get the list of all the required plugins
 	requiredPlugins := w.getRequiredPlugins()
 
-	var versionFailures []requiredPluginVersion
+	var pluginsNotInstalled []requiredPluginVersion
+	var pluginsWithNoConnection []requiredPluginVersion
 
-	for name, _ := range requiredPlugins {
-		if _, found := installedPlugins[name]; found {
-			if installedPlugins[name].LessThan(requiredPlugins[name]) {
-				versionFailures = append(versionFailures,
-					requiredPluginVersion{
-						plugin:           name,
-						installedVersion: installedPlugins[name].String(),
-						requiredVersion:  requiredPlugins[name].String(),
-					})
+	for name, requiredVersion := range requiredPlugins {
+		var req = requiredPluginVersion{plugin: name}
+		req.SetRequiredVersion(requiredVersion)
+
+		if installedVersion, found := installedPlugins[name]; found {
+			req.SetInstalledVersion(installedVersion)
+
+			req.matchingConnections = steampipeconfig.GlobalConfig.ConnectionsForPlugin(name, installedVersion)
+			if len(req.matchingConnections) == 0 {
+				pluginsWithNoConnection = append(pluginsWithNoConnection, req)
+			} else if installedPlugins[name].LessThan(requiredVersion) {
+				pluginsNotInstalled = append(pluginsNotInstalled, req)
 			}
 		} else {
-			versionFailures = append(versionFailures,
-				requiredPluginVersion{
-					plugin:           name,
-					installedVersion: "none",
-					requiredVersion:  requiredPlugins[name].String(),
-				})
+			req.installedVersion = "none"
+			pluginsNotInstalled = append(pluginsNotInstalled, req)
 		}
 
 	}
-	if len(versionFailures) > 0 {
-		return errors.New(pluginVersionError(versionFailures))
-
+	if len(pluginsNotInstalled)+len(pluginsWithNoConnection) > 0 {
+		return errors.New(pluginVersionError(pluginsNotInstalled, pluginsWithNoConnection))
 	}
+
 	return nil
 }
 
@@ -82,18 +82,41 @@ func (w *Workspace) getInstalledPlugins() (map[string]*version.Version, error) {
 }
 
 type requiredPluginVersion struct {
-	plugin           string
-	requiredVersion  string
-	installedVersion string
+	plugin              string
+	requiredVersion     string
+	installedVersion    string
+	matchingConnections []*modconfig.Connection
 }
 
-func pluginVersionError(reqs []requiredPluginVersion) string {
+func (v *requiredPluginVersion) SetRequiredVersion(requiredVersion *version.Version) {
+	requiredVersionString := requiredVersion.String()
+	// if no required version was specified, the version will be 0.0.0
+	if requiredVersionString == "0.0.0" {
+		v.requiredVersion = "latest"
+	} else {
+		v.requiredVersion = requiredVersionString
+	}
+}
+
+func (v *requiredPluginVersion) SetInstalledVersion(installedVersion *version.Version) {
+	v.installedVersion = installedVersion.String()
+}
+
+func pluginVersionError(pluginsNotInstalled []requiredPluginVersion, pluginsWithNoConnection []requiredPluginVersion) string {
+	failureCount := len(pluginsNotInstalled) + len(pluginsWithNoConnection)
 	var notificationLines = []string{
-		fmt.Sprintf("%d mod plugin %s not satisfied. ", len(reqs), utils.Pluralize("requirement", len(reqs))),
+		fmt.Sprintf("%d mod plugin %s not satisfied. ", failureCount, utils.Pluralize("requirement", failureCount)),
 		"",
 	}
 	longestNameLength := 0
-	for _, report := range reqs {
+	for _, report := range pluginsNotInstalled {
+		thisName := report.plugin
+		if len(thisName) > longestNameLength {
+			longestNameLength = len(thisName)
+		}
+	}
+
+	for _, report := range pluginsWithNoConnection {
 		thisName := report.plugin
 		if len(thisName) > longestNameLength {
 			longestNameLength = len(thisName)
@@ -101,33 +124,58 @@ func pluginVersionError(reqs []requiredPluginVersion) string {
 	}
 
 	// sort alphabetically
-	sort.Slice(reqs, func(i, j int) bool {
-		return reqs[i].plugin < reqs[j].plugin
+	sort.Slice(pluginsNotInstalled, func(i, j int) bool {
+		return pluginsNotInstalled[i].plugin < pluginsNotInstalled[j].plugin
+	})
+	sort.Slice(pluginsWithNoConnection, func(i, j int) bool {
+		return pluginsWithNoConnection[i].plugin < pluginsWithNoConnection[j].plugin
 	})
 
 	// build first part of string
 	// recheck longest names
 	longestVersionLength := 0
-	var pluginVersions = make([]string, len(reqs))
-	for i, req := range reqs {
+
+	var notInstalledStrings = make([]string, len(pluginsNotInstalled))
+	var noConnectionString = make([]string, len(pluginsWithNoConnection))
+	for i, req := range pluginsNotInstalled {
 		format := fmt.Sprintf("  %%-%ds  %%-2s", longestNameLength)
-		pluginVersions[i] = fmt.Sprintf(
+		notInstalledStrings[i] = fmt.Sprintf(
 			format,
 			req.plugin,
 			req.installedVersion,
 		)
 
-		if len(pluginVersions[i]) > longestVersionLength {
-			longestVersionLength = len(pluginVersions[i])
+		if len(notInstalledStrings[i]) > longestVersionLength {
+			longestVersionLength = len(notInstalledStrings[i])
 		}
 	}
 
-	for i, req := range reqs {
+	for i, req := range pluginsNotInstalled {
 		format := fmt.Sprintf("%%-%ds  →  %%2s", longestVersionLength)
 		notificationLines = append(notificationLines, fmt.Sprintf(
 			format,
-			pluginVersions[i],
+			notInstalledStrings[i],
 			constants.Bold(req.requiredVersion),
+		))
+	}
+
+	for i, req := range pluginsWithNoConnection {
+		format := fmt.Sprintf("  %%-%ds  [no compatible connection configured]", longestNameLength)
+		noConnectionString[i] = fmt.Sprintf(
+			format,
+			req.plugin,
+		)
+
+		if len(noConnectionString[i]) > longestVersionLength {
+			longestVersionLength = len(noConnectionString[i])
+		}
+	}
+
+	for i, _ := range pluginsWithNoConnection {
+		format := fmt.Sprintf("%%-%ds", longestVersionLength)
+		notificationLines = append(notificationLines, fmt.Sprintf(
+			format,
+			noConnectionString[i],
 		))
 	}
 
