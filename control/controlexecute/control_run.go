@@ -18,6 +18,8 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
+const controlQueryTimeout = 240 * time.Second
+
 type ControlRunStatus uint32
 
 const (
@@ -80,9 +82,10 @@ func (r *ControlRun) Skip() {
 	r.setRunStatus(ControlRunComplete)
 }
 
-func (r *ControlRun) setupSearchPath(ctx context.Context, session *sql.Conn, client db_common.Client) error {
-	utils.LogTime("ControlRun.setupSearchPath start")
-	defer utils.LogTime("ControlRun.setupSearchPath end")
+// set search path for this control run
+func (r *ControlRun) setSearchPath(ctx context.Context, session *sql.Conn, client db_common.Client) error {
+	utils.LogTime("ControlRun.setSearchPath start")
+	defer utils.LogTime("ControlRun.setSearchPath end")
 
 	searchPath := []string{}
 	searchPathPrefix := []string{}
@@ -106,6 +109,8 @@ func (r *ControlRun) setupSearchPath(ctx context.Context, session *sql.Conn, cli
 	if err != nil {
 		return err
 	}
+
+	// no execute the SQL to actuall set the search path
 	q := fmt.Sprintf("set search_path to %s", strings.Join(newSearchPath, ","))
 	_, err = session.ExecContext(ctx, q)
 	return err
@@ -167,37 +172,49 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	r.executionTree.progress.OnControlStart(control)
 
 	// resolve the control query
-	query, err := r.executionTree.workspace.ResolveControlQuery(control)
+	query, err := r.resolveControlQuery(err, control)
 	if err != nil {
-		r.SetError(fmt.Errorf(`cannot run %s - failed to resolve query "%s": %s`, control.Name(), typehelpers.SafeString(control.SQL), err.Error()))
-		return
-	}
-	if query == "" {
-		r.SetError(fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typehelpers.SafeString(control.SQL)))
+		r.SetError(err)
 		return
 	}
 
 	log.Printf("[TRACE] setting search path %s\n", control.Name())
-	r.setupSearchPath(ctx, dbSession, client)
-
-	shouldBeDoneBy := time.Now().Add(240 * time.Second)
-	ctx, cancel := context.WithDeadline(ctx, shouldBeDoneBy)
-	// Even though ctx will expire, it is good practice to call its cancellation function in any case.
-	// Not doing so may keep the context and its parent alive longer than necessary.
-	defer cancel()
-
-	queryResult, err := client.ExecuteInSession(ctx, dbSession, query, false)
-	if err != nil {
-
-		log.Printf("[TRACE] client.ExecuteInSession returned error %s", err.Error())
-		// set the run error status
-		// this updates the run summary error count and the progress error count
+	if err := r.setSearchPath(ctx, dbSession, client); err != nil {
 		r.SetError(err)
 		return
 	}
-	// validate required columns
+
+	// create a context with a deadline
+	shouldBeDoneBy := time.Now().Add(controlQueryTimeout)
+	ctx, cancel := context.WithDeadline(ctx, shouldBeDoneBy)
+	// Even though ctx will expire, it is good practice to call its cancellation function in any case.
+	defer cancel()
+
+	// execute the control query
+	queryResult, err := client.ExecuteInSession(ctx, dbSession, query, false)
+	if err != nil {
+		log.Printf("[TRACE] client.ExecuteInSession returned error %s", err.Error())
+		r.SetError(err)
+		return
+	}
 	r.queryResult = queryResult
 
+	// now wait for control completion
+	r.waitForResults(ctx)
+}
+
+func (r *ControlRun) resolveControlQuery(err error, control *modconfig.Control) (string, error) {
+	query, err := r.executionTree.workspace.ResolveControlQuery(control)
+	if err != nil {
+		return "", fmt.Errorf(`cannot run %s - failed to resolve query "%s": %s`, control.Name(), typehelpers.SafeString(control.SQL), err.Error())
+	}
+	if query == "" {
+		return "", fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typehelpers.SafeString(control.SQL))
+	}
+	return query, nil
+}
+
+func (r *ControlRun) waitForResults(ctx context.Context) {
 	// create a channel to which will be closed when gathering has been done
 	gatherDoneChan := make(chan string)
 	go func() {
@@ -212,7 +229,6 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	case <-gatherDoneChan:
 		// do nothing
 	}
-
 }
 
 func (r *ControlRun) gatherResults() {
@@ -246,7 +262,6 @@ func (r *ControlRun) gatherResults() {
 			return
 		}
 	}
-
 }
 
 // add the result row to our results and update the summary with the row status

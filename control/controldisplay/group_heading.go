@@ -37,6 +37,7 @@ func (r GroupHeadingRenderer) Render() string {
 	isDryRun := viper.GetBool(constants.ArgDryRun)
 
 	if r.width <= 0 {
+		// this should never happen, since the minimum width is set by the formatter
 		log.Printf("[WARN] group heading renderer has width of %d\n", r.width)
 		return ""
 	}

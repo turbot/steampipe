@@ -47,7 +47,6 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 	plugin_manager.NewPluginManager(configMap, logger).Serve()
-	fmt.Printf("[WARN] DONE")
 }
 
 func createPluginManagerLog() hclog.Logger {

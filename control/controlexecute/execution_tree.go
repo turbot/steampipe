@@ -17,7 +17,7 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-// ExecutionTree is a structure representing the control result hierarchy
+// ExecutionTree is a structure representing the control hierarchy
 type ExecutionTree struct {
 	Root      *ResultGroup
 	StartTime time.Time
@@ -34,7 +34,6 @@ type ExecutionTree struct {
 	controlRuns []*ControlRun
 }
 
-// NewExecutionTree creates a result group from a ModTreeItem
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg string) (*ExecutionTree, error) {
 	// now populate the ExecutionTree
 	executionTree := &ExecutionTree{
@@ -263,7 +262,8 @@ func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereC
 }
 
 func (e *ExecutionTree) GetAllTags() []string {
-	tagColumnMap := make(map[string]bool) // to keep track which tags have been added as columns
+	// map keep track which tags have been added as columns
+	tagColumnMap := make(map[string]bool)
 	var tagColumns []string
 	for _, r := range e.controlRuns {
 		if r.Control.Tags != nil {

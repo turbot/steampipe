@@ -107,8 +107,8 @@ func (r GroupRenderer) parentIndent() string {
 }
 
 func (r GroupRenderer) Render() string {
-	// this should never happen since the minimum number of colums is set in the formatter
 	if r.width <= 0 {
+		// this should never happen, since the minimum width is set by the formatter
 		log.Printf("[WARN] group renderer has width of %d\n", r.width)
 		return ""
 	}

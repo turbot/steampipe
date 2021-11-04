@@ -16,7 +16,7 @@ import (
 func GetCtyTypes(item interface{}) map[string]cty.Type {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("[WARN] GetAttributeDetails failed with panic: %v", r)
+			log.Printf("[WARN] GetCtyTypes failed with panic: %v", r)
 		}
 	}()
 	var res = make(map[string]cty.Type)

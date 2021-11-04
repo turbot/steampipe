@@ -167,7 +167,7 @@ func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 
 	caCertificate, err := x509.CreateCertificate(rand.Reader, caCertificateData, caCertificateData, &caPrivateKey.PublicKey, caPrivateKey)
 	if err != nil {
-		log.Println("[WARN] Failed to create certificate")
+		log.Println("[WARN] failed to create certificate")
 		return nil, nil, err
 	}
 
@@ -177,12 +177,12 @@ func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 		Bytes: caCertificate,
 	})
 	if err != nil {
-		log.Println("[WARN] Failed to encode to PEM")
+		log.Println("[WARN] failed to encode to PEM")
 		return nil, nil, err
 	}
 
 	if err := writeCertFile(getRootCertLocation(), caCertificatePem.String()); err != nil {
-		log.Println("[WARN] Failed to save the certificate")
+		log.Println("[WARN] failed to save the certificate")
 		return nil, nil, err
 	}
 
@@ -279,7 +279,7 @@ func ensureRootPrivateKey() (*rsa.PrivateKey, error) {
 	var err error
 	caPrivateKey, err = rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		log.Println("[WARN] Private key creation failed for ca failed")
+		log.Println("[WARN] private key creation failed for ca failed")
 		return nil, err
 	}
 	caPrivateKeyPem := new(bytes.Buffer)
@@ -288,11 +288,11 @@ func ensureRootPrivateKey() (*rsa.PrivateKey, error) {
 		Bytes: x509.MarshalPKCS1PrivateKey(caPrivateKey),
 	})
 	if err != nil {
-		log.Println("[WARN] Failed to encode to PEM for ca private key")
+		log.Println("[WARN] failed to encode to PEM for ca private key")
 		return nil, err
 	}
 	if err := writeCertFile(getRootCertKeyLocation(), caPrivateKeyPem.String()); err != nil {
-		log.Println("[WARN] Failed to save root private key")
+		log.Println("[WARN] failed to save root private key")
 		return nil, err
 	}
 	return caPrivateKey, nil

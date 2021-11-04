@@ -6,11 +6,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/turbot/steampipe/constants"
-
-	"github.com/spf13/viper"
-
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 )
 
 func daemonCmd() *cobra.Command {
@@ -23,7 +21,7 @@ func daemonCmd() *cobra.Command {
 }
 
 func runDaemonCmd(cmd *cobra.Command, args []string) {
-	// create command which will run steampipe in plugin-manager mode
+	// create command which will run steampipe plugin-manager
 	pluginManagerCmd := exec.Command("steampipe", "plugin-manager", "--install-dir", viper.GetString(constants.ArgInstallDir))
 	pluginManagerCmd.Stdout = os.Stdout
 	pluginManagerCmd.Start()
