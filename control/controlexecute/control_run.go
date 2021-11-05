@@ -143,7 +143,6 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	startTime := time.Now()
 	control := r.Control
 	log.Printf("[TRACE] control start %s\n", control.Name())
-	r.executionTree.progress.OnControlExecuteStart()
 
 	// function to cleanup and update status after control run completion
 	defer func() {
@@ -166,6 +165,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	defer dbSession.Close()
 
 	// set our status
+	r.executionTree.progress.OnControlExecuteStart()
 	r.runStatus = ControlRunStarted
 
 	// update the current running control in the Progress renderer
@@ -191,7 +191,8 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	defer cancel()
 
 	// execute the control query
-	queryResult, err := client.ExecuteInSession(ctx, dbSession, query, false)
+	// NOTE no need to pass an OnComplete callback - we are already closing our session after waiting for results
+	queryResult, err := client.ExecuteInSession(ctx, dbSession, query, nil, false)
 	if err != nil {
 		log.Printf("[TRACE] client.ExecuteInSession returned error %s", err.Error())
 		r.SetError(err)

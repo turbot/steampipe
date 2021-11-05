@@ -9,6 +9,7 @@ import (
 
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -93,7 +94,7 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
 	// - pass in the list of connection plugins we have already loaded
 
-	connectionPlugins, otherRes := createConnectionPlugins(updates.Update, connectionsPluginsWithDynamicSchema)
+	connectionPlugins, otherRes := CreateConnectionPlugins(updates.Update.Connections(), connectionsPluginsWithDynamicSchema)
 	// merge results into local results
 	res.Merge(otherRes)
 	if res.Error != nil {
@@ -134,7 +135,7 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 	}
 }
 
-func createConnectionPlugins(requiredConnections ConnectionDataMap, alreadyLoaded map[string]*ConnectionPlugin) (map[string]*ConnectionPlugin, *RefreshConnectionResult) {
+func CreateConnectionPlugins(requiredConnections []*modconfig.Connection, alreadyLoaded map[string]*ConnectionPlugin) (map[string]*ConnectionPlugin, *RefreshConnectionResult) {
 	if alreadyLoaded == nil {
 		alreadyLoaded = make(map[string]*ConnectionPlugin)
 	}
@@ -148,14 +149,14 @@ func createConnectionPlugins(requiredConnections ConnectionDataMap, alreadyLoade
 
 	// keep track of how many plugins we are creating
 	pluginCount := 0
-	for connectionName, connectionData := range requiredConnections {
+	for _, connection := range requiredConnections {
 		// if we have already loaded this plugin, just send down the channel
-		if existingConnectionPlugin, ok := alreadyLoaded[connectionName]; ok {
+		if existingConnectionPlugin, ok := alreadyLoaded[connection.Name]; ok {
 			pluginChan <- existingConnectionPlugin
 		} else {
 			pluginCount++
 			// instantiate the connection plugin, and retrieve schema
-			getConnectionPluginAsync(connectionData, pluginChan, errorChan)
+			getConnectionPluginAsync(connection, pluginChan, errorChan)
 		}
 	}
 
@@ -175,9 +176,9 @@ func createConnectionPlugins(requiredConnections ConnectionDataMap, alreadyLoade
 	return connectionPlugins, res
 }
 
-func getConnectionPluginAsync(connectionData *ConnectionData, pluginChan chan *ConnectionPlugin, errorChan chan error) {
+func getConnectionPluginAsync(connection *modconfig.Connection, pluginChan chan *ConnectionPlugin, errorChan chan error) {
 	go func() {
-		p, err := CreateConnectionPlugin(connectionData.Connection)
+		p, err := CreateConnectionPlugin(connection)
 		if err != nil {
 			errorChan <- err
 			return
@@ -202,7 +203,7 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 		}
 	}
 
-	connectionsPluginsWithDynamicSchema, res := createConnectionPlugins(connectionsWithDynamicSchema, nil)
+	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections(), nil)
 	hashMap := make(map[string]string)
 	for name, c := range connectionsPluginsWithDynamicSchema {
 		// update schema hash stored in required connections so it is persisted in the state if updates are made

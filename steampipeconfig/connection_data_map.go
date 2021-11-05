@@ -29,6 +29,16 @@ func (m ConnectionDataMap) Equals(other ConnectionDataMap) bool {
 	return true
 }
 
+func (m ConnectionDataMap) Connections() []*modconfig.Connection {
+	var res = make([]*modconfig.Connection, len(m))
+	idx := 0
+	for _, d := range m {
+		res[idx] = d.Connection
+		idx++
+	}
+	return res
+}
+
 // NewConnectionDataMap tries to populate a map of connection data for all connections in connectionMap
 func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (ConnectionDataMap, []string, error) {
 	utils.LogTime("steampipeconfig.getRequiredConnections start")

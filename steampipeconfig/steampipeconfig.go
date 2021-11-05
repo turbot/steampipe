@@ -6,6 +6,9 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/hashicorp/go-version"
+	"github.com/turbot/steampipe/ociinstaller"
+
 	"github.com/turbot/steampipe/utils"
 
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -232,3 +235,28 @@ GeneralOptions:
 
 	return str
 }
+
+func (c *SteampipeConfig) ConnectionsForPlugin(pluginLongName string, pluginVersion *version.Version) []*modconfig.Connection {
+	var res []*modconfig.Connection
+	for _, con := range c.Connections {
+		// extract stream from plugin
+		ref := ociinstaller.NewSteampipeImageRef(con.Plugin)
+		org, plugin, stream := ref.GetOrgNameAndStream()
+		longName := fmt.Sprintf("%s/%s", org, plugin)
+		if longName == pluginLongName {
+			if stream == "latest" {
+				res = append(res, con)
+			} else {
+				connectionPluginVersion, err := version.NewVersion(stream)
+				if err != nil && connectionPluginVersion.LessThanOrEqual(pluginVersion) {
+					res = append(res, con)
+				}
+			}
+		}
+	}
+	return res
+}
+
+//func (c *SteampipeConfig) ConnectionsForPlugin(plugin *goVersion.Version) []modconfig.Connection {
+//
+//}

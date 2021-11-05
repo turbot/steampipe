@@ -40,7 +40,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *sql.Conn, 
 		return &queryresult.SyncQueryResult{}, nil
 	}
 
-	result, err := c.ExecuteInSession(ctx, session, query, disableSpinner)
+	result, err := c.ExecuteInSession(ctx, session, query, nil, disableSpinner)
 	if err != nil {
 		return nil, err
 	}
@@ -67,10 +67,13 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 	if err != nil {
 		return
 	}
-	return c.ExecuteInSession(ctx, session, query, disableSpinner)
+
+	// define callback to close session when the async execution is complete
+	closeSessionCallback := func() { session.Close() }
+	return c.ExecuteInSession(ctx, session, query, closeSessionCallback, disableSpinner)
 }
 
-func (c *DbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (res *queryresult.Result, err error) {
+func (c *DbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
 	if query == "" {
 		return queryresult.NewQueryResult(nil), nil
 	}
@@ -129,9 +132,9 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, quer
 		c.readRows(ctx, startTime, rows, result, spinner)
 		// commit transaction
 		tx.Commit()
-		// TODO change this to NOT close the session here - instead maybe call a passed-in OnComplete callback
-		// return the session to the pool
-		session.Close()
+		if onComplete != nil {
+			onComplete()
+		}
 	}()
 
 	return result, nil
@@ -186,7 +189,8 @@ func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64,
 	retries := 0
 	var session *sql.Conn
 	var backendPid int64
-	err = retry.Do(ctx, retry.WithMaxRetries(10, backoff), func(ctx context.Context) error {
+	const getSessionMaxRetries = 10
+	err = retry.Do(ctx, retry.WithMaxRetries(getSessionMaxRetries, backoff), func(ctx context.Context) error {
 		session, err = c.dbClient.Conn(ctx)
 		if err != nil {
 			retries++

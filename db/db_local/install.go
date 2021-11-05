@@ -304,19 +304,18 @@ func createMaintenanceClient(port int) (*sql.DB, error) {
 
 	// connect to the database using the postgres driver
 	utils.LogTime("db_local.createClient connection open start")
-	client, err := sql.Open("postgres", psqlInfo)
-	client.SetMaxOpenConns(1)
+	db, err := sql.Open("postgres", psqlInfo)
+	db.SetMaxOpenConns(1)
 	utils.LogTime("db_local.createClient connection open end")
 
 	if err != nil {
 		return nil, err
 	}
 
-	if !db_common.WaitForConnection(client) {
-		return nil, fmt.Errorf("could not establish connection with database")
+	if err := db_common.WaitForConnection(db); err != nil {
+		return nil, err
 	}
-
-	return client, nil
+	return db, nil
 }
 
 func startServiceForInstall(port int) (*psutils.Process, error) {

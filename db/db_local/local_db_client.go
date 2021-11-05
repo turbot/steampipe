@@ -37,8 +37,7 @@ func GetLocalClient(invoker constants.Invoker) (db_common.Client, error) {
 	if err != nil {
 		ShutdownService(invoker)
 	}
-	// NOTE:  client shutdown will shutdown service (if invoker matches)
-	return client, nil
+	return client, err
 }
 
 // NewLocalClient ensures that the database instance is running
@@ -112,8 +111,8 @@ func (c *LocalDbClient) ExecuteSyncInSession(ctx context.Context, session *sql.C
 }
 
 // ExecuteInSession implements Client
-func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (res *queryresult.Result, err error) {
-	return c.client.ExecuteInSession(ctx, session, query, disableSpinner)
+func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
+	return c.client.ExecuteInSession(ctx, session, query, onComplete, disableSpinner)
 }
 
 // Execute implements Client

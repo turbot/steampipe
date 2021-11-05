@@ -30,7 +30,7 @@ func GetPluginPath(plugin, pluginShortName string) (string, error) {
 		}
 	}
 
-	// there should be just 1 file with extension pluginExtension ("fdw")
+	// there should be just 1 file with extension pluginExtension (".plugin")
 	entries, err := ioutil.ReadDir(pluginFolder)
 	if err != nil {
 		return "", fmt.Errorf("failed to load plugin %s: %v", remoteSchema, err)
