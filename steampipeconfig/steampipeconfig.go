@@ -236,7 +236,7 @@ GeneralOptions:
 	return str
 }
 
-// TODO refactor - take into account majorr version differences
+// TODO refactor - take into account major version differences
 func (c *SteampipeConfig) ConnectionsForPlugin(pluginLongName string, pluginVersion *version.Version) []*modconfig.Connection {
 	var res []*modconfig.Connection
 	for _, con := range c.Connections {
