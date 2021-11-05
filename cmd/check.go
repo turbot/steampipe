@@ -231,19 +231,6 @@ func initialiseCheck() *checkInitData {
 		initData.result.Error = err
 		return initData
 	}
-	// check if workspace support parallel execution
-	supportsParallelExecutions, err := initData.workspace.SupportsParallelExecution()
-	if err != nil {
-		initData.result.Error = err
-		return initData
-	}
-	if !supportsParallelExecutions {
-		viper.Set(constants.ArgMaxParallel, 1)
-	}
-
-	if len(initData.workspace.Controls) == 0 {
-		initData.result.AddWarnings("no controls found in current workspace")
-	}
 
 	// get a client
 	var client db_common.Client

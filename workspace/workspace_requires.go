@@ -10,8 +10,6 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/plugin"
-	"github.com/turbot/steampipe/steampipeconfig"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -26,7 +24,6 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 	requiredPlugins := w.getRequiredPlugins()
 
 	var pluginsNotInstalled []requiredPluginVersion
-	var pluginsWithNoConnection []requiredPluginVersion
 
 	for name, requiredVersion := range requiredPlugins {
 		var req = requiredPluginVersion{plugin: name}
@@ -34,17 +31,9 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 
 		if installedVersion, found := installedPlugins[name]; found {
 			req.SetInstalledVersion(installedVersion)
-			connectionsForPlugin := steampipeconfig.GlobalConfig.ConnectionsForPlugin(name, installedVersion)
-			req.matchingConnections = connectionsForPlugin
 
-			if len(req.matchingConnections) == 0 {
-				pluginsWithNoConnection = append(pluginsWithNoConnection, req)
-			} else {
-				// add first connection to workspace compatible connections list
-				w.CompatibleConnections = append(w.CompatibleConnections, connectionsForPlugin[0])
-				if installedPlugins[name].LessThan(requiredVersion) {
-					pluginsNotInstalled = append(pluginsNotInstalled, req)
-				}
+			if installedPlugins[name].LessThan(requiredVersion) {
+				pluginsNotInstalled = append(pluginsNotInstalled, req)
 			}
 		} else {
 			req.installedVersion = "none"
@@ -52,8 +41,8 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 		}
 
 	}
-	if len(pluginsNotInstalled)+len(pluginsWithNoConnection) > 0 {
-		return errors.New(pluginVersionError(pluginsNotInstalled, pluginsWithNoConnection))
+	if len(pluginsNotInstalled) > 0 {
+		return errors.New(pluginVersionError(pluginsNotInstalled))
 	}
 
 	return nil
@@ -87,10 +76,9 @@ func (w *Workspace) getInstalledPlugins() (map[string]*version.Version, error) {
 }
 
 type requiredPluginVersion struct {
-	plugin              string
-	requiredVersion     string
-	installedVersion    string
-	matchingConnections []*modconfig.Connection
+	plugin           string
+	requiredVersion  string
+	installedVersion string
 }
 
 func (v *requiredPluginVersion) SetRequiredVersion(requiredVersion *version.Version) {
@@ -107,8 +95,8 @@ func (v *requiredPluginVersion) SetInstalledVersion(installedVersion *version.Ve
 	v.installedVersion = installedVersion.String()
 }
 
-func pluginVersionError(pluginsNotInstalled []requiredPluginVersion, pluginsWithNoConnection []requiredPluginVersion) string {
-	failureCount := len(pluginsNotInstalled) + len(pluginsWithNoConnection)
+func pluginVersionError(pluginsNotInstalled []requiredPluginVersion) string {
+	failureCount := len(pluginsNotInstalled)
 	var notificationLines = []string{
 		fmt.Sprintf("%d mod plugin %s not satisfied. ", failureCount, utils.Pluralize("requirement", failureCount)),
 		"",
@@ -121,19 +109,9 @@ func pluginVersionError(pluginsNotInstalled []requiredPluginVersion, pluginsWith
 		}
 	}
 
-	for _, report := range pluginsWithNoConnection {
-		thisName := report.plugin
-		if len(thisName) > longestNameLength {
-			longestNameLength = len(thisName)
-		}
-	}
-
 	// sort alphabetically
 	sort.Slice(pluginsNotInstalled, func(i, j int) bool {
 		return pluginsNotInstalled[i].plugin < pluginsNotInstalled[j].plugin
-	})
-	sort.Slice(pluginsWithNoConnection, func(i, j int) bool {
-		return pluginsWithNoConnection[i].plugin < pluginsWithNoConnection[j].plugin
 	})
 
 	// build first part of string
@@ -141,7 +119,6 @@ func pluginVersionError(pluginsNotInstalled []requiredPluginVersion, pluginsWith
 	longestVersionLength := 0
 
 	var notInstalledStrings = make([]string, len(pluginsNotInstalled))
-	var noConnectionString = make([]string, len(pluginsWithNoConnection))
 	for i, req := range pluginsNotInstalled {
 		format := fmt.Sprintf("  %%-%ds  %%-2s", longestNameLength)
 		notInstalledStrings[i] = fmt.Sprintf(
@@ -161,26 +138,6 @@ func pluginVersionError(pluginsNotInstalled []requiredPluginVersion, pluginsWith
 			format,
 			notInstalledStrings[i],
 			constants.Bold(req.requiredVersion),
-		))
-	}
-
-	for i, req := range pluginsWithNoConnection {
-		format := fmt.Sprintf("  %%-%ds  [no compatible connection configured]", longestNameLength)
-		noConnectionString[i] = fmt.Sprintf(
-			format,
-			req.plugin,
-		)
-
-		if len(noConnectionString[i]) > longestVersionLength {
-			longestVersionLength = len(noConnectionString[i])
-		}
-	}
-
-	for i, _ := range pluginsWithNoConnection {
-		format := fmt.Sprintf("%%-%ds", longestVersionLength)
-		notificationLines = append(notificationLines, fmt.Sprintf(
-			format,
-			noConnectionString[i],
 		))
 	}
 
