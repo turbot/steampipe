@@ -39,20 +39,14 @@ func (p *PluginVersion) String() string {
 // Initialise parses the version and name properties
 func (p *PluginVersion) Initialise() hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	if p.VersionString == "" {
-		// if no version specified, all versions will do
-		p.Version, _ = goVersion.NewVersion("0")
+	if version, err := goVersion.NewVersion(strings.TrimPrefix(p.VersionString, "v")); err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("invalid plugin version %s", p.VersionString),
+			Subject:  &p.DeclRange,
+		})
 	} else {
-		version, err := goVersion.NewVersion(strings.TrimPrefix(p.VersionString, "v"))
-		if err != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("invalid plugin version %s", p.VersionString),
-				Subject:  &p.DeclRange,
-			})
-		} else {
-			p.Version = version
-		}
+		p.Version = version
 	}
 
 	// parse plugin name
