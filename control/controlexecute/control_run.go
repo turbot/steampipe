@@ -191,7 +191,8 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	defer cancel()
 
 	// execute the control query
-	queryResult, err := client.ExecuteInSession(ctx, dbSession, query, false)
+	// NOTE no need to pass an OnComplete callback - we are already closing our session after waiting for results
+	queryResult, err := client.ExecuteInSession(ctx, dbSession, query, nil, false)
 	if err != nil {
 		log.Printf("[TRACE] client.ExecuteInSession returned error %s", err.Error())
 		r.SetError(err)

@@ -111,8 +111,8 @@ func (c *LocalDbClient) ExecuteSyncInSession(ctx context.Context, session *sql.C
 }
 
 // ExecuteInSession implements Client
-func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (res *queryresult.Result, err error) {
-	return c.client.ExecuteInSession(ctx, session, query, disableSpinner)
+func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
+	return c.client.ExecuteInSession(ctx, session, query, onComplete, disableSpinner)
 }
 
 // Execute implements Client

@@ -29,7 +29,7 @@ type Client interface {
 	Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error)
 
 	ExecuteSyncInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error)
-	ExecuteInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (res *queryresult.Result, err error)
+	ExecuteInSession(ctx context.Context, session *sql.Conn, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error)
 
 	CacheOn() error
 	CacheOff() error
