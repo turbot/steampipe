@@ -232,6 +232,10 @@ func initialiseCheck() *checkInitData {
 		return initData
 	}
 
+	if len(initData.workspace.Controls) == 0 {
+		initData.result.AddWarnings("no controls found in current workspace")
+	}
+
 	// get a client
 	var client db_common.Client
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
