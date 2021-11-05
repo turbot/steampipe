@@ -43,8 +43,7 @@ type Workspace struct {
 	fileWatcherErrorHandler func(error)
 	watcherError            error
 	// event handlers
-	reportEventHandlers   []reportevents.ReportEventHandler
-	CompatibleConnections []*modconfig.Connection
+	reportEventHandlers []reportevents.ReportEventHandler
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -640,20 +639,6 @@ func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
 	}
 
 	return string(fileBytes), true, nil
-}
-
-func (w *Workspace) SupportsParallelExecution() (bool, error) {
-	connectionPlugins, res := steampipeconfig.CreateConnectionPlugins(w.CompatibleConnections, nil)
-	if res.Error != nil {
-		return false, res.Error
-	}
-	for _, c := range connectionPlugins {
-		if !c.SupportedOperations.ParallelExecution {
-			return false, nil
-			break
-		}
-	}
-	return true, nil
 }
 
 // does this resource name look like a control or query

@@ -37,11 +37,11 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 			connectionsForPlugin := steampipeconfig.GlobalConfig.ConnectionsForPlugin(name, installedVersion)
 			req.matchingConnections = connectionsForPlugin
 
+			// if there are no matching connections raise an error
 			if len(req.matchingConnections) == 0 {
 				pluginsWithNoConnection = append(pluginsWithNoConnection, req)
 			} else {
-				// add first connection to workspace compatible connections list
-				w.CompatibleConnections = append(w.CompatibleConnections, connectionsForPlugin[0])
+				// check if installed plugin satisfies version
 				if installedPlugins[name].LessThan(requiredVersion) {
 					pluginsNotInstalled = append(pluginsNotInstalled, req)
 				}
