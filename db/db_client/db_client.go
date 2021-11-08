@@ -24,9 +24,10 @@ type DbClient struct {
 	dbClient           *sql.DB
 	// map of database sessions, keyed to the backend_pid in postgres
 	// used to track whether a given session has been initialised
-	initializedSessions       map[int64]SessionStats
+	initializedSessions       map[int64]*SessionStats
 	schemaMetadata            *schema.Metadata
 	requiredSessionSearchPath []string
+	sessionInitWaitGroup      *sync.WaitGroup
 }
 
 func NewDbClient(connectionString string) (*DbClient, error) {
@@ -39,9 +40,12 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 	client := &DbClient{
 		dbClient:            db,
 		sessionAcquireLock:  new(sync.Mutex),
-		initializedSessions: make(map[int64]SessionStats),
+		initializedSessions: make(map[int64]*SessionStats),
 		// set up a blank struct for the schema metadata
 		schemaMetadata: schema.NewMetadata(),
+		// a waitgroup to keep track of active session initializations
+		// so that we don't try to shutdown while an init is underway
+		sessionInitWaitGroup: &sync.WaitGroup{},
 	}
 	client.connectionString = connectionString
 	client.LoadSchema()
@@ -87,6 +91,7 @@ func (c *DbClient) Close() error {
 		// clear the map - so that we can't reuse it
 		log.Printf("[TRACE] Number of unique database sessions: %d\n", len(c.initializedSessions))
 		c.initializedSessions = nil
+		c.sessionInitWaitGroup.Wait()
 		return c.dbClient.Close()
 	}
 
@@ -139,7 +144,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	defer utils.LogTime("db_client.refreshDbClient end")
 
 	// clear the initializedSessions map
-	c.initializedSessions = make(map[int64]SessionStats)
+	c.initializedSessions = make(map[int64]*SessionStats)
 	err := c.dbClient.Close()
 	if err != nil {
 		return err

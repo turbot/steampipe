@@ -6,12 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
-	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
-	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
@@ -91,10 +88,9 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, quer
 			if tx != nil {
 				tx.Rollback()
 			}
-			// TODO change this to NOT close the session here - instead maybe call a passed-in OnComplete callback
-			// close and release the db connection, if we have one
-			if session != nil {
-				session.Close()
+			// call the completion callback - if one was provided
+			if onComplete != nil {
+				onComplete()
 			}
 		}
 	}()
@@ -131,130 +127,17 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, quer
 		// read in the rows and stream to the query result object
 		c.readRows(ctx, startTime, rows, result, spinner)
 		// commit transaction
-		tx.Commit()
+		if ctx.Err() == nil {
+			tx.Commit()
+		} else {
+			tx.Rollback()
+		}
 		if onComplete != nil {
 			onComplete()
 		}
 	}()
 
 	return result, nil
-}
-
-func (c *DbClient) AcquireSession(ctx context.Context) (*sql.Conn, error) {
-	c.sessionAcquireLock.Lock()
-	defer c.sessionAcquireLock.Unlock()
-
-	// get a database conneciton and query its backend pid
-	// note - this will retry if the connection is bad
-	session, backendPid, err := c.getSessionWithRetries(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if c.ensureSessionFunc == nil {
-		return session, nil
-	}
-
-	sessionStat, isInitialized := c.initializedSessions[backendPid]
-	if !isInitialized {
-		sessionStat = NewSessionStat()
-		if err := c.ensureSessionFunc(ctx, session); err != nil {
-			return nil, err
-		}
-		sessionStat.Initialized = time.Now()
-	}
-
-	// update required session search path if needed
-	if strings.Join(sessionStat.SearchPath, ",") != strings.Join(c.requiredSessionSearchPath, ",") {
-		if err := c.setSessionSearchPathToRequired(ctx, session); err != nil {
-			return nil, err
-		}
-		sessionStat.SearchPath = c.requiredSessionSearchPath
-	}
-
-	sessionStat.LastUsed = time.Now()
-	sessionStat.UsedCount++
-	// now write back to the map
-	c.initializedSessions[backendPid] = sessionStat
-
-	return session, nil
-}
-
-func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64, error) {
-	backoff, err := retry.NewFibonacci(100 * time.Millisecond)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	retries := 0
-	var session *sql.Conn
-	var backendPid int64
-	const getSessionMaxRetries = 10
-	err = retry.Do(ctx, retry.WithMaxRetries(getSessionMaxRetries, backoff), func(ctx context.Context) error {
-		session, err = c.dbClient.Conn(ctx)
-		if err != nil {
-			retries++
-			return retry.RetryableError(err)
-		}
-		backendPid, err = getBackendPid(ctx, session)
-		if err != nil {
-			session.Close()
-			retries++
-			return retry.RetryableError(err)
-		}
-		return nil
-	})
-
-	if err != nil {
-		log.Printf("[WARN] AcquireSession failed after 10 retries: %s", err)
-		return nil, 0, err
-	}
-
-	if retries > 0 {
-		log.Printf("[TRACE] AcquireSession succeeded after %d retries", retries)
-	}
-	return session, backendPid, nil
-}
-
-// get the unique postgres identifier for a database session
-func getBackendPid(ctx context.Context, session *sql.Conn) (int64, error) {
-	var pid int64
-	rows, err := session.QueryContext(ctx, "select pg_backend_pid()")
-	if err != nil {
-		return pid, err
-	}
-	rows.Next()
-	rows.Scan(&pid)
-	rows.Close()
-	return pid, nil
-}
-
-// createTransaction , with a timeout - this may be required if the db client becomes unresponsive
-func (c *DbClient) createTransaction(ctx context.Context, session *sql.Conn, retryOnTimeout bool) (tx *sql.Tx, err error) {
-	doneChan := make(chan bool)
-	go func() {
-		tx, err = session.BeginTx(ctx, nil)
-		if err != nil {
-			err = utils.PrefixError(err, "error creating transaction")
-		}
-		close(doneChan)
-	}()
-
-	select {
-	case <-doneChan:
-	case <-time.After(time.Second * 5):
-		log.Printf("[TRACE] timed out creating a transaction")
-		if retryOnTimeout {
-			log.Printf("[TRACE] refresh the client and retry")
-			// refresh the db client to try to fix the issue
-			c.refreshDbClient(ctx)
-
-			// recurse back into this function, passing 'retryOnTimeout=false' to prevent further recursion
-			return c.createTransaction(ctx, session, false)
-		}
-		err = fmt.Errorf("error creating transaction - please restart Steampipe")
-	}
-	return
 }
 
 // run query in a goroutine, so we can check for cancellation
@@ -320,7 +203,7 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 			display.UpdateSpinnerMessage(activeSpinner, "Cancelling query")
 			continueToNext = false
 		default:
-			if rowResult, err := readRow(rows, cols, colTypes); err != nil {
+			if rowResult, err := readRowContext(ctx, rows, cols, colTypes); err != nil {
 				result.StreamError(err)
 				continueToNext = false
 			} else {
@@ -338,6 +221,24 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 
 	// set the time that it took for this one to execute
 	result.Duration <- time.Since(start)
+}
+
+func readRowContext(ctx context.Context, rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]interface{}, error) {
+	c := make(chan bool, 1)
+	var readRowResult []interface{}
+	var readRowError error
+	go func() {
+		readRowResult, readRowError = readRow(rows, cols, colTypes)
+		close(c)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-c:
+		return readRowResult, readRowError
+	}
+
 }
 
 func readRow(rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]interface{}, error) {

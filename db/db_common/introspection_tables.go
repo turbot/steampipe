@@ -54,7 +54,7 @@ func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfi
 
 	sql := []string{createSql, insertSql}
 	// execute the query, passing 'true' to disable the spinner
-	_, err := session.ExecContext(context.Background(), strings.Join(sql, "\n"))
+	_, err := session.ExecContext(ctx, strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create introspection tables: %v", err)
 	}

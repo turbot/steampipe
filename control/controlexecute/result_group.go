@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/utils"
 	"golang.org/x/sync/semaphore"
 
 	"github.com/spf13/viper"
@@ -161,7 +162,7 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 	startTime := time.Now()
 
 	for _, controlRun := range r.ControlRuns {
-		if ctx.Err() != nil {
+		if utils.IsContextCancelled(ctx) {
 			controlRun.SetError(ctx.Err())
 			continue
 		}
