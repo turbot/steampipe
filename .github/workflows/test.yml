@@ -153,7 +153,8 @@ jobs:
       - name: Check Test Passed/Failed
         continue-on-error: false
         run: |
-          exit ${{ steps.run-test-suite.outputs.sp-logs }}
+          echo "${{ steps.run-test-suite.outputs.sp-logs }}"
+          exit "${{ steps.run-test-suite.outputs.sp-logs }}"
 
   clean_up:
     # let's clean up the artifacts.
