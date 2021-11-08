@@ -44,7 +44,7 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 		// set up a blank struct for the schema metadata
 		schemaMetadata: schema.NewMetadata(),
 		// a waitgroup to keep track of active session initializations
-		// so that we don't try to shutdown while an init in underway
+		// so that we don't try to shutdown while an init is underway
 		sessionInitWaitGroup: &sync.WaitGroup{},
 	}
 	client.connectionString = connectionString
