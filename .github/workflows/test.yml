@@ -150,7 +150,7 @@ jobs:
       - name: Check Test Passed/Failed
         continue-on-error: false
         run: |
-          if [[ ${{ steps.run-test-suite.outputs.exit_code }} == 0 ]]; then
+          if [ ${{ steps.run-test-suite.outputs.exit_code }} -eq 0 ]; then
             exit 0
           else
             exit 1
