@@ -2,6 +2,9 @@ package workspace
 
 import (
 	"context"
+	"log"
+
+	"github.com/turbot/go-kit/helpers"
 
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
@@ -10,10 +13,18 @@ import (
 
 // EnsureSessionData determines whether session scoped data (introspection tables and prepared statements)
 // exists for this session, and if not, creates it
-func EnsureSessionData(ctx context.Context, source *SessionDataSource, client db_common.Client) error {
+func EnsureSessionData(ctx context.Context, source *SessionDataSource, client db_common.Client) (err error) {
+	log.Printf("[TRACE] EnsureSessionData")
+	defer log.Printf("[TRACE] EnsureSessionData done - error %v", err)
 	utils.LogTime("workspace.EnsureSessionData start")
 	defer utils.LogTime("workspace.EnsureSessionData end")
 
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[WARN] EnsureSessionData failed with panic: %v", r)
+			err = helpers.ToError(r)
+		}
+	}()
 	// check for introspection tables
 	result, err := client.ExecuteSync(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema LIKE 'pg_temp%' AND table_name='steampipe_mod' ", true)
 	if err != nil {
@@ -32,5 +43,6 @@ func EnsureSessionData(ctx context.Context, source *SessionDataSource, client db
 			return err
 		}
 	}
+
 	return nil
 }
