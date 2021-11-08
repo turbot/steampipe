@@ -86,3 +86,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 #  assert_equal "$(echo $checkFileContent | jq '.lastChecked')" "$(echo $newCheckFileContent | jq '.lastChecked')"
 #
 #}
+
+@test "steampipe service help is displayed when no sub command given" {
+    run steampipe service
+    assert_equal "1" "0"
+}
