@@ -88,6 +88,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, quer
 			if tx != nil {
 				tx.Rollback()
 			}
+			// call the completion callback - if one was provided
 			if onComplete != nil {
 				onComplete()
 			}
