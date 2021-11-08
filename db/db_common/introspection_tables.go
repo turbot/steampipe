@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"runtime/debug"
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
@@ -124,7 +125,7 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	for _, mod := range workspaceResources.Mods {
 		if _, added := resourcesAdded[mod.Name()]; !added {
 			resourcesAdded[mod.Name()] = true
-			log.Printf("[TRACE] getTableInsertSqlForResource for mod %p", mod)
+			log.Printf("[TRACE] getTableInsertSqlForResource for mod %s", mod.Name())
 			insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.IntrospectionTableMod))
 		}
 	}
@@ -181,6 +182,8 @@ func getTableInsertSqlForResource(item modconfig.ResourceWithMetadata, tableName
 	// for each item there is core reflection data (i.e. reflection resource all items have)
 	// and item specific reflection data
 	// get the core reflection data values
+	metadata := item.GetMetadata()
+	log.Printf("[TRACE] getTableInsertSqlForResource metadata nil: %v", helpers.IsNil(metadata))
 	valuesCore, columnsCore := getColumnValues(item.GetMetadata())
 	// get item specific reflection data values from the item
 	valuesItem, columnsItem := getColumnValues(item)
@@ -193,7 +196,8 @@ func getTableInsertSqlForResource(item modconfig.ResourceWithMetadata, tableName
 
 // use reflection to evaluate the column names and values from item - return as 2 separate arrays
 func getColumnValues(item interface{}) ([]string, []string) {
-	if item == nil {
+	if helpers.IsNil(item) {
+		log.Printf("[TRACE] getColumnValues item is nil: %v", item)
 		return nil, nil
 	}
 	var columns, values []string
@@ -204,6 +208,10 @@ func getColumnValues(item interface{}) ([]string, []string) {
 	val := reflect.ValueOf(helpers.DereferencePointer(item))
 	t := reflect.TypeOf(item)
 
+	log.Printf("[TRACE] getColumnValues  val is nil %v, type %v", helpers.IsNil(val), t)
+	if helpers.IsNil(val) {
+		debug.PrintStack()
+	}
 	for i := 0; i < val.NumField(); i++ {
 		fieldName := val.Type().Field(i).Name
 		field, _ := t.FieldByName(fieldName)
