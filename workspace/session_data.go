@@ -10,12 +10,12 @@ import (
 
 // EnsureSessionData determines whether session scoped data (introspection tables and prepared statements)
 // exists for this session, and if not, creates it
-func EnsureSessionData(ctx context.Context, source *SessionDataSource, client *sql.Conn) error {
+func EnsureSessionData(ctx context.Context, source *SessionDataSource, session *sql.Conn) error {
 	utils.LogTime("workspace.EnsureSessionData start")
 	defer utils.LogTime("workspace.EnsureSessionData end")
 
 	// check for introspection tables
-	row := client.QueryRowContext(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema LIKE 'pg_temp%' AND table_name='steampipe_mod' ")
+	row := session.QueryRowContext(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema LIKE 'pg_temp%' AND table_name='steampipe_mod' ")
 
 	var count int
 	err := row.Scan(&count)
@@ -25,11 +25,10 @@ func EnsureSessionData(ctx context.Context, source *SessionDataSource, client *s
 
 	// if the steampipe_mod table is missing, assume we have no session data - go ahead and create it
 	if count == 0 {
-		err = db_common.CreatePreparedStatements(ctx, source.PreparedStatementSource, client)
-		if err != nil {
+		if err = db_common.CreatePreparedStatements(ctx, source.PreparedStatementSource, session); err != nil {
 			return err
 		}
-		if err = db_common.CreateIntrospectionTables(ctx, source.IntrospectionTableSource, client); err != nil {
+		if err = db_common.CreateIntrospectionTables(ctx, source.IntrospectionTableSource, session); err != nil {
 			return err
 		}
 	}
