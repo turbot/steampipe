@@ -144,11 +144,12 @@ jobs:
           name: test-logs
           path: ~/.steampipe/logs
           if-no-files-found: error
-
+      
+      # This job checks whether the test suite has passed or not.
+      # Since the exit_code is set only when the bats test suite pass, so we have added the if-conditional block 
       - name: Check Test Passed/Failed
         continue-on-error: false
         run: |
-          echo ${{ steps.run-test-suite.outputs.exit_code }}
           if [[ ${{ steps.run-test-suite.outputs.exit_code }} == 0 ]]; then
             exit 0
           else
