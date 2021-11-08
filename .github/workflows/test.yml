@@ -149,6 +149,7 @@ jobs:
         continue-on-error: false
         run: |
           echo ${{ steps.run-test-suite.outputs.test }}
+          echo ${{ steps.run-test-suite.outputs.exit_code }}
           exit 0
 
   clean_up:
