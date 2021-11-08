@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/db/db_common"
-
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe-plugin-sdk/grpc"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -57,6 +57,7 @@ type ControlRun struct {
 
 	group         *ResultGroup
 	executionTree *ExecutionTree
+	attempts      int
 }
 
 func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree *ExecutionTree) *ControlRun {
@@ -184,24 +185,45 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 		return
 	}
 
-	// create a context with a deadline
-	shouldBeDoneBy := time.Now().Add(controlQueryTimeout)
-	ctx, cancel := context.WithDeadline(ctx, shouldBeDoneBy)
+	ctxWithDeadline, cancel := r.getControlQueryContext(ctx)
 	// Even though ctx will expire, it is good practice to call its cancellation function in any case.
 	defer cancel()
 
 	// execute the control query
 	// NOTE no need to pass an OnComplete callback - we are already closing our session after waiting for results
-	queryResult, err := client.ExecuteInSession(ctx, dbSession, query, nil, false)
+	queryResult, err := client.ExecuteInSession(ctxWithDeadline, dbSession, query, nil, false)
+
 	if err != nil {
-		log.Printf("[TRACE] client.ExecuteInSession returned error %s", err.Error())
+		r.attempts++
+
+		// is this an rpc EOF error - meaning that the plugin somehow crashed
+		if grpc.IsGRPCConnectivityError(err) {
+			if r.attempts < constants.MaxControlRunAttempts {
+				log.Printf("[TRACE] control %s query failed with plugin connectivity error %s - retrying...", r.Control.Name(), err)
+				ctxWithDeadline, cancel := r.getControlQueryContext(ctx)
+				defer cancel()
+				// recurse into this function to retry use the same context, so that we respect the timeout
+				r.Execute(ctxWithDeadline, client)
+				return
+			} else {
+				log.Printf("[TRACE] control %s query failed again with plugin connectivity error %s - NOT retrying...", r.Control.Name(), err)
+			}
+		}
 		r.SetError(err)
 		return
 	}
+
 	r.queryResult = queryResult
 
 	// now wait for control completion
 	r.waitForResults(ctx)
+}
+
+func (r *ControlRun) getControlQueryContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	// create a context with a deadline
+	shouldBeDoneBy := time.Now().Add(controlQueryTimeout)
+	ctxWithDeadline, cancel := context.WithDeadline(ctx, shouldBeDoneBy)
+	return ctxWithDeadline, cancel
 }
 
 func (r *ControlRun) resolveControlQuery(err error, control *modconfig.Control) (string, error) {

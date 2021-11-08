@@ -13,7 +13,7 @@ const (
 	WorkspaceDefaultModName = "local"
 	WorkspaceModFileName    = "mod.sp"
 	DefaultVarsFileName     = "steampipe.spvars"
-	MaxControlRunAttempts   = 3
+	MaxControlRunAttempts   = 2
 )
 
 func WorkspaceModPath(workspacePath string) string {
