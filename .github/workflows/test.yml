@@ -56,6 +56,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Move build artifacts
+        run: |
+          mkdir ~/artifacts
+          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
+          mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
+
+      - name: List Build Artifacts
+        run: ls -l ~/artifacts
+
       - name: Save Linux Build Artifact
         uses: actions/upload-artifact@v2
         with:
