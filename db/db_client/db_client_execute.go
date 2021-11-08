@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -220,27 +219,22 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 			break
 		}
 	}
-	log.Println("[WARN] done with loop :: readRows")
 
 	// set the time that it took for this one to execute
 	result.Duration <- time.Since(start)
 }
 
 func readRowContext(ctx context.Context, rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]interface{}, error) {
-	log.Println("[WARN] In readRowContext")
-
 	c := make(chan bool, 1)
 	var readRowResult []interface{}
 	var readRowError error
 	go func() {
-		log.Println("[WARN] calling readRow")
 		readRowResult, readRowError = readRow(rows, cols, colTypes)
 		close(c)
 	}()
 
 	select {
 	case <-ctx.Done():
-		log.Println("[WARN] readRowContext Cancelled")
 		return nil, ctx.Err()
 	case <-c:
 		return readRowResult, readRowError
@@ -256,7 +250,6 @@ func readRow(rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]inter
 	for i := range columnValues {
 		resultPtrs[i] = &columnValues[i]
 	}
-	log.Println("[WARN] waiting for SCAN")
 	err := rows.Scan(resultPtrs...)
 	if err != nil {
 		// return error, handling cancellation error explicitly
