@@ -48,10 +48,6 @@ jobs:
         run: |
           go test -timeout 30s -run github.com/turbot/steampipe ./...
 
-      - name: Run Unit Tests
-        run: |
-          go test -timeout 30s -run github.com/turbot/steampipe ./...
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
@@ -59,15 +55,6 @@ jobs:
           args: release --rm-dist --skip-publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Move build artifacts
-        run: |
-          mkdir ~/artifacts
-          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
-          mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
-
-      - name: List Build Artifacts
-        run: ls -l ~/artifacts
 
       - name: Save Linux Build Artifact
         uses: actions/upload-artifact@v2
@@ -138,11 +125,26 @@ jobs:
           steampipe service stop
 
       - name: Run Test Suite
+        id: run-test-suite
         timeout-minutes: 15
+        continue-on-error: true
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          echo "::set-output name=sp-logs::$(echo $?)"
           steampipe service stop --force
+      
+      - name: Save Test Suite Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-logs
+          path: ~/.steampipe/logs
+          if-no-files-found: error
+
+      - name: Check Test Passed/Failed
+        continue-on-error: false
+        run: |
+          exit ${{ steps.run-test-suite.outputs.sp-logs }}
 
   clean_up:
     # let's clean up the artifacts.
@@ -170,4 +172,10 @@ jobs:
         uses: geekyeggo/delete-artifact@v1
         with:
           name: test-artifact
+          failOnError: true
+
+      - name: Clean up Test Suite Logs
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: test-logs
           failOnError: true
