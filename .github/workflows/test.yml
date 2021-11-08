@@ -140,7 +140,7 @@ jobs:
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          echo "::set-output name=exit-code::$(echo $?)"
+          echo ::set-output name=exit-code::"$(echo $?)"
           steampipe service stop --force
       
       - name: Save Test Suite Logs
@@ -153,8 +153,8 @@ jobs:
       - name: Check Test Passed/Failed
         continue-on-error: false
         run: |
-          echo ${{ steps.run-test-suite.outputs.exit-code }}
-          exit ${{ steps.run-test-suite.outputs.exit-code }}
+          echo "${{ steps.run-test-suite.outputs.exit-code }}"
+          exit "${{ steps.run-test-suite.outputs.exit-code }}"
 
   clean_up:
     # let's clean up the artifacts.
