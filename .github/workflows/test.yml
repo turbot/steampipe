@@ -149,7 +149,7 @@ jobs:
         continue-on-error: false
         run: |
           echo ${{ steps.run-test-suite.outputs.exit_code }}
-          if [ -e steps.run-test-suite.outputs.exit_code ]; then
+          if [[ ${{ steps.run-test-suite.outputs.exit_code }} == 0 ]]; then
             exit 0
           else
             exit 1
