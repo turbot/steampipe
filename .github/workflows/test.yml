@@ -140,7 +140,7 @@ jobs:
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          echo ::set-output name=exit-code::1
+          echo ::set-output name=exit-code::$(echo $?)
           steampipe service stop --force
       
       - name: Save Test Suite Logs
