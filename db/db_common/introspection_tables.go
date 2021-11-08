@@ -157,7 +157,7 @@ func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnS
 
 // get the sql column definitions for tagged properties of the item
 func getColumnDefinitions(item interface{}) []string {
-	log.Printf("[TRACE] getColumnDefinitions for item %v", item)
+	log.Printf("[TRACE] getColumnDefinitions for item %p", item)
 	t := reflect.TypeOf(item)
 
 	var columnDef []string
