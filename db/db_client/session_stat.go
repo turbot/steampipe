@@ -1,7 +1,6 @@
 package db_client
 
 import (
-	"database/sql"
 	"time"
 )
 
@@ -12,7 +11,6 @@ type SessionStats struct {
 	Initialized time.Time
 	UsedCount   int
 	SearchPath  []string `json:"-"`
-	Session     *sql.Conn
 	BackendPid  int64
 }
 
@@ -23,7 +21,6 @@ func NewSessionStat() *SessionStats {
 		LastUsed:    t,
 		Initialized: t,
 		UsedCount:   0,
-		Session:     nil,
 	}
 }
 
