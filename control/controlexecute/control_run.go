@@ -162,7 +162,10 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 		r.SetError(fmt.Errorf("error acquiring database connection: %s", err.Error()))
 		return
 	}
-	defer dbSession.Close()
+	defer func() {
+		log.Printf("[TRACE] closing session for: %s\n", r.Control.Name())
+		dbSession.Close()
+	}()
 
 	// set our status
 	r.executionTree.progress.OnControlExecuteStart()
