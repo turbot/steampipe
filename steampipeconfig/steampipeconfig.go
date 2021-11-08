@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"strings"
@@ -175,16 +176,20 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 }
 
 func (c *SteampipeConfig) GetConnectionOptions(connectionName string) *options.Connection {
+	log.Printf("[WARN] GetConnectionOptions")
 	connection, ok := c.Connections[connectionName]
 	if !ok {
+		log.Printf("[WARN] returning default %v", c.DefaultConnectionOptions)
 		// if we can't find connection, jsy return defaults
 		return c.DefaultConnectionOptions
 	}
 	// does the connection have connection options set - if not, return the default
 	if connection.Options == nil {
+		log.Printf("[WARN] returning default %v", c.DefaultConnectionOptions)
 		return c.DefaultConnectionOptions
 	}
 	// so there are connection options, ensure all fields are set
+	log.Printf("[WARN] connection defines options %v", connection.Options)
 
 	// create a copy of the options to return
 	result := &options.Connection{
@@ -192,11 +197,13 @@ func (c *SteampipeConfig) GetConnectionOptions(connectionName string) *options.C
 		CacheTTL: c.DefaultConnectionOptions.CacheTTL,
 	}
 	if connection.Options.Cache != nil {
+		log.Printf("[WARN] connection defines cache option %v", *connection.Options.Cache)
 		result.Cache = connection.Options.Cache
 	}
 	if connection.Options.CacheTTL != nil {
 		result.CacheTTL = connection.Options.CacheTTL
 	}
+
 	return result
 
 }
