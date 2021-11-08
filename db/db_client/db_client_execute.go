@@ -93,8 +93,8 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, quer
 			}
 			// TODO change this to NOT close the session here - instead maybe call a passed-in OnComplete callback
 			// close and release the db connection, if we have one
-			if session != nil {
-				session.Close()
+			if onComplete != nil {
+				onComplete()
 			}
 		}
 	}()
@@ -131,7 +131,11 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, quer
 		// read in the rows and stream to the query result object
 		c.readRows(ctx, startTime, rows, result, spinner)
 		// commit transaction
-		tx.Commit()
+		if ctx.Err() == nil {
+			tx.Commit()
+		} else {
+			tx.Rollback()
+		}
 		if onComplete != nil {
 			onComplete()
 		}
@@ -140,16 +144,28 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, quer
 	return result, nil
 }
 
-func (c *DbClient) AcquireSession(ctx context.Context) (*sql.Conn, error) {
+func (c *DbClient) AcquireSession(ctx context.Context) (_ *sql.Conn, acquireSessionError error) {
+	c.sessionInitWaitGroup.Add(1)
 	c.sessionAcquireLock.Lock()
-	defer c.sessionAcquireLock.Unlock()
 
-	// get a database conneciton and query its backend pid
+	defer func() {
+		c.sessionInitWaitGroup.Done()
+		c.sessionAcquireLock.Unlock()
+	}()
+
+	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
 	session, backendPid, err := c.getSessionWithRetries(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	defer func() {
+		// make sure that we close the acquired session, in case of error
+		if acquireSessionError != nil && session != nil {
+			session.Close()
+		}
+	}()
 
 	if c.ensureSessionFunc == nil {
 		return session, nil
@@ -162,6 +178,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (*sql.Conn, error) {
 			return nil, err
 		}
 		sessionStat.Initialized = time.Now()
+		sessionStat.BackendPid = backendPid
 	}
 
 	// update required session search path if needed
@@ -172,8 +189,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (*sql.Conn, error) {
 		sessionStat.SearchPath = c.requiredSessionSearchPath
 	}
 
-	sessionStat.LastUsed = time.Now()
-	sessionStat.UsedCount++
+	sessionStat.UpdateUsage()
 	// now write back to the map
 	c.initializedSessions[backendPid] = sessionStat
 
@@ -190,13 +206,17 @@ func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64,
 	var session *sql.Conn
 	var backendPid int64
 	const getSessionMaxRetries = 10
-	err = retry.Do(ctx, retry.WithMaxRetries(getSessionMaxRetries, backoff), func(ctx context.Context) error {
-		session, err = c.dbClient.Conn(ctx)
+	err = retry.Do(ctx, retry.WithMaxRetries(getSessionMaxRetries, backoff), func(localCtx context.Context) (e error) {
+		if utils.IsContextCancelled(localCtx) {
+			return ctx.Err()
+		}
+
+		session, err = c.dbClient.Conn(localCtx)
 		if err != nil {
 			retries++
 			return retry.RetryableError(err)
 		}
-		backendPid, err = getBackendPid(ctx, session)
+		backendPid, err = getBackendPid(localCtx, session)
 		if err != nil {
 			session.Close()
 			retries++
@@ -320,7 +340,7 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 			display.UpdateSpinnerMessage(activeSpinner, "Cancelling query")
 			continueToNext = false
 		default:
-			if rowResult, err := readRow(rows, cols, colTypes); err != nil {
+			if rowResult, err := readRowContext(ctx, rows, cols, colTypes); err != nil {
 				result.StreamError(err)
 				continueToNext = false
 			} else {
@@ -335,9 +355,32 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 			break
 		}
 	}
+	log.Println("[WARN] done with loop :: readRows")
 
 	// set the time that it took for this one to execute
 	result.Duration <- time.Since(start)
+}
+
+func readRowContext(ctx context.Context, rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]interface{}, error) {
+	log.Println("[WARN] In readRowContext")
+
+	c := make(chan bool, 1)
+	var readRowResult []interface{}
+	var readRowError error
+	go func() {
+		log.Println("[WARN] calling readRow")
+		readRowResult, readRowError = readRow(rows, cols, colTypes)
+		close(c)
+	}()
+
+	select {
+	case <-ctx.Done():
+		log.Println("[WARN] readRowContext Cancelled")
+		return nil, ctx.Err()
+	case <-c:
+		return readRowResult, readRowError
+	}
+
 }
 
 func readRow(rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]interface{}, error) {
@@ -348,6 +391,7 @@ func readRow(rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]inter
 	for i := range columnValues {
 		resultPtrs[i] = &columnValues[i]
 	}
+	log.Println("[WARN] waiting for SCAN")
 	err := rows.Scan(resultPtrs...)
 	if err != nil {
 		// return error, handling cancellation error explicitly
