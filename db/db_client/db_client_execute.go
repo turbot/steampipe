@@ -88,8 +88,6 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, quer
 			if tx != nil {
 				tx.Rollback()
 			}
-			// TODO change this to NOT close the session here - instead maybe call a passed-in OnComplete callback
-			// close and release the db connection, if we have one
 			if onComplete != nil {
 				onComplete()
 			}

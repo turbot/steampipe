@@ -42,7 +42,9 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 		sessionAcquireLock:  new(sync.Mutex),
 		initializedSessions: make(map[int64]*SessionStats),
 		// set up a blank struct for the schema metadata
-		schemaMetadata:       schema.NewMetadata(),
+		schemaMetadata: schema.NewMetadata(),
+		// a waitgroup to keep track of active session initializations
+		// so that we don't try to shutdown while an init in underway
 		sessionInitWaitGroup: &sync.WaitGroup{},
 	}
 	client.connectionString = connectionString
