@@ -54,6 +54,5 @@ fi
 
 echo "Running with STEAMPIPE_INSTALL_DIR set to $STEAMPIPE_INSTALL_DIR"
 
-bats --tap $MY_PATH/test_files/000*
-
-echo "::set-output name=exit_code::$(echo $?)"
+# bats --tap $MY_PATH/test_files/000*
+echo "::set-output name=test::test"

@@ -148,7 +148,7 @@ jobs:
       - name: Check Test Passed/Failed
         continue-on-error: false
         run: |
-          echo ${{ steps.run-test-suite.outputs.exit_code }}
+          echo ${{ steps.run-test-suite.outputs.test }}
           exit 0
 
   clean_up:
