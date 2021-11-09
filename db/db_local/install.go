@@ -257,6 +257,18 @@ func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
 
 	// resolve the name of the database that is to be installed
 	databaseName := resolveDatabaseName()
+	// validate db name
+	firstCharacter := databaseName[0:1]
+	var ascii int
+	for _, r := range databaseName {
+		ascii = int(r)
+		break
+	}
+	if firstCharacter == "_" || (ascii >= 'a' && ascii <= 'z') {
+		log.Printf("[TRACE] valid database name: %s", databaseName)
+	} else {
+		return fmt.Errorf("Invalid database name '%s' - must start with either a lowercase character or an underscore", databaseName)
+	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring database...")
 	err = installDatabaseWithPermissions(databaseName, client)

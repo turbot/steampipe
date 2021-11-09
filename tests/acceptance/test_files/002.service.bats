@@ -53,6 +53,20 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $target_install_directory
 }
 
+@test "custom database name - should not start with uppercase characters" {
+  # Set the STEAMPIPE_INITDB_DATABASE_NAME env variable
+  export STEAMPIPE_INITDB_DATABASE_NAME="Custom_db_name"
+  
+  target_install_directory=$(mktemp -d)
+  
+  # Start the service
+  run steampipe service start --install-dir $target_install_directory
+  
+  assert_failure
+  run steampipe service stop --force
+  rm -rf $target_install_directory
+}
+
 @test "steampipe service stop should not trigger daily checks and tasks" {
     run steampipe service start
 
