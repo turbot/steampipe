@@ -163,18 +163,24 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	log.Printf("[TRACE] ParseMod calling decode")
 	diags = decode(runCtx)
 	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
+		err := plugin.DiagsToError("Failed to decode all mod hcl files", diags)
+		log.Printf("[TRACE] decode failed: %s", err)
+		return nil, err
 	}
 
 	// if eval is not complete, there must be dependencies - run again in dependency order
 	if !runCtx.EvalComplete() {
+		log.Printf("[TRACE] !EvalComplete, calling decode again")
 		diags = decode(runCtx)
 		if diags.HasErrors() {
-			return nil, plugin.DiagsToError("Failed to parse all mod hcl files", diags)
+			err := plugin.DiagsToError("Failed to decode all mod hcl files", diags)
+			log.Printf("[TRACE] decode failed: %s", err)
+			return nil, err
 		}
 
 		// we failed to resolve dependencies
 		if !runCtx.EvalComplete() {
+			log.Printf("[TRACE] failed to resolve mod dependencies")
 			return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", runCtx.FormatDependencies())
 		}
 	}
@@ -184,6 +190,8 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	if err := mod.BuildResourceTree(); err != nil {
 		return nil, err
 	}
+
+	log.Printf("[TRACE] returning mod")
 
 	return mod, nil
 }

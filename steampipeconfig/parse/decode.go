@@ -30,6 +30,8 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 	// build list of blocks to decode
 	blocks, err := runCtx.BlocksToDecode()
 
+	log.Printf("[TRACE] decode %d blocks", len(blocks))
+
 	// now clear dependencies from run context - they will be rebuilt
 	runCtx.ClearDependencies()
 	if err != nil {
@@ -41,12 +43,14 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 	for _, block := range blocks {
 		// if opts specifies block types, check whether this type is included
 		if !runCtx.ShouldIncludeBlock(block) {
+			log.Printf("[TRACE] skipping block %s", block.Type)
 			continue
 		}
 		// check name is valid
 		moreDiags := validateName(block)
 		if moreDiags.HasErrors() {
 			diags = append(diags, moreDiags...)
+			log.Printf("[TRACE] validateName failed %s", moreDiags)
 			continue
 		}
 		switch block.Type {

@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -202,6 +203,7 @@ func (r *RunContext) BlocksToDecode() (hcl.Blocks, error) {
 		return nil, err
 	}
 	if len(depOrder) == 0 {
+		log.Printf("[TRACE] BlocksToDecode len(depOrder) == 0")
 		return r.blocks, nil
 	}
 
