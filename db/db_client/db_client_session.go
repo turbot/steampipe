@@ -93,7 +93,7 @@ func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64,
 	})
 
 	if err != nil {
-		log.Printf("[WARN] AcquireSession failed after 10 retries: %s", err)
+		log.Printf("[TRACE] AcquireSession failed after 10 retries: %s", err)
 		return nil, 0, err
 	}
 

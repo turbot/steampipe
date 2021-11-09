@@ -186,7 +186,6 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.Refre
 // SetUserSearchPath sets the search path for the all steampipe users of the db service
 // do this wy finding all users assigned to the role steampipe_users and set their search path
 func (c *LocalDbClient) setUserSearchPath() ([]string, error) {
-	log.Println("[Trace] SetUserSearchPath")
 	var searchPath []string
 
 	// is there a user search path in the config?
