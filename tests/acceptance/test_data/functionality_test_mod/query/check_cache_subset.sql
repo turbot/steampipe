@@ -4,5 +4,5 @@ select
         when mod(id,2)=1 then 'ok'
     end status,
     time_now as resource,
-    id as reason, a, b, c, d
+    id as reason, a, b, c
 from chaos.chaos_cache_check where id=2
