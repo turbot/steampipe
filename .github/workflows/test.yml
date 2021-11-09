@@ -48,10 +48,6 @@ jobs:
         run: |
           go test -timeout 30s -run github.com/turbot/steampipe ./...
 
-      - name: Run Unit Tests
-        run: |
-          go test -timeout 30s -run github.com/turbot/steampipe ./...
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
@@ -138,11 +134,31 @@ jobs:
           steampipe service stop
 
       - name: Run Test Suite
+        id: run-test-suite
         timeout-minutes: 15
+        continue-on-error: true
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh
           steampipe service stop --force
+      
+      - name: Save Test Suite Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-logs
+          path: ~/.steampipe/logs
+          if-no-files-found: error
+      
+      # This job checks whether the test suite has passed or not.
+      # Since the exit_code is set only when the bats test suite pass, so we have added the if-conditional block 
+      - name: Check Test Passed/Failed
+        continue-on-error: false
+        run: |
+          if [ ${{ steps.run-test-suite.outputs.exit_code }} -eq 0 ]; then
+            exit 0
+          else
+            exit 1
+          fi
 
   clean_up:
     # let's clean up the artifacts.
@@ -170,4 +186,10 @@ jobs:
         uses: geekyeggo/delete-artifact@v1
         with:
           name: test-artifact
+          failOnError: true
+
+      - name: Clean up Test Suite Logs
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: test-logs
           failOnError: true
