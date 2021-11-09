@@ -245,10 +245,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		}
 		org := image.Config.Plugin.Organization
 		name := image.Config.Plugin.Name
-		docURL := ""
-		if org == "turbot" {
-			docURL = fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
-		}
+		docURL := fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
 		installReports = append(installReports, display.InstallReport{
 			Skipped:        false,
 			Plugin:         p,
@@ -407,10 +404,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		}
 		org := image.Config.Plugin.Organization
 		name := image.Config.Plugin.Name
-		docURL := ""
-		if org == "turbot" {
-			docURL = fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
-		}
+		docURL := fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
 		updateReports = append(updateReports, display.InstallReport{
 			Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
 			Skipped:        false,
