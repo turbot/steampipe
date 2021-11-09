@@ -46,15 +46,12 @@ func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfi
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
-	log.Printf("[TRACE] getColumnDefinitions for ResourceMetadata")
 	// get the sql for columns which every table has
 	commonColumnSql := getColumnDefinitions(modconfig.ResourceMetadata{})
 
-	log.Printf("[TRACE] getCreateTablesSql")
 	// get the create sql for each table type
 	createSql := getCreateTablesSql(commonColumnSql)
 
-	log.Printf("[TRACE] getTableInsertSql")
 	// now get sql to populate the tables
 	insertSql := getTableInsertSql(workspaceResources)
 
@@ -72,17 +69,11 @@ func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfi
 
 func getCreateTablesSql(commonColumnSql []string) string {
 	var createSql []string
-	log.Printf("[TRACE] getTableInsertSql Control")
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.IntrospectionTableControl, commonColumnSql))
-	log.Printf("[TRACE] getTableInsertSql Query")
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.IntrospectionTableQuery, commonColumnSql))
-	log.Printf("[TRACE] getTableInsertSql Benchmark")
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
-	log.Printf("[TRACE] getTableInsertSql Mod")
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
-	log.Printf("[TRACE] getTableInsertSql Variable")
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
-	log.Printf("[TRACE] getTableInsertSql ResourceReference")
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
@@ -104,42 +95,36 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	for _, control := range workspaceResources.Controls {
 		if _, added := resourcesAdded[control.Name()]; !added {
 			resourcesAdded[control.Name()] = true
-			log.Printf("[TRACE] getTableInsertSqlForResource for control %p", control)
 			insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.IntrospectionTableControl))
 		}
 	}
 	for _, query := range workspaceResources.Queries {
 		if _, added := resourcesAdded[query.Name()]; !added {
 			resourcesAdded[query.Name()] = true
-			log.Printf("[TRACE] getTableInsertSqlForResource for query %p", query)
 			insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.IntrospectionTableQuery))
 		}
 	}
 	for _, benchmark := range workspaceResources.Benchmarks {
 		if _, added := resourcesAdded[benchmark.Name()]; !added {
 			resourcesAdded[benchmark.Name()] = true
-			log.Printf("[TRACE] getTableInsertSqlForResource for benchmark %p", benchmark)
 			insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.IntrospectionTableBenchmark))
 		}
 	}
 	for _, mod := range workspaceResources.Mods {
 		if _, added := resourcesAdded[mod.Name()]; !added {
 			resourcesAdded[mod.Name()] = true
-			log.Printf("[TRACE] getTableInsertSqlForResource for mod %s", mod.Name())
 			insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.IntrospectionTableMod))
 		}
 	}
 	for _, variable := range workspaceResources.Variables {
 		if _, added := resourcesAdded[variable.Name()]; !added {
 			resourcesAdded[variable.Name()] = true
-			log.Printf("[TRACE] getTableInsertSqlForResource for variable %p", variable)
 			insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
 		}
 	}
 	for _, reference := range workspaceResources.References {
 		if _, added := resourcesAdded[reference.Name()]; !added {
 			resourcesAdded[reference.Name()] = true
-			log.Printf("[TRACE] getTableInsertSqlForResource for reference %p", reference)
 			insertSql = append(insertSql, getTableInsertSqlForResource(reference, constants.IntrospectionTableReference))
 		}
 	}
@@ -158,7 +143,6 @@ func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnS
 
 // get the sql column definitions for tagged properties of the item
 func getColumnDefinitions(item interface{}) []string {
-	log.Printf("[TRACE] getColumnDefinitions for item %p", item)
 	t := reflect.TypeOf(item)
 
 	var columnDef []string
@@ -196,10 +180,6 @@ func getTableInsertSqlForResource(item modconfig.ResourceWithMetadata, tableName
 
 // use reflection to evaluate the column names and values from item - return as 2 separate arrays
 func getColumnValues(item interface{}) ([]string, []string) {
-	if helpers.IsNil(item) {
-		log.Printf("[TRACE] getColumnValues item is nil: %v", item)
-		return nil, nil
-	}
 	var columns, values []string
 
 	// dereference item in vcase it is a pointer
@@ -208,7 +188,7 @@ func getColumnValues(item interface{}) ([]string, []string) {
 	val := reflect.ValueOf(helpers.DereferencePointer(item))
 	t := reflect.TypeOf(item)
 
-	log.Printf("[TRACE] getColumnValues  val is nil %v, type %v", helpers.IsNil(val), t)
+	log.Printf("[TRACE] getColumnValues item is nil: %v, val is nil: %v, type %v", helpers.IsNil(item), helpers.IsNil(val), t)
 	if helpers.IsNil(val) {
 		debug.PrintStack()
 	}

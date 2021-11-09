@@ -160,6 +160,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 
 	// perform initial decode to get dependencies
 	// (if there are no dependencies, this is all that is needed)
+	log.Printf("[TRACE] ParseMod calling decode")
 	diags = decode(runCtx)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)

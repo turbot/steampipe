@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -95,6 +96,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 				diags = append(diags, moreDiags...)
 			}
 		default:
+			log.Printf("[TRACE] decode calling decodeResource for block %s.%s", block.Type, block.Labels[0])
 			// all other blocks are treated the same:
 			resource, res := decodeResource(block, runCtx)
 			moreDiags = handleDecodeResult(resource, res, block, runCtx)
@@ -539,11 +541,17 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 // - add resource to RunContext (which adds it to the mod)handleDecodeResult
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
+	log.Printf("[TRACE] handleDecodeResult for resource %s", resource.Name())
 	if res.Success() {
+		log.Printf("[TRACE] decode was successful")
+
 		// if resource supports metadata, save it
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
+			log.Printf("[TRACE] resource supports metadata")
 			body := block.Body.(*hclsyntax.Body)
 			diags = addResourceMetadata(resourceWithMetadata, body.SrcRange, runCtx)
+		} else {
+			log.Printf("[TRACE] resource DOES NOT support metadata")
 		}
 
 		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
@@ -571,15 +579,18 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 }
 
 func addResourceMetadata(resourceWithMetadata modconfig.ResourceWithMetadata, srcRange hcl.Range, runCtx *RunContext) hcl.Diagnostics {
+	log.Printf("[TRACE] addResourceMetadata for %s", resourceWithMetadata.Name())
 	var diags hcl.Diagnostics
 	metadata, err := GetMetadataForParsedResource(resourceWithMetadata.Name(), srcRange, runCtx.FileData, runCtx.CurrentMod)
 	if err != nil {
+		log.Printf("[TRACE] addResourceMetadata failed: %s", err)
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  err.Error(),
 			Subject:  &srcRange,
 		})
 	} else {
+		log.Printf("[TRACE] addResourceMetadata succeeded, calling SetMetadata")
 		resourceWithMetadata.SetMetadata(metadata)
 	}
 	return diags
