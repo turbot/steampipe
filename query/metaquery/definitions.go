@@ -1,6 +1,11 @@
 package metaquery
 
-import "github.com/turbot/steampipe/constants"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/turbot/steampipe/constants"
+)
 
 type metaQueryArg struct {
 	value       string
@@ -20,6 +25,12 @@ var metaQueryDefinitions map[string]metaQueryDefinition
 
 func init() {
 	metaQueryDefinitions = map[string]metaQueryDefinition{
+		".test": {
+			title:       "Test metaquery",
+			handler:     func(input *HandlerInput) error { fmt.Println(strings.Join(input.args(), ",")); return nil },
+			validator:   exactlyNArgs(1),
+			description: "Test Metaquery",
+		},
 		constants.CmdHelp: {
 			title:       constants.CmdHelp,
 			handler:     doHelp,

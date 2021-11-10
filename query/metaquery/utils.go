@@ -1,6 +1,7 @@
 package metaquery
 
 import (
+	"encoding/csv"
 	"sort"
 	"strings"
 
@@ -13,13 +14,34 @@ func IsMetaQuery(query string) bool {
 		return false
 	}
 
-	query = strings.TrimSuffix(query, ";")
-
 	// try to look for the validator
-	cmd := strings.Fields(query)[0]
+	cmd, _ := getCmdAndArgs(query)
 	_, foundHandler := metaQueryDefinitions[cmd]
 
 	return foundHandler
+}
+
+func getCmdAndArgs(query string) (string, []string) {
+	query = strings.TrimSuffix(query, ";")
+	split := splitByWhitespace(query)
+	cmd := split[0]
+	args := []string{}
+	if len(split) > 1 {
+		args = split[1:]
+	}
+	return cmd, args
+}
+
+func splitByWhitespace(str string) (s []string) {
+	strReader := strings.NewReader(str)
+	csvDecoder := csv.NewReader(strReader)
+	csvDecoder.Comma = ' '
+	csvDecoder.LazyQuotes = true
+	csvDecoder.TrimLeadingSpace = true
+	// Read can never error, because we are passing in a StringReader
+	// lookup csv.Reader.Read
+	split, _ := csvDecoder.Read()
+	return split
 }
 
 // PromptSuggestions :: Returns a list of the suggestions for go-prompt
@@ -37,5 +59,6 @@ func PromptSuggestions() []prompt.Suggest {
 }
 
 func getArguments(query string) []string {
-	return strings.Fields(strings.TrimSpace(query))[1:]
+	_, args := getCmdAndArgs(query)
+	return args
 }

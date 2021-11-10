@@ -17,29 +17,28 @@ type ValidationResult struct {
 	Message   string
 }
 
-type validator func(val string) ValidationResult
+type validator func(val []string) ValidationResult
 
 // Validate :: validate a full metaquery along with arguments - we can return err & validationResult
 func Validate(query string) ValidationResult {
 	query = strings.TrimSuffix(query, ";")
 	// get the meta query
-	q := strings.Split(query, " ")
+	cmd, args := getCmdAndArgs(query)
 
-	validatorFunction := metaQueryDefinitions[q[0]].validator
+	validatorFunction := metaQueryDefinitions[cmd].validator
 
 	if validatorFunction != nil {
-		return validatorFunction(strings.Join(getArguments(query), " "))
+		return validatorFunction(args)
 	}
 	return ValidationResult{Err: fmt.Errorf("'%s' is not a known command", query)}
 }
 
 func booleanValidator(metaquery string, validators ...validator) validator {
-	return func(val string) ValidationResult {
+	return func(args []string) ValidationResult {
 		//	Error: argument required multi-line mode is off.  You can enable it with: .multi on
 		//	headers mode is off.  You can enable it with: .headers on
 		//	timing mode is off.  You can enable it with: .timing on
 		title := metaQueryDefinitions[metaquery].title
-		args := strings.Fields(strings.TrimSpace(val))
 		numArgs := len(args)
 
 		if numArgs == 0 {
@@ -69,19 +68,19 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 				Err: fmt.Errorf("command needs %d argument(s) - got %d", 1, numArgs),
 			}
 		}
-		return buildValidationResult(val, validators)
+		return buildValidationResult(args, validators)
 	}
 }
 
 func composeValidator(validators ...validator) validator {
-	return func(val string) ValidationResult {
+	return func(val []string) ValidationResult {
 		return buildValidationResult(val, validators)
 	}
 }
 
 func validatorFromArgsOf(cmd string) validator {
-	return func(val string) ValidationResult {
-		metaQueryDefinition, _ := metaQueryDefinitions[cmd]
+	return func(val []string) ValidationResult {
+		metaQueryDefinition := metaQueryDefinitions[cmd]
 		validArgs := []string{}
 
 		for _, validArg := range metaQueryDefinition.args {
@@ -93,8 +92,7 @@ func validatorFromArgsOf(cmd string) validator {
 }
 
 var atMostNArgs = func(n int) validator {
-	return func(val string) ValidationResult {
-		args := strings.Fields(strings.TrimSpace(val))
+	return func(args []string) ValidationResult {
 		numArgs := len(args)
 		if numArgs > n {
 			return ValidationResult{
@@ -106,8 +104,7 @@ var atMostNArgs = func(n int) validator {
 }
 
 var exactlyNArgs = func(n int) validator {
-	return func(val string) ValidationResult {
-		args := strings.Fields(strings.TrimSpace(val))
+	return func(args []string) ValidationResult {
 		numArgs := len(args)
 		if numArgs != n {
 			return ValidationResult{
@@ -123,15 +120,17 @@ var exactlyNArgs = func(n int) validator {
 var noArgs = exactlyNArgs(0)
 
 var allowedArgValues = func(caseSensitive bool, allowedValues ...string) validator {
-	return func(val string) ValidationResult {
+	return func(args []string) ValidationResult {
 		if !caseSensitive {
 			// convert everything to lower case
-			val = strings.ToLower(val)
+			for idx, a := range args {
+				args[idx] = strings.ToLower(a)
+			}
 			for idx, av := range allowedValues {
 				allowedValues[idx] = strings.ToLower(av)
 			}
 		}
-		args := strings.Fields(strings.TrimSpace(val))
+
 		for _, arg := range args {
 			if !helpers.StringSliceContains(allowedValues, arg) {
 				return ValidationResult{
@@ -143,7 +142,7 @@ var allowedArgValues = func(caseSensitive bool, allowedValues ...string) validat
 	}
 }
 
-func buildValidationResult(val string, validators []validator) ValidationResult {
+func buildValidationResult(val []string, validators []validator) ValidationResult {
 	var messages string
 	for _, v := range validators {
 		validate := v(val)

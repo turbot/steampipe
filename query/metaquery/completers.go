@@ -16,18 +16,14 @@ type CompleterInput struct {
 	Connections *steampipeconfig.ConnectionDataMap
 }
 
-func (h *CompleterInput) args() []string {
-	return getArguments(h.Query)
-}
-
 type completer func(input *CompleterInput) []prompt.Suggest
 
 // Complete :: return completions for metaqueries.
 func Complete(input *CompleterInput) []prompt.Suggest {
 	input.Query = strings.TrimSuffix(input.Query, ";")
-	var s = strings.Fields(input.Query)
+	cmd, _ := getCmdAndArgs(input.Query)
 
-	metaQueryObj, found := metaQueryDefinitions[s[0]]
+	metaQueryObj, found := metaQueryDefinitions[cmd]
 	if !found {
 		return []prompt.Suggest{}
 	}
