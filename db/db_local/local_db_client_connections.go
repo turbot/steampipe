@@ -84,7 +84,6 @@ func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampip
 	log.Printf("[TRACE] buildConnectionUpdateQueries: num updates %d", numUpdates)
 
 	if numUpdates > 0 {
-
 		// find any plugins which use a newer sdk version than steampipe.
 		validationFailures, validatedUpdates, validatedPlugins := steampipeconfig.ValidatePlugins(connectionUpdates.Update, connectionUpdates.ConnectionPlugins)
 		if len(validationFailures) > 0 {

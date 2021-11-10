@@ -3,6 +3,7 @@ package workspace
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/db/db_local"
 
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -66,7 +67,10 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 		utils.ShowError(err)
 		return
 	}
+	// set the global steampipe config
 	steampipeconfig.GlobalConfig = config
+	// update the viper default based on this loaded config
+	cmdconfig.SetViperDefaults(config)
 	refreshResult := w.client.RefreshConnectionAndSearchPaths()
 	if refreshResult.Error != nil {
 		fmt.Println()
