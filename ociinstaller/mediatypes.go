@@ -50,7 +50,9 @@ func MediaTypeForPlatform(imageType string) string {
 	case "db":
 		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+tar", imageType, runtime.GOOS, runtime.GOARCH)
 	case "fdw":
-		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, runtime.GOARCH)
+		// TACTICAL: fdw only supports AMD64 - on M1 macs Rosetta will emulate this for us
+		arch := "amd64"
+		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch)
 	case "plugin":
 		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, runtime.GOARCH)
 	}
