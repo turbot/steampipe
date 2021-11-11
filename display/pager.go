@@ -83,8 +83,7 @@ func execPager(cmd *exec.Cmd, content string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = strings.NewReader(content)
-	// Run it, so that this blocks out the go-prompt stuff.
-	// No point Start-ing it anyway
+	// run the command - it will block until the pager is exited
 	err := cmd.Run()
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "could not display results")
