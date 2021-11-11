@@ -1,3 +1,13 @@
+## v0.9.1 [2021-11-11]
+_Bug fixes_
+* Escape schema names when dropping connection schema. ([#1074](https://github.com/turbot/steampipe-postgres-fdw/issues/1074))
+* Add support for quoted arguments with whitespace in query meta-commands (e.g. `.inspect`). ([#1067](https://github.com/turbot/steampipe-postgres-fdw/issues/1067))
+* Fix issue where Postgres usernames weren't getting escaped properly when setting search path. ([#1094](https://github.com/turbot/steampipe-postgres-fdw/issues/1094)).
+* Add support to fall back to `more` (if available) where `less` is not available in the environment. ([#1072](https://github.com/turbot/steampipe-postgres-fdw/issues/1072))
+* Non-turbot plugin installs now show link to documentation. ([#1075](https://github.com/turbot/steampipe-postgres-fdw/issues/1075))
+* Constrain check table-output rendering to a minimum width to avoid rendering crashes. ([#1062](https://github.com/turbot/steampipe-postgres-fdw/issues/1062))
+* `steampipe check --dry-run` should not display control summary. ([#1053](https://github.com/turbot/steampipe-postgres-fdw/issues/1053))
+
 ## v0.9.0 [2021-10-24]
 _What's new?_
 * Update `check` command to support `markdown` and `HTML` output. ([#480](https://github.com/turbot/steampipe/issues/480), [#1011](https://github.com/turbot/steampipe/issues/1011))
@@ -21,7 +31,6 @@ _Bug fixes_
 
 
 ## v0.8.5 [2021-10-07]
-
 _Bug fixes_
 * Fix handling of null unicode chars in JSON fields. ([#102](https://github.com/turbot/steampipe-postgres-fdw/issues/102))
 * Fix issue where queries with a`limit` clause not always listing all results. Only pass the limit to the plugin if all quals are supported by plugin `key columns`. [#103](https://github.com/turbot/steampipe-postgres-fdw/issues/103))
