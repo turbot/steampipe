@@ -49,7 +49,7 @@ func (h *HandlerInput) args() []string {
 
 type handler func(input *HandlerInput) error
 
-// Handle :: handle metaquery.
+// Handle handles a metaquery execution from the interactive client
 func Handle(input *HandlerInput) error {
 	cmd, _ := getCmdAndArgs(input.Query)
 	metaQueryObj, found := metaQueryDefinitions[cmd]

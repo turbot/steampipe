@@ -32,9 +32,10 @@ func getCmdAndArgs(query string) (string, []string) {
 	return cmd, args
 }
 
+// splitByWhitespace uses the CSV decoder, using '\s' as the separator rune
+// this enables us to parse out the tokens - even if they are quoted and/or escaped
 func splitByWhitespace(str string) (s []string) {
-	strReader := strings.NewReader(str)
-	csvDecoder := csv.NewReader(strReader)
+	csvDecoder := csv.NewReader(strings.NewReader(str))
 	csvDecoder.Comma = ' '
 	csvDecoder.LazyQuotes = true
 	csvDecoder.TrimLeadingSpace = true
