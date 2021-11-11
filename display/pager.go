@@ -11,19 +11,13 @@ import (
 	"github.com/karrick/gows"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 )
 
 // ShowPaged :: displays the `content` in a system dependent pager
 func ShowPaged(content string) {
-	if isPagerNeeded(content) {
-		switch runtime.GOOS {
-		case "darwin", "linux":
-			nixLessPager(content)
-		case "windows":
-			winMorePager(content)
-		default:
-			nullPager(content)
-		}
+	if isPagerNeeded(content) && (runtime.GOOS == "darwin" || runtime.GOOS == "linux") {
+		nixPager(content)
 	} else {
 		nullPager(content)
 	}
@@ -59,24 +53,39 @@ func isPagerNeeded(content string) bool {
 	return false
 }
 
-func winMorePager(content string) {
-	// for the time being, route this to the nullpager
-	// eventually use windows `more` with a temp file
-	nullPager(content)
-}
-
 func nullPager(content string) {
 	// just dump the whole thing out
 	// we will use this for non-tty environments as well
 	fmt.Print(content)
 }
 
-func nixLessPager(content string) {
-	lessProcess := exec.Command("less", "-SRXF")
-	lessProcess.Stdout = os.Stdout
-	lessProcess.Stderr = os.Stderr
-	lessProcess.Stdin = strings.NewReader(content)
-	// Run it, so that this blocks out the go-prompt stuff.
-	// No point Start-ing it anyway
-	lessProcess.Run()
+func nixPager(content string) {
+	if isLessAvailable() {
+		execPager(exec.Command("less", "-SRXF"), content)
+	} else if isMoreAvailable() {
+		execPager(exec.Command("more"), content)
+	} else {
+		nullPager(content)
+	}
+}
+
+func isLessAvailable() bool {
+	_, err := exec.LookPath("less")
+	return err == nil
+}
+
+func isMoreAvailable() bool {
+	_, err := exec.LookPath("more")
+	return err == nil
+}
+
+func execPager(cmd *exec.Cmd, content string) {
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = strings.NewReader(content)
+	// run the command - it will block until the pager is exited
+	err := cmd.Run()
+	if err != nil {
+		utils.ShowErrorWithMessage(err, "could not display results")
+	}
 }
