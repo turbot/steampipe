@@ -12,6 +12,7 @@ import (
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/grpc"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -143,7 +144,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 
 	startTime := time.Now()
 	control := r.Control
-	log.Printf("[TRACE] control start %s\n", control.Name())
+	log.Printf("[WARN] control start, %s\n", control.Name())
 
 	// function to cleanup and update status after control run completion
 	defer func() {
@@ -157,20 +158,24 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	}()
 
 	// get a db connection
+	log.Printf("[WARN] wait session for, %s\n", control.Name())
 	dbSession, err := client.AcquireSession(ctx)
-	log.Printf("[TRACE] got session for: %s\n", r.Control.Name())
+	log.Printf("[WARN] got session for, %s\n", r.Control.Name())
 	if err != nil {
-		r.SetError(fmt.Errorf("error acquiring database connection: %s", err.Error()))
+		r.SetError(fmt.Errorf("error acquiring database connection, %s", err.Error()))
 		return
 	}
 	defer func() {
-		log.Printf("[TRACE] closing session for: %s\n", r.Control.Name())
+		log.Printf("[WARN] closing session for, %s\n", r.Control.Name())
 		dbSession.Close()
 	}()
 
+	backendPid, err := db_client.GetBackendPid(ctx, dbSession)
+	log.Printf("[WARN] backend PID for, %s is %d\n", control.Name(), backendPid)
+
 	// set our status
-	r.executionTree.progress.OnControlExecuteStart()
 	r.runStatus = ControlRunStarted
+	r.executionTree.progress.OnControlExecuteStart()
 
 	// update the current running control in the Progress renderer
 	r.executionTree.progress.OnControlStart(control)
@@ -194,7 +199,9 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 
 	// execute the control query
 	// NOTE no need to pass an OnComplete callback - we are already closing our session after waiting for results
+	log.Printf("[WARN] execute start for, %s\n", control.Name())
 	queryResult, err := client.ExecuteInSession(ctxWithDeadline, dbSession, query, nil, false)
+	log.Printf("[WARN] execute finish for, %s\n", control.Name())
 
 	if err != nil {
 		r.attempts++
@@ -219,7 +226,9 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	r.queryResult = queryResult
 
 	// now wait for control completion
+	log.Printf("[WARN] wait result for, %s\n", control.Name())
 	r.waitForResults(ctx)
+	log.Printf("[WARN] finish result for, %s\n", control.Name())
 }
 
 func (r *ControlRun) getControlQueryContext(ctx context.Context) (context.Context, context.CancelFunc) {

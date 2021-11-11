@@ -13,12 +13,7 @@ import (
 
 func (c *DbClient) AcquireSession(ctx context.Context) (_ *sql.Conn, acquireSessionError error) {
 	c.sessionInitWaitGroup.Add(1)
-	c.sessionAcquireLock.Lock()
-
-	defer func() {
-		c.sessionInitWaitGroup.Done()
-		c.sessionAcquireLock.Unlock()
-	}()
+	defer c.sessionInitWaitGroup.Done()
 
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
@@ -26,6 +21,8 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *sql.Conn, acquireSess
 	if err != nil {
 		return nil, err
 	}
+
+	log.Printf("[WARN] Got Session with PID: %d", backendPid)
 
 	defer func() {
 		// make sure that we close the acquired session, in case of error
@@ -38,12 +35,28 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *sql.Conn, acquireSess
 		return session, nil
 	}
 
+	c.sessionMapMutex.Lock()
 	sessionStat, isInitialized := c.initializedSessions[backendPid]
+	c.sessionMapMutex.Unlock()
+
 	if !isInitialized {
 		sessionStat = NewSessionStat()
-		if err := c.ensureSessionFunc(ctx, session); err != nil {
+		log.Printf("[WARN] Session with PID: %d - waiting for init lock", backendPid)
+		lockError := c.parallelSessionInitLock.Acquire(ctx, 1)
+		if lockError != nil {
+			return nil, lockError
+		}
+
+		log.Printf("[WARN] Session with PID: %d - got init lock", backendPid)
+
+		err := c.ensureSessionFunc(ctx, session)
+		c.parallelSessionInitLock.Release(1)
+		if err != nil {
 			return nil, err
 		}
+
+		log.Printf("[WARN] Session with PID: %d - init DONE", backendPid)
+
 		sessionStat.Initialized = time.Now()
 		sessionStat.BackendPid = backendPid
 	}
@@ -57,13 +70,21 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *sql.Conn, acquireSess
 	}
 
 	sessionStat.UpdateUsage()
+
 	// now write back to the map
+	c.sessionMapMutex.Lock()
 	c.initializedSessions[backendPid] = sessionStat
+	c.sessionMapMutex.Unlock()
+
+	log.Printf("[WARN] Session with PID: %d - returning", backendPid)
 
 	return session, nil
 }
 
 func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64, error) {
+	// c.sessionAcquireMutex.Lock()
+	// defer c.sessionAcquireMutex.Unlock()
+
 	backoff, err := retry.NewFibonacci(100 * time.Millisecond)
 	if err != nil {
 		return nil, 0, err
@@ -83,7 +104,7 @@ func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64,
 			retries++
 			return retry.RetryableError(err)
 		}
-		backendPid, err = getBackendPid(localCtx, session)
+		backendPid, err = GetBackendPid(localCtx, session)
 		if err != nil {
 			session.Close()
 			retries++
@@ -104,7 +125,7 @@ func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64,
 }
 
 // get the unique postgres identifier for a database session
-func getBackendPid(ctx context.Context, session *sql.Conn) (int64, error) {
+func GetBackendPid(ctx context.Context, session *sql.Conn) (int64, error) {
 	var pid int64
 	rows, err := session.QueryContext(ctx, "select pg_backend_pid()")
 	if err != nil {

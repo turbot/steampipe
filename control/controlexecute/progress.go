@@ -2,7 +2,9 @@ package controlexecute
 
 import (
 	"fmt"
+	"log"
 	"sync"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -15,14 +17,16 @@ import (
 )
 
 type ControlProgressRenderer struct {
-	updateLock *sync.Mutex
-	total      int
-	pending    int
-	complete   int
-	error      int
-	spinner    *spinner.Spinner
-	enabled    bool
-	executing  int
+	startTime          time.Time
+	timeToFirstControl time.Duration
+	updateLock         *sync.Mutex
+	total              int
+	pending            int
+	complete           int
+	error              int
+	spinner            *spinner.Spinner
+	enabled            bool
+	executing          int
 }
 
 func NewControlProgressRenderer(total int) *ControlProgressRenderer {
@@ -37,14 +41,22 @@ func (p *ControlProgressRenderer) Start() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 
+	p.startTime = time.Now()
+
 	if p.enabled {
-		p.spinner = display.ShowSpinner("")
+		p.spinner = display.ShowSpinner("Starting Controls")
 	}
 }
 
 func (p *ControlProgressRenderer) OnControlExecuteStart() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
+
+	if p.timeToFirstControl == 0 {
+		p.timeToFirstControl = time.Since(p.startTime)
+		log.Println("[WARN] Time to first control:", p.timeToFirstControl)
+	}
+
 	if p.enabled {
 		// increment the parallel execution count
 		p.executing++
@@ -102,13 +114,13 @@ func (p *ControlProgressRenderer) Finish() {
 }
 
 func (p ControlProgressRenderer) message() string {
-	return fmt.Sprintf("Running %d %s. (%d complete, %d pending, %d %s) [%d in parallel]",
+	return fmt.Sprintf("Running %d %s. (%d complete, %d running, %d pending, %d %s)",
 		p.total,
 		utils.Pluralize("control", p.total),
 		p.complete,
+		p.executing,
 		p.pending,
 		p.error,
 		utils.Pluralize("error", p.error),
-		p.executing,
 	)
 }

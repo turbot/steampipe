@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
@@ -18,16 +19,20 @@ import (
 
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
-	connectionString   string
-	ensureSessionFunc  db_common.EnsureSessionStateCallback
-	sessionAcquireLock *sync.Mutex
-	dbClient           *sql.DB
+	connectionString  string
+	ensureSessionFunc db_common.EnsureSessionStateCallback
+	dbClient          *sql.DB
 	// map of database sessions, keyed to the backend_pid in postgres
 	// used to track whether a given session has been initialised
-	initializedSessions       map[int64]*SessionStats
+	initializedSessions       SessionStatMap
 	schemaMetadata            *schema.Metadata
 	requiredSessionSearchPath []string
-	sessionInitWaitGroup      *sync.WaitGroup
+
+	// concurrency management for db session access
+	sessionMapMutex         *sync.Mutex
+	sessionAcquireMutex     *sync.Mutex
+	parallelSessionInitLock *semaphore.Weighted
+	sessionInitWaitGroup    *sync.WaitGroup
 }
 
 func NewDbClient(connectionString string) (*DbClient, error) {
@@ -39,13 +44,15 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 	}
 	client := &DbClient{
 		dbClient:            db,
-		sessionAcquireLock:  new(sync.Mutex),
-		initializedSessions: make(map[int64]*SessionStats),
+		initializedSessions: make(SessionStatMap),
 		// set up a blank struct for the schema metadata
 		schemaMetadata: schema.NewMetadata(),
 		// a waitgroup to keep track of active session initializations
 		// so that we don't try to shutdown while an init is underway
-		sessionInitWaitGroup: &sync.WaitGroup{},
+		sessionInitWaitGroup:    &sync.WaitGroup{},
+		sessionMapMutex:         new(sync.Mutex),
+		sessionAcquireMutex:     new(sync.Mutex),
+		parallelSessionInitLock: semaphore.NewWeighted(5),
 	}
 	client.connectionString = connectionString
 	client.LoadSchema()
@@ -144,7 +151,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	defer utils.LogTime("db_client.refreshDbClient end")
 
 	// clear the initializedSessions map
-	c.initializedSessions = make(map[int64]*SessionStats)
+	c.initializedSessions = make(SessionStatMap)
 	err := c.dbClient.Close()
 	if err != nil {
 		return err

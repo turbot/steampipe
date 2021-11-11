@@ -4,6 +4,8 @@ import (
 	"time"
 )
 
+type SessionStatMap map[int64]*SessionStats
+
 // SessionStats is a struct uses to store initialisation status for database sessions
 type SessionStats struct {
 	Created     time.Time
