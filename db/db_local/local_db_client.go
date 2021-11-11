@@ -191,7 +191,7 @@ func (c *LocalDbClient) setUserSearchPath() error {
 	}
 
 	// escape the schema names
-	searchPath = db_common.PgEscapeSearchPath(searchPath)
+	escapedSearchPath := db_common.PgEscapeSearchPath(searchPath)
 
 	log.Println("[TRACE] setting user search path to", searchPath)
 
@@ -212,8 +212,8 @@ func (c *LocalDbClient) setUserSearchPath() error {
 		}
 		queries = append(queries, fmt.Sprintf(
 			"alter user %s set search_path to %s;",
-			user,
-			strings.Join(searchPath, ","),
+			db_common.PgEscapeName(user),
+			strings.Join(escapedSearchPath, ","),
 		))
 	}
 	query = strings.Join(queries, "\n")
