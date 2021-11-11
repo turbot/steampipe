@@ -49,18 +49,14 @@ func (h *HandlerInput) args() []string {
 
 type handler func(input *HandlerInput) error
 
-// Handle :: handle metaquery.
+// Handle handles a metaquery execution from the interactive client
 func Handle(input *HandlerInput) error {
-	input.Query = strings.TrimSuffix(input.Query, ";")
-	var s = strings.Fields(input.Query)
-
-	var handlerFunction handler
-	metaQueryObj, found := metaQueryDefinitions[s[0]]
+	cmd, _ := getCmdAndArgs(input.Query)
+	metaQueryObj, found := metaQueryDefinitions[cmd]
 	if !found {
-		return fmt.Errorf("not sure how to handle '%s'", s[0])
+		return fmt.Errorf("not sure how to handle '%s'", cmd)
 	}
-
-	handlerFunction = metaQueryObj.handler
+	handlerFunction := metaQueryObj.handler
 	return handlerFunction(input)
 }
 

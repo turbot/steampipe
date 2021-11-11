@@ -1,6 +1,8 @@
 package metaquery
 
-import "github.com/turbot/steampipe/constants"
+import (
+	"github.com/turbot/steampipe/constants"
+)
 
 type metaQueryArg struct {
 	value       string
