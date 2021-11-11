@@ -12,9 +12,9 @@ type CmdAndArgsExpected struct {
 
 func TestGetCmdAndArgs(t *testing.T) {
 	cases := map[string]CmdAndArgsExpected{
-		`.cmd arg1`:             {cmd: ".cmd", args: []string{"arg1"}},
-		`.cmd arg1 arg2`:        {cmd: ".cmd", args: []string{"arg1", "arg2"}},
-		`.cmd "arg1 arg2" arg3`: {cmd: ".cmd", args: []string{"arg1 arg2", "arg3"}},
+		`.cmd arg1`:               {cmd: ".cmd", args: []string{"arg1"}},
+		`.cmd arg1 arg2`:          {cmd: ".cmd", args: []string{"arg1", "arg2"}},
+		`.cmd "arg1a arg1b" arg2`: {cmd: ".cmd", args: []string{"arg1a arg1b", "arg2"}},
 	}
 
 	for input, expected := range cases {
