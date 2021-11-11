@@ -221,7 +221,7 @@ func (c *LocalDbClient) setUserSearchPath() ([]string, error) {
 		}
 		queries = append(queries, fmt.Sprintf(
 			"alter user %s set search_path to %s;",
-			user,
+			db_common.PgEscapeName(user),
 			strings.Join(escapedSearchPath, ","),
 		))
 	}
