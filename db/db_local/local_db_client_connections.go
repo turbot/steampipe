@@ -194,7 +194,7 @@ func commentsQuery(p *steampipeconfig.ConnectionPlugin) []string {
 
 func deleteConnectionQuery(name string) []string {
 	return []string{
-		fmt.Sprintf(`DROP SCHEMA IF EXISTS %s CASCADE;`, name),
+		fmt.Sprintf(`DROP SCHEMA IF EXISTS %s CASCADE;`, db_common.PgEscapeName(name)),
 	}
 }
 
