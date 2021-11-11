@@ -16,12 +16,8 @@ import (
 
 // ShowPaged :: displays the `content` in a system dependent pager
 func ShowPaged(content string) {
-	if isPagerNeeded(content) {
-		if (runtime.GOOS == "darwin" || runtime.GOOS == "linux") && (isMoreAvailable() || isLessAvailable()) {
-			nixMoreOrLessPager(content)
-		} else {
-			nullPager(content)
-		}
+	if isPagerNeeded(content) && (runtime.GOOS == "darwin" || runtime.GOOS == "linux") {
+		nixPager(content)
 	} else {
 		nullPager(content)
 	}
@@ -63,25 +59,13 @@ func nullPager(content string) {
 	fmt.Print(content)
 }
 
-func nixMoreOrLessPager(content string) {
-	var pager *exec.Cmd
+func nixPager(content string) {
 	if isLessAvailable() {
-		pager = exec.Command("less", "-SRXF")
+		execPager(exec.Command("less", "-SRXF"), content)
 	} else if isMoreAvailable() {
-		pager = exec.Command("more")
+		execPager(exec.Command("more"), content)
 	} else {
-		// we should never get here
-		utils.ShowWarning("could not find a supported pager in environment")
-		return
-	}
-	pager.Stdout = os.Stdout
-	pager.Stderr = os.Stderr
-	pager.Stdin = strings.NewReader(content)
-	// Run it, so that this blocks out the go-prompt stuff.
-	// No point Start-ing it anyway
-	err := pager.Run()
-	if err != nil {
-		utils.ShowErrorWithMessage(err, "could not display results")
+		nullPager(content)
 	}
 }
 
@@ -89,7 +73,20 @@ func isLessAvailable() bool {
 	_, err := exec.LookPath("less")
 	return err == nil
 }
+
 func isMoreAvailable() bool {
 	_, err := exec.LookPath("more")
 	return err == nil
+}
+
+func execPager(cmd *exec.Cmd, content string) {
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = strings.NewReader(content)
+	// Run it, so that this blocks out the go-prompt stuff.
+	// No point Start-ing it anyway
+	err := cmd.Run()
+	if err != nil {
+		utils.ShowErrorWithMessage(err, "could not display results")
+	}
 }
