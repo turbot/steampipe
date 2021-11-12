@@ -30,17 +30,17 @@ const SteampipeConfContent = `# Custom settings for Steampipe
 #
 # see documentation on this behavior in the postgresql docs:
 # https://www.postgresql.org/docs/11/config-setting.html#CONFIG-INCLUDES
-## 
-## autovacuum=off
-## bgwriter_lru_maxpages=0
-## effective_cache_size=64kB
-## fsync=off
-## full_page_writes=off
-## maintenance_work_mem=1024kB
-## password_encryption=scram-sha-256
-## random_page_cost=0.01
-## seq_page_cost=0.01
-## 
+
+autovacuum=off
+bgwriter_lru_maxpages=0
+effective_cache_size=64kB
+fsync=off
+full_page_writes=off
+maintenance_work_mem=1024kB
+password_encryption=scram-sha-256
+random_page_cost=0.01
+seq_page_cost=0.01
+
 # If the shared buffers are too small then large tables in memory can create
 # "no unpinned buffers available" errors.
 #
@@ -54,18 +54,18 @@ const SteampipeConfContent = `# Custom settings for Steampipe
 #
 # In tha case, set synchronous_commit in an overriding config file
 # synchronous_commit=off
-## 
-## temp_buffers=800kB
-## timezone=UTC
-## track_activities=off
-## track_counts=off
-## wal_buffers=32kB
-## work_mem=64kB
+
+temp_buffers=800kB
+timezone=UTC
+track_activities=off
+track_counts=off
+wal_buffers=32kB
+work_mem=64kB
 jit=off
-## 
+ 
 # postgres log collection
-## log_statement=all
-## log_min_duration_statement=2000
-## logging_collector=on
-## log_min_error_statement=error
-## log_filename='database-%Y-%m-%d.log'`
+log_statement=all
+log_min_duration_statement=2000
+logging_collector=on
+log_min_error_statement=error
+log_filename='database-%Y-%m-%d.log'`
