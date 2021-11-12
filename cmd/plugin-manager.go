@@ -29,6 +29,34 @@ func pluginManagerCmd() *cobra.Command {
 	return cmd
 }
 
+func testPluginManagerCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:    "test-plugin-manager",
+		Run:    runTestPluginManagerCmd,
+		Hidden: true,
+	}
+	cmdconfig.OnCmd(cmd)
+
+	return cmd
+}
+func runTestPluginManagerCmd(cmd *cobra.Command, args []string) {
+	log.Printf("[WARN] runTestPluginManagerCmd")
+	man, err := plugin_manager.GetPluginManager()
+	if err != nil {
+		log.Printf("[WARN] error getting plugin manager: %s", err)
+		return
+	}
+	log.Printf("[WARN] got plugin manager")
+
+	plugin, err := man.Get(&pb.GetRequest{Connection: "aws"})
+	if err != nil {
+		log.Printf("[WARN] error getting plugin manager: %s", err)
+		return
+	}
+	log.Printf("[WARN] got plugin %v", plugin)
+
+}
+
 func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	logger := createPluginManagerLog()
 
