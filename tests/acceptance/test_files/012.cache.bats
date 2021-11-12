@@ -5,13 +5,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe plugin install chaos
   run steampipe service start
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json
-  echo $output > output1.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check" --output json &> output1.json
   # store the time from 1st query in `content`
   content=$(cat output1.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json
-  echo $output > output2.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check" --output json &> output2.json
   # store the time from 2nd query in `new_content`
   new_content=$(cat output2.json | jq '.[0].time_now')
 
@@ -29,13 +27,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe plugin install chaos
   run steampipe service start
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json
-  echo $output > output1.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check" --output json &> output1.json
   # store the time from 1st query in `content`
   content=$(cat output1.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b from chaos_cache_check" --output json
-  echo $output > output2.json
+  steampipe query "select time_now, a, b from chaos_cache_check" --output json &> output2.json
   # store the time from 2nd query in `new_content`
   new_content=$(cat output2.json | jq '.[0].time_now')
 
@@ -53,23 +49,19 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe plugin install chaos
   run steampipe service start
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json
-  echo $output > output1.json
+  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json &> output1.json
   # store the time from 1st query in `content`
   content=$(cat output1.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json
-  echo $output > output2.json
+  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json &> output2.json
   # store the time from 2nd query in `new_content`
   content2=$(cat output2.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json
-  echo $output > output3.json
+  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json &> output3.json
   # store the time from 2nd query in `new_content`
   content3=$(cat output3.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json
-  echo $output > output4.json
+  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json &> output4.json
   # store the time from 2nd query in `new_content`
   content4=$(cat output4.json | jq '.[0].time_now')
 
@@ -91,23 +83,19 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe plugin install chaos
   run steampipe service start
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json
-  echo $output > output1.json
+  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json &> output1.json
   # store the time from 1st query in `content`
   content=$(cat output1.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b from chaos_cache_check" --output json
-  echo $output > output2.json
+  run steampipe query "select time_now, a, b from chaos_cache_check" --output json &> output2.json
   # store the time from 2nd query in `new_content`
   content2=$(cat output2.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b from chaos_cache_check" --output json
-  echo $output > output3.json
+  run steampipe query "select time_now, a, b from chaos_cache_check" --output json &> output3.json
   # store the time from 2nd query in `new_content`
   content3=$(cat output3.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b from chaos_cache_check" --output json
-  echo $output > output4.json
+  run steampipe query "select time_now, a, b from chaos_cache_check" --output json &> output4.json
   # store the time from 2nd query in `new_content`
   content4=$(cat output4.json | jq '.[0].time_now')
 
@@ -129,13 +117,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe plugin install chaos
   run steampipe service start
 
-  run steampipe query "select time_now, a, b from chaos_cache_check" --output json
-  echo $output > output1.json
+  steampipe query "select time_now, a, b from chaos_cache_check" --output json &> output1.json
   # store the time from 1st query in `content`
   content=$(cat output1.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json
-  echo $output > output2.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check" --output json &> output2.json
   # store the time from 2nd query in `new_content`
   new_content=$(cat output2.json | jq '.[0].time_now')
 
@@ -158,13 +144,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe plugin install chaos
   run steampipe service start
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check limit 3" --output json
-  echo $output > output1.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check limit 3" --output json &> output1.json
   # store the time from 1st query in `content`
   content=$(cat output1.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check limit 3" --output json
-  echo $output > output2.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check limit 3" --output json &> output2.json
   # store the time from 2nd query in `new_content`
   new_content=$(cat output2.json | jq '.[0].time_now')
 
@@ -182,13 +166,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe plugin install chaos
   run steampipe service start
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json
-  echo $output > output1.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check" --output json &> output1.json
   # store the time from 1st query in `content`
   content=$(cat output1.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check limit 3" --output json
-  echo $output > output2.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check limit 3" --output json &> output2.json
   # store the time from 2nd query in `new_content`
   new_content=$(cat output2.json | jq '.[0].time_now')
 
@@ -206,13 +188,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe plugin install chaos
   run steampipe service start
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check limit 3" --output json
-  echo $output > output1.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check limit 3" --output json &> output1.json
   # store the time from 1st query in `content`
   content=$(cat output1.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check" --output json
-  echo $output > output2.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check" --output json &> output2.json
   # store the time from 2nd query in `new_content`
   new_content=$(cat output2.json | jq '.[0].time_now')
 
@@ -235,13 +215,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe plugin install chaos
   run steampipe service start
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check limit 4" --output json
-  echo $output > output1.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check limit 4" --output json &> output1.json
   # store the time from 1st query in `content`
   content=$(cat output1.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check limit 3" --output json
-  echo $output > output2.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check limit 3" --output json &> output2.json
   # store the time from 2nd query in `new_content`
   new_content=$(cat output2.json | jq '.[0].time_now')
 
@@ -259,13 +237,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe plugin install chaos
   run steampipe service start
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check limit 3" --output json
-  echo $output > output1.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check limit 3" --output json &> output1.json
   # store the time from 1st query in `content`
   content=$(cat output1.json | jq '.[0].time_now')
 
-  run steampipe query "select time_now, a, b, c from chaos_cache_check limit 4" --output json
-  echo $output > output2.json
+  steampipe query "select time_now, a, b, c from chaos_cache_check limit 4" --output json &> output2.json
   # store the time from 2nd query in `new_content`
   new_content=$(cat output2.json | jq '.[0].time_now')
 
