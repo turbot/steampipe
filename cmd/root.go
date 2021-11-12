@@ -151,6 +151,7 @@ func AddCommands() {
 		daemonCmd(),
 		pluginManagerCmd(),
 		testPluginManagerCmd(),
+		testPluginCmd(),
 	)
 }
 
