@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"syscall"
 
@@ -40,7 +41,12 @@ func start() error {
 	// create command which will start plugin-manager
 	// we have to spawn a separate process to do this so the plugin process itself is not an orphan
 
-	pluginManagerCmd := exec.Command("steampipe", "daemon", "--install-dir", viper.GetString(constants.ArgInstallDir))
+	// get the location of the currently running steampipe process
+	executable, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	pluginManagerCmd := exec.Command(executable, "daemon", "--install-dir", viper.GetString(constants.ArgInstallDir))
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
