@@ -40,7 +40,7 @@ func start() error {
 	// create command which will start plugin-manager
 	// we have to spawn a separate process to do this so the plugin process itself is not an orphan
 
-	pluginManagerCmd := exec.Command("steampipe", "plugin-manager", "--install-dir", viper.GetString(constants.ArgInstallDir))
+	pluginManagerCmd := exec.Command("steampipe", "daemon", "--install-dir", viper.GetString(constants.ArgInstallDir))
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
