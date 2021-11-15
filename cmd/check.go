@@ -272,7 +272,6 @@ func initialiseCheck() *checkInitData {
 }
 
 func handleCheckInitResult(initData *checkInitData) bool {
-	shouldExit := false
 	// if there is an error or cancellation we bomb out
 	// check for the various kinds of failures
 	utils.FailOnError(initData.result.Error)
@@ -281,9 +280,11 @@ func handleCheckInitResult(initData *checkInitData) bool {
 		utils.FailOnError(initData.ctx.Err())
 	}
 
-	// if there is a usage warning we display it and exit politely
+	// if there is a usage warning we display it
 	initData.result.DisplayMessages()
-	shouldExit = len(initData.result.Warnings) > 0
+
+	// if there are no controls, set shouldExit to true
+	shouldExit := initData.workspace == nil || len(initData.workspace.Controls) == 0
 
 	return shouldExit
 }
