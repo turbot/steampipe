@@ -2,7 +2,6 @@ package db_common
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/turbot/steampipe/steampipeconfig"
 
@@ -10,7 +9,7 @@ import (
 	"github.com/turbot/steampipe/schema"
 )
 
-type EnsureSessionStateCallback = func(context.Context, *sql.Conn) error
+type EnsureSessionStateCallback = func(context.Context, *DBSession) error
 
 type Client interface {
 	Close() error
@@ -23,13 +22,13 @@ type Client interface {
 	SetSessionSearchPath(...string) error
 	ContructSearchPath(requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error)
 
-	AcquireSession(ctx context.Context) (*sql.Conn, error)
+	AcquireSession(ctx context.Context) (*DBSession, error)
 
 	ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error)
 	Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error)
 
-	ExecuteSyncInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error)
-	ExecuteInSession(ctx context.Context, session *sql.Conn, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error)
+	ExecuteSyncInSession(ctx context.Context, session *DBSession, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error)
+	ExecuteInSession(ctx context.Context, session *DBSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error)
 
 	CacheOn() error
 	CacheOff() error

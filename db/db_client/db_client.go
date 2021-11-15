@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -19,20 +18,20 @@ import (
 
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
-	connectionString  string
-	ensureSessionFunc db_common.EnsureSessionStateCallback
-	dbClient          *sql.DB
-	// map of database sessions, keyed to the backend_pid in postgres
-	// used to track whether a given session has been initialised
-	initializedSessions       SessionStatMap
+	connectionString          string
+	ensureSessionFunc         db_common.EnsureSessionStateCallback
+	dbClient                  *sql.DB
 	schemaMetadata            *schema.Metadata
 	requiredSessionSearchPath []string
 
 	// concurrency management for db session access
-	sessionMapMutex         *sync.Mutex
-	sessionAcquireMutex     *sync.Mutex
 	parallelSessionInitLock *semaphore.Weighted
 	sessionInitWaitGroup    *sync.WaitGroup
+
+	// map of database sessions, keyed to the backend_pid in postgres
+	// used to track database sessions that were created
+	sessions      map[int64]*db_common.DBSession
+	sessionsMutex *sync.Mutex
 }
 
 func NewDbClient(connectionString string) (*DbClient, error) {
@@ -43,16 +42,17 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 		return nil, err
 	}
 	client := &DbClient{
-		dbClient:            db,
-		initializedSessions: make(SessionStatMap),
+		dbClient: db,
 		// set up a blank struct for the schema metadata
 		schemaMetadata: schema.NewMetadata(),
 		// a waitgroup to keep track of active session initializations
 		// so that we don't try to shutdown while an init is underway
-		sessionInitWaitGroup:    &sync.WaitGroup{},
-		sessionMapMutex:         new(sync.Mutex),
-		sessionAcquireMutex:     new(sync.Mutex),
-		parallelSessionInitLock: semaphore.NewWeighted(5),
+		sessionInitWaitGroup: &sync.WaitGroup{},
+		// a weighted semaphore to control the maximum number parallel
+		// initializations under way
+		parallelSessionInitLock: semaphore.NewWeighted(3),
+		sessions:                make(map[int64]*db_common.DBSession),
+		sessionsMutex:           &sync.Mutex{},
 	}
 	client.connectionString = connectionString
 	client.LoadSchema()
@@ -96,8 +96,8 @@ func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallba
 func (c *DbClient) Close() error {
 	if c.dbClient != nil {
 		// clear the map - so that we can't reuse it
-		log.Printf("[TRACE] Number of unique database sessions: %d\n", len(c.initializedSessions))
-		c.initializedSessions = nil
+		utils.DebugDumpJSON("Sessions:", c.sessions)
+		c.sessions = nil
 		c.sessionInitWaitGroup.Wait()
 		return c.dbClient.Close()
 	}
@@ -151,7 +151,6 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	defer utils.LogTime("db_client.refreshDbClient end")
 
 	// clear the initializedSessions map
-	c.initializedSessions = make(SessionStatMap)
 	err := c.dbClient.Close()
 	if err != nil {
 		return err

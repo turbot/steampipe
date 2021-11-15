@@ -2,7 +2,6 @@ package controlexecute
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"strings"
@@ -12,7 +11,6 @@ import (
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/grpc"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -30,6 +28,33 @@ const (
 	ControlRunError
 )
 
+type Lifecycle struct {
+	Contructed time.Time
+
+	FirstExecute time.Time
+
+	ExecuteStart time.Time
+
+	QueuedForSession time.Time
+	AcquiredSession  time.Time
+
+	QueryResolutionStart  time.Time
+	QueryResolutionFinish time.Time
+
+	SetSearchPathStart  time.Time
+	SetSearchPathFinish time.Time
+
+	QueryStart  time.Time
+	QueryFinish time.Time
+
+	GatherResultStart  time.Time
+	GatherResultFinish time.Time
+
+	RetriesStarted []time.Time
+
+	ExecuteEnd time.Time
+}
+
 // ControlRun is a struct representing a  a control run - will contain one or more result items (i.e. for one or more resources)
 type ControlRun struct {
 	runError error `json:"-"`
@@ -40,6 +65,11 @@ type ControlRun struct {
 
 	// execution duration
 	Duration time.Duration `json:"-"`
+
+	// Lifecycle
+	Lifecycle *Lifecycle `json:"lifecycle"`
+
+	BackendPid int64 `json:"backend_pid"`
 
 	// the result
 	ControlId   string                  `json:"control_id"`
@@ -77,6 +107,8 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 
 		group:    group,
 		doneChan: make(chan bool, 1),
+
+		Lifecycle: &Lifecycle{Contructed: time.Now(), RetriesStarted: []time.Time{}},
 	}
 }
 
@@ -85,7 +117,7 @@ func (r *ControlRun) Skip() {
 }
 
 // set search path for this control run
-func (r *ControlRun) setSearchPath(ctx context.Context, session *sql.Conn, client db_common.Client) error {
+func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.DBSession, client db_common.Client) error {
 	utils.LogTime("ControlRun.setSearchPath start")
 	defer utils.LogTime("ControlRun.setSearchPath end")
 
@@ -114,15 +146,15 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *sql.Conn, clien
 
 	// no execute the SQL to actuall set the search path
 	q := fmt.Sprintf("set search_path to %s", strings.Join(newSearchPath, ","))
-	_, err = session.ExecContext(ctx, q)
+	_, err = session.Raw.ExecContext(ctx, q)
 	return err
 }
 
-func (r *ControlRun) getCurrentSearchPath(ctx context.Context, session *sql.Conn) ([]string, error) {
+func (r *ControlRun) getCurrentSearchPath(ctx context.Context, session *db_common.DBSession) ([]string, error) {
 	utils.LogTime("ControlRun.getCurrentSearchPath start")
 	defer utils.LogTime("ControlRun.getCurrentSearchPath end")
 
-	row := session.QueryRowContext(ctx, "show search_path")
+	row := session.Raw.QueryRowContext(ctx, "show search_path")
 	pathAsString := ""
 	err := row.Scan(&pathAsString)
 	if err != nil {
@@ -142,9 +174,13 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
 
-	startTime := time.Now()
+	r.Lifecycle.ExecuteStart = time.Now()
+	if r.Lifecycle.FirstExecute.IsZero() {
+		r.Lifecycle.FirstExecute = r.Lifecycle.ExecuteStart
+	}
+
 	control := r.Control
-	log.Printf("[WARN] control start, %s\n", control.Name())
+	log.Printf("[TRACE] control start, %s\n", control.Name())
 
 	// function to cleanup and update status after control run completion
 	defer func() {
@@ -154,44 +190,52 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 		if len(r.Severity) != 0 {
 			r.group.updateSeverityCounts(r.Severity, r.Summary)
 		}
-		r.Duration = time.Since(startTime)
+		r.Lifecycle.ExecuteEnd = time.Now()
+		r.Duration = r.Lifecycle.ExecuteEnd.Sub(r.Lifecycle.ExecuteStart)
+		log.Printf("[WARN] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.executionTree.progress.executing)
 	}()
 
 	// get a db connection
 	log.Printf("[WARN] wait session for, %s\n", control.Name())
+	r.Lifecycle.QueuedForSession = time.Now()
 	dbSession, err := client.AcquireSession(ctx)
-	log.Printf("[WARN] got session for, %s\n", r.Control.Name())
+	log.Printf("[WARN] got session for, %s, %d\n", r.Control.Name(), dbSession.BackendPid)
 	if err != nil {
 		r.SetError(fmt.Errorf("error acquiring database connection, %s", err.Error()))
 		return
 	}
+	r.Lifecycle.AcquiredSession = time.Now()
 	defer func() {
-		log.Printf("[WARN] closing session for, %s\n", r.Control.Name())
+		log.Printf("[WARN] closing session for, %s, %d\n", r.Control.Name(), dbSession.BackendPid)
 		dbSession.Close()
 	}()
 
-	backendPid, err := db_client.GetBackendPid(ctx, dbSession)
-	log.Printf("[WARN] backend PID for, %s is %d\n", control.Name(), backendPid)
+	log.Printf("[TRACE] backend PID for, %s is %d\n", control.Name(), dbSession.BackendPid)
 
 	// set our status
 	r.runStatus = ControlRunStarted
 	r.executionTree.progress.OnControlExecuteStart()
+	log.Printf("[WARN] execute start for, %s, , %d\n", control.Name(), r.executionTree.progress.executing)
 
 	// update the current running control in the Progress renderer
 	r.executionTree.progress.OnControlStart(control)
 
 	// resolve the control query
+	r.Lifecycle.QueryResolutionStart = time.Now()
 	query, err := r.resolveControlQuery(err, control)
 	if err != nil {
 		r.SetError(err)
 		return
 	}
+	r.Lifecycle.QueryResolutionFinish = time.Now()
 
 	log.Printf("[TRACE] setting search path %s\n", control.Name())
+	r.Lifecycle.SetSearchPathStart = time.Now()
 	if err := r.setSearchPath(ctx, dbSession, client); err != nil {
 		r.SetError(err)
 		return
 	}
+	r.Lifecycle.SetSearchPathFinish = time.Now()
 
 	ctxWithDeadline, cancel := r.getControlQueryContext(ctx)
 	// Even though ctx will expire, it is good practice to call its cancellation function in any case.
@@ -199,9 +243,11 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 
 	// execute the control query
 	// NOTE no need to pass an OnComplete callback - we are already closing our session after waiting for results
-	log.Printf("[WARN] execute start for, %s\n", control.Name())
+	log.Printf("[TRACE] execute start for, %s\n", control.Name())
+	r.Lifecycle.QueryStart = time.Now()
 	queryResult, err := client.ExecuteInSession(ctxWithDeadline, dbSession, query, nil, false)
-	log.Printf("[WARN] execute finish for, %s\n", control.Name())
+	r.Lifecycle.QueryFinish = time.Now()
+	log.Printf("[TRACE] execute finish for, %s\n", control.Name())
 
 	if err != nil {
 		r.attempts++
@@ -213,6 +259,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 				ctxWithDeadline, cancel := r.getControlQueryContext(ctx)
 				defer cancel()
 				// recurse into this function to retry use the same context, so that we respect the timeout
+				r.Lifecycle.RetriesStarted = append(r.Lifecycle.RetriesStarted, time.Now())
 				r.Execute(ctxWithDeadline, client)
 				return
 			} else {
@@ -226,9 +273,9 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	r.queryResult = queryResult
 
 	// now wait for control completion
-	log.Printf("[WARN] wait result for, %s\n", control.Name())
+	log.Printf("[TRACE] wait result for, %s\n", control.Name())
 	r.waitForResults(ctx)
-	log.Printf("[WARN] finish result for, %s\n", control.Name())
+	log.Printf("[TRACE] finish result for, %s\n", control.Name())
 }
 
 func (r *ControlRun) getControlQueryContext(ctx context.Context) (context.Context, context.CancelFunc) {
@@ -267,6 +314,8 @@ func (r *ControlRun) waitForResults(ctx context.Context) {
 }
 
 func (r *ControlRun) gatherResults() {
+	r.Lifecycle.GatherResultStart = time.Now()
+	defer func() { r.Lifecycle.GatherResultFinish = time.Now() }()
 	for {
 		select {
 		case row := <-*r.queryResult.RowChan:

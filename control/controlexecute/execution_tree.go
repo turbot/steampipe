@@ -88,14 +88,20 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 		e.progress.Finish()
 	}()
 
+	maxParallelGoRoutines := viper.GetInt64(constants.ArgMaxParallel) * 3
+	if maxParallelGoRoutines < 10 {
+		// goroutines are cheap
+		maxParallelGoRoutines = 10
+	}
+
 	// to limit the number of parallel controls go routines started
-	parallelismLock := semaphore.NewWeighted(viper.GetInt64(constants.ArgMaxParallel))
+	parallelismLock := semaphore.NewWeighted(maxParallelGoRoutines)
 
 	// just execute the root - it will traverse the tree
 	e.Root.Execute(ctx, client, parallelismLock)
 
 	// wait till we can acquire all semaphores - meaning that all runs have finished
-	parallelismLock.Acquire(ctx, viper.GetInt64(constants.ArgMaxParallel))
+	parallelismLock.Acquire(ctx, maxParallelGoRoutines)
 
 	failures := e.Root.Summary.Status.Alarm + e.Root.Summary.Status.Error
 
