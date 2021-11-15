@@ -1,6 +1,7 @@
 package steampipeconfig
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -32,7 +33,13 @@ type ConnectionPlugin struct {
 }
 
 // CreateConnectionPlugin instantiates a plugin for a connection, fetches schema and sends connection config
-func CreateConnectionPlugin(connection *modconfig.Connection) (*ConnectionPlugin, error) {
+func CreateConnectionPlugin(connection *modconfig.Connection) (res *ConnectionPlugin, err error) {
+	defer func() {
+		if err != nil {
+			// prefix error with the plugin name
+			err = fmt.Errorf("failed to start plugin '%s': %s", connection.PluginShortName, err)
+		}
+	}()
 	pluginName := connection.Plugin
 	connectionName := connection.Name
 	connectionConfig := connection.Config
@@ -41,7 +48,6 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (*ConnectionPlugin
 	log.Printf("[TRACE] CreateConnectionPlugin connection: '%s', pluginName: '%s'", connectionName, pluginName)
 
 	var pluginManager pluginshared.PluginManager
-	var err error
 	if env := os.Getenv("STEAMPIPE_PLUGIN_MANAGER_DEBUG"); strings.ToLower(env) == "true" {
 		// run plugin manager locally - for debugging
 		log.Printf("[WARN] running plugin manager in-process for debugging")

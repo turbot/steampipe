@@ -4,10 +4,6 @@ package constants
 const (
 	ArgHelp              = "help"
 	ArgVersion           = "version"
-	ArgJSON              = "json"
-	ArgCSV               = "csv"
-	ArgTable             = "table"
-	ArgLine              = "line"
 	ArgForce             = "force"
 	ArgAll               = "all"
 	ArgTimer             = "timing"

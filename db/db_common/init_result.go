@@ -1,6 +1,11 @@
 package db_common
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
+)
 
 type InitResult struct {
 	Error    error
@@ -21,6 +26,11 @@ func (r *InitResult) HasMessages() bool {
 }
 
 func (r *InitResult) DisplayMessages() {
+	// do not display message in json or csv output mode
+	output := viper.Get(constants.ArgOutput)
+	if output == constants.OutputFormatJSON || output == constants.OutputFormatCSV {
+		return
+	}
 	for _, w := range r.Warnings {
 		fmt.Println(w)
 	}

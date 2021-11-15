@@ -327,8 +327,8 @@ func validateArgs(cmd *cobra.Command, args []string) bool {
 func shouldPrintTiming() bool {
 	outputFormat := viper.GetString(constants.ArgOutput)
 
-	return ((viper.GetBool(constants.ArgTimer) && !viper.GetBool(constants.ArgDryRun)) &&
-		(outputFormat == controldisplay.OutputFormatText || outputFormat == controldisplay.OutputFormatBrief))
+	return (viper.GetBool(constants.ArgTimer) && !viper.GetBool(constants.ArgDryRun)) &&
+		(outputFormat == constants.OutputFormatText || outputFormat == constants.OutputFormatBrief)
 }
 
 func validateOutputFormat() error {
@@ -338,7 +338,7 @@ func validateOutputFormat() error {
 		// could not get a formatter
 		return err
 	}
-	if outputFormat == controldisplay.OutputFormatNone {
+	if outputFormat == constants.OutputFormatNone {
 		// set progress to false
 		viper.Set(constants.ArgProgress, false)
 	}
