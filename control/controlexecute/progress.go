@@ -3,7 +3,6 @@ package controlexecute
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -16,7 +15,6 @@ import (
 )
 
 type ControlProgressRenderer struct {
-	startTime  time.Time
 	updateLock *sync.Mutex
 	total      int
 	pending    int
@@ -40,8 +38,6 @@ func (p *ControlProgressRenderer) Start() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 
-	p.startTime = time.Now()
-
 	if p.enabled {
 		p.spinner = display.ShowSpinner("Starting Controls")
 	}
@@ -50,8 +46,11 @@ func (p *ControlProgressRenderer) Start() {
 func (p *ControlProgressRenderer) OnControlExecuteStart() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
+
 	// increment the parallel execution count
 	p.executing++
+
+	// decrement pending count
 	p.pending--
 
 	if p.enabled {
