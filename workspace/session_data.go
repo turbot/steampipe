@@ -29,15 +29,15 @@ func EnsureSessionData(ctx context.Context, source *SessionDataSource, session *
 
 	// if the steampipe_mod table is missing, assume we have no session data - go ahead and create it
 	if count == 0 {
-		session.Timeline.Add(db_common.DBSessionLifecycleEventPreparedStatementStart)
+		session.LifeCycle.Add("prepared_statement_start")
 		err = db_common.CreatePreparedStatements(ctx, source.PreparedStatementSource, session)
-		session.Timeline.Add(db_common.DBSessionLifecycleEventPreparedStatementFinish)
+		session.LifeCycle.Add("prepared_statement_finish")
 		if err != nil {
 			return err
 		}
-		session.Timeline.Add(db_common.DBSessionLifecycleEventIntrospectionTableStart)
+		session.LifeCycle.Add("introspection_table_start")
 		err = db_common.CreateIntrospectionTables(ctx, source.IntrospectionTableSource, session)
-		session.Timeline.Add(db_common.DBSessionLifecycleEventIntrospectionTableFinish)
+		session.LifeCycle.Add("introspection_table_finish")
 		if err != nil {
 			return err
 		}

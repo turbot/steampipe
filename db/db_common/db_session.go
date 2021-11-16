@@ -2,15 +2,19 @@ package db_common
 
 import (
 	"database/sql"
+	"time"
+
+	"github.com/turbot/steampipe/utils"
 )
 
 // DatabaseSession wraps over the raw database/sql.Conn and also allows for retaining useful instrumentation
 type DatabaseSession struct {
-	BackendPid  int64              `json:"backend_pid"`
-	Timeline    DBSessionLifecycle `json:"lifecycle"`
-	UsedCount   int                `json:"used"`
-	SearchPath  []string           `json:"-"`
-	Initialized bool               `json:"-"`
+	BackendPid  int64                 `json:"backend_pid"`
+	LifeCycle   *utils.LifecycleTimer `json:"lifecycle"`
+	UsedCount   int                   `json:"used"`
+	LastUsed    time.Time             `json:"last_used"`
+	SearchPath  []string              `json:"-"`
+	Initialized bool                  `json:"-"`
 
 	// this gets rewritten, since the database/sql gives back a new instance everytime
 	Connection *sql.Conn `json:"-"`
@@ -18,7 +22,7 @@ type DatabaseSession struct {
 
 func NewDBSession(backendPid int64) *DatabaseSession {
 	return &DatabaseSession{
-		Timeline:   DBSessionLifecycle{},
+		LifeCycle:  utils.NewLifecycleTimer(),
 		BackendPid: backendPid,
 	}
 }
@@ -26,7 +30,7 @@ func NewDBSession(backendPid int64) *DatabaseSession {
 // UpdateUsage updates the UsedCount of the DatabaseSession and also the lastUsed time
 func (s *DatabaseSession) UpdateUsage() {
 	s.UsedCount++
-	s.Timeline.Add(DBSessionLifecycleEventLastUsed)
+	s.LastUsed = time.Now()
 }
 
 func (s *DatabaseSession) Close() error {
