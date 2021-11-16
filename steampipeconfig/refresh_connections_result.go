@@ -9,6 +9,10 @@ type RefreshConnectionResult struct {
 	Error              error
 }
 
+func (r *RefreshConnectionResult) AddWarning(warning string) {
+	r.Warnings = append(r.Warnings, warning)
+}
+
 func (r *RefreshConnectionResult) ShowWarnings() {
 	for _, w := range r.Warnings {
 		fmt.Println(w)

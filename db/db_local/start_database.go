@@ -12,11 +12,12 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/turbot/steampipe/plugin_manager"
+
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -75,11 +76,6 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 			}
 		}
 	}()
-
-	// start the plugin manager
-	if err := plugin_manager.Start(); err != nil {
-		return ServiceFailedToStart, err
-	}
 
 	// remove the stale info file, ignoring errors - will overwrite anyway
 	_ = removeRunningInstanceInfo()
@@ -159,7 +155,12 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 		return ServiceFailedToStart, err
 	}
 
-	return ServiceStarted, err
+	// start the plugin manager
+	if err := plugin_manager.Start(); err != nil {
+		return ServiceFailedToStart, err
+	}
+
+	return ServiceStarted, nil
 }
 
 // getDatabaseName connects to the service and retrieves the database name
