@@ -47,18 +47,20 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*pb.Conn
 		log.Printf("[WARN] Failed to reload connection config: %s", err.Error())
 	}
 
+	log.Printf("[WARN] created ConnectionWatcher")
 	return w, nil
 }
 
 func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
+	log.Printf("[WARN] ConnectionWatcher handleFileWatcherEvent")
 	config, err := steampipeconfig.LoadConnectionConfig()
 	if err != nil {
 		log.Printf("[WARN] Error loading updated connection config: %s", err.Error())
 		return
 	}
-	client, err := db_local.NewLocalClient(constants.InvokerPluginManager)
+	client, err := db_local.NewLocalClient(constants.InvokerConnectionWatcher)
 	if err != nil {
-		log.Printf("[WARN] Error creating client ot handle updated connection config: %s", err.Error())
+		log.Printf("[WARN] Error creating client to handle updated connection config: %s", err.Error())
 	}
 	defer client.Close()
 
