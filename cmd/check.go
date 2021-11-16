@@ -230,7 +230,6 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 		return initData
 	}
 
-	display.UpdateSpinnerMessage(spinner, "Validating plugin requirements")
 	// check if the required plugins are installed
 	err = initData.workspace.CheckRequiredPluginsInstalled()
 	if err != nil {
