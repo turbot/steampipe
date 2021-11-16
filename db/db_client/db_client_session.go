@@ -61,13 +61,15 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DatabaseSes
 		err := c.ensureSessionFunc(ctx, session)
 		session.LifeCycle.Add("init_finish")
 
-		session.Initialized = true
-
 		c.sessionInitWaitGroup.Done()
 		c.parallelSessionInitLock.Release(1)
 		if err != nil {
 			return nil, err
 		}
+
+		// if there is no error, mark session as initialized
+		session.Initialized = true
+
 		log.Printf("[TRACE] Session with PID: %d - init DONE", backendPid)
 	}
 
