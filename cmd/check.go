@@ -32,28 +32,6 @@ type checkInitData struct {
 	result    *db_common.InitResult
 }
 
-func (i *checkInitData) warmUpConnections(ctx context.Context, connections int64, spinner *spinner.Spinner) error {
-	if connections > viper.GetInt64(constants.ArgMaxParallel) {
-		// we cannot initiate more connections than the max parallel
-		connections = viper.GetInt64(constants.ArgMaxParallel)
-	}
-	display.UpdateSpinnerMessage(spinner, "Warming up. Creating connections")
-	warmedUpSessions := []*db_common.DBSession{}
-	for range make([]int64, connections) {
-		if utils.IsContextCancelled(ctx) {
-			continue
-		}
-		if session, err := i.client.AcquireSession(ctx); err == nil {
-			warmedUpSessions = append(warmedUpSessions, session)
-			display.UpdateSpinnerMessage(spinner, fmt.Sprintf("Warming up. Creating connections - %d created", len(warmedUpSessions)))
-		}
-	}
-	for _, s := range warmedUpSessions {
-		s.Close()
-	}
-	return nil
-}
-
 type exportData struct {
 	executionTree *controlexecute.ExecutionTree
 	exportFormats []controldisplay.CheckExportTarget
@@ -242,7 +220,6 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 		initData.result.Error = err
 		return initData
 	}
-	display.UpdateSpinnerMessage(spinner, "Loading workspace")
 	// load workspace
 	initData.workspace, err = loadWorkspacePromptingForVariables(ctx, spinner)
 	if err != nil {
@@ -280,7 +257,6 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 	}
 	initData.client = client
 
-	display.UpdateSpinnerMessage(spinner, "Refreshing Service")
 	refreshResult := initData.client.RefreshConnectionAndSearchPaths()
 	if refreshResult.Error != nil {
 		initData.result.Error = refreshResult.Error
@@ -298,8 +274,6 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 	initData.client.SetEnsureSessionDataFunc(func(ctx context.Context, conn *db_common.DBSession) error {
 		return workspace.EnsureSessionData(ctx, sessionDataSource, conn)
 	})
-
-	initData.warmUpConnections(ctx, 3, spinner)
 
 	return initData
 }
