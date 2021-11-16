@@ -3,7 +3,6 @@ package workspace
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/utils"
@@ -30,15 +29,15 @@ func EnsureSessionData(ctx context.Context, source *SessionDataSource, session *
 
 	// if the steampipe_mod table is missing, assume we have no session data - go ahead and create it
 	if count == 0 {
-		session.Timeline.PreparedStatementStart = time.Now()
+		session.Timeline.PreparedStatementStart()
 		err = db_common.CreatePreparedStatements(ctx, source.PreparedStatementSource, session)
-		session.Timeline.PreparedStatementFinish = time.Now()
+		session.Timeline.PreparedStatementFinish()
 		if err != nil {
 			return err
 		}
-		session.Timeline.IntrospectionTableStart = time.Now()
+		session.Timeline.IntrospectionTableStart()
 		err = db_common.CreateIntrospectionTables(ctx, source.IntrospectionTableSource, session)
-		session.Timeline.IntrospectionTableFinish = time.Now()
+		session.Timeline.IntrospectionTableFinish()
 		if err != nil {
 			return err
 		}
