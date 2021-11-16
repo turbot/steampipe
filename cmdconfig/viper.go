@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/steampipeconfig"
 )
 
 // InitViper :: initializes and configures an instance of viper
@@ -28,10 +27,10 @@ func Viper() *viper.Viper {
 	return viper.GetViper()
 }
 
-func SetViperDefaults(config *steampipeconfig.SteampipeConfig) {
+func SetViperDefaults(configMap map[string]interface{}) {
 	setBaseDefaults()
-	if config != nil {
-		overrideDefaultsFromConfig(config)
+	if configMap != nil {
+		overrideDefaultsFromConfig(configMap)
 	}
 	overrideDefaultsFromEnv()
 }
@@ -48,8 +47,8 @@ func setBaseDefaults() {
 	}
 }
 
-func overrideDefaultsFromConfig(config *steampipeconfig.SteampipeConfig) {
-	for k, v := range config.ConfigMap() {
+func overrideDefaultsFromConfig(configMap map[string]interface{}) {
+	for k, v := range configMap {
 		viper.SetDefault(k, v)
 	}
 }
