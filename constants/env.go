@@ -11,6 +11,7 @@ const (
 	EnvCheckDisplayWidth = "STEAMPIPE_CHECK_DISPLAY_WIDTH"
 	EnvCacheEnabled      = "STEAMPIPE_CACHE"
 	EnvCacheTTL          = "STEAMPIPE_CACHE_TTL"
+	EnvConnectionWatcher = "STEAMPIPE_CONNECTION_WATCHER"
 	// EnvInputVarPrefix is the prefix for environment variables that represent values for input variables.
 	EnvInputVarPrefix = "SP_VAR_"
 )

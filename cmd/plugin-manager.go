@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/turbot/go-kit/types"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
@@ -15,6 +17,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/steampipeconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 func pluginManagerCmd() *cobra.Command {
@@ -42,18 +45,31 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	log.Printf("[TRACE] loaded config map")
 
 	pluginManager := plugin_manager.NewPluginManager(configMap, logger)
-	//connectionWatcher, err := connection_watcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
-	//if err != nil {
-	//	log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
-	//	utils.ShowError(err)
-	//	os.Exit(1)
-	//}
-	//
-	//// close the connection watcher
-	//defer connectionWatcher.Close()
+
+	if runConnectionWatcher() {
+		connectionWatcher, err := connection_watcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
+		if err != nil {
+			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
+			utils.ShowError(err)
+			os.Exit(1)
+		}
+
+		// close the connection watcher
+		defer connectionWatcher.Close()
+	}
 
 	log.Printf("[TRACE] about to serve")
 	pluginManager.Serve()
+}
+
+func runConnectionWatcher() bool {
+	// if CacheEnabledEnvVar is set, overwrite the value in DefaultConnectionOptions
+	if envStr, ok := os.LookupEnv(constants.EnvConnectionWatcher); ok {
+		if parsedEnv, err := types.ToBool(envStr); err == nil {
+			return parsedEnv
+		}
+	}
+	return true
 }
 
 func createPluginManagerLog() hclog.Logger {
