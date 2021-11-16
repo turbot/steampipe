@@ -2,32 +2,32 @@ package controlexecute
 
 import "time"
 
-type LifecycleEvent string
+type ControlRunLifecycleEvent string
 
 const (
-	ControlRunLifecycleEventConstructed           LifecycleEvent = "constructed"
-	ControlRunLifecycleEventExecuteStart          LifecycleEvent = "execute_start"
-	ControlRunLifecycleEventQueuedForSession      LifecycleEvent = "queued_for_session"
-	ControlRunLifecycleEventAcquiredSession       LifecycleEvent = "acquired_session"
-	ControlRunLifecycleEventQueryResolutionStart  LifecycleEvent = "query_resolution_start"
-	ControlRunLifecycleEventQueryResolutionFinish LifecycleEvent = "query_resolution_finish"
-	ControlRunLifecycleEventSetSearchPathStart    LifecycleEvent = "set_search_path_start"
-	ControlRunLifecycleEventSetSearchPathFinish   LifecycleEvent = "set_search_path_finish"
-	ControlRunLifecycleEventQueryStart            LifecycleEvent = "query_start"
-	ControlRunLifecycleEventQueryFinish           LifecycleEvent = "query_finish"
-	ControlRunLifecycleEventGatherResultStart     LifecycleEvent = "gather_start"
-	ControlRunLifecycleEventGatherResultFinish    LifecycleEvent = "gather_finish"
-	ControlRunLifecycleEventExecuteFinish         LifecycleEvent = "execute_end"
+	ControlRunLifecycleEventConstructed           ControlRunLifecycleEvent = "constructed"
+	ControlRunLifecycleEventExecuteStart          ControlRunLifecycleEvent = "execute_start"
+	ControlRunLifecycleEventQueuedForSession      ControlRunLifecycleEvent = "queued_for_session"
+	ControlRunLifecycleEventAcquiredSession       ControlRunLifecycleEvent = "acquired_session"
+	ControlRunLifecycleEventQueryResolutionStart  ControlRunLifecycleEvent = "query_resolution_start"
+	ControlRunLifecycleEventQueryResolutionFinish ControlRunLifecycleEvent = "query_resolution_finish"
+	ControlRunLifecycleEventSetSearchPathStart    ControlRunLifecycleEvent = "set_search_path_start"
+	ControlRunLifecycleEventSetSearchPathFinish   ControlRunLifecycleEvent = "set_search_path_finish"
+	ControlRunLifecycleEventQueryStart            ControlRunLifecycleEvent = "query_start"
+	ControlRunLifecycleEventQueryFinish           ControlRunLifecycleEvent = "query_finish"
+	ControlRunLifecycleEventGatherResultStart     ControlRunLifecycleEvent = "gather_start"
+	ControlRunLifecycleEventGatherResultFinish    ControlRunLifecycleEvent = "gather_finish"
+	ControlRunLifecycleEventExecuteFinish         ControlRunLifecycleEvent = "execute_end"
 )
 
-type ControlRunLifecycle map[LifecycleEvent]time.Time
+type ControlRunLifecycle map[ControlRunLifecycleEvent]time.Time
 
 func newControlRunLifecycle() ControlRunLifecycle {
-	return map[LifecycleEvent]time.Time{ControlRunLifecycleEventConstructed: time.Now()}
+	return map[ControlRunLifecycleEvent]time.Time{ControlRunLifecycleEventConstructed: time.Now()}
 }
 
 // GetDuration returns the duration between two events - if both exist
-func (r ControlRunLifecycle) GetDuration(from, to LifecycleEvent) time.Duration {
+func (r ControlRunLifecycle) GetDuration(from, to ControlRunLifecycleEvent) time.Duration {
 	return r[from].Sub(r[to])
 }
 
