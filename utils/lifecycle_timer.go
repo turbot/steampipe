@@ -18,7 +18,6 @@ func NewLifecycleTimer() *LifecycleTimer {
 
 // GetDuration returns the duration between first and last event
 func (r LifecycleTimer) GetDuration() time.Duration {
-
 	return r.events[0].Time.Sub(r.events[len(r.events)-1].Time)
 }
 
