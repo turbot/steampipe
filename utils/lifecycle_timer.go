@@ -7,7 +7,7 @@ type LifecycleEvent struct {
 	Time  time.Time
 }
 
-// LifecycleTimer records the time for control run lifecycle events
+// LifecycleTimer records the time for lifecycle events
 type LifecycleTimer struct {
 	events []*LifecycleEvent
 }
@@ -16,7 +16,7 @@ func NewLifecycleTimer() *LifecycleTimer {
 	return &LifecycleTimer{}
 }
 
-// GetDuration returns the duration between two events - if both exist
+// GetDuration returns the duration between first and last event
 func (r LifecycleTimer) GetDuration() time.Duration {
 
 	return r.events[0].Time.Sub(r.events[len(r.events)-1].Time)
