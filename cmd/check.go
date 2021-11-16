@@ -283,8 +283,11 @@ func handleCheckInitResult(initData *checkInitData) bool {
 	// if there is a usage warning we display it
 	initData.result.DisplayMessages()
 
-	// if there are no controls, set shouldExit to true
-	shouldExit := initData.workspace == nil || len(initData.workspace.Controls) == 0
+	// if there is are any warnings, exit politely
+	shouldExit := len(initData.result.Warnings) > 0
+
+	// alternative approach - only stop the control run if there are no controls
+	//shouldExit := initData.workspace == nil || len(initData.workspace.Controls) == 0
 
 	return shouldExit
 }
