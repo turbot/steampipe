@@ -11,6 +11,7 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/utils"
@@ -32,7 +33,7 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner
 
 // ExecuteSyncInSession implements Client
 // execute a query against this client and wait for the result
-func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *sql.Conn, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
+func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	if query == "" {
 		return &queryresult.SyncQueryResult{}, nil
 	}
@@ -70,7 +71,7 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 	return c.ExecuteInSession(ctx, session, query, closeSessionCallback, disableSpinner)
 }
 
-func (c *DbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
+func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
 	if query == "" {
 		return queryresult.NewQueryResult(nil), nil
 	}
@@ -102,7 +103,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *sql.Conn, quer
 	}
 
 	// begin a transaction
-	tx, err = c.createTransaction(ctx, session, true)
+	tx, err = c.createTransaction(ctx, session.Connection, true)
 	if err != nil {
 		return
 	}

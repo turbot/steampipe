@@ -30,7 +30,8 @@ func NewControlProgressRenderer(total int) *ControlProgressRenderer {
 		updateLock: &sync.Mutex{},
 		total:      total,
 		pending:    total,
-		enabled:    viper.GetBool(constants.ArgProgress)}
+		enabled:    viper.GetBool(constants.ArgProgress),
+	}
 }
 
 func (p *ControlProgressRenderer) Start() {
@@ -38,16 +39,21 @@ func (p *ControlProgressRenderer) Start() {
 	defer p.updateLock.Unlock()
 
 	if p.enabled {
-		p.spinner = display.ShowSpinner("")
+		p.spinner = display.ShowSpinner("Starting controls")
 	}
 }
 
 func (p *ControlProgressRenderer) OnControlExecuteStart() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
+
+	// increment the parallel execution count
+	p.executing++
+
+	// decrement pending count
+	p.pending--
+
 	if p.enabled {
-		// increment the parallel execution count
-		p.executing++
 		display.UpdateSpinnerMessage(p.spinner, p.message())
 	}
 }
@@ -55,9 +61,9 @@ func (p *ControlProgressRenderer) OnControlExecuteStart() {
 func (p *ControlProgressRenderer) OnControlExecuteFinish() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
+	// decrement the parallel execution count
+	p.executing--
 	if p.enabled {
-		// decrement the parallel execution count
-		p.executing--
 		display.UpdateSpinnerMessage(p.spinner, p.message())
 	}
 }
@@ -73,10 +79,9 @@ func (p *ControlProgressRenderer) OnControlStart(control *modconfig.Control) {
 func (p *ControlProgressRenderer) OnControlComplete() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
+	p.complete++
 
 	if p.enabled {
-		p.pending--
-		p.complete++
 		display.UpdateSpinnerMessage(p.spinner, p.message())
 	}
 }
@@ -84,10 +89,9 @@ func (p *ControlProgressRenderer) OnControlComplete() {
 func (p *ControlProgressRenderer) OnControlError() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
+	p.error++
 
 	if p.enabled {
-		p.pending--
-		p.error++
 		display.UpdateSpinnerMessage(p.spinner, p.message())
 	}
 }
@@ -102,13 +106,13 @@ func (p *ControlProgressRenderer) Finish() {
 }
 
 func (p ControlProgressRenderer) message() string {
-	return fmt.Sprintf("Running %d %s. (%d complete, %d pending, %d %s) [%d in parallel]",
+	return fmt.Sprintf("Running %d %s. (%d complete, %d running, %d pending, %d %s)",
 		p.total,
 		utils.Pluralize("control", p.total),
 		p.complete,
+		p.executing,
 		p.pending,
 		p.error,
 		utils.Pluralize("error", p.error),
-		p.executing,
 	)
 }

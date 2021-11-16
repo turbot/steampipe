@@ -4,12 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/schema"
@@ -18,16 +18,23 @@ import (
 
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
-	connectionString   string
-	ensureSessionFunc  db_common.EnsureSessionStateCallback
-	sessionAcquireLock *sync.Mutex
-	dbClient           *sql.DB
-	// map of database sessions, keyed to the backend_pid in postgres
-	// used to track whether a given session has been initialised
-	initializedSessions       map[int64]*SessionStats
+	connectionString          string
+	ensureSessionFunc         db_common.EnsureSessionStateCallback
+	dbClient                  *sql.DB
 	schemaMetadata            *schema.Metadata
 	requiredSessionSearchPath []string
-	sessionInitWaitGroup      *sync.WaitGroup
+
+	// concurrency management for db session access
+	parallelSessionInitLock *semaphore.Weighted
+
+	// a wait group which lets others wait for any running DBSession init to complete
+	sessionInitWaitGroup *sync.WaitGroup
+
+	// map of database sessions, keyed to the backend_pid in postgres
+	// used to track database sessions that were created
+	sessions map[int64]*db_common.DatabaseSession
+	// allows locked access to the 'sessions' map
+	sessionsMutex *sync.Mutex
 }
 
 func NewDbClient(connectionString string) (*DbClient, error) {
@@ -38,14 +45,17 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 		return nil, err
 	}
 	client := &DbClient{
-		dbClient:            db,
-		sessionAcquireLock:  new(sync.Mutex),
-		initializedSessions: make(map[int64]*SessionStats),
+		dbClient: db,
 		// set up a blank struct for the schema metadata
 		schemaMetadata: schema.NewMetadata(),
 		// a waitgroup to keep track of active session initializations
 		// so that we don't try to shutdown while an init is underway
 		sessionInitWaitGroup: &sync.WaitGroup{},
+		// a weighted semaphore to control the maximum number parallel
+		// initializations under way
+		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
+		sessions:                make(map[int64]*db_common.DatabaseSession),
+		sessionsMutex:           &sync.Mutex{},
 	}
 	client.connectionString = connectionString
 	client.LoadSchema()
@@ -88,10 +98,9 @@ func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallba
 // closes the connection to the database and shuts down the backend
 func (c *DbClient) Close() error {
 	if c.dbClient != nil {
-		// clear the map - so that we can't reuse it
-		log.Printf("[TRACE] Number of unique database sessions: %d\n", len(c.initializedSessions))
-		c.initializedSessions = nil
 		c.sessionInitWaitGroup.Wait()
+		// clear the map - so that we can't reuse it
+		c.sessions = nil
 		return c.dbClient.Close()
 	}
 
@@ -143,8 +152,10 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	utils.LogTime("db_client.refreshDbClient start")
 	defer utils.LogTime("db_client.refreshDbClient end")
 
-	// clear the initializedSessions map
-	c.initializedSessions = make(map[int64]*SessionStats)
+	// wait for any pending inits to finish
+	c.sessionInitWaitGroup.Wait()
+
+	// close the connection
 	err := c.dbClient.Close()
 	if err != nil {
 		return err

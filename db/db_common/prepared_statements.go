@@ -2,7 +2,6 @@ package db_common
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"strings"
@@ -12,7 +11,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.WorkspaceResourceMaps, session *sql.Conn) error {
+func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.WorkspaceResourceMaps, session *DatabaseSession) error {
 	log.Printf("[TRACE] CreatePreparedStatements")
 
 	utils.LogTime("db.CreatePreparedStatements start")
@@ -30,12 +29,12 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 	}
 
 	// execute the query, passing 'true' to disable the spinner
-	_, err := session.ExecContext(ctx, strings.Join(queries, ";\n"))
+	_, err := session.Connection.ExecContext(ctx, strings.Join(queries, ";\n"))
 
 	// if there was an error - we would like to know which query or control failed, so try to create them one by one
 	if err != nil {
 		for name, sql := range sqlMap {
-			if _, err = session.ExecContext(ctx, sql); err != nil {
+			if _, err = session.Connection.ExecContext(ctx, sql); err != nil {
 				return fmt.Errorf("failed to create prepared statement for %s: %v", name, err)
 			}
 		}
@@ -81,7 +80,7 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 }
 
 // UpdatePreparedStatements first attempts to deallocate all prepared statements in workspace, then recreates them
-func UpdatePreparedStatements(ctx context.Context, prevResourceMaps, currentResourceMaps *modconfig.WorkspaceResourceMaps, session *sql.Conn) error {
+func UpdatePreparedStatements(ctx context.Context, prevResourceMaps, currentResourceMaps *modconfig.WorkspaceResourceMaps, session *DatabaseSession) error {
 	log.Printf("[TRACE] UpdatePreparedStatements")
 
 	utils.LogTime("db.UpdatePreparedStatements start")
@@ -108,7 +107,7 @@ func UpdatePreparedStatements(ctx context.Context, prevResourceMaps, currentReso
 	}
 
 	s := strings.Join(sql, "\n")
-	_, err := session.ExecContext(ctx, s)
+	_, err := session.Connection.ExecContext(ctx, s)
 	if err != nil {
 		log.Printf("[TRACE] failed to update prepared statements - deallocate returned error %v", err)
 		return err

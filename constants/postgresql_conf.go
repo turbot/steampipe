@@ -52,7 +52,7 @@ seq_page_cost=0.01
 # Steampipe does very few commits in general, so leaving this on will have
 # very little impact on performance.
 #
-# In tha case, set synchronous_commit in an overriding config file
+# In that case, set synchronous_commit in an overriding config file
 # synchronous_commit=off
 
 temp_buffers=800kB
@@ -64,8 +64,11 @@ work_mem=64kB
 jit=off
 
 # postgres log collection
-log_statement=all
-log_min_duration_statement=2000
-logging_collector=on
+log_connections=on
+log_disconnections=on
+log_min_duration_statement=1000
+log_destination=stderr
+log_statement=none
 log_min_error_statement=error
+logging_collector=on
 log_filename='database-%Y-%m-%d.log'`

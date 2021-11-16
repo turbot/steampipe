@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -125,11 +125,17 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	var spinner *spinner.Spinner
+	if viper.GetBool(constants.ArgProgress) {
+		spinner = display.ShowSpinner("Starting controls...")
+	}
+
 	// initialise
-	initData = initialiseCheck()
+	initData = initialiseCheck(spinner)
 	if shouldExit := handleCheckInitResult(initData); shouldExit {
 		return
 	}
+	display.StopSpinner(spinner)
 
 	// pull out useful properties
 	ctx := initData.ctx
@@ -185,7 +191,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = failures
 }
 
-func initialiseCheck() *checkInitData {
+func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 	initData := &checkInitData{
 		result: &db_common.InitResult{},
 	}
@@ -214,9 +220,8 @@ func initialiseCheck() *checkInitData {
 		initData.result.Error = err
 		return initData
 	}
-
 	// load workspace
-	initData.workspace, err = loadWorkspacePromptingForVariables(ctx)
+	initData.workspace, err = loadWorkspacePromptingForVariables(ctx, spinner)
 	if err != nil {
 		if !utils.IsCancelledError(err) {
 			err = utils.PrefixError(err, "failed to load workspace")
@@ -236,6 +241,7 @@ func initialiseCheck() *checkInitData {
 		initData.result.AddWarnings("no controls found in current workspace")
 	}
 
+	display.UpdateSpinnerMessage(spinner, "Connecting to service...")
 	// get a client
 	var client db_common.Client
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
@@ -264,7 +270,7 @@ func initialiseCheck() *checkInitData {
 	// register EnsureSessionData as a callback on the client.
 	// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 	// so our client object calls this callback to restore the session data
-	initData.client.SetEnsureSessionDataFunc(func(ctx context.Context, conn *sql.Conn) error {
+	initData.client.SetEnsureSessionDataFunc(func(ctx context.Context, conn *db_common.DatabaseSession) error {
 		return workspace.EnsureSessionData(ctx, sessionDataSource, conn)
 	})
 

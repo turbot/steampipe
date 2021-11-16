@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/utils"
 	"golang.org/x/sync/semaphore"
@@ -180,6 +181,10 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 
 		go func(run *ControlRun) {
 			defer func() {
+				if r := recover(); r != nil {
+					// if the Execute panic'ed, set it as an error
+					run.SetError(helpers.ToError(r))
+				}
 				// Release in defer, so that we don't retain the lock even if there's a panic inside
 				parallelismLock.Release(1)
 			}()

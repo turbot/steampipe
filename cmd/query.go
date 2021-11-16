@@ -3,13 +3,13 @@ package cmd
 import (
 	"bufio"
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 
+	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -107,7 +107,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	ctx := context.Background()
 
 	// load the workspace
-	w, err := loadWorkspacePromptingForVariables(ctx)
+	w, err := loadWorkspacePromptingForVariables(ctx, nil)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	// se we have loaded a workspace - be sure to close it
@@ -177,7 +177,7 @@ func getPipedStdinData() string {
 	return stdinData
 }
 
-func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspace, error) {
+func loadWorkspacePromptingForVariables(ctx context.Context, spinner *spinner.Spinner) (*workspace.Workspace, error) {
 	workspacePath := viper.GetString(constants.ArgWorkspace)
 
 	w, err := workspace.Load(workspacePath)
@@ -189,10 +189,16 @@ func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
 	if !ok {
 		return nil, err
 	}
+	if spinner != nil {
+		spinner.Stop()
+	}
 	// so we have missing variables - prompt for them
 	if err := interactive.PromptForMissingVariables(ctx, missingVariablesError.MissingVariables); err != nil {
 		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
 		return nil, err
+	}
+	if spinner != nil {
+		spinner.Start()
 	}
 	// ok we should have all variables now - reload workspace
 	return workspace.Load(workspacePath)
@@ -259,7 +265,7 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 		// register EnsureSessionData as a callback on the client.
 		// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 		// so our client object calls this callback to restore the session data
-		initData.Client.SetEnsureSessionDataFunc(func(ctx context.Context, session *sql.Conn) error {
+		initData.Client.SetEnsureSessionDataFunc(func(ctx context.Context, session *db_common.DatabaseSession) error {
 			return workspace.EnsureSessionData(ctx, sessionDataSource, session)
 		})
 	}()

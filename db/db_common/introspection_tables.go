@@ -2,7 +2,6 @@ package db_common
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -39,7 +38,7 @@ func UpdateIntrospectionTables(workspaceResources *modconfig.WorkspaceResourceMa
 	return nil
 }
 
-func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, session *sql.Conn) error {
+func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, session *DatabaseSession) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
@@ -54,7 +53,7 @@ func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfi
 
 	sql := []string{createSql, insertSql}
 	// execute the query, passing 'true' to disable the spinner
-	_, err := session.ExecContext(ctx, strings.Join(sql, "\n"))
+	_, err := session.Connection.ExecContext(ctx, strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create introspection tables: %v", err)
 	}
