@@ -89,10 +89,6 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 	}()
 
 	maxParallelGoRoutines := viper.GetInt64(constants.ArgMaxParallel) * constants.ParallelControlMultiplier
-	if maxParallelGoRoutines < constants.MinimumParallelControls {
-		// goroutines are cheap
-		maxParallelGoRoutines = constants.MinimumParallelControls
-	}
 
 	// to limit the number of parallel controls go routines started
 	parallelismLock := semaphore.NewWeighted(maxParallelGoRoutines)
