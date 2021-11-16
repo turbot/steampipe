@@ -42,7 +42,7 @@ type ControlRun struct {
 	// Lifecycle
 	Lifecycle ControlRunLifecycle `json:"-"`
 
-	BackendPid int64 `json:"backend_pid"`
+	BackendPid int64 `json:"-"`
 
 	// the result
 	ControlId   string                  `json:"control_id"`
