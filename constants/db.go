@@ -8,6 +8,8 @@ import (
 
 // dbClient constants
 const (
+	// the number of clients to initialize in parallel
+	// if we start initializing all clients together, it leads to bad performance on all
 	MaxParallelClientInits = 3
 )
 

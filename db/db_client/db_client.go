@@ -26,11 +26,14 @@ type DbClient struct {
 
 	// concurrency management for db session access
 	parallelSessionInitLock *semaphore.Weighted
-	sessionInitWaitGroup    *sync.WaitGroup
+
+	// a wait group which lets others wait for any running DBSession init to complete
+	sessionInitWaitGroup *sync.WaitGroup
 
 	// map of database sessions, keyed to the backend_pid in postgres
 	// used to track database sessions that were created
-	sessions      map[int64]*db_common.DBSession
+	sessions map[int64]*db_common.DBSession
+	// allows locked access to the `sessions` map
 	sessionsMutex *sync.Mutex
 }
 

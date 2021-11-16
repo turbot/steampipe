@@ -1,6 +1,6 @@
 package constants
 
-const (
-	ParallelControlMultiplier = 3
-	MinimumParallelControls   = 10
-)
+// the number of goroutines to start.
+// this is a multiplier to the max parallel input
+// essentially, twice as many go routines wait for DBSession
+const ParallelControlMultiplier = 3
