@@ -163,14 +163,12 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 		r.Lifecycle.ExecuteFinish()
 
 		r.Duration = r.Lifecycle.GetDuration(ControlRunLifecycleEventExecuteStart, ControlRunLifecycleEventExecuteFinish)
-		log.Printf("[WARN] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.executionTree.progress.executing)
+		log.Printf("[TRACE] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.executionTree.progress.executing)
 	}()
 
 	// get a db connection
-	log.Printf("[WARN] wait session for, %s\n", control.Name())
 	r.Lifecycle.QueuedForSession()
 	dbSession, err := client.AcquireSession(ctx)
-	log.Printf("[WARN] got session for, %s, %d\n", r.Control.Name(), dbSession.BackendPid)
 	if err != nil {
 		r.SetError(fmt.Errorf("error acquiring database connection, %s", err.Error()))
 		return
@@ -179,16 +177,12 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	r.Lifecycle.AcquiredSession()
 
 	defer func() {
-		log.Printf("[WARN] closing session for, %s, %d\n", r.Control.Name(), dbSession.BackendPid)
 		dbSession.Close()
 	}()
-
-	log.Printf("[TRACE] backend PID for, %s is %d\n", control.Name(), dbSession.BackendPid)
 
 	// set our status
 	r.runStatus = ControlRunStarted
 	r.executionTree.progress.OnControlExecuteStart()
-	log.Printf("[WARN] execute start for, %s, , %d\n", control.Name(), r.executionTree.progress.executing)
 
 	// update the current running control in the Progress renderer
 	r.executionTree.progress.OnControlStart(control)
