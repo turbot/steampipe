@@ -105,6 +105,8 @@ const (
 	InvokerPlugin = "plugin"
 	// InvokerReport is set when invoked by report command
 	InvokerReport = "report"
+	// InvokerConnectionWatcher is set when invoked by the connection watcher process
+	InvokerConnectionWatcher = "connection-watcher"
 )
 
 // IsValid is a validator for Invoker known values

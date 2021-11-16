@@ -48,6 +48,7 @@ func GetPluginPath(plugin, pluginShortName string) (string, error) {
 	return filepath.Join(pluginFolder, matches[0]), nil
 }
 
+// PluginFQNToSchemaName convert a full plugin name to a schema name
 // schemas in postgres are limited to 63 chars - the name may be longer than this, in which case trim the length
 // and add a hash to the end to make unique
 func PluginFQNToSchemaName(pluginFQN string) string {
@@ -67,7 +68,7 @@ func trimSchemaName(pluginFQN string) string {
 	return pluginFQN[:maxSchemaNameLength-9]
 }
 
-// search for a folder which when hashed would match the schema
+// FindPluginFolder searches for a folder which when hashed would match the schema
 func FindPluginFolder(remoteSchema string) (string, error) {
 	pluginDir := constants.PluginDir()
 

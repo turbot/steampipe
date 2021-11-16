@@ -17,7 +17,6 @@ import (
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
-	"github.com/turbot/steampipe/workspace"
 )
 
 // serviceCmd :: Service management commands
@@ -215,8 +214,6 @@ func runServiceInForeground(invoker constants.Invoker) {
 	checkTimer := time.NewTicker(100 * time.Millisecond)
 	defer checkTimer.Stop()
 
-	connectionWatcher, err := workspace.NewConnectionWatcher(invoker, func(error) {})
-	utils.FailOnError(err)
 	var lastCtrlC time.Time
 
 	for {
@@ -246,8 +243,6 @@ func runServiceInForeground(invoker constants.Invoker) {
 					continue
 				}
 			}
-			// close the connection watcher
-			connectionWatcher.Close()
 			fmt.Println("Stopping Steampipe service.")
 
 			db_local.StopDB(false, invoker, nil)

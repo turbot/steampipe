@@ -8,16 +8,13 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-version"
-	"github.com/turbot/steampipe/ociinstaller"
-
-	"github.com/turbot/steampipe/utils"
-
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
 	"github.com/turbot/go-kit/helpers"
-
 	"github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/ociinstaller"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
+	"github.com/turbot/steampipe/utils"
 )
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
@@ -131,12 +128,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) {
 	}
 }
 
-const CacheEnabledEnvVar = "STEAMPIPE_CACHE"
-
-const CacheTTLEnvVar = "STEAMPIPE_CACHE_TTL"
-
 var defaultCacheEnabled = true
-
 var defaultTTL = 300
 
 // if default connection options have been set, assign them to any connection which do not define specific options
@@ -151,7 +143,7 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 	// base default
 
 	// if CacheEnabledEnvVar is set, overwrite the value in DefaultConnectionOptions
-	if envStr, ok := os.LookupEnv(CacheEnabledEnvVar); ok {
+	if envStr, ok := os.LookupEnv(constants.EnvCacheEnabled); ok {
 		if parsedEnv, err := types.ToBool(envStr); err == nil {
 			c.DefaultConnectionOptions.Cache = &parsedEnv
 		}
@@ -162,7 +154,7 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 	}
 
 	// if CacheTTLEnvVar is set, overwrite the value in DefaultConnectionOptions
-	if ttlString, ok := os.LookupEnv(CacheTTLEnvVar); ok {
+	if ttlString, ok := os.LookupEnv(constants.EnvCacheTTL); ok {
 		if parsed, err := types.ToInt64(ttlString); err == nil {
 			ttl := int(parsed)
 			c.DefaultConnectionOptions.CacheTTL = &ttl

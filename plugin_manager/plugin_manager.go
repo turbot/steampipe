@@ -33,12 +33,15 @@ type PluginManager struct {
 }
 
 func NewPluginManager(connectionConfig map[string]*pb.ConnectionConfig, logger hclog.Logger) *PluginManager {
-	return &PluginManager{
+	pluginManager := &PluginManager{
 		logger:           logger,
 		connectionConfig: connectionConfig,
 		Plugins:          make(map[string]runningPlugin),
 	}
+	return pluginManager
 }
+
+// plugin interface functions
 
 func (m *PluginManager) Serve() {
 	// create a plugin map, using ourselves as the implementation
@@ -52,8 +55,6 @@ func (m *PluginManager) Serve() {
 		GRPCServer: plugin.DefaultGRPCServer,
 	})
 }
-
-// plugin interface functions
 
 func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error) {
 	m.mut.Lock()
@@ -117,16 +118,11 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 
 }
 
-func (m *PluginManager) SetConnectionConfigMap(req *pb.SetConnectionConfigMapRequest) (resp *pb.SetConnectionConfigMapResponse, err error) {
+func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*pb.ConnectionConfig) {
 	m.mut.Lock()
-	defer func() {
-		m.mut.Unlock()
-		if r := recover(); r != nil {
-			err = helpers.ToError(r)
-		}
-	}()
-	m.connectionConfig = req.ConfigMap
-	return &pb.SetConnectionConfigMapResponse{}, nil
+	defer m.mut.Unlock()
+
+	m.connectionConfig = configMap
 }
 
 func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
