@@ -1,6 +1,5 @@
 package constants
 
-// the number of goroutines to start.
-// this is a multiplier to the max parallel input
-// essentially, twice as many go routines wait for DBSession
+// ParallelControlMultiplier is used to determine the nbumber of goroutines to start for the control run
+// this is a multiplier for the max db connections which are configred
 const ParallelControlMultiplier = 3
