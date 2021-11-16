@@ -48,7 +48,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos2.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
 
-    run steampipe query "select * from chaos4.chaos_cache_check"
+    run steampipe query "select time_now from chaos4.chaos_cache_check"
     assert_success
 }
 
@@ -58,7 +58,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
 
     # this should fail because of duplicate connection name
-    run steampipe query "select * from chaos.chaos_cache_check"
+    run steampipe query "select time_now from chaos.chaos_cache_check"
 
     assert_output --partial 'Error: duplicate connection name'
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos2.json
@@ -69,7 +69,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos2.yml $STEAMPIPE_INSTALL_DIR/config/chaos3.yml
 
-    run steampipe query "select * from chaos5.chaos_cache_check"
+    run steampipe query "select time_now from chaos5.chaos_cache_check"
     assert_success
 }
 
@@ -78,7 +78,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
-    run steampipe query "select * from chaos6.chaos_cache_check"
+    run steampipe query "select time_now from chaos6.chaos_cache_check"
     assert_success
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 }
@@ -88,7 +88,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
-    run steampipe query "select * from chaos6.chaos_cache_check"
+    run steampipe query "select time_now from chaos6.chaos_cache_check"
     assert_success
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 }
@@ -98,7 +98,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
-    run steampipe query "select * from chaos6.chaos_cache_check"
+    run steampipe query "select time_now from chaos6.chaos_cache_check"
     assert_success
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 }
