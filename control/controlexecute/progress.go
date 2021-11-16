@@ -52,6 +52,7 @@ func (p *ControlProgressRenderer) OnControlExecuteStart() {
 	defer p.updateLock.Unlock()
 	// increment the parallel execution count
 	p.executing++
+	p.pending--
 
 	if p.enabled {
 		display.UpdateSpinnerMessage(p.spinner, p.message())
@@ -79,7 +80,6 @@ func (p *ControlProgressRenderer) OnControlStart(control *modconfig.Control) {
 func (p *ControlProgressRenderer) OnControlComplete() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
-	p.pending--
 	p.complete++
 
 	if p.enabled {
@@ -90,7 +90,6 @@ func (p *ControlProgressRenderer) OnControlComplete() {
 func (p *ControlProgressRenderer) OnControlError() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
-	p.pending--
 	p.error++
 
 	if p.enabled {
@@ -104,12 +103,6 @@ func (p *ControlProgressRenderer) Finish() {
 
 	if p.enabled {
 		display.StopSpinner(p.spinner)
-	}
-}
-
-func (p *ControlProgressRenderer) WarmedUp(count int) {
-	if p.enabled {
-		display.UpdateSpinnerMessage(p.spinner, fmt.Sprintf("Warming up. Creating connections - %d created", count))
 	}
 }
 
