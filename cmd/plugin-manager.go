@@ -32,19 +32,20 @@ func pluginManagerCmd() *cobra.Command {
 func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	logger := createPluginManagerLog()
 
-	log.Printf("[WARN] runPluginManagerCmd")
+	log.Printf("[INFO] Starting plugin manager")
 	// build config map
 	steampipeConfig, err := steampipeconfig.LoadConnectionConfig()
 	if err != nil {
-		utils.ShowError(err)
+		log.Printf("[WARN] failed to load connection config: %s", err.Error())
 		os.Exit(1)
 	}
 	configMap := connection_watcher.NewConnectionConfigMap(steampipeConfig.Connections)
-	log.Printf("[WARN] got config map")
+	log.Printf("[TRACE] loaded config map")
 
 	pluginManager := plugin_manager.NewPluginManager(configMap, logger)
 	connectionWatcher, err := connection_watcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
 	if err != nil {
+		log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
 		utils.ShowError(err)
 		os.Exit(1)
 	}
@@ -52,7 +53,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	// close the connection watcher
 	defer connectionWatcher.Close()
 
-	log.Printf("[WARN] about to serve")
+	log.Printf("[TRACE] about to serve")
 	pluginManager.Serve()
 }
 
