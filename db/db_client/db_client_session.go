@@ -28,7 +28,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DBSession, 
 	if !found {
 		session = db_common.NewDBSession(backendPid)
 	}
-	// we get a new `rawConnection` everytime. USE IT!
+	// we get a new *sql.Conn everytime. USE IT!
 	session.Raw = rawConnection
 	c.sessionsMutex.Unlock()
 
