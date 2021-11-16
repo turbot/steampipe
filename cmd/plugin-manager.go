@@ -15,7 +15,6 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/steampipeconfig"
-	"github.com/turbot/steampipe/utils"
 )
 
 func pluginManagerCmd() *cobra.Command {
@@ -43,15 +42,15 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	log.Printf("[TRACE] loaded config map")
 
 	pluginManager := plugin_manager.NewPluginManager(configMap, logger)
-	connectionWatcher, err := connection_watcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
-	if err != nil {
-		log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
-		utils.ShowError(err)
-		os.Exit(1)
-	}
-
-	// close the connection watcher
-	defer connectionWatcher.Close()
+	//connectionWatcher, err := connection_watcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
+	//if err != nil {
+	//	log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
+	//	utils.ShowError(err)
+	//	os.Exit(1)
+	//}
+	//
+	//// close the connection watcher
+	//defer connectionWatcher.Close()
 
 	log.Printf("[TRACE] about to serve")
 	pluginManager.Serve()
