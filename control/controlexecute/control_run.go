@@ -28,33 +28,6 @@ const (
 	ControlRunError
 )
 
-type Lifecycle struct {
-	Contructed time.Time
-
-	FirstExecute time.Time
-
-	ExecuteStart time.Time
-
-	QueuedForSession time.Time
-	AcquiredSession  time.Time
-
-	QueryResolutionStart  time.Time
-	QueryResolutionFinish time.Time
-
-	SetSearchPathStart  time.Time
-	SetSearchPathFinish time.Time
-
-	QueryStart  time.Time
-	QueryFinish time.Time
-
-	GatherResultStart  time.Time
-	GatherResultFinish time.Time
-
-	RetriesStarted []time.Time
-
-	ExecuteEnd time.Time
-}
-
 // ControlRun is a struct representing a  a control run - will contain one or more result items (i.e. for one or more resources)
 type ControlRun struct {
 	runError error `json:"-"`
@@ -67,7 +40,7 @@ type ControlRun struct {
 	Duration time.Duration `json:"-"`
 
 	// Lifecycle
-	Lifecycle *Lifecycle `json:"lifecycle"`
+	Lifecycle ControlRunLifecycle `json:"-"`
 
 	BackendPid int64 `json:"backend_pid"`
 
@@ -102,13 +75,13 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 		Tags:        control.GetTags(),
 		RowMap:      make(map[string][]*ResultRow),
 
+		Lifecycle: newControlRunLifecycle(),
+
 		executionTree: executionTree,
 		runStatus:     ControlRunReady,
 
 		group:    group,
 		doneChan: make(chan bool, 1),
-
-		Lifecycle: &Lifecycle{Contructed: time.Now(), RetriesStarted: []time.Time{}},
 	}
 }
 
@@ -174,10 +147,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
 
-	r.Lifecycle.ExecuteStart = time.Now()
-	if r.Lifecycle.FirstExecute.IsZero() {
-		r.Lifecycle.FirstExecute = r.Lifecycle.ExecuteStart
-	}
+	r.Lifecycle.ExecuteStart()
 
 	control := r.Control
 	log.Printf("[TRACE] control start, %s\n", control.Name())
@@ -190,21 +160,24 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 		if len(r.Severity) != 0 {
 			r.group.updateSeverityCounts(r.Severity, r.Summary)
 		}
-		r.Lifecycle.ExecuteEnd = time.Now()
-		r.Duration = r.Lifecycle.ExecuteEnd.Sub(r.Lifecycle.ExecuteStart)
+		r.Lifecycle.ExecuteFinish()
+
+		r.Duration = r.Lifecycle.GetDuration(ControlRunLifecycleEventExecuteStart, ControlRunLifecycleEventExecuteFinish)
 		log.Printf("[WARN] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.executionTree.progress.executing)
 	}()
 
 	// get a db connection
 	log.Printf("[WARN] wait session for, %s\n", control.Name())
-	r.Lifecycle.QueuedForSession = time.Now()
+	r.Lifecycle.QueuedForSession()
 	dbSession, err := client.AcquireSession(ctx)
 	log.Printf("[WARN] got session for, %s, %d\n", r.Control.Name(), dbSession.BackendPid)
 	if err != nil {
 		r.SetError(fmt.Errorf("error acquiring database connection, %s", err.Error()))
 		return
 	}
-	r.Lifecycle.AcquiredSession = time.Now()
+
+	r.Lifecycle.AcquiredSession()
+
 	defer func() {
 		log.Printf("[WARN] closing session for, %s, %d\n", r.Control.Name(), dbSession.BackendPid)
 		dbSession.Close()
@@ -221,21 +194,21 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	r.executionTree.progress.OnControlStart(control)
 
 	// resolve the control query
-	r.Lifecycle.QueryResolutionStart = time.Now()
+	r.Lifecycle.QueryResolutionStart()
 	query, err := r.resolveControlQuery(err, control)
 	if err != nil {
 		r.SetError(err)
 		return
 	}
-	r.Lifecycle.QueryResolutionFinish = time.Now()
+	r.Lifecycle.QueryResolutionFinish()
 
 	log.Printf("[TRACE] setting search path %s\n", control.Name())
-	r.Lifecycle.SetSearchPathStart = time.Now()
+	r.Lifecycle.SetSearchPathStart()
 	if err := r.setSearchPath(ctx, dbSession, client); err != nil {
 		r.SetError(err)
 		return
 	}
-	r.Lifecycle.SetSearchPathFinish = time.Now()
+	r.Lifecycle.SetSearchPathFinish()
 
 	ctxWithDeadline, cancel := r.getControlQueryContext(ctx)
 	// Even though ctx will expire, it is good practice to call its cancellation function in any case.
@@ -244,9 +217,9 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	// execute the control query
 	// NOTE no need to pass an OnComplete callback - we are already closing our session after waiting for results
 	log.Printf("[TRACE] execute start for, %s\n", control.Name())
-	r.Lifecycle.QueryStart = time.Now()
+	r.Lifecycle.QueryStart()
 	queryResult, err := client.ExecuteInSession(ctxWithDeadline, dbSession, query, nil, false)
-	r.Lifecycle.QueryFinish = time.Now()
+	r.Lifecycle.QueryFinish()
 	log.Printf("[TRACE] execute finish for, %s\n", control.Name())
 
 	if err != nil {
@@ -259,7 +232,6 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 				ctxWithDeadline, cancel := r.getControlQueryContext(ctx)
 				defer cancel()
 				// recurse into this function to retry use the same context, so that we respect the timeout
-				r.Lifecycle.RetriesStarted = append(r.Lifecycle.RetriesStarted, time.Now())
 				r.Execute(ctxWithDeadline, client)
 				return
 			} else {
@@ -314,8 +286,8 @@ func (r *ControlRun) waitForResults(ctx context.Context) {
 }
 
 func (r *ControlRun) gatherResults() {
-	r.Lifecycle.GatherResultStart = time.Now()
-	defer func() { r.Lifecycle.GatherResultFinish = time.Now() }()
+	r.Lifecycle.GatherResultStart()
+	defer func() { r.Lifecycle.GatherResultFinish() }()
 	for {
 		select {
 		case row := <-*r.queryResult.RowChan:
