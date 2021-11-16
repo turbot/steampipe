@@ -27,7 +27,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DBSession, 
 	session, found := c.sessions[backendPid]
 	if !found {
 		session = db_common.NewDBSession(backendPid)
-		session.Timeline.Created()
+		session.Timeline.Add(db_common.DBSessionLifecycleEventCreated)
 	}
 	// we get a new *sql.Conn everytime. USE IT!
 	session.Raw = rawConnection
@@ -48,7 +48,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DBSession, 
 
 	if !session.Initialized {
 		log.Printf("[TRACE] Session with PID: %d - waiting for init lock", backendPid)
-		session.Timeline.QueuedForInitialize()
+		session.Timeline.Add(db_common.DBSessionLifecycleEventQueuedForInitialize)
 
 		lockError := c.parallelSessionInitLock.Acquire(ctx, 1)
 		if lockError != nil {
@@ -57,9 +57,9 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DBSession, 
 		c.sessionInitWaitGroup.Add(1)
 
 		log.Printf("[TRACE] Session with PID: %d - waiting for init start", backendPid)
-		session.Timeline.InitializeStart()
+		session.Timeline.Add(db_common.DBSessionLifecycleEventInitializeStart)
 		err := c.ensureSessionFunc(ctx, session)
-		session.Timeline.InitializeFinish()
+		session.Timeline.Add(db_common.DBSessionLifecycleEventInitializeFinish)
 
 		session.Initialized = true
 

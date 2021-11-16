@@ -25,7 +25,7 @@ func NewDBSession(backendPid int64) *DBSession {
 
 func (s *DBSession) UpdateUsage() {
 	s.UsedCount++
-	s.Timeline.LastUsed()
+	s.Timeline.Add(DBSessionLifecycleEventLastUsed)
 }
 
 func (s *DBSession) GetRaw() *sql.Conn {

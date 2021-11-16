@@ -2,6 +2,7 @@ package controlexecute
 
 import "time"
 
+// lifecycle events during a control run
 type ControlRunLifecycleEvent string
 
 const (
@@ -20,6 +21,7 @@ const (
 	ControlRunLifecycleEventExecuteFinish         ControlRunLifecycleEvent = "execute_end"
 )
 
+// records time.Time for lifecycle events
 type ControlRunLifecycle map[ControlRunLifecycleEvent]time.Time
 
 func newControlRunLifecycle() ControlRunLifecycle {
@@ -31,42 +33,6 @@ func (r ControlRunLifecycle) GetDuration(from, to ControlRunLifecycleEvent) time
 	return r[from].Sub(r[to])
 }
 
-func (r ControlRunLifecycle) Constructed() {
-	r[ControlRunLifecycleEventConstructed] = time.Now()
-}
-func (r ControlRunLifecycle) ExecuteStart() {
-	r[ControlRunLifecycleEventExecuteStart] = time.Now()
-}
-func (r ControlRunLifecycle) QueuedForSession() {
-	r[ControlRunLifecycleEventQueuedForSession] = time.Now()
-}
-func (r ControlRunLifecycle) AcquiredSession() {
-	r[ControlRunLifecycleEventAcquiredSession] = time.Now()
-}
-func (r ControlRunLifecycle) QueryResolutionStart() {
-	r[ControlRunLifecycleEventQueryResolutionStart] = time.Now()
-}
-func (r ControlRunLifecycle) QueryResolutionFinish() {
-	r[ControlRunLifecycleEventQueryResolutionFinish] = time.Now()
-}
-func (r ControlRunLifecycle) SetSearchPathStart() {
-	r[ControlRunLifecycleEventSetSearchPathStart] = time.Now()
-}
-func (r ControlRunLifecycle) SetSearchPathFinish() {
-	r[ControlRunLifecycleEventSetSearchPathFinish] = time.Now()
-}
-func (r ControlRunLifecycle) QueryStart() {
-	r[ControlRunLifecycleEventQueryStart] = time.Now()
-}
-func (r ControlRunLifecycle) QueryFinish() {
-	r[ControlRunLifecycleEventQueryFinish] = time.Now()
-}
-func (r ControlRunLifecycle) GatherResultStart() {
-	r[ControlRunLifecycleEventGatherResultStart] = time.Now()
-}
-func (r ControlRunLifecycle) GatherResultFinish() {
-	r[ControlRunLifecycleEventGatherResultFinish] = time.Now()
-}
-func (r ControlRunLifecycle) ExecuteFinish() {
-	r[ControlRunLifecycleEventExecuteFinish] = time.Now()
+func (r ControlRunLifecycle) Add(event ControlRunLifecycleEvent) {
+	r[event] = time.Now()
 }

@@ -22,31 +22,6 @@ type DBSessionLifecycle map[DBSessionLifecycleEvent]time.Time
 func (r DBSessionLifecycle) GetDuration(from, to DBSessionLifecycleEvent) time.Duration {
 	return r[from].Sub(r[to])
 }
-
-func (r DBSessionLifecycle) Created() {
-	r[DBSessionLifecycleEventCreated] = time.Now()
-}
-func (r DBSessionLifecycle) QueuedForInitialize() {
-	r[DBSessionLifecycleEventQueuedForInitialize] = time.Now()
-}
-func (r DBSessionLifecycle) InitializeStart() {
-	r[DBSessionLifecycleEventInitializeStart] = time.Now()
-}
-func (r DBSessionLifecycle) InitializeFinish() {
-	r[DBSessionLifecycleEventInitializeFinish] = time.Now()
-}
-func (r DBSessionLifecycle) IntrospectionTableStart() {
-	r[DBSessionLifecycleEventIntrospectionTableStart] = time.Now()
-}
-func (r DBSessionLifecycle) IntrospectionTableFinish() {
-	r[DBSessionLifecycleEventIntrospectionTableFinish] = time.Now()
-}
-func (r DBSessionLifecycle) PreparedStatementStart() {
-	r[DBSessionLifecycleEventPreparedStatementStart] = time.Now()
-}
-func (r DBSessionLifecycle) PreparedStatementFinish() {
-	r[DBSessionLifecycleEventPreparedStatementFinish] = time.Now()
-}
-func (r DBSessionLifecycle) LastUsed() {
-	r[DBSessionLifecycleEventLastUsed] = time.Now()
+func (r DBSessionLifecycle) Add(event DBSessionLifecycleEvent) {
+	r[event] = time.Now()
 }
