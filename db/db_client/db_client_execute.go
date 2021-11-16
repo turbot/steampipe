@@ -103,7 +103,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	}
 
 	// begin a transaction
-	tx, err = c.createTransaction(ctx, session.GetRaw(), true)
+	tx, err = c.createTransaction(ctx, session.Connection, true)
 	if err != nil {
 		return
 	}

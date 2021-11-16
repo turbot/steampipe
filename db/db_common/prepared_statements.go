@@ -29,12 +29,12 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 	}
 
 	// execute the query, passing 'true' to disable the spinner
-	_, err := session.GetRaw().ExecContext(ctx, strings.Join(queries, ";\n"))
+	_, err := session.Connection.ExecContext(ctx, strings.Join(queries, ";\n"))
 
 	// if there was an error - we would like to know which query or control failed, so try to create them one by one
 	if err != nil {
 		for name, sql := range sqlMap {
-			if _, err = session.GetRaw().ExecContext(ctx, sql); err != nil {
+			if _, err = session.Connection.ExecContext(ctx, sql); err != nil {
 				return fmt.Errorf("failed to create prepared statement for %s: %v", name, err)
 			}
 		}
@@ -107,7 +107,7 @@ func UpdatePreparedStatements(ctx context.Context, prevResourceMaps, currentReso
 	}
 
 	s := strings.Join(sql, "\n")
-	_, err := session.GetRaw().ExecContext(ctx, s)
+	_, err := session.Connection.ExecContext(ctx, s)
 	if err != nil {
 		log.Printf("[TRACE] failed to update prepared statements - deallocate returned error %v", err)
 		return err

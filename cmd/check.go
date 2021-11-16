@@ -127,7 +127,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	var spinner *spinner.Spinner
 	if viper.GetBool(constants.ArgProgress) {
-		spinner = display.ShowSpinner("Starting controls")
+		spinner = display.ShowSpinner("Starting controls...")
 	}
 
 	// initialise
@@ -241,7 +241,7 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 		initData.result.AddWarnings("no controls found in current workspace")
 	}
 
-	display.UpdateSpinnerMessage(spinner, "Connecting to service")
+	display.UpdateSpinnerMessage(spinner, "Connecting to service...")
 	// get a client
 	var client db_common.Client
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {

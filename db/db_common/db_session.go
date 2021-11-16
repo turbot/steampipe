@@ -23,13 +23,10 @@ func NewDBSession(backendPid int64) *DatabaseSession {
 	}
 }
 
+// UpdateUsage updates the UsedCount of the DatabaseSession and also the lastUsed time
 func (s *DatabaseSession) UpdateUsage() {
 	s.UsedCount++
 	s.Timeline.Add(DBSessionLifecycleEventLastUsed)
-}
-
-func (s *DatabaseSession) GetRaw() *sql.Conn {
-	return s.Connection
 }
 
 func (s *DatabaseSession) Close() error {

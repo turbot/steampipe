@@ -33,7 +33,7 @@ type DbClient struct {
 	// map of database sessions, keyed to the backend_pid in postgres
 	// used to track database sessions that were created
 	sessions map[int64]*db_common.DatabaseSession
-	// allows locked access to the `sessions` map
+	// allows locked access to the 'sessions' map
 	sessionsMutex *sync.Mutex
 }
 

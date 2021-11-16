@@ -19,7 +19,7 @@ func EnsureSessionData(ctx context.Context, source *SessionDataSource, session *
 	}
 
 	// check for introspection tables
-	row := session.GetRaw().QueryRowContext(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema LIKE 'pg_temp%' AND table_name='steampipe_mod' ")
+	row := session.Connection.QueryRowContext(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema LIKE 'pg_temp%' AND table_name='steampipe_mod' ")
 
 	var count int
 	err := row.Scan(&count)
