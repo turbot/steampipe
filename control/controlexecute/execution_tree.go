@@ -88,10 +88,10 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 		e.progress.Finish()
 	}()
 
-	maxParallelGoRoutines := viper.GetInt64(constants.ArgMaxParallel) * 3
-	if maxParallelGoRoutines < 10 {
+	maxParallelGoRoutines := viper.GetInt64(constants.ArgMaxParallel) * constants.ParallelControlMultiplier
+	if maxParallelGoRoutines < constants.MinimumParallelControls {
 		// goroutines are cheap
-		maxParallelGoRoutines = 10
+		maxParallelGoRoutines = constants.MinimumParallelControls
 	}
 
 	// to limit the number of parallel controls go routines started
