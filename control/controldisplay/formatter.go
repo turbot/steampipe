@@ -10,6 +10,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/version"
 )
@@ -26,31 +27,21 @@ func (m FormatterMap) keys() []string {
 	return keys
 }
 
-const (
-	OutputFormatNone     = "none"
-	OutputFormatText     = "text"
-	OutputFormatBrief    = "brief"
-	OutputFormatCSV      = "csv"
-	OutputFormatJSON     = "json"
-	OutputFormatHTML     = "html"
-	OutputFormatMarkdown = "md"
-)
-
 var outputFormatters FormatterMap = FormatterMap{
-	OutputFormatNone:     &NullFormatter{},
-	OutputFormatCSV:      &CSVFormatter{},
-	OutputFormatJSON:     &JSONFormatter{},
-	OutputFormatText:     &TextFormatter{},
-	OutputFormatBrief:    &TextFormatter{},
-	OutputFormatHTML:     &HTMLFormatter{},
-	OutputFormatMarkdown: &MarkdownFormatter{},
+	constants.OutputFormatNone:     &NullFormatter{},
+	constants.OutputFormatCSV:      &CSVFormatter{},
+	constants.OutputFormatJSON:     &JSONFormatter{},
+	constants.OutputFormatText:     &TextFormatter{},
+	constants.OutputFormatBrief:    &TextFormatter{},
+	constants.OutputFormatHTML:     &HTMLFormatter{},
+	constants.OutputFormatMarkdown: &MarkdownFormatter{},
 }
 
 var exportFormatters FormatterMap = FormatterMap{
-	OutputFormatCSV:      &CSVFormatter{},
-	OutputFormatJSON:     &JSONFormatter{},
-	OutputFormatHTML:     &HTMLFormatter{},
-	OutputFormatMarkdown: &MarkdownFormatter{},
+	constants.OutputFormatCSV:      &CSVFormatter{},
+	constants.OutputFormatJSON:     &JSONFormatter{},
+	constants.OutputFormatHTML:     &HTMLFormatter{},
+	constants.OutputFormatMarkdown: &MarkdownFormatter{},
 }
 
 type CheckExportTarget struct {
@@ -92,13 +83,13 @@ func InferFormatFromExportFileName(filename string) (string, error) {
 	extension := filepath.Ext(filename)
 	switch extension {
 	case ".csv":
-		return OutputFormatCSV, nil
+		return constants.OutputFormatCSV, nil
 	case ".json":
-		return OutputFormatJSON, nil
+		return constants.OutputFormatJSON, nil
 	case ".html", ".htm":
-		return OutputFormatHTML, nil
+		return constants.OutputFormatHTML, nil
 	case ".md", ".markdown":
-		return OutputFormatMarkdown, nil
+		return constants.OutputFormatMarkdown, nil
 	default:
 		// could not infer format
 		return "", fmt.Errorf("could not infer valid export format from filename '%s'", filename)

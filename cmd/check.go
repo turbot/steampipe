@@ -272,7 +272,6 @@ func initialiseCheck() *checkInitData {
 }
 
 func handleCheckInitResult(initData *checkInitData) bool {
-	shouldExit := false
 	// if there is an error or cancellation we bomb out
 	// check for the various kinds of failures
 	utils.FailOnError(initData.result.Error)
@@ -281,9 +280,14 @@ func handleCheckInitResult(initData *checkInitData) bool {
 		utils.FailOnError(initData.ctx.Err())
 	}
 
-	// if there is a usage warning we display it and exit politely
+	// if there is a usage warning we display it
 	initData.result.DisplayMessages()
-	shouldExit = len(initData.result.Warnings) > 0
+
+	// if there is are any warnings, exit politely
+	shouldExit := len(initData.result.Warnings) > 0
+
+	// alternative approach - only stop the control run if there are no controls
+	//shouldExit := initData.workspace == nil || len(initData.workspace.Controls) == 0
 
 	return shouldExit
 }
@@ -327,8 +331,8 @@ func validateArgs(cmd *cobra.Command, args []string) bool {
 func shouldPrintTiming() bool {
 	outputFormat := viper.GetString(constants.ArgOutput)
 
-	return ((viper.GetBool(constants.ArgTimer) && !viper.GetBool(constants.ArgDryRun)) &&
-		(outputFormat == controldisplay.OutputFormatText || outputFormat == controldisplay.OutputFormatBrief))
+	return (viper.GetBool(constants.ArgTimer) && !viper.GetBool(constants.ArgDryRun)) &&
+		(outputFormat == constants.OutputFormatText || outputFormat == constants.OutputFormatBrief)
 }
 
 func validateOutputFormat() error {
@@ -338,7 +342,7 @@ func validateOutputFormat() error {
 		// could not get a formatter
 		return err
 	}
-	if outputFormat == controldisplay.OutputFormatNone {
+	if outputFormat == constants.OutputFormatNone {
 		// set progress to false
 		viper.Set(constants.ArgProgress, false)
 	}
