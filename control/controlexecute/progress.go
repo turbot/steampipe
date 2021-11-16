@@ -39,7 +39,7 @@ func (p *ControlProgressRenderer) Start() {
 	defer p.updateLock.Unlock()
 
 	if p.enabled {
-		p.spinner = display.ShowSpinner("Starting Controls")
+		p.spinner = display.ShowSpinner("Starting controls")
 	}
 }
 
