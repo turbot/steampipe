@@ -70,10 +70,6 @@ func (c *PluginManagerClient) Get(req *pb.GetRequest) (res *pb.GetResponse, err 
 	return c.manager.Get(req)
 }
 
-func (c *PluginManagerClient) SetConnectionConfigMap(req *pb.SetConnectionConfigMapRequest) (res *pb.SetConnectionConfigMapResponse, err error) {
-	return c.manager.SetConnectionConfigMap(req)
-}
-
 func (c *PluginManagerClient) Shutdown(req *pb.ShutdownRequest) (res *pb.ShutdownResponse, err error) {
 	log.Printf("[TRACE] PluginManagerClient Shutdown")
 	return c.manager.Shutdown(req)

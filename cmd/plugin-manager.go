@@ -7,15 +7,13 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/turbot/steampipe/workspace"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/connection_watcher"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/plugin_manager"
-	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -41,21 +39,21 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 		utils.ShowError(err)
 		os.Exit(1)
 	}
-	configMap := pb.NewConnectionConfigMap(steampipeConfig.Connections)
-
+	configMap := connection_watcher.NewConnectionConfigMap(steampipeConfig.Connections)
 	log.Printf("[WARN] got config map")
-	connectionWatcher, err := workspace.NewConnectionWatcher(constants.InvokerPluginManager, func(error) {})
+
+	pluginManager := plugin_manager.NewPluginManager(configMap, logger)
+	connectionWatcher, err := connection_watcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
 	if err != nil {
-		log.Printf("[WARN] connection watcher failed %s", err)
 		utils.ShowError(err)
-		os.Exit(2)
+		os.Exit(1)
 	}
-	log.Printf("[WARN] connection watcher started")
+
 	// close the connection watcher
 	defer connectionWatcher.Close()
 
 	log.Printf("[WARN] about to serve")
-	plugin_manager.NewPluginManager(configMap, logger).Serve()
+	pluginManager.Serve()
 }
 
 func createPluginManagerLog() hclog.Logger {

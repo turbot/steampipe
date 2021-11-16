@@ -7,8 +7,6 @@ package proto;
 // Interface exported by the server.
 service PluginManager {
   rpc Get(GetRequest) returns (GetResponse) {}
-  rpc SetConnectionConfig(SetConnectionConfigMapRequest) returns (SetConnectionConfigMapResponse) {}
-  rpc SetConnectionConfigMap(SetConnectionConfigMapRequest) returns (SetConnectionConfigMapResponse) {}
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {}
 }
 
@@ -19,11 +17,6 @@ message GetRequest {
 message GetResponse {
   ReattachConfig reattach = 1;
 }
-message SetConnectionConfigMapRequest{
-  map<string, ConnectionConfig> configMap = 1;
-}
-
-message SetConnectionConfigMapResponse{}
 
 message ShutdownRequest {}
 
