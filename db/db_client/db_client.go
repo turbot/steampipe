@@ -95,10 +95,9 @@ func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallba
 // closes the connection to the database and shuts down the backend
 func (c *DbClient) Close() error {
 	if c.dbClient != nil {
-		// clear the map - so that we can't reuse it
-		utils.DebugDumpJSON("Sessions:", c.sessions)
-		c.sessions = nil
 		c.sessionInitWaitGroup.Wait()
+		// clear the map - so that we can't reuse it
+		c.sessions = nil
 		return c.dbClient.Close()
 	}
 

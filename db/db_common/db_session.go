@@ -24,7 +24,7 @@ type DBSessionTimeline struct {
 
 // DBSession wraps over the raw database/sql.Conn and also allows for retaining useful instrumentation
 type DBSession struct {
-	BackendPid  int64              `json: "backend_pid"`
+	BackendPid  int64              `json:"backend_pid"`
 	Timeline    *DBSessionTimeline `json:"timeline"`
 	UsedCount   int                `json:"used"`
 	SearchPath  []string           `json:"-"`
