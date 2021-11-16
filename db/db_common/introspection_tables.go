@@ -38,7 +38,7 @@ func UpdateIntrospectionTables(workspaceResources *modconfig.WorkspaceResourceMa
 	return nil
 }
 
-func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, session *DBSession) error {
+func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, session *DatabaseSession) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 

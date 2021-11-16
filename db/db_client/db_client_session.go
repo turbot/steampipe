@@ -12,13 +12,13 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DBSession, acquireSessionError error) {
+func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DatabaseSession, acquireSessionError error) {
 	c.sessionInitWaitGroup.Add(1)
 	defer c.sessionInitWaitGroup.Done()
 
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
-	rawConnection, backendPid, err := c.getSessionWithRetries(ctx)
+	databaseConnection, backendPid, err := c.getSessionWithRetries(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -30,15 +30,15 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DBSession, 
 		session.Timeline.Add(db_common.DBSessionLifecycleEventCreated)
 	}
 	// we get a new *sql.Conn everytime. USE IT!
-	session.Raw = rawConnection
+	session.Connection = databaseConnection
 	c.sessionsMutex.Unlock()
 
 	log.Printf("[TRACE] Got Session with PID: %d", backendPid)
 
 	defer func() {
 		// make sure that we close the acquired session, in case of error
-		if acquireSessionError != nil && rawConnection != nil {
-			rawConnection.Close()
+		if acquireSessionError != nil && databaseConnection != nil {
+			databaseConnection.Close()
 		}
 	}()
 
@@ -73,7 +73,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DBSession, 
 
 	// update required session search path if needed
 	if strings.Join(session.SearchPath, ",") != strings.Join(c.requiredSessionSearchPath, ",") {
-		if err := c.setSessionSearchPathToRequired(ctx, rawConnection); err != nil {
+		if err := c.setSessionSearchPathToRequired(ctx, databaseConnection); err != nil {
 			return nil, err
 		}
 		session.SearchPath = c.requiredSessionSearchPath

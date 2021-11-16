@@ -11,7 +11,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.WorkspaceResourceMaps, session *DBSession) error {
+func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.WorkspaceResourceMaps, session *DatabaseSession) error {
 	log.Printf("[TRACE] CreatePreparedStatements")
 
 	utils.LogTime("db.CreatePreparedStatements start")
@@ -80,7 +80,7 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 }
 
 // UpdatePreparedStatements first attempts to deallocate all prepared statements in workspace, then recreates them
-func UpdatePreparedStatements(ctx context.Context, prevResourceMaps, currentResourceMaps *modconfig.WorkspaceResourceMaps, session *DBSession) error {
+func UpdatePreparedStatements(ctx context.Context, prevResourceMaps, currentResourceMaps *modconfig.WorkspaceResourceMaps, session *DatabaseSession) error {
 	log.Printf("[TRACE] UpdatePreparedStatements")
 
 	utils.LogTime("db.UpdatePreparedStatements start")

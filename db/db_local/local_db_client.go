@@ -95,7 +95,7 @@ func (c *LocalDbClient) RefreshSessions(ctx context.Context) error {
 	return c.client.RefreshSessions(ctx)
 }
 
-func (c *LocalDbClient) AcquireSession(ctx context.Context) (*db_common.DBSession, error) {
+func (c *LocalDbClient) AcquireSession(ctx context.Context) (*db_common.DatabaseSession, error) {
 	return c.client.AcquireSession(ctx)
 }
 
@@ -105,12 +105,12 @@ func (c *LocalDbClient) ExecuteSync(ctx context.Context, query string, disableSp
 }
 
 // ExecuteSyncInSession implements Client
-func (c *LocalDbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DBSession, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
+func (c *LocalDbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	return c.client.ExecuteSyncInSession(ctx, session, query, disableSpinner)
 }
 
 // ExecuteInSession implements Client
-func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *db_common.DBSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
+func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
 	return c.client.ExecuteInSession(ctx, session, query, onComplete, disableSpinner)
 }
 

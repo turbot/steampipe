@@ -32,7 +32,7 @@ type DbClient struct {
 
 	// map of database sessions, keyed to the backend_pid in postgres
 	// used to track database sessions that were created
-	sessions map[int64]*db_common.DBSession
+	sessions map[int64]*db_common.DatabaseSession
 	// allows locked access to the `sessions` map
 	sessionsMutex *sync.Mutex
 }
@@ -54,7 +54,7 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 		// a weighted semaphore to control the maximum number parallel
 		// initializations under way
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
-		sessions:                make(map[int64]*db_common.DBSession),
+		sessions:                make(map[int64]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
 	}
 	client.connectionString = connectionString

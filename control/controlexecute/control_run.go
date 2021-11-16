@@ -90,7 +90,7 @@ func (r *ControlRun) Skip() {
 }
 
 // set search path for this control run
-func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.DBSession, client db_common.Client) error {
+func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.DatabaseSession, client db_common.Client) error {
 	utils.LogTime("ControlRun.setSearchPath start")
 	defer utils.LogTime("ControlRun.setSearchPath end")
 
@@ -119,15 +119,15 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.DBSes
 
 	// no execute the SQL to actuall set the search path
 	q := fmt.Sprintf("set search_path to %s", strings.Join(newSearchPath, ","))
-	_, err = session.Raw.ExecContext(ctx, q)
+	_, err = session.Connection.ExecContext(ctx, q)
 	return err
 }
 
-func (r *ControlRun) getCurrentSearchPath(ctx context.Context, session *db_common.DBSession) ([]string, error) {
+func (r *ControlRun) getCurrentSearchPath(ctx context.Context, session *db_common.DatabaseSession) ([]string, error) {
 	utils.LogTime("ControlRun.getCurrentSearchPath start")
 	defer utils.LogTime("ControlRun.getCurrentSearchPath end")
 
-	row := session.Raw.QueryRowContext(ctx, "show search_path")
+	row := session.Connection.QueryRowContext(ctx, "show search_path")
 	pathAsString := ""
 	err := row.Scan(&pathAsString)
 	if err != nil {

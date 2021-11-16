@@ -4,8 +4,8 @@ import (
 	"database/sql"
 )
 
-// DBSession wraps over the raw database/sql.Conn and also allows for retaining useful instrumentation
-type DBSession struct {
+// DatabaseSession wraps over the raw database/sql.Conn and also allows for retaining useful instrumentation
+type DatabaseSession struct {
 	BackendPid  int64              `json:"backend_pid"`
 	Timeline    DBSessionLifecycle `json:"lifecycle"`
 	UsedCount   int                `json:"used"`
@@ -13,29 +13,29 @@ type DBSession struct {
 	Initialized bool               `json:"-"`
 
 	// this gets rewritten, since the database/sql gives back a new instance everytime
-	Raw *sql.Conn `json:"-"`
+	Connection *sql.Conn `json:"-"`
 }
 
-func NewDBSession(backendPid int64) *DBSession {
-	return &DBSession{
+func NewDBSession(backendPid int64) *DatabaseSession {
+	return &DatabaseSession{
 		Timeline:   DBSessionLifecycle{},
 		BackendPid: backendPid,
 	}
 }
 
-func (s *DBSession) UpdateUsage() {
+func (s *DatabaseSession) UpdateUsage() {
 	s.UsedCount++
 	s.Timeline.Add(DBSessionLifecycleEventLastUsed)
 }
 
-func (s *DBSession) GetRaw() *sql.Conn {
-	return s.Raw
+func (s *DatabaseSession) GetRaw() *sql.Conn {
+	return s.Connection
 }
 
-func (s *DBSession) Close() error {
-	if s.Raw != nil {
-		err := s.Raw.Close()
-		s.Raw = nil
+func (s *DatabaseSession) Close() error {
+	if s.Connection != nil {
+		err := s.Connection.Close()
+		s.Connection = nil
 		return err
 	}
 	return nil

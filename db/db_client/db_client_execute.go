@@ -33,7 +33,7 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner
 
 // ExecuteSyncInSession implements Client
 // execute a query against this client and wait for the result
-func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DBSession, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
+func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	if query == "" {
 		return &queryresult.SyncQueryResult{}, nil
 	}
@@ -71,7 +71,7 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 	return c.ExecuteInSession(ctx, session, query, closeSessionCallback, disableSpinner)
 }
 
-func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DBSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
+func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
 	if query == "" {
 		return queryresult.NewQueryResult(nil), nil
 	}

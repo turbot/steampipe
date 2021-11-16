@@ -265,7 +265,7 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 		// register EnsureSessionData as a callback on the client.
 		// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 		// so our client object calls this callback to restore the session data
-		initData.Client.SetEnsureSessionDataFunc(func(ctx context.Context, session *db_common.DBSession) error {
+		initData.Client.SetEnsureSessionDataFunc(func(ctx context.Context, session *db_common.DatabaseSession) error {
 			return workspace.EnsureSessionData(ctx, sessionDataSource, session)
 		})
 	}()

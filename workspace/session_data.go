@@ -10,7 +10,7 @@ import (
 
 // EnsureSessionData determines whether session scoped data (introspection tables and prepared statements)
 // exists for this session, and if not, creates it
-func EnsureSessionData(ctx context.Context, source *SessionDataSource, session *db_common.DBSession) error {
+func EnsureSessionData(ctx context.Context, source *SessionDataSource, session *db_common.DatabaseSession) error {
 	utils.LogTime("workspace.EnsureSessionData start")
 	defer utils.LogTime("workspace.EnsureSessionData end")
 
