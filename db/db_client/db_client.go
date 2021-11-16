@@ -50,7 +50,7 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 		sessionInitWaitGroup: &sync.WaitGroup{},
 		// a weighted semaphore to control the maximum number parallel
 		// initializations under way
-		parallelSessionInitLock: semaphore.NewWeighted(3),
+		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
 		sessions:                make(map[int64]*db_common.DBSession),
 		sessionsMutex:           &sync.Mutex{},
 	}
@@ -150,7 +150,10 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	utils.LogTime("db_client.refreshDbClient start")
 	defer utils.LogTime("db_client.refreshDbClient end")
 
-	// clear the initializedSessions map
+	// wait for any pending inits to finish
+	c.sessionInitWaitGroup.Wait()
+
+	// close the connection
 	err := c.dbClient.Close()
 	if err != nil {
 		return err

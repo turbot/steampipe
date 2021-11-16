@@ -7,6 +7,9 @@ import (
 )
 
 // dbClient constants
+const (
+	MaxParallelClientInits = 3
+)
 
 // DatabaseListenAddresses is an arrays is listen addresses which Steampipe accepts
 var DatabaseListenAddresses = []string{"localhost", "127.0.0.1"}
