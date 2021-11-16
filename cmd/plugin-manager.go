@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/turbot/steampipe/workspace"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
@@ -32,20 +34,27 @@ func pluginManagerCmd() *cobra.Command {
 func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	logger := createPluginManagerLog()
 
+	log.Printf("[WARN] runPluginManagerCmd")
 	// build config map
 	steampipeConfig, err := steampipeconfig.LoadConnectionConfig()
 	if err != nil {
 		utils.ShowError(err)
 		os.Exit(1)
 	}
-	configMap := make(map[string]*pb.ConnectionConfig)
-	for k, v := range steampipeConfig.Connections {
-		configMap[k] = &pb.ConnectionConfig{
-			Plugin:          v.Plugin,
-			PluginShortName: v.PluginShortName,
-			Config:          v.Config,
-		}
+	configMap := pb.NewConnectionConfigMap(steampipeConfig.Connections)
+
+	log.Printf("[WARN] got config map")
+	connectionWatcher, err := workspace.NewConnectionWatcher(constants.InvokerPluginManager, func(error) {})
+	if err != nil {
+		log.Printf("[WARN] connection watcher failed %s", err)
+		utils.ShowError(err)
+		os.Exit(2)
 	}
+	log.Printf("[WARN] connection watcher started")
+	// close the connection watcher
+	defer connectionWatcher.Close()
+
+	log.Printf("[WARN] about to serve")
 	plugin_manager.NewPluginManager(configMap, logger).Serve()
 }
 
@@ -55,7 +64,7 @@ func createPluginManagerLog() hclog.Logger {
 	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Printf("failed to open plugin manager log file: %s\n", err.Error())
-		os.Exit(1)
+		os.Exit(3)
 	}
 	logger := logging.NewLogger(&hclog.LoggerOptions{Output: f})
 	log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))

@@ -72,7 +72,7 @@ func (c *LocalDbClient) Close() error {
 	return nil
 }
 
-// EnsureSessionState implements Client
+// SetEnsureSessionDataFunc implements Client
 func (c *LocalDbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallback) {
 	c.client.SetEnsureSessionDataFunc(f)
 }

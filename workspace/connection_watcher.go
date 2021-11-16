@@ -3,6 +3,9 @@ package workspace
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/plugin_manager"
+	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
+
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/db/db_local"
 
@@ -76,6 +79,18 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 		fmt.Println()
 		utils.ShowError(refreshResult.Error)
 		return
+	}
+
+	configMap := pb.NewConnectionConfigMap(steampipeconfig.GlobalConfig.Connections)
+	pluginManager, err := plugin_manager.GetPluginManager()
+	if err != nil {
+		refreshResult.AddWarning(fmt.Sprintf("connection config watcher failed to connect to plugin manager: %s", err.Error()))
+	} else {
+		// so we got a plugin manager client - set connection config
+		_, err := pluginManager.SetConnectionConfigMap(&pb.SetConnectionConfigMapRequest{ConfigMap: configMap})
+		if err != nil {
+			refreshResult.AddWarning(fmt.Sprintf("connection config watcher failed to set connection config in plugin manager: %s", err.Error()))
+		}
 	}
 	// display any refresh warnings
 	refreshResult.ShowWarnings()

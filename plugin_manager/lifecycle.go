@@ -131,6 +131,7 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	if state == nil {
 		log.Printf("[TRACE] GetPluginManager called but plugin manager not running")
 		if startIfNeeded {
+
 			log.Printf("[TRACE] calling Start()")
 			// start the plugin manager
 			if err := start(); err != nil {
