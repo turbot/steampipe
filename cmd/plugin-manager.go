@@ -43,14 +43,14 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	log.Printf("[WARN] got config map")
 
 	pluginManager := plugin_manager.NewPluginManager(configMap, logger)
-	connectionWatcher, err := connection_watcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
-	if err != nil {
-		utils.ShowError(err)
-		os.Exit(1)
-	}
-
-	// close the connection watcher
-	defer connectionWatcher.Close()
+	//connectionWatcher, err := connection_watcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
+	//if err != nil {
+	//	utils.ShowError(err)
+	//	os.Exit(1)
+	//}
+	//
+	//// close the connection watcher
+	//defer connectionWatcher.Close()
 
 	log.Printf("[WARN] about to serve")
 	pluginManager.Serve()

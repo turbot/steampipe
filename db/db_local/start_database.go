@@ -77,6 +77,11 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 		}
 	}()
 
+	// start the plugin manager
+	if err := plugin_manager.Start(); err != nil {
+		return ServiceFailedToStart, err
+	}
+
 	// remove the stale info file, ignoring errors - will overwrite anyway
 	_ = removeRunningInstanceInfo()
 
@@ -152,11 +157,6 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	// ensure the db contains command schema
 	err = ensureCommandSchema(databaseName)
 	if err != nil {
-		return ServiceFailedToStart, err
-	}
-
-	// start the plugin manager
-	if err := plugin_manager.Start(); err != nil {
 		return ServiceFailedToStart, err
 	}
 
