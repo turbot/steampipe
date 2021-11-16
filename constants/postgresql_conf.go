@@ -62,7 +62,7 @@ track_counts=off
 wal_buffers=32kB
 work_mem=64kB
 jit=off
- 
+
 # postgres log collection
 ## log_statement=all
 log_min_duration_statement=2000
