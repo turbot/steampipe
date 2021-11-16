@@ -88,9 +88,9 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 		e.progress.Finish()
 	}()
 
-	// the number of parallel to start - we start goroutines as a multiplier of the number of parallel connections
-	// available, so that go routines receive connections as soon as they are available and no time
-	// is spent in getting the control ready to run.
+	// the number of goroutines parallel to start
+	// - we start goroutines as a multiplier of the number of parallel database connections
+	// so that go routines receive connections as soon as they are available 
 	maxParallelGoRoutines := viper.GetInt64(constants.ArgMaxParallel) * constants.ParallelControlMultiplier
 
 	// to limit the number of parallel controls go routines started
