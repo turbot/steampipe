@@ -51,6 +51,7 @@ func NewLocalClient(invoker constants.Invoker) (*LocalDbClient, error) {
 	}
 	dbClient, err := db_client.NewDbClient(connString)
 	if err != nil {
+		log.Printf("[WARN] error getting local client %s", err.Error())
 		return nil, err
 	}
 

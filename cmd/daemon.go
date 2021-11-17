@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -21,8 +22,14 @@ func daemonCmd() *cobra.Command {
 }
 
 func runDaemonCmd(cmd *cobra.Command, args []string) {
+	// get the location of the currently running steampipe process
+	executable, err := os.Executable()
+	if err != nil {
+		fmt.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
+		os.Exit(1)
+	}
 	// create command which will run steampipe plugin-manager
-	pluginManagerCmd := exec.Command("steampipe", "plugin-manager", "--install-dir", viper.GetString(constants.ArgInstallDir))
+	pluginManagerCmd := exec.Command(executable, "plugin-manager", "--install-dir", viper.GetString(constants.ArgInstallDir))
 	pluginManagerCmd.Stdout = os.Stdout
 	pluginManagerCmd.Start()
 

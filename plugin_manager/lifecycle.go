@@ -22,6 +22,7 @@ func Start() error {
 	// try to load the plugin manager state
 	state, err := loadPluginManagerState(true)
 	if err != nil {
+		log.Printf("[WARN] plugin manager Start() - load state failed: %s", err)
 		return err
 	}
 
@@ -44,8 +45,11 @@ func start() error {
 	// get the location of the currently running steampipe process
 	executable, err := os.Executable()
 	if err != nil {
+		log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
 		return err
 	}
+	log.Printf("[TRACE] plugin manager start() - got steampipe exe path: %s", executable)
+
 	pluginManagerCmd := exec.Command(executable, "daemon", "--install-dir", viper.GetString(constants.ArgInstallDir))
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
@@ -66,11 +70,15 @@ func start() error {
 		Logger: logger,
 	})
 	if _, err := client.Start(); err != nil {
+		log.Printf("[WARN] plugin manager start() failed to start GRPC client for plugin manager: %s", err)
 		return err
 	}
 
-	// create a plugin manager state
+	// create a plugin manager state.
+	// NOTE: the pid returned by the reattach config is the pid of the daemon process
 	state := NewPluginManagerState(client.ReattachConfig())
+
+	log.Printf("[TRACE] start: started plugin manager, daemon pid %d", state.Pid)
 
 	// now save the state
 	return state.Save()
@@ -143,5 +151,6 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 		// not retrying - just fail
 		return nil, fmt.Errorf("plugin manager is not running")
 	}
+	log.Printf("[TRACE] plugin manager is running - returning client")
 	return NewPluginManagerClient(state)
 }
