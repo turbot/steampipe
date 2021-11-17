@@ -224,6 +224,12 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			}
 			return
 		}),
+		prompt.OptionCompletionEscapeFunc(func(s string) string {
+			if strings.ContainsAny(s, " -") {
+				return db_common.PgEscapeName(s)
+			}
+			return s
+		}),
 		prompt.OptionFormatter(c.highlighter.Highlight),
 		prompt.OptionHistory(c.interactiveQueryHistory.Get()),
 		prompt.OptionInputTextColor(prompt.DefaultColor),
