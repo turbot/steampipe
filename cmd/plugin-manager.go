@@ -34,7 +34,7 @@ func pluginManagerCmd() *cobra.Command {
 func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	logger := createPluginManagerLog()
 
-	log.Printf("[INFO] Starting plugin manager")
+	log.Printf("[INFO] starting plugin manager")
 	// build config map
 	steampipeConfig, err := steampipeconfig.LoadConnectionConfig()
 	if err != nil {

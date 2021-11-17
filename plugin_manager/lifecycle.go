@@ -121,6 +121,7 @@ func GetPluginManager() (pluginshared.PluginManager, error) {
 // if not,and if startIfNeeded is true, it starts the manager
 // it then returns a plugin manager client
 func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
+	log.Printf("[WARN] getPluginManager startIfNeeded %v", startIfNeeded)
 	// try to load the plugin manager state
 	state, err := loadPluginManagerState(true)
 	if err != nil {
@@ -129,12 +130,12 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	}
 	// if we did not load it and there was no error, it means the plugin manager is not running
 	if state == nil {
-		log.Printf("[TRACE] GetPluginManager called but plugin manager not running")
+		log.Printf("[WARN] GetPluginManager called, plugin manager not running")
 		if startIfNeeded {
-
-			log.Printf("[TRACE] calling Start()")
+			log.Printf("[WARN] calling Start()")
 			// start the plugin manager
 			if err := start(); err != nil {
+				log.Printf("[WARN] start returned error %s", err.Error())
 				return nil, err
 			}
 			// recurse in, setting startIfNeeded to false to avoid further recursion on failure
@@ -143,5 +144,6 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 		// not retrying - just fail
 		return nil, fmt.Errorf("plugin manager is not running")
 	}
+	log.Printf("[WARN] plugin manager is running - returning client")
 	return NewPluginManagerClient(state)
 }
