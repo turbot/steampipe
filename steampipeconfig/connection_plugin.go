@@ -55,8 +55,9 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (res *ConnectionPl
 	} else {
 		pluginManager, err = plugin_manager.GetPluginManager()
 	}
-
+	// check the error from the plugin manager startup
 	if err != nil {
+		log.Printf("[WARN] failed to start plugin manager: %s", err)
 		return nil, err
 	}
 
@@ -84,12 +85,14 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (res *ConnectionPl
 	}
 
 	if err = pluginClient.SetConnectionConfig(req); err != nil {
+		log.Printf("[WARN] failed to set connection config: %s", err)
 		return nil, err
 	}
 
 	// fetch the plugin schema
 	schema, err := pluginClient.GetSchema()
 	if err != nil {
+		log.Printf("[WARN] failed to get schema: %s", err)
 		return nil, err
 	}
 	// fetch the supported operations
@@ -109,6 +112,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (res *ConnectionPl
 		Schema:              schema,
 		SupportedOperations: supportedOperations,
 	}
+	log.Printf("[TRACE] created connection plugin for connection: '%s', pluginName: '%s'", connectionName, pluginName)
 	return c, nil
 }
 

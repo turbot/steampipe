@@ -42,6 +42,8 @@ func GetLocalClient(invoker constants.Invoker) (db_common.Client, error) {
 // NewLocalClient ensures that the database instance is running
 // and returns a `Client` to interact with it
 func NewLocalClient(invoker constants.Invoker) (*LocalDbClient, error) {
+	log.Printf("[WARN] NewLocalClient invoker %s", invoker)
+
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
 
@@ -49,13 +51,15 @@ func NewLocalClient(invoker constants.Invoker) (*LocalDbClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("[WARN] connString %s", connString)
 	dbClient, err := db_client.NewDbClient(connString)
 	if err != nil {
+		log.Printf("[WARN] error getrting local client %s", err.Error())
 		return nil, err
 	}
 
 	c := &LocalDbClient{client: dbClient, invoker: invoker}
-	log.Printf("[TRACE] created local client %p", c)
+	log.Printf("[WARN] created local client %p", c)
 	return c, nil
 }
 

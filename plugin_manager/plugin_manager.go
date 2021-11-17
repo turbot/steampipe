@@ -111,7 +111,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (resp *pb.GetResponse, err error
 	reattach := pb.NewReattachConfig(client.ReattachConfig())
 	m.Plugins[req.Connection] = runningPlugin{client: client, reattach: reattach}
 
-	log.Printf("[TRACE] PluginManager Get complete")
+	log.Printf("[TRACE] PluginManager Get complete, returning reattach config with PID: %d", reattach.Pid)
 
 	// and return
 	return &pb.GetResponse{Reattach: reattach}, nil

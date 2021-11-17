@@ -67,6 +67,7 @@ func (s *pluginManagerState) verifyServiceRunning() (bool, error) {
 
 // kill the plugin manager process and delete the state
 func (s *pluginManagerState) kill() error {
+	// the state file contains the Pid of the daemon process - find and kill the process
 	process, err := utils.FindProcess(s.Pid)
 	if err != nil {
 		return err
