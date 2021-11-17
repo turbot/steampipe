@@ -22,11 +22,12 @@ func Start() error {
 	// try to load the plugin manager state
 	state, err := loadPluginManagerState(true)
 	if err != nil {
+		log.Printf("[WARN] Startload state failed: %s", err)
 		return err
 	}
 
 	if state != nil {
-		log.Printf("[TRACE] plugin manager Start() found previous instance of plugin manager still running - stopping it")
+		log.Printf("[WARN] plugin manager Start() found previous instance of plugin manager still running - stopping it")
 		// stop the current instance
 		if err := stop(state); err != nil {
 			log.Printf("[WARN] failed to stop previous instance of plugin manager: %s", err)
@@ -46,6 +47,8 @@ func start() error {
 	if err != nil {
 		return err
 	}
+	log.Printf("[WARN] start got steampipe exe path: %s", executable)
+
 	pluginManagerCmd := exec.Command(executable, "daemon", "--install-dir", viper.GetString(constants.ArgInstallDir))
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
@@ -66,9 +69,11 @@ func start() error {
 		Logger: logger,
 	})
 	if _, err := client.Start(); err != nil {
+		log.Printf("[WARN] failed to start GRPC client for plugin manager: %s", err)
 		return err
 	}
 
+	log.Printf("[WARN] start: started plugin manager")
 	// create a plugin manager state
 	state := NewPluginManagerState(client.ReattachConfig())
 

@@ -80,6 +80,8 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	// start the plugin manager
 	log.Printf("[WARN] StartDB starting plugin manager")
 	if err := plugin_manager.Start(); err != nil {
+		log.Printf("[WARN] StartDB plugin manager failed to start: %s", err)
+
 		return ServiceFailedToStart, err
 	}
 	log.Printf("[WARN] StartDB started plugin manager")
