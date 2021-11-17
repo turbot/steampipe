@@ -45,7 +45,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (res *ConnectionPl
 	connectionConfig := connection.Config
 	connectionOptions := connection.Options
 
-	log.Printf("[TRACE] CreateConnectionPlugin connection: '%s', pluginName: '%s'", connectionName, pluginName)
+	log.Printf("[WARN] CreateConnectionPlugin connection: '%s', pluginName: '%s'", connectionName, pluginName)
 
 	var pluginManager pluginshared.PluginManager
 	if env := os.Getenv("STEAMPIPE_PLUGIN_MANAGER_DEBUG"); strings.ToLower(env) == "true" {
@@ -56,10 +56,6 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (res *ConnectionPl
 		pluginManager, err = plugin_manager.GetPluginManager()
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
 	// ask the plugin manager for the plugin reattach config
 	getResponse, err := pluginManager.Get(&proto.GetRequest{Connection: connectionName})
 	if err != nil {
@@ -67,7 +63,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (res *ConnectionPl
 		return nil, err
 	}
 
-	log.Printf("[TRACE] plugin manager returned reattach config for connection '%s' - pid %d",
+	log.Printf("[WARN] plugin manager returned reattach config for connection '%s' - pid %d",
 		connectionName, getResponse.Reattach.Pid)
 
 	// attach to the plugin process
@@ -84,12 +80,15 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (res *ConnectionPl
 	}
 
 	if err = pluginClient.SetConnectionConfig(req); err != nil {
+		log.Printf("[WARN] failed to set connection config: %s", err)
 		return nil, err
 	}
 
 	// fetch the plugin schema
 	schema, err := pluginClient.GetSchema()
 	if err != nil {
+		log.Printf("[WARN] failed to get schema: %s", err)
+
 		return nil, err
 	}
 	// fetch the supported operations
@@ -109,6 +108,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (res *ConnectionPl
 		Schema:              schema,
 		SupportedOperations: supportedOperations,
 	}
+	log.Printf("[WARN] created connection plugin")
 	return c, nil
 }
 
