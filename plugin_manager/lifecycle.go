@@ -9,7 +9,6 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/constants"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
@@ -41,7 +40,9 @@ func StartNewInstance(steampipeExecutablePath string) error {
 // when ther plugin mananager is first started by steampipe, we derive the exe path from the running process and
 // store it in the plugin manager state file - then if the fdw needs to start the plugin manager it knows how to
 func start(steampipeExecutablePath string) error {
-	pluginManagerCmd := exec.Command(steampipeExecutablePath, "plugin-manager", "--install-dir", viper.GetString(constants.ArgInstallDir))
+	// note: we assume the install dir has been assigned to constants.SteampipeDir
+	// - this is done both by the FDW and Steampipe
+	pluginManagerCmd := exec.Command(steampipeExecutablePath, "plugin-manager", "--install-dir", constants.SteampipeDir)
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
@@ -67,7 +68,7 @@ func start(steampipeExecutablePath string) error {
 	// create a plugin manager state.
 	state := NewPluginManagerState(steampipeExecutablePath, client.ReattachConfig())
 
-	log.Printf("[TRACE] start: started plugin manager, daemon pid %d", state.Pid)
+	log.Printf("[TRACE] start: started plugin manager, pid %d", state.Pid)
 
 	// now save the state
 	return state.Save()

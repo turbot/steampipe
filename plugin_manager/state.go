@@ -20,7 +20,7 @@ type pluginManagerState struct {
 	ProtocolVersion int
 	Addr            *pb.SimpleAddr
 	Pid             int
-	// path to the steampipe executeable
+	// path to the steampipe executable
 	Executable string
 	// is the plugin manager running
 	Running bool
