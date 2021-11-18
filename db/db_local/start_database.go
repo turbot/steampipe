@@ -21,7 +21,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// StartResult is a pseudoEnum for outcomes of Start
+// StartResult is a pseudoEnum for outcomes of StartNewInstance
 type StartResult int
 
 // StartListenType is a pseudoEnum of network binding for postgres
@@ -158,7 +158,13 @@ func StartDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	}
 
 	// start the plugin manager
-	if err := plugin_manager.Start(); err != nil {
+	// get the location of the currently running steampipe process
+	executable, err := os.Executable()
+	if err != nil {
+		log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
+		return ServiceFailedToStart, err
+	}
+	if err := plugin_manager.StartNewInstance(executable); err != nil {
 		log.Printf("[WARN] StartDB plugin manager failed to start: %s", err)
 		return ServiceFailedToStart, err
 	}

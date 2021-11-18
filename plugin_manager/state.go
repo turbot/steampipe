@@ -20,10 +20,15 @@ type pluginManagerState struct {
 	ProtocolVersion int
 	Addr            *pb.SimpleAddr
 	Pid             int
+	// path to the steampipe executeable
+	Executable string
+	// is the plugin manager running
+	Running bool
 }
 
-func NewPluginManagerState(reattach *plugin.ReattachConfig) *pluginManagerState {
+func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *pluginManagerState {
 	return &pluginManagerState{
+		Executable:      executable,
 		Protocol:        reattach.Protocol,
 		ProtocolVersion: reattach.ProtocolVersion,
 		Addr:            pb.NewSimpleAddr(reattach.Addr),
@@ -48,21 +53,22 @@ func (s *pluginManagerState) Save() error {
 	return ioutil.WriteFile(constants.PluginManagerStateFilePath(), content, 0644)
 }
 
-func (s *pluginManagerState) verifyServiceRunning() (bool, error) {
+// check whether the plugin manager is running
+// it it is NOT, delete the state file
+// if it is, set the 'running property of the statefile to true
+func (s *pluginManagerState) verifyRunning() error {
 	pidExists, err := utils.PidExists(s.Pid)
-	if err != nil {
-		return false, fmt.Errorf("failed to verify plugin manager is running: %s", err.Error())
-	}
-	if !pidExists {
+
+	// if we fail to determine if the plugin manager is running, assume it is NOT
+	if err == nil && pidExists {
+		s.Running = true
+	} else if err = s.delete(); err != nil {
 		// file is outdated - delete
-		if err := s.delete(); err != nil {
-			return false, err
-		}
-		// plugin manager is NOT running
-		return false, nil
+		log.Printf("[WARN] plugin manager is not running but failed to delete state file: %s", err.Error())
+		err = fmt.Errorf("plugin manager is not running but failed to delete state file: %s", err.Error())
 	}
-	// plugin manager IS running
-	return true, nil
+	// return error (which may be nil)
+	return err
 }
 
 // kill the plugin manager process and delete the state
@@ -85,7 +91,7 @@ func (s *pluginManagerState) delete() error {
 	return os.Remove(constants.PluginManagerStateFilePath())
 }
 
-func loadPluginManagerState(verify bool) (*pluginManagerState, error) {
+func loadPluginManagerState() (*pluginManagerState, error) {
 	if !helpers.FileExists(constants.PluginManagerStateFilePath()) {
 		log.Printf("[TRACE] plugin manager state file not found")
 		return nil, nil
@@ -101,15 +107,11 @@ func loadPluginManagerState(verify bool) (*pluginManagerState, error) {
 		return nil, err
 	}
 
-	if verify {
-		if running, err := s.verifyServiceRunning(); err != nil {
-			log.Printf("[TRACE] plugin manager is running, pid %d", s.Pid)
-			return nil, err
-		} else if !running {
-			log.Printf("[TRACE] plugin manager state file exists but pid %d is not running - deleting file", s.Pid)
-			return nil, nil
-		}
-
+	// check is the manager is running - this deletes that state file if it si not running,
+	// and set the 'Running' property on the state if it is
+	if err = s.verifyRunning(); err != nil {
+		return nil, err
 	}
+
 	return s, nil
 }

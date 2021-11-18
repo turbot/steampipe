@@ -3,7 +3,7 @@
 if [[ ! ${MY_PATH} ]];
 then
   MY_PATH="`dirname \"$0\"`"              # relative
-  MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized  
+  MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 fi
 
 if [[ ! ${TIME_TO_QUERY} ]];
@@ -45,17 +45,3 @@ echo "\___ \| __/ _\` | '__| __| | '_ \ / _\` |   | |/ _ \/ __| __/ __|"
 echo " ___) | || (_| | |  | |_| | | | | (_| |   | |  __/\__ \ |_\__ \\"
 echo "|____/ \__\__,_|_|   \__|_|_| |_|\__, |   |_|\___||___/\__|___/"
 echo "                                 |___/                         "
-
-export PATH=$MY_PATH/lib/bats/bin:$PATH
-
-if [[ ! ${STEAMPIPE_INSTALL_DIR} ]];
-then
-  export STEAMPIPE_INSTALL_DIR="$HOME/.steampipe"
-fi
-
-echo "Running with STEAMPIPE_INSTALL_DIR set to $STEAMPIPE_INSTALL_DIR"
-
-bats --tap $MY_PATH/test_files
-
-# Setting the exit_code, to use in the github workflow(This only gets set to 0 when the above bats test suite passes)
-echo "::set-output name=exit_code::$(echo $?)"
