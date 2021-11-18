@@ -61,7 +61,7 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*pb.Conn
 
 func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	defer func() {
-		if r := recover; r != nil {
+		if r := recover(); r != nil {
 			log.Printf("[WARN] ConnectionWatcher caught a panic: %s", helpers.ToError(r).Error())
 		}
 	}()
