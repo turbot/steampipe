@@ -4,53 +4,45 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"os/exec"
 	"syscall"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/constants"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
 )
 
-// Start loads the plugin manager state, stops any previous instance and instantiates a new the plugin manager
-func Start() error {
+// StartNewInstance loads the plugin manager state, stops any previous instance and instantiates a new plugin manager
+func StartNewInstance(steampipeExecutablePath string) error {
 	// try to load the plugin manager state
-	state, err := loadPluginManagerState(true)
+	state, err := loadPluginManagerState()
 	if err != nil {
-		log.Printf("[WARN] plugin manager Start() - load state failed: %s", err)
+		log.Printf("[WARN] plugin manager StartNewInstance() - load state failed: %s", err)
 		return err
 	}
 
-	if state != nil {
-		log.Printf("[TRACE] plugin manager Start() found previous instance of plugin manager still running - stopping it")
+	if state != nil && state.Running {
+		log.Printf("[TRACE] plugin manager StartNewInstance() found previous instance of plugin manager still running - stopping it")
 		// stop the current instance
 		if err := stop(state); err != nil {
 			log.Printf("[WARN] failed to stop previous instance of plugin manager: %s", err)
 			return err
 		}
 	}
-	return start()
+	return start(steampipeExecutablePath)
 }
 
 // start plugin manager, without checking it is already running
-func start() error {
-	// create command which will start plugin-manager
-	// we have to spawn a separate process to do this so the plugin process itself is not an orphan
-
-	// get the location of the currently running steampipe process
-	executable, err := os.Executable()
-	if err != nil {
-		log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
-		return err
-	}
-	log.Printf("[TRACE] plugin manager start() - got steampipe exe path: %s", executable)
-
-	pluginManagerCmd := exec.Command(executable, "daemon", "--install-dir", viper.GetString(constants.ArgInstallDir))
+// we need to be provided with the exe path as we have no way of knowing where the steampipe exe it
+// when ther plugin mananager is first started by steampipe, we derive the exe path from the running process and
+// store it in the plugin manager state file - then if the fdw needs to start the plugin manager it knows how to
+func start(steampipeExecutablePath string) error {
+	// note: we assume the install dir has been assigned to constants.SteampipeDir
+	// - this is done both by the FDW and Steampipe
+	pluginManagerCmd := exec.Command(steampipeExecutablePath, "plugin-manager", "--install-dir", constants.SteampipeDir)
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
@@ -62,12 +54,11 @@ func start() error {
 
 	// launch the plugin manager the plugin process
 	client := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig: pluginshared.Handshake,
-		Plugins:         pluginshared.PluginMap,
-		Cmd:             pluginManagerCmd,
-		AllowedProtocols: []plugin.Protocol{
-			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
-		Logger: logger,
+		HandshakeConfig:  pluginshared.Handshake,
+		Plugins:          pluginshared.PluginMap,
+		Cmd:              pluginManagerCmd,
+		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
+		Logger:           logger,
 	})
 	if _, err := client.Start(); err != nil {
 		log.Printf("[WARN] plugin manager start() failed to start GRPC client for plugin manager: %s", err)
@@ -75,10 +66,9 @@ func start() error {
 	}
 
 	// create a plugin manager state.
-	// NOTE: the pid returned by the reattach config is the pid of the daemon process
-	state := NewPluginManagerState(client.ReattachConfig())
+	state := NewPluginManagerState(steampipeExecutablePath, client.ReattachConfig())
 
-	log.Printf("[TRACE] start: started plugin manager, daemon pid %d", state.Pid)
+	log.Printf("[TRACE] start: started plugin manager, pid %d", state.Pid)
 
 	// now save the state
 	return state.Save()
@@ -87,11 +77,11 @@ func start() error {
 // Stop loads the plugin manager state and if a running instance is found, stop it
 func Stop() error {
 	// try to load the plugin manager state
-	state, err := loadPluginManagerState(true)
+	state, err := loadPluginManagerState()
 	if err != nil {
 		return err
 	}
-	if state == nil {
+	if state == nil || state.Running == false {
 		// nothing to do
 		return nil
 	}
@@ -130,19 +120,25 @@ func GetPluginManager() (pluginshared.PluginManager, error) {
 // it then returns a plugin manager client
 func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	// try to load the plugin manager state
-	state, err := loadPluginManagerState(true)
+	state, err := loadPluginManagerState()
 	if err != nil {
 		log.Printf("[WARN] failed to load plugin manager state: %s", err.Error())
 		return nil, err
 	}
 	// if we did not load it and there was no error, it means the plugin manager is not running
+	// we cannot start it as we do not know the correct steampipe exe path - which is stored in the state
+	// this is not expected - we would expect the plugin manager to have been started with the datatbase
 	if state == nil {
+		return nil, fmt.Errorf("plugin manager is not running and there is no state file")
+	}
+	// if the plugin manager is not running, it must have crashed/terminated
+	if !state.Running {
 		log.Printf("[TRACE] GetPluginManager called but plugin manager not running")
+		// is we are not already recursing, start the plugin manager then recurse back into this function
 		if startIfNeeded {
-
-			log.Printf("[TRACE] calling Start()")
+			log.Printf("[TRACE] calling StartNewInstance()")
 			// start the plugin manager
-			if err := start(); err != nil {
+			if err := start(state.Executable); err != nil {
 				return nil, err
 			}
 			// recurse in, setting startIfNeeded to false to avoid further recursion on failure

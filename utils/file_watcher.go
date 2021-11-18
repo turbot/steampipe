@@ -83,8 +83,6 @@ func NewWatcher(opts *WatcherOptions) (*FileWatcher, error) {
 		watcher.addDirectory(d)
 	}
 
-	// start the watcher
-	watcher.start()
 	return watcher, nil
 }
 
@@ -95,7 +93,7 @@ func (w *FileWatcher) Close() {
 	w.closeChan <- true
 }
 
-func (w *FileWatcher) start() {
+func (w *FileWatcher) Start() {
 	// make an initial call to addWatches to add watches on existing files matching our criteria
 	w.addWatches()
 

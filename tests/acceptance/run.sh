@@ -3,7 +3,7 @@
 if [[ ! ${MY_PATH} ]];
 then
   MY_PATH="`dirname \"$0\"`"              # relative
-  MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized  
+  MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 fi
 
 if [[ ! ${TIME_TO_QUERY} ]];

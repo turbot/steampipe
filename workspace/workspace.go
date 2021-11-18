@@ -113,6 +113,8 @@ func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(erro
 		return err
 	}
 	w.watcher = watcher
+	// start the watcher
+	watcher.Start()
 
 	// set the file watcher error handler, which will get called when there are parsing errors
 	// after a file watcher event
