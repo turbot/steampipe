@@ -99,6 +99,12 @@ func StopSpinner(spinner *spinner.Spinner) {
 	}
 }
 
+func ResumeSpinner(spinner *spinner.Spinner) {
+	if spinner != nil && !spinner.Active() {
+		spinner.Restart()
+	}
+}
+
 // UpdateSpinnerMessage updates the message of the given spinner
 func UpdateSpinnerMessage(spinner *spinner.Spinner, newMessage string) {
 	if spinner != nil {

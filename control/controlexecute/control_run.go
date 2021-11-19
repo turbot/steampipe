@@ -156,7 +156,6 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 
 	// function to cleanup and update status after control run completion
 	defer func() {
-		r.executionTree.progress.OnControlExecuteFinish()
 		// update the result group status with our status - this will be passed all the way up the execution tree
 		r.group.updateSummary(r.Summary)
 		if len(r.Severity) != 0 {
@@ -171,11 +170,13 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	r.Lifecycle.Add("queued_for_session")
 	dbSession, err := client.AcquireSession(ctx)
 	if err != nil {
-		r.SetError(fmt.Errorf("error acquiring database connection, %s", err.Error()))
+		if !utils.IsCancelledError(err) {
+			err = fmt.Errorf("error acquiring database connection, %s", err.Error())
+		}
+		r.SetError(err)
 		return
 	}
-
-	r.Lifecycle.Add("queued_for_session")
+	r.Lifecycle.Add("acquired_session")
 
 	defer func() {
 		dbSession.Close()
@@ -183,10 +184,10 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 
 	// set our status
 	r.runStatus = ControlRunStarted
-	r.executionTree.progress.OnControlExecuteStart()
 
 	// update the current running control in the Progress renderer
 	r.executionTree.progress.OnControlStart(control)
+	defer r.executionTree.progress.OnControlFinish()
 
 	// resolve the control query
 	r.Lifecycle.Add("query_resolution_start")

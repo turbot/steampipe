@@ -39,11 +39,11 @@ func (p *ControlProgressRenderer) Start() {
 	defer p.updateLock.Unlock()
 
 	if p.enabled {
-		p.spinner = display.ShowSpinner("Starting controls")
+		p.spinner = display.ShowSpinner("Starting controls...")
 	}
 }
 
-func (p *ControlProgressRenderer) OnControlExecuteStart() {
+func (p *ControlProgressRenderer) OnControlStart(control *modconfig.Control) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 
@@ -58,7 +58,7 @@ func (p *ControlProgressRenderer) OnControlExecuteStart() {
 	}
 }
 
-func (p *ControlProgressRenderer) OnControlExecuteFinish() {
+func (p *ControlProgressRenderer) OnControlFinish() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	// decrement the parallel execution count
@@ -68,14 +68,6 @@ func (p *ControlProgressRenderer) OnControlExecuteFinish() {
 	}
 }
 
-func (p *ControlProgressRenderer) OnControlStart(control *modconfig.Control) {
-	p.updateLock.Lock()
-	defer p.updateLock.Unlock()
-
-	if p.enabled {
-		display.UpdateSpinnerMessage(p.spinner, p.message())
-	}
-}
 func (p *ControlProgressRenderer) OnControlComplete() {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
@@ -97,9 +89,6 @@ func (p *ControlProgressRenderer) OnControlError() {
 }
 
 func (p *ControlProgressRenderer) Finish() {
-	p.updateLock.Lock()
-	defer p.updateLock.Unlock()
-
 	if p.enabled {
 		display.StopSpinner(p.spinner)
 	}

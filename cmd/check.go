@@ -127,7 +127,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	var spinner *spinner.Spinner
 	if viper.GetBool(constants.ArgProgress) {
-		spinner = display.ShowSpinner("Starting controls...")
+		spinner = display.ShowSpinner("Initializing...")
 	}
 
 	// initialise
@@ -247,7 +247,12 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		client, err = db_client.NewDbClient(connectionString)
 	} else {
+		// stop the spinner
+		display.StopSpinner(spinner)
+		// when starting the database, installers may trigger their own spinners
 		client, err = db_local.GetLocalClient(constants.InvokerCheck)
+		// resume the spinner
+		display.ResumeSpinner(spinner)
 	}
 
 	if err != nil {
