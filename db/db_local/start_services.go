@@ -54,7 +54,7 @@ func StartServices(port int, listen StartListenType, invoker constants.Invoker) 
 	utils.LogTime("db_local.StartServices start")
 	defer utils.LogTime("db_local.StartServices end")
 
-	info, err := GetStatus()
+	info, err := GetState()
 	if err != nil {
 		return ServiceFailedToStart, err
 	}

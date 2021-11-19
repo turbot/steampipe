@@ -26,7 +26,7 @@ func EnsureDbAndStartService(invoker constants.Invoker) error {
 		return err
 	}
 
-	dbStatus, err := GetStatus()
+	dbStatus, err := GetState()
 	if err != nil {
 		return err
 	}
@@ -53,8 +53,8 @@ func EnsureDbAndStartService(invoker constants.Invoker) error {
 	return nil
 }
 
-// GetStatus checks that the database instance is running and returns its details
-func GetStatus() (*RunningDBInstanceInfo, error) {
+// GetState checks that the database instance is running and returns its details
+func GetState() (*RunningDBInstanceInfo, error) {
 	utils.LogTime("db.GetStatus start")
 	defer utils.LogTime("db.GetStatus end")
 

@@ -181,7 +181,7 @@ func installFDW(firstSetup bool, spinner *spinner.Spinner) (string, error) {
 	utils.LogTime("db_local.installFDW start")
 	defer utils.LogTime("db_local.installFDW end")
 
-	status, err := GetStatus()
+	status, err := GetState()
 	if err != nil {
 		return "", err
 	}

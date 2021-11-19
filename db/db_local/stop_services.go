@@ -33,7 +33,7 @@ func ShutdownService(invoker constants.Invoker) {
 	utils.LogTime("db_local.ShutdownService start")
 	defer utils.LogTime("db_local.ShutdownService end")
 
-	status, _ := GetStatus()
+	status, _ := GetState()
 
 	// if the service is not running or it was invoked by 'steampipe service',
 	// then we don't shut it down
@@ -98,11 +98,11 @@ func StopServices(force bool, invoker constants.Invoker, spinner *spinner.Spinne
 		utils.LogTime("db_local.StopDB end")
 	}()
 
-	// TODO think about failures - we should shut down the service event if plugin manager does not stop
 	// stop the plugin manager
 	// this means it may be stopped even if we fail to stop the service - that is ok - we will restart it if needed
 	if err := plugin_manager.Stop(); err != nil {
-		return ServiceStopFailed, err
+		// log it and carry on
+		log.Printf("[ERROR] Failed to stop plugin manager: %s", err.Error())
 	}
 
 	if force {
@@ -112,19 +112,19 @@ func StopServices(force bool, invoker constants.Invoker, spinner *spinner.Spinne
 		return ServiceStopped, nil
 	}
 
-	info, err := GetStatus()
+	dbState, err := GetState()
 	if err != nil {
 		return ServiceStopFailed, err
 	}
 
-	if info == nil {
+	if dbState == nil {
 		// we do not have a info file
 		// assume that the service is not running
 		return ServiceNotRunning, nil
 	}
 
 	// GetStatus has made sure that the process exists
-	process, err := psutils.NewProcess(int32(info.Pid))
+	process, err := psutils.NewProcess(int32(dbState.Pid))
 	if err != nil {
 		return ServiceStopFailed, err
 	}
