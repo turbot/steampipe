@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -28,18 +29,15 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 		queries = append(queries, q)
 	}
 
-	// execute the query, passing 'true' to disable the spinner
-	_, err := session.Connection.ExecContext(ctx, strings.Join(queries, ";\n"))
-
-	// if there was an error - we would like to know which query or control failed, so try to create them one by one
-	if err != nil {
-		for name, sql := range sqlMap {
-			if _, err = session.Connection.ExecContext(ctx, sql); err != nil {
-				return fmt.Errorf("failed to create prepared statement for %s: %v", name, err)
-			}
+	var errors []error
+	for name, sql := range sqlMap {
+		if _, err := session.Connection.ExecContext(ctx, sql); err != nil {
+			errors = append(errors, fmt.Errorf("failed to create prepared statement for %s: %v", name, err))
 		}
 	}
-
+	if len(errors) > 0 {
+		return helpers.CombineErrors(errors...)
+	}
 	// return context error - this enables calling code to respond to cancellation
 	return ctx.Err()
 }
