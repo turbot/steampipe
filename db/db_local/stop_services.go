@@ -100,11 +100,15 @@ func StopServices(force bool, invoker constants.Invoker, spinner *spinner.Spinne
 
 	// stop the plugin manager
 	// this means it may be stopped even if we fail to stop the service - that is ok - we will restart it if needed
-	if err := plugin_manager.Stop(); err != nil {
-		// log it and carry on
-		log.Printf("[ERROR] Failed to stop plugin manager: %s", err.Error())
-	}
+	pluginManagerStopError := plugin_manager.Stop()
 
+	// stop the DB Service
+	stopResult, dbStopError := stopDBService(spinner, force)
+
+	return stopResult, utils.CombineErrors(dbStopError, pluginManagerStopError)
+}
+
+func stopDBService(spinner *spinner.Spinner, force bool) (StopStatus, error) {
 	if force {
 		// check if we have a process from another install-dir
 		display.UpdateSpinnerMessage(spinner, "Checking for running instances...")

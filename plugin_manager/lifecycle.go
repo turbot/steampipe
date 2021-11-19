@@ -106,8 +106,6 @@ func stop(state *PluginManagerState) error {
 	log.Printf("[TRACE] pluginManager state.kill")
 	// now kill the plugin manager
 	return state.kill()
-
-	return err
 }
 
 // GetPluginManager connects to a running plugin manager

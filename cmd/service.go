@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"os"
@@ -351,13 +352,26 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 		pmState, pmStateErr := plugin_manager.LoadPluginManagerState()
 
 		if dbStateErr != nil || pmStateErr != nil {
-			utils.ShowError(fmt.Errorf(`could not get Steampipe service status:
-	failed to get plugin manager state: %s
-	failed to get db state: %s`, dbStateErr.Error(), pmStateErr.Error()))
+			utils.ShowError(composeStateError(dbStateErr, pmStateErr))
 			return
 		}
 		printStatus(dbState, pmState)
 	}
+}
+
+func composeStateError(dbStateErr error, pmStateErr error) error {
+	msg := "could not get Steampipe service status:"
+
+	if dbStateErr != nil {
+		msg = fmt.Sprintf(`%s
+	failed to get db state: %s`, msg, dbStateErr.Error())
+	}
+	if pmStateErr != nil {
+		msg = fmt.Sprintf(`%s
+	failed to get plugin manager state: %s`, msg, pmStateErr.Error())
+	}
+
+	return errors.New(msg)
 }
 
 func runServiceStopCmd(cmd *cobra.Command, args []string) {
