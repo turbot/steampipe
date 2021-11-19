@@ -10,6 +10,7 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/plugin_manager"
 
 	"github.com/turbot/steampipe/utils"
 )
@@ -25,12 +26,16 @@ func EnsureDbAndStartService(invoker constants.Invoker) error {
 		return err
 	}
 
-	status, err := GetStatus()
+	dbStatus, err := GetStatus()
+	if err != nil {
+		return err
+	}
+	pluginMamagerStatus, err := plugin_manager.LoadPluginManagerState()
 	if err != nil {
 		return err
 	}
 
-	if status == nil {
+	if dbStatus == nil || pluginMamagerStatus == nil || !pluginMamagerStatus.Running {
 		// the db service is not started - start it
 		utils.LogTime("StartImplicitService start")
 		log.Println("[TRACE] start implicit service")
@@ -43,7 +48,7 @@ func EnsureDbAndStartService(invoker constants.Invoker) error {
 		// so db is already running - ensure it contains command schema
 		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
 		// and upgrades to this version - we need to ensure we create the command schema
-		return ensureCommandSchema(status.Database)
+		return ensureCommandSchema(dbStatus.Database)
 	}
 	return nil
 }

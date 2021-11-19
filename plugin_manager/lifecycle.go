@@ -18,7 +18,7 @@ import (
 // StartNewInstance loads the plugin manager state, stops any previous instance and instantiates a new plugin manager
 func StartNewInstance(steampipeExecutablePath string) error {
 	// try to load the plugin manager state
-	state, err := loadPluginManagerState()
+	state, err := LoadPluginManagerState()
 	if err != nil {
 		log.Printf("[WARN] plugin manager StartNewInstance() - load state failed: %s", err)
 		return err
@@ -77,7 +77,7 @@ func start(steampipeExecutablePath string) error {
 // Stop loads the plugin manager state and if a running instance is found, stop it
 func Stop() error {
 	// try to load the plugin manager state
-	state, err := loadPluginManagerState()
+	state, err := LoadPluginManagerState()
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func GetPluginManager() (pluginshared.PluginManager, error) {
 // it then returns a plugin manager client
 func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	// try to load the plugin manager state
-	state, err := loadPluginManagerState()
+	state, err := LoadPluginManagerState()
 	if err != nil {
 		log.Printf("[WARN] failed to load plugin manager state: %s", err.Error())
 		return nil, err

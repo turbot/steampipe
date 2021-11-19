@@ -59,19 +59,25 @@ func StartServices(port int, listen StartListenType, invoker constants.Invoker) 
 		return ServiceFailedToStart, err
 	}
 
-	pmState, err := plugin_manager.LoadPluginManagerState(true)
-	if err != nil {
-		return ServiceFailedToStart, err
-	}
-
 	if info == nil {
 		startResult, err = startDB(port, listen, invoker)
 	}
 
-	if pmState == nil {
+	pmState, err := plugin_manager.LoadPluginManagerState()
+	if err != nil {
+		return ServiceFailedToStart, err
+	}
+
+	if pmState == nil || !pmState.Running {
 		// start the plugin manager
-		if err := plugin_manager.Start(); err != nil {
-			log.Printf("[WARN] StartDB plugin manager failed to start: %s", err)
+		// get the location of the currently running steampipe process
+		executable, err := os.Executable()
+		if err != nil {
+			log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
+			return ServiceFailedToStart, err
+		}
+		if err := plugin_manager.StartNewInstance(executable); err != nil {
+			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
 			return ServiceFailedToStart, err
 		}
 	}
@@ -183,18 +189,6 @@ func startDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	// ensure the db contains command schema
 	err = ensureCommandSchema(databaseName)
 	if err != nil {
-		return ServiceFailedToStart, err
-	}
-
-	// start the plugin manager
-	// get the location of the currently running steampipe process
-	executable, err := os.Executable()
-	if err != nil {
-		log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
-		return ServiceFailedToStart, err
-	}
-	if err := plugin_manager.StartNewInstance(executable); err != nil {
-		log.Printf("[WARN] StartDB plugin manager failed to start: %s", err)
 		return ServiceFailedToStart, err
 	}
 

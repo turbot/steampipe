@@ -157,10 +157,10 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	info, err := db_local.GetStatus()
 	utils.FailOnErrorWithMessage(err, "could not fetch service information")
 
-	pmState, err := plugin_manager.LoadPluginManagerState(true)
+	pmState, err := plugin_manager.LoadPluginManagerState()
 	utils.FailOnErrorWithMessage(err, "could not fetch plugin manager information")
 
-	if info != nil && pmState != nil {
+	if info != nil && pmState != nil && pmState.Running {
 		if info.Invoker == constants.InvokerService {
 			fmt.Println("Steampipe service is already running.")
 			return
@@ -201,8 +201,9 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 			utils.FailOnError(err)
 		}
 		info, _ = db_local.GetStatus()
+		pmState, _ = plugin_manager.LoadPluginManagerState()
 	}
-	printStatus(info)
+	printStatus(info, pmState)
 
 	if viper.GetBool(constants.ArgForeground) {
 		runServiceInForeground(invoker)
@@ -315,9 +316,18 @@ to force a restart.
 	utils.FailOnError(err)
 	fmt.Println("Steampipe service restarted.")
 
-	if info, err := db_local.GetStatus(); err != nil {
-		printStatus(info)
+	dbInfo, err := db_local.GetStatus()
+	if err != nil {
+		utils.ShowError(err)
+		return
 	}
+	pmInfo, err := plugin_manager.LoadPluginManagerState()
+	if err != nil {
+		utils.ShowError(err)
+		return
+	}
+
+	printStatus(dbInfo, pmInfo)
 
 }
 
@@ -337,13 +347,13 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 	if viper.GetBool(constants.ArgAll) {
 		showAllStatus()
 	} else {
-		if info, err := db_local.GetStatus(); err != nil {
+		dbInfo, dbInfoErr := db_local.GetStatus()
+		pmInfo, pmInfoErr := plugin_manager.LoadPluginManagerState()
+		if dbInfoErr != nil || pmInfoErr != nil {
 			utils.ShowError(fmt.Errorf("could not get Steampipe service status"))
-		} else if info != nil {
-			printStatus(info)
-		} else {
-			fmt.Println("Steampipe service is not running.")
+			return
 		}
+		printStatus(dbInfo, pmInfo)
 	}
 }
 
@@ -495,11 +505,15 @@ func getServiceProcessDetails(process *psutils.Process) (string, string, string,
 	return fmt.Sprintf("%d", process.Pid), installDir, port, listenType
 }
 
-func printStatus(info *db_local.RunningDBInstanceInfo) {
+func printStatus(dbInfo *db_local.RunningDBInstanceInfo, pmInfo *plugin_manager.PluginManagerState) {
+	if dbInfo == nil && pmInfo == nil {
+		fmt.Println("Service is not running")
+		return
+	}
 
 	statusMessage := ""
 
-	if info.Invoker == constants.InvokerService {
+	if dbInfo.Invoker == constants.InvokerService {
 		msg := `
 Steampipe service is running:
 
@@ -524,7 +538,7 @@ Managing the Steampipe service:
   # Stop the service
   steampipe service stop
 `
-		statusMessage = fmt.Sprintf(msg, strings.Join(info.Listen, ", "), info.Port, info.Database, info.User, info.Password, info.User, info.Password, info.Listen[0], info.Port, info.Database)
+		statusMessage = fmt.Sprintf(msg, strings.Join(dbInfo.Listen, ", "), dbInfo.Port, dbInfo.Database, dbInfo.User, dbInfo.Password, dbInfo.User, dbInfo.Password, dbInfo.Listen[0], dbInfo.Port, dbInfo.Database)
 	} else {
 		msg := `
 Steampipe service was started for an active %s session. The service will exit when all active sessions exit.
@@ -534,13 +548,25 @@ To keep the service running after the %s session completes, use %s.
 
 		statusMessage = fmt.Sprintf(
 			msg,
-			fmt.Sprintf("steampipe %s", info.Invoker),
-			info.Invoker,
+			fmt.Sprintf("steampipe %s", dbInfo.Invoker),
+			dbInfo.Invoker,
 			constants.Bold("steampipe service start"),
 		)
 	}
 
 	fmt.Println(statusMessage)
+
+	if dbInfo != nil && pmInfo == nil {
+		// the service is running, but the plugin_manager is not running and there's no state file
+		// meaning that it cannot be restarted by the FDW
+		// it's an ERROR
+		utils.ShowError(fmt.Errorf(`
+Service is running, but the Plugin Manager cannot be recovered.
+Please use %s to recover the service
+`,
+			constants.Bold("steampipe service restart"),
+		))
+	}
 }
 
 func printRunningImplicit(invoker constants.Invoker) {

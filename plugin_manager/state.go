@@ -2,7 +2,6 @@ package plugin_manager
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -23,7 +22,7 @@ type PluginManagerState struct {
 	// path to the steampipe executable
 	Executable string
 	// is the plugin manager running
-	Running bool
+	Running bool `json:"-"`
 }
 
 func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *PluginManagerState {
@@ -54,21 +53,12 @@ func (s *PluginManagerState) Save() error {
 }
 
 // check whether the plugin manager is running
-// it it is NOT, delete the state file
-// if it is, set the 'running property of the statefile to true
-func (s *PluginManagerState) verifyRunning() error {
+func (s *PluginManagerState) verifyRunning() (bool, error) {
 	pidExists, err := utils.PidExists(s.Pid)
-
-	// if we fail to determine if the plugin manager is running, assume it is NOT
-	if err == nil && pidExists {
-		s.Running = true
-	} else if err = s.delete(); err != nil {
-		// file is outdated - delete
-		log.Printf("[WARN] plugin manager is not running but failed to delete state file: %s", err.Error())
-		err = fmt.Errorf("plugin manager is not running but failed to delete state file: %s", err.Error())
+	if err != nil {
+		return false, err
 	}
-	// return error (which may be nil)
-	return err
+	return pidExists, nil
 }
 
 // kill the plugin manager process and delete the state
@@ -91,7 +81,7 @@ func (s *PluginManagerState) delete() error {
 	return os.Remove(constants.PluginManagerStateFilePath())
 }
 
-func loadPluginManagerState() (*PluginManagerState, error) {
+func LoadPluginManagerState() (*PluginManagerState, error) {
 	if !helpers.FileExists(constants.PluginManagerStateFilePath()) {
 		log.Printf("[TRACE] plugin manager state file not found")
 		return nil, nil
@@ -109,9 +99,13 @@ func loadPluginManagerState() (*PluginManagerState, error) {
 
 	// check is the manager is running - this deletes that state file if it si not running,
 	// and set the 'Running' property on the state if it is
-	if err = s.verifyRunning(); err != nil {
+	pluginManagerRunning, err := s.verifyRunning()
+	if err != nil {
 		return nil, err
 	}
+	// save the running status on the state struct
+	s.Running = pluginManagerRunning
 
-	return s, nil
+	// return error (which may be nil)
+	return s, err
 }
