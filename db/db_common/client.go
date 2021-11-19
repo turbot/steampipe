@@ -8,7 +8,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig"
 )
 
-type EnsureSessionStateCallback = func(context.Context, *DatabaseSession) error
+type EnsureSessionStateCallback = func(context.Context, *DatabaseSession) (err error, warnings []string)
 
 type Client interface {
 	Close() error
@@ -21,7 +21,7 @@ type Client interface {
 	SetSessionSearchPath(...string) error
 	ContructSearchPath(requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error)
 
-	AcquireSession(ctx context.Context) (*DatabaseSession, error)
+	AcquireSession(ctx context.Context) (*DatabaseSession, error, []string)
 
 	ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error)
 	Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error)
@@ -34,7 +34,7 @@ type Client interface {
 	CacheClear() error
 
 	SetEnsureSessionDataFunc(EnsureSessionStateCallback)
-	RefreshSessions(ctx context.Context) error
+	RefreshSession(ctx context.Context) (error, []string)
 
 	// remote client will have empty implementation
 	RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult

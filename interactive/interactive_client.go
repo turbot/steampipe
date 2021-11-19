@@ -84,9 +84,8 @@ func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStream
 	return c, nil
 }
 
-// InteractiveQuery :: start an interactive prompt and return
-func (c *InteractiveClient) InteractiveQuery() {
-
+// InteractivePrompt starts an interactive prompt and return
+func (c *InteractiveClient) InteractivePrompt() {
 	// start a cancel handler for the interactive client - this will call activeQueryCancelFunc if it is set
 	// (registered when we call createQueryContext)
 	interruptSignalChannel := c.startCancelHandler()

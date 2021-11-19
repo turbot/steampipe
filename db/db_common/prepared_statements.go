@@ -6,13 +6,12 @@ import (
 	"log"
 	"strings"
 
-	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
-func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.WorkspaceResourceMaps, session *DatabaseSession) error {
+func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.WorkspaceResourceMaps, session *DatabaseSession) (err error, warnings []string) {
 	log.Printf("[TRACE] CreatePreparedStatements")
 
 	utils.LogTime("db.CreatePreparedStatements start")
@@ -21,7 +20,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 	// first get the SQL to create all prepared statements
 	sqlMap := GetPreparedStatementsSQL(resourceMaps)
 	if len(sqlMap) == 0 {
-		return nil
+		return nil, nil
 	}
 	// first try to run the whole thing in one query
 	var queries []string
@@ -29,17 +28,14 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 		queries = append(queries, q)
 	}
 
-	var errors []error
 	for name, sql := range sqlMap {
 		if _, err := session.Connection.ExecContext(ctx, sql); err != nil {
-			errors = append(errors, fmt.Errorf("failed to create prepared statement for %s: %v", name, err))
+			warnings = append(warnings, fmt.Sprintf("failed to create prepared statement for %s: %v", name, err))
 		}
 	}
-	if len(errors) > 0 {
-		return helpers.CombineErrors(errors...)
-	}
+
 	// return context error - this enables calling code to respond to cancellation
-	return ctx.Err()
+	return ctx.Err(), warnings
 }
 
 func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map[string]string {
@@ -78,7 +74,7 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 }
 
 // UpdatePreparedStatements first attempts to deallocate all prepared statements in workspace, then recreates them
-func UpdatePreparedStatements(ctx context.Context, prevResourceMaps, currentResourceMaps *modconfig.WorkspaceResourceMaps, session *DatabaseSession) error {
+func UpdatePreparedStatements(ctx context.Context, prevResourceMaps, currentResourceMaps *modconfig.WorkspaceResourceMaps, session *DatabaseSession) (error, []string) {
 	log.Printf("[TRACE] UpdatePreparedStatements")
 
 	utils.LogTime("db.UpdatePreparedStatements start")
@@ -108,7 +104,7 @@ func UpdatePreparedStatements(ctx context.Context, prevResourceMaps, currentReso
 	_, err := session.Connection.ExecContext(ctx, s)
 	if err != nil {
 		log.Printf("[TRACE] failed to update prepared statements - deallocate returned error %v", err)
-		return err
+		return err, nil
 	}
 
 	// now recreate them

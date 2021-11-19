@@ -23,7 +23,7 @@ import (
 // execute a query against this client and wait for the result
 func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	// acquire a session
-	session, err := c.AcquireSession(ctx)
+	session, err, _ := c.AcquireSession(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 // with the service
 func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
 	// acquire a session
-	session, err := c.AcquireSession(ctx)
+	session, err, _ := c.AcquireSession(ctx)
 	if err != nil {
 		return
 	}
