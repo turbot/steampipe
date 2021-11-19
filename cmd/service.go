@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -156,7 +157,10 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	info, err := db_local.GetStatus()
 	utils.FailOnErrorWithMessage(err, "could not fetch service information")
 
-	if info != nil {
+	pmState, err := plugin_manager.LoadPluginManagerState(true)
+	utils.FailOnErrorWithMessage(err, "could not fetch plugin manager information")
+
+	if info != nil && pmState != nil {
 		if info.Invoker == constants.InvokerService {
 			fmt.Println("Steampipe service is already running.")
 			return
@@ -178,7 +182,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	} else {
 		// start db, refreshing connections
-		status, err := db_local.StartDB(port, listen, invoker)
+		status, err := db_local.StartServices(port, listen, invoker)
 		utils.FailOnError(err)
 
 		if status == db_local.ServiceFailedToStart {
@@ -193,7 +197,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		err = db_local.RefreshConnectionAndSearchPaths(invoker)
 
 		if err != nil {
-			db_local.StopDB(false, constants.InvokerService, nil)
+			db_local.StopServices(false, constants.InvokerService, nil)
 			utils.FailOnError(err)
 		}
 		info, _ = db_local.GetStatus()
@@ -245,7 +249,7 @@ func runServiceInForeground(invoker constants.Invoker) {
 			}
 			fmt.Println("Stopping Steampipe service.")
 
-			db_local.StopDB(false, invoker, nil)
+			db_local.StopServices(false, invoker, nil)
 			fmt.Println("Steampipe service stopped.")
 			return
 		}
@@ -276,7 +280,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	stopStatus, err := db_local.StopDB(viper.GetBool(constants.ArgForce), constants.InvokerService, nil)
+	stopStatus, err := db_local.StopServices(viper.GetBool(constants.ArgForce), constants.InvokerService, nil)
 
 	utils.FailOnErrorWithMessage(err, "could not stop current instance")
 
@@ -296,7 +300,7 @@ to force a restart.
 	viper.Set(constants.ArgServicePassword, currentServiceStatus.Password)
 
 	// start db, refreshing connections
-	status, err := db_local.StartDB(currentServiceStatus.Port, currentServiceStatus.ListenType, currentServiceStatus.Invoker)
+	status, err := db_local.StartServices(currentServiceStatus.Port, currentServiceStatus.ListenType, currentServiceStatus.Invoker)
 	if err != nil {
 		utils.ShowError(err)
 		return
@@ -368,7 +372,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 
 	force := cmdconfig.Viper().GetBool(constants.ArgForce)
 	if force {
-		status, err = db_local.StopDB(force, constants.InvokerService, spinner)
+		status, err = db_local.StopServices(force, constants.InvokerService, spinner)
 	} else {
 		info, err = db_local.GetStatus()
 		if err != nil {
@@ -399,7 +403,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 			return
 		}
 
-		status, _ = db_local.StopDB(false, constants.InvokerService, spinner)
+		status, _ = db_local.StopServices(false, constants.InvokerService, spinner)
 	}
 
 	if err != nil {

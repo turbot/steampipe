@@ -89,7 +89,7 @@ func Stop() error {
 }
 
 // stop the running plugin manager instance
-func stop(state *pluginManagerState) error {
+func stop(state *PluginManagerState) error {
 	log.Printf("[TRACE] plugin manager stop")
 	pluginManager, err := NewPluginManagerClient(state)
 	if err != nil {

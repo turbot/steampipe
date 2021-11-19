@@ -35,7 +35,7 @@ func EnsureDbAndStartService(invoker constants.Invoker) error {
 		utils.LogTime("StartImplicitService start")
 		log.Println("[TRACE] start implicit service")
 
-		if _, err := StartDB(constants.DatabaseDefaultPort, ListenTypeLocal, invoker); err != nil {
+		if _, err := StartServices(constants.DatabaseDefaultPort, ListenTypeLocal, invoker); err != nil {
 			return err
 		}
 		utils.LogTime("StartImplicitService end")
