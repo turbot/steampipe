@@ -14,6 +14,7 @@ import (
 )
 
 var Logger hclog.Logger
+var exitCode int
 
 func main() {
 	utils.LogTime("main start")
@@ -61,8 +62,10 @@ func setULimit() error {
 // postgresql engine.
 func checkRoot() {
 	if os.Geteuid() == 0 {
-		panic(fmt.Errorf(`Steampipe cannot be run as the "root" user.
+		exitCode = 1
+		utils.ShowError(fmt.Errorf(`Steampipe cannot be run as the "root" user.
 To reduce security risk, use an unprivileged user account instead.`))
+		os.Exit(exitCode)
 	}
 
 	/*
@@ -75,6 +78,8 @@ To reduce security risk, use an unprivileged user account instead.`))
 	 */
 
 	if os.Geteuid() != os.Getuid() {
-		panic(fmt.Errorf("real and effective user IDs must match."))
+		exitCode = 1
+		utils.ShowError(fmt.Errorf("real and effective user IDs must match."))
+		os.Exit(exitCode)
 	}
 }
