@@ -248,10 +248,11 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 		client, err = db_client.NewDbClient(connectionString)
 	} else {
 		// stop the spinner
-		spinner.Stop()
+		display.StopSpinner(spinner)
 		// when starting the database, installers may trigger their own spinners
 		client, err = db_local.GetLocalClient(constants.InvokerCheck)
-		spinner.Start()
+		// resume the spinner
+		display.ResumeSpinner(spinner)
 	}
 
 	if err != nil {
