@@ -33,7 +33,7 @@ func ShutdownService(invoker constants.Invoker) {
 	utils.LogTime("db_local.ShutdownService start")
 	defer utils.LogTime("db_local.ShutdownService end")
 
-	status, _ := GetStatus()
+	status, _ := GetState()
 
 	// if the service is not running or it was invoked by 'steampipe service',
 	// then we don't shut it down
@@ -50,7 +50,7 @@ func ShutdownService(invoker constants.Invoker) {
 	}
 
 	// we can shut down the database
-	stopStatus, err := StopDB(false, invoker, nil)
+	stopStatus, err := StopServices(false, invoker, nil)
 	if err != nil {
 		utils.ShowError(err)
 	}
@@ -59,7 +59,7 @@ func ShutdownService(invoker constants.Invoker) {
 	}
 
 	// shutdown failed - try to force stop
-	_, err = StopDB(true, invoker, nil)
+	_, err = StopServices(true, invoker, nil)
 	if err != nil {
 		utils.ShowError(err)
 	}
@@ -86,8 +86,8 @@ func GetCountOfConnectedClients() (i int, e error) {
 	return clientCount - rootClient.Stats().OpenConnections, nil
 }
 
-// StopDB searches for and stops the running instance. Does nothing if an instance was not found
-func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (status StopStatus, e error) {
+// StopServices searches for and stops the running instance. Does nothing if an instance was not found
+func StopServices(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (status StopStatus, e error) {
 	log.Printf("[TRACE] StopDB invoker %s, force %v", invoker, force)
 	utils.LogTime("db_local.StopDB start")
 
@@ -98,13 +98,17 @@ func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (st
 		utils.LogTime("db_local.StopDB end")
 	}()
 
-	// TODO think about failures - we should shut down the service event if plugin manager does not stop
 	// stop the plugin manager
 	// this means it may be stopped even if we fail to stop the service - that is ok - we will restart it if needed
-	if err := plugin_manager.Stop(); err != nil {
-		return ServiceStopFailed, err
-	}
+	pluginManagerStopError := plugin_manager.Stop()
 
+	// stop the DB Service
+	stopResult, dbStopError := stopDBService(spinner, force)
+
+	return stopResult, utils.CombineErrors(dbStopError, pluginManagerStopError)
+}
+
+func stopDBService(spinner *spinner.Spinner, force bool) (StopStatus, error) {
 	if force {
 		// check if we have a process from another install-dir
 		display.UpdateSpinnerMessage(spinner, "Checking for running instances...")
@@ -112,19 +116,19 @@ func StopDB(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (st
 		return ServiceStopped, nil
 	}
 
-	info, err := GetStatus()
+	dbState, err := GetState()
 	if err != nil {
 		return ServiceStopFailed, err
 	}
 
-	if info == nil {
+	if dbState == nil {
 		// we do not have a info file
 		// assume that the service is not running
 		return ServiceNotRunning, nil
 	}
 
 	// GetStatus has made sure that the process exists
-	process, err := psutils.NewProcess(int32(info.Pid))
+	process, err := psutils.NewProcess(int32(dbState.Pid))
 	if err != nil {
 		return ServiceStopFailed, err
 	}

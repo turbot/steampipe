@@ -15,7 +15,7 @@ func getLocalSteampipeConnectionString() (string, error) {
 	defer utils.LogTime("db.createDbClient end")
 	log.Println("[TRACE] createDbClient")
 
-	info, err := GetStatus()
+	info, err := GetState()
 	if err != nil {
 		return "", err
 	}
@@ -42,7 +42,7 @@ func createLocalDbClient(opts *CreateDbOptions) (*sql.DB, error) {
 	defer utils.LogTime("db.createDbClient end")
 
 	// load the db status
-	info, err := GetStatus()
+	info, err := GetState()
 	if err != nil {
 		return nil, err
 	}

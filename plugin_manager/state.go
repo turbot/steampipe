@@ -2,7 +2,6 @@ package plugin_manager
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -15,7 +14,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-type pluginManagerState struct {
+type PluginManagerState struct {
 	Protocol        plugin.Protocol
 	ProtocolVersion int
 	Addr            *pb.SimpleAddr
@@ -23,11 +22,11 @@ type pluginManagerState struct {
 	// path to the steampipe executable
 	Executable string
 	// is the plugin manager running
-	Running bool
+	Running bool `json:"-"`
 }
 
-func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *pluginManagerState {
-	return &pluginManagerState{
+func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *PluginManagerState {
+	return &PluginManagerState{
 		Executable:      executable,
 		Protocol:        reattach.Protocol,
 		ProtocolVersion: reattach.ProtocolVersion,
@@ -36,7 +35,7 @@ func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *
 	}
 }
 
-func (s *pluginManagerState) reattachConfig() *plugin.ReattachConfig {
+func (s *PluginManagerState) reattachConfig() *plugin.ReattachConfig {
 	return &plugin.ReattachConfig{
 		Protocol:        s.Protocol,
 		ProtocolVersion: s.ProtocolVersion,
@@ -45,7 +44,7 @@ func (s *pluginManagerState) reattachConfig() *plugin.ReattachConfig {
 	}
 }
 
-func (s *pluginManagerState) Save() error {
+func (s *PluginManagerState) Save() error {
 	content, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return err
@@ -54,25 +53,16 @@ func (s *pluginManagerState) Save() error {
 }
 
 // check whether the plugin manager is running
-// it it is NOT, delete the state file
-// if it is, set the 'running property of the statefile to true
-func (s *pluginManagerState) verifyRunning() error {
+func (s *PluginManagerState) verifyRunning() (bool, error) {
 	pidExists, err := utils.PidExists(s.Pid)
-
-	// if we fail to determine if the plugin manager is running, assume it is NOT
-	if err == nil && pidExists {
-		s.Running = true
-	} else if err = s.delete(); err != nil {
-		// file is outdated - delete
-		log.Printf("[WARN] plugin manager is not running but failed to delete state file: %s", err.Error())
-		err = fmt.Errorf("plugin manager is not running but failed to delete state file: %s", err.Error())
+	if err != nil {
+		return false, err
 	}
-	// return error (which may be nil)
-	return err
+	return pidExists, nil
 }
 
 // kill the plugin manager process and delete the state
-func (s *pluginManagerState) kill() error {
+func (s *PluginManagerState) kill() error {
 	// the state file contains the Pid of the daemon process - find and kill the process
 	process, err := utils.FindProcess(s.Pid)
 	if err != nil {
@@ -87,11 +77,11 @@ func (s *pluginManagerState) kill() error {
 	return s.delete()
 }
 
-func (s *pluginManagerState) delete() error {
+func (s *PluginManagerState) delete() error {
 	return os.Remove(constants.PluginManagerStateFilePath())
 }
 
-func loadPluginManagerState() (*pluginManagerState, error) {
+func LoadPluginManagerState() (*PluginManagerState, error) {
 	if !helpers.FileExists(constants.PluginManagerStateFilePath()) {
 		log.Printf("[TRACE] plugin manager state file not found")
 		return nil, nil
@@ -101,7 +91,7 @@ func loadPluginManagerState() (*pluginManagerState, error) {
 	if err != nil {
 		return nil, err
 	}
-	var s = new(pluginManagerState)
+	var s = new(PluginManagerState)
 	err = json.Unmarshal(fileContent, s)
 	if err != nil {
 		return nil, err
@@ -109,9 +99,13 @@ func loadPluginManagerState() (*pluginManagerState, error) {
 
 	// check is the manager is running - this deletes that state file if it si not running,
 	// and set the 'Running' property on the state if it is
-	if err = s.verifyRunning(); err != nil {
+	pluginManagerRunning, err := s.verifyRunning()
+	if err != nil {
 		return nil, err
 	}
+	// save the running status on the state struct
+	s.Running = pluginManagerRunning
 
-	return s, nil
+	// return error (which may be nil)
+	return s, err
 }

@@ -99,6 +99,10 @@ func CombineErrorsWithPrefix(prefix string, errors ...error) error {
 		return nil
 	}
 
+	if allErrorsNil(errors...) {
+		return nil
+	}
+
 	if len(errors) == 1 {
 		if len(prefix) == 0 {
 			return errors[0]
@@ -112,6 +116,15 @@ func CombineErrorsWithPrefix(prefix string, errors ...error) error {
 		combinedErrorString = append(combinedErrorString, e.Error())
 	}
 	return fmt.Errorf(strings.Join(combinedErrorString, "\n\t"))
+}
+
+func allErrorsNil(errors ...error) bool {
+	for _, e := range errors {
+		if e != nil {
+			return false
+		}
+	}
+	return true
 }
 
 func CombineErrors(errors ...error) error {

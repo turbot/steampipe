@@ -16,10 +16,10 @@ const maxRetries = 2
 // PluginManagerClient is the client used by steampipe to access the plugin manager
 type PluginManagerClient struct {
 	manager            pluginshared.PluginManager
-	pluginManagerState *pluginManagerState
+	pluginManagerState *PluginManagerState
 }
 
-func NewPluginManagerClient(pluginManagerState *pluginManagerState) (*PluginManagerClient, error) {
+func NewPluginManagerClient(pluginManagerState *PluginManagerState) (*PluginManagerClient, error) {
 	res := &PluginManagerClient{
 		pluginManagerState: pluginManagerState,
 	}
