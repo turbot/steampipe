@@ -166,9 +166,8 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		initResult.DisplayMessages()
 	}
 
-	// We need to Render the prompt here to make sure that it comes back
-	// after the messages have been displayed
-	c.interactivePrompt.Render()
+	// tell the workspace to reset the prompt after displaying async filewatcher messages
+	c.initData.Workspace.SetOnFileWatcherEventMessages(func() { c.interactivePrompt.Render() })
 }
 
 // ClosePrompt cancels the running prompt, setting the action to take after close

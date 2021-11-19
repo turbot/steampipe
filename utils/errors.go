@@ -91,6 +91,9 @@ func IsCancelledError(err error) bool {
 }
 
 func ShowWarning(warning string) {
+	if len(warning) == 0 {
+		return
+	}
 	fmt.Fprintf(color.Output, "%s: %v\n", colorWarn, warning)
 }
 

@@ -13,4 +13,5 @@ type WorkspaceResourceProvider interface {
 	GetResourceMaps() *modconfig.WorkspaceResourceMaps
 	GetControl(controlName string) (*modconfig.Control, bool)
 	SetupWatcher(client Client, onError func(err error)) error
+	SetOnFileWatcherEventMessages(f func())
 }
