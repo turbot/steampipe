@@ -13,7 +13,7 @@ import (
 )
 
 func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSessionResult {
-	res := &db_common.AcquireSessionResult{}
+	sessionResult := &db_common.AcquireSessionResult{}
 	c.sessionInitWaitGroup.Add(1)
 	defer c.sessionInitWaitGroup.Done()
 
@@ -21,8 +21,8 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 	// note - this will retry if the connection is bad
 	databaseConnection, backendPid, err := c.getSessionWithRetries(ctx)
 	if err != nil {
-		res.Error = err
-		return res
+		sessionResult.Error = err
+		return sessionResult
 	}
 
 	c.sessionsMutex.Lock()
@@ -33,20 +33,20 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 	}
 	// we get a new *sql.Conn everytime. USE IT!
 	session.Connection = databaseConnection
-	res.Session = session
+	sessionResult.Session = session
 	c.sessionsMutex.Unlock()
 
 	log.Printf("[TRACE] Got Session with PID: %d", backendPid)
 
 	defer func() {
 		// make sure that we close the acquired session, in case of error
-		if res.Error != nil && databaseConnection != nil {
+		if sessionResult.Error != nil && databaseConnection != nil {
 			databaseConnection.Close()
 		}
 	}()
 
 	if c.ensureSessionFunc == nil {
-		return res
+		return sessionResult
 	}
 
 	if !session.Initialized {
@@ -55,8 +55,8 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 
 		err := c.parallelSessionInitLock.Acquire(ctx, 1)
 		if err != nil {
-			res.Error = err
-			return res
+			sessionResult.Error = err
+			return sessionResult
 		}
 		c.sessionInitWaitGroup.Add(1)
 
@@ -64,12 +64,12 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 		session.LifeCycle.Add("init_start")
 		err, warnings := c.ensureSessionFunc(ctx, session)
 		session.LifeCycle.Add("init_finish")
-		res.Warnings = warnings
+		sessionResult.Warnings = warnings
 		c.sessionInitWaitGroup.Done()
 		c.parallelSessionInitLock.Release(1)
 		if err != nil {
-			res.Error = err
-			return res
+			sessionResult.Error = err
+			return sessionResult
 		}
 
 		// if there is no error, mark session as initialized
@@ -82,8 +82,8 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 	if strings.Join(session.SearchPath, ",") != strings.Join(c.requiredSessionSearchPath, ",") {
 		err := c.setSessionSearchPathToRequired(ctx, databaseConnection)
 		if err != nil {
-			res.Error = err
-			return res
+			sessionResult.Error = err
+			return sessionResult
 		}
 		session.SearchPath = c.requiredSessionSearchPath
 	}
@@ -97,7 +97,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 
 	log.Printf("[TRACE] Session with PID: %d - returning", backendPid)
 
-	return res
+	return sessionResult
 }
 
 func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64, error) {

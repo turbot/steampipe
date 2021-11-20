@@ -168,16 +168,16 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 
 	// get a db connection
 	r.Lifecycle.Add("queued_for_session")
-	res := client.AcquireSession(ctx)
-	if res.Error != nil {
-		if !utils.IsCancelledError(res.Error) {
-			res.Error = fmt.Errorf("error acquiring database connection, %s", res.Error.Error())
+	sessionResult := client.AcquireSession(ctx)
+	if sessionResult.Error != nil {
+		if !utils.IsCancelledError(sessionResult.Error) {
+			sessionResult.Error = fmt.Errorf("error acquiring database connection, %s", sessionResult.Error.Error())
 		}
-		r.SetError(res.Error)
+		r.SetError(sessionResult.Error)
 		return
 	}
 	r.Lifecycle.Add("got_session")
-	dbSession := res.Session
+	dbSession := sessionResult.Session
 	defer func() {
 		dbSession.Close()
 	}()

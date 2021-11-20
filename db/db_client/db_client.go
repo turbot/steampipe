@@ -147,11 +147,11 @@ func (c *DbClient) RefreshSession(ctx context.Context) *db_common.AcquireSession
 	if err := c.refreshDbClient(ctx); err != nil {
 		return &db_common.AcquireSessionResult{Error: err}
 	}
-	res := c.AcquireSession(ctx)
-	if res.Session != nil {
-		res.Session.Close()
+	sessionResult := c.AcquireSession(ctx)
+	if sessionResult.Session != nil {
+		sessionResult.Session.Close()
 	}
-	return res
+	return sessionResult
 }
 
 // refreshDbClient terminates the current connection and opens up a new connection to the service.
