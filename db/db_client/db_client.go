@@ -140,18 +140,18 @@ func (c *DbClient) LoadSchema() {
 }
 
 // RefreshSession terminates the current connections and creates a new one - repopulating session data
-func (c *DbClient) RefreshSession(ctx context.Context) (error, []string) {
+func (c *DbClient) RefreshSession(ctx context.Context) *db_common.AcquireSessionResult {
 	utils.LogTime("db_client.RefreshSession start")
 	defer utils.LogTime("db_client.RefreshSession end")
 
 	if err := c.refreshDbClient(ctx); err != nil {
-		return err, nil
+		return &db_common.AcquireSessionResult{Error: err}
 	}
-	session, err, warnings := c.AcquireSession(ctx)
-	if session != nil {
-		session.Close()
+	res := c.AcquireSession(ctx)
+	if res.Session != nil {
+		res.Session.Close()
 	}
-	return err, warnings
+	return res
 }
 
 // refreshDbClient terminates the current connection and opens up a new connection to the service.

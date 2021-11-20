@@ -269,16 +269,16 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 		// so our client object calls this callback to restore the session data
 		initData.Client.SetEnsureSessionDataFunc(func(ctx context.Context, session *db_common.DatabaseSession) (error, []string) {
 			// TODO only create for queries
-			return workspace.EnsureSessionData(ctx, w, session)
+			return workspace.EnsureSessionData(ctx, w, session, queries)
 		})
 
 		// force creation of session data - se we see any prepared statement errors at once
-		session, err, warnings := initData.Client.AcquireSession(ctx)
-		initData.Result.AddWarnings(warnings...)
+		sessionResult := initData.Client.AcquireSession(ctx)
+		initData.Result.AddWarnings(sessionResult.Warnings...)
 		if err != nil {
 			initData.Result.Error = fmt.Errorf("error acquiring database connection, %s", err.Error())
 		} else {
-			session.Close()
+			sessionResult.Session.Close()
 		}
 
 	}()

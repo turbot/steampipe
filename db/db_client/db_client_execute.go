@@ -23,12 +23,12 @@ import (
 // execute a query against this client and wait for the result
 func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
 	// acquire a session
-	session, err, _ := c.AcquireSession(ctx)
-	if err != nil {
-		return nil, err
+	res := c.AcquireSession(ctx)
+	if res.Error != nil {
+		return nil, res.Error
 	}
-	defer session.Close()
-	return c.ExecuteSyncInSession(ctx, session, query, disableSpinner)
+	defer res.Session.Close()
+	return c.ExecuteSyncInSession(ctx, res.Session, query, disableSpinner)
 }
 
 // ExecuteSyncInSession implements Client
@@ -59,16 +59,16 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 // Bear in mind that whenever ExecuteQuery is called, the returned `queryresult.Result` MUST be fully read -
 // otherwise the transaction is left open, which will block the connection and will prevent subsequent communications
 // with the service
-func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
+func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner bool) (*queryresult.Result, error) {
 	// acquire a session
-	session, err, _ := c.AcquireSession(ctx)
-	if err != nil {
-		return
+	res := c.AcquireSession(ctx)
+	if res.Error != nil {
+		return nil, res.Error
 	}
 
 	// define callback to close session when the async execution is complete
-	closeSessionCallback := func() { session.Close() }
-	return c.ExecuteInSession(ctx, session, query, closeSessionCallback, disableSpinner)
+	closeSessionCallback := func() { res.Session.Close() }
+	return c.ExecuteInSession(ctx, res.Session, query, closeSessionCallback, disableSpinner)
 }
 
 func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {

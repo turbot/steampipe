@@ -21,7 +21,7 @@ type Client interface {
 	SetSessionSearchPath(...string) error
 	ContructSearchPath(requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error)
 
-	AcquireSession(ctx context.Context) (*DatabaseSession, error, []string)
+	AcquireSession(ctx context.Context) *AcquireSessionResult
 
 	ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error)
 	Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error)
@@ -34,7 +34,7 @@ type Client interface {
 	CacheClear() error
 
 	SetEnsureSessionDataFunc(EnsureSessionStateCallback)
-	RefreshSession(ctx context.Context) (error, []string)
+	RefreshSession(ctx context.Context) *AcquireSessionResult
 
 	// remote client will have empty implementation
 	RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult
