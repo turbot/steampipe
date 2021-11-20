@@ -10,7 +10,7 @@ import (
 
 // EnsureSessionData determines whether session scoped data (introspection tables and prepared statements)
 // exists for this session, and if not, creates it
-func EnsureSessionData(ctx context.Context, workspace *Workspace, session *db_common.DatabaseSession, queries []string) (err error, warnings []string) {
+func EnsureSessionData(ctx context.Context, source *SessionDataSource, session *db_common.DatabaseSession) (err error, warnings []string) {
 	utils.LogTime("workspace.EnsureSessionData start")
 	defer utils.LogTime("workspace.EnsureSessionData end")
 
@@ -30,14 +30,14 @@ func EnsureSessionData(ctx context.Context, workspace *Workspace, session *db_co
 	// if the steampipe_mod table is missing, assume we have no session data - go ahead and create it
 	if count == 0 {
 		session.LifeCycle.Add("prepared_statement_start")
-		err, warnings = db_common.CreatePreparedStatements(ctx, workspace.GetResourceMaps(), session)
+		err, warnings = db_common.CreatePreparedStatements(ctx, source.PreparedStatementSource(), session)
 		if err != nil {
 			return err, warnings
 		}
 		session.LifeCycle.Add("prepared_statement_finish")
 
 		session.LifeCycle.Add("introspection_table_start")
-		err = db_common.CreateIntrospectionTables(ctx, workspace.GetResourceMaps(), session)
+		err = db_common.CreateIntrospectionTables(ctx, source.IntrospectionTableSource(), session)
 		session.LifeCycle.Add("introspection_table_finish")
 		if err != nil {
 			return err, warnings

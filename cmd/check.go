@@ -269,12 +269,13 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 	initData.result.AddWarnings(refreshResult.Warnings...)
 
 	// setup the session data - prepared statements and introspection tables
+	sessionDataSource := workspace.NewSessionDataSource(initData.workspace, nil)
 
 	// register EnsureSessionData as a callback on the client.
 	// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 	// so our client object calls this callback to restore the session data
 	initData.client.SetEnsureSessionDataFunc(func(ctx context.Context, conn *db_common.DatabaseSession) (error, []string) {
-		return workspace.EnsureSessionData(ctx, initData.workspace, conn, nil)
+		return workspace.EnsureSessionData(ctx, sessionDataSource, conn)
 	})
 
 	return initData
