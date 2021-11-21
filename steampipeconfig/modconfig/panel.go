@@ -2,7 +2,7 @@ package modconfig
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/hashicorp/hcl/v2"
@@ -56,7 +56,7 @@ func (p *Panel) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 		return nil, nil, fmt.Errorf("Panel.InitialiseFromFile must be called with markdown files only - filepath: '%s'", filePath)
 	}
 
-	markdownBytes, err := ioutil.ReadFile(filePath)
+	markdownBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, nil, err
 	}

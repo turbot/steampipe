@@ -2,7 +2,6 @@ package db_local
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -98,7 +97,7 @@ func errorIfUnknownService() error {
 	}
 
 	// read the content of the postmaster.pid file
-	fileContent, err := ioutil.ReadFile(getPostmasterPidLocation())
+	fileContent, err := os.ReadFile(getPostmasterPidLocation())
 	if err != nil {
 		return err
 	}

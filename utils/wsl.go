@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"io/ioutil"
+	"os"
 	"runtime"
 	"strings"
 )
@@ -13,7 +13,7 @@ func IsWSL() (bool, error) {
 		return false, nil
 	}
 	// https://github.com/Microsoft/WSL/issues/2299#issuecomment-361366982
-	osReleaseContent, err := ioutil.ReadFile("/proc/version")
+	osReleaseContent, err := os.ReadFile("/proc/version")
 	if err != nil {
 		return false, err
 	}

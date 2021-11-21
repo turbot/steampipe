@@ -2,7 +2,6 @@ package statefile
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -20,5 +19,5 @@ func (s *State) Save() error {
 	_ = os.Remove(stateFilePath)
 	// save state file
 	file, _ := json.MarshalIndent(s, "", " ")
-	return ioutil.WriteFile(stateFilePath, file, 0644)
+	return os.WriteFile(stateFilePath, file, 0644)
 }

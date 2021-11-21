@@ -3,7 +3,7 @@ package plugin
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/url"
 	"strings"
@@ -187,7 +187,7 @@ func (v *VersionChecker) requestServerForLatest(payload []versionCheckPayload) [
 		return nil
 	}
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Printf("[TRACE] Error reading body stream")
 		return nil

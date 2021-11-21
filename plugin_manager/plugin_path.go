@@ -2,7 +2,6 @@ package plugin_manager
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -31,7 +30,7 @@ func GetPluginPath(plugin, pluginShortName string) (string, error) {
 	}
 
 	// there should be just 1 file with extension pluginExtension (".plugin")
-	entries, err := ioutil.ReadDir(pluginFolder)
+	entries, err := os.ReadDir(pluginFolder)
 	if err != nil {
 		return "", fmt.Errorf("failed to load plugin %s: %v", remoteSchema, err)
 	}

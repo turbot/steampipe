@@ -8,7 +8,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/big"
 	"os"
@@ -129,7 +128,7 @@ func parseCertificateInLocation(location string) (*x509.Certificate, error) {
 	utils.LogTime("db_local.parseCertificateInLocation start")
 	defer utils.LogTime("db_local.parseCertificateInLocation end")
 
-	rootCertRaw, err := ioutil.ReadFile(getRootCertLocation())
+	rootCertRaw, err := os.ReadFile(getRootCertLocation())
 	if err != nil {
 		// if we can't read the certificate, then there's a problem with permissions
 		return nil, err
@@ -301,7 +300,7 @@ func ensureRootPrivateKey() (*rsa.PrivateKey, error) {
 func loadRootPrivateKey() (*rsa.PrivateKey, error) {
 	location := getRootCertKeyLocation()
 
-	priv, err := ioutil.ReadFile(location)
+	priv, err := os.ReadFile(location)
 	if err != nil {
 		log.Printf("[TRACE] loadRootPrivateKey - failed to load key from %s: %s", location, err.Error())
 		return nil, err
@@ -335,5 +334,5 @@ func loadRootPrivateKey() (*rsa.PrivateKey, error) {
 }
 
 func writeCertFile(filePath string, cert string) error {
-	return ioutil.WriteFile(filePath, []byte(cert), 0600)
+	return os.WriteFile(filePath, []byte(cert), 0600)
 }

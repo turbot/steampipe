@@ -2,7 +2,6 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -505,7 +504,7 @@ func setup(test getConnectionsToUpdateTest) {
 
 func setupTestConfig(test getConnectionsToUpdateTest) {
 	for i, config := range test.required {
-		ioutil.WriteFile(connectionConfigPath(i), []byte(config), 0644)
+		os.WriteFile(connectionConfigPath(i), []byte(config), 0644)
 	}
 	os.MkdirAll(constants.InternalDir(), os.ModePerm)
 	writeJson(test.current, constants.ConnectionStatePath())

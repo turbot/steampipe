@@ -2,7 +2,6 @@ package db_local
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -18,7 +17,7 @@ type Passwords struct {
 }
 
 func writePasswordFile(password string) error {
-	return ioutil.WriteFile(getPasswordFileLocation(), []byte(password), 0600)
+	return os.WriteFile(getPasswordFileLocation(), []byte(password), 0600)
 }
 
 // readPasswordFile reads the password file and returns it contents.
@@ -32,7 +31,7 @@ func readPasswordFile() (string, error) {
 		}
 		return p, nil
 	}
-	contentBytes, err := ioutil.ReadFile(getPasswordFileLocation())
+	contentBytes, err := os.ReadFile(getPasswordFileLocation())
 	if err != nil {
 		return "", err
 	}
@@ -67,7 +66,7 @@ func migrateLegacyPasswordFile() error {
 }
 
 func getLegacyPasswords() (*Passwords, error) {
-	contentBytes, err := ioutil.ReadFile(getLegacyPasswordFileLocation())
+	contentBytes, err := os.ReadFile(getLegacyPasswordFileLocation())
 	if err != nil {
 		return nil, err
 	}
