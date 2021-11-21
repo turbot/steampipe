@@ -50,7 +50,7 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 	resourceMaps := w.GetResourceMaps()
 	// if resources have changed, update introspection tables and prepared statements
 	if !prevResourceMaps.Equals(resourceMaps) {
-		res := client.RefreshSession(context.Background())
+		res := client.RefreshSessions(context.Background())
 		if res.Error != nil || len(res.Warnings) > 0 {
 			fmt.Println()
 			utils.ShowErrorWithMessage(res.Error, "error when refreshing session data")

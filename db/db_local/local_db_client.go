@@ -92,8 +92,8 @@ func (c *LocalDbClient) LoadSchema() {
 	c.client.LoadSchema()
 }
 
-func (c *LocalDbClient) RefreshSession(ctx context.Context) *db_common.AcquireSessionResult {
-	return c.client.RefreshSession(ctx)
+func (c *LocalDbClient) RefreshSessions(ctx context.Context) *db_common.AcquireSessionResult {
+	return c.client.RefreshSessions(ctx)
 }
 
 func (c *LocalDbClient) AcquireSession(ctx context.Context) *db_common.AcquireSessionResult {

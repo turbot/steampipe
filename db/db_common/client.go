@@ -34,7 +34,7 @@ type Client interface {
 	CacheClear() error
 
 	SetEnsureSessionDataFunc(EnsureSessionStateCallback)
-	RefreshSession(ctx context.Context) *AcquireSessionResult
+	RefreshSessions(ctx context.Context) *AcquireSessionResult
 
 	// remote client will have empty implementation
 	RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult
