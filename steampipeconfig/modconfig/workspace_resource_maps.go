@@ -21,6 +21,7 @@ func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
 		References: make(map[string]*ResourceReference),
 	}
 }
+
 func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 	for name, mod := range m.Mods {
 		if otherMod, ok := other.Mods[name]; !ok {
@@ -137,4 +138,13 @@ func (m *WorkspaceResourceMaps) PopulateReferences() {
 			m.References[ref.String()] = ref
 		}
 	}
+}
+
+func (m *WorkspaceResourceMaps) Empty() bool {
+	return len(m.Mods)+
+		len(m.Queries)+
+		len(m.Controls)+
+		len(m.Benchmarks)+
+		len(m.Variables)+
+		len(m.References) == 0
 }

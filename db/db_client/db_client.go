@@ -139,12 +139,19 @@ func (c *DbClient) LoadSchema() {
 	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
 }
 
-// RefreshSessions terminates the current connections.
-func (c *DbClient) RefreshSessions(ctx context.Context) error {
+// RefreshSessions terminates the current connections and creates a new one - repopulating session data
+func (c *DbClient) RefreshSessions(ctx context.Context) *db_common.AcquireSessionResult {
 	utils.LogTime("db_client.RefreshSessions start")
 	defer utils.LogTime("db_client.RefreshSessions end")
 
-	return c.refreshDbClient(ctx)
+	if err := c.refreshDbClient(ctx); err != nil {
+		return &db_common.AcquireSessionResult{Error: err}
+	}
+	sessionResult := c.AcquireSession(ctx)
+	if sessionResult.Session != nil {
+		sessionResult.Session.Close()
+	}
+	return sessionResult
 }
 
 // refreshDbClient terminates the current connection and opens up a new connection to the service.

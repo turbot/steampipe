@@ -2,10 +2,11 @@ package workspace
 
 import (
 	"context"
-
-	"github.com/turbot/steampipe/db/db_common"
+	"fmt"
+	"strings"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -49,7 +50,15 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 	resourceMaps := w.GetResourceMaps()
 	// if resources have changed, update introspection tables and prepared statements
 	if !prevResourceMaps.Equals(resourceMaps) {
-		client.RefreshSessions(context.Background())
+		res := client.RefreshSessions(context.Background())
+		if res.Error != nil || len(res.Warnings) > 0 {
+			fmt.Println()
+			utils.ShowErrorWithMessage(res.Error, "error when refreshing session data")
+			utils.ShowWarning(strings.Join(res.Warnings, "\n"))
+			if w.onFileWatcherEventMessages != nil {
+				w.onFileWatcherEventMessages()
+			}
+		}
 	}
 	w.raiseReportChangedEvents(w.getPanelMap(), prevPanels, w.getReportMap(), prevReports)
 }

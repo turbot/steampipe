@@ -3,13 +3,12 @@ package db_common
 import (
 	"context"
 
-	"github.com/turbot/steampipe/steampipeconfig"
-
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/steampipeconfig"
 )
 
-type EnsureSessionStateCallback = func(context.Context, *DatabaseSession) error
+type EnsureSessionStateCallback = func(context.Context, *DatabaseSession) (err error, warnings []string)
 
 type Client interface {
 	Close() error
@@ -22,7 +21,7 @@ type Client interface {
 	SetSessionSearchPath(...string) error
 	ContructSearchPath(requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error)
 
-	AcquireSession(ctx context.Context) (*DatabaseSession, error)
+	AcquireSession(ctx context.Context) *AcquireSessionResult
 
 	ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error)
 	Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error)
@@ -35,8 +34,8 @@ type Client interface {
 	CacheClear() error
 
 	SetEnsureSessionDataFunc(EnsureSessionStateCallback)
-	RefreshSessions(ctx context.Context) error
-	// remote client will have empty implementation
+	RefreshSessions(ctx context.Context) *AcquireSessionResult
 
+	// remote client will have empty implementation
 	RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult
 }

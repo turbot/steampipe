@@ -217,6 +217,8 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 			close(initDataChan)
 		}()
 
+		// set max DB connections to 1
+		viper.Set(constants.ArgMaxParallel, 1)
 		// get a db client
 		var client db_common.Client
 		var err error
@@ -255,19 +257,24 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 
 		// set up the session data - prepared statements and introspection tables
 		// this defaults to creating prepared statements for all queries
-		sessionDataSource := workspace.NewSessionDataSource(w.GetResourceMaps())
-		// if queries were provided as args, only create prepared statements required for these queries
-		if len(queries) > 0 {
-			log.Printf("[TRACE] only creating prepared statements for command line queries")
-			sessionDataSource.PreparedStatementSource = preparedStatementSource
-		}
+		sessionDataSource := workspace.NewSessionDataSource(w, preparedStatementSource)
 
 		// register EnsureSessionData as a callback on the client.
 		// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 		// so our client object calls this callback to restore the session data
-		initData.Client.SetEnsureSessionDataFunc(func(ctx context.Context, session *db_common.DatabaseSession) error {
+		initData.Client.SetEnsureSessionDataFunc(func(ctx context.Context, session *db_common.DatabaseSession) (error, []string) {
 			return workspace.EnsureSessionData(ctx, sessionDataSource, session)
 		})
+
+		// force creation of session data - se we see any prepared statement errors at once
+		sessionResult := initData.Client.AcquireSession(ctx)
+		initData.Result.AddWarnings(sessionResult.Warnings...)
+		if err != nil {
+			initData.Result.Error = fmt.Errorf("error acquiring database connection, %s", err.Error())
+		} else {
+			sessionResult.Session.Close()
+		}
+
 	}()
 }
 

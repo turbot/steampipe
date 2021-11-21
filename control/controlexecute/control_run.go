@@ -168,16 +168,16 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 
 	// get a db connection
 	r.Lifecycle.Add("queued_for_session")
-	dbSession, err := client.AcquireSession(ctx)
-	if err != nil {
-		if !utils.IsCancelledError(err) {
-			err = fmt.Errorf("error acquiring database connection, %s", err.Error())
+	sessionResult := client.AcquireSession(ctx)
+	if sessionResult.Error != nil {
+		if !utils.IsCancelledError(sessionResult.Error) {
+			sessionResult.Error = fmt.Errorf("error acquiring database connection, %s", sessionResult.Error.Error())
 		}
-		r.SetError(err)
+		r.SetError(sessionResult.Error)
 		return
 	}
-	r.Lifecycle.Add("acquired_session")
-
+	r.Lifecycle.Add("got_session")
+	dbSession := sessionResult.Session
 	defer func() {
 		dbSession.Close()
 	}()
@@ -191,7 +191,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 
 	// resolve the control query
 	r.Lifecycle.Add("query_resolution_start")
-	query, err := r.resolveControlQuery(err, control)
+	query, err := r.resolveControlQuery(control)
 	if err != nil {
 		r.SetError(err)
 		return
@@ -253,7 +253,7 @@ func (r *ControlRun) getControlQueryContext(ctx context.Context) (context.Contex
 	return ctxWithDeadline, cancel
 }
 
-func (r *ControlRun) resolveControlQuery(err error, control *modconfig.Control) (string, error) {
+func (r *ControlRun) resolveControlQuery(control *modconfig.Control) (string, error) {
 	query, err := r.executionTree.workspace.ResolveControlQuery(control)
 	if err != nil {
 		return "", fmt.Errorf(`cannot run %s - failed to resolve query "%s": %s`, control.Name(), typehelpers.SafeString(control.SQL), err.Error())

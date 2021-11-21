@@ -1,17 +1,27 @@
 package workspace
 
-import "github.com/turbot/steampipe/steampipeconfig/modconfig"
+import (
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+)
 
 type SessionDataSource struct {
-	PreparedStatementSource, IntrospectionTableSource *modconfig.WorkspaceResourceMaps
+	PreparedStatementSource  func() *modconfig.WorkspaceResourceMaps
+	IntrospectionTableSource func() *modconfig.WorkspaceResourceMaps
 }
 
-// NewSessionDataSource creates a new SessionDataSource object
-// it defaults to using the same source for prepared statemntrs and introspection tables
-func NewSessionDataSource(source *modconfig.WorkspaceResourceMaps) *SessionDataSource {
-	return &SessionDataSource{
-		IntrospectionTableSource: source,
-		PreparedStatementSource:  source,
+func NewSessionDataSource(w *Workspace, preparedStatementSource *modconfig.WorkspaceResourceMaps) *SessionDataSource {
+	res := &SessionDataSource{
+		IntrospectionTableSource: func() *modconfig.WorkspaceResourceMaps {
+			return w.GetResourceMaps()
+		},
+		PreparedStatementSource: func() *modconfig.WorkspaceResourceMaps {
+			return w.GetResourceMaps()
+		},
 	}
-
+	if preparedStatementSource != nil && !preparedStatementSource.Empty() {
+		res.PreparedStatementSource = func() *modconfig.WorkspaceResourceMaps {
+			return preparedStatementSource
+		}
+	}
+	return res
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.WorkspaceResourceMaps, session *DatabaseSession) error {
+func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.WorkspaceResourceMaps, session *DatabaseSession) (err error, warnings []string) {
 	log.Printf("[TRACE] CreatePreparedStatements")
 
 	utils.LogTime("db.CreatePreparedStatements start")
@@ -20,7 +20,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 	// first get the SQL to create all prepared statements
 	sqlMap := GetPreparedStatementsSQL(resourceMaps)
 	if len(sqlMap) == 0 {
-		return nil
+		return nil, nil
 	}
 	// first try to run the whole thing in one query
 	var queries []string
@@ -28,20 +28,14 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 		queries = append(queries, q)
 	}
 
-	// execute the query, passing 'true' to disable the spinner
-	_, err := session.Connection.ExecContext(ctx, strings.Join(queries, ";\n"))
-
-	// if there was an error - we would like to know which query or control failed, so try to create them one by one
-	if err != nil {
-		for name, sql := range sqlMap {
-			if _, err = session.Connection.ExecContext(ctx, sql); err != nil {
-				return fmt.Errorf("failed to create prepared statement for %s: %v", name, err)
-			}
+	for name, sql := range sqlMap {
+		if _, err := session.Connection.ExecContext(ctx, sql); err != nil {
+			warnings = append(warnings, fmt.Sprintf("failed to create prepared statement for %s: %v", name, err))
 		}
 	}
 
 	// return context error - this enables calling code to respond to cancellation
-	return ctx.Err()
+	return ctx.Err(), warnings
 }
 
 func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map[string]string {
@@ -76,44 +70,5 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 	}
 
 	return sqlMap
-
-}
-
-// UpdatePreparedStatements first attempts to deallocate all prepared statements in workspace, then recreates them
-func UpdatePreparedStatements(ctx context.Context, prevResourceMaps, currentResourceMaps *modconfig.WorkspaceResourceMaps, session *DatabaseSession) error {
-	log.Printf("[TRACE] UpdatePreparedStatements")
-
-	utils.LogTime("db.UpdatePreparedStatements start")
-	defer utils.LogTime("db.UpdatePreparedStatements end")
-
-	var sql []string
-	for name, query := range prevResourceMaps.Queries {
-		// query map contains long and short names for queries - avoid dupes
-		if !strings.HasPrefix(name, "query.") {
-			continue
-		}
-		sql = append(sql, fmt.Sprintf("DEALLOCATE %s;", query.GetPreparedStatementName()))
-	}
-	for name, control := range prevResourceMaps.Controls {
-		// query map contains long and short names for controls - avoid dupes
-		if !strings.HasPrefix(name, "control.") {
-			continue
-		}
-		// do not create prepared statements for controls which reference another query
-		if control.Query != nil {
-			continue
-		}
-		sql = append(sql, fmt.Sprintf("DEALLOCATE %s;", control.GetPreparedStatementName()))
-	}
-
-	s := strings.Join(sql, "\n")
-	_, err := session.Connection.ExecContext(ctx, s)
-	if err != nil {
-		log.Printf("[TRACE] failed to update prepared statements - deallocate returned error %v", err)
-		return err
-	}
-
-	// now recreate them
-	return CreatePreparedStatements(ctx, currentResourceMaps, session)
 
 }

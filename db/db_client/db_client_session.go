@@ -12,7 +12,8 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DatabaseSession, acquireSessionError error) {
+func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSessionResult {
+	sessionResult := &db_common.AcquireSessionResult{}
 	c.sessionInitWaitGroup.Add(1)
 	defer c.sessionInitWaitGroup.Done()
 
@@ -20,7 +21,8 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DatabaseSes
 	// note - this will retry if the connection is bad
 	databaseConnection, backendPid, err := c.getSessionWithRetries(ctx)
 	if err != nil {
-		return nil, err
+		sessionResult.Error = err
+		return sessionResult
 	}
 
 	c.sessionsMutex.Lock()
@@ -31,40 +33,43 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DatabaseSes
 	}
 	// we get a new *sql.Conn everytime. USE IT!
 	session.Connection = databaseConnection
+	sessionResult.Session = session
 	c.sessionsMutex.Unlock()
 
 	log.Printf("[TRACE] Got Session with PID: %d", backendPid)
 
 	defer func() {
 		// make sure that we close the acquired session, in case of error
-		if acquireSessionError != nil && databaseConnection != nil {
+		if sessionResult.Error != nil && databaseConnection != nil {
 			databaseConnection.Close()
 		}
 	}()
 
 	if c.ensureSessionFunc == nil {
-		return session, nil
+		return sessionResult
 	}
 
 	if !session.Initialized {
 		log.Printf("[TRACE] Session with PID: %d - waiting for init lock", backendPid)
 		session.LifeCycle.Add("queued_for_init")
 
-		lockError := c.parallelSessionInitLock.Acquire(ctx, 1)
-		if lockError != nil {
-			return nil, lockError
+		err := c.parallelSessionInitLock.Acquire(ctx, 1)
+		if err != nil {
+			sessionResult.Error = err
+			return sessionResult
 		}
 		c.sessionInitWaitGroup.Add(1)
 
 		log.Printf("[TRACE] Session with PID: %d - waiting for init start", backendPid)
 		session.LifeCycle.Add("init_start")
-		err := c.ensureSessionFunc(ctx, session)
+		err, warnings := c.ensureSessionFunc(ctx, session)
 		session.LifeCycle.Add("init_finish")
-
+		sessionResult.Warnings = warnings
 		c.sessionInitWaitGroup.Done()
 		c.parallelSessionInitLock.Release(1)
 		if err != nil {
-			return nil, err
+			sessionResult.Error = err
+			return sessionResult
 		}
 
 		// if there is no error, mark session as initialized
@@ -75,8 +80,10 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DatabaseSes
 
 	// update required session search path if needed
 	if strings.Join(session.SearchPath, ",") != strings.Join(c.requiredSessionSearchPath, ",") {
-		if err := c.setSessionSearchPathToRequired(ctx, databaseConnection); err != nil {
-			return nil, err
+		err := c.setSessionSearchPathToRequired(ctx, databaseConnection)
+		if err != nil {
+			sessionResult.Error = err
+			return sessionResult
 		}
 		session.SearchPath = c.requiredSessionSearchPath
 	}
@@ -90,7 +97,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (_ *db_common.DatabaseSes
 
 	log.Printf("[TRACE] Session with PID: %d - returning", backendPid)
 
-	return session, nil
+	return sessionResult
 }
 
 func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64, error) {

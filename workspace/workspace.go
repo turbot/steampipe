@@ -44,6 +44,8 @@ type Workspace struct {
 	watcherError            error
 	// event handlers
 	reportEventHandlers []reportevents.ReportEventHandler
+	// callback function to reset display after the file watche displays messages
+	onFileWatcherEventMessages func()
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -127,6 +129,10 @@ func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(erro
 	}
 
 	return nil
+}
+
+func (w *Workspace) SetOnFileWatcherEventMessages(f func()) {
+	w.onFileWatcherEventMessages = f
 }
 
 func (w *Workspace) Close() {

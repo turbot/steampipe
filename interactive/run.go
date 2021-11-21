@@ -8,7 +8,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// RunInteractivePrompt :: start the interactive query prompt
+// RunInteractivePrompt starts the interactive query prompt
 func RunInteractivePrompt(initChan *chan *db_common.QueryInitData) (*queryresult.ResultStreamer, error) {
 	resultsStreamer := queryresult.NewResultStreamer()
 
@@ -20,7 +20,7 @@ func RunInteractivePrompt(initChan *chan *db_common.QueryInitData) (*queryresult
 	}
 
 	// start the interactive prompt in a go routine
-	go interactiveClient.InteractiveQuery()
+	go interactiveClient.InteractivePrompt()
 
 	return resultsStreamer, nil
 }

@@ -84,9 +84,8 @@ func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStream
 	return c, nil
 }
 
-// InteractiveQuery :: start an interactive prompt and return
-func (c *InteractiveClient) InteractiveQuery() {
-
+// InteractivePrompt starts an interactive prompt and return
+func (c *InteractiveClient) InteractivePrompt() {
 	// start a cancel handler for the interactive client - this will call activeQueryCancelFunc if it is set
 	// (registered when we call createQueryContext)
 	interruptSignalChannel := c.startCancelHandler()
@@ -161,15 +160,15 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		return
 	}
 	if initResult.HasMessages() {
-		// after closing prompt, restart it
-		c.ClosePrompt(AfterPromptCloseRestart)
 		fmt.Println()
 		initResult.DisplayMessages()
 	}
-
 	// We need to Render the prompt here to make sure that it comes back
 	// after the messages have been displayed
 	c.interactivePrompt.Render()
+
+	// tell the workspace to reset the prompt after displaying async filewatcher messages
+	c.initData.Workspace.SetOnFileWatcherEventMessages(func() { c.interactivePrompt.Render() })
 }
 
 // ClosePrompt cancels the running prompt, setting the action to take after close
