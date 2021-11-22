@@ -27,7 +27,7 @@ func PidExists(targetPid int) (bool, error) {
 }
 
 // FindProcess tries to find the process with the given pid
-// returns NIL if the process could not be found
+// returns nil if the process could not be found
 func FindProcess(targetPid int) (*psutils.Process, error) {
 	LogTime("FindProcess start")
 	defer LogTime("FindProcess end")

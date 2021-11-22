@@ -68,7 +68,6 @@ func (s *PluginManagerState) kill() error {
 	if err != nil {
 		return err
 	}
-	defer s.delete()
 	if process == nil {
 		log.Println("[TRACE] Tried to kill plugin_manager, but couldn't find process")
 		return nil
@@ -80,6 +79,7 @@ func (s *PluginManagerState) kill() error {
 		return err
 	}
 	// delete the state file as we have shutdown the plugin manager
+	s.delete()
 	return nil
 }
 
@@ -100,7 +100,8 @@ func LoadPluginManagerState() (*PluginManagerState, error) {
 	var s = new(PluginManagerState)
 	err = json.Unmarshal(fileContent, s)
 	if err != nil {
-		log.Println("[TRACE] bad plugin manager state file at", constants.PluginManagerStateFilePath())
+		log.Printf("[TRACE] failed to unmarshall plugin manager state file at %s with error %s\n", constants.PluginManagerStateFilePath(), err.Error())
+		log.Printf("[TRACE] deleting invalid plugin manager state file\n")
 		s.delete()
 		return nil, nil
 	}
