@@ -81,7 +81,7 @@ func Stop() error {
 	if err != nil {
 		return err
 	}
-	if state == nil || state.Running == false {
+	if state == nil || !state.Running {
 		// nothing to do
 		return nil
 	}
