@@ -2,7 +2,6 @@ package plugin_manager
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 	"syscall"
@@ -49,7 +48,7 @@ func (s *PluginManagerState) Save() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(constants.PluginManagerStateFilePath(), content, 0644)
+	return os.WriteFile(constants.PluginManagerStateFilePath(), content, 0644)
 }
 
 // check whether the plugin manager is running
@@ -93,7 +92,7 @@ func LoadPluginManagerState() (*PluginManagerState, error) {
 		return nil, nil
 	}
 
-	fileContent, err := ioutil.ReadFile(constants.PluginManagerStateFilePath())
+	fileContent, err := os.ReadFile(constants.PluginManagerStateFilePath())
 	if err != nil {
 		return nil, err
 	}
