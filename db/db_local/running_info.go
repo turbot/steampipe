@@ -62,7 +62,7 @@ func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
 	var info = new(RunningDBInstanceInfo)
 	err = json.Unmarshal(fileContent, info)
 	if err != nil {
-		log.Println("[TRACE] bad db state file at ", constants.RunningInfoFilePath())
+		log.Printf("[TRACE] failed to unmarshal database state file %s: %s\n", constants.RunningInfoFilePath(), err.Error())
 		return nil, nil
 	}
 	return info, nil
