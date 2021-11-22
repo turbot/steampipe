@@ -26,6 +26,8 @@ func PidExists(targetPid int) (bool, error) {
 	return found, err
 }
 
+// FindProcess tries to find the process with the given pid
+// returns nil if the process could not be found
 func FindProcess(targetPid int) (*psutils.Process, error) {
 	LogTime("FindProcess start")
 	defer LogTime("FindProcess end")
@@ -38,13 +40,13 @@ func FindProcess(targetPid int) (*psutils.Process, error) {
 		if targetPid == int(pid) {
 			process, err := psutils.NewProcess(int32(targetPid))
 			if err != nil {
-				// is we fail to create a process for the pid, just treat it as if we can't find the process
+				// if we fail to create a process for the pid, just treat it as if we can't find the process
 				return nil, nil
 			}
 
 			status, err := process.Status()
 			if err != nil {
-				return nil, fmt.Errorf("failed to get status")
+				return nil, fmt.Errorf("failed to get status: %s", err.Error())
 			}
 
 			if status == "Z" {

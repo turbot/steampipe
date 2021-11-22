@@ -2,7 +2,7 @@ package plugin_manager
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os/exec"
 	"syscall"
@@ -50,7 +50,7 @@ func start(steampipeExecutablePath string) error {
 
 	// discard logging from the plugin manager client (plugin manager logs will still flow through to the log file
 	// as this is set up in the pluginb manager)
-	logger := logging.NewLogger(&hclog.LoggerOptions{Name: "plugin", Output: ioutil.Discard})
+	logger := logging.NewLogger(&hclog.LoggerOptions{Name: "plugin", Output: io.Discard})
 
 	// launch the plugin manager the plugin process
 	client := plugin.NewClient(&plugin.ClientConfig{
@@ -81,7 +81,7 @@ func Stop() error {
 	if err != nil {
 		return err
 	}
-	if state == nil || state.Running == false {
+	if state == nil || !state.Running {
 		// nothing to do
 		return nil
 	}

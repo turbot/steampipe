@@ -116,6 +116,9 @@ func CombineErrorsWithPrefix(prefix string, errors ...error) error {
 
 	combinedErrorString := []string{prefix}
 	for _, e := range errors {
+		if e == nil {
+			continue
+		}
 		combinedErrorString = append(combinedErrorString, e.Error())
 	}
 	return fmt.Errorf(strings.Join(combinedErrorString, "\n\t"))

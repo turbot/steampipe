@@ -2,7 +2,6 @@ package plugin_manager
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 	"syscall"
@@ -49,7 +48,7 @@ func (s *PluginManagerState) Save() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(constants.PluginManagerStateFilePath(), content, 0644)
+	return os.WriteFile(constants.PluginManagerStateFilePath(), content, 0644)
 }
 
 // check whether the plugin manager is running
@@ -68,17 +67,23 @@ func (s *PluginManagerState) kill() error {
 	if err != nil {
 		return err
 	}
+	if process == nil {
+		log.Println("[TRACE] tried to kill plugin_manager, but couldn't find process")
+		return nil
+	}
 	// kill the plugin manager process by sending a SIGTERM (to give it a chance to clean up its children)
 	err = process.SendSignal(syscall.SIGTERM)
 	if err != nil {
+		log.Println("[TRACE] tried to kill plugin_manager, but couldn't send signal to process", err)
 		return err
 	}
 	// delete the state file as we have shutdown the plugin manager
-	return s.delete()
+	s.delete()
+	return nil
 }
 
-func (s *PluginManagerState) delete() error {
-	return os.Remove(constants.PluginManagerStateFilePath())
+func (s *PluginManagerState) delete() {
+	os.Remove(constants.PluginManagerStateFilePath())
 }
 
 func LoadPluginManagerState() (*PluginManagerState, error) {
@@ -87,14 +92,17 @@ func LoadPluginManagerState() (*PluginManagerState, error) {
 		return nil, nil
 	}
 
-	fileContent, err := ioutil.ReadFile(constants.PluginManagerStateFilePath())
+	fileContent, err := os.ReadFile(constants.PluginManagerStateFilePath())
 	if err != nil {
 		return nil, err
 	}
 	var s = new(PluginManagerState)
 	err = json.Unmarshal(fileContent, s)
 	if err != nil {
-		return nil, err
+		log.Printf("[TRACE] failed to unmarshall plugin manager state file at %s with error %s\n", constants.PluginManagerStateFilePath(), err.Error())
+		log.Printf("[TRACE] deleting invalid plugin manager state file\n")
+		s.delete()
+		return nil, nil
 	}
 
 	// check is the manager is running - this deletes that state file if it si not running,
