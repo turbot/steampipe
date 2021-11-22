@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"github.com/turbot/go-kit/helpers"
@@ -29,7 +30,6 @@ func (r *RunningDBInstanceInfo) Save() error {
 		return err
 	}
 	return ioutil.WriteFile(constants.RunningInfoFilePath(), content, 0644)
-
 }
 
 func (r *RunningDBInstanceInfo) String() string {
@@ -62,7 +62,8 @@ func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
 	var info = new(RunningDBInstanceInfo)
 	err = json.Unmarshal(fileContent, info)
 	if err != nil {
-		return nil, err
+		log.Println("[TRACE] bad db state file at ", constants.RunningInfoFilePath())
+		return nil, nil
 	}
 	return info, nil
 }

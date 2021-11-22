@@ -40,13 +40,13 @@ func FindProcess(targetPid int) (*psutils.Process, error) {
 		if targetPid == int(pid) {
 			process, err := psutils.NewProcess(int32(targetPid))
 			if err != nil {
-				// is we fail to create a process for the pid, just treat it as if we can't find the process
+				// if we fail to create a process for the pid, just treat it as if we can't find the process
 				return nil, nil
 			}
 
 			status, err := process.Status()
 			if err != nil {
-				return nil, fmt.Errorf("failed to get status")
+				return nil, fmt.Errorf("failed to get status: %s", err.Error())
 			}
 
 			if status == "Z" {
