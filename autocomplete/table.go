@@ -75,11 +75,11 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 	}
 
 	for _, table := range unqualifiedTablesToAdd {
-		s = append(s, prompt.Suggest{Text: table, Description: "Table", Escape: true})
+		s = append(s, prompt.Suggest{Text: table, Description: "Table"})
 	}
 
 	for _, table := range qualifiedTablesToAdd {
-		s = append(s, prompt.Suggest{Text: table, Description: "Table", Escape: true})
+		s = append(s, prompt.Suggest{Text: table, Description: "Table"})
 	}
 
 	return s
