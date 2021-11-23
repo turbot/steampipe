@@ -12,6 +12,10 @@ builds:
       - darwin
     goarch:
       - amd64
+      - arm64
+    ignore:
+      - goos: linux
+        goarch: arm64
     id: "steampipe"
     binary:
       'steampipe'
