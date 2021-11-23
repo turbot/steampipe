@@ -2,7 +2,6 @@ package cmdconfig
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -21,9 +20,9 @@ func ValidateConnectionStringArgs() error {
 	// so a backend was set - is it a connection string or a database name
 	if !strings.HasPrefix(workspaceDatabase, "postgresql://") {
 		// it must be a database name - verify the cloud token was provided
-		cloudToken, gotCloudToken := os.LookupEnv(constants.EnvCloudToken)
-		if !gotCloudToken {
-			return fmt.Errorf("if %s is set as a workspace name, %s must be set", constants.EnvWorkspaceDatabase, constants.EnvCloudToken)
+		cloudToken := viper.GetString(constants.ArgCloudToken)
+		if cloudToken == "" {
+			return fmt.Errorf("if %s is not a connection string, %s must be set", constants.EnvWorkspaceDatabase, constants.EnvCloudToken)
 		}
 
 		// so we have a database and a token - build the connection string and set it in viper
@@ -33,6 +32,7 @@ func ValidateConnectionStringArgs() error {
 		}
 	}
 
+	// TODO SSL MODE
 	// now set the connection string in viper
 	viper.Set(constants.ArgConnectionString, connectionString+"?sslmode=require")
 

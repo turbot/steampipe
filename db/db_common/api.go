@@ -5,66 +5,71 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
-const baseURL = "https://latestpipe.turbot.io"
+const baseURL = "https://testpipe.turbot.io"
 const actorAPI = "/api/v1/actor"
 const actorWorkspacesAPI = "/api/v1/actor/workspace"
-const passwordAPIFormat = "/api/v1/user/%s/password"
+const userPasswordAPIFormat = "/api/v1/user/%s/password"
 const userWorkspaceAPIFormat = "/api/v1/user/%s/workspace/%s"
 const orgWorkspaceAPIFormat = "/api/v1/org/%s/workspace/%s"
 
-func GetConnectionString(workspaceHandle, token string) (string, error) {
-	//	parts := strings.Split(workspaceHandle, "/")
-	//	if len(parts) != )
-	//	user := parts[0]
-	//	workspaceHandle := parts[1]
-	//	// create a 'bearer' string by appending the access token
-	//	var bearer = "Bearer " + token
-	//
-	//	client := &http.Client{}
-	//
-	//	// org or user?
-	//	//GetActorWorkspaces
-	//
-	//	// "kai/dev"
-	//	//userHandle, err := GetActor(bearer, client)
-	//	//if err != nil {
-	//	//	return "", err
-	//	//}
-	//	//{
-	//	//identity: {
-	//	//	type: "user" / "org",
-	//	//	handle: "kai" / "acme" // identity handle
-	//	//}
-	//	//handle: "dev" // workspace handle
-	//	//}
-	//
-	//	//workspaceHost, workspaceRandString, err := GetWorkspaceHost(userHandle, workspaceHandle, bearer, client)
-	//
-	//	if err != nil {
-	//		return "", err
-	//	}
-	//	password, err := GetPassword(userHandle, bearer, client)
-	//	if err != nil {
-	//		return "", err
-	//	}
-	//
-	////	if kai was trying to connect to acme org “dev” workspace, it would end up being:
-	////postgresql://kai:kai-password@acme-dev.workspace-host:9193/workspace-db-name
-	//
-	//
-	//	return fmt.Sprintf("postgresql://%s:%s@%s:9193/%s-%s", userHandle, password, workspaceHost, workspaceRandString, workspaceHandle), nil
-	//							postgresql://${user.handle}:${res.data.$password}@${identity.handle}-${workspace.handle}.${workspace.host}:9193/${workspace.database_name}
-	return "", nil
-}
+func GetConnectionString(workspaceDatabaseString, token string) (string, error) {
 
-func GetActorWorkspaces(bearer string, client *http.Client) (string, error) {
-	resp, err := fetchAPIData(baseURL+actorWorkspacesAPI, bearer, client)
+	parts := strings.Split(workspaceDatabaseString, "/")
+	if len(parts) != 2 {
+		return "", fmt.Errorf("workspace-database must be either a connection string or '<user handle>/<workspace handle>")
+	}
+	identityHandle := parts[0]
+	workspaceHandle := parts[1]
+
+	// create a 'bearer' string by appending the access token
+	var bearer = "Bearer " + token
+
+	client := &http.Client{}
+
+	// org or user?
+	_, err := GetWorkspace(identityHandle, workspaceHandle, bearer, client)
+
+	// "kai/dev"
+	userHandle, err := GetActor(bearer, client)
 	if err != nil {
 		return "", err
 	}
+	password, err := GetPassword(userHandle, bearer, client)
+	if err != nil {
+		return "", err
+	}
+	//
 
+
+//postgresql://${user.handle}:${res.data.$password}@${identity.handle}-${workspace.handle}.${workspace.host}:9193/${workspace.database_name}
+
+	//	if kai was trying to connect to acme org “dev” workspace, it would end up being:
+		//postgresql://kai:kai-password@acme-dev.workspace-host:9193/workspace-db-name
+
+	//return fmt.Sprintf("postgresql://%s:%s@%s:9193/%s-%s", userHandle, password, workspaceHost, workspaceRandString, workspaceHandle), nil
+	//						postgresql://${user.handle}:${res.data.$password}@${identity.handle}-${workspace.handle}.${workspace.host}:9193/${workspace.database_name}
+	//
+	return "", nil
+}
+
+func GetWorkspace(identityHandle, workspaceHandle, bearer string, client *http.Client) (map[string]interface{}, error) {
+	// TODO build base URL from ArgCloudHost
+	resp, err := fetchAPIData(baseURL+actorWorkspacesAPI, bearer, client)
+	if err != nil {
+		return nil, err
+	}
+
+	items  := resp["items"].([]interface{})
+
+	for _, i := range items{
+		item :=i.(map[string]interface{})
+		identity := item["identity"].(map[string]interface{})
+		if identity["handle"] == identityHandle && item["handle"] == workspaceHandle
+
+	}
 	// identity.type=org/user
 	// HANDLE PAGING
 	handle, ok := resp["handle"].(string)

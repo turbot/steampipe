@@ -68,9 +68,9 @@ func InitCmd() {
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", constants.DefaultInstallDir))
 	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace working directory (defaults to current working directory) [DEPRECATED - use 'workspapce-chdir']")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceChDir, constants.DefaultWorkspaceChdir(), "Path to the workspace working directory (defaults to current working directory)")
-	rootCmd.PersistentFlags().String(constants.ArgCloudHost, "", "Steampipe Cloud host")
+	rootCmd.PersistentFlags().String(constants.ArgCloudHost, "cloud.steampipe.io", "Steampipe Cloud host")
 	rootCmd.PersistentFlags().String(constants.ArgCloudToken, "", "Steampipe Cloud authentication token")
-	rootCmd.PersistentFlags().String(constants.ArgWorkspaceDatabase, "something", "Steampipe workspace database ")
+	rootCmd.PersistentFlags().String(constants.ArgWorkspaceDatabase, "", "Steampipe workspace database ")
 
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 	viper.BindPFlag(constants.ArgWorkspace, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspace))
