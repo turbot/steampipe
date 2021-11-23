@@ -1,7 +1,6 @@
 package connection_watcher
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -50,7 +49,7 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*pb.Conn
 	}
 
 	go func() {
-		// start the watcher after a delay (to avoid refereshing connections before/while steampipe is doing it)
+		// start the watcher after a delay (to avoid refreshing connections before/while steampipe is doing it)
 		time.Sleep(5 * time.Second)
 		watcher.Start()
 	}()
@@ -72,27 +71,33 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 		log.Printf("[WARN] Error loading updated connection config: %s", err.Error())
 		return
 	}
+	log.Printf("[TRACE] loaded updated config")
 	client, err := db_local.NewLocalClient(constants.InvokerConnectionWatcher)
 	if err != nil {
 		log.Printf("[WARN] Error creating client to handle updated connection config: %s", err.Error())
 	}
 	defer client.Close()
 
+	log.Printf("[TRACE] loaded updated config")
 	// set the global steampipe config
 	steampipeconfig.GlobalConfig = config
 	// update the viper default based on this loaded config
 	cmdconfig.SetViperDefaults(config.ConfigMap())
 
-	refreshResult := client.RefreshConnectionAndSearchPaths()
-	if refreshResult.Error != nil {
-		fmt.Println()
-		utils.ShowError(refreshResult.Error)
-		return
-	}
+	log.Printf("[TRACE] calling onConnectionConfigChanged")
 	// convert config to format expected by plugin manager
 	// (plugin manager cannot reference steampipe config to avoid circular deps)
 	configMap := NewConnectionConfigMap(steampipeconfig.GlobalConfig.Connections)
 	w.onConnectionConfigChanged(configMap)
+
+	log.Printf("[TRACE] calling RefreshConnectionAndSearchPaths")
+
+	// now refresh connections and search paths
+	refreshResult := client.RefreshConnectionAndSearchPaths()
+	if refreshResult.Error != nil {
+		log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
+		return
+	}
 
 	// display any refresh warnings
 	refreshResult.ShowWarnings()

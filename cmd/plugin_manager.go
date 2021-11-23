@@ -46,7 +46,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 
 	pluginManager := plugin_manager.NewPluginManager(configMap, logger)
 
-	if runConnectionWatcher() {
+	if shouldRunConnectionWatcher() {
 		connectionWatcher, err := connection_watcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
 		if err != nil {
 			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
@@ -62,7 +62,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	pluginManager.Serve()
 }
 
-func runConnectionWatcher() bool {
+func shouldRunConnectionWatcher() bool {
 	// if CacheEnabledEnvVar is set, overwrite the value in DefaultConnectionOptions
 	if envStr, ok := os.LookupEnv(constants.EnvConnectionWatcher); ok {
 		if parsedEnv, err := types.ToBool(envStr); err == nil {
