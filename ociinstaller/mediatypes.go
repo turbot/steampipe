@@ -44,7 +44,7 @@ const (
 	MediaTypeFdwSqlLayer     = "application/vnd.turbot.steampipe.fdw.sql.layer.v1+text"
 )
 
-// MediaTypeForPlatform :: returns media types for binaries for this OS and architecture
+// MediaTypeForPlatform returns media types for binaries for this OS and architecture
 func MediaTypeForPlatform(imageType string) string {
 	switch imageType {
 	case "db":
@@ -54,13 +54,14 @@ func MediaTypeForPlatform(imageType string) string {
 		arch := "amd64"
 		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch)
 	case "plugin":
-		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, runtime.GOARCH)
+		// TACTICAL: plugins only supports AMD64 - on M1 macs Rosetta will emulate this for us
+		arch := "amd64"
+		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch)
 	}
 	return ""
-
 }
 
-// SharedMediaTypes :: Returns media types that are NOT specific to the os and arch (readmes, control files, etc)
+// SharedMediaTypes returns media types that are NOT specific to the os and arch (readmes, control files, etc)
 func SharedMediaTypes(imageType string) []string {
 	switch imageType {
 	case "db":
