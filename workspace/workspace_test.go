@@ -93,11 +93,47 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 			},
 		}},
 	},
+	"single_mod_in_hidden_folder": {
+		source: "test_data/.hidden/w_1",
+		expected: &Workspace{
+			Mod: &modconfig.Mod{
+				ShortName: "w_1",
+				Title:     toStringPointer("workspace 1"),
+				Queries: map[string]*modconfig.Query{
+					"localq1": {
+						ShortName: "localq1", Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
+					},
+					"localq2": {
+						ShortName: "localq2", Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
+					},
+				},
+			},
+			Queries: map[string]*modconfig.Query{
+				"w_1.query.localq1": {
+					ShortName: "localq1", Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
+				},
+				"query.localq1": {
+					ShortName: "localq1", Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
+				},
+				"w_2.query.localq2": {
+					ShortName: "localq2", Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
+				},
+				"query.localq2": {
+					ShortName: "localq2", Title: toStringPointer("LocalQ2"), Description: toStringPointer("THIS IS LOCAL QUERY 2"), SQL: toStringPointer(".inspect"),
+				},
+				"m1.query.q1": {
+					ShortName: "q1", FullName: "Q1", Description: toStringPointer("THIS IS QUERY 1"), Documentation: toStringPointer("select 1"),
+				},
+				"m2.query.q2": {
+					ShortName: "q2", FullName: "Q2", Description: toStringPointer("THIS IS QUERY 2"), Documentation: toStringPointer("select 2"),
+				},
+			},
+		},
+	},
 }
 
 func TestLoadWorkspace(t *testing.T) {
 	for name, test := range testCasesLoadWorkspace {
-
 		workspacePath, err := filepath.Abs(test.source)
 		workspace, err := Load(workspacePath)
 

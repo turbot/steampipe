@@ -437,7 +437,10 @@ func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig
 
 func (w *Workspace) loadExclusions() error {
 	// default to ignoring hidden files and folders
-	w.exclusions = []string{"**/.*"}
+	w.exclusions = []string{
+		fmt.Sprintf("%s/**/.*", w.Path),
+		fmt.Sprintf("%s/.*", w.Path),
+	}
 
 	ignorePath := filepath.Join(w.Path, constants.WorkspaceIgnoreFile)
 	file, err := os.Open(ignorePath)
