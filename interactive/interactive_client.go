@@ -482,7 +482,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		//named queries
 		s = append(s, c.namedQuerySuggestions()...)
 		// "select"
-		s = append(s, prompt.Suggest{Text: "select"})
+		s = append(s, prompt.Suggest{Text: "select", Output: "select"}, prompt.Suggest{Text: "with", Output: "with"})
 
 		// metaqueries
 		s = append(s, metaquery.PromptSuggestions()...)
@@ -528,7 +528,7 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 		if q.Description != nil {
 			description += fmt.Sprintf(": %s", *q.Description)
 		}
-		res = append(res, prompt.Suggest{Text: queryName, Description: description})
+		res = append(res, prompt.Suggest{Text: queryName, Output: queryName, Description: description})
 	}
 	// add all the controls in the workspace
 	for controlName, c := range c.workspace().GetControlMap() {

@@ -1,12 +1,14 @@
 package autocomplete
 
 import (
+	"encoding/csv"
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
 )
@@ -47,7 +49,7 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 		// add qualified names of all tables
 		for tableName := range schemaDetails {
 			if !isTemporarySchema {
-				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, tableName))
+				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", escapeIfRequired(schemaName), escapeIfRequired(tableName)))
 			}
 		}
 
@@ -71,15 +73,15 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 	sort.Strings(qualifiedTablesToAdd)
 
 	for _, schema := range schemasToAdd {
-		s = append(s, prompt.Suggest{Text: schema, Description: "Schema"})
+		s = append(s, prompt.Suggest{Text: schema, Description: "Schema", Output: schema})
 	}
 
 	for _, table := range unqualifiedTablesToAdd {
-		s = append(s, prompt.Suggest{Text: table, Description: "Table"})
+		s = append(s, prompt.Suggest{Text: table, Description: "Table", Output: escapeIfRequired(table)})
 	}
 
 	for _, table := range qualifiedTablesToAdd {
-		s = append(s, prompt.Suggest{Text: table, Description: "Table"})
+		s = append(s, prompt.Suggest{Text: table, Description: "Table", Output: escapeIfRequired(table)})
 	}
 
 	return s
@@ -87,4 +89,23 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 
 func stripVersionFromPluginName(pluginName string) string {
 	return strings.Split(pluginName, "@")[0]
+}
+
+func escapeIfRequired(strToEscape string) string {
+	tokens := tokenize(strToEscape)
+	escaped := []string{}
+	for _, token := range tokens {
+		if strings.ContainsAny(token, " -") {
+			token = db_common.PgEscapeName(token)
+		}
+		escaped = append(escaped, token)
+	}
+	return strings.Join(escaped, ".")
+}
+
+func tokenize(str string) []string {
+	csvReader := csv.NewReader(strings.NewReader(str))
+	csvReader.Comma = '.'
+	c, _ := csvReader.ReadAll()
+	return c[0]
 }
