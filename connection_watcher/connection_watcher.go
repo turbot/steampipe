@@ -48,12 +48,7 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*pb.Conn
 		log.Printf("[WARN] Failed to reload connection config: %s", err.Error())
 	}
 
-	go func() {
-		// start the watcher after a delay (to avoid refreshing connections before/while steampipe is doing it)
-		//time.Sleep(5 * time.Second)
-		watcher.Start()
-		log.Printf("[WARN] START")
-	}()
+	watcher.Start()
 
 	log.Printf("[INFO] created ConnectionWatcher")
 	return w, nil
@@ -70,7 +65,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 	// (this is to avoid conflicting calls to refreshConnections between Steampipe and the watcher)
 	w.count++
 	if w.count == 1 {
-		log.Printf("[TRACE] handleFileWatcherEvent ignoring first event %v", e)
+		log.Printf("[TRACE] handleFileWatcherEvent ignoring first event")
 		return
 	}
 
