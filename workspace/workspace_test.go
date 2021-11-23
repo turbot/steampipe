@@ -94,15 +94,11 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 		}},
 	},
 	"single_mod_in_hidden_folder": {
-		source: "test_data/.hidden/single_mod_with_ignored_sql_files",
+		source: "test_data/.hidden/w_1",
 		expected: &Workspace{
 			Mod: &modconfig.Mod{
 				ShortName: "w_1",
 				Title:     toStringPointer("workspace 1"),
-				//ModDepends: []*modconfig.ModVersion{
-				//	{ShortName: "github.com/turbot/m1", Version: "0.0.0"},
-				//	{ShortName: "github.com/turbot/m2", Version: "0.0.0"},
-				//},
 				Queries: map[string]*modconfig.Query{
 					"localq1": {
 						ShortName: "localq1", Title: toStringPointer("LocalQ1"), Description: toStringPointer("THIS IS LOCAL QUERY 1"), SQL: toStringPointer(".tables"),
@@ -138,7 +134,6 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 
 func TestLoadWorkspace(t *testing.T) {
 	for name, test := range testCasesLoadWorkspace {
-
 		workspacePath, err := filepath.Abs(test.source)
 		workspace, err := Load(workspacePath)
 
