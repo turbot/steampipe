@@ -2,7 +2,6 @@ package connection_watcher
 
 import (
 	"log"
-	"time"
 
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -20,6 +19,7 @@ type ConnectionWatcher struct {
 	watcherError              error
 	watcher                   *utils.FileWatcher
 	onConnectionConfigChanged func(configMap map[string]*pb.ConnectionConfig)
+	count                     int
 }
 
 func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*pb.ConnectionConfig)) (*ConnectionWatcher, error) {
@@ -48,22 +48,26 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*pb.Conn
 		log.Printf("[WARN] Failed to reload connection config: %s", err.Error())
 	}
 
-	go func() {
-		// start the watcher after a delay (to avoid refreshing connections before/while steampipe is doing it)
-		time.Sleep(5 * time.Second)
-		watcher.Start()
-	}()
+	watcher.Start()
 
 	log.Printf("[INFO] created ConnectionWatcher")
 	return w, nil
 }
 
-func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
+func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("[WARN] ConnectionWatcher caught a panic: %s", helpers.ToError(r).Error())
 		}
 	}()
+
+	// ignore the first event - this is raised as soon as we start the watcher
+	// (this is to avoid conflicting calls to refreshConnections between Steampipe and the watcher)
+	w.count++
+	if w.count == 1 {
+		log.Printf("[TRACE] handleFileWatcherEvent ignoring first event")
+		return
+	}
 
 	log.Printf("[TRACE] ConnectionWatcher handleFileWatcherEvent")
 	config, err := steampipeconfig.LoadConnectionConfig()

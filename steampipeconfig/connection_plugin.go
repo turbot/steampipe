@@ -74,7 +74,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (res *ConnectionPl
 	// attach to the plugin process
 	pluginClient, err := attachToPlugin(getResponse.Reattach.Convert(), pluginName)
 	if err != nil {
-		log.Printf("[WARN] failed to attach to plugin for connection '%s' - pid %d: %s",
+		log.Printf("[TRACE] failed to attach to plugin for connection '%s' - pid %d: %s",
 			connectionName, getResponse.Reattach.Pid, err)
 		return nil, err
 	}
@@ -85,14 +85,14 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (res *ConnectionPl
 	}
 
 	if err = pluginClient.SetConnectionConfig(req); err != nil {
-		log.Printf("[WARN] failed to set connection config: %s", err)
+		log.Printf("[TRACE] failed to set connection config: %s", err)
 		return nil, err
 	}
 
 	// fetch the plugin schema
 	schema, err := pluginClient.GetSchema()
 	if err != nil {
-		log.Printf("[WARN] failed to get schema: %s", err)
+		log.Printf("[TRACE] failed to get schema: %s", err)
 		return nil, err
 	}
 	// fetch the supported operations
