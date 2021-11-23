@@ -2,7 +2,6 @@ package versionfile
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -46,7 +45,7 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 }
 
 func readPluginVersionFile(path string) (*PluginVersionFile, error) {
-	file, _ := ioutil.ReadFile(path)
+	file, _ := os.ReadFile(path)
 
 	var data PluginVersionFile
 

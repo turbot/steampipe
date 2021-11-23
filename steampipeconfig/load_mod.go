@@ -2,7 +2,6 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -149,7 +148,7 @@ func loadModDependency(modDependency *modconfig.ModVersion, runCtx *parse.RunCon
 
 func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder string) (string, *goVersion.Version, error) {
 	shortDepName := filepath.Base(modDependency.Name)
-	entries, err := ioutil.ReadDir(parentFolder)
+	entries, err := os.ReadDir(parentFolder)
 	if err != nil {
 		return "", nil, fmt.Errorf("mod dependency %s is not installed", modDependency.Name)
 	}

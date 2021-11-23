@@ -2,7 +2,6 @@ package versionfile
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -63,7 +62,7 @@ func LoadDatabaseVersionFile() (*DatabaseVersionFile, error) {
 }
 
 func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
-	file, _ := ioutil.ReadFile(path)
+	file, _ := os.ReadFile(path)
 	var data DatabaseVersionFile
 	if err := json.Unmarshal([]byte(file), &data); err != nil {
 		log.Println("[ERROR]", "Error while reading DB version file", err)

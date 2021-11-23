@@ -3,7 +3,6 @@ package db_local
 import (
 	"database/sql"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -398,7 +397,7 @@ func initDatabase() error {
 
 	// intentionally overwriting existing pg_hba.conf with a minimal config which only allows root
 	// so that we can setup the database and permissions
-	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(constants.MinimalPgHbaContent), 0600)
+	return os.WriteFile(getPgHbaConfLocation(), []byte(constants.MinimalPgHbaContent), 0600)
 }
 
 func installDatabaseWithPermissions(databaseName string, rawClient *sql.DB) error {
@@ -471,7 +470,7 @@ func installDatabaseWithPermissions(databaseName string, rawClient *sql.DB) erro
 
 func writePgHbaContent(databaseName string, username string) error {
 	content := fmt.Sprintf(constants.PgHbaTemplate, databaseName, username)
-	return ioutil.WriteFile(getPgHbaConfLocation(), []byte(content), 0600)
+	return os.WriteFile(getPgHbaConfLocation(), []byte(content), 0600)
 }
 
 func installForeignServer(databaseName string, rawClient *sql.DB) error {
@@ -507,5 +506,5 @@ func updateDownloadedBinarySignature() error {
 		return err
 	}
 	installedSignature := fmt.Sprintf("%s|%s", versionInfo.EmbeddedDB.ImageDigest, versionInfo.FdwExtension.ImageDigest)
-	return ioutil.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)
+	return os.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)
 }

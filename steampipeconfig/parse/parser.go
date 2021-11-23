@@ -2,7 +2,7 @@ package parse
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -24,7 +24,7 @@ func LoadFileData(paths ...string) (map[string][]byte, hcl.Diagnostics) {
 	var fileData = map[string][]byte{}
 
 	for _, configPath := range paths {
-		data, err := ioutil.ReadFile(configPath)
+		data, err := os.ReadFile(configPath)
 
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
@@ -201,7 +201,7 @@ func parseYamlFile(filename string) (*hcl.File, hcl.Diagnostics) {
 	}
 	defer f.Close()
 
-	src, err := ioutil.ReadAll(f)
+	src, err := io.ReadAll(f)
 	if err != nil {
 		return nil, hcl.Diagnostics{
 			{

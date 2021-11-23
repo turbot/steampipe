@@ -3,7 +3,6 @@ package statefile
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -30,7 +29,7 @@ func LoadState() (State, error) {
 		return currentState, err
 	}
 
-	stateFileContent, err := ioutil.ReadFile(stateFilePath)
+	stateFileContent, err := os.ReadFile(stateFilePath)
 	if err != nil {
 		fmt.Println("Could not read update state file")
 		return currentState, err

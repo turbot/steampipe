@@ -2,7 +2,6 @@ package input_vars
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -63,7 +62,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 		diags = diags.Append(moreDiags)
 	}
 
-	if infos, err := ioutil.ReadDir("."); err == nil {
+	if infos, err := os.ReadDir("."); err == nil {
 		// "infos" is already sorted by name, so we just need to filter it here.
 		for _, info := range infos {
 			name := info.Name()
@@ -123,7 +122,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 func addVarsFromFile(filename string, sourceType ValueSourceType, to map[string]UnparsedVariableValue) tfdiags.Diagnostics {
 	var diags tfdiags.Diagnostics
 
-	src, err := ioutil.ReadFile(filename)
+	src, err := os.ReadFile(filename)
 	if err != nil {
 		if os.IsNotExist(err) {
 			diags = diags.Append(tfdiags.Sourceless(

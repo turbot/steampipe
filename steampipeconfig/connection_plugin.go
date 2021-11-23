@@ -2,7 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -129,7 +129,7 @@ func runPluginManagerInProcess() (*plugin_manager.PluginManager, error) {
 	}
 
 	// discard logging from the plugin client (plugin logs will still flow through)
-	loggOpts := &hclog.LoggerOptions{Name: "plugin", Output: ioutil.Discard}
+	loggOpts := &hclog.LoggerOptions{Name: "plugin", Output: io.Discard}
 	logger := logging.NewLogger(loggOpts)
 
 	// build config map

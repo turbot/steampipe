@@ -3,7 +3,6 @@ package db_local
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -265,11 +264,11 @@ func retrieveDatabaseNameFromService(port int) (string, error) {
 
 func writePGConf() error {
 	// Apply default settings in conf files
-	err := ioutil.WriteFile(getPostgresqlConfLocation(), []byte(constants.PostgresqlConfContent), 0600)
+	err := os.WriteFile(getPostgresqlConfLocation(), []byte(constants.PostgresqlConfContent), 0600)
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(getSteampipeConfLocation(), []byte(constants.SteampipeConfContent), 0600)
+	err = os.WriteFile(getSteampipeConfLocation(), []byte(constants.SteampipeConfContent), 0600)
 	if err != nil {
 		return err
 	}

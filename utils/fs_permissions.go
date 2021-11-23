@@ -1,13 +1,12 @@
 package utils
 
 import (
-	"io/ioutil"
 	"os"
 )
 
 func EnsureDirectoryPermission(directoryPath string) error {
 	// verify that we can read and write to the directory
-	tmpFile, err := ioutil.TempFile(directoryPath, "tmp")
+	tmpFile, err := os.CreateTemp(directoryPath, "tmp")
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,6 @@ package versionfile
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -26,7 +25,7 @@ func LoadLegacyVersionFile() (*LegacyVersionFile, error) {
 }
 
 func readLegacyVersionFile(path string) (*LegacyVersionFile, error) {
-	file, _ := ioutil.ReadFile(path)
+	file, _ := os.ReadFile(path)
 
 	var data LegacyVersionFile
 

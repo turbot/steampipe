@@ -2,7 +2,6 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -43,7 +42,7 @@ func LoadConnectionConfig() (*SteampipeConfig, error) {
 func ensureDefaultConfigFile(configFolder string) error {
 	defaultConfigFile := filepath.Join(configFolder, defaultConfigFileName)
 	if _, err := os.Stat(defaultConfigFile); os.IsNotExist(err) {
-		err = ioutil.WriteFile(defaultConfigFile, []byte(constants.DefaultSPCContent), 0755)
+		err = os.WriteFile(defaultConfigFile, []byte(constants.DefaultSPCContent), 0755)
 		if err != nil {
 			return err
 		}

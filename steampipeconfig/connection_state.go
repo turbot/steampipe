@@ -3,8 +3,8 @@ package steampipeconfig
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
@@ -32,7 +32,7 @@ func loadConnectionStateFile() (ConnectionDataMap, error) {
 	if !helpers.FileExists(connectionStatePath) {
 		return connectionState, nil
 	}
-	jsonFile, err := ioutil.ReadFile(connectionStatePath)
+	jsonFile, err := os.ReadFile(connectionStatePath)
 	if err != nil {
 		return nil, fmt.Errorf("error loading %s: %v", connectionStatePath, err)
 	}
@@ -75,5 +75,5 @@ func SaveConnectionState(state ConnectionDataMap) error {
 
 func writeJson(data interface{}, path string) error {
 	j, _ := json.MarshalIndent(data, "", " ")
-	return ioutil.WriteFile(path, j, 0644)
+	return os.WriteFile(path, j, 0644)
 }

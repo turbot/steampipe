@@ -2,8 +2,8 @@ package modconfig
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -125,7 +125,7 @@ func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 		return nil, nil, fmt.Errorf("Query.InitialiseFromFile must be called with .sql files only - filepath: '%s'", filePath)
 	}
 
-	sqlBytes, err := ioutil.ReadFile(filePath)
+	sqlBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, nil, err
 	}

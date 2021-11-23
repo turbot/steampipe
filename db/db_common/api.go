@@ -3,7 +3,7 @@ package db_common
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -93,7 +93,7 @@ func fetchAPIData(url, bearer string, client *http.Client) (map[string]interface
 		return nil, err
 	}
 	defer resp.Body.Close()
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

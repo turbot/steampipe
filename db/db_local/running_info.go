@@ -3,7 +3,6 @@ package db_local
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -29,7 +28,7 @@ func (r *RunningDBInstanceInfo) Save() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(constants.RunningInfoFilePath(), content, 0644)
+	return os.WriteFile(constants.RunningInfoFilePath(), content, 0644)
 }
 
 func (r *RunningDBInstanceInfo) String() string {
@@ -55,7 +54,7 @@ func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
 		return nil, nil
 	}
 
-	fileContent, err := ioutil.ReadFile(constants.RunningInfoFilePath())
+	fileContent, err := os.ReadFile(constants.RunningInfoFilePath())
 	if err != nil {
 		return nil, err
 	}
