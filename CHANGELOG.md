@@ -1,3 +1,19 @@
+## v0.10.0 [tbd]
+_What's new?_
+* Add support for parallel control execution. ([#1001](https://github.com/turbot/steampipe/issues/1001))
+  * Only spawn a single plugin per steampipe connection, no matter how many db connections use it. 
+  * Share a single query result cache between multiple database connections. 
+* When cli displays error messages from plugins, they are now be prefixed with plugin name. ([#1071](https://github.com/turbot/steampipe/issues/1071))
+* Do not show plugin error messages in JSON/CSV output. ([#1110](https://github.com/turbot/steampipe/issues/1110))
+* Support Linux package managers(apt-get, yum, snap). ([#595](https://github.com/turbot/steampipe/issues/595))
+* Provider more responsive feedback for control runs. ([#1101](https://github.com/turbot/steampipe/issues/1101))
+* Create prepared statements one by one to allow accurate error reporting and reduce memory burden. ([#1148](https://github.com/turbot/steampipe/issues/1148))
+* Improve display of asyncronous error in interactive prompt. ([#1085](https://github.com/turbot/steampipe/issues/1085))
+
+_Bug fixes_
+* Fix reflection error when loading a workspace from a hidden folder. ([#1157](https://github.com/turbot/steampipe/issues/1157))
+* Fix intermittent crash when using boolean quals on jsonb columns. ([#122](https://github.com/turbot/steampipe-postgres-fdw/issues/122))
+
 ## v0.9.1 [2021-11-11]
 _Bug fixes_
 * Escape schema names when dropping connection schema. ([#1074](https://github.com/turbot/steampipe/issues/1074))
