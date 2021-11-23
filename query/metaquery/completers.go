@@ -38,7 +38,7 @@ func completerFromArgsOf(cmd string) completer {
 		metaQueryDefinition, _ := metaQueryDefinitions[cmd]
 		suggestions := make([]prompt.Suggest, len(metaQueryDefinition.args))
 		for idx, arg := range metaQueryDefinition.args {
-			suggestions[idx] = prompt.Suggest{Text: arg.value, Description: arg.description}
+			suggestions[idx] = prompt.Suggest{Text: arg.value, Description: arg.description, Output: arg.value}
 		}
 		return suggestions
 	}

@@ -113,7 +113,7 @@ func init() {
 		constants.CmdInspect: {
 			title:       constants.CmdInspect,
 			handler:     inspect,
-			validator:   atMostNArgs(1),
+			validator:   atLeastNArgs(1),
 			description: "View connections, tables & column information",
 			completer:   inspectCompleter,
 		},

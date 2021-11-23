@@ -91,6 +91,18 @@ func validatorFromArgsOf(cmd string) validator {
 	}
 }
 
+var atLeastNArgs = func(n int) validator {
+	return func(args []string) ValidationResult {
+		numArgs := len(args)
+		if numArgs < n {
+			return ValidationResult{
+				Err: fmt.Errorf("command needs at least %d argument(s) - got %d", n, numArgs),
+			}
+		}
+		return ValidationResult{ShouldRun: true}
+	}
+}
+
 var atMostNArgs = func(n int) validator {
 	return func(args []string) ValidationResult {
 		numArgs := len(args)

@@ -2,6 +2,7 @@ package metaquery
 
 import (
 	"encoding/csv"
+	"log"
 	"sort"
 	"strings"
 
@@ -41,7 +42,10 @@ func splitByWhitespace(str string) (s []string) {
 	csvDecoder.TrimLeadingSpace = true
 	// Read can never error, because we are passing in a StringReader
 	// lookup csv.Reader.Read
-	split, _ := csvDecoder.Read()
+	split, err := csvDecoder.Read()
+	if err != nil {
+		log.Println("[WARN]", err)
+	}
 	return split
 }
 
@@ -49,7 +53,7 @@ func splitByWhitespace(str string) (s []string) {
 func PromptSuggestions() []prompt.Suggest {
 	suggestions := make([]prompt.Suggest, 0, len(metaQueryDefinitions))
 	for k, definition := range metaQueryDefinitions {
-		suggestions = append(suggestions, prompt.Suggest{Text: k, Description: definition.description})
+		suggestions = append(suggestions, prompt.Suggest{Text: k, Description: definition.description, Output: k})
 	}
 
 	sort.SliceStable(suggestions[:], func(i, j int) bool {
