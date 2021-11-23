@@ -439,7 +439,7 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 	// reload the config, since an installation MUST have created a new config file
 	if !isUpdate {
 		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgWorkspace), cmd.Name())
+		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgWorkspaceChDir), cmd.Name())
 		if err != nil {
 			return err
 		}

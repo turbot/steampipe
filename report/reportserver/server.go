@@ -57,7 +57,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 	}
 	refreshResult.ShowWarnings()
 
-	loadedWorkspace, err := workspace.Load(viper.GetString(constants.ArgWorkspace))
+	loadedWorkspace, err := workspace.Load(viper.GetString(constants.ArgWorkspaceChDir))
 	if err != nil {
 		return nil, err
 	}

@@ -47,7 +47,7 @@ Examples:
   steampipe query "select * from cloud"`,
 
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			workspace, err := workspace.LoadResourceNames(viper.GetString(constants.ArgWorkspace))
+			workspace, err := workspace.LoadResourceNames(viper.GetString(constants.ArgWorkspaceChDir))
 			if err != nil {
 				return []string{}, cobra.ShellCompDirectiveError
 			}
@@ -95,7 +95,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		args = append(args, stdinData)
 	}
 
-	err := validateConnectionStringArgs()
+	err := cmdconfig.ValidateConnectionStringArgs()
 	utils.FailOnError(err)
 
 	// enable spinner only in interactive mode
@@ -124,39 +124,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		startCancelHandler(cancel)
 		// set global exit code
 		exitCode = queryexecute.RunBatchSession(ctx, initDataChan)
-
 	}
-
-}
-
-func validateConnectionStringArgs() error {
-	backendEnvVar, backendDefined := os.LookupEnv(constants.EnvDatabaseBackend)
-
-	if !backendDefined {
-		// no database set - so no connection string
-		return nil
-	}
-	connectionString := backendEnvVar
-
-	// so a backend was set - is it a connection string or a database name
-	if !strings.HasPrefix(backendEnvVar, "postgresql://") {
-		// it must be a database name - verify the cloud token was provided
-		cloudToken, gotCloudToken := os.LookupEnv(constants.EnvCloudToken)
-		if !gotCloudToken {
-			return fmt.Errorf("if %s is set as a workspace name, %s must be set", constants.EnvDatabaseBackend, constants.EnvCloudToken)
-		}
-
-		// so we have a database and a token - build the connection string and set it in viper
-		var err error
-		if connectionString, err = db_common.GetConnectionString(backendEnvVar, cloudToken); err != nil {
-			return err
-		}
-	}
-
-	// now set the connection string in viper
-	viper.Set(constants.ArgConnectionString, connectionString)
-
-	return nil
 }
 
 // getPipedStdinData reads the Standard Input and returns the available data as a string
@@ -178,7 +146,7 @@ func getPipedStdinData() string {
 }
 
 func loadWorkspacePromptingForVariables(ctx context.Context, spinner *spinner.Spinner) (*workspace.Workspace, error) {
-	workspacePath := viper.GetString(constants.ArgWorkspace)
+	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
 
 	w, err := workspace.Load(workspacePath)
 	if err == nil {

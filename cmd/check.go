@@ -57,7 +57,7 @@ func checkCmd() *cobra.Command {
 
 You may specify one or more benchmarks or controls to run (separated by a space), or run 'steampipe check all' to run all controls in the workspace.`,
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			workspaceResources, err := workspace.LoadResourceNames(viper.GetString(constants.ArgWorkspace))
+			workspaceResources, err := workspace.LoadResourceNames(viper.GetString(constants.ArgWorkspaceChDir))
 			if err != nil {
 				return []string{}, cobra.ShellCompDirectiveError
 			}
@@ -204,7 +204,7 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 		return initData
 	}
 
-	err = validateConnectionStringArgs()
+	err = cmdconfig.ValidateConnectionStringArgs()
 	if err != nil {
 		initData.result.Error = err
 		return initData

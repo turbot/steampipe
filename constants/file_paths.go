@@ -33,6 +33,13 @@ func steampipeSubDir(dirName string) string {
 	return subDir
 }
 
+// DefaultWorkspaceChdir returns the default workspace chdir (the current directory)
+func DefaultWorkspaceChdir() string {
+	wd, _ := os.Getwd()
+	return wd
+
+}
+
 // PluginDir returns the path to the plugins directory (creates if missing)
 func PluginDir() string {
 	return steampipeSubDir("plugins")
