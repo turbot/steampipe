@@ -6,17 +6,17 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 )
 
-const baseURL = "https://testpipe.turbot.io"
 const actorAPI = "/api/v1/actor"
 const actorWorkspacesAPI = "/api/v1/actor/workspace"
-const userPasswordAPIFormat = "/api/v1/user/%s/password"
-const userWorkspaceAPIFormat = "/api/v1/user/%s/workspace/%s"
-const orgWorkspaceAPIFormat = "/api/v1/org/%s/workspace/%s"
+const passwordAPIFormat = "/api/v1/user/%s/password"
 
 func GetConnectionString(workspaceDatabaseString, token string) (string, error) {
-
+	baseURL := fmt.Sprintf("https://%s", viper.GetString(constants.ArgCloudHost))
 	parts := strings.Split(workspaceDatabaseString, "/")
 	if len(parts) != 2 {
 		return "", fmt.Errorf("workspace-database must be either a connection string or '<user handle>/<workspace handle>")
@@ -30,56 +30,44 @@ func GetConnectionString(workspaceDatabaseString, token string) (string, error) 
 	client := &http.Client{}
 
 	// org or user?
-	_, err := GetWorkspace(identityHandle, workspaceHandle, bearer, client)
-
-	// "kai/dev"
-	userHandle, err := GetActor(bearer, client)
+	workspace, err := GetWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer, client)
 	if err != nil {
 		return "", err
 	}
-	password, err := GetPassword(userHandle, bearer, client)
+	workspaceHost := workspace["host"].(string)
+	databaseName := workspace["database_name"].(string)
+
+	userHandle, err := getActor(baseURL, bearer, client)
 	if err != nil {
 		return "", err
 	}
-	//
+	password, err := getPassword(baseURL, userHandle, bearer, client)
+	if err != nil {
+		return "", err
+	}
 
-
-//postgresql://${user.handle}:${res.data.$password}@${identity.handle}-${workspace.handle}.${workspace.host}:9193/${workspace.database_name}
-
-	//	if kai was trying to connect to acme org “dev” workspace, it would end up being:
-		//postgresql://kai:kai-password@acme-dev.workspace-host:9193/workspace-db-name
-
-	//return fmt.Sprintf("postgresql://%s:%s@%s:9193/%s-%s", userHandle, password, workspaceHost, workspaceRandString, workspaceHandle), nil
-	//						postgresql://${user.handle}:${res.data.$password}@${identity.handle}-${workspace.handle}.${workspace.host}:9193/${workspace.database_name}
-	//
-	return "", nil
+	return fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", userHandle, password, identityHandle, workspaceHandle, workspaceHost, databaseName), nil
 }
 
-func GetWorkspace(identityHandle, workspaceHandle, bearer string, client *http.Client) (map[string]interface{}, error) {
-	// TODO build base URL from ArgCloudHost
+func GetWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer string, client *http.Client) (map[string]interface{}, error) {
 	resp, err := fetchAPIData(baseURL+actorWorkspacesAPI, bearer, client)
 	if err != nil {
 		return nil, err
 	}
 
-	items  := resp["items"].([]interface{})
-
-	for _, i := range items{
-		item :=i.(map[string]interface{})
+	// TODO HANDLE PAGING
+	items := resp["items"].([]interface{})
+	for _, i := range items {
+		item := i.(map[string]interface{})
 		identity := item["identity"].(map[string]interface{})
-		if identity["handle"] == identityHandle && item["handle"] == workspaceHandle
-
+		if identity["handle"] == identityHandle && item["handle"] == workspaceHandle {
+			return item, nil
+		}
 	}
-	// identity.type=org/user
-	// HANDLE PAGING
-	handle, ok := resp["handle"].(string)
-	if !ok {
-		return "", fmt.Errorf("failed to read handle from Steampipe Cloud API")
-	}
-	return handle, nil
+	return nil, nil
 }
 
-func GetActor(bearer string, client *http.Client) (string, error) {
+func getActor(baseURL, bearer string, client *http.Client) (string, error) {
 	resp, err := fetchAPIData(baseURL+actorAPI, bearer, client)
 	if err != nil {
 		return "", err
@@ -92,7 +80,7 @@ func GetActor(bearer string, client *http.Client) (string, error) {
 	return handle, nil
 }
 
-func GetPassword(userHandle, bearer string, client *http.Client) (string, error) {
+func getPassword(baseURL, userHandle, bearer string, client *http.Client) (string, error) {
 	url := baseURL + fmt.Sprintf(passwordAPIFormat, userHandle)
 	resp, err := fetchAPIData(url, bearer, client)
 	if err != nil {
@@ -105,28 +93,6 @@ func GetPassword(userHandle, bearer string, client *http.Client) (string, error)
 	}
 	return password, nil
 }
-
-// idtype, idhandle, wshandle
-//func GetWorkspaceHost(userHandle, workspaceHandle, bearer string, client *http.Client) (string, string, error) {
-//
-//	// deduce correct api
-//
-//	url := baseURL + fmt.Sprintf(userWorkspaceAPIFormat, idhandle, workspaceHandle)
-//	resp, err := fetchAPIData(url, bearer, client)
-//	if err != nil {
-//		return "", "", err
-//	}
-//
-//	host, ok := resp["host"].(string)
-//	if !ok {
-//		return "", "", fmt.Errorf("failed to read workspace data from Steampipe Cloud API")
-//	}
-//	randString, ok := resp["rand_string"].(string)
-//	if !ok {
-//		return "", "", fmt.Errorf("failed to read workspace data from Steampipe Cloud API")
-//	}
-//	return host, randString, nil
-//}
 
 func fetchAPIData(url, bearer string, client *http.Client) (map[string]interface{}, error) {
 	req, err := http.NewRequest("GET", url, nil)
