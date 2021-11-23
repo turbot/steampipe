@@ -46,16 +46,14 @@ const (
 
 // MediaTypeForPlatform returns media types for binaries for this OS and architecture
 func MediaTypeForPlatform(imageType string) string {
+	// we do not (yet) support Arm for the database, FDW or plugins - on M1 macs Rosetta will emulate this for us
+	arch := "amd64"
 	switch imageType {
 	case "db":
-		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+tar", imageType, runtime.GOOS, runtime.GOARCH)
+		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+tar", imageType, runtime.GOOS, arch)
 	case "fdw":
-		// TACTICAL: fdw only supports AMD64 - on M1 macs Rosetta will emulate this for us
-		arch := "amd64"
 		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch)
 	case "plugin":
-		// TACTICAL: plugins only supports AMD64 - on M1 macs Rosetta will emulate this for us
-		arch := "amd64"
 		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch)
 	}
 	return ""
