@@ -90,7 +90,7 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 
 	// the number of goroutines parallel to start
 	// - we start goroutines as a multiplier of the number of parallel database connections
-	// so that go routines receive connections as soon as they are available 
+	// so that go routines receive connections as soon as they are available
 	maxParallelGoRoutines := viper.GetInt64(constants.ArgMaxParallel) * constants.ParallelControlMultiplier
 
 	// to limit the number of parallel controls go routines started
@@ -99,8 +99,10 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 	// just execute the root - it will traverse the tree
 	e.Root.Execute(ctx, client, parallelismLock)
 
-	// wait till we can acquire all semaphores - meaning that all runs have finished
-	parallelismLock.Acquire(ctx, maxParallelGoRoutines)
+	// wait till we can acquire all semaphores - meaning that all active runs have finished
+	// use a Background context - since the original context may have been cancelled
+	// this lets us wait for the active control queries to cancel
+	parallelismLock.Acquire(context.Background(), maxParallelGoRoutines)
 
 	failures := e.Root.Summary.Status.Alarm + e.Root.Summary.Status.Error
 
