@@ -21,7 +21,7 @@ func (g *General) ConfigMap() map[string]interface{} {
 		res[constants.ArgUpdateCheck] = g.UpdateCheck
 	}
 	if g.MaxParallel != nil {
-		res[constants.ArgMaxParallel] = 10 //g.MaxParallel
+		res[constants.ArgMaxParallel] = g.MaxParallel
 	}
 
 	return res
