@@ -99,10 +99,16 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 	// just execute the root - it will traverse the tree
 	e.Root.Execute(ctx, client, parallelismLock)
 
+	executeFinishWaitCtx := ctx
+	if ctx.Err() != nil {
+		// use a Background context - since the original context has been cancelled
+		// this lets us wait for the active control queries to cancel
+		c, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		executeFinishWaitCtx = c
+		defer cancel()
+	}
 	// wait till we can acquire all semaphores - meaning that all active runs have finished
-	// use a Background context - since the original context may have been cancelled
-	// this lets us wait for the active control queries to cancel
-	parallelismLock.Acquire(context.Background(), maxParallelGoRoutines)
+	parallelismLock.Acquire(executeFinishWaitCtx, maxParallelGoRoutines)
 
 	failures := e.Root.Summary.Status.Alarm + e.Root.Summary.Status.Error
 
