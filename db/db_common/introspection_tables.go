@@ -128,7 +128,7 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 }
 
 func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnSql []string) string {
-	columnDefinitions := append(getColumnDefinitions(s), commonColumnSql...)
+	columnDefinitions := append(commonColumnSql, getColumnDefinitions(s)...)
 
 	tableSql := fmt.Sprintf(`create temp table %s (
 %s
@@ -139,20 +139,16 @@ func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnS
 // get the sql column definitions for tagged properties of the item
 func getColumnDefinitions(item interface{}) []string {
 	t := reflect.TypeOf(item)
-
 	var columnDef []string
 	val := reflect.ValueOf(item)
 	for i := 0; i < val.NumField(); i++ {
 		fieldName := val.Type().Field(i).Name
 		field, _ := t.FieldByName(fieldName)
-
 		columnTag, ok := newColumnTag(field)
 		if !ok {
 			continue
 		}
-
 		columnDef = append(columnDef, fmt.Sprintf("  %s  %s", columnTag.Column, columnTag.ColumnType))
-
 	}
 	return columnDef
 }
