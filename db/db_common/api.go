@@ -19,7 +19,7 @@ func GetConnectionString(workspaceDatabaseString, token string) (string, error) 
 	baseURL := fmt.Sprintf("https://%s", viper.GetString(constants.ArgCloudHost))
 	parts := strings.Split(workspaceDatabaseString, "/")
 	if len(parts) != 2 {
-		return "", fmt.Errorf("workspace-database must be either a connection string or '<user handle>/<workspace handle>")
+		return "", fmt.Errorf("invalid 'workspace-database' argument '%s' - must be either a connection string or in format <identity>/<workspace>", workspaceDatabaseString)
 	}
 	identityHandle := parts[0]
 	workspaceHandle := parts[1]
@@ -33,6 +33,9 @@ func GetConnectionString(workspaceDatabaseString, token string) (string, error) 
 	workspace, err := GetWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer, client)
 	if err != nil {
 		return "", err
+	}
+	if workspace == nil {
+		return "", fmt.Errorf("failed to resolve workspace with identity handle '%s', workspace handle '%s'", identityHandle, workspaceHandle)
 	}
 	workspaceHost := workspace["host"].(string)
 	databaseName := workspace["database_name"].(string)
@@ -52,16 +55,19 @@ func GetConnectionString(workspaceDatabaseString, token string) (string, error) 
 func GetWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer string, client *http.Client) (map[string]interface{}, error) {
 	resp, err := fetchAPIData(baseURL+actorWorkspacesAPI, bearer, client)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get workspace data from Steampipe Cloud API: %s ", err.Error())
 	}
 
 	// TODO HANDLE PAGING
-	items := resp["items"].([]interface{})
-	for _, i := range items {
-		item := i.(map[string]interface{})
-		identity := item["identity"].(map[string]interface{})
-		if identity["handle"] == identityHandle && item["handle"] == workspaceHandle {
-			return item, nil
+	items := resp["items"]
+	if items != nil {
+		itemsArray := items.([]interface{})
+		for _, i := range itemsArray {
+			item := i.(map[string]interface{})
+			identity := item["identity"].(map[string]interface{})
+			if identity["handle"] == identityHandle && item["handle"] == workspaceHandle {
+				return item, nil
+			}
 		}
 	}
 	return nil, nil
@@ -70,7 +76,7 @@ func GetWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer string, c
 func getActor(baseURL, bearer string, client *http.Client) (string, error) {
 	resp, err := fetchAPIData(baseURL+actorAPI, bearer, client)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get actor from Steampipe Cloud API: %s ", err.Error())
 	}
 
 	handle, ok := resp["handle"].(string)
@@ -84,7 +90,7 @@ func getPassword(baseURL, userHandle, bearer string, client *http.Client) (strin
 	url := baseURL + fmt.Sprintf(passwordAPIFormat, userHandle)
 	resp, err := fetchAPIData(url, bearer, client)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get password from Steampipe Cloud API: %s ", err.Error())
 	}
 
 	password, ok := resp["$password"].(string)
@@ -105,6 +111,9 @@ func fetchAPIData(url, bearer string, client *http.Client) (map[string]interface
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 206 {
+		return nil, fmt.Errorf("%s", resp.Status)
 	}
 	defer resp.Body.Close()
 	bodyBytes, err := io.ReadAll(resp.Body)

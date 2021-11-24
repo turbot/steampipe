@@ -51,7 +51,7 @@ func (c *InteractiveClient) workspaceWatcherErrorHandler(err error) {
 }
 
 func (c *InteractiveClient) isInitialised() bool {
-	return c.initData != nil
+	return c.initData != nil && c.initData.Client != nil
 }
 
 func (c *InteractiveClient) waitForInitData(ctx context.Context) error {

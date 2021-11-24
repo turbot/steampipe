@@ -22,7 +22,7 @@ func ValidateConnectionStringArgs() error {
 		// it must be a database name - verify the cloud token was provided
 		cloudToken := viper.GetString(constants.ArgCloudToken)
 		if cloudToken == "" {
-			return fmt.Errorf("if %s is not a connection string, %s must be set", constants.EnvWorkspaceDatabase, constants.EnvCloudToken)
+			return fmt.Errorf("cannot resolve workspace: required argument '--%s' missing", constants.ArgCloudToken)
 		}
 
 		// so we have a database and a token - build the connection string and set it in viper
