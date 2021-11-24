@@ -1,7 +1,6 @@
 package autocomplete
 
 import (
-	"encoding/csv"
 	"fmt"
 	"sort"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 // GetTableAutoCompleteSuggestions :: derives and returns tables for typeahead
@@ -49,7 +49,7 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 		// add qualified names of all tables
 		for tableName := range schemaDetails {
 			if !isTemporarySchema {
-				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", escapeIfRequired(schemaName), escapeIfRequired(tableName)))
+				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, escapeIfRequired(tableName)))
 			}
 		}
 
@@ -73,6 +73,8 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 	sort.Strings(qualifiedTablesToAdd)
 
 	for _, schema := range schemasToAdd {
+		// we don't need to escape schema names, since schema names are derived from connection names
+		// which are validated so that we don't end up with names which need it
 		s = append(s, prompt.Suggest{Text: schema, Description: "Schema", Output: schema})
 	}
 
@@ -92,7 +94,7 @@ func stripVersionFromPluginName(pluginName string) string {
 }
 
 func escapeIfRequired(strToEscape string) string {
-	tokens := tokenize(strToEscape)
+	tokens := utils.SplitByRune(strToEscape, '.')
 	escaped := []string{}
 	for _, token := range tokens {
 		if strings.ContainsAny(token, " -") {
@@ -101,11 +103,4 @@ func escapeIfRequired(strToEscape string) string {
 		escaped = append(escaped, token)
 	}
 	return strings.Join(escaped, ".")
-}
-
-func tokenize(str string) []string {
-	csvReader := csv.NewReader(strings.NewReader(str))
-	csvReader.Comma = '.'
-	c, _ := csvReader.ReadAll()
-	return c[0]
 }

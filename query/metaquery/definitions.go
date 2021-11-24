@@ -111,9 +111,12 @@ func init() {
 			completer: completerFromArgsOf(constants.CmdCache),
 		},
 		constants.CmdInspect: {
-			title:       constants.CmdInspect,
-			handler:     inspect,
-			validator:   atLeastNArgs(1),
+			title:   constants.CmdInspect,
+			handler: inspect,
+			// because of the way autocomplete works,
+			// tokenizing the arguments may result in creating multiple arguments
+			// which we join up in the handler
+			validator:   atLeastNArgs(0),
 			description: "View connections, tables & column information",
 			completer:   inspectCompleter,
 		},

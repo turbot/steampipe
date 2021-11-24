@@ -1,12 +1,11 @@
 package metaquery
 
 import (
-	"encoding/csv"
-	"log"
 	"sort"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
+	"github.com/turbot/steampipe/utils"
 )
 
 // IsMetaQuery :: returns true if the query is a metaquery, false otherwise
@@ -24,29 +23,13 @@ func IsMetaQuery(query string) bool {
 
 func getCmdAndArgs(query string) (string, []string) {
 	query = strings.TrimSuffix(query, ";")
-	split := splitByWhitespace(query)
+	split := utils.SplitByWhitespace(query)
 	cmd := split[0]
 	args := []string{}
 	if len(split) > 1 {
 		args = split[1:]
 	}
 	return cmd, args
-}
-
-// splitByWhitespace uses the CSV decoder, using '\s' as the separator rune
-// this enables us to parse out the tokens - even if they are quoted and/or escaped
-func splitByWhitespace(str string) (s []string) {
-	csvDecoder := csv.NewReader(strings.NewReader(str))
-	csvDecoder.Comma = ' '
-	csvDecoder.LazyQuotes = true
-	csvDecoder.TrimLeadingSpace = true
-	// Read can never error, because we are passing in a StringReader
-	// lookup csv.Reader.Read
-	split, err := csvDecoder.Read()
-	if err != nil {
-		log.Println("[WARN]", err)
-	}
-	return split
 }
 
 // PromptSuggestions :: Returns a list of the suggestions for go-prompt
