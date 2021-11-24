@@ -1,16 +1,19 @@
-## v0.10.0 [tbd]
+## v0.10.0 [2021-24-11]
 _What's new?_
 * Add support for parallel control execution. ([#1001](https://github.com/turbot/steampipe/issues/1001))
   * Only spawn a single plugin per steampipe connection, no matter how many db connections use it. 
   * Share a single query result cache between multiple database connections. 
+* Add support for connecting to a remote database, including a Steampipe Cloud workspace database.  ([#1175](https://github.com/turbot/steampipe/issues/1175))
 * When cli displays error messages from plugins, they are now be prefixed with plugin name. ([#1071](https://github.com/turbot/steampipe/issues/1071))
 * Do not show plugin error messages in JSON/CSV output. ([#1110](https://github.com/turbot/steampipe/issues/1110))
 * Support Linux package managers(apt-get, yum, snap). ([#595](https://github.com/turbot/steampipe/issues/595))
 * Provider more responsive feedback for control runs. ([#1101](https://github.com/turbot/steampipe/issues/1101))
 * Create prepared statements one by one to allow accurate error reporting and reduce memory burden. ([#1148](https://github.com/turbot/steampipe/issues/1148))
 * Improve display of asyncronous error in interactive prompt. ([#1085](https://github.com/turbot/steampipe/issues/1085))
+* Deprecate `workspace` argument, replace with `workspace-chdir`
 
 _Bug fixes_
+* Table names with special characters are now escaped correctly in auto-complete and `.inspect`. ([#1109](https://github.com/turbot/steampipe/issues/1109))
 * Fix reflection error when loading a workspace from a hidden folder. ([#1157](https://github.com/turbot/steampipe/issues/1157))
 * Fix intermittent crash when using boolean quals on jsonb columns. ([#122](https://github.com/turbot/steampipe-postgres-fdw/issues/122))
 
