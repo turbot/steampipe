@@ -260,9 +260,23 @@ func inspect(input *HandlerInput) error {
 	if len(input.args()) == 0 {
 		return listConnections(input)
 	}
-	// arg can be one of <connection_name> or <connection_name>.<table_name>
 	tableOrConnection := input.args()[0]
+	if len(input.args()) > 0 {
+		// this should be one argument, but may have been split by the tokenizer
+		// because of the escape characters that autocomplete puts in
+		// join them up
+		tableOrConnection = strings.Join(input.args(), " ")
+	}
+	// arg can be one of <connection_name> or <connection_name>.<table_name>
 	split := strings.Split(tableOrConnection, ".")
+	for i, s := range split {
+		// trim escaping
+		s = strings.TrimSpace(s)
+		s = strings.TrimPrefix(s, `"`)
+		s = strings.TrimSuffix(s, `"`)
+
+		split[i] = s
+	}
 
 	if len(split) == 1 {
 		// only a connection name (or maybe unqualified table name)

@@ -111,9 +111,12 @@ func init() {
 			completer: completerFromArgsOf(constants.CmdCache),
 		},
 		constants.CmdInspect: {
-			title:       constants.CmdInspect,
-			handler:     inspect,
-			validator:   atMostNArgs(1),
+			title:   constants.CmdInspect,
+			handler: inspect,
+			// .inspect only supports a single arg, however the arg validation code cannot understand escaped arguments
+			// e.g. it will treat csv."my table" as 2 args
+			// the logic to handle this escaping is lower down so we just validate to ensure at least one argument has been provided
+			validator:   atLeastNArgs(0),
 			description: "View connections, tables & column information",
 			completer:   inspectCompleter,
 		},
