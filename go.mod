@@ -73,5 +73,4 @@ require (
 	sigs.k8s.io/yaml v1.1.0
 )
 
-// replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20210830083819-c872df2bdcc9
-replace github.com/c-bata/go-prompt => /Users/binaeksarkar/work/sources/go-prompt
+replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20211124090719-0709bc8d8ce2
