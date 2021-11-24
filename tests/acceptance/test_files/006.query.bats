@@ -101,7 +101,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "named query workspace folder" {
-  run steampipe query query.named_query_4 --workspace "tests/acceptance/test_files/workspace_folder/"
+  run steampipe query query.named_query_4 --workspace-chdir "tests/acceptance/test_files/workspace_folder/"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_workspace_folder.txt)"
 }
 

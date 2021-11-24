@@ -64,8 +64,13 @@ func overrideDefaultsFromEnv() {
 	envMappings := map[string]envMapping{
 		constants.EnvUpdateCheck:       {constants.ArgUpdateCheck, "bool"},
 		constants.EnvInstallDir:        {constants.ArgInstallDir, "string"},
+		constants.EnvWorkspaceChDir:    {constants.ArgWorkspaceChDir, "string"},
+		constants.EnvWorkspaceDatabase: {constants.ArgWorkspaceDatabase, "string"},
+		constants.EnvCloudHost:         {constants.ArgCloudHost, "string"},
+		constants.EnvCloudToken:        {constants.ArgCloudToken, "string"},
 		constants.EnvServicePassword:   {constants.ArgServicePassword, "string"},
 		constants.EnvCheckDisplayWidth: {constants.ArgCheckDisplayWidth, "int"},
+		constants.EnvMaxParallel:       {constants.ArgMaxParallel, "int"},
 	}
 	for k, v := range envMappings {
 		if val, ok := os.LookupEnv(k); ok {

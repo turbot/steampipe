@@ -10,6 +10,7 @@ import (
 // General
 type General struct {
 	UpdateCheck *string `hcl:"update_check"`
+	MaxParallel *int    `hcl:"max_parallel"`
 }
 
 // ConfigMap :: create a config map to pass to viper
@@ -18,6 +19,9 @@ func (g *General) ConfigMap() map[string]interface{} {
 	res := map[string]interface{}{}
 	if g.UpdateCheck != nil {
 		res[constants.ArgUpdateCheck] = g.UpdateCheck
+	}
+	if g.MaxParallel != nil {
+		res[constants.ArgMaxParallel] = g.MaxParallel
 	}
 
 	return res
