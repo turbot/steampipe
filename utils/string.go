@@ -5,8 +5,7 @@ import (
 	"strings"
 )
 
-// splitByRune uses the CSV decoder
-// this enables us to parse out the tokens - even if they are quoted and/or escaped
+// SplitByRune uses the CSV decoder to parse out the tokens - even if they are quoted and/or escaped
 func SplitByRune(str string, r rune) []string {
 	csvDecoder := csv.NewReader(strings.NewReader(str))
 	csvDecoder.Comma = r
@@ -16,7 +15,7 @@ func SplitByRune(str string, r rune) []string {
 	return split
 }
 
-// splitByWhitespace splits by the ' ' rune
+// SplitByWhitespace splits by the ' ' rune
 func SplitByWhitespace(str string) []string {
 	return SplitByRune(str, ' ')
 }
