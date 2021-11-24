@@ -113,9 +113,9 @@ func init() {
 		constants.CmdInspect: {
 			title:   constants.CmdInspect,
 			handler: inspect,
-			// because of the way autocomplete works,
-			// tokenizing the arguments may result in creating multiple arguments
-			// which we join up in the handler
+			// .inspect only supports a single arg, however the arg validation code cannot understand escaped arguments
+			// e.g. it will treat csv."my table" as 2 args
+			// the logic to handle this escaping is lower down so we just validate to ensure at least one argument has been provided
 			validator:   atLeastNArgs(0),
 			description: "View connections, tables & column information",
 			completer:   inspectCompleter,
