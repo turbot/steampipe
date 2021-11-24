@@ -66,11 +66,13 @@ func InitCmd() {
 	defer utils.LogTime("cmd.root.InitCmd end")
 
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", constants.DefaultInstallDir))
-	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace working directory (defaults to current working directory) (DEPRECATED: please use workspace-chdir)")
-	rootCmd.PersistentFlags().String(constants.ArgWorkspaceChDir, constants.DefaultWorkspaceChdir(), "Path to the workspace working directory (defaults to current working directory)")
+	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace working directory ")
+	rootCmd.PersistentFlags().String(constants.ArgWorkspaceChDir, "", "Path to the workspace working directory ")
 	rootCmd.PersistentFlags().String(constants.ArgCloudHost, "cloud.steampipe.io", "Steampipe Cloud host")
 	rootCmd.PersistentFlags().String(constants.ArgCloudToken, "", "Steampipe Cloud authentication token")
-	rootCmd.PersistentFlags().String(constants.ArgWorkspaceDatabase, "", "Steampipe Cloud workspace database ")
+	rootCmd.PersistentFlags().String(constants.ArgWorkspaceDatabase, "local", "Steampipe Cloud workspace database ")
+
+	rootCmd.Flag(constants.ArgWorkspace).Deprecated = "please use workspace-chdir"
 
 	viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 	viper.BindPFlag(constants.ArgWorkspace, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspace))
@@ -97,21 +99,11 @@ func initGlobalConfig() {
 	// setup viper without the settings in the config files
 	cmdconfig.SetViperDefaults(nil)
 
-	// handle default workspace arg
-	workspaceChdir := viper.GetString(constants.ArgWorkspaceChDir)
-	workspace := viper.GetString(constants.ArgWorkspace)
-	if workspace != "" {
-		workspaceChdir = workspace
-		viper.Set(constants.ArgWorkspaceChDir, workspaceChdir)
-	}
+	// set the working folder
+	workspaceChdir := setWorkspaceChDir()
 
 	// set global containing install dir
 	setInstallDir()
-
-	if workspaceChdir == "" {
-		// only reason this could happen
-		utils.FailOnError(fmt.Errorf("could not read current directory"))
-	}
 
 	// load config (this sets the global config steampipeconfig.Config)
 	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
@@ -122,6 +114,22 @@ func initGlobalConfig() {
 
 	// set viper config defaults from config and env vars
 	cmdconfig.SetViperDefaults(steampipeconfig.GlobalConfig.ConfigMap())
+}
+
+func setWorkspaceChDir() string {
+	workspaceChdir := viper.GetString(constants.ArgWorkspaceChDir)
+	workspace := viper.GetString(constants.ArgWorkspace)
+	if workspace != "" {
+		workspaceChdir = workspace
+
+	}
+	if workspaceChdir == "" {
+		cwd, err := os.Getwd()
+		utils.FailOnError(err)
+		workspaceChdir = cwd
+	}
+	viper.Set(constants.ArgWorkspaceChDir, workspaceChdir)
+	return workspaceChdir
 }
 
 // CreateLogger :: create a hclog logger with the level specified by the SP_LOG env var

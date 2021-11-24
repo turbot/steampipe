@@ -11,8 +11,8 @@ import (
 
 func ValidateConnectionStringArgs() error {
 	workspaceDatabase := viper.GetString(constants.ArgWorkspaceDatabase)
-	if workspaceDatabase == "" {
-		// no database set - so no connection string
+	if workspaceDatabase == "local" {
+		// local database - nothing to do here
 		return nil
 	}
 	connectionString := workspaceDatabase
