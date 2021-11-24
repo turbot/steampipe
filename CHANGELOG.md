@@ -1,4 +1,4 @@
-## v0.10.0 [2021-24-11]
+## v0.10.0 [2021-11-24]
 _What's new?_
 * Add support for parallel control execution. ([#1001](https://github.com/turbot/steampipe/issues/1001))
   * Only spawn a single plugin per steampipe connection, no matter how many db connections use it. 
