@@ -5,4 +5,4 @@ package constants
 const ParallelControlMultiplier = 3
 
 // The maximum number of seconds to wait for control queries to finish cancelling
-const MaxQueryCancellationTimeout = 30
+const QueryCancellationTimeout = 30

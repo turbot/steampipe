@@ -103,7 +103,7 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 	if ctx.Err() != nil {
 		// use a Background context - since the original context has been cancelled
 		// this lets us wait for the active control queries to cancel
-		c, cancel := context.WithTimeout(context.Background(), constants.MaxQueryCancellationTimeout*time.Second)
+		c, cancel := context.WithTimeout(context.Background(), constants.QueryCancellationTimeout*time.Second)
 		executeFinishWaitCtx = c
 		defer cancel()
 	}
