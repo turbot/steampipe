@@ -32,19 +32,8 @@ func ValidateConnectionStringArgs() error {
 		}
 	}
 
-	// TODO SSL MODE
 	// now set the connection string in viper
-	viper.Set(constants.ArgConnectionString, connectionString+"?sslmode=require")
+	viper.Set(constants.ArgConnectionString, connectionString)
 
 	return nil
 }
-
-//// VerifyLocalDb ensures a local db is being used
-//func VerifyLocalDb() {
-//	err := ValidateConnectionStringArgs()
-//	utils.FailOnError()
-//	connectionString := viper.GetString(constants.ArgConnectionString)
-//	localDb := connectionString == ""
-//	return localDb
-//
-//}

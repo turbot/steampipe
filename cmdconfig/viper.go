@@ -70,6 +70,7 @@ func overrideDefaultsFromEnv() {
 		constants.EnvCloudToken:        {constants.ArgCloudToken, "string"},
 		constants.EnvServicePassword:   {constants.ArgServicePassword, "string"},
 		constants.EnvCheckDisplayWidth: {constants.ArgCheckDisplayWidth, "int"},
+		constants.EnvMaxParallel:       {constants.ArgMaxParallel, "int"},
 	}
 	for k, v := range envMappings {
 		if val, ok := os.LookupEnv(k); ok {

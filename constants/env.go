@@ -6,6 +6,7 @@ const (
 	EnvInstallDir      = "STEAMPIPE_INSTALL_DIR"
 	EnvInstallDatabase = "STEAMPIPE_INITDB_DATABASE_NAME"
 	EnvServicePassword = "STEAMPIPE_DATABASE_PASSWORD"
+	EnvMaxParallel     = "STEAMPIPE_MAX_PARALLEL"
 
 	EnvWorkspaceDatabase = "STEAMPIPE_WORKSPACE_DATABASE"
 	EnvCloudHost         = "STEAMPIPE_CLOUD_HOST"
