@@ -274,16 +274,16 @@ func displayTable(result *queryresult.Result) {
 		utils.ShowError(err)
 		fmt.Println()
 	}
-	// if timer is turned on
-	if cmdconfig.Viper().GetBool(constants.ArgTimer) {
-		// put in the time information in the buffer
-		outbuf.WriteString(fmt.Sprintf("\nTime: %v\n", <-result.Duration))
-	}
 	// write out the table to the buffer
 	t.Render()
 
 	// page out the table
 	ShowPaged(outbuf.String())
+
+	// if timer is turned on
+	if cmdconfig.Viper().GetBool(constants.ArgTimer) {
+		fmt.Printf("\nTime: %v\n", <-result.Duration)
+	}
 }
 
 type displayResultsFunc func(row []interface{}, result *queryresult.Result)
