@@ -5,6 +5,7 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
@@ -149,6 +150,7 @@ func CreateConnectionPlugins(requiredConnections []*modconfig.Connection, alread
 
 	// keep track of how many plugins we are creating
 	pluginCount := 0
+	pluginManagerAccessLock := &sync.Mutex{}
 	for _, connection := range requiredConnections {
 		// if we have already loaded this plugin, just send down the channel
 		if existingConnectionPlugin, ok := alreadyLoaded[connection.Name]; ok {
@@ -156,7 +158,7 @@ func CreateConnectionPlugins(requiredConnections []*modconfig.Connection, alread
 		} else {
 			pluginCount++
 			// instantiate the connection plugin, and retrieve schema
-			getConnectionPluginAsync(connection, pluginChan, errorChan)
+			getConnectionPluginAsync(connection, pluginChan, errorChan, pluginManagerAccessLock)
 		}
 	}
 
@@ -176,9 +178,9 @@ func CreateConnectionPlugins(requiredConnections []*modconfig.Connection, alread
 	return connectionPlugins, res
 }
 
-func getConnectionPluginAsync(connection *modconfig.Connection, pluginChan chan *ConnectionPlugin, errorChan chan error) {
+func getConnectionPluginAsync(connection *modconfig.Connection, pluginChan chan *ConnectionPlugin, errorChan chan error, pluginManagerLock *sync.Mutex) {
 	go func() {
-		p, err := CreateConnectionPlugin(connection)
+		p, err := CreateConnectionPlugin(connection, pluginManagerLock)
 		if err != nil {
 			errorChan <- err
 			return
