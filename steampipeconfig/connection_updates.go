@@ -31,6 +31,8 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 
 	res := &RefreshConnectionResult{}
 	// build connection data for all required connections
+	// NOTE: this will NOT populate SchemaMode for the connections, as we need to load the schema for that
+	// this will be updated below on the call to updateRequiredStateWithSchemaProperties
 	requiredConnectionState, missingPlugins, err := NewConnectionDataMap(GlobalConfig.Connections)
 	if err != nil {
 		res.Error = err
@@ -102,7 +104,9 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	}
 
 	updates.ConnectionPlugins = connectionPlugins
+
 	// set the schema mode and hash on the connection data in required state
+	// this uses data from the ConnectionPlugins which we have now loaded
 	updates.updateRequiredStateWithSchemaProperties(dynamicSchemaHashMap)
 
 	return updates, res
@@ -125,9 +129,10 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 		// - if so us the schema mode from the schema  it has loaded
 		if connectionPlugin, ok := u.ConnectionPlugins[k]; ok {
 			v.SchemaMode = connectionPlugin.Schema.Mode
-			// if the schema hash is still not set, calculate the value from the conneciton plugin schema
-			// this will happen the first time we load a plugin
-			if v.SchemaHash == "" {
+			// if the schema mode is dynamic and the hash is not set yet, calculate the value from the connection plugin schema
+			// this will happen the first time we load a plugin - as schemaHashMap will NOT include the has
+			// because we do not know yet that the plugin is dynamic
+			if v.SchemaMode == plugin.SchemaModeDynamic && v.SchemaHash == "" {
 				v.SchemaHash = pluginSchemaHash(connectionPlugin.Schema)
 			}
 		}
@@ -188,9 +193,10 @@ func getConnectionPluginAsync(connection *modconfig.Connection, pluginChan chan 
 }
 
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, *RefreshConnectionResult) {
-	// for every required connection, check the connection state to determine whether it has a dynamic schema
-	// if we have never loaded the conneciton, there wil be no stste so we cannot retrieve this informaiton
+	// for every required connection, check the connection state to determine whether the schema mode is 'dynamic'
+	// if we have never loaded the connection, there will be no state, so we cannot retrieve this information
 	// however in this case we will load the connection anyway
+	// - at which point the state will be updated with the schema mode for the next time round
 
 	var connectionsWithDynamicSchema = make(ConnectionDataMap)
 	for requiredConnectionName, requiredConnection := range requiredConnectionData {
