@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -50,7 +51,7 @@ func EnsureDBInstalled() (err error) {
 
 	log.Println("[TRACE] calling killPreviousInstanceIfAny")
 	display.UpdateSpinnerMessage(spinner, "Cleanup any Steampipe processes...")
-	killInstanceIfAny()
+	killInstanceIfAny(context.TODO())
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
 	err = removeRunningInstanceInfo()
 	if err != nil && !os.IsNotExist(err) {
@@ -124,7 +125,7 @@ func PrepareDb(spinner *spinner.Spinner) error {
 	if needsInit() {
 		spinner.Start()
 		display.UpdateSpinnerMessage(spinner, "Cleanup any Steampipe processes...")
-		killInstanceIfAny()
+		killInstanceIfAny(context.TODO())
 		if err := runInstall(false, spinner); err != nil {
 			return err
 		}
@@ -290,7 +291,7 @@ func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
 
 	// force stop
 	display.UpdateSpinnerMessage(spinner, "Completing configuration")
-	err = doThreeStepPostgresExit(process)
+	err = doThreeStepPostgresExit(context.TODO(), process)
 
 	return err
 }

@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 	"syscall"
 
 	"github.com/turbot/steampipe/plugin_manager"
@@ -499,24 +498,6 @@ func isPortBindable(port int) error {
 	}
 	defer l.Close()
 	return nil
-}
-
-// kill all postgres processes that were started as part of steampipe (if any)
-func killInstanceIfAny() bool {
-	processes, err := FindAllSteampipePostgresInstances()
-	if err != nil {
-		return false
-	}
-	wg := sync.WaitGroup{}
-	for _, process := range processes {
-		wg.Add(1)
-		go func(p *psutils.Process) {
-			doThreeStepPostgresExit(p)
-			wg.Done()
-		}(process)
-	}
-	wg.Wait()
-	return len(processes) > 0
 }
 
 func FindAllSteampipePostgresInstances() ([]*psutils.Process, error) {

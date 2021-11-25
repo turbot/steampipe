@@ -1,10 +1,12 @@
 package db_local
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -92,7 +94,7 @@ func StopServices(force bool, invoker constants.Invoker, spinner *spinner.Spinne
 	utils.LogTime("db_local.StopDB start")
 
 	defer func() {
-		if e == nil {
+		if e == nil && status == ServiceStopped {
 			os.Remove(constants.RunningInfoFilePath())
 		}
 		utils.LogTime("db_local.StopDB end")
@@ -112,7 +114,13 @@ func stopDBService(spinner *spinner.Spinner, force bool) (StopStatus, error) {
 	if force {
 		// check if we have a process from another install-dir
 		display.UpdateSpinnerMessage(spinner, "Checking for running instances...")
-		killInstanceIfAny()
+		foundCount, killErr := killInstanceIfAny(context.TODO())
+		if killErr != nil {
+			return ServiceStopFailed, killErr
+		}
+		if foundCount == 0 {
+			return ServiceStopped, nil
+		}
 		return ServiceStopped, nil
 	}
 
@@ -135,7 +143,7 @@ func stopDBService(spinner *spinner.Spinner, force bool) (StopStatus, error) {
 
 	display.UpdateSpinnerMessage(spinner, "Shutting down...")
 
-	err = doThreeStepPostgresExit(process)
+	err = doThreeStepPostgresExit(context.Background(), process)
 	if err != nil {
 		// we couldn't stop it still.
 		// timeout
@@ -143,6 +151,31 @@ func stopDBService(spinner *spinner.Spinner, force bool) (StopStatus, error) {
 	}
 
 	return ServiceStopped, nil
+}
+
+// kill all postgres processes that were started as part of steampipe (if any)
+func killInstanceIfAny(ctx context.Context) (int, error) {
+	processes, err := FindAllSteampipePostgresInstances()
+	if err != nil {
+		return -1, err
+	}
+	errorLock := &sync.Mutex{}
+	errors := []error{}
+	for _, process := range processes {
+		go func(p *psutils.Process) {
+			// timeout in 10 seconds if we couldn't shut it.
+			// individual steps have their own timeouts of 2,2,5 seconds
+			timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			defer cancel()
+			err := doThreeStepPostgresExit(timeoutCtx, p)
+			if err != nil {
+				errorLock.Lock()
+				errors = append(errors, err)
+				errorLock.Unlock()
+			}
+		}(process)
+	}
+	return len(processes), utils.CombineErrors(errors...)
 }
 
 /**
@@ -170,7 +203,7 @@ func stopDBService(spinner *spinner.Spinner, force bool) (StopStatus, error) {
 	checked that the service can indeed shutdown gracefully,
 	the sequence is there only as a backup.
 **/
-func doThreeStepPostgresExit(process *psutils.Process) error {
+func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) error {
 	utils.LogTime("db_local.doThreeStepPostgresExit start")
 	defer utils.LogTime("db_local.doThreeStepPostgresExit end")
 
@@ -178,24 +211,24 @@ func doThreeStepPostgresExit(process *psutils.Process) error {
 	var exitSuccessful bool
 
 	// send a SIGTERM
-	err = process.SendSignal(syscall.SIGTERM)
+	err = process.SendSignalWithContext(ctx, syscall.SIGTERM)
 	if err != nil {
 		return err
 	}
 	exitSuccessful = waitForProcessExit(process, 2*time.Second)
-	if !exitSuccessful {
+	if !exitSuccessful && ctx.Err() == nil {
 		// process didn't quit
 		// try a SIGINT
-		err = process.SendSignal(syscall.SIGINT)
+		err = process.SendSignalWithContext(ctx, syscall.SIGINT)
 		if err != nil {
 			return err
 		}
 		exitSuccessful = waitForProcessExit(process, 2*time.Second)
 	}
-	if !exitSuccessful {
+	if !exitSuccessful && ctx.Err() == nil {
 		// process didn't quit
 		// desperation prevails
-		err = process.SendSignal(syscall.SIGQUIT)
+		err = process.SendSignalWithContext(ctx, syscall.SIGQUIT)
 		if err != nil {
 			return err
 		}
@@ -214,10 +247,9 @@ func doThreeStepPostgresExit(process *psutils.Process) error {
 func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 	utils.LogTime("db_local.waitForProcessExit start")
 	defer utils.LogTime("db_local.waitForProcessExit end")
-
 	checkTimer := time.NewTicker(50 * time.Millisecond)
-	timeoutAt := time.After(waitFor)
-
+	ctx, cancel := context.WithTimeout(context.Background(), waitFor)
+	defer cancel()
 	for {
 		select {
 		case <-checkTimer.C:
@@ -226,7 +258,7 @@ func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 				continue
 			}
 			return true
-		case <-timeoutAt:
+		case <-ctx.Done():
 			checkTimer.Stop()
 			return false
 		}
