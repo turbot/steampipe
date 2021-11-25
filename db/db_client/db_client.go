@@ -114,7 +114,6 @@ func (c *DbClient) SchemaMetadata() *schema.Metadata {
 }
 
 func (c *DbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
-	// TODO how to we get connections for remote DB
 	return &steampipeconfig.ConnectionDataMap{}
 }
 
