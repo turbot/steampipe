@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -244,6 +245,11 @@ func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
 		display.StopSpinner(spinner)
 		return fmt.Errorf("Connection to database... FAILED!")
 	}
+	defer func() {
+		display.UpdateSpinnerMessage(spinner, "Completing configuration")
+		client.Close()
+		doThreeStepPostgresExit(process)
+	}()
 
 	display.UpdateSpinnerMessage(spinner, "Generating database passwords...")
 	// generate a password file for use later
@@ -278,19 +284,18 @@ func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring Steampipe...")
-	err = installForeignServer(databaseName, client)
+	err = installForeignServer(context.TODO(), databaseName, client)
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] installForeignServer failed: %v", err)
 		return fmt.Errorf("Configuring Steampipe... FAILED!")
 	}
-
-	// close the client - otherwise, it may be difficult to stop the service
-	client.Close()
-
-	// force stop
-	display.UpdateSpinnerMessage(spinner, "Completing configuration")
-	err = doThreeStepPostgresExit(process)
+	err = ensureNecessaryExtns(context.TODO(), databaseName)
+	if err != nil {
+		display.StopSpinner(spinner)
+		log.Printf("[TRACE] ensureTableFuncExtn failed: %v", err)
+		return fmt.Errorf("Configuring Steampipe... FAILED!")
+	}
 
 	return err
 }
@@ -473,7 +478,7 @@ func writePgHbaContent(databaseName string, username string) error {
 	return os.WriteFile(getPgHbaConfLocation(), []byte(content), 0600)
 }
 
-func installForeignServer(databaseName string, rawClient *sql.DB) error {
+func installForeignServer(ctx context.Context, databaseName string, rawClient *sql.DB) error {
 	utils.LogTime("db_local.installForeignServer start")
 	defer utils.LogTime("db_local.installForeignServer end")
 
@@ -489,7 +494,7 @@ func installForeignServer(databaseName string, rawClient *sql.DB) error {
 		// NOTE: This may print a password to the log file, but it doesn't matter
 		// since the password is stored in a config file anyway.
 		log.Println("[TRACE] Install Foreign Server: ", statement)
-		if _, err := rawClient.Exec(statement); err != nil {
+		if _, err := rawClient.ExecContext(ctx, statement); err != nil {
 			return err
 		}
 	}

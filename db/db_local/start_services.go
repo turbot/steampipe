@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -11,6 +12,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/plugin_manager"
 
 	psutils "github.com/shirou/gopsutil/process"
@@ -174,19 +176,26 @@ func startDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	utils.LogTime("postgresCmd end")
 
 	// ensure the foreign server exists in the database
-	err = ensureSteampipeServer(databaseName)
+	err = ensureSteampipeServer(context.TODO(), databaseName)
 	if err != nil {
 		// there was a problem with the installation
 		return ServiceFailedToStart, err
 	}
 
-	err = ensureTempTablePermissions(databaseName)
+	// ensure the foreign server exists in the database
+	err = ensureNecessaryExtns(context.TODO(), databaseName)
+	if err != nil {
+		// there was a problem with the installation
+		return ServiceFailedToStart, err
+	}
+
+	err = ensureTempTablePermissions(context.TODO(), databaseName)
 	if err != nil {
 		return ServiceFailedToStart, err
 	}
 
 	// ensure the db contains command schema
-	err = ensureCommandSchema(databaseName)
+	err = ensureCommandSchema(context.TODO(), databaseName)
 	if err != nil {
 		return ServiceFailedToStart, err
 	}
@@ -438,9 +447,33 @@ func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
 	return publishChannel, closeFunction, nil
 }
 
+// ensures that the necessary extensions are installed on the database
+func ensureNecessaryExtns(ctx context.Context, databaseName string) error {
+	extensions := []string{
+		"tablefunc",
+	}
+
+	errors := []error{}
+	errorLock := &sync.Mutex{}
+	rootClient, err := createLocalDbClient(&CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
+	if err != nil {
+		return err
+	}
+	defer rootClient.Close()
+	for _, extn := range extensions {
+		_, err = rootClient.ExecContext(ctx, fmt.Sprintf("create extension if not exists", db_common.PgEscapeName(extn)))
+		if err != nil {
+			errorLock.Lock()
+			errors = append(errors, err)
+			errorLock.Unlock()
+		}
+	}
+	return utils.CombineErrors(errors...)
+}
+
 // ensures that the 'steampipe' foreign server exists
 //  (re)install FDW and creates server if it doesn't
-func ensureSteampipeServer(databaseName string) error {
+func ensureSteampipeServer(ctx context.Context, databaseName string) error {
 	rootClient, err := createLocalDbClient(&CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
@@ -451,13 +484,13 @@ func ensureSteampipeServer(databaseName string) error {
 	err = out.Scan(&serverName)
 	// if there is an error, we need to reinstall the foreign server
 	if err != nil {
-		return installForeignServer(databaseName, rootClient)
+		return installForeignServer(ctx, databaseName, rootClient)
 	}
 	return nil
 }
 
 // create the command schema and grant insert permission
-func ensureCommandSchema(databaseName string) error {
+func ensureCommandSchema(ctx context.Context, databaseName string) error {
 	commandSchemaStatements := updateConnectionQuery(constants.CommandSchema, constants.CommandSchema)
 	commandSchemaStatements = append(
 		commandSchemaStatements,
@@ -470,7 +503,7 @@ func ensureCommandSchema(databaseName string) error {
 	defer rootClient.Close()
 
 	for _, statement := range commandSchemaStatements {
-		if _, err := rootClient.Exec(statement); err != nil {
+		if _, err := rootClient.ExecContext(ctx, statement); err != nil {
 			return err
 		}
 	}
@@ -479,13 +512,13 @@ func ensureCommandSchema(databaseName string) error {
 
 // ensures that the 'steampipe_users' role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
-func ensureTempTablePermissions(databaseName string) error {
+func ensureTempTablePermissions(ctx context.Context, databaseName string) error {
 	rootClient, err := createLocalDbClient(&CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
 	defer rootClient.Close()
-	_, err = rootClient.Exec(fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
+	_, err = rootClient.ExecContext(ctx, fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
 	if err != nil {
 		return err
 	}
