@@ -1,7 +1,6 @@
 package db_local
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -284,7 +283,7 @@ func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring Steampipe...")
-	err = installForeignServer(context.TODO(), databaseName, client)
+	err = installForeignServer(databaseName, client)
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] installForeignServer failed: %v", err)
@@ -472,7 +471,7 @@ func writePgHbaContent(databaseName string, username string) error {
 	return os.WriteFile(getPgHbaConfLocation(), []byte(content), 0600)
 }
 
-func installForeignServer(ctx context.Context, databaseName string, rawClient *sql.DB) error {
+func installForeignServer(databaseName string, rawClient *sql.DB) error {
 	utils.LogTime("db_local.installForeignServer start")
 	defer utils.LogTime("db_local.installForeignServer end")
 
@@ -488,7 +487,7 @@ func installForeignServer(ctx context.Context, databaseName string, rawClient *s
 		// NOTE: This may print a password to the log file, but it doesn't matter
 		// since the password is stored in a config file anyway.
 		log.Println("[TRACE] Install Foreign Server: ", statement)
-		if _, err := rawClient.ExecContext(ctx, statement); err != nil {
+		if _, err := rawClient.Exec(statement); err != nil {
 			return err
 		}
 	}

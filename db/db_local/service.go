@@ -1,7 +1,6 @@
 package db_local
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
@@ -48,7 +47,7 @@ func EnsureDbAndStartService(invoker constants.Invoker) error {
 		// so db is already running - ensure it contains command schema
 		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
 		// and upgrades to this version - we need to ensure we create the command schema
-		return ensureCommandSchema(context.TODO(), dbStatus.Database)
+		return ensureCommandSchema(dbStatus.Database)
 	}
 	return nil
 }
