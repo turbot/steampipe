@@ -50,7 +50,7 @@ func Remove(image string, pluginConnections map[string][]modconfig.Connection) e
 
 	if len(conns) > 0 {
 		display.StopSpinner(spinner)
-		str := []string{fmt.Sprintf("\nNote: the following files have steampipe connections using the '%s' plugin:\n", image)}
+		str := []string{fmt.Sprintf("\nNote: the following file(s) have steampipe connections using the '%s' plugin:\n", image)}
 		for _, conn := range conns {
 			str = append(
 				str,
