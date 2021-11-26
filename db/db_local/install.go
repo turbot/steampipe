@@ -290,12 +290,6 @@ func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
 		log.Printf("[TRACE] installForeignServer failed: %v", err)
 		return fmt.Errorf("Configuring Steampipe... FAILED!")
 	}
-	err = ensureNecessaryExtns(context.TODO(), databaseName)
-	if err != nil {
-		display.StopSpinner(spinner)
-		log.Printf("[TRACE] ensureTableFuncExtn failed: %v", err)
-		return fmt.Errorf("Configuring Steampipe... FAILED!")
-	}
 
 	return err
 }
