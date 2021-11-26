@@ -257,7 +257,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	display.StopSpinner(spinner)
 
-	refreshConnectionsIfNecessary(installReports, false)
+	refreshConnectionsIfNecessary(cmd.Context(), installReports, false)
 	display.PrintInstallReports(installReports, false)
 
 	// a concluding blank line - since we always output multiple lines
@@ -414,7 +414,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		})
 	}
 
-	refreshConnectionsIfNecessary(updateReports, true)
+	refreshConnectionsIfNecessary(cmd.Context(), updateReports, true)
 	display.PrintInstallReports(updateReports, true)
 
 	// a concluding blank line - since we always output multiple lines
@@ -422,7 +422,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 }
 
 // start service if necessary and refresh connections
-func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate bool) error {
+func refreshConnectionsIfNecessary(ctx context.Context, reports []display.InstallReport, isUpdate bool) error {
 	// get count of skipped reports
 	skipped := 0
 	for _, report := range reports {
@@ -446,7 +446,7 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 		steampipeconfig.GlobalConfig = config
 	}
 
-	client, err := db_local.GetLocalClient(constants.InvokerPlugin)
+	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin)
 	if err != nil {
 		return err
 	}
@@ -529,7 +529,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
 func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, error) {
-	client, err := db_local.GetLocalClient(constants.InvokerPlugin)
+	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -152,7 +153,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
 	utils.FailOnError(invoker.IsValid())
 
-	err := db_local.EnsureDBInstalled()
+	err := db_local.EnsureDBInstalled(cmd.Context())
 	utils.FailOnError(err)
 
 	dbState, err := db_local.GetState()
@@ -183,7 +184,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	} else {
 		// start db, refreshing connections
-		startResult, err := db_local.StartServices(port, listen, invoker)
+		startResult, err := db_local.StartServices(cmd.Context(), port, listen, invoker)
 		utils.FailOnError(err)
 
 		if startResult == db_local.ServiceFailedToStart {
@@ -198,7 +199,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		err = db_local.RefreshConnectionAndSearchPaths(invoker)
 
 		if err != nil {
-			db_local.StopServices(false, constants.InvokerService, nil)
+			db_local.StopServices(cmd.Context(), false, constants.InvokerService, nil)
 			utils.FailOnError(err)
 		}
 		dbState, _ = db_local.GetState()
@@ -251,7 +252,7 @@ func runServiceInForeground(invoker constants.Invoker) {
 			}
 			fmt.Println("Stopping Steampipe service.")
 
-			db_local.StopServices(false, invoker, nil)
+			db_local.StopServices(context.Background(), false, invoker, nil)
 			fmt.Println("Steampipe service stopped.")
 			return
 		}
@@ -282,7 +283,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	stopResult, err := db_local.StopServices(viper.GetBool(constants.ArgForce), constants.InvokerService, nil)
+	stopResult, err := db_local.StopServices(cmd.Context(), viper.GetBool(constants.ArgForce), constants.InvokerService, nil)
 
 	utils.FailOnErrorWithMessage(err, "could not stop current instance")
 
@@ -302,7 +303,7 @@ to force a restart.
 	viper.Set(constants.ArgServicePassword, currentDbState.Password)
 
 	// start db, refreshing connections
-	startResult, err := db_local.StartServices(currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
+	startResult, err := db_local.StartServices(cmd.Context(), currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
 	if err != nil {
 		utils.ShowError(err)
 		return
@@ -399,7 +400,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 
 	force := cmdconfig.Viper().GetBool(constants.ArgForce)
 	if force {
-		status, err = db_local.StopServices(force, constants.InvokerService, spinner)
+		status, err = db_local.StopServices(cmd.Context(), force, constants.InvokerService, spinner)
 	} else {
 		dbState, err = db_local.GetState()
 		if err != nil {
@@ -430,7 +431,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 			return
 		}
 
-		status, _ = db_local.StopServices(false, constants.InvokerService, spinner)
+		status, _ = db_local.StopServices(cmd.Context(), false, constants.InvokerService, spinner)
 	}
 
 	if err != nil {
@@ -468,25 +469,24 @@ to force a shutdown.
 
 }
 
-func showAllStatus() {
+func showAllStatus() error {
 	var processes []*psutils.Process
 	var err error
 
 	doneFetchingDetailsChan := make(chan bool)
 	sp := display.StartSpinnerAfterDelay("Getting details", constants.SpinnerShowTimeout, doneFetchingDetailsChan)
 
-	processes, err = db_local.FindAllSteampipePostgresInstances()
+	processes, err = db_local.FindAllSteampipePostgresInstances(context.Background())
 	close(doneFetchingDetailsChan)
 	display.StopSpinner(sp)
 
 	if err != nil {
-		utils.ShowError(err)
-		return
+		return err
 	}
 
 	if len(processes) == 0 {
 		fmt.Println("There are no steampipe services running.")
-		return
+		return nil
 	}
 	headers := []string{"PID", "Install Directory", "Port", "Listen"}
 	rows := [][]string{}
@@ -497,6 +497,7 @@ func showAllStatus() {
 	}
 
 	display.ShowWrappedTable(headers, rows, false)
+	return nil
 }
 
 func getServiceProcessDetails(process *psutils.Process) (string, string, string, db_local.StartListenType) {

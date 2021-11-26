@@ -104,7 +104,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
-	ctx := context.Background()
+	ctx := cmd.Context()
+	if !interactiveMode {
+		c, cancel := context.WithCancel(ctx)
+		startCancelHandler(cancel)
+		ctx = c
+	}
 
 	// load the workspace
 	w, err := loadWorkspacePromptingForVariables(ctx, nil)
@@ -120,8 +125,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	if interactiveMode {
 		queryexecute.RunInteractiveSession(&initDataChan)
 	} else {
-		ctx, cancel := context.WithCancel(ctx)
-		startCancelHandler(cancel)
 		// set global exit code
 		exitCode = queryexecute.RunBatchSession(ctx, initDataChan)
 	}
@@ -193,7 +196,7 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 		if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 			client, err = db_client.NewDbClient(connectionString)
 		} else {
-			client, err = db_local.GetLocalClient(constants.InvokerQuery)
+			client, err = db_local.GetLocalClient(ctx, constants.InvokerQuery)
 		}
 		if err != nil {
 			initData.Result.Error = err

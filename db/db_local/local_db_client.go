@@ -25,16 +25,16 @@ type LocalDbClient struct {
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
-func GetLocalClient(invoker constants.Invoker) (db_common.Client, error) {
+func GetLocalClient(ctx context.Context, invoker constants.Invoker) (db_common.Client, error) {
 	// start db if necessary
-	err := EnsureDbAndStartService(invoker)
+	err := EnsureDbAndStartService(ctx, invoker)
 	if err != nil {
 		return nil, err
 	}
 
 	client, err := NewLocalClient(invoker)
 	if err != nil {
-		ShutdownService(invoker)
+		ShutdownService(context.Background(), invoker)
 	}
 	return client, err
 }
@@ -69,7 +69,7 @@ func (c *LocalDbClient) Close() error {
 			return err
 		}
 	}
-	ShutdownService(c.invoker)
+	ShutdownService(context.Background(), c.invoker)
 	return nil
 }
 

@@ -13,18 +13,18 @@ import (
 
 type ociDownloader struct {
 	resolver remotes.Resolver
-	context  context.Context
-	Images   []*SteampipeImage
+	// context  context.Context
+	Images []*SteampipeImage
 }
 
 // NewOciDownloader :: creats and return a ociDownloader instance
-func NewOciDownloader(ctx context.Context) *ociDownloader {
+func NewOciDownloader() *ociDownloader {
 	// oras uses containerd, which uses logrus and is set up to log
 	// warning and above.  Set to ErrrLevel to get rid of unwanted error message
 	logrus.SetLevel(logrus.ErrorLevel)
 	return &ociDownloader{
 		resolver: docker.NewResolver(docker.ResolverOptions{}),
-		context:  ctx,
+		// context:  ctx,
 	}
 }
 
@@ -36,7 +36,7 @@ Returns
 	imageDescription, configDescription, config, imageLayers, error
 
 **/
-func (o *ociDownloader) Pull(ref string, mediaTypes []string, destDir string) (*ocispec.Descriptor, *ocispec.Descriptor, []byte, []ocispec.Descriptor, error) {
+func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []string, destDir string) (*ocispec.Descriptor, *ocispec.Descriptor, []byte, []ocispec.Descriptor, error) {
 	fileStore := content.NewFileStore(destDir)
 	defer fileStore.Close()
 
@@ -45,7 +45,7 @@ func (o *ociDownloader) Pull(ref string, mediaTypes []string, destDir string) (*
 		oras.WithAllowedMediaTypes(append(mediaTypes, MediaTypeConfig, MediaTypePluginConfig)),
 		oras.WithPullEmptyNameAllowed(),
 	}
-	desc, layers, err := oras.Pull(o.context, o.resolver, ref, hybridStore, pullOpts...)
+	desc, layers, err := oras.Pull(ctx, o.resolver, ref, hybridStore, pullOpts...)
 	if err != nil {
 		return &desc, nil, nil, layers, err
 	}

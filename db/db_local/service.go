@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -15,13 +16,13 @@ import (
 )
 
 // EnsureDbAndStartService ensures database is installed and starts service if necessary
-func EnsureDbAndStartService(invoker constants.Invoker) error {
+func EnsureDbAndStartService(ctx context.Context, invoker constants.Invoker) error {
 	utils.LogTime("db.EnsureDbAndStartService start")
 	defer utils.LogTime("db.EnsureDbAndStartService end")
 
 	log.Println("[TRACE] db.EnsureDbAndStartService start")
 
-	if err := EnsureDBInstalled(); err != nil {
+	if err := EnsureDBInstalled(ctx); err != nil {
 		return err
 	}
 
@@ -39,7 +40,7 @@ func EnsureDbAndStartService(invoker constants.Invoker) error {
 		utils.LogTime("StartImplicitService start")
 		log.Println("[TRACE] start implicit service")
 
-		if _, err := StartServices(constants.DatabaseDefaultPort, ListenTypeLocal, invoker); err != nil {
+		if _, err := StartServices(ctx, constants.DatabaseDefaultPort, ListenTypeLocal, invoker); err != nil {
 			return err
 		}
 		utils.LogTime("StartImplicitService end")
@@ -47,7 +48,7 @@ func EnsureDbAndStartService(invoker constants.Invoker) error {
 		// so db is already running - ensure it contains command schema
 		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
 		// and upgrades to this version - we need to ensure we create the command schema
-		return ensureCommandSchema(dbStatus.Database)
+		return ensureCommandSchema(ctx, dbStatus.Database)
 	}
 	return nil
 }

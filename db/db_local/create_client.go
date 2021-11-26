@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -75,7 +76,7 @@ func createLocalDbClient(opts *CreateDbOptions) (*sql.DB, error) {
 		return nil, err
 	}
 
-	if err := db_common.WaitForConnection(db); err != nil {
+	if err := db_common.WaitForConnection(context.Background(), db); err != nil {
 		return nil, err
 	}
 	return db, nil
