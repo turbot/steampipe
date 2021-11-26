@@ -315,7 +315,7 @@ func createMaintenanceClient(port int) (*sql.DB, error) {
 
 	// connect to the database using the postgres driver
 	utils.LogTime("db_local.createClient connection open start")
-	db, err := sql.Open("postgres", psqlInfo)
+	db, err := sql.Open("pgx", psqlInfo)
 	db.SetMaxOpenConns(1)
 	utils.LogTime("db_local.createClient connection open end")
 

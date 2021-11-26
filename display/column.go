@@ -59,7 +59,7 @@ func ColumnValueAsString(val interface{}, colType *sql.ColumnType) (result strin
 		}
 		fallthrough
 	case "NAME":
-		result := string(val.([]uint8))
+		result := string(val.(string))
 		return result, nil
 
 	default:

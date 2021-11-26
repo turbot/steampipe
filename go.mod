@@ -35,9 +35,9 @@ require (
 	github.com/hashicorp/go-version v1.3.0
 	github.com/hashicorp/hcl/v2 v2.9.1
 	github.com/hashicorp/terraform v0.15.1
+	github.com/jackc/pgx/v4 v4.14.0
 	github.com/jedib0t/go-pretty/v6 v6.0.6
 	github.com/karrick/gows v0.3.0
-	github.com/lib/pq v1.8.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/mattn/go-isatty v0.0.12
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect

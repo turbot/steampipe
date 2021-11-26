@@ -67,7 +67,7 @@ func createLocalDbClient(opts *CreateDbOptions) (*sql.DB, error) {
 
 	// connect to the database using the postgres driver
 	utils.LogTime("db.createDbClient connection open start")
-	db, err := sql.Open("postgres", psqlInfo)
+	db, err := sql.Open("pgx", psqlInfo)
 	db.SetMaxOpenConns(1)
 	utils.LogTime("db.createDbClient connection open end")
 
