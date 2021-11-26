@@ -58,7 +58,9 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 		sessionsMutex:           &sync.Mutex{},
 	}
 	client.connectionString = connectionString
-	client.LoadSchema()
+	if err := client.LoadSchema(); err != nil {
+		return nil, err
+	}
 
 	return client, nil
 }
@@ -119,23 +121,33 @@ func (c *DbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
 
 // LoadSchema implements Client
 // retrieve both the raw query result and a sanitised version in list form
-func (c *DbClient) LoadSchema() {
+func (c *DbClient) LoadSchema() error {
 	utils.LogTime("db_client.LoadSchema start")
 	defer utils.LogTime("db_client.LoadSchema end")
 
 	connection, err := c.dbClient.Conn(context.Background())
-	utils.FailOnError(err)
+	if err != nil {
+		return err
+	}
+
 	defer connection.Close()
 
-	tablesResult, err := c.getSchemaFromDB(connection)
+	// get list of schema which we need to retrieve from the db
+	connectionSchemas, err := steampipeconfig.NewConnectionSchemas()
+	if err != nil {
+		return err
+	}
+	schemas := connectionSchemas.UniqueSchemas()
+	tablesResult, err := c.getSchemaFromDB(connection, schemas)
 	utils.FailOnError(err)
 	defer tablesResult.Close()
-
+	``
 	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
 	utils.FailOnError(err)
 
 	c.schemaMetadata.Schemas = metadata.Schemas
 	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
+	return nil
 }
 
 // RefreshSessions terminates the current connections and creates a new one - repopulating session data
@@ -175,7 +187,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	return nil
 }
 
-func (c *DbClient) getSchemaFromDB(conn *sql.Conn) (*sql.Rows, error) {
+func (c *DbClient) getSchemaFromDB(conn *sql.Conn, schemas []string) (*sql.Rows, error) {
 	utils.LogTime("db_client.getSchemaFromDB start")
 	defer utils.LogTime("db_client.getSchemaFromDB end")
 
@@ -210,9 +222,12 @@ func (c *DbClient) getSchemaFromDB(conn *sql.Conn) (*sql.Rows, error) {
 			)
 			AND
 			cols.table_schema <> '%s'
+			AND 
+			table_schema in (%s)
 		ORDER BY 
 			cols.table_schema, cols.table_name, cols.column_name;
 `
+
 	// we do NOT want to fetch the command schema
 	return conn.QueryContext(context.Background(), fmt.Sprintf(query, constants.CommandSchema))
 }

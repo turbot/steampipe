@@ -254,3 +254,14 @@ func (c *SteampipeConfig) ConnectionsForPlugin(pluginLongName string, pluginVers
 	}
 	return res
 }
+
+// ConnectionNames returns a flat list of connection names
+func (c *SteampipeConfig) ConnectionNames() []string {
+	res := make([]string, len(c.Connections))
+	idx := 0
+	for c := range c.Connections {
+		res[idx] = c
+		idx++
+	}
+	return res
+}
