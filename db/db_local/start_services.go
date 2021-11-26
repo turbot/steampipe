@@ -461,7 +461,7 @@ func ensureNecessaryExtns(ctx context.Context, databaseName string) error {
 	}
 	defer rootClient.Close()
 	for _, extn := range extensions {
-		_, err = rootClient.ExecContext(ctx, fmt.Sprintf("create extension if not exists", db_common.PgEscapeName(extn)))
+		_, err = rootClient.ExecContext(ctx, fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
 		if err != nil {
 			errorLock.Lock()
 			errors = append(errors, err)
