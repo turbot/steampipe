@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -34,7 +33,7 @@ type ConnectionPlugin struct {
 }
 
 // CreateConnectionPlugin instantiates a plugin for a connection, fetches schema and sends connection config
-func CreateConnectionPlugin(connection *modconfig.Connection, pluginManagerLock *sync.Mutex) (res *ConnectionPlugin, err error) {
+func CreateConnectionPlugin(connection *modconfig.Connection) (res *ConnectionPlugin, err error) {
 	defer func() {
 		if err != nil {
 			// prefix error with the plugin name
@@ -54,9 +53,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection, pluginManagerLock 
 		log.Printf("[WARN] running plugin manager in-process for debugging")
 		pluginManager, err = runPluginManagerInProcess()
 	} else {
-		pluginManagerLock.Lock()
 		pluginManager, err = plugin_manager.GetPluginManager()
-		pluginManagerLock.Unlock()
 	}
 	// check the error from the plugin manager startup
 	if err != nil {
@@ -88,7 +85,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection, pluginManagerLock 
 	}
 
 	if err = pluginClient.SetConnectionConfig(req); err != nil {
-		log.Printf("[TRACE] failed to set connection config: %s (%s)", err, connectionName)
+		log.Printf("[TRACE] failed to set connection config: %s", err)
 		return nil, err
 	}
 
