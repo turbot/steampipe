@@ -141,7 +141,6 @@ func (c *DbClient) LoadSchema() error {
 	tablesResult, err := c.getSchemaFromDB(connection, schemas)
 	utils.FailOnError(err)
 	defer tablesResult.Close()
-	``
 	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
 	utils.FailOnError(err)
 
