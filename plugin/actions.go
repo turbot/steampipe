@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 const (
@@ -48,9 +49,18 @@ func Remove(image string, pluginConnections map[string][]modconfig.Connection) e
 	delete(v.Plugins, fullPluginName)
 	err = v.Save()
 
+	// store the filenames of the config files, that have the connections
+	var files = map[int]string{}
+	if len(conns) > 0 {
+		for i, con := range conns {
+			files[i] = con.DeclRange.Filename
+		}
+	}
+	connFiles := Unique(files)
+
 	if len(conns) > 0 {
 		display.StopSpinner(spinner)
-		str := []string{fmt.Sprintf("\nNote: the following file(s) have steampipe connections using the '%s' plugin:\n", image)}
+		str := []string{fmt.Sprintf("\nNote: the following %s have steampipe connections using the '%s' plugin:\n", utils.Pluralize("file", len(connFiles)), image)}
 		for _, conn := range conns {
 			str = append(
 				str,
@@ -145,4 +155,17 @@ func List(pluginConnectionMap map[string][]modconfig.Connection) ([]PluginListIt
 	}
 
 	return items, nil
+}
+
+// function that returns an unique map of strings
+func Unique(m map[int]string) map[int]string {
+	n := make(map[int]string, len(m))
+	ref := make(map[string]bool, len(m))
+	for k, v := range m {
+		if _, ok := ref[v]; !ok {
+			ref[v] = true
+			n[k] = v
+		}
+	}
+	return n
 }
