@@ -155,56 +155,44 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	err := db_local.EnsureDBInstalled()
 	utils.FailOnError(err)
 
-	dbState, err := db_local.GetState()
-	utils.FailOnErrorWithMessage(err, "could not fetch service information")
+	// start db, refreshing connections
+	startResult := db_local.StartServices(port, listen, invoker)
+	utils.FailOnError(startResult.Error)
 
-	pmState, err := plugin_manager.LoadPluginManagerState()
-	utils.FailOnErrorWithMessage(err, "could not fetch plugin manager information")
+	if startResult.Status == db_local.ServiceFailedToStart {
+		utils.ShowError(fmt.Errorf("steampipe service failed to start"))
+		return
+	}
 
-	if dbState != nil && pmState != nil && pmState.Running {
-		if dbState.Invoker == constants.InvokerService {
+	if startResult.Status == db_local.ServiceAlreadyRunning {
+		if startResult.DbState.Invoker == constants.InvokerService {
 			fmt.Println("Steampipe service is already running.")
 			return
 		}
 
 		// check that we have the same port and listen parameters
-		if port != dbState.Port {
-			utils.FailOnError(fmt.Errorf("service is already running on port %d - cannot change port while it's running", dbState.Port))
+		if port != startResult.DbState.Port {
+			utils.FailOnError(fmt.Errorf("service is already running on port %d - cannot change port while it's running", startResult.DbState.Port))
 		}
-		if listen != dbState.ListenType {
-			utils.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen type while it's running", dbState.ListenType))
+		if listen != startResult.DbState.ListenType {
+			utils.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen type while it's running", startResult.DbState.ListenType))
 		}
 
-		// convert
-		dbState.Invoker = constants.InvokerService
-		err = dbState.Save()
+		// convert to being invoked by service
+		startResult.DbState.Invoker = constants.InvokerService
+		err = startResult.DbState.Save()
 		if err != nil {
 			utils.FailOnErrorWithMessage(err, "service was already running, but could not make it persistent")
 		}
-	} else {
-		// start db, refreshing connections
-		startResult, err := db_local.StartServices(port, listen, invoker)
-		utils.FailOnError(err)
-
-		if startResult == db_local.ServiceFailedToStart {
-			utils.ShowError(fmt.Errorf("steampipe service failed to start"))
-			return
-		}
-
-		if startResult == db_local.ServiceAlreadyRunning {
-			utils.FailOnError(fmt.Errorf("steampipe service is already running"))
-		}
-
-		err = db_local.RefreshConnectionAndSearchPaths(invoker)
-
-		if err != nil {
-			db_local.StopServices(false, constants.InvokerService, nil)
-			utils.FailOnError(err)
-		}
-		dbState, _ = db_local.GetState()
-		pmState, _ = plugin_manager.LoadPluginManagerState()
 	}
-	printStatus(dbState, pmState)
+
+	err = db_local.RefreshConnectionAndSearchPaths(invoker)
+	if err != nil {
+		db_local.StopServices(false, constants.InvokerService, nil)
+		utils.FailOnError(err)
+	}
+
+	printStatus(startResult.DbState, startResult.PluginManagerState)
 
 	if viper.GetBool(constants.ArgForeground) {
 		runServiceInForeground(invoker)
@@ -273,20 +261,18 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// get current db statue
 	currentDbState, err := db_local.GetState()
-
 	utils.FailOnError(err)
-
 	if currentDbState == nil {
 		fmt.Println("Steampipe service is not running.")
 		return
 	}
 
-	stopResult, err := db_local.StopServices(viper.GetBool(constants.ArgForce), constants.InvokerService, nil)
-
+	// stop db
+	stopStatus, err := db_local.StopServices(viper.GetBool(constants.ArgForce), constants.InvokerService, nil)
 	utils.FailOnErrorWithMessage(err, "could not stop current instance")
-
-	if stopResult != db_local.ServiceStopped {
+	if stopStatus != db_local.ServiceStopped {
 		fmt.Println(`
 Service stop failed.
 
@@ -301,34 +287,20 @@ to force a restart.
 	// set the password in 'viper' so that it can be used by 'service start'
 	viper.Set(constants.ArgServicePassword, currentDbState.Password)
 
-	// start db, refreshing connections
-	startResult, err := db_local.StartServices(currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
-	if err != nil {
-		utils.ShowError(err)
-		return
-	}
-
-	if startResult == db_local.ServiceFailedToStart {
+	// start db
+	startResult := db_local.StartServices(currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
+	utils.FailOnError(startResult.Error)
+	if startResult.Status == db_local.ServiceFailedToStart {
 		fmt.Println("Steampipe service was stopped, but failed to restart.")
 		return
 	}
 
+	// refresh connections
 	err = db_local.RefreshConnectionAndSearchPaths(constants.InvokerService)
 	utils.FailOnError(err)
 	fmt.Println("Steampipe service restarted.")
 
-	dbState, err := db_local.GetState()
-	if err != nil {
-		utils.ShowError(err)
-		return
-	}
-	pmState, err := plugin_manager.LoadPluginManagerState()
-	if err != nil {
-		utils.ShowError(err)
-		return
-	}
-
-	printStatus(dbState, pmState)
+	printStatus(startResult.DbState, startResult.PluginManagerState)
 
 }
 
@@ -523,7 +495,7 @@ func getServiceProcessDetails(process *psutils.Process) (string, string, string,
 }
 
 func printStatus(dbState *db_local.RunningDBInstanceInfo, pmState *plugin_manager.PluginManagerState) {
-	if dbState == nil && pmState == nil {
+	if dbState == nil && !pmState.Running {
 		fmt.Println("Service is not running")
 		return
 	}

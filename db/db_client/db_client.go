@@ -3,7 +3,6 @@ package db_client
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -12,7 +11,6 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -21,7 +19,6 @@ type DbClient struct {
 	connectionString          string
 	ensureSessionFunc         db_common.EnsureSessionStateCallback
 	dbClient                  *sql.DB
-	schemaMetadata            *schema.Metadata
 	requiredSessionSearchPath []string
 
 	// concurrency management for db session access
@@ -35,6 +32,10 @@ type DbClient struct {
 	sessions map[int64]*db_common.DatabaseSession
 	// allows locked access to the 'sessions' map
 	sessionsMutex *sync.Mutex
+
+	// list of connection schemas
+	schemas    []string
+	searchPath []string
 }
 
 func NewDbClient(connectionString string) (*DbClient, error) {
@@ -46,8 +47,6 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 	}
 	client := &DbClient{
 		dbClient: db,
-		// set up a blank struct for the schema metadata
-		schemaMetadata: schema.NewMetadata(),
 		// a waitgroup to keep track of active session initializations
 		// so that we don't try to shutdown while an init is underway
 		sessionInitWaitGroup: &sync.WaitGroup{},
@@ -58,10 +57,8 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 		sessionsMutex:           &sync.Mutex{},
 	}
 	client.connectionString = connectionString
-	if err := client.LoadSchema(); err != nil {
-		return nil, err
-	}
 
+	// TODO populate schemas
 	return client, nil
 }
 
@@ -109,44 +106,13 @@ func (c *DbClient) Close() error {
 	return nil
 }
 
-// SchemaMetadata implements Client
-// return the latest schema metadata
-func (c *DbClient) SchemaMetadata() *schema.Metadata {
-	return c.schemaMetadata
-}
-
 func (c *DbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
 	return &steampipeconfig.ConnectionDataMap{}
 }
 
-// LoadSchema implements Client
-// retrieve both the raw query result and a sanitised version in list form
-func (c *DbClient) LoadSchema() error {
-	utils.LogTime("db_client.LoadSchema start")
-	defer utils.LogTime("db_client.LoadSchema end")
-
-	connection, err := c.dbClient.Conn(context.Background())
-	if err != nil {
-		return err
-	}
-
-	defer connection.Close()
-
-	// get list of schema which we need to retrieve from the db
-	connectionSchemas, err := steampipeconfig.NewConnectionSchemas()
-	if err != nil {
-		return err
-	}
-	schemas := connectionSchemas.UniqueSchemas()
-	tablesResult, err := c.getSchemaFromDB(connection, schemas)
-	utils.FailOnError(err)
-	defer tablesResult.Close()
-	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
-	utils.FailOnError(err)
-
-	c.schemaMetadata.Schemas = metadata.Schemas
-	c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
-	return nil
+// Schemas implements Client
+func (c *DbClient) Schemas() []string {
+	return c.schemas
 }
 
 // RefreshSessions terminates the current connections and creates a new one - repopulating session data
@@ -184,51 +150,6 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	c.dbClient = db
 
 	return nil
-}
-
-func (c *DbClient) getSchemaFromDB(conn *sql.Conn, schemas []string) (*sql.Rows, error) {
-	utils.LogTime("db_client.getSchemaFromDB start")
-	defer utils.LogTime("db_client.getSchemaFromDB end")
-
-	query := `
-		SELECT 
-			table_name, 
-			column_name,
-			column_default,
-			is_nullable,
-			data_type,
-			table_schema,
-			(COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
-			(COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
-		FROM
-			information_schema.columns cols
-		LEFT JOIN
-			pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
-		LEFT JOIN
-			pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
-		WHERE
-		    (
-    			cols.table_name in (
-    				SELECT 
-    					foreign_table_name 
-    				FROM 
-    					information_schema.foreign_tables
-    			) 
-    			OR
-    			cols.table_schema = 'public'
-    			OR
-    			LEFT(cols.table_schema,8) = 'pg_temp_'
-			)
-			AND
-			cols.table_schema <> '%s'
-			AND 
-			table_schema in (%s)
-		ORDER BY 
-			cols.table_schema, cols.table_name, cols.column_name;
-`
-
-	// we do NOT want to fetch the command schema
-	return conn.QueryContext(context.Background(), fmt.Sprintf(query, constants.CommandSchema))
 }
 
 // RefreshConnectionAndSearchPaths implements Client
