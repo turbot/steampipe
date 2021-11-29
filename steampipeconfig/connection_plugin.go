@@ -119,7 +119,6 @@ func CreateConnectionPlugins(connections []*modconfig.Connection, connectionStat
 			errors = append(errors, err)
 			continue
 		}
-
 		// fetch the supported operations
 		supportedOperations, err := pluginClient.GetSupportedOperations()
 		// ignore errors  - just create an empty support structure if needed
