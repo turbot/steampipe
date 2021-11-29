@@ -12,6 +12,7 @@ import (
 	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -148,6 +149,10 @@ func (c *LocalDbClient) SetSessionSearchPath(currentUserPath ...string) error {
 
 func (c *LocalDbClient) ContructSearchPath(requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error) {
 	return c.client.ContructSearchPath(requiredSearchPath, searchPathPrefix, currentSearchPath)
+}
+
+func (c *LocalDbClient) GetSchemaFromDB(schemas []string) (*schema.Metadata, error) {
+	return c.client.GetSchemaFromDB(schemas)
 }
 
 // local only functions
