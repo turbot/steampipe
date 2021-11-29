@@ -87,29 +87,30 @@ func (s *PluginManagerState) delete() {
 }
 
 func LoadPluginManagerState() (*PluginManagerState, error) {
+	// always return empty state
+	s := new(PluginManagerState)
 	if !helpers.FileExists(constants.PluginManagerStateFilePath()) {
 		log.Printf("[TRACE] plugin manager state file not found")
-		return nil, nil
+		return s, nil
 	}
 
 	fileContent, err := os.ReadFile(constants.PluginManagerStateFilePath())
 	if err != nil {
-		return nil, err
+		return s, err
 	}
-	var s = new(PluginManagerState)
 	err = json.Unmarshal(fileContent, s)
 	if err != nil {
 		log.Printf("[TRACE] failed to unmarshall plugin manager state file at %s with error %s\n", constants.PluginManagerStateFilePath(), err.Error())
 		log.Printf("[TRACE] deleting invalid plugin manager state file\n")
 		s.delete()
-		return nil, nil
+		return s, nil
 	}
 
 	// check is the manager is running - this deletes that state file if it si not running,
 	// and set the 'Running' property on the state if it is
 	pluginManagerRunning, err := s.verifyRunning()
 	if err != nil {
-		return nil, err
+		return s, err
 	}
 	// save the running status on the state struct
 	s.Running = pluginManagerRunning
