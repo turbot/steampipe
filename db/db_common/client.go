@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
 )
 
@@ -33,7 +34,7 @@ type Client interface {
 
 	SetEnsureSessionDataFunc(EnsureSessionStateCallback)
 	RefreshSessions(ctx context.Context) *AcquireSessionResult
-
+	GetSchemaFromDB([]string) (*schema.Metadata, error)
 	// remote client will have empty implementation
 	RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult
 }
