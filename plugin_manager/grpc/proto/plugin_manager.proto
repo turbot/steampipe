@@ -11,11 +11,11 @@ service PluginManager {
 }
 
 message GetRequest {
-  string connection = 1;
+  repeated string connections = 1;
 }
 
 message GetResponse {
-  ReattachConfig reattach = 1;
+  map<string, ReattachConfig> reattach_map = 1;
 }
 
 message ShutdownRequest {}

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/turbot/steampipe/query/queryresult"
-	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
 )
 
@@ -12,9 +11,8 @@ type EnsureSessionStateCallback = func(context.Context, *DatabaseSession) (err e
 
 type Client interface {
 	Close() error
-	LoadSchema()
 
-	SchemaMetadata() *schema.Metadata
+	Schemas() []string
 	ConnectionMap() *steampipeconfig.ConnectionDataMap
 
 	GetCurrentSearchPath() ([]string, error)

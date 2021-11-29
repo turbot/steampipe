@@ -21,17 +21,31 @@ import (
 )
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
-type StartResult int
+type StartResult struct {
+	Error              error
+	Status             StartDbStatus
+	DbState            *RunningDBInstanceInfo
+	PluginManagerState *plugin_manager.PluginManagerState
+}
 
-// StartListenType is a pseudoEnum of network binding for postgres
-type StartListenType string
+func (r *StartResult) SetError(err error) *StartResult {
+	r.Error = err
+	r.Status = ServiceFailedToStart
+	return r
+}
+
+// StartDbStatus is a pseudoEnum for outcomes of starting the db
+type StartDbStatus int
 
 const (
 	// start from 10 to prevent confusion with int zero-value
-	ServiceStarted StartResult = iota + 1
+	ServiceStarted StartDbStatus = iota + 1
 	ServiceAlreadyRunning
 	ServiceFailedToStart
 )
+
+// StartListenType is a pseudoEnum of network binding for postgres
+type StartListenType string
 
 const (
 	// ListenTypeNetwork - bind to all known interfaces
@@ -49,55 +63,66 @@ func (slt StartListenType) IsValid() error {
 	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
 }
 
-func StartServices(port int, listen StartListenType, invoker constants.Invoker) (startResult StartResult, err error) {
+func StartServices(port int, listen StartListenType, invoker constants.Invoker) (startResult *StartResult) {
 	utils.LogTime("db_local.StartServices start")
 	defer utils.LogTime("db_local.StartServices end")
 
-	info, err := GetState()
-	if err != nil {
-		return ServiceFailedToStart, err
+	res := &StartResult{}
+	res.DbState, res.Error = GetState()
+	if res.Error != nil {
+		return res
 	}
 
-	if info == nil {
-		startResult, err = startDB(port, listen, invoker)
+	if res.DbState == nil {
+		res = startDB(port, listen, invoker)
+	} else {
+
+		// so db is already running - ensure it contains command schema
+		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
+		// and upgrades to this version - we need to ensure we create the command schema
+		res.Error = ensureCommandSchema(res.DbState.Database)
+		res.Status = ServiceAlreadyRunning
 	}
 
-	pmState, err := plugin_manager.LoadPluginManagerState()
-	if err != nil {
-		return ServiceFailedToStart, err
+	res.PluginManagerState, res.Error = plugin_manager.LoadPluginManagerState()
+	if res.Error != nil {
+		res.Status = ServiceFailedToStart
+		return res
 	}
 
-	if pmState == nil || !pmState.Running {
+	if !res.PluginManagerState.Running {
 		// start the plugin manager
 		// get the location of the currently running steampipe process
 		executable, err := os.Executable()
 		if err != nil {
 			log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
-			return ServiceFailedToStart, err
+			return res.SetError(err)
 		}
 		if err := plugin_manager.StartNewInstance(executable); err != nil {
 			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
-			return ServiceFailedToStart, err
+			return res.SetError(err)
 		}
+		res.Status = ServiceStarted
 	}
 
-	return ServiceStarted, nil
+	return res
 }
 
 // StartDB starts the database if not already running
-func startDB(port int, listen StartListenType, invoker constants.Invoker) (startResult StartResult, err error) {
+func startDB(port int, listen StartListenType, invoker constants.Invoker) (res *StartResult) {
 	log.Printf("[TRACE] StartDB invoker %s", invoker)
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
 	var postgresCmd *exec.Cmd
 
+	res = &StartResult{}
 	defer func() {
 		if r := recover(); r != nil {
-			err = helpers.ToError(r)
+			res.Error = helpers.ToError(r)
 		}
 		// if there was an error and we started the service, stop it again
-		if err != nil {
-			if startResult == ServiceStarted {
+		if res.Error != nil {
+			if res.Status == ServiceStarted {
 				StopServices(false, invoker, nil)
 			}
 			// remove the state file if we are going back with an error
@@ -117,7 +142,7 @@ func startDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	_ = removeRunningInstanceInfo()
 
 	if err := utils.EnsureDirectoryPermission(getDataLocation()); err != nil {
-		return ServiceFailedToStart, fmt.Errorf("%s does not have the necessary permissions to start the service", getDataLocation())
+		return res.SetError(fmt.Errorf("%s does not have the necessary permissions to start the service", getDataLocation()))
 	}
 
 	// Generate the certificate if it fails then set the ssl to off
@@ -126,49 +151,47 @@ func startDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	}
 
 	if err := isPortBindable(port); err != nil {
-		return ServiceFailedToStart, fmt.Errorf("cannot listen on port %d", constants.Bold(port))
+		return res.SetError(fmt.Errorf("cannot listen on port %d", constants.Bold(port)))
 	}
 
 	if err := migrateLegacyPasswordFile(); err != nil {
-		return ServiceFailedToStart, err
+		return res.SetError(err)
 	}
 
 	password, err := resolvePassword()
 	if err != nil {
-		return ServiceFailedToStart, err
+		return res.SetError(err)
 	}
 
 	postgresCmd, err = startPostgresProcess(port, listen, invoker)
 	if err != nil {
-		return ServiceFailedToStart, err
+		return res.SetError(err)
 	}
 
 	// create a RunningInfo with empty database name
 	// we need this to connect to the service using 'root', required retrieve the name of the installed database
-	err = createRunningInfo(postgresCmd, port, "", password, listen, invoker)
-	if err != nil {
-		return ServiceFailedToStart, err
-	}
+	res.DbState = newRunningDBInstanceInfo(postgresCmd, port, "", password, listen, invoker)
+	res.DbState.Save()
 
 	databaseName, err := getDatabaseName(port)
 	if err != nil {
-		return ServiceFailedToStart, err
+		return res.SetError(err)
 	}
 
 	err = updateDatabaseNameInRunningInfo(databaseName)
 	if err != nil {
-		return ServiceFailedToStart, err
+		return res.SetError(err)
 	}
 
 	err = setServicePassword(password)
 	if err != nil {
-		return ServiceFailedToStart, err
+		return res.SetError(err)
 	}
 
 	// release the process - let the OS adopt it, so that we can exit
 	err = postgresCmd.Process.Release()
 	if err != nil {
-		return ServiceFailedToStart, err
+		return res.SetError(err)
 	}
 
 	utils.LogTime("postgresCmd end")
@@ -176,22 +199,22 @@ func startDB(port int, listen StartListenType, invoker constants.Invoker) (start
 	// ensure the foreign server exists in the database
 	err = ensureSteampipeServer(databaseName)
 	if err != nil {
-		// there was a problem with the installation
-		return ServiceFailedToStart, err
+		return res.SetError(err)
 	}
 
 	err = ensureTempTablePermissions(databaseName)
 	if err != nil {
-		return ServiceFailedToStart, err
+		return res.SetError(err)
 	}
 
 	// ensure the db contains command schema
 	err = ensureCommandSchema(databaseName)
 	if err != nil {
-		return ServiceFailedToStart, err
+		return res.SetError(err)
 	}
 
-	return ServiceStarted, nil
+	res.Status = ServiceStarted
+	return res
 }
 
 // getDatabaseName connects to the service and retrieves the database name
@@ -287,24 +310,6 @@ func updateDatabaseNameInRunningInfo(databaseName string) error {
 		return err
 	}
 	runningInfo.Database = databaseName
-	return runningInfo.Save()
-}
-
-func createRunningInfo(cmd *exec.Cmd, port int, databaseName string, password string, listen StartListenType, invoker constants.Invoker) error {
-	runningInfo := new(RunningDBInstanceInfo)
-	runningInfo.Pid = cmd.Process.Pid
-	runningInfo.Port = port
-	runningInfo.User = constants.DatabaseUser
-	runningInfo.Password = password
-	runningInfo.Database = databaseName
-	runningInfo.ListenType = listen
-	runningInfo.Invoker = invoker
-	runningInfo.Listen = constants.DatabaseListenAddresses
-
-	if listen == ListenTypeNetwork {
-		addrs, _ := localAddresses()
-		runningInfo.Listen = append(runningInfo.Listen, addrs...)
-	}
 	return runningInfo.Save()
 }
 

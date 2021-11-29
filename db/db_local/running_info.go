@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"os/exec"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
@@ -23,6 +24,23 @@ type RunningDBInstanceInfo struct {
 	Database   string
 }
 
+func newRunningDBInstanceInfo(cmd *exec.Cmd, port int, databaseName string, password string, listen StartListenType, invoker constants.Invoker) *RunningDBInstanceInfo {
+	dbState := new(RunningDBInstanceInfo)
+	dbState.Pid = cmd.Process.Pid
+	dbState.Port = port
+	dbState.User = constants.DatabaseUser
+	dbState.Password = password
+	dbState.Database = databaseName
+	dbState.ListenType = listen
+	dbState.Invoker = invoker
+	dbState.Listen = constants.DatabaseListenAddresses
+
+	if listen == ListenTypeNetwork {
+		addrs, _ := localAddresses()
+		dbState.Listen = append(dbState.Listen, addrs...)
+	}
+	return dbState
+}
 func (r *RunningDBInstanceInfo) Save() error {
 	content, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
