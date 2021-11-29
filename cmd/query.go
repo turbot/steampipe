@@ -187,14 +187,8 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 
 		// set max DB connections to 1
 		viper.Set(constants.ArgMaxParallel, 1)
-		// get a db client
-		var client db_common.Client
-		var err error
-		if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-			client, err = db_client.NewDbClient(connectionString)
-		} else {
-			client, err = db_local.GetLocalClient(constants.InvokerQuery)
-		}
+		// get a db client (local or remote)
+		client, err := getClient()
 		if err != nil {
 			initData.Result.Error = err
 			return
@@ -244,6 +238,17 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 		}
 
 	}()
+}
+
+func getClient() (db_common.Client, error) {
+	var client db_common.Client
+	var err error
+	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
+		client, err = db_client.NewDbClient(connectionString)
+	} else {
+		client, err = db_local.GetLocalClient(constants.InvokerQuery)
+	}
+	return client, err
 }
 
 func startCancelHandler(cancel context.CancelFunc) {

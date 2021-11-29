@@ -8,6 +8,14 @@ type ConnectionSchemas struct {
 }
 
 func NewConnectionSchemas(connectionNames []string, connectionState ConnectionDataMap) (*ConnectionSchemas, error) {
+	// if no connection state is passed, load it
+	if connectionState == nil {
+		var err error
+		connectionState, err = GetConnectionState(connectionNames)
+		if err != nil {
+			return nil, err
+		}
+	}
 	res := &ConnectionSchemas{
 		SchemaMap: make(map[string][]string),
 	}

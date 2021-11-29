@@ -81,8 +81,6 @@ func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStream
 		initDataChan:            initChan,
 		initResultChan:          make(chan *db_common.InitResult, 1),
 		highlighter:             getHighlighter(viper.GetString(constants.ArgTheme)),
-		// set up a blank struct for the schema metadata
-		schemaMetadata: schema.NewMetadata(),
 	}
 	// asynchronously wait for init to complete
 	// we start this immediately rather than lazy loading as we want to handle errors asap
@@ -159,66 +157,22 @@ func (c *InteractiveClient) LoadSchema() error {
 	utils.LogTime("db_client.LoadSchema start")
 	defer utils.LogTime("db_client.LoadSchema end")
 
-	// get list of schema which we need to retrieve from the db
-	// TODO load state
+	// build a ConnectionSchemas object to identify the schemas to load
+	// (pass nil for sonnection state - this forces NewConnectionSchemas to load it)
 	connectionSchemas, err := steampipeconfig.NewConnectionSchemas(steampipeconfig.GlobalConfig.ConnectionNames(), nil)
 	if err != nil {
 		return err
 	}
+	// get the unique schema - we use this to limit the schemas we load from the database
 	schemas := connectionSchemas.UniqueSchemas()
-	tablesResult, err := c.getSchemaFromDB(schemas)
+	// load these schemas
+	metadata, err := c.client().GetSchemaFromDB(schemas)
 	utils.FailOnError(err)
 
-	log.Printf("[WARN] %v", tablesResult)
-	//metadata, err := db_common.BuildSchemaMetadata(tablesResult.Rows)
-	//utils.FailOnError(err)
-	//
-	//c.schemaMetadata.Schemas = metadata.Schemas
-	//c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
+	// we now need to
+	c.populateSchemaMetadata(metadata, connectionSchemas)
+
 	return nil
-}
-
-func (c *InteractiveClient) getSchemaFromDB(schemas []string) (*queryresult.SyncQueryResult, error) {
-	utils.LogTime("db_client.getSchemaFromDB start")
-	defer utils.LogTime("db_client.getSchemaFromDB end")
-
-	query := `
-		SELECT 
-			table_name, 
-			column_name,
-			column_default,
-			is_nullable,
-			data_type,
-			table_schema,
-			(COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
-			(COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
-		FROM
-			information_schema.columns cols
-		LEFT JOIN
-			pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
-		LEFT JOIN
-			pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
-		WHERE
-		    (
-    			cols.table_name in (
-    				SELECT 
-    					foreign_table_name 
-    				FROM 
-    					information_schema.foreign_tables
-    			) 
-    			OR
-    			cols.table_schema = 'public'
-    			OR
-    			LEFT(cols.table_schema,8) = 'pg_temp_'
-			)
-			AND
-			cols.table_schema <> '%s'
-		ORDER BY 
-			cols.table_schema, cols.table_name, cols.column_name;
-`
-
-	// we do NOT want to fetch the command schema
-	return c.client().ExecuteSync(context.Background(), fmt.Sprintf(query, constants.CommandSchema), true)
 }
 
 // init data has arrived, handle any errors/warnings/messages
@@ -625,4 +579,26 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 		return res[i].Text < res[j].Text
 	})
 	return res
+}
+
+func (c *InteractiveClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, connectionSchemas *steampipeconfig.ConnectionSchemas) error {
+	// set up a blank struct for the schema metadata
+	c.schemaMetadata = schema.NewMetadata()
+
+	c.schemaMetadata.Schemas = schemaMetadata.Schemas
+	// we now need to add in all other schemas wqhich have the same schemas as those we have loaded
+	for loadedSchema, otherSchemas := range connectionSchemas.SchemaMap {
+		// all 'otherSchema's have the same schema as loadedSchema
+		schema, ok := c.schemaMetadata.Schemas[loadedSchema]
+		if !ok {
+			// should never happen
+			return fmt.Errorf("no schema loaded for %s", loadedSchema)
+		}
+
+		for _, s := range otherSchemas {
+			c.schemaMetadata.Schemas[s] = schema
+		}
+	}
+	c.schemaMetadata.TemporarySchemaName = schemaMetadata.TemporarySchemaName
+	return nil
 }
