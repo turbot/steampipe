@@ -24,6 +24,8 @@ import (
 	"github.com/turbot/steampipe/query/metaquery"
 	"github.com/turbot/steampipe/query/queryhistory"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
 )
@@ -50,12 +52,14 @@ type InteractiveClient struct {
 	cancelPrompt      context.CancelFunc
 	// channel from which we read the result of the external initialisation process
 	initDataChan *chan *db_common.QueryInitData
-	// channel used internally to signal an init error
+	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
 
 	afterClose AfterPromptCloseAction
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock sync.Mutex
+
+	schemaMetadata *schema.Metadata
 
 	highlighter *Highlighter
 }
@@ -77,6 +81,8 @@ func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStream
 		initDataChan:            initChan,
 		initResultChan:          make(chan *db_common.InitResult, 1),
 		highlighter:             getHighlighter(viper.GetString(constants.ArgTheme)),
+		// set up a blank struct for the schema metadata
+		schemaMetadata: schema.NewMetadata(),
 	}
 	// asynchronously wait for init to complete
 	// we start this immediately rather than lazy loading as we want to handle errors asap
@@ -141,6 +147,80 @@ func (c *InteractiveClient) InteractivePrompt() {
 	}
 }
 
+// ClosePrompt cancels the running prompt, setting the action to take after close
+func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
+	c.afterClose = afterClose
+	c.cancelPrompt()
+}
+
+// LoadSchema implements Client
+// retrieve both the raw query result and a sanitised version in list form
+func (c *InteractiveClient) LoadSchema() error {
+	utils.LogTime("db_client.LoadSchema start")
+	defer utils.LogTime("db_client.LoadSchema end")
+
+	// get list of schema which we need to retrieve from the db
+	// TODO load state
+	connectionSchemas, err := steampipeconfig.NewConnectionSchemas(steampipeconfig.GlobalConfig.ConnectionNames(), nil)
+	if err != nil {
+		return err
+	}
+	schemas := connectionSchemas.UniqueSchemas()
+	tablesResult, err := c.getSchemaFromDB(schemas)
+	utils.FailOnError(err)
+
+	log.Printf("[WARN] %v", tablesResult)
+	//metadata, err := db_common.BuildSchemaMetadata(tablesResult.Rows)
+	//utils.FailOnError(err)
+	//
+	//c.schemaMetadata.Schemas = metadata.Schemas
+	//c.schemaMetadata.TemporarySchemaName = metadata.TemporarySchemaName
+	return nil
+}
+
+func (c *InteractiveClient) getSchemaFromDB(schemas []string) (*queryresult.SyncQueryResult, error) {
+	utils.LogTime("db_client.getSchemaFromDB start")
+	defer utils.LogTime("db_client.getSchemaFromDB end")
+
+	query := `
+		SELECT 
+			table_name, 
+			column_name,
+			column_default,
+			is_nullable,
+			data_type,
+			table_schema,
+			(COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
+			(COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
+		FROM
+			information_schema.columns cols
+		LEFT JOIN
+			pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
+		LEFT JOIN
+			pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
+		WHERE
+		    (
+    			cols.table_name in (
+    				SELECT 
+    					foreign_table_name 
+    				FROM 
+    					information_schema.foreign_tables
+    			) 
+    			OR
+    			cols.table_schema = 'public'
+    			OR
+    			LEFT(cols.table_schema,8) = 'pg_temp_'
+			)
+			AND
+			cols.table_schema <> '%s'
+		ORDER BY 
+			cols.table_schema, cols.table_name, cols.column_name;
+`
+
+	// we do NOT want to fetch the command schema
+	return c.client().ExecuteSync(context.Background(), fmt.Sprintf(query, constants.CommandSchema), true)
+}
+
 // init data has arrived, handle any errors/warnings/messages
 func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db_common.InitResult) {
 	c.executionLock.Lock()
@@ -151,7 +231,14 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		return
 	}
 
-	// if there is an error, shutdown the prompt
+	// if there was no error, fetch the schema
+	// TODO - make this async
+	if initResult.Error == nil {
+		if err := c.LoadSchema(); err != nil {
+			initResult.Error = err
+		}
+	}
+
 	if initResult.Error != nil {
 		c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
@@ -163,18 +250,13 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		fmt.Println()
 		initResult.DisplayMessages()
 	}
-	// We need to Render the prompt here to make sure that it comes back
+
+	// We need to render the prompt here to make sure that it comes back
 	// after the messages have been displayed
 	c.interactivePrompt.Render()
 
 	// tell the workspace to reset the prompt after displaying async filewatcher messages
 	c.initData.Workspace.SetOnFileWatcherEventMessages(func() { c.interactivePrompt.Render() })
-}
-
-// ClosePrompt cancels the running prompt, setting the action to take after close
-func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
-	c.afterClose = afterClose
-	c.cancelPrompt()
 }
 
 func (c *InteractiveClient) runInteractivePromptAsync(ctx context.Context, promptResultChan *chan utils.InteractiveExitStatus) {
@@ -439,7 +521,7 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 	return metaquery.Handle(&metaquery.HandlerInput{
 		Query:       query,
 		Executor:    client,
-		Schema:      client.SchemaMetadata(),
+		Schema:      c.schemaMetadata,
 		Connections: client.ConnectionMap(),
 		Prompt:      c.interactivePrompt,
 		ClosePrompt: func() { c.afterClose = AfterPromptCloseExit },
@@ -491,7 +573,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		client := c.client()
 		suggestions := metaquery.Complete(&metaquery.CompleterInput{
 			Query:       text,
-			Schema:      client.SchemaMetadata(),
+			Schema:      c.schemaMetadata,
 			Connections: client.ConnectionMap(),
 		})
 
@@ -501,7 +583,8 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 
 		// only add table suggestions if the client is initialised
 		if queryInfo.EditingTable && c.isInitialised() {
-			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.initData.Client.SchemaMetadata(), c.initData.Client.ConnectionMap())...)
+			// TODO CHECK WE HAVE SCHEMAS
+			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.schemaMetadata, c.initData.Client.ConnectionMap())...)
 		}
 
 		// Not sure this is working. comment out for now!

@@ -20,7 +20,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 	defer utils.LogTime("db.refreshConnections end")
 
 	// get a list of all existing schema names
-	schemaNames := c.client.SchemaMetadata().GetSchemas()
+	schemaNames := c.client.Schemas()
 
 	// determine any necessary connection updates
 	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(schemaNames)
@@ -69,7 +69,9 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 
 	// reload the database schemas, since they have changed - otherwise we wouldn't be here
 	log.Println("[TRACE] RefreshConnections: reloading schema")
-	c.LoadSchema()
+	// TODO RELOAD FOR INTERACTIVE
+	// CALLBACK?
+	//c.LoadSchema()
 
 	res.UpdatedConnections = true
 	return res
@@ -106,7 +108,7 @@ func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampip
 func (c *LocalDbClient) updateConnectionMap() error {
 	// load the connection state and cache it!
 	log.Println("[TRACE]", "retrieving connection map")
-	connectionMap, err := steampipeconfig.GetConnectionState(c.client.SchemaMetadata().GetSchemas())
+	connectionMap, err := steampipeconfig.GetConnectionState(c.client.Schemas())
 	if err != nil {
 		return err
 	}

@@ -24,7 +24,7 @@ func StartNewInstance(steampipeExecutablePath string) error {
 		return err
 	}
 
-	if state != nil && state.Running {
+	if state.Running {
 		log.Printf("[TRACE] plugin manager StartNewInstance() found previous instance of plugin manager still running - stopping it")
 		// stop the current instance
 		if err := stop(state); err != nil {
