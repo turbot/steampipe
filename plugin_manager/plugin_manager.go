@@ -65,7 +65,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 	for _, c := range req.Connections {
 		resultWg.Add(1)
 		go func(connectionName string) {
-			reattach, err := m.getPlugin(c)
+			reattach, err := m.getPlugin(connectionName)
 
 			resultLock.Lock()
 			if err != nil {
