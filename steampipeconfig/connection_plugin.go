@@ -80,7 +80,7 @@ func CreateConnectionPlugins(connections []*modconfig.Connection, connectionStat
 	for _, connection := range connections {
 		connectionPlugin, err := createConnectionPlugin(connection, getResponse)
 		if err != nil {
-			errors = append(errors, err)
+			errors = append(errors, fmt.Errorf("failed to start plugin '%s': %s", connection.PluginShortName, err))
 			continue
 		}
 
