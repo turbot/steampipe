@@ -10,6 +10,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmd"
+	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -25,8 +26,11 @@ func main() {
 		}
 		utils.LogTime("main end")
 		utils.DisplayProfileData()
+		instrument.ShutdownTracing()
 		os.Exit(exitCode)
 	}()
+
+	utils.FailOnError(instrument.InitTracing())
 
 	// ensure steampipe is not being run as root
 	checkRoot()
