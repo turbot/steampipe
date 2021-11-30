@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -8,12 +9,16 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/plugin"
 	"github.com/turbot/steampipe/utils"
 )
 
-func (w *Workspace) CheckRequiredPluginsInstalled() error {
+func (w *Workspace) CheckRequiredPluginsInstalled(ctx context.Context) error {
+	_, span := instrument.StartSpan(ctx, "workspace.CheckRequiredPluginsInstalled")
+	defer span.End()
+
 	// get the list of all installed plugins
 	installedPlugins, err := w.getInstalledPlugins()
 	if err != nil {

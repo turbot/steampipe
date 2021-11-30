@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -49,9 +51,12 @@ type Workspace struct {
 }
 
 // Load creates a Workspace and loads the workspace mod
-func Load(workspacePath string) (*Workspace, error) {
+func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	utils.LogTime("workspace.Load start")
 	defer utils.LogTime("workspace.Load end")
+
+	_, span := instrument.StartSpan(ctx, "workspace.Load")
+	defer span.End()
 
 	// create shell workspace
 	workspace := &Workspace{

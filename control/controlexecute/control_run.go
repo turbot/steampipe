@@ -12,9 +12,11 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/grpc"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 const controlQueryTimeout = 240 * time.Second
@@ -149,6 +151,13 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
 
+	controlExecuteTracingCtx, span := instrument.StartSpan(ctx, "control-run")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("control", r.ControlId),
+	)
+
 	r.Lifecycle.Add("execute_start")
 
 	control := r.Control
@@ -168,7 +177,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 
 	// get a db connection
 	r.Lifecycle.Add("queued_for_session")
-	sessionResult := client.AcquireSession(ctx)
+	sessionResult := client.AcquireSession(controlExecuteTracingCtx)
 	if sessionResult.Error != nil {
 		if !utils.IsCancelledError(sessionResult.Error) {
 			sessionResult.Error = fmt.Errorf("error acquiring database connection, %s", sessionResult.Error.Error())
@@ -200,13 +209,13 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 
 	log.Printf("[TRACE] setting search path %s\n", control.Name())
 	r.Lifecycle.Add("set_search_path_start")
-	if err := r.setSearchPath(ctx, dbSession, client); err != nil {
+	if err := r.setSearchPath(controlExecuteTracingCtx, dbSession, client); err != nil {
 		r.SetError(err)
 		return
 	}
 	r.Lifecycle.Add("set_search_path_finish")
 
-	ctxWithDeadline, cancel := r.getControlQueryContext(ctx)
+	ctxWithDeadline, cancel := r.getControlQueryContext(controlExecuteTracingCtx)
 	// Even though ctx will expire, it is good practice to call its cancellation function in any case.
 	defer cancel()
 

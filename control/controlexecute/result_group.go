@@ -8,7 +8,10 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/utils"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/semaphore"
 
 	"github.com/spf13/viper"
@@ -29,6 +32,8 @@ type ResultGroup struct {
 	Groups      []*ResultGroup           `json:"groups"`
 	ControlRuns []*ControlRun            `json:"controls"`
 	Severity    map[string]StatusSummary `json:"-"`
+
+	executionSpan trace.Span
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem         modconfig.ModTreeItem `json:"-"`
@@ -160,11 +165,17 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 	log.Printf("[TRACE] begin ResultGroup.Execute: %s\n", r.GroupId)
 	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
 
+	groupExecuteTracingCtx, span := instrument.StartSpan(ctx, "result-group")
+	span.SetAttributes(
+		attribute.String("group", r.GroupId),
+	)
+	defer span.End()
+
 	startTime := time.Now()
 
 	for _, controlRun := range r.ControlRuns {
-		if utils.IsContextCancelled(ctx) {
-			controlRun.SetError(ctx.Err())
+		if utils.IsContextCancelled(groupExecuteTracingCtx) {
+			controlRun.SetError(groupExecuteTracingCtx.Err())
 			continue
 		}
 
@@ -173,7 +184,7 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 			continue
 		}
 
-		err := parallelismLock.Acquire(ctx, 1)
+		err := parallelismLock.Acquire(groupExecuteTracingCtx, 1)
 		if err != nil {
 			controlRun.SetError(err)
 			continue
@@ -188,11 +199,11 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 				// Release in defer, so that we don't retain the lock even if there's a panic inside
 				parallelismLock.Release(1)
 			}()
-			run.Execute(ctx, client)
+			run.Execute(groupExecuteTracingCtx, client)
 		}(controlRun)
 	}
 	for _, child := range r.Groups {
-		child.Execute(ctx, client, parallelismLock)
+		child.Execute(groupExecuteTracingCtx, client, parallelismLock)
 	}
 
 	r.Duration = time.Since(startTime)

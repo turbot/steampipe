@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
@@ -80,6 +81,10 @@ func (e *ExecutionTree) AddControl(control *modconfig.Control, group *ResultGrou
 func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) int {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
+
+	treeExecuteTracingCtx, span := instrument.StartSpan(ctx, "execution-tree")
+	defer span.End()
+
 	e.StartTime = time.Now()
 	e.progress.Start()
 
@@ -97,9 +102,9 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 	parallelismLock := semaphore.NewWeighted(maxParallelGoRoutines)
 
 	// just execute the root - it will traverse the tree
-	e.Root.Execute(ctx, client, parallelismLock)
+	e.Root.Execute(treeExecuteTracingCtx, client, parallelismLock)
 
-	executeFinishWaitCtx := ctx
+	executeFinishWaitCtx := treeExecuteTracingCtx
 	if ctx.Err() != nil {
 		// use a Background context - since the original context has been cancelled
 		// this lets us wait for the active control queries to cancel
