@@ -25,6 +25,7 @@ func (c *GRPCClient) Shutdown(req *pb.ShutdownRequest) (*pb.ShutdownResponse, er
 
 // GRPCServer is the gRPC server that GRPCClient talks to.
 type GRPCServer struct {
+	pb.UnimplementedPluginManagerServer
 	// This is the real implementation
 	Impl PluginManager
 }
