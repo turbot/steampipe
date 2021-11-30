@@ -7,14 +7,18 @@ import (
 	"log"
 	"time"
 
+	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/utils"
 )
 
 // createTransaction , with a timeout - this may be required if the db client becomes unresponsive
 func (c *DbClient) createTransaction(ctx context.Context, session *sql.Conn, retryOnTimeout bool) (tx *sql.Tx, err error) {
+	traceCtx, span := instrument.StartSpan(ctx, "DbClient.createTransaction")
+	defer span.End()
+
 	doneChan := make(chan bool)
 	go func() {
-		tx, err = session.BeginTx(ctx, nil)
+		tx, err = session.BeginTx(traceCtx, nil)
 		if err != nil {
 			err = utils.PrefixError(err, "error creating transaction")
 		}
@@ -31,7 +35,7 @@ func (c *DbClient) createTransaction(ctx context.Context, session *sql.Conn, ret
 			c.refreshDbClient(ctx)
 
 			// recurse back into this function, passing 'retryOnTimeout=false' to prevent further recursion
-			return c.createTransaction(ctx, session, false)
+			return c.createTransaction(traceCtx, session, false)
 		}
 		err = fmt.Errorf("error creating transaction - please restart Steampipe")
 	}

@@ -9,17 +9,21 @@ import (
 
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/utils"
 )
 
 func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSessionResult {
+	traceCtx, span := instrument.StartSpan(ctx, "DbClient.AcquireSession")
+	defer span.End()
+
 	sessionResult := &db_common.AcquireSessionResult{}
 	c.sessionInitWaitGroup.Add(1)
 	defer c.sessionInitWaitGroup.Done()
 
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
-	databaseConnection, backendPid, err := c.getSessionWithRetries(ctx)
+	databaseConnection, backendPid, err := c.getSessionWithRetries(traceCtx)
 	if err != nil {
 		sessionResult.Error = err
 		return sessionResult
@@ -53,7 +57,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 		log.Printf("[TRACE] Session with PID: %d - waiting for init lock", backendPid)
 		session.LifeCycle.Add("queued_for_init")
 
-		err := c.parallelSessionInitLock.Acquire(ctx, 1)
+		err := c.parallelSessionInitLock.Acquire(traceCtx, 1)
 		if err != nil {
 			sessionResult.Error = err
 			return sessionResult
@@ -62,7 +66,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 
 		log.Printf("[TRACE] Session with PID: %d - waiting for init start", backendPid)
 		session.LifeCycle.Add("init_start")
-		err, warnings := c.ensureSessionFunc(ctx, session)
+		err, warnings := c.ensureSessionFunc(traceCtx, session)
 		session.LifeCycle.Add("init_finish")
 		sessionResult.Warnings = warnings
 		c.sessionInitWaitGroup.Done()
@@ -80,7 +84,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 
 	// update required session search path if needed
 	if strings.Join(session.SearchPath, ",") != strings.Join(c.requiredSessionSearchPath, ",") {
-		err := c.setSessionSearchPathToRequired(ctx, databaseConnection)
+		err := c.setSessionSearchPathToRequired(traceCtx, databaseConnection)
 		if err != nil {
 			sessionResult.Error = err
 			return sessionResult
@@ -101,6 +105,9 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 }
 
 func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64, error) {
+	traceCtx, span := instrument.StartSpan(ctx, "DbClient.DbClient")
+	defer span.End()
+
 	backoff, err := retry.NewFibonacci(100 * time.Millisecond)
 	if err != nil {
 		return nil, 0, err
@@ -110,11 +117,11 @@ func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64,
 	var session *sql.Conn
 	var backendPid int64
 	const getSessionMaxRetries = 10
-	err = retry.Do(ctx, retry.WithMaxRetries(getSessionMaxRetries, backoff), func(retryLocalCtx context.Context) (e error) {
+	err = retry.Do(traceCtx, retry.WithMaxRetries(getSessionMaxRetries, backoff), func(retryLocalCtx context.Context) (e error) {
 		if utils.IsContextCancelled(retryLocalCtx) {
 			return ctx.Err()
 		}
-
+		span.AddEvent("retry")
 		session, err = c.dbClient.Conn(retryLocalCtx)
 		if err != nil {
 			retries++
