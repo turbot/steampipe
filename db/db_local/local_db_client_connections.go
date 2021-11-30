@@ -5,6 +5,9 @@ import (
 	"log"
 	"strings"
 
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -46,7 +49,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 		return res
 	}
 
-	log.Printf("[TRACE] refreshConnections, %d %s\n", len(connectionQueries), utils.Pluralize("update", len(connectionQueries)))
+	log.Printf("[TRACE] refreshConnections, %d connection update %s\n", len(connectionQueries), utils.Pluralize("query", len(connectionQueries)))
 
 	// if there are no connection queries, we are done
 	if len(connectionQueries) == 0 {
@@ -55,7 +58,9 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 
 	// so there ARE connections to update
 	// execute the connection queries
-	if err := executeConnectionQueries(connectionQueries); err != nil {
+	// batch them up
+	batched := utils.BatchStringArray(connectionQueries, 250)
+	if err := executeConnectionQueries(batched); err != nil {
 		res.Error = err
 		return res
 	}
@@ -66,12 +71,6 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 		res.Error = err
 		return res
 	}
-
-	// reload the database schemas, since they have changed - otherwise we wouldn't be here
-	log.Println("[TRACE] RefreshConnections: reloading schema")
-	// TODO RELOAD FOR INTERACTIVE
-	// CALLBACK?
-	//c.LoadSchema()
 
 	res.UpdatedConnections = true
 	return res
@@ -94,8 +93,10 @@ func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampip
 
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
 		connectionQueries = getSchemaQueries(validatedUpdates, validationFailures)
-		// add comments queries for validated connections
-		connectionQueries = append(connectionQueries, getCommentQueries(validatedPlugins)...)
+		if viper.GetBool(constants.ArgSchemaComments) {
+			// add comments queries for validated connections
+			connectionQueries = append(connectionQueries, getCommentQueries(validatedPlugins)...)
+		}
 	}
 
 	for c := range connectionUpdates.Delete {

@@ -1,6 +1,7 @@
 package steampipeconfig
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -20,7 +21,7 @@ import (
 )
 
 // ConnectionPlugin is a structure representing an instance of a plugin
-// NOTE: currently this corresponds to a single steampipe connection,
+// NOTE: this corresponds to a single steampipe connection,
 // i.e. we have 1 plugin instance per steampipe connection
 type ConnectionPlugin struct {
 	ConnectionName      string
@@ -57,8 +58,7 @@ func CreateConnectionPlugins(connections []*modconfig.Connection, connectionStat
 
 	res = make(map[string]*ConnectionPlugin, len(connections))
 
-	log.Printf("[WARN] CreateConnectionPlugin ")
-	//log.Printf("[TRACE] CreateConnectionPlugin connection: '%s', pluginName: '%s'", connectionName, pluginName)
+	log.Printf("[TRACE] CreateConnectionPlugin creating %d connections", len(connectionNames))
 
 	var pluginManager pluginshared.PluginManager
 	if env := os.Getenv("STEAMPIPE_PLUGIN_MANAGER_DEBUG"); strings.ToLower(env) == "true" {
@@ -74,13 +74,10 @@ func CreateConnectionPlugins(connections []*modconfig.Connection, connectionStat
 		return nil, err
 	}
 
-	log.Printf("[WARN] got plugin manager ")
-
 	// ask the plugin manager for the plugin reattach config
 	getResponse, err := pluginManager.Get(&proto.GetRequest{Connections: connectionNames})
 	if err != nil {
-		log.Printf("[WARN] plugin manager failed to get reattach config for %s '%s': %s", utils.Pluralize("connections", len(connections)), connections, err)
-		return nil, err
+
 	}
 
 	var errors []error
@@ -93,8 +90,12 @@ func CreateConnectionPlugins(connections []*modconfig.Connection, connectionStat
 		connectionOptions := connection.Options
 
 		reattach := getResponse.ReattachMap[connectionName]
-		log.Printf("[TRACE] plugin manager returned reattach config for connection '%s' - pid %d",
-			connectionName, reattach.Pid)
+		log.Printf("[TRACE] plugin manager returned reattach config for connection '%s' - pid %d, reattach %v",
+			connectionName, reattach.Pid, reattach)
+		if reattach.Pid == 0 {
+			log.Printf("[WARN] plugin manager returned nil PID for %s", connectionName)
+			return nil, fmt.Errorf("plugin manager returned nil PID for %s", connectionName)
+		}
 
 		// attach to the plugin process
 		pluginClient, err := attachToPlugin(reattach.Convert(), pluginName)
@@ -146,7 +147,7 @@ func CreateConnectionPlugins(connections []*modconfig.Connection, connectionStat
 	// now get schemas
 
 	// we will only need to fetch the schema once for each plugin (apart from plugins with dynamic schema)
-	// build a ConnectionSchemas onject fo rthe connecitons we are updating
+	// build a ConnectionSchemas object for the connections we are updating
 	// - we can use this to identify the minimal set of schemas we need to fetch
 	// if only one connection was passed, load the schema
 	connectionSchemas, err := NewConnectionSchemas(connectionNames, connectionState)

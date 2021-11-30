@@ -86,7 +86,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 	}
 
 	// TODO ADD PLUGINS TO OUR STATE FILE - JUST SERIALISE THE Plugins map?
-
+	log.Printf("[TRACE] PluginManager get returning %+v", resp)
 	return resp, nil
 }
 
@@ -116,8 +116,8 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 		// check the pid exists
 		exists, _ := utils.PidExists(int(reattach.Pid))
 		if exists {
-			// so the plugin id good
-			log.Printf("[TRACE] PluginManager found '%s' in map", connection)
+			// so the plugin is good
+			log.Printf("[TRACE] PluginManager found '%s' in map, pid %d, reattach %v", connection, reattach.Pid, reattach)
 
 			// return the reattach config
 			return reattach, nil
