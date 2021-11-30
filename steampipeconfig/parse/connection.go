@@ -3,6 +3,7 @@ package parse
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -26,7 +27,12 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 	if diags.HasErrors() {
 		return nil, diags
 	}
-	connection.Plugin = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
+
+	if strings.HasPrefix(pluginName, "local/") {
+		connection.Plugin = pluginName
+	} else {
+		connection.Plugin = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
+	}
 	connection.PluginShortName = pluginName
 
 	if connectionContent.Attributes["type"] != nil {
