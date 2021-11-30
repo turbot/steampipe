@@ -23,7 +23,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 	defer utils.LogTime("db.refreshConnections end")
 
 	// get a list of all existing schema names
-	schemaNames := c.client.Schemas()
+	schemaNames := c.client.ForeignSchemas()
 
 	// determine any necessary connection updates
 	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(schemaNames)
@@ -109,7 +109,7 @@ func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampip
 func (c *LocalDbClient) updateConnectionMap() error {
 	// load the connection state and cache it!
 	log.Println("[TRACE]", "retrieving connection map")
-	connectionMap, err := steampipeconfig.GetConnectionState(c.client.Schemas())
+	connectionMap, err := steampipeconfig.GetConnectionState(c.client.ForeignSchemas())
 	if err != nil {
 		return err
 	}

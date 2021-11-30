@@ -157,9 +157,9 @@ func (c *InteractiveClient) LoadSchema() error {
 	utils.LogTime("db_client.LoadSchema start")
 	defer utils.LogTime("db_client.LoadSchema end")
 
-	// build a ConnectionSchemas object to identify the schemas to load
-	// (pass nil for connection state - this forces NewConnectionSchemas to load it)
-	connectionSchemas, err := steampipeconfig.NewConnectionSchemas(steampipeconfig.GlobalConfig.ConnectionNames(), nil)
+	// build a ConnectionSchemaMap object to identify the schemas to load
+	// (pass nil for connection state - this forces NewConnectionSchemaMap to load it)
+	connectionSchemas, err := steampipeconfig.NewConnectionSchemaMap()
 	if err != nil {
 		return err
 	}
@@ -574,9 +574,9 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 	return res
 }
 
-func (c *InteractiveClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, connectionSchemas *steampipeconfig.ConnectionSchemas) error {
+func (c *InteractiveClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, connectionSchemas steampipeconfig.ConnectionSchemaMap) error {
 	// we now need to add in all other schemas which have the same schemas as those we have loaded
-	for loadedSchema, otherSchemas := range connectionSchemas.SchemaMap {
+	for loadedSchema, otherSchemas := range connectionSchemas {
 		// all 'otherSchema's have the same schema as loadedSchema
 		schema, ok := schemaMetadata.Schemas[loadedSchema]
 		if !ok {

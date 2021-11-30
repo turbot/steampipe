@@ -13,7 +13,7 @@ type EnsureSessionStateCallback = func(context.Context, *DatabaseSession) (err e
 type Client interface {
 	Close() error
 
-	Schemas() []string
+	ForeignSchemas() []string
 	ConnectionMap() *steampipeconfig.ConnectionDataMap
 
 	GetCurrentSearchPath() ([]string, error)
