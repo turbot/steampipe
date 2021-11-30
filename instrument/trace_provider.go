@@ -49,6 +49,10 @@ func InitTracing() error {
 }
 
 func ShutdownTracing() {
+	defer func() {
+		// artificially prevent a panic in this fn
+		recover()
+	}()
 	otel.GetTracerProvider().(*tracesdk.TracerProvider).ForceFlush(context.Background())
 	otel.GetTracerProvider().(*tracesdk.TracerProvider).Shutdown(context.Background())
 }
