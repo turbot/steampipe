@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -21,8 +22,10 @@ import (
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type checkInitData struct {
@@ -104,11 +107,18 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
+	tracingContext, span := instrument.StartCmdSpan(cmd)
+
 	initData := &checkInitData{}
+
 	defer func() {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
+			span.SetAttributes(
+				attribute.String("cmd_recovery", helpers.ToError(r).Error()),
+				attribute.String("stack", string(debug.Stack())),
+			)
 			exitCode = 1
 		}
 
@@ -118,6 +128,9 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		if initData.workspace != nil {
 			initData.workspace.Close()
 		}
+
+		span.End()
+		instrument.ShutdownTracing()
 	}()
 
 	// verify we have an argument
@@ -131,7 +144,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// initialise
-	initData = initialiseCheck(spinner)
+	initData = initialiseCheck(tracingContext, spinner)
 	if shouldExit := handleCheckInitResult(initData); shouldExit {
 		return
 	}
@@ -149,7 +162,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// treat each arg as a separate execution
 	for _, arg := range args {
-		if utils.IsContextCancelled(ctx) {
+		argCtx, argSpan := instrument.StartSpan(ctx, arg)
+		if utils.IsContextCancelled(argCtx) {
 			durations = append(durations, 0)
 			// skip over this arg, since the execution was cancelled
 			// (do not just quit as we want to populate the durations)
@@ -161,20 +175,21 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.FailOnError(err)
 
 		// create the execution tree
-		executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, arg)
+		executionTree, err := controlexecute.NewExecutionTree(argCtx, workspace, client, arg)
 		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
 
 		// execute controls synchronously (execute returns the number of failures)
-		failures += executionTree.Execute(ctx, client)
-		err = displayControlResults(ctx, executionTree)
+		failures += executionTree.Execute(argCtx, client)
+		err = displayControlResults(argCtx, executionTree)
 		utils.FailOnError(err)
 
 		if len(exportFormats) > 0 {
 			d := exportData{executionTree: executionTree, exportFormats: exportFormats, errorsLock: &exportErrorsLock, errors: exportErrors, waitGroup: &exportWaitGroup}
-			exportCheckResult(ctx, &d)
+			exportCheckResult(argCtx, &d)
 		}
 
 		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))
+		argSpan.End()
 	}
 
 	// wait for exports to complete
@@ -191,7 +206,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = failures
 }
 
-func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
+func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitData {
+	traceCtx, span := instrument.StartSpan(ctx, "check.initialiseCheck")
+	defer span.End()
+
 	initData := &checkInitData{
 		result: &db_common.InitResult{},
 	}
@@ -210,9 +228,9 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 		return initData
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	cancellableCtx, cancel := context.WithCancel(ctx)
 	startCancelHandler(cancel)
-	initData.ctx = ctx
+	initData.ctx = cancellableCtx
 
 	// set color schema
 	err = initialiseColorScheme()
@@ -221,7 +239,7 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 		return initData
 	}
 	// load workspace
-	initData.workspace, err = loadWorkspacePromptingForVariables(ctx, spinner)
+	initData.workspace, err = loadWorkspacePromptingForVariables(traceCtx, spinner)
 	if err != nil {
 		if !utils.IsCancelledError(err) {
 			err = utils.PrefixError(err, "failed to load workspace")
@@ -231,7 +249,7 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 	}
 
 	// check if the required plugins are installed
-	err = initData.workspace.CheckRequiredPluginsInstalled()
+	err = initData.workspace.CheckRequiredPluginsInstalled(traceCtx)
 	if err != nil {
 		initData.result.Error = err
 		return initData

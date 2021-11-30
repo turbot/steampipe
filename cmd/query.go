@@ -148,7 +148,7 @@ func getPipedStdinData() string {
 func loadWorkspacePromptingForVariables(ctx context.Context, spinner *spinner.Spinner) (*workspace.Workspace, error) {
 	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
 
-	w, err := workspace.Load(workspacePath)
+	w, err := workspace.Load(ctx, workspacePath)
 	if err == nil {
 		return w, nil
 	}
@@ -169,7 +169,7 @@ func loadWorkspacePromptingForVariables(ctx context.Context, spinner *spinner.Sp
 		spinner.Start()
 	}
 	// ok we should have all variables now - reload workspace
-	return workspace.Load(workspacePath)
+	return workspace.Load(ctx, workspacePath)
 }
 
 func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initDataChan chan *db_common.QueryInitData, args []string) {
@@ -202,7 +202,7 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 		initData.Client = client
 
 		// check if the required plugins are installed
-		if err := w.CheckRequiredPluginsInstalled(); err != nil {
+		if err := w.CheckRequiredPluginsInstalled(ctx); err != nil {
 			initData.Result.Error = err
 			return
 		}
