@@ -10,8 +10,8 @@ import (
 )
 
 type InstallOpts struct {
-	ShouldUpdate   bool
-	AdditionalMods []*modconfig.ModVersionConstraint
+	ShouldUpdate bool
+	GetMods      []*modconfig.ModVersionConstraint
 }
 
 func InstallModDependencies(opts *InstallOpts) (string, error) {
@@ -28,7 +28,7 @@ func InstallModDependencies(opts *InstallOpts) (string, error) {
 	// install workspace dependencies
 	var mod *modconfig.Mod
 	if !parse.ModfileExists(workspacePath) {
-		if len(opts.AdditionalMods) == 0 {
+		if len(opts.GetMods) == 0 {
 			return "No mod file found, so there are no dependencies to install", nil
 		}
 		// so there is no mod file, but we are adding mod dependencies - create a default mod
@@ -42,11 +42,6 @@ func InstallModDependencies(opts *InstallOpts) (string, error) {
 		}
 	}
 
-	// if additional dependencies were specified, add to to mod
-	if len(opts.AdditionalMods) > 0 {
-		mod.AddModDependencies(opts.AdditionalMods)
-	}
-
 	installer, err := NewModInstaller(workspacePath)
 	if err != nil {
 		return "", err
@@ -54,18 +49,11 @@ func InstallModDependencies(opts *InstallOpts) (string, error) {
 
 	// set update flag
 	installer.ShouldUpdate = opts.ShouldUpdate
+	installer.GetMods = opts.GetMods
 
 	err = installer.InstallModDependencies(mod)
 	if err != nil {
 		return "", err
-	}
-	// if additional dependencies were added, save the mod file
-	// if additional dependencies were specified, add to to mod
-	if len(opts.AdditionalMods) > 0 {
-		mod.AddModDependencies(opts.AdditionalMods)
-		if err = mod.Save(); err != nil {
-			return "", err
-		}
 	}
 
 	return installer.InstallReport(), nil
