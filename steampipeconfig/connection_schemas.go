@@ -2,21 +2,24 @@ package steampipeconfig
 
 import (
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 // ConnectionSchemaMap is a map of connection to all connections with the same schema
 type ConnectionSchemaMap map[string][]string
 
+// NewConnectionSchemaMap creates a ConnectionSchemaMap for all configured connections
+// it uses the current connection state to determine if a connection has a dynamic schema
+// (NOTE: this will no work for newly added plugins which will not have a state yet
+// - which is why CreateConnectionPlugins loads the schemas for each new plugin
+// and calls NewConnectionSchemaMapForConnections directly, passing the schema modes)
 func NewConnectionSchemaMap() (ConnectionSchemaMap, error) {
 	connectionNames := GlobalConfig.ConnectionNames()
 	connectionState, err := GetConnectionState(connectionNames)
 	if err != nil {
 		return nil, err
 	}
-	return NewConnectionSchemaMapForConnections(connectionNames, connectionState)
-}
 
-func NewConnectionSchemaMapForConnections(connectionNames []string, connectionState ConnectionDataMap) (ConnectionSchemaMap, error) {
 	res := make(ConnectionSchemaMap)
 
 	// if there is only 1 connection, just return a map containing it
@@ -25,15 +28,23 @@ func NewConnectionSchemaMapForConnections(connectionNames []string, connectionSt
 		return res, nil
 	}
 
+	// build a map of connection name to schema mode
+	schemaModeMap := make(map[string]string, len(connectionState))
+	for connectionName, connectionData := range connectionState {
+		if connectionData.SchemaMode != "" {
+			schemaModeMap[connectionName] = connectionData.SchemaMode
+		}
+	}
+	// now build the ConnectionSchemaMap
+	return NewConnectionSchemaMapForConnections(GlobalConfig.ConnectionList(), schemaModeMap), nil
+
+}
+
+func NewConnectionSchemaMapForConnections(connections []*modconfig.Connection, schemaModeMap map[string]string) ConnectionSchemaMap {
+	var res = make(ConnectionSchemaMap)
 	// map of plugin name to first connection which uses it
 	pluginMap := make(map[string]string)
-
-	for _, connectionName := range connectionNames {
-		connection, ok := GlobalConfig.Connections[connectionName]
-		if !ok {
-			continue
-		}
-
+	for _, connection := range connections {
 		p := connection.Plugin
 
 		// look for this plugin in the map - read out the first conneciton which uses it
@@ -42,25 +53,21 @@ func NewConnectionSchemaMapForConnections(connectionNames []string, connectionSt
 		// this is the first connection schema that uses this plugin
 		thisIsFirstConnectionForPlugin := !ok
 
-		// do we have a state for this connection - if so determine whether this is a dynamic schema
-		var connectionData *ConnectionData
-		if connectionState != nil {
-			connectionData = connectionState[connectionName]
-		}
-		dynamicSchema := connectionData != nil && connectionData.SchemaMode == plugin.SchemaModeDynamic
+		// so determine whether this is a dynamic schema
+		dynamicSchema := schemaModeMap[connection.Name] == plugin.SchemaModeDynamic
 		shouldAddSchema := thisIsFirstConnectionForPlugin || dynamicSchema
 
 		// if we have not handled this plugin before, or it is a dynamic schema
 		if shouldAddSchema {
-			pluginMap[p] = connectionName
+			pluginMap[p] = connection.Name
 			// add a new entry in the schema map
-			res[connectionName] = []string{connectionName}
+			res[connection.Name] = []string{connection.Name}
 		} else {
 			// just update list of connections using same schema
-			res[connectionForPlugin] = append(res[connectionForPlugin], connectionName)
+			res[connectionForPlugin] = append(res[connectionForPlugin], connection.Name)
 		}
 	}
-	return res, nil
+	return res
 }
 
 // UniqueSchemas returns the unique schemas for all loaded connections

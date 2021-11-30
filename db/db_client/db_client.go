@@ -62,7 +62,7 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 	}
 	client.connectionString = connectionString
 
-	if err := client.loadForeignSchemaNames(); err != nil {
+	if err := client.LoadForeignSchemaNames(); err != nil {
 		client.Close()
 		return nil, err
 	}
@@ -217,12 +217,13 @@ ORDER BY
 	return query
 }
 
-func (c *DbClient) loadForeignSchemaNames() error {
+func (c *DbClient) LoadForeignSchemaNames() error {
 	res, err := c.dbClient.Query("SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
-
 	if err != nil {
 		return err
 	}
+	// clear foreign schemas
+	c.foreignSchemas = nil
 	var schema string
 	for res.Next() {
 		if err := res.Scan(&schema); err != nil {

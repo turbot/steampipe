@@ -37,4 +37,5 @@ type Client interface {
 	GetSchemaFromDB([]string) (*schema.Metadata, error)
 	// remote client will have empty implementation
 	RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult
+	LoadForeignSchemaNames() error
 }
