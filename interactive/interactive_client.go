@@ -158,7 +158,7 @@ func (c *InteractiveClient) LoadSchema() error {
 	defer utils.LogTime("db_client.LoadSchema end")
 
 	// build a ConnectionSchemas object to identify the schemas to load
-	// (pass nil for sonnection state - this forces NewConnectionSchemas to load it)
+	// (pass nil for connection state - this forces NewConnectionSchemas to load it)
 	connectionSchemas, err := steampipeconfig.NewConnectionSchemas(steampipeconfig.GlobalConfig.ConnectionNames(), nil)
 	if err != nil {
 		return err
@@ -169,7 +169,6 @@ func (c *InteractiveClient) LoadSchema() error {
 	metadata, err := c.client().GetSchemaFromDB(schemas)
 	utils.FailOnError(err)
 
-	// we now need to
 	c.populateSchemaMetadata(metadata, connectionSchemas)
 
 	return nil
@@ -185,14 +184,6 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		return
 	}
 
-	// if there was no error, fetch the schema
-	// TODO - make this async
-	if initResult.Error == nil {
-		if err := c.LoadSchema(); err != nil {
-			initResult.Error = err
-		}
-	}
-
 	if initResult.Error != nil {
 		c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
@@ -200,6 +191,9 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		utils.ShowError(initResult.Error)
 		return
 	}
+	// asyncronously fetch the schema
+	go c.LoadSchema()
+
 	if initResult.HasMessages() {
 		fmt.Println()
 		initResult.DisplayMessages()
@@ -397,7 +391,7 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 		return "", nil
 	}
 
-	// wait fore initialisation to complete so we can access the workspace
+	// wait for initialisation to complete so we can access the workspace
 	if !c.isInitialised() {
 		// create a context used purely to detect cancellation during initialisation
 		// this will also set c.cancelActiveQuery
@@ -536,8 +530,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		queryInfo := getQueryInfo(text)
 
 		// only add table suggestions if the client is initialised
-		if queryInfo.EditingTable && c.isInitialised() {
-			// TODO CHECK WE HAVE SCHEMAS
+		if queryInfo.EditingTable && c.isInitialised() && c.schemaMetadata != nil {
 			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.schemaMetadata, c.initData.Client.ConnectionMap())...)
 		}
 
@@ -582,23 +575,19 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 }
 
 func (c *InteractiveClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, connectionSchemas *steampipeconfig.ConnectionSchemas) error {
-	// set up a blank struct for the schema metadata
-	c.schemaMetadata = schema.NewMetadata()
-
-	c.schemaMetadata.Schemas = schemaMetadata.Schemas
-	// we now need to add in all other schemas wqhich have the same schemas as those we have loaded
+	// we now need to add in all other schemas which have the same schemas as those we have loaded
 	for loadedSchema, otherSchemas := range connectionSchemas.SchemaMap {
 		// all 'otherSchema's have the same schema as loadedSchema
-		schema, ok := c.schemaMetadata.Schemas[loadedSchema]
+		schema, ok := schemaMetadata.Schemas[loadedSchema]
 		if !ok {
 			// should never happen
 			return fmt.Errorf("no schema loaded for %s", loadedSchema)
 		}
 
 		for _, s := range otherSchemas {
-			c.schemaMetadata.Schemas[s] = schema
+			schemaMetadata.Schemas[s] = schema
 		}
 	}
-	c.schemaMetadata.TemporarySchemaName = schemaMetadata.TemporarySchemaName
+	c.schemaMetadata = schemaMetadata
 	return nil
 }

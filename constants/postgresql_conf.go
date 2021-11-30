@@ -62,6 +62,7 @@ track_counts=off
 wal_buffers=32kB
 work_mem=64kB
 jit=off
+max_locks_per_transaction = 2048 
 
 # postgres log collection
 log_connections=on

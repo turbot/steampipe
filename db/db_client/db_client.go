@@ -45,6 +45,7 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 	db, err := establishConnection(connectionString)
+
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +62,10 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 	}
 	client.connectionString = connectionString
 
-	// TODO populate schemas
+	if err := client.loadSchemaNames(); err != nil {
+		client.Close()
+		return nil, err
+	}
 	return client, nil
 }
 
@@ -167,11 +171,11 @@ func (c *DbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshCon
 }
 
 func (c *DbClient) GetSchemaFromDB(schemas []string) (*schema.Metadata, error) {
+	utils.LogTime("db_client.GetSchemaFromDB start")
+	defer utils.LogTime("db_client.GetSchemaFromDB end")
 	connection, err := c.dbClient.Conn(context.Background())
 	utils.FailOnError(err)
 	defer connection.Close()
-	utils.LogTime("db_client.GetSchemaFromDB start")
-	defer utils.LogTime("db_client.GetSchemaFromDB end")
 
 	query := c.buildSchemasQuery(schemas)
 	tablesResult, err := connection.QueryContext(context.Background(), query)
@@ -185,41 +189,46 @@ func (c *DbClient) buildSchemasQuery(schemas []string) string {
 	schemasClause := ""
 	if len(schemas) > 0 {
 		schemasClause = fmt.Sprintf(`
-				cols.table_name in (
-    				SELECT 
-    					foreign_table_name 
-    				FROM 
-    					information_schema.foreign_tables
-					WHERE 
-						foreign_table_schema in ('%s')
-    			) 
-    			OR`, strings.Join(schemas, "','"))
+    cols.table_schema in ('%s')
+OR`, strings.Join(schemas, "','"))
 	}
 	query := fmt.Sprintf(`
-		SELECT 
-			table_name, 
-			column_name,
-			column_default,
-			is_nullable,
-			data_type,
-			table_schema,
-			(COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
-			(COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
-		FROM
-			information_schema.columns cols
-		LEFT JOIN
-			pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
-		LEFT JOIN
-			pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
-		WHERE
-		    (   %s
-    			cols.table_schema = 'public'
-    			OR
-    			LEFT(cols.table_schema,8) = 'pg_temp_'
-			)
-			
-		ORDER BY 
-			cols.table_schema, cols.table_name, cols.column_name;
+SELECT
+    table_name,
+    column_name,
+    column_default,
+    is_nullable,
+    data_type,
+    table_schema,
+    (COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
+    (COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
+FROM
+    information_schema.columns cols
+LEFT JOIN
+    pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
+LEFT JOIN
+    pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
+WHERE %s
+    LEFT(cols.table_schema,8) = 'pg_temp_'
+ORDER BY
+    cols.table_schema, cols.table_name, cols.column_name;
+
 `, schemasClause)
 	return query
+}
+
+func (c *DbClient) loadSchemaNames() error {
+	res, err := c.dbClient.Query("SELECT schema_name FROM information_schema.schemata")
+
+	if err != nil {
+		return err
+	}
+	var schema string
+	for res.Next() {
+		if err := res.Scan(&schema); err != nil {
+			return err
+		}
+		c.schemas = append(c.schemas, schema)
+	}
+	return nil
 }
