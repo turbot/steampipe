@@ -40,7 +40,6 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 		}
 
 		// add the schema into the list of schema
-
 		if !isTemporarySchema {
 			schemasToAdd = append(schemasToAdd, schemaName)
 		}
