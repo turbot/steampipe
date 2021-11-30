@@ -37,8 +37,8 @@ type DbClient struct {
 	sessionsMutex *sync.Mutex
 
 	// list of connection schemas
-	schemas    []string
-	searchPath []string
+	foreignSchemas []string
+	searchPath     []string
 }
 
 func NewDbClient(connectionString string) (*DbClient, error) {
@@ -62,7 +62,7 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 	}
 	client.connectionString = connectionString
 
-	if err := client.loadSchemaNames(); err != nil {
+	if err := client.loadForeignSchemaNames(); err != nil {
 		client.Close()
 		return nil, err
 	}
@@ -117,9 +117,9 @@ func (c *DbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
 	return &steampipeconfig.ConnectionDataMap{}
 }
 
-// Schemas implements Client
-func (c *DbClient) Schemas() []string {
-	return c.schemas
+// ForeignSchemas implements Client
+func (c *DbClient) ForeignSchemas() []string {
+	return c.foreignSchemas
 }
 
 // RefreshSessions terminates the current connections and creates a new one - repopulating session data
@@ -217,8 +217,8 @@ ORDER BY
 	return query
 }
 
-func (c *DbClient) loadSchemaNames() error {
-	res, err := c.dbClient.Query("SELECT schema_name FROM information_schema.schemata")
+func (c *DbClient) loadForeignSchemaNames() error {
+	res, err := c.dbClient.Query("SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
 
 	if err != nil {
 		return err
@@ -228,7 +228,10 @@ func (c *DbClient) loadSchemaNames() error {
 		if err := res.Scan(&schema); err != nil {
 			return err
 		}
-		c.schemas = append(c.schemas, schema)
+		// ignore command schema
+		if schema != constants.CommandSchema {
+			c.foreignSchemas = append(c.foreignSchemas, schema)
+		}
 	}
 	return nil
 }

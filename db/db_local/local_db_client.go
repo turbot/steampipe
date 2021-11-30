@@ -85,9 +85,9 @@ func (c *LocalDbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateC
 	c.client.SetEnsureSessionDataFunc(f)
 }
 
-// Schemas implements Client
-func (c *LocalDbClient) Schemas() []string {
-	return c.client.Schemas()
+// ForeignSchemas implements Client
+func (c *LocalDbClient) ForeignSchemas() []string {
+	return c.client.ForeignSchemas()
 }
 
 func (c *LocalDbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
@@ -168,7 +168,7 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.Refre
 	}
 
 	// load the connection state and cache it!
-	connectionMap, err := steampipeconfig.GetConnectionState(c.Schemas())
+	connectionMap, err := steampipeconfig.GetConnectionState(c.ForeignSchemas())
 	if err != nil {
 		res.Error = err
 		return res
@@ -242,7 +242,7 @@ func (c *LocalDbClient) setUserSearchPath() ([]string, error) {
 
 // build default search path from the connection schemas, bookended with public and internal
 func (c *LocalDbClient) getDefaultSearchPath() []string {
-	searchPath := c.Schemas()
+	searchPath := c.ForeignSchemas()
 	sort.Strings(searchPath)
 	// add the 'public' schema as the first schema in the search_path. This makes it
 	// easier for users to build and work with their own tables, and since it's normally

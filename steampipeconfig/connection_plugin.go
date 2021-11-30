@@ -45,6 +45,7 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (*ConnectionPlugin
 
 func CreateConnectionPlugins(connections []*modconfig.Connection, connectionState ConnectionDataMap) (res map[string]*ConnectionPlugin, err error) {
 	defer func() {
+		// TOODO
 		//if err != nil {
 		//	// prefix error with the plugin name
 		//	err = fmt.Errorf("failed to start plugin '%s': %s", connection.PluginShortName, err)
@@ -147,10 +148,10 @@ func CreateConnectionPlugins(connections []*modconfig.Connection, connectionStat
 	// now get schemas
 
 	// we will only need to fetch the schema once for each plugin (apart from plugins with dynamic schema)
-	// build a ConnectionSchemas object for the connections we are updating
+	// build a ConnectionSchemaMap object for the connections we are updating
 	// - we can use this to identify the minimal set of schemas we need to fetch
 	// if only one connection was passed, load the schema
-	connectionSchemas, err := NewConnectionSchemas(connectionNames, connectionState)
+	connectionSchemas, err := NewConnectionSchemaMapForConnections(connectionNames, connectionState)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +167,7 @@ func CreateConnectionPlugins(connections []*modconfig.Connection, connectionStat
 			continue
 		}
 		// now set this schema for all connections which share it
-		for _, connectionUsingSchema := range connectionSchemas.SchemaMap[c] {
+		for _, connectionUsingSchema := range connectionSchemas[c] {
 			res[connectionUsingSchema].Schema = schema
 		}
 	}
