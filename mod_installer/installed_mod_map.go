@@ -2,13 +2,14 @@ package mod_installer
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/Masterminds/semver"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 // InstalledModMap is is map keyed by mod name storing a list of all the mod version installed for each mod
-type InstalledModMap map[string][]*semver.Version
+type InstalledModMap map[string]semver.Collection
 
 func (i InstalledModMap) GetVersionSatisfyingRequirement(requiredVersion *modconfig.ModVersionConstraint) *semver.Version {
 	// is this mod installed
@@ -25,7 +26,11 @@ func (i InstalledModMap) GetVersionSatisfyingRequirement(requiredVersion *modcon
 }
 
 func (i InstalledModMap) Add(modName string, modVersion *semver.Version) {
-	i[modName] = append(i[modName], modVersion)
+	versions := append(i[modName], modVersion)
+	// reverse sort the versions
+	sort.Sort(sort.Reverse(versions))
+	i[modName] = versions
+
 }
 
 // FlatMap converts the InstalledModMap map into a bool map keyed by qualified mod name
