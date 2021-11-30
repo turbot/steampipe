@@ -155,6 +155,10 @@ func (c *LocalDbClient) GetSchemaFromDB(schemas []string) (*schema.Metadata, err
 	return c.client.GetSchemaFromDB(schemas)
 }
 
+func (c *LocalDbClient) LoadForeignSchemaNames() error {
+	return c.client.LoadForeignSchemaNames()
+}
+
 // local only functions
 
 func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult {

@@ -259,7 +259,17 @@ func (c *SteampipeConfig) ConnectionsForPlugin(pluginLongName string, pluginVers
 func (c *SteampipeConfig) ConnectionNames() []string {
 	res := make([]string, len(c.Connections))
 	idx := 0
-	for c := range c.Connections {
+	for connectionName := range c.Connections {
+		res[idx] = connectionName
+		idx++
+	}
+	return res
+}
+
+func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
+	res := make([]*modconfig.Connection, len(c.Connections))
+	idx := 0
+	for _, c := range c.Connections {
 		res[idx] = c
 		idx++
 	}
