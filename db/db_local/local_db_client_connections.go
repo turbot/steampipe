@@ -58,9 +58,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 
 	// so there ARE connections to update
 	// execute the connection queries
-	// batch them up
-	batched := utils.BatchStringArray(connectionQueries, 100)
-	if err := executeConnectionQueries(batched); err != nil {
+	if err := executeConnectionQueries(connectionQueries); err != nil {
 		res.Error = err
 		return res
 	}
