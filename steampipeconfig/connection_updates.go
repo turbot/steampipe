@@ -47,16 +47,16 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
-	connectionState, err := GetConnectionState(schemaNames)
+	currentConnectionState, err := GetConnectionState(schemaNames)
 	if err != nil {
 		res.Error = err
 		return nil, res
 	}
-	updates.currentConnectionState = connectionState
+	updates.currentConnectionState = currentConnectionState
 
 	// for any connections with dynamic schema, we need to reload their schema
 	// instantiate connection plugins for all connections with dynamic schema - this will retrieve their current schema
-	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, err := getSchemaHashesForDynamicSchemas(requiredConnectionState, connectionState)
+	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, err := getSchemaHashesForDynamicSchemas(requiredConnectionState, currentConnectionState)
 	if err != nil {
 		res.Error = err
 		return nil, res
@@ -65,7 +65,7 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	// connections to create/update
 	for name, requiredConnectionData := range requiredConnectionState {
 		// check whether this connection exists in the state
-		currentConnectionData, ok := connectionState[name]
+		currentConnectionData, ok := currentConnectionState[name]
 		// if it does not exist, or is not equal, add to updates
 		if !ok || !currentConnectionData.Equals(requiredConnectionData) {
 			log.Printf("[TRACE] connection %s is out of date or missing\n", name)
@@ -74,7 +74,7 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	}
 
 	// connections to delete - any connection which is in connection state but NOT required connections
-	for connection, requiredPlugin := range connectionState {
+	for connection, requiredPlugin := range currentConnectionState {
 		if _, ok := requiredConnectionState[connection]; !ok {
 			log.Printf("[TRACE] connection %s is no longer required\n", connection)
 			updates.Delete[connection] = requiredPlugin
@@ -85,7 +85,7 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	// matches the existing db schema
 	for name, requiredHash := range dynamicSchemaHashMap {
 		// get the connection data from the loaded connection state
-		connectionData, ok := connectionState[name]
+		connectionData, ok := currentConnectionState[name]
 		// if the connection exists in the state, does the schemas hash match?
 		if ok && connectionData.SchemaHash != requiredHash {
 			updates.Update[name] = connectionData

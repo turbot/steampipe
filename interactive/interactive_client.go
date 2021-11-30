@@ -159,17 +159,17 @@ func (c *InteractiveClient) LoadSchema() error {
 
 	// build a ConnectionSchemaMap object to identify the schemas to load
 	// (pass nil for connection state - this forces NewConnectionSchemaMap to load it)
-	connectionSchemas, err := steampipeconfig.NewConnectionSchemaMap()
+	connectionSchemaMap, err := steampipeconfig.NewConnectionSchemaMap()
 	if err != nil {
 		return err
 	}
 	// get the unique schema - we use this to limit the schemas we load from the database
-	schemas := connectionSchemas.UniqueSchemas()
+	schemas := connectionSchemaMap.UniqueSchemas()
 	// load these schemas
 	metadata, err := c.client().GetSchemaFromDB(schemas)
 	utils.FailOnError(err)
 
-	c.populateSchemaMetadata(metadata, connectionSchemas)
+	c.populateSchemaMetadata(metadata, connectionSchemaMap)
 
 	return nil
 }
@@ -574,9 +574,9 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 	return res
 }
 
-func (c *InteractiveClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, connectionSchemas steampipeconfig.ConnectionSchemaMap) error {
+func (c *InteractiveClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, connectionSchemaMap steampipeconfig.ConnectionSchemaMap) error {
 	// we now need to add in all other schemas which have the same schemas as those we have loaded
-	for loadedSchema, otherSchemas := range connectionSchemas {
+	for loadedSchema, otherSchemas := range connectionSchemaMap {
 		// all 'otherSchema's have the same schema as loadedSchema
 		schema, ok := schemaMetadata.Schemas[loadedSchema]
 		if !ok {
