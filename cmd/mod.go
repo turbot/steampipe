@@ -95,7 +95,7 @@ func runModGetCmd(cmd *cobra.Command, args []string) {
 	}
 	// just call install, passing an AdditionalMods option
 	msg, err := mod_installer.InstallModDependencies(&mod_installer.InstallOpts{
-		AdditionalMods: requiredModVersions,
+		GetMods: requiredModVersions,
 	})
 	utils.FailOnError(err)
 	fmt.Println(msg)
