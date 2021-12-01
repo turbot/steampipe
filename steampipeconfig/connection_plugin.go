@@ -44,14 +44,6 @@ func CreateConnectionPlugin(connection *modconfig.Connection) (*ConnectionPlugin
 }
 
 func CreateConnectionPlugins(connections []*modconfig.Connection, connectionState ConnectionDataMap) (connectionPluginMap map[string]*ConnectionPlugin, err error) {
-	defer func() {
-		// TOODO
-		//if err != nil {
-		//	// prefix error with the plugin name
-		//	err = fmt.Errorf("failed to start plugin '%s': %s", connection.PluginShortName, err)
-		//}
-	}()
-
 	log.Printf("[TRACE] CreateConnectionPlugin creating %d connections", len(connections))
 
 	// build result map
