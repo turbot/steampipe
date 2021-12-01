@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/cloud"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db/db_common"
 )
 
 func ValidateConnectionStringArgs() error {
@@ -27,7 +27,7 @@ func ValidateConnectionStringArgs() error {
 
 		// so we have a database and a token - build the connection string and set it in viper
 		var err error
-		if connectionString, err = db_common.GetConnectionString(workspaceDatabase, cloudToken); err != nil {
+		if connectionString, err = cloud.GetConnectionString(workspaceDatabase, cloudToken); err != nil {
 			return err
 		}
 	}
