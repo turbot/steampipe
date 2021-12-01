@@ -25,7 +25,7 @@ type runningPlugin struct {
 type PluginManager struct {
 	pb.UnimplementedPluginManagerServer
 
-	Plugins          map[string]runningPlugin
+	Plugins          map[string]*runningPlugin
 	configDir        string
 	mut              sync.Mutex
 	connectionConfig map[string]*pb.ConnectionConfig
@@ -36,7 +36,7 @@ func NewPluginManager(connectionConfig map[string]*pb.ConnectionConfig, logger h
 	pluginManager := &PluginManager{
 		logger:           logger,
 		connectionConfig: connectionConfig,
-		Plugins:          make(map[string]runningPlugin),
+		Plugins:          make(map[string]*runningPlugin),
 	}
 	return pluginManager
 }
@@ -144,7 +144,7 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 	// store the client to our map
 	reattach := pb.NewReattachConfig(client.ReattachConfig())
 	m.mut.Lock()
-	m.Plugins[connection] = runningPlugin{client: client, reattach: reattach}
+	m.Plugins[connection] = &runningPlugin{client: client, reattach: reattach}
 	m.mut.Unlock()
 	log.Printf("[TRACE] PluginManager Get complete, returning reattach config with PID: %d", reattach.Pid)
 
