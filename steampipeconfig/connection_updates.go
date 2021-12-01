@@ -96,7 +96,7 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
 	// - remove these from list of updates
 	connectionsToCreate := removeConnectionsFromList(updates.Update.Connections(), connectionsPluginsWithDynamicSchema)
-	connectionPlugins, err := CreateConnectionPlugins(connectionsToCreate, nil)
+	connectionPlugins, err := CreateConnectionPlugins(connectionsToCreate)
 	if err != nil {
 		res.Error = err
 		return nil, res
@@ -156,17 +156,6 @@ func removeConnectionsFromList(sourceConnections []*modconfig.Connection, connec
 	return res
 }
 
-func getConnectionPluginAsync(connection *modconfig.Connection, pluginChan chan *ConnectionPlugin, errorChan chan error) {
-	go func() {
-		p, err := CreateConnectionPlugin(connection)
-		if err != nil {
-			errorChan <- err
-			return
-		}
-		pluginChan <- p
-	}()
-}
-
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, error) {
 	// for every required connection, check the connection state to determine whether the schema mode is 'dynamic'
 	// if we have never loaded the connection, there will be no state, so we cannot retrieve this information
@@ -184,7 +173,7 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 		}
 	}
 
-	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections(), nil)
+	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections())
 
 	hashMap := make(map[string]string)
 	for name, c := range connectionsPluginsWithDynamicSchema {
