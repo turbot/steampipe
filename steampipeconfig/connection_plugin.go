@@ -36,14 +36,14 @@ type ConnectionPlugin struct {
 // CreateConnectionPlugin instantiates a plugin for a connection, fetches schema and sends connection config
 func CreateConnectionPlugin(connection *modconfig.Connection) (*ConnectionPlugin, error) {
 
-	res, err := CreateConnectionPlugins([]*modconfig.Connection{connection}, nil)
+	res, err := CreateConnectionPlugins([]*modconfig.Connection{connection})
 	if err != nil {
 		return nil, err
 	}
 	return res[connection.Name], nil
 }
 
-func CreateConnectionPlugins(connections []*modconfig.Connection, connectionState ConnectionDataMap) (connectionPluginMap map[string]*ConnectionPlugin, err error) {
+func CreateConnectionPlugins(connections []*modconfig.Connection) (connectionPluginMap map[string]*ConnectionPlugin, err error) {
 	log.Printf("[TRACE] CreateConnectionPlugin creating %d connections", len(connections))
 
 	// build result map
