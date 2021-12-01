@@ -9,7 +9,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 )
 
-// InitViper :: initializes and configures an instance of viper
+// InitViper initializes and configures an instance of viper
 func InitViper() {
 	v := viper.GetViper()
 	// set defaults
@@ -22,7 +22,7 @@ func InitViper() {
 	}
 }
 
-// Viper :: fetches the global viper instance
+// Viper fetches the global viper instance
 func Viper() *viper.Viper {
 	return viper.GetViper()
 }
