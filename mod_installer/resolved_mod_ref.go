@@ -8,20 +8,19 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// ResolvedModRef is a struct to represent a resolved mod reference
+// ResolvedModRef is a struct to represent a resolved mod git reference
 type ResolvedModRef struct {
 	// the FQN of the mod - also the Git URL of the mod repo
 	Name string
 	// the Git branch/tag
 	GitReference plumbing.ReferenceName
-	// the monotonic version - may be unknown for local or branch
-	// although version will be monotonic, we can still use semver
+	// the mod version
 	Version *goVersion.Version
 	// the file path for local mods
 	FilePath string
 }
 
-func NewResolvedModRef(modVersion *modconfig.ModVersion) (*ResolvedModRef, error) {
+func NewResolvedModRef(modVersion *modconfig.ModVersion, version *goVersion.Version) (*ResolvedModRef, error) {
 	res := &ResolvedModRef{
 		Name: modVersion.Name,
 
@@ -29,30 +28,22 @@ func NewResolvedModRef(modVersion *modconfig.ModVersion) (*ResolvedModRef, error
 		FilePath: modVersion.FilePath,
 	}
 	if res.FilePath == "" {
-		// NOTE we currently only support explicit (i.e. minor) versions
-		// if the mod version has either a version constraint or branch, set the git ref
-		res.SetGitReference(modVersion)
+		res.SetGitReference(modVersion, version)
 	}
 
 	return res, nil
 }
 
-func (r *ResolvedModRef) SetGitReference(modVersion *modconfig.ModVersion) {
-
+func (r *ResolvedModRef) SetGitReference(modVersion *modconfig.ModVersion, version *goVersion.Version) {
+	r.Version = version
 	if modVersion.Branch != "" {
 		r.GitReference = plumbing.NewBranchReferenceName(modVersion.Branch)
 		// NOTE: we need to set version from branch
 		return
 	}
 
-	// so there is a version constraint
-
-	// NOTE: if it is just a major constraint, we need to find the latest version in the major
-	// for now assume it is a full version
-
-	// NOTE: we cannot just ToString the version as we need the 'v' at the beginning
-	r.GitReference = plumbing.NewTagReferenceName(modVersion.VersionString)
-	r.Version = modVersion.VersionConstraint
+	// NOTE: use the original version string - this will be the tag name
+	r.GitReference = plumbing.NewTagReferenceName(version.Original())
 }
 
 // FullName returns name in the format <dependency name>@v<dependencyVersion>
