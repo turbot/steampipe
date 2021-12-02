@@ -97,7 +97,7 @@ func loadModDependencies(mod *modconfig.Mod, runCtx *parse.RunContext) error {
 		for _, dependencyMod := range mod.Requires.Mods {
 			// have we already loaded a mod which satisfied this
 			if loadedMod, ok := runCtx.LoadedDependencyMods[dependencyMod.Name]; ok {
-				if loadedMod.Version.GreaterThanOrEqual(dependencyMod.VersionConstraint) {
+				if dependencyMod.VersionConstraint.Check(loadedMod.Version) {
 					continue
 				}
 			}
@@ -167,7 +167,7 @@ func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder s
 				// invalid format - ignore
 				continue
 			}
-			if v.GreaterThanOrEqual(modDependency.VersionConstraint) {
+			if modDependency.VersionConstraint.Check(v) {
 				return filepath.Join(parentFolder, entry.Name()), v, nil
 			}
 		}

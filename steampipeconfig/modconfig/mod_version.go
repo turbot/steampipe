@@ -19,7 +19,7 @@ type ModVersion struct {
 	Alias         *string `cty:"alias" hcl:"alias,optional"`
 
 	// only one of VersionConstraint, Branch and FilePath will be set
-	VersionConstraint *goVersion.Version
+	VersionConstraint goVersion.Constraints
 	// the branch to use
 	Branch string
 	// the local file location to use
@@ -57,7 +57,7 @@ func (m *ModVersion) Initialise() hcl.Diagnostics {
 		return diags
 	}
 	// does the version parse as a semver version
-	if v, err := goVersion.NewVersion(m.VersionString); err == nil {
+	if v, err := goVersion.NewConstraint(m.VersionString); err == nil {
 		m.VersionConstraint = v
 		return diags
 	}
