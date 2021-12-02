@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	goVersion "github.com/hashicorp/go-version"
+
 	"github.com/turbot/steampipe/constants"
 
 	git "github.com/go-git/go-git/v5"
@@ -118,14 +120,39 @@ func (i *ModInstaller) GetModRefForVersion(modVersion *modconfig.ModVersion) (*R
 
 	// so we need to resolve this mod version
 
-	// NOTE for now assume github
-	// get the most recent minor version fo rthis major version from github
-	return i.getLatestCompatibleVersionFromGithub(modVersion)
+	// get the most recent minor version for this major version from the remote git repo
+	return i.getLatestCompatibleVersionFromGit(modVersion)
 }
 
-func (i *ModInstaller) getLatestCompatibleVersionFromGithub(modVersion *modconfig.ModVersion) (*ResolvedModRef, error) {
+func (i *ModInstaller) getLatestCompatibleVersionFromGit(modVersion *modconfig.ModVersion) (*ResolvedModRef, error) {
+	// determine whether a specific version was specified or just a major version
+	version, err := i.getVersionSatisfyingConstraint(modVersion)
+	if err != nil {
+		return nil, err
+	}
+	if version == nil {
+		return nil, fmt.Errorf("no version of %s found satisfying verison constraint %s", modVersion.Name, modVersion.VersionString)
+	}
 	// NOTE for now assume the mod is specified with a full version
-	return NewResolvedModRef(modVersion)
+	return NewResolvedModRef(modVersion, version)
+}
+
+func (i *ModInstaller) getVersionSatisfyingConstraint(modVersion *modconfig.ModVersion) (*goVersion.Version, error) {
+	modReporUrl := i.getGitUrl(modVersion.Name)
+	// get a list of all tags, with corresponding versions
+	// these come back reverse sorted
+	sortedVersions, err := GetTagVersionsFromGit(modReporUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	// search the sorted versions from ends to start, finding the highest version which satisfies the constraint
+	for _, version := range sortedVersions {
+		if modVersion.VersionConstraint.Check(version) {
+			return version, nil
+		}
+	}
+	return nil, nil
 }
 
 func (i *ModInstaller) installDependency(dependency *ResolvedModRef, dependencyMap map[string]*ResolvedModRef) error {
@@ -136,7 +163,7 @@ func (i *ModInstaller) installDependency(dependency *ResolvedModRef, dependencyM
 		}
 	}
 
-	// add this dependency into the map (if we fail to install,m the whole installation process will terminate,
+	// add this dependency into the map (if we fail to install, the whole installation process will terminate,
 	// so no need to check for errors
 	dependencyMap[dependency.Name] = dependency
 
@@ -153,7 +180,7 @@ func (i *ModInstaller) installDependency(dependency *ResolvedModRef, dependencyM
 			return err
 		}
 	}
-	// no load the installed mod and install _its_ dependencies
+	// now load the installed mod and install _its_ dependencies
 	if !parse.ModfileExists(modPath) {
 		log.Printf("[TRACE] dependency %s does not define a mod defintion - so there are no dependencies to install", dependency.Name)
 		return nil
@@ -180,8 +207,7 @@ func (i *ModInstaller) installDependencyFromGit(dependency *ResolvedModRef, inst
 	// NOTE: we need to check existing installed mods
 
 	// get the mod from git
-
-	gitUrl := fmt.Sprintf("https://%s", dependency.Name)
+	gitUrl := i.getGitUrl(dependency.Name)
 	_, err := git.PlainClone(installPath,
 		false,
 		&git.CloneOptions{
@@ -193,6 +219,10 @@ func (i *ModInstaller) installDependencyFromGit(dependency *ResolvedModRef, inst
 		})
 
 	return err
+}
+
+func (i *ModInstaller) getGitUrl(modName string) string {
+	return fmt.Sprintf("https://%s", modName)
 }
 
 func (i *ModInstaller) InstallReport() string {
