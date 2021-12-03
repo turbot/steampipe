@@ -28,6 +28,21 @@ type ModVersion struct {
 	DeclRange hcl.Range
 }
 
+func NewModVersion(modFullName string) (*ModVersion, error) {
+	segments := strings.Split(modFullName, "@")
+	if len(segments) > 2 {
+		return nil, fmt.Errorf("invalid mod name %s", modFullName)
+	}
+	v := &ModVersion{Name: segments[0]}
+	if len(segments) == 2 {
+		v.VersionString = segments[1]
+	}
+	if err := v.Initialise(); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
 func (m *ModVersion) FullName() string {
 	if m.HasVersion() {
 		return fmt.Sprintf("%s@%s", m.Name, m.VersionString)
@@ -50,10 +65,18 @@ func (m *ModVersion) String() string {
 
 // Initialise parses the version and name properties
 func (m *ModVersion) Initialise() hcl.Diagnostics {
-	var diags hcl.Diagnostics
+	diags := m.cleanName()
+	if diags != nil {
+		return diags
+	}
 
 	if strings.HasPrefix(m.VersionString, "file:") {
 		m.FilePath = m.VersionString
+		return diags
+	}
+
+	if m.VersionString == "latest" || m.VersionString == "" {
+		m.VersionConstraint, _ = goVersion.NewConstraint("*")
 		return diags
 	}
 	// does the version parse as a semver version
@@ -62,8 +85,33 @@ func (m *ModVersion) Initialise() hcl.Diagnostics {
 		return diags
 	}
 
+	// todo handle branch and commit hash
 	// otherwise assume it is a branch
 	m.Branch = m.VersionString
 
 	return diags
+}
+
+func (m *ModVersion) cleanName() hcl.Diagnostics {
+	segments := strings.Split(m.Name, "/")
+	l := len(segments)
+	if l == 3 {
+		// leave as is
+		return nil
+	}
+	if l == 1 {
+		turbotGithubPrefix := "github.com/turbot/"
+		modNamePrefix := "steampipe-mod-aws-"
+		if !strings.HasPrefix(m.Name, modNamePrefix) {
+			m.Name = fmt.Sprintf("%s%s%s", turbotGithubPrefix, modNamePrefix, m.Name)
+		} else {
+			m.Name = fmt.Sprintf("%s%s", turbotGithubPrefix, m.Name)
+		}
+		return nil
+	}
+
+	return hcl.Diagnostics{&hcl.Diagnostic{
+		Severity: hcl.DiagError,
+		Summary:  fmt.Sprintf("invalid mod name %s", m.Name),
+	}}
 }

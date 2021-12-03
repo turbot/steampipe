@@ -9,7 +9,6 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/mod_installer"
-	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -54,30 +53,17 @@ func runModInstallCmd(*cobra.Command, []string) {
 		}
 	}()
 
-	workspacePath := viper.GetString(constants.ArgWorkspace)
-
-	// install workspace dependencies
-	// TODO do we need to care about variables?? probably?
-
-	if !parse.ModfileExists(workspacePath) {
-		fmt.Println("No mod file found, so there are no dependencies to install")
-		return
-	}
-	// load the modfile only
-	mod, err := parse.ParseModDefinition(workspacePath)
+	msg, err := mod_installer.InstallModDependencies(false)
 	utils.FailOnError(err)
-
-	installer := mod_installer.NewModInstaller(workspacePath)
-	err = installer.InstallModDependencies(mod)
-	fmt.Println(installer.InstallReport())
-	utils.FailOnError(err)
+	fmt.Println(msg)
 }
 
 // get
 func modGetCmd() *cobra.Command {
 	var cmd = &cobra.Command{
-		Use:   "get",
-		Run:   runModInstallCmd,
+		Use:   "install [git-provider/org/]name[@version]",
+		Args:  cobra.ArbitraryArgs,
+		Run:   runModGetCmd,
 		Short: "Install mod dependencies",
 		Long: `Install mod dependencies.
 `,
@@ -87,7 +73,7 @@ func modGetCmd() *cobra.Command {
 	return cmd
 }
 
-func runModGetCmd(*cobra.Command, []string) {
+func runModGetCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runModGetCmd")
 	defer func() {
 		utils.LogTime("cmd.runModGetCmd end")
@@ -96,15 +82,18 @@ func runModGetCmd(*cobra.Command, []string) {
 		}
 	}()
 
-	//workspacePath := viper.GetString(constants.ArgWorkspace)
-
+	mods := append([]string{}, args...)
+	msg, err := mod_installer.GetMods(mods)
+	utils.FailOnError(err)
+	// TODO FORMAT output
+	fmt.Println(msg)
 }
 
 // list
 func modListCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "list",
-		Run:   runModInstallCmd,
+		Run:   runModListCmd,
 		Short: "Install mod dependencies",
 		Long: `Install mod dependencies.
 `,
@@ -123,15 +112,21 @@ func runModListCmd(*cobra.Command, []string) {
 		}
 	}()
 
-	//workspacePath := viper.ListString(constants.ArgWorkspace)
+	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
+	installer, err := mod_installer.NewModInstaller(workspacePath)
+	utils.FailOnError(err)
 
+	installedMods := installer.AllInstalledMods
+	utils.FailOnError(err)
+	// TODO FORMAT LIST
+	fmt.Println(installedMods)
 }
 
 // update
 func modUpdateCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "update",
-		Run:   runModInstallCmd,
+		Run:   runModUpdateCmd,
 		Short: "Install mod dependencies",
 		Long: `Install mod dependencies.
 `,
@@ -150,6 +145,7 @@ func runModUpdateCmd(*cobra.Command, []string) {
 		}
 	}()
 
-	//workspacePath := viper.UpdateString(constants.ArgWorkspace)
-
+	msg, err := mod_installer.InstallModDependencies(true)
+	utils.FailOnError(err)
+	fmt.Println(msg)
 }
