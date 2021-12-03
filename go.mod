@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/Machiel/slugify v1.0.1
+	github.com/Masterminds/semver v1.5.0
 	github.com/ahmetb/go-linq v3.0.0+incompatible
 	github.com/alecthomas/chroma v0.9.2
 	github.com/bgentry/speakeasy v0.1.0
