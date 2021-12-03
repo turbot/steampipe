@@ -153,6 +153,10 @@ func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder s
 		return "", nil, fmt.Errorf("mod dependency %s is not installed", modDependency.Name)
 	}
 
+	// results vars
+	var dependencyPath string
+	var dependencyVersion *goVersion.Version
+
 	for _, entry := range entries {
 		split := strings.Split(entry.Name(), "@")
 		if len(split) != 2 {
@@ -168,9 +172,19 @@ func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder s
 				continue
 			}
 			if modDependency.VersionConstraint.Check(v) {
-				return filepath.Join(parentFolder, entry.Name()), v, nil
+				// if there is more than 1 mod which satisfied the dependency, fail (for now)
+				if dependencyVersion != nil {
+					return "", nil, fmt.Errorf("more than one mod found which satisfies dependency %s@%s", modDependency.Name, modDependency.VersionString)
+				}
+				dependencyPath = filepath.Join(parentFolder, entry.Name())
+				dependencyVersion = v
 			}
 		}
+	}
+
+	// did we find a result?
+	if dependencyVersion != nil {
+		return dependencyPath, dependencyVersion, nil
 	}
 
 	return "", nil, fmt.Errorf("mod dependency %s is not installed", modDependency.Name)
