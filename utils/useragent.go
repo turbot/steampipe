@@ -17,13 +17,13 @@ import (
 const httpTimeout = 5 * time.Second
 
 func getUserAgent() string {
-	return fmt.Sprintf("Turbot Steampipe/%s (+https://steampipe.io)", version.String())
+	return fmt.Sprintf("Turbot Steampipe/%s (+https://steampipe.io)", version.SteampipeVersion.String())
 }
 
 // BuildRequestPayload :: merges the provided payload with the standard payload that needs to be sent
 func BuildRequestPayload(signature string, payload map[string]interface{}) *bytes.Buffer {
 	requestPayload := map[string]interface{}{
-		"version":     version.String(),
+		"version":     version.SteampipeVersion.String(),
 		"os_platform": runtime.GOOS,
 		"arch":        runtime.GOARCH,
 		"signature":   signature,
