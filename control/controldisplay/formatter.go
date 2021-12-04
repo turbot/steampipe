@@ -110,7 +110,7 @@ func (j *NullFormatter) FileExtension() string {
 }
 
 var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
-	"steampipeversion": func() string { return version.String() },
+	"steampipeversion": func() string { return version.SteampipeVersion.String() },
 	"workingdir":       func() string { wd, _ := os.Getwd(); return wd },
 	"asstr":            func(i reflect.Value) string { return fmt.Sprintf("%v", i) },
 	"statusicon": func(status string) string {

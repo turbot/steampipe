@@ -24,7 +24,7 @@ var exitCode int
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
-	Version: version.String(),
+	Version: version.SteampipeVersion.String(),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.root.PersistentPreRun start")
 		defer utils.LogTime("cmd.root.PersistentPreRun end")

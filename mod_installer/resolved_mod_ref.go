@@ -3,9 +3,8 @@ package mod_installer
 import (
 	"fmt"
 
+	"github.com/Masterminds/semver"
 	"github.com/go-git/go-git/v5/plumbing"
-	goVersion "github.com/hashicorp/go-version"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 // ResolvedModRef is a struct to represent a resolved mod git reference
@@ -15,32 +14,33 @@ type ResolvedModRef struct {
 	// the Git branch/tag
 	GitReference plumbing.ReferenceName
 	// the mod version
-	Version *goVersion.Version
+	Version *semver.Version
 	// the file path for local mods
 	FilePath string
 }
 
-func NewResolvedModRef(modVersion *modconfig.ModVersion, version *goVersion.Version) (*ResolvedModRef, error) {
+func NewResolvedModRef(installationData *InstallationData, version *semver.Version) (*ResolvedModRef, error) {
 	res := &ResolvedModRef{
-		Name: modVersion.Name,
+		Name: installationData.Name,
 
 		// this may be empty strings
-		FilePath: modVersion.FilePath,
+		FilePath: installationData.FilePath,
 	}
 	if res.FilePath == "" {
-		res.SetGitReference(modVersion, version)
+		res.SetGitReference(version)
 	}
 
 	return res, nil
 }
 
-func (r *ResolvedModRef) SetGitReference(modVersion *modconfig.ModVersion, version *goVersion.Version) {
+func (r *ResolvedModRef) SetGitReference(version *semver.Version) {
 	r.Version = version
-	if modVersion.Branch != "" {
-		r.GitReference = plumbing.NewBranchReferenceName(modVersion.Branch)
-		// NOTE: we need to set version from branch
-		return
-	}
+	// TODO handle branches
+	//if modVersion.Branch != "" {
+	//	r.GitReference = plumbing.NewBranchReferenceName(modVersion.Branch)
+	//	// NOTE: we need to set version from branch
+	//	return
+	//}
 
 	// NOTE: use the original version string - this will be the tag name
 	r.GitReference = plumbing.NewTagReferenceName(version.Original())
@@ -48,17 +48,5 @@ func (r *ResolvedModRef) SetGitReference(modVersion *modconfig.ModVersion, versi
 
 // FullName returns name in the format <dependency name>@v<dependencyVersion>
 func (r *ResolvedModRef) FullName() string {
-	segments := r.Version.Segments()
-	return fmt.Sprintf("%s@v%d.%d", r.Name, segments[0], segments[1])
-}
-
-// SatisfiesVersionConstraint return whether this resolved ref satisfies a version constraint
-func (r *ResolvedModRef) SatisfiesVersionConstraint(versionConstraint *goVersion.Version) bool {
-	// if we do not have a version set, then we cannot satisfy a version constraint
-	// this may happen if we are a local file or unversioned branch
-	if r.Version == nil {
-		return false
-	}
-
-	return r.Version.GreaterThanOrEqual(versionConstraint)
+	return fmt.Sprintf("%s@%s", r.Name, r.Version.Original())
 }

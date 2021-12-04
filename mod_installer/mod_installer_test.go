@@ -8,7 +8,6 @@ import (
 )
 
 func TestModInstaller(t *testing.T) {
-
 	cs, err := semver.NewConstraint("^3")
 	v, _ := semver.NewVersion("3.1")
 	res := cs.Check(v)
