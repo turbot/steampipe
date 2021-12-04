@@ -151,9 +151,14 @@ func (q *Query) Name() string {
 	return q.FullName
 }
 
-// QualifiedName returns the name in format: '<modName>.control.<shortName>'
+// QualifiedName returns the name in format: '<modName>.query.<shortName>'
 func (q *Query) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", q.metadata.ModName, q.FullName)
+	return fmt.Sprintf("%s.%s", q.Mod.ShortName, q.FullName)
+}
+
+// QualifiedNameWithVersion returns the name in format: '<modName>@version.query.<shortName>'
+func (q *Query) QualifiedNameWithVersion() string {
+	return fmt.Sprintf("%s.%s", q.Mod.NameWithVersion(), q.FullName)
 }
 
 // GetMetadata implements ResourceWithMetadata
@@ -205,5 +210,5 @@ func (q *Query) GetPreparedStatementName() string {
 
 // ModName implements QueryProvider
 func (q *Query) ModName() string {
-	return q.Mod.ShortName
+	return q.Mod.NameWithVersion()
 }

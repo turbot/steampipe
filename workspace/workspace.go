@@ -140,7 +140,7 @@ func (w *Workspace) SetOnFileWatcherEventMessages(f func()) {
 }
 
 // access functions
-// NOTE: all access functions lock 'loadLock' - this is to avoid conflicts with th efile watcher
+// NOTE: all access functions lock 'loadLock' - this is to avoid conflicts with the file watcher
 
 func (w *Workspace) Close() {
 	if w.watcher != nil {
@@ -219,27 +219,7 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 	return workspaceMap
 }
 
-// GetMod attempts to return the mod with a name matching 'modName'
-// It first checks the workspace mod, then checks all mod dependencies
-func (w *Workspace) GetMod(modName string) *modconfig.Mod {
-	// is it the workspace mod?
-	if modName == w.Mod.Name() {
-		return w.Mod
-	}
-	// try workspace mod dependencies
-	return w.Mods[modName]
-}
-
-// ModList returns a flat list of all mods - the workspace mod and depenfency mods
-func (w *Workspace) ModList() []*modconfig.Mod {
-	var res = []*modconfig.Mod{w.Mod}
-	for _, m := range w.Mods {
-		res = append(res, m)
-	}
-	return res
-}
-
-// SaveWorkspaceMod searialises the workspace mode to <workspace path?.mod.sp
+// SaveWorkspaceMod serialises the workspace mode to <workspace path?.mod.sp
 func (w *Workspace) SaveWorkspaceMod() error {
 	// TODO
 
@@ -365,7 +345,11 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
-			res[q.QualifiedName()] = q
+			// if this mod is a direct dependency of the workspace mod, add it to the map _without_ a verison
+			if w.requiresMod(mod) {
+				res[q.QualifiedName()] = q
+			}
+			res[q.QualifiedNameWithVersion()] = q
 		}
 	}
 	return res
@@ -702,6 +686,11 @@ func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
 	}
 
 	return string(fileBytes), true, nil
+}
+
+func (w *Workspace) requiresMod(mod *modconfig.Mod) bool {
+	// TODO check SUM file
+	return false
 }
 
 // does this resource name look like a control or query
