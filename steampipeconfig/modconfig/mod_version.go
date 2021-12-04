@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	goVersion "github.com/hashicorp/go-version"
-	typehelpers "github.com/turbot/go-kit/types"
-
 	"github.com/hashicorp/hcl/v2"
-
 	"github.com/turbot/go-kit/helpers"
+	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/version"
 )
 
 type ModVersion struct {
@@ -19,7 +17,7 @@ type ModVersion struct {
 	Alias         *string `cty:"alias" hcl:"alias,optional"`
 
 	// only one of VersionConstraint, Branch and FilePath will be set
-	VersionConstraint goVersion.Constraints
+	VersionConstraint *version.Constraint
 	// the branch to use
 	Branch string
 	// the local file location to use
@@ -58,9 +56,9 @@ func (m *ModVersion) HasVersion() bool {
 
 func (m *ModVersion) String() string {
 	if alias := typehelpers.SafeString(m.Alias); alias != "" {
-		return fmt.Sprintf("mod %s (%s)", m.FullName(), alias)
+		return fmt.Sprintf("%s (%s)", m.FullName(), alias)
 	}
-	return fmt.Sprintf("mod %s", m.FullName())
+	return fmt.Sprintf("%s", m.FullName())
 }
 
 // Initialise parses the version and name properties
@@ -76,19 +74,21 @@ func (m *ModVersion) Initialise() hcl.Diagnostics {
 	}
 
 	if m.VersionString == "latest" || m.VersionString == "" {
-		m.VersionConstraint, _ = goVersion.NewConstraint("*")
+		m.VersionConstraint, _ = version.NewConstraint("*")
 		return diags
 	}
 	// does the version parse as a semver version
-	if v, err := goVersion.NewConstraint(m.VersionString); err == nil {
+	if v, err := version.NewConstraint(m.VersionString); err == nil {
 		m.VersionConstraint = v
 		return diags
 	}
 
 	// todo handle branch and commit hash
-	// otherwise assume it is a branch
-	m.Branch = m.VersionString
-
+	diags = append(diags, &hcl.Diagnostic{
+		Severity: hcl.DiagError,
+		Summary:  fmt.Sprintf("invalid mod version %s", m.VersionString),
+		Subject:  &m.DeclRange,
+	})
 	return diags
 }
 

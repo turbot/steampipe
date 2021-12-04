@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	goVersion "github.com/hashicorp/go-version"
+	"github.com/Masterminds/semver"
 )
 
 // ModRef is a struct to represent an unresolved mod reference
@@ -12,7 +12,7 @@ type ModRef struct {
 	// the Git URL of the mod repo
 	Name string
 	// the version constraint of the mod
-	versionConstraint *goVersion.Version
+	versionConstraint *semver.Version
 	// the branch to use
 	branch string
 	// the local file location to use
@@ -43,7 +43,7 @@ func (r *ModRef) setVersion(versionString string) {
 		return
 	}
 	// does the verison parse as a semver version
-	if v, err := goVersion.NewVersion(versionString); err == nil {
+	if v, err := semver.NewVersion(versionString); err == nil {
 		r.versionConstraint = v
 		return
 	}

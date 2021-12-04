@@ -42,6 +42,10 @@ func InstallModDependencies(shouldUpdate bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
+	// write sum file
+	err = installer.WriteSumFile()
+	if err != nil {
+		return "", err
+	}
 	return installer.InstallReport(), nil
 }

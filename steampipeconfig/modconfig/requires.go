@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	goVersion "github.com/hashicorp/go-version"
+	"github.com/Masterminds/semver"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/version"
 )
@@ -12,7 +12,7 @@ import (
 // Requires is a struct representing mod dependencies
 type Requires struct {
 	SteampipeVersionString string `hcl:"steampipe,optional"`
-	SteampipeVersion       *goVersion.Version
+	SteampipeVersion       *semver.Version
 	Plugins                []*PluginVersion `hcl:"plugin,block"`
 	Mods                   []*ModVersion    `hcl:"mod,block"`
 	DeclRange              hcl.Range        `json:"-"`
@@ -20,8 +20,8 @@ type Requires struct {
 
 func (r *Requires) ValidateSteampipeVersion(modName string) error {
 	if r.SteampipeVersion != nil {
-		if version.Version.LessThan(r.SteampipeVersion) {
-			return fmt.Errorf("steampipe version %s does not satisfy %s which requires  version %s", version.String(), modName, r.SteampipeVersion.String())
+		if version.SteampipeVersion.LessThan(r.SteampipeVersion) {
+			return fmt.Errorf("steampipe version %s does not satisfy %s which requires version %s", version.SteampipeVersion.String(), modName, r.SteampipeVersion.String())
 		}
 	}
 	return nil
@@ -31,7 +31,7 @@ func (r *Requires) Initialise() hcl.Diagnostics {
 	var diags hcl.Diagnostics
 
 	if r.SteampipeVersionString != "" {
-		steampipeVersion, err := goVersion.NewVersion(strings.TrimPrefix(r.SteampipeVersionString, "v"))
+		steampipeVersion, err := semver.NewVersion(strings.TrimPrefix(r.SteampipeVersionString, "v"))
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,

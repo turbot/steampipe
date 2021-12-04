@@ -8,7 +8,7 @@ package version
 import (
 	"fmt"
 
-	goVersion "github.com/hashicorp/go-version"
+	"github.com/Masterminds/semver"
 )
 
 /**
@@ -26,20 +26,16 @@ var steampipeVersion = "0.11.0"
 // such as "dev" (in development), "beta", "rc1", etc.
 var prerelease = "dev.0"
 
-// Version is an instance of version.Version. This has the secondary
+// SteampipeVersion is an instance of semver.Version. This has the secondary
 // benefit of verifying during tests and init time that our version is a
 // proper semantic version, which should always be the case.
-var Version *goVersion.Version
+var SteampipeVersion *semver.Version
 
 func init() {
 	versionString := steampipeVersion
 	if prerelease != "" {
 		versionString = fmt.Sprintf("%s-%s", steampipeVersion, prerelease)
 	}
-	Version = goVersion.Must(goVersion.NewVersion(versionString))
-}
+	SteampipeVersion = semver.MustParse(versionString)
 
-// String returns the complete version string, including prerelease
-func String() string {
-	return Version.String()
 }

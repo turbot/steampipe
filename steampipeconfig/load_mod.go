@@ -9,7 +9,7 @@ import (
 
 	"github.com/turbot/steampipe/utils"
 
-	goVersion "github.com/hashicorp/go-version"
+	"github.com/Masterminds/semver"
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
@@ -146,16 +146,16 @@ func loadModDependency(modDependency *modconfig.ModVersion, runCtx *parse.RunCon
 
 }
 
-func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder string) (string, *goVersion.Version, error) {
+func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder string) (string, *semver.Version, error) {
 	shortDepName := filepath.Base(modDependency.Name)
 	entries, err := os.ReadDir(parentFolder)
 	if err != nil {
-		return "", nil, fmt.Errorf("mod dependency %s is not installed", modDependency.Name)
+		return "", nil, fmt.Errorf("mod satisfying '%s' is not installed", modDependency)
 	}
 
 	// results vars
 	var dependencyPath string
-	var dependencyVersion *goVersion.Version
+	var dependencyVersion *semver.Version
 
 	for _, entry := range entries {
 		split := strings.Split(entry.Name(), "@")
@@ -166,7 +166,7 @@ func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder s
 		modName := split[0]
 		versionString := strings.TrimPrefix(split[1], "v")
 		if modName == shortDepName {
-			v, err := goVersion.NewVersion(versionString)
+			v, err := semver.NewVersion(versionString)
 			if err != nil {
 				// invalid format - ignore
 				continue
@@ -187,7 +187,7 @@ func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder s
 		return dependencyPath, dependencyVersion, nil
 	}
 
-	return "", nil, fmt.Errorf("mod dependency %s is not installed", modDependency.Name)
+	return "", nil, fmt.Errorf("mod satisfying '%s' is not installed", modDependency)
 
 }
 
