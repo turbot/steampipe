@@ -1,15 +1,20 @@
 package mod_installer
 
 import (
+	"fmt"
 	"sort"
 
+	"github.com/Masterminds/semver"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/storage/memory"
-	goVersion "github.com/hashicorp/go-version"
 )
 
-func GetTags(repo string) ([]string, error) {
+func getGitUrl(modName string) string {
+	return fmt.Sprintf("https://%s", modName)
+}
+
+func getTags(repo string) ([]string, error) {
 	// Create the remote with repository URL
 	rem := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
 		Name: "origin",
@@ -33,17 +38,17 @@ func GetTags(repo string) ([]string, error) {
 	return tags, nil
 }
 
-func GetTagVersionsFromGit(repo string) ([]*goVersion.Version, error) {
-	tags, err := GetTags(repo)
+func getTagVersionsFromGit(repo string) (semver.Collection, error) {
+	tags, err := getTags(repo)
 	if err != nil {
 		return nil, err
 	}
 
-	versions := make(goVersion.Collection, len(tags))
+	versions := make(semver.Collection, len(tags))
 	// handle index manually as we may not add all tags - if we cannot parse them as a version
 	idx := 0
 	for _, raw := range tags {
-		v, err := goVersion.NewVersion(raw)
+		v, err := semver.NewVersion(raw)
 		if err != nil {
 			continue
 		}
@@ -52,6 +57,6 @@ func GetTagVersionsFromGit(repo string) ([]*goVersion.Version, error) {
 	}
 
 	// sort the versions in REVERSE order
-	sort.Reverse(versions)
+	sort.Sort(sort.Reverse(versions))
 	return versions, nil
 }

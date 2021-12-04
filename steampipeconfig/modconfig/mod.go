@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	goVersion "github.com/hashicorp/go-version"
+	"github.com/Masterminds/semver"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
@@ -45,7 +45,7 @@ type Mod struct {
 	Requires  *Requires  `hcl:"requires,block"`
 	OpenGraph *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
 
-	Version *goVersion.Version
+	Version *semver.Version
 
 	Queries    map[string]*Query
 	Controls   map[string]*Control
@@ -70,7 +70,8 @@ type Mod struct {
 }
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
-	return &Mod{
+
+	mod := &Mod{
 		ShortName:    shortName,
 		FullName:     fmt.Sprintf("mod.%s", shortName),
 		Queries:      make(map[string]*Query),
@@ -83,7 +84,21 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		ModPath:      modPath,
 		DeclRange:    defRange,
 		AllResources: make(map[string]HclResource),
+		Requires:     new(Requires),
 	}
+	// try to derive mod version from the path
+	mod.setVersion()
+	return mod
+}
+
+func (m *Mod) setVersion() {
+	segments := strings.Split(m.ModPath, "@")
+	if len(segments) == 1 {
+		return
+	}
+	versionString := segments[len(segments)-1]
+	// try to set version, ignoring error
+	m.Version, _ = semver.NewVersion(versionString)
 }
 
 func (m *Mod) Equals(other *Mod) bool {

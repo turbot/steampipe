@@ -115,7 +115,7 @@ func (c *InteractiveClient) InteractivePrompt() {
 		c.resultsStreamer.Close()
 	}()
 
-	fmt.Printf("Welcome to Steampipe v%s\n", version.String())
+	fmt.Printf("Welcome to Steampipe v%s\n", version.SteampipeVersion.String())
 	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors

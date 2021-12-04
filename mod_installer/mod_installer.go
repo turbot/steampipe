@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Masterminds/semver"
 	git "github.com/go-git/go-git/v5"
-	goVersion "github.com/hashicorp/go-version"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -67,15 +67,17 @@ type ModInstaller struct {
 	// all installed mod versions
 	AllInstalledMods InstalledModMap
 	// dependencies installed during the current installation process
-	NewInstalledMods InstalledModMap
+	//NewInstalledMods InstalledModMap
 	// should we update dependencies to newer versions if they exist
 	ShouldUpdate bool
+	// map of installation data - available versions and all contrainst for each mod
+	installationDataMap InstallationDataMap
 }
 
 func NewModInstaller(workspacePath string) (*ModInstaller, error) {
 	i := &ModInstaller{
-		ModsDir:          constants.WorkspaceModPath(workspacePath),
-		NewInstalledMods: make(InstalledModMap),
+		ModsDir:             constants.WorkspaceModPath(workspacePath),
+		installationDataMap: make(InstallationDataMap),
 	}
 
 	// build list of currently installed mods
@@ -136,21 +138,34 @@ func (i *ModInstaller) getInstalledMods() (InstalledModMap, error) {
 func (i *ModInstaller) installModDependenciesRecursively(mods []*modconfig.ModVersion) error {
 	var errors []error
 	for _, modVersion := range mods {
-		// check whether there is alreayd a version which satisfies this dependency
-		// and if so - should we update it?
-		shouldInstall, err := i.shouldInstallMod(modVersion)
+		// get or create the installation data for this mod, adding in this mod version constraint
+		installationData, err := i.ensureModInstallationData(modVersion)
 		if err != nil {
 			errors = append(errors, err)
-		}
-		if !shouldInstall {
-			log.Printf("[TRACE] not installing %s with version constraint %s as it is already installed", modVersion.Name, modVersion.VersionConstraint.String())
 			continue
 		}
+		// check whether there is already a version which satisfies this mod version
+		// and if so - should we update it?
+		shouldInstall, err := i.shouldInstallMod(modVersion, installationData)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		if !shouldInstall {
+			log.Printf("[TRACE] not installing %s with version constraint %s as it is already installed", modVersion.Name, modVersion.VersionConstraint.Original)
+			continue
+		}
+		// so we ARE installing
+		// if another version of this mod is installed, delete it
+		// (for now, we do not support multiple versions of same mod installed
+		// - this may change if we move to using a sum file)
+		//i.deleteInstalledMods(modVersion)
 
-		// get a resolved mod ref that satisfies the version constraint for this mod version
-		resolvedRef, err := i.getModRefForVersion(modVersion)
+		// get a resolved mod ref that satisfies ALL the version constraints for this mod
+		resolvedRef, err := i.getModRefSatisfyingConstraints(installationData)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("dependency %s %s cannot be satisfied: %s", modVersion.Name, modVersion.VersionString, err.Error()))
+			continue
 		}
 
 		// install the mod
@@ -163,47 +178,69 @@ func (i *ModInstaller) installModDependenciesRecursively(mods []*modconfig.ModVe
 	return utils.CombineErrorsWithPrefix(fmt.Sprintf("%d dependencies failed to install", len(errors)), errors...)
 }
 
+func (i *ModInstaller) ensureModInstallationData(modVersion *modconfig.ModVersion) (*InstallationData, error) {
+	// have we already loaded the versions for this mod
+	installationData, ok := i.installationDataMap[modVersion.Name]
+	if ok {
+		// if we already have data, add this mod version constraint
+		installationData.addConstraint(modVersion)
+	} else {
+		var err error
+		installationData, err = NewModInstallationData(modVersion)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// update our cache
+	i.installationDataMap[modVersion.Name] = installationData
+
+	return installationData, nil
+}
+
 // get the most recent available mod version which satidsfies the version constraint
-func (i *ModInstaller) getModRefForVersion(modVersion *modconfig.ModVersion) (*ResolvedModRef, error) {
+func (i *ModInstaller) getModRefSatisfyingConstraints(installationData *InstallationData) (*ResolvedModRef, error) {
 	// TODO check whether the lock file contains this dependency and if so
 	// does the locked version satisfy this version requirement-  return error if not
 	// TODO check whether we are replacing this version
 
 	// find a git tag which satisfies the version constraint
-	version, err := i.getGitVersionSatisfyingConstraint(modVersion)
+	version, err := i.getGitVersionSatisfyingConstraint(installationData)
 	if err != nil {
 		return nil, err
 	}
 	if version == nil {
-		return nil, fmt.Errorf("no version of %s found satisfying verison constraint %s", modVersion.Name, modVersion.VersionString)
+		return nil, fmt.Errorf("no version of %s found satisfying verison constraints: %s", installationData.Name, installationData.Constraints)
 	}
 
-	return NewResolvedModRef(modVersion, version)
+	return NewResolvedModRef(installationData, version)
 }
 
-func (i *ModInstaller) getGitVersionSatisfyingConstraint(modVersion *modconfig.ModVersion) (*goVersion.Version, error) {
-	modReporUrl := i.getGitUrl(modVersion.Name)
-	// get a list of all tags, with corresponding versions - these come back reverse sorted
-	sortedVersions, err := GetTagVersionsFromGit(modReporUrl)
-	if err != nil {
-		return nil, err
-	}
+func (i *ModInstaller) getGitVersionSatisfyingConstraint(installationData *InstallationData) (*semver.Version, error) {
+	sortedVersions := installationData.AvailableVersions
 
-	// search the reverse sorted versions, finding the highest version which satisfies the constraint
+	// search the reverse sorted versions, finding the highest version which satisfies ALL constraints
 	for _, version := range sortedVersions {
-		if modVersion.VersionConstraint.Check(version) {
+		if installationData.Constraints.Check(version) {
 			return version, nil
 		}
 	}
 	return nil, nil
 }
 
+// get the available mod versions for this mod
+// NOTE: this will initialise the installation data for this mod if needed
+func (i *ModInstaller) getGitModVersions(installationData *InstallationData) ([]*semver.Version, error) {
+	if installationData.AvailableVersions == nil {
+
+	}
+	return installationData.AvailableVersions, nil
+}
+
 func (i *ModInstaller) install(dependency *ResolvedModRef) (err error) {
 	defer func() {
-		if err != nil {
-			// update the maps of installed mods
-			i.NewInstalledMods.Add(dependency.Name, dependency.Version)
-			i.AllInstalledMods.Add(dependency.Name, dependency.Version)
+		if err == nil {
+			i.onModInstalled(dependency)
 		}
 	}()
 	var modPath string
@@ -227,7 +264,7 @@ func (i *ModInstaller) install(dependency *ResolvedModRef) (err error) {
 		}
 	}
 
-	// now load the installed mod and recusrively install _its_ dependencies
+	// now load the installed mod and recursively install _its_ dependencies
 	if !parse.ModfileExists(modPath) {
 		log.Printf("[TRACE] dependency %s does not define a mod definition - so there are no dependencies to install", dependency.Name)
 		return nil
@@ -241,6 +278,17 @@ func (i *ModInstaller) install(dependency *ResolvedModRef) (err error) {
 	return i.installModDependenciesRecursively(mod.Requires.Mods)
 }
 
+func (i *ModInstaller) onModInstalled(dependency *ResolvedModRef) {
+	// update the maps of installed mods
+	//i.NewInstalledMods.Add(dependency.Name, dependency.Version)
+	i.AllInstalledMods.Add(dependency.Name, dependency.Version)
+	// update the installed version in the installationData
+	installationData := i.installationDataMap[dependency.Name]
+	installationData.Version = dependency.Version
+	// write back to cache
+	i.installationDataMap[dependency.Name] = installationData
+}
+
 func (i *ModInstaller) installDependencyFromGit(dependency *ResolvedModRef, installPath string) error {
 	// ensure mod directory exists - create if necessary
 	if err := os.MkdirAll(i.ModsDir, os.ModePerm); err != nil {
@@ -250,7 +298,7 @@ func (i *ModInstaller) installDependencyFromGit(dependency *ResolvedModRef, inst
 	// NOTE: we need to check existing installed mods
 
 	// get the mod from git
-	gitUrl := i.getGitUrl(dependency.Name)
+	gitUrl := getGitUrl(dependency.Name)
 	_, err := git.PlainClone(installPath,
 		false,
 		&git.CloneOptions{
@@ -264,27 +312,8 @@ func (i *ModInstaller) installDependencyFromGit(dependency *ResolvedModRef, inst
 	return err
 }
 
-func (i *ModInstaller) getGitUrl(modName string) string {
-	return fmt.Sprintf("https://%s", modName)
-}
-
-func (i *ModInstaller) InstallReport() string {
-	if len(i.NewInstalledMods) == 0 {
-		return "No dependencies installed"
-	}
-	strs := make([]string, len(i.NewInstalledMods))
-	idx := 0
-	for name, versions := range i.NewInstalledMods {
-		for _, version := range versions {
-			strs[idx] = fmt.Sprintf("%s@%s", name, version)
-		}
-	}
-	return fmt.Sprintf("\nInstalled %d dependencies:\n  - %s\n", len(i.NewInstalledMods), strings.Join(strs, "\n  - "))
-
-}
-
 // extract the mod name and version from the modfile path
-func (i *ModInstaller) parseModPath(modfilePath string) (modName string, modVersion *goVersion.Version, err error) {
+func (i *ModInstaller) parseModPath(modfilePath string) (modName string, modVersion *semver.Version, err error) {
 	modLongName, err := filepath.Rel(i.ModsDir, filepath.Dir(modfilePath))
 	if err != nil {
 		return
@@ -297,7 +326,7 @@ func (i *ModInstaller) parseModPath(modfilePath string) (modName string, modVers
 		return
 	}
 	modName = parts[0]
-	modVersion, err = goVersion.NewVersion(parts[1])
+	modVersion, err = semver.NewVersion(parts[1])
 	if err != nil {
 		err = fmt.Errorf("mod path %s has invalid version", modfilePath)
 		return
@@ -305,7 +334,7 @@ func (i *ModInstaller) parseModPath(modfilePath string) (modName string, modVers
 	return
 }
 
-func (i *ModInstaller) shouldInstallMod(requiredVersion *modconfig.ModVersion) (bool, error) {
+func (i *ModInstaller) shouldInstallMod(requiredVersion *modconfig.ModVersion, installationData *InstallationData) (bool, error) {
 	// have we already got a version installed which satisfies this dependency?
 	currentVersion := i.AllInstalledMods.GetVersionSatisfyingRequirement(requiredVersion)
 	if currentVersion == nil {
@@ -321,7 +350,7 @@ func (i *ModInstaller) shouldInstallMod(requiredVersion *modconfig.ModVersion) (
 	}
 
 	// so we should update if there is a newer version - check if there is
-	newerModVersionFound, err := i.newerModVersionFound(requiredVersion, currentVersion)
+	newerModVersionFound, err := i.newerModVersionFound(installationData, currentVersion)
 	if err != nil {
 		return false, err
 	}
@@ -330,8 +359,8 @@ func (i *ModInstaller) shouldInstallMod(requiredVersion *modconfig.ModVersion) (
 }
 
 // determine whether there is a newer mod version avoilable which satisfies the dependency version constraint
-func (i *ModInstaller) newerModVersionFound(requiredVersion *modconfig.ModVersion, currentVersion *goVersion.Version) (bool, error) {
-	latestVersion, err := i.getModRefForVersion(requiredVersion)
+func (i *ModInstaller) newerModVersionFound(installationData *InstallationData, currentVersion *semver.Version) (bool, error) {
+	latestVersion, err := i.getModRefSatisfyingConstraints(installationData)
 	if err != nil {
 		return false, err
 	}
@@ -339,4 +368,38 @@ func (i *ModInstaller) newerModVersionFound(requiredVersion *modconfig.ModVersio
 		return true, nil
 	}
 	return false, nil
+}
+
+//// delete any versions of this mod which are currently installed
+//// (this may not be necessary if we support a mpa file)
+//func (i *ModInstaller) deleteInstalledMods(modVersion *modconfig.ModVersion) error {
+//	// recursively search for all the mod.sp files under the .steampipe/mods folder, then build the mod name from the file path
+//	modFolders, err := filehelpers.ListFiles(i.ModsDir, &filehelpers.ListOptions{
+//		Flags:   filehelpers.DirectoriesFlat,
+//		Include: []string{fmt.Sprintf("%s@*", modVersion.Name)},
+//	})
+//	if err != nil {
+//		return err
+//	}
+//	for _, f := range modFolders {
+//		if err := os.RemoveAll(f); err != nil {
+//			return err
+//		}
+//	}
+//	// also remove from AllInstalledMods
+//	delete(i.AllInstalledMods, modVersion.Name)
+//
+//	return nil
+//}
+
+func (i *ModInstaller) InstallReport() string {
+	return i.installationDataMap.InstallReport()
+
+}
+
+func (i *ModInstaller) WriteSumFile() error {
+	sumfileText := i.installationDataMap.SumFileText()
+	data := []byte(sumfileText)
+	res := os.WriteFile("./workspace.sum", data, 0644)
+	return res
 }
