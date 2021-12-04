@@ -417,7 +417,6 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 	}
 
 	return c, res
-
 }
 
 func decodeControlArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName string) (*modconfig.QueryArgs, hcl.Diagnostics) {

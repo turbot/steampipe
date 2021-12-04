@@ -75,7 +75,7 @@ func ModfileExists(modPath string) bool {
 }
 
 // ParseModDefinition parses the modfile only
-// it is expected the callign code wil lhave verified the existence of the modfile by calling ModfileExists
+// it is expected the calling code will have verified the existence of the modfile by calling ModfileExists
 func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 	// TODO think about variables
 

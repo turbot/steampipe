@@ -45,7 +45,8 @@ type Mod struct {
 	Requires  *Requires  `hcl:"requires,block"`
 	OpenGraph *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
 
-	Version *semver.Version
+	VersionString string `cty:"version"`
+	Version       *semver.Version
 
 	Queries    map[string]*Query
 	Controls   map[string]*Control
@@ -70,7 +71,6 @@ type Mod struct {
 }
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
-
 	mod := &Mod{
 		ShortName:    shortName,
 		FullName:     fmt.Sprintf("mod.%s", shortName),
@@ -98,7 +98,11 @@ func (m *Mod) setVersion() {
 	}
 	versionString := segments[len(segments)-1]
 	// try to set version, ignoring error
-	m.Version, _ = semver.NewVersion(versionString)
+	version, err := semver.NewVersion(versionString)
+	if err == nil {
+		m.Version = version
+		m.VersionString = fmt.Sprintf("%d.%d", version.Major(), version.Minor())
+	}
 }
 
 func (m *Mod) Equals(other *Mod) bool {
@@ -281,8 +285,8 @@ func (m *Mod) String() string {
 	}
 
 	versionString := ""
-	if m.Version != nil {
-		versionString = fmt.Sprintf("\nVersion: %s", types.SafeString(m.Version))
+	if m.VersionString == "" {
+		versionString = fmt.Sprintf("\nVersion: v%s", m.VersionString)
 	}
 	var requiresStrings []string
 	var requiresString string
@@ -460,6 +464,13 @@ func duplicateResourceDiagnostics(item HclResource) *hcl.Diagnostic {
 	}
 }
 
+func (m *Mod) NameWithVersion() string {
+	if m.VersionString == "" {
+		return m.ShortName
+	}
+	return fmt.Sprintf("%s@%s", m.ShortName, m.VersionString)
+}
+
 // AddChild  implements ModTreeItem
 func (m *Mod) AddChild(child ModTreeItem) error {
 	m.children = append(m.children, child)
@@ -478,10 +489,7 @@ func (m *Mod) GetParents() []ModTreeItem {
 
 // Name implements ModTreeItem, HclResource
 func (m *Mod) Name() string {
-	if m.Version == nil {
-		return m.FullName
-	}
-	return fmt.Sprintf("%s@%s", m.FullName, types.SafeString(m.Version))
+	return m.FullName
 }
 
 // GetTitle implements ModTreeItem
@@ -536,7 +544,10 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 
 // OnDecoded implements HclResource
 func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics {
-
+	// if VersionString is set, set Version
+	if m.VersionString != "" && m.Version == nil {
+		m.Version, _ = semver.NewVersion(m.VersionString)
+	}
 	// initialise our Requires
 	if m.Requires == nil {
 		return nil
