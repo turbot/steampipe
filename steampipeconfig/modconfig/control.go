@@ -211,8 +211,13 @@ func (c *Control) Name() string {
 }
 
 // QualifiedName returns the name in format: '<modName>.control.<shortName>'
-func (c *Control) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", c.metadata.ModName, c.FullName)
+func (q *Control) QualifiedName() string {
+	return fmt.Sprintf("%s.%s", q.Mod.ShortName, q.FullName)
+}
+
+// QualifiedNameWithVersion returns the name in format: '<modName>@version.control.<shortName>'
+func (q *Control) QualifiedNameWithVersion() string {
+	return fmt.Sprintf("%s.%s", q.Mod.NameWithVersion(), q.FullName)
 }
 
 // GetPaths implements ModTreeItem
@@ -280,5 +285,5 @@ func (c *Control) GetPreparedStatementName() string {
 
 // ModName implements QueryProvider
 func (c *Control) ModName() string {
-	return c.Mod.ShortName
+	return c.Mod.NameWithVersion()
 }
