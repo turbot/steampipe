@@ -1,0 +1,9 @@
+{
+  "mod.dep4": {
+    "github.com/kaidaguerre/steampipe-mod-m1": "1.1.0",
+    "github.com/kaidaguerre/steampipe-mod-m2": "3.0.0"
+  },
+  "mod.m2": {
+    "github.com/kaidaguerre/steampipe-mod-m1": "1.1.0"
+  }
+}
