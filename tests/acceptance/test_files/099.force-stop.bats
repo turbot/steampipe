@@ -12,12 +12,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # Trying to start the service should fail, check the error message
   run steampipe service start
   echo $output
-  assert_line --partial 'Error: could not fetch service information: service is running in an unknown state'
+  assert_output --partial 'service is running in an unknown state'
 
   # Trying to stop the service should fail, check the error message
-  run steampipe service start
+  run steampipe service stop
   echo $output
-  assert_line --partial 'Error: could not fetch service information: service is running in an unknown state'
+  assert_output --partial 'service is running in an unknown state'
 }
 
 @test "force stop works after state file deletion" {
