@@ -18,7 +18,7 @@ func ValidateConnectionStringArgs() error {
 	connectionString := workspaceDatabase
 
 	// so a backend was set - is it a connection string or a database name
-	if !strings.HasPrefix(workspaceDatabase, "postgresql://") {
+	if !(strings.HasPrefix(workspaceDatabase, "postgresql://") || strings.HasPrefix(workspaceDatabase, "postgres://")) {
 		// it must be a database name - verify the cloud token was provided
 		cloudToken := viper.GetString(constants.ArgCloudToken)
 		if cloudToken == "" {
