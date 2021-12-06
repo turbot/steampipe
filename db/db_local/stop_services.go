@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -29,7 +30,7 @@ const (
 )
 
 // ShutdownService stops the database instance if the given 'invoker' matches
-func ShutdownService(invoker constants.Invoker) {
+func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	utils.LogTime("db_local.ShutdownService start")
 	defer utils.LogTime("db_local.ShutdownService end")
 
@@ -42,7 +43,7 @@ func ShutdownService(invoker constants.Invoker) {
 	}
 
 	// how many clients are connected
-	count, _ := GetCountOfConnectedClients()
+	count, _ := GetCountOfConnectedClients(ctx)
 	if count > 0 {
 		// there are other clients connected to the database
 		// we can't stop the DB.
@@ -50,7 +51,7 @@ func ShutdownService(invoker constants.Invoker) {
 	}
 
 	// we can shut down the database
-	stopStatus, err := StopServices(false, invoker, nil)
+	stopStatus, err := StopServices(ctx, false, invoker, nil)
 	if err != nil {
 		utils.ShowError(err)
 	}
@@ -59,7 +60,7 @@ func ShutdownService(invoker constants.Invoker) {
 	}
 
 	// shutdown failed - try to force stop
-	_, err = StopServices(true, invoker, nil)
+	_, err = StopServices(ctx, true, invoker, nil)
 	if err != nil {
 		utils.ShowError(err)
 	}
@@ -67,11 +68,11 @@ func ShutdownService(invoker constants.Invoker) {
 }
 
 // GetCountOfConnectedClients returns the number of clients currently connected to the service
-func GetCountOfConnectedClients() (i int, e error) {
+func GetCountOfConnectedClients(ctx context.Context) (i int, e error) {
 	utils.LogTime("db_local.GetCountOfConnectedClients start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end:%d", i))
 
-	rootClient, err := createLocalDbClient(&CreateDbOptions{Username: constants.DatabaseSuperUser})
+	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return -1, err
 	}
@@ -87,7 +88,7 @@ func GetCountOfConnectedClients() (i int, e error) {
 }
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
-func StopServices(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (status StopStatus, e error) {
+func StopServices(ctx context.Context, force bool, invoker constants.Invoker, spinner *spinner.Spinner) (status StopStatus, e error) {
 	log.Printf("[TRACE] StopDB invoker %s, force %v", invoker, force)
 	utils.LogTime("db_local.StopDB start")
 
@@ -103,16 +104,16 @@ func StopServices(force bool, invoker constants.Invoker, spinner *spinner.Spinne
 	pluginManagerStopError := plugin_manager.Stop()
 
 	// stop the DB Service
-	stopResult, dbStopError := stopDBService(spinner, force)
+	stopResult, dbStopError := stopDBService(ctx, spinner, force)
 
 	return stopResult, utils.CombineErrors(dbStopError, pluginManagerStopError)
 }
 
-func stopDBService(spinner *spinner.Spinner, force bool) (StopStatus, error) {
+func stopDBService(ctx context.Context, spinner *spinner.Spinner, force bool) (StopStatus, error) {
 	if force {
 		// check if we have a process from another install-dir
 		display.UpdateSpinnerMessage(spinner, "Checking for running instances...")
-		killInstanceIfAny()
+		killInstanceIfAny(ctx)
 		return ServiceStopped, nil
 	}
 

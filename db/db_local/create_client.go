@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -37,7 +38,7 @@ type CreateDbOptions struct {
 // the provided username
 // if the database is not provided (empty), it connects to the default database in the service
 // that was created during installation.
-func createLocalDbClient(opts *CreateDbOptions) (*sql.DB, error) {
+func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*sql.DB, error) {
 	utils.LogTime("db.createDbClient start")
 	defer utils.LogTime("db.createDbClient end")
 
@@ -75,7 +76,7 @@ func createLocalDbClient(opts *CreateDbOptions) (*sql.DB, error) {
 		return nil, err
 	}
 
-	if err := db_common.WaitForConnection(db); err != nil {
+	if err := db_common.WaitForConnection(ctx, db); err != nil {
 		return nil, err
 	}
 	return db, nil
