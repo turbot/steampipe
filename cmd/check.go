@@ -22,9 +22,11 @@ import (
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
-	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
+
+	"github.com/turbot/steampipe-plugin-sdk/instrument"
+
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -107,7 +109,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
-	tracingContext, span := instrument.StartCmdSpan(cmd)
+	tracingContext, span := startCmdSpan(cmd)
 
 	initData := &checkInitData{}
 

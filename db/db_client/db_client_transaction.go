@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/turbot/steampipe/instrument"
+	"github.com/turbot/steampipe-plugin-sdk/instrument"
 	"github.com/turbot/steampipe/utils"
 )
 

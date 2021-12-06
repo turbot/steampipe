@@ -9,9 +9,10 @@ import (
 	"github.com/hashicorp/go-hclog"
 	_ "github.com/lib/pq"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/instrument"
 	"github.com/turbot/steampipe/cmd"
-	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/version"
 )
 
 var Logger hclog.Logger
@@ -30,7 +31,7 @@ func main() {
 		os.Exit(exitCode)
 	}()
 
-	utils.FailOnError(instrument.InitTracing())
+	utils.FailOnError(instrument.InitTracing("cli", version.String()))
 
 	// ensure steampipe is not being run as root
 	checkRoot()

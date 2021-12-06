@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/instrument"
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/utils"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"

@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/sethvargo/go-retry"
+	"github.com/turbot/steampipe-plugin-sdk/instrument"
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/utils"
 )
 

@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-version"
+	"github.com/turbot/steampipe-plugin-sdk/instrument"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/instrument"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/plugin"
 	"github.com/turbot/steampipe/utils"
