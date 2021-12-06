@@ -1,6 +1,8 @@
 package interactive
 
 import (
+	"context"
+
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
@@ -15,7 +17,7 @@ func RunInteractivePrompt(initChan *chan *db_common.QueryInitData) (*queryresult
 	interactiveClient, err := newInteractiveClient(initChan, resultsStreamer)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
-		db_local.ShutdownService(constants.InvokerQuery)
+		db_local.ShutdownService(context.Background(), constants.InvokerQuery)
 		return nil, err
 	}
 

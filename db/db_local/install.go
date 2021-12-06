@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -23,7 +24,7 @@ import (
 var ensureMux sync.Mutex
 
 // EnsureDBInstalled makes sure that the embedded pg database is installed and running
-func EnsureDBInstalled() (err error) {
+func EnsureDBInstalled(ctx context.Context) (err error) {
 	utils.LogTime("db_local.EnsureDBInstalled start")
 
 	ensureMux.Lock()
@@ -43,14 +44,14 @@ func EnsureDBInstalled() (err error) {
 
 	if IsInstalled() {
 		// check if the FDW need updating, and init the db id required
-		err := PrepareDb(spinner)
+		err := PrepareDb(ctx, spinner)
 		display.StopSpinner(spinner)
 		return err
 	}
 
 	log.Println("[TRACE] calling killPreviousInstanceIfAny")
 	display.UpdateSpinnerMessage(spinner, "Cleanup any Steampipe processes...")
-	killInstanceIfAny()
+	killInstanceIfAny(ctx)
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
 	err = removeRunningInstanceInfo()
 	if err != nil && !os.IsNotExist(err) {
@@ -85,7 +86,7 @@ func EnsureDBInstalled() (err error) {
 	}
 
 	// run the database installation
-	err = runInstall(true, spinner)
+	err = runInstall(ctx, true, spinner)
 	if err != nil {
 		display.StopSpinner(spinner)
 		return err
@@ -106,7 +107,7 @@ func EnsureDBInstalled() (err error) {
 }
 
 // PrepareDb updates the FDW if needed, and inits the database if required
-func PrepareDb(spinner *spinner.Spinner) error {
+func PrepareDb(ctx context.Context, spinner *spinner.Spinner) error {
 	// check if FDW needs to be updated
 	if fdwNeedsUpdate() {
 		_, err := installFDW(false, spinner)
@@ -124,8 +125,8 @@ func PrepareDb(spinner *spinner.Spinner) error {
 	if needsInit() {
 		spinner.Start()
 		display.UpdateSpinnerMessage(spinner, "Cleanup any Steampipe processes...")
-		killInstanceIfAny()
-		if err := runInstall(false, spinner); err != nil {
+		killInstanceIfAny(ctx)
+		if err := runInstall(ctx, false, spinner); err != nil {
 			return err
 		}
 	}
@@ -204,7 +205,7 @@ func needsInit() bool {
 	return !helpers.FileExists(getPgHbaConfLocation())
 }
 
-func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
+func runInstall(ctx context.Context, firstInstall bool, spinner *spinner.Spinner) error {
 	utils.LogTime("db_local.runInstall start")
 	defer utils.LogTime("db_local.runInstall end")
 
@@ -239,7 +240,7 @@ func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Connection to database...")
-	client, err := createMaintenanceClient(port)
+	client, err := createMaintenanceClient(ctx, port)
 	if err != nil {
 		display.StopSpinner(spinner)
 		return fmt.Errorf("Connection to database... FAILED!")
@@ -308,7 +309,7 @@ func resolveDatabaseName() string {
 
 // createMaintenanceClient connects to the postgres server using the
 // maintenance database and superuser
-func createMaintenanceClient(port int) (*sql.DB, error) {
+func createMaintenanceClient(ctx context.Context, port int) (*sql.DB, error) {
 	psqlInfo := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
 
 	log.Println("[TRACE] Connection string: ", psqlInfo)
@@ -323,7 +324,7 @@ func createMaintenanceClient(port int) (*sql.DB, error) {
 		return nil, err
 	}
 
-	if err := db_common.WaitForConnection(db); err != nil {
+	if err := db_common.WaitForConnection(ctx, db); err != nil {
 		return nil, err
 	}
 	return db, nil

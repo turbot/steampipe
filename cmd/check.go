@@ -250,7 +250,7 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 		// stop the spinner
 		display.StopSpinner(spinner)
 		// when starting the database, installers may trigger their own spinners
-		client, err = db_local.GetLocalClient(constants.InvokerCheck)
+		client, err = db_local.GetLocalClient(initData.ctx, constants.InvokerCheck)
 		// resume the spinner
 		display.ResumeSpinner(spinner)
 	}

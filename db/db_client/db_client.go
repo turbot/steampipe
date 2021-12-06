@@ -44,7 +44,7 @@ type DbClient struct {
 func NewDbClient(connectionString string) (*DbClient, error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
-	db, err := establishConnection(connectionString)
+	db, err := establishConnection(context.TODO(), connectionString)
 
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 	return client, nil
 }
 
-func establishConnection(connStr string) (*sql.DB, error) {
+func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
 	utils.LogTime("db_client.establishConnection start")
 	defer utils.LogTime("db_client.establishConnection end")
 
@@ -90,7 +90,7 @@ func establishConnection(connStr string) (*sql.DB, error) {
 	// never close connection because of age
 	db.SetConnMaxLifetime(0)
 
-	if err := db_common.WaitForConnection(db); err != nil {
+	if err := db_common.WaitForConnection(ctx, db); err != nil {
 		return nil, err
 	}
 	return db, nil
@@ -150,7 +150,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	db, err := establishConnection(c.connectionString)
+	db, err := establishConnection(ctx, c.connectionString)
 	if err != nil {
 		return err
 	}
