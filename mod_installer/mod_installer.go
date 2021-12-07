@@ -127,6 +127,8 @@ func (i *ModInstaller) InstallModDependencies(mod *modconfig.Mod) error {
 		return err
 	}
 
+	dependenciesToInstall := mod.Requires.Mods
+	//
 	if err := i.installModDependenciesRecursively(mod.Requires.Mods, mod); err != nil {
 		return err
 	}
