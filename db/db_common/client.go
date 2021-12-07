@@ -12,9 +12,8 @@ type EnsureSessionStateCallback = func(context.Context, *DatabaseSession) (err e
 
 type Client interface {
 	Close() error
-	LoadSchema()
 
-	SchemaMetadata() *schema.Metadata
+	ForeignSchemas() []string
 	ConnectionMap() *steampipeconfig.ConnectionDataMap
 
 	GetCurrentSearchPath() ([]string, error)
@@ -35,7 +34,8 @@ type Client interface {
 
 	SetEnsureSessionDataFunc(EnsureSessionStateCallback)
 	RefreshSessions(ctx context.Context) *AcquireSessionResult
-
+	GetSchemaFromDB([]string) (*schema.Metadata, error)
 	// remote client will have empty implementation
 	RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult
+	LoadForeignSchemaNames() error
 }

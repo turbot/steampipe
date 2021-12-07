@@ -13,7 +13,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// GetTableAutoCompleteSuggestions :: derives and returns tables for typeahead
+// GetTableAutoCompleteSuggestions derives and returns tables for typeahead
 func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *steampipeconfig.ConnectionDataMap) []prompt.Suggest {
 	var s []prompt.Suggest
 
@@ -30,10 +30,9 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 	for schemaName, schemaDetails := range schema.Schemas {
 		isTemporarySchema := schemaName == schema.TemporarySchemaName
 
-		// when the `schema.Schemas` map is built, it is built from the configured connections and `public`
-		// all other schema are ignored. Refer to Client.loadSchema()
+		// when the schema.Schemas map is built, it is built from the configured connections and `public`
+		// all other schema are ignored.
 		// therefore, the only schema which will not have a connection is `public`
-
 		var pluginOfThisSchema string
 		schemaConnection, hasConnectionForSchema := (*connectionMap)[schemaName]
 		if hasConnectionForSchema {
@@ -41,7 +40,6 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 		}
 
 		// add the schema into the list of schema
-
 		if !isTemporarySchema {
 			schemasToAdd = append(schemasToAdd, schemaName)
 		}

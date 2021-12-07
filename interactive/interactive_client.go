@@ -24,6 +24,8 @@ import (
 	"github.com/turbot/steampipe/query/metaquery"
 	"github.com/turbot/steampipe/query/queryhistory"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
 )
@@ -50,12 +52,14 @@ type InteractiveClient struct {
 	cancelPrompt      context.CancelFunc
 	// channel from which we read the result of the external initialisation process
 	initDataChan *chan *db_common.QueryInitData
-	// channel used internally to signal an init error
+	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
 
 	afterClose AfterPromptCloseAction
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock sync.Mutex
+
+	schemaMetadata *schema.Metadata
 
 	highlighter *Highlighter
 }
@@ -141,6 +145,35 @@ func (c *InteractiveClient) InteractivePrompt() {
 	}
 }
 
+// ClosePrompt cancels the running prompt, setting the action to take after close
+func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
+	c.afterClose = afterClose
+	c.cancelPrompt()
+}
+
+// LoadSchema implements Client
+// retrieve both the raw query result and a sanitised version in list form
+func (c *InteractiveClient) LoadSchema() error {
+	utils.LogTime("db_client.LoadSchema start")
+	defer utils.LogTime("db_client.LoadSchema end")
+
+	// build a ConnectionSchemaMap object to identify the schemas to load
+	// (pass nil for connection state - this forces NewConnectionSchemaMap to load it)
+	connectionSchemaMap, err := steampipeconfig.NewConnectionSchemaMap()
+	if err != nil {
+		return err
+	}
+	// get the unique schema - we use this to limit the schemas we load from the database
+	schemas := connectionSchemaMap.UniqueSchemas()
+	// load these schemas
+	metadata, err := c.client().GetSchemaFromDB(schemas)
+	utils.FailOnError(err)
+
+	c.populateSchemaMetadata(metadata, connectionSchemaMap)
+
+	return nil
+}
+
 // init data has arrived, handle any errors/warnings/messages
 func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db_common.InitResult) {
 	c.executionLock.Lock()
@@ -151,7 +184,6 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		return
 	}
 
-	// if there is an error, shutdown the prompt
 	if initResult.Error != nil {
 		c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
@@ -159,22 +191,20 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		utils.ShowError(initResult.Error)
 		return
 	}
+	// asyncronously fetch the schema
+	go c.LoadSchema()
+
 	if initResult.HasMessages() {
 		fmt.Println()
 		initResult.DisplayMessages()
 	}
-	// We need to Render the prompt here to make sure that it comes back
+
+	// We need to render the prompt here to make sure that it comes back
 	// after the messages have been displayed
 	c.interactivePrompt.Render()
 
 	// tell the workspace to reset the prompt after displaying async filewatcher messages
 	c.initData.Workspace.SetOnFileWatcherEventMessages(func() { c.interactivePrompt.Render() })
-}
-
-// ClosePrompt cancels the running prompt, setting the action to take after close
-func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
-	c.afterClose = afterClose
-	c.cancelPrompt()
 }
 
 func (c *InteractiveClient) runInteractivePromptAsync(ctx context.Context, promptResultChan *chan utils.InteractiveExitStatus) {
@@ -361,7 +391,7 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 		return "", nil
 	}
 
-	// wait fore initialisation to complete so we can access the workspace
+	// wait for initialisation to complete so we can access the workspace
 	if !c.isInitialised() {
 		// create a context used purely to detect cancellation during initialisation
 		// this will also set c.cancelActiveQuery
@@ -439,7 +469,7 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 	return metaquery.Handle(&metaquery.HandlerInput{
 		Query:       query,
 		Executor:    client,
-		Schema:      client.SchemaMetadata(),
+		Schema:      c.schemaMetadata,
 		Connections: client.ConnectionMap(),
 		Prompt:      c.interactivePrompt,
 		ClosePrompt: func() { c.afterClose = AfterPromptCloseExit },
@@ -491,7 +521,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		client := c.client()
 		suggestions := metaquery.Complete(&metaquery.CompleterInput{
 			Query:       text,
-			Schema:      client.SchemaMetadata(),
+			Schema:      c.schemaMetadata,
 			Connections: client.ConnectionMap(),
 		})
 
@@ -500,8 +530,8 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		queryInfo := getQueryInfo(text)
 
 		// only add table suggestions if the client is initialised
-		if queryInfo.EditingTable && c.isInitialised() {
-			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.initData.Client.SchemaMetadata(), c.initData.Client.ConnectionMap())...)
+		if queryInfo.EditingTable && c.isInitialised() && c.schemaMetadata != nil {
+			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.schemaMetadata, c.initData.Client.ConnectionMap())...)
 		}
 
 		// Not sure this is working. comment out for now!
@@ -542,4 +572,22 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 		return res[i].Text < res[j].Text
 	})
 	return res
+}
+
+func (c *InteractiveClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, connectionSchemaMap steampipeconfig.ConnectionSchemaMap) error {
+	// we now need to add in all other schemas which have the same schemas as those we have loaded
+	for loadedSchema, otherSchemas := range connectionSchemaMap {
+		// all 'otherSchema's have the same schema as loadedSchema
+		exemplarSchema, ok := schemaMetadata.Schemas[loadedSchema]
+		if !ok {
+			// should can happen in the case of a dynamic plugin with no tables - use empty schema
+			exemplarSchema = make(map[string]schema.TableSchema)
+		}
+
+		for _, s := range otherSchemas {
+			schemaMetadata.Schemas[s] = exemplarSchema
+		}
+	}
+	c.schemaMetadata = schemaMetadata
+	return nil
 }

@@ -13,7 +13,6 @@ func executeSqlAsRoot(statements ...string) ([]sql.Result, error) {
 		return nil, err
 	}
 	defer rootClient.Close()
-
 	for _, statement := range statements {
 		result, err := rootClient.Exec(statement)
 		if err != nil {

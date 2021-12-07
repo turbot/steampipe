@@ -1,4 +1,4 @@
-package db_common
+package cloud
 
 import (
 	"encoding/json"
@@ -30,7 +30,7 @@ func GetConnectionString(workspaceDatabaseString, token string) (string, error) 
 	client := &http.Client{}
 
 	// org or user?
-	workspace, err := GetWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer, client)
+	workspace, err := getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer, client)
 	if err != nil {
 		return "", err
 	}
@@ -52,7 +52,7 @@ func GetConnectionString(workspaceDatabaseString, token string) (string, error) 
 	return fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", userHandle, password, identityHandle, workspaceHandle, workspaceHost, databaseName), nil
 }
 
-func GetWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer string, client *http.Client) (map[string]interface{}, error) {
+func getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer string, client *http.Client) (map[string]interface{}, error) {
 	resp, err := fetchAPIData(baseURL+actorWorkspacesAPI, bearer, client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workspace data from Steampipe Cloud API: %s ", err.Error())

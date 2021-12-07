@@ -26,10 +26,17 @@ type LocalDbClient struct {
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
 func GetLocalClient(invoker constants.Invoker) (db_common.Client, error) {
+	utils.LogTime("db.GetLocalClient start")
+	defer utils.LogTime("db.GetLocalClient end")
+
 	// start db if necessary
-	err := EnsureDbAndStartService(invoker)
-	if err != nil {
+	if err := EnsureDBInstalled(); err != nil {
 		return nil, err
+	}
+
+	startResult := StartServices(constants.DatabaseDefaultPort, ListenTypeLocal, invoker)
+	if startResult.Error != nil {
+		return nil, startResult.Error
 	}
 
 	client, err := NewLocalClient(invoker)
@@ -78,18 +85,13 @@ func (c *LocalDbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateC
 	c.client.SetEnsureSessionDataFunc(f)
 }
 
-// SchemaMetadata implements Client
-func (c *LocalDbClient) SchemaMetadata() *schema.Metadata {
-	return c.client.SchemaMetadata()
+// ForeignSchemas implements Client
+func (c *LocalDbClient) ForeignSchemas() []string {
+	return c.client.ForeignSchemas()
 }
 
 func (c *LocalDbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
 	return c.connectionMap
-}
-
-// LoadSchema  implements Client
-func (c *LocalDbClient) LoadSchema() {
-	c.client.LoadSchema()
 }
 
 func (c *LocalDbClient) RefreshSessions(ctx context.Context) *db_common.AcquireSessionResult {
@@ -149,6 +151,14 @@ func (c *LocalDbClient) ContructSearchPath(requiredSearchPath []string, searchPa
 	return c.client.ContructSearchPath(requiredSearchPath, searchPathPrefix, currentSearchPath)
 }
 
+func (c *LocalDbClient) GetSchemaFromDB(schemas []string) (*schema.Metadata, error) {
+	return c.client.GetSchemaFromDB(schemas)
+}
+
+func (c *LocalDbClient) LoadForeignSchemaNames() error {
+	return c.client.LoadForeignSchemaNames()
+}
+
 // local only functions
 
 func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult {
@@ -162,7 +172,7 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.Refre
 	}
 
 	// load the connection state and cache it!
-	connectionMap, err := steampipeconfig.GetConnectionState(c.SchemaMetadata().GetSchemas())
+	connectionMap, err := steampipeconfig.GetConnectionState(c.ForeignSchemas())
 	if err != nil {
 		res.Error = err
 		return res
@@ -236,7 +246,7 @@ func (c *LocalDbClient) setUserSearchPath() ([]string, error) {
 
 // build default search path from the connection schemas, bookended with public and internal
 func (c *LocalDbClient) getDefaultSearchPath() []string {
-	searchPath := c.SchemaMetadata().GetSchemas()
+	searchPath := c.ForeignSchemas()
 	sort.Strings(searchPath)
 	// add the 'public' schema as the first schema in the search_path. This makes it
 	// easier for users to build and work with their own tables, and since it's normally

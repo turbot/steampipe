@@ -5,6 +5,9 @@ import (
 	"log"
 	"strings"
 
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -20,7 +23,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 	defer utils.LogTime("db.refreshConnections end")
 
 	// get a list of all existing schema names
-	schemaNames := c.client.SchemaMetadata().GetSchemas()
+	schemaNames := c.client.ForeignSchemas()
 
 	// determine any necessary connection updates
 	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(schemaNames)
@@ -46,14 +49,14 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 		return res
 	}
 
+	log.Printf("[TRACE] refreshConnections, %d connection update %s\n", len(connectionQueries), utils.Pluralize("query", len(connectionQueries)))
+
 	// if there are no connection queries, we are done
 	if len(connectionQueries) == 0 {
 		return res
 	}
 
 	// so there ARE connections to update
-	log.Printf("[TRACE] refreshConnections, %d updates\n", len(connectionQueries))
-
 	// execute the connection queries
 	if err := executeConnectionQueries(connectionQueries); err != nil {
 		res.Error = err
@@ -66,10 +69,10 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 		res.Error = err
 		return res
 	}
-
-	// reload the database schemas, since they have changed - otherwise we wouldn't be here
-	log.Println("[TRACE] RefreshConnections: reloading schema")
-	c.LoadSchema()
+	// reload the database foreign schema names, since they have changed
+	// this is to ensuire search paths are correctly updated
+	log.Println("[TRACE] RefreshConnections: reloading foreign schema names")
+	c.LoadForeignSchemaNames()
 
 	res.UpdatedConnections = true
 	return res
@@ -92,8 +95,10 @@ func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampip
 
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
 		connectionQueries = getSchemaQueries(validatedUpdates, validationFailures)
-		// add comments queries for validated connections
-		connectionQueries = append(connectionQueries, getCommentQueries(validatedPlugins)...)
+		if viper.GetBool(constants.ArgSchemaComments) {
+			// add comments queries for validated connections
+			connectionQueries = append(connectionQueries, getCommentQueries(validatedPlugins)...)
+		}
 	}
 
 	for c := range connectionUpdates.Delete {
@@ -106,7 +111,7 @@ func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampip
 func (c *LocalDbClient) updateConnectionMap() error {
 	// load the connection state and cache it!
 	log.Println("[TRACE]", "retrieving connection map")
-	connectionMap, err := steampipeconfig.GetConnectionState(c.client.SchemaMetadata().GetSchemas())
+	connectionMap, err := steampipeconfig.GetConnectionState(c.client.ForeignSchemas())
 	if err != nil {
 		return err
 	}

@@ -298,7 +298,7 @@ func inspect(input *HandlerInput) error {
 					return inspectTable(schema, tableOrConnection, input)
 				}
 			}
-			return fmt.Errorf("Could not find Connection or Table called %s", tableOrConnection)
+			return fmt.Errorf("Could not find connection or table called %s", tableOrConnection)
 		}
 
 		fmt.Printf(`

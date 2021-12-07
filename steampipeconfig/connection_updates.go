@@ -5,7 +5,6 @@ import (
 	"log"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
@@ -31,6 +30,8 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 
 	res := &RefreshConnectionResult{}
 	// build connection data for all required connections
+	// NOTE: this will NOT populate SchemaMode for the connections, as we need to load the schema for that
+	// this will be updated below on the call to updateRequiredStateWithSchemaProperties
 	requiredConnectionState, missingPlugins, err := NewConnectionDataMap(GlobalConfig.Connections)
 	if err != nil {
 		res.Error = err
@@ -46,24 +47,25 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
-	connectionState, err := GetConnectionState(schemaNames)
+	currentConnectionState, err := GetConnectionState(schemaNames)
 	if err != nil {
 		res.Error = err
 		return nil, res
 	}
-	updates.currentConnectionState = connectionState
+	updates.currentConnectionState = currentConnectionState
 
 	// for any connections with dynamic schema, we need to reload their schema
 	// instantiate connection plugins for all connections with dynamic schema - this will retrieve their current schema
-	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, res := getSchemaHashesForDynamicSchemas(requiredConnectionState, connectionState)
-	if res.Error != nil {
+	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, err := getSchemaHashesForDynamicSchemas(requiredConnectionState, currentConnectionState)
+	if err != nil {
+		res.Error = err
 		return nil, res
 	}
 
 	// connections to create/update
 	for name, requiredConnectionData := range requiredConnectionState {
 		// check whether this connection exists in the state
-		currentConnectionData, ok := connectionState[name]
+		currentConnectionData, ok := currentConnectionState[name]
 		// if it does not exist, or is not equal, add to updates
 		if !ok || !currentConnectionData.Equals(requiredConnectionData) {
 			log.Printf("[TRACE] connection %s is out of date or missing\n", name)
@@ -72,18 +74,19 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	}
 
 	// connections to delete - any connection which is in connection state but NOT required connections
-	for connection, requiredPlugin := range connectionState {
+	for connection, requiredPlugin := range currentConnectionState {
 		if _, ok := requiredConnectionState[connection]; !ok {
 			log.Printf("[TRACE] connection %s is no longer required\n", connection)
 			updates.Delete[connection] = requiredPlugin
 		}
 	}
 
-	// now for every connection with dynamic schema, check whether the schema we have just fetched
-	// matches the existing db schema
+	// now for every connection with dynamic schema,
+	// check whether the schema we have just fetched matches the existing db schema
+	// if not, add to updates
 	for name, requiredHash := range dynamicSchemaHashMap {
 		// get the connection data from the loaded connection state
-		connectionData, ok := connectionState[name]
+		connectionData, ok := currentConnectionState[name]
 		// if the connection exists in the state, does the schemas hash match?
 		if ok && connectionData.SchemaHash != requiredHash {
 			updates.Update[name] = connectionData
@@ -91,18 +94,13 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	}
 
 	//  instantiate connection plugins for all updates
-	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
-	// - pass in the list of connection plugins we have already loaded
-
-	connectionPlugins, otherRes := CreateConnectionPlugins(updates.Update.Connections(), connectionsPluginsWithDynamicSchema)
-	// merge results into local results
-	res.Merge(otherRes)
-	if res.Error != nil {
+	if err := updates.populateConnectionPlugins(connectionsPluginsWithDynamicSchema); err != nil {
+		res.Error = err
 		return nil, res
 	}
 
-	updates.ConnectionPlugins = connectionPlugins
 	// set the schema mode and hash on the connection data in required state
+	// this uses data from the ConnectionPlugins which we have now loaded
 	updates.updateRequiredStateWithSchemaProperties(dynamicSchemaHashMap)
 
 	return updates, res
@@ -125,9 +123,10 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 		// - if so us the schema mode from the schema  it has loaded
 		if connectionPlugin, ok := u.ConnectionPlugins[k]; ok {
 			v.SchemaMode = connectionPlugin.Schema.Mode
-			// if the schema hash is still not set, calculate the value from the conneciton plugin schema
-			// this will happen the first time we load a plugin
-			if v.SchemaHash == "" {
+			// if the schema mode is dynamic and the hash is not set yet, calculate the value from the connection plugin schema
+			// this will happen the first time we load a plugin - as schemaHashMap will NOT include the has
+			// because we do not know yet that the plugin is dynamic
+			if v.SchemaMode == plugin.SchemaModeDynamic && v.SchemaHash == "" {
 				v.SchemaHash = pluginSchemaHash(connectionPlugin.Schema)
 			}
 		}
@@ -135,62 +134,44 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 	}
 }
 
-func CreateConnectionPlugins(requiredConnections []*modconfig.Connection, alreadyLoaded map[string]*ConnectionPlugin) (map[string]*ConnectionPlugin, *RefreshConnectionResult) {
-	if alreadyLoaded == nil {
-		alreadyLoaded = make(map[string]*ConnectionPlugin)
+func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) error {
+	updateConnections := u.Update.Connections()
+	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
+	// - remove these from list of plugins to create
+	connectionsToCreate := removeConnectionsFromList(updateConnections, alreadyCreatedConnectionPlugins)
+	// now crerate them
+	connectionPlugins, err := CreateConnectionPlugins(connectionsToCreate)
+	if err != nil {
+		return err
 	}
-	var connectionPlugins = make(map[string]*ConnectionPlugin)
-	res := &RefreshConnectionResult{}
+	// add back in the already created plugins
+	for name, connectionPlugin := range alreadyCreatedConnectionPlugins {
+		connectionPlugins[name] = connectionPlugin
+	}
+	// and set our ConnectionPlugins property
+	u.ConnectionPlugins = connectionPlugins
+	return nil
+}
+func removeConnectionsFromList(sourceConnections []*modconfig.Connection, connectionsToRemove map[string]*ConnectionPlugin) []*modconfig.Connection {
+	if connectionsToRemove == nil {
+		return sourceConnections
+	}
 
-	// create channels buffered to hold all updates
-	numConnectionPlugins := len(requiredConnections)
-	var pluginChan = make(chan *ConnectionPlugin, numConnectionPlugins)
-	var errorChan = make(chan error, numConnectionPlugins)
-
-	// keep track of how many plugins we are creating
-	pluginCount := 0
-	for _, connection := range requiredConnections {
-		// if we have already loaded this plugin, just send down the channel
-		if existingConnectionPlugin, ok := alreadyLoaded[connection.Name]; ok {
-			pluginChan <- existingConnectionPlugin
-		} else {
-			pluginCount++
-			// instantiate the connection plugin, and retrieve schema
-			getConnectionPluginAsync(connection, pluginChan, errorChan)
+	// build list of required connections
+	var res []*modconfig.Connection
+	for _, c := range sourceConnections {
+		if _, ok := connectionsToRemove[c.Name]; !ok {
+			res = append(res, c)
 		}
 	}
-
-	for i := 0; i < numConnectionPlugins; i++ {
-		select {
-		case err := <-errorChan:
-			log.Println("[TRACE] get connections err chan select - adding warning", "error", err)
-			res.Warnings = append(res.Warnings, err.Error())
-		case p := <-pluginChan:
-			connectionPlugins[p.ConnectionName] = p
-		case <-time.After(10 * time.Second):
-			res.Error = fmt.Errorf("timed out retrieving schema from plugins")
-			return nil, res
-		}
-	}
-
-	return connectionPlugins, res
+	return res
 }
 
-func getConnectionPluginAsync(connection *modconfig.Connection, pluginChan chan *ConnectionPlugin, errorChan chan error) {
-	go func() {
-		p, err := CreateConnectionPlugin(connection)
-		if err != nil {
-			errorChan <- err
-			return
-		}
-		pluginChan <- p
-	}()
-}
-
-func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, *RefreshConnectionResult) {
-	// for every required connection, check the connection state to determine whether it has a dynamic schema
-	// if we have never loaded the conneciton, there wil be no stste so we cannot retrieve this informaiton
+func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, error) {
+	// for every required connection, check the connection state to determine whether the schema mode is 'dynamic'
+	// if we have never loaded the connection, there will be no state, so we cannot retrieve this information
 	// however in this case we will load the connection anyway
+	// - at which point the state will be updated with the schema mode for the next time round
 
 	var connectionsWithDynamicSchema = make(ConnectionDataMap)
 	for requiredConnectionName, requiredConnection := range requiredConnectionData {
@@ -203,7 +184,8 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 		}
 	}
 
-	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections(), nil)
+	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections())
+
 	hashMap := make(map[string]string)
 	for name, c := range connectionsPluginsWithDynamicSchema {
 		// update schema hash stored in required connections so it is persisted in the state if updates are made

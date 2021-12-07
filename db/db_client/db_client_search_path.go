@@ -51,7 +51,7 @@ func (c *DbClient) SetSessionSearchPath(currentUserSearchPath ...string) error {
 	}
 
 	// store search path on the client before escaping
-	c.schemaMetadata.SearchPath = searchPath
+	c.searchPath = searchPath
 
 	// escape the schema
 	c.requiredSessionSearchPath = db_common.PgEscapeSearchPath(searchPath)

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/otiai10/copy"
 	"github.com/turbot/steampipe/constants"
@@ -21,8 +22,8 @@ type getConnectionsToUpdateTest struct {
 	expected interface{}
 }
 
-var connectionTest1Checksum = getTestFileCheckSum("test_data/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-1@latest/connection-test-1.plugin")
-var connectionTest2Checksum = getTestFileCheckSum("test_data/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-2@latest/connection-test-2.plugin")
+var connectionTest1ModTime = getTestFileModTime("test_data/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-1@latest/connection-test-1.plugin")
+var connectionTest2ModTime = getTestFileModTime("test_data/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-2@latest/connection-test-2.plugin")
 
 var testCasesGetConnectionsToUpdate = map[string]getConnectionsToUpdateTest{
 	"no changes": {
@@ -34,14 +35,14 @@ var testCasesGetConnectionsToUpdate = map[string]getConnectionsToUpdateTest{
 		current: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{}, Delete: ConnectionDataMap{}, RequiredConnectionState: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 		}},
@@ -59,24 +60,24 @@ connection "b" {
 		current: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "b"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{}, Delete: ConnectionDataMap{}, RequiredConnectionState: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "b"},
 			},
 		}},
@@ -94,24 +95,24 @@ connection "b" {
 		current: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:   connectionTest2Checksum,
+				ModTime:    connectionTest2ModTime,
 				Connection: &modconfig.Connection{Name: "b"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{}, Delete: ConnectionDataMap{}, RequiredConnectionState: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:   connectionTest2Checksum,
+				ModTime:    connectionTest2ModTime,
 				Connection: &modconfig.Connection{Name: "b"},
 			},
 		}},
@@ -128,24 +129,24 @@ connection "b" {
 		current: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "b"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{}, Delete: ConnectionDataMap{}, RequiredConnectionState: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "b"},
 			},
 		}},
@@ -162,24 +163,24 @@ connection "b" {
 		current: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:   connectionTest2Checksum,
+				ModTime:    connectionTest2ModTime,
 				Connection: &modconfig.Connection{Name: "b"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{}, Delete: ConnectionDataMap{}, RequiredConnectionState: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:   connectionTest2Checksum,
+				ModTime:    connectionTest2ModTime,
 				Connection: &modconfig.Connection{Name: "b"},
 			},
 		}},
@@ -193,20 +194,20 @@ connection "b" {
 		current: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   "xxxxxx",
+				ModTime:    time.Now(),
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 		}, Delete: ConnectionDataMap{}, RequiredConnectionState: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 		}},
@@ -225,24 +226,24 @@ connection "b" {
 		current: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   "xxxxxx",
+				ModTime:    time.Now(),
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   "xxxxxx",
+				ModTime:    time.Now(),
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "b"},
 			},
 		},
@@ -250,12 +251,12 @@ connection "b" {
 			RequiredConnectionState: ConnectionDataMap{
 				"a": {
 					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:   connectionTest1Checksum,
+					ModTime:    connectionTest1ModTime,
 					Connection: &modconfig.Connection{Name: "a"},
 				},
 				"b": {
 					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:   connectionTest1Checksum,
+					ModTime:    connectionTest1ModTime,
 					Connection: &modconfig.Connection{Name: "b"},
 				},
 			}},
@@ -273,36 +274,36 @@ connection "b" {
 		current: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   "xxxxxx",
+				ModTime:    time.Now(),
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:   "xxxxxx",
+				ModTime:    time.Now(),
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:   connectionTest2Checksum,
+				ModTime:    connectionTest2ModTime,
 				Connection: &modconfig.Connection{Name: "b"},
 			},
 		}, Delete: ConnectionDataMap{},
 			RequiredConnectionState: ConnectionDataMap{
 				"a": {
 					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:   connectionTest1Checksum,
+					ModTime:    connectionTest1ModTime,
 					Connection: &modconfig.Connection{Name: "a"},
 				},
 				"b": {
 					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-					CheckSum:   connectionTest2Checksum,
+					ModTime:    connectionTest2ModTime,
 					Connection: &modconfig.Connection{Name: "b"},
 				},
 			}},
@@ -319,24 +320,24 @@ connection "b" {
 		current: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   "xxxxxx",
+				ModTime:    time.Now(),
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   "xxxxxx",
+				ModTime:    time.Now(),
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 		},
 		expected: &ConnectionUpdates{Update: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   connectionTest1Checksum,
+				ModTime:    connectionTest1ModTime,
 				Connection: &modconfig.Connection{Name: "b"},
 			},
 		},
@@ -344,12 +345,12 @@ connection "b" {
 			RequiredConnectionState: ConnectionDataMap{
 				"a": {
 					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:   connectionTest1Checksum,
+					ModTime:    connectionTest1ModTime,
 					Connection: &modconfig.Connection{Name: "a"},
 				},
 				"b": {
 					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:   connectionTest1Checksum,
+					ModTime:    connectionTest1ModTime,
 					Connection: &modconfig.Connection{Name: "b"},
 				},
 			}},
@@ -366,12 +367,12 @@ connection "b" {
 		current: ConnectionDataMap{
 			"a": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				CheckSum:   "xxxxxx",
+				ModTime:    time.Now(),
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 			"b": {
 				Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				CheckSum:   "xxxxxx",
+				ModTime:    time.Now(),
 				Connection: &modconfig.Connection{Name: "a"},
 			},
 		},
@@ -379,12 +380,12 @@ connection "b" {
 			Update: ConnectionDataMap{
 				"a": {
 					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:   connectionTest1Checksum,
+					ModTime:    connectionTest1ModTime,
 					Connection: &modconfig.Connection{Name: "a"},
 				},
 				"b": {
 					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-					CheckSum:   connectionTest2Checksum,
+					ModTime:    connectionTest2ModTime,
 					Connection: &modconfig.Connection{Name: "b"},
 				},
 			},
@@ -392,12 +393,12 @@ connection "b" {
 			RequiredConnectionState: ConnectionDataMap{
 				"a": {
 					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					CheckSum:   connectionTest1Checksum,
+					ModTime:    connectionTest1ModTime,
 					Connection: &modconfig.Connection{Name: "a"},
 				},
 				"b": {
 					Plugin:     "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-					CheckSum:   connectionTest2Checksum,
+					ModTime:    connectionTest2ModTime,
 					Connection: &modconfig.Connection{Name: "b"},
 				},
 			}},
@@ -456,19 +457,19 @@ type connectionDataEqual struct {
 	expectation bool
 }
 
-var data1 ConnectionData = ConnectionData{
+var data1 = ConnectionData{
 	Plugin:     "plugin",
-	CheckSum:   "checksum",
+	ModTime:    time.Now(),
 	Connection: &modconfig.Connection{Name: "a"},
 }
-var data1_duplicate ConnectionData = ConnectionData{
+var data1_duplicate = ConnectionData{
 	Plugin:     "plugin",
-	CheckSum:   "checksum",
+	ModTime:    time.Now(),
 	Connection: &modconfig.Connection{Name: "a"},
 }
-var data2 ConnectionData = ConnectionData{
+var data2 = ConnectionData{
 	Plugin:     "plugin2",
-	CheckSum:   "checksum2",
+	ModTime:    time.Now().Add(-1 * time.Hour),
 	Connection: &modconfig.Connection{Name: "b"},
 }
 
@@ -541,14 +542,7 @@ func copyPlugin(plugin string) {
 	}
 }
 
-func getTestFileCheckSum(file string) string {
-	p, err := filepath.Abs(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-	sha, err := utils.FileHash(p)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return sha
+func getTestFileModTime(file string) time.Time {
+	modTime, _ := utils.FileModTime(file)
+	return modTime
 }
