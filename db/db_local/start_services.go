@@ -453,7 +453,6 @@ func ensurePgExtensions(databaseName string) error {
 	}
 
 	errors := []error{}
-	errorLock := &sync.Mutex{}
 	rootClient, err := createLocalDbClient(&CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
@@ -462,9 +461,7 @@ func ensurePgExtensions(databaseName string) error {
 	for _, extn := range extensions {
 		_, err = rootClient.Exec(fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
 		if err != nil {
-			errorLock.Lock()
 			errors = append(errors, err)
-			errorLock.Unlock()
 		}
 	}
 	return utils.CombineErrors(errors...)
