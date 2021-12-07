@@ -284,7 +284,7 @@ func runInstall(ctx context.Context, firstInstall bool, spinner *spinner.Spinner
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring Steampipe...")
-	err = installForeignServer(ctx, databaseName, client)
+	err = installForeignServer(ctx, client)
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] installForeignServer failed: %v", err)
@@ -472,7 +472,7 @@ func writePgHbaContent(databaseName string, username string) error {
 	return os.WriteFile(getPgHbaConfLocation(), []byte(content), 0600)
 }
 
-func installForeignServer(ctx context.Context, databaseName string, rawClient *sql.DB) error {
+func installForeignServer(ctx context.Context, rawClient *sql.DB) error {
 	utils.LogTime("db_local.installForeignServer start")
 	defer utils.LogTime("db_local.installForeignServer end")
 

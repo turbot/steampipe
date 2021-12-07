@@ -3,6 +3,7 @@ package db_local
 import (
 	"bufio"
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"net"
@@ -78,11 +79,16 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 	if res.DbState == nil {
 		res = startDB(ctx, port, listen, invoker)
 	} else {
-
+		rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
+		if err != nil {
+			res.Error = err
+			res.Status = ServiceFailedToStart
+		}
+		defer rootClient.Close()
 		// so db is already running - ensure it contains command schema
 		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
 		// and upgrades to this version - we need to ensure we create the command schema
-		res.Error = ensureCommandSchema(ctx, res.DbState.Database)
+		res.Error = ensureCommandSchema(ctx, rootClient)
 		res.Status = ServiceAlreadyRunning
 	}
 
@@ -196,34 +202,47 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		return res.SetError(err)
 	}
 
-	utils.LogTime("postgresCmd end")
-
-	// ensure the foreign server exists in the database
-	err = ensureSteampipeServer(ctx, databaseName)
+	err = ensureService(ctx, databaseName)
 	if err != nil {
 		return res.SetError(err)
+	}
+
+	utils.LogTime("postgresCmd end")
+	res.Status = ServiceStarted
+	return res
+}
+
+func ensureService(ctx context.Context, databaseName string) error {
+	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
+	if err != nil {
+		return err
+	}
+	defer rootClient.Close()
+
+	// ensure the foreign server exists in the database
+	err = ensureSteampipeServer(ctx, rootClient)
+	if err != nil {
+		return err
 	}
 
 	// ensure that the necessary extensions are installed in the database
-	err = ensurePgExtensions(databaseName)
+	err = ensurePgExtensions(ctx, rootClient)
 	if err != nil {
 		// there was a problem with the installation
-		return res.SetError(err)
+		return err
 	}
 
-	err = ensureTempTablePermissions(databaseName)
+	err = ensureTempTablePermissions(ctx, databaseName, rootClient)
 	if err != nil {
-		return res.SetError(err)
+		return err
 	}
 
 	// ensure the db contains command schema
-	err = ensureCommandSchema(ctx, databaseName)
+	err = ensureCommandSchema(ctx, rootClient)
 	if err != nil {
-		return res.SetError(err)
+		return err
 	}
-
-	res.Status = ServiceStarted
-	return res
+	return nil
 }
 
 // getDatabaseName connects to the service and retrieves the database name
@@ -453,19 +472,14 @@ func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
 }
 
 // ensures that the necessary extensions are installed on the database
-func ensurePgExtensions(databaseName string) error {
+func ensurePgExtensions(ctx context.Context, rootClient *sql.DB) error {
 	extensions := []string{
 		"tablefunc",
 	}
 
 	errors := []error{}
-	rootClient, err := createLocalDbClient(&CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
-	if err != nil {
-		return err
-	}
-	defer rootClient.Close()
 	for _, extn := range extensions {
-		_, err = rootClient.Exec(fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
+		_, err := rootClient.Exec(fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -475,52 +489,36 @@ func ensurePgExtensions(databaseName string) error {
 
 // ensures that the 'steampipe' foreign server exists
 //  (re)install FDW and creates server if it doesn't
-func ensureSteampipeServer(ctx context.Context, databaseName string) error {
-	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
-	if err != nil {
-		return err
-	}
-	defer rootClient.Close()
+func ensureSteampipeServer(ctx context.Context, rootClient *sql.DB) error {
 	out := rootClient.QueryRow("select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
 	var serverName string
-	err = out.Scan(&serverName)
+	err := out.Scan(&serverName)
 	// if there is an error, we need to reinstall the foreign server
 	if err != nil {
-		return installForeignServer(ctx, databaseName, rootClient)
+		return installForeignServer(ctx, rootClient)
 	}
 	return nil
 }
 
 // create the command schema and grant insert permission
-func ensureCommandSchema(ctx context.Context, databaseName string) error {
+func ensureCommandSchema(ctx context.Context, rootClient *sql.DB) error {
 	commandSchemaStatements := updateConnectionQuery(constants.CommandSchema, constants.CommandSchema)
 	commandSchemaStatements = append(
 		commandSchemaStatements,
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CacheCommandTable),
 	)
-	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
-	if err != nil {
-		return err
-	}
-	defer rootClient.Close()
-
 	for _, statement := range commandSchemaStatements {
 		if _, err := rootClient.Exec(statement); err != nil {
 			return err
 		}
 	}
-	return err
+	return nil
 }
 
 // ensures that the 'steampipe_users' role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
-func ensureTempTablePermissions(ctx context.Context, databaseName string) error {
-	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
-	if err != nil {
-		return err
-	}
-	defer rootClient.Close()
-	_, err = rootClient.Exec(fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
+func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *sql.DB) error {
+	_, err := rootClient.Exec(fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
 	if err != nil {
 		return err
 	}
