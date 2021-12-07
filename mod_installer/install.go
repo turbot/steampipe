@@ -12,6 +12,7 @@ import (
 type InstallOpts struct {
 	ShouldUpdate bool
 	GetMods      []*modconfig.ModVersionConstraint
+	UpdateMods   []*modconfig.ModVersionConstraint
 }
 
 func InstallModDependencies(opts *InstallOpts) (string, error) {
@@ -50,6 +51,7 @@ func InstallModDependencies(opts *InstallOpts) (string, error) {
 	// set update flag
 	installer.ShouldUpdate = opts.ShouldUpdate
 	installer.GetMods = opts.GetMods
+	installer.UpdateMods = opts.UpdateMods
 
 	err = installer.InstallModDependencies(mod)
 	if err != nil {

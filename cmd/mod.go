@@ -167,7 +167,7 @@ func modUpdateCmd() *cobra.Command {
 	return cmd
 }
 
-func runModUpdateCmd(*cobra.Command, []string) {
+func runModUpdateCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runModUpdateCmd")
 	defer func() {
 		utils.LogTime("cmd.runModUpdateCmd end")
@@ -176,7 +176,12 @@ func runModUpdateCmd(*cobra.Command, []string) {
 		}
 	}()
 
-	msg, err := mod_installer.InstallModDependencies(&mod_installer.InstallOpts{ShouldUpdate: true})
+	modsArgs := append([]string{}, args...)
+	// first convert the mod args into well formed mod names
+	updateMods, err := getRequiredModVersions(modsArgs)
+	utils.FailOnError(err)
+
+	msg, err := mod_installer.InstallModDependencies(&mod_installer.InstallOpts{ShouldUpdate: true, UpdateMods: updateMods})
 	utils.FailOnError(err)
 	fmt.Println(msg)
 }
