@@ -55,7 +55,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
  rm -f $FILE_PATH/test_data/csv_plugin_test/b.csv
 
 # run the query and verify - should fail
-run steampipe query "select * from csv1.b"
+ run steampipe query "select * from csv1.b"
  assert_output --partial 'does not exist'
 
  rm -f $FILE_PATH/test_data/csv_plugin_test/b.csv
@@ -90,6 +90,6 @@ function setup() {
 
 function teardown() {
   # remove the files created as part of these tests 
-  rm -f $STEAMPIPE_INSTALL_DIR/config/csv1.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/csv*.spc
   rm -f output.*
 }
