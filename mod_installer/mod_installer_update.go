@@ -11,7 +11,7 @@ import (
 // we are performing an update - verify that we have a lock file and andy specific mods requested for update
 // exist in the lock file
 func (i *ModInstaller) verifyUpdates(updateMods []*modconfig.ModVersionConstraint) error {
-	if len(i.workspaceLock) == 0 {
+	if len(i.installData.Lock) == 0 {
 		return fmt.Errorf("no workspace lock file found - first run 'steampipe plugin install'")
 	}
 	i.UpdateMods = make(map[string]bool)
@@ -19,7 +19,7 @@ func (i *ModInstaller) verifyUpdates(updateMods []*modconfig.ModVersionConstrain
 	// check all mods which have been requested to be updated exist in the lock file (ignore version)
 	var missingMods []string
 	for _, m := range updateMods {
-		if i.workspaceLock.Contains(m.Name) {
+		if i.installData.Lock.ContainsMod(m.Name) {
 			// if this exists in the workspace lock, add to our map of updates
 			i.UpdateMods[m.Name] = true
 		} else {
