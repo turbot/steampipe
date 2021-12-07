@@ -460,7 +460,7 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports []display.Instal
 	return nil
 }
 
-func runPluginListCmd(*cobra.Command, []string) {
+func runPluginListCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runPluginListCmd list")
 	defer func() {
 		utils.LogTime("runPluginListCmd end")
@@ -469,8 +469,7 @@ func runPluginListCmd(*cobra.Command, []string) {
 			exitCode = 1
 		}
 	}()
-	ctx := context.Background()
-	pluginConnectionMap, err := getPluginConnectionMap(ctx)
+	pluginConnectionMap, err := getPluginConnectionMap(cmd.Context())
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "Plugin Listing failed")
 		exitCode = 4
@@ -510,8 +509,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		exitCode = 2
 		return
 	}
-	ctx := context.Background()
-	connectionMap, err := getPluginConnectionMap(ctx)
+	connectionMap, err := getPluginConnectionMap(cmd.Context())
 	if err != nil {
 		utils.ShowError(err)
 		exitCode = 4

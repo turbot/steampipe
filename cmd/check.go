@@ -131,7 +131,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// initialise
-	initData = initialiseCheck(spinner)
+	initData = initialiseCheck(cmd.Context(), spinner)
 	if shouldExit := handleCheckInitResult(initData); shouldExit {
 		return
 	}
@@ -191,7 +191,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = failures
 }
 
-func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
+func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitData {
 	initData := &checkInitData{
 		result: &db_common.InitResult{},
 	}
@@ -210,7 +210,7 @@ func initialiseCheck(spinner *spinner.Spinner) *checkInitData {
 		return initData
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	startCancelHandler(cancel)
 	initData.ctx = ctx
 

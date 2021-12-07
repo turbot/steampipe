@@ -17,6 +17,7 @@ func RunInteractivePrompt(initChan *chan *db_common.QueryInitData) (*queryresult
 	interactiveClient, err := newInteractiveClient(initChan, resultsStreamer)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
+		// do not bind shutdown to any cancellable context
 		db_local.ShutdownService(context.Background(), constants.InvokerQuery)
 		return nil, err
 	}

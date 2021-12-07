@@ -192,6 +192,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	err = db_local.RefreshConnectionAndSearchPaths(ctx, invoker)
 	if err != nil {
+		// the err could be a context cancellation - use background
 		db_local.StopServices(context.Background(), false, constants.InvokerService, nil)
 		utils.FailOnError(err)
 	}
@@ -228,6 +229,7 @@ func runServiceInForeground(invoker constants.Invoker) {
 			}
 		case <-sigIntChannel:
 			fmt.Print("\r")
+			// we don't have a context to pass on
 			count, err := db_local.GetCountOfConnectedClients(context.Background())
 			if err != nil {
 				return
@@ -243,6 +245,7 @@ func runServiceInForeground(invoker constants.Invoker) {
 			}
 			fmt.Println("Stopping Steampipe service.")
 
+			// no context to pass on. use bacckground
 			db_local.StopServices(context.Background(), false, invoker, nil)
 			fmt.Println("Steampipe service stopped.")
 			return

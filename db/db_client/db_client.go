@@ -44,6 +44,7 @@ type DbClient struct {
 func NewDbClient(connectionString string) (*DbClient, error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
+	// https://github.com/turbot/steampipe/issues/1215
 	db, err := establishConnection(context.TODO(), connectionString)
 
 	if err != nil {
@@ -178,7 +179,8 @@ func (c *DbClient) GetSchemaFromDB(schemas []string) (*schema.Metadata, error) {
 	defer connection.Close()
 
 	query := c.buildSchemasQuery(schemas)
-	tablesResult, err := connection.QueryContext(context.Background(), query)
+	// https://github.com/turbot/steampipe/issues/1214
+	tablesResult, err := connection.QueryContext(context.TODO(), query)
 	if err != nil {
 		return nil, err
 	}
