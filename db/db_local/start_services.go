@@ -207,7 +207,7 @@ func startDB(port int, listen StartListenType, invoker constants.Invoker) (res *
 	err = ensurePgExtensions(databaseName)
 	if err != nil {
 		// there was a problem with the installation
-		return ServiceFailedToStart, err
+		return res.SetError(err)
 	}
 
 	err = ensureTempTablePermissions(databaseName)
