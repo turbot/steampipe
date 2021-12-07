@@ -78,9 +78,11 @@ type ModInstaller struct {
 
 	// should we update dependencies to newer versions if they exist
 	ShouldUpdate bool
-	// are depdnencies being added to the workspace with a get command
+	// are dependencies being added to the workspace with a get command
 	// (if so, ignore locked version)
 	GetMods []*modconfig.ModVersionConstraint
+	// have specific mods been specified to update
+	UpdateMods []*modconfig.ModVersionConstraint
 }
 
 func NewModInstaller(workspacePath string) (*ModInstaller, error) {
@@ -426,7 +428,6 @@ func (i *ModInstaller) parseModPath(modfilePath string) (modName string, modVers
 }
 
 func (i *ModInstaller) InstallReport() string {
-
 	if len(i.recentlyInstalled) == 0 {
 		return "No dependencies installed"
 	}
