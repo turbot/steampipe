@@ -430,7 +430,7 @@ Benchmarks:
 				FullName:  "mod.m1",
 				Requires: &modconfig.Requires{
 					SteampipeVersionString: "v0.8.0",
-					Mods: []*modconfig.ModVersion{
+					Mods: []*modconfig.ModVersionConstraint{
 						{
 							Name:          "github.com/turbot/aws-core",
 							VersionString: "v1.0",
@@ -446,7 +446,7 @@ Benchmarks:
 				FullName:  "mod.m1",
 				Requires: &modconfig.Requires{
 					SteampipeVersionString: "v0.8.0",
-					Mods: []*modconfig.ModVersion{
+					Mods: []*modconfig.ModVersionConstraint{
 						{
 							Name:          "github.com/turbot/aws-core",
 							VersionString: "v1.0",

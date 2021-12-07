@@ -23,7 +23,6 @@ func InstallModDependencies(shouldUpdate bool) (string, error) {
 	// TODO do we need to care about variables?? probably?
 
 	if !parse.ModfileExists(workspacePath) {
-
 		return "No mod file found, so there are no dependencies to install", nil
 	}
 	// load the modfile only
@@ -42,8 +41,6 @@ func InstallModDependencies(shouldUpdate bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// write sum file
-	err = installer.WriteSumFile()
 	if err != nil {
 		return "", err
 	}

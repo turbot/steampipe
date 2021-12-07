@@ -43,11 +43,6 @@ func ConnectionStatePath() string {
 	return filepath.Join(InternalDir(), ConnectionsStateFileName)
 }
 
-// ModsDir returns the path to the mods directory (creates if missing)
-func ModsDir() string {
-	return steampipeSubDir("mods")
-}
-
 // ConfigDir returns the path to the config directory (creates if missing)
 func ConfigDir() string {
 	return steampipeSubDir("config")

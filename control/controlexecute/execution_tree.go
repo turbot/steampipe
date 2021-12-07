@@ -280,7 +280,7 @@ func (e *ExecutionTree) GetAllTags() []string {
 	var tagColumns []string
 	for _, r := range e.controlRuns {
 		if r.Control.Tags != nil {
-			for tag := range *r.Control.Tags {
+			for tag := range r.Control.Tags {
 				if !tagColumnMap[tag] {
 					tagColumns = append(tagColumns, tag)
 					tagColumnMap[tag] = true
