@@ -244,6 +244,11 @@ func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
 		display.StopSpinner(spinner)
 		return fmt.Errorf("Connection to database... FAILED!")
 	}
+	defer func() {
+		display.UpdateSpinnerMessage(spinner, "Completing configuration")
+		client.Close()
+		doThreeStepPostgresExit(process)
+	}()
 
 	display.UpdateSpinnerMessage(spinner, "Generating database passwords...")
 	// generate a password file for use later
@@ -284,13 +289,6 @@ func runInstall(firstInstall bool, spinner *spinner.Spinner) error {
 		log.Printf("[TRACE] installForeignServer failed: %v", err)
 		return fmt.Errorf("Configuring Steampipe... FAILED!")
 	}
-
-	// close the client - otherwise, it may be difficult to stop the service
-	client.Close()
-
-	// force stop
-	display.UpdateSpinnerMessage(spinner, "Completing configuration")
-	err = doThreeStepPostgresExit(process)
 
 	return err
 }

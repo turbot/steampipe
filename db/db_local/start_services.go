@@ -11,6 +11,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/plugin_manager"
 
 	psutils "github.com/shirou/gopsutil/process"
@@ -175,6 +176,13 @@ func startDB(port int, listen StartListenType, invoker constants.Invoker) (start
 
 	// ensure the foreign server exists in the database
 	err = ensureSteampipeServer(databaseName)
+	if err != nil {
+		// there was a problem with the installation
+		return ServiceFailedToStart, err
+	}
+
+	// ensure that the necessary extensions are installed in the database
+	err = ensurePgExtensions(databaseName)
 	if err != nil {
 		// there was a problem with the installation
 		return ServiceFailedToStart, err
@@ -436,6 +444,27 @@ func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
 	}()
 
 	return publishChannel, closeFunction, nil
+}
+
+// ensures that the necessary extensions are installed on the database
+func ensurePgExtensions(databaseName string) error {
+	extensions := []string{
+		"tablefunc",
+	}
+
+	errors := []error{}
+	rootClient, err := createLocalDbClient(&CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
+	if err != nil {
+		return err
+	}
+	defer rootClient.Close()
+	for _, extn := range extensions {
+		_, err = rootClient.Exec(fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
+		if err != nil {
+			errors = append(errors, err)
+		}
+	}
+	return utils.CombineErrors(errors...)
 }
 
 // ensures that the 'steampipe' foreign server exists
