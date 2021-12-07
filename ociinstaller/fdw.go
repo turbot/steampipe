@@ -10,14 +10,14 @@ import (
 )
 
 // InstallFdw :: Install the Steampipe Hub Extension files from an OCI image
-func InstallFdw(imageRef string, dbLocation string) (string, error) {
+func InstallFdw(ctx context.Context, imageRef string, dbLocation string) (string, error) {
 	tempDir := NewTempDir(imageRef)
 	defer tempDir.Delete()
 
-	imageDownloader := NewOciDownloader(context.Background())
+	imageDownloader := NewOciDownloader()
 
 	// download the blobs.
-	image, err := imageDownloader.Download(imageRef, "fdw", tempDir.Path)
+	image, err := imageDownloader.Download(ctx, imageRef, "fdw", tempDir.Path)
 	if err != nil {
 		return "", err
 	}

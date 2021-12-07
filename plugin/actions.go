@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -85,8 +86,8 @@ func Exists(plugin string) (bool, error) {
 }
 
 // Install installs a plugin in the local file system
-func Install(plugin string) (*ociinstaller.SteampipeImage, error) {
-	image, err := ociinstaller.InstallPlugin(plugin)
+func Install(ctx context.Context, plugin string) (*ociinstaller.SteampipeImage, error) {
+	image, err := ociinstaller.InstallPlugin(ctx, plugin)
 	return image, err
 }
 

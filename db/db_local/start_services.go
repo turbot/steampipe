@@ -457,7 +457,7 @@ func ensureSteampipeServer(ctx context.Context, databaseName string) error {
 	err = out.Scan(&serverName)
 	// if there is an error, we need to reinstall the foreign server
 	if err != nil {
-		return installForeignServer(databaseName, rootClient)
+		return installForeignServer(ctx, databaseName, rootClient)
 	}
 	return nil
 }
