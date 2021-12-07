@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/steampipeconfig/parse"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -57,7 +56,7 @@ func runModInstallCmd(*cobra.Command, []string) {
 		}
 	}()
 
-	msg, err := mod_installer.InstallModDependencies(false)
+	msg, err := mod_installer.InstallModDependencies(&mod_installer.InstallOpts{ShouldUpdate: false})
 	utils.FailOnError(err)
 	fmt.Println(msg)
 }
@@ -80,7 +79,6 @@ func modGetCmd() *cobra.Command {
 func runModGetCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runModGetCmd")
 	defer func() {
-		// TODO revert to old mod file in case of error
 		utils.LogTime("cmd.runModGetCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
@@ -89,27 +87,22 @@ func runModGetCmd(cmd *cobra.Command, args []string) {
 
 	modsArgs := append([]string{}, args...)
 	// first convert the mod args into well formed mod names
-	modVersions, err := getModVersions(modsArgs)
+	requiredModVersions, err := getRequiredModVersions(modsArgs)
 	utils.FailOnError(err)
-
-	// load workspace mod
-	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
-	// TODO handle no mod file
-	mod, err := parse.ParseModDefinition(workspacePath)
-	utils.FailOnError(err)
-
-	// add dependencies to mod
-	mod.AddModDependencies(modVersions)
-	err = mod.Save()
-	utils.FailOnError(err)
-
-	msg, err := mod_installer.InstallModDependencies(false)
+	if len(requiredModVersions) == 0 {
+		fmt.Println("No mods to add")
+		return
+	}
+	// just call install, passing an AdditionalMods option
+	msg, err := mod_installer.InstallModDependencies(&mod_installer.InstallOpts{
+		AdditionalMods: requiredModVersions,
+	})
 	utils.FailOnError(err)
 	fmt.Println(msg)
 
 }
 
-func getModVersions(modsArgs []string) ([]*modconfig.ModVersionConstraint, error) {
+func getRequiredModVersions(modsArgs []string) ([]*modconfig.ModVersionConstraint, error) {
 	var errors []error
 	mods := make([]*modconfig.ModVersionConstraint, len(modsArgs))
 	for i, modArg := range modsArgs {
@@ -183,7 +176,7 @@ func runModUpdateCmd(*cobra.Command, []string) {
 		}
 	}()
 
-	msg, err := mod_installer.InstallModDependencies(true)
+	msg, err := mod_installer.InstallModDependencies(&mod_installer.InstallOpts{ShouldUpdate: true})
 	utils.FailOnError(err)
 	fmt.Println(msg)
 }
