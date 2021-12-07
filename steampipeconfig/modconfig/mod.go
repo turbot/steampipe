@@ -665,16 +665,16 @@ func (m *Mod) Save() error {
 		modBody.SetAttributeValue("color", cty.StringVal(*m.Color))
 	}
 	if m.Description != nil {
-		modBody.SetAttributeValue("color", cty.StringVal(*m.Color))
+		modBody.SetAttributeValue("description", cty.StringVal(*m.Color))
 	}
 	if m.Documentation != nil {
-		modBody.SetAttributeValue("color", cty.StringVal(*m.Documentation))
+		modBody.SetAttributeValue("documentation", cty.StringVal(*m.Documentation))
 	}
 	if m.Icon != nil {
-		modBody.SetAttributeValue("color", cty.StringVal(*m.Icon))
+		modBody.SetAttributeValue("icon", cty.StringVal(*m.Icon))
 	}
 	if m.Title != nil {
-		modBody.SetAttributeValue("color", cty.StringVal(*m.Title))
+		modBody.SetAttributeValue("title", cty.StringVal(*m.Title))
 	}
 	if len(m.Tags) > 0 {
 		tagMap := make(map[string]cty.Value, len(m.Tags))

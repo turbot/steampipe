@@ -238,21 +238,21 @@ func (i *ModInstaller) getAvailableModVersions(modVersion *modconfig.ModVersionC
 
 func (i *ModInstaller) getInstalledModForConstraint(requiredVersion *modconfig.ModVersionConstraint, availableVersions []*semver.Version, parent *modconfig.Mod) (*modconfig.Mod, error) {
 	// have we already got a version installed which satisfies this dependency?
-	currentVersion := i.InstalledModVersions.GetVersionSatisfyingRequirement(requiredVersion)
-	if currentVersion == nil {
+	installedVersion := i.InstalledModVersions.GetVersionSatisfyingRequirement(requiredVersion)
+	if installedVersion == nil {
 		// no version installed - we SHOULD install it
 		return nil, nil
 	}
 
 	// so there is a version installed which satisfies the requirement
 	// get the path of the mod
-	modPath := filepath.Join(i.modsPath, modVersionFullName(requiredVersion.Name, currentVersion))
+	modPath := filepath.Join(i.modsPath, modVersionFullName(requiredVersion.Name, installedVersion))
 	mod, err := i.loadModfile(modPath)
 	if err != nil {
 		return nil, err
 	}
 	// update installedDependencies
-	i.workspaceLock.Add(parent.Name(), requiredVersion.Name, currentVersion)
+	i.workspaceLock.Add(parent.Name(), requiredVersion.Name, installedVersion)
 
 	// if the installer has updates disabled, we should NOT install
 	if i.ShouldUpdate == false {
@@ -261,7 +261,7 @@ func (i *ModInstaller) getInstalledModForConstraint(requiredVersion *modconfig.M
 	}
 
 	// so we should update if there is a newer version - check if there is
-	newerModVersionFound, err := i.newerModVersionFound(availableVersions, currentVersion)
+	newerModVersionFound, err := i.newerModVersionFound(requiredVersion, installedVersion, availableVersions)
 	if err != nil {
 		return nil, err
 	}
@@ -395,8 +395,8 @@ func (i *ModInstaller) parseModPath(modfilePath string) (modName string, modVers
 }
 
 // determine whether there is a newer mod version avoilable which satisfies the dependency version constraint
-func (i *ModInstaller) newerModVersionFound(installationData []*semver.Version, currentVersion *semver.Version) (bool, error) {
-	latestVersion, err := i.getModRefSatisfyingConstraints(nil, installationData)
+func (i *ModInstaller) newerModVersionFound(requiredVersion *modconfig.ModVersionConstraint, currentVersion *semver.Version, availableVersions []*semver.Version) (bool, error) {
+	latestVersion, err := i.getModRefSatisfyingConstraints(requiredVersion, availableVersions)
 	if err != nil {
 		return false, err
 	}
@@ -417,5 +417,5 @@ func (i *ModInstaller) InstallReport() string {
 		strs[idx] = fmt.Sprintf("%s@%s", ref.Name, ref.Version.String())
 		idx++
 	}
-	return fmt.Sprintf("\nInstalled %d dependencies:\n  - %s\n", len(i.recentlyInstalled), strings.Join(strs, "\n  - "))
+	return fmt.Sprintf("\nInstalled %d %s:\n  - %s\n", len(i.recentlyInstalled), utils.Pluralize("dependency", len(i.recentlyInstalled)), strings.Join(strs, "\n  - "))
 }
