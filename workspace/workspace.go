@@ -219,13 +219,6 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 	return workspaceMap
 }
 
-// SaveWorkspaceMod serialises the workspace mode to <workspace path?.mod.sp
-func (w *Workspace) SaveWorkspaceMod() error {
-	// TODO
-
-	return nil
-}
-
 // clear all resource maps
 func (w *Workspace) reset() {
 	w.Queries = make(map[string]*modconfig.Query)
@@ -239,7 +232,7 @@ func (w *Workspace) reset() {
 // check  whether the workspace contains a modfile
 // this will determine whether we load files recursively, and create pseudo resources for sql files
 func (w *Workspace) setModfileExists() {
-	modFilePath := filepath.Join(w.Path, constants.WorkspaceModFileName)
+	modFilePath := constants.ModFilePath(w.Path)
 	_, err := os.Stat(modFilePath)
 	modFileExists := err == nil
 
@@ -347,6 +340,7 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 		for _, q := range mod.Queries {
 			// if this mod is a direct dependency of the workspace mod, add it to the map _without_ a verison
 			if w.requiresMod(mod) {
+				// /TODO IMPLEMENT
 				res[q.QualifiedName()] = q
 			}
 			res[q.QualifiedNameWithVersion()] = q

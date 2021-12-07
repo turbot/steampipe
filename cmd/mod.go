@@ -3,6 +3,9 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -26,6 +29,7 @@ func modCmd() *cobra.Command {
 	cmd.AddCommand(modGetCmd())
 	cmd.AddCommand(modListCmd())
 	cmd.AddCommand(modUpdateCmd())
+	cmd.AddCommand(modGetCmd())
 
 	return cmd
 }
@@ -61,11 +65,11 @@ func runModInstallCmd(*cobra.Command, []string) {
 // get
 func modGetCmd() *cobra.Command {
 	var cmd = &cobra.Command{
-		Use:   "install [git-provider/org/]name[@version]",
+		Use:   "get [git-provider/org/]name[@version]",
 		Args:  cobra.ArbitraryArgs,
 		Run:   runModGetCmd,
-		Short: "Install mod dependencies",
-		Long: `Install mod dependencies.
+		Short: "Add mod dependencies",
+		Long: `Add mod dependencies.
 `,
 	}
 
@@ -76,17 +80,51 @@ func modGetCmd() *cobra.Command {
 func runModGetCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runModGetCmd")
 	defer func() {
+		// TODO revert to old mod file in case of error
 		utils.LogTime("cmd.runModGetCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
 	}()
 
-	mods := append([]string{}, args...)
-	msg, err := mod_installer.GetMods(mods)
+	modsArgs := append([]string{}, args...)
+	// first convert the mod args into well formed mod names
+	modVersions, err := getModVersions(modsArgs)
 	utils.FailOnError(err)
-	// TODO FORMAT output
+
+	// load workspace mod
+	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
+	// TODO handle no mod file
+	mod, err := parse.ParseModDefinition(workspacePath)
+	utils.FailOnError(err)
+
+	// add dependencies to mod
+	mod.AddModDependencies(modVersions)
+	err = mod.Save()
+	utils.FailOnError(err)
+
+	msg, err := mod_installer.InstallModDependencies(false)
+	utils.FailOnError(err)
 	fmt.Println(msg)
+
+}
+
+func getModVersions(modsArgs []string) ([]*modconfig.ModVersionConstraint, error) {
+	var errors []error
+	mods := make([]*modconfig.ModVersionConstraint, len(modsArgs))
+	for i, modArg := range modsArgs {
+		// create mod version from arg
+		modVersion, err := modconfig.NewModVersionConstraint(modArg)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		mods[i] = modVersion
+	}
+	if len(errors) > 0 {
+		return nil, utils.CombineErrors(errors...)
+	}
+	return mods, nil
 }
 
 // list
@@ -116,7 +154,7 @@ func runModListCmd(*cobra.Command, []string) {
 	installer, err := mod_installer.NewModInstaller(workspacePath)
 	utils.FailOnError(err)
 
-	installedMods := installer.AllInstalledMods
+	installedMods := installer.InstalledModVersions
 	utils.FailOnError(err)
 	// TODO FORMAT LIST
 	fmt.Println(installedMods)

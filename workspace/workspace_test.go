@@ -28,7 +28,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 			Mod: &modconfig.Mod{
 				ShortName: "w_1",
 				Title:     toStringPointer("workspace 1"),
-				//ModDepends: []*modconfig.ModVersion{
+				//ModDepends: []*modconfig.ModVersionConstraint{
 				//	{ShortName: "github.com/turbot/m1", Version: "0.0.0"},
 				//	{ShortName: "github.com/turbot/m2", Version: "0.0.0"},
 				//},
