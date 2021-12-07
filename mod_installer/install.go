@@ -7,10 +7,10 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func InstallModDependencies(opts *InstallOpts) (string, error) {
-	utils.LogTime("cmd.runModInstallCmd")
+func InstallWorkspaceDependencies(opts *InstallOpts) (*InstallData, error) {
+	utils.LogTime("cmd.InstallModDependencies")
 	defer func() {
-		utils.LogTime("cmd.runModInstallCmd end")
+		utils.LogTime("cmd.InstallModDependencies end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
@@ -21,12 +21,12 @@ func InstallModDependencies(opts *InstallOpts) (string, error) {
 	// install workspace dependencies
 	installer, err := NewModInstaller(opts)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if err := installer.InstallWorkspaceDependencies(); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return installer.InstallReport(), nil
+	return installer.installData, nil
 }
