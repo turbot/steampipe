@@ -78,7 +78,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	// installFDW takes care of the spinner, since it may need to run independently
-	_, err = installFDW(true, spinner)
+	_, err = installFDW(ctx, true, spinner)
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] installFDW failed: %v", err)
@@ -110,7 +110,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 func PrepareDb(ctx context.Context, spinner *spinner.Spinner) error {
 	// check if FDW needs to be updated
 	if fdwNeedsUpdate() {
-		_, err := installFDW(false, spinner)
+		_, err := installFDW(ctx, false, spinner)
 		spinner.Stop()
 		if err != nil {
 			log.Printf("[TRACE] installFDW failed: %v", err)
@@ -177,7 +177,7 @@ func fdwNeedsUpdate() bool {
 	return versionInfo.FdwExtension.Version != constants.FdwVersion
 }
 
-func installFDW(firstSetup bool, spinner *spinner.Spinner) (string, error) {
+func installFDW(ctx context.Context, firstSetup bool, spinner *spinner.Spinner) (string, error) {
 	utils.LogTime("db_local.installFDW start")
 	defer utils.LogTime("db_local.installFDW end")
 
