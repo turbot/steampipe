@@ -13,9 +13,9 @@ import (
 type Requires struct {
 	SteampipeVersionString string `hcl:"steampipe,optional"`
 	SteampipeVersion       *semver.Version
-	Plugins                []*PluginVersion `hcl:"plugin,block"`
-	Mods                   []*ModVersion    `hcl:"mod,block"`
-	DeclRange              hcl.Range        `json:"-"`
+	Plugins                []*PluginVersion        `hcl:"plugin,block"`
+	Mods                   []*ModVersionConstraint `hcl:"mod,block"`
+	DeclRange              hcl.Range               `json:"-"`
 }
 
 func (r *Requires) ValidateSteampipeVersion(modName string) error {
@@ -51,4 +51,26 @@ func (r *Requires) Initialise() hcl.Diagnostics {
 		diags = append(diags, moreDiags...)
 	}
 	return diags
+}
+
+func (r *Requires) AddModDependencies(newModVersions []*ModVersionConstraint) {
+	// build map of mods that we are adding
+	var modVersionMap = make(map[string]bool, len(newModVersions))
+	for _, modVersion := range newModVersions {
+		modVersionMap[modVersion.Name] = true
+	}
+	// rebuild the Mods array
+
+	var newMods []*ModVersionConstraint
+	for _, existingModVersion := range r.Mods {
+		// do we already have this in the requires
+		if !modVersionMap[existingModVersion.Name] {
+			newMods = append(newMods, existingModVersion)
+		}
+	}
+	for _, newModVersion := range newModVersions {
+		newMods = append(newMods, newModVersion)
+	}
+	// write back
+	r.Mods = newMods
 }

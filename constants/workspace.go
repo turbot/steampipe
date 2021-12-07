@@ -2,6 +2,7 @@ package constants
 
 import (
 	"path"
+	"path/filepath"
 )
 
 // mod related constants
@@ -10,15 +11,25 @@ const (
 	WorkspaceModDir         = "mods"
 	WorkspaceConfigFileName = "workspace.spc"
 	WorkspaceIgnoreFile     = ".steampipeignore"
-	WorkspaceDefaultModName = "local"
-	WorkspaceModFileName    = "mod.sp"
+	ModFileName             = "mod.sp"
 	DefaultVarsFileName     = "steampipe.spvars"
+	WorkspaceLockFileName   = "workspace.lock"
 	MaxControlRunAttempts   = 2
 )
 
 func WorkspaceModPath(workspacePath string) string {
 	return path.Join(workspacePath, WorkspaceDataDir, WorkspaceModDir)
 }
+
+func WorkspaceLockPath(workspacePath string) string {
+	return path.Join(workspacePath, WorkspaceLockFileName)
+}
+
 func DefaultVarsFilePath(workspacePath string) string {
 	return path.Join(workspacePath, DefaultVarsFileName)
+}
+
+func ModFilePath(modFolder string) string {
+	modFilePath := filepath.Join(modFolder, ModFileName)
+	return modFilePath
 }

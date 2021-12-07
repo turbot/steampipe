@@ -80,7 +80,7 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 	// TODO think about variables
 
 	// if there is no mod at this location, return error
-	modFilePath := filepath.Join(modPath, "mod.sp")
+	modFilePath := constants.ModFilePath(modPath)
 	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("no mod file found in %s", modPath)
 	}

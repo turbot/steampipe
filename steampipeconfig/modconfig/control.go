@@ -14,15 +14,15 @@ import (
 // Control is a struct representing the Control resource
 type Control struct {
 	ShortName        string
-	FullName         string             `cty:"name"`
-	Description      *string            `cty:"description" column:"description,text"`
-	Documentation    *string            `cty:"documentation"  column:"documentation,text"`
-	SearchPath       *string            `cty:"search_path"  column:"search_path,text"`
-	SearchPathPrefix *string            `cty:"search_path_prefix"  column:"search_path_prefix,text"`
-	Severity         *string            `cty:"severity"  column:"severity,text"`
-	SQL              *string            `cty:"sql"  column:"sql,text"`
-	Tags             *map[string]string `cty:"tags"  column:"tags,jsonb"`
-	Title            *string            `cty:"title"  column:"title,text"`
+	FullName         string            `cty:"name"`
+	Description      *string           `cty:"description" column:"description,text"`
+	Documentation    *string           `cty:"documentation"  column:"documentation,text"`
+	SearchPath       *string           `cty:"search_path"  column:"search_path,text"`
+	SearchPathPrefix *string           `cty:"search_path_prefix"  column:"search_path_prefix,text"`
+	Severity         *string           `cty:"severity"  column:"severity,text"`
+	SQL              *string           `cty:"sql"  column:"sql,text"`
+	Tags             map[string]string `cty:"tags"  column:"tags,jsonb"`
+	Title            *string           `cty:"title"  column:"title,text"`
 	Query            *Query
 	// args
 	// arguments may be specified by either a map of named args or as a list of positional args
@@ -64,20 +64,12 @@ func (c *Control) Equals(other *Control) bool {
 	if !res {
 		return res
 	}
-	// tags
-	if c.Tags == nil {
-		if other.Tags != nil {
+	if len(c.Tags) != len(other.Tags) {
+		return false
+	}
+	for k, v := range c.Tags {
+		if otherVal := other.Tags[k]; v != otherVal {
 			return false
-		}
-	} else {
-		// we have tags
-		if other.Tags == nil {
-			return false
-		}
-		for k, v := range *c.Tags {
-			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
-				return false
-			}
 		}
 	}
 
@@ -194,7 +186,7 @@ func (c *Control) GetDescription() string {
 // GetTags implements ModTreeItem
 func (c *Control) GetTags() map[string]string {
 	if c.Tags != nil {
-		return *c.Tags
+		return c.Tags
 	}
 	return map[string]string{}
 }
