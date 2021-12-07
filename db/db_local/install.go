@@ -70,7 +70,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Download & install embedded PostgreSQL database...")
-	_, err = ociinstaller.InstallDB(constants.DefaultEmbeddedPostgresImage, getDatabaseLocation())
+	_, err = ociinstaller.InstallDB(ctx, constants.DefaultEmbeddedPostgresImage, getDatabaseLocation())
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] %v", err)
@@ -194,7 +194,7 @@ func installFDW(ctx context.Context, firstSetup bool, spinner *spinner.Spinner) 
 		}()
 	}
 	display.UpdateSpinnerMessage(spinner, fmt.Sprintf("Download & install %s...", constants.Bold("steampipe-postgres-fdw")))
-	return ociinstaller.InstallFdw(constants.DefaultFdwImage, getDatabaseLocation())
+	return ociinstaller.InstallFdw(ctx, constants.DefaultFdwImage, getDatabaseLocation())
 }
 
 func needsInit() bool {
@@ -276,7 +276,7 @@ func runInstall(ctx context.Context, firstInstall bool, spinner *spinner.Spinner
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring database...")
-	err = installDatabaseWithPermissions(databaseName, client)
+	err = installDatabaseWithPermissions(ctx, databaseName, client)
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] installSteampipeDatabaseAndUser failed: %v", err)
@@ -284,7 +284,7 @@ func runInstall(ctx context.Context, firstInstall bool, spinner *spinner.Spinner
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Configuring Steampipe...")
-	err = installForeignServer(databaseName, client)
+	err = installForeignServer(ctx, databaseName, client)
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] installForeignServer failed: %v", err)
@@ -399,7 +399,7 @@ func initDatabase() error {
 	return os.WriteFile(getPgHbaConfLocation(), []byte(constants.MinimalPgHbaContent), 0600)
 }
 
-func installDatabaseWithPermissions(databaseName string, rawClient *sql.DB) error {
+func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *sql.DB) error {
 	utils.LogTime("db_local.install.installDatabaseWithPermissions start")
 	defer utils.LogTime("db_local.install.installDatabaseWithPermissions end")
 
@@ -460,7 +460,7 @@ func installDatabaseWithPermissions(databaseName string, rawClient *sql.DB) erro
 	for _, statement := range statements {
 		// not logging here, since the password may get logged
 		// we don't want that
-		if _, err := rawClient.Exec(statement); err != nil {
+		if _, err := rawClient.ExecContext(ctx, statement); err != nil {
 			return err
 		}
 	}
@@ -472,7 +472,7 @@ func writePgHbaContent(databaseName string, username string) error {
 	return os.WriteFile(getPgHbaConfLocation(), []byte(content), 0600)
 }
 
-func installForeignServer(databaseName string, rawClient *sql.DB) error {
+func installForeignServer(ctx context.Context, databaseName string, rawClient *sql.DB) error {
 	utils.LogTime("db_local.installForeignServer start")
 	defer utils.LogTime("db_local.installForeignServer end")
 
@@ -488,7 +488,7 @@ func installForeignServer(databaseName string, rawClient *sql.DB) error {
 		// NOTE: This may print a password to the log file, but it doesn't matter
 		// since the password is stored in a config file anyway.
 		log.Println("[TRACE] Install Foreign Server: ", statement)
-		if _, err := rawClient.Exec(statement); err != nil {
+		if _, err := rawClient.ExecContext(ctx, statement); err != nil {
 			return err
 		}
 	}
