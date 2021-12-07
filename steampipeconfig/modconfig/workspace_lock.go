@@ -11,7 +11,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 )
 
-// ModVersionMap represents a map of installed dependencies, keyed by name with versoin as the map value
+// ModVersionMap represents a map of installed dependencies, keyed by name with version as the map value
 type ModVersionMap map[string]*semver.Version
 
 // WorkspaceLock is a map of ModVersionMaps items keyed by the parent mod whose dependencies are installed
@@ -61,11 +61,23 @@ func (m WorkspaceLock) GetLockedModVersion(requiredModVersion *ModVersionConstra
 
 }
 
-// Contains returns whether any dependency in the lock file has the same name as 'modName'
-func (m WorkspaceLock) Contains(modName string) bool {
-	for _, modVersions := range m {
-		for name := range modVersions {
+// ContainsMod returns whether the lockfile contains any version of the given mod
+func (m WorkspaceLock) ContainsMod(modName string) bool {
+	for _, modVersionMap := range m {
+		for name := range modVersionMap {
 			if name == modName {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// ContainsModVersion returns whether the lockfile contains the given mod version
+func (m WorkspaceLock) ContainsModVersion(modName string, modVersion *semver.Version) bool {
+	for _, modVersionMap := range m {
+		for lockName, lockVersion := range modVersionMap {
+			if lockName == modName && lockVersion.Equal(modVersion) {
 				return true
 			}
 		}
