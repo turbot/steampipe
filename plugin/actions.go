@@ -58,25 +58,28 @@ func Remove(image string, pluginConnections map[string][]modconfig.Connection) e
 	}
 	connFiles := Unique(files)
 
-	if len(conns) > 0 {
+	if len(connFiles) > 0 {
 		display.StopSpinner(spinner)
-		str := []string{fmt.Sprintf("\nNote: the following %s have steampipe connections using the '%s' plugin:\n", utils.Pluralize("file", len(connFiles)), image)}
-		for _, conn := range conns {
-			str = append(
-				str,
-				fmt.Sprintf(
-					"\t* file: %s \n \t  connection: '%s' (line %d)",
-					conn.DeclRange.Filename,
-					conn.Name,
-					conn.DeclRange.Start.Line,
-				),
-			)
+		str := []string{fmt.Sprintf("\nNote: the following %s %s steampipe connections using the '%s' plugin:", utils.Pluralize("file", len(connFiles)), utils.Pluralize("has", len(connFiles)), image)}
+		for _, file := range connFiles {
+			str = append(str, fmt.Sprintf("\n \t* file: %s", file))
+			for _, conn := range conns {
+				if conn.DeclRange.Filename == file {
+					str = append(
+						str,
+						fmt.Sprintf(
+							"\t  connection: '%s' (line %d)",
+							conn.Name,
+							conn.DeclRange.Start.Line,
+						),
+					)
+				}
+			}
 		}
-		str = append(str, "\nPlease remove them to continue using steampipe")
+		str = append(str, fmt.Sprintf("\nPlease remove %s to continue using steampipe", utils.Pluralize("it", len(connFiles))))
 		fmt.Println(strings.Join(str, "\n"))
 		fmt.Println()
 	}
-
 	return err
 }
 
