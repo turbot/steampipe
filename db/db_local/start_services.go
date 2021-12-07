@@ -181,8 +181,8 @@ func startDB(port int, listen StartListenType, invoker constants.Invoker) (start
 		return ServiceFailedToStart, err
 	}
 
-	// ensure the foreign server exists in the database
-	err = ensureNecessaryExtns(databaseName)
+	// ensure that the necessary extensions are installed in the database
+	err = ensurePgExtensions(databaseName)
 	if err != nil {
 		// there was a problem with the installation
 		return ServiceFailedToStart, err
@@ -447,7 +447,7 @@ func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
 }
 
 // ensures that the necessary extensions are installed on the database
-func ensureNecessaryExtns(databaseName string) error {
+func ensurePgExtensions(databaseName string) error {
 	extensions := []string{
 		"tablefunc",
 	}
