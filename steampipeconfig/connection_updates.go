@@ -81,8 +81,9 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 		}
 	}
 
-	// now for every connection with dynamic schema, check whether the schema we have just fetched
-	// matches the existing db schema
+	// now for every connection with dynamic schema,
+	// check whether the schema we have just fetched matches the existing db schema
+	// if not, add to updates
 	for name, requiredHash := range dynamicSchemaHashMap {
 		// get the connection data from the loaded connection state
 		connectionData, ok := currentConnectionState[name]
@@ -95,7 +96,8 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	//  instantiate connection plugins for all updates
 	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
 	// - remove these from list of updates
-	connectionsToCreate := removeConnectionsFromList(updates.Update.Connections(), connectionsPluginsWithDynamicSchema)
+	updateConnections := updates.Update.Connections()
+	connectionsToCreate := removeConnectionsFromList(updateConnections, connectionsPluginsWithDynamicSchema)
 	connectionPlugins, err := CreateConnectionPlugins(connectionsToCreate)
 	if err != nil {
 		res.Error = err
@@ -141,16 +143,14 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 
 func removeConnectionsFromList(sourceConnections []*modconfig.Connection, connectionsToRemove map[string]*ConnectionPlugin) []*modconfig.Connection {
 	if connectionsToRemove == nil {
-		connectionsToRemove = make(map[string]*ConnectionPlugin)
+		return sourceConnections
 	}
 
 	// build list of required connections
-	var res = make([]*modconfig.Connection, len(sourceConnections))
-	idx := 0
+	var res []*modconfig.Connection
 	for _, c := range sourceConnections {
 		if _, ok := connectionsToRemove[c.Name]; !ok {
-			res[idx] = c
-			idx++
+			res = append(res, c)
 		}
 	}
 	return res
