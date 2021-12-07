@@ -60,7 +60,7 @@ func Remove(image string, pluginConnections map[string][]modconfig.Connection) e
 
 	if len(connFiles) > 0 {
 		display.StopSpinner(spinner)
-		str := []string{fmt.Sprintf("\nNote: the following %s %s steampipe connections using the '%s' plugin:", utils.Pluralize("file", len(connFiles)), utils.Pluralize("has", len(connFiles)), image)}
+		str := []string{fmt.Sprintf("\nNote: the following %s %s %s steampipe %s using the '%s' plugin:", utils.Pluralize("file", len(connFiles)), utils.Pluralize("has", len(connFiles)), utils.Pluralize("a", len(conns)), utils.Pluralize("connection", len(conns)) ,image)}
 		for _, file := range connFiles {
 			str = append(str, fmt.Sprintf("\n \t* file: %s", file))
 			for _, conn := range conns {
