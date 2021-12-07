@@ -57,7 +57,7 @@ func (r CSVRenderer) renderControl(run *controlexecute.ControlRun, group *contro
 		}
 		tags := make(map[string]string)
 		if run.Control.Tags != nil {
-			tags = *run.Control.Tags
+			tags = run.Control.Tags
 		}
 		for _, prop := range r.columns.TagColumns {
 			val := tags[prop]

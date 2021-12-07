@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -35,7 +36,9 @@ type ReferenceTypeValueMap map[string]map[string]cty.Value
 
 type RunContext struct {
 	// the mod which is currently being parsed
-	CurrentMod       *modconfig.Mod
+	CurrentMod *modconfig.Mod
+	// the workspace lock data
+	WorkspaceLock    modconfig.WorkspaceLock
 	UnresolvedBlocks map[string]*unresolvedBlock
 	FileData         map[string][]byte
 	// the eval context used to decode references in HCL
@@ -60,10 +63,17 @@ type RunContext struct {
 }
 
 func NewRunContext(workspacePath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
+	// load the workspace lock
+	workspaceLock, err := modconfig.LoadWorkspaceLock(workspacePath)
+	if err != nil {
+		log.Printf("failed to load workspace lock.file from %s: %s", workspacePath, err)
+	}
+
 	c := &RunContext{
 		Flags:                flags,
 		ModInstallationPath:  constants.WorkspaceModPath(workspacePath),
 		WorkspacePath:        workspacePath,
+		WorkspaceLock:        workspaceLock,
 		ListOptions:          listOptions,
 		LoadedDependencyMods: make(modconfig.ModMap),
 		UnresolvedBlocks:     make(map[string]*unresolvedBlock),
@@ -77,6 +87,7 @@ func NewRunContext(workspacePath string, flags ParseModFlag, listOptions *filehe
 	// add enums to the variables which may be referenced from within the hcl
 	c.addSteampipeEnums()
 	c.buildEvalContext()
+
 	return c
 }
 
@@ -442,4 +453,14 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	}
 
 	return nil
+}
+
+func (r *RunContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
+	// if the mod has dependencies, there must a workspace lock object in the run context
+	// (mod MUST be the workspace mod, not a dependency, as we would hit this error as soon as we parse it)
+	if mod.Requires != nil && len(mod.Requires.Mods) > 0 && r.WorkspaceLock == nil {
+		return fmt.Errorf("no workspace lock found\nrun 'steampipe mod install'")
+	}
+	return nil
+
 }

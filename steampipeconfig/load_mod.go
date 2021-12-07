@@ -94,14 +94,30 @@ func loadModDependencies(mod *modconfig.Mod, runCtx *parse.RunContext) error {
 	var errors []error
 
 	if mod.Requires != nil {
-		for _, dependencyMod := range mod.Requires.Mods {
+		// now ensure there is a lock file - if we have any mod depdnecies there MUST be a lock file -
+		// otherwise 'steampipe install' must be run
+		if err := runCtx.EnsureWorkspaceLock(mod); err != nil {
+			return err
+		}
+
+		for _, requiredModVersion := range mod.Requires.Mods {
+			// if we have a locked version, update the required version to reflect this
+			lockedVersion, err := runCtx.WorkspaceLock.GetLockedModVersion(requiredModVersion, mod)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+			if lockedVersion != nil {
+				requiredModVersion = lockedVersion
+			}
+
 			// have we already loaded a mod which satisfied this
-			if loadedMod, ok := runCtx.LoadedDependencyMods[dependencyMod.Name]; ok {
-				if dependencyMod.VersionConstraint.Check(loadedMod.Version) {
+			if loadedMod, ok := runCtx.LoadedDependencyMods[requiredModVersion.Name]; ok {
+				if requiredModVersion.Constraint.Check(loadedMod.Version) {
 					continue
 				}
 			}
-			if err := loadModDependency(dependencyMod, runCtx); err != nil {
+			if err := loadModDependency(requiredModVersion, runCtx); err != nil {
 				errors = append(errors, err)
 			}
 		}
@@ -109,17 +125,16 @@ func loadModDependencies(mod *modconfig.Mod, runCtx *parse.RunContext) error {
 	return utils.CombineErrors(errors...)
 }
 
-func loadModDependency(modDependency *modconfig.ModVersion, runCtx *parse.RunContext) error {
+func loadModDependency(modDependency *modconfig.ModVersionConstraint, runCtx *parse.RunContext) error {
 	// dependency mods are installed to <mod path>/<mod nam>@version
 	// for example workspace_folder/.steampipe/mods/github.com/turbot/steampipe-mod-aws-compliance@v1.0
 
 	// we need to list all mod folder in the parent folder: workspace_folder/.steampipe/mods/github.com/turbot/
 	// for each folder we parse the mod name and version and determine whether it meets the version constraint
 
-	// we need to iterate through all mods in the parent folder and find one that sarifies requirements
+	// we need to iterate through all mods in the parent folder and find one that satisfies requirements
 	parentFolder := filepath.Dir(filepath.Join(runCtx.ModInstallationPath, modDependency.Name))
-	// get th elast segment of mod name
-
+	// get the last segment of mod name
 	dependencyPath, version, err := findInstalledDependency(modDependency, parentFolder)
 	if err != nil {
 		return err
@@ -146,7 +161,7 @@ func loadModDependency(modDependency *modconfig.ModVersion, runCtx *parse.RunCon
 
 }
 
-func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder string) (string, *semver.Version, error) {
+func findInstalledDependency(modDependency *modconfig.ModVersionConstraint, parentFolder string) (string, *semver.Version, error) {
 	shortDepName := filepath.Base(modDependency.Name)
 	entries, err := os.ReadDir(parentFolder)
 	if err != nil {
@@ -171,7 +186,7 @@ func findInstalledDependency(modDependency *modconfig.ModVersion, parentFolder s
 				// invalid format - ignore
 				continue
 			}
-			if modDependency.VersionConstraint.Check(v) {
+			if modDependency.Constraint.Check(v) {
 				// if there is more than 1 mod which satisfied the dependency, fail (for now)
 				if dependencyVersion != nil {
 					return "", nil, fmt.Errorf("more than one mod found which satisfies dependency %s@%s", modDependency.Name, modDependency.VersionString)

@@ -24,11 +24,11 @@ type Benchmark struct {
 	ShortName string
 	FullName  string `cty:"name"`
 
-	ChildNames    *[]NamedItem       `cty:"children" hcl:"children"`
-	Description   *string            `cty:"description" hcl:"description" column:"description,text"`
-	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
-	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
+	ChildNames    []NamedItem       `cty:"children" hcl:"children,optional"`
+	Description   *string           `cty:"description" hcl:"description" column:"description,text"`
+	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	Tags          map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
+	Title         *string           `cty:"title" hcl:"title" column:"title,text"`
 
 	// list of all block referenced by the resource
 	References []*ResourceReference
@@ -60,19 +60,12 @@ func (b *Benchmark) Equals(other *Benchmark) bool {
 		return res
 	}
 	// tags
-	if b.Tags == nil {
-		if other.Tags != nil {
+	if len(b.Tags) != len(other.Tags) {
+		return false
+	}
+	for k, v := range b.Tags {
+		if otherVal := other.Tags[k]; v != otherVal {
 			return false
-		}
-	} else {
-		// we have tags
-		if other.Tags == nil {
-			return false
-		}
-		for k, v := range *b.Tags {
-			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
-				return false
-			}
 		}
 	}
 
@@ -100,14 +93,14 @@ func (b *Benchmark) GetDeclRange() *hcl.Range {
 // OnDecoded implements HclResource
 func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 	var res hcl.Diagnostics
-	if b.ChildNames == nil || len(*b.ChildNames) == 0 {
+	if len(b.ChildNames) == 0 {
 		return nil
 	}
 
 	// validate each child name appears only once
 	nameMap := make(map[string]bool)
-	b.ChildNameStrings = make([]string, len(*b.ChildNames))
-	for i, n := range *b.ChildNames {
+	b.ChildNameStrings = make([]string, len(b.ChildNames))
+	for i, n := range b.ChildNames {
 		if nameMap[n.Name] {
 			res = append(res, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -222,7 +215,7 @@ func (b *Benchmark) GetDescription() string {
 // GetTags implements ModTreeItem
 func (b *Benchmark) GetTags() map[string]string {
 	if b.Tags != nil {
-		return *b.Tags
+		return b.Tags
 	}
 	return map[string]string{}
 }

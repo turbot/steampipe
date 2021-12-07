@@ -3,9 +3,13 @@ package modconfig
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/hashicorp/hcl/v2/hclwrite"
+	"github.com/turbot/steampipe/constants"
 
 	"github.com/Masterminds/semver"
 
@@ -30,13 +34,13 @@ type Mod struct {
 	ModDependencyPath string `cty:"mod_dependency_path"`
 
 	// attributes
-	Categories    *[]string          `cty:"categories" hcl:"categories" column:"categories,jsonb"`
-	Color         *string            `cty:"color" hcl:"color" column:"color,text"`
-	Description   *string            `cty:"description" hcl:"description" column:"description,text"`
-	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Icon          *string            `cty:"icon" hcl:"icon" column:"icon,text"`
-	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
-	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
+	Categories    []string          `cty:"categories" hcl:"categories,optional" column:"categories,jsonb"`
+	Color         *string           `cty:"color" hcl:"color" column:"color,text"`
+	Description   *string           `cty:"description" hcl:"description" column:"description,text"`
+	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	Icon          *string           `cty:"icon" hcl:"icon" column:"icon,text"`
+	Tags          map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
+	Title         *string           `cty:"title" hcl:"title" column:"title,text"`
 
 	// list of all blocks referenced by the resource
 	References []*ResourceReference
@@ -127,29 +131,22 @@ func (m *Mod) Equals(other *Mod) bool {
 			return false
 		}
 
-		if len(*m.Categories) != len(*other.Categories) {
+		if len(m.Categories) != len(other.Categories) {
 			return false
 		}
-		for i, c := range *m.Categories {
-			if (*other.Categories)[i] != c {
+		for i, c := range m.Categories {
+			if (other.Categories)[i] != c {
 				return false
 			}
 		}
 	}
 	// tags
-	if m.Tags == nil {
-		if other.Tags != nil {
+	if len(m.Tags) != len(other.Tags) {
+		return false
+	}
+	for k, v := range m.Tags {
+		if otherVal := other.Tags[k]; v != otherVal {
 			return false
-		}
-	} else {
-		// we have tags
-		if other.Tags == nil {
-			return false
-		}
-		for k, v := range *m.Tags {
-			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
-				return false
-			}
 		}
 	}
 
@@ -505,7 +502,7 @@ func (m *Mod) GetDescription() string {
 // GetTags implements ModTreeItem
 func (m *Mod) GetTags() map[string]string {
 	if m.Tags != nil {
-		return *m.Tags
+		return m.Tags
 	}
 	return map[string]string{}
 }
@@ -592,7 +589,7 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 			continue
 		}
 		// check all child names of this benchmark for a matching name
-		for _, childName := range *benchmark.ChildNames {
+		for _, childName := range benchmark.ChildNames {
 			if childName.Name == item.Name() {
 				parents = append(parents, benchmark)
 			}
@@ -628,4 +625,100 @@ func (m *Mod) GetChildControls() []*Control {
 		res = append(res, control)
 	}
 	return res
+}
+
+func (m *Mod) AddModDependencies(modVersions []*ModVersionConstraint) {
+	if m.Requires == nil {
+		m.Requires = &Requires{}
+	}
+
+	m.Requires.AddModDependencies(modVersions)
+}
+
+func (m *Mod) Save() error {
+
+	f := hclwrite.NewEmptyFile()
+	rootBody := f.Body()
+
+	/*
+		ShortName string `cty:"short_name" hcl:"name,label"`
+		Categories    *[]string          `cty:"categories" hcl:"categories" column:"categories,jsonb"`
+		Color         *string            `cty:"color" hcl:"color" column:"color,text"`
+		Description   *string            `cty:"description" hcl:"description" column:"description,text"`
+		Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+		Icon          *string            `cty:"icon" hcl:"icon" column:"icon,text"`
+		Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
+		Title         *string            `cty:"title" hcl:"title" column:"title,text"`
+		Requires  *Requires  `hcl:"requires,block"`
+		OpenGraph *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
+	*/
+
+	modBody := rootBody.AppendNewBlock("mod", []string{m.ShortName}).Body()
+	if len(m.Categories) > 0 {
+		categoryValues := make([]cty.Value, len(m.Categories))
+		for i, c := range m.Categories {
+			categoryValues[i] = cty.StringVal(typehelpers.SafeString(c))
+		}
+		modBody.SetAttributeValue("categories", cty.ListVal(categoryValues))
+	}
+	if m.Color != nil {
+		modBody.SetAttributeValue("color", cty.StringVal(*m.Color))
+	}
+	if m.Description != nil {
+		modBody.SetAttributeValue("color", cty.StringVal(*m.Color))
+	}
+	if m.Documentation != nil {
+		modBody.SetAttributeValue("color", cty.StringVal(*m.Documentation))
+	}
+	if m.Icon != nil {
+		modBody.SetAttributeValue("color", cty.StringVal(*m.Icon))
+	}
+	if m.Title != nil {
+		modBody.SetAttributeValue("color", cty.StringVal(*m.Title))
+	}
+	if len(m.Tags) > 0 {
+		tagMap := make(map[string]cty.Value, len(m.Tags))
+		for k, v := range m.Tags {
+			tagMap[k] = cty.StringVal(v)
+		}
+		modBody.SetAttributeValue("tags", cty.MapVal(tagMap))
+	}
+
+	// requires
+	if requires := m.Requires; requires != nil {
+		requiresBody := modBody.AppendNewBlock("requires", nil).Body()
+
+		if requires.SteampipeVersionString != "" {
+			requiresBody.SetAttributeValue("steampipe", cty.StringVal(requires.SteampipeVersionString))
+		}
+		if len(requires.Plugins) > 0 {
+			pluginValues := make([]cty.Value, len(requires.Plugins))
+			for i, p := range requires.Plugins {
+				pluginValues[i] = cty.StringVal(typehelpers.SafeString(p))
+			}
+			requiresBody.SetAttributeValue("plugins", cty.ListVal(pluginValues))
+		}
+		if len(requires.Mods) > 0 {
+			for _, m := range requires.Mods {
+				modBody := requiresBody.AppendNewBlock("mod", []string{m.Name}).Body()
+				modBody.SetAttributeValue("version", cty.StringVal(m.VersionString))
+			}
+		}
+	}
+	// opengraph
+	if opengraph := m.OpenGraph; opengraph != nil {
+		opengraphBody := modBody.AppendNewBlock("opengraph", nil).Body()
+		if opengraph.Description != nil {
+			opengraphBody.SetAttributeValue("description", cty.StringVal(*opengraph.Description))
+		}
+		if opengraph.Image != nil {
+			opengraphBody.SetAttributeValue("image", cty.StringVal(*opengraph.Image))
+		}
+		if opengraph.Title != nil {
+			opengraphBody.SetAttributeValue("title", cty.StringVal(*opengraph.Title))
+		}
+	}
+
+	return os.WriteFile(constants.ModFilePath(m.ModPath), f.Bytes(), 0644)
+
 }
