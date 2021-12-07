@@ -61,6 +61,18 @@ func (m WorkspaceLock) GetLockedModVersion(requiredModVersion *ModVersionConstra
 
 }
 
+// Contains returns whether any dependency in the lock file has the same name as 'modName'
+func (m WorkspaceLock) Contains(modName string) bool {
+	for _, modVersions := range m {
+		for name := range modVersions {
+			if name == modName {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func LoadWorkspaceLock(workspacePath string) (WorkspaceLock, error) {
 	lockPath := constants.WorkspaceLockPath(workspacePath)
 	if !helpers.FileExists(lockPath) {

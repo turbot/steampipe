@@ -144,7 +144,7 @@ func runModListCmd(*cobra.Command, []string) {
 	}()
 
 	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
-	installer, err := mod_installer.NewModInstaller(workspacePath)
+	installer, err := mod_installer.NewModInstaller(&mod_installer.InstallOpts{WorkspacePath: workspacePath})
 	utils.FailOnError(err)
 
 	installedMods := installer.InstalledModVersions
