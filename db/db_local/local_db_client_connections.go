@@ -71,7 +71,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 	}
 	// reload the database foreign schema names, since they have changed
 	// this is to ensuire search paths are correctly updated
-	log.Println("[TRACE] RefreshConnections: reloading foreighn schema names")
+	log.Println("[TRACE] RefreshConnections: reloading foreign schema names")
 	c.LoadForeignSchemaNames()
 
 	res.UpdatedConnections = true

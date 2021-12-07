@@ -578,14 +578,14 @@ func (c *InteractiveClient) populateSchemaMetadata(schemaMetadata *schema.Metada
 	// we now need to add in all other schemas which have the same schemas as those we have loaded
 	for loadedSchema, otherSchemas := range connectionSchemaMap {
 		// all 'otherSchema's have the same schema as loadedSchema
-		schema, ok := schemaMetadata.Schemas[loadedSchema]
+		exemplarSchema, ok := schemaMetadata.Schemas[loadedSchema]
 		if !ok {
-			// should never happen
-			return fmt.Errorf("no schema loaded for %s", loadedSchema)
+			// should can happen in the case of a dynamic plugin with no tables - use empty schema
+			exemplarSchema = make(map[string]schema.TableSchema)
 		}
 
 		for _, s := range otherSchemas {
-			schemaMetadata.Schemas[s] = schema
+			schemaMetadata.Schemas[s] = exemplarSchema
 		}
 	}
 	c.schemaMetadata = schemaMetadata

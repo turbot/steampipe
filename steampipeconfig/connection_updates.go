@@ -94,17 +94,10 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	}
 
 	//  instantiate connection plugins for all updates
-	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
-	// - remove these from list of updates
-	updateConnections := updates.Update.Connections()
-	connectionsToCreate := removeConnectionsFromList(updateConnections, connectionsPluginsWithDynamicSchema)
-	connectionPlugins, err := CreateConnectionPlugins(connectionsToCreate)
-	if err != nil {
+	if err := updates.populateConnectionPlugins(connectionsPluginsWithDynamicSchema); err != nil {
 		res.Error = err
 		return nil, res
 	}
-
-	updates.ConnectionPlugins = connectionPlugins
 
 	// set the schema mode and hash on the connection data in required state
 	// this uses data from the ConnectionPlugins which we have now loaded
@@ -141,6 +134,24 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 	}
 }
 
+func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) error {
+	updateConnections := u.Update.Connections()
+	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
+	// - remove these from list of plugins to create
+	connectionsToCreate := removeConnectionsFromList(updateConnections, alreadyCreatedConnectionPlugins)
+	// now crerate them
+	connectionPlugins, err := CreateConnectionPlugins(connectionsToCreate)
+	if err != nil {
+		return err
+	}
+	// add back in the already created plugins
+	for name, connectionPlugin := range alreadyCreatedConnectionPlugins {
+		connectionPlugins[name] = connectionPlugin
+	}
+	// and set our ConnectionPlugins property
+	u.ConnectionPlugins = connectionPlugins
+	return nil
+}
 func removeConnectionsFromList(sourceConnections []*modconfig.Connection, connectionsToRemove map[string]*ConnectionPlugin) []*modconfig.Connection {
 	if connectionsToRemove == nil {
 		return sourceConnections
