@@ -12,7 +12,7 @@
 
 Prerequisites:
 
-- [Golang](https://golang.org/doc/install) Version 1.16 or higher.
+- [Golang](https://golang.org/doc/install) Version 1.17 or higher.
 
 Clone:
 
@@ -27,7 +27,7 @@ Build, which automatically installs the new version to your `/usr/local/bin/stea
 make
 ```
 
-Check the verison
+Check the version
 
 ```
 $ steampipe -v
