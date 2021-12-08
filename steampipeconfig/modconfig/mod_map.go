@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-// ModMap is a map of mod name to mod-version
+// ModMap is a map of mod name to mod
 type ModMap map[string]*Mod
 
 func (m ModMap) String() string {

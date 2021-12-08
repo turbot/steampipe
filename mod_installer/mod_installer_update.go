@@ -10,20 +10,20 @@ import (
 
 // we are performing an update - verify that we have a lock file and andy specific mods requested for update
 // exist in the lock file
-func (i *ModInstaller) verifyUpdates(updateMods []*modconfig.ModVersionConstraint) error {
+func (i *ModInstaller) verifyUpdates(updateMods map[string]*modconfig.ModVersionConstraint) error {
 	if len(i.installData.Lock) == 0 {
-		return fmt.Errorf("no workspace lock file found - first run 'steampipe plugin install'")
+		return fmt.Errorf("no installation cache found - run 'steampipe plugin install'")
 	}
 	i.UpdateMods = make(map[string]bool)
 
 	// check all mods which have been requested to be updated exist in the lock file (ignore version)
 	var missingMods []string
-	for _, m := range updateMods {
-		if i.installData.Lock.ContainsMod(m.Name) {
+	for name := range updateMods {
+		if i.installData.Lock.ContainsMod(name) {
 			// if this exists in the workspace lock, add to our map of updates
-			i.UpdateMods[m.Name] = true
+			i.UpdateMods[name] = true
 		} else {
-			missingMods = append(missingMods, m.Name)
+			missingMods = append(missingMods, name)
 		}
 	}
 	if len(missingMods) != 0 {

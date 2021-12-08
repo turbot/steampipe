@@ -53,18 +53,12 @@ func (r *Requires) Initialise() hcl.Diagnostics {
 	return diags
 }
 
-func (r *Requires) AddModDependencies(newModVersions []*ModVersionConstraint) {
-	// build map of mods that we are adding
-	var modVersionMap = make(map[string]bool, len(newModVersions))
-	for _, modVersion := range newModVersions {
-		modVersionMap[modVersion.Name] = true
-	}
+func (r *Requires) AddModDependencies(newModVersions map[string]*ModVersionConstraint) {
 	// rebuild the Mods array
-
 	var newMods []*ModVersionConstraint
 	for _, existingModVersion := range r.Mods {
-		// do we already have this in the requires
-		if !modVersionMap[existingModVersion.Name] {
+		// if this existing mod is being replaced (i.e. is is in newModVersions), skip
+		if _, ok := newModVersions[existingModVersion.Name]; ok {
 			newMods = append(newMods, existingModVersion)
 		}
 	}
@@ -73,4 +67,13 @@ func (r *Requires) AddModDependencies(newModVersions []*ModVersionConstraint) {
 	}
 	// write back
 	r.Mods = newMods
+}
+
+func (r *Requires) GetModDependency(name string) *ModVersionConstraint {
+	for _, c := range r.Mods {
+		if c.Name == name {
+			return c
+		}
+	}
+	return nil
 }
