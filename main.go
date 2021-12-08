@@ -7,7 +7,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 
 	"github.com/hashicorp/go-hclog"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/v4"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/utils"
