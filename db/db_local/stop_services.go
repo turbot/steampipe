@@ -51,7 +51,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	}
 
 	// we can shut down the database
-	stopStatus, err := StopServices(ctx, false, invoker, nil)
+	stopStatus, err := StopServices(false, invoker, nil)
 	if err != nil {
 		utils.ShowError(err)
 	}
@@ -60,7 +60,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	}
 
 	// shutdown failed - try to force stop
-	_, err = StopServices(ctx, true, invoker, nil)
+	_, err = StopServices(true, invoker, nil)
 	if err != nil {
 		utils.ShowError(err)
 	}
@@ -88,7 +88,7 @@ func GetCountOfConnectedClients(ctx context.Context) (i int, e error) {
 }
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
-func StopServices(ctx context.Context, force bool, invoker constants.Invoker, spinner *spinner.Spinner) (status StopStatus, e error) {
+func StopServices(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (status StopStatus, e error) {
 	log.Printf("[TRACE] StopDB invoker %s, force %v", invoker, force)
 	utils.LogTime("db_local.StopDB start")
 
@@ -104,7 +104,7 @@ func StopServices(ctx context.Context, force bool, invoker constants.Invoker, sp
 	pluginManagerStopError := plugin_manager.Stop()
 
 	// stop the DB Service
-	stopResult, dbStopError := stopDBService(ctx, spinner, force)
+	stopResult, dbStopError := stopDBService(context.Background(), spinner, force)
 
 	return stopResult, utils.CombineErrors(dbStopError, pluginManagerStopError)
 }

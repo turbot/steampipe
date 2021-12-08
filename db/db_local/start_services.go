@@ -131,7 +131,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		// if there was an error and we started the service, stop it again
 		if res.Error != nil {
 			if res.Status == ServiceStarted {
-				StopServices(context.Background(), false, invoker, nil)
+				StopServices(false, invoker, nil)
 			}
 			// remove the state file if we are going back with an error
 			removeRunningInstanceInfo()

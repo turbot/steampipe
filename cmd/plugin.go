@@ -451,7 +451,7 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports []display.Instal
 		return err
 	}
 	defer client.Close()
-	res := client.RefreshConnectionAndSearchPaths()
+	res := client.RefreshConnectionAndSearchPaths(ctx)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -532,7 +532,7 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 		return nil, err
 	}
 	defer client.Close()
-	res := client.RefreshConnectionAndSearchPaths()
+	res := client.RefreshConnectionAndSearchPaths(ctx)
 	if res.Error != nil {
 		return nil, res.Error
 	}

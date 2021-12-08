@@ -1,6 +1,7 @@
 package metaquery
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"sort"
@@ -22,11 +23,11 @@ var commonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.Cmd
 
 // QueryExecutor :: this is a container interface which allows us to call into the db/Client object
 type QueryExecutor interface {
-	SetSessionSearchPath(...string) error
-	GetCurrentSearchPath() ([]string, error)
-	CacheOn() error
-	CacheOff() error
-	CacheClear() error
+	SetSessionSearchPath(context.Context, ...string) error
+	GetCurrentSearchPath(context.Context) ([]string, error)
+	CacheOn(context.Context) error
+	CacheOff(context.Context) error
+	CacheClear(context.Context) error
 }
 
 // HandlerInput :: input interface for the metaquery handler
@@ -47,22 +48,22 @@ func (h *HandlerInput) args() []string {
 	return getArguments(h.Query)
 }
 
-type handler func(input *HandlerInput) error
+type handler func(ctx context.Context, input *HandlerInput) error
 
 // Handle handles a metaquery execution from the interactive client
-func Handle(input *HandlerInput) error {
+func Handle(ctx context.Context, input *HandlerInput) error {
 	cmd, _ := getCmdAndArgs(input.Query)
 	metaQueryObj, found := metaQueryDefinitions[cmd]
 	if !found {
 		return fmt.Errorf("not sure how to handle '%s'", cmd)
 	}
 	handlerFunction := metaQueryObj.handler
-	return handlerFunction(input)
+	return handlerFunction(ctx, input)
 }
 
-func setOrGetSearchPath(input *HandlerInput) error {
+func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
 	if len(input.args()) == 0 {
-		currentPath, err := input.Executor.GetCurrentSearchPath()
+		currentPath, err := input.Executor.GetCurrentSearchPath(ctx)
 		if err != nil {
 			return err
 		}
@@ -87,12 +88,12 @@ func setOrGetSearchPath(input *HandlerInput) error {
 
 		// now that the viper is set, call back into the client (exposed via QueryExecutor) which
 		// already knows how to setup the search_paths with the viper values
-		return input.Executor.SetSessionSearchPath()
+		return input.Executor.SetSessionSearchPath(ctx)
 	}
 	return nil
 }
 
-func setSearchPathPrefix(input *HandlerInput) error {
+func setSearchPathPrefix(ctx context.Context, input *HandlerInput) error {
 	arg := input.args()[0]
 	paths := []string{}
 	split := strings.Split(arg, ",")
@@ -104,45 +105,45 @@ func setSearchPathPrefix(input *HandlerInput) error {
 
 	// now that the viper is set, call back into the client (exposed via QueryExecutor) which
 	// already knows how to setup the search_paths with the viper values
-	return input.Executor.SetSessionSearchPath()
+	return input.Executor.SetSessionSearchPath(ctx)
 }
 
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
-func setHeader(input *HandlerInput) error {
+func setHeader(ctx context.Context, input *HandlerInput) error {
 	cmdconfig.Viper().Set(constants.ArgHeader, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
 // set the ArgMulti viper key with the boolean value evaluated from arg[0]
-func setMultiLine(input *HandlerInput) error {
+func setMultiLine(ctx context.Context, input *HandlerInput) error {
 	cmdconfig.Viper().Set(constants.ArgMultiLine, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
 // controls the cache in the connected FDW
-func cacheControl(input *HandlerInput) error {
+func cacheControl(ctx context.Context, input *HandlerInput) error {
 	command := input.args()[0]
 	switch command {
 	case constants.ArgOn:
-		return input.Executor.CacheOn()
+		return input.Executor.CacheOn(ctx)
 	case constants.ArgOff:
-		return input.Executor.CacheOff()
+		return input.Executor.CacheOff(ctx)
 	case constants.ArgClear:
-		return input.Executor.CacheClear()
+		return input.Executor.CacheClear(ctx)
 	}
 
 	return fmt.Errorf("invalid command")
 }
 
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
-func setTiming(input *HandlerInput) error {
+func setTiming(ctx context.Context, input *HandlerInput) error {
 	cmdconfig.Viper().Set(constants.ArgTimer, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
 // set the value of `viperKey` in `viper` with the value from `args[0]`
 func setViperConfigFromArg(viperKey string) handler {
-	return func(input *HandlerInput) error {
+	return func(ctx context.Context, input *HandlerInput) error {
 		cmdconfig.Viper().Set(viperKey, input.args()[0])
 		return nil
 	}
@@ -150,20 +151,20 @@ func setViperConfigFromArg(viperKey string) handler {
 
 // set the value of `viperKey` in `viper` with a static value
 func setViperConfig(viperKey string, value interface{}) handler {
-	return func(input *HandlerInput) error {
+	return func(ctx context.Context, input *HandlerInput) error {
 		cmdconfig.Viper().Set(viperKey, value)
 		return nil
 	}
 }
 
 // exit
-func doExit(input *HandlerInput) error {
+func doExit(ctx context.Context, input *HandlerInput) error {
 	input.ClosePrompt()
 	return nil
 }
 
 // help
-func doHelp(input *HandlerInput) error {
+func doHelp(ctx context.Context, input *HandlerInput) error {
 	commonCmdRows := getMetaQueryHelpRows(commonCmds, false)
 	var advanceCmds []string
 	for cmd := range metaQueryDefinitions {
@@ -205,7 +206,7 @@ func getMetaQueryHelpRows(cmds []string, arrange bool) [][]string {
 }
 
 // list all the tables in the schema
-func listTables(input *HandlerInput) error {
+func listTables(ctx context.Context, input *HandlerInput) error {
 
 	if len(input.args()) == 0 {
 		schemas := input.Schema.GetSchemas()
@@ -256,9 +257,9 @@ To get information about the columns in a table, run %s
 }
 
 // inspect
-func inspect(input *HandlerInput) error {
+func inspect(ctx context.Context, input *HandlerInput) error {
 	if len(input.args()) == 0 {
-		return listConnections(input)
+		return listConnections(ctx, input)
 	}
 	tableOrConnection := input.args()[0]
 	if len(input.args()) > 0 {
@@ -284,7 +285,7 @@ func inspect(input *HandlerInput) error {
 
 		// there was no schema
 		if !schemaFound {
-			searchPath, _ := input.Executor.GetCurrentSearchPath()
+			searchPath, _ := input.Executor.GetCurrentSearchPath(ctx)
 
 			// add the temporary schema to the search_path so that it becomes searchable
 			// for the next step
@@ -312,7 +313,7 @@ To get information about the columns in a table, run %s
 	return inspectTable(split[0], split[1], input)
 }
 
-func listConnections(input *HandlerInput) error {
+func listConnections(ctx context.Context, input *HandlerInput) error {
 	header := []string{"connection", "plugin"}
 	rows := [][]string{}
 
@@ -368,7 +369,7 @@ func inspectConnection(connectionName string, input *HandlerInput) bool {
 	return true
 }
 
-func clearScreen(input *HandlerInput) error {
+func clearScreen(ctx context.Context, input *HandlerInput) error {
 	input.Prompt.ClearScreen()
 	return nil
 }

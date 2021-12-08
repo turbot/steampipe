@@ -193,7 +193,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	err = db_local.RefreshConnectionAndSearchPaths(ctx, invoker)
 	if err != nil {
 		// the err could be a context cancellation - use background
-		db_local.StopServices(context.Background(), false, constants.InvokerService, nil)
+		db_local.StopServices(false, constants.InvokerService, nil)
 		utils.FailOnError(err)
 	}
 
@@ -246,7 +246,7 @@ func runServiceInForeground(invoker constants.Invoker) {
 			fmt.Println("Stopping Steampipe service.")
 
 			// no context to pass on. use bacckground
-			db_local.StopServices(context.Background(), false, invoker, nil)
+			db_local.StopServices(false, invoker, nil)
 			fmt.Println("Steampipe service stopped.")
 			return
 		}
@@ -277,7 +277,7 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// stop db
-	stopStatus, err := db_local.StopServices(cmd.Context(), viper.GetBool(constants.ArgForce), constants.InvokerService, nil)
+	stopStatus, err := db_local.StopServices(viper.GetBool(constants.ArgForce), constants.InvokerService, nil)
 	utils.FailOnErrorWithMessage(err, "could not stop current instance")
 	if stopStatus != db_local.ServiceStopped {
 		fmt.Println(`
@@ -378,7 +378,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 
 	force := cmdconfig.Viper().GetBool(constants.ArgForce)
 	if force {
-		status, err = db_local.StopServices(cmd.Context(), force, constants.InvokerService, spinner)
+		status, err = db_local.StopServices(force, constants.InvokerService, spinner)
 	} else {
 		dbState, err = db_local.GetState()
 		if err != nil {
@@ -409,7 +409,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 			return
 		}
 
-		status, _ = db_local.StopServices(cmd.Context(), false, constants.InvokerService, spinner)
+		status, _ = db_local.StopServices(false, constants.InvokerService, spinner)
 	}
 
 	if err != nil {

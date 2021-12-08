@@ -39,7 +39,7 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(cmd.Context())
 	startCancelHandler(cancel)
 
 	// start db if necessary

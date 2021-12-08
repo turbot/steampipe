@@ -51,7 +51,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 		return nil, err
 	}
 
-	refreshResult := dbClient.RefreshConnectionAndSearchPaths()
+	refreshResult := dbClient.RefreshConnectionAndSearchPaths(ctx)
 	if err != nil {
 		return nil, err
 	}

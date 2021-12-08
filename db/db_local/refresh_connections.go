@@ -13,7 +13,7 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, invoker constants.Invo
 		return err
 	}
 	defer client.Close()
-	refreshResult := client.RefreshConnectionAndSearchPaths()
+	refreshResult := client.RefreshConnectionAndSearchPaths(ctx)
 	// display any initialisation warnings
 	refreshResult.ShowWarnings()
 

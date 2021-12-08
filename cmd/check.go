@@ -245,7 +245,7 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 	// get a client
 	var client db_common.Client
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-		client, err = db_client.NewDbClient(connectionString)
+		client, err = db_client.NewDbClient(initData.ctx, connectionString)
 	} else {
 		// stop the spinner
 		display.StopSpinner(spinner)
@@ -261,7 +261,7 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 	}
 	initData.client = client
 
-	refreshResult := initData.client.RefreshConnectionAndSearchPaths()
+	refreshResult := initData.client.RefreshConnectionAndSearchPaths(initData.ctx)
 	if refreshResult.Error != nil {
 		initData.result.Error = refreshResult.Error
 		return initData

@@ -114,7 +114,7 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.Datab
 		return err
 	}
 
-	newSearchPath, err := client.ContructSearchPath(searchPath, searchPathPrefix, currentPath)
+	newSearchPath, err := client.ContructSearchPath(ctx, searchPath, searchPathPrefix, currentPath)
 	if err != nil {
 		return err
 	}

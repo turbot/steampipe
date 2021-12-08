@@ -213,7 +213,7 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 		}
 		initData.Queries = queries
 
-		res := client.RefreshConnectionAndSearchPaths()
+		res := client.RefreshConnectionAndSearchPaths(ctx)
 		if res.Error != nil {
 			initData.Result.Error = res.Error
 			return
@@ -247,7 +247,7 @@ func getClient(ctx context.Context) (db_common.Client, error) {
 	var client db_common.Client
 	var err error
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-		client, err = db_client.NewDbClient(connectionString)
+		client, err = db_client.NewDbClient(ctx, connectionString)
 	} else {
 		client, err = db_local.GetLocalClient(ctx, constants.InvokerQuery)
 	}

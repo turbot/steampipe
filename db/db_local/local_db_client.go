@@ -56,7 +56,7 @@ func NewLocalClient(ctx context.Context, invoker constants.Invoker) (*LocalDbCli
 	if err != nil {
 		return nil, err
 	}
-	dbClient, err := db_client.NewDbClient(connString)
+	dbClient, err := db_client.NewDbClient(ctx, connString)
 	if err != nil {
 		log.Printf("[WARN] error getting local client %s", err.Error())
 		return nil, err
@@ -123,50 +123,50 @@ func (c *LocalDbClient) Execute(ctx context.Context, query string, disableSpinne
 }
 
 // CacheOn implements Client
-func (c *LocalDbClient) CacheOn() error {
-	return c.client.CacheOn()
+func (c *LocalDbClient) CacheOn(ctx context.Context) error {
+	return c.client.CacheOn(ctx)
 }
 
 // CacheOff implements Client
-func (c *LocalDbClient) CacheOff() error {
-	return c.client.CacheOff()
+func (c *LocalDbClient) CacheOff(ctx context.Context) error {
+	return c.client.CacheOff(ctx)
 }
 
 // CacheClear implements Client
-func (c *LocalDbClient) CacheClear() error {
-	return c.client.CacheClear()
+func (c *LocalDbClient) CacheClear(ctx context.Context) error {
+	return c.client.CacheClear(ctx)
 }
 
 // GetCurrentSearchPath implements Client
-func (c *LocalDbClient) GetCurrentSearchPath() ([]string, error) {
-	return c.client.GetCurrentSearchPath()
+func (c *LocalDbClient) GetCurrentSearchPath(ctx context.Context) ([]string, error) {
+	return c.client.GetCurrentSearchPath(ctx)
 }
 
 // SetSessionSearchPath implements Client
-func (c *LocalDbClient) SetSessionSearchPath(currentUserPath ...string) error {
-	return c.client.SetSessionSearchPath(currentUserPath...)
+func (c *LocalDbClient) SetSessionSearchPath(ctx context.Context, currentUserPath ...string) error {
+	return c.client.SetSessionSearchPath(ctx, currentUserPath...)
 }
 
-func (c *LocalDbClient) ContructSearchPath(requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error) {
-	return c.client.ContructSearchPath(requiredSearchPath, searchPathPrefix, currentSearchPath)
+func (c *LocalDbClient) ContructSearchPath(ctx context.Context, requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error) {
+	return c.client.ContructSearchPath(ctx, requiredSearchPath, searchPathPrefix, currentSearchPath)
 }
 
-func (c *LocalDbClient) GetSchemaFromDB(schemas []string) (*schema.Metadata, error) {
-	return c.client.GetSchemaFromDB(schemas)
+func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context, schemas []string) (*schema.Metadata, error) {
+	return c.client.GetSchemaFromDB(ctx, schemas)
 }
 
-func (c *LocalDbClient) LoadForeignSchemaNames() error {
-	return c.client.LoadForeignSchemaNames()
+func (c *LocalDbClient) LoadForeignSchemaNames(ctx context.Context) error {
+	return c.client.LoadForeignSchemaNames(ctx)
 }
 
 // local only functions
 
-func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult {
-	res := c.refreshConnections()
+func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
+	res := c.refreshConnections(ctx)
 	if res.Error != nil {
 		return res
 	}
-	if err := refreshFunctions(); err != nil {
+	if err := refreshFunctions(ctx); err != nil {
 		res.Error = err
 		return res
 	}
@@ -179,13 +179,13 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.Refre
 	}
 	c.connectionMap = &connectionMap
 	// set user search path first - client may fall back to using it
-	currentSearchPath, err := c.setUserSearchPath()
+	currentSearchPath, err := c.setUserSearchPath(ctx)
 	if err != nil {
 		res.Error = err
 		return res
 	}
 
-	if err := c.SetSessionSearchPath(currentSearchPath...); err != nil {
+	if err := c.SetSessionSearchPath(ctx, currentSearchPath...); err != nil {
 		res.Error = err
 		return res
 	}
@@ -195,7 +195,7 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.Refre
 
 // SetUserSearchPath sets the search path for the all steampipe users of the db service
 // do this wy finding all users assigned to the role steampipe_users and set their search path
-func (c *LocalDbClient) setUserSearchPath() ([]string, error) {
+func (c *LocalDbClient) setUserSearchPath(ctx context.Context) ([]string, error) {
 	var searchPath []string
 
 	// is there a user search path in the config?
@@ -237,7 +237,7 @@ func (c *LocalDbClient) setUserSearchPath() ([]string, error) {
 	}
 	query = strings.Join(queries, "\n")
 	log.Printf("[TRACE] user search path sql: %s", query)
-	_, err = executeSqlAsRoot(query)
+	_, err = executeSqlAsRoot(ctx, query)
 	if err != nil {
 		return nil, err
 	}
