@@ -9,10 +9,10 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func BuildInstallSummary(data *InstallData) string {
+func BuildInstallSummary(installData *InstallData) string {
 	var installedString, alreadyInstalledString string
 
-	installed := data.RecentlyInstalled.FlatMap()
+	installed := installData.RecentlyInstalled.Flat()
 	if installCount := len(installed); installCount > 0 {
 		installedString = fmt.Sprintf("\nInstalled %d %s:\n\t%s\n", installCount, utils.Pluralize("mod", installCount), strings.Join(installed, "\n\t"))
 	}
@@ -20,32 +20,45 @@ func BuildInstallSummary(data *InstallData) string {
 	return res
 }
 
-func BuildGetSummary(data *InstallData, requiredVersions modconfig.VersionConstraintMap) string {
-
+func BuildGetSummary(installData *InstallData, requiredVersions modconfig.VersionConstraintMap) string {
 	// for every required version, see whether we inmstalled it or if it was already installed
 	var installed, alreadyInstalled []string
 
-	for name, versionConstrain := range requiredVersions {
-		if installed, ok := data.RecentlyInstalled[name]; ok {
-
+	for name, versionConstraint := range requiredVersions {
+		if resolvedVersions, ok := installData.RecentlyInstalled[name]; ok {
+			for _, v := range resolvedVersions {
+				if v.Constraint == versionConstraint.Constraint.Original {
+					installed = append(installed, modVersionFullName(name, v.Version))
+					break
+				}
+			}
+		} else if resolvedVersions, ok := installData.AlreadyInstalled[name]; ok {
+			for _, v := range resolvedVersions {
+				if v.Constraint == versionConstraint.Constraint.Original {
+					alreadyInstalled = append(alreadyInstalled, modVersionFullName(name, v.Version))
+					break
+				}
+			}
 		}
 	}
-	if installCount := len(data.RecentlyInstalled); installCount > 0 {
-		installedString = fmt.Sprintf("\nInstalled %d %s:\n\t%s\n", installCount, utils.Pluralize("mod", installCount), strings.Join(data.RecentlyInstalled, "\n\t"))
+	res := ""
+	if installCount := len(installed); installCount > 0 {
+		res = fmt.Sprintf("\nInstalled %d %s:\n\t%s\n", installCount, utils.Pluralize("mod", installCount), strings.Join(installed, "\n\t"))
 	}
-	res := fmt.Sprintf("%s%s\n", installedString, alreadyInstalledString)
+	if len(alreadyInstalled) > 0 {
+		res += fmt.Sprintf("\nAlready installed:\n\t%s\n", strings.Join(alreadyInstalled, "\n\t"))
+	}
+
 	return res
 }
 
-func BuildUpdateSummary(data *InstallData) string {
-	var updatedString, updateAlreadyInstalledString string
-	if installCount := len(data.RecentlyInstalled); installCount > 0 {
-		updatedString = fmt.Sprintf("\nInstalled %d %s:\n\t%s\n", installCount, utils.Pluralize("update", installCount), strings.Join(data.RecentlyInstalled, "\n\t"))
+func BuildUpdateSummary(installData *InstallData) string {
+	updated := installData.RecentlyInstalled.Flat()
+	if len(updated) == 0 {
+		return "All mods are up to date\n"
 	}
-	if len(data.AlreadyInstalled) > 0 {
-		updateAlreadyInstalledString = fmt.Sprintf("\nAlready installed:\n\t%s\n", strings.Join(data.AlreadyInstalled, "\n\t"))
-	}
-	return fmt.Sprintf("%s%s\n", updatedString, updateAlreadyInstalledString)
+
+	return fmt.Sprintf("\nUpdated %d %s:\n\t%s\n", len(updated), utils.Pluralize("update", len(updated)), strings.Join(updated, "\n\t"))
 }
 
 func BuildAvailableUpdateSummary(current, updates modconfig.WorkspaceLock) string {
