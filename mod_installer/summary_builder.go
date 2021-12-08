@@ -12,15 +12,24 @@ import (
 func BuildInstallSummary(data *InstallData) string {
 	var installedString, alreadyInstalledString string
 
-	if installCount := len(data.RecentlyInstalled); installCount > 0 {
-
-		installedString = fmt.Sprintf("\nInstalled %d %s:\n\t%s\n", installCount, utils.Pluralize("mod", installCount), strings.Join(data.RecentlyInstalled, "\n\t"))
+	installed := data.RecentlyInstalled.FlatMap()
+	if installCount := len(installed); installCount > 0 {
+		installedString = fmt.Sprintf("\nInstalled %d %s:\n\t%s\n", installCount, utils.Pluralize("mod", installCount), strings.Join(installed, "\n\t"))
 	}
 	res := fmt.Sprintf("%s%s\n", installedString, alreadyInstalledString)
 	return res
 }
-func BuildGetSummary(data *InstallData, versions map[string]*modconfig.ModVersionConstraint) string {
-	var installedString, alreadyInstalledString string
+
+func BuildGetSummary(data *InstallData, requiredVersions modconfig.VersionConstraintMap) string {
+
+	// for every required version, see whether we inmstalled it or if it was already installed
+	var installed, alreadyInstalled []string
+
+	for name, versionConstrain := range requiredVersions {
+		if installed, ok := data.RecentlyInstalled[name]; ok {
+
+		}
+	}
 	if installCount := len(data.RecentlyInstalled); installCount > 0 {
 		installedString = fmt.Sprintf("\nInstalled %d %s:\n\t%s\n", installCount, utils.Pluralize("mod", installCount), strings.Join(data.RecentlyInstalled, "\n\t"))
 	}

@@ -10,7 +10,7 @@ import (
 
 // we are performing an update - verify that we have a lock file and andy specific mods requested for update
 // exist in the lock file
-func (i *ModInstaller) verifyUpdates(updateMods map[string]*modconfig.ModVersionConstraint) error {
+func (i *ModInstaller) verifyUpdates(updateMods modconfig.VersionConstraintMap) error {
 	if len(i.installData.Lock) == 0 {
 		return fmt.Errorf("no installation cache found - run 'steampipe plugin install'")
 	}

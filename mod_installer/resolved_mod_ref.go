@@ -2,6 +2,7 @@ package mod_installer
 
 import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/version"
 
 	"github.com/Masterminds/semver"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -13,7 +14,8 @@ type ResolvedModRef struct {
 	Name string
 	// the mod version
 	Version *semver.Version
-
+	// the vestion constraint
+	Constraint *version.Constraints
 	// the Git branch/tag
 	GitReference plumbing.ReferenceName
 	// the file path for local mods
@@ -22,8 +24,9 @@ type ResolvedModRef struct {
 
 func NewResolvedModRef(requiredModVersion *modconfig.ModVersionConstraint, version *semver.Version) (*ResolvedModRef, error) {
 	res := &ResolvedModRef{
-		Name:    requiredModVersion.Name,
-		Version: version,
+		Name:       requiredModVersion.Name,
+		Version:    version,
+		Constraint: requiredModVersion.Constraint,
 		// this may be empty strings
 		FilePath: requiredModVersion.FilePath,
 	}
