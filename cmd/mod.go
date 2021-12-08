@@ -95,6 +95,7 @@ func runModGetCmd(cmd *cobra.Command, args []string) {
 	modsArgs := append([]string{}, args...)
 	// first convert the mod args into well formed mod names
 	requiredModVersions, err := getRequiredModVersionsFromArgs(modsArgs)
+	// TODO validate only 1 version of each mod
 	utils.FailOnError(err)
 	if len(requiredModVersions) == 0 {
 		fmt.Println("No mods to add")
@@ -111,9 +112,9 @@ func runModGetCmd(cmd *cobra.Command, args []string) {
 	fmt.Printf(mod_installer.BuildGetSummary(installData, requiredModVersions))
 }
 
-func getRequiredModVersionsFromArgs(modsArgs []string) (map[string]*modconfig.ModVersionConstraint, error) {
+func getRequiredModVersionsFromArgs(modsArgs []string) (modconfig.VersionConstraintMap, error) {
 	var errors []error
-	mods := make(map[string]*modconfig.ModVersionConstraint, len(modsArgs))
+	mods := make(modconfig.VersionConstraintMap, len(modsArgs))
 	for _, modArg := range modsArgs {
 		// create mod version from arg
 		modVersion, err := modconfig.NewModVersionConstraint(modArg)
@@ -223,7 +224,7 @@ func showUpdates() {
 	fmt.Println(mod_installer.BuildAvailableUpdateSummary(current, updates))
 }
 
-func doUpdates(updateMods map[string]*modconfig.ModVersionConstraint) {
+func doUpdates(updateMods modconfig.VersionConstraintMap) {
 	opts := &mod_installer.InstallOpts{
 		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
 		ShouldUpdate:  true,
