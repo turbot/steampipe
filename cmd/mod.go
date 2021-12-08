@@ -109,7 +109,8 @@ func runModGetCmd(cmd *cobra.Command, args []string) {
 	installData, err := mod_installer.InstallWorkspaceDependencies(opts)
 	utils.FailOnError(err)
 
-	fmt.Printf(mod_installer.BuildGetSummary(installData, requiredModVersions))
+	getSummary := mod_installer.BuildGetSummary(installData, requiredModVersions)
+	fmt.Printf(getSummary)
 }
 
 func getRequiredModVersionsFromArgs(modsArgs []string) (modconfig.VersionConstraintMap, error) {
