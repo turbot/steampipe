@@ -60,6 +60,10 @@ func (l WorkspaceLock) Save(workspacePath string) error {
 	return os.WriteFile(constants.WorkspaceLockPath(workspacePath), content, 0644)
 }
 
+func (l WorkspaceLock) Delete(workspacePath string) error {
+	return os.Remove(constants.WorkspaceLockPath(workspacePath))
+}
+
 func (l WorkspaceLock) GetLockedModVersion(requiredModVersion *ModVersionConstraint, parent *Mod) (*ModVersionConstraint, error) {
 	parentDependencies := l[parent.Name()]
 	if parentDependencies == nil {

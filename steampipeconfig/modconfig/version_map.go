@@ -26,6 +26,30 @@ func (m *ResolvedVersionListMap) Add(name string, versionConstraint *ResolvedVer
 	(*m)[name] = append((*m)[name], versionConstraint)
 }
 
+// FlatMap converts the ResolvedVersionListMap map into a bool map keyed by qualified dependency name
+// (we drop the constraint information)
+func (m ResolvedVersionListMap) FlatMap() map[string]bool {
+	var res = make(map[string]bool)
+	for name, versions := range m {
+		for _, version := range versions {
+			key := fmt.Sprintf("%s@%s", name, version)
+			res[key] = true
+		}
+	}
+	return res
+}
+
+// Flat converts the ResolvedVersionListMap map into a string array of full names
+func (m ResolvedVersionListMap) Flat() []string {
+	var res []string
+	for name, versions := range m {
+		for _, version := range versions {
+			res = append(res, fmt.Sprintf("%s@%s", name, version))
+		}
+	}
+	return res
+}
+
 // VersionListMap is a map keyed by dependency name storing a list of versions for each dependency
 type VersionListMap map[string]semver.Collection
 

@@ -125,23 +125,27 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 func (i *ModInstaller) InstallWorkspaceDependencies() error {
 	workspaceMod := i.workspaceMod
 
-	// if we are running 'mod get', add the required mods to the workspace mod requires
-	if len(i.GetMods) > 0 {
-		workspaceMod.AddModDependencies(i.GetMods)
-	}
-	// if there are no dependencies, we have nothing to do
-	if !workspaceMod.HasDependentMods() {
-		return nil
-	}
-
 	// first check our Steampipe version is sufficient
 	if err := workspaceMod.Requires.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
 		return err
 	}
 
+	// if we are running 'mod get', add the required mods to the workspace mod requires
+	if len(i.GetMods) > 0 {
+		workspaceMod.AddModDependencies(i.GetMods)
+	}
+
+	// if there are no dependencies, we have nothing to do
+	if !workspaceMod.HasDependentMods() {
+		// there are no dependencies - delete the cache
+		i.installData.Lock.Delete(i.workspacePath)
+		return nil
+	}
+
 	if err := i.installModDependenciesRecursively(workspaceMod.Requires.Mods, workspaceMod); err != nil {
 		return err
 	}
+
 	// write lock file
 	if err := i.installData.Lock.Save(i.workspacePath); err != nil {
 		return err
