@@ -7,7 +7,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-func (i *ModInstaller) Tidy() (modconfig.VersionsMap, error) {
+func (i *ModInstaller) Tidy() (modconfig.VersionListMap, error) {
 	// install first if necessary
 	if len(i.installData.Lock) == 0 {
 		fmt.Println("no installation cache - run 'steampipe mod install'")

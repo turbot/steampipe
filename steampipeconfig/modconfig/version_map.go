@@ -18,10 +18,18 @@ type VersionMap map[string]*semver.Version
 // ResolvedVersionMap represents a map of ResolvedVersionConstraint, keyed by dependency name
 type ResolvedVersionMap map[string]*ResolvedVersionConstraint
 
-// VersionsMap is a map keyed by dependency name storing a list of versions for each dependency
-type VersionsMap map[string]semver.Collection
+// ResolvedVersionListMap represents a map of ResolvedVersionConstraint arrays, keyed by dependency name
+type ResolvedVersionListMap map[string][]*ResolvedVersionConstraint
 
-func (i VersionsMap) GetVersionSatisfyingRequirement(requiredVersion *ModVersionConstraint) *semver.Version {
+func (m *ResolvedVersionListMap) Add(name string, versionConstraint *ResolvedVersionConstraint) {
+	// TODO verify if pointer is needed
+	(*m)[name] = append((*m)[name], versionConstraint)
+}
+
+// VersionListMap is a map keyed by dependency name storing a list of versions for each dependency
+type VersionListMap map[string]semver.Collection
+
+func (i VersionListMap) GetVersionSatisfyingRequirement(requiredVersion *ModVersionConstraint) *semver.Version {
 	// is this dependency installed
 	versions, ok := i[requiredVersion.Name]
 	if !ok {
@@ -35,7 +43,7 @@ func (i VersionsMap) GetVersionSatisfyingRequirement(requiredVersion *ModVersion
 	return nil
 }
 
-func (i VersionsMap) Add(name string, version *semver.Version) {
+func (i VersionListMap) Add(name string, version *semver.Version) {
 	versions := append(i[name], version)
 	// reverse sort the versions
 	sort.Sort(sort.Reverse(versions))
@@ -43,8 +51,8 @@ func (i VersionsMap) Add(name string, version *semver.Version) {
 
 }
 
-// FlatMap converts the VersionsMap map into a bool map keyed by qualified dependency name
-func (m VersionsMap) FlatMap() map[string]bool {
+// FlatMap converts the VersionListMap map into a bool map keyed by qualified dependency name
+func (m VersionListMap) FlatMap() map[string]bool {
 	var res = make(map[string]bool)
 	for name, versions := range m {
 		for _, version := range versions {
