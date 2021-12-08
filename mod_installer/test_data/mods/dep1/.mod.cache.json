@@ -1,0 +1,22 @@
+{
+  "mod.dep1": {
+    "github.com/kaidaguerre/steampipe-mod-m1": {
+      "Version": "1.0.0",
+      "Constraint": "v1.*"
+    },
+    "github.com/kaidaguerre/steampipe-mod-m2": {
+      "Version": "3.0.0",
+      "Constraint": "v3.0"
+    },
+    "github.com/turbot/steampipe-mod-aws-compliance": {
+      "Version": "0.22.0+preview",
+      "Constraint": "0"
+    }
+  },
+  "mod.m2": {
+    "github.com/kaidaguerre/steampipe-mod-m1": {
+      "Version": "1.0.0",
+      "Constraint": "v1.*"
+    }
+  }
+}

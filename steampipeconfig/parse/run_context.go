@@ -66,7 +66,7 @@ func NewRunContext(workspacePath string, flags ParseModFlag, listOptions *filehe
 	// load the workspace lock
 	workspaceLock, err := modconfig.LoadWorkspaceLock(workspacePath)
 	if err != nil {
-		log.Printf("failed to load workspace lock.file from %s: %s", workspacePath, err)
+		log.Printf("failed to load installation cache from %s: %s", workspacePath, err)
 	}
 
 	c := &RunContext{
@@ -459,7 +459,7 @@ func (r *RunContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
 	// if the mod has dependencies, there must a workspace lock object in the run context
 	// (mod MUST be the workspace mod, not a dependency, as we would hit this error as soon as we parse it)
 	if mod.Requires != nil && len(mod.Requires.Mods) > 0 && r.WorkspaceLock == nil {
-		return fmt.Errorf("no workspace lock found\nrun 'steampipe mod install'")
+		return fmt.Errorf("no installation cache found - run 'steampipe mod install'")
 	}
 	return nil
 
