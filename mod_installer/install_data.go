@@ -11,26 +11,26 @@ type InstallData struct {
 	Lock modconfig.WorkspaceLock
 
 	// all installed mod versions (some of which may not be required)
-	AllInstalled modconfig.VersionsMap
+	AllInstalled modconfig.VersionListMap
 	// mod versions which are installed but not needed
-	//Unreferenced VersionsMap
+	//Unreferenced VersionListMap
 	// ALL the available versions for each dependency mod(we populate this in a lazy fashion)
-	AllAvailable modconfig.VersionsMap
+	AllAvailable modconfig.VersionListMap
 
 	// list of dependencies installed by recent install operation
-	RecentlyInstalled modconfig.VersionsMap
+	RecentlyInstalled modconfig.ResolvedVersionListMap
 	// list of dependencies which were already installed
-	AlreadyInstalled modconfig.VersionsMap
+	AlreadyInstalled modconfig.ResolvedVersionListMap
 }
 
-func NewInstallData(installedMods modconfig.VersionsMap, workspaceLock modconfig.WorkspaceLock) *InstallData {
+func NewInstallData(installedMods modconfig.VersionListMap, workspaceLock modconfig.WorkspaceLock) *InstallData {
 	return &InstallData{
 		Lock:         workspaceLock,
 		AllInstalled: installedMods,
-		//Unreferenced: make(VersionsMap),
-		AllAvailable:      make(modconfig.VersionsMap),
-		RecentlyInstalled: make(modconfig.VersionsMap),
-		AlreadyInstalled:  make(modconfig.VersionsMap),
+		//Unreferenced: make(VersionListMap),
+		AllAvailable:      make(modconfig.VersionListMap),
+		RecentlyInstalled: make(modconfig.ResolvedVersionListMap),
+		AlreadyInstalled:  make(modconfig.ResolvedVersionListMap),
 	}
 }
 
@@ -62,7 +62,10 @@ func (s *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconf
 	// update list of all installed mods
 	s.AllInstalled.Add(dependency.Name, dependency.Version)
 	// update list items installed by this installer
-	s.RecentlyInstalled.Add(dependency.Name, dependency.Version)
+	s.RecentlyInstalled.Add(dependency.Name, &modconfig.ResolvedVersionConstraint{
+		Version:    dependency.Version,
+		Constraint: dependency.Constraint.Original,
+	})
 }
 
 // addExisting is called when a dependency is satisfied by a mod which is already installed
@@ -71,12 +74,15 @@ func (s *InstallData) addExisting(name string, version *semver.Version, parent *
 	modVersion := parent.Requires.GetModDependency(name)
 	s.Lock.Add(name, version, modVersion.Constraint, parent.Name())
 	// update list of already installed items
-	s.AlreadyInstalled.Add(name, version)
+	s.AlreadyInstalled.Add(name, &modconfig.ResolvedVersionConstraint{
+		Version:    version,
+		Constraint: modVersion.Constraint.Original,
+	})
 }
 
 // return a map of all installed mods which are not in the lock file
-func (s *InstallData) getUnusedMods() modconfig.VersionsMap {
-	var unusedModPaths = make(modconfig.VersionsMap)
+func (s *InstallData) getUnusedMods() modconfig.VersionListMap {
+	var unusedModPaths = make(modconfig.VersionListMap)
 	// now delete any mod folders which are not in the lock file
 	for name, versions := range s.AllInstalled {
 		for _, version := range versions {

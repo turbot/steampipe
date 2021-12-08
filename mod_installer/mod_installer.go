@@ -73,7 +73,7 @@ type ModInstaller struct {
 	updateDependencies bool
 	// are dependencies being added to the workspace with a get command
 	// (if so, ignore locked version)
-	GetMods map[string]*modconfig.ModVersionConstraint
+	GetMods modconfig.VersionConstraintMap
 	// have specific mods been specified to update
 	UpdateMods map[string]bool
 }
@@ -274,7 +274,7 @@ func (i *ModInstaller) newerModVersionFound(requiredVersion *modconfig.ModVersio
 }
 
 // getInstalledMods returns a map installed mods, and the versions installed for each
-func (i *ModInstaller) getInstalledMods() (modconfig.VersionsMap, error) {
+func (i *ModInstaller) getInstalledMods() (modconfig.VersionListMap, error) {
 	// recursively search for all the mod.sp files under the .steampipe/mods folder, then build the mod name from the file path
 	modFiles, err := filehelpers.ListFiles(i.modsPath, &filehelpers.ListOptions{
 		Flags:   filehelpers.FilesRecursive,
@@ -285,7 +285,7 @@ func (i *ModInstaller) getInstalledMods() (modconfig.VersionsMap, error) {
 	}
 
 	// create result map - a list of version for each mod
-	installedMods := make(modconfig.VersionsMap, len(modFiles))
+	installedMods := make(modconfig.VersionListMap, len(modFiles))
 	// collect errors
 	var errors []error
 
