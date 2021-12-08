@@ -12,35 +12,43 @@ import (
 	"github.com/turbot/steampipe/version"
 )
 
+const filePrefix = "file:"
+
 type ModVersionConstraint struct {
 	// the fully qualified mod name, e.g. github.com/turbot/mod1
 	Name          string `cty:"name" hcl:"name,label"`
 	VersionString string `cty:"version" hcl:"version"`
-	//Alias         *string `cty:"alias" hcl:"alias,optional"`
-
 	// only one of Constraint, Branch and FilePath will be set
 	Constraint *version.Constraints
 	// the branch to use
 	Branch string
 	// the local file location to use
-	FilePath string
-
+	FilePath  string
 	DeclRange hcl.Range
 }
 
 func NewModVersionConstraint(modFullName string) (*ModVersionConstraint, error) {
-	segments := strings.Split(modFullName, "@")
-	if len(segments) > 2 {
-		return nil, fmt.Errorf("invalid mod name %s", modFullName)
+	var m *ModVersionConstraint
+	// if name has `file:` prefix, just set the name and ignore version
+	if strings.HasPrefix(modFullName, filePrefix) {
+		m = &ModVersionConstraint{Name: modFullName}
+	} else {
+		// otherwise try to extract version from name
+		segments := strings.Split(modFullName, "@")
+		if len(segments) > 2 {
+			return nil, fmt.Errorf("invalid mod name %s", modFullName)
+		}
+		m = &ModVersionConstraint{Name: segments[0]}
+		if len(segments) == 2 {
+			m.VersionString = segments[1]
+		}
 	}
-	v := &ModVersionConstraint{Name: segments[0]}
-	if len(segments) == 2 {
-		v.VersionString = segments[1]
-	}
-	if err := v.Initialise(); err != nil {
+
+	// try to convert version into a semver constraint
+	if err := m.Initialise(); err != nil {
 		return nil, err
 	}
-	return v, nil
+	return m, nil
 }
 
 func (m *ModVersionConstraint) FullName() string {
@@ -53,29 +61,25 @@ func (m *ModVersionConstraint) FullName() string {
 // HasVersion returns whether the mod has a version specified, or is the latest
 // if no version is specified, or the version is "latest", this is the latest version
 func (m *ModVersionConstraint) HasVersion() bool {
-	return !helpers.StringSliceContains([]string{"", "latest"}, m.VersionString)
+	return !helpers.StringSliceContains([]string{"", "latest", "*"}, m.VersionString)
 }
 
 func (m *ModVersionConstraint) String() string {
-	//if alias := typehelpers.SafeString(m.Alias); alias != "" {
-	//	return fmt.Sprintf("%s (%s)", m.FullName(), alias)
-	//}
 	return fmt.Sprintf("%s", m.FullName())
 }
 
 // Initialise parses the version and name properties
 func (m *ModVersionConstraint) Initialise() hcl.Diagnostics {
+	if strings.HasPrefix(m.Name, filePrefix) {
+		m.setFilePath()
+		return nil
+	}
+
 	diags := m.cleanName()
 	if diags != nil {
 		return diags
 	}
 
-	if strings.HasPrefix(m.VersionString, "file:") {
-		m.FilePath = m.VersionString
-		return diags
-	}
-
-	// TODO ignore prerelease
 	if m.VersionString == "" {
 		m.Constraint, _ = version.NewConstraint("*")
 		m.VersionString = "latest"
@@ -126,4 +130,12 @@ func (m *ModVersionConstraint) cleanName() hcl.Diagnostics {
 		Severity: hcl.DiagError,
 		Summary:  fmt.Sprintf("invalid mod name %s", m.Name),
 	}}
+}
+
+func (m *ModVersionConstraint) setFilePath() {
+	m.FilePath = strings.TrimPrefix(m.FilePath, filePrefix)
+}
+
+func ModVersionFullName(name string, version *semver.Version) string {
+	return fmt.Sprintf("%s@%s", name, version.Original())
 }

@@ -6,84 +6,15 @@ import (
 	"log"
 	"os"
 
+	"github.com/turbot/steampipe/version"
+
 	"github.com/Masterminds/semver"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 )
 
-// ModVersionMap represents a map of installed dependencies, keyed by name with version as the map value
-type ModVersionMap map[string]*semver.Version
-
 // WorkspaceLock is a map of ModVersionMaps items keyed by the parent mod whose dependencies are installed
-type WorkspaceLock map[string]ModVersionMap
-
-// Add adds a dependency to the list of items installed for the given parent
-func (m WorkspaceLock) Add(parent, dependency string, dependencyVersion *semver.Version) {
-	// get the map for this parent
-	parentItems := m[parent]
-	// create if needed
-	if parentItems == nil {
-		parentItems = make(ModVersionMap)
-	}
-	// add the dependency
-	parentItems[dependency] = dependencyVersion
-	// save
-	m[parent] = parentItems
-}
-
-func (m WorkspaceLock) Save(workspacePath string) error {
-	content, err := json.MarshalIndent(m, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(constants.WorkspaceLockPath(workspacePath), content, 0644)
-}
-
-func (m WorkspaceLock) GetLockedModVersion(requiredModVersion *ModVersionConstraint, parent *Mod) (*ModVersionConstraint, error) {
-	parentDependencies := m[parent.Name()]
-	if parentDependencies == nil {
-		return nil, nil
-	}
-	// look for this mod in the lock file entries for this parent
-	lockedVersion := parentDependencies[requiredModVersion.Name]
-	// TODO if there is no locked version - error? require --update???
-	if lockedVersion == nil {
-		return nil, nil
-	}
-	// verify the locked version satisfies the version constraint
-	if !requiredModVersion.Constraint.Check(lockedVersion) {
-		// TODO ignore if update is true???
-		// WHAT TO DO
-		return nil, fmt.Errorf("failed to install dependencies for %s - locked version %s@%s does not meet the constraint %s", parent.Name(), requiredModVersion.Name, lockedVersion.Original(), requiredModVersion.Constraint.Original)
-	}
-	// create a new requiredModVersion using the locked version
-	return NewModVersionConstraint(fmt.Sprintf("%s@%s", requiredModVersion.Name, lockedVersion))
-
-}
-
-// ContainsMod returns whether the lockfile contains any version of the given mod
-func (m WorkspaceLock) ContainsMod(modName string) bool {
-	for _, modVersionMap := range m {
-		for name := range modVersionMap {
-			if name == modName {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// ContainsModVersion returns whether the lockfile contains the given mod version
-func (m WorkspaceLock) ContainsModVersion(modName string, modVersion *semver.Version) bool {
-	for _, modVersionMap := range m {
-		for lockName, lockVersion := range modVersionMap {
-			if lockName == modName && lockVersion.Equal(modVersion) {
-				return true
-			}
-		}
-	}
-	return false
-}
+type WorkspaceLock map[string]ResolvedVersionMap
 
 func LoadWorkspaceLock(workspacePath string) (WorkspaceLock, error) {
 	lockPath := constants.WorkspaceLockPath(workspacePath)
@@ -104,4 +35,69 @@ func LoadWorkspaceLock(workspacePath string) (WorkspaceLock, error) {
 	}
 
 	return res, nil
+}
+
+// Add adds a dependency to the list of items installed for the given parent
+func (l WorkspaceLock) Add(dependencyName string, dependencyVersion *semver.Version, constraint *version.Constraints, parentName string) {
+	// get the map for this parent
+	parentItems := l[parentName]
+	// create if needed
+	if parentItems == nil {
+		parentItems = make(ResolvedVersionMap)
+	}
+	// add the dependency
+
+	parentItems[dependencyName] = &ResolvedVersionConstraint{dependencyVersion, constraint.Original}
+	// save
+	l[parentName] = parentItems
+}
+
+func (l WorkspaceLock) Save(workspacePath string) error {
+	content, err := json.MarshalIndent(l, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(constants.WorkspaceLockPath(workspacePath), content, 0644)
+}
+
+func (l WorkspaceLock) GetLockedModVersion(requiredModVersion *ModVersionConstraint, parent *Mod) (*ModVersionConstraint, error) {
+	parentDependencies := l[parent.Name()]
+	if parentDependencies == nil {
+		return nil, nil
+	}
+	// look for this mod in the lock file entries for this parent
+	lockedVersion := parentDependencies[requiredModVersion.Name]
+	if lockedVersion == nil {
+		return nil, nil
+	}
+	// verify the locked version satisfies the version constraint
+	if !requiredModVersion.Constraint.Check(lockedVersion.Version) {
+		return nil, fmt.Errorf("failed to install dependencies for %s - locked version %s@%s does not meet the constraint %s", parent.Name(), ModVersionFullName(requiredModVersion.Name, lockedVersion.Version), requiredModVersion.Constraint.Original)
+	}
+	// create a new requiredModVersion using the locked version
+	return NewModVersionConstraint(fmt.Sprintf("%s@%s", requiredModVersion.Name, lockedVersion))
+}
+
+// ContainsMod returns whether the lockfile contains any version of the given mod
+func (l WorkspaceLock) ContainsMod(modName string) bool {
+	for _, modVersionMap := range l {
+		for name := range modVersionMap {
+			if name == modName {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// ContainsModVersion returns whether the lockfile contains the given mod version
+func (l WorkspaceLock) ContainsModVersion(modName string, modVersion *semver.Version) bool {
+	for _, modVersionMap := range l {
+		for lockName, lockVersion := range modVersionMap {
+			if lockName == modName && lockVersion.Version.Equal(modVersion) {
+				return true
+			}
+		}
+	}
+	return false
 }

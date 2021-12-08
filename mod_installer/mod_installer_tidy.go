@@ -3,12 +3,14 @@ package mod_installer
 import (
 	"fmt"
 	"os"
+
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-func (i *ModInstaller) Tidy() (InstalledModMap, error) {
+func (i *ModInstaller) Tidy() (modconfig.VersionsMap, error) {
 	// install first if necessary
 	if len(i.installData.Lock) == 0 {
-		fmt.Println("no workspace lock found\nrun 'steampipe mod install'")
+		fmt.Println("no installation cache - run 'steampipe mod install'")
 		return nil, nil
 	}
 	unusedMods := i.installData.getUnusedMods()
