@@ -13,7 +13,7 @@ const (
 	WorkspaceIgnoreFile     = ".steampipeignore"
 	ModFileName             = "mod.sp"
 	DefaultVarsFileName     = "steampipe.spvars"
-	WorkspaceLockFileName   = "workspace.lock"
+	WorkspaceLockFileName   = ".mod.cache.json"
 	MaxControlRunAttempts   = 2
 )
 

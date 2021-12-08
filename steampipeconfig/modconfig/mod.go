@@ -627,7 +627,8 @@ func (m *Mod) GetChildControls() []*Control {
 	return res
 }
 
-func (m *Mod) AddModDependencies(modVersions []*ModVersionConstraint) {
+func (m *Mod) AddModDependencies(modVersions map[string]*ModVersionConstraint) {
+	// create Requires if needed
 	if m.Requires == nil {
 		m.Requires = &Requires{}
 	}
@@ -721,4 +722,8 @@ func (m *Mod) Save() error {
 
 	return os.WriteFile(constants.ModFilePath(m.ModPath), f.Bytes(), 0644)
 
+}
+
+func (m *Mod) HasDependentMods() bool {
+	return m.Requires != nil && len(m.Requires.Mods) > 0
 }
