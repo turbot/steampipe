@@ -192,7 +192,6 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	err = db_local.RefreshConnectionAndSearchPaths(ctx, invoker)
 	if err != nil {
-		// the err could be a context cancellation - use background
 		db_local.StopServices(false, constants.InvokerService, nil)
 		utils.FailOnError(err)
 	}

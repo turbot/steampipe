@@ -76,6 +76,8 @@ func (c *LocalDbClient) Close() error {
 			return err
 		}
 	}
+	// no context to pass on - use background
+	// we shouldn't do this in a context that can be cancelled anyway
 	ShutdownService(context.Background(), c.invoker)
 	return nil
 }
