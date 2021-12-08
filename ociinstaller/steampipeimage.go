@@ -17,7 +17,6 @@ type SteampipeImage struct {
 	Database      *DbImage
 	Fdw           *HubImage
 	resolver      *remotes.Resolver
-	// context       *context.Context
 }
 
 type PluginImage struct {
@@ -43,7 +42,6 @@ type HubImage struct {
 func (o *ociDownloader) newSteampipeImage() *SteampipeImage {
 	SteampipeImage := &SteampipeImage{
 		resolver: &o.resolver,
-		// context:  &o.context,
 	}
 	o.Images = append(o.Images, SteampipeImage)
 	return SteampipeImage

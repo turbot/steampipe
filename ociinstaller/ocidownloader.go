@@ -13,8 +13,7 @@ import (
 
 type ociDownloader struct {
 	resolver remotes.Resolver
-	// context  context.Context
-	Images []*SteampipeImage
+	Images   []*SteampipeImage
 }
 
 // NewOciDownloader :: creats and return a ociDownloader instance
@@ -24,7 +23,6 @@ func NewOciDownloader() *ociDownloader {
 	logrus.SetLevel(logrus.ErrorLevel)
 	return &ociDownloader{
 		resolver: docker.NewResolver(docker.ResolverOptions{}),
-		// context:  ctx,
 	}
 }
 
