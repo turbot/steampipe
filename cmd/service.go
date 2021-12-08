@@ -228,7 +228,7 @@ func runServiceInForeground(invoker constants.Invoker) {
 			}
 		case <-sigIntChannel:
 			fmt.Print("\r")
-			// we don't have a context to pass on
+			// we don't have a context to pass on - use Background
 			count, err := db_local.GetCountOfConnectedClients(context.Background())
 			if err != nil {
 				return
