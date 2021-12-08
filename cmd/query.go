@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"strings"
 
 	"github.com/briandowns/spinner"
@@ -87,6 +88,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("cmd.runQueryCmd end")
 		if r := recover(); r != nil {
+			debug.PrintStack()
 			utils.ShowError(helpers.ToError(r))
 		}
 	}()
