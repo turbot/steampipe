@@ -125,11 +125,24 @@ func (c *LocalDbClient) updateConnectionMap() error {
 }
 
 func getSchemaQueries(updates steampipeconfig.ConnectionDataMap, failures []*steampipeconfig.ValidationFailure) []string {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[TRACE]getSchemaQueries had panic %v", r)
+			panic(r)
+		}
+	}()
 	var schemaQueries []string
 	for connectionName, plugin := range updates {
+		log.Printf("[TRACE] getSchemaQueries connectionName %s plugin %v", connectionName, plugin)
+		if plugin == nil {
+			log.Printf("[TRACE] getSchemaQueries NIL PLUGIN")
+		}
 		remoteSchema := plugin_manager.PluginFQNToSchemaName(plugin.Plugin)
-		log.Printf("[TRACE] update connection %s, plugin Name %s, schema %s\n ", connectionName, plugin.Plugin, remoteSchema)
-		schemaQueries = append(schemaQueries, updateConnectionQuery(connectionName, remoteSchema)...)
+		log.Printf("[TRACE] _____update connection %s, plugin Name %s, schema %s, schemaQueries %v\n ", connectionName, plugin.Plugin, remoteSchema, schemaQueries)
+		queries := updateConnectionQuery(connectionName, remoteSchema)
+		log.Printf("[TRACE] updateConnectionQuery returned")
+		schemaQueries = append(schemaQueries, queries...)
+		log.Printf("[TRACE] append(schemaQueries, queries...) returned")
 	}
 	log.Printf("[TRACE] finished adding updates")
 	for _, failure := range failures {
@@ -154,9 +167,11 @@ func getCommentQueries(plugins []*steampipeconfig.ConnectionPlugin) []string {
 }
 
 func updateConnectionQuery(localSchema, remoteSchema string) []string {
+	log.Printf("[TRACE] updateConnectionQuery localSchema %s remoteSchema %s", localSchema, remoteSchema)
+
 	// escape the name
 	localSchema = db_common.PgEscapeName(localSchema)
-	return []string{
+	res := []string{
 
 		// Each connection has a unique schema. The schema, and all objects inside it,
 		// are owned by the root user.
@@ -181,6 +196,8 @@ func updateConnectionQuery(localSchema, remoteSchema string) []string {
 		// Import the foreign schema into this connection.
 		fmt.Sprintf(`import foreign schema "%s" from server steampipe into %s;`, remoteSchema, localSchema),
 	}
+	log.Printf("[TRACE] updateConnectionQuery returning %v", res)
+	return res
 }
 
 func commentsQuery(p *steampipeconfig.ConnectionPlugin) []string {
