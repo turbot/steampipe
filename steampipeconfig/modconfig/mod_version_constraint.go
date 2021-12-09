@@ -14,12 +14,16 @@ import (
 
 const filePrefix = "file:"
 
+type VersionConstrainCollection []*ModVersionConstraint
+
 type ModVersionConstraint struct {
 	// the fully qualified mod name, e.g. github.com/turbot/mod1
 	Name          string `cty:"name" hcl:"name,label"`
 	VersionString string `cty:"version" hcl:"version"`
 	// only one of Constraint, Branch and FilePath will be set
 	Constraint *version.Constraints
+	// // NOTE: aliases will be supported in the future
+	//Alias string `cty:"alias" hcl:"alias"`
 	// the branch to use
 	Branch string
 	// the local file location to use
@@ -134,4 +138,9 @@ func (m *ModVersionConstraint) cleanName() hcl.Diagnostics {
 
 func (m *ModVersionConstraint) setFilePath() {
 	m.FilePath = strings.TrimPrefix(m.FilePath, filePrefix)
+}
+
+func (m *ModVersionConstraint) Equals(other *ModVersionConstraint) bool {
+	// just check the hcl properties
+	return m.Name == other.Name && m.VersionString == other.VersionString
 }

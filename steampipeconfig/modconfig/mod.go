@@ -8,8 +8,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/steampipe/version"
-
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/turbot/steampipe/constants"
 
@@ -90,8 +88,9 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		ModPath:      modPath,
 		DeclRange:    defRange,
 		AllResources: make(map[string]HclResource),
-		Requires:     new(Requires),
+		Requires:     newRequires(),
 	}
+
 	// try to derive mod version from the path
 	mod.setVersion()
 	return mod
@@ -551,7 +550,7 @@ func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	if m.Requires == nil {
 		return nil
 	}
-	return m.Requires.Initialise()
+	return m.Requires.initialise()
 }
 
 // AddReference implements HclResource
@@ -630,11 +629,6 @@ func (m *Mod) GetChildControls() []*Control {
 }
 
 func (m *Mod) AddModDependencies(modVersions map[string]*ModVersionConstraint) {
-	// create Requires if needed
-	if m.Requires == nil {
-		m.Requires = &Requires{}
-	}
-
 	m.Requires.AddModDependencies(modVersions)
 }
 
@@ -642,19 +636,6 @@ func (m *Mod) Save() error {
 
 	f := hclwrite.NewEmptyFile()
 	rootBody := f.Body()
-
-	/*
-		ShortName string `cty:"short_name" hcl:"name,label"`
-		Categories    *[]string          `cty:"categories" hcl:"categories" column:"categories,jsonb"`
-		Color         *string            `cty:"color" hcl:"color" column:"color,text"`
-		Description   *string            `cty:"description" hcl:"description" column:"description,text"`
-		Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-		Icon          *string            `cty:"icon" hcl:"icon" column:"icon,text"`
-		Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
-		Title         *string            `cty:"title" hcl:"title" column:"title,text"`
-		Requires  *Requires  `hcl:"requires,block"`
-		OpenGraph *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
-	*/
 
 	modBody := rootBody.AppendNewBlock("mod", []string{m.ShortName}).Body()
 	if len(m.Categories) > 0 {
@@ -729,6 +710,7 @@ func (m *Mod) Save() error {
 func (m *Mod) HasDependentMods() bool {
 	return m.Requires != nil && len(m.Requires.Mods) > 0
 }
-func (m *Mod) DependsOnMod(name string, constraint *version.Constraints) bool {
-	return m.Requires != nil && m.Requires.ContainsMod(name, constraint)
+
+func (m *Mod) DependsOnMod(requiredModVersion *ModVersionConstraint) bool {
+	return m.Requires != nil && m.Requires.ContainsMod(requiredModVersion)
 }
