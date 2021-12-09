@@ -100,20 +100,46 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 		return nil, err
 	}
 
-	// set the AddMods - exclude anything already in the mod requires
-	i.setAddMods(opts.AddMods)
+	// if we are updating ensure we have a non empty lock file, and that all mods requested to update are in it
+	if err := i.setModArgs(opts); err != nil {
+		return nil, err
+	}
 
 	// create install data
 	i.installData = NewInstallData(workspaceLock)
 
-	// if we are updating ensure we have a non empty lock file, and that all mods requested to update are in it
+	return i, nil
+}
+
+func (i *ModInstaller) setModArgs(opts *InstallOpts) error {
+	// list of mods to add
+	var addMods version_map.VersionConstraintMap
 	if i.updating {
-		if err := i.verifyUpdates(opts.UpdateMods); err != nil {
-			return nil, err
+		if err := i.verifyCanUpdate(); err != nil {
+			return err
 		}
+
+		// build map of mods to update
+		i.UpdateMods = make(map[string]bool)
+
+		// check all mods which have been requested to be updated exist in the lock file (ignore version)
+		for name, version := range opts.ModArgs {
+			if i.installData.Lock.ContainsMod(name) {
+				// if this exists in the workspace lock, add to our map of updates
+				i.UpdateMods[name] = true
+			} else {
+				addMods[name] = version
+			}
+		}
+	} else {
+		// we are not updating, so any set the AddMods - exclude anything already in the mod requires
+		addMods = opts.ModArgs
 	}
 
-	return i, nil
+	// if we have any add mods, add them
+	i.setAddMods(addMods)
+
+	return nil
 }
 
 // InstallWorkspaceDependencies installs all dependencies of the workspace mod
