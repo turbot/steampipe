@@ -15,10 +15,10 @@ import (
 
 // GetCurrentSearchPath implements Client
 // query the database to get the current search path
-func (c *DbClient) GetCurrentSearchPath() ([]string, error) {
+func (c *DbClient) GetCurrentSearchPath(ctx context.Context) ([]string, error) {
 	var currentSearchPath []string
 	var pathAsString string
-	rows, err := c.ExecuteSync(context.Background(), "show search_path", false)
+	rows, err := c.ExecuteSync(ctx, "show search_path", false)
 	if err != nil {
 		return nil, err
 	}
@@ -41,11 +41,11 @@ func (c *DbClient) GetCurrentSearchPath() ([]string, error) {
 // (otherwise fall back to user search path)
 // this just sets the required search path for this client
 // - when creating a database session, we will actually set the searchPath
-func (c *DbClient) SetSessionSearchPath(currentUserSearchPath ...string) error {
+func (c *DbClient) SetSessionSearchPath(ctx context.Context, currentUserSearchPath ...string) error {
 	requiredSearchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 
-	searchPath, err := c.ContructSearchPath(requiredSearchPath, searchPathPrefix, currentUserSearchPath)
+	searchPath, err := c.ContructSearchPath(ctx, requiredSearchPath, searchPathPrefix, currentUserSearchPath)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (c *DbClient) SetSessionSearchPath(currentUserSearchPath ...string) error {
 	return err
 }
 
-func (c *DbClient) ContructSearchPath(requiredSearchPath []string, searchPathPrefix []string, currentUserSearchPath []string) ([]string, error) {
+func (c *DbClient) ContructSearchPath(ctx context.Context, requiredSearchPath []string, searchPathPrefix []string, currentUserSearchPath []string) ([]string, error) {
 	// if a search path was passed, add 'internal' to the end
 	if len(requiredSearchPath) > 0 {
 		// add 'internal' schema as last schema in the search path
@@ -72,7 +72,7 @@ func (c *DbClient) ContructSearchPath(requiredSearchPath []string, searchPathPre
 		if len(currentUserSearchPath) == 0 {
 			// no current search path was passed in - fetch it
 			var err error
-			if currentUserSearchPath, err = c.GetCurrentSearchPath(); err != nil {
+			if currentUserSearchPath, err = c.GetCurrentSearchPath(ctx); err != nil {
 				return nil, err
 			}
 		}

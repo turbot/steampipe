@@ -41,10 +41,11 @@ type DbClient struct {
 	searchPath     []string
 }
 
-func NewDbClient(connectionString string) (*DbClient, error) {
+func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
-	db, err := establishConnection(connectionString)
+
+	db, err := establishConnection(ctx, connectionString)
 
 	if err != nil {
 		return nil, err
@@ -62,14 +63,14 @@ func NewDbClient(connectionString string) (*DbClient, error) {
 	}
 	client.connectionString = connectionString
 
-	if err := client.LoadForeignSchemaNames(); err != nil {
+	if err := client.LoadForeignSchemaNames(ctx); err != nil {
 		client.Close()
 		return nil, err
 	}
 	return client, nil
 }
 
-func establishConnection(connStr string) (*sql.DB, error) {
+func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
 	utils.LogTime("db_client.establishConnection start")
 	defer utils.LogTime("db_client.establishConnection end")
 
@@ -90,7 +91,7 @@ func establishConnection(connStr string) (*sql.DB, error) {
 	// never close connection because of age
 	db.SetConnMaxLifetime(0)
 
-	if err := db_common.WaitForConnection(db); err != nil {
+	if err := db_common.WaitForConnection(ctx, db); err != nil {
 		return nil, err
 	}
 	return db, nil
@@ -150,7 +151,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	db, err := establishConnection(c.connectionString)
+	db, err := establishConnection(ctx, c.connectionString)
 	if err != nil {
 		return err
 	}
@@ -160,25 +161,26 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 }
 
 // RefreshConnectionAndSearchPaths implements Client
-func (c *DbClient) RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult {
+func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
 	// base db client does not refresh connections, it just sets search path
 	// (only local db client refreshed connections)
 	res := &steampipeconfig.RefreshConnectionResult{}
-	if err := c.SetSessionSearchPath(); err != nil {
+	if err := c.SetSessionSearchPath(ctx); err != nil {
 		res.Error = err
 	}
 	return res
 }
 
-func (c *DbClient) GetSchemaFromDB(schemas []string) (*schema.Metadata, error) {
+func (c *DbClient) GetSchemaFromDB(ctx context.Context, schemas []string) (*schema.Metadata, error) {
 	utils.LogTime("db_client.GetSchemaFromDB start")
 	defer utils.LogTime("db_client.GetSchemaFromDB end")
-	connection, err := c.dbClient.Conn(context.Background())
+	connection, err := c.dbClient.Conn(ctx)
 	utils.FailOnError(err)
 	defer connection.Close()
 
 	query := c.buildSchemasQuery(schemas)
-	tablesResult, err := connection.QueryContext(context.Background(), query)
+
+	tablesResult, err := connection.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -217,8 +219,8 @@ ORDER BY
 	return query
 }
 
-func (c *DbClient) LoadForeignSchemaNames() error {
-	res, err := c.dbClient.Query("SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
+func (c *DbClient) LoadForeignSchemaNames(ctx context.Context) error {
+	res, err := c.dbClient.QueryContext(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
 	if err != nil {
 		return err
 	}

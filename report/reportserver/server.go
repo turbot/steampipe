@@ -46,12 +46,12 @@ type ReportClientInfo struct {
 }
 
 func NewServer(ctx context.Context) (*Server, error) {
-	dbClient, err := db_local.GetLocalClient(constants.InvokerReport)
+	dbClient, err := db_local.GetLocalClient(ctx, constants.InvokerReport)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshResult := dbClient.RefreshConnectionAndSearchPaths()
+	refreshResult := dbClient.RefreshConnectionAndSearchPaths(ctx)
 	if err != nil {
 		return nil, err
 	}

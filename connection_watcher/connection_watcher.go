@@ -1,6 +1,7 @@
 package connection_watcher
 
 import (
+	"context"
 	"log"
 
 	"github.com/fsnotify/fsnotify"
@@ -61,6 +62,9 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 		}
 	}()
 
+	// this is a file system event handler and not bound to any context
+	ctx := context.Background()
+
 	// ignore the first event - this is raised as soon as we start the watcher
 	// (this is to avoid conflicting calls to refreshConnections between Steampipe and the watcher)
 	w.count++
@@ -76,7 +80,8 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 		return
 	}
 	log.Printf("[TRACE] loaded updated config")
-	client, err := db_local.NewLocalClient(constants.InvokerConnectionWatcher)
+
+	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher)
 	if err != nil {
 		log.Printf("[WARN] Error creating client to handle updated connection config: %s", err.Error())
 	}
@@ -102,7 +107,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 	// update the viper default based on this loaded config
 	cmdconfig.SetViperDefaults(config.ConfigMap())
 	// now refresh connections and search paths
-	refreshResult := client.RefreshConnectionAndSearchPaths()
+	refreshResult := client.RefreshConnectionAndSearchPaths(ctx)
 	if refreshResult.Error != nil {
 		log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
 		return

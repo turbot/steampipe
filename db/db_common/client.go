@@ -16,11 +16,11 @@ type Client interface {
 	ForeignSchemas() []string
 	ConnectionMap() *steampipeconfig.ConnectionDataMap
 
-	GetCurrentSearchPath() ([]string, error)
-	SetSessionSearchPath(...string) error
-	ContructSearchPath(requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error)
+	GetCurrentSearchPath(context.Context) ([]string, error)
+	SetSessionSearchPath(ctx context.Context, newSearchPath ...string) error
+	ContructSearchPath(ctx context.Context, requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error)
 
-	AcquireSession(ctx context.Context) *AcquireSessionResult
+	AcquireSession(context.Context) *AcquireSessionResult
 
 	ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error)
 	Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error)
@@ -28,14 +28,14 @@ type Client interface {
 	ExecuteSyncInSession(ctx context.Context, session *DatabaseSession, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error)
 	ExecuteInSession(ctx context.Context, session *DatabaseSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error)
 
-	CacheOn() error
-	CacheOff() error
-	CacheClear() error
+	CacheOn(context.Context) error
+	CacheOff(context.Context) error
+	CacheClear(context.Context) error
 
 	SetEnsureSessionDataFunc(EnsureSessionStateCallback)
 	RefreshSessions(ctx context.Context) *AcquireSessionResult
-	GetSchemaFromDB([]string) (*schema.Metadata, error)
+	GetSchemaFromDB(context.Context, []string) (*schema.Metadata, error)
 	// remote client will have empty implementation
-	RefreshConnectionAndSearchPaths() *steampipeconfig.RefreshConnectionResult
-	LoadForeignSchemaNames() error
+	RefreshConnectionAndSearchPaths(context.Context) *steampipeconfig.RefreshConnectionResult
+	LoadForeignSchemaNames(context.Context) error
 }

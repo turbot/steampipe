@@ -153,7 +153,7 @@ func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
 
 // LoadSchema implements Client
 // retrieve both the raw query result and a sanitised version in list form
-func (c *InteractiveClient) LoadSchema() error {
+func (c *InteractiveClient) LoadSchema(ctx context.Context) error {
 	utils.LogTime("db_client.LoadSchema start")
 	defer utils.LogTime("db_client.LoadSchema end")
 
@@ -166,7 +166,7 @@ func (c *InteractiveClient) LoadSchema() error {
 	// get the unique schema - we use this to limit the schemas we load from the database
 	schemas := connectionSchemaMap.UniqueSchemas()
 	// load these schemas
-	metadata, err := c.client().GetSchemaFromDB(schemas)
+	metadata, err := c.client().GetSchemaFromDB(ctx, schemas)
 	utils.FailOnError(err)
 
 	c.populateSchemaMetadata(metadata, connectionSchemaMap)
@@ -192,7 +192,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		return
 	}
 	// asyncronously fetch the schema
-	go c.LoadSchema()
+	go c.LoadSchema(ctx)
 
 	if initResult.HasMessages() {
 		fmt.Println()
@@ -466,7 +466,7 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 	}
 	client := c.client()
 	// validation passed, now we will run
-	return metaquery.Handle(&metaquery.HandlerInput{
+	return metaquery.Handle(ctx, &metaquery.HandlerInput{
 		Query:       query,
 		Executor:    client,
 		Schema:      c.schemaMetadata,

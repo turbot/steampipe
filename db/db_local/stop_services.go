@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -42,7 +43,8 @@ func ShutdownService(invoker constants.Invoker) {
 	}
 
 	// how many clients are connected
-	count, _ := GetCountOfConnectedClients()
+	// under a fresh context
+	count, _ := GetCountOfConnectedClients(context.Background())
 	if count > 0 {
 		// there are other clients connected to the database
 		// we can't stop the DB.
@@ -67,11 +69,11 @@ func ShutdownService(invoker constants.Invoker) {
 }
 
 // GetCountOfConnectedClients returns the number of clients currently connected to the service
-func GetCountOfConnectedClients() (i int, e error) {
+func GetCountOfConnectedClients(ctx context.Context) (i int, e error) {
 	utils.LogTime("db_local.GetCountOfConnectedClients start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end:%d", i))
 
-	rootClient, err := createLocalDbClient(&CreateDbOptions{Username: constants.DatabaseSuperUser})
+	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return -1, err
 	}
@@ -112,7 +114,8 @@ func stopDBService(spinner *spinner.Spinner, force bool) (StopStatus, error) {
 	if force {
 		// check if we have a process from another install-dir
 		display.UpdateSpinnerMessage(spinner, "Checking for running instances...")
-		killInstanceIfAny()
+		// do not use a context that can be cancelled
+		killInstanceIfAny(context.Background())
 		return ServiceStopped, nil
 	}
 

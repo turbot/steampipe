@@ -223,7 +223,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			continue
 		}
 		display.UpdateSpinnerMessage(spinner, fmt.Sprintf("Installing plugin: %s", p))
-		image, err := plugin.Install(p)
+		image, err := plugin.Install(cmd.Context(), p)
 		if err != nil {
 			msg := ""
 			if strings.HasSuffix(err.Error(), "not found") {
@@ -257,7 +257,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	display.StopSpinner(spinner)
 
-	refreshConnectionsIfNecessary(installReports, false)
+	refreshConnectionsIfNecessary(cmd.Context(), installReports, false)
 	display.PrintInstallReports(installReports, false)
 
 	// a concluding blank line - since we always output multiple lines
@@ -380,7 +380,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		}
 
 		spinner := display.ShowSpinner(fmt.Sprintf("Updating plugin %s...", report.CheckResponse.Name))
-		image, err := plugin.Install(report.Plugin.Name)
+		image, err := plugin.Install(cmd.Context(), report.Plugin.Name)
 		display.StopSpinner(spinner)
 		if err != nil {
 			msg := ""
@@ -414,7 +414,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		})
 	}
 
-	refreshConnectionsIfNecessary(updateReports, true)
+	refreshConnectionsIfNecessary(cmd.Context(), updateReports, true)
 	display.PrintInstallReports(updateReports, true)
 
 	// a concluding blank line - since we always output multiple lines
@@ -422,7 +422,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 }
 
 // start service if necessary and refresh connections
-func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate bool) error {
+func refreshConnectionsIfNecessary(ctx context.Context, reports []display.InstallReport, isUpdate bool) error {
 	// get count of skipped reports
 	skipped := 0
 	for _, report := range reports {
@@ -446,12 +446,12 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 		steampipeconfig.GlobalConfig = config
 	}
 
-	client, err := db_local.GetLocalClient(constants.InvokerPlugin)
+	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
-	res := client.RefreshConnectionAndSearchPaths()
+	res := client.RefreshConnectionAndSearchPaths(ctx)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -460,7 +460,7 @@ func refreshConnectionsIfNecessary(reports []display.InstallReport, isUpdate boo
 	return nil
 }
 
-func runPluginListCmd(*cobra.Command, []string) {
+func runPluginListCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runPluginListCmd list")
 	defer func() {
 		utils.LogTime("runPluginListCmd end")
@@ -469,8 +469,7 @@ func runPluginListCmd(*cobra.Command, []string) {
 			exitCode = 1
 		}
 	}()
-	ctx := context.Background()
-	pluginConnectionMap, err := getPluginConnectionMap(ctx)
+	pluginConnectionMap, err := getPluginConnectionMap(cmd.Context())
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "Plugin Listing failed")
 		exitCode = 4
@@ -510,8 +509,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		exitCode = 2
 		return
 	}
-	ctx := context.Background()
-	connectionMap, err := getPluginConnectionMap(ctx)
+	connectionMap, err := getPluginConnectionMap(cmd.Context())
 	if err != nil {
 		utils.ShowError(err)
 		exitCode = 4
@@ -529,12 +527,12 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
 func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, error) {
-	client, err := db_local.GetLocalClient(constants.InvokerPlugin)
+	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin)
 	if err != nil {
 		return nil, err
 	}
 	defer client.Close()
-	res := client.RefreshConnectionAndSearchPaths()
+	res := client.RefreshConnectionAndSearchPaths(ctx)
 	if res.Error != nil {
 		return nil, res.Error
 	}

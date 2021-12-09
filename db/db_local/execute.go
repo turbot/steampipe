@@ -1,14 +1,15 @@
 package db_local
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/turbot/steampipe/constants"
 )
 
-func executeSqlAsRoot(statements ...string) ([]sql.Result, error) {
+func executeSqlAsRoot(ctx context.Context, statements ...string) ([]sql.Result, error) {
 	var results []sql.Result
-	rootClient, err := createLocalDbClient(&CreateDbOptions{Username: constants.DatabaseSuperUser})
+	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}

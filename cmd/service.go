@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -141,6 +142,9 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt, os.Kill)
+	defer cancel()
+
 	port := viper.GetInt(constants.ArgPort)
 	if port < 1 || port > 65535 {
 		panic("Invalid Port :: MUST be within range (1:65535)")
@@ -152,11 +156,11 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
 	utils.FailOnError(invoker.IsValid())
 
-	err := db_local.EnsureDBInstalled()
+	err := db_local.EnsureDBInstalled(ctx)
 	utils.FailOnError(err)
 
 	// start db, refreshing connections
-	startResult := db_local.StartServices(port, listen, invoker)
+	startResult := db_local.StartServices(ctx, port, listen, invoker)
 	utils.FailOnError(startResult.Error)
 
 	if startResult.Status == db_local.ServiceFailedToStart {
@@ -186,7 +190,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	err = db_local.RefreshConnectionAndSearchPaths(invoker)
+	err = db_local.RefreshConnectionAndSearchPaths(ctx, invoker)
 	if err != nil {
 		db_local.StopServices(false, constants.InvokerService, nil)
 		utils.FailOnError(err)
@@ -224,8 +228,12 @@ func runServiceInForeground(invoker constants.Invoker) {
 			}
 		case <-sigIntChannel:
 			fmt.Print("\r")
-			count, err := db_local.GetCountOfConnectedClients()
+			// if we have received this signal, then the user probably wants to shut down
+			// everything. Shutdowns MUST NOT happen in cancellable contexts
+			count, err := db_local.GetCountOfConnectedClients(context.Background())
 			if err != nil {
+				// report the error in the off chance that there's one
+				utils.ShowError(err)
 				return
 			}
 
@@ -288,7 +296,7 @@ to force a restart.
 	viper.Set(constants.ArgServicePassword, currentDbState.Password)
 
 	// start db
-	startResult := db_local.StartServices(currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
+	startResult := db_local.StartServices(cmd.Context(), currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
 	utils.FailOnError(startResult.Error)
 	if startResult.Status == db_local.ServiceFailedToStart {
 		fmt.Println("Steampipe service was stopped, but failed to restart.")
@@ -296,7 +304,7 @@ to force a restart.
 	}
 
 	// refresh connections
-	err = db_local.RefreshConnectionAndSearchPaths(constants.InvokerService)
+	err = db_local.RefreshConnectionAndSearchPaths(cmd.Context(), constants.InvokerService)
 	utils.FailOnError(err)
 	fmt.Println("Steampipe service restarted.")
 
@@ -318,7 +326,7 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 	if viper.GetBool(constants.ArgAll) {
-		showAllStatus()
+		showAllStatus(cmd.Context())
 	} else {
 		dbState, dbStateErr := db_local.GetState()
 		pmState, pmStateErr := plugin_manager.LoadPluginManagerState()
@@ -390,7 +398,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		}
 
 		// check if there are any connected clients to the service
-		connectedClientCount, err := db_local.GetCountOfConnectedClients()
+		connectedClientCount, err := db_local.GetCountOfConnectedClients(cmd.Context())
 		if err != nil {
 			display.StopSpinner(spinner)
 			utils.FailOnErrorWithMessage(err, "error during service stop")
@@ -440,14 +448,14 @@ to force a shutdown.
 
 }
 
-func showAllStatus() {
+func showAllStatus(ctx context.Context) {
 	var processes []*psutils.Process
 	var err error
 
 	doneFetchingDetailsChan := make(chan bool)
 	sp := display.StartSpinnerAfterDelay("Getting details", constants.SpinnerShowTimeout, doneFetchingDetailsChan)
 
-	processes, err = db_local.FindAllSteampipePostgresInstances()
+	processes, err = db_local.FindAllSteampipePostgresInstances(ctx)
 	close(doneFetchingDetailsChan)
 	display.StopSpinner(sp)
 

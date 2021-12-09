@@ -9,14 +9,14 @@ import (
 )
 
 // InstallDB :: Install Postgres files fom OCI image
-func InstallDB(imageRef string, dest string) (string, error) {
+func InstallDB(ctx context.Context, imageRef string, dest string) (string, error) {
 	tempDir := NewTempDir(imageRef)
 	defer tempDir.Delete()
 
-	imageDownloader := NewOciDownloader(context.Background())
+	imageDownloader := NewOciDownloader()
 
 	// Download the blobs
-	image, err := imageDownloader.Download(imageRef, "db", tempDir.Path)
+	image, err := imageDownloader.Download(ctx, imageRef, "db", tempDir.Path)
 	if err != nil {
 		return "", err
 	}

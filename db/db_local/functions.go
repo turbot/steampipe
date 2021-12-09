@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -24,7 +25,7 @@ ORDER BY
 
 **/
 
-func refreshFunctions() error {
+func refreshFunctions(ctx context.Context) error {
 	utils.LogTime("db.refreshFunctions start")
 	defer utils.LogTime("db.refreshFunctions end")
 
@@ -33,7 +34,7 @@ func refreshFunctions() error {
 		fmt.Sprintf(`grant usage on schema %s to %s;`, constants.FunctionSchema, constants.DatabaseUsersRole),
 	}
 	queries = append(queries, getFunctionAddStrings(constants.Functions)...)
-	if _, err := executeSqlAsRoot(queries...); err != nil {
+	if _, err := executeSqlAsRoot(ctx, queries...); err != nil {
 		return err
 	}
 	return nil

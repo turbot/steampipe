@@ -17,7 +17,6 @@ type SteampipeImage struct {
 	Database      *DbImage
 	Fdw           *HubImage
 	resolver      *remotes.Resolver
-	context       *context.Context
 }
 
 type PluginImage struct {
@@ -43,13 +42,12 @@ type HubImage struct {
 func (o *ociDownloader) newSteampipeImage() *SteampipeImage {
 	SteampipeImage := &SteampipeImage{
 		resolver: &o.resolver,
-		context:  &o.context,
 	}
 	o.Images = append(o.Images, SteampipeImage)
 	return SteampipeImage
 }
 
-func (o *ociDownloader) Download(ref string, imageType string, destDir string) (*SteampipeImage, error) {
+func (o *ociDownloader) Download(ctx context.Context, ref string, imageType string, destDir string) (*SteampipeImage, error) {
 	var mediaTypes []string
 	Image := o.newSteampipeImage()
 	Image.ImageRef = ref
@@ -59,7 +57,7 @@ func (o *ociDownloader) Download(ref string, imageType string, destDir string) (
 	mediaTypes = append(mediaTypes, ConfigMediaTypes()...)
 
 	// Download the files
-	imageDesc, _, configBytes, layers, err := o.Pull(ref, mediaTypes, destDir)
+	imageDesc, _, configBytes, layers, err := o.Pull(ctx, ref, mediaTypes, destDir)
 	if err != nil {
 		return nil, err
 	}

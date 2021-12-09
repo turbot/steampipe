@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -17,7 +18,7 @@ import (
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionResult {
+func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
 	res := &steampipeconfig.RefreshConnectionResult{}
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
@@ -58,7 +59,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 
 	// so there ARE connections to update
 	// execute the connection queries
-	if err := executeConnectionQueries(connectionQueries); err != nil {
+	if err := executeConnectionQueries(ctx, connectionQueries); err != nil {
 		res.Error = err
 		return res
 	}
@@ -72,7 +73,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 	// reload the database foreign schema names, since they have changed
 	// this is to ensuire search paths are correctly updated
 	log.Println("[TRACE] RefreshConnections: reloading foreign schema names")
-	c.LoadForeignSchemaNames()
+	c.LoadForeignSchemaNames(ctx)
 
 	res.UpdatedConnections = true
 	return res
@@ -202,9 +203,9 @@ func deleteConnectionQuery(name string) []string {
 	}
 }
 
-func executeConnectionQueries(schemaQueries []string) error {
+func executeConnectionQueries(ctx context.Context, schemaQueries []string) error {
 	log.Printf("[TRACE] there are connections to update\n")
-	_, err := executeSqlAsRoot(schemaQueries...)
+	_, err := executeSqlAsRoot(ctx, schemaQueries...)
 	if err != nil {
 		return err
 	}

@@ -12,15 +12,15 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// InstallPlugin :: Install a plugin from an OCI Image
-func InstallPlugin(imageRef string) (*SteampipeImage, error) {
+// InstallPlugin installs a plugin from an OCI Image
+func InstallPlugin(ctx context.Context, imageRef string) (*SteampipeImage, error) {
 	tempDir := NewTempDir(imageRef)
 	defer tempDir.Delete()
 
 	ref := NewSteampipeImageRef(imageRef)
-	imageDownloader := NewOciDownloader(context.Background())
+	imageDownloader := NewOciDownloader()
 
-	image, err := imageDownloader.Download(ref.ActualImageRef(), "plugin", tempDir.Path)
+	image, err := imageDownloader.Download(ctx, ref.ActualImageRef(), "plugin", tempDir.Path)
 	if err != nil {
 		return nil, err
 	}
