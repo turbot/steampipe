@@ -22,6 +22,17 @@ func BuildInstallSummary(installData *InstallData) string {
 	return res
 }
 
+func BuildUninstallSummary(installData *InstallData) string {
+	var installedString, alreadyInstalledString string
+
+	installed := installData.RecentlyInstalled.FlatNames()
+	if installCount := len(installed); installCount > 0 {
+		installedString = fmt.Sprintf("\nInstalled %d %s:\n\t%s\n", installCount, utils.Pluralize("mod", installCount), strings.Join(installed, "\n\t"))
+	}
+	res := fmt.Sprintf("%s%s\n", installedString, alreadyInstalledString)
+	return res
+}
+
 func BuildGetSummary(installData *InstallData, requiredVersions version_map.VersionConstraintMap) string {
 	// for every required version, see whether we inmstalled it or if it was already installed
 	var installed, alreadyInstalled []string
