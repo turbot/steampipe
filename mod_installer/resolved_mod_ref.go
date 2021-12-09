@@ -51,5 +51,5 @@ func (r *ResolvedModRef) setGitReference() {
 
 // FullName returns name in the format <dependency name>@v<dependencyVersion>
 func (r *ResolvedModRef) FullName() string {
-	return modVersionFullName(r.Name, r.Version)
+	return modconfig.ModVersionFullName(r.Name, r.Version)
 }

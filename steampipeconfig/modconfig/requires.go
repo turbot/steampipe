@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/Masterminds/semver"
@@ -16,19 +17,19 @@ type Requires struct {
 	Plugins                []*PluginVersion        `hcl:"plugin,block"`
 	Mods                   []*ModVersionConstraint `hcl:"mod,block"`
 	DeclRange              hcl.Range               `json:"-"`
+	// map keyed by name [and alias]
+	modMap map[string]*ModVersionConstraint
 }
 
-func (r *Requires) ValidateSteampipeVersion(modName string) error {
-	if r.SteampipeVersion != nil {
-		if version.SteampipeVersion.LessThan(r.SteampipeVersion) {
-			return fmt.Errorf("steampipe version %s does not satisfy %s which requires version %s", version.SteampipeVersion.String(), modName, r.SteampipeVersion.String())
-		}
-	}
-	return nil
+func newRequires() *Requires {
+	r := &Requires{}
+	r.initialise()
+	return r
 }
 
-func (r *Requires) Initialise() hcl.Diagnostics {
+func (r *Requires) initialise() hcl.Diagnostics {
 	var diags hcl.Diagnostics
+	r.modMap = make(map[string]*ModVersionConstraint)
 
 	if r.SteampipeVersionString != "" {
 		steampipeVersion, err := semver.NewVersion(strings.TrimPrefix(r.SteampipeVersionString, "v"))
@@ -49,38 +50,61 @@ func (r *Requires) Initialise() hcl.Diagnostics {
 	for _, m := range r.Mods {
 		moreDiags := m.Initialise()
 		diags = append(diags, moreDiags...)
+		if !diags.HasErrors() {
+			// key map entry by name [and alias]
+			r.modMap[m.Name] = m
+		}
 	}
 	return diags
 }
 
-func (r *Requires) AddModDependencies(newModVersions map[string]*ModVersionConstraint) {
-	// rebuild the Mods array
-	var newMods []*ModVersionConstraint
-	for _, existingModVersion := range r.Mods {
-		// if this existing mod is being replaced (i.e. is is in newModVersions), skip
-		if _, ok := newModVersions[existingModVersion.Name]; ok {
-			newMods = append(newMods, existingModVersion)
-		}
-	}
-	for _, newModVersion := range newModVersions {
-		newMods = append(newMods, newModVersion)
-	}
-	// write back
-	r.Mods = newMods
-}
-
-func (r *Requires) GetModDependency(name string) *ModVersionConstraint {
-	for _, c := range r.Mods {
-		if c.Name == name {
-			return c
+func (r *Requires) ValidateSteampipeVersion(modName string) error {
+	if r.SteampipeVersion != nil {
+		if version.SteampipeVersion.LessThan(r.SteampipeVersion) {
+			return fmt.Errorf("steampipe version %s does not satisfy %s which requires version %s", version.SteampipeVersion.String(), modName, r.SteampipeVersion.String())
 		}
 	}
 	return nil
 }
 
-func (r *Requires) ContainsMod(name string, constraint *version.Constraints) bool {
-	if c := r.GetModDependency(name); c != nil {
-		return c.Constraint.Equals(constraint)
+// AddModDependencies adds all the mod in newModVersions to our list of mods, using the following logic
+// - if a mod with same name, [alias] and constraint exists, it is not added
+// - if a mod with same name [and alias] and different constraint exist, it is replaced
+func (r *Requires) AddModDependencies(newModVersions map[string]*ModVersionConstraint) {
+	// rebuild the Mods array
+
+	for name, newVersion := range newModVersions {
+		// todo take alias into account
+
+		// if this existing mod is being replaced (i.e. is is in newModVersions), skip
+		if existingVersion, ok := r.modMap[name]; ok {
+			if existingVersion.Constraint.Equals(newVersion.Constraint) {
+				continue
+			}
+			// so the contraints are different - fall through to update the stored version
+		}
+		r.modMap[name] = newVersion
+	}
+
+	// now update the mod array from teh map
+	var newMods = make([]*ModVersionConstraint, len(r.modMap))
+	idx := 0
+	for _, requiredVersion := range r.modMap {
+		newMods[idx] = requiredVersion
+	}
+	// sort by name
+	sort.Sort(ModVersionConstraintCollection(newMods))
+	// write back
+	r.Mods = newMods
+}
+
+func (r *Requires) GetModDependency(name string /*,alias string*/) *ModVersionConstraint {
+	return r.modMap[name]
+}
+
+func (r *Requires) ContainsMod(requiredModVersion *ModVersionConstraint) bool {
+	if c := r.GetModDependency(requiredModVersion.Name); c != nil {
+		return c.Equals(requiredModVersion)
 	}
 	return false
 }

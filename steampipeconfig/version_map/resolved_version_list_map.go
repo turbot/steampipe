@@ -9,8 +9,9 @@ type ResolvedVersionListMap map[string][]*ResolvedVersionConstraint
 
 // Add appends the version constraint to the list for the given name
 func (m ResolvedVersionListMap) Add(name string, versionConstraint *ResolvedVersionConstraint) {
-	// TODO CHECK FOR DUPES
-	m[name] = append(m[name], versionConstraint)
+	// if there is already an entry for the same name, replace it
+	// TODO handle alias
+	m[name] = []*ResolvedVersionConstraint{versionConstraint}
 }
 
 // Remove removes the given version constraint from the list for the given name

@@ -1,16 +1,9 @@
 package mod_installer
 
 import (
-	"fmt"
-
-	"github.com/turbot/steampipe/version"
-
 	"github.com/Masterminds/semver"
+	"github.com/turbot/steampipe/version"
 )
-
-func modVersionFullName(name string, version *semver.Version) string {
-	return fmt.Sprintf("%s@%s", name, version.Original())
-}
 
 func getVersionSatisfyingConstraint(constraint *version.Constraints, availableVersions []*semver.Version) *semver.Version {
 	// search the reverse sorted versions, finding the highest version which satisfies ALL constraints
