@@ -16,7 +16,7 @@ type ociDownloader struct {
 	Images   []*SteampipeImage
 }
 
-// NewOciDownloader :: creats and return a ociDownloader instance
+// NewOciDownloader creates and returns a ociDownloader instance
 func NewOciDownloader() *ociDownloader {
 	// oras uses containerd, which uses logrus and is set up to log
 	// warning and above.  Set to ErrrLevel to get rid of unwanted error message
@@ -28,7 +28,7 @@ func NewOciDownloader() *ociDownloader {
 
 /**
 
-Pull :: downloads the image from the given `ref` to the supplied `destDir`
+Pull downloads the image from the given `ref` to the supplied `destDir`
 
 Returns
 	imageDescription, configDescription, config, imageLayers, error

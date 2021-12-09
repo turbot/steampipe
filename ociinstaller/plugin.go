@@ -12,7 +12,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// InstallPlugin :: Install a plugin from an OCI Image
+// InstallPlugin installs a plugin from an OCI Image
 func InstallPlugin(ctx context.Context, imageRef string) (*SteampipeImage, error) {
 	tempDir := NewTempDir(imageRef)
 	defer tempDir.Delete()
