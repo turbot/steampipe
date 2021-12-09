@@ -135,7 +135,3 @@ func (m *ModVersionConstraint) cleanName() hcl.Diagnostics {
 func (m *ModVersionConstraint) setFilePath() {
 	m.FilePath = strings.TrimPrefix(m.FilePath, filePrefix)
 }
-
-func ModVersionFullName(name string, version *semver.Version) string {
-	return fmt.Sprintf("%s@%s", name, version.Original())
-}
