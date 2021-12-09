@@ -31,3 +31,7 @@ func (c Constraints) Check(v *semver.Version) bool {
 func (c Constraints) Validate(v *semver.Version) (bool, []error) {
 	return c.constraint.Validate(v)
 }
+
+func (c Constraints) Equals(other *Constraints) bool {
+	return c.Original == other.Original
+}
