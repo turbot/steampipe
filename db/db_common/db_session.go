@@ -9,7 +9,7 @@ import (
 
 // DatabaseSession wraps over the raw database/sql.Conn and also allows for retaining useful instrumentation
 type DatabaseSession struct {
-	BackendPid  int64                 `json:"backend_pid"`
+	BackendPid  uint32                `json:"backend_pid"`
 	LifeCycle   *utils.LifecycleTimer `json:"lifecycle"`
 	UsedCount   int                   `json:"used"`
 	LastUsed    time.Time             `json:"last_used"`
@@ -20,7 +20,7 @@ type DatabaseSession struct {
 	Connection *sql.Conn `json:"-"`
 }
 
-func NewDBSession(backendPid int64) *DatabaseSession {
+func NewDBSession(backendPid uint32) *DatabaseSession {
 	return &DatabaseSession{
 		LifeCycle:  utils.NewLifecycleTimer(),
 		BackendPid: backendPid,

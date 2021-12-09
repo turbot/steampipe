@@ -227,7 +227,7 @@ func (c *LocalDbClient) setUserSearchPath(ctx context.Context) ([]string, error)
 	var queries []string
 	for _, row := range res.Rows {
 		rowResult := row.(*queryresult.RowResult)
-		user := string(rowResult.Data[0].([]uint8))
+		user := string(rowResult.Data[0].(string))
 		if user == "root" {
 			continue
 		}
