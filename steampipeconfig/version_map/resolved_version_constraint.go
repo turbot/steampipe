@@ -3,7 +3,8 @@ package version_map
 import "github.com/Masterminds/semver"
 
 type ResolvedVersionConstraint struct {
-	Name       string
+	Name string
+	// Alias string
 	Version    *semver.Version
 	Constraint string
 }

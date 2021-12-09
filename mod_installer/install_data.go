@@ -68,7 +68,6 @@ func (s *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconf
 func (s *InstallData) addExisting(name string, version *semver.Version, parent *modconfig.Mod) {
 	// update lock
 	modVersion := parent.Requires.GetModDependency(name)
-	s.Lock.InstallCache.Add(name, version, modVersion.Constraint, parent.Name())
 	// update list of already installed items
 	s.AlreadyInstalled.Add(name, &version_map.ResolvedVersionConstraint{
 		Name:       name,

@@ -46,7 +46,8 @@ func modInstallCmd() *cobra.Command {
 `,
 	}
 
-	cmdconfig.OnCmd(cmd)
+	cmdconfig.OnCmd(cmd).
+		AddBoolFlag(constants.ArgTidy, "", true, "Remove unreferenced mods after installation")
 	return cmd
 }
 
@@ -125,6 +126,7 @@ func getRequiredModVersionsFromArgs(modsArgs []string) (version_map.VersionConst
 			errors = append(errors, err)
 			continue
 		}
+		// TODO include alias in key
 		mods[modVersion.Name] = modVersion
 	}
 	if len(errors) > 0 {

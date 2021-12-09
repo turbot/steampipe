@@ -10,19 +10,19 @@ import (
 // VersionListMap is a map keyed by dependency name storing a list of versions for each dependency
 type VersionListMap map[string]semver.Collection
 
-func (i VersionListMap) GetVersionSatisfyingRequirement(requiredVersion *modconfig.ModVersionConstraint) *semver.Version {
-	// is this dependency installed
-	versions, ok := i[requiredVersion.Name]
-	if !ok {
-		return nil
-	}
-	for _, v := range versions {
-		if requiredVersion.Constraint.Check(v) {
-			return v
-		}
-	}
-	return nil
-}
+//func (i VersionListMap) GetVersionSatisfyingRequirement(requiredVersion *modconfig.ModVersionConstraint) *semver.Version {
+//	// is this dependency installed
+//	versions, ok := i[requiredVersion.Name]
+//	if !ok {
+//		return nil
+//	}
+//	for _, v := range versions {
+//		if requiredVersion.Constraint.Check(v) {
+//			return v
+//		}
+//	}
+//	return nil
+//}
 
 func (i VersionListMap) Add(name string, version *semver.Version) {
 	versions := append(i[name], version)

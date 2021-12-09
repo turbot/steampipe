@@ -102,7 +102,7 @@ func loadModDependencies(mod *modconfig.Mod, runCtx *parse.RunContext) error {
 
 		for _, requiredModVersion := range mod.Requires.Mods {
 			// if we have a locked version, update the required version to reflect this
-			lockedVersion, err := runCtx.WorkspaceLock.GetLockedModVersion(requiredModVersion, mod)
+			lockedVersion, err := runCtx.WorkspaceLock.GetLockedModVersionConstraint(requiredModVersion, mod)
 			if err != nil {
 				errors = append(errors, err)
 				continue
