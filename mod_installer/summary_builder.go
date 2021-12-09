@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+
 	"github.com/turbot/steampipe/steampipeconfig/version_map"
 
 	"github.com/turbot/steampipe/utils"
@@ -28,14 +30,14 @@ func BuildGetSummary(installData *InstallData, requiredVersions version_map.Vers
 		if resolvedVersions, ok := installData.RecentlyInstalled[name]; ok {
 			for _, v := range resolvedVersions {
 				if v.Constraint == versionConstraint.Constraint.Original {
-					installed = append(installed, modVersionFullName(name, v.Version))
+					installed = append(installed, modconfig.ModVersionFullName(name, v.Version))
 					break
 				}
 			}
 		} else if resolvedVersions, ok := installData.AlreadyInstalled[name]; ok {
 			for _, v := range resolvedVersions {
 				if v.Constraint == versionConstraint.Constraint.Original {
-					alreadyInstalled = append(alreadyInstalled, modVersionFullName(name, v.Version))
+					alreadyInstalled = append(alreadyInstalled, modconfig.ModVersionFullName(name, v.Version))
 					break
 				}
 			}

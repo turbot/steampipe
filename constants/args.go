@@ -38,6 +38,7 @@ const (
 	ArgConnectionString  = "connection-string"
 	ArgCheckDisplayWidth = "check-display-width"
 	ArgShow              = "show"
+	ArgTidy              = "tidy"
 )
 
 /// metaquery mode arguments
