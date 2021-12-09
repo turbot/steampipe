@@ -35,6 +35,7 @@ var outputFormatters FormatterMap = FormatterMap{
 	constants.OutputFormatBrief:    &TextFormatter{},
 	constants.OutputFormatHTML:     &HTMLFormatter{},
 	constants.OutputFormatMarkdown: &MarkdownFormatter{},
+	constants.OutputFormatNUnit3:   &NUnit3Formatter{},
 }
 
 var exportFormatters FormatterMap = FormatterMap{
@@ -42,6 +43,7 @@ var exportFormatters FormatterMap = FormatterMap{
 	constants.OutputFormatJSON:     &JSONFormatter{},
 	constants.OutputFormatHTML:     &HTMLFormatter{},
 	constants.OutputFormatMarkdown: &MarkdownFormatter{},
+	constants.OutputFormatNUnit3:   &NUnit3Formatter{},
 }
 
 type CheckExportTarget struct {
@@ -90,6 +92,8 @@ func InferFormatFromExportFileName(filename string) (string, error) {
 		return constants.OutputFormatHTML, nil
 	case ".md", ".markdown":
 		return constants.OutputFormatMarkdown, nil
+	case ".xml":
+		return constants.OutputFormatNUnit3, nil
 	default:
 		// could not infer format
 		return "", fmt.Errorf("could not infer valid export format from filename '%s'", filename)

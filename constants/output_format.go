@@ -10,4 +10,5 @@ const (
 	OutputFormatMarkdown = "md"
 	OutputFormatTable    = "table"
 	OutputFormatLine     = "line"
+	OutputFormatNUnit3    = "nunit3"
 )

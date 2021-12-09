@@ -285,3 +285,19 @@ func TestHtmlFormatter(t *testing.T) {
 		t.FailNow()
 	}
 }
+
+// test and expected output to be added after implementation
+const expectedNUnit3Output = ``
+
+func TestNUnit3Formatter(t *testing.T) {
+	f := new(NUnit3Formatter)
+	reader, _ := f.Format(context.Background(), tree)
+	b := bytes.NewBufferString("")
+	_, _ = io.Copy(b, reader)
+	output := b.String()
+	if output != expectedNUnit3Output {
+		t.Log(`"expected" is equal to "output"`)
+		t.Log(output)
+		t.FailNow()
+	}
+}
