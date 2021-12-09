@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/utils"
@@ -100,27 +101,27 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 	return sessionResult
 }
 
-func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64, error) {
+func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, uint32, error) {
 	backoff, err := retry.NewFibonacci(100 * time.Millisecond)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	retries := 0
 	var session *sql.Conn
-	var backendPid int64
+	var backendPid uint32
+
+	retries := 0
 	const getSessionMaxRetries = 10
 	err = retry.Do(ctx, retry.WithMaxRetries(getSessionMaxRetries, backoff), func(retryLocalCtx context.Context) (e error) {
 		if utils.IsContextCancelled(retryLocalCtx) {
-			return ctx.Err()
+			return retryLocalCtx.Err()
 		}
-
+		// get a database connection from the pool
 		session, err = c.dbClient.Conn(retryLocalCtx)
 		if err != nil {
 			retries++
 			return retry.RetryableError(err)
 		}
-		backendPid, err = db_common.GetBackendPid(retryLocalCtx, session)
 		if err != nil {
 			session.Close()
 			retries++
@@ -137,5 +138,11 @@ func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, int64,
 	if retries > 0 {
 		log.Printf("[TRACE] getSessionWithRetries succeeded after %d retries", retries)
 	}
+
+	session.Raw(func(driverConn interface{}) error {
+		backendPid = driverConn.(*stdlib.Conn).Conn().PgConn().PID()
+		return nil
+	})
+
 	return session, backendPid, nil
 }
