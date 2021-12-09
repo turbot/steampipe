@@ -85,21 +85,24 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 		AddMods:       make(version_map.VersionConstraintMap),
 	}
 
-	// load lock file - ignore errors
-	workspaceLock, _ := version_map.LoadWorkspaceLock(i.workspacePath)
-
-	// set the NewModVersions - exclude anything already in the lock
-	i.setAddMods(opts.AddMods)
-
-	// create install data
-	i.installData = NewInstallData(workspaceLock)
-
-	// now load workspace mod, creating a default if needed
+	// load workspace mod, creating a default if needed
 	mod, err := i.loadModfile(i.workspacePath, true)
 	if err != nil {
 		return nil, err
 	}
 	i.workspaceMod = mod
+
+	// load lock file
+	workspaceLock, err := version_map.LoadWorkspaceLock(i.workspacePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// set the AddMods - exclude anything already in the mod requires
+	i.setAddMods(opts.AddMods)
+
+	// create install data
+	i.installData = NewInstallData(workspaceLock)
 
 	// if we are updating ensure we have a non empty lock file, and that all mods requested to update are in it
 	if i.updating {
@@ -326,9 +329,11 @@ func (i *ModInstaller) getModRefSatisfyingConstraints(modVersion *modconfig.ModV
 	return NewResolvedModRef(modVersion, version)
 }
 
-func (i *ModInstaller) setAddMods(getMods version_map.VersionConstraintMap) {
-	// TODO
-	//for name, contraint := range getMods{
-	//	!if i.installData.Lock.ContainsModConstraint()
-	//}
+func (i *ModInstaller) setAddMods(addMods version_map.VersionConstraintMap) {
+	for name, contraint := range addMods {
+		// does the workspace mod already have a dependency on this mod - if so DO NOT add to AddMods
+		if !i.workspaceMod.DependsOnMod(name, contraint.Constraint) {
+			i.AddMods[name] = contraint
+		}
+	}
 }

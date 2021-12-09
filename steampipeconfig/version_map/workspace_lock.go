@@ -12,8 +12,6 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/utils"
 
-	"github.com/turbot/steampipe/version"
-
 	"github.com/Masterminds/semver"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
@@ -29,21 +27,20 @@ type WorkspaceLock struct {
 }
 
 func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
-	lockPath := constants.WorkspaceLockPath(workspacePath)
-	if !helpers.FileExists(lockPath) {
-		return nil, nil
-	}
-
-	fileContent, err := os.ReadFile(lockPath)
-	if err != nil {
-		log.Printf("[TRACE] error reading %s: %s\n", lockPath, err.Error())
-		return nil, err
-	}
 	var installCache = make(DependencyVersionMap)
-	err = json.Unmarshal(fileContent, &installCache)
-	if err != nil {
-		log.Printf("[TRACE] failed to unmarshal %s: %s\n", lockPath, err.Error())
-		return nil, nil
+	lockPath := constants.WorkspaceLockPath(workspacePath)
+	if helpers.FileExists(lockPath) {
+
+		fileContent, err := os.ReadFile(lockPath)
+		if err != nil {
+			log.Printf("[TRACE] error reading %s: %s\n", lockPath, err.Error())
+			return nil, err
+		}
+		err = json.Unmarshal(fileContent, &installCache)
+		if err != nil {
+			log.Printf("[TRACE] failed to unmarshal %s: %s\n", lockPath, err.Error())
+			return nil, nil
+		}
 	}
 	res := &WorkspaceLock{
 		WorkspacePath:        workspacePath,
@@ -122,11 +119,12 @@ func (l *WorkspaceLock) setMissing(installedMods VersionListMap) {
 	for parent, deps := range l.InstallCache {
 		// deps is a map of dep name to resolved contraint list
 		// flatten and iterate
-		for name, resolvedConstraint := range deps.FlatMap() {
-			// build full name and check map of installed
-			fullName := modconfig.ModVersionFullName(name, resolvedConstraint.Version)
+		depsFlat := deps.FlatMap()
+		for fullName, resolvedConstraint := range depsFlat {
 			if !flatInstalled[fullName] {
-				// remove this item from th einstall cache and add into missing
+				// get the mod name from the constraint (fullName includes the version)
+				name := resolvedConstraint.Name
+				// remove this item from the install cache and add into missing
 				l.MissingVersions[parent].Add(name, resolvedConstraint)
 				l.InstallCache[parent].Remove(name, resolvedConstraint)
 			}
@@ -171,12 +169,13 @@ func (l *WorkspaceLock) GetLockedModVersion(requiredModVersion *modconfig.ModVer
 		return nil, fmt.Errorf("parent %s has more than 1 version of dependency %s", parent.Name(), requiredModVersion.Name)
 	}
 	lockedVersion := lockedVersions[0]
+	lockedVersionFullName := modconfig.ModVersionFullName(requiredModVersion.Name, lockedVersion.Version)
 	// verify the locked version satisfies the version constraint
 	if !requiredModVersion.Constraint.Check(lockedVersion.Version) {
-		return nil, fmt.Errorf("failed to install dependencies for %s - locked version %s@%s does not meet the constraint %s", parent.Name(), modconfig.ModVersionFullName(requiredModVersion.Name, lockedVersion.Version), requiredModVersion.Constraint.Original)
+		return nil, fmt.Errorf("failed to install dependencies for %s - locked version %s does not meet the constraint %s", parent.Name(), lockedVersionFullName, requiredModVersion.Constraint.Original)
 	}
 	// create a new requiredModVersion using the locked version
-	return modconfig.NewModVersionConstraint(fmt.Sprintf("%s@%s", requiredModVersion.Name, lockedVersion))
+	return modconfig.NewModVersionConstraint(lockedVersionFullName)
 }
 
 // ContainsMod returns whether the lockfile contains any version of the given mod
@@ -197,7 +196,8 @@ func (l *WorkspaceLock) ContainsModVersion(modName string, modVersion *semver.Ve
 		for lockName, lockVersions := range modVersionMap {
 			// we only support a single version at the moment but iterate anyway - we validate elsewhere
 			for _, lockVersion := range lockVersions {
-				if lockName == modName && lockVersion.Version.Equal(modVersion) {
+				// TODO consider handling of metadata
+				if lockName == modName && lockVersion.Version.Equal(modVersion) && lockVersion.Version.Metadata() == modVersion.Metadata() {
 					return true
 				}
 			}
@@ -206,16 +206,16 @@ func (l *WorkspaceLock) ContainsModVersion(modName string, modVersion *semver.Ve
 	return false
 }
 
-func (l *WorkspaceLock) ContainsModConstraint(modName string, constraint *version.Constraints) bool {
-	for _, modVersionMap := range l.InstallCache {
-		for lockName, lockVersions := range modVersionMap {
-			// we only support a single version at the moment but iterate anyway - we validate elsewhere
-			for _, lockVersion := range lockVersions {
-				if lockName == modName && lockVersion.Constraint == constraint.Original {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
+//func (l *WorkspaceLock) ContainsModConstraint(modName string, constraint *version.Constraints) bool {
+//	for _, modVersionMap := range l.InstallCache {
+//		for lockName, lockVersions := range modVersionMap {
+//			// we only support a single version at the moment but iterate anyway - we validate elsewhere
+//			for _, lockVersion := range lockVersions {
+//				if lockName == modName && lockVersion.Constraint == constraint.Original {
+//					return true
+//				}
+//			}
+//		}
+//	}
+//	return false
+//}
