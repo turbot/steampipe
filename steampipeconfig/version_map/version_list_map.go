@@ -1,7 +1,6 @@
 package version_map
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/Masterminds/semver"
@@ -38,7 +37,7 @@ func (m VersionListMap) FlatMap() map[string]bool {
 	var res = make(map[string]bool)
 	for name, versions := range m {
 		for _, version := range versions {
-			key := fmt.Sprintf("%s@%s", name, version)
+			key := modconfig.ModVersionFullName(name, version)
 			res[key] = true
 		}
 	}

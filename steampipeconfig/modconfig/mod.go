@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/turbot/steampipe/version"
+
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/turbot/steampipe/constants"
 
@@ -726,4 +728,7 @@ func (m *Mod) Save() error {
 
 func (m *Mod) HasDependentMods() bool {
 	return m.Requires != nil && len(m.Requires.Mods) > 0
+}
+func (m *Mod) DependsOnMod(name string, constraint *version.Constraints) bool {
+	return m.Requires != nil && m.Requires.ContainsMod(name, constraint)
 }
