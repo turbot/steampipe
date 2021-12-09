@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -32,7 +32,7 @@ func InstallWorkspaceDependencies(opts *InstallOpts) (*InstallData, error) {
 	return installer.installData, nil
 }
 
-func GetAvailableUpdates(opts *InstallOpts) (installedMods modconfig.WorkspaceLock, availableUpdates modconfig.WorkspaceLock, err error) {
+func GetAvailableUpdates(opts *InstallOpts) (installedMods version_map.DependencyVersionMap, availableUpdates version_map.DependencyVersionMap, err error) {
 	// install workspace dependencies
 	installer, err := NewModInstaller(opts)
 	if err != nil {
@@ -42,6 +42,6 @@ func GetAvailableUpdates(opts *InstallOpts) (installedMods modconfig.WorkspaceLo
 	if err != nil {
 		return
 	}
-	installedMods = installer.installData.Lock
+	installedMods = installer.installData.Lock.InstallCache
 	return
 }

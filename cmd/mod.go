@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
+
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/spf13/cobra"
@@ -103,7 +105,7 @@ func runModGetCmd(cmd *cobra.Command, args []string) {
 	}
 	// just call install, passing GetMods option
 	opts := &mod_installer.InstallOpts{
-		GetMods:       requiredModVersions,
+		AddMods:       requiredModVersions,
 		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
 	}
 	installData, err := mod_installer.InstallWorkspaceDependencies(opts)
@@ -113,9 +115,9 @@ func runModGetCmd(cmd *cobra.Command, args []string) {
 	fmt.Printf(getSummary)
 }
 
-func getRequiredModVersionsFromArgs(modsArgs []string) (modconfig.VersionConstraintMap, error) {
+func getRequiredModVersionsFromArgs(modsArgs []string) (version_map.VersionConstraintMap, error) {
 	var errors []error
-	mods := make(modconfig.VersionConstraintMap, len(modsArgs))
+	mods := make(version_map.VersionConstraintMap, len(modsArgs))
 	for _, modArg := range modsArgs {
 		// create mod version from arg
 		modVersion, err := modconfig.NewModVersionConstraint(modArg)
@@ -225,10 +227,10 @@ func showUpdates() {
 	fmt.Println(mod_installer.BuildAvailableUpdateSummary(current, updates))
 }
 
-func doUpdates(updateMods modconfig.VersionConstraintMap) {
+func doUpdates(updateMods version_map.VersionConstraintMap) {
 	opts := &mod_installer.InstallOpts{
 		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
-		ShouldUpdate:  true,
+		Updating:      true,
 		UpdateMods:    updateMods,
 	}
 
