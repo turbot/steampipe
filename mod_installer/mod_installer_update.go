@@ -5,14 +5,18 @@ import (
 	"log"
 	"strings"
 
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
 )
 
 // we are performing an update - verify that we have a lock file and andy specific mods requested for update
 // exist in the lock file
-func (i *ModInstaller) verifyUpdates(updateMods modconfig.VersionConstraintMap) error {
-	if len(i.installData.Lock) == 0 {
+func (i *ModInstaller) verifyUpdates(updateMods version_map.VersionConstraintMap) error {
+	// TODO encapsulate this into lock and use from workspace load as well
+	if len(i.installData.Lock.InstallCache) == 0 {
 		return fmt.Errorf("no installation cache found - run 'steampipe plugin install'")
+	}
+	if len(i.installData.Lock.MissingVersions) > 0 {
+		return fmt.Errorf("installation cache out of sync with installed mods - run 'steampipe plugin install'")
 	}
 	i.UpdateMods = make(map[string]bool)
 
@@ -34,7 +38,7 @@ func (i *ModInstaller) verifyUpdates(updateMods modconfig.VersionConstraintMap) 
 
 func (i *ModInstaller) shouldUpdate(modName string) bool {
 	log.Printf("[TRACE] ModInstaller shouldUpdate %s", modName)
-	if !i.updateDependencies {
+	if !i.updating {
 		log.Printf("[TRACE] updates not enabled - returning false")
 		return false
 	}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
 
 	"github.com/turbot/steampipe/utils"
 )
@@ -12,7 +12,7 @@ import (
 func BuildInstallSummary(installData *InstallData) string {
 	var installedString, alreadyInstalledString string
 
-	installed := installData.RecentlyInstalled.Flat()
+	installed := installData.RecentlyInstalled.FlatNames()
 	if installCount := len(installed); installCount > 0 {
 		installedString = fmt.Sprintf("\nInstalled %d %s:\n\t%s\n", installCount, utils.Pluralize("mod", installCount), strings.Join(installed, "\n\t"))
 	}
@@ -20,7 +20,7 @@ func BuildInstallSummary(installData *InstallData) string {
 	return res
 }
 
-func BuildGetSummary(installData *InstallData, requiredVersions modconfig.VersionConstraintMap) string {
+func BuildGetSummary(installData *InstallData, requiredVersions version_map.VersionConstraintMap) string {
 	// for every required version, see whether we inmstalled it or if it was already installed
 	var installed, alreadyInstalled []string
 
@@ -53,7 +53,7 @@ func BuildGetSummary(installData *InstallData, requiredVersions modconfig.Versio
 }
 
 func BuildUpdateSummary(installData *InstallData) string {
-	updated := installData.RecentlyInstalled.Flat()
+	updated := installData.RecentlyInstalled.FlatNames()
 	if len(updated) == 0 {
 		return "All mods are up to date\n"
 	}
@@ -61,22 +61,23 @@ func BuildUpdateSummary(installData *InstallData) string {
 	return fmt.Sprintf("\nUpdated %d %s:\n\t%s\n", len(updated), utils.Pluralize("update", len(updated)), strings.Join(updated, "\n\t"))
 }
 
-func BuildAvailableUpdateSummary(current, updates modconfig.WorkspaceLock) string {
+func BuildAvailableUpdateSummary(current, updates version_map.DependencyVersionMap) string {
 	if len(updates) == 0 {
 		return "No updated mods available"
 	}
 
+	// TODO
 	updateCount := 0
 	var strs []string
-	for parent, deps := range updates {
-		strs = append(strs, fmt.Sprintf("required by %s:", parent))
-		for name, update := range deps {
-			// get the current installed version
-			currentDep := current[parent][name]
-			strs = append(strs, fmt.Sprintf("\tmod: %s, version constraint %s, currently installed %s, available %s", name, update.Constraint, currentDep.Version, update.Version))
-			updateCount++
-		}
-	}
+	//for parent, deps := range updates {
+	//	strs = append(strs, fmt.Sprintf("required by %s:", parent))
+	//	for name, update := range deps {
+	//		// get the current installed version
+	//		currentDep := current[parent][name]
+	//		strs = append(strs, fmt.Sprintf("\tmod: %s, version constraint %s, currently installed %s, available %s", name, update.Constraint, currentDep.Version, update.Version))
+	//		updateCount++
+	//	}
+	//}
 
 	return strings.Join(append([]string{fmt.Sprintf("%d %s found:", updateCount, utils.Pluralize("update", updateCount))}, strs...), "\n")
 }
