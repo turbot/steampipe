@@ -43,7 +43,7 @@ func (c *LocalDbClient) refreshConnections() *steampipeconfig.RefreshConnectionR
 
 	// now build list of necessary queries to perform the update
 	connectionQueries, otherRes := c.buildConnectionUpdateQueries(connectionUpdates)
-	log.Printf("[TRACE] buildConnectionUpdateQueries returned")
+	log.Printf("[TRACE] buildConnectionUpdateQueries returned\n")
 	// merge results into local results
 	res.Merge(otherRes)
 	if res.Error != nil {
@@ -85,7 +85,13 @@ func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampip
 	var res *steampipeconfig.RefreshConnectionResult
 	numUpdates := len(connectionUpdates.Update)
 
-	log.Printf("[TRACE] buildConnectionUpdateQueries: num updates %d", numUpdates)
+	log.Printf("[TRACE] buildConnectionUpdateQueries: num updates %d\n", numUpdates)
+
+	log.Printf("[TRACE] UPDATES:")
+	for name, connectionData := range connectionUpdates.Update {
+		log.Printf("[TRACE] %s : %v:\n", name, connectionData)
+
+	}
 
 	if numUpdates > 0 {
 		// find any plugins which use a newer sdk version than steampipe.
@@ -96,9 +102,9 @@ func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampip
 
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
 		connectionQueries = getSchemaQueries(validatedUpdates, validationFailures)
-		log.Printf("[TRACE] getSchemaQueries")
+		log.Printf("[TRACE] getSchemaQueries\n")
 		if viper.GetBool(constants.ArgSchemaComments) {
-			log.Printf("[TRACE] adding comments queries")
+			log.Printf("[TRACE] adding comments queries\n")
 			// add comments queries for validated connections
 			connectionQueries = append(connectionQueries, getCommentQueries(validatedPlugins)...)
 		}
@@ -127,24 +133,24 @@ func (c *LocalDbClient) updateConnectionMap() error {
 func getSchemaQueries(updates steampipeconfig.ConnectionDataMap, failures []*steampipeconfig.ValidationFailure) []string {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("[TRACE]getSchemaQueries had panic %v", r)
+			log.Printf("[TRACE] getSchemaQueries had panic %v\n", r)
 			panic(r)
 		}
 	}()
 	var schemaQueries []string
-	for connectionName, plugin := range updates {
-		log.Printf("[TRACE] getSchemaQueries connectionName %s plugin %v", connectionName, plugin)
-		if plugin == nil {
-			log.Printf("[TRACE] getSchemaQueries NIL PLUGIN")
+	for connectionName, connectionData := range updates {
+		log.Printf("[TRACE] getSchemaQueries connectionName %s plugin %v\n", connectionName, connectionData)
+		if connectionData == nil {
+			log.Printf("[TRACE] getSchemaQueries NIL CONNECTION DATA")
 		}
-		remoteSchema := plugin_manager.PluginFQNToSchemaName(plugin.Plugin)
-		log.Printf("[TRACE] _____update connection %s, plugin Name %s, schema %s, schemaQueries %v\n ", connectionName, plugin.Plugin, remoteSchema, schemaQueries)
+		remoteSchema := plugin_manager.PluginFQNToSchemaName(connectionData.Plugin)
+		log.Printf("[TRACE] _____update connection %s, plugin Name %s, schema %s, schemaQueries %v\n ", connectionName, connectionData.Plugin, remoteSchema, schemaQueries)
 		queries := updateConnectionQuery(connectionName, remoteSchema)
-		log.Printf("[TRACE] updateConnectionQuery returned")
+		log.Printf("[TRACE] updateConnectionQuery returned\n")
 		schemaQueries = append(schemaQueries, queries...)
 		log.Printf("[TRACE] append(schemaQueries, queries...) returned")
 	}
-	log.Printf("[TRACE] finished adding updates")
+	log.Printf("[TRACE] finished adding updates\n")
 	for _, failure := range failures {
 		log.Printf("[TRACE] remove schema for conneciton failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
 		if failure.ShouldDropIfExists {
@@ -152,22 +158,22 @@ func getSchemaQueries(updates steampipeconfig.ConnectionDataMap, failures []*ste
 		}
 	}
 
-	log.Printf("[TRACE] returning schema queries")
+	log.Printf("[TRACE] returning schema queries\n")
 	return schemaQueries
 }
 
 func getCommentQueries(plugins []*steampipeconfig.ConnectionPlugin) []string {
-	log.Printf("[TRACE] getCommentQueries")
+	log.Printf("[TRACE] getCommentQueries\n")
 	var commentQueries []string
 	for _, plugin := range plugins {
 		commentQueries = append(commentQueries, commentsQuery(plugin)...)
 	}
-	log.Printf("[TRACE] getCommentQueries finished")
+	log.Printf("[TRACE] getCommentQueries finished\n")
 	return commentQueries
 }
 
 func updateConnectionQuery(localSchema, remoteSchema string) []string {
-	log.Printf("[TRACE] updateConnectionQuery localSchema %s remoteSchema %s", localSchema, remoteSchema)
+	log.Printf("[TRACE] updateConnectionQuery localSchema %s remoteSchema %s\n", localSchema, remoteSchema)
 
 	// escape the name
 	localSchema = db_common.PgEscapeName(localSchema)
@@ -196,12 +202,12 @@ func updateConnectionQuery(localSchema, remoteSchema string) []string {
 		// Import the foreign schema into this connection.
 		fmt.Sprintf(`import foreign schema "%s" from server steampipe into %s;`, remoteSchema, localSchema),
 	}
-	log.Printf("[TRACE] updateConnectionQuery returning %v", res)
+	log.Printf("[TRACE] updateConnectionQuery returning %v\n", res)
 	return res
 }
 
 func commentsQuery(p *steampipeconfig.ConnectionPlugin) []string {
-	log.Printf("[TRACE] commentsQuery for %s", p.PluginName)
+	log.Printf("[TRACE] commentsQuery for %s\n", p.PluginName)
 	var statements []string
 	for t, schema := range p.Schema.Schema {
 		table := db_common.PgEscapeName(t)
@@ -218,7 +224,7 @@ func commentsQuery(p *steampipeconfig.ConnectionPlugin) []string {
 			}
 		}
 	}
-	log.Printf("[TRACE] commentsQuery finished")
+	log.Printf("[TRACE] commentsQuery finished\n")
 
 	return statements
 }
