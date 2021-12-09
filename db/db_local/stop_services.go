@@ -30,7 +30,7 @@ const (
 )
 
 // ShutdownService stops the database instance if the given 'invoker' matches
-func ShutdownService(ctx context.Context, invoker constants.Invoker) {
+func ShutdownService(invoker constants.Invoker) {
 	utils.LogTime("db_local.ShutdownService start")
 	defer utils.LogTime("db_local.ShutdownService end")
 
@@ -43,7 +43,8 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	}
 
 	// how many clients are connected
-	count, _ := GetCountOfConnectedClients(ctx)
+	// under a fresh context
+	count, _ := GetCountOfConnectedClients(context.Background())
 	if count > 0 {
 		// there are other clients connected to the database
 		// we can't stop the DB.
@@ -104,16 +105,17 @@ func StopServices(force bool, invoker constants.Invoker, spinner *spinner.Spinne
 	pluginManagerStopError := plugin_manager.Stop()
 
 	// stop the DB Service
-	stopResult, dbStopError := stopDBService(context.Background(), spinner, force)
+	stopResult, dbStopError := stopDBService(spinner, force)
 
 	return stopResult, utils.CombineErrors(dbStopError, pluginManagerStopError)
 }
 
-func stopDBService(ctx context.Context, spinner *spinner.Spinner, force bool) (StopStatus, error) {
+func stopDBService(spinner *spinner.Spinner, force bool) (StopStatus, error) {
 	if force {
 		// check if we have a process from another install-dir
 		display.UpdateSpinnerMessage(spinner, "Checking for running instances...")
-		killInstanceIfAny(ctx)
+		// do not use a context that can be cancelled
+		killInstanceIfAny(context.Background())
 		return ServiceStopped, nil
 	}
 

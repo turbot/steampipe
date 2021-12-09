@@ -41,7 +41,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker) (db_common.C
 
 	client, err := NewLocalClient(ctx, invoker)
 	if err != nil {
-		ShutdownService(ctx, invoker)
+		ShutdownService(invoker)
 	}
 	return client, err
 }
@@ -78,7 +78,7 @@ func (c *LocalDbClient) Close() error {
 	}
 	// no context to pass on - use background
 	// we shouldn't do this in a context that can be cancelled anyway
-	ShutdownService(context.Background(), c.invoker)
+	ShutdownService(c.invoker)
 	return nil
 }
 

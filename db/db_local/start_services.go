@@ -196,13 +196,13 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		return res.SetError(err)
 	}
 
-	// release the process - let the OS adopt it, so that we can exit
-	err = postgresCmd.Process.Release()
+	err = ensureService(ctx, databaseName)
 	if err != nil {
 		return res.SetError(err)
 	}
 
-	err = ensureService(ctx, databaseName)
+	// release the process - let the OS adopt it, so that we can exit
+	err = postgresCmd.Process.Release()
 	if err != nil {
 		return res.SetError(err)
 	}
@@ -232,6 +232,7 @@ func ensureService(ctx context.Context, databaseName string) error {
 		return err
 	}
 
+	// ensure permissions for writing to temp tables
 	err = ensureTempTablePermissions(ctx, databaseName, rootClient)
 	if err != nil {
 		return err
@@ -490,7 +491,7 @@ func ensurePgExtensions(ctx context.Context, rootClient *sql.DB) error {
 // ensures that the 'steampipe' foreign server exists
 //  (re)install FDW and creates server if it doesn't
 func ensureSteampipeServer(ctx context.Context, rootClient *sql.DB) error {
-	out := rootClient.QueryRow("select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
+	out := rootClient.QueryRowContext(ctx, "select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
 	var serverName string
 	err := out.Scan(&serverName)
 	// if there is an error, we need to reinstall the foreign server
@@ -508,7 +509,7 @@ func ensureCommandSchema(ctx context.Context, rootClient *sql.DB) error {
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CacheCommandTable),
 	)
 	for _, statement := range commandSchemaStatements {
-		if _, err := rootClient.Exec(statement); err != nil {
+		if _, err := rootClient.ExecContext(ctx, statement); err != nil {
 			return err
 		}
 	}
@@ -518,7 +519,7 @@ func ensureCommandSchema(ctx context.Context, rootClient *sql.DB) error {
 // ensures that the 'steampipe_users' role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
 func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *sql.DB) error {
-	_, err := rootClient.Exec(fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
+	_, err := rootClient.ExecContext(ctx, fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
 	if err != nil {
 		return err
 	}

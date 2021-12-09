@@ -228,9 +228,12 @@ func runServiceInForeground(invoker constants.Invoker) {
 			}
 		case <-sigIntChannel:
 			fmt.Print("\r")
-			// we don't have a context to pass on - use Background
+			// if we have received this signal, then the user probably wants to shut down
+			// everything. Shutdowns MUST NOT happen in cancellable contexts
 			count, err := db_local.GetCountOfConnectedClients(context.Background())
 			if err != nil {
+				// report the error in the off chance that there's one
+				utils.ShowError(err)
 				return
 			}
 
@@ -244,7 +247,6 @@ func runServiceInForeground(invoker constants.Invoker) {
 			}
 			fmt.Println("Stopping Steampipe service.")
 
-			// no context to pass on. use bacckground
 			db_local.StopServices(false, invoker, nil)
 			fmt.Println("Steampipe service stopped.")
 			return
