@@ -5,6 +5,8 @@ import (
 	"log"
 	"strings"
 
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -38,7 +40,7 @@ type RunContext struct {
 	// the mod which is currently being parsed
 	CurrentMod *modconfig.Mod
 	// the workspace lock data
-	WorkspaceLock    modconfig.WorkspaceLock
+	WorkspaceLock    *version_map.WorkspaceLock
 	UnresolvedBlocks map[string]*unresolvedBlock
 	FileData         map[string][]byte
 	// the eval context used to decode references in HCL
@@ -64,7 +66,7 @@ type RunContext struct {
 
 func NewRunContext(workspacePath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
 	// load the workspace lock
-	workspaceLock, err := modconfig.LoadWorkspaceLock(workspacePath)
+	workspaceLock, err := version_map.LoadWorkspaceLock(workspacePath)
 	if err != nil {
 		log.Printf("failed to load installation cache from %s: %s", workspacePath, err)
 	}

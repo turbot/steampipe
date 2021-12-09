@@ -5,11 +5,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
 
 	"github.com/Masterminds/semver"
 	git "github.com/go-git/go-git/v5"
-	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
@@ -70,10 +70,9 @@ type ModInstaller struct {
 	installData *InstallData
 
 	// should we update dependencies to newer versions if they exist
-	updateDependencies bool
-	// are dependencies being added to the workspace with a get command
-	// (if so, ignore locked version)
-	GetMods modconfig.VersionConstraintMap
+	updating bool
+	// are dependencies being added to the workspace
+	AddMods version_map.VersionConstraintMap
 	// have specific mods been specified to update
 	UpdateMods map[string]bool
 }
@@ -82,27 +81,18 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	i := &ModInstaller{
 		workspacePath: opts.WorkspacePath,
 		modsPath:      constants.WorkspaceModPath(opts.WorkspacePath),
-
-		GetMods:            opts.GetMods,
-		updateDependencies: opts.ShouldUpdate,
-	}
-
-	// build list of ALL currently installed mods - by searching through the mods folder and finding mod.sp files
-	installedMods, err := i.getInstalledMods()
-	if err != nil {
-		return nil, err
+		updating:      opts.Updating,
+		AddMods:       make(version_map.VersionConstraintMap),
 	}
 
 	// load lock file - ignore errors
-	workspaceLock, _ := modconfig.LoadWorkspaceLock(i.workspacePath)
-	// if we failed to load, create an empty map
-	if workspaceLock == nil {
-		log.Printf("[TRACE] no workspace.lock file loaded - creating a new one")
-		workspaceLock = make(modconfig.WorkspaceLock)
-	}
+	workspaceLock, _ := version_map.LoadWorkspaceLock(i.workspacePath)
+
+	// set the NewModVersions - exclude anything already in the lock
+	i.setAddMods(opts.AddMods)
 
 	// create install data
-	i.installData = NewInstallData(installedMods, workspaceLock)
+	i.installData = NewInstallData(workspaceLock)
 
 	// now load workspace mod, creating a default if needed
 	mod, err := i.loadModfile(i.workspacePath, true)
@@ -112,7 +102,7 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	i.workspaceMod = mod
 
 	// if we are updating ensure we have a non empty lock file, and that all mods requested to update are in it
-	if i.updateDependencies {
+	if i.updating {
 		if err := i.verifyUpdates(opts.UpdateMods); err != nil {
 			return nil, err
 		}
@@ -131,8 +121,8 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 	}
 
 	// if we are running 'mod get', add the required mods to the workspace mod requires
-	if len(i.GetMods) > 0 {
-		workspaceMod.AddModDependencies(i.GetMods)
+	if len(i.AddMods) > 0 {
+		workspaceMod.AddModDependencies(i.AddMods)
 	}
 
 	// if there are no dependencies, we have nothing to do
@@ -152,7 +142,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 	}
 
 	// if we are running 'mod get', we are now safe to save the mod file
-	if len(i.GetMods) > 0 {
+	if len(i.AddMods) > 0 {
 		if err := i.workspaceMod.Save(); err != nil {
 			return err
 		}
@@ -170,16 +160,6 @@ func (i *ModInstaller) installModDependenciesRecursively(mods []*modconfig.ModVe
 			errors = append(errors, err)
 			continue
 		}
-		// if we are NOT updating, and have a locked version, update the required version to reflect this
-		//if i.respectLockFile() {
-		//	lockedVersion, err := i.installData.Lock.GetLockedModVersion(requiredModVersion, parent)
-		//	if err != nil {
-		//		return err
-		//	}
-		//	if lockedVersion != nil {
-		//		requiredModVersion = lockedVersion
-		//	}
-		//}
 
 		// check whether there is already a version which satisfies this mod version
 		installedMod, err := i.getInstalledVersionForConstraint(requiredModVersion, availableVersions)
@@ -224,45 +204,41 @@ func (i *ModInstaller) installModDependenciesRecursively(mods []*modconfig.ModVe
 	return utils.CombineErrorsWithPrefix(fmt.Sprintf("%d %s failed to install", len(errors), utils.Pluralize("dependency", len(errors))), errors...)
 }
 
-// if we are updating or 'getting' mods, do NOT respect the lock file
-func (i *ModInstaller) respectLockFile() bool {
-	return !i.updateDependencies && len(i.GetMods) == 0
-}
-
 // check whether there is a mod version installed that satisfies the version constraint (and update requirements)
 func (i *ModInstaller) getInstalledVersionForConstraint(requiredModVersion *modconfig.ModVersionConstraint, availableVersions []*semver.Version) (*modconfig.Mod, error) {
-	log.Printf("[TRACE] getInstalledVersionForConstraint required version %v", requiredModVersion)
+	// TODO
+	//log.Printf("[TRACE] getInstalledVersionForConstraint required version %v", requiredModVersion)
+	//
+	//installedVersion := i.installData.AllInstalled.GetVersionSatisfyingRequirement(requiredModVersion)
+	//if installedVersion == nil {
+	//	log.Printf("[TRACE] no version of %s installed which satisfies version constrain %s", requiredModVersion.Name, requiredModVersion.Constraint.Original)
+	//	return nil, nil
+	//}
+	//log.Printf("[TRACE] found installed version %s@%s", requiredModVersion.Name, installedVersion.Original())
+	//
+	//// so there IS a version installed which satisfies the constraint.
+	//// if we are updating, see if there is a newer verison
+	//if i.shouldUpdate(requiredModVersion.Name) {
+	//	// so we should update if there is a newer version - check if there is
+	//	newerModVersionFound, err := i.newerModVersionFound(requiredModVersion, installedVersion, availableVersions)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	if newerModVersionFound {
+	//		// there is a newer version so we will NOT use the installed version - return nil
+	//		return nil, nil
+	//	}
+	//}
+	//
+	//// so we resolved an installed version which will satisfy
+	//// load the mod
+	//modPath := filepath.Join(i.modsPath, modVersionFullName(requiredModVersion.Name, installedVersion))
+	//installedMod, err := i.loadModfile(modPath, false)
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	installedVersion := i.installData.AllInstalled.GetVersionSatisfyingRequirement(requiredModVersion)
-	if installedVersion == nil {
-		log.Printf("[TRACE] no version of %s installed which satisfies version constrain %s", requiredModVersion.Name, requiredModVersion.Constraint.Original)
-		return nil, nil
-	}
-	log.Printf("[TRACE] found installed version %s@%s", requiredModVersion.Name, installedVersion.Original())
-
-	// so there IS a version installed which satisfies the constraint.
-	// if we are updating, see if there is a newer verison
-	if i.shouldUpdate(requiredModVersion.Name) {
-		// so we should update if there is a newer version - check if there is
-		newerModVersionFound, err := i.newerModVersionFound(requiredModVersion, installedVersion, availableVersions)
-		if err != nil {
-			return nil, err
-		}
-		if newerModVersionFound {
-			// there is a newer version so we will NOT use the installed version - return nil
-			return nil, nil
-		}
-	}
-
-	// so we resolved an installed version which will satisfy
-	// load the mod
-	modPath := filepath.Join(i.modsPath, modVersionFullName(requiredModVersion.Name, installedVersion))
-	installedMod, err := i.loadModfile(modPath, false)
-	if err != nil {
-		return nil, err
-	}
-
-	return installedMod, err
+	return nil, nil
 }
 
 // determine whether there is a newer mod version avoilable which satisfies the dependency version constraint
@@ -275,38 +251,6 @@ func (i *ModInstaller) newerModVersionFound(requiredVersion *modconfig.ModVersio
 		return true, nil
 	}
 	return false, nil
-}
-
-// getInstalledMods returns a map installed mods, and the versions installed for each
-func (i *ModInstaller) getInstalledMods() (modconfig.VersionListMap, error) {
-	// recursively search for all the mod.sp files under the .steampipe/mods folder, then build the mod name from the file path
-	modFiles, err := filehelpers.ListFiles(i.modsPath, &filehelpers.ListOptions{
-		Flags:   filehelpers.FilesRecursive,
-		Include: []string{"**/mod.sp"},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// create result map - a list of version for each mod
-	installedMods := make(modconfig.VersionListMap, len(modFiles))
-	// collect errors
-	var errors []error
-
-	for _, modfilePath := range modFiles {
-		modName, version, err := i.parseModPath(modfilePath)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		// add this mod version to the map
-		installedMods.Add(modName, version)
-	}
-
-	if len(errors) > 0 {
-		return nil, utils.CombineErrors(errors...)
-	}
-	return installedMods, nil
 }
 
 // install a mod
@@ -382,24 +326,9 @@ func (i *ModInstaller) getModRefSatisfyingConstraints(modVersion *modconfig.ModV
 	return NewResolvedModRef(modVersion, version)
 }
 
-// extract the mod name and version from the modfile path
-func (i *ModInstaller) parseModPath(modfilePath string) (modName string, modVersion *semver.Version, err error) {
-	modLongName, err := filepath.Rel(i.modsPath, filepath.Dir(modfilePath))
-	if err != nil {
-		return
-	}
-	// we expect modLongName to be of form github.com/turbot/steampipe-mod-m2@v1.0
-	// split to get the name and version
-	parts := strings.Split(modLongName, "@")
-	if len(parts) != 2 {
-		err = fmt.Errorf("invalid mod path %s", modfilePath)
-		return
-	}
-	modName = parts[0]
-	modVersion, err = semver.NewVersion(parts[1])
-	if err != nil {
-		err = fmt.Errorf("mod path %s has invalid version", modfilePath)
-		return
-	}
-	return
+func (i *ModInstaller) setAddMods(getMods version_map.VersionConstraintMap) {
+	// TODO
+	//for name, contraint := range getMods{
+	//	!if i.installData.Lock.ContainsModConstraint()
+	//}
 }

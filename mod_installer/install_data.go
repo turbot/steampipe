@@ -3,50 +3,47 @@ package mod_installer
 import (
 	"github.com/Masterminds/semver"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
 	"github.com/turbot/steampipe/version"
 )
 
 type InstallData struct {
 	// record of the full dependency tree
-	Lock modconfig.WorkspaceLock
+	Lock *version_map.WorkspaceLock
 
-	// all installed mod versions (some of which may not be required)
-	AllInstalled modconfig.VersionListMap
-	// mod versions which are installed but not needed
-	//Unreferenced VersionListMap
 	// ALL the available versions for each dependency mod(we populate this in a lazy fashion)
-	AllAvailable modconfig.VersionListMap
+	allAvailable version_map.VersionListMap
 
 	// list of dependencies installed by recent install operation
-	RecentlyInstalled modconfig.ResolvedVersionListMap
+	RecentlyInstalled version_map.ResolvedVersionListMap
 	// list of dependencies which were already installed
-	AlreadyInstalled modconfig.ResolvedVersionListMap
+	AlreadyInstalled version_map.ResolvedVersionListMap
 }
 
-func NewInstallData(installedMods modconfig.VersionListMap, workspaceLock modconfig.WorkspaceLock) *InstallData {
+func NewInstallData(workspaceLock *version_map.WorkspaceLock) *InstallData {
 	return &InstallData{
-		Lock:         workspaceLock,
-		AllInstalled: installedMods,
-		//Unreferenced: make(VersionListMap),
-		AllAvailable:      make(modconfig.VersionListMap),
-		RecentlyInstalled: make(modconfig.ResolvedVersionListMap),
-		AlreadyInstalled:  make(modconfig.ResolvedVersionListMap),
+		Lock:              workspaceLock,
+		allAvailable:      make(version_map.VersionListMap),
+		RecentlyInstalled: make(version_map.ResolvedVersionListMap),
+		AlreadyInstalled:  make(version_map.ResolvedVersionListMap),
 	}
 }
 
 // GetAvailableUpdates returns a map of all installed mods which are not in the lock file
-func (s *InstallData) GetAvailableUpdates() (modconfig.WorkspaceLock, error) {
-	res := make(modconfig.WorkspaceLock)
-	for parent, deps := range s.Lock {
-		for name, dep := range deps {
+func (s *InstallData) GetAvailableUpdates() (version_map.DependencyVersionMap, error) {
+	res := make(version_map.DependencyVersionMap)
+	for parent, deps := range s.Lock.InstallCache {
+		for name, constraints := range deps {
 			availableVersions, err := s.getAvailableModVersions(name)
 			if err != nil {
 				return nil, err
 			}
-			constraint, _ := version.NewConstraint(dep.Constraint)
-			var latestVersion = getVersionSatisfyingConstraint(constraint, availableVersions)
-			if latestVersion.GreaterThan(dep.Version) {
-				res.Add(name, latestVersion, constraint, parent)
+			for _, resolvedConstraint := range constraints {
+				constraint, _ := version.NewConstraint(resolvedConstraint.Constraint)
+				var latestVersion = getVersionSatisfyingConstraint(constraint, availableVersions)
+				if latestVersion.GreaterThan(resolvedConstraint.Version) {
+					res.Add(name, latestVersion, constraint, parent)
+				}
 			}
 		}
 	}
@@ -58,11 +55,9 @@ func (s *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconf
 	// update lock
 	// get the constraint from the parent (it must be there)
 	modVersion := parent.Requires.GetModDependency(dependency.Name)
-	s.Lock.Add(dependency.Name, dependency.Version, modVersion.Constraint, parent.Name())
-	// update list of all installed mods
-	s.AllInstalled.Add(dependency.Name, dependency.Version)
+	s.Lock.InstallCache.Add(dependency.Name, dependency.Version, modVersion.Constraint, parent.Name())
 	// update list items installed by this installer
-	s.RecentlyInstalled.Add(dependency.Name, &modconfig.ResolvedVersionConstraint{
+	s.RecentlyInstalled.Add(dependency.Name, &version_map.ResolvedVersionConstraint{
 		Version:    dependency.Version,
 		Constraint: dependency.Constraint.Original,
 	})
@@ -72,32 +67,19 @@ func (s *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconf
 func (s *InstallData) addExisting(name string, version *semver.Version, parent *modconfig.Mod) {
 	// update lock
 	modVersion := parent.Requires.GetModDependency(name)
-	s.Lock.Add(name, version, modVersion.Constraint, parent.Name())
+	s.Lock.InstallCache.Add(name, version, modVersion.Constraint, parent.Name())
 	// update list of already installed items
-	s.AlreadyInstalled.Add(name, &modconfig.ResolvedVersionConstraint{
+	s.AlreadyInstalled.Add(name, &version_map.ResolvedVersionConstraint{
 		Version:    version,
 		Constraint: modVersion.Constraint.Original,
 	})
 }
 
-// return a map of all installed mods which are not in the lock file
-func (s *InstallData) getUnusedMods() modconfig.VersionListMap {
-	var unusedModPaths = make(modconfig.VersionListMap)
-	// now delete any mod folders which are not in the lock file
-	for name, versions := range s.AllInstalled {
-		for _, version := range versions {
-			if !s.Lock.ContainsModVersion(name, version) {
-				unusedModPaths.Add(name, version)
-			}
-		}
-	}
-	return unusedModPaths
-}
-
+//
 // retrieve all available mod versions from our cache, or from Git if not yet cached
 func (s *InstallData) getAvailableModVersions(modName string) ([]*semver.Version, error) {
 	// have we already loaded the versions for this mod
-	availableVersions, ok := s.AllAvailable[modName]
+	availableVersions, ok := s.allAvailable[modName]
 	if ok {
 		return availableVersions, nil
 	}
@@ -108,7 +90,7 @@ func (s *InstallData) getAvailableModVersions(modName string) ([]*semver.Version
 		return nil, err
 	}
 	// update our cache
-	s.AllAvailable[modName] = availableVersions
+	s.allAvailable[modName] = availableVersions
 
 	return availableVersions, nil
 }
