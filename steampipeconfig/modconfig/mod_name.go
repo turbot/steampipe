@@ -8,7 +8,8 @@ import (
 )
 
 func ModVersionFullName(name string, version *semver.Version) string {
-	return fmt.Sprintf("%s@%s", name, version.Original())
+	o := version.Original()
+	return fmt.Sprintf("%s@%s", name, o)
 }
 
 func ParseModFullName(fullName string) (modName string, modVersion *semver.Version, err error) {

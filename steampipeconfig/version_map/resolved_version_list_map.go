@@ -1,6 +1,8 @@
 package version_map
 
-import "fmt"
+import (
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+)
 
 // ResolvedVersionListMap represents a map of ResolvedVersionConstraint arrays, keyed by dependency name
 type ResolvedVersionListMap map[string][]*ResolvedVersionConstraint
@@ -22,12 +24,12 @@ func (m ResolvedVersionListMap) Remove(name string, constraint *ResolvedVersionC
 	m[name] = res
 }
 
-// FlatMap converts the ResolvedVersionListMap map into a map keyed by full dependency name
+// FlatMap converts the ResolvedVersionListMap map into a map keyed by the FULL dependency name (i.e. including version(
 func (m ResolvedVersionListMap) FlatMap() map[string]*ResolvedVersionConstraint {
 	var res = make(map[string]*ResolvedVersionConstraint)
 	for name, versions := range m {
 		for _, version := range versions {
-			key := fmt.Sprintf("%s@%s", name, version)
+			key := modconfig.ModVersionFullName(name, version.Version)
 			res[key] = version
 		}
 	}
@@ -39,7 +41,7 @@ func (m ResolvedVersionListMap) FlatNames() []string {
 	var res []string
 	for name, versions := range m {
 		for _, version := range versions {
-			res = append(res, fmt.Sprintf("%s@%s", name, version))
+			res = append(res, modconfig.ModVersionFullName(name, version.Version))
 		}
 	}
 	return res

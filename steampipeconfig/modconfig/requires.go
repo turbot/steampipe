@@ -77,3 +77,10 @@ func (r *Requires) GetModDependency(name string) *ModVersionConstraint {
 	}
 	return nil
 }
+
+func (r *Requires) ContainsMod(name string, constraint *version.Constraints) bool {
+	if c := r.GetModDependency(name); c != nil {
+		return c.Constraint.Equals(constraint)
+	}
+	return false
+}

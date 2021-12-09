@@ -58,6 +58,7 @@ func (s *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconf
 	s.Lock.InstallCache.Add(dependency.Name, dependency.Version, modVersion.Constraint, parent.Name())
 	// update list items installed by this installer
 	s.RecentlyInstalled.Add(dependency.Name, &version_map.ResolvedVersionConstraint{
+		Name:       dependency.Name,
 		Version:    dependency.Version,
 		Constraint: dependency.Constraint.Original,
 	})
@@ -70,6 +71,7 @@ func (s *InstallData) addExisting(name string, version *semver.Version, parent *
 	s.Lock.InstallCache.Add(name, version, modVersion.Constraint, parent.Name())
 	// update list of already installed items
 	s.AlreadyInstalled.Add(name, &version_map.ResolvedVersionConstraint{
+		Name:       name,
 		Version:    version,
 		Constraint: modVersion.Constraint.Original,
 	})

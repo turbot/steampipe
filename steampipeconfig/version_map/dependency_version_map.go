@@ -16,7 +16,7 @@ func (m DependencyVersionMap) Add(dependencyName string, dependencyVersion *semv
 		parentItems = make(ResolvedVersionListMap)
 	}
 	// add the dependency
-	parentItems.Add(dependencyName, &ResolvedVersionConstraint{dependencyVersion, constraint.Original})
+	parentItems.Add(dependencyName, &ResolvedVersionConstraint{dependencyName, dependencyVersion, constraint.Original})
 	// save
 	m[parentName] = parentItems
 }
