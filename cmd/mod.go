@@ -30,7 +30,6 @@ func modCmd() *cobra.Command {
 	cmd.AddCommand(modUninstallCmd())
 	cmd.AddCommand(modUpdateCmd())
 	cmd.AddCommand(modListCmd())
-	cmd.AddCommand(modTidyCmd())
 
 	return cmd
 }
@@ -164,99 +163,6 @@ func runModUninstallCmd(cmd *cobra.Command, args []string) {
 	fmt.Printf(mod_installer.BuildUninstallSummary(installData))
 }
 
-//func showUpdates() {
-//	opts := &mod_installer.InstallOpts{
-//		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
-//	}
-//	current, updates, err := mod_installer.GetAvailableUpdates(opts)
-//	utils.FailOnError(err)
-//	fmt.Println(mod_installer.BuildAvailableUpdateSummary(current, updates))
-//}
-
-//func runModGetCmd(cmd *cobra.Command, args []string) {
-//	utils.LogTime("cmd.runModGetCmd")
-//	defer func() {
-//		utils.LogTime("cmd.runModGetCmd end")
-//		if r := recover(); r != nil {
-//			utils.ShowError(helpers.ToError(r))
-//			exitCode = 1
-//		}
-//	}()
-//
-//	modsArgs := append([]string{}, args...)
-//	// first convert the mod args into well formed mod names
-//	requiredModVersions, err := getRequiredModVersionsFromArgs(modsArgs)
-//	// TODO validate only 1 version of each mod
-//	utils.FailOnError(err)
-//	if len(requiredModVersions) == 0 {
-//		fmt.Println("No mods to add")
-//		return
-//	}
-//	// just call install, passing GetMods option
-//	opts := &mod_installer.InstallOpts{
-//		AddMods:       requiredModVersions,
-//		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
-//	}
-//	installData, err := mod_installer.InstallWorkspaceDependencies(opts)
-//	utils.FailOnError(err)
-//
-//	getSummary := mod_installer.BuildGetSummary(installData, requiredModVersions)
-//	fmt.Printf(getSummary)
-//}
-
-func getRequiredModVersionsFromArgs(modsArgs []string) (version_map.VersionConstraintMap, error) {
-	var errors []error
-	mods := make(version_map.VersionConstraintMap, len(modsArgs))
-	for _, modArg := range modsArgs {
-		// create mod version from arg
-		modVersion, err := modconfig.NewModVersionConstraint(modArg)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		// TODO include alias in key
-		mods[modVersion.Name] = modVersion
-	}
-	if len(errors) > 0 {
-		return nil, utils.CombineErrors(errors...)
-	}
-	return mods, nil
-}
-
-// list
-func modListCmd() *cobra.Command {
-	var cmd = &cobra.Command{
-		Use:   "list",
-		Run:   runModListCmd,
-		Short: "Install mod dependencies",
-		Long: `Install mod dependencies.
-`,
-	}
-
-	cmdconfig.OnCmd(cmd)
-	return cmd
-}
-
-func runModListCmd(*cobra.Command, []string) {
-	utils.LogTime("cmd.runModListCmd")
-	defer func() {
-		utils.LogTime("cmd.runModListCmd end")
-		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
-			exitCode = 1
-		}
-	}()
-
-	//workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
-	//installer, err := mod_installer.NewModInstaller(&mod_installer.InstallOpts{WorkspacePath: workspacePath})
-	//utils.FailOnError(err)
-
-	//installedMods := installer.GetModList()
-	//utils.FailOnError(err)
-	//// TODO FORMAT LIST
-	//fmt.Println(installedMods)
-}
-
 // update
 func modUpdateCmd() *cobra.Command {
 	var cmd = &cobra.Command{
@@ -300,6 +206,58 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 	fmt.Printf(mod_installer.BuildInstallSummary(installData))
 }
 
+func getRequiredModVersionsFromArgs(modsArgs []string) (version_map.VersionConstraintMap, error) {
+	var errors []error
+	mods := make(version_map.VersionConstraintMap, len(modsArgs))
+	for _, modArg := range modsArgs {
+		// create mod version from arg
+		modVersion, err := modconfig.NewModVersionConstraint(modArg)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		// TODO include alias in key
+		mods[modVersion.Name] = modVersion
+	}
+	if len(errors) > 0 {
+		return nil, utils.CombineErrors(errors...)
+	}
+	return mods, nil
+}
+
+// list
+func modListCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "list",
+		Run:   runModListCmd,
+		Short: "Install mod dependencies",
+		Long: `Install mod dependencies.
+`,
+	}
+
+	cmdconfig.OnCmd(cmd)
+	return cmd
+}
+func runModListCmd(*cobra.Command, []string) {
+	utils.LogTime("cmd.runModListCmd")
+	defer func() {
+		utils.LogTime("cmd.runModListCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+			exitCode = 1
+		}
+	}()
+
+	//workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
+	//installer, err := mod_installer.NewModInstaller(&mod_installer.InstallOpts{WorkspacePath: workspacePath})
+	//utils.FailOnError(err)
+
+	//installedMods := installer.GetModList()
+	//utils.FailOnError(err)
+	//// TODO FORMAT LIST
+	//fmt.Println(installedMods)
+}
+
 //func doUpdates(updateMods version_map.VersionConstraintMap) {
 //	opts := &mod_installer.InstallOpts{
 //		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
@@ -312,41 +270,50 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 //	fmt.Printf(mod_installer.BuildUpdateSummary(installData))
 //}
 //
+//
+//// tidy
+//func modTidyCmd() *cobra.Command {
+//	var cmd = &cobra.Command{
+//		Use:   "tidy",
+//		Run:   runModTidyCmd,
+//		Short: "Tidy mod dependencies",
+//		Long: `Tidy mod dependencies.
+//`,
+//	}
+//
+//	cmdconfig.OnCmd(cmd)
+//	return cmd
+//}
+//
+//func runModTidyCmd(cmd *cobra.Command, args []string) {
+//	utils.LogTime("cmd.runModTidyCmd")
+//	defer func() {
+//		utils.LogTime("cmd.runModTidyCmd end")
+//		if r := recover(); r != nil {
+//			utils.ShowError(helpers.ToError(r))
+//			exitCode = 1
+//		}
+//	}()
+//
+//	opts := &mod_installer.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
+//
+//	// install workspace dependencies
+//	installer, err := mod_installer.NewModInstaller(opts)
+//	utils.FailOnError(err)
+//
+//	unusedMods, err := installer.Tidy()
+//	utils.FailOnError(err)
+//
+//	if count := len(unusedMods.FlatMap()); count > 0 {
+//		fmt.Printf("Removed %d unused %s\n", count, utils.Pluralize("mod", count))
+//	}
+//}
 
-// tidy
-func modTidyCmd() *cobra.Command {
-	var cmd = &cobra.Command{
-		Use:   "tidy",
-		Run:   runModTidyCmd,
-		Short: "Tidy mod dependencies",
-		Long: `Tidy mod dependencies.
-`,
-	}
-
-	cmdconfig.OnCmd(cmd)
-	return cmd
-}
-
-func runModTidyCmd(cmd *cobra.Command, args []string) {
-	utils.LogTime("cmd.runModTidyCmd")
-	defer func() {
-		utils.LogTime("cmd.runModTidyCmd end")
-		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
-			exitCode = 1
-		}
-	}()
-
-	opts := &mod_installer.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
-
-	// install workspace dependencies
-	installer, err := mod_installer.NewModInstaller(opts)
-	utils.FailOnError(err)
-
-	unusedMods, err := installer.Tidy()
-	utils.FailOnError(err)
-
-	if count := len(unusedMods.FlatMap()); count > 0 {
-		fmt.Printf("Removed %d unused %s\n", count, utils.Pluralize("mod", count))
-	}
-}
+//func showUpdates() {
+//	opts := &mod_installer.InstallOpts{
+//		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
+//	}
+//	current, updates, err := mod_installer.GetAvailableUpdates(opts)
+//	utils.FailOnError(err)
+//	fmt.Println(mod_installer.BuildAvailableUpdateSummary(current, updates))
+//}

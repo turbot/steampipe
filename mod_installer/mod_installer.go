@@ -109,6 +109,19 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	return i, nil
 }
 
+func (i *ModInstaller) UninstallWorkspaceDependencies() error {
+	// if no mods specified, just delete the lock file and tidy
+	if len(i.mods) == 0 {
+		if err := i.installData.Lock.Delete(); err != nil {
+			return err
+		}
+	} else {
+		i.installData.Lock.DeleteMods(i.mods, i.workspaceMod)
+	}
+	_, err := i.Tidy()
+	return err
+}
+
 // InstallWorkspaceDependencies installs all dependencies of the workspace mod
 func (i *ModInstaller) InstallWorkspaceDependencies() error {
 	workspaceMod := i.workspaceMod
@@ -127,7 +140,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 	// if there are no dependencies, we have nothing to do
 	if !workspaceMod.HasDependentMods() {
 		// there are no dependencies - delete the cache
-		i.installData.Lock.Delete(i.workspacePath)
+		i.installData.Lock.Delete()
 		return nil
 	}
 
@@ -136,7 +149,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 	}
 
 	// write lock file
-	if err := i.installData.Lock.Save(i.workspacePath); err != nil {
+	if err := i.installData.Lock.Save(); err != nil {
 		return err
 	}
 
