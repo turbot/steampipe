@@ -84,6 +84,7 @@ func (r *Requires) AddModDependencies(newModVersions map[string]*ModVersionConst
 	idx := 0
 	for _, requiredVersion := range r.modMap {
 		newMods[idx] = requiredVersion
+		idx++
 	}
 	// sort by name
 	sort.Sort(ModVersionConstraintCollection(newMods))
