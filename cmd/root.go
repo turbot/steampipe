@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -30,6 +31,8 @@ var rootCmd = &cobra.Command{
 
 		viper.Set(constants.ConfigKeyActiveCommand, cmd)
 		viper.Set(constants.ConfigKeyActiveCommandArgs, args)
+		viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
+
 		createLogger()
 		initGlobalConfig()
 		task.RunTasks()

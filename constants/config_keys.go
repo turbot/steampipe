@@ -10,4 +10,5 @@ const (
 	ConfigKeyActiveCommand      = "cmd"
 	ConfigKeyActiveCommandArgs  = "cmd_args"
 	ConfigInteractiveVariables  = "interactive_var"
+	ConfigKeyIsTerminalTTY      = "is_terminal"
 )

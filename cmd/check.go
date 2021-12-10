@@ -379,6 +379,9 @@ func validateExportTargets(exportTargets []controldisplay.CheckExportTarget) err
 
 func initialiseColorScheme() error {
 	theme := viper.GetString(constants.ArgTheme)
+	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
+		theme = "plain"
+	}
 	themeDef, ok := controldisplay.ColorSchemes[theme]
 	if !ok {
 		return fmt.Errorf("invalid theme '%s'", theme)

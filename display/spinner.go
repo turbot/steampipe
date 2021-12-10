@@ -8,7 +8,8 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/karrick/gows"
-	"github.com/mattn/go-isatty"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 )
 
 //
@@ -48,7 +49,7 @@ func truncateSpinnerMessageToScreen(msg string) string {
 // NOT be shown at all
 //
 func StartSpinnerAfterDelay(msg string, delay time.Duration, cancelStartIf chan bool) *spinner.Spinner {
-	if !isatty.IsTerminal(os.Stdout.Fd()) {
+	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
 		return nil
 	}
 
@@ -77,9 +78,10 @@ func StartSpinnerAfterDelay(msg string, delay time.Duration, cancelStartIf chan 
 
 // ShowSpinner shows a spinner with the given message
 func ShowSpinner(msg string) *spinner.Spinner {
-	if !isatty.IsTerminal(os.Stdout.Fd()) {
+	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
 		return nil
 	}
+
 	msg = truncateSpinnerMessageToScreen(msg)
 	s := spinner.New(
 		spinner.CharSets[14],
