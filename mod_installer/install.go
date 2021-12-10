@@ -6,9 +6,9 @@ import (
 )
 
 func InstallWorkspaceDependencies(opts *InstallOpts) (*InstallData, error) {
-	utils.LogTime("cmd.InstallModDependencies")
+	utils.LogTime("cmd.InstallWorkspaceDependencies")
 	defer func() {
-		utils.LogTime("cmd.InstallModDependencies end")
+		utils.LogTime("cmd.InstallWorkspaceDependencies end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
 		}
