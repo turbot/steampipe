@@ -12,14 +12,12 @@ import (
 )
 
 func BuildInstallSummary(installData *InstallData) string {
-	var installedString, alreadyInstalledString string
-
 	installed := installData.RecentlyInstalled.FlatNames()
-	if installCount := len(installed); installCount > 0 {
-		installedString = fmt.Sprintf("\nInstalled %d %s:\n\t%s\n", installCount, utils.Pluralize("mod", installCount), strings.Join(installed, "\n\t"))
+	installCount := len(installed)
+	if installCount == 0 {
+		return "All mods are up to date"
 	}
-	res := fmt.Sprintf("%s%s\n", installedString, alreadyInstalledString)
-	return res
+	return fmt.Sprintf("\nInstalled %d %s:\n\t%s\n", installCount, utils.Pluralize("mod", installCount), strings.Join(installed, "\n\t"))
 }
 
 func BuildUninstallSummary(installData *InstallData) string {
@@ -27,7 +25,7 @@ func BuildUninstallSummary(installData *InstallData) string {
 
 	installed := installData.RecentlyInstalled.FlatNames()
 	if installCount := len(installed); installCount > 0 {
-		installedString = fmt.Sprintf("\nInstalled %d %s:\n\t%s\n", installCount, utils.Pluralize("mod", installCount), strings.Join(installed, "\n\t"))
+		installedString = fmt.Sprintf("\nInstalled %d %s:\n\t%s\n\n", installCount, utils.Pluralize("mod", installCount), strings.Join(installed, "\n\t"))
 	}
 	res := fmt.Sprintf("%s%s\n", installedString, alreadyInstalledString)
 	return res
