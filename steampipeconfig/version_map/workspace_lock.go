@@ -124,14 +124,16 @@ func (l *WorkspaceLock) setMissing() {
 	for parent, deps := range l.InstallCache {
 		// deps is a map of dep name to resolved contraint list
 		// flatten and iterate
-		depsFlat := deps.FlatMap()
-		for fullName, resolvedConstraint := range depsFlat {
+
+		for name, resolvedConstraint := range deps {
+			fullName := modconfig.ModVersionFullName(name, resolvedConstraint.Version)
+
 			if !flatInstalled[fullName] {
 				// get the mod name from the constraint (fullName includes the version)
 				name := resolvedConstraint.Name
 				// remove this item from the install cache and add into missing
 				l.MissingVersions[parent].Add(name, resolvedConstraint)
-				l.InstallCache[parent].Remove(name, resolvedConstraint)
+				l.InstallCache[parent].Remove(name)
 			}
 		}
 	}
@@ -160,53 +162,26 @@ func (l *WorkspaceLock) Delete() error {
 }
 
 // DeleteMods removes mods from the lock file then, if it is empty, deletes the file
-func (l *WorkspaceLock) DeleteMods(mods VersionConstraintMap, parent *modconfig.Mod) error {
-
-	for modName, constraint := range mods {
-		parentDependencies := l.InstallCache[parent.Name()]
-		if parentDependencies == nil {
-			return nil
+func (l *WorkspaceLock) DeleteMods(mods VersionConstraintMap, parent *modconfig.Mod) {
+	for modName := range mods {
+		if parentDependencies := l.InstallCache[parent.Name()]; parentDependencies != nil {
+			parentDependencies.Remove(modName)
 		}
-
-		// look for this mod in the lock file entries for this parent
-		lockedVersions := parentDependencies[modName]
-		if len(lockedVersions) == 0 {
-			return nil
-		}
-		// NOTE: for now we only support a single version of each mod per parent
-		// when we support aliases this restriction can be removed
-		if len(lockedVersions) > 1 {
-			return fmt.Errorf("parent %s has more than 1 version of dependency %s", parent.Name(), modName)
-		}
-
 	}
 }
 
 // GetMod looks for a lock file entry matching the given mod name
-func (l *WorkspaceLock) GetMod(modName string, parent *modconfig.Mod) (*ResolvedVersionConstraint, error) {
-	parentDependencies := l.InstallCache[parent.Name()]
-	if parentDependencies == nil {
-		return nil, nil
+func (l *WorkspaceLock) GetMod(modName string, parent *modconfig.Mod) *ResolvedVersionConstraint {
+	if parentDependencies := l.InstallCache[parent.Name()]; parentDependencies != nil {
+		// look for this mod in the lock file entries for this parent
+		return parentDependencies[modName]
 	}
-	// look for this mod in the lock file entries for this parent
-	lockedVersions := parentDependencies[modName]
-	if len(lockedVersions) == 0 {
-		return nil, nil
-	}
-	// NOTE: for now we only support a single version of each mod per parent
-	// when we support aliases this restriction can be removed
-	if len(lockedVersions) > 1 {
-		return nil, fmt.Errorf("parent %s has more than 1 version of dependency %s", parent.Name(), modName)
-	}
-	return lockedVersions[0], nil
+	return nil
 }
 
 // GetLockedModVersion looks for a lock file entry matching the required constraint and returns nil if not found
 func (l *WorkspaceLock) GetLockedModVersion(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod) (*ResolvedVersionConstraint, error) {
-	lockedVersion, err := l.GetMod(requiredModVersion.Name, parent)
-	if err != nil {
-		return nil, err
-	}
+	lockedVersion := l.GetMod(requiredModVersion.Name, parent)
 	if lockedVersion == nil {
 		return nil, nil
 	}
@@ -221,10 +196,7 @@ func (l *WorkspaceLock) GetLockedModVersion(requiredModVersion *modconfig.ModVer
 
 // EnsureLockedModVersion looks for a lock file entry matching the required mod name and returns an error if not found
 func (l *WorkspaceLock) EnsureLockedModVersion(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod) (*ResolvedVersionConstraint, error) {
-	lockedVersion, err := l.GetMod(requiredModVersion.Name, parent)
-	if err != nil {
-		return nil, err
-	}
+	lockedVersion := l.GetMod(requiredModVersion.Name, parent)
 	if lockedVersion == nil {
 		return nil, nil
 	}
@@ -252,13 +224,10 @@ func (l *WorkspaceLock) GetLockedModVersionConstraint(requiredModVersion *modcon
 // ContainsModVersion returns whether the lockfile contains the given mod version
 func (l *WorkspaceLock) ContainsModVersion(modName string, modVersion *semver.Version) bool {
 	for _, modVersionMap := range l.InstallCache {
-		for lockName, lockVersions := range modVersionMap {
-			// we only support a single version at the moment but iterate anyway - we validate elsewhere
-			for _, lockVersion := range lockVersions {
-				// TODO consider handling of metadata
-				if lockName == modName && lockVersion.Version.Equal(modVersion) && lockVersion.Version.Metadata() == modVersion.Metadata() {
-					return true
-				}
+		for lockName, lockVersion := range modVersionMap {
+			// TODO consider handling of metadata
+			if lockName == modName && lockVersion.Version.Equal(modVersion) && lockVersion.Version.Metadata() == modVersion.Metadata() {
+				return true
 			}
 		}
 	}
@@ -267,12 +236,9 @@ func (l *WorkspaceLock) ContainsModVersion(modName string, modVersion *semver.Ve
 
 func (l *WorkspaceLock) ContainsModConstraint(modName string, constraint *version.Constraints) bool {
 	for _, modVersionMap := range l.InstallCache {
-		for lockName, lockVersions := range modVersionMap {
-			// we only support a single version at the moment but iterate anyway - we validate elsewhere
-			for _, lockVersion := range lockVersions {
-				if lockName == modName && lockVersion.Constraint == constraint.Original {
-					return true
-				}
+		for lockName, lockVersion := range modVersionMap {
+			if lockName == modName && lockVersion.Constraint == constraint.Original {
+				return true
 			}
 		}
 	}
