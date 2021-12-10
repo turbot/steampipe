@@ -12,6 +12,7 @@ import (
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 const (
@@ -49,25 +50,37 @@ func Remove(image string, pluginConnections map[string][]modconfig.Connection) e
 	delete(v.Plugins, fullPluginName)
 	err = v.Save()
 
+	// store the filenames of the config files, that have the connections
+	var files = map[int]string{}
 	if len(conns) > 0 {
-		display.StopSpinner(spinner)
-		str := []string{fmt.Sprintf("\nThe following files have steampipe connections using the '%s' plugin:\n", image)}
-		for _, conn := range conns {
-			str = append(
-				str,
-				fmt.Sprintf(
-					"\t* '%s' in %s, line %d",
-					conn.Name,
-					conn.DeclRange.Filename,
-					conn.DeclRange.Start.Line,
-				),
-			)
+		for i, con := range conns {
+			files[i] = con.DeclRange.Filename
 		}
-		str = append(str, "\nPlease remove them to continue using steampipe")
+	}
+	connFiles := Unique(files)
+
+	if len(connFiles) > 0 {
+		display.StopSpinner(spinner)
+		str := []string{fmt.Sprintf("\nUninstalled plugin %s\n\nNote: the following %s %s %s steampipe %s using the '%s' plugin:", image, utils.Pluralize("file", len(connFiles)), utils.Pluralize("has", len(connFiles)), utils.Pluralize("a", len(conns)), utils.Pluralize("connection", len(conns)), image)}
+		for _, file := range connFiles {
+			str = append(str, fmt.Sprintf("\n \t* file: %s", file))
+			for _, conn := range conns {
+				if conn.DeclRange.Filename == file {
+					str = append(
+						str,
+						fmt.Sprintf(
+							"\t  connection: '%s' (line %d)",
+							conn.Name,
+							conn.DeclRange.Start.Line,
+						),
+					)
+				}
+			}
+		}
+		str = append(str, fmt.Sprintf("\nPlease remove %s to continue using steampipe", utils.Pluralize("it", len(connFiles))))
 		fmt.Println(strings.Join(str, "\n"))
 		fmt.Println()
 	}
-
 	return err
 }
 
@@ -146,4 +159,17 @@ func List(pluginConnectionMap map[string][]modconfig.Connection) ([]PluginListIt
 	}
 
 	return items, nil
+}
+
+// function that returns an unique map of strings
+func Unique(m map[int]string) map[int]string {
+	n := make(map[int]string, len(m))
+	ref := make(map[string]bool, len(m))
+	for k, v := range m {
+		if _, ok := ref[v]; !ok {
+			ref[v] = true
+			n[k] = v
+		}
+	}
+	return n
 }

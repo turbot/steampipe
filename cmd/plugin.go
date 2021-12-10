@@ -519,8 +519,6 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	for _, p := range args {
 		if err := plugin.Remove(p, connectionMap); err != nil {
 			utils.ShowErrorWithMessage(err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
-		} else {
-			fmt.Println("Uninstalled plugin", p)
 		}
 	}
 }
