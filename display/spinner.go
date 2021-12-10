@@ -48,7 +48,7 @@ func truncateSpinnerMessageToScreen(msg string) string {
 // NOT be shown at all
 //
 func StartSpinnerAfterDelay(msg string, delay time.Duration, cancelStartIf chan bool) *spinner.Spinner {
-	if isatty.IsTerminal(os.Stdout.Fd()) {
+	if !isatty.IsTerminal(os.Stdout.Fd()) {
 		return nil
 	}
 
@@ -77,7 +77,7 @@ func StartSpinnerAfterDelay(msg string, delay time.Duration, cancelStartIf chan 
 
 // ShowSpinner shows a spinner with the given message
 func ShowSpinner(msg string) *spinner.Spinner {
-	if isatty.IsTerminal(os.Stdout.Fd()) {
+	if !isatty.IsTerminal(os.Stdout.Fd()) {
 		return nil
 	}
 	msg = truncateSpinnerMessageToScreen(msg)
