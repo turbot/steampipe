@@ -73,20 +73,13 @@ func (r *Requires) ValidateSteampipeVersion(modName string) error {
 func (r *Requires) AddModDependencies(newModVersions map[string]*ModVersionConstraint) {
 	// rebuild the Mods array
 
+	// first rebuild the mod map
 	for name, newVersion := range newModVersions {
 		// todo take alias into account
-
-		// if this existing mod is being replaced (i.e. is is in newModVersions), skip
-		if existingVersion, ok := r.modMap[name]; ok {
-			if existingVersion.Constraint.Equals(newVersion.Constraint) {
-				continue
-			}
-			// so the contraints are different - fall through to update the stored version
-		}
 		r.modMap[name] = newVersion
 	}
 
-	// now update the mod array from teh map
+	// now update the mod array from the map
 	var newMods = make([]*ModVersionConstraint, len(r.modMap))
 	idx := 0
 	for _, requiredVersion := range r.modMap {

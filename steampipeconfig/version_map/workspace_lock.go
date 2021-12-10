@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/turbot/steampipe/version"
+
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	filehelpers "github.com/turbot/go-kit/files"
@@ -54,16 +56,16 @@ func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 		return nil, err
 	}
 
-	if err := res.validate(); err != nil {
-		return nil, err
-	}
+	// populate the MissingVersions
+	// (this removes missing items from the install cache)
+	res.setMissing()
+
 	return res, nil
 }
 
 // populate MissingVersions and UnreferencedVersions
 func (l *WorkspaceLock) validate() error {
 
-	l.setMissing()
 	return nil
 }
 
@@ -219,16 +221,16 @@ func (l *WorkspaceLock) ContainsModVersion(modName string, modVersion *semver.Ve
 	return false
 }
 
-//func (l *WorkspaceLock) ContainsModConstraint(modName string, constraint *version.Constraints) bool {
-//	for _, modVersionMap := range l.InstallCache {
-//		for lockName, lockVersions := range modVersionMap {
-//			// we only support a single version at the moment but iterate anyway - we validate elsewhere
-//			for _, lockVersion := range lockVersions {
-//				if lockName == modName && lockVersion.Constraint == constraint.Original {
-//					return true
-//				}
-//			}
-//		}
-//	}
-//	return false
-//}
+func (l *WorkspaceLock) ContainsModConstraint(modName string, constraint *version.Constraints) bool {
+	for _, modVersionMap := range l.InstallCache {
+		for lockName, lockVersions := range modVersionMap {
+			// we only support a single version at the moment but iterate anyway - we validate elsewhere
+			for _, lockVersion := range lockVersions {
+				if lockName == modName && lockVersion.Constraint == constraint.Original {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}

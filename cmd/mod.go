@@ -46,8 +46,8 @@ func modInstallCmd() *cobra.Command {
 
 	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgTidy, "", true, "Remove unreferenced mods after installation").
-		AddBoolFlag(constants.ArgUpdate, "", true, "Update all dependent mods to the latest available version").
-		AddBoolFlag(constants.ArgShowUpdates, "", true, "Update all dependent mods to the latest available version")
+		AddBoolFlag(constants.ArgUpdate, "", false, "Update all dependent mods to the latest available version").
+		AddBoolFlag(constants.ArgShowUpdates, "", false, "Update all dependent mods to the latest available version")
 	return cmd
 }
 
@@ -71,11 +71,58 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 	// TODO validate only 1 version of each mod
 	utils.FailOnError(err)
 
+	// if any mod args are specied, set the update flag
+	// - if a mod is specified as an arg which is already installed with a different constraint,
+	// it should be installed with th elkatest available version
+	// (if constraint is the same nothing should be done unless update flag is set)
+	/*
+
+		latest m1@1.5
+
+		1:
+		current dep: m1@*
+		installed: m1@1.1
+		args: m1@* --update
+		result: m1@1.5
+
+		2:
+		current dep: m1@1.1
+		installed: m1@1.1
+		args: m1@1.1 --update
+		result: m1@1.1
+
+		3:
+		current dep: m1@1.1
+		installed: m1@1.1
+		args: m1@1.2
+		result: m1@1.2
+
+		4:
+		current dep: m1@1.1
+		installed: m1@1.1
+		args: m1@1.*
+		result: m1@1.5
+
+		5:
+		current dep: m1@1.*
+		installed: m1@1.1
+		args: m1@1.*
+		result: m1@1.1 [NO UPDATE]
+
+		6:
+		current dep: m1@1.*
+		installed: m1@1.1
+		args: m1@1.0
+		result: m1@1.0
+
+
+
+	*/
+
 	opts := &mod_installer.InstallOpts{
 		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
-		// TODO handle show
-		Updating: viper.GetBool(constants.ArgUpdate),
-		ModArgs:  modArgs,
+		Updating:      viper.GetBool(constants.ArgUpdate),
+		ModArgs:       modArgs,
 	}
 
 	installData, err := mod_installer.InstallWorkspaceDependencies(opts)
