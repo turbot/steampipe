@@ -5,12 +5,12 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func InstallWorkspaceDependencies(opts *InstallOpts) (*InstallData, error) {
+func InstallWorkspaceDependencies(opts *InstallOpts) (_ *InstallData, err error) {
 	utils.LogTime("cmd.InstallWorkspaceDependencies")
 	defer func() {
 		utils.LogTime("cmd.InstallWorkspaceDependencies end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			err = helpers.ToError(r)
 		}
 	}()
 

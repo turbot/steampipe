@@ -115,7 +115,7 @@ func (l *WorkspaceLock) GetUnreferencedMods() VersionListMap {
 	return unreferencedVersions
 }
 
-// identify mods which are in tInstallCache but not installed
+// identify mods which are in InstallCache but not installed
 // move them from InstallCache into MissingVersions
 func (l *WorkspaceLock) setMissing() {
 	// create a map of full modname to bool to allow simple checking
@@ -132,7 +132,7 @@ func (l *WorkspaceLock) setMissing() {
 				// get the mod name from the constraint (fullName includes the version)
 				name := resolvedConstraint.Name
 				// remove this item from the install cache and add into missing
-				l.MissingVersions[parent].Add(name, resolvedConstraint)
+				l.MissingVersions.Add(name, resolvedConstraint.Version, resolvedConstraint.Constraint, parent)
 				l.InstallCache[parent].Remove(name)
 			}
 		}
@@ -194,7 +194,8 @@ func (l *WorkspaceLock) GetLockedModVersion(requiredModVersion *modconfig.ModVer
 	return lockedVersion, nil
 }
 
-// EnsureLockedModVersion looks for a lock file entry matching the required mod name and returns an error if not found
+// EnsureLockedModVersion looks for a lock file entry matching the required mod name
+// if ther eis no
 func (l *WorkspaceLock) EnsureLockedModVersion(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod) (*ResolvedVersionConstraint, error) {
 	lockedVersion := l.GetMod(requiredModVersion.Name, parent)
 	if lockedVersion == nil {
@@ -203,7 +204,7 @@ func (l *WorkspaceLock) EnsureLockedModVersion(requiredModVersion *modconfig.Mod
 
 	// verify the locked version satisfies the version constraint
 	if !requiredModVersion.Constraint.Check(lockedVersion.Version) {
-		return nil, fmt.Errorf("failed to install dependencies for %s - locked version %s does not meet the constraint %s", parent.Name(), modconfig.ModVersionFullName(requiredModVersion.Name, lockedVersion.Version), requiredModVersion.Constraint.Original)
+		return nil, fmt.Errorf("failed to resolvedependencies for %s - locked version %s does not meet the constraint %s", parent.Name(), modconfig.ModVersionFullName(requiredModVersion.Name, lockedVersion.Version), requiredModVersion.Constraint.Original)
 	}
 
 	return lockedVersion, nil
@@ -214,7 +215,12 @@ func (l *WorkspaceLock) EnsureLockedModVersion(requiredModVersion *modconfig.Mod
 func (l *WorkspaceLock) GetLockedModVersionConstraint(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod) (*modconfig.ModVersionConstraint, error) {
 	lockedVersion, err := l.EnsureLockedModVersion(requiredModVersion, parent)
 	if err != nil {
+		// EnsureLockedModVersion returns an error if the locked version does not satisfy the requirement
 		return nil, err
+	}
+	if lockedVersion == nil {
+		// EnsureLockedModVersion returns nil if no locked version is found
+		return nil, nil
 	}
 	// create a new ModVersionConstraint using the locked version
 	lockedVersionFullName := modconfig.ModVersionFullName(requiredModVersion.Name, lockedVersion.Version)
@@ -243,4 +249,15 @@ func (l *WorkspaceLock) ContainsModConstraint(modName string, constraint *versio
 		}
 	}
 	return false
+}
+
+// Incomplete returned whether there are any missing dependencies
+// (i.e. they exist in the lock file but ate not installed)
+func (l *WorkspaceLock) Incomplete() bool {
+	return len(l.MissingVersions) > 0
+}
+
+// Empty returns whether the install cache is empty
+func (l *WorkspaceLock) Empty() bool {
+	return len(l.InstallCache) == 0
 }
