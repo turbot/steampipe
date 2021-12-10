@@ -33,17 +33,15 @@ func NewInstallData(workspaceLock *version_map.WorkspaceLock) *InstallData {
 func (s *InstallData) GetAvailableUpdates() (version_map.DependencyVersionMap, error) {
 	res := make(version_map.DependencyVersionMap)
 	for parent, deps := range s.Lock.InstallCache {
-		for name, constraints := range deps {
+		for name, resolvedConstraint := range deps {
 			availableVersions, err := s.getAvailableModVersions(name)
 			if err != nil {
 				return nil, err
 			}
-			for _, resolvedConstraint := range constraints {
-				constraint, _ := version.NewConstraint(resolvedConstraint.Constraint)
-				var latestVersion = getVersionSatisfyingConstraint(constraint, availableVersions)
-				if latestVersion.GreaterThan(resolvedConstraint.Version) {
-					res.Add(name, latestVersion, constraint, parent)
-				}
+			constraint, _ := version.NewConstraint(resolvedConstraint.Constraint)
+			var latestVersion = getVersionSatisfyingConstraint(constraint, availableVersions)
+			if latestVersion.GreaterThan(resolvedConstraint.Version) {
+				res.Add(name, latestVersion, constraint, parent)
 			}
 		}
 	}
