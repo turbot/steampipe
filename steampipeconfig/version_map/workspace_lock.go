@@ -21,7 +21,7 @@ import (
 
 // WorkspaceLock is a map of ModVersionMaps items keyed by the parent mod whose dependencies are installed
 type WorkspaceLock struct {
-	WorkspacePath   string
+	workspacePath   string
 	InstallCache    DependencyVersionMap
 	MissingVersions DependencyVersionMap
 
@@ -46,7 +46,7 @@ func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 		}
 	}
 	res := &WorkspaceLock{
-		WorkspacePath:   workspacePath,
+		workspacePath:   workspacePath,
 		modsPath:        constants.WorkspaceModPath(workspacePath),
 		InstallCache:    installCache,
 		MissingVersions: make(DependencyVersionMap),
@@ -146,16 +146,40 @@ func (l *WorkspaceLock) parseModPath(modfilePath string) (modName string, modVer
 	return modconfig.ParseModFullName(modFullName)
 }
 
-func (l *WorkspaceLock) Save(workspacePath string) error {
+func (l *WorkspaceLock) Save() error {
 	content, err := json.MarshalIndent(l.InstallCache, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(constants.WorkspaceLockPath(workspacePath), content, 0644)
+	return os.WriteFile(constants.WorkspaceLockPath(l.workspacePath), content, 0644)
 }
 
-func (l *WorkspaceLock) Delete(workspacePath string) error {
-	return os.Remove(constants.WorkspaceLockPath(workspacePath))
+// Delete deletes the lock file
+func (l *WorkspaceLock) Delete() error {
+	return os.Remove(constants.WorkspaceLockPath(l.workspacePath))
+}
+
+// DeleteMods removes mods from the lock file then, if it is empty, deletes the file
+func (l *WorkspaceLock) DeleteMods(mods VersionConstraintMap, parent *modconfig.Mod) error {
+
+	for modName, constraint := range mods {
+		parentDependencies := l.InstallCache[parent.Name()]
+		if parentDependencies == nil {
+			return nil
+		}
+
+		// look for this mod in the lock file entries for this parent
+		lockedVersions := parentDependencies[modName]
+		if len(lockedVersions) == 0 {
+			return nil
+		}
+		// NOTE: for now we only support a single version of each mod per parent
+		// when we support aliases this restriction can be removed
+		if len(lockedVersions) > 1 {
+			return fmt.Errorf("parent %s has more than 1 version of dependency %s", parent.Name(), modName)
+		}
+
+	}
 }
 
 // GetMod looks for a lock file entry matching the given mod name
