@@ -39,9 +39,12 @@ func ValidatePlugins(updates ConnectionDataMap, plugins map[string]*ConnectionPl
 			// validation failed
 			validationFailures = append(validationFailures, validationFailure)
 		} else {
-			// validation passed - add to liost of validated plugins
+			// validation passed - add to list of validated plugins
 			validatedPlugins = append(validatedPlugins, p)
-			validatedUpdates[p.ConnectionName] = updates[p.ConnectionName]
+			// if this connection has updates, add them
+			if _, ok := updates[p.ConnectionName]; ok {
+				validatedUpdates[p.ConnectionName] = updates[p.ConnectionName]
+			}
 		}
 	}
 	return validationFailures, validatedUpdates, validatedPlugins

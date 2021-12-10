@@ -33,16 +33,7 @@ type ConnectionPlugin struct {
 	SupportedOperations *sdkproto.GetSupportedOperationsResponse
 }
 
-// CreateConnectionPlugin instantiates a plugin for a connection, fetches schema and sends connection config
-func CreateConnectionPlugin(connection *modconfig.Connection) (*ConnectionPlugin, error) {
-
-	res, err := CreateConnectionPlugins([]*modconfig.Connection{connection})
-	if err != nil {
-		return nil, err
-	}
-	return res[connection.Name], nil
-}
-
+// CreateConnectionPlugins instantiates plugins for specified connections, fetches schemas and sends connection config
 func CreateConnectionPlugins(connections []*modconfig.Connection) (connectionPluginMap map[string]*ConnectionPlugin, err error) {
 	log.Printf("[TRACE] CreateConnectionPlugin creating %d connections", len(connections))
 

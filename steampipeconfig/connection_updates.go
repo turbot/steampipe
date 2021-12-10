@@ -168,6 +168,7 @@ func removeConnectionsFromList(sourceConnections []*modconfig.Connection, connec
 }
 
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, error) {
+	log.Printf("[TRACE] getSchemaHashesForDynamicSchemas")
 	// for every required connection, check the connection state to determine whether the schema mode is 'dynamic'
 	// if we have never loaded the connection, there will be no state, so we cannot retrieve this information
 	// however in this case we will load the connection anyway
@@ -179,12 +180,17 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 			// SchemaMode will be unpopulated for plugins using an older version of the sdk
 			// that is fine, we treat that as SchemaModeDynamic
 			if existingConnection.SchemaMode == plugin.SchemaModeDynamic {
+				log.Printf("[TRACE] fetching schema for connection %s using dynamic plugin %s", requiredConnectionName, requiredConnection.Plugin)
 				connectionsWithDynamicSchema[requiredConnectionName] = requiredConnection
 			}
 		}
 	}
 
-	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections())
+	connectionsPluginsWithDynamicSchema, err := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections())
+	if err != nil {
+		return nil, nil, err
+	}
+	log.Printf("[TRACE] fetched schema for %d dynamic %s", len(connectionsPluginsWithDynamicSchema), utils.Pluralize("plugin", len(connectionsPluginsWithDynamicSchema)))
 
 	hashMap := make(map[string]string)
 	for name, c := range connectionsPluginsWithDynamicSchema {
@@ -192,7 +198,7 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 		schemaHash := pluginSchemaHash(c.Schema)
 		hashMap[name] = schemaHash
 	}
-	return hashMap, connectionsPluginsWithDynamicSchema, res
+	return hashMap, connectionsPluginsWithDynamicSchema, err
 }
 
 func pluginSchemaHash(s *proto.Schema) string {

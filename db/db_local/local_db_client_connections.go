@@ -124,10 +124,12 @@ func (c *LocalDbClient) updateConnectionMap() error {
 
 func getSchemaQueries(updates steampipeconfig.ConnectionDataMap, failures []*steampipeconfig.ValidationFailure) []string {
 	var schemaQueries []string
-	for connectionName, plugin := range updates {
-		remoteSchema := plugin_manager.PluginFQNToSchemaName(plugin.Plugin)
-		log.Printf("[TRACE] update connection %s, plugin Name %s, schema %s\n ", connectionName, plugin.Plugin, remoteSchema)
-		schemaQueries = append(schemaQueries, updateConnectionQuery(connectionName, remoteSchema)...)
+	for connectionName, connectionData := range updates {
+		remoteSchema := plugin_manager.PluginFQNToSchemaName(connectionData.Plugin)
+		log.Printf("[TRACE] update connection %s, plugin Name %s, schema %s, schemaQueries %v\n ", connectionName, connectionData.Plugin, remoteSchema, schemaQueries)
+		queries := updateConnectionQuery(connectionName, remoteSchema)
+		schemaQueries = append(schemaQueries, queries...)
+
 	}
 	for _, failure := range failures {
 		log.Printf("[TRACE] remove schema for conneciton failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
