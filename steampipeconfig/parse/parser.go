@@ -156,7 +156,8 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	addPseudoResourcesToMod(pseudoResources, hclResources, mod)
 
 	// add this mod to run context - this it to ensure all pseudo resources get added
-	runCtx.AddMod(mod, content, fileData)
+	runCtx.SetDecodeContent(content, fileData)
+	runCtx.AddMod(mod)
 
 	// perform initial decode to get dependencies
 	// (if there are no dependencies, this is all that is needed)

@@ -110,6 +110,7 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 }
 
 func (i *ModInstaller) UninstallWorkspaceDependencies() error {
+	// TODO remove from mod requires
 	// if no mods specified, just delete the lock file and tidy
 	if len(i.mods) == 0 {
 		if err := i.installData.Lock.Delete(); err != nil {
