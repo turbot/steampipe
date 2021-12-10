@@ -41,7 +41,7 @@ func (s *InstallData) GetAvailableUpdates() (version_map.DependencyVersionMap, e
 			constraint, _ := version.NewConstraint(resolvedConstraint.Constraint)
 			var latestVersion = getVersionSatisfyingConstraint(constraint, availableVersions)
 			if latestVersion.GreaterThan(resolvedConstraint.Version) {
-				res.Add(name, latestVersion, constraint, parent)
+				res.Add(name, latestVersion, constraint.Original, parent)
 			}
 		}
 	}
@@ -53,7 +53,7 @@ func (s *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconf
 	// update lock
 	// get the constraint from the parent (it must be there)
 	modVersion := parent.Requires.GetModDependency(dependency.Name)
-	s.Lock.InstallCache.Add(dependency.Name, dependency.Version, modVersion.Constraint, parent.Name())
+	s.Lock.InstallCache.Add(dependency.Name, dependency.Version, modVersion.Constraint.Original, parent.Name())
 	// update list items installed by this installer
 	s.RecentlyInstalled.Add(dependency.Name, &version_map.ResolvedVersionConstraint{
 		Name:       dependency.Name,
