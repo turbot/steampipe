@@ -50,6 +50,7 @@ type RunContext struct {
 	ListOptions          *filehelpers.ListOptions
 	LoadedDependencyMods modconfig.ModMap
 	WorkspacePath        string
+	modPath              string
 	ModInstallationPath  string
 	// if set, only decode these blocks
 	BlockTypes []string
@@ -64,7 +65,7 @@ type RunContext struct {
 	Variables       map[string]*modconfig.Variable
 }
 
-func NewRunContext(workspacePath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
+func NewRunContext(workspacePath, modPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
 	// load the workspace lock
 	workspaceLock, err := version_map.LoadWorkspaceLock(workspacePath)
 	if err != nil {
@@ -75,6 +76,7 @@ func NewRunContext(workspacePath string, flags ParseModFlag, listOptions *filehe
 		Flags:                flags,
 		ModInstallationPath:  constants.WorkspaceModPath(workspacePath),
 		WorkspacePath:        workspacePath,
+		modPath:              modPath,
 		WorkspaceLock:        workspaceLock,
 		ListOptions:          listOptions,
 		LoadedDependencyMods: make(modconfig.ModMap),
@@ -124,14 +126,11 @@ func (r *RunContext) AddVariables(inputVariables map[string]*modconfig.Variable)
 
 // AddMod is used to add a mod with any pseudo resources to the eval context
 // - in practice this will be a shell mod with just pseudo resources - other resources will be added as they are parsed
-func (r *RunContext) AddMod(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[string][]byte) hcl.Diagnostics {
+func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	if len(r.UnresolvedBlocks) > 0 {
 		// should never happen
 		panic("calling SetContent on runContext but there are unresolved blocks from a previous parse")
 	}
-
-	r.FileData = fileData
-	r.blocks = content.Blocks
 
 	var diags hcl.Diagnostics
 
@@ -162,6 +161,12 @@ func (r *RunContext) AddMod(mod *modconfig.Mod, content *hcl.BodyContent, fileDa
 	// rebuild the eval context
 	r.buildEvalContext()
 	return diags
+}
+
+// TODO is this needed? Add comment
+func (r *RunContext) SetDecodeContent(content *hcl.BodyContent, fileData map[string][]byte) {
+	r.blocks = content.Blocks
+	r.FileData = fileData
 }
 
 func (r *RunContext) ShouldIncludeBlock(block *hcl.Block) bool {
@@ -386,7 +391,8 @@ func (r *RunContext) buildEvalContext() {
 	// create evaluation context
 	r.EvalCtx = &hcl.EvalContext{
 		Variables: variables,
-		Functions: ContextFunctions(r.WorkspacePath),
+		// use the mod path as the file root for functions
+		Functions: ContextFunctions(r.modPath),
 	}
 }
 
@@ -434,9 +440,7 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	typeString := parsedName.ItemType
 
 	// the resource name will not have a mod - but the run context knows which mod we are parsing
-
 	mod := r.CurrentMod
-
 	modName := mod.ShortName
 	if mod.ModPath == r.WorkspacePath {
 		modName = "local"

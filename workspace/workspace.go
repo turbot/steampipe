@@ -294,6 +294,7 @@ func (w *Workspace) getRunContext() *parse.RunContext {
 	}
 	return parse.NewRunContext(
 		w.Path,
+		w.Path,
 		parseFlag,
 		&filehelpers.ListOptions{
 			// listFlag specifies whether to load files recursively
@@ -339,11 +340,8 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
 			// if this mod is a direct dependency of the workspace mod, add it to the map _without_ a verison
-			if w.requiresMod(mod) {
-				// /TODO IMPLEMENT
-				res[q.QualifiedName()] = q
-			}
-			res[q.QualifiedNameWithVersion()] = q
+			res[q.QualifiedName()] = q
+
 		}
 	}
 	return res
@@ -510,7 +508,8 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.Work
 
 // ResolveQueryAndArgs attempts to resolve 'arg' to a query and query args
 func (w *Workspace) ResolveQueryAndArgs(sqlString string) (string, modconfig.QueryProvider, error) {
-	var args *modconfig.QueryArgs
+	var args = &modconfig.QueryArgs{}
+
 	var err error
 
 	// if this looks like a named query or named control invocation, parse the sql string for arguments
@@ -680,11 +679,6 @@ func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
 	}
 
 	return string(fileBytes), true, nil
-}
-
-func (w *Workspace) requiresMod(mod *modconfig.Mod) bool {
-	// TODO check SUM file
-	return false
 }
 
 // does this resource name look like a control or query

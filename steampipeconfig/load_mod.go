@@ -34,6 +34,7 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 	// create a run context for this mod
 	if modPath != parentRunCtx.WorkspacePath {
 		runCtx = parse.NewRunContext(
+			parentRunCtx.WorkspacePath,
 			modPath,
 			parse.CreatePseudoResources,
 			&filehelpers.ListOptions{
@@ -42,18 +43,8 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 				// only load .sp files
 				Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 			})
+		runCtx.WorkspaceLock = parentRunCtx.WorkspaceLock
 	}
-	// TODO
-	defer func() {
-		if err != nil {
-			//parentRunCtx.Merge(runCtx)
-		}
-	}()
-	//if runCtx.WorkingFolder != modPath {
-	//	prev := runCtx.WorkingFolder
-	//	runCtx.SetWorkingFolder(modPath)
-	//	defer runCtx.SetWorkingFolder(prev)
-	//}
 
 	// verify the mod folder exists
 	if _, err := os.Stat(modPath); os.IsNotExist(err) {
@@ -111,6 +102,10 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 	if err != nil {
 		return nil, err
 	}
+
+	// now add fully populated mod to the parent run context
+	parentRunCtx.CurrentMod = mod
+	parentRunCtx.AddMod(mod)
 
 	return mod, err
 }
@@ -228,7 +223,6 @@ func findInstalledDependency(modDependency *modconfig.ModVersionConstraint, pare
 	}
 
 	return "", nil, fmt.Errorf("mod satisfying '%s' is not installed", modDependency)
-
 }
 
 // LoadModResourceNames parses all hcl files in modPath and returns the names of all resources
