@@ -117,6 +117,9 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 		}
 	} else {
 		i.installData.Lock.DeleteMods(i.mods, i.workspaceMod)
+		if err := i.installData.Lock.Save(); err != nil {
+			return err
+		}
 	}
 	_, err := i.Tidy()
 	return err
