@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/briandowns/spinner"
 	psutils "github.com/shirou/gopsutil/process"
@@ -49,9 +50,6 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return err
 	}
 
-	log.Println("[TRACE] calling killPreviousInstanceIfAny")
-	display.UpdateSpinnerMessage(spinner, "Cleanup any Steampipe processes...")
-	killInstanceIfAny(ctx)
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
 	err = removeRunningInstanceInfo()
 	if err != nil && !os.IsNotExist(err) {
@@ -232,12 +230,17 @@ func runInstall(ctx context.Context, firstInstall bool, spinner *spinner.Spinner
 		log.Printf("[TRACE] getNextFreePort failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")
 	}
+
+	time.Sleep(5 * time.Second)
+
 	process, err := startServiceForInstall(port)
 	if err != nil {
 		display.StopSpinner(spinner)
 		log.Printf("[TRACE] startServiceForInstall failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")
 	}
+
+	time.Sleep(5 * time.Second)
 
 	display.UpdateSpinnerMessage(spinner, "Connection to database...")
 	client, err := createMaintenanceClient(ctx, port)
@@ -251,6 +254,8 @@ func runInstall(ctx context.Context, firstInstall bool, spinner *spinner.Spinner
 		doThreeStepPostgresExit(process)
 	}()
 
+	time.Sleep(5 * time.Second)
+
 	display.UpdateSpinnerMessage(spinner, "Generating database passwords...")
 	// generate a password file for use later
 	_, err = readPasswordFile()
@@ -259,6 +264,8 @@ func runInstall(ctx context.Context, firstInstall bool, spinner *spinner.Spinner
 		log.Printf("[TRACE] readPassword failed: %v", err)
 		return fmt.Errorf("Generating database passwords... FAILED!")
 	}
+
+	time.Sleep(5 * time.Second)
 
 	// resolve the name of the database that is to be installed
 	databaseName := resolveDatabaseName()
@@ -275,6 +282,8 @@ func runInstall(ctx context.Context, firstInstall bool, spinner *spinner.Spinner
 		return fmt.Errorf("Invalid database name '%s' - must start with either a lowercase character or an underscore", databaseName)
 	}
 
+	time.Sleep(5 * time.Second)
+
 	display.UpdateSpinnerMessage(spinner, "Configuring database...")
 	err = installDatabaseWithPermissions(ctx, databaseName, client)
 	if err != nil {
@@ -283,6 +292,8 @@ func runInstall(ctx context.Context, firstInstall bool, spinner *spinner.Spinner
 		return fmt.Errorf("Configuring database... FAILED!")
 	}
 
+	time.Sleep(5 * time.Second)
+
 	display.UpdateSpinnerMessage(spinner, "Configuring Steampipe...")
 	err = installForeignServer(ctx, client)
 	if err != nil {
@@ -290,6 +301,8 @@ func runInstall(ctx context.Context, firstInstall bool, spinner *spinner.Spinner
 		log.Printf("[TRACE] installForeignServer failed: %v", err)
 		return fmt.Errorf("Configuring Steampipe... FAILED!")
 	}
+
+	time.Sleep(5 * time.Second)
 
 	return err
 }
@@ -372,6 +385,9 @@ func getNextFreePort() (int, error) {
 }
 
 func initDatabase() error {
+
+	defer time.Sleep(5 * time.Second)
+
 	utils.LogTime("db_local.install.initDatabase start")
 	defer utils.LogTime("db_local.install.initDatabase end")
 
