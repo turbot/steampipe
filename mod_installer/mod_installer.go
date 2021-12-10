@@ -74,9 +74,7 @@ type ModInstaller struct {
 	// should we update dependencies to newer versions if they exist
 	updating bool
 	// are dependencies being added to the workspace
-	AddMods version_map.VersionConstraintMap
-	// have specific mods been specified to update
-	UpdateMods map[string]bool
+	mods version_map.VersionConstraintMap
 }
 
 func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
@@ -84,7 +82,7 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 		workspacePath: opts.WorkspacePath,
 		modsPath:      constants.WorkspaceModPath(opts.WorkspacePath),
 		updating:      opts.Updating,
-		AddMods:       make(version_map.VersionConstraintMap),
+		mods:          opts.ModArgs,
 	}
 
 	// load workspace mod, creating a default if needed
@@ -100,47 +98,43 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 		return nil, err
 	}
 
-	// if we are updating ensure we have a non empty lock file, and that all mods requested to update are in it
-	if err := i.setModArgs(opts); err != nil {
-		return nil, err
-	}
-
 	// create install data
 	i.installData = NewInstallData(workspaceLock)
 
+	// TODO think about if we need verifyCanUpdate
+	//// if we are updating ensure we have a non empty lock file, and that all mods requested to update are in it
+	//if err := i.setModArgs(opts); err != nil {
+	//	return nil, err
+	//}
 	return i, nil
 }
 
-func (i *ModInstaller) setModArgs(opts *InstallOpts) error {
-	// list of mods to add
-	var addMods version_map.VersionConstraintMap
-	if i.updating {
-		if err := i.verifyCanUpdate(); err != nil {
-			return err
-		}
-
-		// build map of mods to update
-		i.UpdateMods = make(map[string]bool)
-
-		// check all mods which have been requested to be updated exist in the lock file (ignore version)
-		for name, version := range opts.ModArgs {
-			if i.installData.Lock.ContainsMod(name) {
-				// if this exists in the workspace lock, add to our map of updates
-				i.UpdateMods[name] = true
-			} else {
-				addMods[name] = version
-			}
-		}
-	} else {
-		// we are not updating, so any set the AddMods - exclude anything already in the mod requires
-		addMods = opts.ModArgs
-	}
-
-	// if we have any add mods, add them
-	i.setAddMods(addMods)
-
-	return nil
-}
+//func (i *ModInstaller) setModArgs(opts *InstallOpts) error {
+//	// list of mods to add
+//	var addMods version_map.VersionConstraintMap
+//	if i.updating {
+//		if err := i.verifyCanUpdate(); err != nil {
+//			return err
+//		}
+//	}
+//	// add all mod args to the installer
+//	// if any mods have mods versions which are NOT already in the lock file
+//		// (i/.e/ if same mod name and constraint exist, skip)
+//		for name, version := range opts.ModArgs {
+//			if i.installData.Lock.ContainsModConstraint(name, version.Constraint) {
+//				addMods[name] = version
+//			}
+//		}
+//	} else {
+//		// we are not updating, so any set the AddMods - exclude anything already in the mod requires
+//		addMods = opts.ModArgs
+//	}
+//
+//	// if we have any add mods, add them
+//	i.setAddMods(addMods)
+//
+//	return nil
+//}
 
 // InstallWorkspaceDependencies installs all dependencies of the workspace mod
 func (i *ModInstaller) InstallWorkspaceDependencies() error {
@@ -151,9 +145,10 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 		return err
 	}
 
-	// if we are running 'mod get', add the required mods to the workspace mod requires
-	if len(i.AddMods) > 0 {
-		workspaceMod.AddModDependencies(i.AddMods)
+	// if mod args have been provided, add them to the the workspace mod requires
+	// (this will replace any existing dependencies of same name)
+	if len(i.mods) > 0 {
+		workspaceMod.AddModDependencies(i.mods)
 	}
 
 	// if there are no dependencies, we have nothing to do
@@ -167,15 +162,13 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 		return err
 	}
 
-	// tidy unused dependencies
-
 	// write lock file
 	if err := i.installData.Lock.Save(i.workspacePath); err != nil {
 		return err
 	}
 
 	// if we are running 'mod get', we are now safe to save the mod file
-	if len(i.AddMods) > 0 {
+	if len(i.mods) > 0 {
 		if err := i.workspaceMod.Save(); err != nil {
 			return err
 		}
@@ -183,7 +176,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 
 	// tidy unused mods
 	if viper.GetBool(constants.ArgTidy) {
-		if err := i.installData.Lock.Save(i.workspacePath); err != nil {
+		if _, err := i.Tidy(); err != nil {
 			return err
 		}
 	}
@@ -195,57 +188,122 @@ func (i *ModInstaller) installModDependenciesRecursively(mods []*modconfig.ModVe
 	var errors []error
 
 	for _, requiredModVersion := range mods {
-		// get or create the installation data for this mod, adding in this mod version constraint
-		availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name)
+		shouldUpdate := true
+
+		//
+		modVersion, err := i.getCurrentlyInstalledVersion(requiredModVersion, parent)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		// TODO ONLY GET AVAILABLE VERSIONS IF WE ARE UPDATING OR IT IS NOT INSTALLED
-		// check whether there is already a version which satisfies this mod version
-		// this checks the lock file, and if found, whether we should update it
-		// if the dependency is not found in the lockfile,
-		// or requires updating and we have our update flag set, it returns nil
-		installedMod, err := i.getInstalledVersionForConstraint(requiredModVersion, availableVersions, parent)
-		if err != nil {
-			return err
+
+		if err := i.installModDependencyRecursively(requiredModVersion, modVersion, parent, shouldUpdate); err != nil {
+			errors = append(errors, err)
 		}
-
-		if installedMod != nil {
-			// so we found an existing mod which will satisfy this requirement
-			// update the install data
-			i.installData.addExisting(requiredModVersion.Name, installedMod.Version, parent)
-			log.Printf("[TRACE] not installing %s with version constraint %s as version %s is already installed", requiredModVersion.Name, requiredModVersion.Constraint.Original, installedMod.Version)
-		} else {
-			// so we ARE installing
-
-			// get a resolved mod ref that satisfies the version constraints
-			resolvedRef, err := i.getModRefSatisfyingConstraints(requiredModVersion, availableVersions)
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-			// install the mod
-			installedMod, err = i.install(resolvedRef, parent)
-			if err != nil {
-				errors = append(errors, err)
-			}
-			if installedMod == nil {
-				// this is unexpected but just ignore
-				log.Printf("[TRACE] dependency %s does not define a mod definition - so there are no child dependencies to install", resolvedRef.Name)
-				continue
-			}
-		}
-
-		// to get here we have the dependency mod - either we installed it or it was already installed
-		// recursively install its dependencies
-		if err := i.installModDependenciesRecursively(installedMod.Requires.Mods, installedMod); err != nil {
-			return err
-		}
-
 	}
 
 	return utils.CombineErrorsWithPrefix(fmt.Sprintf("%d %s failed to install", len(errors), utils.Pluralize("dependency", len(errors))), errors...)
+}
+
+func (i *ModInstaller) getCurrentlyInstalledVersion(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod) (*modconfig.Mod, error) {
+	// get or create the installation data for this mod, adding in this mod version constraint
+	availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name)
+	if err != nil {
+		//return err
+	}
+
+	// do we have an installed version which satisfies this
+	modVersion, err := i.installData.Lock.GetLockedModVersion(requiredModVersion, parent)
+	if err != nil {
+		//return err
+
+	}
+
+	// if we have an installed version, decide whether to update it
+	canUpdate, err := i.canUpdateMod(modVersion, requiredModVersion, availableVersions)
+	if err != nil {
+		//return err
+
+	}
+	if canUpdate {
+		modVersion = nil
+	}
+
+	var installedMod *modconfig.Mod
+	// if we have an existing installed mod version, load the mod file
+	if modVersion != nil {
+		installedMod, err = i.loadDependencyMod(modVersion)
+		if err != nil {
+			return nil, err
+
+		}
+	}
+	return installedMod, nil
+}
+
+func (i *ModInstaller) installModDependencyRecursively(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod, mod *modconfig.Mod, shouldUpdate bool) error {
+
+	// TODO ONLY GET AVAILABLE VERSIONS IF WE ARE UPDATING OR IT IS NOT INSTALLED
+	// check whether there is already a version which satisfies this mod version
+	// this checks the lock file, and if found, whether we should update it
+	// if the dependency is not found in the lockfile,
+	// or requires updating and we have our update flag set, it returns nil
+	//installedMod, err := i.getInstalledVersionForConstraint(requiredModVersion, availableVersions, parent)
+	//if err != nil {
+	//	return err
+	//}
+
+	if installedMod != nil {
+		// so we found an existing mod which will satisfy this requirement
+		// update the install data
+		i.installData.addExisting(installedMod.Name(), installedMod.Version, parent)
+		log.Printf("[TRACE] not installing %s with version constraint %s as version %s is already installed", requiredModVersion.Name, requiredModVersion.Constraint.Original, installedMod.Version)
+	} else {
+		// so we ARE installing
+
+		// get a resolved mod ref that satisfies the version constraints
+		resolvedRef, err := i.getModRefSatisfyingConstraints(requiredModVersion, availableVersions)
+		if err != nil {
+			//errors = append(errors, err)
+			//continue
+		}
+		// install the mod
+		installedMod, err = i.install(resolvedRef, parent)
+		if err != nil {
+			//errors = append(errors, err)
+			//continue
+		}
+		if installedMod == nil {
+			// this is unexpected but just ignore
+			//log.Printf("[TRACE] dependency %s does not define a mod definition - so there are no child dependencies to install", resolvedRef.Name)
+			//continue
+		}
+	}
+
+	// to get here we have the dependency mod - either we installed it or it was already installed
+	// recursively install its dependencies
+	var errors []error
+	for _, dep := range installedMod.Requires.Mods {
+		if err := i.installModDependenciesRecursively(installedMod.Requires.Mods, installedMod); err != nil {
+			errors = append(errors, err)
+			continue
+		}
+	}
+
+	return utils.CombineErrorsWithPrefix(fmt.Sprintf("%d child %s failed to install", len(errors), utils.Pluralize("dependency", len(errors))), errors...)
+}
+
+func (i *ModInstaller) loadDependencyMod(modVersion *version_map.ResolvedVersionConstraint) (*modconfig.Mod, error) {
+	modPath := filepath.Join(i.modsPath, modconfig.ModVersionFullName(modVersion.Name, modVersion.Version))
+	return i.loadModfile(modPath, false)
+
+}
+
+func (i *ModInstaller) canUpdateMod(modVersion *version_map.ResolvedVersionConstraint, requiredModVersion *modconfig.ModVersionConstraint, availableVersions []*semver.Version) (bool, error) {
+	if modVersion != nil && i.shouldUpdate(requiredModVersion.Name) {
+		return i.updateAvailable(requiredModVersion, modVersion.Version, availableVersions)
+	}
+	return false, nil
 }
 
 // check whether there is a mod version installed that satisfies the version constraint (and update requirements)
@@ -264,7 +322,44 @@ func (i *ModInstaller) getInstalledVersionForConstraint(requiredModVersion *modc
 	// if we are updating, see if there is a newer verison
 	if i.shouldUpdate(requiredModVersion.Name) {
 		// so we should update if there is a newer version - check if there is
-		newerModVersionFound, err := i.newerModVersionFound(requiredModVersion, installedVersion.Version, availableVersions)
+		newerModVersionFound, err := i.updateAvailable(requiredModVersion, installedVersion.Version, availableVersions)
+		if err != nil {
+			return nil, err
+		}
+		if newerModVersionFound {
+			// there is a newer version so we will NOT use the installed version - return nil
+			return nil, nil
+		}
+	}
+
+	// so we resolved an installed version which will satisfy
+	// load the mod
+	modPath := filepath.Join(i.modsPath, modconfig.ModVersionFullName(requiredModVersion.Name, installedVersion.Version))
+	installedMod, err := i.loadModfile(modPath, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return installedMod, nil
+}
+
+// check whether there is a mod version installed that satisfies the version constraint (and update requirements)
+func (i *ModInstaller) getInstalledVersionForConstraintOLD(requiredModVersion *modconfig.ModVersionConstraint, availableVersions []*semver.Version, parent *modconfig.Mod) (*modconfig.Mod, error) {
+	// does this required version exist in in the lock file
+	log.Printf("[TRACE] getInstalledVersionForConstraint required version %v", requiredModVersion)
+	installedVersion, err := i.installData.Lock.GetLockedModVersion(requiredModVersion, parent)
+	if installedVersion == nil {
+		log.Printf("[TRACE] no version of %s installed for parent %s which satisfies version constrain %s", requiredModVersion.Name, parent.Name(), requiredModVersion.Constraint.Original)
+		return nil, nil
+	}
+
+	log.Printf("[TRACE] found installed version %s@%s", requiredModVersion.Name, installedVersion.Version)
+
+	// so there IS a version installed which satisfies the constraint.
+	// if we are updating, see if there is a newer verison
+	if i.shouldUpdate(requiredModVersion.Name) {
+		// so we should update if there is a newer version - check if there is
+		newerModVersionFound, err := i.updateAvailable(requiredModVersion, installedVersion.Version, availableVersions)
 		if err != nil {
 			return nil, err
 		}
@@ -286,7 +381,7 @@ func (i *ModInstaller) getInstalledVersionForConstraint(requiredModVersion *modc
 }
 
 // determine whether there is a newer mod version avoilable which satisfies the dependency version constraint
-func (i *ModInstaller) newerModVersionFound(requiredVersion *modconfig.ModVersionConstraint, currentVersion *semver.Version, availableVersions []*semver.Version) (bool, error) {
+func (i *ModInstaller) updateAvailable(requiredVersion *modconfig.ModVersionConstraint, currentVersion *semver.Version, availableVersions []*semver.Version) (bool, error) {
 	latestVersion, err := i.getModRefSatisfyingConstraints(requiredVersion, availableVersions)
 	if err != nil {
 		return false, err
@@ -369,11 +464,11 @@ func (i *ModInstaller) getModRefSatisfyingConstraints(modVersion *modconfig.ModV
 	return NewResolvedModRef(modVersion, version)
 }
 
-func (i *ModInstaller) setAddMods(addMods version_map.VersionConstraintMap) {
-	for name, contraint := range addMods {
-		// does the workspace mod already have a dependency on this mod - if so DO NOT add to AddMods
-		if !i.workspaceMod.DependsOnMod(contraint) {
-			i.AddMods[name] = contraint
-		}
-	}
-}
+//func (i *ModInstaller) setAddMods(addMods version_map.VersionConstraintMap) {
+//	for name, contraint := range addMods {
+//		// does the workspace mod already have a dependency on this mod - if so DO NOT add to AddMods
+//		if !i.workspaceMod.DependsOnMod(contraint) {
+//			i.mods[name] = contraint
+//		}
+//	}
+//}
