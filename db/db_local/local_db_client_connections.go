@@ -90,7 +90,6 @@ func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampip
 	log.Printf("[TRACE] UPDATES:")
 	for name, connectionData := range connectionUpdates.Update {
 		log.Printf("[TRACE] %s : %v:\n", name, connectionData)
-
 	}
 
 	if numUpdates > 0 {
