@@ -23,12 +23,37 @@ import (
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err error) {
+func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
 		}
 	}()
+
+	runCtx := parentRunCtx
+	// create a run context for this mod
+	if modPath != parentRunCtx.WorkspacePath {
+		runCtx = parse.NewRunContext(
+			modPath,
+			parse.CreatePseudoResources,
+			&filehelpers.ListOptions{
+				// listFlag specifies whether to load files recursively
+				Flags: filehelpers.FilesRecursive,
+				// only load .sp files
+				Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
+			})
+	}
+	// TODO
+	defer func() {
+		if err != nil {
+			//parentRunCtx.Merge(runCtx)
+		}
+	}()
+	//if runCtx.WorkingFolder != modPath {
+	//	prev := runCtx.WorkingFolder
+	//	runCtx.SetWorkingFolder(modPath)
+	//	defer runCtx.SetWorkingFolder(prev)
+	//}
 
 	// verify the mod folder exists
 	if _, err := os.Stat(modPath); os.IsNotExist(err) {
@@ -94,7 +119,7 @@ func loadModDependencies(mod *modconfig.Mod, runCtx *parse.RunContext) error {
 	var errors []error
 
 	if mod.Requires != nil {
-		// now ensure there is a lock file - if we have any mod depdnecies there MUST be a lock file -
+		// now ensure there is a lock file - if we have any mod dependnecies there MUST be a lock file -
 		// otherwise 'steampipe install' must be run
 		if err := runCtx.EnsureWorkspaceLock(mod); err != nil {
 			return err

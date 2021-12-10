@@ -120,7 +120,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 	installData, err := mod_installer.InstallWorkspaceDependencies(opts)
 	utils.FailOnError(err)
 
-	fmt.Printf(mod_installer.BuildInstallSummary(installData))
+	fmt.Println(mod_installer.BuildInstallSummary(installData))
 }
 
 // uninstall

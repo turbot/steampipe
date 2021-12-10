@@ -93,6 +93,16 @@ func NewRunContext(workspacePath string, flags ParseModFlag, listOptions *filehe
 	return c
 }
 
+func (r *RunContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
+	// if the mod has dependencies, there must a workspace lock object in the run context
+	// (mod MUST be the workspace mod, not a dependency, as we would hit this error as soon as we parse it)
+	if mod.HasDependentMods() && (r.WorkspaceLock.Empty() || r.WorkspaceLock.Incomplete()) {
+		return fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
+	}
+
+	return nil
+}
+
 // VariableValueMap converts a map of variables to a map of the underlying cty value
 func VariableValueMap(variables map[string]*modconfig.Variable) map[string]cty.Value {
 	ret := make(map[string]cty.Value, len(variables))
@@ -373,7 +383,7 @@ func (r *RunContext) buildEvalContext() {
 		variables[mod] = cty.ObjectVal(refTypeMap)
 	}
 
-	//create evaluation context
+	// create evaluation context
 	r.EvalCtx = &hcl.EvalContext{
 		Variables: variables,
 		Functions: ContextFunctions(r.WorkspacePath),
@@ -455,14 +465,4 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	}
 
 	return nil
-}
-
-func (r *RunContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
-	// if the mod has dependencies, there must a workspace lock object in the run context
-	// (mod MUST be the workspace mod, not a dependency, as we would hit this error as soon as we parse it)
-	if mod.Requires != nil && len(mod.Requires.Mods) > 0 && r.WorkspaceLock == nil {
-		return fmt.Errorf("no installation cache found - run 'steampipe mod install'")
-	}
-	return nil
-
 }
