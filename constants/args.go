@@ -37,9 +37,7 @@ const (
 	ArgVarFile           = "var-file"
 	ArgConnectionString  = "connection-string"
 	ArgCheckDisplayWidth = "check-display-width"
-	ArgTidy              = "tidy"
-	ArgUpdate            = "update"
-	ArgShowUpdates       = "show-updates"
+	ArgPrune             = "prune"
 )
 
 /// metaquery mode arguments

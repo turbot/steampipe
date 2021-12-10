@@ -28,6 +28,7 @@ func modCmd() *cobra.Command {
 
 	cmd.AddCommand(modInstallCmd())
 	cmd.AddCommand(modUninstallCmd())
+	cmd.AddCommand(modUpdateCmd())
 	cmd.AddCommand(modListCmd())
 	cmd.AddCommand(modTidyCmd())
 
@@ -45,9 +46,7 @@ func modInstallCmd() *cobra.Command {
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgTidy, "", true, "Remove unreferenced mods after installation").
-		AddBoolFlag(constants.ArgUpdate, "", false, "Update all dependent mods to the latest available version").
-		AddBoolFlag(constants.ArgShowUpdates, "", false, "Update all dependent mods to the latest available version")
+		AddBoolFlag(constants.ArgPrune, "", true, "Remove unreferenced mods after installation")
 	return cmd
 }
 
@@ -60,11 +59,6 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 			exitCode = 1
 		}
 	}()
-
-	if viper.GetBool(constants.ArgShowUpdates) {
-		showUpdates()
-		return
-	}
 
 	// if any mod names were passed as args, convert into formed mod names
 	modArgs, err := getRequiredModVersionsFromArgs(args)
@@ -121,7 +115,6 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 
 	opts := &mod_installer.InstallOpts{
 		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
-		Updating:      viper.GetBool(constants.ArgUpdate),
 		ModArgs:       modArgs,
 	}
 
@@ -171,14 +164,14 @@ func runModUninstallCmd(cmd *cobra.Command, args []string) {
 	fmt.Printf(mod_installer.BuildUninstallSummary(installData))
 }
 
-func showUpdates() {
-	opts := &mod_installer.InstallOpts{
-		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
-	}
-	current, updates, err := mod_installer.GetAvailableUpdates(opts)
-	utils.FailOnError(err)
-	fmt.Println(mod_installer.BuildAvailableUpdateSummary(current, updates))
-}
+//func showUpdates() {
+//	opts := &mod_installer.InstallOpts{
+//		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
+//	}
+//	current, updates, err := mod_installer.GetAvailableUpdates(opts)
+//	utils.FailOnError(err)
+//	fmt.Println(mod_installer.BuildAvailableUpdateSummary(current, updates))
+//}
 
 //func runModGetCmd(cmd *cobra.Command, args []string) {
 //	utils.LogTime("cmd.runModGetCmd")
@@ -265,56 +258,47 @@ func runModListCmd(*cobra.Command, []string) {
 }
 
 // update
-//func modUpdateCmd() *cobra.Command {
-//	var cmd = &cobra.Command{
-//		Use:   "update",
-//		Run:   runModUpdateCmd,
-//		Short: "Update workspace dependencies",
-//		Long: `Update workspace dependencies.
-//`,
-//	}
-//
-//	cmdconfig.OnCmd(cmd).
-//		AddBoolFlag(constants.ArgAll, "", false, "Update all mods to its latest available version").
-//		AddBoolFlag(constants.ArgShow, "", false, "Just display the updates which would be performed")
-//
-//	return cmd
-//}
+func modUpdateCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "update",
+		Run:   runModUpdateCmd,
+		Short: "Update workspace dependencies",
+		Long: `Update workspace dependencies.
+`,
+	}
 
-//func runModUpdateCmd(cmd *cobra.Command, args []string) {
-//	utils.LogTime("cmd.runModUpdateCmd")
-//	defer func() {
-//		utils.LogTime("cmd.runModUpdateCmd end")
-//		if r := recover(); r != nil {
-//			utils.ShowError(helpers.ToError(r))
-//			exitCode = 1
-//		}
-//	}()
-//
-//	// args to 'mod update' -- one or more mods to update
-//	mods, err := validateArgs(args)
-//	if err != nil {
-//		fmt.Println()
-//		utils.ShowError(err)
-//		fmt.Println()
-//		cmd.Help()
-//		fmt.Println()
-//		exitCode = 2
-//		return
-//	}
-//
-//	// first convert the mod args into well-formed mod names
-//	updateMods, err := getRequiredModVersionsFromArgs(mods)
-//	utils.FailOnError(err)
-//
-//	// if show flag is set, just display the potential updates
-//	if cmdconfig.Viper().GetBool(constants.ArgShow) {
-//		showUpdates()
-//	} else {
-//		doUpdates(updateMods)
-//	}
-//}
-//
+	cmdconfig.OnCmd(cmd).
+		AddBoolFlag(constants.ArgPrune, "", true, "Remove unreferenced mods after installation")
+
+	return cmd
+}
+
+func runModUpdateCmd(cmd *cobra.Command, args []string) {
+	utils.LogTime("cmd.runModUpdateCmd")
+	defer func() {
+		utils.LogTime("cmd.runModUpdateCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+			exitCode = 1
+		}
+	}()
+
+	// if any mod names were passed as args, convert into formed mod names
+	modArgs, err := getRequiredModVersionsFromArgs(args)
+	// TODO validate only 1 version of each mod
+	utils.FailOnError(err)
+
+	opts := &mod_installer.InstallOpts{
+		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
+		ModArgs:       modArgs,
+		Updating:      true,
+	}
+
+	installData, err := mod_installer.InstallWorkspaceDependencies(opts)
+	utils.FailOnError(err)
+
+	fmt.Printf(mod_installer.BuildInstallSummary(installData))
+}
 
 //func doUpdates(updateMods version_map.VersionConstraintMap) {
 //	opts := &mod_installer.InstallOpts{
