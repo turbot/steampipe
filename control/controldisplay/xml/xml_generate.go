@@ -1,0 +1,3 @@
+package xml
+
+// go:generate
