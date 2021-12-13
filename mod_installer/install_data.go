@@ -19,6 +19,10 @@ type InstallData struct {
 	RecentlyInstalled version_map.ResolvedVersionListMap
 	// list of dependencies which were already installed
 	AlreadyInstalled version_map.ResolvedVersionListMap
+	// list of dependencies which have been updated
+	Updated version_map.ResolvedVersionListMap
+	// list of dependencies which have been uninstalled
+	Uninstalled version_map.ResolvedVersionListMap
 }
 
 func NewInstallData(workspaceLock *version_map.WorkspaceLock) *InstallData {
@@ -32,11 +36,11 @@ func NewInstallData(workspaceLock *version_map.WorkspaceLock) *InstallData {
 }
 
 // GetAvailableUpdates returns a map of all installed mods which are not in the lock file
-func (s *InstallData) GetAvailableUpdates() (version_map.DependencyVersionMap, error) {
+func (d *InstallData) GetAvailableUpdates() (version_map.DependencyVersionMap, error) {
 	res := make(version_map.DependencyVersionMap)
-	for parent, deps := range s.Lock.InstallCache {
+	for parent, deps := range d.Lock.InstallCache {
 		for name, resolvedConstraint := range deps {
-			availableVersions, err := s.getAvailableModVersions(name)
+			availableVersions, err := d.getAvailableModVersions(name)
 			if err != nil {
 				return nil, err
 			}
@@ -51,13 +55,13 @@ func (s *InstallData) GetAvailableUpdates() (version_map.DependencyVersionMap, e
 }
 
 // onModInstalled is called when a dependency is satisfied by installing a mod version
-func (s *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconfig.Mod) {
+func (d *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconfig.Mod) {
 	// get the constraint from the parent (it must be there)
 	modVersion := parent.Require.GetModDependency(dependency.Name)
 	// update lock
-	s.NewLock.InstallCache.Add(dependency.Name, dependency.Version, modVersion.Constraint.Original, parent.Name())
+	d.NewLock.InstallCache.Add(dependency.Name, dependency.Version, modVersion.Constraint.Original, parent.Name())
 	// update list items installed by this installer
-	s.RecentlyInstalled.Add(dependency.Name, &version_map.ResolvedVersionConstraint{
+	d.RecentlyInstalled.Add(dependency.Name, &version_map.ResolvedVersionConstraint{
 		Name:       dependency.Name,
 		Version:    dependency.Version,
 		Constraint: dependency.Constraint.Original,
@@ -65,13 +69,13 @@ func (s *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconf
 }
 
 // addExisting is called when a dependency is satisfied by a mod which is already installed
-func (s *InstallData) addExisting(name string, version *semver.Version, constraint *version.Constraints, parent *modconfig.Mod) {
+func (d *InstallData) addExisting(name string, version *semver.Version, constraint *version.Constraints, parent *modconfig.Mod) {
 	// update lock
-	s.NewLock.InstallCache.Add(name, version, constraint.Original, parent.Name())
+	d.NewLock.InstallCache.Add(name, version, constraint.Original, parent.Name())
 
 	modVersion := parent.Require.GetModDependency(name)
 	// update list of already installed items
-	s.AlreadyInstalled.Add(name, &version_map.ResolvedVersionConstraint{
+	d.AlreadyInstalled.Add(name, &version_map.ResolvedVersionConstraint{
 		Name:       name,
 		Version:    version,
 		Constraint: modVersion.Constraint.Original,
@@ -80,9 +84,9 @@ func (s *InstallData) addExisting(name string, version *semver.Version, constrai
 
 //
 // retrieve all available mod versions from our cache, or from Git if not yet cached
-func (s *InstallData) getAvailableModVersions(modName string) ([]*semver.Version, error) {
+func (d *InstallData) getAvailableModVersions(modName string) ([]*semver.Version, error) {
 	// have we already loaded the versions for this mod
-	availableVersions, ok := s.allAvailable[modName]
+	availableVersions, ok := d.allAvailable[modName]
 	if ok {
 		return availableVersions, nil
 	}
@@ -93,7 +97,18 @@ func (s *InstallData) getAvailableModVersions(modName string) ([]*semver.Version
 		return nil, err
 	}
 	// update our cache
-	s.allAvailable[modName] = availableVersions
+	d.allAvailable[modName] = availableVersions
 
 	return availableVersions, nil
+}
+
+func (d *InstallData) setUninstalled(mods version_map.VersionConstraintMap, parent *modconfig.Mod) error {
+	var err error
+	if len(mods) == 0 {
+		d.Uninstalled = d.Lock.GetAllLockedModVersions(parent)
+		return nil
+	}
+
+	d.Uninstalled, err = d.Lock.GetLockedModVersions(mods, parent)
+	return err
 }
