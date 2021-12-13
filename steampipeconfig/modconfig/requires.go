@@ -10,8 +10,8 @@ import (
 	"github.com/turbot/steampipe/version"
 )
 
-// Requires is a struct representing mod dependencies
-type Requires struct {
+// Require is a struct representing mod dependencies
+type Require struct {
 	SteampipeVersionString string `hcl:"steampipe,optional"`
 	SteampipeVersion       *semver.Version
 	Plugins                []*PluginVersion        `hcl:"plugin,block"`
@@ -21,13 +21,13 @@ type Requires struct {
 	modMap map[string]*ModVersionConstraint
 }
 
-func newRequires() *Requires {
-	r := &Requires{}
+func newRequire() *Require {
+	r := &Require{}
 	r.initialise()
 	return r
 }
 
-func (r *Requires) initialise() hcl.Diagnostics {
+func (r *Require) initialise() hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	r.modMap = make(map[string]*ModVersionConstraint)
 
@@ -58,7 +58,7 @@ func (r *Requires) initialise() hcl.Diagnostics {
 	return diags
 }
 
-func (r *Requires) ValidateSteampipeVersion(modName string) error {
+func (r *Require) ValidateSteampipeVersion(modName string) error {
 	if r.SteampipeVersion != nil {
 		if version.SteampipeVersion.LessThan(r.SteampipeVersion) {
 			return fmt.Errorf("steampipe version %s does not satisfy %s which requires version %s", version.SteampipeVersion.String(), modName, r.SteampipeVersion.String())
@@ -70,7 +70,7 @@ func (r *Requires) ValidateSteampipeVersion(modName string) error {
 // AddModDependencies adds all the mod in newModVersions to our list of mods, using the following logic
 // - if a mod with same name, [alias] and constraint exists, it is not added
 // - if a mod with same name [and alias] and different constraint exist, it is replaced
-func (r *Requires) AddModDependencies(newModVersions map[string]*ModVersionConstraint) {
+func (r *Require) AddModDependencies(newModVersions map[string]*ModVersionConstraint) {
 	// rebuild the Mods array
 
 	// first rebuild the mod map
@@ -92,7 +92,7 @@ func (r *Requires) AddModDependencies(newModVersions map[string]*ModVersionConst
 	r.Mods = newMods
 }
 
-func (r *Requires) RemoveModDependencies(versions map[string]*ModVersionConstraint) {
+func (r *Require) RemoveModDependencies(versions map[string]*ModVersionConstraint) {
 	// first rebuild the mod map
 	for name := range versions {
 		// todo take alias into account
@@ -111,21 +111,21 @@ func (r *Requires) RemoveModDependencies(versions map[string]*ModVersionConstrai
 	r.Mods = newMods
 }
 
-func (r *Requires) RemoveAllModDependencies() {
+func (r *Require) RemoveAllModDependencies() {
 	r.Mods = nil
 }
 
-func (r *Requires) GetModDependency(name string /*,alias string*/) *ModVersionConstraint {
+func (r *Require) GetModDependency(name string /*,alias string*/) *ModVersionConstraint {
 	return r.modMap[name]
 }
 
-func (r *Requires) ContainsMod(requiredModVersion *ModVersionConstraint) bool {
+func (r *Require) ContainsMod(requiredModVersion *ModVersionConstraint) bool {
 	if c := r.GetModDependency(requiredModVersion.Name); c != nil {
 		return c.Equals(requiredModVersion)
 	}
 	return false
 }
 
-func (r *Requires) Empty() bool {
+func (r *Require) Empty() bool {
 	return r.SteampipeVersion == nil && len(r.Mods) == 0 && len(r.Plugins) == 0
 }

@@ -118,12 +118,12 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 	} else {
 		workspaceMod.RemoveModDependencies(i.mods)
 	}
-	if err := i.installMods(workspaceMod.Requires.Mods, workspaceMod); err != nil {
+	if err := i.installMods(workspaceMod.Require.Mods, workspaceMod); err != nil {
 		return err
 	}
 
-	if workspaceMod.Requires.Empty() {
-		workspaceMod.Requires = nil
+	if workspaceMod.Require.Empty() {
+		workspaceMod.Require = nil
 	}
 	// write the lock file
 	if err := i.installData.Lock.Save(); err != nil {
@@ -150,7 +150,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 	workspaceMod := i.workspaceMod
 
 	// first check our Steampipe version is sufficient
-	if err := workspaceMod.Requires.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
+	if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
 		return err
 	}
 
@@ -167,7 +167,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 		return nil
 	}
 
-	if err := i.installMods(workspaceMod.Requires.Mods, workspaceMod); err != nil {
+	if err := i.installMods(workspaceMod.Require.Mods, workspaceMod); err != nil {
 		return err
 	}
 
@@ -251,7 +251,7 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 	var errors []error
 	// now update the parent to dependency mod and install its child dependencies
 	parent = dependencyMod
-	for _, dep := range dependencyMod.Requires.Mods {
+	for _, dep := range dependencyMod.Require.Mods {
 		childDependencyMod, err := i.getCurrentlyInstalledVersion(dep, parent, shouldUpdate)
 		if err != nil {
 			errors = append(errors, err)

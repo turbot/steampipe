@@ -13,7 +13,7 @@ mod "m1" {
     description = "CIS reports, queries, and actions for AWS. Open source CLI. No DB required."
   }
 //
-//  requires {
+//  require {
 //    steampipe  ">0.3.0" {}
 //
 //    plugin "aws" {}

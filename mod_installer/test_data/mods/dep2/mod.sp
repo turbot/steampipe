@@ -1,5 +1,5 @@
 mod "dep2" {
-  requires {
+  require {
     mod "github.com/kaidaguerre/steampipe-mod-m2" {
       version = "latest"
     }
