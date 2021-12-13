@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/utils"
@@ -51,7 +50,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 	}
 
 	if !session.Initialized {
-		log.Printf("[TRACE] Session with PID: %d - waiting for init lock", backendPid)
+		log.Printf("[WARN] Session with PID: %d - waiting for init lock", backendPid)
 		session.LifeCycle.Add("queued_for_init")
 
 		err := c.parallelSessionInitLock.Acquire(ctx, 1)
@@ -61,7 +60,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 		}
 		c.sessionInitWaitGroup.Add(1)
 
-		log.Printf("[TRACE] Session with PID: %d - waiting for init start", backendPid)
+		log.Printf("[WARN] Session with PID: %d - waiting for init start", backendPid)
 		session.LifeCycle.Add("init_start")
 		err, warnings := c.ensureSessionFunc(ctx, session)
 		session.LifeCycle.Add("init_finish")
@@ -76,7 +75,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 		// if there is no error, mark session as initialized
 		session.Initialized = true
 
-		log.Printf("[TRACE] Session with PID: %d - init DONE", backendPid)
+		log.Printf("[WARN] Session with PID: %d - init DONE", backendPid)
 	}
 
 	// update required session search path if needed
@@ -139,10 +138,26 @@ func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, uint32
 		log.Printf("[TRACE] getSessionWithRetries succeeded after %d retries", retries)
 	}
 
-	session.Raw(func(driverConn interface{}) error {
-		backendPid = driverConn.(*stdlib.Conn).Conn().PgConn().PID()
-		return nil
-	})
+	backendPid, _ = GetBackendPid(ctx, session)
+	//session.Raw(func(driverConn interface{}) error {
+	//	//backendPid = driverConn.(*stdlib.Conn).Conn().PgConn().PID()
+	//
+	//
+	//	return nil
+	//})
 
-	return session, backendPid, nil
+	return session, uint32(backendPid), nil
+}
+
+// get the unique postgres identifier for a database session
+func GetBackendPid(ctx context.Context, session *sql.Conn) (uint32, error) {
+	var pid int64
+	rows, err := session.QueryContext(ctx, "select pg_backend_pid()")
+	if err != nil {
+		return 0, err
+	}
+	rows.Next()
+	rows.Scan(&pid)
+	rows.Close()
+	return uint32(pid), nil
 }
