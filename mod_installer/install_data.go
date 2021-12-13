@@ -102,13 +102,21 @@ func (d *InstallData) getAvailableModVersions(modName string) ([]*semver.Version
 	return availableVersions, nil
 }
 
-func (d *InstallData) setUninstalled(mods version_map.VersionConstraintMap, parent *modconfig.Mod) error {
-	var err error
-	if len(mods) == 0 {
-		d.Uninstalled = d.Lock.GetAllLockedModVersions(parent)
-		return nil
-	}
+// update the lock with the NewLock and dtermine if any mods have been uninstalled
+func (d *InstallData) onInstallComplete() {
+	d.Uninstalled = d.getUninstalled(d.Lock, d.NewLock)
+	d.Lock = d.NewLock
+}
 
-	d.Uninstalled, err = d.Lock.GetLockedModVersions(mods, parent)
-	return err
+// determine which dependencies have been uninstalled by comparing old and new lock data
+func (d *InstallData) getUninstalled(oldLock *version_map.WorkspaceLock, newLock *version_map.WorkspaceLock) version_map.ResolvedVersionListMap {
+	res := make(version_map.ResolvedVersionListMap)
+	oldFlat := oldLock.InstallCache.FlatMap()
+	newFlat := newLock.InstallCache.FlatMap()
+	for fullName, oldDep := range oldFlat {
+		if _, ok := newFlat[fullName]; !ok {
+			res.Add(oldDep.Name, oldDep)
+		}
+	}
+	return res
 }
