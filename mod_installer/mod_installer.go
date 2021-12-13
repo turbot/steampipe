@@ -74,15 +74,20 @@ type ModInstaller struct {
 	// should we update dependencies to newer versions if they exist
 	updating bool
 	// are dependencies being added to the workspace
-	mods version_map.VersionConstraintMap
+	mods   version_map.VersionConstraintMap
+	dryRun bool
 }
 
 func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
+
 	i := &ModInstaller{
 		workspacePath: opts.WorkspacePath,
-		modsPath:      constants.WorkspaceModPath(opts.WorkspacePath),
 		updating:      opts.Updating,
 		mods:          opts.ModArgs,
+		dryRun:        opts.DryRun,
+	}
+	if err := i.setModsPath(); err != nil {
+		return nil, err
 	}
 
 	// load workspace mod, creating a default if needed
@@ -107,6 +112,21 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	//	return nil, err
 	//}
 	return i, nil
+}
+
+func (i *ModInstaller) setModsPath() error {
+	// if this is a dry run, install mods to temp dir which will be deleted
+	if i.dryRun {
+		dir, err := os.MkdirTemp(os.TempDir(), "sp_dr_*")
+		if err != nil {
+			return err
+		}
+		i.modsPath = dir
+	} else {
+		// fall back to setting real mod path
+		i.modsPath = constants.WorkspaceModPath(i.workspacePath)
+	}
+	return nil
 }
 
 func (i *ModInstaller) UninstallWorkspaceDependencies() error {
@@ -135,7 +155,7 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 	}
 
 	// if this is a dry run, return now
-	if viper.GetBool(constants.ArgDryRun) {
+	if i.dryRun {
 		log.Printf("[TRACE] UninstallWorkspaceDependencies - dry-run=true, returning before saving mod file and cache\n")
 		return nil
 	}
@@ -162,6 +182,11 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 // InstallWorkspaceDependencies installs all dependencies of the workspace mod
 func (i *ModInstaller) InstallWorkspaceDependencies() error {
 	workspaceMod := i.workspaceMod
+	defer func() {
+		if i.dryRun {
+			os.RemoveAll(i.modsPath)
+		}
+	}()
 
 	// first check our Steampipe version is sufficient
 	if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
@@ -186,7 +211,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 	}
 
 	// if this is a dry run, return now
-	if viper.GetBool(constants.ArgDryRun) {
+	if i.dryRun {
 		log.Printf("[TRACE] InstallWorkspaceDependencies - dry-run=true, returning before saving mod file and cache\n")
 		return nil
 	}
@@ -381,10 +406,6 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 		}
 	}()
 
-	if viper.GetBool(constants.ArgDryRun) {
-		log.Printf("[TRACE] install %s - dry-run=truem, returning before install\n", dependency.FullName())
-		return nil, nil
-	}
 	fullName := dependency.FullName()
 	destPath := i.getDependencyDestPath(fullName)
 
