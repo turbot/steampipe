@@ -116,6 +116,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 
 	opts := &mod_installer.InstallOpts{
 		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
+		DryRun:        viper.GetBool(constants.ArgDryRun),
 		ModArgs:       modArgs,
 	}
 
@@ -159,6 +160,7 @@ func runModUninstallCmd(cmd *cobra.Command, args []string) {
 
 	opts := &mod_installer.InstallOpts{
 		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
+		DryRun:        viper.GetBool(constants.ArgDryRun),
 		ModArgs:       modArgs,
 	}
 
@@ -202,6 +204,7 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 
 	opts := &mod_installer.InstallOpts{
 		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
+		DryRun:        viper.GetBool(constants.ArgDryRun),
 		ModArgs:       modArgs,
 		Updating:      true,
 	}
@@ -288,7 +291,10 @@ func runModPruneCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	opts := &mod_installer.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
+	opts := &mod_installer.InstallOpts{
+		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
+		DryRun:        viper.GetBool(constants.ArgDryRun),
+	}
 
 	// install workspace dependencies
 	installer, err := mod_installer.NewModInstaller(opts)
