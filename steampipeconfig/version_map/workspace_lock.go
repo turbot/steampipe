@@ -21,7 +21,7 @@ import (
 
 // WorkspaceLock is a map of ModVersionMaps items keyed by the parent mod whose dependencies are installed
 type WorkspaceLock struct {
-	workspacePath   string
+	WorkspacePath   string
 	InstallCache    DependencyVersionMap
 	MissingVersions DependencyVersionMap
 
@@ -29,6 +29,14 @@ type WorkspaceLock struct {
 	installedMods VersionListMap
 }
 
+func EmptyWorkspaceLock(workspacePath string) *WorkspaceLock {
+	return &WorkspaceLock{
+		WorkspacePath:   workspacePath,
+		modsPath:        constants.WorkspaceModPath(workspacePath),
+		InstallCache:    make(DependencyVersionMap),
+		MissingVersions: make(DependencyVersionMap),
+	}
+}
 func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 	var installCache = make(DependencyVersionMap)
 	lockPath := constants.WorkspaceLockPath(workspacePath)
@@ -46,7 +54,7 @@ func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 		}
 	}
 	res := &WorkspaceLock{
-		workspacePath:   workspacePath,
+		WorkspacePath:   workspacePath,
 		modsPath:        constants.WorkspaceModPath(workspacePath),
 		InstallCache:    installCache,
 		MissingVersions: make(DependencyVersionMap),
@@ -149,16 +157,21 @@ func (l *WorkspaceLock) parseModPath(modfilePath string) (modName string, modVer
 }
 
 func (l *WorkspaceLock) Save() error {
+	if len(l.InstallCache) == 0 {
+		// ignore error
+		l.Delete()
+		return nil
+	}
 	content, err := json.MarshalIndent(l.InstallCache, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(constants.WorkspaceLockPath(l.workspacePath), content, 0644)
+	return os.WriteFile(constants.WorkspaceLockPath(l.WorkspacePath), content, 0644)
 }
 
 // Delete deletes the lock file
 func (l *WorkspaceLock) Delete() error {
-	return os.Remove(constants.WorkspaceLockPath(l.workspacePath))
+	return os.Remove(constants.WorkspaceLockPath(l.WorkspacePath))
 }
 
 // DeleteMods removes mods from the lock file then, if it is empty, deletes the file

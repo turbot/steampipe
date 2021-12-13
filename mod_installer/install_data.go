@@ -9,7 +9,8 @@ import (
 
 type InstallData struct {
 	// record of the full dependency tree
-	Lock *version_map.WorkspaceLock
+	Lock    *version_map.WorkspaceLock
+	NewLock *version_map.WorkspaceLock
 
 	// ALL the available versions for each dependency mod(we populate this in a lazy fashion)
 	allAvailable version_map.VersionListMap
@@ -23,6 +24,7 @@ type InstallData struct {
 func NewInstallData(workspaceLock *version_map.WorkspaceLock) *InstallData {
 	return &InstallData{
 		Lock:              workspaceLock,
+		NewLock:           version_map.EmptyWorkspaceLock(workspaceLock.WorkspacePath),
 		allAvailable:      make(version_map.VersionListMap),
 		RecentlyInstalled: make(version_map.ResolvedVersionListMap),
 		AlreadyInstalled:  make(version_map.ResolvedVersionListMap),
@@ -50,10 +52,10 @@ func (s *InstallData) GetAvailableUpdates() (version_map.DependencyVersionMap, e
 
 // onModInstalled is called when a dependency is satisfied by installing a mod version
 func (s *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconfig.Mod) {
-	// update lock
 	// get the constraint from the parent (it must be there)
 	modVersion := parent.Requires.GetModDependency(dependency.Name)
-	s.Lock.InstallCache.Add(dependency.Name, dependency.Version, modVersion.Constraint.Original, parent.Name())
+	// update lock
+	s.NewLock.InstallCache.Add(dependency.Name, dependency.Version, modVersion.Constraint.Original, parent.Name())
 	// update list items installed by this installer
 	s.RecentlyInstalled.Add(dependency.Name, &version_map.ResolvedVersionConstraint{
 		Name:       dependency.Name,
@@ -63,8 +65,10 @@ func (s *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconf
 }
 
 // addExisting is called when a dependency is satisfied by a mod which is already installed
-func (s *InstallData) addExisting(name string, version *semver.Version, parent *modconfig.Mod) {
+func (s *InstallData) addExisting(name string, version *semver.Version, constraint *version.Constraints, parent *modconfig.Mod) {
 	// update lock
+	s.NewLock.InstallCache.Add(name, version, constraint.Original, parent.Name())
+
 	modVersion := parent.Requires.GetModDependency(name)
 	// update list of already installed items
 	s.AlreadyInstalled.Add(name, &version_map.ResolvedVersionConstraint{

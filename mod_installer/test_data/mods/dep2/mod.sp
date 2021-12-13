@@ -1,8 +1,7 @@
-mod "dep2"{
+mod "dep2" {
   requires {
-
-    mod "github.com/kaidaguerre/steampipe-mod-m2"  {
-      version = "v3.0"
+    mod "github.com/kaidaguerre/steampipe-mod-m2" {
+      version = "latest"
     }
   }
 }
