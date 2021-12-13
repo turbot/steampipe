@@ -113,14 +113,14 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 func loadModDependencies(mod *modconfig.Mod, runCtx *parse.RunContext) error {
 	var errors []error
 
-	if mod.Requires != nil {
+	if mod.Require != nil {
 		// now ensure there is a lock file - if we have any mod dependnecies there MUST be a lock file -
 		// otherwise 'steampipe install' must be run
 		if err := runCtx.EnsureWorkspaceLock(mod); err != nil {
 			return err
 		}
 
-		for _, requiredModVersion := range mod.Requires.Mods {
+		for _, requiredModVersion := range mod.Require.Mods {
 			// if we have a locked version, update the required version to reflect this
 			lockedVersion, err := runCtx.WorkspaceLock.GetLockedModVersionConstraint(requiredModVersion, mod)
 			if err != nil {
