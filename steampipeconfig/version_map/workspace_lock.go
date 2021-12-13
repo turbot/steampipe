@@ -40,6 +40,7 @@ func EmptyWorkspaceLock(existingLock *WorkspaceLock) *WorkspaceLock {
 		installedMods:   existingLock.installedMods,
 	}
 }
+
 func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 	var installCache = make(DependencyVersionMap)
 	lockPath := constants.WorkspaceLockPath(workspacePath)
@@ -211,14 +212,6 @@ func (l *WorkspaceLock) GetLockedModVersions(mods VersionConstraintMap, parent *
 	return res, nil
 }
 
-func (l *WorkspaceLock) GetAllLockedModVersions(parent *modconfig.Mod) ResolvedVersionListMap {
-	if parentDependencies := l.InstallCache[parent.Name()]; parentDependencies != nil {
-		// look for this mod in the lock file entries for this parent
-		return parentDependencies.ToVersionListMap()
-	}
-	return make(ResolvedVersionListMap)
-}
-
 // GetLockedModVersion looks for a lock file entry matching the required constraint and returns nil if not found
 func (l *WorkspaceLock) GetLockedModVersion(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod) (*ResolvedVersionConstraint, error) {
 	lockedVersion := l.GetMod(requiredModVersion.Name, parent)
@@ -235,7 +228,6 @@ func (l *WorkspaceLock) GetLockedModVersion(requiredModVersion *modconfig.ModVer
 }
 
 // EnsureLockedModVersion looks for a lock file entry matching the required mod name
-// if ther eis no
 func (l *WorkspaceLock) EnsureLockedModVersion(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod) (*ResolvedVersionConstraint, error) {
 	lockedVersion := l.GetMod(requiredModVersion.Name, parent)
 	if lockedVersion == nil {
