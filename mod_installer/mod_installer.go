@@ -125,6 +125,13 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 	if workspaceMod.Require.Empty() {
 		workspaceMod.Require = nil
 	}
+
+	// if this is a dry run, return now
+	if viper.GetBool(constants.ArgDryRun) {
+		log.Printf("[TRACE] UninstallWorkspaceDependencies - dry-run=true, returning before saving mod file and cache\n")
+		return nil
+	}
+
 	// write the lock file
 	if err := i.installData.Lock.Save(); err != nil {
 		return err
@@ -169,6 +176,12 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 
 	if err := i.installMods(workspaceMod.Require.Mods, workspaceMod); err != nil {
 		return err
+	}
+
+	// if this is a dry run, return now
+	if viper.GetBool(constants.ArgDryRun) {
+		log.Printf("[TRACE] InstallWorkspaceDependencies - dry-run=true, returning before saving mod file and cache\n")
+		return nil
 	}
 
 	// write the lock file
@@ -228,6 +241,7 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 		if err != nil {
 			return err
 		}
+
 		// install the mod
 		dependencyMod, err = i.install(resolvedRef, parent)
 		if err != nil {
@@ -340,6 +354,10 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 		}
 	}()
 
+	if viper.GetBool(constants.ArgDryRun) {
+		log.Printf("[TRACE] install %s - dry-run=truem, returning before install\n", dependency.FullName())
+		return nil, nil
+	}
 	fullName := dependency.FullName()
 	destPath := i.getDependencyDestPath(fullName)
 
