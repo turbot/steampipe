@@ -49,9 +49,6 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return err
 	}
 
-	log.Println("[TRACE] calling killPreviousInstanceIfAny")
-	display.UpdateSpinnerMessage(spinner, "Cleanup any Steampipe processes...")
-	killInstanceIfAny(ctx)
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
 	err = removeRunningInstanceInfo()
 	if err != nil && !os.IsNotExist(err) {
@@ -232,6 +229,7 @@ func runInstall(ctx context.Context, firstInstall bool, spinner *spinner.Spinner
 		log.Printf("[TRACE] getNextFreePort failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")
 	}
+
 	process, err := startServiceForInstall(port)
 	if err != nil {
 		display.StopSpinner(spinner)
