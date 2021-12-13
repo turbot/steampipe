@@ -8,7 +8,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/version_map"
 )
 
-func (i *ModInstaller) Tidy() (version_map.VersionListMap, error) {
+func (i *ModInstaller) Prune() (version_map.VersionListMap, error) {
 	unusedMods := i.installData.Lock.GetUnreferencedMods()
 	// now delete any mod folders which are not in the lock file
 	for name, versions := range unusedMods {

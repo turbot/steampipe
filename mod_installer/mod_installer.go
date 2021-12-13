@@ -72,7 +72,7 @@ type ModInstaller struct {
 	installData *InstallData
 
 	// should we update dependencies to newer versions if they exist
-	shouldUpdate bool
+	updating bool
 	// are dependencies being added to the workspace
 	mods version_map.VersionConstraintMap
 }
@@ -81,7 +81,7 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	i := &ModInstaller{
 		workspacePath: opts.WorkspacePath,
 		modsPath:      constants.WorkspaceModPath(opts.WorkspacePath),
-		shouldUpdate:  opts.Updating,
+		updating:      opts.Updating,
 		mods:          opts.ModArgs,
 	}
 
@@ -112,12 +112,20 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 	workspaceMod := i.workspaceMod
 
-	// if no mods specified, just delete the lock file and tidy
+	// remove required dependencies from the mod file
 	if len(i.mods) == 0 {
 		workspaceMod.RemoveAllModDependencies()
+
 	} else {
 		workspaceMod.RemoveModDependencies(i.mods)
 	}
+
+	// update the install data
+	if err := i.installData.setUninstalled(i.mods, i.workspaceMod); err != nil {
+		return err
+	}
+
+	// uninstall by calling Install
 	if err := i.installMods(workspaceMod.Require.Mods, workspaceMod); err != nil {
 		return err
 	}
@@ -144,11 +152,10 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 
 	// tidy unused mods
 	if viper.GetBool(constants.ArgPrune) {
-		if _, err := i.Tidy(); err != nil {
+		if _, err := i.Prune(); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -198,7 +205,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 
 	// tidy unused mods
 	if viper.GetBool(constants.ArgPrune) {
-		if _, err := i.Tidy(); err != nil {
+		if _, err := i.Prune(); err != nil {
 			return err
 		}
 	}
@@ -209,13 +216,15 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) error {
 	var errors []error
 	for _, requiredModVersion := range mods {
-		update := i.shouldUpdate
-		modToUse, err := i.getCurrentlyInstalledVersion(requiredModVersion, parent, update)
+		update := i.updating
+		modToUse, err := i.getCurrentlyInstalledVersionToUse(requiredModVersion, parent, update)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		// set the force updfate flag - this is passed down the depdnecy tree to ensure we update downstream dependecies
+
+		// if the mod is not installed or needs updating, pass shouldUpdate=true into installModDependencesRecursively
+		// this ensures that we update any dependencies which have updates available
 		shouldUpdate := modToUse == nil
 		if err := i.installModDependencesRecursively(requiredModVersion, modToUse, parent, shouldUpdate); err != nil {
 			errors = append(errors, err)
@@ -223,7 +232,21 @@ func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, paren
 	}
 
 	i.installData.Lock = i.installData.NewLock
-	return utils.CombineErrorsWithPrefix(fmt.Sprintf("%d %s failed to install", len(errors), utils.Pluralize("dependency", len(errors))), errors...)
+
+	return i.buildInstallError(errors)
+}
+
+func (i *ModInstaller) buildInstallError(errors []error) error {
+	if len(errors) == 0 {
+		return nil
+	}
+	verb := "install"
+	if i.updating {
+		verb = "update"
+	}
+	prefix := fmt.Sprintf("%d %s failed to %s", len(errors), utils.Pluralize("dependency", len(errors)), verb)
+	err := utils.CombineErrorsWithPrefix(prefix, errors...)
+	return err
 }
 
 func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modconfig.ModVersionConstraint, dependencyMod *modconfig.Mod, parent *modconfig.Mod, shouldUpdate bool) error {
@@ -266,7 +289,7 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 	// now update the parent to dependency mod and install its child dependencies
 	parent = dependencyMod
 	for _, dep := range dependencyMod.Require.Mods {
-		childDependencyMod, err := i.getCurrentlyInstalledVersion(dep, parent, shouldUpdate)
+		childDependencyMod, err := i.getCurrentlyInstalledVersionToUse(dep, parent, shouldUpdate)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -280,13 +303,17 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 	return utils.CombineErrorsWithPrefix(fmt.Sprintf("%d child %s failed to install", len(errors), utils.Pluralize("dependency", len(errors))), errors...)
 }
 
-func (i *ModInstaller) getCurrentlyInstalledVersion(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod, forceUpdate bool) (*modconfig.Mod, error) {
+func (i *ModInstaller) getCurrentlyInstalledVersionToUse(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod, forceUpdate bool) (*modconfig.Mod, error) {
 	// do we have an installed version of this mod matching the required mod constraint
 	installedVersion, err := i.installData.Lock.GetLockedModVersion(requiredModVersion, parent)
 	if err != nil {
 		return nil, err
 	}
 	if installedVersion == nil {
+		// if we are updating, the a version of th emod MUST be installed
+		if i.updating {
+			return nil, fmt.Errorf("%s is not installed", requiredModVersion.Name)
+		}
 		return nil, nil
 	}
 
