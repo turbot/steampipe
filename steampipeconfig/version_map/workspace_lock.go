@@ -195,6 +195,30 @@ func (l *WorkspaceLock) GetMod(modName string, parent *modconfig.Mod) *ResolvedV
 	return nil
 }
 
+// GetLockedModVersions builds a ResolvedVersionListMap with the resolved versions
+// for each item of the given VersionConstraintMap found in the lock file
+func (l *WorkspaceLock) GetLockedModVersions(mods VersionConstraintMap, parent *modconfig.Mod) (ResolvedVersionListMap, error) {
+	var res = make(ResolvedVersionListMap)
+	for name, constraint := range mods {
+		resolvedConstraint, err := l.GetLockedModVersion(constraint, parent)
+		if err != nil {
+			return nil, err
+		}
+		if resolvedConstraint != nil {
+			res.Add(name, resolvedConstraint)
+		}
+	}
+	return res, nil
+}
+
+func (l *WorkspaceLock) GetAllLockedModVersions(parent *modconfig.Mod) ResolvedVersionListMap {
+	if parentDependencies := l.InstallCache[parent.Name()]; parentDependencies != nil {
+		// look for this mod in the lock file entries for this parent
+		return parentDependencies.ToVersionListMap()
+	}
+	return make(ResolvedVersionListMap)
+}
+
 // GetLockedModVersion looks for a lock file entry matching the required constraint and returns nil if not found
 func (l *WorkspaceLock) GetLockedModVersion(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod) (*ResolvedVersionConstraint, error) {
 	lockedVersion := l.GetMod(requiredModVersion.Name, parent)

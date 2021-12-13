@@ -10,3 +10,12 @@ func (m ResolvedVersionMap) Add(name string, constraint *ResolvedVersionConstrai
 func (m ResolvedVersionMap) Remove(name string) {
 	delete(m, name)
 }
+
+// ToVersionListMap converts this map into a ResolvedVersionListMap
+func (m ResolvedVersionMap) ToVersionListMap() ResolvedVersionListMap {
+	res := make(ResolvedVersionListMap, len(m))
+	for k, v := range m {
+		res.Add(k, v)
+	}
+	return res
+}
