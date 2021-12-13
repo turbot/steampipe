@@ -53,7 +53,7 @@ func (s *InstallData) GetAvailableUpdates() (version_map.DependencyVersionMap, e
 // onModInstalled is called when a dependency is satisfied by installing a mod version
 func (s *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconfig.Mod) {
 	// get the constraint from the parent (it must be there)
-	modVersion := parent.Requires.GetModDependency(dependency.Name)
+	modVersion := parent.Require.GetModDependency(dependency.Name)
 	// update lock
 	s.NewLock.InstallCache.Add(dependency.Name, dependency.Version, modVersion.Constraint.Original, parent.Name())
 	// update list items installed by this installer
@@ -69,7 +69,7 @@ func (s *InstallData) addExisting(name string, version *semver.Version, constrai
 	// update lock
 	s.NewLock.InstallCache.Add(name, version, constraint.Original, parent.Name())
 
-	modVersion := parent.Requires.GetModDependency(name)
+	modVersion := parent.Require.GetModDependency(name)
 	// update list of already installed items
 	s.AlreadyInstalled.Add(name, &version_map.ResolvedVersionConstraint{
 		Name:       name,

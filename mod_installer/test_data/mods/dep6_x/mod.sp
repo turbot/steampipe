@@ -1,5 +1,5 @@
 mod "dep6"{
-  requires {
+  require {
     mod "github.com/kaidaguerre/steampipe-mod-m1"  {
       version = "v1.*"
     }

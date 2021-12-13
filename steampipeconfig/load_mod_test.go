@@ -428,7 +428,7 @@ Benchmarks:
 			expected: &modconfig.Mod{
 				ShortName: "m1",
 				FullName:  "mod.m1",
-				Requires: &modconfig.Requires{
+				Require: &modconfig.Require{
 					SteampipeVersionString: "v0.8.0",
 					Mods: []*modconfig.ModVersionConstraint{
 						{
@@ -444,7 +444,7 @@ Benchmarks:
 			expected: &modconfig.Mod{
 				ShortName: "m1",
 				FullName:  "mod.m1",
-				Requires: &modconfig.Requires{
+				Require: &modconfig.Require{
 					SteampipeVersionString: "v0.8.0",
 					Mods: []*modconfig.ModVersionConstraint{
 						{

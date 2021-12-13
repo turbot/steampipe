@@ -1,5 +1,5 @@
 mod "dep1" {
-  requires {
+  require {
     mod "github.com/turbot/steampipe-mod-aws-compliance" {
       version = "0"
     }
