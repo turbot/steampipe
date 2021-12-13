@@ -131,10 +131,8 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 	}
 
 	//  now safe to save the mod file
-	if len(i.mods) > 0 {
-		if err := i.workspaceMod.Save(); err != nil {
-			return err
-		}
+	if err := i.workspaceMod.Save(); err != nil {
+		return err
 	}
 
 	// tidy unused mods

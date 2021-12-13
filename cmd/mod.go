@@ -133,7 +133,9 @@ func modUninstallCmd() *cobra.Command {
 `,
 	}
 
-	cmdconfig.OnCmd(cmd)
+	cmdconfig.OnCmd(cmd).
+		AddBoolFlag(constants.ArgPrune, "", true, "Remove unreferenced mods after uninstallation")
+
 	return cmd
 }
 
