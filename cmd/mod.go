@@ -45,7 +45,8 @@ func modInstallCmd() *cobra.Command {
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgPrune, "", true, "Remove unreferenced mods after installation")
+		AddBoolFlag(constants.ArgPrune, "", true, "Remove unreferenced mods after installation").
+		AddBoolFlag(constants.ArgDryRun, "", false, "Show which mods would be installed or uninstalled without performing the installation")
 	return cmd
 }
 
@@ -134,7 +135,8 @@ func modUninstallCmd() *cobra.Command {
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgPrune, "", true, "Remove unreferenced mods after uninstallation")
+		AddBoolFlag(constants.ArgPrune, "", true, "Remove unreferenced mods after uninstallation").
+		AddBoolFlag(constants.ArgDryRun, "", false, "Show which mods would be uninstalled without removing them")
 
 	return cmd
 }
@@ -176,7 +178,8 @@ func modUpdateCmd() *cobra.Command {
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgPrune, "", true, "Remove unreferenced mods after installation")
+		AddBoolFlag(constants.ArgPrune, "", true, "Remove unreferenced mods after installation").
+		AddBoolFlag(constants.ArgDryRun, "", false, "Show which mods would be updated without updating them")
 
 	return cmd
 }
