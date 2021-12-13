@@ -46,7 +46,7 @@ type Mod struct {
 	References []*ResourceReference
 
 	// blocks
-	Requires  *Requires  `hcl:"requires,block"`
+	Require   *Require   `hcl:"require,block"`
 	OpenGraph *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
 
 	VersionString string `cty:"version"`
@@ -88,7 +88,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		ModPath:      modPath,
 		DeclRange:    defRange,
 		AllResources: make(map[string]HclResource),
-		Requires:     newRequires(),
+		Require:      newRequire(),
 	}
 
 	// try to derive mod version from the path
@@ -288,17 +288,17 @@ func (m *Mod) String() string {
 	}
 	var requiresStrings []string
 	var requiresString string
-	if m.Requires != nil {
-		if m.Requires.SteampipeVersionString != "" {
-			requiresStrings = append(requiresStrings, fmt.Sprintf("Steampipe %s", m.Requires.SteampipeVersionString))
+	if m.Require != nil {
+		if m.Require.SteampipeVersionString != "" {
+			requiresStrings = append(requiresStrings, fmt.Sprintf("Steampipe %s", m.Require.SteampipeVersionString))
 		}
-		for _, m := range m.Requires.Mods {
+		for _, m := range m.Require.Mods {
 			requiresStrings = append(requiresStrings, m.String())
 		}
-		for _, p := range m.Requires.Plugins {
+		for _, p := range m.Require.Plugins {
 			requiresStrings = append(requiresStrings, p.String())
 		}
-		requiresString = fmt.Sprintf("Requires: \n%s", strings.Join(requiresStrings, "\n"))
+		requiresString = fmt.Sprintf("Require: \n%s", strings.Join(requiresStrings, "\n"))
 	}
 
 	return fmt.Sprintf(`Name: %s
@@ -546,11 +546,11 @@ func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	if m.VersionString != "" && m.Version == nil {
 		m.Version, _ = semver.NewVersion(m.VersionString)
 	}
-	// initialise our Requires
-	if m.Requires == nil {
+	// initialise our Require
+	if m.Require == nil {
 		return nil
 	}
-	return m.Requires.initialise()
+	return m.Require.initialise()
 }
 
 // AddReference implements HclResource
@@ -629,15 +629,15 @@ func (m *Mod) GetChildControls() []*Control {
 }
 
 func (m *Mod) AddModDependencies(modVersions map[string]*ModVersionConstraint) {
-	m.Requires.AddModDependencies(modVersions)
+	m.Require.AddModDependencies(modVersions)
 }
 
 func (m *Mod) RemoveModDependencies(modVersions map[string]*ModVersionConstraint) {
-	m.Requires.RemoveModDependencies(modVersions)
+	m.Require.RemoveModDependencies(modVersions)
 }
 
 func (m *Mod) RemoveAllModDependencies() {
-	m.Requires.RemoveAllModDependencies()
+	m.Require.RemoveAllModDependencies()
 }
 
 func (m *Mod) Save() error {
@@ -692,22 +692,22 @@ func (m *Mod) Save() error {
 
 	}
 
-	// requires
-	if requires := m.Requires; requires != nil {
-		requiresBody := modBody.AppendNewBlock("requires", nil).Body()
+	// require
+	if require := m.Require; require != nil {
+		requiresBody := modBody.AppendNewBlock("require", nil).Body()
 
-		if requires.SteampipeVersionString != "" {
-			requiresBody.SetAttributeValue("steampipe", cty.StringVal(requires.SteampipeVersionString))
+		if require.SteampipeVersionString != "" {
+			requiresBody.SetAttributeValue("steampipe", cty.StringVal(require.SteampipeVersionString))
 		}
-		if len(requires.Plugins) > 0 {
-			pluginValues := make([]cty.Value, len(requires.Plugins))
-			for i, p := range requires.Plugins {
+		if len(require.Plugins) > 0 {
+			pluginValues := make([]cty.Value, len(require.Plugins))
+			for i, p := range require.Plugins {
 				pluginValues[i] = cty.StringVal(typehelpers.SafeString(p))
 			}
 			requiresBody.SetAttributeValue("plugins", cty.ListVal(pluginValues))
 		}
-		if len(requires.Mods) > 0 {
-			for _, m := range requires.Mods {
+		if len(require.Mods) > 0 {
+			for _, m := range require.Mods {
 				modBody := requiresBody.AppendNewBlock("mod", []string{m.Name}).Body()
 				modBody.SetAttributeValue("version", cty.StringVal(m.VersionString))
 			}
@@ -719,9 +719,9 @@ func (m *Mod) Save() error {
 }
 
 func (m *Mod) HasDependentMods() bool {
-	return m.Requires != nil && len(m.Requires.Mods) > 0
+	return m.Require != nil && len(m.Require.Mods) > 0
 }
 
 func (m *Mod) DependsOnMod(requiredModVersion *ModVersionConstraint) bool {
-	return m.Requires != nil && m.Requires.ContainsMod(requiredModVersion)
+	return m.Require != nil && m.Require.ContainsMod(requiredModVersion)
 }

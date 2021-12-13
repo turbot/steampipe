@@ -52,8 +52,8 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 }
 
 func (w *Workspace) getRequiredPlugins() map[string]*semver.Version {
-	if w.Mod.Requires != nil {
-		requiredPluginVersions := w.Mod.Requires.Plugins
+	if w.Mod.Require != nil {
+		requiredPluginVersions := w.Mod.Require.Plugins
 		requiredVersion := make(version_map.VersionMap)
 		for _, pluginVersion := range requiredPluginVersions {
 			requiredVersion[pluginVersion.ShortName()] = pluginVersion.Version
