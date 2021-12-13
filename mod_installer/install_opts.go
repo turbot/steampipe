@@ -7,5 +7,6 @@ import (
 type InstallOpts struct {
 	WorkspacePath string
 	Updating      bool
+	DryRun        bool
 	ModArgs       version_map.VersionConstraintMap
 }
