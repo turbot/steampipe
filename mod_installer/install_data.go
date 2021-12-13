@@ -24,7 +24,7 @@ type InstallData struct {
 func NewInstallData(workspaceLock *version_map.WorkspaceLock) *InstallData {
 	return &InstallData{
 		Lock:              workspaceLock,
-		NewLock:           version_map.EmptyWorkspaceLock(workspaceLock.WorkspacePath),
+		NewLock:           version_map.EmptyWorkspaceLock(workspaceLock),
 		allAvailable:      make(version_map.VersionListMap),
 		RecentlyInstalled: make(version_map.ResolvedVersionListMap),
 		AlreadyInstalled:  make(version_map.ResolvedVersionListMap),

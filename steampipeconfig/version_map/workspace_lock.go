@@ -29,12 +29,15 @@ type WorkspaceLock struct {
 	installedMods VersionListMap
 }
 
-func EmptyWorkspaceLock(workspacePath string) *WorkspaceLock {
+// EmptyWorkspaceLock creates a new empty workspace lock based,
+// sharing workspace path and installedMods with 'existingLock'
+func EmptyWorkspaceLock(existingLock *WorkspaceLock) *WorkspaceLock {
 	return &WorkspaceLock{
-		WorkspacePath:   workspacePath,
-		modsPath:        constants.WorkspaceModPath(workspacePath),
+		WorkspacePath:   existingLock.WorkspacePath,
+		modsPath:        constants.WorkspaceModPath(existingLock.WorkspacePath),
 		InstallCache:    make(DependencyVersionMap),
 		MissingVersions: make(DependencyVersionMap),
+		installedMods:   existingLock.installedMods,
 	}
 }
 func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
