@@ -646,18 +646,14 @@ func (m *Mod) Save() error {
 	rootBody := f.Body()
 
 	modBody := rootBody.AppendNewBlock("mod", []string{m.ShortName}).Body()
-	if len(m.Categories) > 0 {
-		categoryValues := make([]cty.Value, len(m.Categories))
-		for i, c := range m.Categories {
-			categoryValues[i] = cty.StringVal(typehelpers.SafeString(c))
-		}
-		modBody.SetAttributeValue("categories", cty.ListVal(categoryValues))
+	if m.Title != nil {
+		modBody.SetAttributeValue("title", cty.StringVal(*m.Title))
+	}
+	if m.Description != nil {
+		modBody.SetAttributeValue("description", cty.StringVal(*m.Description))
 	}
 	if m.Color != nil {
 		modBody.SetAttributeValue("color", cty.StringVal(*m.Color))
-	}
-	if m.Description != nil {
-		modBody.SetAttributeValue("description", cty.StringVal(*m.Color))
 	}
 	if m.Documentation != nil {
 		modBody.SetAttributeValue("documentation", cty.StringVal(*m.Documentation))
@@ -665,15 +661,35 @@ func (m *Mod) Save() error {
 	if m.Icon != nil {
 		modBody.SetAttributeValue("icon", cty.StringVal(*m.Icon))
 	}
-	if m.Title != nil {
-		modBody.SetAttributeValue("title", cty.StringVal(*m.Title))
+	if len(m.Categories) > 0 {
+		categoryValues := make([]cty.Value, len(m.Categories))
+		for i, c := range m.Categories {
+			categoryValues[i] = cty.StringVal(typehelpers.SafeString(c))
+		}
+		modBody.SetAttributeValue("categories", cty.ListVal(categoryValues))
 	}
+
 	if len(m.Tags) > 0 {
 		tagMap := make(map[string]cty.Value, len(m.Tags))
 		for k, v := range m.Tags {
 			tagMap[k] = cty.StringVal(v)
 		}
 		modBody.SetAttributeValue("tags", cty.MapVal(tagMap))
+	}
+
+	// opengraph
+	if opengraph := m.OpenGraph; opengraph != nil {
+		opengraphBody := modBody.AppendNewBlock("opengraph", nil).Body()
+		if opengraph.Title != nil {
+			opengraphBody.SetAttributeValue("title", cty.StringVal(*opengraph.Title))
+		}
+		if opengraph.Description != nil {
+			opengraphBody.SetAttributeValue("description", cty.StringVal(*opengraph.Description))
+		}
+		if opengraph.Image != nil {
+			opengraphBody.SetAttributeValue("image", cty.StringVal(*opengraph.Image))
+		}
+
 	}
 
 	// requires
@@ -695,19 +711,6 @@ func (m *Mod) Save() error {
 				modBody := requiresBody.AppendNewBlock("mod", []string{m.Name}).Body()
 				modBody.SetAttributeValue("version", cty.StringVal(m.VersionString))
 			}
-		}
-	}
-	// opengraph
-	if opengraph := m.OpenGraph; opengraph != nil {
-		opengraphBody := modBody.AppendNewBlock("opengraph", nil).Body()
-		if opengraph.Description != nil {
-			opengraphBody.SetAttributeValue("description", cty.StringVal(*opengraph.Description))
-		}
-		if opengraph.Image != nil {
-			opengraphBody.SetAttributeValue("image", cty.StringVal(*opengraph.Image))
-		}
-		if opengraph.Title != nil {
-			opengraphBody.SetAttributeValue("title", cty.StringVal(*opengraph.Title))
 		}
 	}
 

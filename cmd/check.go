@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/steampipe/mod_installer"
+
 	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -94,7 +96,8 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')").
-		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden())
+		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden()).
+		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod depdencies before runnign the check")
 
 	return cmd
 }
@@ -194,6 +197,15 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitData {
 	initData := &checkInitData{
 		result: &db_common.InitResult{},
+	}
+
+	if viper.GetBool(constants.ArgModInstall) {
+		opts := &mod_installer.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
+		_, err := mod_installer.InstallWorkspaceDependencies(opts)
+		if err != nil {
+			initData.result.Error = err
+			return initData
+		}
 	}
 
 	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
