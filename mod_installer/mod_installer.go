@@ -79,7 +79,6 @@ type ModInstaller struct {
 }
 
 func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
-
 	i := &ModInstaller{
 		workspacePath: opts.WorkspacePath,
 		updating:      opts.Updating,
@@ -140,11 +139,6 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 		workspaceMod.RemoveModDependencies(i.mods)
 	}
 
-	// update the install data
-	if err := i.installData.setUninstalled(i.mods, i.workspaceMod); err != nil {
-		return err
-	}
-
 	// uninstall by calling Install
 	if err := i.installMods(workspaceMod.Require.Mods, workspaceMod); err != nil {
 		return err
@@ -156,6 +150,7 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 
 	// if this is a dry run, return now
 	if i.dryRun {
+
 		log.Printf("[TRACE] UninstallWorkspaceDependencies - dry-run=true, returning before saving mod file and cache\n")
 		return nil
 	}
@@ -256,7 +251,8 @@ func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, paren
 		}
 	}
 
-	i.installData.Lock = i.installData.NewLock
+	// update the lock to be the new lock, and record any uninstalled mods
+	i.installData.onInstallComplete()
 
 	return i.buildInstallError(errors)
 }
@@ -435,8 +431,7 @@ func (i *ModInstaller) installFromGit(dependency *ResolvedModRef, installPath st
 	_, err := git.PlainClone(installPath,
 		false,
 		&git.CloneOptions{
-			URL: gitUrl,
-			//Progress:      os.Stdout,
+			URL:           gitUrl,
 			ReferenceName: dependency.GitReference,
 			Depth:         1,
 			SingleBranch:  true,
