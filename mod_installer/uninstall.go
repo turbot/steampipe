@@ -14,7 +14,7 @@ func UninstallWorkspaceDependencies(opts *InstallOpts) (*InstallData, error) {
 		}
 	}()
 
-	// install workspace dependencies
+	// uninstall workspace dependencies
 	installer, err := NewModInstaller(opts)
 	if err != nil {
 		return nil, err
