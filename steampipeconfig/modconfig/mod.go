@@ -632,6 +632,14 @@ func (m *Mod) AddModDependencies(modVersions map[string]*ModVersionConstraint) {
 	m.Requires.AddModDependencies(modVersions)
 }
 
+func (m *Mod) RemoveModDependencies(modVersions map[string]*ModVersionConstraint) {
+	m.Requires.RemoveModDependencies(modVersions)
+}
+
+func (m *Mod) RemoveAllModDependencies() {
+	m.Requires.RemoveAllModDependencies()
+}
+
 func (m *Mod) Save() error {
 
 	f := hclwrite.NewEmptyFile()

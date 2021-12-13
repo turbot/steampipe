@@ -110,20 +110,41 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 }
 
 func (i *ModInstaller) UninstallWorkspaceDependencies() error {
-	// TODO remove from mod requires
+	workspaceMod := i.workspaceMod
+
 	// if no mods specified, just delete the lock file and tidy
 	if len(i.mods) == 0 {
-		if err := i.installData.Lock.Delete(); err != nil {
-			return err
-		}
+		workspaceMod.RemoveAllModDependencies()
 	} else {
-		i.installData.Lock.DeleteMods(i.mods, i.workspaceMod)
-		if err := i.installData.Lock.Save(); err != nil {
+		workspaceMod.RemoveModDependencies(i.mods)
+	}
+	if err := i.installMods(workspaceMod.Requires.Mods, workspaceMod); err != nil {
+		return err
+	}
+
+	if workspaceMod.Requires.Empty() {
+		workspaceMod.Requires = nil
+	}
+	// write the lock file
+	if err := i.installData.Lock.Save(); err != nil {
+		return err
+	}
+
+	//  now safe to save the mod file
+	if len(i.mods) > 0 {
+		if err := i.workspaceMod.Save(); err != nil {
 			return err
 		}
 	}
-	_, err := i.Tidy()
-	return err
+
+	// tidy unused mods
+	if viper.GetBool(constants.ArgPrune) {
+		if _, err := i.Tidy(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // InstallWorkspaceDependencies installs all dependencies of the workspace mod
@@ -152,12 +173,12 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 		return err
 	}
 
-	// write lock file
+	// write the lock file
 	if err := i.installData.Lock.Save(); err != nil {
 		return err
 	}
 
-	// if we are running 'mod get', we are now safe to save the mod file
+	//  now safe to save the mod file
 	if len(i.mods) > 0 {
 		if err := i.workspaceMod.Save(); err != nil {
 			return err
@@ -190,6 +211,7 @@ func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, paren
 		}
 	}
 
+	i.installData.Lock = i.installData.NewLock
 	return utils.CombineErrorsWithPrefix(fmt.Sprintf("%d %s failed to install", len(errors), utils.Pluralize("dependency", len(errors))), errors...)
 }
 
@@ -222,7 +244,7 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 		// so we found an existing mod which will satisfy this requirement
 
 		// update the install data
-		i.installData.addExisting(requiredModVersion.Name, dependencyMod.Version, parent)
+		i.installData.addExisting(requiredModVersion.Name, dependencyMod.Version, requiredModVersion.Constraint, parent)
 		log.Printf("[TRACE] not installing %s with version constraint %s as version %s is already installed", requiredModVersion.Name, requiredModVersion.Constraint.Original, dependencyMod.Version)
 	}
 

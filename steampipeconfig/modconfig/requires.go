@@ -92,6 +92,29 @@ func (r *Requires) AddModDependencies(newModVersions map[string]*ModVersionConst
 	r.Mods = newMods
 }
 
+func (r *Requires) RemoveModDependencies(versions map[string]*ModVersionConstraint) {
+	// first rebuild the mod map
+	for name := range versions {
+		// todo take alias into account
+		delete(r.modMap, name)
+	}
+	// now update the mod array from the map
+	var newMods = make([]*ModVersionConstraint, len(r.modMap))
+	idx := 0
+	for _, requiredVersion := range r.modMap {
+		newMods[idx] = requiredVersion
+		idx++
+	}
+	// sort by name
+	sort.Sort(ModVersionConstraintCollection(newMods))
+	// write back
+	r.Mods = newMods
+}
+
+func (r *Requires) RemoveAllModDependencies() {
+	r.Mods = nil
+}
+
 func (r *Requires) GetModDependency(name string /*,alias string*/) *ModVersionConstraint {
 	return r.modMap[name]
 }
@@ -101,4 +124,8 @@ func (r *Requires) ContainsMod(requiredModVersion *ModVersionConstraint) bool {
 		return c.Equals(requiredModVersion)
 	}
 	return false
+}
+
+func (r *Requires) Empty() bool {
+	return r.SteampipeVersion == nil && len(r.Mods) == 0 && len(r.Plugins) == 0
 }
