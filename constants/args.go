@@ -38,6 +38,7 @@ const (
 	ArgConnectionString  = "connection-string"
 	ArgCheckDisplayWidth = "check-display-width"
 	ArgPrune             = "prune"
+	ArgModInstall        = "mod-install"
 )
 
 /// metaquery mode arguments
