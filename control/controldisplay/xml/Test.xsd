@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:annotation>
+    <xs:documentation>This is document is descriptive, rather than a guarantee of future decisions.</xs:documentation>
+  </xs:annotation>
+
+  <xs:include schemaLocation="TestDefinitions.xsd" />
+
+  <xs:element name="test-case" type="TestCaseElementType">
+    <xs:unique name="TestCaseUniqueId">
+      <xs:selector xpath=". | .//test-case | .//test-suite" />
+      <xs:field xpath="@id" />
+    </xs:unique>
+  </xs:element>
+
+  <xs:element name="test-suite" type="TestSuiteElementType">
+    <xs:unique name="TestSuiteUniqueId">
+      <xs:selector xpath=". | .//test-case | .//test-suite" />
+      <xs:field xpath="@id" />
+    </xs:unique>
+  </xs:element>
+
+</xs:schema>
