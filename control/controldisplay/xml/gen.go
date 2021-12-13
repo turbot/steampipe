@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	"aqwari.net/xml/xsdgen"
 )
@@ -21,7 +22,7 @@ func tmpfile() *os.File {
 	return f
 }
 
-func xsdfile(s string) (filename string) {
+func xsdFile(s string) (filename string) {
 	file := tmpfile()
 	defer file.Close()
 	fmt.Fprintf(file, ` %s `, s)
@@ -30,48 +31,36 @@ func xsdfile(s string) (filename string) {
 
 func XmlGen() {
 	cfg := new(xsdgen.Config)
-	cfg.Option(xsdgen.PackageName("xml"))
+	cfg.Option(
+		xsdgen.PackageName("xml"),
+		xsdgen.LogLevel(5),
+		xsdgen.LogOutput(log.New(os.Stderr, "", 0)),
+		xsdgen.Namespaces("xmlns:xs=http://www.w3.org/2001/XMLSchema"),
+		// xsdgen.FollowImports(true),
+	)
 
-	content := `<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.org/">
-	<simpleType name="myType1">
-	  <restriction base="base64Binary">
-		<length value="10" />
-	  </restriction>
-	</simpleType>
-  
-	<complexType name="myType2">
-	  <simpleContent>
-		<extension base="base64Binary">
-		  <attribute name="length" type="int"/>
-		</extension>
-	  </simpleContent>
-	</complexType>
-  
-	<complexType name="myType3">
-	  <simpleContent>
-		<extension base="date">
-		  <attribute name="length" type="int"/>
-		</extension>
-	  </simpleContent>
-	</complexType>
-  
-	<complexType name="myType4">
-	  <sequence>
-		<element name="title" type="string"/>
-		<element name="blob" type="base64Binary"/>
-		<element name="timestamp" type="dateTime"/>
-	  </sequence>
-	</complexType>
-  
-	<simpleType name="myType5">
-	  <restriction base="gDay"/>
-	</simpleType>
-  </schema>`
-	// file := xsdfile(content)
+	// testResult, _ := xsdFilesFS.ReadFile("TestResult.xsd")
 
-	out, err := cfg.GenSource(xsdfile(content))
+	// test, _ := xsdFilesFS.ReadDir(".")
+	// testResultDef, _ := xsdFilesFS.ReadFile("TestDefinitions.xsd")
+	// testResultFilterDef, _ := xsdFilesFS.ReadFile("TestFilterDefinitions.xsd")
+	root := "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/control/controldisplay/xml"
+	out, err := cfg.GenSource(
+		filepath.Join(root, "Test.xsd"),
+		filepath.Join(root, "TestDefinitions.xsd"),
+		filepath.Join(root, "TestFilter.xsd"),
+		filepath.Join(root, "TestFilterDefinitions.xsd"),
+		filepath.Join(root, "TestResult.xsd"),
+	)
+	// string1 := filepath.Join(root, "TestResult.xsd")
+	// fmt.Println(string1)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("%s\n", out)
+	// for _, x := range test {
+	// 	fmt.Println(x.Name())
+	// }
+	// fmt.Print(string(testResult))
+	// fmt.Print(xsdFilesFS)
 }
