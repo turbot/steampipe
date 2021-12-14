@@ -730,6 +730,9 @@ func (m *Mod) HasDependentMods() bool {
 	return m.Require != nil && len(m.Require.Mods) > 0
 }
 
-func (m *Mod) DependsOnMod(requiredModVersion *ModVersionConstraint) bool {
-	return m.Require != nil && m.Require.ContainsMod(requiredModVersion)
+func (m *Mod) GetModDependency(modName string) *ModVersionConstraint {
+	if m.Require == nil {
+		return nil
+	}
+	return m.Require.GetModDependency(modName)
 }
