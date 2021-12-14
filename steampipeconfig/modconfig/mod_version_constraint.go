@@ -78,11 +78,7 @@ func (m *ModVersionConstraint) Initialise() hcl.Diagnostics {
 		m.setFilePath()
 		return nil
 	}
-
-	diags := m.cleanName()
-	if diags != nil {
-		return diags
-	}
+	var diags hcl.Diagnostics
 
 	if m.VersionString == "" {
 		m.Constraint, _ = version.NewConstraint("*")
@@ -110,30 +106,6 @@ func (m *ModVersionConstraint) Initialise() hcl.Diagnostics {
 		Subject:  &m.DeclRange,
 	})
 	return diags
-}
-
-func (m *ModVersionConstraint) cleanName() hcl.Diagnostics {
-	segments := strings.Split(m.Name, "/")
-	l := len(segments)
-	if l == 3 {
-		// leave as is
-		return nil
-	}
-	if l == 1 {
-		turbotGithubPrefix := "github.com/turbot/"
-		modNamePrefix := "steampipe-mod-"
-		if !strings.HasPrefix(m.Name, modNamePrefix) {
-			m.Name = fmt.Sprintf("%s%s%s", turbotGithubPrefix, modNamePrefix, m.Name)
-		} else {
-			m.Name = fmt.Sprintf("%s%s", turbotGithubPrefix, m.Name)
-		}
-		return nil
-	}
-
-	return hcl.Diagnostics{&hcl.Diagnostic{
-		Severity: hcl.DiagError,
-		Summary:  fmt.Sprintf("invalid mod name %s", m.Name),
-	}}
 }
 
 func (m *ModVersionConstraint) setFilePath() {

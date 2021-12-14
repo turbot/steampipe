@@ -1,6 +1,8 @@
 package mod_installer
 
 import (
+	"fmt"
+
 	"github.com/Masterminds/semver"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/version_map"
@@ -94,7 +96,7 @@ func (d *InstallData) getAvailableModVersions(modName string) ([]*semver.Version
 	var err error
 	availableVersions, err = getTagVersionsFromGit(getGitUrl(modName))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not retrieve version data from Git URL '%s'", modName)
 	}
 	// update our cache
 	d.allAvailable[modName] = availableVersions
