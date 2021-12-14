@@ -64,9 +64,9 @@ func TransformErrorToSteampipe(err error) error {
 
 	errString := strings.TrimSpace(err.Error())
 
-	// an error that originated from our database/sql driver (always prefixed with "pq:")
-	if strings.HasPrefix(errString, "pq:") {
-		errString = strings.TrimSpace(strings.TrimPrefix(errString, "pq:"))
+	// an error that originated from our database/sql driver (always prefixed with "ERROR:")
+	if strings.HasPrefix(errString, "ERROR:") {
+		errString = strings.TrimSpace(strings.TrimPrefix(errString, "ERROR:"))
 
 		// if this is an RPC Error while talking with the plugin
 		if strings.HasPrefix(errString, "rpc error") {
