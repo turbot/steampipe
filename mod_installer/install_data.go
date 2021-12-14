@@ -59,7 +59,7 @@ func (d *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconf
 	// get the constraint from the parent (it must be there)
 	modVersion := parent.Require.GetModDependency(dependency.Name)
 	// update lock
-	d.NewLock.InstallCache.Add(dependency.Name, dependency.Version, modVersion.Constraint.Original, parent.Name())
+	d.NewLock.InstallCache.Add(dependency.Name, dependency.Version, modVersion.Constraint.Original, parent.GetModDependencyPath())
 	// update list items installed by this installer
 	d.RecentlyInstalled.Add(dependency.Name, &version_map.ResolvedVersionConstraint{
 		Name:       dependency.Name,
@@ -71,7 +71,7 @@ func (d *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconf
 // addExisting is called when a dependency is satisfied by a mod which is already installed
 func (d *InstallData) addExisting(name string, version *semver.Version, constraint *version.Constraints, parent *modconfig.Mod) {
 	// update lock
-	d.NewLock.InstallCache.Add(name, version, constraint.Original, parent.Name())
+	d.NewLock.InstallCache.Add(name, version, constraint.Original, parent.GetModDependencyPath())
 
 	modVersion := parent.Require.GetModDependency(name)
 	// update list of already installed items

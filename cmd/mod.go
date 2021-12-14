@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -245,6 +246,7 @@ func modListCmd() *cobra.Command {
 	cmdconfig.OnCmd(cmd)
 	return cmd
 }
+
 func runModListCmd(*cobra.Command, []string) {
 	utils.LogTime("cmd.runModListCmd")
 	defer func() {
@@ -255,14 +257,15 @@ func runModListCmd(*cobra.Command, []string) {
 		}
 	}()
 
-	//workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
-	//installer, err := mod_installer.NewModInstaller(&mod_installer.InstallOpts{WorkspacePath: workspacePath})
-	//utils.FailOnError(err)
+	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
+	installer, err := mod_installer.NewModInstaller(&mod_installer.InstallOpts{WorkspacePath: workspacePath})
+	utils.FailOnError(err)
 
-	//installedMods := installer.GetModList()
-	//utils.FailOnError(err)
-	//// TODO FORMAT LIST
-	//fmt.Println(installedMods)
+	treeString := installer.GetModList()
+	if len(strings.Split(treeString, "\n")) > 1 {
+		fmt.Println()
+	}
+	fmt.Println(treeString)
 }
 
 // prune
