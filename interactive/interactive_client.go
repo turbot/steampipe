@@ -566,7 +566,7 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 		if c.Description != nil {
 			description += fmt.Sprintf(": %s", *c.Description)
 		}
-		res = append(res, prompt.Suggest{Text: controlName, Description: description})
+		res = append(res, prompt.Suggest{Text: controlName, Output: controlName, Description: description})
 	}
 	sort.Slice(res, func(i, j int) bool {
 		return res[i].Text < res[j].Text
