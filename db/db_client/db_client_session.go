@@ -50,7 +50,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 	}
 
 	if !session.Initialized {
-		log.Printf("[WARN] Session with PID: %d - waiting for init lock", backendPid)
+		log.Printf("[TRACE] Session with PID: %d - waiting for init lock", backendPid)
 		session.LifeCycle.Add("queued_for_init")
 
 		err := c.parallelSessionInitLock.Acquire(ctx, 1)
@@ -60,7 +60,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 		}
 		c.sessionInitWaitGroup.Add(1)
 
-		log.Printf("[WARN] Session with PID: %d - waiting for init start", backendPid)
+		log.Printf("[TRACE] Session with PID: %d - waiting for init start", backendPid)
 		session.LifeCycle.Add("init_start")
 		err, warnings := c.ensureSessionFunc(ctx, session)
 		session.LifeCycle.Add("init_finish")
@@ -75,7 +75,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 		// if there is no error, mark session as initialized
 		session.Initialized = true
 
-		log.Printf("[WARN] Session with PID: %d - init DONE", backendPid)
+		log.Printf("[TRACE] Session with PID: %d - init DONE", backendPid)
 	}
 
 	// update required session search path if needed
