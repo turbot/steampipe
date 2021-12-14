@@ -49,8 +49,8 @@ type ResourceWithMetadata interface {
 	SetMetadata(metadata *ResourceMetadata)
 }
 
-// PreparedStatementProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
-type PreparedStatementProvider interface {
+// QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
+type QueryProvider interface {
 	Name() string
 	ModName() string
 	GetParams() []*ParamDef
