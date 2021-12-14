@@ -23,8 +23,8 @@ type ModInstaller struct {
 
 	installData *InstallData
 
-	// should we update dependencies to newer versions if they exist
-	updating bool
+	// what command is being run
+	command string
 	// are dependencies being added to the workspace
 	mods   version_map.VersionConstraintMap
 	dryRun bool
@@ -33,8 +33,7 @@ type ModInstaller struct {
 func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	i := &ModInstaller{
 		workspacePath: opts.WorkspacePath,
-		updating:      opts.Updating,
-		mods:          opts.ModArgs,
+		command:       opts.Command,
 		dryRun:        opts.DryRun,
 	}
 	if err := i.setModsPath(); err != nil {
@@ -42,11 +41,11 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	}
 
 	// load workspace mod, creating a default if needed
-	mod, err := i.loadModfile(i.workspacePath, true)
+	workspaceMod, err := i.loadModfile(i.workspacePath, true)
 	if err != nil {
 		return nil, err
 	}
-	i.workspaceMod = mod
+	i.workspaceMod = workspaceMod
 
 	// load lock file
 	workspaceLock, err := version_map.LoadWorkspaceLock(i.workspacePath)
@@ -57,7 +56,13 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	// create install data
 	i.installData = NewInstallData(workspaceLock)
 
-	// TODO think about if we need verifyCanUpdate
+	// parse args to get the required mod versions
+	requiredMods, err := i.GetRequiredModVersionsFromArgs(opts.ModArgs)
+	if err != nil {
+		return nil, err
+	}
+	i.mods = requiredMods
+
 	return i, nil
 }
 
@@ -84,6 +89,7 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 		workspaceMod.RemoveAllModDependencies()
 
 	} else {
+		// verify all the mods specifed in the args exist in the modfile
 		workspaceMod.RemoveModDependencies(i.mods)
 	}
 
@@ -188,7 +194,7 @@ func (i *ModInstaller) GetModList() string {
 func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) error {
 	var errors []error
 	for _, requiredModVersion := range mods {
-		update := i.updating
+		update := i.updating()
 		modToUse, err := i.getCurrentlyInstalledVersionToUse(requiredModVersion, parent, update)
 		if err != nil {
 			errors = append(errors, err)
@@ -214,7 +220,7 @@ func (i *ModInstaller) buildInstallError(errors []error) error {
 		return nil
 	}
 	verb := "install"
-	if i.updating {
+	if i.updating() {
 		verb = "update"
 	}
 	prefix := fmt.Sprintf("%d %s failed to %s", len(errors), utils.Pluralize("dependency", len(errors)), verb)
@@ -284,10 +290,6 @@ func (i *ModInstaller) getCurrentlyInstalledVersionToUse(requiredModVersion *mod
 		return nil, err
 	}
 	if installedVersion == nil {
-		// if we are updating, the a version of th emod MUST be installed
-		if i.updating {
-			return nil, fmt.Errorf("%s is not installed", requiredModVersion.Name)
-		}
 		return nil, nil
 	}
 
@@ -427,4 +429,11 @@ func (i *ModInstaller) loadModfile(modPath string, createDefault bool) (*modconf
 		}
 	}
 	return mod, nil
+}
+
+func (i *ModInstaller) updating() bool {
+	return i.command == "update"
+}
+func (i *ModInstaller) uninstalling() bool {
+	return i.command == "uninstall"
 }

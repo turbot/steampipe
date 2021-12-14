@@ -10,8 +10,6 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/mod_installer"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/steampipeconfig/version_map"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -61,13 +59,11 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// if any mod names were passed as args, convert into formed mod names
-	modArgs, err := getRequiredModVersionsFromArgs(args)
-	// TODO validate only 1 version of each mod
-	utils.FailOnError(err)
+
 	opts := &mod_installer.InstallOpts{
 		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
 		DryRun:        viper.GetBool(constants.ArgDryRun),
-		ModArgs:       modArgs,
+		ModArgs:       args,
 	}
 
 	installData, err := mod_installer.InstallWorkspaceDependencies(opts)
@@ -103,17 +99,7 @@ func runModUninstallCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	// if any mod names were passed as args, convert into formed mod names
-	modArgs, err := getRequiredModVersionsFromArgs(args)
-	// TODO validate only 1 version of each mod
-	utils.FailOnError(err)
-
-	opts := &mod_installer.InstallOpts{
-		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
-		DryRun:        viper.GetBool(constants.ArgDryRun),
-		ModArgs:       modArgs,
-	}
-
+	opts := newInstallOpts(cmd, args...)
 	installData, err := mod_installer.UninstallWorkspaceDependencies(opts)
 	utils.FailOnError(err)
 
@@ -147,41 +133,12 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	// if any mod names were passed as args, convert into formed mod names
-	modArgs, err := getRequiredModVersionsFromArgs(args)
-	// TODO validate only 1 version of each mod
-	utils.FailOnError(err)
-
-	opts := &mod_installer.InstallOpts{
-		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
-		DryRun:        viper.GetBool(constants.ArgDryRun),
-		ModArgs:       modArgs,
-		Updating:      true,
-	}
+	opts := newInstallOpts(cmd, args...)
 
 	installData, err := mod_installer.InstallWorkspaceDependencies(opts)
 	utils.FailOnError(err)
 
 	fmt.Println(mod_installer.BuildUpdateSummary(installData))
-}
-
-func getRequiredModVersionsFromArgs(modsArgs []string) (version_map.VersionConstraintMap, error) {
-	var errors []error
-	mods := make(version_map.VersionConstraintMap, len(modsArgs))
-	for _, modArg := range modsArgs {
-		// create mod version from arg
-		modVersion, err := modconfig.NewModVersionConstraint(modArg)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		// TODO include alias in key
-		mods[modVersion.Name] = modVersion
-	}
-	if len(errors) > 0 {
-		return nil, utils.CombineErrors(errors...)
-	}
-	return mods, nil
 }
 
 // list
@@ -198,7 +155,7 @@ func modListCmd() *cobra.Command {
 	return cmd
 }
 
-func runModListCmd(*cobra.Command, []string) {
+func runModListCmd(cmd *cobra.Command, _ []string) {
 	utils.LogTime("cmd.runModListCmd")
 	defer func() {
 		utils.LogTime("cmd.runModListCmd end")
@@ -207,9 +164,8 @@ func runModListCmd(*cobra.Command, []string) {
 			exitCode = 1
 		}
 	}()
-
-	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
-	installer, err := mod_installer.NewModInstaller(&mod_installer.InstallOpts{WorkspacePath: workspacePath})
+	opts := newInstallOpts(cmd)
+	installer, err := mod_installer.NewModInstaller(opts)
 	utils.FailOnError(err)
 
 	treeString := installer.GetModList()
@@ -258,4 +214,14 @@ func runModPruneCmd(cmd *cobra.Command, args []string) {
 	if count := len(unusedMods.FlatMap()); count > 0 {
 		fmt.Println(mod_installer.BuildPruneSummary(unusedMods))
 	}
+}
+
+func newInstallOpts(cmd *cobra.Command, args ...string) *mod_installer.InstallOpts {
+	opts := &mod_installer.InstallOpts{
+		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
+		DryRun:        viper.GetBool(constants.ArgDryRun),
+		ModArgs:       args,
+		Command:       cmd.Name(),
+	}
+	return opts
 }
