@@ -178,9 +178,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	}
 	r.Lifecycle.Add("got_session")
 	dbSession := sessionResult.Session
-	defer func() {
-		dbSession.Close()
-	}()
+	defer dbSession.Close()
 
 	// set our status
 	r.runStatus = ControlRunStarted
@@ -206,15 +204,16 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	}
 	r.Lifecycle.Add("set_search_path_finish")
 
-	ctxWithDeadline, cancel := r.getControlQueryContext(ctx)
-	// Even though ctx will expire, it is good practice to call its cancellation function in any case.
-	defer cancel()
+	// get a context with a timeout for the control to execute within
+	// we don't use the cancelFn from this timeout context, since usage will lead to 'pgx'
+	// prematurely closing the database connection that this query executed in
+	controlExecutionCtx := r.getControlQueryContext(ctx)
 
 	// execute the control query
 	// NOTE no need to pass an OnComplete callback - we are already closing our session after waiting for results
 	log.Printf("[TRACE] execute start for, %s\n", control.Name())
 	r.Lifecycle.Add("query_start")
-	queryResult, err := client.ExecuteInSession(ctxWithDeadline, dbSession, query, nil, false)
+	queryResult, err := client.ExecuteInSession(controlExecutionCtx, dbSession, query, nil, false)
 	r.Lifecycle.Add("query_finish")
 	log.Printf("[TRACE] execute finish for, %s\n", control.Name())
 
@@ -225,10 +224,8 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 		if grpc.IsGRPCConnectivityError(err) {
 			if r.attempts < constants.MaxControlRunAttempts {
 				log.Printf("[TRACE] control %s query failed with plugin connectivity error %s - retrying...", r.Control.Name(), err)
-				ctxWithDeadline, cancel := r.getControlQueryContext(ctx)
-				defer cancel()
-				// recurse into this function to retry use the same context, so that we respect the timeout
-				r.Execute(ctxWithDeadline, client)
+				// recurse into this function to retry using the original context - which Execute will use to create it's own timeout context
+				r.Execute(ctx, client)
 				return
 			} else {
 				log.Printf("[TRACE] control %s query failed again with plugin connectivity error %s - NOT retrying...", r.Control.Name(), err)
@@ -246,11 +243,12 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] finish result for, %s\n", control.Name())
 }
 
-func (r *ControlRun) getControlQueryContext(ctx context.Context) (context.Context, context.CancelFunc) {
+func (r *ControlRun) getControlQueryContext(ctx context.Context) context.Context {
 	// create a context with a deadline
 	shouldBeDoneBy := time.Now().Add(controlQueryTimeout)
-	ctxWithDeadline, cancel := context.WithDeadline(ctx, shouldBeDoneBy)
-	return ctxWithDeadline, cancel
+	// we don't use this cancel fn because, pgx prematurely cancels the PG connection when this cancel gets called in 'defer'
+	newCtx, _ := context.WithDeadline(ctx, shouldBeDoneBy)
+	return newCtx
 }
 
 func (r *ControlRun) resolveControlQuery(control *modconfig.Control) (string, error) {

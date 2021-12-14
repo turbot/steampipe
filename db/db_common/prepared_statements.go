@@ -22,11 +22,6 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 	if len(sqlMap) == 0 {
 		return nil, nil
 	}
-	// first try to run the whole thing in one query
-	var queries []string
-	for _, q := range sqlMap {
-		queries = append(queries, q)
-	}
 
 	for name, sql := range sqlMap {
 		if _, err := session.Connection.ExecContext(ctx, sql); err != nil {
