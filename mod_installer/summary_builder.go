@@ -35,6 +35,9 @@ func BuildUpdateSummary(installData *InstallData) string {
 	updated := installData.Updated.FlatNames()
 	updateCount := len(updated)
 	if updateCount == 0 {
+		if len(installData.Lock.InstallCache) == 0 {
+			return "No mods installed"
+		}
 		return "All mods are up to date"
 	}
 

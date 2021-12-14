@@ -46,7 +46,7 @@ require (
 	github.com/turbot/go-kit v0.3.0
 	github.com/turbot/steampipe-plugin-sdk v1.8.0
 	github.com/ulikunitz/xz v0.5.8
-	github.com/xlab/treeprint v0.0.0-20161029104018-1d6e34225557
+	github.com/xlab/treeprint v1.1.0
 	github.com/zclconf/go-cty v1.8.2
 	github.com/zclconf/go-cty-yaml v1.0.2
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
