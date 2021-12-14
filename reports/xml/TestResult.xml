@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<test-run id="2" name="mock-assembly.dll" fullname="D:\Dev\NUnit\nunit-3.0\work\bin\vs2008\Debug\mock-assembly.dll" testcasecount="25" result="Failed" time="0.154" total="18" passed="12" failed="2" inconclusive="1" skipped="3" asserts="2" run-date="2011-07-26" start-time="11:34:27">
+  <environment nunit-version="1.0.0.0" clr-version="2.0.50727.4961" os-version="Microsoft Windows NT 6.1.7600.0" platform="Win32NT" cwd="D:\Dev\NUnit\nunit-3.0\work\bin\vs2008\Debug" machine-name="CHARLIE-LAPTOP" user="charlie" user-domain="charlie-laptop" culture="en-US" uiculture="en-US" />
+  <test-suite type="Assembly" id="1036" name="mock-assembly.dll" fullname="D:\Dev\NUnit\nunit-3.0\work\bin\vs2008\Debug\mock-assembly.dll" testcasecount="25" result="Failed" time="0.154" total="18" passed="12" failed="2" inconclusive="1" skipped="3" asserts="2">
+    <properties>
+      <property name="_PID" value="11928" />
+      <property name="_APPDOMAIN" value="test-domain-mock-assembly.dll" />
+    </properties>
+    <failure>
+      <message><![CDATA[Child test failed]]></message>
+    </failure>
+    <test-suite type="TestFixture" id="1000" name="MockTestFixture" fullname="NUnit.Tests.Assemblies.MockTestFixture" testcasecount="11" result="Failed" time="0.119" total="10" passed="4" failed="2" inconclusive="1" skipped="3" asserts="0">
+      <properties>
+        <property name="Category" value="FixtureCategory" />
+        <property name="Description" value="Fake Test Fixture" />
+      </properties>
+      <failure>
+        <message><![CDATA[Child test failed]]></message>
+      </failure>
+      <test-case id="1005" name="FailingTest" fullname="NUnit.Tests.Assemblies.MockTestFixture.FailingTest" result="Failed" time="0.023" asserts="0">
+        <failure>
+          <message><![CDATA[Intentional failure]]></message>
+          <stack-trace><![CDATA[   at NUnit.Framework.Assert.Fail(String message, Object[] args) in D:\Dev\NUnit\nunit-3.0\work\NUnitFramework\src\framework\Assert.cs:line 142
+   at NUnit.Framework.Assert.Fail(String message) in D:\Dev\NUnit\nunit-3.0\work\NUnitFramework\src\framework\Assert.cs:line 152
+   at NUnit.Tests.Assemblies.MockTestFixture.FailingTest() in D:\Dev\NUnit\nunit-3.0\work\NUnitFramework\src\mock-assembly\MockAssembly.cs:line 121]]></stack-trace>
+        </failure>
+      </test-case>
+      <test-case id="1010" name="InconclusiveTest" fullname="NUnit.Tests.Assemblies.MockTestFixture.InconclusiveTest" result="Inconclusive" time="0.001" asserts="0" />
+      <test-case id="1001" name="MockTest1" fullname="NUnit.Tests.Assemblies.MockTestFixture.MockTest1" result="Passed" time="0.000" asserts="0">
+        <properties>
+          <property name="Description" value="Mock Test #1" />
+        </properties>
+      </test-case>
+      <test-case id="1002" name="MockTest2" fullname="NUnit.Tests.Assemblies.MockTestFixture.MockTest2" result="Passed" time="0.000" asserts="0">
+        <properties>
+          <property name="Severity" value="Critical" />
+          <property name="Description" value="This is a really, really, really, really, really, really, really, really, really, really, really, really, really, really, really, really, really, really, really, really, really, really, really, really, really long description" />
+          <property name="Category" value="MockCategory" />
+        </properties>
+      </test-case>
+      <test-case id="1003" name="MockTest3" fullname="NUnit.Tests.Assemblies.MockTestFixture.MockTest3" result="Passed" time="0.000" asserts="0">
+        <properties>
+          <property name="Category" value="AnotherCategory" />
+          <property name="Category" value="MockCategory" />
+        </properties>
+      </test-case>
+      <test-case id="1007" name="MockTest4" fullname="NUnit.Tests.Assemblies.MockTestFixture.MockTest4" result="Skipped" label="Ignored" time="0.000" asserts="0">
+        <properties>
+          <property name="Category" value="Foo" />
+          <property name="_SKIPREASON" value="ignoring this test method for now" />
+        </properties>
+        <reason>
+          <message><![CDATA[ignoring this test method for now]]></message>
+        </reason>
+      </test-case>
+      <test-case id="1004" name="MockTest5" fullname="NUnit.Tests.Assemblies.MockTestFixture.MockTest5" result="Skipped" label="Invalid" time="0.000" asserts="0">
+        <properties>
+          <property name="_SKIPREASON" value="Method is not public" />
+        </properties>
+        <reason>
+          <message><![CDATA[Method is not public]]></message>
+        </reason>
+      </test-case>
+      <test-case id="1009" name="NotRunnableTest" fullname="NUnit.Tests.Assemblies.MockTestFixture.NotRunnableTest" result="Skipped" label="Invalid" time="0.000" asserts="0">
+        <properties>
+          <property name="_SKIPREASON" value="No arguments were provided" />
+        </properties>
+        <reason>
+          <message><![CDATA[No arguments were provided]]></message>
+        </reason>
+      </test-case>
+      <test-case id="1011" name="TestWithException" fullname="NUnit.Tests.Assemblies.MockTestFixture.TestWithException" result="Failed" label="Error" time="0.002" asserts="0">
+        <failure>
+          <message><![CDATA[System.ApplicationException : Intentional Exception]]></message>
+          <stack-trace><![CDATA[   at NUnit.Tests.Assemblies.MockTestFixture.MethodThrowsException() in D:\Dev\NUnit\nunit-3.0\work\NUnitFramework\src\mock-assembly\MockAssembly.cs:line 158
+   at NUnit.Tests.Assemblies.MockTestFixture.TestWithException() in D:\Dev\NUnit\nunit-3.0\work\NUnitFramework\src\mock-assembly\MockAssembly.cs:line 153]]></stack-trace>
+        </failure>
+      </test-case>
+      <test-case id="1006" name="TestWithManyProperties" fullname="NUnit.Tests.Assemblies.MockTestFixture.TestWithManyProperties" result="Passed" time="0.000" asserts="0">
+        <properties>
+          <property name="TargetMethod" value="SomeClassName" />
+          <property name="Size" value="5" />
+        </properties>
+      </test-case>
+    </test-suite>
+    <test-suite type="TestFixture" id="1023" name="BadFixture" fullname="NUnit.Tests.BadFixture" testcasecount="1" result="Skipped" label="Invalid" time="0.000" total="0" passed="0" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_SKIPREASON" value="No suitable constructor was found" />
+      </properties>
+      <reason>
+        <message><![CDATA[No suitable constructor was found]]></message>
+      </reason>
+    </test-suite>
+    <test-suite type="TestFixture" id="1025" name="FixtureWithTestCases" fullname="NUnit.Tests.FixtureWithTestCases" testcasecount="2" result="Passed" time="0.010" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="2">
+      <test-suite type="ParameterizedMethod" id="1026" name="MethodWithParameters" fullname="NUnit.Tests.FixtureWithTestCases.MethodWithParameters" testcasecount="2" result="Passed" time="0.009" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="2">
+        <test-case id="1027" name="MethodWithParameters(2,2)" fullname="NUnit.Tests.FixtureWithTestCases.MethodWithParameters(2,2)" result="Passed" time="0.006" asserts="1" />
+        <test-case id="1028" name="MethodWithParameters(9,11)" fullname="NUnit.Tests.FixtureWithTestCases.MethodWithParameters(9,11)" result="Passed" time="0.000" asserts="1" />
+      </test-suite>
+    </test-suite>
+    <test-suite type="TestFixture" id="1016" name="IgnoredFixture" fullname="NUnit.Tests.IgnoredFixture" testcasecount="3" result="Skipped" label="Ignored" time="0.000" total="0" passed="0" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_SKIPREASON" value="" />
+      </properties>
+      <reason>
+        <message><![CDATA[]]></message>
+      </reason>
+    </test-suite>
+    <test-suite type="ParameterizedFixture" id="1029" name="ParameterizedFixture" fullname="NUnit.Tests.ParameterizedFixture" testcasecount="4" result="Passed" time="0.007" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <test-suite type="TestFixture" id="1030" name="ParameterizedFixture(42)" fullname="NUnit.Tests.ParameterizedFixture(42)" testcasecount="2" result="Passed" time="0.003" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <test-case id="1031" name="Test1" fullname="NUnit.Tests.ParameterizedFixture(42).Test1" result="Passed" time="0.000" asserts="0" />
+        <test-case id="1032" name="Test2" fullname="NUnit.Tests.ParameterizedFixture(42).Test2" result="Passed" time="0.000" asserts="0" />
+      </test-suite>
+      <test-suite type="TestFixture" id="1033" name="ParameterizedFixture(5)" fullname="NUnit.Tests.ParameterizedFixture(5)" testcasecount="2" result="Passed" time="0.002" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <test-case id="1034" name="Test1" fullname="NUnit.Tests.ParameterizedFixture(5).Test1" result="Passed" time="0.000" asserts="0" />
+        <test-case id="1035" name="Test2" fullname="NUnit.Tests.ParameterizedFixture(5).Test2" result="Passed" time="0.000" asserts="0" />
+      </test-suite>
+    </test-suite>
+    <test-suite type="TestFixture" id="1012" name="OneTestCase" fullname="NUnit.Tests.Singletons.OneTestCase" testcasecount="1" result="Passed" time="0.001" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <test-case id="1013" name="TestCase" fullname="NUnit.Tests.Singletons.OneTestCase.TestCase" result="Passed" time="0.000" asserts="0" />
+    </test-suite>
+    <test-suite type="TestFixture" id="1014" name="MockTestFixture" fullname="NUnit.Tests.TestAssembly.MockTestFixture" testcasecount="1" result="Passed" time="0.001" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <test-case id="1015" name="MyTest" fullname="NUnit.Tests.TestAssembly.MockTestFixture.MyTest" result="Passed" time="0.001" asserts="0" />
+    </test-suite>
+  </test-suite>
+</test-run>
