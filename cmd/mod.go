@@ -3,16 +3,14 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/steampipeconfig/version_map"
-
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/mod_installer"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
 	"github.com/turbot/steampipe/utils"
 )
 
