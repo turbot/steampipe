@@ -6,63 +6,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/viper"
-
-	"github.com/turbot/steampipe/steampipeconfig/version_map"
-
 	"github.com/Masterminds/semver"
 	git "github.com/go-git/go-git/v5"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
 	"github.com/turbot/steampipe/utils"
 )
-
-/*
-mog get
-
-A user may install a mod with steampipe mod get modname[@version]
-
-version may be:
-
-- Not specified: steampipe mod get aws-cis
-	The latest version (highest version tag) will be installed.
-	A dependency is added to the requires block specifying the version that was downloaded
-- A major version: steampipe mod get aws-cis@3
-	The latest release (highest version tag) of the specified major version will be installed.
-	A dependency is added to the requires block specifying the version that was downloaded
-- A monotonic version tag: steampipe mod get aws-cis@v2.21
-	The specified version is downloaded and added as requires dependency.
-- A branch name: steampipe mod get aws-cis@staging
-	The current version of the specified branch is downloaded.
-	The branch dependency is added to the requires list. Note that a branch is considered a distinct "major" release, it is not cached in the registry, and has no minor version.
-	Branch versions do not auto-update - you have to run steampipe mod update to get a newer version.
-	Branch versioning is meant to simplify development and testing - published mods should ONLY include version tag dependencies, NOT branch dependencies.
-- A local file path: steampipe mod get "file:~/my_path/aws-core"
-	The mod from the local filesystem is added to the namespace, but nothing is downloaded.
-	The local dependency is added to the requires list. Note that a local mod is considered a distinct "major" release, it is not cached in the registry, and has no minor version.
-	Local versioning is meant to simplify development and testing - published mods should ONLY include version tag dependencies, NOT local dependencies.
-
-
-Steampipe Version Dependency
-If the installed version of Steampipe does not meet the dependency criteria, the user will be warned and the mod will NOT be installed.
-
-Plugin Dependency
-If the mod specifies plugin versions that are not installed, or have no connections, the user will be warned but the mod will be installed. The user should be warned at installation time, and also when starting Steampipe in the workspace.
-
-
-Detecting conflicts
-mod 1 require a@1.0
-mod 2 require a@file:/foo
-
--> how do we detect if the file version satisfied constrainst of a - this is for dev purposes so always pass?
-
-mod 1 require a@1.0
-mod 2 require a@<branch>
-
--> how do we detect if the file version satisfied constraints of a - check branch?
-
-*/
 
 type ModInstaller struct {
 	workspaceMod  *modconfig.Mod
@@ -106,10 +58,6 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	i.installData = NewInstallData(workspaceLock)
 
 	// TODO think about if we need verifyCanUpdate
-	//// if we are updating ensure we have a non empty lock file, and that all mods requested to update are in it
-	//if err := i.setModArgs(opts); err != nil {
-	//	return nil, err
-	//}
 	return i, nil
 }
 
@@ -459,114 +407,3 @@ func (i *ModInstaller) loadModfile(modPath string, createDefault bool) (*modconf
 	}
 	return parse.ParseModDefinition(modPath)
 }
-
-//func (i *ModInstaller) setModArgs(opts *InstallOpts) error {
-//	// list of mods to add
-//	var addMods version_map.VersionConstraintMap
-//	if i.updating {
-//		if err := i.verifyCanUpdate(); err != nil {
-//			return err
-//		}
-//	}
-//	// add all mod args to the installer
-//	// if any mods have mods versions which are NOT already in the lock file
-//		// (i/.e/ if same mod name and constraint exist, skip)
-//		for name, version := range opts.ModArgs {
-//			if i.installData.Lock.ContainsModConstraint(name, version.Constraint) {
-//				addMods[name] = version
-//			}
-//		}
-//	} else {
-//		// we are not updating, so any set the AddMods - exclude anything already in the mod requires
-//		addMods = opts.ModArgs
-//	}
-//
-//	// if we have any add mods, add them
-//	i.setAddMods(addMods)
-//
-//	return nil
-//}
-
-//
-//// check whether there is a mod version installed that satisfies the version constraint (and update requirements)
-//func (i *ModInstaller) getInstalledVersionForConstraint(requiredModVersion *modconfig.ModVersionConstraint, availableVersions []*semver.Version, parent *modconfig.Mod) (*modconfig.Mod, error) {
-//	// does this required version exist in in the lock file
-//	log.Printf("[TRACE] getInstalledVersionForConstraint required version %v", requiredModVersion)
-//	installedVersion, err := i.installData.Lock.EnsureLockedModVersion(requiredModVersion, parent)
-//	if installedVersion == nil {
-//		log.Printf("[TRACE] no version of %s installed for parent %s which satisfies version constrain %s", requiredModVersion.Name, parent.Name(), requiredModVersion.Constraint.Original)
-//		return nil, nil
-//	}
-//
-//	log.Printf("[TRACE] found installed version %s@%s", requiredModVersion.Name, installedVersion.Version)
-//
-//	// so there IS a version installed which satisfies the constraint.
-//	// if we are updating, see if there is a newer verison
-//	if i.shouldUpdate(requiredModVersion.Name) {
-//		// so we should update if there is a newer version - check if there is
-//		newerModVersionFound, err := i.updateAvailable(requiredModVersion, installedVersion.Version, availableVersions)
-//		if err != nil {
-//			return nil, err
-//		}
-//		if newerModVersionFound {
-//			// there is a newer version so we will NOT use the installed version - return nil
-//			return nil, nil
-//		}
-//	}
-//
-//	// so we resolved an installed version which will satisfy
-//	// load the mod
-//	modPath := filepath.Join(i.modsPath, modconfig.ModVersionFullName(requiredModVersion.Name, installedVersion.Version))
-//	installedMod, err := i.loadModfile(modPath, false)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	return installedMod, nil
-//}
-
-//// check whether there is a mod version installed that satisfies the version constraint (and update requirements)
-//func (i *ModInstaller) getInstalledVersionForConstraintOLD(requiredModVersion *modconfig.ModVersionConstraint, availableVersions []*semver.Version, parent *modconfig.Mod) (*modconfig.Mod, error) {
-//	// does this required version exist in in the lock file
-//	log.Printf("[TRACE] getInstalledVersionForConstraint required version %v", requiredModVersion)
-//	installedVersion, err := i.installData.Lock.EnsureLockedModVersion(requiredModVersion, parent)
-//	if installedVersion == nil {
-//		log.Printf("[TRACE] no version of %s installed for parent %s which satisfies version constrain %s", requiredModVersion.Name, parent.Name(), requiredModVersion.Constraint.Original)
-//		return nil, nil
-//	}
-//
-//	log.Printf("[TRACE] found installed version %s@%s", requiredModVersion.Name, installedVersion.Version)
-//
-//	// so there IS a version installed which satisfies the constraint.
-//	// if we are updating, see if there is a newer verison
-//	if i.shouldUpdate(requiredModVersion.Name) {
-//		// so we should update if there is a newer version - check if there is
-//		newerModVersionFound, err := i.updateAvailable(requiredModVersion, installedVersion.Version, availableVersions)
-//		if err != nil {
-//			return nil, err
-//		}
-//		if newerModVersionFound {
-//			// there is a newer version so we will NOT use the installed version - return nil
-//			return nil, nil
-//		}
-//	}
-//
-//	// so we resolved an installed version which will satisfy
-//	// load the mod
-//	modPath := filepath.Join(i.modsPath, modconfig.ModVersionFullName(requiredModVersion.Name, installedVersion.Version))
-//	installedMod, err := i.loadModfile(modPath, false)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	return installedMod, nil
-//}
-
-//func (i *ModInstaller) setAddMods(addMods version_map.VersionConstraintMap) {
-//	for name, contraint := range addMods {
-//		// does the workspace mod already have a dependency on this mod - if so DO NOT add to AddMods
-//		if !i.workspaceMod.DependsOnMod(contraint) {
-//			i.mods[name] = contraint
-//		}
-//	}
-//}

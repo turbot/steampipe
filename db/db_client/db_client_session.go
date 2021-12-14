@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v4/stdlib"
+
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/utils"
@@ -138,26 +140,10 @@ func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, uint32
 		log.Printf("[TRACE] getSessionWithRetries succeeded after %d retries", retries)
 	}
 
-	backendPid, _ = GetBackendPid(ctx, session)
-	//session.Raw(func(driverConn interface{}) error {
-	//	//backendPid = driverConn.(*stdlib.Conn).Conn().PgConn().PID()
-	//
-	//
-	//	return nil
-	//})
+	session.Raw(func(driverConn interface{}) error {
+		backendPid = driverConn.(*stdlib.Conn).Conn().PgConn().PID()
+		return nil
+	})
 
 	return session, uint32(backendPid), nil
-}
-
-// get the unique postgres identifier for a database session
-func GetBackendPid(ctx context.Context, session *sql.Conn) (uint32, error) {
-	var pid int64
-	rows, err := session.QueryContext(ctx, "select pg_backend_pid()")
-	if err != nil {
-		return 0, err
-	}
-	rows.Next()
-	rows.Scan(&pid)
-	rows.Close()
-	return uint32(pid), nil
 }
