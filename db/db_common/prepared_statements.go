@@ -24,7 +24,6 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 	}
 
 	for name, sql := range sqlMap {
-		log.Println("[TRACE] creating prepared statement", sql)
 		if _, err := session.Connection.ExecContext(ctx, sql); err != nil {
 			warnings = append(warnings, fmt.Sprintf("failed to create prepared statement for %s: %v", name, err))
 		}
