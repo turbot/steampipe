@@ -225,6 +225,7 @@ func (i *ModInstaller) buildInstallError(errors []error) error {
 func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modconfig.ModVersionConstraint, dependencyMod *modconfig.Mod, parent *modconfig.Mod, shouldUpdate bool) error {
 	// get available versions for this mod
 	availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name)
+
 	if err != nil {
 		return err
 	}
@@ -350,7 +351,6 @@ func (i *ModInstaller) getModRefSatisfyingConstraints(modVersion *modconfig.ModV
 func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod) (_ *modconfig.Mod, err error) {
 	defer func() {
 		if err == nil {
-
 			i.installData.onModInstalled(dependency, parent)
 		}
 	}()
