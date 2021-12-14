@@ -47,7 +47,7 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 		}
 
 		// remove trailing semicolons from sql as this breaks the prepare statement
-		rawSql := cleanPrparedStatementSQL(typehelpers.SafeString(query.SQL))
+		rawSql := cleanPreparedStatementSQL(typehelpers.SafeString(query.SQL))
 		preparedStatementName := query.GetPreparedStatementName()
 		sqlMap[query.FullName] = fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
 	}
@@ -75,7 +75,7 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 	return sqlMap
 }
 
-func cleanPrparedStatementSQL(query string) string {
+func cleanPreparedStatementSQL(query string) string {
 	rawSql := strings.TrimRight(strings.TrimSpace(query), ";")
 	return rawSql
 }
