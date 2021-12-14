@@ -264,12 +264,12 @@ func (c *Control) SetMetadata(metadata *ResourceMetadata) {
 	c.metadata = metadata
 }
 
-// GetParams implements PreparedStatementProvider
+// GetParams implements QueryProvider
 func (c *Control) GetParams() []*ParamDef {
 	return c.Params
 }
 
-// GetPreparedStatementName implements PreparedStatementProvider
+// GetPreparedStatementName implements QueryProvider
 func (c *Control) GetPreparedStatementName() string {
 	// lazy load
 	if c.PreparedStatementName == "" {
@@ -278,7 +278,7 @@ func (c *Control) GetPreparedStatementName() string {
 	return c.PreparedStatementName
 }
 
-// ModName implements PreparedStatementProvider
+// ModName implements QueryProvider
 func (c *Control) ModName() string {
 	return c.Mod.ShortName
 }

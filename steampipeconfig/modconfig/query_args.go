@@ -73,7 +73,7 @@ func (q *QueryArgs) Empty() bool {
 // falling back on defaults from param definitions in the source (if present)
 // it returns the arg values as a csv string which can be used in a prepared statement invocation
 // (the arg values and param defaults will already have been converted to postgres format)
-func (q *QueryArgs) ResolveAsString(source PreparedStatementProvider) (string, error) {
+func (q *QueryArgs) ResolveAsString(source QueryProvider) (string, error) {
 	var paramStrs, missingParams []string
 	var err error
 	if len(q.Args) > 0 {
@@ -107,7 +107,7 @@ func (q *QueryArgs) ResolveAsString(source PreparedStatementProvider) (string, e
 	return fmt.Sprintf("(%s)", strings.Join(paramStrs, ",")), err
 }
 
-func (q *QueryArgs) resolveNamedParameters(source PreparedStatementProvider) (argStrs []string, missingParams []string, err error) {
+func (q *QueryArgs) resolveNamedParameters(source QueryProvider) (argStrs []string, missingParams []string, err error) {
 	// if query params contains both positional and named params, error out
 	if len(q.ArgsList) > 0 {
 		err = fmt.Errorf("ResolveAsString failed for %s - params data contain both positional and named parameters", source.Name())
@@ -152,7 +152,7 @@ func (q *QueryArgs) resolveNamedParameters(source PreparedStatementProvider) (ar
 	return argStrs, missingParams, nil
 }
 
-func (q *QueryArgs) resolvePositionalParameters(source PreparedStatementProvider) (argStrs []string, missingParams []string, err error) {
+func (q *QueryArgs) resolvePositionalParameters(source QueryProvider) (argStrs []string, missingParams []string, err error) {
 	// if query params contains both positional and named params, error out
 	if len(q.Args) > 0 {
 		err = fmt.Errorf("resolvePositionalParameters failed for %s - args data contain both positional and named parameters", source.Name())

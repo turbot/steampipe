@@ -12,7 +12,7 @@ const preparesStatementQuerySuffix = "_q"
 const preparesStatementControlSuffix = "_c"
 
 // GetPreparedStatementExecuteSQL return the SQLs to run the query as a prepared statement
-func GetPreparedStatementExecuteSQL(source PreparedStatementProvider, args *QueryArgs) (string, error) {
+func GetPreparedStatementExecuteSQL(source QueryProvider, args *QueryArgs) (string, error) {
 	paramsString, err := args.ResolveAsString(source)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve args for %s: %s", source.Name(), err.Error())
@@ -22,7 +22,7 @@ func GetPreparedStatementExecuteSQL(source PreparedStatementProvider, args *Quer
 	return executeString, nil
 }
 
-func preparedStatementName(source PreparedStatementProvider) string {
+func preparedStatementName(source QueryProvider) string {
 	var name, suffix string
 	prefix := fmt.Sprintf("%s_", source.ModName())
 

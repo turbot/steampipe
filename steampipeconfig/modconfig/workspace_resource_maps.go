@@ -100,7 +100,7 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 	return true
 }
 
-func (m *WorkspaceResourceMaps) AddPreparedStatementProvider(provider PreparedStatementProvider) {
+func (m *WorkspaceResourceMaps) AddQueryProvider(provider QueryProvider) {
 	switch p := provider.(type) {
 	case *Query:
 		if p != nil {

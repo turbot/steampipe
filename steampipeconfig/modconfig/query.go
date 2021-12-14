@@ -189,12 +189,12 @@ func (q *Query) GetDeclRange() *hcl.Range {
 	return &q.DeclRange
 }
 
-// GetParams implements PreparedStatementProvider
+// GetParams implements QueryProvider
 func (q *Query) GetParams() []*ParamDef {
 	return q.Params
 }
 
-// GetPreparedStatementName implements PreparedStatementProvider
+// GetPreparedStatementName implements QueryProvider
 func (q *Query) GetPreparedStatementName() string {
 	// lazy load
 	if q.PreparedStatementName == "" {
@@ -203,7 +203,7 @@ func (q *Query) GetPreparedStatementName() string {
 	return q.PreparedStatementName
 }
 
-// ModName implements PreparedStatementProvider
+// ModName implements QueryProvider
 func (q *Query) ModName() string {
 	return q.Mod.ShortName
 }
