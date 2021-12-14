@@ -450,7 +450,7 @@ Benchmarks:
 						{
 							Name:          "github.com/turbot/aws-core",
 							VersionString: "v1.0",
-							Alias:         utils.ToStringPointer("core"),
+							//Alias:         utils.ToStringPointer("core"),
 						},
 					},
 				},
