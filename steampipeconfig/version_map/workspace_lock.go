@@ -181,7 +181,7 @@ func (l *WorkspaceLock) Delete() error {
 // DeleteMods removes mods from the lock file then, if it is empty, deletes the file
 func (l *WorkspaceLock) DeleteMods(mods VersionConstraintMap, parent *modconfig.Mod) {
 	for modName := range mods {
-		if parentDependencies := l.InstallCache[parent.Name()]; parentDependencies != nil {
+		if parentDependencies := l.InstallCache[parent.GetModDependencyPath()]; parentDependencies != nil {
 			parentDependencies.Remove(modName)
 		}
 	}
@@ -189,7 +189,7 @@ func (l *WorkspaceLock) DeleteMods(mods VersionConstraintMap, parent *modconfig.
 
 // GetMod looks for a lock file entry matching the given mod name
 func (l *WorkspaceLock) GetMod(modName string, parent *modconfig.Mod) *ResolvedVersionConstraint {
-	if parentDependencies := l.InstallCache[parent.Name()]; parentDependencies != nil {
+	if parentDependencies := l.InstallCache[parent.GetModDependencyPath()]; parentDependencies != nil {
 		// look for this mod in the lock file entries for this parent
 		return parentDependencies[modName]
 	}
@@ -236,7 +236,7 @@ func (l *WorkspaceLock) EnsureLockedModVersion(requiredModVersion *modconfig.Mod
 
 	// verify the locked version satisfies the version constraint
 	if !requiredModVersion.Constraint.Check(lockedVersion.Version) {
-		return nil, fmt.Errorf("failed to resolvedependencies for %s - locked version %s does not meet the constraint %s", parent.Name(), modconfig.ModVersionFullName(requiredModVersion.Name, lockedVersion.Version), requiredModVersion.Constraint.Original)
+		return nil, fmt.Errorf("failed to resolvedependencies for %s - locked version %s does not meet the constraint %s", parent.GetModDependencyPath(), modconfig.ModVersionFullName(requiredModVersion.Name, lockedVersion.Version), requiredModVersion.Constraint.Original)
 	}
 
 	return lockedVersion, nil

@@ -490,6 +490,14 @@ func (m *Mod) Name() string {
 	return m.FullName
 }
 
+// GetModDependencyPath ModDependencyPath if it is set. If not it returns NameWithVersion()
+func (m *Mod) GetModDependencyPath() string {
+	if m.ModDependencyPath != "" {
+		return m.ModDependencyPath
+	}
+	return m.NameWithVersion()
+}
+
 // GetTitle implements ModTreeItem
 func (m *Mod) GetTitle() string {
 	return typehelpers.SafeString(m.Title)

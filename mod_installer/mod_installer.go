@@ -181,6 +181,10 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 	return nil
 }
 
+func (i *ModInstaller) GetModList() string {
+	return i.installData.Lock.GetModList(i.workspaceMod.GetModDependencyPath())
+}
+
 func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) error {
 	var errors []error
 	for _, requiredModVersion := range mods {
@@ -346,6 +350,7 @@ func (i *ModInstaller) getModRefSatisfyingConstraints(modVersion *modconfig.ModV
 func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod) (_ *modconfig.Mod, err error) {
 	defer func() {
 		if err == nil {
+
 			i.installData.onModInstalled(dependency, parent)
 		}
 	}()
@@ -405,5 +410,16 @@ func (i *ModInstaller) loadModfile(modPath string, createDefault bool) (*modconf
 		}
 		return nil, nil
 	}
-	return parse.ParseModDefinition(modPath)
+	mod, err := parse.ParseModDefinition(modPath)
+	if err != nil {
+		return nil, err
+	}
+	// if this is NOT the workspace mod, set ModDependencyPath - determine relative path from mod root
+	if modPath != i.workspacePath {
+		mod.ModDependencyPath, err = filepath.Rel(i.modsPath, modPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return mod, nil
 }

@@ -9,6 +9,9 @@ import (
 )
 
 func ModVersionFullName(name string, version *semver.Version) string {
+	if version == nil {
+		return name
+	}
 	versionString := GetMonotonicVersionString(version)
 	return fmt.Sprintf("%s@v%s", name, versionString)
 }
