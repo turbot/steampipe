@@ -24,7 +24,6 @@
    at NUnit.Framework.Assert.Fail(String message) in D:\Dev\NUnit\nunit-3.0\work\NUnitFramework\src\framework\Assert.cs:line 152
    at NUnit.Tests.Assemblies.MockTestFixture.FailingTest() in D:\Dev\NUnit\nunit-3.0\work\NUnitFramework\src\mock-assembly\MockAssembly.cs:line 121]]></stack-trace>
         </failure>
-      </test-case>
       <test-case id="1010" name="InconclusiveTest" fullname="NUnit.Tests.Assemblies.MockTestFixture.InconclusiveTest" result="Inconclusive" time="0.001" asserts="0" />
       <test-case id="1001" name="MockTest1" fullname="NUnit.Tests.Assemblies.MockTestFixture.MockTest1" result="Passed" time="0.000" asserts="0">
         <properties>
