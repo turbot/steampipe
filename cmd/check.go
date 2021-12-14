@@ -132,10 +132,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// initialise
 	initData = initialiseCheck(cmd.Context(), spinner)
+	display.StopSpinner(spinner)
 	if shouldExit := handleCheckInitResult(initData); shouldExit {
 		return
 	}
-	display.StopSpinner(spinner)
 
 	// pull out useful properties
 	ctx := initData.ctx
