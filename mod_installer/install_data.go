@@ -84,7 +84,6 @@ func (d *InstallData) addExisting(name string, version *semver.Version, constrai
 	})
 }
 
-//
 // retrieve all available mod versions from our cache, or from Git if not yet cached
 func (d *InstallData) getAvailableModVersions(modName string) ([]*semver.Version, error) {
 	// have we already loaded the versions for this mod

@@ -367,7 +367,14 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 	}
 
 	// now load the installed mod and return it
-	return i.loadModfile(destPath, false)
+	modFile, err := i.loadModfile(destPath, false)
+	if err != nil {
+		return nil, err
+	}
+	if modFile == nil {
+		return nil, fmt.Errorf("'%s' has no mod definition file", dependency.FullName())
+	}
+	return modFile, nil
 
 }
 
@@ -376,8 +383,6 @@ func (i *ModInstaller) installFromGit(dependency *ResolvedModRef, installPath st
 	if err := os.MkdirAll(i.modsPath, os.ModePerm); err != nil {
 		return err
 	}
-
-	// NOTE: we need to check existing installed mods
 
 	// get the mod from git
 	gitUrl := getGitUrl(dependency.Name)
