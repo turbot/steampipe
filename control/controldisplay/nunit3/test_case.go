@@ -13,6 +13,8 @@ type TestCase struct {
 	StartTime *time.Time  `xml:"start-time,attr,omitempty"`
 	EndTime   *time.Time  `xml:"end-time,attr,omitempty"`
 	Props     *Properties `xml:"properties,omitempty"`
+	Result    *string     `xml:"result,attr"`
+	Label     *string     `xml:"label,attr"`
 }
 
 func NewTestCase() *TestCase {

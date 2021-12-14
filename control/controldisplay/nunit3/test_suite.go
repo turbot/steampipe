@@ -8,11 +8,12 @@ import (
 type TestSuite struct {
 	XMLName xml.Name `xml:"test-suite"`
 
-	ID        *string    `xml:"id,attr"`
-	Name      *string    `xml:"name,attr"`
-	FullName  *string    `xml:"fullname,attr"`
-	StartTime *time.Time `xml:"start-time,attr,omitempty"`
-	EndTime   *time.Time `xml:"end-time,attr,omitempty"`
+	ID        *string        `xml:"id,attr"`
+	Name      *string        `xml:"name,attr"`
+	FullName  *string        `xml:"fullname,attr"`
+	StartTime *time.Time     `xml:"start-time,attr,omitempty"`
+	EndTime   *time.Time     `xml:"end-time,attr,omitempty"`
+	Time      *time.Duration `xml:"time,attr"`
 
 	// Child Elements
 	Suites []*TestSuite

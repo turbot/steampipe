@@ -55,6 +55,9 @@ func getTestSuiteFromResultGroup(r *controlexecute.ResultGroup) *nunit3.TestSuit
 	for _, group := range r.Groups {
 		thisSuite.AddTestSuite(getTestSuiteFromResultGroup(group))
 	}
+	thisSuite.ID = &r.GroupId
+	thisSuite.Name = &r.Title
+	thisSuite.Time = &r.Duration
 	return thisSuite
 }
 
@@ -67,6 +70,9 @@ func getTestSuiteFromControlRun(r *controlexecute.ControlRun) *nunit3.TestSuite 
 	for _, rows := range r.Rows {
 		thisSuite.AddTestCase(getTestCaseFromControlRunRow(rows))
 	}
+	thisSuite.ID = &r.ControlId
+	thisSuite.Name = &r.Title
+	thisSuite.Time = &r.Duration
 	return thisSuite
 }
 
@@ -74,6 +80,9 @@ func getTestCaseFromControlRunRow(r *controlexecute.ResultRow) *nunit3.TestCase 
 	testCase := nunit3.NewTestCase()
 
 	testCase.Name = &r.Resource
+	testCase.Result = &r.Status
+	testCase.ID = &r.Control.FullName
+	testCase.Label = &r.Reason
 
 	return testCase
 }

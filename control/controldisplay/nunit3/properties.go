@@ -17,7 +17,7 @@ func NewProperty(key string, value string) *Property {
 
 type Properties struct {
 	XMLName xml.Name    `xml:"properties"`
-	Props   []*Property `xml:"properties`
+	Props   []*Property `xml:"properties"`
 }
 
 func (properties *Properties) AddProperty(pr *Property) {
