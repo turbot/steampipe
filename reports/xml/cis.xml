@@ -1,7 +1,6 @@
- <test-run>
-  <environment nunit-version="3.0.0.0" clr-version="2.0.50727.4961" os-version="Microsoft Windows NT 6.1.7600.0" platform="Win32NT" cwd="D:\Dev\NUnit\nunit-3.0\work\bin\vs2008\Debug" machine-name="CHARLIE-LAPTOP" user="charlie" user-domain="charlie-laptop" culture="en-US" uiculture="en-US" />
-  <test-suite id="benchmark.check_all" name="Benchmark to test the steampipe check all functionality" duration="8117">
-   <test-suite id="control.check_1" name="Control to verify steampipe check all functionality 1" duration="-39680410">
+ <test-run testcasecount="2" total="2" passed="1" failed="1" skipped="0">
+  <test-suite id="benchmark.check_all" name="Benchmark to test the steampipe check all functionality" duration="7077">
+   <test-suite id="control.check_1" name="Control to verify steampipe check all functionality 1" duration="-35071401">
     <test-case id="control.check_1:0" name="control.check_1" result="Passed" label="acceptance tests">
      <properties>
       <property>
@@ -21,7 +20,7 @@
      </property>
     </properties>
    </test-suite>
-   <test-suite id="control.check_2" name="Control to verify steampipe check all functionality 2" duration="-38774969">
+   <test-suite id="control.check_2" name="Control to verify steampipe check all functionality 2" duration="-33697082">
     <test-case id="control.check_2:0" name="control.check_2" result="Failed" label="integration tests">
      <properties>
       <property>
