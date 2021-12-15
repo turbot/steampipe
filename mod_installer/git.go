@@ -38,7 +38,7 @@ func getTags(repo string) ([]string, error) {
 	return tags, nil
 }
 
-func getTagVersionsFromGit(repo string) (semver.Collection, error) {
+func getTagVersionsFromGit(repo string, includePrerelease bool) (semver.Collection, error) {
 	tags, err := getTags(repo)
 	if err != nil {
 		return nil, err
@@ -52,9 +52,15 @@ func getTagVersionsFromGit(repo string) (semver.Collection, error) {
 		if err != nil {
 			continue
 		}
+
+		if !includePrerelease && v.Metadata() != "" || v.Prerelease() != "" {
+			continue
+		}
 		versions[idx] = v
 		idx++
 	}
+	// shrink slice
+	versions = versions[:idx]
 
 	// sort the versions in REVERSE order
 	sort.Sort(sort.Reverse(versions))

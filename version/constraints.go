@@ -35,3 +35,12 @@ func (c Constraints) Validate(v *semver.Version) (bool, []error) {
 func (c Constraints) Equals(other *Constraints) bool {
 	return c.Original == other.Original
 }
+
+// IsPrerelease determines whether the constraint parses as a specifc version with prerelease or metadata set
+func (c Constraints) IsPrerelease() bool {
+	v, err := semver.NewVersion(c.Original)
+	if err != nil {
+		return false
+	}
+	return v.Prerelease() != "" || v.Metadata() != ""
+}

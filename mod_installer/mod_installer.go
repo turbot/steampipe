@@ -194,7 +194,6 @@ func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, paren
 
 	var errors []error
 	for _, requiredModVersion := range mods {
-
 		modToUse, err := i.getCurrentlyInstalledVersionToUse(requiredModVersion, parent, i.updating())
 		if err != nil {
 			errors = append(errors, err)
@@ -230,7 +229,8 @@ func (i *ModInstaller) buildInstallError(errors []error) error {
 
 func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modconfig.ModVersionConstraint, dependencyMod *modconfig.Mod, parent *modconfig.Mod, shouldUpdate bool) error {
 	// get available versions for this mod
-	availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name)
+	includePrerelease := requiredModVersion.Constraint.IsPrerelease()
+	availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name, includePrerelease)
 
 	if err != nil {
 		return err
@@ -310,7 +310,8 @@ func (i *ModInstaller) canUpdateMod(installedVersion *version_map.ResolvedVersio
 	// TODO check * vs latest - maybe need a custom equals?
 	if forceUpdate || installedVersion.Constraint != requiredModVersion.Constraint.Original {
 		// get available versions for this mod
-		availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name)
+		includePrerelease := requiredModVersion.Constraint.IsPrerelease()
+		availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name, includePrerelease)
 		if err != nil {
 			return false, err
 		}
