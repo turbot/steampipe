@@ -1,7 +1,7 @@
  <test-run>
-  <test-suite id="benchmark.cis_v130" name="CIS v1.3.0" duration="263543883">
-   <test-suite id="benchmark.cis_v130_1" name="1 Identity and Access Management" duration="147104475">
-    <test-suite id="control.cis_v130_1_1" name="1.1 Maintain current contact details" duration="-232778695">
+  <test-suite id="benchmark.cis_v130" name="CIS v1.3.0" duration="276007740">
+   <test-suite id="benchmark.cis_v130_1" name="1 Identity and Access Management" duration="160963377">
+    <test-suite id="control.cis_v130_1_1" name="1.1 Maintain current contact details" duration="-146662666">
      <test-case id="control.cis_v130_1_1:0" name="control.cis_v130_1_1" result="Failed" label="is pretty insecure">
       <properties>
        <property>
@@ -27,9 +27,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value>high</value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_2" name="1.2 Ensure security contact information is registered" duration="-277987757">
+    <test-suite id="control.cis_v130_1_2" name="1.2 Ensure security contact information is registered" duration="-140512002">
      <test-case id="control.cis_v130_1_2:0" name="control.cis_v130_1_2" result="Failed" label="is pretty insecure">
       <properties>
        <property>
@@ -55,9 +59,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value>high</value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_3" name="1.3 Ensure security questions are registered in the AWS account" duration="-127483373">
+    <test-suite id="control.cis_v130_1_3" name="1.3 Ensure security questions are registered in the AWS account" duration="-248376780">
      <test-case id="control.cis_v130_1_3:0" name="control.cis_v130_1_3" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -83,9 +91,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value>high</value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_4" name="1.4 Ensure no root user account access key exists" duration="-234410733">
+    <test-suite id="control.cis_v130_1_4" name="1.4 Ensure no root user account access key exists" duration="-172028399">
      <test-case id="control.cis_v130_1_4:0" name="control.cis_v130_1_4" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -111,9 +123,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value>high</value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_5" name="1.5 Ensure MFA is enabled for the &#34;root user&#34; account" duration="-132879489">
+    <test-suite id="control.cis_v130_1_5" name="1.5 Ensure MFA is enabled for the &#34;root user&#34; account" duration="-223068685">
      <test-case id="control.cis_v130_1_5:0" name="control.cis_v130_1_5" result="Failed" label="is pretty insecure">
       <properties>
        <property>
@@ -139,9 +155,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_6" name="1.6 Ensure hardware MFA is enabled for the &#34;root user&#34; account" duration="-184718617">
+    <test-suite id="control.cis_v130_1_6" name="1.6 Ensure hardware MFA is enabled for the &#34;root user&#34; account" duration="-166516595">
      <test-case id="control.cis_v130_1_6:0" name="control.cis_v130_1_6" result="Failed" label="is in some sort of error state">
       <properties>
        <property>
@@ -167,9 +187,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_7" name="1.7 Eliminate use of the root user for administrative and daily tasks" duration="-138467416">
+    <test-suite id="control.cis_v130_1_7" name="1.7 Eliminate use of the root user for administrative and daily tasks" duration="-184830444">
      <test-case id="control.cis_v130_1_7:0" name="control.cis_v130_1_7" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -195,9 +219,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_8" name="1.8 Ensure IAM password policy requires minimum length of 14 or greater" duration="-153140499">
+    <test-suite id="control.cis_v130_1_8" name="1.8 Ensure IAM password policy requires minimum length of 14 or greater" duration="-160260537">
      <test-case id="control.cis_v130_1_8:0" name="control.cis_v130_1_8" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -223,9 +251,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_9" name="1.9 Ensure IAM password policy prevents password reuse" duration="-233606688">
+    <test-suite id="control.cis_v130_1_9" name="1.9 Ensure IAM password policy prevents password reuse" duration="-245034233">
      <test-case id="control.cis_v130_1_9:0" name="control.cis_v130_1_9" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -251,9 +283,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_10" name="1.10 Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password" duration="-165150992">
+    <test-suite id="control.cis_v130_1_10" name="1.10 Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password" duration="-198634070">
      <test-case id="control.cis_v130_1_10:0" name="control.cis_v130_1_10" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -279,9 +315,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value>critical</value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_11" name="1.11 Do not setup access keys during initial user setup for all IAM users that have a console password" duration="-140643072">
+    <test-suite id="control.cis_v130_1_11" name="1.11 Do not setup access keys during initial user setup for all IAM users that have a console password" duration="-217434530">
      <test-case id="control.cis_v130_1_11:0" name="control.cis_v130_1_11" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -307,9 +347,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_12" name="1.12 Ensure credentials unused for 90 days or greater are disabled" duration="-160310660">
+    <test-suite id="control.cis_v130_1_12" name="1.12 Ensure credentials unused for 90 days or greater are disabled" duration="-179439715">
      <test-case id="control.cis_v130_1_12:0" name="control.cis_v130_1_12" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -335,9 +379,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_13" name="1.13 Ensure there is only one active access key available for any single IAM user" duration="-128343565">
+    <test-suite id="control.cis_v130_1_13" name="1.13 Ensure there is only one active access key available for any single IAM user" duration="-147653490">
      <test-case id="control.cis_v130_1_13:0" name="control.cis_v130_1_13" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -363,9 +411,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_14" name="1.14 Ensure access keys are rotated every 90 days or less" duration="-292739871">
+    <test-suite id="control.cis_v130_1_14" name="1.14 Ensure access keys are rotated every 90 days or less" duration="-154424775">
      <test-case id="control.cis_v130_1_14:0" name="control.cis_v130_1_14" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -391,9 +443,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_15" name="1.15 Ensure IAM Users Receive Permissions Only Through Groups" duration="-122187955">
+    <test-suite id="control.cis_v130_1_15" name="1.15 Ensure IAM Users Receive Permissions Only Through Groups" duration="-131752599">
      <test-case id="control.cis_v130_1_15:0" name="control.cis_v130_1_15" result="Failed" label="is pretty insecure">
       <properties>
        <property>
@@ -419,9 +475,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_16" name="1.16 Ensure IAM policies that allow full &#34;*:*&#34; administrative privileges are not attached" duration="-208741399">
+    <test-suite id="control.cis_v130_1_16" name="1.16 Ensure IAM policies that allow full &#34;*:*&#34; administrative privileges are not attached" duration="-173809266">
      <test-case id="control.cis_v130_1_16:0" name="control.cis_v130_1_16" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -447,9 +507,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value>critical</value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_17" name="1.17 Ensure a support role has been created to manage incidents with AWS Support" duration="-190754552">
+    <test-suite id="control.cis_v130_1_17" name="1.17 Ensure a support role has been created to manage incidents with AWS Support" duration="-161121144">
      <test-case id="control.cis_v130_1_17:0" name="control.cis_v130_1_17" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -475,9 +539,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_18" name="1.18 Ensure IAM instance roles are used for AWS resource access from instances" duration="-147238909">
+    <test-suite id="control.cis_v130_1_18" name="1.18 Ensure IAM instance roles are used for AWS resource access from instances" duration="-185891364">
      <test-case id="control.cis_v130_1_18:0" name="control.cis_v130_1_18" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -503,9 +571,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_19" name="1.19 Ensure that all the expired SSL/TLS certificates stored in AWS IAM are removed" duration="-154668164">
+    <test-suite id="control.cis_v130_1_19" name="1.19 Ensure that all the expired SSL/TLS certificates stored in AWS IAM are removed" duration="-192420660">
      <test-case id="control.cis_v130_1_19:0" name="control.cis_v130_1_19" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -531,9 +603,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_20" name="1.20 Ensure that S3 Buckets are configured with &#39;Block public access (bucket settings)&#39;" duration="-172668479">
+    <test-suite id="control.cis_v130_1_20" name="1.20 Ensure that S3 Buckets are configured with &#39;Block public access (bucket settings)&#39;" duration="-208974100">
      <test-case id="control.cis_v130_1_20:0" name="control.cis_v130_1_20" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -559,9 +635,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_21" name="1.21 Ensure that IAM Access analyzer is enabled" duration="-167081268">
+    <test-suite id="control.cis_v130_1_21" name="1.21 Ensure that IAM Access analyzer is enabled" duration="-216627058">
      <test-case id="control.cis_v130_1_21:0" name="control.cis_v130_1_21" result="Failed" label="is pretty insecure">
       <properties>
        <property>
@@ -587,9 +667,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value>critical</value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_22" name="1.22 Ensure IAM users are managed centrally via identity federation or AWS Organizations for multi-account environments" duration="-177526568">
+    <test-suite id="control.cis_v130_1_22" name="1.22 Ensure IAM users are managed centrally via identity federation or AWS Organizations for multi-account environments" duration="-290363682">
      <test-case id="control.cis_v130_1_22:0" name="control.cis_v130_1_22" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -615,6 +699,10 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
     <properties>
@@ -624,9 +712,9 @@
      </property>
     </properties>
    </test-suite>
-   <test-suite id="benchmark.cis_v130_2" name="2 Storage" duration="13064489">
-    <test-suite id="benchmark.cis_v130_2_1" name="2.1 Simple Storage Service (S3)" duration="7447591">
-     <test-suite id="control.cis_v130_2_1_1" name="2.1.1 Ensure all S3 buckets employ encryption-at-rest" duration="-198982711">
+   <test-suite id="benchmark.cis_v130_2" name="2 Storage" duration="12683480">
+    <test-suite id="benchmark.cis_v130_2_1" name="2.1 Simple Storage Service (S3)" duration="10894642">
+     <test-suite id="control.cis_v130_2_1_1" name="2.1.1 Ensure all S3 buckets employ encryption-at-rest" duration="-197289754">
       <test-case id="control.cis_v130_2_1_1:0" name="control.cis_v130_2_1_1" result="Passed" label="is totally secure and this is qa very very very very very long reason">
        <properties>
         <property>
@@ -652,9 +740,13 @@
         <key>type</key>
         <value>control</value>
        </property>
+       <property>
+        <key>severity</key>
+        <value></value>
+       </property>
       </properties>
      </test-suite>
-     <test-suite id="control.cis_v130_2_1_2" name="2.1.2 Ensure S3 Bucket Policy allows HTTPS requests" duration="-199939333">
+     <test-suite id="control.cis_v130_2_1_2" name="2.1.2 Ensure S3 Bucket Policy allows HTTPS requests" duration="-212289523">
       <test-case id="control.cis_v130_2_1_2:0" name="control.cis_v130_2_1_2" result="Passed" label="just some info, thought you should know">
        <properties>
         <property>
@@ -680,6 +772,10 @@
         <key>type</key>
         <value>control</value>
        </property>
+       <property>
+        <key>severity</key>
+        <value></value>
+       </property>
       </properties>
      </test-suite>
      <properties>
@@ -689,8 +785,8 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="benchmark.cis_v130_2_2" name="2.2 Elastic Compute Cloud (EC2)" duration="5604923">
-     <test-suite id="control.cis_v130_2_2_1" name="2.2.1 Ensure EBS volume encryption is enabled" duration="-242798733">
+    <test-suite id="benchmark.cis_v130_2_2" name="2.2 Elastic Compute Cloud (EC2)" duration="1785194">
+     <test-suite id="control.cis_v130_2_2_1" name="2.2.1 Ensure EBS volume encryption is enabled" duration="-207867100">
       <test-case id="control.cis_v130_2_2_1:0" name="control.cis_v130_2_2_1" result="Passed" label="is totally secure and this is qa very very very very very long reason">
        <properties>
         <property>
@@ -716,6 +812,10 @@
         <key>type</key>
         <value>control</value>
        </property>
+       <property>
+        <key>severity</key>
+        <value></value>
+       </property>
       </properties>
      </test-suite>
      <properties>
@@ -732,8 +832,8 @@
      </property>
     </properties>
    </test-suite>
-   <test-suite id="benchmark.cis_v130_3" name="3 Logging" duration="39636505">
-    <test-suite id="control.cis_v130_3_1" name="3.1 Ensure CloudTrail is enabled in all regions" duration="-179168113">
+   <test-suite id="benchmark.cis_v130_3" name="3 Logging" duration="42825477">
+    <test-suite id="control.cis_v130_3_1" name="3.1 Ensure CloudTrail is enabled in all regions" duration="-246662023">
      <test-case id="control.cis_v130_3_1:0" name="control.cis_v130_3_1" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -759,9 +859,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_2" name="3.2 Ensure CloudTrail log file validation is enabled." duration="-195137500">
+    <test-suite id="control.cis_v130_3_2" name="3.2 Ensure CloudTrail log file validation is enabled." duration="-232980919">
      <test-case id="control.cis_v130_3_2:0" name="control.cis_v130_3_2" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -787,9 +891,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_3" name="3.3 Ensure the S3 bucket used to store CloudTrail logs is not publicly accessible" duration="-189864655">
+    <test-suite id="control.cis_v130_3_3" name="3.3 Ensure the S3 bucket used to store CloudTrail logs is not publicly accessible" duration="-203348548">
      <test-case id="control.cis_v130_3_3:0" name="control.cis_v130_3_3" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -815,9 +923,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_4" name="3.4 Ensure CloudTrail trails are integrated with CloudWatch Logs" duration="-205169405">
+    <test-suite id="control.cis_v130_3_4" name="3.4 Ensure CloudTrail trails are integrated with CloudWatch Logs" duration="-262914107">
      <test-case id="control.cis_v130_3_4:0" name="control.cis_v130_3_4" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -843,9 +955,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_5" name="3.5 Ensure AWS Config is enabled in all regions" duration="-210497122">
+    <test-suite id="control.cis_v130_3_5" name="3.5 Ensure AWS Config is enabled in all regions" duration="-227638738">
      <test-case id="control.cis_v130_3_5:0" name="control.cis_v130_3_5" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -871,9 +987,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_6" name="3.6 Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket" duration="-220366992">
+    <test-suite id="control.cis_v130_3_6" name="3.6 Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket" duration="-226765233">
      <test-case id="control.cis_v130_3_6:0" name="control.cis_v130_3_6" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -899,9 +1019,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_7" name="3.7 Ensure CloudTrail logs are encrypted at rest using KMS CMKs" duration="-214267099">
+    <test-suite id="control.cis_v130_3_7" name="3.7 Ensure CloudTrail logs are encrypted at rest using KMS CMKs" duration="-302887886">
      <test-case id="control.cis_v130_3_7:0" name="control.cis_v130_3_7" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -927,9 +1051,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_8" name="3.8 Ensure rotation for customer created CMKs is enabled" duration="-250169981">
+    <test-suite id="control.cis_v130_3_8" name="3.8 Ensure rotation for customer created CMKs is enabled" duration="-256379596">
      <test-case id="control.cis_v130_3_8:0" name="control.cis_v130_3_8" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -955,9 +1083,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_9" name="3.9 Ensure VPC flow logging is enabled in all VPCs" duration="-219118281">
+    <test-suite id="control.cis_v130_3_9" name="3.9 Ensure VPC flow logging is enabled in all VPCs" duration="-241027742">
      <test-case id="control.cis_v130_3_9:0" name="control.cis_v130_3_9" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -983,9 +1115,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_10" name="3.10 Ensure that Object-level logging for write events is enabled for S3 bucket" duration="-293498797">
+    <test-suite id="control.cis_v130_3_10" name="3.10 Ensure that Object-level logging for write events is enabled for S3 bucket" duration="-239402445">
      <test-case id="control.cis_v130_3_10:0" name="control.cis_v130_3_10" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -1011,9 +1147,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_11" name="3.11 Ensure that Object-level logging for read events is enabled for S3 bucket" duration="-291901797">
+    <test-suite id="control.cis_v130_3_11" name="3.11 Ensure that Object-level logging for read events is enabled for S3 bucket" duration="-287972393">
      <test-case id="control.cis_v130_3_11:0" name="control.cis_v130_3_11" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -1039,6 +1179,10 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
     <properties>
@@ -1048,8 +1192,8 @@
      </property>
     </properties>
    </test-suite>
-   <test-suite id="benchmark.cis_v130_4" name="4 Monitoring" duration="50243444">
-    <test-suite id="control.cis_v130_4_1" name="4.1 Ensure a log metric filter and alarm exist for unauthorized API calls" duration="-226622339">
+   <test-suite id="benchmark.cis_v130_4" name="4 Monitoring" duration="46303161">
+    <test-suite id="control.cis_v130_4_1" name="4.1 Ensure a log metric filter and alarm exist for unauthorized API calls" duration="-268346321">
      <test-case id="control.cis_v130_4_1:0" name="control.cis_v130_4_1" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -1075,9 +1219,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_2" name="4.2 Ensure a log metric filter and alarm exist for Management Console sign-in without MFA" duration="-262085437">
+    <test-suite id="control.cis_v130_4_2" name="4.2 Ensure a log metric filter and alarm exist for Management Console sign-in without MFA" duration="-273800033">
      <test-case id="control.cis_v130_4_2:0" name="control.cis_v130_4_2" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -1103,9 +1251,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_3" name="4.3 Ensure a log metric filter and alarm exist for usage of &#34;root&#34; account" duration="-276356083">
+    <test-suite id="control.cis_v130_4_3" name="4.3 Ensure a log metric filter and alarm exist for usage of &#34;root&#34; account" duration="-254765577">
      <test-case id="control.cis_v130_4_3:0" name="control.cis_v130_4_3" result="Passed" label="just some info, thought you should know">
       <properties>
        <property>
@@ -1131,9 +1283,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_4" name="4.4 Ensure a log metric filter and alarm exist for IAM policy changes" duration="-264434666">
+    <test-suite id="control.cis_v130_4_4" name="4.4 Ensure a log metric filter and alarm exist for IAM policy changes" duration="-305375637">
      <test-case id="control.cis_v130_4_4:0" name="control.cis_v130_4_4" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -1159,9 +1315,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_5" name="4.5 Ensure a log metric filter and alarm exist for CloudTrail configuration changes" duration="-235235628">
+    <test-suite id="control.cis_v130_4_5" name="4.5 Ensure a log metric filter and alarm exist for CloudTrail configuration changes" duration="-262092993">
      <test-case id="control.cis_v130_4_5:0" name="control.cis_v130_4_5" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -1187,9 +1347,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_6" name="4.6 Ensure a log metric filter and alarm exist for AWS Management Console authentication failures" duration="-248613324">
+    <test-suite id="control.cis_v130_4_6" name="4.6 Ensure a log metric filter and alarm exist for AWS Management Console authentication failures" duration="-270667582">
      <test-case id="control.cis_v130_4_6:0" name="control.cis_v130_4_6" result="Passed" label="just some info, thought you should know">
       <properties>
        <property>
@@ -1215,9 +1379,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_7" name="4.7 Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created CMKs" duration="-249423231">
+    <test-suite id="control.cis_v130_4_7" name="4.7 Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created CMKs" duration="-260469861">
      <test-case id="control.cis_v130_4_7:0" name="control.cis_v130_4_7" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -1243,9 +1411,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_8" name="4.8 Ensure a log metric filter and alarm exist for S3 bucket policy changes" duration="-270911400">
+    <test-suite id="control.cis_v130_4_8" name="4.8 Ensure a log metric filter and alarm exist for S3 bucket policy changes" duration="-304584280">
      <test-case id="control.cis_v130_4_8:0" name="control.cis_v130_4_8" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -1271,9 +1443,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_9" name="4.9 Ensure a log metric filter and alarm exist for AWS Config configuration changes" duration="-250992306">
+    <test-suite id="control.cis_v130_4_9" name="4.9 Ensure a log metric filter and alarm exist for AWS Config configuration changes" duration="-282380458">
      <test-case id="control.cis_v130_4_9:0" name="control.cis_v130_4_9" result="Skipped" label="totally skipping this one">
       <properties>
        <property>
@@ -1293,18 +1469,19 @@
         <value>skip</value>
        </property>
       </properties>
-      <reason>
-        <message><![CDATA[ignoring this test method for now]]></message>
-      </reason>
      </test-case>
      <properties>
       <property>
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_10" name="4.10 Ensure a log metric filter and alarm exist for security group changes" duration="-256584922">
+    <test-suite id="control.cis_v130_4_10" name="4.10 Ensure a log metric filter and alarm exist for security group changes" duration="-297016870">
      <test-case id="control.cis_v130_4_10:0" name="control.cis_v130_4_10" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -1330,9 +1507,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_11" name="4.11 Ensure a log metric filter and alarm exist for changes to Network Access Control Lists (NACL)" duration="-263638940">
+    <test-suite id="control.cis_v130_4_11" name="4.11 Ensure a log metric filter and alarm exist for changes to Network Access Control Lists (NACL)" duration="-310430783">
      <test-case id="control.cis_v130_4_11:0" name="control.cis_v130_4_11" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -1358,9 +1539,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_12" name="4.12 Ensure a log metric filter and alarm exist for changes to network gateways" duration="-265235166">
+    <test-suite id="control.cis_v130_4_12" name="4.12 Ensure a log metric filter and alarm exist for changes to network gateways" duration="-298584167">
      <test-case id="control.cis_v130_4_12:0" name="control.cis_v130_4_12" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -1386,9 +1571,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_13" name="4.13 Ensure a log metric filter and alarm exist for route table changes" duration="-285157031">
+    <test-suite id="control.cis_v130_4_13" name="4.13 Ensure a log metric filter and alarm exist for route table changes" duration="-276105607">
      <test-case id="control.cis_v130_4_13:0" name="control.cis_v130_4_13" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -1414,9 +1603,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_14" name="4.14 Ensure a log metric filter and alarm exist for VPC changes" duration="-279533156">
+    <test-suite id="control.cis_v130_4_14" name="4.14 Ensure a log metric filter and alarm exist for VPC changes" duration="-276885035">
      <test-case id="control.cis_v130_4_14:0" name="control.cis_v130_4_14" result="Skipped" label="totally skipping this one">
       <properties>
        <property>
@@ -1442,9 +1635,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_15" name="4.15 Ensure a log metric filter and alarm exists for AWS Organizations changes" duration="-290997070">
+    <test-suite id="control.cis_v130_4_15" name="4.15 Ensure a log metric filter and alarm exists for AWS Organizations changes" duration="-284404740">
      <test-case id="control.cis_v130_4_15:0" name="control.cis_v130_4_15" result="Passed" label="is totally secure and this is qa very very very very very long reason">
       <properties>
        <property>
@@ -1470,6 +1667,10 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
     <properties>
@@ -1479,8 +1680,8 @@
      </property>
     </properties>
    </test-suite>
-   <test-suite id="benchmark.cis_v130_5" name="5 Networking" duration="13487112">
-    <test-suite id="control.cis_v130_5_1" name="5.1 Ensure no Network ACLs allow ingress from 0.0.0.0/0 to remote server administration ports" duration="-301849800">
+   <test-suite id="benchmark.cis_v130_5" name="5 Networking" duration="13224002">
+    <test-suite id="control.cis_v130_5_1" name="5.1 Ensure no Network ACLs allow ingress from 0.0.0.0/0 to remote server administration ports" duration="-312740936">
      <test-case id="control.cis_v130_5_1:0" name="control.cis_v130_5_1" result="Failed" label="is pretty insecure">
       <properties>
        <property>
@@ -1506,9 +1707,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_5_2" name="5.2 Ensure no security groups allow ingress from 0.0.0.0/0 to remote server administration ports" duration="-300890762">
+    <test-suite id="control.cis_v130_5_2" name="5.2 Ensure no security groups allow ingress from 0.0.0.0/0 to remote server administration ports" duration="-314330803">
      <test-case id="control.cis_v130_5_2:0" name="control.cis_v130_5_2" result="Failed" label="is pretty insecure">
       <properties>
        <property>
@@ -1534,9 +1739,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_5_3" name="5.3 Ensure the default security group of every VPC restricts all traffic" duration="-277121589">
+    <test-suite id="control.cis_v130_5_3" name="5.3 Ensure the default security group of every VPC restricts all traffic" duration="-315101886">
      <test-case id="control.cis_v130_5_3:0" name="control.cis_v130_5_3" result="Failed" label="is pretty insecure">
       <properties>
        <property>
@@ -1562,9 +1771,13 @@
        <key>type</key>
        <value>control</value>
       </property>
+      <property>
+       <key>severity</key>
+       <value></value>
+      </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_5_4" name="5.4 Ensure routing tables for VPC peering are &#39;least access&#39;" duration="-297656759">
+    <test-suite id="control.cis_v130_5_4" name="5.4 Ensure routing tables for VPC peering are &#39;least access&#39;" duration="-291109175">
      <test-case id="control.cis_v130_5_4:0" name="control.cis_v130_5_4" result="Failed" label="is pretty insecure">
       <properties>
        <property>
@@ -1589,6 +1802,10 @@
       <property>
        <key>type</key>
        <value>control</value>
+      </property>
+      <property>
+       <key>severity</key>
+       <value></value>
       </property>
      </properties>
     </test-suite>
