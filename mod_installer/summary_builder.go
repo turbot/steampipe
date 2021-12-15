@@ -33,7 +33,9 @@ func getVerb(verb string) string {
 
 func BuildUpdateSummary(installData *InstallData) string {
 	updated := installData.Updated.FlatNames()
-	updateCount := len(updated)
+	installed := installData.RecentlyInstalled.FlatNames()
+	// for now treat an install as update - we only install deps which are in the mod.sp but missing in the mod folder
+	updateCount := len(updated) + len(installed)
 	if updateCount == 0 {
 		if len(installData.Lock.InstallCache) == 0 {
 			return "No mods installed"
@@ -42,7 +44,7 @@ func BuildUpdateSummary(installData *InstallData) string {
 	}
 
 	verb := getVerb(VerbUpdated)
-	return fmt.Sprintf("\n%s %d %s:\n\t%s\n", verb, updateCount, utils.Pluralize("mod", updateCount), strings.Join(updated, "\n\t"))
+	return fmt.Sprintf("\n%s %d %s:\n\t%s\n", verb, updateCount, utils.Pluralize("mod", updateCount), strings.Join(append(updated, installed...), "\n\t"))
 }
 
 func BuildInstallSummary(installData *InstallData) string {
