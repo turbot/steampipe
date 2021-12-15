@@ -42,7 +42,8 @@ func (d *InstallData) GetAvailableUpdates() (version_map.DependencyVersionMap, e
 	res := make(version_map.DependencyVersionMap)
 	for parent, deps := range d.Lock.InstallCache {
 		for name, resolvedConstraint := range deps {
-			availableVersions, err := d.getAvailableModVersions(name)
+			includePrerelease := resolvedConstraint.IsPrerelease()
+			availableVersions, err := d.getAvailableModVersions(name, includePrerelease)
 			if err != nil {
 				return nil, err
 			}
@@ -85,7 +86,7 @@ func (d *InstallData) addExisting(name string, version *semver.Version, constrai
 }
 
 // retrieve all available mod versions from our cache, or from Git if not yet cached
-func (d *InstallData) getAvailableModVersions(modName string) ([]*semver.Version, error) {
+func (d *InstallData) getAvailableModVersions(modName string, includePrerelease bool) ([]*semver.Version, error) {
 	// have we already loaded the versions for this mod
 	availableVersions, ok := d.allAvailable[modName]
 	if ok {
@@ -93,7 +94,7 @@ func (d *InstallData) getAvailableModVersions(modName string) ([]*semver.Version
 	}
 	// so we have not cached this yet - retrieve from Git
 	var err error
-	availableVersions, err = getTagVersionsFromGit(getGitUrl(modName))
+	availableVersions, err = getTagVersionsFromGit(getGitUrl(modName), includePrerelease)
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve version data from Git URL '%s'", modName)
 	}

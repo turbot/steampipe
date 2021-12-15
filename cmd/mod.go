@@ -10,6 +10,8 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/mod_installer"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -28,6 +30,7 @@ func modCmd() *cobra.Command {
 	cmd.AddCommand(modUpdateCmd())
 	cmd.AddCommand(modPruneCmd())
 	cmd.AddCommand(modListCmd())
+	cmd.AddCommand(modInitCmd())
 
 	return cmd
 }
@@ -59,13 +62,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// if any mod names were passed as args, convert into formed mod names
-
-	opts := &mod_installer.InstallOpts{
-		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
-		DryRun:        viper.GetBool(constants.ArgDryRun),
-		ModArgs:       args,
-	}
-
+	opts := newInstallOpts(cmd, args...)
 	installData, err := mod_installer.InstallWorkspaceDependencies(opts)
 	utils.FailOnError(err)
 
@@ -214,6 +211,38 @@ func runModPruneCmd(cmd *cobra.Command, args []string) {
 	if count := len(unusedMods.FlatMap()); count > 0 {
 		fmt.Println(mod_installer.BuildPruneSummary(unusedMods))
 	}
+}
+
+// init
+func modInitCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "init",
+		Run:   runModInitCmd,
+		Short: "Create a modfile in the current directory",
+		Long:  `Create a modfile in the current directory`,
+	}
+
+	cmdconfig.OnCmd(cmd)
+	return cmd
+}
+
+func runModInitCmd(cmd *cobra.Command, args []string) {
+	utils.LogTime("cmd.runModInitCmd")
+	defer func() {
+		utils.LogTime("cmd.runModInitCmd end")
+		if r := recover(); r != nil {
+			utils.ShowError(helpers.ToError(r))
+			exitCode = 1
+		}
+	}()
+	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
+	if parse.ModfileExists(workspacePath) {
+		fmt.Println("Working folder already contains a mod definition file")
+		return
+	}
+	mod := modconfig.CreateDefaultMod(workspacePath)
+	utils.FailOnError(mod.Save())
+	fmt.Printf("Created mod definition file '%s'\n", constants.ModFilePath(workspacePath))
 }
 
 func newInstallOpts(cmd *cobra.Command, args ...string) *mod_installer.InstallOpts {
