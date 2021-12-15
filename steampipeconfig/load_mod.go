@@ -32,9 +32,9 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 
 	runCtx := parentRunCtx
 	// create a run context for this mod
-	if modPath != parentRunCtx.WorkspacePath {
+	if modPath != parentRunCtx.RootEvalPath {
 		runCtx = parse.NewRunContext(
-			parentRunCtx.WorkspacePath,
+			parentRunCtx.WorkspaceLock,
 			modPath,
 			parse.CreatePseudoResources,
 			&filehelpers.ListOptions{
@@ -43,7 +43,7 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 				// only load .sp files
 				Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 			})
-		runCtx.WorkspaceLock = parentRunCtx.WorkspaceLock
+		runCtx.BlockTypes = parentRunCtx.BlockTypes
 	}
 
 	// verify the mod folder exists
@@ -153,7 +153,7 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, runCtx *pa
 	// for each folder we parse the mod name and version and determine whether it meets the version constraint
 
 	// we need to iterate through all mods in the parent folder and find one that satisfies requirements
-	parentFolder := filepath.Dir(filepath.Join(runCtx.ModInstallationPath, modDependency.Name))
+	parentFolder := filepath.Dir(filepath.Join(runCtx.WorkspaceLock.ModInstallationPath, modDependency.Name))
 	// get the last segment of mod name
 	dependencyPath, version, err := findInstalledDependency(modDependency, parentFolder)
 	if err != nil {

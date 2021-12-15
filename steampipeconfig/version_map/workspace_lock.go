@@ -25,19 +25,19 @@ type WorkspaceLock struct {
 	InstallCache    DependencyVersionMap
 	MissingVersions DependencyVersionMap
 
-	modsPath      string
-	installedMods VersionListMap
+	ModInstallationPath string
+	installedMods       VersionListMap
 }
 
 // EmptyWorkspaceLock creates a new empty workspace lock based,
 // sharing workspace path and installedMods with 'existingLock'
 func EmptyWorkspaceLock(existingLock *WorkspaceLock) *WorkspaceLock {
 	return &WorkspaceLock{
-		WorkspacePath:   existingLock.WorkspacePath,
-		modsPath:        constants.WorkspaceModPath(existingLock.WorkspacePath),
-		InstallCache:    make(DependencyVersionMap),
-		MissingVersions: make(DependencyVersionMap),
-		installedMods:   existingLock.installedMods,
+		WorkspacePath:       existingLock.WorkspacePath,
+		ModInstallationPath: constants.WorkspaceModPath(existingLock.WorkspacePath),
+		InstallCache:        make(DependencyVersionMap),
+		MissingVersions:     make(DependencyVersionMap),
+		installedMods:       existingLock.installedMods,
 	}
 }
 
@@ -58,10 +58,10 @@ func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 		}
 	}
 	res := &WorkspaceLock{
-		WorkspacePath:   workspacePath,
-		modsPath:        constants.WorkspaceModPath(workspacePath),
-		InstallCache:    installCache,
-		MissingVersions: make(DependencyVersionMap),
+		WorkspacePath:       workspacePath,
+		ModInstallationPath: constants.WorkspaceModPath(workspacePath),
+		InstallCache:        installCache,
+		MissingVersions:     make(DependencyVersionMap),
 	}
 
 	if err := res.getInstalledMods(); err != nil {
@@ -84,7 +84,7 @@ func (l *WorkspaceLock) validate() error {
 // getInstalledMods returns a map installed mods, and the versions installed for each
 func (l *WorkspaceLock) getInstalledMods() error {
 	// recursively search for all the mod.sp files under the .steampipe/mods folder, then build the mod name from the file path
-	modFiles, err := filehelpers.ListFiles(l.modsPath, &filehelpers.ListOptions{
+	modFiles, err := filehelpers.ListFiles(l.ModInstallationPath, &filehelpers.ListOptions{
 		Flags:   filehelpers.FilesRecursive,
 		Include: []string{"**/mod.sp"},
 	})
@@ -153,7 +153,7 @@ func (l *WorkspaceLock) setMissing() {
 
 // extract the mod name and version from the modfile path
 func (l *WorkspaceLock) parseModPath(modfilePath string) (modName string, modVersion *semver.Version, err error) {
-	modFullName, err := filepath.Rel(l.modsPath, filepath.Dir(modfilePath))
+	modFullName, err := filepath.Rel(l.ModInstallationPath, filepath.Dir(modfilePath))
 	if err != nil {
 		return
 	}
