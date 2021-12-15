@@ -3,6 +3,7 @@ package version_map
 import (
 	"github.com/Masterminds/semver"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/xlab/treeprint"
 )
 
 type DependencyVersionMap map[string]ResolvedVersionMap
@@ -27,6 +28,57 @@ func (m DependencyVersionMap) FlatMap() ResolvedVersionMap {
 	for _, deps := range m {
 		for _, dep := range deps {
 			res[modconfig.ModVersionFullName(dep.Name, dep.Version)] = dep
+		}
+	}
+	return res
+}
+
+func (m DependencyVersionMap) GetDependencyTree(rootName string) treeprint.Tree {
+	tree := treeprint.NewWithRoot(rootName)
+	m.buildTree(rootName, tree)
+	return tree
+}
+
+func (m DependencyVersionMap) buildTree(name string, tree treeprint.Tree) {
+	deps := m[name]
+	for name, version := range deps {
+		fullName := modconfig.ModVersionFullName(name, version.Version)
+		child := tree.AddBranch(fullName)
+		// if there are children add them
+		m.buildTree(fullName, child)
+	}
+}
+
+// GetMissingFromOther returns a map of dependencies which exit in this map but not 'other'
+func (m DependencyVersionMap) GetMissingFromOther(other DependencyVersionMap) DependencyVersionMap {
+	res := make(DependencyVersionMap)
+	for parent, deps := range m {
+		otherDeps := other[parent]
+		if otherDeps == nil {
+			otherDeps = make(ResolvedVersionMap)
+		}
+		for name, dep := range deps {
+			if _, ok := otherDeps[name]; !ok {
+				res.Add(dep.Name, dep.Version, dep.Constraint, parent)
+			}
+		}
+	}
+	return res
+}
+
+func (m DependencyVersionMap) GetUpdatedInOther(other DependencyVersionMap) DependencyVersionMap {
+	res := make(DependencyVersionMap)
+	for parent, deps := range m {
+		otherDeps := other[parent]
+		if otherDeps == nil {
+			otherDeps = make(ResolvedVersionMap)
+		}
+		for name, dep := range deps {
+			if otherDep, ok := otherDeps[name]; ok {
+				if !otherDep.Version.Equal(dep.Version) {
+					res.Add(otherDep.Name, otherDep.Version, otherDep.Constraint, parent)
+				}
+			}
 		}
 	}
 	return res

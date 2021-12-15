@@ -245,6 +245,8 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 	fmt.Printf("Created mod definition file '%s'\n", constants.ModFilePath(workspacePath))
 }
 
+// helpers
+
 func newInstallOpts(cmd *cobra.Command, args ...string) *mod_installer.InstallOpts {
 	opts := &mod_installer.InstallOpts{
 		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
