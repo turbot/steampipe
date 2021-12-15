@@ -1,5 +1,5 @@
- <test-run testcasecount="2" total="2" passed="1" failed="1" skipped="0">
-  <test-suite id="benchmark.check_all" name="Benchmark to test the steampipe check all functionality" duration="5917" testcasecount="2" total="2" passed="1" failed="1" skipped="0">
+ <test-run testcasecount="2" total="2" passed="1" failed="1" skipped="0" inconclusive="0">
+  <test-suite id="benchmark.check_all" name="Benchmark to test the steampipe check all functionality" duration="5917" testcasecount="2" total="2" passed="1" failed="1" skipped="0" inconclusive="0">
    <test-suite id="control.check_1" name="Control to verify steampipe check all functionality 1" duration="-36215744">
     <test-case id="control.check_1:0" name="control.check_1" result="Passed" label="acceptance tests">
      <properties>
