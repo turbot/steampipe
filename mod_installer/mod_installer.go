@@ -57,7 +57,7 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	}
 
 	// create install data
-	i.installData = NewInstallData(workspaceLock)
+	i.installData = NewInstallData(workspaceLock, workspaceMod)
 
 	// parse args to get the required mod versions
 	requiredMods, err := i.GetRequiredModVersionsFromArgs(opts.ModArgs)
@@ -355,7 +355,6 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 		if err == nil {
 			i.installData.onModInstalled(dependency, parent)
 		}
-
 	}()
 	// if the target path exists, use the exiting file
 	// if it does not exist (the usual case), install it

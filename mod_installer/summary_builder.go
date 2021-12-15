@@ -2,7 +2,6 @@ package mod_installer
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -32,41 +31,45 @@ func getVerb(verb string) string {
 }
 
 func BuildUpdateSummary(installData *InstallData) string {
-	updated := installData.Updated.FlatNames()
-	installed := installData.RecentlyInstalled.FlatNames()
 	// for now treat an install as update - we only install deps which are in the mod.sp but missing in the mod folder
-	updateCount := len(updated) + len(installed)
+	updateCount := len(installData.Updated.FlatMap())
 	if updateCount == 0 {
 		if len(installData.Lock.InstallCache) == 0 {
 			return "No mods installed"
 		}
 		return "All mods are up to date"
 	}
+	updatedTree := installData.GetUpdatedTree()
 
 	verb := getVerb(VerbUpdated)
-	return fmt.Sprintf("\n%s %d %s:\n\t%s\n", verb, updateCount, utils.Pluralize("mod", updateCount), strings.Join(append(updated, installed...), "\n\t"))
+	return fmt.Sprintf("\n%s %d %s:\n\n%s", verb, updateCount, utils.Pluralize("mod", updateCount), updatedTree.String())
 }
 
 func BuildInstallSummary(installData *InstallData) string {
-	installed := installData.RecentlyInstalled.FlatNames()
-	installCount := len(installed)
+	// for now treat an install as update - we only install deps which are in the mod.sp but missing in the mod folder
+	installCount := len(installData.Installed.FlatMap())
 	if installCount == 0 {
+		if len(installData.Lock.InstallCache) == 0 {
+			return "No mods installed"
+		}
 		return "All mods are up to date"
 	}
+	installedTree := installData.GetInstalledTree()
 
 	verb := getVerb(VerbInstalled)
-	return fmt.Sprintf("\n%s %d %s:\n\t%s\n", verb, installCount, utils.Pluralize("mod", installCount), strings.Join(installed, "\n\t"))
+	return fmt.Sprintf("\n%s %d %s:\n\n%s", verb, installCount, utils.Pluralize("mod", installCount), installedTree.String())
 }
 
 func BuildUninstallSummary(installData *InstallData) string {
-	verb := getVerb(VerbUninstalled)
-	installed := installData.Uninstalled.FlatNames()
-	installCount := len(installed)
-
-	if installCount == 0 {
-		return "Nothing to uninstall"
+	// for now treat an install as update - we only install deps which are in the mod.sp but missing in the mod folder
+	uninstallCount := len(installData.Uninstalled.FlatMap())
+	if uninstallCount == 0 {
+		return "Nothing uninstalled"
 	}
-	return fmt.Sprintf("\n%s %d %s:\n\t%s\n", verb, installCount, utils.Pluralize("mod", installCount), strings.Join(installed, "\n\t"))
+	uninstalledTree := installData.GetUninstalledTree()
+
+	verb := getVerb(VerbUninstalled)
+	return fmt.Sprintf("\n%s %d %s:\n\n%s", verb, uninstallCount, utils.Pluralize("mod", uninstallCount), uninstalledTree.String())
 }
 
 func BuildPruneSummary(pruned version_map.VersionListMap) string {
