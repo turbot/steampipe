@@ -1,9 +1,9 @@
  <?xml version="1.0" encoding="utf-8" standalone="no"?>
-   <test-run>
+  <test-run>
   <test-suite id="benchmark.cis_v130" name="CIS v1.3.0" time="264956271">
    <test-suite id="benchmark.cis_v130_1" name="1 Identity and Access Management" time="147311104">
     <test-suite id="control.cis_v130_1_1" name="1.1 Maintain current contact details" time="-147432663">
-     <test-case id="control.cis_v130_1_1" name="control.cis_v130_1_1" result="alarm" label="is pretty insecure"></test-case>
+     <test-case id="control.cis_v130_1_1" name="control.cis_v130_1_1" result="Failed" label="is pretty insecure"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -12,7 +12,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_2" name="1.2 Ensure security contact information is registered" time="-236610209">
-     <test-case id="control.cis_v130_1_2" name="control.cis_v130_1_2" result="alarm" label="is pretty insecure"></test-case>
+     <test-case id="control.cis_v130_1_2" name="control.cis_v130_1_2" result="Failed" label="is pretty insecure"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -21,7 +21,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_3" name="1.3 Ensure security questions are registered in the AWS account" time="-179255160">
-     <test-case id="control.cis_v130_1_3" name="control.cis_v130_1_3" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_3" name="control.cis_v130_1_3" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -30,7 +30,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_4" name="1.4 Ensure no root user account access key exists" time="-233375907">
-     <test-case id="control.cis_v130_1_4" name="control.cis_v130_1_4" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_4" name="control.cis_v130_1_4" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -39,7 +39,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_5" name="1.5 Ensure MFA is enabled for the &#34;root user&#34; account" time="-127037248">
-     <test-case id="control.cis_v130_1_5" name="control.cis_v130_1_5" result="alarm" label="is pretty insecure"></test-case>
+     <test-case id="control.cis_v130_1_5" name="control.cis_v130_1_5" result="Failed" label="is pretty insecure"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -48,7 +48,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_6" name="1.6 Ensure hardware MFA is enabled for the &#34;root user&#34; account" time="-133588969">
-     <test-case id="control.cis_v130_1_6" name="control.cis_v130_1_6" result="error" label="is in some sort of error state"></test-case>
+     <test-case id="control.cis_v130_1_6" name="control.cis_v130_1_6" result="Failed" label="is in some sort of error state"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -57,7 +57,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_7" name="1.7 Eliminate use of the root user for administrative and daily tasks" time="-200244630">
-     <test-case id="control.cis_v130_1_7" name="control.cis_v130_1_7" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_7" name="control.cis_v130_1_7" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -66,7 +66,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_8" name="1.8 Ensure IAM password policy requires minimum length of 14 or greater" time="-139770803">
-     <test-case id="control.cis_v130_1_8" name="control.cis_v130_1_8" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_8" name="control.cis_v130_1_8" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -75,7 +75,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_9" name="1.9 Ensure IAM password policy prevents password reuse" time="-167926289">
-     <test-case id="control.cis_v130_1_9" name="control.cis_v130_1_9" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_9" name="control.cis_v130_1_9" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -84,7 +84,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_10" name="1.10 Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password" time="-123426571">
-     <test-case id="control.cis_v130_1_10" name="control.cis_v130_1_10" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_10" name="control.cis_v130_1_10" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -93,7 +93,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_11" name="1.11 Do not setup access keys during initial user setup for all IAM users that have a console password" time="-153230136">
-     <test-case id="control.cis_v130_1_11" name="control.cis_v130_1_11" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_11" name="control.cis_v130_1_11" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -102,7 +102,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_12" name="1.12 Ensure credentials unused for 90 days or greater are disabled" time="-160999488">
-     <test-case id="control.cis_v130_1_12" name="control.cis_v130_1_12" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_12" name="control.cis_v130_1_12" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -111,7 +111,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_13" name="1.13 Ensure there is only one active access key available for any single IAM user" time="-216087301">
-     <test-case id="control.cis_v130_1_13" name="control.cis_v130_1_13" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_13" name="control.cis_v130_1_13" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -120,7 +120,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_14" name="1.14 Ensure access keys are rotated every 90 days or less" time="-243825232">
-     <test-case id="control.cis_v130_1_14" name="control.cis_v130_1_14" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_14" name="control.cis_v130_1_14" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -129,7 +129,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_15" name="1.15 Ensure IAM Users Receive Permissions Only Through Groups" time="-127928705">
-     <test-case id="control.cis_v130_1_15" name="control.cis_v130_1_15" result="alarm" label="is pretty insecure"></test-case>
+     <test-case id="control.cis_v130_1_15" name="control.cis_v130_1_15" result="Failed" label="is pretty insecure"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -138,7 +138,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_16" name="1.16 Ensure IAM policies that allow full &#34;*:*&#34; administrative privileges are not attached" time="-141598781">
-     <test-case id="control.cis_v130_1_16" name="control.cis_v130_1_16" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_16" name="control.cis_v130_1_16" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -147,7 +147,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_17" name="1.17 Ensure a support role has been created to manage incidents with AWS Support" time="-155020125">
-     <test-case id="control.cis_v130_1_17" name="control.cis_v130_1_17" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_17" name="control.cis_v130_1_17" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -156,7 +156,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_18" name="1.18 Ensure IAM instance roles are used for AWS resource access from instances" time="-221122753">
-     <test-case id="control.cis_v130_1_18" name="control.cis_v130_1_18" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_18" name="control.cis_v130_1_18" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -165,7 +165,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_19" name="1.19 Ensure that all the expired SSL/TLS certificates stored in AWS IAM are removed" time="-166852596">
-     <test-case id="control.cis_v130_1_19" name="control.cis_v130_1_19" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_19" name="control.cis_v130_1_19" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -174,7 +174,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_20" name="1.20 Ensure that S3 Buckets are configured with &#39;Block public access (bucket settings)&#39;" time="-185984993">
-     <test-case id="control.cis_v130_1_20" name="control.cis_v130_1_20" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_20" name="control.cis_v130_1_20" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -183,7 +183,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_21" name="1.21 Ensure that IAM Access analyzer is enabled" time="-190732489">
-     <test-case id="control.cis_v130_1_21" name="control.cis_v130_1_21" result="alarm" label="is pretty insecure"></test-case>
+     <test-case id="control.cis_v130_1_21" name="control.cis_v130_1_21" result="Failed" label="is pretty insecure"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -192,7 +192,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_1_22" name="1.22 Ensure IAM users are managed centrally via identity federation or AWS Organizations for multi-account environments" time="-302564285">
-     <test-case id="control.cis_v130_1_22" name="control.cis_v130_1_22" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_1_22" name="control.cis_v130_1_22" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -210,7 +210,7 @@
    <test-suite id="benchmark.cis_v130_2" name="2 Storage" time="13563556">
     <test-suite id="benchmark.cis_v130_2_1" name="2.1 Simple Storage Service (S3)" time="7584085">
      <test-suite id="control.cis_v130_2_1_1" name="2.1.1 Ensure all S3 buckets employ encryption-at-rest" time="-303356509">
-      <test-case id="control.cis_v130_2_1_1" name="control.cis_v130_2_1_1" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+      <test-case id="control.cis_v130_2_1_1" name="control.cis_v130_2_1_1" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
       <properties>
        <property>
         <key>type</key>
@@ -219,7 +219,7 @@
       </properties>
      </test-suite>
      <test-suite id="control.cis_v130_2_1_2" name="2.1.2 Ensure S3 Bucket Policy allows HTTPS requests" time="-173578031">
-      <test-case id="control.cis_v130_2_1_2" name="control.cis_v130_2_1_2" result="info" label="just some info, thought you should know"></test-case>
+      <test-case id="control.cis_v130_2_1_2" name="control.cis_v130_2_1_2" result="Inconclusive" label="just some info, thought you should know"></test-case>
       <properties>
        <property>
         <key>type</key>
@@ -236,7 +236,7 @@
     </test-suite>
     <test-suite id="benchmark.cis_v130_2_2" name="2.2 Elastic Compute Cloud (EC2)" time="5975042">
      <test-suite id="control.cis_v130_2_2_1" name="2.2.1 Ensure EBS volume encryption is enabled" time="-191598806">
-      <test-case id="control.cis_v130_2_2_1" name="control.cis_v130_2_2_1" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+      <test-case id="control.cis_v130_2_2_1" name="control.cis_v130_2_2_1" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
       <properties>
        <property>
         <key>type</key>
@@ -260,7 +260,7 @@
    </test-suite>
    <test-suite id="benchmark.cis_v130_3" name="3 Logging" time="40214808">
     <test-suite id="control.cis_v130_3_1" name="3.1 Ensure CloudTrail is enabled in all regions" time="-180257647">
-     <test-case id="control.cis_v130_3_1" name="control.cis_v130_3_1" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_3_1" name="control.cis_v130_3_1" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -269,7 +269,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_3_2" name="3.2 Ensure CloudTrail log file validation is enabled." time="-250597085">
-     <test-case id="control.cis_v130_3_2" name="control.cis_v130_3_2" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_3_2" name="control.cis_v130_3_2" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -278,7 +278,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_3_3" name="3.3 Ensure the S3 bucket used to store CloudTrail logs is not publicly accessible" time="-212078011">
-     <test-case id="control.cis_v130_3_3" name="control.cis_v130_3_3" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_3_3" name="control.cis_v130_3_3" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -287,7 +287,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_3_4" name="3.4 Ensure CloudTrail trails are integrated with CloudWatch Logs" time="-261940219">
-     <test-case id="control.cis_v130_3_4" name="control.cis_v130_3_4" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_3_4" name="control.cis_v130_3_4" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -296,7 +296,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_3_5" name="3.5 Ensure AWS Config is enabled in all regions" time="-196308367">
-     <test-case id="control.cis_v130_3_5" name="control.cis_v130_3_5" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_3_5" name="control.cis_v130_3_5" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -305,7 +305,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_3_6" name="3.6 Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket" time="-201199008">
-     <test-case id="control.cis_v130_3_6" name="control.cis_v130_3_6" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_3_6" name="control.cis_v130_3_6" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -314,7 +314,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_3_7" name="3.7 Ensure CloudTrail logs are encrypted at rest using KMS CMKs" time="-235004388">
-     <test-case id="control.cis_v130_3_7" name="control.cis_v130_3_7" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_3_7" name="control.cis_v130_3_7" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -323,7 +323,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_3_8" name="3.8 Ensure rotation for customer created CMKs is enabled" time="-206315551">
-     <test-case id="control.cis_v130_3_8" name="control.cis_v130_3_8" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_3_8" name="control.cis_v130_3_8" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -332,7 +332,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_3_9" name="3.9 Ensure VPC flow logging is enabled in all VPCs" time="-211105182">
-     <test-case id="control.cis_v130_3_9" name="control.cis_v130_3_9" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_3_9" name="control.cis_v130_3_9" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -341,7 +341,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_3_10" name="3.10 Ensure that Object-level logging for write events is enabled for S3 bucket" time="-247892408">
-     <test-case id="control.cis_v130_3_10" name="control.cis_v130_3_10" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_3_10" name="control.cis_v130_3_10" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -350,7 +350,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_3_11" name="3.11 Ensure that Object-level logging for read events is enabled for S3 bucket" time="-229160203">
-     <test-case id="control.cis_v130_3_11" name="control.cis_v130_3_11" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_3_11" name="control.cis_v130_3_11" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -367,7 +367,7 @@
    </test-suite>
    <test-suite id="benchmark.cis_v130_4" name="4 Monitoring" time="49386348">
     <test-suite id="control.cis_v130_4_1" name="4.1 Ensure a log metric filter and alarm exist for unauthorized API calls" time="-222073775">
-     <test-case id="control.cis_v130_4_1" name="control.cis_v130_4_1" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_4_1" name="control.cis_v130_4_1" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -376,7 +376,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_2" name="4.2 Ensure a log metric filter and alarm exist for Management Console sign-in without MFA" time="-237417267">
-     <test-case id="control.cis_v130_4_2" name="control.cis_v130_4_2" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_4_2" name="control.cis_v130_4_2" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -385,7 +385,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_3" name="4.3 Ensure a log metric filter and alarm exist for usage of &#34;root&#34; account" time="-258666393">
-     <test-case id="control.cis_v130_4_3" name="control.cis_v130_4_3" result="info" label="just some info, thought you should know"></test-case>
+     <test-case id="control.cis_v130_4_3" name="control.cis_v130_4_3" result="Inconclusive" label="just some info, thought you should know"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -394,7 +394,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_4" name="4.4 Ensure a log metric filter and alarm exist for IAM policy changes" time="-249807446">
-     <test-case id="control.cis_v130_4_4" name="control.cis_v130_4_4" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_4_4" name="control.cis_v130_4_4" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -403,7 +403,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_5" name="4.5 Ensure a log metric filter and alarm exist for CloudTrail configuration changes" time="-291973932">
-     <test-case id="control.cis_v130_4_5" name="control.cis_v130_4_5" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_4_5" name="control.cis_v130_4_5" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -412,7 +412,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_6" name="4.6 Ensure a log metric filter and alarm exist for AWS Management Console authentication failures" time="-251893900">
-     <test-case id="control.cis_v130_4_6" name="control.cis_v130_4_6" result="info" label="just some info, thought you should know"></test-case>
+     <test-case id="control.cis_v130_4_6" name="control.cis_v130_4_6" result="Inconclusive" label="just some info, thought you should know"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -421,7 +421,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_7" name="4.7 Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created CMKs" time="-265049894">
-     <test-case id="control.cis_v130_4_7" name="control.cis_v130_4_7" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_4_7" name="control.cis_v130_4_7" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -430,7 +430,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_8" name="4.8 Ensure a log metric filter and alarm exist for S3 bucket policy changes" time="-300100065">
-     <test-case id="control.cis_v130_4_8" name="control.cis_v130_4_8" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_4_8" name="control.cis_v130_4_8" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -439,7 +439,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_9" name="4.9 Ensure a log metric filter and alarm exist for AWS Config configuration changes" time="-294275150">
-     <test-case id="control.cis_v130_4_9" name="control.cis_v130_4_9" result="skip" label="totally skipping this one"></test-case>
+     <test-case id="control.cis_v130_4_9" name="control.cis_v130_4_9" result="Skipped" label="totally skipping this one"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -448,7 +448,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_10" name="4.10 Ensure a log metric filter and alarm exist for security group changes" time="-293507004">
-     <test-case id="control.cis_v130_4_10" name="control.cis_v130_4_10" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_4_10" name="control.cis_v130_4_10" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -457,7 +457,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_11" name="4.11 Ensure a log metric filter and alarm exist for changes to Network Access Control Lists (NACL)" time="-295813101">
-     <test-case id="control.cis_v130_4_11" name="control.cis_v130_4_11" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_4_11" name="control.cis_v130_4_11" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -466,7 +466,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_12" name="4.12 Ensure a log metric filter and alarm exist for changes to network gateways" time="-265837585">
-     <test-case id="control.cis_v130_4_12" name="control.cis_v130_4_12" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_4_12" name="control.cis_v130_4_12" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -475,7 +475,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_13" name="4.13 Ensure a log metric filter and alarm exist for route table changes" time="-273080442">
-     <test-case id="control.cis_v130_4_13" name="control.cis_v130_4_13" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_4_13" name="control.cis_v130_4_13" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -484,7 +484,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_14" name="4.14 Ensure a log metric filter and alarm exist for VPC changes" time="-279111935">
-     <test-case id="control.cis_v130_4_14" name="control.cis_v130_4_14" result="skip" label="totally skipping this one"></test-case>
+     <test-case id="control.cis_v130_4_14" name="control.cis_v130_4_14" result="Skipped" label="totally skipping this one"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -493,7 +493,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_4_15" name="4.15 Ensure a log metric filter and alarm exists for AWS Organizations changes" time="-266647657">
-     <test-case id="control.cis_v130_4_15" name="control.cis_v130_4_15" result="ok" label="is totally secure and this is qa very very very very very long reason"></test-case>
+     <test-case id="control.cis_v130_4_15" name="control.cis_v130_4_15" result="Passed" label="is totally secure and this is qa very very very very very long reason"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -510,7 +510,7 @@
    </test-suite>
    <test-suite id="benchmark.cis_v130_5" name="5 Networking" time="14471063">
     <test-suite id="control.cis_v130_5_1" name="5.1 Ensure no Network ACLs allow ingress from 0.0.0.0/0 to remote server administration ports" time="-277024810">
-     <test-case id="control.cis_v130_5_1" name="control.cis_v130_5_1" result="alarm" label="is pretty insecure"></test-case>
+     <test-case id="control.cis_v130_5_1" name="control.cis_v130_5_1" result="Failed" label="is pretty insecure"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -519,7 +519,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_5_2" name="5.2 Ensure no security groups allow ingress from 0.0.0.0/0 to remote server administration ports" time="-280202346">
-     <test-case id="control.cis_v130_5_2" name="control.cis_v130_5_2" result="alarm" label="is pretty insecure"></test-case>
+     <test-case id="control.cis_v130_5_2" name="control.cis_v130_5_2" result="Failed" label="is pretty insecure"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -528,7 +528,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_5_3" name="5.3 Ensure the default security group of every VPC restricts all traffic" time="-288055800">
-     <test-case id="control.cis_v130_5_3" name="control.cis_v130_5_3" result="alarm" label="is pretty insecure"></test-case>
+     <test-case id="control.cis_v130_5_3" name="control.cis_v130_5_3" result="Failed" label="is pretty insecure"></test-case>
      <properties>
       <property>
        <key>type</key>
@@ -537,7 +537,7 @@
      </properties>
     </test-suite>
     <test-suite id="control.cis_v130_5_4" name="5.4 Ensure routing tables for VPC peering are &#39;least access&#39;" time="-281116575">
-     <test-case id="control.cis_v130_5_4" name="control.cis_v130_5_4" result="alarm" label="is pretty insecure"></test-case>
+     <test-case id="control.cis_v130_5_4" name="control.cis_v130_5_4" result="Failed" label="is pretty insecure"></test-case>
      <properties>
       <property>
        <key>type</key>
