@@ -8,6 +8,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	git "github.com/go-git/go-git/v5"
+	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -17,8 +18,10 @@ import (
 )
 
 type ModInstaller struct {
-	workspaceMod  *modconfig.Mod
-	modsPath      string
+	workspaceMod *modconfig.Mod
+	modsPath     string
+	// temp location used to install dependencies
+	tmpPath       string
 	workspacePath string
 
 	installData *InstallData
@@ -67,17 +70,12 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 }
 
 func (i *ModInstaller) setModsPath() error {
-	// if this is a dry run, install mods to temp dir which will be deleted
-	if i.dryRun {
-		dir, err := os.MkdirTemp(os.TempDir(), "sp_dr_*")
-		if err != nil {
-			return err
-		}
-		i.modsPath = dir
-	} else {
-		// fall back to setting real mod path
-		i.modsPath = constants.WorkspaceModPath(i.workspacePath)
+	dir, err := os.MkdirTemp(os.TempDir(), "sp_dr_*")
+	if err != nil {
+		return err
 	}
+	i.tmpPath = dir
+	i.modsPath = constants.WorkspaceModPath(i.workspacePath)
 	return nil
 }
 
@@ -129,11 +127,17 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 }
 
 // InstallWorkspaceDependencies installs all dependencies of the workspace mod
-func (i *ModInstaller) InstallWorkspaceDependencies() error {
+func (i *ModInstaller) InstallWorkspaceDependencies() (err error) {
 	workspaceMod := i.workspaceMod
 	defer func() {
-		if i.dryRun {
-			os.RemoveAll(i.modsPath)
+		// tidy unused mods
+		// (put in defer so it still gets called in case of errors)
+		if viper.GetBool(constants.ArgPrune) {
+			// be sure not to overwrite an existing return error
+			_, pruneErr := i.Prune()
+			if pruneErr != nil && err == nil {
+				err = pruneErr
+			}
 		}
 	}()
 
@@ -177,13 +181,6 @@ func (i *ModInstaller) InstallWorkspaceDependencies() error {
 		}
 	}
 
-	// tidy unused mods
-	if viper.GetBool(constants.ArgPrune) {
-		if _, err := i.Prune(); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -192,10 +189,13 @@ func (i *ModInstaller) GetModList() string {
 }
 
 func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) error {
+	// clean up the temp location
+	defer os.RemoveAll(i.tmpPath)
+
 	var errors []error
 	for _, requiredModVersion := range mods {
-		update := i.updating()
-		modToUse, err := i.getCurrentlyInstalledVersionToUse(requiredModVersion, parent, update)
+
+		modToUse, err := i.getCurrentlyInstalledVersionToUse(requiredModVersion, parent, i.updating())
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -249,11 +249,6 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 		dependencyMod, err = i.install(resolvedRef, parent)
 		if err != nil {
 			return err
-		}
-		if dependencyMod == nil {
-			// this is unexpected but just ignore
-			log.Printf("[TRACE] dependency %s does not define a mod definition - so there are no child dependencies to install", resolvedRef.Name)
-			return nil
 		}
 	} else {
 		// so we found an existing mod which will satisfy this requirement
@@ -351,41 +346,60 @@ func (i *ModInstaller) getModRefSatisfyingConstraints(modVersion *modconfig.ModV
 
 // install a mod
 func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod) (_ *modconfig.Mod, err error) {
+	// get the temp location to install the mod to
+	fullName := dependency.FullName()
+	tempDestPath := i.getDependencyTmpPath(fullName)
+
 	defer func() {
 		if err == nil {
 			i.installData.onModInstalled(dependency, parent)
 		}
+
 	}()
-
-	fullName := dependency.FullName()
-	destPath := i.getDependencyDestPath(fullName)
-
 	// if the target path exists, use the exiting file
 	// if it does not exist (the usual case), install it
-	if _, err := os.Stat(destPath); os.IsNotExist(err) {
-		if err := i.installFromGit(dependency, destPath); err != nil {
+	if _, err := os.Stat(tempDestPath); os.IsNotExist(err) {
+		if err := i.installFromGit(dependency, tempDestPath); err != nil {
 			return nil, err
 		}
 	}
 
 	// now load the installed mod and return it
-	modFile, err := i.loadModfile(destPath, false)
+	modDef, err := i.loadModfile(tempDestPath, false)
 	if err != nil {
 		return nil, err
 	}
-	if modFile == nil {
+	if modDef == nil {
 		return nil, fmt.Errorf("'%s' has no mod definition file", dependency.FullName())
 	}
-	return modFile, nil
+	// hack set mod dependency path
+	if err := i.setModDependencyPath(modDef, i.tmpPath); err != nil {
+		return nil, err
+	}
 
+	// so we have successfully installed this dependency to the temp location, now copy to the mod location
+	if !i.dryRun {
+		destPath := i.getDependencyDestPath(fullName)
+		if err := i.copyModFromTempToModsFolder(tempDestPath, destPath); err != nil {
+			return nil, err
+		}
+	}
+
+	return modDef, nil
 }
 
-func (i *ModInstaller) installFromGit(dependency *ResolvedModRef, installPath string) error {
-	// ensure mod directory exists - create if necessary
-	if err := os.MkdirAll(i.modsPath, os.ModePerm); err != nil {
+func (i *ModInstaller) copyModFromTempToModsFolder(tmpPath string, destPath string) error {
+	if err := os.RemoveAll(destPath); err != nil {
 		return err
 	}
 
+	if err := copy.Copy(tmpPath, destPath); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (i *ModInstaller) installFromGit(dependency *ResolvedModRef, installPath string) error {
 	// get the mod from git
 	gitUrl := getGitUrl(dependency.Name)
 	_, err := git.PlainClone(installPath,
@@ -400,14 +414,33 @@ func (i *ModInstaller) installFromGit(dependency *ResolvedModRef, installPath st
 	return err
 }
 
+// build the path of the temp location to copy this depednency to
+func (i *ModInstaller) getDependencyTmpPath(dependencyFullName string) string {
+	return filepath.Join(i.tmpPath, dependencyFullName)
+}
+
+// build the path of the temp location to copy this depednency to
 func (i *ModInstaller) getDependencyDestPath(dependencyFullName string) string {
 	return filepath.Join(i.modsPath, dependencyFullName)
 }
 
 func (i *ModInstaller) loadDependencyMod(modVersion *version_map.ResolvedVersionConstraint) (*modconfig.Mod, error) {
 	modPath := i.getDependencyDestPath(modconfig.ModVersionFullName(modVersion.Name, modVersion.Version))
-	return i.loadModfile(modPath, false)
+	modDef, err := i.loadModfile(modPath, false)
+	if err != nil {
+		return nil, err
+	}
+	if err := i.setModDependencyPath(modDef, modPath); err != nil {
+		return nil, err
+	}
+	return modDef, nil
 
+}
+
+// HACK set the mod depdnency path
+func (i *ModInstaller) setModDependencyPath(mod *modconfig.Mod, modPath string) (err error) {
+	mod.ModDependencyPath, err = filepath.Rel(i.modsPath, modPath)
+	return
 }
 
 func (i *ModInstaller) loadModfile(modPath string, createDefault bool) (*modconfig.Mod, error) {
@@ -421,13 +454,7 @@ func (i *ModInstaller) loadModfile(modPath string, createDefault bool) (*modconf
 	if err != nil {
 		return nil, err
 	}
-	// if this is NOT the workspace mod, set ModDependencyPath - determine relative path from mod root
-	if modPath != i.workspacePath {
-		mod.ModDependencyPath, err = filepath.Rel(i.modsPath, modPath)
-		if err != nil {
-			return nil, err
-		}
-	}
+
 	return mod, nil
 }
 
