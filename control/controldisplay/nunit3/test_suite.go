@@ -13,7 +13,9 @@ type TestSuite struct {
 	FullName  *string        `xml:"fullname,attr"`
 	StartTime *time.Time     `xml:"start-time,attr,omitempty"`
 	EndTime   *time.Time     `xml:"end-time,attr,omitempty"`
-	Time      *time.Duration `xml:"time,attr"`
+	Duration  *time.Duration `xml:"duration,attr,omitempty"`
+
+	Failure *Failure
 
 	// Child Elements
 	Suites []*TestSuite
@@ -23,6 +25,10 @@ type TestSuite struct {
 
 func NewTestSuite() *TestSuite {
 	return &TestSuite{}
+}
+
+func (ts *TestSuite) SetFailure(f *Failure) {
+	ts.Failure = f
 }
 
 func (ts *TestSuite) AddTestCase(tc *TestCase) {
