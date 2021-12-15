@@ -121,7 +121,6 @@ func getTestCaseFromControlRunRow(r *controlexecute.ResultRow, idx int) *nunit3.
 	testCase.Name = &r.Control.FullName
 	testCase.Result = &runStatus
 	testCase.ID = &testCaseId
-	testCase.Label = &r.Reason
 
 	for _, dim := range r.Dimensions {
 		testCase.AddProperty(nunit3.NewProperty(fmt.Sprintf("steampipe:dimension:%s", dim.Key), dim.Value))
