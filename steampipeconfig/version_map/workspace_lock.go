@@ -98,9 +98,11 @@ func (l *WorkspaceLock) getInstalledMods() error {
 	var errors []error
 
 	for _, modfilePath := range modFiles {
+		// try to parse the mon name and version form the parent folder of the modfile
 		modName, version, err := l.parseModPath(modfilePath)
 		if err != nil {
-			errors = append(errors, err)
+			// if we fail to parse, just ignore this modfile
+			// - it's parent is not a valid mod installation folder so it is probably a child folder of a mod
 			continue
 		}
 		// add this mod version to the map
