@@ -53,7 +53,7 @@
           <message><![CDATA[ignoring this test method for now]]></message>
         </reason>
       </test-case>
-      <test-case id="1004" name="MockTest5" fullname="NUnit.Tests.Assemblies.MockTestFixture.MockTest5" result="Skipped" label="Invalid" time="0.000" asserts="0">
+      <test-case id="1004" name="MockTest5" fullname="NUnit.Tests.Assemblies.MockTestFixture.MockTest5" result="Skipped" label="Ignored" time="0.000" asserts="0">
         <properties>
           <property name="_SKIPREASON" value="Method is not public" />
         </properties>
@@ -61,7 +61,7 @@
           <message><![CDATA[Method is not public]]></message>
         </reason>
       </test-case>
-      <test-case id="1009" name="NotRunnableTest" fullname="NUnit.Tests.Assemblies.MockTestFixture.NotRunnableTest" result="Skipped" label="Invalid" time="0.000" asserts="0">
+      <test-case id="1009" name="NotRunnableTest" fullname="NUnit.Tests.Assemblies.MockTestFixture.NotRunnableTest" result="Skipped" label="Ignored" time="0.000" asserts="0">
         <properties>
           <property name="_SKIPREASON" value="No arguments were provided" />
         </properties>
