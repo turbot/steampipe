@@ -14,3 +14,7 @@ func (c ResolvedVersionConstraint) Equals(other *ResolvedVersionConstraint) bool
 		c.Version.Equal(other.Version) &&
 		c.Constraint == other.Constraint
 }
+
+func (c ResolvedVersionConstraint) IsPrerelease() bool {
+	return c.Version.Prerelease() != "" || c.Version.Metadata() != ""
+}

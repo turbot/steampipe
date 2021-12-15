@@ -701,9 +701,8 @@ func (m *Mod) Save() error {
 	}
 
 	// require
-	if require := m.Require; require != nil {
+	if require := m.Require; require != nil && !m.Require.Empty() {
 		requiresBody := modBody.AppendNewBlock("require", nil).Body()
-
 		if require.SteampipeVersionString != "" {
 			requiresBody.SetAttributeValue("steampipe", cty.StringVal(require.SteampipeVersionString))
 		}
