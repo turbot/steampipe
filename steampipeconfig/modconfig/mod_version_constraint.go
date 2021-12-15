@@ -2,10 +2,7 @@ package modconfig
 
 import (
 	"fmt"
-	"log"
 	"strings"
-
-	"github.com/Masterminds/semver"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
@@ -91,15 +88,14 @@ func (m *ModVersionConstraint) Initialise() hcl.Diagnostics {
 	}
 	// does the version parse as a semver version
 	if c, err := version.NewConstraint(m.VersionString); err == nil {
+		// no error
 		m.Constraint = c
-		v, _ := semver.NewVersion("1.1")
-		a := c.Check(v)
-		log.Println(a)
-
 		return diags
 	}
 
 	// todo handle branch and commit hash
+
+	// so there was an error
 	diags = append(diags, &hcl.Diagnostic{
 		Severity: hcl.DiagError,
 		Summary:  fmt.Sprintf("invalid mod version %s", m.VersionString),
