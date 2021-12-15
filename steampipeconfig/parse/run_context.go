@@ -2,18 +2,15 @@ package parse
 
 import (
 	"fmt"
-	"log"
 	"strings"
-
-	"github.com/turbot/steampipe/steampipeconfig/version_map"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -49,9 +46,7 @@ type RunContext struct {
 	Flags                ParseModFlag
 	ListOptions          *filehelpers.ListOptions
 	LoadedDependencyMods modconfig.ModMap
-	WorkspacePath        string
-	modPath              string
-	ModInstallationPath  string
+	RootEvalPath         string
 	// if set, only decode these blocks
 	BlockTypes []string
 	// if set, exclude these block types
@@ -65,18 +60,10 @@ type RunContext struct {
 	Variables       map[string]*modconfig.Variable
 }
 
-func NewRunContext(workspacePath, modPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
-	// load the workspace lock
-	workspaceLock, err := version_map.LoadWorkspaceLock(workspacePath)
-	if err != nil {
-		log.Printf("failed to load installation cache from %s: %s", workspacePath, err)
-	}
-
+func NewRunContext(workspaceLock *version_map.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
 	c := &RunContext{
 		Flags:                flags,
-		ModInstallationPath:  constants.WorkspaceModPath(workspacePath),
-		WorkspacePath:        workspacePath,
-		modPath:              modPath,
+		RootEvalPath:         rootEvalPath,
 		WorkspaceLock:        workspaceLock,
 		ListOptions:          listOptions,
 		LoadedDependencyMods: make(modconfig.ModMap),
@@ -392,7 +379,7 @@ func (r *RunContext) buildEvalContext() {
 	r.EvalCtx = &hcl.EvalContext{
 		Variables: variables,
 		// use the mod path as the file root for functions
-		Functions: ContextFunctions(r.modPath),
+		Functions: ContextFunctions(r.RootEvalPath),
 	}
 }
 
@@ -442,7 +429,7 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	// the resource name will not have a mod - but the run context knows which mod we are parsing
 	mod := r.CurrentMod
 	modName := mod.ShortName
-	if mod.ModPath == r.WorkspacePath {
+	if mod.ModPath == r.RootEvalPath {
 		modName = "local"
 	}
 	variablesForMod, ok := r.referenceValues[modName]
