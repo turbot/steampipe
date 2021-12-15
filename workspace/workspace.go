@@ -19,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -250,7 +251,10 @@ func (w *Workspace) loadWorkspaceMod() error {
 	}
 
 	// build run context which we use to load the workspace
-	runCtx := w.getRunContext()
+	runCtx, err := w.getRunContext()
+	if err != nil {
+		return err
+	}
 	// add variables to runContext
 	runCtx.AddVariables(inputVariables)
 
@@ -279,9 +283,15 @@ func (w *Workspace) loadWorkspaceMod() error {
 
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
-func (w *Workspace) getRunContext() *parse.RunContext {
-	return parse.NewRunContext(
-		w.Path,
+func (w *Workspace) getRunContext() (*parse.RunContext, error) {
+	// load the workspace lock
+	workspaceLock, err := version_map.LoadWorkspaceLock(w.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load installation cache from %s: %s", w.Path, err)
+	}
+
+	runCtx := parse.NewRunContext(
+		workspaceLock,
 		w.Path,
 		parse.CreatePseudoResources|parse.CreateDefaultMod,
 		&filehelpers.ListOptions{
@@ -291,13 +301,18 @@ func (w *Workspace) getRunContext() *parse.RunContext {
 			// only load .sp files
 			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 		})
+
+	return runCtx, nil
 }
 
 func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
 	// build options used to load workspace
-	opts := w.getRunContext()
+	runCtx, err := w.getRunContext()
+	if err != nil {
+		return nil, err
+	}
 
-	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, opts)
+	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, runCtx)
 	if err != nil {
 		return nil, err
 	}
