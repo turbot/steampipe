@@ -315,9 +315,13 @@ func (w *Workspace) loadWorkspaceMod() error {
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
 func (w *Workspace) getRunContext() *parse.RunContext {
+	parseFlag := parse.CreateDefaultMod
+	if w.loadPseudoResources {
+		parseFlag |= parse.CreatePseudoResources
+	}
 	return parse.NewRunContext(
 		w.Path,
-		parse.CreatePseudoResources|parse.CreateDefaultMod,
+		parseFlag,
 		&filehelpers.ListOptions{
 			// listFlag specifies whether to load files recursively
 			Flags:   w.listFlag,
