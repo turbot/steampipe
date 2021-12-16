@@ -129,6 +129,8 @@ func getTestCaseFromControlRunRow(r *controlexecute.ResultRow, idx int) *nunit3.
 	testCase.AddProperty((nunit3.NewProperty("steampipe:status", r.Status)))
 	testCase.AddProperty(nunit3.NewProperty("steampipe:reason", r.Reason))
 
+	testCase.SetReason(nunit3.NewReason(r.Reason))
+
 	return testCase
 }
 

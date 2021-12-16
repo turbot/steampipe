@@ -16,6 +16,7 @@ type TestCase struct {
 	Label     *string    `xml:"label,attr"`
 
 	Props *Properties `xml:"properties,omitempty"`
+	Reason *Reason
 }
 
 func NewTestCase() *TestCase {
@@ -27,4 +28,8 @@ func (tc *TestCase) AddProperty(pr *Property) {
 		tc.Props = &Properties{}
 	}
 	tc.Props.AddProperty(pr)
+}
+
+func (tc *TestCase) SetReason(r *Reason) {
+	tc.Reason = r
 }
