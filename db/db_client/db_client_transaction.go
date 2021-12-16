@@ -13,6 +13,9 @@ import (
 // createTransaction , with a timeout - this may be required if the db client becomes unresponsive
 func (c *DbClient) createTransaction(ctx context.Context, session *sql.Conn, retryOnTimeout bool) (tx *sql.Tx, err error) {
 	doneChan := make(chan bool)
+	if session == nil {
+		return nil, fmt.Errorf("cannot create transaction :: received nil SESSION")
+	}
 	go func() {
 		tx, err = session.BeginTx(ctx, nil)
 		if err != nil {

@@ -83,16 +83,16 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	startTime := time.Now()
 	// channel to flag to spinner that the query has run
 	var spinner *spinner.Spinner
-	var tx *sql.Tx
+	// var tx *sql.Tx
 
 	defer func() {
 		if err != nil {
 			// stop spinner in case of error
 			display.StopSpinner(spinner)
 			// error - rollback transaction if we have one
-			if tx != nil {
-				tx.Rollback()
-			}
+			// if tx != nil {
+			// 	tx.Rollback()
+			// }
 			// call the completion callback - if one was provided
 			if onComplete != nil {
 				onComplete()
@@ -107,13 +107,14 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	}
 
 	// begin a transaction
-	tx, err = c.createTransaction(ctx, session.Connection, true)
-	if err != nil {
-		return
-	}
+	// tx, err = c.createTransaction(ctx, session.Connection, true)
+	// if err != nil {
+	// 	return
+	// }
+
 	// start query
 	var rows *sql.Rows
-	rows, err = c.startQuery(ctx, query, tx)
+	rows, err = c.startQuery(ctx, query, session.Connection)
 	if err != nil {
 		return
 	}
@@ -132,11 +133,11 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		// read in the rows and stream to the query result object
 		c.readRows(ctx, startTime, rows, result, spinner)
 		// commit transaction
-		if ctx.Err() == nil {
-			tx.Commit()
-		} else {
-			tx.Rollback()
-		}
+		// if ctx.Err() == nil {
+		// 	tx.Commit()
+		// } else {
+		// 	tx.Rollback()
+		// }
 		if onComplete != nil {
 			onComplete()
 		}
@@ -147,7 +148,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 // run query in a goroutine, so we can check for cancellation
 // in case the client becomes unresponsive and does not respect context cancellation
-func (c *DbClient) startQuery(ctx context.Context, query string, tx *sql.Tx) (rows *sql.Rows, err error) {
+func (c *DbClient) startQuery(ctx context.Context, query string, conn *sql.Conn) (rows *sql.Rows, err error) {
 	doneChan := make(chan bool)
 	defer func() {
 		if err != nil {
@@ -160,7 +161,7 @@ func (c *DbClient) startQuery(ctx context.Context, query string, tx *sql.Tx) (ro
 	}()
 	go func() {
 		// start asynchronous query
-		rows, err = tx.QueryContext(ctx, query)
+		rows, err = conn.QueryContext(ctx, query)
 		close(doneChan)
 	}()
 
