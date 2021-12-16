@@ -79,7 +79,7 @@ func getTestSuiteFromResultGroup(r *controlexecute.ResultGroup) *nunit3.TestSuit
 	passed := r.Summary.Status.Info + r.Summary.Status.Ok
 	failed := r.Summary.Status.Alarm + r.Summary.Status.Error
 	skipped := r.Summary.Status.Skip
-	
+
 	thisSuite.TestCaseCount = &total
 	thisSuite.Total = &total
 	thisSuite.Passed = &passed
@@ -127,6 +127,7 @@ func getTestCaseFromControlRunRow(r *controlexecute.ResultRow, idx int) *nunit3.
 	}
 
 	testCase.AddProperty((nunit3.NewProperty("steampipe:status", r.Status)))
+	testCase.AddProperty(nunit3.NewProperty("steampipe:reason", r.Reason))
 
 	return testCase
 }
