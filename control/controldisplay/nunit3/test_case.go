@@ -15,7 +15,7 @@ type TestCase struct {
 	Result    *string    `xml:"result,attr"`
 	Label     *string    `xml:"label,attr"`
 
-	Props *Properties `xml:"properties,omitempty"`
+	Props  *Properties `xml:"properties,omitempty"`
 	Reason *Reason
 }
 
