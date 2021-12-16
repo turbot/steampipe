@@ -153,7 +153,7 @@ func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
 
 // LoadSchema implements Client
 // retrieve both the raw query result and a sanitised version in list form
-func (c *InteractiveClient) LoadSchema(ctx context.Context) error {
+func (c *InteractiveClient) LoadSchema() error {
 	utils.LogTime("db_client.LoadSchema start")
 	defer utils.LogTime("db_client.LoadSchema end")
 
@@ -166,7 +166,8 @@ func (c *InteractiveClient) LoadSchema(ctx context.Context) error {
 	// get the unique schema - we use this to limit the schemas we load from the database
 	schemas := connectionSchemaMap.UniqueSchemas()
 	// load these schemas
-	metadata, err := c.client().GetSchemaFromDB(ctx, schemas)
+	// in a background context, since we are not running in a context - but GetSchemaFromDB needs one
+	metadata, err := c.client().GetSchemaFromDB(context.Background(), schemas)
 	utils.FailOnError(err)
 
 	c.populateSchemaMetadata(metadata, connectionSchemaMap)
@@ -176,6 +177,8 @@ func (c *InteractiveClient) LoadSchema(ctx context.Context) error {
 
 // init data has arrived, handle any errors/warnings/messages
 func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db_common.InitResult) {
+	// try to take an execution lock, so that we don't end up showing warnings and errors
+	// while an execution is underway
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
@@ -191,8 +194,6 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		utils.ShowError(initResult.Error)
 		return
 	}
-	// asyncronously fetch the schema
-	go c.LoadSchema(ctx)
 
 	if initResult.HasMessages() {
 		fmt.Println()
@@ -340,6 +341,8 @@ func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 }
 
 func (c *InteractiveClient) executor(line string) {
+	// take an execution lock, so that errors and warnings don't show up while
+	// we are underway
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
