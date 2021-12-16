@@ -171,7 +171,7 @@
     </test-suite>
     <test-suite id="control.cis_v140_1_7" name="1.7 Eliminate use of the &#39;root&#39; user for administrative and daily tasks" duration="-20276648128">
      <failure>
-      <message><![CDATA[Credential report not available. Please run [1maws iam generate-credential-report[22m to generate it and try again.]]></message>
+      <message><![CDATA[Credential report not available. Please run aws iam generate-credential-report to generate it and try again.]]></message>
      </failure>
      <properties>
       <property>
@@ -242,7 +242,7 @@
     </test-suite>
     <test-suite id="control.cis_v140_1_10" name="1.10 Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password" duration="-4615604184">
      <failure>
-      <message><![CDATA[Credential report not available. Please run [1maws iam generate-credential-report[22m to generate it and try again.]]></message>
+      <message><![CDATA[Credential report not available. Please run aws iam generate-credential-report to generate it and try again.]]></message>
      </failure>
      <properties>
       <property>
@@ -257,7 +257,7 @@
     </test-suite>
     <test-suite id="control.cis_v140_1_11" name="1.11 Do not setup access keys during initial user setup for all IAM users that have a console password" duration="-4355187837">
      <failure>
-      <message><![CDATA[Credential report not available. Please run [1maws iam generate-credential-report[22m to generate it and try again.]]></message>
+      <message><![CDATA[Credential report not available. Please run aws iam generate-credential-report to generate it and try again.]]></message>
      </failure>
      <properties>
       <property>
@@ -272,7 +272,7 @@
     </test-suite>
     <test-suite id="control.cis_v140_1_12" name="1.12 Ensure credentials unused for 45 days or greater are disabled" duration="-7322191549">
      <failure>
-      <message><![CDATA[Credential report not available. Please run [1maws iam generate-credential-report[22m to generate it and try again.]]></message>
+      <message><![CDATA[Credential report not available. Please run aws iam generate-credential-report to generate it and try again.]]></message>
      </failure>
      <properties>
       <property>
