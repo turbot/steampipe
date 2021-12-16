@@ -47,6 +47,8 @@ type Workspace struct {
 	reportEventHandlers []reportevents.ReportEventHandler
 	// callback function to reset display after the file watche displays messages
 	onFileWatcherEventMessages func()
+	modFileExists              bool
+	loadPseudoResources        bool
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -59,8 +61,9 @@ func Load(workspacePath string) (*Workspace, error) {
 		Path: workspacePath,
 	}
 
-	// determine whether to load files recursively or just from the top level folder
-	workspace.setListFlag()
+	// check whether the workspace contains a modfile
+	// this will determine whether we load files recursively, and create pseudo resources for sql files
+	workspace.setModfileExists()
 
 	// load the .steampipe ignore file
 	if err := workspace.loadExclusions(); err != nil {
@@ -76,7 +79,7 @@ func Load(workspacePath string) (*Workspace, error) {
 	return workspace, nil
 }
 
-// LoadResourceNames builds lists of all workspace respurce names
+// LoadResourceNames builds lists of all workspace resource names
 func LoadResourceNames(workspacePath string) (*modconfig.WorkspaceResources, error) {
 	utils.LogTime("workspace.LoadResourceNames start")
 	defer utils.LogTime("workspace.LoadResourceNames end")
@@ -87,7 +90,7 @@ func LoadResourceNames(workspacePath string) (*modconfig.WorkspaceResources, err
 	}
 
 	// determine whether to load files recursively or just from the top level folder
-	workspace.setListFlag()
+	workspace.setModfileExists()
 
 	// load the .steampipe ignore file
 	if err := workspace.loadExclusions(); err != nil {
@@ -136,14 +139,14 @@ func (w *Workspace) SetOnFileWatcherEventMessages(f func()) {
 	w.onFileWatcherEventMessages = f
 }
 
+// access functions
+// NOTE: all access functions lock 'loadLock' - this is to avoid conflicts with th efile watcher
+
 func (w *Workspace) Close() {
 	if w.watcher != nil {
 		w.watcher.Close()
 	}
 }
-
-// access functions
-// NOTE: all access functions lock 'loadLock' - this is to avoid conflicts with th efile watcher
 
 func (w *Workspace) GetQueryMap() map[string]*modconfig.Query {
 	w.loadLock.Lock()
@@ -253,17 +256,22 @@ func (w *Workspace) reset() {
 	w.Panels = make(map[string]*modconfig.Panel)
 }
 
-// determine whether to load files recursively or just from the top level folder
-// if there is a mod file in the workspace folder, load recursively
-func (w *Workspace) setListFlag() {
+// check  whether the workspace contains a modfile
+// this will determine whether we load files recursively, and create pseudo resources for sql files
+func (w *Workspace) setModfileExists() {
 	modFilePath := filepath.Join(w.Path, constants.WorkspaceModFileName)
 	_, err := os.Stat(modFilePath)
 	modFileExists := err == nil
+
 	if modFileExists {
+		log.Printf("[TRACE] modfile exists in workspace folder - creating pseudo-resources and loading files recusrively ")
 		// only load/watch recursively if a mod sp file exists in the workspace folder
 		w.listFlag = filehelpers.FilesRecursive
+		w.loadPseudoResources = true
 	} else {
+		log.Printf("[TRACE] no modfile exists in workspace folder - NOT creating pseudoresources and onnly loading resource files from top level folder")
 		w.listFlag = filehelpers.Files
+		w.loadPseudoResources = false
 	}
 }
 
@@ -307,9 +315,13 @@ func (w *Workspace) loadWorkspaceMod() error {
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
 func (w *Workspace) getRunContext() *parse.RunContext {
+	parseFlag := parse.CreateDefaultMod
+	if w.loadPseudoResources {
+		parseFlag |= parse.CreatePseudoResources
+	}
 	return parse.NewRunContext(
 		w.Path,
-		parse.CreatePseudoResources|parse.CreateDefaultMod,
+		parseFlag,
 		&filehelpers.ListOptions{
 			// listFlag specifies whether to load files recursively
 			Flags:   w.listFlag,

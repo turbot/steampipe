@@ -105,6 +105,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_workspace_folder.txt)"
 }
 
+@test "named query workspace query folder(should fail - no mod.sp file)" {
+  run steampipe query query.named_query_7 --workspace-chdir "tests/acceptance/test_files/workspace_folder/query_folder"
+  
+  # This query should fail since the folder does not contain a mod.sp file
+  assert_output --partial 'not found in workspace'
+}
+
 @test "sql file" {
   run steampipe query tests/acceptance/test_files/workspace_folder/query_folder/named_query_7.sql
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_sql_file.txt)"
