@@ -176,7 +176,6 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context, schemas []string) (*sche
 	defer utils.LogTime("db_client.GetSchemaFromDB end")
 	connection, err := c.dbClient.Conn(ctx)
 	utils.FailOnError(err)
-	defer connection.Close()
 
 	query := c.buildSchemasQuery(schemas)
 
@@ -184,7 +183,20 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context, schemas []string) (*sche
 	if err != nil {
 		return nil, err
 	}
-	return db_common.BuildSchemaMetadata(tablesResult)
+
+	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
+	if err != nil {
+		return nil, err
+	}
+	connection.Close()
+
+	searchPath, err := c.GetCurrentSearchPath(ctx)
+	if err != nil {
+		return nil, err
+	}
+	metadata.SearchPath = searchPath
+
+	return metadata, nil
 }
 
 func (c *DbClient) buildSchemasQuery(schemas []string) string {
