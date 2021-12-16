@@ -1,7 +1,7 @@
  <test-run testcasecount="55" total="55" passed="43" failed="10" skipped="2">
-  <test-suite id="benchmark.cis_v130" name="CIS v1.3.0" duration="297851350" testcasecount="55" total="55" passed="43" failed="10" skipped="2">
-   <test-suite id="benchmark.cis_v130_1" name="1 Identity and Access Management" duration="170305612" testcasecount="22" total="22" passed="16" failed="6" skipped="0">
-    <test-suite id="control.cis_v130_1_1" name="1.1 Maintain current contact details" duration="-135760847">
+  <test-suite id="benchmark.cis_v130" name="CIS v1.3.0" duration="345810623" testcasecount="55" total="55" passed="43" failed="10" skipped="2">
+   <test-suite id="benchmark.cis_v130_1" name="1 Identity and Access Management" duration="195626759" testcasecount="22" total="22" passed="16" failed="6" skipped="0">
+    <test-suite id="control.cis_v130_1_1" name="1.1 Maintain current contact details" duration="-195749486">
      <test-case id="control.cis_v130_1_1:0" name="control.cis_v130_1_1" result="Failed">
       <properties>
        <property>
@@ -20,6 +20,10 @@
         <key>steampipe:status</key>
         <value>alarm</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is pretty insecure</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -33,7 +37,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_2" name="1.2 Ensure security contact information is registered" duration="-268570090">
+    <test-suite id="control.cis_v130_1_2" name="1.2 Ensure security contact information is registered" duration="-312292787">
      <test-case id="control.cis_v130_1_2:0" name="control.cis_v130_1_2" result="Failed">
       <properties>
        <property>
@@ -52,6 +56,10 @@
         <key>steampipe:status</key>
         <value>alarm</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is pretty insecure</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -65,7 +73,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_3" name="1.3 Ensure security questions are registered in the AWS account" duration="-267523335">
+    <test-suite id="control.cis_v130_1_3" name="1.3 Ensure security questions are registered in the AWS account" duration="-202518562">
      <test-case id="control.cis_v130_1_3:0" name="control.cis_v130_1_3" result="Passed">
       <properties>
        <property>
@@ -84,6 +92,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -97,7 +109,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_4" name="1.4 Ensure no root user account access key exists" duration="-220838382">
+    <test-suite id="control.cis_v130_1_4" name="1.4 Ensure no root user account access key exists" duration="-308443294">
      <test-case id="control.cis_v130_1_4:0" name="control.cis_v130_1_4" result="Passed">
       <properties>
        <property>
@@ -116,6 +128,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -129,7 +145,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_5" name="1.5 Ensure MFA is enabled for the &#34;root user&#34; account" duration="-235454722">
+    <test-suite id="control.cis_v130_1_5" name="1.5 Ensure MFA is enabled for the &#34;root user&#34; account" duration="-187597122">
      <test-case id="control.cis_v130_1_5:0" name="control.cis_v130_1_5" result="Failed">
       <properties>
        <property>
@@ -148,6 +164,10 @@
         <key>steampipe:status</key>
         <value>alarm</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is pretty insecure</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -161,7 +181,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_6" name="1.6 Ensure hardware MFA is enabled for the &#34;root user&#34; account" duration="-177934054">
+    <test-suite id="control.cis_v130_1_6" name="1.6 Ensure hardware MFA is enabled for the &#34;root user&#34; account" duration="-168842653">
      <test-case id="control.cis_v130_1_6:0" name="control.cis_v130_1_6" result="Failed">
       <properties>
        <property>
@@ -180,6 +200,10 @@
         <key>steampipe:status</key>
         <value>error</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is in some sort of error state</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -193,7 +217,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_7" name="1.7 Eliminate use of the root user for administrative and daily tasks" duration="-219070166">
+    <test-suite id="control.cis_v130_1_7" name="1.7 Eliminate use of the root user for administrative and daily tasks" duration="-203639716">
      <test-case id="control.cis_v130_1_7:0" name="control.cis_v130_1_7" result="Passed">
       <properties>
        <property>
@@ -212,6 +236,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -225,7 +253,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_8" name="1.8 Ensure IAM password policy requires minimum length of 14 or greater" duration="-155151251">
+    <test-suite id="control.cis_v130_1_8" name="1.8 Ensure IAM password policy requires minimum length of 14 or greater" duration="-184973987">
      <test-case id="control.cis_v130_1_8:0" name="control.cis_v130_1_8" result="Passed">
       <properties>
        <property>
@@ -244,6 +272,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -257,7 +289,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_9" name="1.9 Ensure IAM password policy prevents password reuse" duration="-150671695">
+    <test-suite id="control.cis_v130_1_9" name="1.9 Ensure IAM password policy prevents password reuse" duration="-221197183">
      <test-case id="control.cis_v130_1_9:0" name="control.cis_v130_1_9" result="Passed">
       <properties>
        <property>
@@ -276,6 +308,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -289,7 +325,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_10" name="1.10 Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password" duration="-164974105">
+    <test-suite id="control.cis_v130_1_10" name="1.10 Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password" duration="-158326251">
      <test-case id="control.cis_v130_1_10:0" name="control.cis_v130_1_10" result="Passed">
       <properties>
        <property>
@@ -308,6 +344,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -321,7 +361,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_11" name="1.11 Do not setup access keys during initial user setup for all IAM users that have a console password" duration="-184159330">
+    <test-suite id="control.cis_v130_1_11" name="1.11 Do not setup access keys during initial user setup for all IAM users that have a console password" duration="-260934083">
      <test-case id="control.cis_v130_1_11:0" name="control.cis_v130_1_11" result="Passed">
       <properties>
        <property>
@@ -340,6 +380,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -353,7 +397,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_12" name="1.12 Ensure credentials unused for 90 days or greater are disabled" duration="-243911139">
+    <test-suite id="control.cis_v130_1_12" name="1.12 Ensure credentials unused for 90 days or greater are disabled" duration="-177379971">
      <test-case id="control.cis_v130_1_12:0" name="control.cis_v130_1_12" result="Passed">
       <properties>
        <property>
@@ -372,6 +416,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -385,7 +433,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_13" name="1.13 Ensure there is only one active access key available for any single IAM user" duration="-181241703">
+    <test-suite id="control.cis_v130_1_13" name="1.13 Ensure there is only one active access key available for any single IAM user" duration="-254436676">
      <test-case id="control.cis_v130_1_13:0" name="control.cis_v130_1_13" result="Passed">
       <properties>
        <property>
@@ -404,6 +452,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -417,7 +469,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_14" name="1.14 Ensure access keys are rotated every 90 days or less" duration="-170426607">
+    <test-suite id="control.cis_v130_1_14" name="1.14 Ensure access keys are rotated every 90 days or less" duration="-268484878">
      <test-case id="control.cis_v130_1_14:0" name="control.cis_v130_1_14" result="Passed">
       <properties>
        <property>
@@ -436,6 +488,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -449,7 +505,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_15" name="1.15 Ensure IAM Users Receive Permissions Only Through Groups" duration="-146871494">
+    <test-suite id="control.cis_v130_1_15" name="1.15 Ensure IAM Users Receive Permissions Only Through Groups" duration="-166832309">
      <test-case id="control.cis_v130_1_15:0" name="control.cis_v130_1_15" result="Failed">
       <properties>
        <property>
@@ -468,6 +524,10 @@
         <key>steampipe:status</key>
         <value>alarm</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is pretty insecure</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -481,7 +541,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_16" name="1.16 Ensure IAM policies that allow full &#34;*:*&#34; administrative privileges are not attached" duration="-167511877">
+    <test-suite id="control.cis_v130_1_16" name="1.16 Ensure IAM policies that allow full &#34;*:*&#34; administrative privileges are not attached" duration="-390016409">
      <test-case id="control.cis_v130_1_16:0" name="control.cis_v130_1_16" result="Passed">
       <properties>
        <property>
@@ -500,6 +560,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -513,7 +577,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_17" name="1.17 Ensure a support role has been created to manage incidents with AWS Support" duration="-192622797">
+    <test-suite id="control.cis_v130_1_17" name="1.17 Ensure a support role has been created to manage incidents with AWS Support" duration="-390902112">
      <test-case id="control.cis_v130_1_17:0" name="control.cis_v130_1_17" result="Passed">
       <properties>
        <property>
@@ -532,6 +596,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -545,7 +613,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_18" name="1.18 Ensure IAM instance roles are used for AWS resource access from instances" duration="-253430101">
+    <test-suite id="control.cis_v130_1_18" name="1.18 Ensure IAM instance roles are used for AWS resource access from instances" duration="-230955964">
      <test-case id="control.cis_v130_1_18:0" name="control.cis_v130_1_18" result="Passed">
       <properties>
        <property>
@@ -564,6 +632,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -577,7 +649,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_19" name="1.19 Ensure that all the expired SSL/TLS certificates stored in AWS IAM are removed" duration="-210708354">
+    <test-suite id="control.cis_v130_1_19" name="1.19 Ensure that all the expired SSL/TLS certificates stored in AWS IAM are removed" duration="-212456537">
      <test-case id="control.cis_v130_1_19:0" name="control.cis_v130_1_19" result="Passed">
       <properties>
        <property>
@@ -596,6 +668,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -609,7 +685,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_20" name="1.20 Ensure that S3 Buckets are configured with &#39;Block public access (bucket settings)&#39;" duration="-214445354">
+    <test-suite id="control.cis_v130_1_20" name="1.20 Ensure that S3 Buckets are configured with &#39;Block public access (bucket settings)&#39;" duration="-239099459">
      <test-case id="control.cis_v130_1_20:0" name="control.cis_v130_1_20" result="Passed">
       <properties>
        <property>
@@ -628,6 +704,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -641,7 +721,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_21" name="1.21 Ensure that IAM Access analyzer is enabled" duration="-196726709">
+    <test-suite id="control.cis_v130_1_21" name="1.21 Ensure that IAM Access analyzer is enabled" duration="-295193822">
      <test-case id="control.cis_v130_1_21:0" name="control.cis_v130_1_21" result="Failed">
       <properties>
        <property>
@@ -660,6 +740,10 @@
         <key>steampipe:status</key>
         <value>alarm</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is pretty insecure</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -673,7 +757,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_1_22" name="1.22 Ensure IAM users are managed centrally via identity federation or AWS Organizations for multi-account environments" duration="-231198051">
+    <test-suite id="control.cis_v130_1_22" name="1.22 Ensure IAM users are managed centrally via identity federation or AWS Organizations for multi-account environments" duration="-222240539">
      <test-case id="control.cis_v130_1_22:0" name="control.cis_v130_1_22" result="Passed">
       <properties>
        <property>
@@ -692,6 +776,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -712,9 +800,9 @@
      </property>
     </properties>
    </test-suite>
-   <test-suite id="benchmark.cis_v130_2" name="2 Storage" duration="13730934" testcasecount="3" total="3" passed="3" failed="0" skipped="0">
-    <test-suite id="benchmark.cis_v130_2_1" name="2.1 Simple Storage Service (S3)" duration="10812058" testcasecount="2" total="2" passed="2" failed="0" skipped="0">
-     <test-suite id="control.cis_v130_2_1_1" name="2.1.1 Ensure all S3 buckets employ encryption-at-rest" duration="-198991241">
+   <test-suite id="benchmark.cis_v130_2" name="2 Storage" duration="16737210" testcasecount="3" total="3" passed="3" failed="0" skipped="0">
+    <test-suite id="benchmark.cis_v130_2_1" name="2.1 Simple Storage Service (S3)" duration="7889180" testcasecount="2" total="2" passed="2" failed="0" skipped="0">
+     <test-suite id="control.cis_v130_2_1_1" name="2.1.1 Ensure all S3 buckets employ encryption-at-rest" duration="-253284628">
       <test-case id="control.cis_v130_2_1_1:0" name="control.cis_v130_2_1_1" result="Passed">
        <properties>
         <property>
@@ -733,6 +821,10 @@
          <key>steampipe:status</key>
          <value>ok</value>
         </property>
+        <property>
+         <key>steampipe:reason</key>
+         <value>is totally secure and this is qa very very very very very long reason</value>
+        </property>
        </properties>
       </test-case>
       <properties>
@@ -746,7 +838,7 @@
        </property>
       </properties>
      </test-suite>
-     <test-suite id="control.cis_v130_2_1_2" name="2.1.2 Ensure S3 Bucket Policy allows HTTPS requests" duration="-297960338">
+     <test-suite id="control.cis_v130_2_1_2" name="2.1.2 Ensure S3 Bucket Policy allows HTTPS requests" duration="-330508873">
       <test-case id="control.cis_v130_2_1_2:0" name="control.cis_v130_2_1_2" result="Passed">
        <properties>
         <property>
@@ -765,6 +857,10 @@
          <key>steampipe:status</key>
          <value>info</value>
         </property>
+        <property>
+         <key>steampipe:reason</key>
+         <value>just some info, thought you should know</value>
+        </property>
        </properties>
       </test-case>
       <properties>
@@ -785,8 +881,8 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="benchmark.cis_v130_2_2" name="2.2 Elastic Compute Cloud (EC2)" duration="2916112" testcasecount="1" total="1" passed="1" failed="0" skipped="0">
-     <test-suite id="control.cis_v130_2_2_1" name="2.2.1 Ensure EBS volume encryption is enabled" duration="-207151128">
+    <test-suite id="benchmark.cis_v130_2_2" name="2.2 Elastic Compute Cloud (EC2)" duration="8842901" testcasecount="1" total="1" passed="1" failed="0" skipped="0">
+     <test-suite id="control.cis_v130_2_2_1" name="2.2.1 Ensure EBS volume encryption is enabled" duration="-241201544">
       <test-case id="control.cis_v130_2_2_1:0" name="control.cis_v130_2_2_1" result="Passed">
        <properties>
         <property>
@@ -805,6 +901,10 @@
          <key>steampipe:status</key>
          <value>ok</value>
         </property>
+        <property>
+         <key>steampipe:reason</key>
+         <value>is totally secure and this is qa very very very very very long reason</value>
+        </property>
        </properties>
       </test-case>
       <properties>
@@ -832,8 +932,8 @@
      </property>
     </properties>
    </test-suite>
-   <test-suite id="benchmark.cis_v130_3" name="3 Logging" duration="49151001" testcasecount="11" total="11" passed="11" failed="0" skipped="0">
-    <test-suite id="control.cis_v130_3_1" name="3.1 Ensure CloudTrail is enabled in all regions" duration="-243197075">
+   <test-suite id="benchmark.cis_v130_3" name="3 Logging" duration="56001404" testcasecount="11" total="11" passed="11" failed="0" skipped="0">
+    <test-suite id="control.cis_v130_3_1" name="3.1 Ensure CloudTrail is enabled in all regions" duration="-290554106">
      <test-case id="control.cis_v130_3_1:0" name="control.cis_v130_3_1" result="Passed">
       <properties>
        <property>
@@ -852,6 +952,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -865,7 +969,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_2" name="3.2 Ensure CloudTrail log file validation is enabled." duration="-283179970">
+    <test-suite id="control.cis_v130_3_2" name="3.2 Ensure CloudTrail log file validation is enabled." duration="-248067656">
      <test-case id="control.cis_v130_3_2:0" name="control.cis_v130_3_2" result="Passed">
       <properties>
        <property>
@@ -884,6 +988,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -897,7 +1005,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_3" name="3.3 Ensure the S3 bucket used to store CloudTrail logs is not publicly accessible" duration="-327879832">
+    <test-suite id="control.cis_v130_3_3" name="3.3 Ensure the S3 bucket used to store CloudTrail logs is not publicly accessible" duration="-274093678">
      <test-case id="control.cis_v130_3_3:0" name="control.cis_v130_3_3" result="Passed">
       <properties>
        <property>
@@ -916,6 +1024,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -929,7 +1041,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_4" name="3.4 Ensure CloudTrail trails are integrated with CloudWatch Logs" duration="-330370988">
+    <test-suite id="control.cis_v130_3_4" name="3.4 Ensure CloudTrail trails are integrated with CloudWatch Logs" duration="-313164996">
      <test-case id="control.cis_v130_3_4:0" name="control.cis_v130_3_4" result="Passed">
       <properties>
        <property>
@@ -948,6 +1060,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -961,7 +1077,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_5" name="3.5 Ensure AWS Config is enabled in all regions" duration="-223645132">
+    <test-suite id="control.cis_v130_3_5" name="3.5 Ensure AWS Config is enabled in all regions" duration="-346774910">
      <test-case id="control.cis_v130_3_5:0" name="control.cis_v130_3_5" result="Passed">
       <properties>
        <property>
@@ -980,6 +1096,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -993,7 +1113,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_6" name="3.6 Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket" duration="-233290198">
+    <test-suite id="control.cis_v130_3_6" name="3.6 Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket" duration="-266932809">
      <test-case id="control.cis_v130_3_6:0" name="control.cis_v130_3_6" result="Passed">
       <properties>
        <property>
@@ -1012,6 +1132,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1025,7 +1149,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_7" name="3.7 Ensure CloudTrail logs are encrypted at rest using KMS CMKs" duration="-276470891">
+    <test-suite id="control.cis_v130_3_7" name="3.7 Ensure CloudTrail logs are encrypted at rest using KMS CMKs" duration="-281758684">
      <test-case id="control.cis_v130_3_7:0" name="control.cis_v130_3_7" result="Passed">
       <properties>
        <property>
@@ -1044,6 +1168,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1057,7 +1185,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_8" name="3.8 Ensure rotation for customer created CMKs is enabled" duration="-335982362">
+    <test-suite id="control.cis_v130_3_8" name="3.8 Ensure rotation for customer created CMKs is enabled" duration="-325916337">
      <test-case id="control.cis_v130_3_8:0" name="control.cis_v130_3_8" result="Passed">
       <properties>
        <property>
@@ -1076,6 +1204,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1089,7 +1221,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_9" name="3.9 Ensure VPC flow logging is enabled in all VPCs" duration="-245616179">
+    <test-suite id="control.cis_v130_3_9" name="3.9 Ensure VPC flow logging is enabled in all VPCs" duration="-359219387">
      <test-case id="control.cis_v130_3_9:0" name="control.cis_v130_3_9" result="Passed">
       <properties>
        <property>
@@ -1108,6 +1240,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1121,7 +1257,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_10" name="3.10 Ensure that Object-level logging for write events is enabled for S3 bucket" duration="-290230024">
+    <test-suite id="control.cis_v130_3_10" name="3.10 Ensure that Object-level logging for write events is enabled for S3 bucket" duration="-282797397">
      <test-case id="control.cis_v130_3_10:0" name="control.cis_v130_3_10" result="Passed">
       <properties>
        <property>
@@ -1140,6 +1276,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1153,7 +1293,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_3_11" name="3.11 Ensure that Object-level logging for read events is enabled for S3 bucket" duration="-338380553">
+    <test-suite id="control.cis_v130_3_11" name="3.11 Ensure that Object-level logging for read events is enabled for S3 bucket" duration="-305626669">
      <test-case id="control.cis_v130_3_11:0" name="control.cis_v130_3_11" result="Passed">
       <properties>
        <property>
@@ -1172,6 +1312,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1192,8 +1336,8 @@
      </property>
     </properties>
    </test-suite>
-   <test-suite id="benchmark.cis_v130_4" name="4 Monitoring" duration="51472956" testcasecount="15" total="15" passed="13" failed="0" skipped="2">
-    <test-suite id="control.cis_v130_4_1" name="4.1 Ensure a log metric filter and alarm exist for unauthorized API calls" duration="-259811858">
+   <test-suite id="benchmark.cis_v130_4" name="4 Monitoring" duration="62038028" testcasecount="15" total="15" passed="13" failed="0" skipped="2">
+    <test-suite id="control.cis_v130_4_1" name="4.1 Ensure a log metric filter and alarm exist for unauthorized API calls" duration="-298213207">
      <test-case id="control.cis_v130_4_1:0" name="control.cis_v130_4_1" result="Passed">
       <properties>
        <property>
@@ -1212,6 +1356,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1225,7 +1373,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_2" name="4.2 Ensure a log metric filter and alarm exist for Management Console sign-in without MFA" duration="-340044691">
+    <test-suite id="control.cis_v130_4_2" name="4.2 Ensure a log metric filter and alarm exist for Management Console sign-in without MFA" duration="-339432768">
      <test-case id="control.cis_v130_4_2:0" name="control.cis_v130_4_2" result="Passed">
       <properties>
        <property>
@@ -1244,6 +1392,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1257,7 +1409,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_3" name="4.3 Ensure a log metric filter and alarm exist for usage of &#34;root&#34; account" duration="-260987770">
+    <test-suite id="control.cis_v130_4_3" name="4.3 Ensure a log metric filter and alarm exist for usage of &#34;root&#34; account" duration="-322189724">
      <test-case id="control.cis_v130_4_3:0" name="control.cis_v130_4_3" result="Passed">
       <properties>
        <property>
@@ -1276,6 +1428,10 @@
         <key>steampipe:status</key>
         <value>info</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>just some info, thought you should know</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1289,7 +1445,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_4" name="4.4 Ensure a log metric filter and alarm exist for IAM policy changes" duration="-269302872">
+    <test-suite id="control.cis_v130_4_4" name="4.4 Ensure a log metric filter and alarm exist for IAM policy changes" duration="-315182697">
      <test-case id="control.cis_v130_4_4:0" name="control.cis_v130_4_4" result="Passed">
       <properties>
        <property>
@@ -1308,6 +1464,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1321,7 +1481,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_5" name="4.5 Ensure a log metric filter and alarm exist for CloudTrail configuration changes" duration="-275199564">
+    <test-suite id="control.cis_v130_4_5" name="4.5 Ensure a log metric filter and alarm exist for CloudTrail configuration changes" duration="-328592565">
      <test-case id="control.cis_v130_4_5:0" name="control.cis_v130_4_5" result="Passed">
       <properties>
        <property>
@@ -1340,6 +1500,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1353,7 +1517,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_6" name="4.6 Ensure a log metric filter and alarm exist for AWS Management Console authentication failures" duration="-306375548">
+    <test-suite id="control.cis_v130_4_6" name="4.6 Ensure a log metric filter and alarm exist for AWS Management Console authentication failures" duration="-372881233">
      <test-case id="control.cis_v130_4_6:0" name="control.cis_v130_4_6" result="Passed">
       <properties>
        <property>
@@ -1372,6 +1536,10 @@
         <key>steampipe:status</key>
         <value>info</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>just some info, thought you should know</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1385,7 +1553,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_7" name="4.7 Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created CMKs" duration="-282366756">
+    <test-suite id="control.cis_v130_4_7" name="4.7 Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created CMKs" duration="-342173004">
      <test-case id="control.cis_v130_4_7:0" name="control.cis_v130_4_7" result="Passed">
       <properties>
        <property>
@@ -1404,6 +1572,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1417,7 +1589,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_8" name="4.8 Ensure a log metric filter and alarm exist for S3 bucket policy changes" duration="-291031794">
+    <test-suite id="control.cis_v130_4_8" name="4.8 Ensure a log metric filter and alarm exist for S3 bucket policy changes" duration="-376541254">
      <test-case id="control.cis_v130_4_8:0" name="control.cis_v130_4_8" result="Passed">
       <properties>
        <property>
@@ -1436,6 +1608,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1449,7 +1625,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_9" name="4.9 Ensure a log metric filter and alarm exist for AWS Config configuration changes" duration="-284749398">
+    <test-suite id="control.cis_v130_4_9" name="4.9 Ensure a log metric filter and alarm exist for AWS Config configuration changes" duration="-332443240">
      <test-case id="control.cis_v130_4_9:0" name="control.cis_v130_4_9" result="Skipped">
       <properties>
        <property>
@@ -1468,6 +1644,10 @@
         <key>steampipe:status</key>
         <value>skip</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>totally skipping this one</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1481,7 +1661,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_10" name="4.10 Ensure a log metric filter and alarm exist for security group changes" duration="-312780022">
+    <test-suite id="control.cis_v130_4_10" name="4.10 Ensure a log metric filter and alarm exist for security group changes" duration="-363132416">
      <test-case id="control.cis_v130_4_10:0" name="control.cis_v130_4_10" result="Passed">
       <properties>
        <property>
@@ -1500,6 +1680,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1513,7 +1697,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_11" name="4.11 Ensure a log metric filter and alarm exist for changes to Network Access Control Lists (NACL)" duration="-320641953">
+    <test-suite id="control.cis_v130_4_11" name="4.11 Ensure a log metric filter and alarm exist for changes to Network Access Control Lists (NACL)" duration="-383173097">
      <test-case id="control.cis_v130_4_11:0" name="control.cis_v130_4_11" result="Passed">
       <properties>
        <property>
@@ -1532,6 +1716,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1545,7 +1733,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_12" name="4.12 Ensure a log metric filter and alarm exist for changes to network gateways" duration="-297143123">
+    <test-suite id="control.cis_v130_4_12" name="4.12 Ensure a log metric filter and alarm exist for changes to network gateways" duration="-345880495">
      <test-case id="control.cis_v130_4_12:0" name="control.cis_v130_4_12" result="Passed">
       <properties>
        <property>
@@ -1564,6 +1752,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1577,7 +1769,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_13" name="4.13 Ensure a log metric filter and alarm exist for route table changes" duration="-329512384">
+    <test-suite id="control.cis_v130_4_13" name="4.13 Ensure a log metric filter and alarm exist for route table changes" duration="-388203843">
      <test-case id="control.cis_v130_4_13:0" name="control.cis_v130_4_13" result="Passed">
       <properties>
        <property>
@@ -1596,6 +1788,10 @@
         <key>steampipe:status</key>
         <value>ok</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1609,7 +1805,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_14" name="4.14 Ensure a log metric filter and alarm exist for VPC changes" duration="-298709380">
+    <test-suite id="control.cis_v130_4_14" name="4.14 Ensure a log metric filter and alarm exist for VPC changes" duration="-356559579">
      <test-case id="control.cis_v130_4_14:0" name="control.cis_v130_4_14" result="Skipped">
       <properties>
        <property>
@@ -1628,6 +1824,10 @@
         <key>steampipe:status</key>
         <value>skip</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>totally skipping this one</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1641,7 +1841,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_4_15" name="4.15 Ensure a log metric filter and alarm exists for AWS Organizations changes" duration="-305472114">
+    <test-suite id="control.cis_v130_4_15" name="4.15 Ensure a log metric filter and alarm exists for AWS Organizations changes" duration="-349525826">
      <test-case id="control.cis_v130_4_15:0" name="control.cis_v130_4_15" result="Passed">
       <properties>
        <property>
@@ -1659,6 +1859,10 @@
        <property>
         <key>steampipe:status</key>
         <value>ok</value>
+       </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is totally secure and this is qa very very very very very long reason</value>
        </property>
       </properties>
      </test-case>
@@ -1680,8 +1884,8 @@
      </property>
     </properties>
    </test-suite>
-   <test-suite id="benchmark.cis_v130_5" name="5 Networking" duration="13183437" testcasecount="4" total="4" passed="0" failed="4" skipped="0">
-    <test-suite id="control.cis_v130_5_1" name="5.1 Ensure no Network ACLs allow ingress from 0.0.0.0/0 to remote server administration ports" duration="-335159777">
+   <test-suite id="benchmark.cis_v130_5" name="5 Networking" duration="15395932" testcasecount="4" total="4" passed="0" failed="4" skipped="0">
+    <test-suite id="control.cis_v130_5_1" name="5.1 Ensure no Network ACLs allow ingress from 0.0.0.0/0 to remote server administration ports" duration="-364070243">
      <test-case id="control.cis_v130_5_1:0" name="control.cis_v130_5_1" result="Failed">
       <properties>
        <property>
@@ -1700,6 +1904,10 @@
         <key>steampipe:status</key>
         <value>alarm</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is pretty insecure</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1713,7 +1921,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_5_2" name="5.2 Ensure no security groups allow ingress from 0.0.0.0/0 to remote server administration ports" duration="-314404402">
+    <test-suite id="control.cis_v130_5_2" name="5.2 Ensure no security groups allow ingress from 0.0.0.0/0 to remote server administration ports" duration="-366029162">
      <test-case id="control.cis_v130_5_2:0" name="control.cis_v130_5_2" result="Failed">
       <properties>
        <property>
@@ -1732,6 +1940,10 @@
         <key>steampipe:status</key>
         <value>alarm</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is pretty insecure</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1745,7 +1957,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_5_3" name="5.3 Ensure the default security group of every VPC restricts all traffic" duration="-313578384">
+    <test-suite id="control.cis_v130_5_3" name="5.3 Ensure the default security group of every VPC restricts all traffic" duration="-381174258">
      <test-case id="control.cis_v130_5_3:0" name="control.cis_v130_5_3" result="Failed">
       <properties>
        <property>
@@ -1764,6 +1976,10 @@
         <key>steampipe:status</key>
         <value>alarm</value>
        </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is pretty insecure</value>
+       </property>
       </properties>
      </test-case>
      <properties>
@@ -1777,7 +1993,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v130_5_4" name="5.4 Ensure routing tables for VPC peering are &#39;least access&#39;" duration="-321438213">
+    <test-suite id="control.cis_v130_5_4" name="5.4 Ensure routing tables for VPC peering are &#39;least access&#39;" duration="-379358798">
      <test-case id="control.cis_v130_5_4:0" name="control.cis_v130_5_4" result="Failed">
       <properties>
        <property>
@@ -1795,6 +2011,10 @@
        <property>
         <key>steampipe:status</key>
         <value>alarm</value>
+       </property>
+       <property>
+        <key>steampipe:reason</key>
+        <value>is pretty insecure</value>
        </property>
       </properties>
      </test-case>
