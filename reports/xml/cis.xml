@@ -1,7 +1,7 @@
  <test-run testcasecount="1043" total="1043" passed="954" failed="89" skipped="0">
   <test-suite id="benchmark.cis_v140" name="CIS v1.4.0" duration="23504914385" testcasecount="1043" total="1043" passed="954" failed="89" skipped="0">
    <test-suite id="benchmark.cis_v140_1" name="1 Identity and Access Management" duration="4398899787" testcasecount="981" total="981" passed="950" failed="31" skipped="0">
-    <test-suite id="control.cis_v140_1_1" name="1.1 Maintain current contact details" duration="-4399044678">
+    <test-suite id="control.cis_v140_1_1" name="1.1 Maintain current contact details" duration="4399044678">
      <test-case id="control.cis_v140_1_1:0" name="control.cis_v140_1_1" result="Passed">
       <properties>
        <property>
@@ -29,7 +29,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_2" name="1.2 Ensure security contact information is registered" duration="-4365721250">
+    <test-suite id="control.cis_v140_1_2" name="1.2 Ensure security contact information is registered" duration="4365721250">
      <test-case id="control.cis_v140_1_2:0" name="control.cis_v140_1_2" result="Passed">
       <properties>
        <property>
@@ -57,7 +57,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_3" name="1.3 Ensure security questions are registered in the AWS account" duration="-4368964193">
+    <test-suite id="control.cis_v140_1_3" name="1.3 Ensure security questions are registered in the AWS account" duration="4368964193">
      <test-case id="control.cis_v140_1_3:0" name="control.cis_v140_1_3" result="Passed">
       <properties>
        <property>
@@ -85,7 +85,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_4" name="1.4 Ensure no &#39;root&#39; user account access key exists" duration="-4696799338">
+    <test-suite id="control.cis_v140_1_4" name="1.4 Ensure no &#39;root&#39; user account access key exists" duration="4696799338">
      <test-case id="control.cis_v140_1_4:0" name="control.cis_v140_1_4" result="Passed">
       <properties>
        <property>
@@ -113,7 +113,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_5" name="1.5 Ensure MFA is enabled for the &#39;root&#39; user account" duration="-4397930253">
+    <test-suite id="control.cis_v140_1_5" name="1.5 Ensure MFA is enabled for the &#39;root&#39; user account" duration="4397930253">
      <test-case id="control.cis_v140_1_5:0" name="control.cis_v140_1_5" result="Passed">
       <properties>
        <property>
@@ -141,7 +141,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_6" name="1.6 Ensure hardware MFA is enabled for the &#39;root&#39; user account" duration="-10904356153">
+    <test-suite id="control.cis_v140_1_6" name="1.6 Ensure hardware MFA is enabled for the &#39;root&#39; user account" duration="10904356153">
      <test-case id="control.cis_v140_1_6:0" name="control.cis_v140_1_6" result="Failed">
       <properties>
        <property>
@@ -169,7 +169,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_7" name="1.7 Eliminate use of the &#39;root&#39; user for administrative and daily tasks" duration="-20276648128">
+    <test-suite id="control.cis_v140_1_7" name="1.7 Eliminate use of the &#39;root&#39; user for administrative and daily tasks" duration="20276648128">
      <failure>
       <message><![CDATA[Credential report not available. Please run aws iam generate-credential-report to generate it and try again.]]></message>
      </failure>
@@ -184,7 +184,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_8" name="1.8 Ensure IAM password policy requires minimum length of 14 or greater" duration="-4631085088">
+    <test-suite id="control.cis_v140_1_8" name="1.8 Ensure IAM password policy requires minimum length of 14 or greater" duration="4631085088">
      <test-case id="control.cis_v140_1_8:0" name="control.cis_v140_1_8" result="Failed">
       <properties>
        <property>
@@ -212,7 +212,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_9" name="1.9 Ensure IAM password policy prevents password reuse" duration="-7064275236">
+    <test-suite id="control.cis_v140_1_9" name="1.9 Ensure IAM password policy prevents password reuse" duration="7064275236">
      <test-case id="control.cis_v140_1_9:0" name="control.cis_v140_1_9" result="Failed">
       <properties>
        <property>
@@ -240,7 +240,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_10" name="1.10 Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password" duration="-4615604184">
+    <test-suite id="control.cis_v140_1_10" name="1.10 Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password" duration="4615604184">
      <failure>
       <message><![CDATA[Credential report not available. Please run aws iam generate-credential-report to generate it and try again.]]></message>
      </failure>
@@ -255,7 +255,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_11" name="1.11 Do not setup access keys during initial user setup for all IAM users that have a console password" duration="-4355187837">
+    <test-suite id="control.cis_v140_1_11" name="1.11 Do not setup access keys during initial user setup for all IAM users that have a console password" duration="4355187837">
      <failure>
       <message><![CDATA[Credential report not available. Please run aws iam generate-credential-report to generate it and try again.]]></message>
      </failure>
@@ -270,7 +270,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_12" name="1.12 Ensure credentials unused for 45 days or greater are disabled" duration="-7322191549">
+    <test-suite id="control.cis_v140_1_12" name="1.12 Ensure credentials unused for 45 days or greater are disabled" duration="7322191549">
      <failure>
       <message><![CDATA[Credential report not available. Please run aws iam generate-credential-report to generate it and try again.]]></message>
      </failure>
@@ -285,7 +285,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_13" name="1.13 Ensure there is only one active access key available for any single IAM user" duration="-7844903199">
+    <test-suite id="control.cis_v140_1_13" name="1.13 Ensure there is only one active access key available for any single IAM user" duration="7844903199">
      <test-case id="control.cis_v140_1_13:0" name="control.cis_v140_1_13" result="Failed">
       <properties>
        <property>
@@ -313,7 +313,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_14" name="1.14 Ensure access keys are rotated every 90 days or less" duration="-14267407045">
+    <test-suite id="control.cis_v140_1_14" name="1.14 Ensure access keys are rotated every 90 days or less" duration="14267407045">
      <test-case id="control.cis_v140_1_14:0" name="control.cis_v140_1_14" result="Failed">
       <properties>
        <property>
@@ -357,7 +357,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_15" name="1.15 Ensure IAM Users Receive Permissions Only Through Groups" duration="-4101665130">
+    <test-suite id="control.cis_v140_1_15" name="1.15 Ensure IAM Users Receive Permissions Only Through Groups" duration="4101665130">
      <test-case id="control.cis_v140_1_15:0" name="control.cis_v140_1_15" result="Failed">
       <properties>
        <property>
@@ -385,7 +385,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_16" name="1.16 Ensure IAM policies that allow full &#34;*:*&#34; administrative privileges are not attached" duration="-18721628759">
+    <test-suite id="control.cis_v140_1_16" name="1.16 Ensure IAM policies that allow full &#34;*:*&#34; administrative privileges are not attached" duration="18721628759">
      <test-case id="control.cis_v140_1_16:0" name="control.cis_v140_1_16" result="Failed">
       <properties>
        <property>
@@ -15517,7 +15517,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_17" name="1.17 Ensure a support role has been created to manage incidents with AWS Support" duration="-6793678466">
+    <test-suite id="control.cis_v140_1_17" name="1.17 Ensure a support role has been created to manage incidents with AWS Support" duration="6793678466">
      <test-case id="control.cis_v140_1_17:0" name="control.cis_v140_1_17" result="Failed">
       <properties>
        <property>
@@ -15545,7 +15545,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_18" name="1.18 Ensure IAM instance roles are used for AWS resource access from instances" duration="-8429510206">
+    <test-suite id="control.cis_v140_1_18" name="1.18 Ensure IAM instance roles are used for AWS resource access from instances" duration="8429510206">
      <test-case id="control.cis_v140_1_18:0" name="control.cis_v140_1_18" result="Passed">
       <properties>
        <property>
@@ -15573,7 +15573,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_19" name="1.19 Ensure that all the expired SSL/TLS certificates stored in AWS IAM are removed" duration="-4673419065">
+    <test-suite id="control.cis_v140_1_19" name="1.19 Ensure that all the expired SSL/TLS certificates stored in AWS IAM are removed" duration="4673419065">
      <properties>
       <property>
        <key>type</key>
@@ -15585,7 +15585,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_20" name="1.20 Ensure that IAM Access analyzer is enabled for all regions" duration="-11602097803">
+    <test-suite id="control.cis_v140_1_20" name="1.20 Ensure that IAM Access analyzer is enabled for all regions" duration="11602097803">
      <test-case id="control.cis_v140_1_20:0" name="control.cis_v140_1_20" result="Failed">
       <properties>
        <property>
@@ -15937,7 +15937,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_1_21" name="1.21 Ensure IAM users are managed centrally via identity federation or AWS Organizations for multi-account environments" duration="-23439458912">
+    <test-suite id="control.cis_v140_1_21" name="1.21 Ensure IAM users are managed centrally via identity federation or AWS Organizations for multi-account environments" duration="23439458912">
      <test-case id="control.cis_v140_1_21:0" name="control.cis_v140_1_21" result="Passed">
       <properties>
        <property>
@@ -15974,7 +15974,7 @@
    </test-suite>
    <test-suite id="benchmark.cis_v140_2" name="2 Storage" duration="2923155832" testcasecount="9" total="9" passed="1" failed="8" skipped="0">
     <test-suite id="benchmark.cis_v140_2_1" name="2.1 Simple Storage Service (S3)" duration="2394643628" testcasecount="9" total="9" passed="1" failed="8" skipped="0">
-     <test-suite id="control.cis_v140_2_1_1" name="2.1.1 Ensure all S3 buckets employ encryption-at-rest" duration="-8423116900">
+     <test-suite id="control.cis_v140_2_1_1" name="2.1.1 Ensure all S3 buckets employ encryption-at-rest" duration="8423116900">
       <failure>
        <message><![CDATA[AccessDenied: Access Denied
 	status code: 403, request id: DBV6FG6F2HX556VN, host id: I6BfhphmhAfCJEdd+6pgoGJDuteYU1jhzr4UJX2oVRY6f8rqwIvwXmQ5BbJSMDodXwC2s9CpGjk=]]></message>
@@ -15990,7 +15990,7 @@
        </property>
       </properties>
      </test-suite>
-     <test-suite id="control.cis_v140_2_1_2" name="2.1.2 Ensure S3 Bucket Policy is set to deny HTTP requests" duration="-26986636977">
+     <test-suite id="control.cis_v140_2_1_2" name="2.1.2 Ensure S3 Bucket Policy is set to deny HTTP requests" duration="26986636977">
       <test-case id="control.cis_v140_2_1_2:0" name="control.cis_v140_2_1_2" result="Failed">
        <properties>
         <property>
@@ -16102,7 +16102,7 @@
        </property>
       </properties>
      </test-suite>
-     <test-suite id="control.cis_v140_2_1_3" name="2.1.3 Ensure MFA Delete is enabled on S3 buckets" duration="-8349942240">
+     <test-suite id="control.cis_v140_2_1_3" name="2.1.3 Ensure MFA Delete is enabled on S3 buckets" duration="8349942240">
       <failure>
        <message><![CDATA[AccessDenied: Access Denied
 	status code: 403, request id: DBV8B56CW5MAZG14, host id: OV6twiQBwX9nBR54uCiwkmCrqH/WXERO3Zr6HfurINzl2rpLD53mKbhtTbz23cxtD+hz4asQ3Ek=]]></message>
@@ -16118,7 +16118,7 @@
        </property>
       </properties>
      </test-suite>
-     <test-suite id="control.cis_v140_2_1_4" name="2.1.4 Ensure all data in Amazon S3 has been discovered, classified and secured when required" duration="-23441482478">
+     <test-suite id="control.cis_v140_2_1_4" name="2.1.4 Ensure all data in Amazon S3 has been discovered, classified and secured when required" duration="23441482478">
       <test-case id="control.cis_v140_2_1_4:0" name="control.cis_v140_2_1_4" result="Passed">
        <properties>
         <property>
@@ -16146,7 +16146,7 @@
        </property>
       </properties>
      </test-suite>
-     <test-suite id="control.cis_v140_2_1_5" name="2.1.5 Ensure that S3 Buckets are configured with &#39;Block public access (bucket settings)&#39;" duration="-20906083168">
+     <test-suite id="control.cis_v140_2_1_5" name="2.1.5 Ensure that S3 Buckets are configured with &#39;Block public access (bucket settings)&#39;" duration="20906083168">
       <failure>
        <message><![CDATA[AccessDenied: Access Denied
 	status code: 403, request id: RXC2HYH4CGM5BV7H, host id: fukA1dmNzDd7jC91Z9LovOI8vjFSAecG8+f8hpBWdIxn7GbZzlmlj2eAySgSP94nZl1/8q7R52U=]]></message>
@@ -16170,7 +16170,7 @@
      </properties>
     </test-suite>
     <test-suite id="benchmark.cis_v140_2_2" name="2.2 Elastic Compute Cloud (EC2)" duration="270584366" testcasecount="0" total="0" passed="0" failed="0" skipped="0">
-     <test-suite id="control.cis_v140_2_2_1" name="2.2.1 Ensure EBS volume encryption is enabled" duration="-24624498670">
+     <test-suite id="control.cis_v140_2_2_1" name="2.2.1 Ensure EBS volume encryption is enabled" duration="24624498670">
       <properties>
        <property>
         <key>type</key>
@@ -16190,7 +16190,7 @@
      </properties>
     </test-suite>
     <test-suite id="benchmark.cis_v140_2_3" name="2.3 Relational Database Service (RDS)" duration="257920537" testcasecount="0" total="0" passed="0" failed="0" skipped="0">
-     <test-suite id="control.cis_v140_2_3_1" name="2.3.1 Ensure that encryption is enabled for RDS Instances" duration="-14931582940">
+     <test-suite id="control.cis_v140_2_3_1" name="2.3.1 Ensure that encryption is enabled for RDS Instances" duration="14931582940">
       <properties>
        <property>
         <key>type</key>
@@ -16217,7 +16217,7 @@
     </properties>
    </test-suite>
    <test-suite id="benchmark.cis_v140_3" name="3 Logging" duration="7209250219" testcasecount="34" total="34" passed="1" failed="33" skipped="0">
-    <test-suite id="control.cis_v140_3_1" name="3.1 Ensure CloudTrail is enabled in all regions" duration="-13241278749">
+    <test-suite id="control.cis_v140_3_1" name="3.1 Ensure CloudTrail is enabled in all regions" duration="13241278749">
      <properties>
       <property>
        <key>type</key>
@@ -16229,7 +16229,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_3_2" name="3.2 Ensure CloudTrail log file validation is enabled" duration="-13472321055">
+    <test-suite id="control.cis_v140_3_2" name="3.2 Ensure CloudTrail log file validation is enabled" duration="13472321055">
      <properties>
       <property>
        <key>type</key>
@@ -16241,7 +16241,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_3_3" name="3.3 Ensure the S3 bucket used to store CloudTrail logs is not publicly accessible" duration="-23365348780">
+    <test-suite id="control.cis_v140_3_3" name="3.3 Ensure the S3 bucket used to store CloudTrail logs is not publicly accessible" duration="23365348780">
      <properties>
       <property>
        <key>type</key>
@@ -16253,7 +16253,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_3_4" name="3.4 Ensure CloudTrail trails are integrated with CloudWatch Logs" duration="-15118786169">
+    <test-suite id="control.cis_v140_3_4" name="3.4 Ensure CloudTrail trails are integrated with CloudWatch Logs" duration="15118786169">
      <properties>
       <property>
        <key>type</key>
@@ -16265,7 +16265,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_3_5" name="3.5 Ensure AWS Config is enabled in all regions" duration="-20016438863">
+    <test-suite id="control.cis_v140_3_5" name="3.5 Ensure AWS Config is enabled in all regions" duration="20016438863">
      <test-case id="control.cis_v140_3_5:0" name="control.cis_v140_3_5" result="Failed">
       <properties>
        <property>
@@ -16717,7 +16717,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_3_6" name="3.6 Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket" duration="-13740142294">
+    <test-suite id="control.cis_v140_3_6" name="3.6 Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket" duration="13740142294">
      <properties>
       <property>
        <key>type</key>
@@ -16729,7 +16729,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_3_7" name="3.7 Ensure CloudTrail logs are encrypted at rest using KMS CMKs" duration="-14531416359">
+    <test-suite id="control.cis_v140_3_7" name="3.7 Ensure CloudTrail logs are encrypted at rest using KMS CMKs" duration="14531416359">
      <properties>
       <property>
        <key>type</key>
@@ -16741,7 +16741,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_3_8" name="3.8 Ensure rotation for customer created CMKs is enabled" duration="-27836740205">
+    <test-suite id="control.cis_v140_3_8" name="3.8 Ensure rotation for customer created CMKs is enabled" duration="27836740205">
      <test-case id="control.cis_v140_3_8:0" name="control.cis_v140_3_8" result="Passed">
       <properties>
        <property>
@@ -16773,7 +16773,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_3_9" name="3.9 Ensure VPC flow logging is enabled in all VPCs" duration="-14859392074">
+    <test-suite id="control.cis_v140_3_9" name="3.9 Ensure VPC flow logging is enabled in all VPCs" duration="14859392074">
      <test-case id="control.cis_v140_3_9:0" name="control.cis_v140_3_9" result="Failed">
       <properties>
        <property>
@@ -16805,7 +16805,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_3_10" name="3.10 Ensure that Object-level logging for write events is enabled for S3 bucket" duration="-17559384401">
+    <test-suite id="control.cis_v140_3_10" name="3.10 Ensure that Object-level logging for write events is enabled for S3 bucket" duration="17559384401">
      <test-case id="control.cis_v140_3_10:0" name="control.cis_v140_3_10" result="Failed">
       <properties>
        <property>
@@ -16917,7 +16917,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_3_11" name="3.11 Ensure that Object-level logging for read events is enabled for S3 bucket" duration="-26987753678">
+    <test-suite id="control.cis_v140_3_11" name="3.11 Ensure that Object-level logging for read events is enabled for S3 bucket" duration="26987753678">
      <test-case id="control.cis_v140_3_11:0" name="control.cis_v140_3_11" result="Failed">
       <properties>
        <property>
@@ -17037,7 +17037,7 @@
     </properties>
    </test-suite>
    <test-suite id="benchmark.cis_v140_4" name="4 Monitoring" duration="8878302299" testcasecount="15" total="15" passed="0" failed="15" skipped="0">
-    <test-suite id="control.cis_v140_4_1" name="4.1 Ensure a log metric filter and alarm exist for unauthorized API calls" duration="-23340573148">
+    <test-suite id="control.cis_v140_4_1" name="4.1 Ensure a log metric filter and alarm exist for unauthorized API calls" duration="23340573148">
      <test-case id="control.cis_v140_4_1:0" name="control.cis_v140_4_1" result="Failed">
       <properties>
        <property>
@@ -17065,7 +17065,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_2" name="4.2 Ensure a log metric filter and alarm exist for Management Console sign-in without MFA" duration="-23348616027">
+    <test-suite id="control.cis_v140_4_2" name="4.2 Ensure a log metric filter and alarm exist for Management Console sign-in without MFA" duration="23348616027">
      <test-case id="control.cis_v140_4_2:0" name="control.cis_v140_4_2" result="Failed">
       <properties>
        <property>
@@ -17093,7 +17093,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_3" name="4.3 Ensure a log metric filter and alarm exist for usage of &#39;root&#39; account" duration="-21828327788">
+    <test-suite id="control.cis_v140_4_3" name="4.3 Ensure a log metric filter and alarm exist for usage of &#39;root&#39; account" duration="21828327788">
      <test-case id="control.cis_v140_4_3:0" name="control.cis_v140_4_3" result="Failed">
       <properties>
        <property>
@@ -17121,7 +17121,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_4" name="4.4 Ensure a log metric filter and alarm exist for IAM policy changes" duration="-23350207980">
+    <test-suite id="control.cis_v140_4_4" name="4.4 Ensure a log metric filter and alarm exist for IAM policy changes" duration="23350207980">
      <test-case id="control.cis_v140_4_4:0" name="control.cis_v140_4_4" result="Failed">
       <properties>
        <property>
@@ -17149,7 +17149,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_5" name="4.5 Ensure a log metric filter and alarm exist for CloudTrail configuration changes" duration="-23659664666">
+    <test-suite id="control.cis_v140_4_5" name="4.5 Ensure a log metric filter and alarm exist for CloudTrail configuration changes" duration="23659664666">
      <test-case id="control.cis_v140_4_5:0" name="control.cis_v140_4_5" result="Failed">
       <properties>
        <property>
@@ -17177,7 +17177,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_6" name="4.6 Ensure a log metric filter and alarm exist for AWS Management Console authentication failures" duration="-23610062878">
+    <test-suite id="control.cis_v140_4_6" name="4.6 Ensure a log metric filter and alarm exist for AWS Management Console authentication failures" duration="23610062878">
      <test-case id="control.cis_v140_4_6:0" name="control.cis_v140_4_6" result="Failed">
       <properties>
        <property>
@@ -17205,7 +17205,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_7" name="4.7 Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created CMKs" duration="-25273111805">
+    <test-suite id="control.cis_v140_4_7" name="4.7 Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created CMKs" duration="25273111805">
      <test-case id="control.cis_v140_4_7:0" name="control.cis_v140_4_7" result="Failed">
       <properties>
        <property>
@@ -17233,7 +17233,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_8" name="4.8 Ensure a log metric filter and alarm exist for S3 bucket policy changes" duration="-21883705852">
+    <test-suite id="control.cis_v140_4_8" name="4.8 Ensure a log metric filter and alarm exist for S3 bucket policy changes" duration="21883705852">
      <test-case id="control.cis_v140_4_8:0" name="control.cis_v140_4_8" result="Failed">
       <properties>
        <property>
@@ -17261,7 +17261,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_9" name="4.9 Ensure a log metric filter and alarm exist for AWS Config configuration changes" duration="-23409709975">
+    <test-suite id="control.cis_v140_4_9" name="4.9 Ensure a log metric filter and alarm exist for AWS Config configuration changes" duration="23409709975">
      <test-case id="control.cis_v140_4_9:0" name="control.cis_v140_4_9" result="Failed">
       <properties>
        <property>
@@ -17289,7 +17289,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_10" name="4.10 Ensure a log metric filter and alarm exist for security group changes" duration="-23428875094">
+    <test-suite id="control.cis_v140_4_10" name="4.10 Ensure a log metric filter and alarm exist for security group changes" duration="23428875094">
      <test-case id="control.cis_v140_4_10:0" name="control.cis_v140_4_10" result="Failed">
       <properties>
        <property>
@@ -17317,7 +17317,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_11" name="4.11 Ensure a log metric filter and alarm exist for changes to Network Access Control Lists (NACL)" duration="-23666156228">
+    <test-suite id="control.cis_v140_4_11" name="4.11 Ensure a log metric filter and alarm exist for changes to Network Access Control Lists (NACL)" duration="23666156228">
      <test-case id="control.cis_v140_4_11:0" name="control.cis_v140_4_11" result="Failed">
       <properties>
        <property>
@@ -17345,7 +17345,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_12" name="4.12 Ensure a log metric filter and alarm exist for changes to network gateways" duration="-23509296500">
+    <test-suite id="control.cis_v140_4_12" name="4.12 Ensure a log metric filter and alarm exist for changes to network gateways" duration="23509296500">
      <test-case id="control.cis_v140_4_12:0" name="control.cis_v140_4_12" result="Failed">
       <properties>
        <property>
@@ -17373,7 +17373,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_13" name="4.13 Ensure a log metric filter and alarm exist for route table changes" duration="-23504995215">
+    <test-suite id="control.cis_v140_4_13" name="4.13 Ensure a log metric filter and alarm exist for route table changes" duration="23504995215">
      <test-case id="control.cis_v140_4_13:0" name="control.cis_v140_4_13" result="Failed">
       <properties>
        <property>
@@ -17401,7 +17401,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_14" name="4.14 Ensure a log metric filter and alarm exist for VPC changes" duration="-23586866503">
+    <test-suite id="control.cis_v140_4_14" name="4.14 Ensure a log metric filter and alarm exist for VPC changes" duration="23586866503">
      <test-case id="control.cis_v140_4_14:0" name="control.cis_v140_4_14" result="Failed">
       <properties>
        <property>
@@ -17429,7 +17429,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_4_15" name="4.15 Ensure a log metric filter and alarm exists for AWS Organizations changes" duration="-23722498816">
+    <test-suite id="control.cis_v140_4_15" name="4.15 Ensure a log metric filter and alarm exists for AWS Organizations changes" duration="23722498816">
      <test-case id="control.cis_v140_4_15:0" name="control.cis_v140_4_15" result="Failed">
       <properties>
        <property>
@@ -17465,7 +17465,7 @@
     </properties>
    </test-suite>
    <test-suite id="benchmark.cis_v140_5" name="5 Networking" duration="95295716" testcasecount="4" total="4" passed="2" failed="2" skipped="0">
-    <test-suite id="control.cis_v140_5_1" name="5.1 Ensure no Network ACLs allow ingress from 0.0.0.0/0 to remote server administration ports" duration="-24524653590">
+    <test-suite id="control.cis_v140_5_1" name="5.1 Ensure no Network ACLs allow ingress from 0.0.0.0/0 to remote server administration ports" duration="24524653590">
      <test-case id="control.cis_v140_5_1:0" name="control.cis_v140_5_1" result="Failed">
       <properties>
        <property>
@@ -17497,7 +17497,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_5_2" name="5.2 Ensure no security groups allow ingress from 0.0.0.0/0 to remote server administration ports" duration="-23986772684">
+    <test-suite id="control.cis_v140_5_2" name="5.2 Ensure no security groups allow ingress from 0.0.0.0/0 to remote server administration ports" duration="23986772684">
      <test-case id="control.cis_v140_5_2:0" name="control.cis_v140_5_2" result="Passed">
       <properties>
        <property>
@@ -17529,7 +17529,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_5_3" name="5.3 Ensure the default security group of every VPC restricts all traffic" duration="-24312158281">
+    <test-suite id="control.cis_v140_5_3" name="5.3 Ensure the default security group of every VPC restricts all traffic" duration="24312158281">
      <test-case id="control.cis_v140_5_3:0" name="control.cis_v140_5_3" result="Failed">
       <properties>
        <property>
@@ -17561,7 +17561,7 @@
       </property>
      </properties>
     </test-suite>
-    <test-suite id="control.cis_v140_5_4" name="5.4 Ensure routing tables for VPC peering are &#34;least access&#34;" duration="-23520838485">
+    <test-suite id="control.cis_v140_5_4" name="5.4 Ensure routing tables for VPC peering are &#34;least access&#34;" duration="23520838485">
      <test-case id="control.cis_v140_5_4:0" name="control.cis_v140_5_4" result="Passed">
       <properties>
        <property>
