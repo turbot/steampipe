@@ -446,7 +446,33 @@ func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
 // get the parent item for this ModTreeItem
 func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 	var parents []ModTreeItem
+
+	for _, query := range m.Queries {
+		if query.Name() == item.Name() {
+			parents = append(parents, m)
+		}
+	}
+	for _, controls := range m.Controls {
+		if controls.Name() == item.Name() {
+			parents = append(parents, m)
+		}
+	}
+	for _, variable := range m.Variables {
+		if variable.Name() == item.Name() {
+			parents = append(parents, m)
+		}
+	}
+	for _, local := range m.Locals {
+		if local.Name() == item.Name() {
+			parents = append(parents, m)
+		}
+	}
+
 	for _, benchmark := range m.Benchmarks {
+		// is mod the parent?
+		if benchmark.Name() == item.Name() {
+			parents = append(parents, m)
+		}
 		if benchmark.ChildNames == nil {
 			continue
 		}
@@ -458,6 +484,9 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 		}
 	}
 	for _, report := range m.Reports {
+		if report.Name() == item.Name() {
+			parents = append(parents, m)
+		}
 		// check all child names of this benchmark for a matching name
 		for _, child := range report.GetChildren() {
 			if child.Name() == item.Name() {
@@ -466,6 +495,9 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 		}
 	}
 	for _, panel := range m.Panels {
+		if panel.Name() == item.Name() {
+			parents = append(parents, m)
+		}
 		// check all child names of this benchmark for a matching name
 		for _, child := range panel.GetChildren() {
 			if child.Name() == item.Name() {

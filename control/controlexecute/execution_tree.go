@@ -49,13 +49,13 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	}
 
 	// now identify the root item of the control list
-	rootItems, err := executionTree.getExecutionRootFromArg(arg)
+	rootItem, err := executionTree.getExecutionRootFromArg(arg)
 	if err != nil {
 		return nil, err
 	}
 
 	// build tree of result groups, starting with a synthetic 'root' node
-	executionTree.Root = NewRootResultGroup(executionTree, rootItems...)
+	executionTree.Root = NewRootResultGroup(executionTree, rootItem)
 
 	// after tree has built, ControlCount will be set - create progress rendered
 	executionTree.progress = NewControlProgressRenderer(len(executionTree.controlRuns))
@@ -192,16 +192,18 @@ func (e *ExecutionTree) ShouldIncludeControl(controlName string) bool {
 // - if the arg is a benchmark name, the root will be the Benchmark with that name
 // - if the arg is a mod name, the root will be the Mod with that name
 // - if the arg is 'all' the root will be a node with all Mods as children
-func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTreeItem, error) {
-	var res []modconfig.ModTreeItem
+func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeItem, error) {
 	// special case handling for the string "all"
 	if arg == "all" {
-		//
-		// build list of all workspace mods - these will act as root items
-		for _, m := range e.workspace.Mods {
-			res = append(res, m)
+		// return the workspace mod as root
+		return e.workspace.Mod, nil
+	}
+
+	// if the arg is the name of one of the workjspace dependen
+	for _, mod := range e.workspace.Mods {
+		if mod.ShortName == arg {
+			return mod, nil
 		}
-		return res, nil
 	}
 
 	// what resource type is arg?
@@ -215,17 +217,17 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTree
 	case modconfig.BlockTypeControl:
 		// check whether the arg is a control name
 		if control, ok := e.workspace.Controls[arg]; ok {
-			return []modconfig.ModTreeItem{control}, nil
+			return control, nil
 		}
 	case modconfig.BlockTypeBenchmark:
 		// look in the workspace control group map for this control group
 		if benchmark, ok := e.workspace.Benchmarks[arg]; ok {
-			return []modconfig.ModTreeItem{benchmark}, nil
+			return benchmark, nil
 		}
 	case modconfig.BlockTypeMod:
 		// get all controls for the mod
 		if mod, ok := e.workspace.Mods[arg]; ok {
-			return []modconfig.ModTreeItem{mod}, nil
+			return mod, nil
 		}
 	}
 	return nil, fmt.Errorf("no controls found matching argument '%s'", arg)
