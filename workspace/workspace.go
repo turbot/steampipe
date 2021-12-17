@@ -291,7 +291,7 @@ func (w *Workspace) loadWorkspaceMod() error {
 
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
-func (w *Workspace) getRunContext()(*parse.RunContext, error) {
+func (w *Workspace) getRunContext() (*parse.RunContext, error) {
 	parseFlag := parse.CreateDefaultMod
 	if w.loadPseudoResources {
 		parseFlag |= parse.CreatePseudoResources
@@ -302,7 +302,7 @@ func (w *Workspace) getRunContext()(*parse.RunContext, error) {
 		return nil, fmt.Errorf("failed to load installation cache from %s: %s", w.Path, err)
 	}
 
-	runCtx :=  parse.NewRunContext(
+	runCtx := parse.NewRunContext(
 		workspaceLock,
 		w.Path,
 		parseFlag,
