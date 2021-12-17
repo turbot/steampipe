@@ -174,7 +174,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		err = displayControlResults(ctx, executionTree)
 		utils.FailOnError(err)
 
-		if len(exportFormats) > 0 {
+		if len(exportFormats) > 0 && ctx.Err() == nil {
 			d := exportData{executionTree: executionTree, exportFormats: exportFormats, errorsLock: &exportErrorsLock, errors: exportErrors, waitGroup: &exportWaitGroup}
 			exportCheckResult(ctx, &d)
 		}
@@ -184,6 +184,13 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// wait for exports to complete
 	exportWaitGroup.Wait()
+
+	if ctx.Err() != nil {
+		// context was cancelled
+		exitCode = -1
+		return
+	}
+
 	if len(exportErrors) > 0 {
 		utils.ShowError(utils.CombineErrors(exportErrors...))
 	}
@@ -288,8 +295,8 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 	// register EnsureSessionData as a callback on the client.
 	// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 	// so our client object calls this callback to restore the session data
-	initData.client.SetEnsureSessionDataFunc(func(ctx context.Context, conn *db_common.DatabaseSession) (error, []string) {
-		return workspace.EnsureSessionData(ctx, sessionDataSource, conn)
+	initData.client.SetEnsureSessionDataFunc(func(lCtx context.Context, conn *db_common.DatabaseSession) (error, []string) {
+		return workspace.EnsureSessionData(lCtx, sessionDataSource, conn)
 	})
 
 	return initData

@@ -37,7 +37,7 @@ type ControlRun struct {
 	Summary StatusSummary      `json:"-"`
 
 	// execution duration
-	Duration time.Duration `json:"-"`
+	Duration time.Duration `json:"duration"`
 
 	// used to trace the events within the duration of a control execution
 	Lifecycle *utils.LifecycleTimer `json:"-"`
@@ -139,6 +139,8 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	control := r.Control
 	log.Printf("[TRACE] control start, %s\n", control.Name())
 
+	startTime := time.Now()
+
 	// function to cleanup and update status after control run completion
 	defer func() {
 		// update the result group status with our status - this will be passed all the way up the execution tree
@@ -147,9 +149,17 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 			r.group.updateSeverityCounts(r.Severity, r.Summary)
 		}
 		r.Lifecycle.Add("execute_end")
-		r.Duration = r.Lifecycle.GetDuration()
+		r.Duration = time.Since(startTime)
+		if r.group != nil {
+			r.group.AddDuration(r.Duration)
+		}
 		log.Printf("[TRACE] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.executionTree.progress.executing)
 	}()
+
+	if utils.IsContextCancelled(ctx) {
+		r.SetError(ctx.Err())
+		return
+	}
 
 	// get a db connection
 	r.Lifecycle.Add("queued_for_session")
@@ -158,7 +168,6 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 		if !utils.IsCancelledError(sessionResult.Error) {
 			sessionResult.Error = fmt.Errorf("error acquiring database connection, %s", sessionResult.Error.Error())
 		}
-		r.SetError(sessionResult.Error)
 		return
 	}
 	r.Lifecycle.Add("got_session")

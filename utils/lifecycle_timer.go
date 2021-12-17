@@ -16,10 +16,11 @@ func NewLifecycleTimer() *LifecycleTimer {
 	return &LifecycleTimer{}
 }
 
-// GetDuration returns the duration between two events - if both exist
+// GetDuration returns the duration between first and the last event
 func (r LifecycleTimer) GetDuration() time.Duration {
-
-	return r.events[0].Time.Sub(r.events[len(r.events)-1].Time)
+	lastEvent := r.events[len(r.events)-1]
+	firstEvent := r.events[0]
+	return lastEvent.Time.Sub(firstEvent.Time)
 }
 
 func (r *LifecycleTimer) Add(event string) {
