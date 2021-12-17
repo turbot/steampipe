@@ -32,6 +32,9 @@ func (c *InteractiveClient) readInitDataStream() {
 		return
 	}
 
+	// asyncronously fetch the schema
+	go c.LoadSchema()
+
 	// now create prepared statements
 	log.Printf("[TRACE] readInitDataStream - data has arrived")
 
