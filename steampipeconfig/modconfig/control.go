@@ -202,11 +202,6 @@ func (c *Control) Name() string {
 	return c.FullName
 }
 
-// QualifiedName returns the name in format: '<modName>.control.<shortName>'
-func (q *Control) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", q.Mod.ShortName, q.FullName)
-}
-
 // QualifiedNameWithVersion returns the name in format: '<modName>@version.control.<shortName>'
 func (q *Control) QualifiedNameWithVersion() string {
 	return fmt.Sprintf("%s.%s", q.Mod.NameWithVersion(), q.FullName)
@@ -239,6 +234,7 @@ func (c *Control) AddReference(ref *ResourceReference) {
 // SetMod implements HclResource
 func (c *Control) SetMod(mod *Mod) {
 	c.Mod = mod
+	c.FullName = fmt.Sprintf("%s.%s", mod.ShortName, c.FullName)
 }
 
 // GetMod implements HclResource

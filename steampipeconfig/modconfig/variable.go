@@ -58,11 +58,6 @@ func (v *Variable) Name() string {
 	return v.FullName
 }
 
-// QualifiedName returns the name in format: '<modName>.var.<shortName>'
-func (v *Variable) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", v.metadata.ModName, v.FullName)
-}
-
 // GetMetadata implements ResourceWithMetadata
 func (v *Variable) GetMetadata() *ResourceMetadata {
 	return v.metadata
@@ -82,6 +77,7 @@ func (v *Variable) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (v *Variable) SetMod(mod *Mod) {
 	v.Mod = mod
+	v.FullName = fmt.Sprintf("%s.%s", mod.ShortName, v.FullName)
 }
 
 // GetMod implements HclResource

@@ -85,11 +85,6 @@ func (p *Panel) Name() string {
 	return p.FullName
 }
 
-// QualifiedName returns the name in format: '<modName>.panel.<shortName>'
-func (p *Panel) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", p.metadata.ModName, p.FullName)
-}
-
 // OnDecoded implements HclResource
 func (p *Panel) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
@@ -99,6 +94,7 @@ func (p *Panel) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (p *Panel) SetMod(mod *Mod) {
 	p.Mod = mod
+	p.FullName = fmt.Sprintf("%s.%s", mod.ShortName, p.FullName)
 }
 
 // GetMod implements HclResource

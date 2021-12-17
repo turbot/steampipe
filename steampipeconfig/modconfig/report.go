@@ -45,11 +45,6 @@ func (r *Report) Name() string {
 	return r.FullName
 }
 
-// QualifiedName returns the name in format: '<modName>.report.<shortName>'
-func (r *Report) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", r.metadata.ModName, r.FullName)
-}
-
 // OnDecoded implements HclResource
 func (r *Report) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
@@ -61,6 +56,7 @@ func (r *Report) AddReference(*ResourceReference) {
 // SetMod implements HclResource
 func (r *Report) SetMod(mod *Mod) {
 	r.Mod = mod
+	r.FullName = fmt.Sprintf("%s.%s", mod.ShortName, r.FullName)
 }
 
 // GetMod implements HclResource

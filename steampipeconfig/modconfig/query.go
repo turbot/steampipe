@@ -151,16 +151,6 @@ func (q *Query) Name() string {
 	return q.FullName
 }
 
-// QualifiedName returns the name in format: '<modName>.query.<shortName>'
-func (q *Query) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", q.Mod.ShortName, q.FullName)
-}
-
-// QualifiedNameWithVersion returns the name in format: '<modName>@version.query.<shortName>'
-func (q *Query) QualifiedNameWithVersion() string {
-	return fmt.Sprintf("%s.%s", q.Mod.NameWithVersion(), q.FullName)
-}
-
 // GetMetadata implements ResourceWithMetadata
 func (q *Query) GetMetadata() *ResourceMetadata {
 	return q.metadata
@@ -182,6 +172,7 @@ func (q *Query) AddReference(ref *ResourceReference) {
 // SetMod implements HclResource
 func (q *Query) SetMod(mod *Mod) {
 	q.Mod = mod
+	q.FullName = fmt.Sprintf("%s.%s", mod.ShortName, q.FullName)
 }
 
 // GetMod implements HclResource

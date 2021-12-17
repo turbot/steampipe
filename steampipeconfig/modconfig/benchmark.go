@@ -113,6 +113,7 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 		nameMap[n.Name] = true
 	}
 
+	// in order to populate th echildren in the order specified, we create an empty array and populate by index in AddChild
 	b.children = make([]ModTreeItem, len(b.ChildNameStrings))
 	return res
 }
@@ -125,6 +126,7 @@ func (b *Benchmark) AddReference(ref *ResourceReference) {
 // SetMod implements HclResource
 func (b *Benchmark) SetMod(mod *Mod) {
 	b.Mod = mod
+	b.FullName = fmt.Sprintf("%s.%s", mod.ShortName, b.FullName)
 }
 
 // GetMod implements HclResource
@@ -237,7 +239,7 @@ func (b *Benchmark) GetPaths() []NodePath {
 }
 
 // Name implements ModTreeItem, HclResource, ResourceWithMetadata
-// return name in format: 'control.<shortName>'
+// return name in format: '<modname>.control.<shortName>'
 func (b *Benchmark) Name() string {
 	return b.FullName
 }
@@ -250,9 +252,4 @@ func (b *Benchmark) GetMetadata() *ResourceMetadata {
 // SetMetadata implements ResourceWithMetadata
 func (b *Benchmark) SetMetadata(metadata *ResourceMetadata) {
 	b.metadata = metadata
-}
-
-// QualifiedName returns the name in format: '<modName>.control.<shortName>'
-func (b *Benchmark) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", b.metadata.ModName, b.FullName)
 }

@@ -31,7 +31,7 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 	}()
 
 	runCtx := parentRunCtx
-	// create a run context for this mod
+	// if this it not the root mod, create child a run context for its evaluation
 	if modPath != parentRunCtx.RootEvalPath {
 		runCtx = parse.NewRunContext(
 			parentRunCtx.WorkspaceLock,
@@ -104,8 +104,10 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 	}
 
 	// now add fully populated mod to the parent run context
-	parentRunCtx.CurrentMod = mod
-	parentRunCtx.AddMod(mod)
+	if modPath != parentRunCtx.RootEvalPath {
+		parentRunCtx.CurrentMod = mod
+		parentRunCtx.AddMod(mod)
+	}
 
 	return mod, err
 }

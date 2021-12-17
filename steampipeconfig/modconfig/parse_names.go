@@ -57,6 +57,18 @@ func ParseResourceName(fullName string) (res *ParsedResourceName, err error) {
 	return
 }
 
+// UnqualifiedResourceName removes the mod prefix from the given name
+func UnqualifiedResourceName(fullName string) string {
+	parts := strings.Split(fullName, ".")
+	switch len(parts) {
+	case 3:
+		return strings.Join(parts[1:], ".")
+	default:
+		return fullName
+	}
+
+}
+
 func ParseResourcePropertyPath(propertyPath string) (res *ParsedPropertyPath, err error) {
 	res = &ParsedPropertyPath{}
 

@@ -11,7 +11,6 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
@@ -347,15 +346,14 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 	for _, q := range w.Mod.Queries {
 		// add 'local' alias
 		res[q.Name()] = q
-		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.ShortName), q.ShortName)
-		res[longName] = q
+		res[modconfig.UnqualifiedResourceName(q.Name())] = q
 	}
 
 	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
 			// if this mod is a direct dependency of the workspace mod, add it to the map _without_ a verison
-			res[q.QualifiedName()] = q
+			res[q.Name()] = q
 
 		}
 	}
@@ -369,13 +367,13 @@ func (w *Workspace) buildControlMap(modMap modconfig.ModMap) map[string]*modconf
 	// for LOCAL resources, add map entries keyed by both short name: control.<shortName> and  long name: <modName>.control.<shortName?
 	for _, c := range w.Mod.Controls {
 		res[c.Name()] = c
-		res[c.QualifiedName()] = c
+		res[modconfig.UnqualifiedResourceName(c.Name())] = c
 	}
 
 	// for mode dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, c := range mod.Controls {
-			res[c.QualifiedName()] = c
+			res[c.Name()] = c
 		}
 	}
 	return res
@@ -385,16 +383,16 @@ func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) map[string]*modco
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Benchmark)
 
-	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
+	// for LOCAL resources, add map entries keyed by both unqualified name: benchmark.<shortName> and full name: <modName>.benchmark.<shortName?
 	for _, b := range w.Mod.Benchmarks {
+		res[modconfig.UnqualifiedResourceName(b.Name())] = b
 		res[b.Name()] = b
-		res[b.QualifiedName()] = b
 	}
 
 	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, c := range mod.Benchmarks {
-			res[c.QualifiedName()] = c
+			res[c.Name()] = c
 		}
 	}
 	return res
@@ -407,13 +405,13 @@ func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfi
 	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
 	for _, r := range w.Mod.Reports {
 		res[r.Name()] = r
-		res[r.QualifiedName()] = r
+		res[modconfig.UnqualifiedResourceName(r.Name())] = r
 	}
 
 	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, r := range mod.Reports {
-			res[r.QualifiedName()] = r
+			res[r.Name()] = r
 		}
 	}
 	return res
@@ -427,13 +425,13 @@ func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig
 	for _, p := range w.Mod.Panels {
 		res[fmt.Sprintf("local.%s", p.Name())] = p
 		res[p.Name()] = p
-		res[p.QualifiedName()] = p
+		res[modconfig.UnqualifiedResourceName(p.Name())] = p
 	}
 
 	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, p := range mod.Panels {
-			res[p.QualifiedName()] = p
+			res[p.Name()] = p
 		}
 	}
 	return res

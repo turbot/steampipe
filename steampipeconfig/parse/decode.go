@@ -539,12 +539,6 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	if res.Success() {
-		// if resource supports metadata, save it
-		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
-			body := block.Body.(*hclsyntax.Body)
-			diags = addResourceMetadata(resourceWithMetadata, body.SrcRange, runCtx)
-		}
-
 		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
 		if _, ok := resource.(*modconfig.Mod); !ok {
 			resource.SetMod(runCtx.CurrentMod)
@@ -552,6 +546,13 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 			moreDiags := runCtx.CurrentMod.AddResource(resource)
 			diags = append(diags, moreDiags...)
 		}
+
+		// if resource supports metadata, save it
+		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
+			body := block.Body.(*hclsyntax.Body)
+			diags = addResourceMetadata(resourceWithMetadata, body.SrcRange, runCtx)
+		}
+
 		// add resource into the run context
 		moreDiags := runCtx.AddResource(resource)
 		diags = append(diags, moreDiags...)

@@ -60,12 +60,6 @@ type Mod struct {
 	Variables  map[string]*Variable
 	Locals     map[string]*Local
 
-	// flat list of all resources
-	AllResources map[string]HclResource
-
-	// list of benchmark names, sorted alphabetically
-	benchmarksOrdered []string
-
 	// ModPath is the installation location of the mod
 	ModPath   string
 	DeclRange hcl.Range
@@ -76,19 +70,18 @@ type Mod struct {
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	mod := &Mod{
-		ShortName:    shortName,
-		FullName:     fmt.Sprintf("mod.%s", shortName),
-		Queries:      make(map[string]*Query),
-		Controls:     make(map[string]*Control),
-		Benchmarks:   make(map[string]*Benchmark),
-		Reports:      make(map[string]*Report),
-		Panels:       make(map[string]*Panel),
-		Variables:    make(map[string]*Variable),
-		Locals:       make(map[string]*Local),
-		ModPath:      modPath,
-		DeclRange:    defRange,
-		AllResources: make(map[string]HclResource),
-		Require:      newRequire(),
+		ShortName:  shortName,
+		FullName:   fmt.Sprintf("mod.%s", shortName),
+		Queries:    make(map[string]*Query),
+		Controls:   make(map[string]*Control),
+		Benchmarks: make(map[string]*Benchmark),
+		Reports:    make(map[string]*Report),
+		Panels:     make(map[string]*Panel),
+		Variables:  make(map[string]*Variable),
+		Locals:     make(map[string]*Local),
+		ModPath:    modPath,
+		DeclRange:  defRange,
+		Require:    newRequire(),
 	}
 
 	// try to derive mod version from the path
@@ -323,145 +316,6 @@ Benchmarks:
 	)
 }
 
-// BuildResourceTree builds the control tree structure by setting the parent property for each control and benchmar
-// NOTE: this also builds the sorted benchmark list
-func (m *Mod) BuildResourceTree() error {
-	// build sorted list of benchmarks
-	m.benchmarksOrdered = make([]string, len(m.Benchmarks))
-	idx := 0
-	for name, benchmark := range m.Benchmarks {
-		// save this benchmark name
-		m.benchmarksOrdered[idx] = name
-		idx++
-
-		// add benchmark into control tree
-		if err := m.addItemIntoResourceTree(benchmark); err != nil {
-			return err
-		}
-	}
-	// now sort the benchmark names
-	sort.Strings(m.benchmarksOrdered)
-
-	for _, control := range m.Controls {
-		if err := m.addItemIntoResourceTree(control); err != nil {
-			return err
-		}
-	}
-	for _, panel := range m.Panels {
-		if err := m.addItemIntoResourceTree(panel); err != nil {
-			return err
-		}
-	}
-	for _, report := range m.Reports {
-		if err := m.addItemIntoResourceTree(report); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
-	parents := m.getParents(item)
-
-	// so we have a result - add into tree
-	for _, p := range parents {
-		// TODO validity checking
-		//for _, parentPath := range p.GetPaths() {
-		//	// check this item does not exist in the parent path
-		//	if helpers.StringSliceContains(parentPath, item.Name()) {
-		//		return fmt.Errorf("cyclical dependency adding '%s' into control tree - parent '%s'", item.Name(), p.Name())
-		//	}
-		item.AddParent(p)
-		p.AddChild(item)
-		//}
-	}
-
-	return nil
-}
-
-func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	switch r := item.(type) {
-	case *Query:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Queries[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		}
-		m.Queries[name] = r
-
-	case *Control:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Controls[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		}
-		m.Controls[name] = r
-
-	case *Benchmark:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Benchmarks[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.Benchmarks[name] = r
-		}
-
-	case *Panel:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Panels[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.Panels[name] = r
-		}
-
-	case *Report:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Reports[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.Reports[name] = r
-		}
-
-	case *Variable:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Variables[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.Variables[name] = r
-		}
-
-	case *Local:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Locals[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.Locals[name] = r
-		}
-	}
-	m.AllResources[item.Name()] = item
-	return diags
-}
-
-func duplicateResourceDiagnostics(item HclResource) *hcl.Diagnostic {
-	return &hcl.Diagnostic{
-		Severity: hcl.DiagError,
-		Summary:  fmt.Sprintf("mod defines more than one resource named %s", item.Name()),
-		Subject:  item.GetDeclRange(),
-	}
-}
-
 func (m *Mod) NameWithVersion() string {
 	if m.VersionString == "" {
 		return m.ShortName
@@ -590,7 +444,6 @@ func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
 }
 
 // get the parent item for this ModTreeItem
-// first check all benchmarks - if they do not have this as child, default to the mod
 func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 	var parents []ModTreeItem
 	for _, benchmark := range m.Benchmarks {
@@ -620,10 +473,10 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 			}
 		}
 	}
-	if len(parents) == 0 {
-		// fall back on mod
-		parents = []ModTreeItem{m}
-	}
+	//if len(parents) == 0 {
+	//	// fall back on mod
+	//	parents = []ModTreeItem{m}
+	//}
 	return parents
 }
 
