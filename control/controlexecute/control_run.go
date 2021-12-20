@@ -178,7 +178,11 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	}
 	r.Lifecycle.Add("got_session")
 	dbSession := sessionResult.Session
-	defer dbSession.Close(true)
+	defer func() {
+		shouldWaitForCleanup := utils.IsContextCancelled(ctx)
+		log.Printf("[WARN] shouldWaitForCleanup %v %v", shouldWaitForCleanup, ctx.Err())
+		dbSession.Close(shouldWaitForCleanup)
+	}()
 
 	// set our status
 	r.runStatus = ControlRunStarted

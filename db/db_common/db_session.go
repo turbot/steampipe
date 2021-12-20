@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"runtime/debug"
 	"time"
 
 	"github.com/jackc/pgx/v4/stdlib"
@@ -39,20 +38,19 @@ func (s *DatabaseSession) UpdateUsage() {
 }
 
 func (s *DatabaseSession) Close(waitForCleanup bool) error {
-	debug.PrintStack()
 	var err error
 	if s.Connection != nil {
 		log.Printf("[TRACE] !@#$&*() wait for cleanup: %d :: %v\n", s.BackendPid, waitForCleanup)
 
 		if waitForCleanup {
 			s.Connection.Raw(func(driverConn interface{}) error {
-				log.Printf("[TRACE] !@#$&*() wait for cleanup :: %d\n", s.BackendPid)
+				log.Printf("[WARN] *********************** wait for cleanup :: %d\n", s.BackendPid)
 				conn := driverConn.(*stdlib.Conn)
 				select {
 				case <-time.After(5 * time.Second):
 					return context.DeadlineExceeded
 				case <-conn.Conn().PgConn().CleanupDone():
-					log.Printf("[TRACE] !@#$&*() cleanup done :: %d\n", s.BackendPid)
+					log.Printf("[WARN] ******************** cleanup done :: %d\n", s.BackendPid)
 					return nil
 				}
 			})

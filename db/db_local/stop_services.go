@@ -45,9 +45,9 @@ func ShutdownService(invoker constants.Invoker) {
 	// how many clients are connected
 	// under a fresh context
 	count, _ := GetCountOfConnectedClients(context.Background())
-	log.Printf("[TRACE] client count %v", count)
+	log.Printf("[WARN] client count %v", count)
 	if count > 0 {
-		log.Printf("[TRACE] not shutting down")
+		log.Printf("[WARN] not shutting down")
 		// there are other clients connected to the database
 		// we can't stop the DB.
 		return
@@ -72,6 +72,7 @@ func ShutdownService(invoker constants.Invoker) {
 
 // GetCountOfConnectedClients returns the number of clients currently connected to the service
 func GetCountOfConnectedClients(ctx context.Context) (i int, e error) {
+	log.Printf("[WARN] GetCountOfConnectedClients")
 	utils.LogTime("db_local.GetCountOfConnectedClients start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end:%d", i))
 
