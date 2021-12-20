@@ -68,7 +68,7 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 	controlId := control.Name()
 	// only show qualified control names for controls from dependent mods
 	if control.Mod.Name() == executionTree.workspace.Mod.Name() {
-		controlId = modconfig.UnqualifiedResourceName(controlId)
+		controlId = control.UnqualifiedName
 	}
 
 	res := &ControlRun{
