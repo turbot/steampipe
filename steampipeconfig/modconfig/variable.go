@@ -29,7 +29,8 @@ type Variable struct {
 	ParsingMode                var_config.VariableParsingMode
 	Mod                        *Mod
 
-	metadata *ResourceMetadata
+	metadata        *ResourceMetadata
+	UnqualifiedName string
 }
 
 func NewVariable(v *var_config.Variable) *Variable {
@@ -77,6 +78,7 @@ func (v *Variable) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (v *Variable) SetMod(mod *Mod) {
 	v.Mod = mod
+	v.UnqualifiedName = v.FullName
 	v.FullName = fmt.Sprintf("%s.%s", mod.ShortName, v.FullName)
 }
 

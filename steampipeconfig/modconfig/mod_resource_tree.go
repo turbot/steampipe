@@ -122,7 +122,8 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		}
 
 	case *Variable:
-		name := r.Name()
+		// NOTE: add variable by unqualified name
+		name := r.UnqualifiedName
 		// check for dupes
 		if _, ok := m.Variables[name]; ok {
 			diags = append(diags, duplicateResourceDiagnostics(item))
