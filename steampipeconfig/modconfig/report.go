@@ -58,6 +58,7 @@ func (r *Report) AddReference(*ResourceReference) {
 // SetMod implements HclResource
 func (r *Report) SetMod(mod *Mod) {
 	r.Mod = mod
+	r.UnqualifiedName = r.FullName
 	r.FullName = fmt.Sprintf("%s.%s", mod.ShortName, r.FullName)
 }
 

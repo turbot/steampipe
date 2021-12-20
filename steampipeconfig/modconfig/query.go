@@ -83,10 +83,9 @@ func (q *Query) Equals(other *Query) bool {
 
 func NewQuery(block *hcl.Block) *Query {
 	return &Query{
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("query.%s", block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("query.%s", block.Labels[0]),
-		DeclRange:       block.DefRange,
+		ShortName: block.Labels[0],
+		FullName:  fmt.Sprintf("query.%s", block.Labels[0]),
+		DeclRange: block.DefRange,
 	}
 }
 
@@ -174,6 +173,7 @@ func (q *Query) AddReference(ref *ResourceReference) {
 // SetMod implements HclResource
 func (q *Query) SetMod(mod *Mod) {
 	q.Mod = mod
+	q.UnqualifiedName = q.FullName
 	q.FullName = fmt.Sprintf("%s.%s", mod.ShortName, q.FullName)
 }
 

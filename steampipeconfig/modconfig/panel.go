@@ -96,6 +96,7 @@ func (p *Panel) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (p *Panel) SetMod(mod *Mod) {
 	p.Mod = mod
+	p.UnqualifiedName = p.FullName
 	p.FullName = fmt.Sprintf("%s.%s", mod.ShortName, p.FullName)
 }
 
