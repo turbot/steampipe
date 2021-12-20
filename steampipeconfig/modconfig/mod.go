@@ -447,32 +447,7 @@ func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
 func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 	var parents []ModTreeItem
 
-	for _, query := range m.Queries {
-		if query.Name() == item.Name() {
-			parents = append(parents, m)
-		}
-	}
-	for _, controls := range m.Controls {
-		if controls.Name() == item.Name() {
-			parents = append(parents, m)
-		}
-	}
-	for _, variable := range m.Variables {
-		if variable.Name() == item.Name() {
-			parents = append(parents, m)
-		}
-	}
-	for _, local := range m.Locals {
-		if local.Name() == item.Name() {
-			parents = append(parents, m)
-		}
-	}
-
 	for _, benchmark := range m.Benchmarks {
-		// is mod the parent?
-		if benchmark.Name() == item.Name() {
-			parents = append(parents, m)
-		}
 		if benchmark.ChildNames == nil {
 			continue
 		}
@@ -484,9 +459,6 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 		}
 	}
 	for _, report := range m.Reports {
-		if report.Name() == item.Name() {
-			parents = append(parents, m)
-		}
 		// check all child names of this benchmark for a matching name
 		for _, child := range report.GetChildren() {
 			if child.Name() == item.Name() {
@@ -505,11 +477,52 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 			}
 		}
 	}
-	//if len(parents) == 0 {
-	//	// fall back on mod
-	//	parents = []ModTreeItem{m}
-	//}
+	// if this item has no parents and is a child of the mod, set the mod as parent
+	if len(parents) == 0 && m.hasChild(item) {
+		parents = []ModTreeItem{m}
+
+	}
 	return parents
+}
+
+// is the given item a child of the mod
+func (m *Mod) hasChild(item ModTreeItem) bool {
+	for _, q := range m.Queries {
+		if q.Name() == item.Name() {
+			return true
+		}
+	}
+	for _, b := range m.Benchmarks {
+		if b.Name() == item.Name() {
+			return true
+		}
+	}
+	for _, r := range m.Reports {
+		if r.Name() == item.Name() {
+			return true
+		}
+	}
+	for _, p := range m.Panels {
+		if p.Name() == item.Name() {
+			return true
+		}
+	}
+	for _, c := range m.Controls {
+		if c.Name() == item.Name() {
+			return true
+		}
+	}
+	for _, v := range m.Variables {
+		if v.Name() == item.Name() {
+			return true
+		}
+	}
+	for _, l := range m.Locals {
+		if l.Name() == item.Name() {
+			return true
+		}
+	}
+	return false
 }
 
 // GetChildControls return a flat list of controls underneath the mod
