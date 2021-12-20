@@ -178,7 +178,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	}
 	r.Lifecycle.Add("got_session")
 	dbSession := sessionResult.Session
-	defer dbSession.Close()
+	defer dbSession.Close(true)
 
 	// set our status
 	r.runStatus = ControlRunStarted

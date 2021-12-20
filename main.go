@@ -1,14 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/go-kit/helpers"
 
 	"github.com/hashicorp/go-hclog"
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/utils"
 )
@@ -39,6 +40,30 @@ func main() {
 
 	// execute the command
 	exitCode = cmd.Execute()
+	// trySimple()
+}
+
+// func trySimple() {
+// 	baseCtx := context.Background()
+// 	connection, _ := db_client.EstablishConnection(baseCtx, "postgres://steampipe:4cbe-4bc2-9c18@localhost:9193/")
+// 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+// 	defer cancel()
+
+// 	c, _ := connection.Conn(ctx)
+// 	fmt.Println("Sending query")
+// 	c.ExecContext(ctx, "select pg_sleep(30)")
+// 	c.Close()
+
+// 	count := getCount(connection)
+// 	fmt.Println(count)
+// }
+
+func getCount(db *sql.DB) int {
+	clientCount := 0
+	// get the total number of connected clients
+	row := db.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend';")
+	row.Scan(&clientCount)
+	return clientCount - db.Stats().OpenConnections
 }
 
 // set the current to the max to avoid any file handle shortages

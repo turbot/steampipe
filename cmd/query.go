@@ -237,7 +237,7 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 		if err != nil {
 			initData.Result.Error = fmt.Errorf("error acquiring database connection, %s", err.Error())
 		} else {
-			sessionResult.Session.Close()
+			sessionResult.Session.Close(utils.IsContextCancelled(ctx))
 		}
 
 	}()
@@ -259,6 +259,7 @@ func startCancelHandler(cancel context.CancelFunc) {
 	signal.Notify(sigIntChannel, os.Interrupt)
 	go func() {
 		<-sigIntChannel
+		log.Println("[TRACE] got SIGINT")
 		// call context cancellation function
 		cancel()
 		// leave the channel open - any subsequent interrupts hits will be ignored

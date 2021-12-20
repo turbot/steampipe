@@ -72,10 +72,13 @@ func NewLocalClient(ctx context.Context, invoker constants.Invoker) (*LocalDbCli
 func (c *LocalDbClient) Close() error {
 	log.Printf("[TRACE] close local client %p", c)
 	if c.client != nil {
+		log.Printf("[TRACE] local client not NIL")
 		if err := c.client.Close(); err != nil {
 			return err
 		}
+		log.Printf("[TRACE] local client close complete")
 	}
+	log.Printf("[TRACE] shutdown local service %v", c.invoker)
 	// no context to pass on - use background
 	// we shouldn't do this in a context that can be cancelled anyway
 	ShutdownService(c.invoker)

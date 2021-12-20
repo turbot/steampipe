@@ -179,7 +179,7 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 			continue
 		}
 
-		go func(run *ControlRun) {
+		go func(c context.Context, run *ControlRun) {
 			defer func() {
 				if r := recover(); r != nil {
 					// if the Execute panic'ed, set it as an error
@@ -188,8 +188,8 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 				// Release in defer, so that we don't retain the lock even if there's a panic inside
 				parallelismLock.Release(1)
 			}()
-			run.Execute(ctx, client)
-		}(controlRun)
+			run.Execute(c, client)
+		}(ctx, controlRun)
 	}
 	for _, child := range r.Groups {
 		child.Execute(ctx, client, parallelismLock)

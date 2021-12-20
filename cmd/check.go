@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 	"sync"
@@ -113,6 +114,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 
 		if initData.client != nil {
+			log.Printf("[TRACE] close client")
 			initData.client.Close()
 		}
 		if initData.workspace != nil {
@@ -138,7 +140,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// pull out useful properties
-	ctx := initData.ctx
 	workspace := initData.workspace
 	client := initData.client
 	failures := 0
@@ -149,7 +150,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// treat each arg as a separate execution
 	for _, arg := range args {
-		if utils.IsContextCancelled(ctx) {
+		if utils.IsContextCancelled(initData.ctx) {
 			durations = append(durations, 0)
 			// skip over this arg, since the execution was cancelled
 			// (do not just quit as we want to populate the durations)
@@ -161,17 +162,17 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.FailOnError(err)
 
 		// create the execution tree
-		executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, arg)
+		executionTree, err := controlexecute.NewExecutionTree(initData.ctx, workspace, client, arg)
 		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
 
 		// execute controls synchronously (execute returns the number of failures)
-		failures += executionTree.Execute(ctx, client)
-		err = displayControlResults(ctx, executionTree)
+		failures += executionTree.Execute(initData.ctx, client)
+		err = displayControlResults(initData.ctx, executionTree)
 		utils.FailOnError(err)
 
 		if len(exportFormats) > 0 {
 			d := exportData{executionTree: executionTree, exportFormats: exportFormats, errorsLock: &exportErrorsLock, errors: exportErrors, waitGroup: &exportWaitGroup}
-			exportCheckResult(ctx, &d)
+			exportCheckResult(initData.ctx, &d)
 		}
 
 		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))

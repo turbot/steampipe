@@ -27,7 +27,7 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner
 	if sessionResult.Error != nil {
 		return nil, sessionResult.Error
 	}
-	defer sessionResult.Session.Close()
+	defer sessionResult.Session.Close(utils.IsContextCancelled(ctx))
 	return c.ExecuteSyncInSession(ctx, sessionResult.Session, query, disableSpinner)
 }
 
@@ -67,7 +67,7 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 	}
 
 	// define callback to close session when the async execution is complete
-	closeSessionCallback := func() { sessionResult.Session.Close() }
+	closeSessionCallback := func() { sessionResult.Session.Close(utils.IsContextCancelled(ctx)) }
 	return c.ExecuteInSession(ctx, sessionResult.Session, query, closeSessionCallback, disableSpinner)
 }
 

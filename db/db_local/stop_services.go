@@ -45,7 +45,9 @@ func ShutdownService(invoker constants.Invoker) {
 	// how many clients are connected
 	// under a fresh context
 	count, _ := GetCountOfConnectedClients(context.Background())
+	log.Printf("[TRACE] client count %v", count)
 	if count > 0 {
+		log.Printf("[TRACE] not shutting down")
 		// there are other clients connected to the database
 		// we can't stop the DB.
 		return
@@ -78,6 +80,10 @@ func GetCountOfConnectedClients(ctx context.Context) (i int, e error) {
 		return -1, err
 	}
 	defer rootClient.Close()
+
+	r, _ := rootClient.Query("select * from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend';")
+	utils.DebugDumpRows(r)
+	r.Close()
 
 	clientCount := 0
 	// get the total number of connected clients

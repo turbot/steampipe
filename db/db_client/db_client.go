@@ -4,9 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/schema"
@@ -21,6 +25,7 @@ import (
 type DbClient struct {
 	connectionString          string
 	ensureSessionFunc         db_common.EnsureSessionStateCallback
+	connectionAppName         string
 	dbClient                  *sql.DB
 	requiredSessionSearchPath []string
 
@@ -45,13 +50,16 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
-	db, err := establishConnection(ctx, connectionString)
+	appName := fmt.Sprintf("%s_%s", constants.AppName, utils.GetMD5Hash(time.Now().String()))
+
+	db, err := establishConnection(ctx, connectionString, appName)
 
 	if err != nil {
 		return nil, err
 	}
 	client := &DbClient{
-		dbClient: db,
+		dbClient:          db,
+		connectionAppName: appName,
 		// a waitgroup to keep track of active session initializations
 		// so that we don't try to shutdown while an init is underway
 		sessionInitWaitGroup: &sync.WaitGroup{},
@@ -70,9 +78,18 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	return client, nil
 }
 
-func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
+func establishConnection(ctx context.Context, connStr string, appName string) (*sql.DB, error) {
 	utils.LogTime("db_client.establishConnection start")
 	defer utils.LogTime("db_client.establishConnection end")
+
+	connConfig, _ := pgx.ParseConfig(connStr)
+	connConfig.PreferSimpleProtocol = true
+
+	connConfig.RuntimeParams = map[string]string{
+		"application_name": appName,
+	}
+
+	connStr = stdlib.RegisterConnConfig(connConfig)
 
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
@@ -104,8 +121,10 @@ func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallba
 // Close implements Client
 // closes the connection to the database and shuts down the backend
 func (c *DbClient) Close() error {
+	log.Printf("[TRACE] DbClient.Close %v", c.dbClient)
 	if c.dbClient != nil {
 		c.sessionInitWaitGroup.Wait()
+
 		// clear the map - so that we can't reuse it
 		c.sessions = nil
 		return c.dbClient.Close()
@@ -133,7 +152,7 @@ func (c *DbClient) RefreshSessions(ctx context.Context) *db_common.AcquireSessio
 	}
 	sessionResult := c.AcquireSession(ctx)
 	if sessionResult.Session != nil {
-		sessionResult.Session.Close()
+		sessionResult.Session.Close(utils.IsContextCancelled(ctx))
 	}
 	return sessionResult
 }
@@ -151,7 +170,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	db, err := establishConnection(ctx, c.connectionString)
+	db, err := establishConnection(ctx, c.connectionString, c.connectionAppName)
 	if err != nil {
 		return err
 	}

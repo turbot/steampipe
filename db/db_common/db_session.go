@@ -1,9 +1,14 @@
 package db_common
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
+	"log"
+	"runtime/debug"
 	"time"
 
+	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -33,10 +38,29 @@ func (s *DatabaseSession) UpdateUsage() {
 	s.LastUsed = time.Now()
 }
 
-func (s *DatabaseSession) Close() error {
+func (s *DatabaseSession) Close(waitForCleanup bool) error {
+	debug.PrintStack()
+	var err error
 	if s.Connection != nil {
-		err := s.Connection.Close()
+		log.Printf("[TRACE] !@#$&*() wait for cleanup: %d :: %v\n", s.BackendPid, waitForCleanup)
+
+		if waitForCleanup {
+			s.Connection.Raw(func(driverConn interface{}) error {
+				log.Printf("[TRACE] !@#$&*() wait for cleanup :: %d\n", s.BackendPid)
+				conn := driverConn.(*stdlib.Conn)
+				select {
+				case <-time.After(5 * time.Second):
+					return context.DeadlineExceeded
+				case <-conn.Conn().PgConn().CleanupDone():
+					log.Printf("[TRACE] !@#$&*() cleanup done :: %d\n", s.BackendPid)
+					return nil
+				}
+			})
+		}
+
+		err = s.Connection.Close()
 		s.Connection = nil
+		fmt.Println(err)
 		return err
 	}
 	return nil
