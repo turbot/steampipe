@@ -115,7 +115,7 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 		m.mut.Unlock()
 
 		// so we have the plugin in our map - is it started?
-		err = m.waitForPluginLoad(p)
+		err = m.waitForPluginLoad(connection, p)
 		if err != nil {
 			return nil, err
 		}
@@ -252,7 +252,7 @@ func (m *PluginManager) startPlugin(connection string) (*plugin.Client, error) {
 	return client, nil
 }
 
-func (m *PluginManager) waitForPluginLoad(p *runningPlugin) error {
+func (m *PluginManager) waitForPluginLoad(connection string, p *runningPlugin) error {
 	pluginStartTimeoutSecs := 5
 
 	select {
@@ -261,6 +261,6 @@ func (m *PluginManager) waitForPluginLoad(p *runningPlugin) error {
 		return nil
 
 	case <-time.After(time.Duration(pluginStartTimeoutSecs) * time.Second):
-		return fmt.Errorf("timed out waiting for %s to startup after %d seconds", pluginStartTimeoutSecs)
+		return fmt.Errorf("timed out waiting for %s to startup after %d seconds", connection, pluginStartTimeoutSecs)
 	}
 }
