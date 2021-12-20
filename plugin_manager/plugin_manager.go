@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -17,8 +18,9 @@ import (
 )
 
 type runningPlugin struct {
-	client   *plugin.Client
-	reattach *pb.ReattachConfig
+	client      *plugin.Client
+	reattach    *pb.ReattachConfig
+	initialized chan (bool)
 }
 
 // PluginManager is the real implementation of grpc.PluginManager
@@ -62,6 +64,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 	var resultLock sync.Mutex
 	var resultWg sync.WaitGroup
 
+	log.Printf("[TRACE] PluginManager Get, connections: '%s'\n", req.Connections)
 	for _, c := range req.Connections {
 		resultWg.Add(1)
 		go func(connectionName string) {
@@ -97,21 +100,30 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 		}
 	}()
 
-	log.Printf("[TRACE] PluginManager Get connection '%s'\n", connection)
+	log.Printf("[TRACE] PluginManager getPlugin connection '%s'\n", connection)
 
 	// reason for starting the plugin (if we need to
 	var reason string
 
 	// is this plugin already running
+	// lock access to plugin map
 	m.mut.Lock()
 	p, ok := m.Plugins[connection]
-	m.mut.Unlock()
 
-	if !ok {
-		reason = fmt.Sprintf("PluginManager %p '%s' NOT found in map  - starting", m, connection)
-	} else {
-		// so we have the plugin in our map - does it exist
+	if ok {
+		// unlock access to map
+		m.mut.Unlock()
 
+		// so we have the plugin in our map - is it started?
+		err = m.waitForPluginLoad(p)
+		if err != nil {
+			return nil, err
+		}
+		log.Printf("[TRACE] connection %s is loaded, check for running PID", connection)
+
+		// ok so the plugin should now be running
+
+		// now check if the plugins process IS running
 		reattach := p.reattach
 		// check the pid exists
 		exists, _ := utils.PidExists(int(reattach.Pid))
@@ -130,6 +142,17 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 		m.mut.Unlock()
 		// update reason
 		reason = fmt.Sprintf("PluginManager found pid %d for connection '%s' in plugin map but plugin process does not exist - killing client and removing from map", reattach.Pid, connection)
+
+	} else {
+		// so the plugin is NOT loaded or loading - this is the first time anyone has requested this connection
+		// put in a placeholder so no other thread tries to create start this plugin
+		m.Plugins[connection] = &runningPlugin{
+			initialized: make(chan (bool), 1),
+		}
+
+		// unlock access to map
+		m.mut.Unlock()
+		reason = fmt.Sprintf("PluginManager %p '%s' NOT found in map  - starting", m, connection)
 	}
 
 	// fall through to plugin startup
@@ -142,14 +165,27 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 	}
 
 	// store the client to our map
-	reattach := pb.NewReattachConfig(client.ReattachConfig())
-	m.mut.Lock()
-	m.Plugins[connection] = &runningPlugin{client: client, reattach: reattach}
-	m.mut.Unlock()
+	reattach := m.storeClientToMap(connection, client)
 	log.Printf("[TRACE] PluginManager Get complete, returning reattach config with PID: %d", reattach.Pid)
 
 	// and return
 	return reattach, nil
+}
+
+// create reattach config for plugin, store to map and close initialized channel
+func (m *PluginManager) storeClientToMap(connection string, client *plugin.Client) *pb.ReattachConfig {
+	// lock access to map
+	m.mut.Lock()
+	defer m.mut.Unlock()
+
+	reattach := pb.NewReattachConfig(client.ReattachConfig())
+	p := m.Plugins[connection]
+	p.client = client
+	p.reattach = reattach
+	m.Plugins[connection] = p
+	// mark as initialized
+	close(p.initialized)
+	return reattach
 }
 
 func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*pb.ConnectionConfig) {
@@ -160,7 +196,7 @@ func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*pb.Connecti
 }
 
 func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
-	log.Printf("[TRACE] PluginManager Shutdown")
+	log.Printf("[WARN] PluginManager Shutdown %v", m.Plugins)
 
 	m.mut.Lock()
 	defer func() {
@@ -171,7 +207,7 @@ func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResp
 	}()
 
 	for _, p := range m.Plugins {
-		log.Printf("[TRACE] killing plugin %v", p)
+		log.Printf("[WARN] killing plugin %v", p.reattach.Pid)
 		p.client.Kill()
 	}
 	return &pb.ShutdownResponse{}, nil
@@ -214,4 +250,17 @@ func (m *PluginManager) startPlugin(connection string) (*plugin.Client, error) {
 		return nil, err
 	}
 	return client, nil
+}
+
+func (m *PluginManager) waitForPluginLoad(p *runningPlugin) error {
+	pluginStartTimeoutSecs := 5
+
+	select {
+	case <-p.initialized:
+		log.Printf("[WARN] initialized: %d", p.reattach.Pid)
+		return nil
+
+	case <-time.After(time.Duration(pluginStartTimeoutSecs) * time.Second):
+		return fmt.Errorf("timed out waiting for %s to startup after %d seconds", pluginStartTimeoutSecs)
+	}
 }
