@@ -128,20 +128,24 @@ func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 		moreDiags := r.storeResourceInCtyMap(q)
 		diags = append(diags, moreDiags...)
 	}
-	for _, q := range mod.Controls {
-		moreDiags := r.storeResourceInCtyMap(q)
+	for _, c := range mod.Controls {
+		moreDiags := r.storeResourceInCtyMap(c)
 		diags = append(diags, moreDiags...)
 	}
-	for _, q := range mod.Locals {
-		moreDiags := r.storeResourceInCtyMap(q)
+	for _, b := range mod.Benchmarks {
+		moreDiags := r.storeResourceInCtyMap(b)
 		diags = append(diags, moreDiags...)
 	}
-	for _, q := range mod.Reports {
-		moreDiags := r.storeResourceInCtyMap(q)
+	for _, l := range mod.Locals {
+		moreDiags := r.storeResourceInCtyMap(l)
 		diags = append(diags, moreDiags...)
 	}
-	for _, q := range mod.Panels {
-		moreDiags := r.storeResourceInCtyMap(q)
+	for _, rpt := range mod.Reports {
+		moreDiags := r.storeResourceInCtyMap(rpt)
+		diags = append(diags, moreDiags...)
+	}
+	for _, p := range mod.Panels {
+		moreDiags := r.storeResourceInCtyMap(p)
 		diags = append(diags, moreDiags...)
 	}
 
