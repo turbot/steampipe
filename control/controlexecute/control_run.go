@@ -65,10 +65,15 @@ type ControlRun struct {
 }
 
 func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree *ExecutionTree) *ControlRun {
-	res := &ControlRun{
-		Control: control,
+	controlId := control.Name()
+	// only show qualified control names for controls from dependent mods
+	if control.Mod.Name() == executionTree.workspace.Mod.Name() {
+		controlId = modconfig.UnqualifiedResourceName(controlId)
+	}
 
-		ControlId:   control.Name(),
+	res := &ControlRun{
+		Control:     control,
+		ControlId:   controlId,
 		Description: typehelpers.SafeString(control.Description),
 		Severity:    typehelpers.SafeString(control.Severity),
 		Title:       typehelpers.SafeString(control.Title),
