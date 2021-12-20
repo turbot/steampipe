@@ -21,15 +21,17 @@ type Report struct {
 
 	DeclRange hcl.Range
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents         []ModTreeItem
+	metadata        *ResourceMetadata
+	UnqualifiedName string
 }
 
 func NewReport(block *hcl.Block) *Report {
 	report := &Report{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("report.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
+		ShortName:       block.Labels[0],
+		FullName:        fmt.Sprintf("report.%s", block.Labels[0]),
+		UnqualifiedName: fmt.Sprintf("report.%s", block.Labels[0]),
+		DeclRange:       block.DefRange,
 	}
 	return report
 }

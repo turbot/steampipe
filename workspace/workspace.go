@@ -346,7 +346,7 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 	for _, q := range w.Mod.Queries {
 		// add 'local' alias
 		res[q.Name()] = q
-		res[modconfig.UnqualifiedResourceName(q.Name())] = q
+		res[q.UnqualifiedName] = q
 	}
 
 	// for mod dependencies, add resources keyed by long name only
@@ -367,7 +367,7 @@ func (w *Workspace) buildControlMap(modMap modconfig.ModMap) map[string]*modconf
 	// for LOCAL resources, add map entries keyed by both short name: control.<shortName> and  long name: <modName>.control.<shortName?
 	for _, c := range w.Mod.Controls {
 		res[c.Name()] = c
-		res[modconfig.UnqualifiedResourceName(c.Name())] = c
+		res[c.UnqualifiedName] = c
 	}
 
 	// for mode dependencies, add resources keyed by long name only
@@ -385,7 +385,7 @@ func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) map[string]*modco
 
 	// for LOCAL resources, add map entries keyed by both unqualified name: benchmark.<shortName> and full name: <modName>.benchmark.<shortName?
 	for _, b := range w.Mod.Benchmarks {
-		res[modconfig.UnqualifiedResourceName(b.Name())] = b
+		res[b.UnqualifiedName] = b
 		res[b.Name()] = b
 	}
 
@@ -405,7 +405,7 @@ func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfi
 	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
 	for _, r := range w.Mod.Reports {
 		res[r.Name()] = r
-		res[modconfig.UnqualifiedResourceName(r.Name())] = r
+		res[r.UnqualifiedName] = r
 	}
 
 	// for mod dependencies, add resources keyed by long name only
@@ -425,7 +425,7 @@ func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig
 	for _, p := range w.Mod.Panels {
 		res[fmt.Sprintf("local.%s", p.Name())] = p
 		res[p.Name()] = p
-		res[modconfig.UnqualifiedResourceName(p.Name())] = p
+		res[p.UnqualifiedName] = p
 	}
 
 	// for mod dependencies, add resources keyed by long name only

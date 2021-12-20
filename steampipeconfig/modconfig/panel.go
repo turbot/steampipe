@@ -30,15 +30,17 @@ type Panel struct {
 	DeclRange hcl.Range
 	Mod       *Mod `cty:"mod"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents         []ModTreeItem
+	metadata        *ResourceMetadata
+	UnqualifiedName string
 }
 
 func NewPanel(block *hcl.Block) *Panel {
 	panel := &Panel{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("panel.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
+		ShortName:       block.Labels[0],
+		FullName:        fmt.Sprintf("panel.%s", block.Labels[0]),
+		UnqualifiedName: fmt.Sprintf("panel.%s", block.Labels[0]),
+		DeclRange:       block.DefRange,
 	}
 	return panel
 }

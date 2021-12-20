@@ -39,14 +39,16 @@ type Control struct {
 	parents               []ModTreeItem
 	metadata              *ResourceMetadata
 	PreparedStatementName string `column:"prepared_statement_name,text"`
+	UnqualifiedName       string
 }
 
 func NewControl(block *hcl.Block) *Control {
 	control := &Control{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("control.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
-		Args:      NewQueryArgs(),
+		ShortName:       block.Labels[0],
+		FullName:        fmt.Sprintf("control.%s", block.Labels[0]),
+		UnqualifiedName: fmt.Sprintf("control.%s", block.Labels[0]),
+		DeclRange:       block.DefRange,
+		Args:            NewQueryArgs(),
 	}
 	return control
 }

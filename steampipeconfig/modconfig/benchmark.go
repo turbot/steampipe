@@ -37,16 +37,18 @@ type Benchmark struct {
 	ChildNameStrings []string `column:"children,jsonb"`
 	DeclRange        hcl.Range
 
-	parents  []ModTreeItem
-	children []ModTreeItem
-	metadata *ResourceMetadata
+	parents         []ModTreeItem
+	children        []ModTreeItem
+	metadata        *ResourceMetadata
+	UnqualifiedName string
 }
 
 func NewBenchmark(block *hcl.Block) *Benchmark {
 	return &Benchmark{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("benchmark.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
+		ShortName:       block.Labels[0],
+		FullName:        fmt.Sprintf("benchmark.%s", block.Labels[0]),
+		UnqualifiedName: fmt.Sprintf("benchmark.%s", block.Labels[0]),
+		DeclRange:       block.DefRange,
 	}
 }
 

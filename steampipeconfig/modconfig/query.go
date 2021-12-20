@@ -35,6 +35,7 @@ type Query struct {
 	DeclRange             hcl.Range
 	PreparedStatementName string `column:"prepared_statement_name,text"`
 	metadata              *ResourceMetadata
+	UnqualifiedName       string
 }
 
 func (q *Query) Equals(other *Query) bool {
@@ -82,9 +83,10 @@ func (q *Query) Equals(other *Query) bool {
 
 func NewQuery(block *hcl.Block) *Query {
 	return &Query{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("query.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
+		ShortName:       block.Labels[0],
+		FullName:        fmt.Sprintf("query.%s", block.Labels[0]),
+		UnqualifiedName: fmt.Sprintf("query.%s", block.Labels[0]),
+		DeclRange:       block.DefRange,
 	}
 }
 
