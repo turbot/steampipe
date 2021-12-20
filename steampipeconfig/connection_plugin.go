@@ -34,7 +34,7 @@ type ConnectionPlugin struct {
 }
 
 // CreateConnectionPlugins instantiates plugins for specified connections, fetches schemas and sends connection config
-func CreateConnectionPlugins(connections []*modconfig.Connection) (connectionPluginMap map[string]*ConnectionPlugin, err error) {
+func CreateConnectionPlugins(connections ...*modconfig.Connection) (connectionPluginMap map[string]*ConnectionPlugin, err error) {
 	log.Printf("[TRACE] CreateConnectionPlugin creating %d connections", len(connections))
 
 	// build result map
