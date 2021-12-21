@@ -154,7 +154,6 @@ func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	return diags
 }
 
-// TODO is this needed? Add comment
 func (r *RunContext) SetDecodeContent(content *hcl.BodyContent, fileData map[string][]byte) {
 	r.blocks = content.Blocks
 	r.FileData = fileData

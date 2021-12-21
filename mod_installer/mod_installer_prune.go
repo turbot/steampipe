@@ -21,7 +21,6 @@ func (i *ModInstaller) Prune() (version_map.VersionListMap, error) {
 	}
 
 	return unusedMods, nil
-
 }
 
 func (i *ModInstaller) deleteDependencyItem(depPath string) error {

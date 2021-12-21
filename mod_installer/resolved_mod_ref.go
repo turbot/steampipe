@@ -38,11 +38,6 @@ func NewResolvedModRef(requiredModVersion *modconfig.ModVersionConstraint, versi
 
 func (r *ResolvedModRef) setGitReference() {
 	// TODO handle branches
-	//if modVersion.Branch != "" {
-	//	r.GitReference = plumbing.NewBranchReferenceName(modVersion.Branch)
-	//	// NOTE: we need to set version from branch
-	//	return
-	//}
 
 	// NOTE: use the original version string - this will be the tag name
 	r.GitReference = plumbing.NewTagReferenceName(r.Version.Original())

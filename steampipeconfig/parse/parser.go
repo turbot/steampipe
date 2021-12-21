@@ -7,12 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hashicorp/hcl/v2/hclsyntax"
-
-	"github.com/hashicorp/hcl/v2/gohcl"
-
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/json"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"

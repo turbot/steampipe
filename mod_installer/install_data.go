@@ -3,12 +3,11 @@ package mod_installer
 import (
 	"fmt"
 
-	"github.com/xlab/treeprint"
-
 	"github.com/Masterminds/semver"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/version_map"
 	"github.com/turbot/steampipe/version_helpers"
+	"github.com/xlab/treeprint"
 )
 
 type InstallData struct {
