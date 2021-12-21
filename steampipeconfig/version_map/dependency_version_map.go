@@ -66,7 +66,7 @@ func (m DependencyVersionMap) GetMissingFromOther(other DependencyVersionMap) De
 	return res
 }
 
-func (m DependencyVersionMap) GetUpdatedInOther(other DependencyVersionMap) DependencyVersionMap {
+func (m DependencyVersionMap) GetUpgradedInOther(other DependencyVersionMap) DependencyVersionMap {
 	res := make(DependencyVersionMap)
 	for parent, deps := range m {
 		otherDeps := other[parent]
@@ -75,7 +75,25 @@ func (m DependencyVersionMap) GetUpdatedInOther(other DependencyVersionMap) Depe
 		}
 		for name, dep := range deps {
 			if otherDep, ok := otherDeps[name]; ok {
-				if !otherDep.Version.Equal(dep.Version) {
+				if otherDep.Version.GreaterThan(dep.Version) {
+					res.Add(otherDep.Name, otherDep.Version, otherDep.Constraint, parent)
+				}
+			}
+		}
+	}
+	return res
+}
+
+func (m DependencyVersionMap) GetDowngradedInOther(other DependencyVersionMap) DependencyVersionMap {
+	res := make(DependencyVersionMap)
+	for parent, deps := range m {
+		otherDeps := other[parent]
+		if otherDeps == nil {
+			otherDeps = make(ResolvedVersionMap)
+		}
+		for name, dep := range deps {
+			if otherDep, ok := otherDeps[name]; ok {
+				if otherDep.Version.LessThan(dep.Version) {
 					res.Add(otherDep.Name, otherDep.Version, otherDep.Constraint, parent)
 				}
 			}

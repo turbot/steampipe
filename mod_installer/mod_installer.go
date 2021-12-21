@@ -152,13 +152,6 @@ func (i *ModInstaller) InstallWorkspaceDependencies() (err error) {
 		workspaceMod.AddModDependencies(i.mods)
 	}
 
-	// if there are no dependencies, we have nothing to do
-	if !workspaceMod.HasDependentMods() {
-		// there are no dependencies - delete the cache
-		i.installData.Lock.Delete()
-		return nil
-	}
-
 	if err := i.installMods(workspaceMod.Require.Mods, workspaceMod); err != nil {
 		return err
 	}
@@ -181,6 +174,10 @@ func (i *ModInstaller) InstallWorkspaceDependencies() (err error) {
 		}
 	}
 
+	if !workspaceMod.HasDependentMods() {
+		// there are no dependencies - delete the cache
+		i.installData.Lock.Delete()
+	}
 	return nil
 }
 

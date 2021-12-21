@@ -21,8 +21,10 @@ type InstallData struct {
 
 	// list of dependencies installed by recent install operation
 	Installed version_map.DependencyVersionMap
-	// list of dependencies which have been updated
-	Updated version_map.DependencyVersionMap
+	// list of dependencies which have been upgraded
+	Upgraded version_map.DependencyVersionMap
+	// list of dependencies which have been downgraded
+	Downgraded version_map.DependencyVersionMap
 	// list of dependencies which have been uninstalled
 	Uninstalled  version_map.DependencyVersionMap
 	WorkspaceMod *modconfig.Mod
@@ -35,7 +37,8 @@ func NewInstallData(workspaceLock *version_map.WorkspaceLock, workspaceMod *modc
 		NewLock:      version_map.EmptyWorkspaceLock(workspaceLock),
 		allAvailable: make(version_map.VersionListMap),
 		Installed:    make(version_map.DependencyVersionMap),
-		Updated:      make(version_map.DependencyVersionMap),
+		Upgraded:     make(version_map.DependencyVersionMap),
+		Downgraded:   make(version_map.DependencyVersionMap),
 		Uninstalled:  make(version_map.DependencyVersionMap),
 	}
 }
@@ -99,12 +102,13 @@ func (d *InstallData) getAvailableModVersions(modName string, includePrerelease 
 func (d *InstallData) onInstallComplete() {
 	d.Installed = d.NewLock.InstallCache.GetMissingFromOther(d.Lock.InstallCache)
 	d.Uninstalled = d.Lock.InstallCache.GetMissingFromOther(d.NewLock.InstallCache)
-	d.Updated = d.Lock.InstallCache.GetUpdatedInOther(d.NewLock.InstallCache)
+	d.Upgraded = d.Lock.InstallCache.GetUpgradedInOther(d.NewLock.InstallCache)
+	d.Downgraded = d.Lock.InstallCache.GetDowngradedInOther(d.NewLock.InstallCache)
 	d.Lock = d.NewLock
 }
 
 func (d *InstallData) GetUpdatedTree() treeprint.Tree {
-	return d.Updated.GetDependencyTree(d.WorkspaceMod.GetModDependencyPath())
+	return d.Upgraded.GetDependencyTree(d.WorkspaceMod.GetModDependencyPath())
 }
 
 func (d *InstallData) GetInstalledTree() treeprint.Tree {

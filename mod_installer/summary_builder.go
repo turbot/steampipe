@@ -12,14 +12,16 @@ import (
 const (
 	VerbInstalled   = "Installed"
 	VerbUninstalled = "Uninstalled"
-	VerbUpdated     = "Updated"
+	VerbUpgraded    = "Upgraded"
+	VerbDowngraded  = "Downgraded"
 	VerbPruned      = "Pruned"
 )
 
 var dryRunVerbs = map[string]string{
 	VerbInstalled:   "Would install",
 	VerbUninstalled: "Would uninstall",
-	VerbUpdated:     "Would update",
+	VerbUpgraded:    "Would upgrade",
+	VerbDowngraded:  "Would downgrade",
 	VerbPruned:      "Would prune",
 }
 
@@ -30,34 +32,49 @@ func getVerb(verb string) string {
 	return verb
 }
 
-func BuildUpdateSummary(installData *InstallData) string {
-	// for now treat an install as update - we only install deps which are in the mod.sp but missing in the mod folder
-	updateCount := len(installData.Updated.FlatMap())
-	if updateCount == 0 {
-		if len(installData.Lock.InstallCache) == 0 {
-			return "No mods installed"
-		}
-		return "All mods are up to date"
-	}
-	updatedTree := installData.GetUpdatedTree()
-
-	verb := getVerb(VerbUpdated)
-	return fmt.Sprintf("\n%s %d %s:\n\n%s", verb, updateCount, utils.Pluralize("mod", updateCount), updatedTree.String())
-}
-
 func BuildInstallSummary(installData *InstallData) string {
 	// for now treat an install as update - we only install deps which are in the mod.sp but missing in the mod folder
-	installCount := len(installData.Installed.FlatMap())
-	if installCount == 0 {
+	modDependencyPath := installData.WorkspaceMod.GetModDependencyPath()
+	installCount, installedTreeString := getInstallationResultString(installData.Installed, modDependencyPath)
+	uninstallCount, uninstalledTreeString := getInstallationResultString(installData.Uninstalled, modDependencyPath)
+	upgradeCount, upgradeTreeString := getInstallationResultString(installData.Upgraded, modDependencyPath)
+	downgradeCount, downgradeTreeString := getInstallationResultString(installData.Downgraded, modDependencyPath)
+
+	var installString, upgradeString, downgradeString, uninstallString string
+	if installCount > 0 {
+		verb := getVerb(VerbInstalled)
+		installString = fmt.Sprintf("\n%s %d %s:\n\n%s\n", verb, installCount, utils.Pluralize("mod", installCount), installedTreeString)
+	}
+	if uninstallCount > 0 {
+		verb := getVerb(VerbUninstalled)
+		uninstallString = fmt.Sprintf("\n%s %d %s:\n\n%s\n", verb, uninstallCount, utils.Pluralize("mod", uninstallCount), uninstalledTreeString)
+	}
+	if upgradeCount > 0 {
+		verb := getVerb(VerbUpgraded)
+		upgradeString = fmt.Sprintf("\n%s %d %s:\n\n%s\n", verb, upgradeCount, utils.Pluralize("mod", upgradeCount), upgradeTreeString)
+	}
+	if downgradeCount > 0 {
+		verb := getVerb(VerbDowngraded)
+		downgradeString = fmt.Sprintf("\n%s %d %s:\n\n%s\n", verb, downgradeCount, utils.Pluralize("mod", downgradeCount), downgradeTreeString)
+	}
+
+	if installCount+uninstallCount+upgradeCount+downgradeCount == 0 {
 		if len(installData.Lock.InstallCache) == 0 {
-			return "No mods installed"
+			return "No mods are installed"
 		}
 		return "All mods are up to date"
 	}
-	installedTree := installData.GetInstalledTree()
+	return fmt.Sprintf("%s%s%s%s", installString, upgradeString, downgradeString, uninstallString)
+}
 
-	verb := getVerb(VerbInstalled)
-	return fmt.Sprintf("\n%s %d %s:\n\n%s", verb, installCount, utils.Pluralize("mod", installCount), installedTree.String())
+func getInstallationResultString(items version_map.DependencyVersionMap, modDependencyPath string) (int, string) {
+	var res string
+	count := len(items.FlatMap())
+	if count > 0 {
+		tree := items.GetDependencyTree(modDependencyPath)
+		res = tree.String()
+	}
+	return count, res
 }
 
 func BuildUninstallSummary(installData *InstallData) string {

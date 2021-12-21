@@ -8,14 +8,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/turbot/steampipe/constants"
-
 	"github.com/Masterminds/semver"
-
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclwrite"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/constants"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -46,8 +45,9 @@ type Mod struct {
 	References []*ResourceReference
 
 	// blocks
-	Require   *Require   `hcl:"require,block"`
-	OpenGraph *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
+	Require       *Require   `hcl:"require,block"`
+	LegacyRequire *Require   `hcl:"requires,block"`
+	OpenGraph     *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
 
 	VersionString string `cty:"version"`
 	Version       *semver.Version
@@ -406,13 +406,26 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 }
 
 // OnDecoded implements HclResource
-func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics {
+func (m *Mod) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 	// if VersionString is set, set Version
 	if m.VersionString != "" && m.Version == nil {
 		m.Version, _ = semver.NewVersion(m.VersionString)
 	}
 	// build flat children
 	m.buildFlatChilden()
+
+	// handle legacy requires block
+	if m.LegacyRequire != nil && !m.Require.Empty() {
+		if m.Require != nil && !m.Require.Empty() {
+			return hcl.Diagnostics{&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Both 'require' and legacy 'requires' blocks are defined",
+				Subject:  &block.DefRange,
+			}}
+		}
+		m.Require = m.LegacyRequire
+	}
+
 	// initialise our Require
 	if m.Require == nil {
 		return nil
@@ -649,7 +662,12 @@ func (m *Mod) buildFlatChilden() {
 }
 
 func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
-	fileData, err := os.ReadFile(constants.ModFilePath(m.ModPath))
+	modFilePath := constants.ModFilePath(m.ModPath)
+	if !helpers.FileExists(modFilePath) {
+		return nil, nil
+	}
+
+	fileData, err := os.ReadFile(modFilePath)
 	if err != nil {
 		return nil, err
 	}

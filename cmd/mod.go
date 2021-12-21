@@ -135,7 +135,7 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 	installData, err := mod_installer.InstallWorkspaceDependencies(opts)
 	utils.FailOnError(err)
 
-	fmt.Println(mod_installer.BuildUpdateSummary(installData))
+	fmt.Println(mod_installer.BuildInstallSummary(installData))
 }
 
 // list
