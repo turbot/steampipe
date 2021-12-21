@@ -27,7 +27,11 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner
 	if sessionResult.Error != nil {
 		return nil, sessionResult.Error
 	}
-	defer sessionResult.Session.Close(utils.IsContextCancelled(ctx))
+	defer func() {
+		// we need to do this in a closure, otherwise the ctx will be evaluated immediately
+		// and not in call-time
+		sessionResult.Session.Close(utils.IsContextCancelled(ctx))
+	}()
 	return c.ExecuteSyncInSession(ctx, sessionResult.Session, query, disableSpinner)
 }
 

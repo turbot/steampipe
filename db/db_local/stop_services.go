@@ -45,10 +45,8 @@ func ShutdownService(invoker constants.Invoker) {
 
 	// how many clients are connected
 	// under a fresh context
-	count, _ := GetCountOfConnectedClients(context.Background())
-	log.Printf("[WARN] client count %v", count)
+	count, _ := GetCountOfThirdPartyClients(context.Background())
 	if count > 0 {
-		log.Printf("[WARN] not shutting down")
 		// there are other clients connected to the database
 		// we can't stop the DB.
 		return
@@ -71,9 +69,8 @@ func ShutdownService(invoker constants.Invoker) {
 
 }
 
-// GetCountOfConnectedClients returns the number of clients currently connected to the service
-func GetCountOfConnectedClients(ctx context.Context) (i int, e error) {
-	log.Printf("[WARN] GetCountOfConnectedClients")
+// GetCountOfThirdPartyClients returns the number of clients currently connected to the service
+func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 	utils.LogTime("db_local.GetCountOfConnectedClients start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end:%d", i))
 
@@ -85,6 +82,7 @@ func GetCountOfConnectedClients(ctx context.Context) (i int, e error) {
 
 	clientCount := 0
 	// get the total number of connected clients
+	// which are not us - determined by the unique application_name client parameter
 	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name != $1;", runtime_constants.PgClientAppName)
 	row.Scan(&clientCount)
 	// clientCount can never be zero, since the client we are using to run the query counts as a client
