@@ -3,7 +3,6 @@ package db_common
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v4/stdlib"
@@ -53,7 +52,6 @@ func (s *DatabaseSession) Close(waitForCleanup bool) error {
 
 		err = s.Connection.Close()
 		s.Connection = nil
-		fmt.Println(err)
 		return err
 	}
 	return nil
