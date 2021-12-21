@@ -174,7 +174,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		err = displayControlResults(ctx, executionTree)
 		utils.FailOnError(err)
 
-		if len(exportFormats) > 0 && ctx.Err() == nil {
+		if len(exportFormats) > 0 && !utils.IsContextCancelled(ctx) {
 			d := exportData{executionTree: executionTree, exportFormats: exportFormats, errorsLock: &exportErrorsLock, errors: exportErrors, waitGroup: &exportWaitGroup}
 			exportCheckResult(ctx, &d)
 		}
@@ -184,12 +184,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// wait for exports to complete
 	exportWaitGroup.Wait()
-
-	if ctx.Err() != nil {
-		// context was cancelled
-		exitCode = -1
-		return
-	}
 
 	if len(exportErrors) > 0 {
 		utils.ShowError(utils.CombineErrors(exportErrors...))

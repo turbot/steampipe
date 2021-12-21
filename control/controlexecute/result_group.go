@@ -112,31 +112,31 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ModTreeItem
 	return group
 }
 
-// PopulateGroupMap mutates the passed in a map to return all child result groups
-func (r *ResultGroup) PopulateGroupMap(groupMap map[string]*ResultGroup) {
+// populateGroupMap mutates the passed in a map to return all child result groups
+func (r *ResultGroup) populateGroupMap(groupMap map[string]*ResultGroup) {
 	if groupMap == nil {
 		groupMap = make(map[string]*ResultGroup)
 	}
 	// add self
 	groupMap[r.GroupId] = r
 	for _, g := range r.Groups {
-		g.PopulateGroupMap(groupMap)
+		g.populateGroupMap(groupMap)
 	}
 }
 
-// AddResult adds a result to the list, updates the summary status
+// addResult adds a result to the list, updates the summary status
 // (this also updates the status of our parent, all the way up the tree)
-func (r *ResultGroup) AddResult(run *ControlRun) {
+func (r *ResultGroup) addResult(run *ControlRun) {
 	r.ControlRuns = append(r.ControlRuns, run)
 }
 
-func (r *ResultGroup) AddDuration(d time.Duration) {
+func (r *ResultGroup) addDuration(d time.Duration) {
 	r.durationUpdateLock.Lock()
 	defer r.durationUpdateLock.Unlock()
 
 	r.Duration += d.Round(time.Millisecond)
 	if r.Parent != nil {
-		r.Parent.AddDuration(d.Round(time.Millisecond))
+		r.Parent.addDuration(d.Round(time.Millisecond))
 	}
 }
 
@@ -149,6 +149,7 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 	r.Summary.Status.Info += summary.Info
 	r.Summary.Status.Ok += summary.Ok
 	r.Summary.Status.Error += summary.Error
+
 	if r.Parent != nil {
 		r.Parent.updateSummary(summary)
 	}
@@ -174,7 +175,7 @@ func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummar
 	}
 }
 
-func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, parallelismLock *semaphore.Weighted) {
+func (r *ResultGroup) execute(ctx context.Context, client db_common.Client, parallelismLock *semaphore.Weighted) {
 	log.Printf("[TRACE] begin ResultGroup.Execute: %s\n", r.GroupId)
 	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
 
@@ -185,7 +186,7 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 		}
 
 		if viper.GetBool(constants.ArgDryRun) {
-			controlRun.Skip()
+			controlRun.skip()
 			continue
 		}
 
@@ -204,11 +205,11 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 				// Release in defer, so that we don't retain the lock even if there's a panic inside
 				parallelismLock.Release(1)
 			}()
-			run.Execute(c, client)
+			run.execute(c, client)
 		}(ctx, controlRun)
 	}
 	for _, child := range r.Groups {
-		child.Execute(ctx, client, parallelismLock)
+		child.execute(ctx, client, parallelismLock)
 	}
 }
 
