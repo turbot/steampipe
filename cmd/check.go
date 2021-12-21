@@ -140,6 +140,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// pull out useful properties
+	ctx := initData.ctx
 	workspace := initData.workspace
 	client := initData.client
 	failures := 0
@@ -150,7 +151,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// treat each arg as a separate execution
 	for _, arg := range args {
-		if utils.IsContextCancelled(initData.ctx) {
+		if utils.IsContextCancelled(ctx) {
 			durations = append(durations, 0)
 			// skip over this arg, since the execution was cancelled
 			// (do not just quit as we want to populate the durations)
@@ -162,17 +163,17 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.FailOnError(err)
 
 		// create the execution tree
-		executionTree, err := controlexecute.NewExecutionTree(initData.ctx, workspace, client, arg)
+		executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, arg)
 		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
 
 		// execute controls synchronously (execute returns the number of failures)
-		failures += executionTree.Execute(initData.ctx, client)
-		err = displayControlResults(initData.ctx, executionTree)
+		failures += executionTree.Execute(ctx, client)
+		err = displayControlResults(ctx, executionTree)
 		utils.FailOnError(err)
 
 		if len(exportFormats) > 0 {
 			d := exportData{executionTree: executionTree, exportFormats: exportFormats, errorsLock: &exportErrorsLock, errors: exportErrors, waitGroup: &exportWaitGroup}
-			exportCheckResult(initData.ctx, &d)
+			exportCheckResult(ctx, &d)
 		}
 
 		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))
@@ -246,12 +247,12 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 	// get a client
 	var client db_common.Client
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-		client, err = db_client.NewDbClient(initData.ctx, connectionString)
+		client, err = db_client.NewDbClient(ctx, connectionString)
 	} else {
 		// stop the spinner
 		display.StopSpinner(spinner)
 		// when starting the database, installers may trigger their own spinners
-		client, err = db_local.GetLocalClient(initData.ctx, constants.InvokerCheck)
+		client, err = db_local.GetLocalClient(ctx, constants.InvokerCheck)
 		// resume the spinner
 		display.ResumeSpinner(spinner)
 	}
@@ -262,7 +263,7 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 	}
 	initData.client = client
 
-	refreshResult := initData.client.RefreshConnectionAndSearchPaths(initData.ctx)
+	refreshResult := initData.client.RefreshConnectionAndSearchPaths(ctx)
 	if refreshResult.Error != nil {
 		initData.result.Error = refreshResult.Error
 		return initData

@@ -69,7 +69,7 @@ func ShutdownService(invoker constants.Invoker) {
 
 }
 
-// GetCountOfThirdPartyClients returns the number of clients currently connected to the service
+// GetCountOfThirdPartyClients returns the number of connections to the service from other thrid party applications
 func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 	utils.LogTime("db_local.GetCountOfConnectedClients start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end:%d", i))
