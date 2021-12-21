@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/plugin_manager"
+	"github.com/turbot/steampipe/runtime_constants"
 
 	"github.com/turbot/steampipe/utils"
 )
@@ -82,13 +83,9 @@ func GetCountOfConnectedClients(ctx context.Context) (i int, e error) {
 	}
 	defer rootClient.Close()
 
-	r, _ := rootClient.Query("select * from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend';")
-	utils.DebugDumpRows(r)
-	r.Close()
-
 	clientCount := 0
 	// get the total number of connected clients
-	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend';")
+	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name != $1;", runtime_constants.PgClientAppName)
 	row.Scan(&clientCount)
 	// clientCount can never be zero, since the client we are using to run the query counts as a client
 	// deduct the open connections in the pool of this client

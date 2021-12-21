@@ -7,12 +7,12 @@ import (
 	"log"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/runtime_constants"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"golang.org/x/sync/semaphore"
@@ -25,7 +25,6 @@ import (
 type DbClient struct {
 	connectionString          string
 	ensureSessionFunc         db_common.EnsureSessionStateCallback
-	connectionAppName         string
 	dbClient                  *sql.DB
 	requiredSessionSearchPath []string
 
@@ -50,16 +49,13 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
-	appName := fmt.Sprintf("%s_%s", constants.AppName, utils.GetMD5Hash(time.Now().String()))
-
-	db, err := establishConnection(ctx, connectionString, appName)
+	db, err := establishConnection(ctx, connectionString)
 
 	if err != nil {
 		return nil, err
 	}
 	client := &DbClient{
-		dbClient:          db,
-		connectionAppName: appName,
+		dbClient: db,
 		// a waitgroup to keep track of active session initializations
 		// so that we don't try to shutdown while an init is underway
 		sessionInitWaitGroup: &sync.WaitGroup{},
@@ -78,7 +74,7 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	return client, nil
 }
 
-func establishConnection(ctx context.Context, connStr string, appName string) (*sql.DB, error) {
+func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
 	utils.LogTime("db_client.establishConnection start")
 	defer utils.LogTime("db_client.establishConnection end")
 
@@ -86,7 +82,7 @@ func establishConnection(ctx context.Context, connStr string, appName string) (*
 	connConfig.PreferSimpleProtocol = true
 
 	connConfig.RuntimeParams = map[string]string{
-		"application_name": appName,
+		"application_name": runtime_constants.PgClientAppName,
 	}
 
 	connStr = stdlib.RegisterConnConfig(connConfig)
@@ -170,7 +166,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	db, err := establishConnection(ctx, c.connectionString, c.connectionAppName)
+	db, err := establishConnection(ctx, c.connectionString)
 	if err != nil {
 		return err
 	}
