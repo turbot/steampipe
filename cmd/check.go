@@ -425,6 +425,12 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, formats []controldisplay.CheckExportTarget) []error {
 	errors := []error{}
 	for _, format := range formats {
+		if utils.IsContextCancelled(ctx) {
+			// set the error
+			errors = append(errors, ctx.Err())
+			// and skip forward
+			continue
+		}
 		formatter, err := controldisplay.GetExportFormatter(format.Format)
 		if err != nil {
 			errors = append(errors, err)
@@ -432,6 +438,10 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 		}
 		formattedReader, err := formatter.Format(ctx, executionTree)
 		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		if utils.IsContextCancelled(ctx) {
 			errors = append(errors, err)
 			continue
 		}
