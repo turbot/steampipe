@@ -4,11 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/runtime_constants"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"golang.org/x/sync/semaphore"
@@ -74,6 +78,13 @@ func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
 	utils.LogTime("db_client.establishConnection start")
 	defer utils.LogTime("db_client.establishConnection end")
 
+	connConfig, _ := pgx.ParseConfig(connStr)
+	connConfig.RuntimeParams = map[string]string{
+		// set an app name so that we can track connections from this execution
+		"application_name": runtime_constants.PgClientAppName,
+	}
+	connStr = stdlib.RegisterConnConfig(connConfig)
+
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		return nil, err
@@ -104,8 +115,10 @@ func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallba
 // Close implements Client
 // closes the connection to the database and shuts down the backend
 func (c *DbClient) Close() error {
+	log.Printf("[TRACE] DbClient.Close %v", c.dbClient)
 	if c.dbClient != nil {
 		c.sessionInitWaitGroup.Wait()
+
 		// clear the map - so that we can't reuse it
 		c.sessions = nil
 		return c.dbClient.Close()
@@ -133,7 +146,7 @@ func (c *DbClient) RefreshSessions(ctx context.Context) *db_common.AcquireSessio
 	}
 	sessionResult := c.AcquireSession(ctx)
 	if sessionResult.Session != nil {
-		sessionResult.Session.Close()
+		sessionResult.Session.Close(utils.IsContextCancelled(ctx))
 	}
 	return sessionResult
 }

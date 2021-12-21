@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 	"sync"
@@ -113,6 +114,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 
 		if initData.client != nil {
+			log.Printf("[TRACE] close client")
 			initData.client.Close()
 		}
 		if initData.workspace != nil {
@@ -245,12 +247,12 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 	// get a client
 	var client db_common.Client
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-		client, err = db_client.NewDbClient(initData.ctx, connectionString)
+		client, err = db_client.NewDbClient(ctx, connectionString)
 	} else {
 		// stop the spinner
 		display.StopSpinner(spinner)
 		// when starting the database, installers may trigger their own spinners
-		client, err = db_local.GetLocalClient(initData.ctx, constants.InvokerCheck)
+		client, err = db_local.GetLocalClient(ctx, constants.InvokerCheck)
 		// resume the spinner
 		display.ResumeSpinner(spinner)
 	}
@@ -261,7 +263,7 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 	}
 	initData.client = client
 
-	refreshResult := initData.client.RefreshConnectionAndSearchPaths(initData.ctx)
+	refreshResult := initData.client.RefreshConnectionAndSearchPaths(ctx)
 	if refreshResult.Error != nil {
 		initData.result.Error = refreshResult.Error
 		return initData

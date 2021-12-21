@@ -230,7 +230,7 @@ func runServiceInForeground(invoker constants.Invoker) {
 			fmt.Print("\r")
 			// if we have received this signal, then the user probably wants to shut down
 			// everything. Shutdowns MUST NOT happen in cancellable contexts
-			count, err := db_local.GetCountOfConnectedClients(context.Background())
+			count, err := db_local.GetCountOfThirdPartyClients(context.Background())
 			if err != nil {
 				// report the error in the off chance that there's one
 				utils.ShowError(err)
@@ -398,7 +398,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		}
 
 		// check if there are any connected clients to the service
-		connectedClientCount, err := db_local.GetCountOfConnectedClients(cmd.Context())
+		connectedClientCount, err := db_local.GetCountOfThirdPartyClients(cmd.Context())
 		if err != nil {
 			display.StopSpinner(spinner)
 			utils.FailOnErrorWithMessage(err, "error during service stop")

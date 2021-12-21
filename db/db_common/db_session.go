@@ -1,9 +1,11 @@
 package db_common
 
 import (
+	"context"
 	"database/sql"
 	"time"
 
+	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -33,9 +35,22 @@ func (s *DatabaseSession) UpdateUsage() {
 	s.LastUsed = time.Now()
 }
 
-func (s *DatabaseSession) Close() error {
+func (s *DatabaseSession) Close(waitForCleanup bool) error {
+	var err error
 	if s.Connection != nil {
-		err := s.Connection.Close()
+		if waitForCleanup {
+			s.Connection.Raw(func(driverConn interface{}) error {
+				conn := driverConn.(*stdlib.Conn)
+				select {
+				case <-time.After(5 * time.Second):
+					return context.DeadlineExceeded
+				case <-conn.Conn().PgConn().CleanupDone():
+					return nil
+				}
+			})
+		}
+
+		err = s.Connection.Close()
 		s.Connection = nil
 		return err
 	}
