@@ -411,8 +411,6 @@ func (m *Mod) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 	if m.VersionString != "" && m.Version == nil {
 		m.Version, _ = semver.NewVersion(m.VersionString)
 	}
-	// build flat children
-	m.buildFlatChilden()
 
 	// handle legacy requires block
 	if m.LegacyRequire != nil && !m.Require.Empty() {
