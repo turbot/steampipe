@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/Machiel/slugify v1.0.1
+	github.com/Masterminds/semver v1.5.0
 	github.com/ahmetb/go-linq v3.0.0+incompatible
 	github.com/alecthomas/chroma v0.9.2
 	github.com/bgentry/speakeasy v0.1.0
@@ -45,6 +46,7 @@ require (
 	github.com/turbot/go-kit v0.3.0
 	github.com/turbot/steampipe-plugin-sdk v1.8.0
 	github.com/ulikunitz/xz v0.5.8
+	github.com/xlab/treeprint v1.1.0
 	github.com/zclconf/go-cty v1.8.2
 	github.com/zclconf/go-cty-yaml v1.0.2
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c

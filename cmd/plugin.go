@@ -112,7 +112,7 @@ Examples:
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag("all", "", false, "Update all plugins to its latest available version").
+		AddBoolFlag(constants.ArgAll, "", false, "Update all plugins to its latest available version").
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin update")
 
 	return cmd
@@ -273,25 +273,14 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			exitCode = 1
 		}
 	}()
-	// args to 'plugin update' -- one or more plugins to install
-	// These can be simple names ('aws') for "standard" plugins, or
-	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
-	plugins := append([]string{}, args...)
 
-	if len(plugins) == 0 && !(cmdconfig.Viper().GetBool("all")) {
+	// args to 'plugin update' -- one or more plugins to update
+	// These can be simple names ('aws') for "standard" plugins,
+	// or full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
+	plugins, err := resolveUpdatePluginsFromArgs(args)
+	if err != nil {
 		fmt.Println()
-		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all")))
-		fmt.Println()
-		cmd.Help()
-		fmt.Println()
-		exitCode = 2
-		return
-	}
-
-	if len(plugins) > 0 && cmdconfig.Viper().GetBool("all") {
-		// we can't allow update and install at the same time
-		fmt.Println()
-		utils.ShowError(fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`")))
+		utils.ShowError(err)
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -320,7 +309,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
 
-	if cmdconfig.Viper().GetBool("all") {
+	if cmdconfig.Viper().GetBool(constants.ArgAll) {
 		for k, v := range versionData.Plugins {
 			ref := ociinstaller.NewSteampipeImageRef(k)
 			org, name, stream := ref.GetOrgNameAndStream()
@@ -419,6 +408,21 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 	// a concluding blank line - since we always output multiple lines
 	fmt.Println()
+}
+
+func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
+	plugins := append([]string{}, args...)
+
+	if len(plugins) == 0 && !(cmdconfig.Viper().GetBool("all")) {
+		// either plugin name(s) or "all" must be provided
+		return nil, fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all"))
+	}
+
+	if len(plugins) > 0 && cmdconfig.Viper().GetBool(constants.ArgAll) {
+		// we can't allow update and install at the same time
+		return nil, fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`"))
+	}
+	return plugins, nil
 }
 
 // start service if necessary and refresh connections

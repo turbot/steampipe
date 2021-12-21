@@ -14,15 +14,15 @@ import (
 // Control is a struct representing the Control resource
 type Control struct {
 	ShortName        string
-	FullName         string             `cty:"name"`
-	Description      *string            `cty:"description" column:"description,text"`
-	Documentation    *string            `cty:"documentation"  column:"documentation,text"`
-	SearchPath       *string            `cty:"search_path"  column:"search_path,text"`
-	SearchPathPrefix *string            `cty:"search_path_prefix"  column:"search_path_prefix,text"`
-	Severity         *string            `cty:"severity"  column:"severity,text"`
-	SQL              *string            `cty:"sql"  column:"sql,text"`
-	Tags             *map[string]string `cty:"tags"  column:"tags,jsonb"`
-	Title            *string            `cty:"title"  column:"title,text"`
+	FullName         string            `cty:"name"`
+	Description      *string           `cty:"description" column:"description,text"`
+	Documentation    *string           `cty:"documentation"  column:"documentation,text"`
+	SearchPath       *string           `cty:"search_path"  column:"search_path,text"`
+	SearchPathPrefix *string           `cty:"search_path_prefix"  column:"search_path_prefix,text"`
+	Severity         *string           `cty:"severity"  column:"severity,text"`
+	SQL              *string           `cty:"sql"  column:"sql,text"`
+	Tags             map[string]string `cty:"tags"  column:"tags,jsonb"`
+	Title            *string           `cty:"title"  column:"title,text"`
 	Query            *Query
 	// args
 	// arguments may be specified by either a map of named args or as a list of positional args
@@ -39,14 +39,16 @@ type Control struct {
 	parents               []ModTreeItem
 	metadata              *ResourceMetadata
 	PreparedStatementName string `column:"prepared_statement_name,text"`
+	UnqualifiedName       string
 }
 
 func NewControl(block *hcl.Block) *Control {
 	control := &Control{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("control.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
-		Args:      NewQueryArgs(),
+		ShortName:       block.Labels[0],
+		FullName:        fmt.Sprintf("control.%s", block.Labels[0]),
+		UnqualifiedName: fmt.Sprintf("control.%s", block.Labels[0]),
+		DeclRange:       block.DefRange,
+		Args:            NewQueryArgs(),
 	}
 	return control
 }
@@ -64,20 +66,12 @@ func (c *Control) Equals(other *Control) bool {
 	if !res {
 		return res
 	}
-	// tags
-	if c.Tags == nil {
-		if other.Tags != nil {
+	if len(c.Tags) != len(other.Tags) {
+		return false
+	}
+	for k, v := range c.Tags {
+		if otherVal := other.Tags[k]; v != otherVal {
 			return false
-		}
-	} else {
-		// we have tags
-		if other.Tags == nil {
-			return false
-		}
-		for k, v := range *c.Tags {
-			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
-				return false
-			}
 		}
 	}
 
@@ -194,7 +188,7 @@ func (c *Control) GetDescription() string {
 // GetTags implements ModTreeItem
 func (c *Control) GetTags() map[string]string {
 	if c.Tags != nil {
-		return *c.Tags
+		return c.Tags
 	}
 	return map[string]string{}
 }
@@ -210,9 +204,9 @@ func (c *Control) Name() string {
 	return c.FullName
 }
 
-// QualifiedName returns the name in format: '<modName>.control.<shortName>'
-func (c *Control) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", c.metadata.ModName, c.FullName)
+// QualifiedNameWithVersion returns the name in format: '<modName>@version.control.<shortName>'
+func (q *Control) QualifiedNameWithVersion() string {
+	return fmt.Sprintf("%s.%s", q.Mod.NameWithVersion(), q.FullName)
 }
 
 // GetPaths implements ModTreeItem
@@ -242,6 +236,8 @@ func (c *Control) AddReference(ref *ResourceReference) {
 // SetMod implements HclResource
 func (c *Control) SetMod(mod *Mod) {
 	c.Mod = mod
+	c.UnqualifiedName = c.FullName
+	c.FullName = fmt.Sprintf("%s.%s", mod.ShortName, c.FullName)
 }
 
 // GetMod implements HclResource
@@ -280,5 +276,5 @@ func (c *Control) GetPreparedStatementName() string {
 
 // ModName implements QueryProvider
 func (c *Control) ModName() string {
-	return c.Mod.ShortName
+	return c.Mod.NameWithVersion()
 }

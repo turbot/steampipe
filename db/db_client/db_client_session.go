@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v4/stdlib"
+
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/utils"
@@ -144,5 +145,5 @@ func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, uint32
 		return nil
 	})
 
-	return session, backendPid, nil
+	return session, uint32(backendPid), nil
 }

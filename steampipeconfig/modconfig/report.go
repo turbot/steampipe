@@ -21,15 +21,17 @@ type Report struct {
 
 	DeclRange hcl.Range
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents         []ModTreeItem
+	metadata        *ResourceMetadata
+	UnqualifiedName string
 }
 
 func NewReport(block *hcl.Block) *Report {
 	report := &Report{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("report.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
+		ShortName:       block.Labels[0],
+		FullName:        fmt.Sprintf("report.%s", block.Labels[0]),
+		UnqualifiedName: fmt.Sprintf("report.%s", block.Labels[0]),
+		DeclRange:       block.DefRange,
 	}
 	return report
 }
@@ -45,11 +47,6 @@ func (r *Report) Name() string {
 	return r.FullName
 }
 
-// QualifiedName returns the name in format: '<modName>.report.<shortName>'
-func (r *Report) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", r.metadata.ModName, r.FullName)
-}
-
 // OnDecoded implements HclResource
 func (r *Report) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
@@ -61,6 +58,8 @@ func (r *Report) AddReference(*ResourceReference) {
 // SetMod implements HclResource
 func (r *Report) SetMod(mod *Mod) {
 	r.Mod = mod
+	r.UnqualifiedName = r.FullName
+	r.FullName = fmt.Sprintf("%s.%s", mod.ShortName, r.FullName)
 }
 
 // GetMod implements HclResource

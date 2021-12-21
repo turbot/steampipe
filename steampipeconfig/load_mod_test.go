@@ -428,9 +428,9 @@ Benchmarks:
 			expected: &modconfig.Mod{
 				ShortName: "m1",
 				FullName:  "mod.m1",
-				Requires: &modconfig.Requires{
+				Require: &modconfig.Require{
 					SteampipeVersionString: "v0.8.0",
-					Mods: []*modconfig.ModVersion{
+					Mods: []*modconfig.ModVersionConstraint{
 						{
 							Name:          "github.com/turbot/aws-core",
 							VersionString: "v1.0",
@@ -444,13 +444,13 @@ Benchmarks:
 			expected: &modconfig.Mod{
 				ShortName: "m1",
 				FullName:  "mod.m1",
-				Requires: &modconfig.Requires{
+				Require: &modconfig.Require{
 					SteampipeVersionString: "v0.8.0",
-					Mods: []*modconfig.ModVersion{
+					Mods: []*modconfig.ModVersionConstraint{
 						{
 							Name:          "github.com/turbot/aws-core",
 							VersionString: "v1.0",
-							Alias:         utils.ToStringPointer("core"),
+							//Alias:         utils.ToStringPointer("core"),
 						},
 					},
 				},

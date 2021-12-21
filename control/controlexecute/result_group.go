@@ -72,6 +72,12 @@ func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.Mod
 
 // NewResultGroup creates a result group from a ModTreeItem
 func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ModTreeItem, parent *ResultGroup) *ResultGroup {
+	// only show qualified group names for controls from dependent mods
+	groupId := treeItem.Name()
+	if mod := treeItem.GetMod(); mod != nil && mod.Name() == executionTree.workspace.Mod.Name() {
+		groupId = modconfig.UnqualifiedResourceName(groupId)
+	}
+
 	group := &ResultGroup{
 		GroupId:           treeItem.Name(),
 		Title:             treeItem.GetTitle(),

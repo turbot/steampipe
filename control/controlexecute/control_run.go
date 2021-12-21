@@ -65,10 +65,15 @@ type ControlRun struct {
 }
 
 func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree *ExecutionTree) *ControlRun {
-	res := &ControlRun{
-		Control: control,
+	controlId := control.Name()
+	// only show qualified control names for controls from dependent mods
+	if control.Mod.Name() == executionTree.workspace.Mod.Name() {
+		controlId = control.UnqualifiedName
+	}
 
-		ControlId:   control.Name(),
+	res := &ControlRun{
+		Control:     control,
+		ControlId:   controlId,
 		Description: typehelpers.SafeString(control.Description),
 		Severity:    typehelpers.SafeString(control.Severity),
 		Title:       typehelpers.SafeString(control.Title),
@@ -123,26 +128,6 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.Datab
 	q := fmt.Sprintf("set search_path to %s", strings.Join(newSearchPath, ","))
 	_, err = session.Connection.ExecContext(ctx, q)
 	return err
-}
-
-func (r *ControlRun) getCurrentSearchPath(ctx context.Context, session *db_common.DatabaseSession) ([]string, error) {
-	utils.LogTime("ControlRun.getCurrentSearchPath start")
-	defer utils.LogTime("ControlRun.getCurrentSearchPath end")
-
-	row := session.Connection.QueryRowContext(ctx, "show search_path")
-	pathAsString := ""
-	err := row.Scan(&pathAsString)
-	if err != nil {
-		return nil, err
-	}
-	currentSearchPath := strings.Split(pathAsString, ",")
-	// unescape search path
-	for idx, p := range currentSearchPath {
-		p = strings.Join(strings.Split(p, "\""), "")
-		p = strings.TrimSpace(p)
-		currentSearchPath[idx] = p
-	}
-	return currentSearchPath, nil
 }
 
 func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
@@ -246,12 +231,58 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] finish result for, %s\n", control.Name())
 }
 
+func (r *ControlRun) SetError(err error) {
+	if err == nil {
+		return
+	}
+	r.runError = utils.TransformErrorToSteampipe(err)
+
+	// update error count
+	r.Summary.Error++
+	r.setRunStatus(ControlRunError)
+}
+
+func (r *ControlRun) GetError() error {
+	return r.runError
+}
+
+func (r *ControlRun) getCurrentSearchPath(ctx context.Context, session *db_common.DatabaseSession) ([]string, error) {
+	utils.LogTime("ControlRun.getCurrentSearchPath start")
+	defer utils.LogTime("ControlRun.getCurrentSearchPath end")
+
+	row := session.Connection.QueryRowContext(ctx, "show search_path")
+	pathAsString := ""
+	err := row.Scan(&pathAsString)
+	if err != nil {
+		return nil, err
+	}
+	currentSearchPath := strings.Split(pathAsString, ",")
+	// unescape search path
+	for idx, p := range currentSearchPath {
+		p = strings.Join(strings.Split(p, "\""), "")
+		p = strings.TrimSpace(p)
+		currentSearchPath[idx] = p
+	}
+	return currentSearchPath, nil
+}
+
 func (r *ControlRun) getControlQueryContext(ctx context.Context) context.Context {
 	// create a context with a deadline
 	shouldBeDoneBy := time.Now().Add(controlQueryTimeout)
 	// we don't use this cancel fn because, pgx prematurely cancels the PG connection when this cancel gets called in 'defer'
 	newCtx, _ := context.WithDeadline(ctx, shouldBeDoneBy)
 	return newCtx
+}
+
+func (r *ControlRun) GetRunStatus() ControlRunStatus {
+	r.stateLock.Lock()
+	defer r.stateLock.Unlock()
+	return r.runStatus
+}
+
+func (r *ControlRun) Finished() bool {
+	status := r.GetRunStatus()
+	return status == ControlRunComplete || status == ControlRunError
 }
 
 func (r *ControlRun) resolveControlQuery(control *modconfig.Control) (string, error) {
@@ -345,21 +376,6 @@ func (r *ControlRun) createdOrderedResultRows() {
 	}
 }
 
-func (r *ControlRun) SetError(err error) {
-	if err == nil {
-		return
-	}
-	r.runError = utils.TransformErrorToSteampipe(err)
-
-	// update error count
-	r.Summary.Error++
-	r.setRunStatus(ControlRunError)
-}
-
-func (r *ControlRun) GetError() error {
-	return r.runError
-}
-
 func (r *ControlRun) setRunStatus(status ControlRunStatus) {
 	r.stateLock.Lock()
 	r.runStatus = status
@@ -376,15 +392,4 @@ func (r *ControlRun) setRunStatus(status ControlRunStatus) {
 		// TODO CANCEL QUERY IF NEEDED
 		r.doneChan <- true
 	}
-}
-
-func (r *ControlRun) GetRunStatus() ControlRunStatus {
-	r.stateLock.Lock()
-	defer r.stateLock.Unlock()
-	return r.runStatus
-}
-
-func (r *ControlRun) Finished() bool {
-	status := r.GetRunStatus()
-	return status == ControlRunComplete || status == ControlRunError
 }

@@ -24,11 +24,11 @@ type Benchmark struct {
 	ShortName string
 	FullName  string `cty:"name"`
 
-	ChildNames    *[]NamedItem       `cty:"children" hcl:"children"`
-	Description   *string            `cty:"description" hcl:"description" column:"description,text"`
-	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
-	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
+	ChildNames    []NamedItem       `cty:"children" hcl:"children,optional"`
+	Description   *string           `cty:"description" hcl:"description" column:"description,text"`
+	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	Tags          map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
+	Title         *string           `cty:"title" hcl:"title" column:"title,text"`
 
 	// list of all block referenced by the resource
 	References []*ResourceReference
@@ -37,16 +37,18 @@ type Benchmark struct {
 	ChildNameStrings []string `column:"children,jsonb"`
 	DeclRange        hcl.Range
 
-	parents  []ModTreeItem
-	children []ModTreeItem
-	metadata *ResourceMetadata
+	parents         []ModTreeItem
+	children        []ModTreeItem
+	metadata        *ResourceMetadata
+	UnqualifiedName string
 }
 
 func NewBenchmark(block *hcl.Block) *Benchmark {
 	return &Benchmark{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("benchmark.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
+		ShortName:       block.Labels[0],
+		FullName:        fmt.Sprintf("benchmark.%s", block.Labels[0]),
+		UnqualifiedName: fmt.Sprintf("benchmark.%s", block.Labels[0]),
+		DeclRange:       block.DefRange,
 	}
 }
 
@@ -60,19 +62,12 @@ func (b *Benchmark) Equals(other *Benchmark) bool {
 		return res
 	}
 	// tags
-	if b.Tags == nil {
-		if other.Tags != nil {
+	if len(b.Tags) != len(other.Tags) {
+		return false
+	}
+	for k, v := range b.Tags {
+		if otherVal := other.Tags[k]; v != otherVal {
 			return false
-		}
-	} else {
-		// we have tags
-		if other.Tags == nil {
-			return false
-		}
-		for k, v := range *b.Tags {
-			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
-				return false
-			}
 		}
 	}
 
@@ -100,14 +95,14 @@ func (b *Benchmark) GetDeclRange() *hcl.Range {
 // OnDecoded implements HclResource
 func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 	var res hcl.Diagnostics
-	if b.ChildNames == nil || len(*b.ChildNames) == 0 {
+	if len(b.ChildNames) == 0 {
 		return nil
 	}
 
 	// validate each child name appears only once
 	nameMap := make(map[string]bool)
-	b.ChildNameStrings = make([]string, len(*b.ChildNames))
-	for i, n := range *b.ChildNames {
+	b.ChildNameStrings = make([]string, len(b.ChildNames))
+	for i, n := range b.ChildNames {
 		if nameMap[n.Name] {
 			res = append(res, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -120,6 +115,7 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 		nameMap[n.Name] = true
 	}
 
+	// in order to populate th echildren in the order specified, we create an empty array and populate by index in AddChild
 	b.children = make([]ModTreeItem, len(b.ChildNameStrings))
 	return res
 }
@@ -132,6 +128,8 @@ func (b *Benchmark) AddReference(ref *ResourceReference) {
 // SetMod implements HclResource
 func (b *Benchmark) SetMod(mod *Mod) {
 	b.Mod = mod
+	b.UnqualifiedName = b.FullName
+	b.FullName = fmt.Sprintf("%s.%s", mod.ShortName, b.FullName)
 }
 
 // GetMod implements HclResource
@@ -222,7 +220,7 @@ func (b *Benchmark) GetDescription() string {
 // GetTags implements ModTreeItem
 func (b *Benchmark) GetTags() map[string]string {
 	if b.Tags != nil {
-		return *b.Tags
+		return b.Tags
 	}
 	return map[string]string{}
 }
@@ -244,7 +242,7 @@ func (b *Benchmark) GetPaths() []NodePath {
 }
 
 // Name implements ModTreeItem, HclResource, ResourceWithMetadata
-// return name in format: 'control.<shortName>'
+// return name in format: '<modname>.control.<shortName>'
 func (b *Benchmark) Name() string {
 	return b.FullName
 }
@@ -257,9 +255,4 @@ func (b *Benchmark) GetMetadata() *ResourceMetadata {
 // SetMetadata implements ResourceWithMetadata
 func (b *Benchmark) SetMetadata(metadata *ResourceMetadata) {
 	b.metadata = metadata
-}
-
-// QualifiedName returns the name in format: '<modName>.control.<shortName>'
-func (b *Benchmark) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", b.metadata.ModName, b.FullName)
 }

@@ -6,7 +6,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/hashicorp/go-version"
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
+
+	"github.com/Masterminds/semver"
+
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/plugin"
@@ -48,10 +51,10 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 	return nil
 }
 
-func (w *Workspace) getRequiredPlugins() map[string]*version.Version {
-	if w.Mod.Requires != nil {
-		requiredPluginVersions := w.Mod.Requires.Plugins
-		requiredVersion := make(map[string]*version.Version)
+func (w *Workspace) getRequiredPlugins() map[string]*semver.Version {
+	if w.Mod.Require != nil {
+		requiredPluginVersions := w.Mod.Require.Plugins
+		requiredVersion := make(version_map.VersionMap)
 		for _, pluginVersion := range requiredPluginVersions {
 			requiredVersion[pluginVersion.ShortName()] = pluginVersion.Version
 		}
@@ -60,12 +63,12 @@ func (w *Workspace) getRequiredPlugins() map[string]*version.Version {
 	return nil
 }
 
-func (w *Workspace) getInstalledPlugins() (map[string]*version.Version, error) {
-	installedPlugins := make(map[string]*version.Version)
+func (w *Workspace) getInstalledPlugins() (version_map.VersionMap, error) {
+	installedPlugins := make(version_map.VersionMap)
 	installedPluginsData, _ := plugin.List(nil)
 	for _, plugin := range installedPluginsData {
 		org, name, _ := ociinstaller.NewSteampipeImageRef(plugin.Name).GetOrgNameAndStream()
-		semverVersion, err := version.NewVersion(plugin.Version)
+		semverVersion, err := semver.NewVersion(plugin.Version)
 		if err != nil {
 			continue
 		}
@@ -81,7 +84,7 @@ type requiredPluginVersion struct {
 	installedVersion string
 }
 
-func (v *requiredPluginVersion) SetRequiredVersion(requiredVersion *version.Version) {
+func (v *requiredPluginVersion) SetRequiredVersion(requiredVersion *semver.Version) {
 	requiredVersionString := requiredVersion.String()
 	// if no required version was specified, the version will be 0.0.0
 	if requiredVersionString == "0.0.0" {
@@ -91,7 +94,7 @@ func (v *requiredPluginVersion) SetRequiredVersion(requiredVersion *version.Vers
 	}
 }
 
-func (v *requiredPluginVersion) SetInstalledVersion(installedVersion *version.Version) {
+func (v *requiredPluginVersion) SetInstalledVersion(installedVersion *semver.Version) {
 	v.installedVersion = installedVersion.String()
 }
 

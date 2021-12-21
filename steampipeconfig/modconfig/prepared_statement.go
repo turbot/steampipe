@@ -3,6 +3,7 @@ package modconfig
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/turbot/steampipe/utils"
 )
@@ -25,6 +26,8 @@ func GetPreparedStatementExecuteSQL(source QueryProvider, args *QueryArgs) (stri
 func preparedStatementName(source QueryProvider) string {
 	var name, suffix string
 	prefix := fmt.Sprintf("%s_", source.ModName())
+	prefix = strings.Replace(prefix, ".", "_", -1)
+	prefix = strings.Replace(prefix, "@", "_", -1)
 
 	// build suffix using a char to indicate control or query, and the truncated hash
 	switch t := source.(type) {

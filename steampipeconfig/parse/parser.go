@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hashicorp/hcl/v2/gohcl"
-
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/json"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
@@ -75,12 +75,12 @@ func ModfileExists(modPath string) bool {
 }
 
 // ParseModDefinition parses the modfile only
-// it is expected the callign code wil lhave verified the existence of the modfile by calling ModfileExists
+// it is expected the calling code will have verified the existence of the modfile by calling ModfileExists
 func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 	// TODO think about variables
 
 	// if there is no mod at this location, return error
-	modFilePath := filepath.Join(modPath, "mod.sp")
+	modFilePath := constants.ModFilePath(modPath)
 	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("no mod file found in %s", modPath)
 	}
@@ -107,7 +107,11 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 
 	for _, block := range content.Blocks {
 		if block.Type == modconfig.BlockTypeMod {
-			mod := modconfig.NewMod(block.Labels[0], modPath, block.DefRange)
+			var defRange = block.DefRange
+			if hclBody, ok := block.Body.(*hclsyntax.Body); ok {
+				defRange = hclBody.SrcRange
+			}
+			mod := modconfig.NewMod(block.Labels[0], modPath, defRange)
 			diags := gohcl.DecodeBody(block.Body, evalCtx, mod)
 			if diags.HasErrors() {
 				return nil, plugin.DiagsToError("Failed to decode mod hcl file", diags)
@@ -156,7 +160,8 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	addPseudoResourcesToMod(pseudoResources, hclResources, mod)
 
 	// add this mod to run context - this it to ensure all pseudo resources get added
-	runCtx.AddMod(mod, content, fileData)
+	runCtx.SetDecodeContent(content, fileData)
+	runCtx.AddMod(mod)
 
 	// perform initial decode to get dependencies
 	// (if there are no dependencies, this is all that is needed)
@@ -180,7 +185,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 
 	// now tell mod to build tree of controls.
 	// NOTE: this also builds the sorted benchmark list
-	if err := mod.BuildResourceTree(); err != nil {
+	if err := mod.BuildResourceTree(runCtx.LoadedDependencyMods); err != nil {
 		return nil, err
 	}
 

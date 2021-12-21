@@ -1,7 +1,7 @@
-mod "dep1"{
-  requires {
-    mod "github.com/kaidaguerre/steampipe-mod-m2"  {
-      version = "v1.0"
+mod "dep1" {
+  require {
+    mod "github.com/turbot/steampipe-mod-aws-compliance" {
+      version = "0"
     }
   }
 }

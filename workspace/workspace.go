@@ -11,7 +11,6 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
@@ -19,6 +18,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -140,7 +140,7 @@ func (w *Workspace) SetOnFileWatcherEventMessages(f func()) {
 }
 
 // access functions
-// NOTE: all access functions lock 'loadLock' - this is to avoid conflicts with th efile watcher
+// NOTE: all access functions lock 'loadLock' - this is to avoid conflicts with the file watcher
 
 func (w *Workspace) Close() {
 	if w.watcher != nil {
@@ -219,33 +219,6 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 	return workspaceMap
 }
 
-// GetMod attempts to return the mod with a name matching 'modName'
-// It first checks the workspace mod, then checks all mod dependencies
-func (w *Workspace) GetMod(modName string) *modconfig.Mod {
-	// is it the workspace mod?
-	if modName == w.Mod.Name() {
-		return w.Mod
-	}
-	// try workspace mod dependencies
-	return w.Mods[modName]
-}
-
-// ModList returns a flat list of all mods - the workspace mod and depenfency mods
-func (w *Workspace) ModList() []*modconfig.Mod {
-	var res = []*modconfig.Mod{w.Mod}
-	for _, m := range w.Mods {
-		res = append(res, m)
-	}
-	return res
-}
-
-// SaveWorkspaceMod searialises the workspace mode to <workspace path?.mod.sp
-func (w *Workspace) SaveWorkspaceMod() error {
-	// TODO
-
-	return nil
-}
-
 // clear all resource maps
 func (w *Workspace) reset() {
 	w.Queries = make(map[string]*modconfig.Query)
@@ -259,7 +232,7 @@ func (w *Workspace) reset() {
 // check  whether the workspace contains a modfile
 // this will determine whether we load files recursively, and create pseudo resources for sql files
 func (w *Workspace) setModfileExists() {
-	modFilePath := filepath.Join(w.Path, constants.WorkspaceModFileName)
+	modFilePath := constants.ModFilePath(w.Path)
 	_, err := os.Stat(modFilePath)
 	modFileExists := err == nil
 
@@ -285,7 +258,10 @@ func (w *Workspace) loadWorkspaceMod() error {
 	}
 
 	// build run context which we use to load the workspace
-	runCtx := w.getRunContext()
+	runCtx, err := w.getRunContext()
+	if err != nil {
+		return err
+	}
 	// add variables to runContext
 	runCtx.AddVariables(inputVariables)
 
@@ -314,12 +290,19 @@ func (w *Workspace) loadWorkspaceMod() error {
 
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
-func (w *Workspace) getRunContext() *parse.RunContext {
+func (w *Workspace) getRunContext() (*parse.RunContext, error) {
 	parseFlag := parse.CreateDefaultMod
 	if w.loadPseudoResources {
 		parseFlag |= parse.CreatePseudoResources
 	}
-	return parse.NewRunContext(
+	// load the workspace lock
+	workspaceLock, err := version_map.LoadWorkspaceLock(w.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load installation cache from %s: %s", w.Path, err)
+	}
+
+	runCtx := parse.NewRunContext(
+		workspaceLock,
 		w.Path,
 		parseFlag,
 		&filehelpers.ListOptions{
@@ -329,13 +312,18 @@ func (w *Workspace) getRunContext() *parse.RunContext {
 			// only load .sp files
 			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 		})
+
+	return runCtx, nil
 }
 
 func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
 	// build options used to load workspace
-	opts := w.getRunContext()
+	runCtx, err := w.getRunContext()
+	if err != nil {
+		return nil, err
+	}
 
-	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, opts)
+	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, runCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -358,14 +346,15 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 	for _, q := range w.Mod.Queries {
 		// add 'local' alias
 		res[q.Name()] = q
-		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.ShortName), q.ShortName)
-		res[longName] = q
+		res[q.UnqualifiedName] = q
 	}
 
 	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, q := range mod.Queries {
-			res[q.QualifiedName()] = q
+			// if this mod is a direct dependency of the workspace mod, add it to the map _without_ a verison
+			res[q.Name()] = q
+
 		}
 	}
 	return res
@@ -378,13 +367,13 @@ func (w *Workspace) buildControlMap(modMap modconfig.ModMap) map[string]*modconf
 	// for LOCAL resources, add map entries keyed by both short name: control.<shortName> and  long name: <modName>.control.<shortName?
 	for _, c := range w.Mod.Controls {
 		res[c.Name()] = c
-		res[c.QualifiedName()] = c
+		res[c.UnqualifiedName] = c
 	}
 
 	// for mode dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, c := range mod.Controls {
-			res[c.QualifiedName()] = c
+			res[c.Name()] = c
 		}
 	}
 	return res
@@ -394,16 +383,16 @@ func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) map[string]*modco
 	//  build a list of long and short names for these queries
 	var res = make(map[string]*modconfig.Benchmark)
 
-	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
+	// for LOCAL resources, add map entries keyed by both unqualified name: benchmark.<shortName> and full name: <modName>.benchmark.<shortName?
 	for _, b := range w.Mod.Benchmarks {
+		res[b.UnqualifiedName] = b
 		res[b.Name()] = b
-		res[b.QualifiedName()] = b
 	}
 
 	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, c := range mod.Benchmarks {
-			res[c.QualifiedName()] = c
+			res[c.Name()] = c
 		}
 	}
 	return res
@@ -416,13 +405,13 @@ func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfi
 	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
 	for _, r := range w.Mod.Reports {
 		res[r.Name()] = r
-		res[r.QualifiedName()] = r
+		res[r.UnqualifiedName] = r
 	}
 
 	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, r := range mod.Reports {
-			res[r.QualifiedName()] = r
+			res[r.Name()] = r
 		}
 	}
 	return res
@@ -436,13 +425,13 @@ func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig
 	for _, p := range w.Mod.Panels {
 		res[fmt.Sprintf("local.%s", p.Name())] = p
 		res[p.Name()] = p
-		res[p.QualifiedName()] = p
+		res[p.UnqualifiedName] = p
 	}
 
 	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, p := range mod.Panels {
-			res[p.QualifiedName()] = p
+			res[p.Name()] = p
 		}
 	}
 	return res
@@ -532,7 +521,8 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.Work
 
 // ResolveQueryAndArgs attempts to resolve 'arg' to a query and query args
 func (w *Workspace) ResolveQueryAndArgs(sqlString string) (string, modconfig.QueryProvider, error) {
-	var args *modconfig.QueryArgs
+	var args = &modconfig.QueryArgs{}
+
 	var err error
 
 	// if this looks like a named query or named control invocation, parse the sql string for arguments

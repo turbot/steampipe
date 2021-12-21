@@ -8,9 +8,9 @@ import (
 	"github.com/stevenle/topsort"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/version_map"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -35,7 +35,9 @@ type ReferenceTypeValueMap map[string]map[string]cty.Value
 
 type RunContext struct {
 	// the mod which is currently being parsed
-	CurrentMod       *modconfig.Mod
+	CurrentMod *modconfig.Mod
+	// the workspace lock data
+	WorkspaceLock    *version_map.WorkspaceLock
 	UnresolvedBlocks map[string]*unresolvedBlock
 	FileData         map[string][]byte
 	// the eval context used to decode references in HCL
@@ -44,8 +46,7 @@ type RunContext struct {
 	Flags                ParseModFlag
 	ListOptions          *filehelpers.ListOptions
 	LoadedDependencyMods modconfig.ModMap
-	WorkspacePath        string
-	ModInstallationPath  string
+	RootEvalPath         string
 	// if set, only decode these blocks
 	BlockTypes []string
 	// if set, exclude these block types
@@ -59,11 +60,11 @@ type RunContext struct {
 	Variables       map[string]*modconfig.Variable
 }
 
-func NewRunContext(workspacePath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
+func NewRunContext(workspaceLock *version_map.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
 	c := &RunContext{
 		Flags:                flags,
-		ModInstallationPath:  constants.WorkspaceModPath(workspacePath),
-		WorkspacePath:        workspacePath,
+		RootEvalPath:         rootEvalPath,
+		WorkspaceLock:        workspaceLock,
 		ListOptions:          listOptions,
 		LoadedDependencyMods: make(modconfig.ModMap),
 		UnresolvedBlocks:     make(map[string]*unresolvedBlock),
@@ -77,7 +78,18 @@ func NewRunContext(workspacePath string, flags ParseModFlag, listOptions *filehe
 	// add enums to the variables which may be referenced from within the hcl
 	c.addSteampipeEnums()
 	c.buildEvalContext()
+
 	return c
+}
+
+func (r *RunContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
+	// if the mod has dependencies, there must a workspace lock object in the run context
+	// (mod MUST be the workspace mod, not a dependency, as we would hit this error as soon as we parse it)
+	if mod.HasDependentMods() && (r.WorkspaceLock.Empty() || r.WorkspaceLock.Incomplete()) {
+		return fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
+	}
+
+	return nil
 }
 
 // VariableValueMap converts a map of variables to a map of the underlying cty value
@@ -101,14 +113,11 @@ func (r *RunContext) AddVariables(inputVariables map[string]*modconfig.Variable)
 
 // AddMod is used to add a mod with any pseudo resources to the eval context
 // - in practice this will be a shell mod with just pseudo resources - other resources will be added as they are parsed
-func (r *RunContext) AddMod(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[string][]byte) hcl.Diagnostics {
+func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	if len(r.UnresolvedBlocks) > 0 {
 		// should never happen
 		panic("calling SetContent on runContext but there are unresolved blocks from a previous parse")
 	}
-
-	r.FileData = fileData
-	r.blocks = content.Blocks
 
 	var diags hcl.Diagnostics
 
@@ -119,26 +128,35 @@ func (r *RunContext) AddMod(mod *modconfig.Mod, content *hcl.BodyContent, fileDa
 		moreDiags := r.storeResourceInCtyMap(q)
 		diags = append(diags, moreDiags...)
 	}
-	for _, q := range mod.Controls {
-		moreDiags := r.storeResourceInCtyMap(q)
+	for _, c := range mod.Controls {
+		moreDiags := r.storeResourceInCtyMap(c)
 		diags = append(diags, moreDiags...)
 	}
-	for _, q := range mod.Locals {
-		moreDiags := r.storeResourceInCtyMap(q)
+	for _, b := range mod.Benchmarks {
+		moreDiags := r.storeResourceInCtyMap(b)
 		diags = append(diags, moreDiags...)
 	}
-	for _, q := range mod.Reports {
-		moreDiags := r.storeResourceInCtyMap(q)
+	for _, l := range mod.Locals {
+		moreDiags := r.storeResourceInCtyMap(l)
 		diags = append(diags, moreDiags...)
 	}
-	for _, q := range mod.Panels {
-		moreDiags := r.storeResourceInCtyMap(q)
+	for _, rpt := range mod.Reports {
+		moreDiags := r.storeResourceInCtyMap(rpt)
+		diags = append(diags, moreDiags...)
+	}
+	for _, p := range mod.Panels {
+		moreDiags := r.storeResourceInCtyMap(p)
 		diags = append(diags, moreDiags...)
 	}
 
 	// rebuild the eval context
 	r.buildEvalContext()
 	return diags
+}
+
+func (r *RunContext) SetDecodeContent(content *hcl.BodyContent, fileData map[string][]byte) {
+	r.blocks = content.Blocks
+	r.FileData = fileData
 }
 
 func (r *RunContext) ShouldIncludeBlock(block *hcl.Block) bool {
@@ -360,10 +378,11 @@ func (r *RunContext) buildEvalContext() {
 		variables[mod] = cty.ObjectVal(refTypeMap)
 	}
 
-	//create evaluation context
+	// create evaluation context
 	r.EvalCtx = &hcl.EvalContext{
 		Variables: variables,
-		Functions: ContextFunctions(r.WorkspacePath),
+		// use the mod path as the file root for functions
+		Functions: ContextFunctions(r.RootEvalPath),
 	}
 }
 
@@ -411,11 +430,9 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	typeString := parsedName.ItemType
 
 	// the resource name will not have a mod - but the run context knows which mod we are parsing
-
 	mod := r.CurrentMod
-
 	modName := mod.ShortName
-	if mod.ModPath == r.WorkspacePath {
+	if mod.ModPath == r.RootEvalPath {
 		modName = "local"
 	}
 	variablesForMod, ok := r.referenceValues[modName]

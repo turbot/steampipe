@@ -11,7 +11,7 @@ mod "m1" {
   labels = ["public cloud", "aws"]
 
   # dependencies
-  requires {
+  require {
     steampipe = ">0.3.0"
 
     plugin "aws" {}

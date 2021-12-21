@@ -35,6 +35,7 @@ type Query struct {
 	DeclRange             hcl.Range
 	PreparedStatementName string `column:"prepared_statement_name,text"`
 	metadata              *ResourceMetadata
+	UnqualifiedName       string
 }
 
 func (q *Query) Equals(other *Query) bool {
@@ -151,11 +152,6 @@ func (q *Query) Name() string {
 	return q.FullName
 }
 
-// QualifiedName returns the name in format: '<modName>.control.<shortName>'
-func (q *Query) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", q.metadata.ModName, q.FullName)
-}
-
 // GetMetadata implements ResourceWithMetadata
 func (q *Query) GetMetadata() *ResourceMetadata {
 	return q.metadata
@@ -177,6 +173,8 @@ func (q *Query) AddReference(ref *ResourceReference) {
 // SetMod implements HclResource
 func (q *Query) SetMod(mod *Mod) {
 	q.Mod = mod
+	q.UnqualifiedName = q.FullName
+	q.FullName = fmt.Sprintf("%s.%s", mod.ShortName, q.FullName)
 }
 
 // GetMod implements HclResource
@@ -205,5 +203,5 @@ func (q *Query) GetPreparedStatementName() string {
 
 // ModName implements QueryProvider
 func (q *Query) ModName() string {
-	return q.Mod.ShortName
+	return q.Mod.NameWithVersion()
 }

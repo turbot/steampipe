@@ -30,15 +30,17 @@ type Panel struct {
 	DeclRange hcl.Range
 	Mod       *Mod `cty:"mod"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents         []ModTreeItem
+	metadata        *ResourceMetadata
+	UnqualifiedName string
 }
 
 func NewPanel(block *hcl.Block) *Panel {
 	panel := &Panel{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("panel.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
+		ShortName:       block.Labels[0],
+		FullName:        fmt.Sprintf("panel.%s", block.Labels[0]),
+		UnqualifiedName: fmt.Sprintf("panel.%s", block.Labels[0]),
+		DeclRange:       block.DefRange,
 	}
 	return panel
 }
@@ -85,11 +87,6 @@ func (p *Panel) Name() string {
 	return p.FullName
 }
 
-// QualifiedName returns the name in format: '<modName>.panel.<shortName>'
-func (p *Panel) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", p.metadata.ModName, p.FullName)
-}
-
 // OnDecoded implements HclResource
 func (p *Panel) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
@@ -99,6 +96,8 @@ func (p *Panel) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (p *Panel) SetMod(mod *Mod) {
 	p.Mod = mod
+	p.UnqualifiedName = p.FullName
+	p.FullName = fmt.Sprintf("%s.%s", mod.ShortName, p.FullName)
 }
 
 // GetMod implements HclResource

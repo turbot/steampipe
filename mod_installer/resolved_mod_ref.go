@@ -1,73 +1,49 @@
 package mod_installer
 
 import (
-	"fmt"
-
+	"github.com/Masterminds/semver"
 	"github.com/go-git/go-git/v5/plumbing"
-	goVersion "github.com/hashicorp/go-version"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/version_helpers"
 )
 
-// ResolvedModRef is a struct to represent a resolved mod reference
+// ResolvedModRef is a struct to represent a resolved mod git reference
 type ResolvedModRef struct {
 	// the FQN of the mod - also the Git URL of the mod repo
 	Name string
+	// the mod version
+	Version *semver.Version
+	// the vestion constraint
+	Constraint *version_helpers.Constraints
 	// the Git branch/tag
 	GitReference plumbing.ReferenceName
-	// the monotonic version - may be unknown for local or branch
-	// although version will be monotonic, we can still use semver
-	Version *goVersion.Version
 	// the file path for local mods
 	FilePath string
 }
 
-func NewResolvedModRef(modVersion *modconfig.ModVersion) (*ResolvedModRef, error) {
+func NewResolvedModRef(requiredModVersion *modconfig.ModVersionConstraint, version *semver.Version) (*ResolvedModRef, error) {
 	res := &ResolvedModRef{
-		Name: modVersion.Name,
-
+		Name:       requiredModVersion.Name,
+		Version:    version,
+		Constraint: requiredModVersion.Constraint,
 		// this may be empty strings
-		FilePath: modVersion.FilePath,
+		FilePath: requiredModVersion.FilePath,
 	}
 	if res.FilePath == "" {
-		// NOTE we currently only support explicit (i.e. minor) versions
-		// if the mod version has either a version constraint or branch, set the git ref
-		res.SetGitReference(modVersion)
+		res.setGitReference()
 	}
 
 	return res, nil
 }
 
-func (r *ResolvedModRef) SetGitReference(modVersion *modconfig.ModVersion) {
+func (r *ResolvedModRef) setGitReference() {
+	// TODO handle branches
 
-	if modVersion.Branch != "" {
-		r.GitReference = plumbing.NewBranchReferenceName(modVersion.Branch)
-		// NOTE: we need to set version from branch
-		return
-	}
-
-	// so there is a version constraint
-
-	// NOTE: if it is just a major constraint, we need to find the latest version in the major
-	// for now assume it is a full version
-
-	// NOTE: we cannot just ToString the version as we need the 'v' at the beginning
-	r.GitReference = plumbing.NewTagReferenceName(modVersion.VersionString)
-	r.Version = modVersion.VersionConstraint
+	// NOTE: use the original version string - this will be the tag name
+	r.GitReference = plumbing.NewTagReferenceName(r.Version.Original())
 }
 
 // FullName returns name in the format <dependency name>@v<dependencyVersion>
 func (r *ResolvedModRef) FullName() string {
-	segments := r.Version.Segments()
-	return fmt.Sprintf("%s@v%d.%d", r.Name, segments[0], segments[1])
-}
-
-// SatisfiesVersionConstraint return whether this resolved ref satisfies a version constraint
-func (r *ResolvedModRef) SatisfiesVersionConstraint(versionConstraint *goVersion.Version) bool {
-	// if we do not have a version set, then we cannot satisfy a version constraint
-	// this may happen if we are a local file or unversioned branch
-	if r.Version == nil {
-		return false
-	}
-
-	return r.Version.GreaterThanOrEqual(versionConstraint)
+	return modconfig.ModVersionFullName(r.Name, r.Version)
 }
