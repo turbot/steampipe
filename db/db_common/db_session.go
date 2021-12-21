@@ -33,15 +33,18 @@ func NewDBSession(backendPid uint32) *DatabaseSession {
 
 // UpdateUsage updates the UsedCount of the DatabaseSession and also the lastUsed time
 func (s *DatabaseSession) UpdateUsage() {
-	s.UsedCount++
-	s.LastUsed = time.Now()
-	wasSwapped := atomic.CompareAndSwapInt32(&s.inUse, 0, 1)
-	if !wasSwapped {
+	if !atomic.CompareAndSwapInt32(&s.inUse, 0, 1) {
 		panic("cannot use DatabaseSession under usage")
 	}
+	s.UsedCount++
+	s.LastUsed = time.Now()
 }
 
 func (s *DatabaseSession) Close(waitForCleanup bool) error {
+	if !atomic.CompareAndSwapInt32(&s.inUse, 1, 0) {
+		return nil
+	}
+
 	var err error
 	if s.Connection != nil {
 		if waitForCleanup {
