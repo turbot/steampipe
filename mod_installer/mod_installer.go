@@ -461,6 +461,7 @@ func (i *ModInstaller) loadModfile(modPath string, createDefault bool) (*modconf
 func (i *ModInstaller) updating() bool {
 	return i.command == "update"
 }
+
 func (i *ModInstaller) uninstalling() bool {
 	return i.command == "uninstall"
 }

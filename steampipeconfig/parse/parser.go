@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/hashicorp/hcl/v2/hclsyntax"
+
 	"github.com/hashicorp/hcl/v2/gohcl"
 
 	"github.com/hashicorp/hcl/v2"
@@ -107,7 +109,11 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 
 	for _, block := range content.Blocks {
 		if block.Type == modconfig.BlockTypeMod {
-			mod := modconfig.NewMod(block.Labels[0], modPath, block.DefRange)
+			var defRange = block.DefRange
+			if hclBody, ok := block.Body.(*hclsyntax.Body); ok {
+				defRange = hclBody.SrcRange
+			}
+			mod := modconfig.NewMod(block.Labels[0], modPath, defRange)
 			diags := gohcl.DecodeBody(block.Body, evalCtx, mod)
 			if diags.HasErrors() {
 				return nil, plugin.DiagsToError("Failed to decode mod hcl file", diags)

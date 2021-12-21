@@ -64,6 +64,9 @@ type Mod struct {
 	ModPath   string
 	DeclRange hcl.Range
 
+	// all children as an array of hcl resources - built before the 'children' array
+	flatChildren []HclResource
+	// array of direct mod children - excluds resources which are children of othe rresources
 	children []ModTreeItem
 	metadata *ResourceMetadata
 }
@@ -323,7 +326,7 @@ func (m *Mod) NameWithVersion() string {
 	return fmt.Sprintf("%s@%s", m.ShortName, m.VersionString)
 }
 
-// AddChild  implements ModTreeItem
+// AddChild implements ModTreeItem
 func (m *Mod) AddChild(child ModTreeItem) error {
 	m.children = append(m.children, child)
 	return nil
@@ -408,6 +411,8 @@ func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	if m.VersionString != "" && m.Version == nil {
 		m.Version, _ = semver.NewVersion(m.VersionString)
 	}
+	// build flat children
+	m.buildFlatChilden()
 	// initialise our Require
 	if m.Require == nil {
 		return nil
@@ -487,38 +492,8 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 
 // is the given item a child of the mod
 func (m *Mod) hasChild(item ModTreeItem) bool {
-	for _, q := range m.Queries {
-		if q.Name() == item.Name() {
-			return true
-		}
-	}
-	for _, b := range m.Benchmarks {
-		if b.Name() == item.Name() {
-			return true
-		}
-	}
-	for _, r := range m.Reports {
-		if r.Name() == item.Name() {
-			return true
-		}
-	}
-	for _, p := range m.Panels {
-		if p.Name() == item.Name() {
-			return true
-		}
-	}
-	for _, c := range m.Controls {
+	for _, c := range m.flatChildren {
 		if c.Name() == item.Name() {
-			return true
-		}
-	}
-	for _, v := range m.Variables {
-		if v.Name() == item.Name() {
-			return true
-		}
-	}
-	for _, l := range m.Locals {
-		if l.Name() == item.Name() {
 			return true
 		}
 	}
@@ -547,7 +522,6 @@ func (m *Mod) RemoveAllModDependencies() {
 }
 
 func (m *Mod) Save() error {
-
 	f := hclwrite.NewEmptyFile()
 	rootBody := f.Body()
 
@@ -619,8 +593,13 @@ func (m *Mod) Save() error {
 		}
 	}
 
-	return os.WriteFile(constants.ModFilePath(m.ModPath), f.Bytes(), 0644)
-
+	// load existing mod data and remove the mod definitions from it
+	nonModData, err := m.loadNonModDataInModFile()
+	if err != nil {
+		return err
+	}
+	modData := append(f.Bytes(), nonModData...)
+	return os.WriteFile(constants.ModFilePath(m.ModPath), modData, 0644)
 }
 
 func (m *Mod) HasDependentMods() bool {
@@ -632,4 +611,60 @@ func (m *Mod) GetModDependency(modName string) *ModVersionConstraint {
 		return nil
 	}
 	return m.Require.GetModDependency(modName)
+}
+
+func (m *Mod) buildFlatChilden() {
+	res := make([]HclResource, len(m.Queries)+len(m.Controls)+len(m.Benchmarks)+len(m.Reports)+len(m.Panels)+len(m.Variables)+len(m.Locals))
+
+	idx := 0
+	for _, r := range m.Queries {
+		res[idx] = r
+		idx++
+	}
+	for _, r := range m.Controls {
+		res[idx] = r
+		idx++
+	}
+	for _, r := range m.Benchmarks {
+		res[idx] = r
+		idx++
+	}
+	for _, r := range m.Reports {
+		res[idx] = r
+		idx++
+	}
+	for _, r := range m.Panels {
+		res[idx] = r
+		idx++
+	}
+	for _, r := range m.Variables {
+		res[idx] = r
+		idx++
+	}
+	for _, r := range m.Locals {
+		res[idx] = r
+		idx++
+	}
+	m.flatChildren = res
+}
+
+func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
+	fileData, err := os.ReadFile(constants.ModFilePath(m.ModPath))
+	if err != nil {
+		return nil, err
+	}
+
+	fileLines := strings.Split(string(fileData), "\n")
+	decl := m.DeclRange
+	// just use line positions
+	start := decl.Start.Line - 1
+	end := decl.End.Line - 1
+
+	var resLines []string
+	for i, line := range fileLines {
+		if (i < start || i > end) && line != "" {
+			resLines = append(resLines, line)
+		}
+	}
+	return []byte(strings.Join(resLines, "\n")), nil
 }
