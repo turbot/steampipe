@@ -28,9 +28,9 @@ func modCmd() *cobra.Command {
 	cmd.AddCommand(modInstallCmd())
 	cmd.AddCommand(modUninstallCmd())
 	cmd.AddCommand(modUpdateCmd())
-	cmd.AddCommand(modPruneCmd())
 	cmd.AddCommand(modListCmd())
 	cmd.AddCommand(modInitCmd())
+	cmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for mod")
 
 	return cmd
 }
@@ -40,14 +40,15 @@ func modInstallCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "install",
 		Run:   runModInstallCmd,
-		Short: "Install mod dependencies",
-		Long: `Install mod dependencies.
-`,
+		Short: "Install one or more mods and their dependencies",
+		Long:  `Install one or more mods and their dependencies.`,
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgPrune, "", true, "Remove unreferenced mods after installation").
-		AddBoolFlag(constants.ArgDryRun, "", false, "Show which mods would be installed or uninstalled without performing the installation")
+		AddBoolFlag(constants.ArgPrune, "", true, "Remove unused dependencies after installation is complete").
+		AddBoolFlag(constants.ArgDryRun, "", false, "Show which mods would be installed/updated/uninstalled without modifying them").
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for install")
+
 	return cmd
 }
 
@@ -74,14 +75,14 @@ func modUninstallCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "uninstall",
 		Run:   runModUninstallCmd,
-		Short: "Uninstall mod dependencies",
-		Long: `Uninstall mod dependencies.
-`,
+		Short: "Uninstall a mod and its dependencies",
+		Long:  `Uninstall a mod and its dependencies.`,
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgPrune, "", true, "Remove unreferenced mods after uninstallation").
-		AddBoolFlag(constants.ArgDryRun, "", false, "Show which mods would be uninstalled without removing them")
+		AddBoolFlag(constants.ArgPrune, "", true, "Remove unused dependencies after uninstallation is complete").
+		AddBoolFlag(constants.ArgDryRun, "", false, "Show which mods would be uninstalled without modifying them").
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for uninstall")
 
 	return cmd
 }
@@ -108,14 +109,14 @@ func modUpdateCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "update",
 		Run:   runModUpdateCmd,
-		Short: "Update workspace dependencies",
-		Long: `Update workspace dependencies.
-`,
+		Short: "Update one or more mods and their dependencies",
+		Long:  `Update one or more mods and their dependencies.`,
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgPrune, "", true, "Remove unreferenced mods after installation").
-		AddBoolFlag(constants.ArgDryRun, "", false, "Show which mods would be updated without updating them")
+		AddBoolFlag(constants.ArgPrune, "", true, "Remove unused dependencies after update is complete").
+		AddBoolFlag(constants.ArgDryRun, "", false, "Show which mods would be updated without modifying them").
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for update")
 
 	return cmd
 }
@@ -143,12 +144,11 @@ func modListCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "list",
 		Run:   runModListCmd,
-		Short: "List mod dependencies",
-		Long: `List mod dependencies.
-`,
+		Short: "List currently installed mods",
+		Long:  `List currently installed mods.`,
 	}
 
-	cmdconfig.OnCmd(cmd)
+	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, "h", false, "Help for list")
 	return cmd
 }
 
@@ -172,57 +172,16 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 	fmt.Println(treeString)
 }
 
-// prune
-func modPruneCmd() *cobra.Command {
-	var cmd = &cobra.Command{
-		Use:   "prune",
-		Run:   runModPruneCmd,
-		Short: "Prune mod dependencies",
-		Long: `Prune mod dependencies.
-`,
-	}
-
-	cmdconfig.OnCmd(cmd)
-	return cmd
-}
-
-func runModPruneCmd(cmd *cobra.Command, args []string) {
-	utils.LogTime("cmd.runModPruneCmd")
-	defer func() {
-		utils.LogTime("cmd.runModPruneCmd end")
-		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
-			exitCode = 1
-		}
-	}()
-
-	opts := &mod_installer.InstallOpts{
-		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
-		DryRun:        viper.GetBool(constants.ArgDryRun),
-	}
-
-	// install workspace dependencies
-	installer, err := mod_installer.NewModInstaller(opts)
-	utils.FailOnError(err)
-
-	unusedMods, err := installer.Prune()
-	utils.FailOnError(err)
-
-	if count := len(unusedMods.FlatMap()); count > 0 {
-		fmt.Println(mod_installer.BuildPruneSummary(unusedMods))
-	}
-}
-
 // init
 func modInitCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "init",
 		Run:   runModInitCmd,
-		Short: "Create a modfile in the current directory",
-		Long:  `Create a modfile in the current directory`,
+		Short: "Initialize the current directory with a mod.sp file",
+		Long:  `Initialize the current directory with a mod.sp file.`,
 	}
 
-	cmdconfig.OnCmd(cmd)
+	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, "h", false, "Help for init")
 	return cmd
 }
 
