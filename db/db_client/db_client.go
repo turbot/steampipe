@@ -79,12 +79,10 @@ func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
 	defer utils.LogTime("db_client.establishConnection end")
 
 	connConfig, _ := pgx.ParseConfig(connStr)
-
 	connConfig.RuntimeParams = map[string]string{
 		// set an app name so that we can track connections from this execution
 		"application_name": runtime_constants.PgClientAppName,
 	}
-
 	connStr = stdlib.RegisterConnConfig(connConfig)
 
 	db, err := sql.Open("pgx", connStr)
