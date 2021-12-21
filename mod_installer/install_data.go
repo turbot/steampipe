@@ -8,7 +8,7 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/version_map"
-	"github.com/turbot/steampipe/version"
+	"github.com/turbot/steampipe/version_helpers"
 )
 
 type InstallData struct {
@@ -50,7 +50,7 @@ func (d *InstallData) GetAvailableUpdates() (version_map.DependencyVersionMap, e
 			if err != nil {
 				return nil, err
 			}
-			constraint, _ := version.NewConstraint(resolvedConstraint.Constraint)
+			constraint, _ := version_helpers.NewConstraint(resolvedConstraint.Constraint)
 			var latestVersion = getVersionSatisfyingConstraint(constraint, availableVersions)
 			if latestVersion.GreaterThan(resolvedConstraint.Version) {
 				res.Add(name, latestVersion, constraint.Original, parent)
@@ -70,7 +70,7 @@ func (d *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconf
 }
 
 // addExisting is called when a dependency is satisfied by a mod which is already installed
-func (d *InstallData) addExisting(name string, version *semver.Version, constraint *version.Constraints, parent *modconfig.Mod) {
+func (d *InstallData) addExisting(name string, version *semver.Version, constraint *version_helpers.Constraints, parent *modconfig.Mod) {
 	// update lock
 	parentPath := parent.GetModDependencyPath()
 	d.NewLock.InstallCache.Add(name, version, constraint.Original, parentPath)

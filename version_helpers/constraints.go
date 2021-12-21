@@ -1,4 +1,4 @@
-package version
+package version_helpers
 
 import (
 	"github.com/Masterminds/semver"

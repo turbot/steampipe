@@ -1,11 +1,10 @@
 package mod_installer
 
 import (
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/version"
-
 	"github.com/Masterminds/semver"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/version_helpers"
 )
 
 // ResolvedModRef is a struct to represent a resolved mod git reference
@@ -15,7 +14,7 @@ type ResolvedModRef struct {
 	// the mod version
 	Version *semver.Version
 	// the vestion constraint
-	Constraint *version.Constraints
+	Constraint *version_helpers.Constraints
 	// the Git branch/tag
 	GitReference plumbing.ReferenceName
 	// the file path for local mods

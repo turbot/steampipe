@@ -7,16 +7,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/turbot/steampipe/version"
-
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
-	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/Masterminds/semver"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/version_helpers"
 )
 
 // WorkspaceLock is a map of ModVersionMaps items keyed by the parent mod whose dependencies are installed
@@ -274,7 +271,7 @@ func (l *WorkspaceLock) ContainsModVersion(modName string, modVersion *semver.Ve
 	return false
 }
 
-func (l *WorkspaceLock) ContainsModConstraint(modName string, constraint *version.Constraints) bool {
+func (l *WorkspaceLock) ContainsModConstraint(modName string, constraint *version_helpers.Constraints) bool {
 	for _, modVersionMap := range l.InstallCache {
 		for lockName, lockVersion := range modVersionMap {
 			if lockName == modName && lockVersion.Constraint == constraint.Original {
