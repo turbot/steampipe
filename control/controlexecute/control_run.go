@@ -37,7 +37,7 @@ type ControlRun struct {
 	Summary StatusSummary      `json:"-"`
 
 	// execution duration
-	Duration time.Duration `json:"duration"`
+	Duration time.Duration `json:"-"`
 
 	// used to trace the events within the duration of a control execution
 	Lifecycle *utils.LifecycleTimer `json:"-"`
