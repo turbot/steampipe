@@ -6,6 +6,17 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output 'No mods installed'
 }
 
+@test "list mods" {
+  # install 2 mods and list them
+  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance@0.1
+  steampipe mod install github.com/turbot/steampipe-mod-zoom-compliance@0.1
+  run steampipe mod list
+  assert_output '
+local
+├── github.com/turbot/steampipe-mod-zoom-compliance@v0.1
+└── github.com/turbot/steampipe-mod-aws-compliance@v0.1'
+}
+
 @test "install latest" {
   run steampipe mod install github.com/turbot/steampipe-mod-aws-compliance
   assert_output --partial 'Installed 1 mod:
@@ -64,6 +75,17 @@ local
   # better message
   assert_output '
 Installed 1 mod:
+
+local
+└── github.com/turbot/steampipe-mod-aws-compliance@v0.1'
+}
+
+@test "uninstall mod" {
+  # install particular mod version and uninstall
+  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance@0.1
+  run steampipe mod uninstall
+  assert_output '
+Uninstalled 1 mod:
 
 local
 └── github.com/turbot/steampipe-mod-aws-compliance@v0.1'
