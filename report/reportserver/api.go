@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
+	"runtime"
 	"time"
 
 	"github.com/gin-contrib/static"
@@ -16,10 +18,18 @@ import (
 func StartAPI(ctx context.Context, webSocket *melody.Melody) {
 	router := gin.Default()
 
-	router.Use(static.Serve("/", static.LocalFile("./static", true)))
+	_, filename, _, _ := runtime.Caller(1)
+	assetsDirectory := path.Join(path.Dir(filename), "assets")
+
+	router.Use(static.Serve("/", static.LocalFile(assetsDirectory, true)))
 
 	router.GET("/ws", func(c *gin.Context) {
 		webSocket.HandleRequest(c.Writer, c.Request)
+	})
+
+	router.NoRoute(func(c *gin.Context) {
+		//c.File("./static/index.html")
+		c.File(path.Join(assetsDirectory, "index.html"))
 	})
 
 	srv := &http.Server{

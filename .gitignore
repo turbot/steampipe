@@ -22,7 +22,7 @@
 # vendor/
 
 # Report server
-/report/reportserver/static/
+/report/reportserver/assets/
 
 # Dist directory is created by goreleaser
 /dist
