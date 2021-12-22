@@ -23,7 +23,7 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) {
 	})
 
 	srv := &http.Server{
-		Addr:    ":5000",
+		Addr:    ":3001",
 		Handler: router,
 	}
 
