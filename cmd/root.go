@@ -175,6 +175,7 @@ func AddCommands() {
 		modCmd(),
 		generateCompletionScriptsCmd(),
 		pluginManagerCmd(),
+		inspectCmd(),
 	)
 }
 

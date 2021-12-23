@@ -103,6 +103,8 @@ const (
 	InvokerCheck = "check"
 	// InvokerPlugin is set when invoked by a plugin command
 	InvokerPlugin = "plugin"
+	// InvokerInspect is set when invoked by inspect command
+	InvokerInspect = "inspect"
 	// InvokerReport is set when invoked by report command
 	InvokerReport = "report"
 	// InvokerConnectionWatcher is set when invoked by the connection watcher process

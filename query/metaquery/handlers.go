@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/inspector"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
 )
@@ -259,7 +260,7 @@ To get information about the columns in a table, run %s
 // inspect
 func inspect(ctx context.Context, input *HandlerInput) error {
 	if len(input.args()) == 0 {
-		return listConnections(ctx, input)
+		return inspector.ListConnections(ctx, *input.Schema, *input.Connections)
 	}
 	tableOrConnection := input.args()[0]
 	if len(input.args()) > 0 {
@@ -281,10 +282,10 @@ func inspect(ctx context.Context, input *HandlerInput) error {
 
 	if len(split) == 1 {
 		// only a connection name (or maybe unqualified table name)
-		schemaFound := inspectConnection(tableOrConnection, input)
+		err := inspector.DescribeConnection(ctx, tableOrConnection, *input.Schema, *input.Connections)
 
 		// there was no schema
-		if !schemaFound {
+		if err != nil {
 			searchPath, _ := input.Executor.GetCurrentSearchPath(ctx)
 
 			// add the temporary schema to the search_path so that it becomes searchable
