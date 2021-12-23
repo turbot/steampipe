@@ -186,7 +186,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		return res.SetError(err)
 	}
 
-	err = updateDatabaseNameInRunningInfo(ctx, databaseName)
+	res.DbState, err = updateDatabaseNameInRunningInfo(ctx, databaseName)
 	if err != nil {
 		return res.SetError(err)
 	}
@@ -333,13 +333,13 @@ func writePGConf(ctx context.Context) error {
 	return nil
 }
 
-func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) error {
+func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) (*RunningDBInstanceInfo, error) {
 	runningInfo, err := loadRunningInstanceInfo()
 	if err != nil {
-		return err
+		return runningInfo, err
 	}
 	runningInfo.Database = databaseName
-	return runningInfo.Save()
+	return runningInfo, runningInfo.Save()
 }
 
 func createCmd(ctx context.Context, port int, listenAddresses string) *exec.Cmd {
