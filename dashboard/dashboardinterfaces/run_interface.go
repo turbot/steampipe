@@ -9,9 +9,9 @@ type DashboardRunStatus string
 // TODO [report] think about status - do we need in progress
 const (
 	DashboardRunReady    DashboardRunStatus = "ready"
-	DashboardRunBlocked                     = "blocked"
-	DashboardRunComplete                    = "complete"
-	DashboardRunError                       = "error"
+	DashboardRunBlocked  DashboardRunStatus = "blocked"
+	DashboardRunComplete DashboardRunStatus = "complete"
+	DashboardRunError    DashboardRunStatus = "error"
 )
 
 type DashboardNodeRun interface {

@@ -127,9 +127,7 @@ func (q *QueryArgs) Merge(other *QueryArgs, source QueryProvider) (*QueryArgs, e
 		result.ArgList = make([]*string, listLength)
 
 		// first set values from other
-		for i, a := range other.ArgList {
-			result.ArgList[i] = a
-		}
+		copy(result.ArgList, other.ArgList)
 
 		// now set any unset values from base list
 		for i, a := range q.ArgList {

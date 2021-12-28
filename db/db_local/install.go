@@ -78,7 +78,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	statushooks.SetStatus(ctx, "Installing database...")
 	defer statushooks.Done(ctx)
 
-	err = downloadAndInstallDbFiles(ctx, err)
+	err = downloadAndInstallDbFiles(ctx)
 	if err != nil {
 		return err
 	}
@@ -123,10 +123,10 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	return nil
 }
 
-func downloadAndInstallDbFiles(ctx context.Context, err error) error {
+func downloadAndInstallDbFiles(ctx context.Context) error {
 	statushooks.SetStatus(ctx, "Prepare database install location...")
 	// clear all db files
-	err = os.RemoveAll(getDatabaseLocation())
+	err := os.RemoveAll(getDatabaseLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Prepare database install location... FAILED!")
@@ -191,7 +191,7 @@ func prepareDb(ctx context.Context) error {
 		defer statushooks.Done(ctx)
 
 		// install new db binaries
-		if err = downloadAndInstallDbFiles(ctx, err); err != nil {
+		if err = downloadAndInstallDbFiles(ctx	); err != nil {
 			return err
 		}
 		// write a signature after everything gets done!

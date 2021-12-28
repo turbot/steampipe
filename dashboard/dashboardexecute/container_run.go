@@ -131,15 +131,12 @@ func (r *DashboardContainerRun) Execute(ctx context.Context) {
 	// wait for children to complete
 	var errors []error
 	for !r.ChildrenComplete() {
-		select {
-		case completeChild := <-r.childComplete:
-			if completeChild.GetRunStatus() == dashboardinterfaces.DashboardRunError {
-				errors = append(errors, completeChild.GetError())
-			}
-			// fall through to recheck ChildrenComplete
-
-			// TODO [reports]  timeout?
+		completeChild := <-r.childComplete
+		if completeChild.GetRunStatus() == dashboardinterfaces.DashboardRunError {
+			errors = append(errors, completeChild.GetError())
 		}
+		// fall through to recheck ChildrenComplete
+		// TODO [reports]  timeout?
 	}
 
 	// so all children have completed - check for errors

@@ -36,7 +36,7 @@ type DashboardHierarchy struct {
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb"json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
 	Base       *DashboardHierarchy  `hcl:"base" json:"-"`

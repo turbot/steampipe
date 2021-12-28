@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"log"
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/filepaths"
@@ -1300,9 +1301,17 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 		})
 
 	// set working directory to the mod path
-	os.Chdir(modPath)
+	err = os.Chdir(modPath)
+	if err != nil {
+		t.Errorf("failed to chdir '%s': %s", modPath, err)
+	}
 	// change back to original directory
-	defer os.Chdir(wd)
+	defer func() {
+		if err := os.Chdir(wd); err != nil {
+			log.Printf("[TRACE] Failed change back to original directory '%s': %s", wd, err)
+		}
+	}()
+		
 	actualMod, err := LoadMod(modPath, runCtx)
 	if err != nil {
 		if test.expected != "ERROR" {

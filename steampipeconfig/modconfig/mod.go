@@ -140,12 +140,7 @@ func (m *Mod) Equals(other *Mod) bool {
 	}
 
 	// now check the child resources
-	if !m.ResourceMaps.Equals(other.ResourceMaps) {
-		return false
-	}
-
-	return true
-
+	return m.ResourceMaps.Equals(other.ResourceMaps)
 }
 
 // CreateDefaultMod creates a default mod created for a workspace with no mod definition
