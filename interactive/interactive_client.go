@@ -70,10 +70,14 @@ func getHighlighter(theme string) *Highlighter {
 }
 
 func newInteractiveClient(ctx context.Context, initData *query.InitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+	interactiveQueryHistory, err := queryhistory.New()
+	if err != nil {
+		return nil, err
+	}
 	c := &InteractiveClient{
 		initData:                initData,
 		resultsStreamer:         resultsStreamer,
-		interactiveQueryHistory: queryhistory.New(),
+		interactiveQueryHistory: interactiveQueryHistory,
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
 		initResultChan:          make(chan *db_common.InitResult, 1),

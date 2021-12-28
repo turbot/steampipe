@@ -18,7 +18,10 @@ func DebugDumpJSON(msg string, d interface{}) {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent(" ", " ")
 	os.Stdout.WriteString(msg)
-	enc.Encode(d)
+	err := enc.Encode(d)
+	if err != nil {
+		fmt.Printf("Encode failed: %v\n", err)
+	}
 }
 
 func DebugDumpViper() {

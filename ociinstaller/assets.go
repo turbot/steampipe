@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"log"
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
@@ -12,7 +13,11 @@ import (
 // InstallAssets installs the Steampipe report server assets
 func InstallAssets(ctx context.Context, assetsLocation string) error {
 	tempDir := NewTempDir(assetsLocation)
-	defer tempDir.Delete()
+	defer func() {
+		if err := tempDir.Delete(); err != nil {
+			log.Printf("[TRACE] Failed to delete temp dir '%s' after installing assets: %s", tempDir, err)
+		}
+	}()
 
 	// download the blobs
 	imageDownloader := NewOciDownloader()

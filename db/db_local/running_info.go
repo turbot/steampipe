@@ -70,7 +70,10 @@ func (r *RunningDBInstanceInfo) String() string {
 	r.Password = "XXXX-XXXX-XXXX"
 
 	jsonEncoder.SetIndent("", "")
-	jsonEncoder.Encode(r)
+	err := jsonEncoder.Encode(r)
+	if err != nil {
+		log.Printf("[TRACE] Encode failed: %v\n", err)
+	}
 	r.Password = p
 	return writeBuffer.String()
 }
