@@ -64,10 +64,10 @@ func readRow(rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]inter
 		return nil, err
 	}
 
-	return populateRow(columnValues, colTypes), nil
+	return populateRow(columnValues, colTypes)
 }
 
-func populateRow(columnValues []interface{}, colTypes []*sql.ColumnType) []interface{} {
+func populateRow(columnValues []interface{}, colTypes []*sql.ColumnType) ([]interface{}, error) {
 	result := make([]interface{}, len(columnValues))
 	for i, columnValue := range columnValues {
 		if columnValue != nil {
@@ -77,8 +77,7 @@ func populateRow(columnValues []interface{}, colTypes []*sql.ColumnType) []inter
 			case "JSON", "JSONB":
 				var val interface{}
 				if err := json.Unmarshal(columnValue.([]byte), &val); err != nil {
-					// what???
-					// TODO how to handle error
+					return result, err
 				}
 				result[i] = val
 			default:
@@ -86,7 +85,7 @@ func populateRow(columnValues []interface{}, colTypes []*sql.ColumnType) []inter
 			}
 		}
 	}
-	return result
+	return result, nil
 }
 
 // columnValuesAsString converts a slice of columns into strings

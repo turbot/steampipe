@@ -189,7 +189,7 @@ func createConnectionPlugin(connection *modconfig.Connection, getResponse *proto
 		}
 	}
 	// fetch the supported operations
-	supportedOperations, err := pluginClient.GetSupportedOperations()
+	supportedOperations, _ := pluginClient.GetSupportedOperations()
 	// ignore errors  - just create an empty support structure if needed
 	if supportedOperations == nil {
 		supportedOperations = &sdkproto.GetSupportedOperationsResponse{}

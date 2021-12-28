@@ -84,7 +84,10 @@ func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 	// get the total number of connected clients
 	// which are not us - determined by the unique application_name client parameter
 	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name != $1;", runtime.PgClientAppName)
-	row.Scan(&clientCount)
+	err = row.Scan(&clientCount)
+	if err != nil {
+		return -1, err
+	}
 	// clientCount can never be zero, since the client we are using to run the query counts as a client
 	// deduct the open connections in the pool of this client
 	return clientCount - rootClient.Stats().OpenConnections, nil

@@ -183,7 +183,10 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 	// create a RunningInfo with empty database name
 	// we need this to connect to the service using 'root', required retrieve the name of the installed database
 	res.DbState = newRunningDBInstanceInfo(postgresCmd, port, "", password, listen, invoker)
-	res.DbState.Save()
+	err = res.DbState.Save()
+	if err != nil {
+		return res.SetError(err)
+	}
 
 	databaseName, err := getDatabaseName(ctx, port)
 	if err != nil {

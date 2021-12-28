@@ -20,7 +20,6 @@ import (
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
 func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
-	res := &steampipeconfig.RefreshConnectionResult{}
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
