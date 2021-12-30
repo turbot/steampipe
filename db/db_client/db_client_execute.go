@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -91,7 +92,9 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 			display.StopSpinner(spinner)
 			// error - rollback transaction if we have one
 			if tx != nil {
-				tx.Rollback()
+				if err := tx.Rollback(); err != nil {
+					log.Println("[ERROR]", "Rollback failed", err)
+				}
 			}
 			// call the completion callback - if one was provided
 			if onComplete != nil {
@@ -133,9 +136,13 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		c.readRows(ctx, startTime, rows, result, spinner)
 		// commit transaction
 		if ctx.Err() == nil {
-			tx.Commit()
+			if err := tx.Commit(); err != nil {
+				log.Println("[ERROR]", "Commit failed", err)
+			}
 		} else {
-			tx.Rollback()
+			if err := tx.Rollback(); err != nil {
+				log.Println("[ERROR]", "Rollback failed", err)
+			}
 		}
 		if onComplete != nil {
 			onComplete()
