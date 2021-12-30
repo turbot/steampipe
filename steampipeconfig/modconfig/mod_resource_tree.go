@@ -1,4 +1,4 @@
-package modconfig
+	package modconfig
 
 import (
 	"fmt"
@@ -59,15 +59,11 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 }
 
 func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
-	parents := append(m.getParents(item))
-
-	// so we have a result - add into tree
-	for _, p := range parents {
+	for _, p := range m.getParents(item) {
 		item.AddParent(p)
 		p.AddChild(item)
 
 	}
-
 	return nil
 }
 
