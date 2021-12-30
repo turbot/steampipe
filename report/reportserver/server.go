@@ -166,7 +166,6 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		fmt.Println("Got workspace error event", *e)
 		payload := buildWorkspaceErrorPayload(e)
 		s.webSocket.Broadcast(payload)
-		break
 
 	case *reportevents.ExecutionStarted:
 		fmt.Println("Got execution started event", *e)
@@ -180,15 +179,12 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			}
 		}
 		s.mutex.Unlock()
-		break
 
 	case *reportevents.PanelError:
 		fmt.Println("Got panel error event", *e)
-		break
 
 	case *reportevents.PanelComplete:
 		fmt.Println("Got panel complete event", *e)
-		break
 
 	case *reportevents.ReportChanged:
 		fmt.Println("Got report changed event", *e)
@@ -278,15 +274,11 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			}
 		}
 
-		break
-
 	case *reportevents.ReportError:
 		fmt.Println("Got report error event", *e)
-		break
 
 	case *reportevents.ReportComplete:
 		fmt.Println("Got report complete event", *e)
-		break
 
 	case *reportevents.ExecutionComplete:
 		fmt.Println("Got execution complete event", *e)
@@ -300,6 +292,5 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			}
 		}
 		s.mutex.Unlock()
-		break
 	}
 }
