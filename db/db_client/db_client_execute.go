@@ -58,11 +58,9 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 	return syncResult, nil
 }
 
-// Execute  implements Client
-// execute the provided query against the Database in the given context.Context
-// Bear in mind that whenever ExecuteQuery is called, the returned `queryresult.Result` MUST be fully read -
-// otherwise the transaction is left open, which will block the connection and will prevent subsequent communications
-// with the service
+// Execute implements Client
+// execute the query in the given Context
+// NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
 func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner bool) (*queryresult.Result, error) {
 	// acquire a session
 	sessionResult := c.AcquireSession(ctx)
@@ -75,6 +73,10 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 	return c.ExecuteInSession(ctx, sessionResult.Session, query, closeSessionCallback, disableSpinner)
 }
 
+// ExecuteInSession implements Client
+// execute the query in the given Context using the provided DatabaseSession
+// ExecuteInSession assumes no responsibility over the lifecycle of the DatabaseSession - that is the responsibility of the caller
+// NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
 func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
 	if query == "" {
 		return queryresult.NewQueryResult(nil), nil
@@ -83,16 +85,11 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	startTime := time.Now()
 	// channel to flag to spinner that the query has run
 	var spinner *spinner.Spinner
-	var tx *sql.Tx
 
 	defer func() {
 		if err != nil {
 			// stop spinner in case of error
 			display.StopSpinner(spinner)
-			// error - rollback transaction if we have one
-			if tx != nil {
-				tx.Rollback()
-			}
 			// call the completion callback - if one was provided
 			if onComplete != nil {
 				onComplete()
@@ -106,14 +103,9 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		spinner = display.ShowSpinner("Loading results...")
 	}
 
-	// begin a transaction
-	tx, err = c.createTransaction(ctx, session.Connection, true)
-	if err != nil {
-		return
-	}
 	// start query
 	var rows *sql.Rows
-	rows, err = c.startQuery(ctx, query, tx)
+	rows, err = c.startQuery(ctx, query, session.Connection)
 	if err != nil {
 		return
 	}
@@ -131,12 +123,6 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	go func() {
 		// read in the rows and stream to the query result object
 		c.readRows(ctx, startTime, rows, result, spinner)
-		// commit transaction
-		if ctx.Err() == nil {
-			tx.Commit()
-		} else {
-			tx.Rollback()
-		}
 		if onComplete != nil {
 			onComplete()
 		}
@@ -147,7 +133,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 // run query in a goroutine, so we can check for cancellation
 // in case the client becomes unresponsive and does not respect context cancellation
-func (c *DbClient) startQuery(ctx context.Context, query string, tx *sql.Tx) (rows *sql.Rows, err error) {
+func (c *DbClient) startQuery(ctx context.Context, query string, conn *sql.Conn) (rows *sql.Rows, err error) {
 	doneChan := make(chan bool)
 	defer func() {
 		if err != nil {
@@ -160,7 +146,7 @@ func (c *DbClient) startQuery(ctx context.Context, query string, tx *sql.Tx) (ro
 	}()
 	go func() {
 		// start asynchronous query
-		rows, err = tx.QueryContext(ctx, query)
+		rows, err = conn.QueryContext(ctx, query)
 		close(doneChan)
 	}()
 
