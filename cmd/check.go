@@ -10,13 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/mod_installer"
+	"github.com/turbot/steampipe/modinstaller"
 
 	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/cmd_config"
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
@@ -56,7 +56,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		},
 	}
 
-	cmd_config.
+	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers for csv and table output").
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for check").
@@ -76,7 +76,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')").
-		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmd_config.FlagOptions.Hidden()).
+		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden()).
 		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod depdencies before runnign the check")
 
 	return cmd
@@ -195,15 +195,15 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 	}
 
 	if viper.GetBool(constants.ArgModInstall) {
-		opts := &mod_installer.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
-		_, err := mod_installer.InstallWorkspaceDependencies(opts)
+		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
+		_, err := modinstaller.InstallWorkspaceDependencies(opts)
 		if err != nil {
 			initData.result.Error = err
 			return initData
 		}
 	}
 
-	cmd_config.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	err := validateOutputFormat()
 	if err != nil {
@@ -211,7 +211,7 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 		return initData
 	}
 
-	err = cmd_config.ValidateConnectionStringArgs()
+	err = cmdconfig.ValidateConnectionStringArgs()
 	if err != nil {
 		initData.result.Error = err
 		return initData

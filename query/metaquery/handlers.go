@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/cmd_config"
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/schema"
@@ -110,13 +110,13 @@ func setSearchPathPrefix(ctx context.Context, input *HandlerInput) error {
 
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
 func setHeader(ctx context.Context, input *HandlerInput) error {
-	cmd_config.Viper().Set(constants.ArgHeader, typeHelpers.StringToBool(input.args()[0]))
+	cmdconfig.Viper().Set(constants.ArgHeader, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
 // set the ArgMulti viper key with the boolean value evaluated from arg[0]
 func setMultiLine(ctx context.Context, input *HandlerInput) error {
-	cmd_config.Viper().Set(constants.ArgMultiLine, typeHelpers.StringToBool(input.args()[0]))
+	cmdconfig.Viper().Set(constants.ArgMultiLine, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
@@ -137,14 +137,14 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
 func setTiming(ctx context.Context, input *HandlerInput) error {
-	cmd_config.Viper().Set(constants.ArgTimer, typeHelpers.StringToBool(input.args()[0]))
+	cmdconfig.Viper().Set(constants.ArgTimer, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
 // set the value of `viperKey` in `viper` with the value from `args[0]`
 func setViperConfigFromArg(viperKey string) handler {
 	return func(ctx context.Context, input *HandlerInput) error {
-		cmd_config.Viper().Set(viperKey, input.args()[0])
+		cmdconfig.Viper().Set(viperKey, input.args()[0])
 		return nil
 	}
 }
@@ -152,7 +152,7 @@ func setViperConfigFromArg(viperKey string) handler {
 // set the value of `viperKey` in `viper` with a static value
 func setViperConfig(viperKey string, value interface{}) handler {
 	return func(ctx context.Context, input *HandlerInput) error {
-		cmd_config.Viper().Set(viperKey, value)
+		cmdconfig.Viper().Set(viperKey, value)
 		return nil
 	}
 }

@@ -7,7 +7,7 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
-	"github.com/turbot/steampipe/cmd_config"
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/report/reportserver"
 	"github.com/turbot/steampipe/utils"
@@ -23,7 +23,7 @@ func reportCmd() *cobra.Command {
 		Long:             `Run a report...TODO better description!`,
 	}
 
-	cmd_config.OnCmd(cmd).
+	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for report")
 	return cmd
 }
@@ -37,7 +37,7 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	cmd_config.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	ctx, cancel := context.WithCancel(cmd.Context())
 	startCancelHandler(cancel)

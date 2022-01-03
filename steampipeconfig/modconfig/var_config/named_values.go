@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform/addrs"
-	"github.com/turbot/steampipe/steampipeconfig/input_vars/typeexpr"
+	"github.com/turbot/steampipe/steampipeconfig/inputvars/typeexpr"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
 	//"github.com/hashicorp/terraform/internal/typeexpr"

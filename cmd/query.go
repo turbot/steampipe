@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/cmd_config"
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
@@ -63,7 +63,7 @@ Examples:
 
 	// Notes:
 	// * In the future we may add --csv and --json flags as shortcuts for --output
-	cmd_config.
+	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for query").
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
@@ -95,12 +95,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		args = append(args, stdinData)
 	}
 
-	err := cmd_config.ValidateConnectionStringArgs()
+	err := cmdconfig.ValidateConnectionStringArgs()
 	utils.FailOnError(err)
 
 	// enable spinner only in interactive mode
 	interactiveMode := len(args) == 0
-	cmd_config.Viper().Set(constants.ConfigKeyShowInteractiveOutput, interactiveMode)
+	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, interactiveMode)
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 

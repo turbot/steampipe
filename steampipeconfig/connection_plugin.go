@@ -12,9 +12,9 @@ import (
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
-	"github.com/turbot/steampipe/plugin_manager"
-	"github.com/turbot/steampipe/plugin_manager/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
+	"github.com/turbot/steampipe/pluginmanager"
+	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
 	"github.com/turbot/steampipe/utils"
@@ -205,7 +205,7 @@ func getPluginManager() (pluginshared.PluginManager, error) {
 		log.Printf("[WARN] running plugin manager in-process for debugging")
 		pluginManager, err = runPluginManagerInProcess()
 	} else {
-		pluginManager, err = plugin_manager.GetPluginManager()
+		pluginManager, err = pluginmanager.GetPluginManager()
 	}
 	// check the error from the plugin manager startup
 	if err != nil {
@@ -221,7 +221,7 @@ func attachToPlugin(reattach *plugin.ReattachConfig, pluginName string) (*sdkgrp
 }
 
 // function used for debugging the plugin manager
-func runPluginManagerInProcess() (*plugin_manager.PluginManager, error) {
+func runPluginManagerInProcess() (*pluginmanager.PluginManager, error) {
 	steampipeConfig, err := LoadConnectionConfig()
 	if err != nil {
 		return nil, err
@@ -240,5 +240,5 @@ func runPluginManagerInProcess() (*plugin_manager.PluginManager, error) {
 			Config:          v.Config,
 		}
 	}
-	return plugin_manager.NewPluginManager(configMap, logger), nil
+	return pluginmanager.NewPluginManager(configMap, logger), nil
 }

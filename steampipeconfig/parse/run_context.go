@@ -10,7 +10,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/steampipeconfig/version_map"
+	"github.com/turbot/steampipe/steampipeconfig/versionmap"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -37,7 +37,7 @@ type RunContext struct {
 	// the mod which is currently being parsed
 	CurrentMod *modconfig.Mod
 	// the workspace lock data
-	WorkspaceLock    *version_map.WorkspaceLock
+	WorkspaceLock    *versionmap.WorkspaceLock
 	UnresolvedBlocks map[string]*unresolvedBlock
 	FileData         map[string][]byte
 	// the eval context used to decode references in HCL
@@ -60,7 +60,7 @@ type RunContext struct {
 	Variables       map[string]*modconfig.Variable
 }
 
-func NewRunContext(workspaceLock *version_map.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
+func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
 	c := &RunContext{
 		Flags:                flags,
 		RootEvalPath:         rootEvalPath,

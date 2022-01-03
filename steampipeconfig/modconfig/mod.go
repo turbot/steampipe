@@ -14,7 +14,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/file_paths"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -610,7 +610,7 @@ func (m *Mod) Save() error {
 		return err
 	}
 	modData := append(f.Bytes(), nonModData...)
-	return os.WriteFile(file_paths.ModFilePath(m.ModPath), modData, 0644)
+	return os.WriteFile(filepaths.ModFilePath(m.ModPath), modData, 0644)
 }
 
 func (m *Mod) HasDependentMods() bool {
@@ -660,7 +660,7 @@ func (m *Mod) buildFlatChilden() {
 }
 
 func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
-	modFilePath := file_paths.ModFilePath(m.ModPath)
+	modFilePath := filepaths.ModFilePath(m.ModPath)
 	if !helpers.FileExists(modFilePath) {
 		return nil, nil
 	}

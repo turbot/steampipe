@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/file_paths"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -27,7 +27,7 @@ func GetConnectionState(schemaNames []string) (ConnectionDataMap, error) {
 // load and parse the connection config
 func loadConnectionStateFile() (ConnectionDataMap, error) {
 	var connectionState ConnectionDataMap
-	connectionStatePath := file_paths.ConnectionStatePath()
+	connectionStatePath := filepaths.ConnectionStatePath()
 
 	if !helpers.FileExists(connectionStatePath) {
 		return connectionState, nil
@@ -70,7 +70,7 @@ func pruneConnectionState(connections ConnectionDataMap, schemaNames []string) C
 }
 
 func SaveConnectionState(state ConnectionDataMap) error {
-	return writeJson(state, file_paths.ConnectionStatePath())
+	return writeJson(state, filepaths.ConnectionStatePath())
 }
 
 func writeJson(data interface{}, path string) error {

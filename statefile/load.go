@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/turbot/steampipe/file_paths"
+	"github.com/turbot/steampipe/filepaths"
 )
 
 const updateStateFileName = "update-check.json"
@@ -22,7 +22,7 @@ type State struct {
 func LoadState() (State, error) {
 	currentState := createState()
 
-	stateFilePath := filepath.Join(file_paths.InternalDir(), updateStateFileName)
+	stateFilePath := filepath.Join(filepaths.InternalDir(), updateStateFileName)
 	// get the state file
 	_, err := os.Stat(stateFilePath)
 	if err != nil {

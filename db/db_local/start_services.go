@@ -14,8 +14,8 @@ import (
 	"syscall"
 
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/file_paths"
-	"github.com/turbot/steampipe/plugin_manager"
+	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/pluginmanager"
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
@@ -29,7 +29,7 @@ type StartResult struct {
 	Error              error
 	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
-	PluginManagerState *plugin_manager.PluginManagerState
+	PluginManagerState *pluginmanager.PluginManagerState
 }
 
 func (r *StartResult) SetError(err error) *StartResult {
@@ -93,7 +93,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 		res.Status = ServiceAlreadyRunning
 	}
 
-	res.PluginManagerState, res.Error = plugin_manager.LoadPluginManagerState()
+	res.PluginManagerState, res.Error = pluginmanager.LoadPluginManagerState()
 	if res.Error != nil {
 		res.Status = ServiceFailedToStart
 		return res
@@ -107,7 +107,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 			log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
 			return res.SetError(err)
 		}
-		if err := plugin_manager.StartNewInstance(executable); err != nil {
+		if err := pluginmanager.StartNewInstance(executable); err != nil {
 			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
 			return res.SetError(err)
 		}
@@ -356,7 +356,7 @@ func createCmd(ctx context.Context, port int, listenAddresses string) *exec.Cmd 
 		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
 
 		// log directory
-		"-c", fmt.Sprintf("log_directory=%s", file_paths.LogDir()),
+		"-c", fmt.Sprintf("log_directory=%s", filepaths.LogDir()),
 
 		// If ssl is off  it doesnot matter what we pass in the ssl_cert_file and ssl_key_file
 		// SSL will only get validated if the ssl is on
@@ -367,7 +367,7 @@ func createCmd(ctx context.Context, port int, listenAddresses string) *exec.Cmd 
 		// Data Directory
 		"-D", getDataLocation())
 
-	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", file_paths.SteampipeDir))
+	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths.SteampipeDir))
 
 	//  Check if the /etc/ssl directory exist in os
 	dirExist, _ := os.Stat(constants.SslConfDir)

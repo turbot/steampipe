@@ -10,7 +10,7 @@ import (
 
 	"github.com/otiai10/copy"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/file_paths"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -420,7 +420,7 @@ func TestGetConnectionsToUpdate(t *testing.T) {
 	// set steampipe dir
 	os.Chdir("./test_data/connections_to_update")
 	wd, _ := os.Getwd()
-	file_paths.SteampipeDir = wd
+	filepaths.SteampipeDir = wd
 
 	for name, test := range testCasesGetConnectionsToUpdate {
 		// setup connection config
@@ -490,13 +490,13 @@ func TestConnectionsUpdateEqual(t *testing.T) {
 
 func setup(test getConnectionsToUpdateTest) {
 
-	os.RemoveAll(file_paths.PluginDir())
-	os.RemoveAll(file_paths.ConfigDir())
-	os.RemoveAll(file_paths.InternalDir())
+	os.RemoveAll(filepaths.PluginDir())
+	os.RemoveAll(filepaths.ConfigDir())
+	os.RemoveAll(filepaths.InternalDir())
 
-	os.MkdirAll(file_paths.PluginDir(), os.ModePerm)
-	os.MkdirAll(file_paths.ConfigDir(), os.ModePerm)
-	os.MkdirAll(file_paths.InternalDir(), os.ModePerm)
+	os.MkdirAll(filepaths.PluginDir(), os.ModePerm)
+	os.MkdirAll(filepaths.ConfigDir(), os.ModePerm)
+	os.MkdirAll(filepaths.InternalDir(), os.ModePerm)
 
 	for _, plugin := range test.current {
 		copyPlugin(plugin.Plugin)
@@ -508,12 +508,12 @@ func setupTestConfig(test getConnectionsToUpdateTest) {
 	for i, config := range test.required {
 		os.WriteFile(connectionConfigPath(i), []byte(config), 0644)
 	}
-	os.MkdirAll(file_paths.InternalDir(), os.ModePerm)
-	writeJson(test.current, file_paths.ConnectionStatePath())
+	os.MkdirAll(filepaths.InternalDir(), os.ModePerm)
+	writeJson(test.current, filepaths.ConnectionStatePath())
 }
 
 func resetConfig(test getConnectionsToUpdateTest) {
-	connectionStatePath := file_paths.ConnectionStatePath()
+	connectionStatePath := filepaths.ConnectionStatePath()
 
 	os.Remove(connectionStatePath)
 	for i, _ := range test.required {
@@ -523,7 +523,7 @@ func resetConfig(test getConnectionsToUpdateTest) {
 
 func connectionConfigPath(i int) string {
 	fileName := fmt.Sprintf("test%d%s", i, constants.ConfigExtension)
-	path := filepath.Join(file_paths.ConfigDir(), fileName)
+	path := filepath.Join(filepaths.ConfigDir(), fileName)
 	return path
 }
 
@@ -532,7 +532,7 @@ func copyPlugin(plugin string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	dest, err := filepath.Abs(filepath.Join(file_paths.PluginDir(), plugin))
+	dest, err := filepath.Abs(filepath.Join(filepaths.PluginDir(), plugin))
 	if err != nil {
 		log.Fatal(err)
 	}

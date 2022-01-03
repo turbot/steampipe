@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/hcl/v2/json"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/file_paths"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"sigs.k8s.io/yaml"
 )
@@ -81,7 +81,7 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 	// TODO think about variables
 
 	// if there is no mod at this location, return error
-	modFilePath := file_paths.ModFilePath(modPath)
+	modFilePath := filepaths.ModFilePath(modPath)
 	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("no mod file found in %s", modPath)
 	}

@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/cmd_config"
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
@@ -79,7 +79,7 @@ Examples:
   steampipe plugin install turbot/azure@0.1.0`,
 	}
 
-	cmd_config.
+	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin install")
 	return cmd
@@ -108,7 +108,7 @@ Examples:
   steampipe plugin update aws`,
 	}
 
-	cmd_config.
+	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgAll, "", false, "Update all plugins to its latest available version").
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin update")
@@ -136,7 +136,7 @@ Examples:
   steampipe plugin list --outdated`,
 	}
 
-	cmd_config.
+	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag("outdated", "", false, "Check each plugin in the list for updates").
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin list")
@@ -165,7 +165,7 @@ Example:
 `,
 	}
 
-	cmd_config.OnCmd(cmd).
+	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin uninstall")
 
 	return cmd
@@ -304,7 +304,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
 
-	if cmd_config.Viper().GetBool(constants.ArgAll) {
+	if cmdconfig.Viper().GetBool(constants.ArgAll) {
 		for k, v := range versionData.Plugins {
 			ref := ociinstaller.NewSteampipeImageRef(k)
 			org, name, stream := ref.GetOrgNameAndStream()
@@ -408,12 +408,12 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 	plugins := append([]string{}, args...)
 
-	if len(plugins) == 0 && !(cmd_config.Viper().GetBool("all")) {
+	if len(plugins) == 0 && !(cmdconfig.Viper().GetBool("all")) {
 		// either plugin name(s) or "all" must be provided
 		return nil, fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all"))
 	}
 
-	if len(plugins) > 0 && cmd_config.Viper().GetBool(constants.ArgAll) {
+	if len(plugins) > 0 && cmdconfig.Viper().GetBool(constants.ArgAll) {
 		// we can't allow update and install at the same time
 		return nil, fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`"))
 	}

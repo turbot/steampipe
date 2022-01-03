@@ -11,9 +11,9 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
-	"github.com/turbot/steampipe/cmd_config"
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/file_paths"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/task"
 	"github.com/turbot/steampipe/utils"
@@ -69,7 +69,7 @@ func InitCmd() {
 	utils.LogTime("cmd.root.InitCmd start")
 	defer utils.LogTime("cmd.root.InitCmd end")
 
-	rootCmd.PersistentFlags().String(constants.ArgInstallDir, file_paths.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", file_paths.DefaultInstallDir))
+	rootCmd.PersistentFlags().String(constants.ArgInstallDir, filepaths.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", filepaths.DefaultInstallDir))
 	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace working directory")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceChDir, "", "Path to the workspace working directory")
 	rootCmd.PersistentFlags().String(constants.ArgCloudHost, "cloud.steampipe.io", "Steampipe Cloud host")
@@ -103,7 +103,7 @@ func initGlobalConfig() {
 	defer utils.LogTime("cmd.root.initGlobalConfig end")
 
 	// setup viper without the settings in the config files
-	cmd_config.SetViperDefaults(nil)
+	cmdconfig.SetViperDefaults(nil)
 
 	// set the working folder
 	workspaceChdir := setWorkspaceChDir()
@@ -119,7 +119,7 @@ func initGlobalConfig() {
 	steampipeconfig.GlobalConfig = config
 
 	// set viper config defaults from config and env vars
-	cmd_config.SetViperDefaults(steampipeconfig.GlobalConfig.ConfigMap())
+	cmdconfig.SetViperDefaults(steampipeconfig.GlobalConfig.ConfigMap())
 }
 
 func setWorkspaceChDir() string {
@@ -163,7 +163,7 @@ func setInstallDir() {
 		err = os.MkdirAll(installDir, 0755)
 		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
 	}
-	file_paths.SteampipeDir = installDir
+	filepaths.SteampipeDir = installDir
 }
 
 func AddCommands() {

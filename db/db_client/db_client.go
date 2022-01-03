@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants/runtime"
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/runtime_constants"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"golang.org/x/sync/semaphore"
@@ -81,7 +81,7 @@ func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
 	connConfig, _ := pgx.ParseConfig(connStr)
 	connConfig.RuntimeParams = map[string]string{
 		// set an app name so that we can track connections from this execution
-		"application_name": runtime_constants.PgClientAppName,
+		"application_name": runtime.PgClientAppName,
 	}
 	connStr = stdlib.RegisterConnConfig(connConfig)
 

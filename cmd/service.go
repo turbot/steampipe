@@ -14,11 +14,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/cmd_config"
+	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
-	"github.com/turbot/steampipe/plugin_manager"
+	"github.com/turbot/steampipe/pluginmanager"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -55,7 +55,7 @@ Run Steampipe as a local service, exposing it as a database endpoint for
 connection from any Postgres compatible database client.`,
 	}
 
-	cmd_config.
+	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service start").
 		// for now default port to -1 so we fall back to the default of the deprecated arg
@@ -66,7 +66,7 @@ connection from any Postgres compatible database client.`,
 		// foreground enables the service to run in the foreground - till exit
 		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
 		// Hidden flags for internal use
-		AddStringFlag(constants.ArgInvoker, "", string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmd_config.FlagOptions.Hidden())
+		AddStringFlag(constants.ArgInvoker, "", string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
 }
@@ -83,7 +83,7 @@ func serviceStatusCmd() *cobra.Command {
 Report current status of the Steampipe database service.`,
 	}
 
-	cmd_config.OnCmd(cmd).
+	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service status").
 		AddBoolFlag(constants.ArgAll, "", false, "Bypasses the INSTALL_DIR and reports status of all running steampipe services")
 
@@ -100,7 +100,7 @@ func serviceStopCmd() *cobra.Command {
 		Long:  `Stop the Steampipe service.`,
 	}
 
-	cmd_config.
+	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service stop").
 		AddBoolFlag(constants.ArgForce, "", false, "Forces all services to shutdown, releasing all open connections and ports")
@@ -118,7 +118,7 @@ func serviceRestartCmd() *cobra.Command {
 		Long:  `Restart the Steampipe service.`,
 	}
 
-	cmd_config.
+	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service restart").
 		AddBoolFlag(constants.ArgForce, "", false, "Forces the service to restart, releasing all open connections and ports")
@@ -152,7 +152,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	listen := db_local.StartListenType(viper.GetString(constants.ArgListenAddress))
 	utils.FailOnError(listen.IsValid())
 
-	invoker := constants.Invoker(cmd_config.Viper().GetString(constants.ArgInvoker))
+	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
 	utils.FailOnError(invoker.IsValid())
 
 	err := db_local.EnsureDBInstalled(ctx)
@@ -328,7 +328,7 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 		showAllStatus(cmd.Context())
 	} else {
 		dbState, dbStateErr := db_local.GetState()
-		pmState, pmStateErr := plugin_manager.LoadPluginManagerState()
+		pmState, pmStateErr := pluginmanager.LoadPluginManagerState()
 
 		if dbStateErr != nil || pmStateErr != nil {
 			utils.ShowError(composeStateError(dbStateErr, pmStateErr))
@@ -376,7 +376,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	force := cmd_config.Viper().GetBool(constants.ArgForce)
+	force := cmdconfig.Viper().GetBool(constants.ArgForce)
 	if force {
 		status, err = db_local.StopServices(force, constants.InvokerService, spinner)
 	} else {
@@ -501,7 +501,7 @@ func getServiceProcessDetails(process *psutils.Process) (string, string, string,
 	return fmt.Sprintf("%d", process.Pid), installDir, port, listenType
 }
 
-func printStatus(dbState *db_local.RunningDBInstanceInfo, pmState *plugin_manager.PluginManagerState) {
+func printStatus(dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.PluginManagerState) {
 	if dbState == nil && !pmState.Running {
 		fmt.Println("Service is not running")
 		return

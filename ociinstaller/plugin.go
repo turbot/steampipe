@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/turbot/steampipe/file_paths"
+	"github.com/turbot/steampipe/filepaths"
 	versionfile "github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/utils"
 )
@@ -104,7 +104,7 @@ func installPluginDocs(image *SteampipeImage, tempdir string) error {
 }
 
 func installPluginConfigFiles(image *SteampipeImage, tempdir string) error {
-	installTo := file_paths.ConfigDir()
+	installTo := filepaths.ConfigDir()
 
 	// if ConfigFileDir is not set, then there are no config files.
 	if image.Plugin.ConfigFileDir == "" {
@@ -140,7 +140,7 @@ func pluginInstallDir(imageRef string) string {
 	ref := NewSteampipeImageRef(imageRef)
 	osSafePath := filepath.FromSlash(ref.DisplayImageRef())
 
-	fullPath := filepath.Join(file_paths.PluginDir(), osSafePath)
+	fullPath := filepath.Join(filepaths.PluginDir(), osSafePath)
 
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 		err = os.MkdirAll(fullPath, 0755)
