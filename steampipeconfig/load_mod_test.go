@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
@@ -27,7 +26,7 @@ type loadModTest struct {
 var runCtx = &parse.RunContext{
 	Flags: parse.CreatePseudoResources | parse.CreateDefaultMod,
 	ListOptions: &filehelpers.ListOptions{
-		Exclude: []string{fmt.Sprintf("**/%s*", constants.WorkspaceDataDir)},
+		Exclude: []string{fmt.Sprintf("**/%s*", filepaths.WorkspaceDataDir)},
 		Flags:   filehelpers.Files,
 	},
 }
