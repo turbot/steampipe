@@ -76,9 +76,9 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 }
 
 // ExecuteInSession implements Client
-// execute the provided query against the Service in the given `context.Context` using the provided `*DatabaseSession`
-// ExecuteInSession assumes no responsibility over the lifecycle of the DatabaseSession - that is wholly the responsibility of the caller
-// The returned `*queryresult.Result` MUST be fully read - otherwise the connection will block and will prevent further communication
+// execute the query in the given Context using the provided DatabaseSession
+// ExecuteInSession assumes no responsibility over the lifecycle of the DatabaseSession - that is the responsibility of the caller
+// NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
 func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
 	if query == "" {
 		return queryresult.NewQueryResult(nil), nil
