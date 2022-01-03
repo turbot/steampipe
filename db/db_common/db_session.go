@@ -3,7 +3,6 @@ package db_common
 import (
 	"context"
 	"database/sql"
-	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pgx/v4/stdlib"
@@ -18,7 +17,6 @@ type DatabaseSession struct {
 	LastUsed    time.Time             `json:"last_used"`
 	SearchPath  []string              `json:"-"`
 	Initialized bool                  `json:"-"`
-	inUse       int32                 `json:"-"`
 
 	// this gets rewritten, since the database/sql gives back a new instance everytime
 	Connection *sql.Conn `json:"-"`
@@ -33,18 +31,11 @@ func NewDBSession(backendPid uint32) *DatabaseSession {
 
 // UpdateUsage updates the UsedCount of the DatabaseSession and also the lastUsed time
 func (s *DatabaseSession) UpdateUsage() {
-	if !atomic.CompareAndSwapInt32(&s.inUse, 0, 1) {
-		panic("cannot use DatabaseSession under usage")
-	}
 	s.UsedCount++
 	s.LastUsed = time.Now()
 }
 
 func (s *DatabaseSession) Close(waitForCleanup bool) error {
-	if !atomic.CompareAndSwapInt32(&s.inUse, 1, 0) {
-		return nil
-	}
-
 	var err error
 	if s.Connection != nil {
 		if waitForCleanup {

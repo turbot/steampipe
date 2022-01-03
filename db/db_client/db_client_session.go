@@ -14,14 +14,14 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func (c *DbClient) AcquireSession(ctx context.Context) (asr *db_common.AcquireSessionResult) {
+func (c *DbClient) AcquireSession(ctx context.Context) (res *db_common.AcquireSessionResult) {
 	sessionResult := &db_common.AcquireSessionResult{}
 	c.sessionInitWaitGroup.Add(1)
 	defer c.sessionInitWaitGroup.Done()
 
 	defer func() {
-		if asr != nil && asr.Session != nil {
-			asr.Session.UpdateUsage()
+		if res != nil && res.Session != nil {
+			res.Session.UpdateUsage()
 		}
 	}()
 

@@ -176,11 +176,6 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 		log.Printf("[TRACE] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.executionTree.progress.executing)
 	}()
 
-	if utils.IsContextCancelled(ctx) {
-		r.SetError(ctx.Err())
-		return
-	}
-
 	// get a db connection
 	r.Lifecycle.Add("queued_for_session")
 	sessionResult := client.AcquireSession(ctx)
