@@ -32,7 +32,7 @@ type WorkspaceLock struct {
 func EmptyWorkspaceLock(existingLock *WorkspaceLock) *WorkspaceLock {
 	return &WorkspaceLock{
 		WorkspacePath:       existingLock.WorkspacePath,
-		ModInstallationPath: filepaths.WorkspaceModPath(existingLock.WorkspacePath),
+		ModInstallationPath: filepaths.WorkspaceLockPath(existingLock.WorkspacePath),
 		InstallCache:        make(DependencyVersionMap),
 		MissingVersions:     make(DependencyVersionMap),
 		installedMods:       existingLock.installedMods,
@@ -41,7 +41,7 @@ func EmptyWorkspaceLock(existingLock *WorkspaceLock) *WorkspaceLock {
 
 func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 	var installCache = make(DependencyVersionMap)
-	lockPath := filepaths.WorkspaceModPath(workspacePath)
+	lockPath := filepaths.WorkspaceLockPath(workspacePath)
 	if helpers.FileExists(lockPath) {
 
 		fileContent, err := os.ReadFile(lockPath)
@@ -57,7 +57,7 @@ func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 	}
 	res := &WorkspaceLock{
 		WorkspacePath:       workspacePath,
-		ModInstallationPath: filepaths.WorkspaceModPath(workspacePath),
+		ModInstallationPath: filepaths.WorkspaceLockPath(workspacePath),
 		InstallCache:        installCache,
 		MissingVersions:     make(DependencyVersionMap),
 	}
@@ -170,12 +170,12 @@ func (l *WorkspaceLock) Save() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepaths.WorkspaceModPath(l.WorkspacePath), content, 0644)
+	return os.WriteFile(filepaths.WorkspaceLockPath(l.WorkspacePath), content, 0644)
 }
 
 // Delete deletes the lock file
 func (l *WorkspaceLock) Delete() error {
-	return os.Remove(filepaths.WorkspaceModPath(l.WorkspacePath))
+	return os.Remove(filepaths.WorkspaceLockPath(l.WorkspacePath))
 }
 
 // DeleteMods removes mods from the lock file then, if it is empty, deletes the file

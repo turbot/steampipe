@@ -1,0 +1,5 @@
+## Overview
+
+The [General Data Protection Regulation (GDPR)](https://gdpr-info.eu/) is a new European privacy law that became enforceable on May 25, 2018. The GDPR replaces the EU Data Protection Directive, also known as [Directive 95/46/EC](http://en.wikipedia.org/wiki/Data_Protection_Directive). It's intended to harmonize data protection laws throughout the European Union (EU) by applying a single data protection law that is binding throughout each member state.
+
+The GDPR applies to all organizations that are established in the EU and to organizations, whether or not established in the EU, that process the personal data of EU data subjects in connection with either the offering of goods or services to data subjects in the EU or the monitoring of behavior that takes place within the EU. Personal data is any information that relates to an identified or identifiable natural person.
