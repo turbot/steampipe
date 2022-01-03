@@ -4,11 +4,12 @@ import (
 	"context"
 
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/statushooks"
 )
 
 // RefreshConnectionAndSearchPaths creates a local client and refreshed connections and search paths
-func RefreshConnectionAndSearchPaths(ctx context.Context, invoker constants.Invoker) error {
-	client, err := NewLocalClient(ctx, invoker)
+func RefreshConnectionAndSearchPaths(ctx context.Context, invoker constants.Invoker, statushook statushooks.StatusHooks) error {
+	client, err := NewLocalClient(ctx, invoker, statushook)
 	if err != nil {
 		return err
 	}

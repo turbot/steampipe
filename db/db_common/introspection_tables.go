@@ -31,7 +31,7 @@ func UpdateIntrospectionTables(workspaceResources *modconfig.WorkspaceResourceMa
 
 	sql := []string{clearSql, insertSql}
 	// execute the query, passing 'true' to disable the spinner
-	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"), true)
+	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to update introspection tables: %v", err)
 	}

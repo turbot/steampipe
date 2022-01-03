@@ -18,7 +18,7 @@ import (
 func (c *DbClient) GetCurrentSearchPath(ctx context.Context) ([]string, error) {
 	var currentSearchPath []string
 	var pathAsString string
-	rows, err := c.ExecuteSync(ctx, "show search_path", true)
+	rows, err := c.ExecuteSync(ctx, "show search_path")
 	if err != nil {
 		return nil, err
 	}

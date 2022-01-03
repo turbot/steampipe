@@ -19,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/pluginmanager"
+	"github.com/turbot/steampipe/statusspinner"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -155,11 +156,12 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
 	utils.FailOnError(invoker.IsValid())
 
-	err := db_local.EnsureDBInstalled(ctx)
+	statusSpinner := statusspinner.NewStatusSpinner()
+	err := db_local.EnsureDBInstalled(ctx, statusSpinner)
 	utils.FailOnError(err)
 
 	// start db, refreshing connections
-	startResult := db_local.StartServices(ctx, port, listen, invoker)
+	startResult := db_local.StartServices(ctx, port, listen, invoker, statusSpinner)
 	utils.FailOnError(startResult.Error)
 
 	if startResult.Status == db_local.ServiceFailedToStart {
@@ -189,20 +191,20 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	err = db_local.RefreshConnectionAndSearchPaths(ctx, invoker)
+	err = db_local.RefreshConnectionAndSearchPaths(ctx, invoker, statusSpinner)
 	if err != nil {
-		db_local.StopServices(false, constants.InvokerService, nil)
+		db_local.StopServices(false, constants.InvokerService, statusSpinner)
 		utils.FailOnError(err)
 	}
 
 	printStatus(startResult.DbState, startResult.PluginManagerState)
 
 	if viper.GetBool(constants.ArgForeground) {
-		runServiceInForeground(invoker)
+		runServiceInForeground(invoker, statusSpinner)
 	}
 }
 
-func runServiceInForeground(invoker constants.Invoker) {
+func runServiceInForeground(invoker constants.Invoker, statusSpinner *statusspinner.StatusSpinner) {
 	fmt.Println("Hit Ctrl+C to stop the service")
 
 	sigIntChannel := make(chan os.Signal, 1)
@@ -246,7 +248,7 @@ func runServiceInForeground(invoker constants.Invoker) {
 			}
 			fmt.Println("Stopping Steampipe service.")
 
-			db_local.StopServices(false, invoker, nil)
+			db_local.StopServices(false, invoker, statusSpinner)
 			fmt.Println("Steampipe service stopped.")
 			return
 		}
@@ -277,7 +279,8 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// stop db
-	stopStatus, err := db_local.StopServices(viper.GetBool(constants.ArgForce), constants.InvokerService, nil)
+	statusSpinner := statusspinner.NewStatusSpinner()
+	stopStatus, err := db_local.StopServices(viper.GetBool(constants.ArgForce), constants.InvokerService, statusSpinner)
 	utils.FailOnErrorWithMessage(err, "could not stop current instance")
 	if stopStatus != db_local.ServiceStopped {
 		fmt.Println(`
@@ -295,7 +298,7 @@ to force a restart.
 	viper.Set(constants.ArgServicePassword, currentDbState.Password)
 
 	// start db
-	startResult := db_local.StartServices(cmd.Context(), currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
+	startResult := db_local.StartServices(cmd.Context(), currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker, statusSpinner)
 	utils.FailOnError(startResult.Error)
 	if startResult.Status == db_local.ServiceFailedToStart {
 		fmt.Println("Steampipe service was stopped, but failed to restart.")
@@ -303,7 +306,7 @@ to force a restart.
 	}
 
 	// refresh connections
-	err = db_local.RefreshConnectionAndSearchPaths(cmd.Context(), constants.InvokerService)
+	err = db_local.RefreshConnectionAndSearchPaths(cmd.Context(), constants.InvokerService, statusSpinner)
 	utils.FailOnError(err)
 	fmt.Println("Steampipe service restarted.")
 
@@ -324,8 +327,9 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 		fmt.Println("Steampipe service is not installed.")
 		return
 	}
+	statusSpinner := statusspinner.NewStatusSpinner(statusspinner.WithDelay(constants.SpinnerShowTimeout))
 	if viper.GetBool(constants.ArgAll) {
-		showAllStatus(cmd.Context())
+		showAllStatus(cmd.Context(), statusSpinner)
 	} else {
 		dbState, dbStateErr := db_local.GetState()
 		pmState, pmStateErr := pluginmanager.LoadPluginManagerState()
@@ -356,12 +360,11 @@ func composeStateError(dbStateErr error, pmStateErr error) error {
 func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runServiceStopCmd stop")
 
-	stoppedChan := make(chan bool, 1)
 	var status db_local.StopStatus
 	var err error
 	var dbState *db_local.RunningDBInstanceInfo
 
-	spinner := display.StartSpinnerAfterDelay("", constants.SpinnerShowTimeout, stoppedChan)
+	statusSpinner := statusspinner.NewStatusSpinner(statusspinner.WithDelay(constants.SpinnerShowTimeout))
 
 	defer func() {
 		utils.LogTime("runServiceStopCmd end")
@@ -378,20 +381,21 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 
 	force := cmdconfig.Viper().GetBool(constants.ArgForce)
 	if force {
-		status, err = db_local.StopServices(force, constants.InvokerService, spinner)
+		status, err = db_local.StopServices(force, constants.InvokerService, statusSpinner)
 	} else {
 		dbState, err = db_local.GetState()
 		if err != nil {
-			display.StopSpinner(spinner)
+			statusSpinner.Done()
 			utils.FailOnErrorWithMessage(err, "could not stop Steampipe service")
 		}
 		if dbState == nil {
-			display.StopSpinner(spinner)
+			// TODO - move all these dones to defer?
+			statusSpinner.Done()
 			fmt.Println("Steampipe service is not running.")
 			return
 		}
 		if dbState.Invoker != constants.InvokerService {
-			display.StopSpinner(spinner)
+			statusSpinner.Done()
 			printRunningImplicit(dbState.Invoker)
 			return
 		}
@@ -399,26 +403,26 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		// check if there are any connected clients to the service
 		connectedClientCount, err := db_local.GetCountOfThirdPartyClients(cmd.Context())
 		if err != nil {
-			display.StopSpinner(spinner)
+			statusSpinner.Done()
 			utils.FailOnErrorWithMessage(err, "error during service stop")
 		}
 
 		if connectedClientCount > 0 {
-			display.StopSpinner(spinner)
+			statusSpinner.Done()
 			printClientsConnected()
 			return
 		}
 
-		status, _ = db_local.StopServices(false, constants.InvokerService, spinner)
+		status, _ = db_local.StopServices(false, constants.InvokerService, statusSpinner)
 	}
 
 	if err != nil {
-		display.StopSpinner(spinner)
+		statusSpinner.Done()
 		utils.ShowError(err)
 		return
 	}
 
-	display.StopSpinner(spinner)
+	statusSpinner.Done()
 
 	switch status {
 	case db_local.ServiceStopped:
@@ -447,16 +451,13 @@ to force a shutdown.
 
 }
 
-func showAllStatus(ctx context.Context) {
+func showAllStatus(ctx context.Context, statusSpinner *statusspinner.StatusSpinner) {
 	var processes []*psutils.Process
 	var err error
 
-	doneFetchingDetailsChan := make(chan bool)
-	sp := display.StartSpinnerAfterDelay("Getting details", constants.SpinnerShowTimeout, doneFetchingDetailsChan)
-
+	statusSpinner.SetStatus("Getting details")
 	processes, err = db_local.FindAllSteampipePostgresInstances(ctx)
-	close(doneFetchingDetailsChan)
-	display.StopSpinner(sp)
+	statusSpinner.Done()
 
 	utils.FailOnError(err)
 

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/turbot/steampipe/statusspinner"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
@@ -46,7 +48,7 @@ type ReportClientInfo struct {
 }
 
 func NewServer(ctx context.Context) (*Server, error) {
-	dbClient, err := db_local.GetLocalClient(ctx, constants.InvokerReport)
+	var dbClient, err = db_local.GetLocalClient(ctx, constants.InvokerReport, statusspinner.NewStatusSpinner())
 	if err != nil {
 		return nil, err
 	}

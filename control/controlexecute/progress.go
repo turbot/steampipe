@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/turbot/steampipe/statushooks"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
-
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/briandowns/spinner"
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -23,6 +23,9 @@ type ControlProgressRenderer struct {
 	spinner    *spinner.Spinner
 	enabled    bool
 	executing  int
+
+	// status update hooks
+	statusHook statushooks.StatusHooks
 }
 
 func NewControlProgressRenderer(total int) *ControlProgressRenderer {
@@ -39,7 +42,7 @@ func (p *ControlProgressRenderer) Start() {
 	defer p.updateLock.Unlock()
 
 	if p.enabled {
-		p.spinner = display.ShowSpinner("Starting controls...")
+		p.statusHook.SetStatus("Starting controls...")
 	}
 }
 
@@ -54,7 +57,7 @@ func (p *ControlProgressRenderer) OnControlStart(control *modconfig.Control) {
 	p.pending--
 
 	if p.enabled {
-		display.UpdateSpinnerMessage(p.spinner, p.message())
+		p.statusHook.SetStatus(p.message())
 	}
 }
 
@@ -64,7 +67,7 @@ func (p *ControlProgressRenderer) OnControlFinish() {
 	// decrement the parallel execution count
 	p.executing--
 	if p.enabled {
-		display.UpdateSpinnerMessage(p.spinner, p.message())
+		p.statusHook.SetStatus(p.message())
 	}
 }
 
@@ -74,7 +77,7 @@ func (p *ControlProgressRenderer) OnControlComplete() {
 	p.complete++
 
 	if p.enabled {
-		display.UpdateSpinnerMessage(p.spinner, p.message())
+		p.statusHook.SetStatus(p.message())
 	}
 }
 
@@ -84,13 +87,13 @@ func (p *ControlProgressRenderer) OnControlError() {
 	p.error++
 
 	if p.enabled {
-		display.UpdateSpinnerMessage(p.spinner, p.message())
+		p.statusHook.SetStatus(p.message())
 	}
 }
 
 func (p *ControlProgressRenderer) Finish() {
 	if p.enabled {
-		display.StopSpinner(p.spinner)
+		p.statusHook.Done()
 	}
 }
 

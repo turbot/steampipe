@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -24,6 +23,7 @@ import (
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/modinstaller"
+	"github.com/turbot/steampipe/statusspinner"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -109,14 +109,11 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	var spinner *spinner.Spinner
-	if viper.GetBool(constants.ArgProgress) {
-		spinner = display.ShowSpinner("Initializing...")
-	}
+	statusSpinner := statusspinner.NewStatusSpinner(statusspinner.WithMessage("Initializing..."))
 
 	// initialise
-	initData = initialiseCheck(cmd.Context(), spinner)
-	display.StopSpinner(spinner)
+	initData = initialiseCheck(cmd.Context(), statusSpinner)
+	statusSpinner.Done()
 	if shouldExit := handleCheckInitResult(initData); shouldExit {
 		return
 	}
@@ -189,7 +186,7 @@ func validateArgs(cmd *cobra.Command, args []string) bool {
 	return true
 }
 
-func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *control.InitData {
+func initialiseCheck(ctx context.Context, statusSpinner *statusspinner.StatusSpinner) *control.InitData {
 	initData := &control.InitData{
 		Result: &db_common.InitResult{},
 	}
@@ -228,7 +225,7 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *control.Ini
 		return initData
 	}
 	// load workspace
-	initData.Workspace, err = loadWorkspacePromptingForVariables(ctx, spinner)
+	initData.Workspace, err = loadWorkspacePromptingForVariables(ctx, statusSpinner)
 	if err != nil {
 		if !utils.IsCancelledError(err) {
 			err = utils.PrefixError(err, "failed to load workspace")
@@ -248,18 +245,14 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *control.Ini
 		initData.Result.AddWarnings("no controls found in current workspace")
 	}
 
-	display.UpdateSpinnerMessage(spinner, "Connecting to service...")
+	statusSpinner.SetStatus("Connecting to service...")
 	// get a client
 	var client db_common.Client
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-		client, err = db_client.NewDbClient(ctx, connectionString)
+		client, err = db_client.NewDbClient(ctx, connectionString, nil)
 	} else {
-		// stop the spinner
-		display.StopSpinner(spinner)
 		// when starting the database, installers may trigger their own spinners
-		client, err = db_local.GetLocalClient(ctx, constants.InvokerCheck)
-		// resume the spinner
-		display.ResumeSpinner(spinner)
+		client, err = db_local.GetLocalClient(ctx, constants.InvokerCheck, statusSpinner)
 	}
 
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/query"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/statusspinner"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -16,7 +17,8 @@ func RunInteractivePrompt(initData *query.InitData) (*queryresult.ResultStreamer
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
 		// do not bind shutdown to any cancellable context
-		db_local.ShutdownService(constants.InvokerQuery)
+		// TODO CLEAR DELAY on status hook???
+		db_local.ShutdownService(constants.InvokerQuery, statusHook)
 		return nil, err
 	}
 
