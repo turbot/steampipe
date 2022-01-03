@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/cmd_config"
 	"github.com/turbot/steampipe/constants"
 
 	"github.com/turbot/go-kit/helpers"
@@ -44,7 +44,7 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 		if numArgs == 0 {
 			// get the current status of this mode (convert metaquery name into arg name)
 			// NOTE - request second arg from cast even though we donl;t use it - to avoid panic
-			currentStatus := cmdconfig.Viper().GetBool(constants.ArgFromMetaquery(metaquery))
+			currentStatus := cmd_config.Viper().GetBool(constants.ArgFromMetaquery(metaquery))
 			// what is the new status (the opposite)
 			newStatus := !currentStatus
 

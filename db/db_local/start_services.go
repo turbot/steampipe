@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/file_paths"
 	"github.com/turbot/steampipe/plugin_manager"
 
 	psutils "github.com/shirou/gopsutil/process"
@@ -355,7 +356,7 @@ func createCmd(ctx context.Context, port int, listenAddresses string) *exec.Cmd 
 		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
 
 		// log directory
-		"-c", fmt.Sprintf("log_directory=%s", constants.LogDir()),
+		"-c", fmt.Sprintf("log_directory=%s", file_paths.LogDir()),
 
 		// If ssl is off  it doesnot matter what we pass in the ssl_cert_file and ssl_key_file
 		// SSL will only get validated if the ssl is on
@@ -366,7 +367,7 @@ func createCmd(ctx context.Context, port int, listenAddresses string) *exec.Cmd 
 		// Data Directory
 		"-D", getDataLocation())
 
-	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", constants.SteampipeDir))
+	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", file_paths.SteampipeDir))
 
 	//  Check if the /etc/ssl directory exist in os
 	dirExist, _ := os.Stat(constants.SslConfDir)

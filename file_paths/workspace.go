@@ -1,4 +1,4 @@
-package constants
+package file_paths
 
 import (
 	"path"
@@ -14,7 +14,6 @@ const (
 	ModFileName             = "mod.sp"
 	DefaultVarsFileName     = "steampipe.spvars"
 	WorkspaceLockFileName   = ".mod.cache.json"
-	MaxControlRunAttempts   = 2
 )
 
 func WorkspaceModPath(workspacePath string) string {

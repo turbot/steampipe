@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/file_paths"
 )
 
 // Save the state
@@ -13,8 +13,8 @@ import (
 func (s *State) Save() error {
 	s.LastCheck = nowTimeString()
 	// ensure internal dirs exists
-	_ = os.MkdirAll(constants.InternalDir(), os.ModePerm)
-	stateFilePath := filepath.Join(constants.InternalDir(), updateStateFileName)
+	_ = os.MkdirAll(file_paths.InternalDir(), os.ModePerm)
+	stateFilePath := filepath.Join(file_paths.InternalDir(), updateStateFileName)
 	// if there is an existing file it must be bad/corrupt, so delete it
 	_ = os.Remove(stateFilePath)
 	// save state file

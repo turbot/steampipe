@@ -3,6 +3,7 @@ package constants
 import "fmt"
 
 // Metaquery commands
+
 const (
 	CmdTableList        = ".tables"             // List all tables
 	CmdOutput           = ".output"             // Set output mode

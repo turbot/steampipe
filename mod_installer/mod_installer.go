@@ -11,6 +11,7 @@ import (
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/file_paths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/steampipeconfig/version_map"
@@ -75,7 +76,7 @@ func (i *ModInstaller) setModsPath() error {
 		return err
 	}
 	i.tmpPath = dir
-	i.modsPath = constants.WorkspaceModPath(i.workspacePath)
+	i.modsPath = file_paths.WorkspaceModPath(i.workspacePath)
 	return nil
 }
 

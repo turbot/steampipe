@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/file_paths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
 )
 
@@ -56,7 +57,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	// if they are present. There's the original terraform.tfvars
 	// (constants.DefaultVarsFilename) along with the later-added search for all files
 	// ending in .auto.spvars.
-	defaultVarsPath := constants.DefaultVarsFilePath(workspacePath)
+	defaultVarsPath := file_paths.DefaultVarsFilePath(workspacePath)
 	if _, err := os.Stat(defaultVarsPath); err == nil {
 		moreDiags := addVarsFromFile(defaultVarsPath, ValueFromAutoFile, ret)
 		diags = diags.Append(moreDiags)

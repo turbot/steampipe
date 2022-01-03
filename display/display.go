@@ -13,7 +13,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/karrick/gows"
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/cmd_config"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/utils"
@@ -21,7 +21,7 @@ import (
 
 // ShowOutput :: displays the output using the proper formatter as applicable
 func ShowOutput(result *queryresult.Result) {
-	output := cmdconfig.Viper().GetString(constants.ArgOutput)
+	output := cmd_config.Viper().GetString(constants.ArgOutput)
 	if output == constants.OutputFormatJSON {
 		displayJSON(result)
 	} else if output == constants.OutputFormatCSV {
@@ -204,9 +204,9 @@ func displayJSON(result *queryresult.Result) {
 
 func displayCSV(result *queryresult.Result) {
 	csvWriter := csv.NewWriter(os.Stdout)
-	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
+	csvWriter.Comma = []rune(cmd_config.Viper().GetString(constants.ArgSeparator))[0]
 
-	if cmdconfig.Viper().GetBool(constants.ArgHeader) {
+	if cmd_config.Viper().GetBool(constants.ArgHeader) {
 		_ = csvWriter.Write(ColumnNames(result.ColTypes))
 	}
 
@@ -281,7 +281,7 @@ func displayTable(result *queryresult.Result) {
 	ShowPaged(outbuf.String())
 
 	// if timer is turned on
-	if cmdconfig.Viper().GetBool(constants.ArgTimer) {
+	if cmd_config.Viper().GetBool(constants.ArgTimer) {
 		fmt.Printf("\nTime: %v\n", <-result.Duration)
 	}
 }

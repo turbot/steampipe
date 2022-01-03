@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/cmd_config"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
@@ -27,27 +27,6 @@ import (
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
-
-type checkInitData struct {
-	ctx       context.Context
-	workspace *workspace.Workspace
-	client    db_common.Client
-	result    *db_common.InitResult
-}
-
-type exportData struct {
-	executionTree *controlexecute.ExecutionTree
-	exportFormats []controldisplay.CheckExportTarget
-	errorsLock    *sync.Mutex
-	errors        []error
-	waitGroup     *sync.WaitGroup
-}
-
-func (e *exportData) addErrors(err []error) {
-	e.errorsLock.Lock()
-	e.errors = append(e.errors, err...)
-	e.errorsLock.Unlock()
-}
 
 func checkCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -77,7 +56,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		},
 	}
 
-	cmdconfig.
+	cmd_config.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers for csv and table output").
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for check").
@@ -97,7 +76,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')").
-		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden()).
+		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmd_config.FlagOptions.Hidden()).
 		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod depdencies before runnign the check")
 
 	return cmd
@@ -175,7 +154,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.FailOnError(err)
 
 		if len(exportFormats) > 0 {
-			d := exportData{executionTree: executionTree, exportFormats: exportFormats, errorsLock: &exportErrorsLock, errors: exportErrors, waitGroup: &exportWaitGroup}
+			d := checkExportData{executionTree: executionTree, exportFormats: exportFormats, errorsLock: &exportErrorsLock, errors: exportErrors, waitGroup: &exportWaitGroup}
 			exportCheckResult(ctx, &d)
 		}
 
@@ -197,6 +176,19 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = failures
 }
 
+func validateArgs(cmd *cobra.Command, args []string) bool {
+	if len(args) == 0 {
+		fmt.Println()
+		utils.ShowError(fmt.Errorf("you must provide at least one argument"))
+		fmt.Println()
+		cmd.Help()
+		fmt.Println()
+		exitCode = 2
+		return false
+	}
+	return true
+}
+
 func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitData {
 	initData := &checkInitData{
 		result: &db_common.InitResult{},
@@ -211,7 +203,7 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 		}
 	}
 
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
+	cmd_config.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	err := validateOutputFormat()
 	if err != nil {
@@ -219,7 +211,7 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 		return initData
 	}
 
-	err = cmdconfig.ValidateConnectionStringArgs()
+	err = cmd_config.ValidateConnectionStringArgs()
 	if err != nil {
 		initData.result.Error = err
 		return initData
@@ -343,19 +335,6 @@ func printTiming(args []string, durations []time.Duration) {
 	display.ShowWrappedTable(headers, rows, false)
 }
 
-func validateArgs(cmd *cobra.Command, args []string) bool {
-	if len(args) == 0 {
-		fmt.Println()
-		utils.ShowError(fmt.Errorf("you must provide at least one argument"))
-		fmt.Println()
-		cmd.Help()
-		fmt.Println()
-		exitCode = 2
-		return false
-	}
-	return true
-}
-
 func shouldPrintTiming() bool {
 	outputFormat := viper.GetString(constants.ArgOutput)
 
@@ -411,6 +390,17 @@ func initialiseColorScheme() error {
 	}
 	controldisplay.ControlColors = scheme
 	return nil
+}
+
+func exportCheckResult(ctx context.Context, d *checkExportData) {
+	d.waitGroup.Add(1)
+	go func() {
+		err := exportControlResults(ctx, d.executionTree, d.exportFormats)
+		if len(err) > 0 {
+			d.addErrors(err)
+		}
+		d.waitGroup.Done()
+	}()
 }
 
 func displayControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree) error {

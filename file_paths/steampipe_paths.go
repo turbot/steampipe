@@ -1,4 +1,4 @@
-package constants
+package file_paths
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 // Constants for Config
 const (
 	DefaultInstallDir           = "~/.steampipe"
-	ConnectionsStateFileName    = "connection.json"
+	connectionsStateFileName    = "connection.json"
 	versionFileName             = "versions.json"
 	databaseRunningInfoFileName = "steampipe.json"
 	pluginManagerStateFileName  = "plugin_manager.json"
@@ -40,7 +40,7 @@ func PluginDir() string {
 
 // ConnectionStatePath returns the path of the connections state file
 func ConnectionStatePath() string {
-	return filepath.Join(InternalDir(), ConnectionsStateFileName)
+	return filepath.Join(InternalDir(), connectionsStateFileName)
 }
 
 // ConfigDir returns the path to the config directory (creates if missing)

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/file_paths"
 )
 
 // QueryHistory :: struct for working with history in the interactive mode
@@ -59,7 +60,7 @@ func (q *QueryHistory) Persist() error {
 	defer func() {
 		file.Close()
 	}()
-	path := filepath.Join(constants.InternalDir(), constants.HistoryFile)
+	path := filepath.Join(file_paths.InternalDir(), constants.HistoryFile)
 	file, err = os.Create(path)
 	if err != nil {
 		return err
@@ -80,7 +81,7 @@ func (q *QueryHistory) Get() []string {
 
 // loads up the history from the file where it is persisted
 func (q *QueryHistory) load() error {
-	path := filepath.Join(constants.InternalDir(), constants.HistoryFile)
+	path := filepath.Join(file_paths.InternalDir(), constants.HistoryFile)
 	file, err := os.Open(path)
 	if err != nil {
 		q.history = []string{}

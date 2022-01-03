@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/file_paths"
 )
 
 const (
@@ -54,7 +54,7 @@ func LoadDatabaseVersionFile() (*DatabaseVersionFile, error) {
 		return migratedVersionFile, nil
 	}
 
-	versionFilePath := constants.DatabaseVersionFilePath()
+	versionFilePath := file_paths.DatabaseVersionFilePath()
 	if helpers.FileExists(versionFilePath) {
 		return readDatabaseVersionFile(versionFilePath)
 	}
@@ -81,7 +81,7 @@ func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 
 // Save writes the config
 func (f *DatabaseVersionFile) Save() error {
-	versionFilePath := constants.DatabaseVersionFilePath()
+	versionFilePath := file_paths.DatabaseVersionFilePath()
 	return f.write(versionFilePath)
 }
 
@@ -96,7 +96,7 @@ func (f *DatabaseVersionFile) write(path string) error {
 
 // delete the file on disk if it exists
 func (f *DatabaseVersionFile) delete() {
-	versionFilePath := constants.DatabaseVersionFilePath()
+	versionFilePath := file_paths.DatabaseVersionFilePath()
 	if helpers.FileExists(versionFilePath) {
 		os.Remove(versionFilePath)
 	}

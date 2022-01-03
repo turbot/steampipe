@@ -7,9 +7,10 @@ import (
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/cmd_config"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_local"
+	"github.com/turbot/steampipe/file_paths"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
@@ -29,7 +30,7 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*pb.Conn
 	}
 
 	watcherOptions := &utils.WatcherOptions{
-		Directories: []string{constants.ConfigDir()},
+		Directories: []string{file_paths.ConfigDir()},
 		Include:     filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
 		ListFlag:    filehelpers.FilesRecursive,
 
@@ -105,7 +106,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 	// set the global steampipe config
 	steampipeconfig.GlobalConfig = config
 	// update the viper default based on this loaded config
-	cmdconfig.SetViperDefaults(config.ConfigMap())
+	cmd_config.SetViperDefaults(config.ConfigMap())
 	// now refresh connections and search paths
 	refreshResult := client.RefreshConnectionAndSearchPaths(ctx)
 	if refreshResult.Error != nil {

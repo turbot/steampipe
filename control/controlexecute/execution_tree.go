@@ -89,9 +89,7 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 	}()
 
 	// the number of goroutines parallel to start
-	// - we start goroutines as a multiplier of the number of parallel database connections
-	// so that go routines receive connections as soon as they are available
-	maxParallelGoRoutines := viper.GetInt64(constants.ArgMaxParallel) * constants.ParallelControlMultiplier
+	maxParallelGoRoutines := viper.GetInt64(constants.ArgMaxParallel)
 
 	// to limit the number of parallel controls go routines started
 	parallelismLock := semaphore.NewWeighted(maxParallelGoRoutines)
@@ -103,7 +101,7 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 	if ctx.Err() != nil {
 		// use a Background context - since the original context has been cancelled
 		// this lets us wait for the active control queries to cancel
-		c, cancel := context.WithTimeout(context.Background(), constants.QueryCancellationTimeout*time.Second)
+		c, cancel := context.WithTimeout(context.Background(), constants.ControlQueryCancellationTimeoutSecs*time.Second)
 		executeFinishWaitCtx = c
 		defer cancel()
 	}

@@ -1,4 +1,4 @@
-package autocomplete
+package interactive
 
 import (
 	"fmt"
@@ -47,7 +47,7 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 		// add qualified names of all tables
 		for tableName := range schemaDetails {
 			if !isTemporarySchema {
-				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, escapeIfRequired(tableName)))
+				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, sanitiseTableName(tableName)))
 			}
 		}
 
@@ -77,11 +77,11 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 	}
 
 	for _, table := range unqualifiedTablesToAdd {
-		s = append(s, prompt.Suggest{Text: table, Description: "Table", Output: escapeIfRequired(table)})
+		s = append(s, prompt.Suggest{Text: table, Description: "Table", Output: sanitiseTableName(table)})
 	}
 
 	for _, table := range qualifiedTablesToAdd {
-		s = append(s, prompt.Suggest{Text: table, Description: "Table", Output: escapeIfRequired(table)})
+		s = append(s, prompt.Suggest{Text: table, Description: "Table", Output: sanitiseTableName(table)})
 	}
 
 	return s
@@ -91,7 +91,7 @@ func stripVersionFromPluginName(pluginName string) string {
 	return strings.Split(pluginName, "@")[0]
 }
 
-func escapeIfRequired(strToEscape string) string {
+func sanitiseTableName(strToEscape string) string {
 	tokens := utils.SplitByRune(strToEscape, '.')
 	escaped := []string{}
 	for _, token := range tokens {

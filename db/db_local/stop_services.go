@@ -13,6 +13,7 @@ import (
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/file_paths"
 	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/runtime_constants"
 
@@ -97,7 +98,7 @@ func StopServices(force bool, invoker constants.Invoker, spinner *spinner.Spinne
 
 	defer func() {
 		if e == nil {
-			os.Remove(constants.RunningInfoFilePath())
+			os.Remove(file_paths.RunningInfoFilePath())
 		}
 		utils.LogTime("db_local.StopDB end")
 	}()

@@ -1,4 +1,4 @@
-package cmdconfig
+package cmd_config
 
 import (
 	"fmt"

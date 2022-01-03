@@ -1,6 +1,8 @@
 package constants
 
-const DefaultSPCContent = `
+// DefaultConnectionConfigContent is the content of the default connection config file, default.spc,
+// that is created if it does not exist
+const DefaultConnectionConfigContent = `
 #
 # For detailed descriptions, see the reference documentation
 # at https://steampipe.io/docs/reference/cli-args

@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/cmd_config"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
@@ -22,7 +22,6 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// serviceCmd :: Service management commands
 func serviceCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "service [command]",
@@ -43,7 +42,7 @@ connection from any Postgres compatible database client.`,
 	return cmd
 }
 
-// serviceStartCmd :: handler for service start
+// handler for service start
 func serviceStartCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "start",
@@ -56,7 +55,7 @@ Run Steampipe as a local service, exposing it as a database endpoint for
 connection from any Postgres compatible database client.`,
 	}
 
-	cmdconfig.
+	cmd_config.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service start").
 		// for now default port to -1 so we fall back to the default of the deprecated arg
@@ -67,7 +66,7 @@ connection from any Postgres compatible database client.`,
 		// foreground enables the service to run in the foreground - till exit
 		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
 		// Hidden flags for internal use
-		AddStringFlag(constants.ArgInvoker, "", string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
+		AddStringFlag(constants.ArgInvoker, "", string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmd_config.FlagOptions.Hidden())
 
 	return cmd
 }
@@ -84,14 +83,14 @@ func serviceStatusCmd() *cobra.Command {
 Report current status of the Steampipe database service.`,
 	}
 
-	cmdconfig.OnCmd(cmd).
+	cmd_config.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service status").
 		AddBoolFlag(constants.ArgAll, "", false, "Bypasses the INSTALL_DIR and reports status of all running steampipe services")
 
 	return cmd
 }
 
-// serviceStopCmd :: handler for service stop
+// handler for service stop
 func serviceStopCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stop",
@@ -101,7 +100,7 @@ func serviceStopCmd() *cobra.Command {
 		Long:  `Stop the Steampipe service.`,
 	}
 
-	cmdconfig.
+	cmd_config.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service stop").
 		AddBoolFlag(constants.ArgForce, "", false, "Forces all services to shutdown, releasing all open connections and ports")
@@ -109,7 +108,7 @@ func serviceStopCmd() *cobra.Command {
 	return cmd
 }
 
-// serviceRestartCmd :: restarts the database service
+// restarts the database service
 func serviceRestartCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "restart",
@@ -119,7 +118,7 @@ func serviceRestartCmd() *cobra.Command {
 		Long:  `Restart the Steampipe service.`,
 	}
 
-	cmdconfig.
+	cmd_config.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service restart").
 		AddBoolFlag(constants.ArgForce, "", false, "Forces the service to restart, releasing all open connections and ports")
@@ -147,13 +146,13 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	port := viper.GetInt(constants.ArgPort)
 	if port < 1 || port > 65535 {
-		panic("Invalid Port :: MUST be within range (1:65535)")
+		panic("Invalid port - must be within range (1:65535)")
 	}
 
 	listen := db_local.StartListenType(viper.GetString(constants.ArgListenAddress))
 	utils.FailOnError(listen.IsValid())
 
-	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
+	invoker := constants.Invoker(cmd_config.Viper().GetString(constants.ArgInvoker))
 	utils.FailOnError(invoker.IsValid())
 
 	err := db_local.EnsureDBInstalled(ctx)
@@ -377,7 +376,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	force := cmdconfig.Viper().GetBool(constants.ArgForce)
+	force := cmd_config.Viper().GetBool(constants.ArgForce)
 	if force {
 		status, err = db_local.StopServices(force, constants.InvokerService, spinner)
 	} else {

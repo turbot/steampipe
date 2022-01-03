@@ -9,6 +9,7 @@ import (
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/file_paths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
@@ -33,7 +34,7 @@ var runCtx = &parse.RunContext{
 var testCasesLoadMod map[string]loadModTest
 
 func init() {
-	constants.SteampipeDir = "~/.steampipe"
+	file_paths.SteampipeDir = "~/.steampipe"
 	testCasesLoadMod = map[string]loadModTest{
 		"no_mod_sql_files": {
 			source: "test_data/mods/no_mod_sql_files",

@@ -7,10 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/turbot/steampipe/file_paths"
+
 	"github.com/Masterminds/semver"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version_helpers"
@@ -31,7 +32,7 @@ type WorkspaceLock struct {
 func EmptyWorkspaceLock(existingLock *WorkspaceLock) *WorkspaceLock {
 	return &WorkspaceLock{
 		WorkspacePath:       existingLock.WorkspacePath,
-		ModInstallationPath: constants.WorkspaceModPath(existingLock.WorkspacePath),
+		ModInstallationPath: file_paths.WorkspaceModPath(existingLock.WorkspacePath),
 		InstallCache:        make(DependencyVersionMap),
 		MissingVersions:     make(DependencyVersionMap),
 		installedMods:       existingLock.installedMods,
@@ -40,7 +41,7 @@ func EmptyWorkspaceLock(existingLock *WorkspaceLock) *WorkspaceLock {
 
 func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 	var installCache = make(DependencyVersionMap)
-	lockPath := constants.WorkspaceLockPath(workspacePath)
+	lockPath := file_paths.WorkspaceModPath(workspacePath)
 	if helpers.FileExists(lockPath) {
 
 		fileContent, err := os.ReadFile(lockPath)
@@ -56,7 +57,7 @@ func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 	}
 	res := &WorkspaceLock{
 		WorkspacePath:       workspacePath,
-		ModInstallationPath: constants.WorkspaceModPath(workspacePath),
+		ModInstallationPath: file_paths.WorkspaceModPath(workspacePath),
 		InstallCache:        installCache,
 		MissingVersions:     make(DependencyVersionMap),
 	}
@@ -169,12 +170,12 @@ func (l *WorkspaceLock) Save() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(constants.WorkspaceLockPath(l.WorkspacePath), content, 0644)
+	return os.WriteFile(file_paths.WorkspaceModPath(l.WorkspacePath), content, 0644)
 }
 
 // Delete deletes the lock file
 func (l *WorkspaceLock) Delete() error {
-	return os.Remove(constants.WorkspaceLockPath(l.WorkspacePath))
+	return os.Remove(file_paths.WorkspaceModPath(l.WorkspacePath))
 }
 
 // DeleteMods removes mods from the lock file then, if it is empty, deletes the file

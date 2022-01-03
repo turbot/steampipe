@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/file_paths"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -23,7 +23,7 @@ func NewTempDir(path string) *tempDir {
 }
 
 func getOrCreateTempDir(ref string) string {
-	pluginCacheDir := filepath.Join(constants.PluginDir(), safeDirName(fmt.Sprintf("tmp-%s", generateTempDirName())))
+	pluginCacheDir := filepath.Join(file_paths.PluginDir(), safeDirName(fmt.Sprintf("tmp-%s", generateTempDirName())))
 
 	if _, err := os.Stat(pluginCacheDir); os.IsNotExist(err) {
 		err = os.MkdirAll(pluginCacheDir, 0755)

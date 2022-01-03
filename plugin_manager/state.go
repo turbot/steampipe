@@ -6,9 +6,10 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/turbot/steampipe/file_paths"
+
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/constants"
 	pb "github.com/turbot/steampipe/plugin_manager/grpc/proto"
 	"github.com/turbot/steampipe/utils"
 )
@@ -48,7 +49,7 @@ func (s *PluginManagerState) Save() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(constants.PluginManagerStateFilePath(), content, 0644)
+	return os.WriteFile(file_paths.PluginManagerStateFilePath(), content, 0644)
 }
 
 // check whether the plugin manager is running
@@ -83,24 +84,24 @@ func (s *PluginManagerState) kill() error {
 }
 
 func (s *PluginManagerState) delete() {
-	os.Remove(constants.PluginManagerStateFilePath())
+	os.Remove(file_paths.PluginManagerStateFilePath())
 }
 
 func LoadPluginManagerState() (*PluginManagerState, error) {
 	// always return empty state
 	s := new(PluginManagerState)
-	if !helpers.FileExists(constants.PluginManagerStateFilePath()) {
+	if !helpers.FileExists(file_paths.PluginManagerStateFilePath()) {
 		log.Printf("[TRACE] plugin manager state file not found")
 		return s, nil
 	}
 
-	fileContent, err := os.ReadFile(constants.PluginManagerStateFilePath())
+	fileContent, err := os.ReadFile(file_paths.PluginManagerStateFilePath())
 	if err != nil {
 		return s, err
 	}
 	err = json.Unmarshal(fileContent, s)
 	if err != nil {
-		log.Printf("[TRACE] failed to unmarshall plugin manager state file at %s with error %s\n", constants.PluginManagerStateFilePath(), err.Error())
+		log.Printf("[TRACE] failed to unmarshall plugin manager state file at %s with error %s\n", file_paths.PluginManagerStateFilePath(), err.Error())
 		log.Printf("[TRACE] deleting invalid plugin manager state file\n")
 		s.delete()
 		return s, nil

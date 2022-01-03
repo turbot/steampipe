@@ -6,13 +6,14 @@ import (
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/platform"
+	"github.com/turbot/steampipe/file_paths"
 	"github.com/turbot/steampipe/utils"
 )
 
 const ServiceExecutableRelativeLocation = "/db/12.1.0/postgres/bin/postgres"
 
 func databaseInstanceDir() string {
-	loc := filepath.Join(constants.DatabaseDir(), constants.DatabaseVersion)
+	loc := filepath.Join(file_paths.DatabaseDir(), constants.DatabaseVersion)
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
 		utils.FailOnErrorWithMessage(err, "could not create db version directory")
@@ -30,7 +31,7 @@ func getDatabaseLocation() string {
 }
 
 func getDatabaseLogDirectory() string {
-	loc := constants.LogDir()
+	loc := file_paths.LogDir()
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
 		utils.FailOnErrorWithMessage(err, "could not create postgres logging directory")
@@ -111,5 +112,5 @@ func getLegacyPasswordFileLocation() string {
 }
 
 func getPasswordFileLocation() string {
-	return filepath.Join(constants.InternalDir(), ".passwd")
+	return filepath.Join(file_paths.InternalDir(), ".passwd")
 }

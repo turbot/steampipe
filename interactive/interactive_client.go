@@ -12,12 +12,10 @@ import (
 	"github.com/alecthomas/chroma/formatters"
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
-	"github.com/spf13/viper"
-
 	"github.com/c-bata/go-prompt"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/autocomplete"
-	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/cmd_config"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/display"
@@ -487,7 +485,7 @@ func (c *InteractiveClient) restartInteractiveSession() {
 }
 
 func (c *InteractiveClient) shouldExecute(line string) bool {
-	return !cmdconfig.Viper().GetBool(constants.ArgMultiLine) || strings.HasSuffix(line, ";") || metaquery.IsMetaQuery(line)
+	return !cmd_config.Viper().GetBool(constants.ArgMultiLine) || strings.HasSuffix(line, ";") || metaquery.IsMetaQuery(line)
 }
 
 func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
@@ -512,7 +510,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 	if isFirstWord(text) {
 		// add all we know that can be the first words
 
-		//named queries
+		// named queries
 		s = append(s, c.namedQuerySuggestions()...)
 		// "select"
 		s = append(s, prompt.Suggest{Text: "select", Output: "select"}, prompt.Suggest{Text: "with", Output: "with"})
@@ -523,9 +521,8 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 	} else if metaquery.IsMetaQuery(text) {
 		client := c.client()
 		suggestions := metaquery.Complete(&metaquery.CompleterInput{
-			Query:       text,
-			Schema:      c.schemaMetadata,
-			Connections: client.ConnectionMap(),
+			Query:            text,
+			TableSuggestions: GetTableAutoCompleteSuggestions(c.schemaMetadata, client.ConnectionMap()),
 		})
 
 		s = append(s, suggestions...)
@@ -534,7 +531,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 
 		// only add table suggestions if the client is initialised
 		if queryInfo.EditingTable && c.isInitialised() && c.schemaMetadata != nil {
-			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.schemaMetadata, c.initData.Client.ConnectionMap())...)
+			s = append(s, GetTableAutoCompleteSuggestions(c.schemaMetadata, c.initData.Client.ConnectionMap())...)
 		}
 
 		// Not sure this is working. comment out for now!

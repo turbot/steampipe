@@ -1,4 +1,4 @@
-package cmdconfig
+package cmd_config
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/file_paths"
 )
 
 // InitViper initializes and configures an instance of viper
@@ -39,7 +40,7 @@ func SetViperDefaults(configMap map[string]interface{}) {
 func setBaseDefaults() {
 	defaults := map[string]interface{}{
 		constants.ArgUpdateCheck: true,
-		constants.ArgInstallDir:  constants.DefaultInstallDir,
+		constants.ArgInstallDir:  file_paths.DefaultInstallDir,
 	}
 
 	for k, v := range defaults {

@@ -12,9 +12,10 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
-	"github.com/turbot/steampipe/cmdconfig"
+	"github.com/turbot/steampipe/cmd_config"
 	"github.com/turbot/steampipe/connection_watcher"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/file_paths"
 	"github.com/turbot/steampipe/plugin_manager"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
@@ -26,7 +27,7 @@ func pluginManagerCmd() *cobra.Command {
 		Run:    runPluginManagerCmd,
 		Hidden: true,
 	}
-	cmdconfig.OnCmd(cmd)
+	cmd_config.OnCmd(cmd)
 
 	return cmd
 }
@@ -74,7 +75,7 @@ func shouldRunConnectionWatcher() bool {
 
 func createPluginManagerLog() hclog.Logger {
 	logName := fmt.Sprintf("plugin-%s.log", time.Now().Format("2006-01-02"))
-	logPath := filepath.Join(constants.LogDir(), logName)
+	logPath := filepath.Join(file_paths.LogDir(), logName)
 	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Printf("failed to open plugin manager log file: %s\n", err.Error())

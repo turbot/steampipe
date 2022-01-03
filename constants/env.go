@@ -1,6 +1,6 @@
 package constants
 
-// Known Environment Variables
+// Environment Variables
 const (
 	EnvUpdateCheck     = "STEAMPIPE_UPDATE_CHECK"
 	EnvInstallDir      = "STEAMPIPE_INSTALL_DIR"
