@@ -54,5 +54,7 @@ func (s *DatabaseSession) Close(waitForCleanup bool) error {
 		s.Connection = nil
 		return err
 	}
-	return nil
+	c := s.Connection
+	s.Connection = nil
+	return c.Close()
 }

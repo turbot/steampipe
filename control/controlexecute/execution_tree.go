@@ -97,7 +97,7 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 	parallelismLock := semaphore.NewWeighted(maxParallelGoRoutines)
 
 	// just execute the root - it will traverse the tree
-	e.Root.Execute(ctx, client, parallelismLock)
+	e.Root.execute(ctx, client, parallelismLock)
 
 	executeFinishWaitCtx := ctx
 	if ctx.Err() != nil {

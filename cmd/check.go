@@ -184,6 +184,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// wait for exports to complete
 	exportWaitGroup.Wait()
+
 	if len(exportErrors) > 0 {
 		utils.ShowError(utils.CombineErrors(exportErrors...))
 	}
@@ -288,8 +289,8 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 	// register EnsureSessionData as a callback on the client.
 	// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 	// so our client object calls this callback to restore the session data
-	initData.client.SetEnsureSessionDataFunc(func(ctx context.Context, conn *db_common.DatabaseSession) (error, []string) {
-		return workspace.EnsureSessionData(ctx, sessionDataSource, conn)
+	initData.client.SetEnsureSessionDataFunc(func(localCtx context.Context, conn *db_common.DatabaseSession) (error, []string) {
+		return workspace.EnsureSessionData(localCtx, sessionDataSource, conn)
 	})
 
 	return initData
@@ -317,6 +318,9 @@ func handleCheckInitResult(initData *checkInitData) bool {
 }
 
 func exportCheckResult(ctx context.Context, d *exportData) {
+	if utils.IsContextCancelled(ctx) {
+		return
+	}
 	d.waitGroup.Add(1)
 	go func() {
 		err := exportControlResults(ctx, d.executionTree, d.exportFormats)
@@ -424,6 +428,12 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, formats []controldisplay.CheckExportTarget) []error {
 	errors := []error{}
 	for _, format := range formats {
+		if utils.IsContextCancelled(ctx) {
+			// set the error
+			errors = append(errors, ctx.Err())
+			// and skip forward
+			continue
+		}
 		formatter, err := controldisplay.GetExportFormatter(format.Format)
 		if err != nil {
 			errors = append(errors, err)
@@ -431,6 +441,10 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 		}
 		formattedReader, err := formatter.Format(ctx, executionTree)
 		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		if utils.IsContextCancelled(ctx) {
 			errors = append(errors, err)
 			continue
 		}

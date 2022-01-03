@@ -92,7 +92,7 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 	return res
 }
 
-func (r *ControlRun) Skip() {
+func (r *ControlRun) skip() {
 	r.setRunStatus(ControlRunComplete)
 }
 
@@ -130,7 +130,27 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.Datab
 	return err
 }
 
-func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
+func (r *ControlRun) getCurrentSearchPath(ctx context.Context, session *db_common.DatabaseSession) ([]string, error) {
+	utils.LogTime("ControlRun.getCurrentSearchPath start")
+	defer utils.LogTime("ControlRun.getCurrentSearchPath end")
+
+	row := session.Connection.QueryRowContext(ctx, "show search_path")
+	pathAsString := ""
+	err := row.Scan(&pathAsString)
+	if err != nil {
+		return nil, err
+	}
+	currentSearchPath := strings.Split(pathAsString, ",")
+	// unescape search path
+	for idx, p := range currentSearchPath {
+		p = strings.Join(strings.Split(p, "\""), "")
+		p = strings.TrimSpace(p)
+		currentSearchPath[idx] = p
+	}
+	return currentSearchPath, nil
+}
+
+func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
 
@@ -138,6 +158,8 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 
 	control := r.Control
 	log.Printf("[TRACE] control start, %s\n", control.Name())
+
+	startTime := time.Now()
 
 	// function to cleanup and update status after control run completion
 	defer func() {
@@ -147,7 +169,10 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 			r.group.updateSeverityCounts(r.Severity, r.Summary)
 		}
 		r.Lifecycle.Add("execute_end")
-		r.Duration = r.Lifecycle.GetDuration()
+		r.Duration = time.Since(startTime)
+		if r.group != nil {
+			r.group.addDuration(r.Duration)
+		}
 		log.Printf("[TRACE] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.executionTree.progress.executing)
 	}()
 
@@ -158,13 +183,12 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 		if !utils.IsCancelledError(sessionResult.Error) {
 			sessionResult.Error = fmt.Errorf("error acquiring database connection, %s", sessionResult.Error.Error())
 		}
-		r.SetError(sessionResult.Error)
 		return
 	}
 	r.Lifecycle.Add("got_session")
 	dbSession := sessionResult.Session
 	defer func() {
-		// do this in a closure, otherwise the argument will not get evaluated in calltime
+		// do this in a closure, otherwise the argument will not get evaluated during calltime
 		dbSession.Close(utils.IsContextCancelled(ctx))
 	}()
 
@@ -213,7 +237,7 @@ func (r *ControlRun) Execute(ctx context.Context, client db_common.Client) {
 			if r.attempts < constants.MaxControlRunAttempts {
 				log.Printf("[TRACE] control %s query failed with plugin connectivity error %s - retrying...", r.Control.Name(), err)
 				// recurse into this function to retry using the original context - which Execute will use to create it's own timeout context
-				r.Execute(ctx, client)
+				r.execute(ctx, client)
 				return
 			} else {
 				log.Printf("[TRACE] control %s query failed again with plugin connectivity error %s - NOT retrying...", r.Control.Name(), err)
@@ -244,26 +268,6 @@ func (r *ControlRun) SetError(err error) {
 
 func (r *ControlRun) GetError() error {
 	return r.runError
-}
-
-func (r *ControlRun) getCurrentSearchPath(ctx context.Context, session *db_common.DatabaseSession) ([]string, error) {
-	utils.LogTime("ControlRun.getCurrentSearchPath start")
-	defer utils.LogTime("ControlRun.getCurrentSearchPath end")
-
-	row := session.Connection.QueryRowContext(ctx, "show search_path")
-	pathAsString := ""
-	err := row.Scan(&pathAsString)
-	if err != nil {
-		return nil, err
-	}
-	currentSearchPath := strings.Split(pathAsString, ",")
-	// unescape search path
-	for idx, p := range currentSearchPath {
-		p = strings.Join(strings.Split(p, "\""), "")
-		p = strings.TrimSpace(p)
-		currentSearchPath[idx] = p
-	}
-	return currentSearchPath, nil
 }
 
 func (r *ControlRun) getControlQueryContext(ctx context.Context) context.Context {

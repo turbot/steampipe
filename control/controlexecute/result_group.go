@@ -31,10 +31,12 @@ type ResultGroup struct {
 	Severity    map[string]StatusSummary `json:"-"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
-	GroupItem         modconfig.ModTreeItem `json:"-"`
-	Parent            *ResultGroup          `json:"-"`
-	Duration          time.Duration         `json:"-"`
-	summaryUpdateLock *sync.Mutex
+	GroupItem modconfig.ModTreeItem `json:"-"`
+	Parent    *ResultGroup          `json:"-"`
+	Duration  time.Duration         `json:"-"`
+
+	// lock to prevent multiple control_runs updating this
+	updateLock *sync.Mutex
 }
 
 type GroupSummary struct {
@@ -49,12 +51,12 @@ func NewGroupSummary() *GroupSummary {
 // NewRootResultGroup creates a ResultGroup to act as the root node of a control execution tree
 func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.ModTreeItem) *ResultGroup {
 	root := &ResultGroup{
-		GroupId:           RootResultGroupName,
-		Groups:            []*ResultGroup{},
-		Tags:              make(map[string]string),
-		Summary:           NewGroupSummary(),
-		Severity:          make(map[string]StatusSummary),
-		summaryUpdateLock: new(sync.Mutex),
+		GroupId:    RootResultGroupName,
+		Groups:     []*ResultGroup{},
+		Tags:       make(map[string]string),
+		Summary:    NewGroupSummary(),
+		Severity:   make(map[string]StatusSummary),
+		updateLock: new(sync.Mutex),
 	}
 	for _, item := range rootItems {
 		// if root item is a benchmark, create new result group with root as parent
@@ -79,16 +81,16 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ModTreeItem
 	}
 
 	group := &ResultGroup{
-		GroupId:           treeItem.Name(),
-		Title:             treeItem.GetTitle(),
-		Description:       treeItem.GetDescription(),
-		Tags:              treeItem.GetTags(),
-		GroupItem:         treeItem,
-		Parent:            parent,
-		Groups:            []*ResultGroup{},
-		Summary:           NewGroupSummary(),
-		Severity:          make(map[string]StatusSummary),
-		summaryUpdateLock: new(sync.Mutex),
+		GroupId:     groupId,
+		Title:       treeItem.GetTitle(),
+		Description: treeItem.GetDescription(),
+		Tags:        treeItem.GetTags(),
+		GroupItem:   treeItem,
+		Parent:      parent,
+		Groups:      []*ResultGroup{},
+		Summary:     NewGroupSummary(),
+		Severity:    make(map[string]StatusSummary),
+		updateLock:  new(sync.Mutex),
 	}
 	// add child groups for children which are benchmarks
 	for _, c := range treeItem.GetChildren() {
@@ -109,42 +111,52 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ModTreeItem
 	return group
 }
 
-// PopulateGroupMap mutates the passed in a map to return all child result groups
-func (r *ResultGroup) PopulateGroupMap(groupMap map[string]*ResultGroup) {
+// populateGroupMap mutates the passed in a map to return all child result groups
+func (r *ResultGroup) populateGroupMap(groupMap map[string]*ResultGroup) {
 	if groupMap == nil {
 		groupMap = make(map[string]*ResultGroup)
 	}
 	// add self
 	groupMap[r.GroupId] = r
 	for _, g := range r.Groups {
-		g.PopulateGroupMap(groupMap)
+		g.populateGroupMap(groupMap)
 	}
 }
 
-// AddResult adds a result to the list, updates the summary status
+// addResult adds a result to the list, updates the summary status
 // (this also updates the status of our parent, all the way up the tree)
-func (r *ResultGroup) AddResult(run *ControlRun) {
+func (r *ResultGroup) addResult(run *ControlRun) {
 	r.ControlRuns = append(r.ControlRuns, run)
+}
 
+func (r *ResultGroup) addDuration(d time.Duration) {
+	r.updateLock.Lock()
+	defer r.updateLock.Unlock()
+
+	r.Duration += d.Round(time.Millisecond)
+	if r.Parent != nil {
+		r.Parent.addDuration(d.Round(time.Millisecond))
+	}
 }
 
 func (r *ResultGroup) updateSummary(summary StatusSummary) {
-	r.summaryUpdateLock.Lock()
-	defer r.summaryUpdateLock.Unlock()
+	r.updateLock.Lock()
+	defer r.updateLock.Unlock()
 
 	r.Summary.Status.Skip += summary.Skip
 	r.Summary.Status.Alarm += summary.Alarm
 	r.Summary.Status.Info += summary.Info
 	r.Summary.Status.Ok += summary.Ok
 	r.Summary.Status.Error += summary.Error
+
 	if r.Parent != nil {
 		r.Parent.updateSummary(summary)
 	}
 }
 
 func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummary) {
-	r.summaryUpdateLock.Lock()
-	defer r.summaryUpdateLock.Unlock()
+	r.updateLock.Lock()
+	defer r.updateLock.Unlock()
 
 	val, exists := r.Severity[severity]
 	if !exists {
@@ -162,11 +174,9 @@ func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummar
 	}
 }
 
-func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, parallelismLock *semaphore.Weighted) {
+func (r *ResultGroup) execute(ctx context.Context, client db_common.Client, parallelismLock *semaphore.Weighted) {
 	log.Printf("[TRACE] begin ResultGroup.Execute: %s\n", r.GroupId)
 	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
-
-	startTime := time.Now()
 
 	for _, controlRun := range r.ControlRuns {
 		if utils.IsContextCancelled(ctx) {
@@ -175,7 +185,7 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 		}
 
 		if viper.GetBool(constants.ArgDryRun) {
-			controlRun.Skip()
+			controlRun.skip()
 			continue
 		}
 
@@ -194,14 +204,12 @@ func (r *ResultGroup) Execute(ctx context.Context, client db_common.Client, para
 				// Release in defer, so that we don't retain the lock even if there's a panic inside
 				parallelismLock.Release(1)
 			}()
-			run.Execute(c, client)
+			run.execute(c, client)
 		}(ctx, controlRun)
 	}
 	for _, child := range r.Groups {
-		child.Execute(ctx, client, parallelismLock)
+		child.execute(ctx, client, parallelismLock)
 	}
-
-	r.Duration = time.Since(startTime)
 }
 
 // GetGroupByName finds an immediate child ResultGroup with a specific name

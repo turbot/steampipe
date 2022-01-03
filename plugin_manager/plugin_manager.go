@@ -235,6 +235,7 @@ func (m *PluginManager) startPlugin(connection string) (*plugin.Client, error) {
 	}
 
 	cmd := exec.Command(pluginPath)
+
 	// pass env to command
 	cmd.Env = os.Environ()
 	client := plugin.NewClient(&plugin.ClientConfig{
