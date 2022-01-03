@@ -13,6 +13,8 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/turbot/steampipe/statushooks"
+
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/pluginmanager"
@@ -67,7 +69,7 @@ func (slt StartListenType) IsValid() error {
 	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
 }
 
-func StartServices(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) (startResult *StartResult) {
+func StartServices(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker, statusHook statushooks.StatusHooks) (startResult *StartResult) {
 	utils.LogTime("db_local.StartServices start")
 	defer utils.LogTime("db_local.StartServices end")
 
@@ -78,7 +80,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 	}
 
 	if res.DbState == nil {
-		res = startDB(ctx, port, listen, invoker)
+		res = startDB(ctx, port, listen, invoker, statusHook)
 	} else {
 		rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
 		if err != nil {
@@ -122,7 +124,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 }
 
 // StartDB starts the database if not already running
-func startDB(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) (res *StartResult) {
+func startDB(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker, statusHook statushooks.StatusHooks) (res *StartResult) {
 	log.Printf("[TRACE] StartDB invoker %s", invoker)
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
@@ -136,7 +138,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		// if there was an error and we started the service, stop it again
 		if res.Error != nil {
 			if res.Status == ServiceStarted {
-				StopServices(false, invoker, nil)
+				StopServices(false, invoker, statusHook)
 			}
 			// remove the state file if we are going back with an error
 			removeRunningInstanceInfo()

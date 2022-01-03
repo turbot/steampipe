@@ -9,6 +9,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/turbot/steampipe/statusspinner"
+
+	"github.com/turbot/steampipe/statushooks"
+
 	"github.com/alecthomas/chroma/formatters"
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
@@ -18,7 +22,6 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/query"
 	"github.com/turbot/steampipe/query/metaquery"
 	"github.com/turbot/steampipe/query/queryhistory"
@@ -54,7 +57,11 @@ type InteractiveClient struct {
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock  sync.Mutex
 	schemaMetadata *schema.Metadata
-	highlighter    *Highlighter
+
+	highlighter *Highlighter
+
+	// status update hooks
+	statusHook statushooks.StatusHooks
 }
 
 func getHighlighter(theme string) *Highlighter {
@@ -75,6 +82,7 @@ func newInteractiveClient(initData *query.InitData, resultsStreamer *queryresult
 		initResultChan:          make(chan *db_common.InitResult, 1),
 		highlighter:             getHighlighter(viper.GetString(constants.ArgTheme)),
 	}
+
 	// asynchronously wait for init to complete
 	// we start this immediately rather than lazy loading as we want to handle errors asap
 	go c.readInitDataStream()
@@ -367,7 +375,7 @@ func (c *InteractiveClient) executor(line string) {
 
 	} else {
 		// otherwise execute query
-		result, err := c.client().Execute(queryContext, query, false)
+		result, err := c.client().Execute(queryContext, query)
 		if err != nil {
 			utils.ShowError(utils.HandleCancelError(err))
 		} else {
@@ -395,17 +403,14 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 			c.cancelActiveQueryIfAny()
 		}()
 
-		initDoneChan := make(chan bool)
-		sp := display.StartSpinnerAfterDelay("Initializing...", constants.SpinnerShowTimeout, initDoneChan)
+		c.statusHook.SetStatus("Initializing...")
 		// wait for client initialisation to complete
-		if err := c.waitForInitData(queryContext); err != nil {
+		err := c.waitForInitData(queryContext)
+		c.statusHook.Done()
+		if err != nil {
 			// if it failed, report error and quit
-			close(initDoneChan)
-			display.StopSpinner(sp)
 			return "", err
 		}
-		close(initDoneChan)
-		display.StopSpinner(sp)
 	}
 
 	// push the current line into the buffer

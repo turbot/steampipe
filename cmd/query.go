@@ -9,7 +9,8 @@ import (
 	"os/signal"
 	"strings"
 
-	"github.com/briandowns/spinner"
+	"github.com/turbot/steampipe/statusspinner"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -144,7 +145,7 @@ func getPipedStdinData() string {
 	return stdinData
 }
 
-func loadWorkspacePromptingForVariables(ctx context.Context, spinner *spinner.Spinner) (*workspace.Workspace, error) {
+func loadWorkspacePromptingForVariables(ctx context.Context, statusSpinner *statusspinner.StatusSpinner) (*workspace.Workspace, error) {
 	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
 
 	w, err := workspace.Load(workspacePath)
@@ -156,17 +157,15 @@ func loadWorkspacePromptingForVariables(ctx context.Context, spinner *spinner.Sp
 	if !ok {
 		return nil, err
 	}
-	if spinner != nil {
-		spinner.Stop()
-	}
 	// so we have missing variables - prompt for them
+	// first hide spinner
+	statusSpinner.Done()
 	if err := interactive.PromptForMissingVariables(ctx, missingVariablesError.MissingVariables); err != nil {
 		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
 		return nil, err
 	}
-	if spinner != nil {
-		spinner.Start()
-	}
+	// show spinner sgain
+	statusSpinner.Show()
 	// ok we should have all variables now - reload workspace
 	return workspace.Load(workspacePath)
 }

@@ -9,14 +9,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/briandowns/spinner"
+	"github.com/turbot/steampipe/statushooks"
+
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/constants/runtime"
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/pluginmanager"
-
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -32,7 +31,7 @@ const (
 )
 
 // ShutdownService stops the database instance if the given 'invoker' matches
-func ShutdownService(invoker constants.Invoker) {
+func ShutdownService(invoker constants.Invoker, statusHook statushooks.StatusHooks) {
 	utils.LogTime("db_local.ShutdownService start")
 	defer utils.LogTime("db_local.ShutdownService end")
 
@@ -54,7 +53,7 @@ func ShutdownService(invoker constants.Invoker) {
 	}
 
 	// we can shut down the database
-	stopStatus, err := StopServices(false, invoker, nil)
+	stopStatus, err := StopServices(false, invoker, statusHook)
 	if err != nil {
 		utils.ShowError(err)
 	}
@@ -63,7 +62,7 @@ func ShutdownService(invoker constants.Invoker) {
 	}
 
 	// shutdown failed - try to force stop
-	_, err = StopServices(true, invoker, nil)
+	_, err = StopServices(true, invoker, statusHook)
 	if err != nil {
 		utils.ShowError(err)
 	}
@@ -92,7 +91,7 @@ func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 }
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
-func StopServices(force bool, invoker constants.Invoker, spinner *spinner.Spinner) (status StopStatus, e error) {
+func StopServices(force bool, invoker constants.Invoker, statusHook statushooks.StatusHooks) (status StopStatus, e error) {
 	log.Printf("[TRACE] StopDB invoker %s, force %v", invoker, force)
 	utils.LogTime("db_local.StopDB start")
 
@@ -108,15 +107,15 @@ func StopServices(force bool, invoker constants.Invoker, spinner *spinner.Spinne
 	pluginManagerStopError := pluginmanager.Stop()
 
 	// stop the DB Service
-	stopResult, dbStopError := stopDBService(spinner, force)
+	stopResult, dbStopError := stopDBService(force, statusHook)
 
 	return stopResult, utils.CombineErrors(dbStopError, pluginManagerStopError)
 }
 
-func stopDBService(spinner *spinner.Spinner, force bool) (StopStatus, error) {
+func stopDBService(force bool, statusHook statushooks.StatusHooks) (StopStatus, error) {
 	if force {
 		// check if we have a process from another install-dir
-		display.UpdateSpinnerMessage(spinner, "Checking for running instances...")
+		statusHook.SetStatus("Checking for running instances...")
 		// do not use a context that can be cancelled
 		killInstanceIfAny(context.Background())
 		return ServiceStopped, nil
@@ -139,7 +138,7 @@ func stopDBService(spinner *spinner.Spinner, force bool) (StopStatus, error) {
 		return ServiceStopFailed, err
 	}
 
-	display.UpdateSpinnerMessage(spinner, "Shutting down...")
+	statusHook.SetStatus("Shutting down...")
 
 	err = doThreeStepPostgresExit(process)
 	if err != nil {

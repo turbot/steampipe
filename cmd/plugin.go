@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/plugin"
 	"github.com/turbot/steampipe/statefile"
+	"github.com/turbot/steampipe/statusspinner"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -204,7 +205,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
 
-	spinner := display.ShowSpinner("")
+	statusSpinner := statusspinner.NewStatusSpinner()
 
 	for _, p := range plugins {
 		isPluginExists, _ := plugin.Exists(p)
@@ -217,7 +218,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			})
 			continue
 		}
-		display.UpdateSpinnerMessage(spinner, fmt.Sprintf("Installing plugin: %s", p))
+		statusSpinner.SetStatus(fmt.Sprintf("Installing plugin: %s", p))
 		image, err := plugin.Install(cmd.Context(), p)
 		if err != nil {
 			msg := ""
@@ -250,9 +251,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		})
 	}
 
-	display.StopSpinner(spinner)
+	statusSpinner.Done()
 
-	refreshConnectionsIfNecessary(cmd.Context(), installReports, false)
+	refreshConnectionsIfNecessary(cmd.Context(), installReports, true, statusSpinner)
 	display.PrintInstallReports(installReports, false)
 
 	// a concluding blank line - since we always output multiple lines
@@ -340,9 +341,9 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	spinner := display.ShowSpinner("Checking for available updates")
+	statusSpinner := statusspinner.NewStatusSpinner(statusspinner.WithMessage("Checking for available updates"))
 	reports := plugin.GetUpdateReport(state.InstallationID, runUpdatesFor)
-	display.StopSpinner(spinner)
+	statusSpinner.Done()
 
 	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
@@ -363,9 +364,9 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		spinner := display.ShowSpinner(fmt.Sprintf("Updating plugin %s...", report.CheckResponse.Name))
+		statusSpinner.SetStatus(fmt.Sprintf("Updating plugin %s...", report.CheckResponse.Name))
 		image, err := plugin.Install(cmd.Context(), report.Plugin.Name)
-		display.StopSpinner(spinner)
+		statusSpinner.Done()
 		if err != nil {
 			msg := ""
 			if strings.HasSuffix(err.Error(), "not found") {
@@ -398,7 +399,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		})
 	}
 
-	refreshConnectionsIfNecessary(cmd.Context(), updateReports, true)
+	refreshConnectionsIfNecessary(cmd.Context(), updateReports, false, nil)
 	display.PrintInstallReports(updateReports, true)
 
 	// a concluding blank line - since we always output multiple lines
@@ -421,7 +422,7 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 }
 
 // start service if necessary and refresh connections
-func refreshConnectionsIfNecessary(ctx context.Context, reports []display.InstallReport, isUpdate bool) error {
+func refreshConnectionsIfNecessary(ctx context.Context, reports []display.InstallReport, shouldReload bool, statusSpinner *statusspinner.StatusSpinner) error {
 	// get count of skipped reports
 	skipped := 0
 	for _, report := range reports {
@@ -436,7 +437,7 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports []display.Instal
 	}
 
 	// reload the config, since an installation MUST have created a new config file
-	if !isUpdate {
+	if shouldReload {
 		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgWorkspaceChDir), cmd.Name())
 		if err != nil {
@@ -445,7 +446,7 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports []display.Instal
 		steampipeconfig.GlobalConfig = config
 	}
 
-	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin)
+	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, statusSpinner)
 	if err != nil {
 		return err
 	}
@@ -468,7 +469,9 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 			exitCode = 1
 		}
 	}()
-	pluginConnectionMap, err := getPluginConnectionMap(cmd.Context())
+
+	statusSpinner := statusspinner.NewStatusSpinner()
+	pluginConnectionMap, err := getPluginConnectionMap(cmd.Context(), statusSpinner)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "Plugin Listing failed")
 		exitCode = 4
@@ -508,7 +511,9 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		exitCode = 2
 		return
 	}
-	connectionMap, err := getPluginConnectionMap(cmd.Context())
+
+	statusSpinner := statusspinner.NewStatusSpinner()
+	connectionMap, err := getPluginConnectionMap(cmd.Context(), statusSpinner)
 	if err != nil {
 		utils.ShowError(err)
 		exitCode = 4
@@ -516,15 +521,15 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	}
 
 	for _, p := range args {
-		if err := plugin.Remove(p, connectionMap); err != nil {
+		if err := plugin.Remove(p, connectionMap, statusSpinner); err != nil {
 			utils.ShowErrorWithMessage(err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
 		}
 	}
 }
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
-func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, error) {
-	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin)
+func getPluginConnectionMap(ctx context.Context, statusSpinner *statusspinner.StatusSpinner) (map[string][]modconfig.Connection, error) {
+	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, statusSpinner)
 	if err != nil {
 		return nil, err
 	}

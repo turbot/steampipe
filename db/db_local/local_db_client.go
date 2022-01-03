@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/turbot/steampipe/statushooks"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_client"
@@ -25,30 +27,29 @@ type LocalDbClient struct {
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
-func GetLocalClient(ctx context.Context, invoker constants.Invoker) (db_common.Client, error) {
+func GetLocalClient(ctx context.Context, invoker constants.Invoker, statusHook statushooks.StatusHooks) (db_common.Client, error) {
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
 	// start db if necessary
-	if err := EnsureDBInstalled(ctx); err != nil {
+	if err := EnsureDBInstalled(ctx, statusHook); err != nil {
 		return nil, err
 	}
 
-	startResult := StartServices(ctx, constants.DatabaseDefaultPort, ListenTypeLocal, invoker)
+	startResult := StartServices(ctx, constants.DatabaseDefaultPort, ListenTypeLocal, invoker, statusHook)
 	if startResult.Error != nil {
 		return nil, startResult.Error
 	}
 
-	client, err := NewLocalClient(ctx, invoker)
+	client, err := NewLocalClient(ctx, invoker, statusHook)
 	if err != nil {
-		ShutdownService(invoker)
+		ShutdownService(invoker, statusHook)
 	}
 	return client, err
 }
 
-// NewLocalClient ensures that the database instance is running
-// and returns a `Client` to interact with it
-func NewLocalClient(ctx context.Context, invoker constants.Invoker) (*LocalDbClient, error) {
+// NewLocalClient verifies that the local database instance is running and returns a Client to interact with it
+func NewLocalClient(ctx context.Context, invoker constants.Invoker, statusHook statushooks.StatusHooks) (*LocalDbClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
 
@@ -56,7 +57,7 @@ func NewLocalClient(ctx context.Context, invoker constants.Invoker) (*LocalDbCli
 	if err != nil {
 		return nil, err
 	}
-	dbClient, err := db_client.NewDbClient(ctx, connString)
+	dbClient, err := db_client.NewDbClient(ctx, connString, statusHook)
 	if err != nil {
 		log.Printf("[WARN] error getting local client %s", err.Error())
 		return nil, err
@@ -79,9 +80,7 @@ func (c *LocalDbClient) Close() error {
 		log.Printf("[TRACE] local client close complete")
 	}
 	log.Printf("[TRACE] shutdown local service %v", c.invoker)
-	// no context to pass on - use background
-	// we shouldn't do this in a context that can be cancelled anyway
-	ShutdownService(c.invoker)
+	ShutdownService(c.invoker, c.client.StatusHook)
 	return nil
 }
 
@@ -108,23 +107,23 @@ func (c *LocalDbClient) AcquireSession(ctx context.Context) *db_common.AcquireSe
 }
 
 // ExecuteSync implements Client
-func (c *LocalDbClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
-	return c.client.ExecuteSync(ctx, query, disableSpinner)
+func (c *LocalDbClient) ExecuteSync(ctx context.Context, query string) (*queryresult.SyncQueryResult, error) {
+	return c.client.ExecuteSync(ctx, query)
 }
 
 // ExecuteSyncInSession implements Client
-func (c *LocalDbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
-	return c.client.ExecuteSyncInSession(ctx, session, query, disableSpinner)
+func (c *LocalDbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string) (*queryresult.SyncQueryResult, error) {
+	return c.client.ExecuteSyncInSession(ctx, session, query)
 }
 
 // ExecuteInSession implements Client
-func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
-	return c.client.ExecuteInSession(ctx, session, query, onComplete, disableSpinner)
+func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func()) (res *queryresult.Result, err error) {
+	return c.client.ExecuteInSession(ctx, session, query, onComplete)
 }
 
 // Execute implements Client
-func (c *LocalDbClient) Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
-	return c.client.Execute(ctx, query, disableSpinner)
+func (c *LocalDbClient) Execute(ctx context.Context, query string) (res *queryresult.Result, err error) {
+	return c.client.Execute(ctx, query)
 }
 
 // CacheOn implements Client
@@ -221,7 +220,7 @@ func (c *LocalDbClient) setUserSearchPath(ctx context.Context) ([]string, error)
 
 	// get all roles which are a member of steampipe_users
 	query := fmt.Sprintf(`select usename from pg_user where pg_has_role(usename, '%s', 'member')`, constants.DatabaseUsersRole)
-	res, err := c.ExecuteSync(context.Background(), query, true)
+	res, err := c.ExecuteSync(context.Background(), query)
 	if err != nil {
 		return nil, err
 	}

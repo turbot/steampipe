@@ -247,7 +247,7 @@ func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereC
 		query = fmt.Sprintf("select resource_name from %s where %s", constants.IntrospectionTableControl, whereClause)
 	}
 
-	res, err := e.client.ExecuteSync(ctx, query, false)
+	res, err := e.client.ExecuteSync(ctx, query)
 	if err != nil {
 		return nil, err
 	}

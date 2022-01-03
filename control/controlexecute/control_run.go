@@ -225,7 +225,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	// NOTE no need to pass an OnComplete callback - we are already closing our session after waiting for results
 	log.Printf("[TRACE] execute start for, %s\n", control.Name())
 	r.Lifecycle.Add("query_start")
-	queryResult, err := client.ExecuteInSession(controlExecutionCtx, dbSession, query, nil, false)
+	queryResult, err := client.ExecuteInSession(controlExecutionCtx, dbSession, query, nil)
 	r.Lifecycle.Add("query_finish")
 	log.Printf("[TRACE] execute finish for, %s\n", control.Name())
 

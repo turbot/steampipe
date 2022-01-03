@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/turbot/steampipe/statushooks"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/spf13/viper"
@@ -43,9 +45,12 @@ type DbClient struct {
 	// list of connection schemas
 	foreignSchemas []string
 	searchPath     []string
+
+	// status update hooks
+	StatusHook statushooks.StatusHooks
 }
 
-func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error) {
+func NewDbClient(ctx context.Context, connectionString string, statusHook statushooks.StatusHooks) (*DbClient, error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
@@ -64,6 +69,7 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
 		sessions:                make(map[uint32]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
+		StatusHook:              statusHook,
 	}
 	client.connectionString = connectionString
 
