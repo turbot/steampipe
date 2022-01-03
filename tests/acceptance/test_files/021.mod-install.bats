@@ -80,6 +80,20 @@ local
 └── github.com/turbot/steampipe-mod-aws-compliance@v0.1'
 }
 
+@test "dependency scenario 1" {
+  # install a mod(steampipe-mod-m2) which depends on a version(2.0) of another mod(steampipe-mod-m1)
+  steampipe mod install github.com/pskrbasu/steampipe-mod-m2
+  run steampipe mod list
+  # should list both the mods
+}
+
+@test "dependency scenario 2" {
+  # install a mod(steampipe-mod-m3) which depends on a version(3.0) of another mod(steampipe-mod-m2)
+  steampipe mod install github.com/pskrbasu/steampipe-mod-m2
+  run steampipe mod list
+  # should list both the mods
+}
+
 function teardown() {
   rm -rf .steampipe/
   rm -rf .mod.cache.json
