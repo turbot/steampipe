@@ -44,9 +44,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # Extract password from the state file
   db_name=$(cat $target_install_directory/internal/steampipe.json | jq .Database)
   echo $db_name
+  echo $output
   
   # Both should be equal
   assert_equal "$db_name" "\"custom_db_name\""
+  # Check if database name in the output is the same
+  assert_output --partial 'Database: custom_db_name'
   
   run steampipe service stop --install-dir $target_install_directory
   
