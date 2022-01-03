@@ -84,11 +84,14 @@ Examples:
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runQueryCmd start")
-
+	var client db_common.Client
 	defer func() {
 		utils.LogTime("cmd.runQueryCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(helpers.ToError(r))
+		}
+		if client != nil {
+			client.Close()
 		}
 	}()
 
@@ -118,6 +121,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// se we have loaded a workspace - be sure to close it
 	defer w.Close()
+
+	// create the client - starting the service, if necessary
+	client, err = getClient(ctx)
+	if err != nil {
+		utils.FailOnErrorWithMessage(err, "failed to load client")
+	}
 
 	// perform rest of initialisation async
 	initDataChan := make(chan *query.InitData, 1)
@@ -191,12 +200,7 @@ func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initData
 
 		// set max DB connections to 1
 		viper.Set(constants.ArgMaxParallel, 1)
-		// get a db client (local or remote)
-		client, err := getClient(ctx)
-		if err != nil {
-			initData.Result.Error = err
-			return
-		}
+
 		initData.Client = client
 
 		// check if the required plugins are installed
