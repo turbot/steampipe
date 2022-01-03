@@ -14,7 +14,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// ShowPaged :: displays the `content` in a system dependent pager
+// ShowPaged displays the `content` in a system dependent pager
 func ShowPaged(content string) {
 	if isPagerNeeded(content) && (runtime.GOOS == "darwin" || runtime.GOOS == "linux") {
 		nixPager(content)

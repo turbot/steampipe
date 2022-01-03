@@ -212,7 +212,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			installReports = append(installReports, display.InstallReport{
 				Plugin:         p,
 				Skipped:        true,
-				SkipReason:     display.ALREADY_INSTALLED,
+				SkipReason:     constants.PluginAlreadyInstalled,
 				IsUpdateReport: false,
 			})
 			continue
@@ -324,7 +324,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 				updateReports = append(updateReports, display.InstallReport{
 					Skipped:        true,
 					Plugin:         p,
-					SkipReason:     display.NOT_INSTALLED,
+					SkipReason:     constants.PluginNotInstalled,
 					IsUpdateReport: true,
 				})
 			}
@@ -357,7 +357,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			updateReports = append(updateReports, display.InstallReport{
 				Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
 				Skipped:        true,
-				SkipReason:     display.LATEST_ALREADY_INSTALLED,
+				SkipReason:     constants.PluginLatestAlreadyInstalled,
 				IsUpdateReport: true,
 			})
 			continue

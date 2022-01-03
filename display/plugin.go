@@ -9,10 +9,6 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-const ALREADY_INSTALLED = "Already installed"
-const LATEST_ALREADY_INSTALLED = "Latest already installed"
-const NOT_INSTALLED = "Not installed"
-
 type InstallReport struct {
 	Skipped        bool
 	Plugin         string
@@ -66,7 +62,7 @@ func (i *InstallReport) String() string {
 	}
 }
 
-// Prints out the installation reports onto the console
+// PrintInstallReports Prints out the installation reports onto the console
 func PrintInstallReports(reports []InstallReport, isUpdateReport bool) {
 	installedOrUpdated := []InstallReport{}
 	canBeInstalled := []InstallReport{}
@@ -76,9 +72,9 @@ func PrintInstallReports(reports []InstallReport, isUpdateReport bool) {
 		report.IsUpdateReport = isUpdateReport
 		if !report.Skipped {
 			installedOrUpdated = append(installedOrUpdated, report)
-		} else if report.SkipReason == NOT_INSTALLED {
+		} else if report.SkipReason == constants.PluginNotInstalled {
 			canBeInstalled = append(canBeInstalled, report)
-		} else if report.SkipReason == ALREADY_INSTALLED {
+		} else if report.SkipReason == constants.PluginAlreadyInstalled {
 			canBeUpdated = append(canBeUpdated, report)
 		}
 	}
