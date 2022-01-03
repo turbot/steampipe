@@ -59,10 +59,8 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 }
 
 // Execute implements Client
-// execute the provided query against the Database in the given context.Context
-// Bear in mind that whenever ExecuteQuery is called, the returned `queryresult.Result` MUST be fully read -
-// otherwise the transaction is left open, which will block the connection and will prevent subsequent communications
-// with the service
+// execute the query in the given Context
+// NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
 func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner bool) (*queryresult.Result, error) {
 	// acquire a session
 	sessionResult := c.AcquireSession(ctx)
