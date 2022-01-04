@@ -10,13 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/statushooks"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/contexthelpers"
 	"github.com/turbot/steampipe/control"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
@@ -25,6 +24,7 @@ import (
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/modinstaller"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/statusspinner"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
@@ -90,6 +90,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
 	initData := &control.InitData{}
+	var ctx context.Context
 	defer func() {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
@@ -99,7 +100,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		if initData.Client != nil {
 			log.Printf("[TRACE] close client")
-			initData.Client.Close()
+			initData.Client.Close(ctx)
 		}
 		if initData.Workspace != nil {
 			initData.Workspace.Close()
@@ -114,14 +115,14 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	statusHook := getStatusHook()
 
 	// initialise
-	initData = initialiseCheck(cmd.Context(), statusHook)
+	initData = initialiseCheck(cmd.Context())
 	statusHook.Done()
 	if shouldExit := handleCheckInitResult(initData); shouldExit {
 		return
 	}
 
 	// pull out useful properties
-	ctx := initData.Ctx
+	ctx = initData.Ctx
 	workspace := initData.Workspace
 	client := initData.Client
 	failures := 0
@@ -177,7 +178,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 func getStatusHook() statushooks.StatusHooks {
 	if !viper.GetBool(constants.ArgProgress) {
-		return statushooks.Null
+		return statushooks.NullHooks
 	}
 	return statusspinner.NewStatusSpinner(statusspinner.WithMessage("Initializing..."))
 }
@@ -195,7 +196,7 @@ func validateArgs(cmd *cobra.Command, args []string) bool {
 	return true
 }
 
-func initialiseCheck(ctx context.Context, statusHook statushooks.StatusHooks) *control.InitData {
+func initialiseCheck(ctx context.Context) *control.InitData {
 	initData := &control.InitData{
 		Result: &db_common.InitResult{},
 	}
@@ -223,7 +224,7 @@ func initialiseCheck(ctx context.Context, statusHook statushooks.StatusHooks) *c
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	startCancelHandler(cancel)
+	contexthelpers.StartCancelHandler(cancel)
 	initData.Ctx = ctx
 
 	// set color schema
@@ -233,7 +234,7 @@ func initialiseCheck(ctx context.Context, statusHook statushooks.StatusHooks) *c
 		return initData
 	}
 	// load workspace
-	initData.Workspace, err = loadWorkspacePromptingForVariables(ctx, statusHook)
+	initData.Workspace, err = loadWorkspacePromptingForVariables(ctx)
 	if err != nil {
 		if !utils.IsCancelledError(err) {
 			err = utils.PrefixError(err, "failed to load workspace")
@@ -253,14 +254,14 @@ func initialiseCheck(ctx context.Context, statusHook statushooks.StatusHooks) *c
 		initData.Result.AddWarnings("no controls found in current workspace")
 	}
 
-	statusHook.SetStatus("Connecting to service...")
+	statushooks.SetStatus(ctx, "Connecting to service...")
 	// get a client
 	var client db_common.Client
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-		client, err = db_client.NewDbClient(ctx, connectionString, nil)
+		client, err = db_client.NewDbClient(ctx, connectionString)
 	} else {
 		// when starting the database, installers may trigger their own spinners
-		client, err = db_local.GetLocalClient(ctx, constants.InvokerCheck, statusHook)
+		client, err = db_local.GetLocalClient(ctx, constants.InvokerCheck)
 	}
 
 	if err != nil {

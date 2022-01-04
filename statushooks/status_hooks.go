@@ -6,7 +6,7 @@ type StatusHooks interface {
 	Message(...string)
 }
 
-var Null = &NullStatusHook{}
+var NullHooks = &NullStatusHook{}
 
 type NullStatusHook struct{}
 

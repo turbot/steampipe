@@ -1,6 +1,7 @@
 package controlexecute
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -37,16 +38,16 @@ func NewControlProgressRenderer(total int) *ControlProgressRenderer {
 	}
 }
 
-func (p *ControlProgressRenderer) Start() {
+func (p *ControlProgressRenderer) Start(ctx context.Context) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 
 	if p.enabled {
-		p.statusHook.SetStatus("Starting controls...")
+		statushooks.SetStatus(ctx, "Starting controls...")
 	}
 }
 
-func (p *ControlProgressRenderer) OnControlStart(control *modconfig.Control) {
+func (p *ControlProgressRenderer) OnControlStart(ctx context.Context, control *modconfig.Control) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 
@@ -57,37 +58,37 @@ func (p *ControlProgressRenderer) OnControlStart(control *modconfig.Control) {
 	p.pending--
 
 	if p.enabled {
-		p.statusHook.SetStatus(p.message())
+		statushooks.SetStatus(ctx, p.message())
 	}
 }
 
-func (p *ControlProgressRenderer) OnControlFinish() {
+func (p *ControlProgressRenderer) OnControlFinish(ctx context.Context) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	// decrement the parallel execution count
 	p.executing--
 	if p.enabled {
-		p.statusHook.SetStatus(p.message())
+		statushooks.SetStatus(ctx, p.message())
 	}
 }
 
-func (p *ControlProgressRenderer) OnControlComplete() {
+func (p *ControlProgressRenderer) OnControlComplete(ctx context.Context) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	p.complete++
 
 	if p.enabled {
-		p.statusHook.SetStatus(p.message())
+		statushooks.SetStatus(ctx, p.message())
 	}
 }
 
-func (p *ControlProgressRenderer) OnControlError() {
+func (p *ControlProgressRenderer) OnControlError(ctx context.Context) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	p.error++
 
 	if p.enabled {
-		p.statusHook.SetStatus(p.message())
+		statushooks.SetStatus(ctx, p.message())
 	}
 }
 

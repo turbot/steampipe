@@ -1,9 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/turbot/steampipe/statushooks"
+	"github.com/turbot/steampipe/statusspinner"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/mattn/go-isatty"
@@ -183,6 +187,19 @@ func Execute() int {
 	utils.LogTime("cmd.root.Execute start")
 	defer utils.LogTime("cmd.root.Execute end")
 
-	rootCmd.Execute()
+	ctx := createRootContext()
+	rootCmd.ExecuteContext(ctx)
 	return exitCode
+}
+
+// create the root context - create a status renderer and set as value
+func createRootContext() context.Context {
+	var statusRenderer statushooks.StatusHooks = statushooks.NullHooks
+	// we need to redo this check as the prerun is not called yet
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		statusRenderer = statusspinner.NewStatusSpinner()
+	}
+
+	ctx := statushooks.AddToContext(context.Background(), statusRenderer)
+	return ctx
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/contexthelpers"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/interactive"
@@ -30,6 +31,12 @@ func RunInteractiveSession(initData *query.InitData) {
 }
 
 func RunBatchSession(ctx context.Context, initData *query.InitData) int {
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithCancel(ctx)
+
+	// start cancel handler to intercept interurpts and cancel the context
+	contexthelpers.StartCancelHandler(cancel)
+
 	// wait for init
 	<-initData.Loaded
 	if err := initData.Result.Error; err != nil {
@@ -38,7 +45,7 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) int {
 	// ensure we close client
 	defer func() {
 		if initData.Client != nil {
-			initData.Client.Close()
+			initData.Client.Close(ctx)
 		}
 	}()
 
