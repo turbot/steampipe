@@ -12,9 +12,6 @@ import (
 
 	"github.com/turbot/steampipe/statushooks"
 
-	"github.com/turbot/steampipe/modinstaller"
-	"github.com/turbot/steampipe/statusspinner"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
