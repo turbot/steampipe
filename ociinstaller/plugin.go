@@ -53,7 +53,7 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 	pluginFullName := ref.DisplayImageRef()
 
 	plugin, ok := v.Plugins[pluginFullName]
-	if ok == false {
+	if !ok {
 		plugin = &versionfile.InstalledVersion{}
 	}
 

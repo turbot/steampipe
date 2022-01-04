@@ -515,7 +515,7 @@ func resetConfig(test getConnectionsToUpdateTest) {
 	connectionStatePath := constants.ConnectionStatePath()
 
 	os.Remove(connectionStatePath)
-	for i, _ := range test.required {
+    for i := range test.required {
 		os.Remove(connectionConfigPath(i))
 	}
 }

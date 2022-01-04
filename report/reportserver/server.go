@@ -199,7 +199,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		}
 
 		for k, v := range s.reportClients {
-			fmt.Println(fmt.Sprintf("Report client: %v %v", k, types.SafeString(v.Report)))
+			fmt.Printf("Report client: %v %v\n", k, types.SafeString(v.Report))
 		}
 
 		// If) any deleted/new/changed reports, emit an available reports message to clients
