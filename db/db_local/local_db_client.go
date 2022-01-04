@@ -7,8 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/steampipe/statushooks"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_client"
@@ -27,29 +25,29 @@ type LocalDbClient struct {
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
-func GetLocalClient(ctx context.Context, invoker constants.Invoker, statusHook statushooks.StatusHooks) (db_common.Client, error) {
+func GetLocalClient(ctx context.Context, invoker constants.Invoker) (db_common.Client, error) {
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
 	// start db if necessary
-	if err := EnsureDBInstalled(ctx, statusHook); err != nil {
+	if err := EnsureDBInstalled(ctx); err != nil {
 		return nil, err
 	}
 
-	startResult := StartServices(ctx, constants.DatabaseDefaultPort, ListenTypeLocal, invoker, statusHook)
+	startResult := StartServices(ctx, constants.DatabaseDefaultPort, ListenTypeLocal, invoker)
 	if startResult.Error != nil {
 		return nil, startResult.Error
 	}
 
-	client, err := NewLocalClient(ctx, invoker, statusHook)
+	client, err := NewLocalClient(ctx, invoker)
 	if err != nil {
-		ShutdownService(invoker, statusHook)
+		ShutdownService(ctx, invoker)
 	}
 	return client, err
 }
 
 // NewLocalClient verifies that the local database instance is running and returns a Client to interact with it
-func NewLocalClient(ctx context.Context, invoker constants.Invoker, statusHook statushooks.StatusHooks) (*LocalDbClient, error) {
+func NewLocalClient(ctx context.Context, invoker constants.Invoker) (*LocalDbClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
 
@@ -57,7 +55,7 @@ func NewLocalClient(ctx context.Context, invoker constants.Invoker, statusHook s
 	if err != nil {
 		return nil, err
 	}
-	dbClient, err := db_client.NewDbClient(ctx, connString, statusHook)
+	dbClient, err := db_client.NewDbClient(ctx, connString)
 	if err != nil {
 		log.Printf("[WARN] error getting local client %s", err.Error())
 		return nil, err
@@ -70,17 +68,17 @@ func NewLocalClient(ctx context.Context, invoker constants.Invoker, statusHook s
 
 // Close implements Client
 // close the connection to the database and shuts down the backend
-func (c *LocalDbClient) Close() error {
+func (c *LocalDbClient) Close(ctx context.Context) error {
 	log.Printf("[TRACE] close local client %p", c)
 	if c.client != nil {
 		log.Printf("[TRACE] local client not NIL")
-		if err := c.client.Close(); err != nil {
+		if err := c.client.Close(ctx); err != nil {
 			return err
 		}
 		log.Printf("[TRACE] local client close complete")
 	}
 	log.Printf("[TRACE] shutdown local service %v", c.invoker)
-	ShutdownService(c.invoker, c.client.StatusHook)
+	ShutdownService(ctx, c.invoker)
 	return nil
 }
 

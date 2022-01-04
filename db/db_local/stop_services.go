@@ -9,13 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/turbot/steampipe/statushooks"
-
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/constants/runtime"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/pluginmanager"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -31,7 +30,7 @@ const (
 )
 
 // ShutdownService stops the database instance if the given 'invoker' matches
-func ShutdownService(invoker constants.Invoker, statusHook statushooks.StatusHooks) {
+func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	utils.LogTime("db_local.ShutdownService start")
 	defer utils.LogTime("db_local.ShutdownService end")
 
@@ -53,7 +52,7 @@ func ShutdownService(invoker constants.Invoker, statusHook statushooks.StatusHoo
 	}
 
 	// we can shut down the database
-	stopStatus, err := StopServices(false, invoker, statusHook)
+	stopStatus, err := StopServices(ctx, false, invoker)
 	if err != nil {
 		utils.ShowError(err)
 	}
@@ -62,7 +61,7 @@ func ShutdownService(invoker constants.Invoker, statusHook statushooks.StatusHoo
 	}
 
 	// shutdown failed - try to force stop
-	_, err = StopServices(true, invoker, statusHook)
+	_, err = StopServices(ctx, true, invoker)
 	if err != nil {
 		utils.ShowError(err)
 	}
@@ -91,7 +90,7 @@ func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 }
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
-func StopServices(force bool, invoker constants.Invoker, statusHook statushooks.StatusHooks) (status StopStatus, e error) {
+func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (status StopStatus, e error) {
 	log.Printf("[TRACE] StopDB invoker %s, force %v", invoker, force)
 	utils.LogTime("db_local.StopDB start")
 
@@ -107,15 +106,15 @@ func StopServices(force bool, invoker constants.Invoker, statusHook statushooks.
 	pluginManagerStopError := pluginmanager.Stop()
 
 	// stop the DB Service
-	stopResult, dbStopError := stopDBService(force, statusHook)
+	stopResult, dbStopError := stopDBService(ctx, force)
 
 	return stopResult, utils.CombineErrors(dbStopError, pluginManagerStopError)
 }
 
-func stopDBService(force bool, statusHook statushooks.StatusHooks) (StopStatus, error) {
+func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	if force {
 		// check if we have a process from another install-dir
-		statusHook.SetStatus("Checking for running instances...")
+		statushooks.SetStatus(ctx, "Checking for running instances...")
 		// do not use a context that can be cancelled
 		killInstanceIfAny(context.Background())
 		return ServiceStopped, nil
@@ -138,7 +137,8 @@ func stopDBService(force bool, statusHook statushooks.StatusHooks) (StopStatus, 
 		return ServiceStopFailed, err
 	}
 
-	statusHook.SetStatus("Shutting down...")
+	statushooks.SetStatus(ctx, "Shutting down...")
+	defer statushooks.Done(ctx)
 
 	err = doThreeStepPostgresExit(process)
 	if err != nil {

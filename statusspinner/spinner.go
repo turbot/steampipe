@@ -8,8 +8,6 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/karrick/gows"
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/constants"
 )
 
 //
@@ -27,7 +25,6 @@ type StatusSpinner struct {
 	spinner *spinner.Spinner
 	delay   time.Duration
 	cancel  chan struct{}
-	enabled bool
 }
 
 type StatusSpinnerOpt func(*StatusSpinner)
@@ -46,8 +43,7 @@ func WithDelay(delay time.Duration) StatusSpinnerOpt {
 }
 
 func NewStatusSpinner(opts ...StatusSpinnerOpt) *StatusSpinner {
-	enabled := viper.GetBool(constants.ConfigKeyIsTerminalTTY)
-	res := &StatusSpinner{enabled: enabled}
+	res := &StatusSpinner{}
 
 	res.spinner = spinner.New(
 		spinner.CharSets[14],
@@ -64,9 +60,6 @@ func NewStatusSpinner(opts ...StatusSpinnerOpt) *StatusSpinner {
 
 // SetStatus implements StatusHooks
 func (s *StatusSpinner) SetStatus(msg string) {
-	if !s.enabled {
-		return
-	}
 	s.UpdateSpinnerMessage(msg)
 	if !s.spinner.Active() {
 		// todo think about delay
@@ -153,42 +146,3 @@ func (s *StatusSpinner) truncateSpinnerMessageToScreen(msg string) string {
 	}
 	return msg
 }
-
-//// ShowSpinner shows a spinner with the given message
-//func (s *StatusSpinner) show(msg string) *spinner.Spinner {
-//	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
-//		return nil
-//	}
-//
-//	msg = s.truncateSpinnerMessageToScreen(msg)
-//	s.spinner := spinner.New(
-//		spinner.CharSets[14],
-//		100*time.Millisecond,
-//		spinner.WithHiddenCursor(true),
-//		spinner.WithWriter(os.Stdout),
-//		spinner.WithSuffix(fmt.Sprintf(" %s", msg)),
-//	)
-//	s.Start()
-//	return s
-//}
-
-//// StopSpinnerWithMessage stops a spinner instance and clears it, after writing `finalMsg`
-//func StopSpinnerWithMessage(spinner *spinner.Spinner, finalMsg string) {
-//	if spinner != nil {
-//		spinner.FinalMSG = finalMsg
-//		spinner.Stop()
-//	}
-//}
-
-//// StopSpinner stops a spinner instance and clears it
-//func StopSpinner(spinner *spinner.Spinner) {
-//	if spinner != nil {
-//		spinner.Stop()
-//	}
-//}
-
-//func ResumeSpinner(spinner *spinner.Spinner) {
-//	if spinner != nil && !spinner.Active() {
-//		spinner.Restart()
-//	}
-//}

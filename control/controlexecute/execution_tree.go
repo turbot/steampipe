@@ -55,7 +55,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	}
 
 	// build tree of result groups, starting with a synthetic 'root' node
-	executionTree.Root = NewRootResultGroup(executionTree, rootItem)
+	executionTree.Root = NewRootResultGroup(ctx, executionTree, rootItem)
 
 	// after tree has built, ControlCount will be set - create progress rendered
 	executionTree.progress = NewControlProgressRenderer(len(executionTree.controlRuns))
@@ -65,7 +65,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 
 // AddControl checks whether control should be included in the tree
 // if so, creates a ControlRun, which is added to the parent group
-func (e *ExecutionTree) AddControl(control *modconfig.Control, group *ResultGroup) {
+func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Control, group *ResultGroup) {
 	// note we use short name to determine whether to include a control
 	if e.ShouldIncludeControl(control.ShortName) {
 		// create new ControlRun with treeItem as the parent
@@ -81,7 +81,7 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.StartTime = time.Now()
-	e.progress.Start()
+	e.progress.Start(ctx)
 
 	defer func() {
 		e.EndTime = time.Now()

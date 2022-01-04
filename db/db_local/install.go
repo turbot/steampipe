@@ -24,7 +24,7 @@ import (
 var ensureMux sync.Mutex
 
 // EnsureDBInstalled makes sure that the embedded pg database is installed and running
-func EnsureDBInstalled(ctx context.Context, status statushooks.StatusHooks) (err error) {
+func EnsureDBInstalled(ctx context.Context) (err error) {
 	utils.LogTime("db_local.EnsureDBInstalled start")
 
 	ensureMux.Lock()
@@ -44,61 +44,61 @@ func EnsureDBInstalled(ctx context.Context, status statushooks.StatusHooks) (err
 
 	if IsInstalled() {
 		// check if the FDW need updating, and init the db id required
-		err := prepareDb(ctx, status)
-		status.SetStatus("")
+		err := prepareDb(ctx)
+		statushooks.Done(ctx)
 		return err
 	}
 
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
 	err = removeRunningInstanceInfo()
 	if err != nil && !os.IsNotExist(err) {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		log.Printf("[TRACE] removeRunningInstanceInfo failed: %v", err)
 		return fmt.Errorf("Cleanup any Steampipe processes... FAILED!")
 	}
 
 	log.Println("[TRACE] removing previous installation")
-	status.SetStatus("Prepare database install location...")
+	statushooks.SetStatus(ctx, "Prepare database install location...")
 	err = os.RemoveAll(getDatabaseLocation())
 	if err != nil {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Prepare database install location... FAILED!")
 	}
 
-	status.SetStatus("Download & install embedded PostgreSQL database...")
+	statushooks.SetStatus(ctx, "Download & install embedded PostgreSQL database...")
 	_, err = ociinstaller.InstallDB(ctx, constants.DefaultEmbeddedPostgresImage, getDatabaseLocation())
 	if err != nil {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Download & install embedded PostgreSQL database... FAILED!")
 	}
 
-	_, err = installFDW(ctx, true, status)
+	_, err = installFDW(ctx, true)
 	if err != nil {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		log.Printf("[TRACE] installFDW failed: %v", err)
 		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
 	}
 
 	// run the database installation
-	err = runInstall(ctx, true, status)
+	err = runInstall(ctx, true)
 	if err != nil {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		return err
 	}
 
 	// write a signature after everything gets done!
 	// so that we can check for this later on
-	status.SetStatus("Updating install records...")
+	statushooks.SetStatus(ctx, "Updating install records...")
 	err = updateDownloadedBinarySignature()
 	if err != nil {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		log.Printf("[TRACE] updateDownloadedBinarySignature failed: %v", err)
 		return fmt.Errorf("Updating install records... FAILED!")
 	}
 
-	status.SetStatus("")
+	statushooks.Done(ctx)
 	return nil
 }
 
@@ -135,11 +135,11 @@ func IsInstalled() bool {
 }
 
 // prepareDb updates the FDW if needed, and inits the database if required
-func prepareDb(ctx context.Context, status statushooks.StatusHooks) error {
+func prepareDb(ctx context.Context) error {
 	// check if FDW needs to be updated
 	if fdwNeedsUpdate() {
-		_, err := installFDW(ctx, false, status)
-		status.SetStatus("")
+		_, err := installFDW(ctx, false)
+		statushooks.Done(ctx)
 		if err != nil {
 			log.Printf("[TRACE] installFDW failed: %v", err)
 			return fmt.Errorf("Update steampipe-postgres-fdw... FAILED!")
@@ -151,9 +151,9 @@ func prepareDb(ctx context.Context, status statushooks.StatusHooks) error {
 	}
 
 	if needsInit() {
-		status.SetStatus("Cleanup any Steampipe processes...")
+		statushooks.SetStatus(ctx, "Cleanup any Steampipe processes...")
 		killInstanceIfAny(ctx)
-		if err := runInstall(ctx, false, status); err != nil {
+		if err := runInstall(ctx, false); err != nil {
 			return err
 		}
 	}
@@ -172,7 +172,7 @@ func fdwNeedsUpdate() bool {
 	return versionInfo.FdwExtension.Version != constants.FdwVersion
 }
 
-func installFDW(ctx context.Context, firstSetup bool, status statushooks.StatusHooks) (string, error) {
+func installFDW(ctx context.Context, firstSetup bool) (string, error) {
 	utils.LogTime("db_local.installFDW start")
 	defer utils.LogTime("db_local.installFDW end")
 
@@ -188,7 +188,7 @@ func installFDW(ctx context.Context, firstSetup bool, status statushooks.StatusH
 			}
 		}()
 	}
-	status.SetStatus(fmt.Sprintf("Download & install %s...", constants.Bold("steampipe-postgres-fdw")))
+	statushooks.SetStatus(ctx, fmt.Sprintf("Download & install %s...", constants.Bold("steampipe-postgres-fdw")))
 	return ociinstaller.InstallFdw(ctx, constants.DefaultFdwImage, getDatabaseLocation())
 }
 
@@ -200,58 +200,58 @@ func needsInit() bool {
 	return !helpers.FileExists(getPgHbaConfLocation())
 }
 
-func runInstall(ctx context.Context, firstInstall bool, status statushooks.StatusHooks) error {
+func runInstall(ctx context.Context, firstInstall bool) error {
 	utils.LogTime("db_local.runInstall start")
 	defer utils.LogTime("db_local.runInstall end")
 
-	status.SetStatus("Cleaning up...")
+	statushooks.SetStatus(ctx, "Cleaning up...")
 	err := utils.RemoveDirectoryContents(getDataLocation())
 	if err != nil {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Prepare database install location... FAILED!")
 	}
 
-	status.SetStatus("Initializing database...")
+	statushooks.SetStatus(ctx, "Initializing database...")
 	err = initDatabase()
 	if err != nil {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		log.Printf("[TRACE] initDatabase failed: %v", err)
 		return fmt.Errorf("Initializing database... FAILED!")
 	}
 
-	status.SetStatus("Starting database...")
+	statushooks.SetStatus(ctx, "Starting database...")
 	port, err := getNextFreePort()
 	if err != nil {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		log.Printf("[TRACE] getNextFreePort failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")
 	}
 
 	process, err := startServiceForInstall(port)
 	if err != nil {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		log.Printf("[TRACE] startServiceForInstall failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")
 	}
 
-	status.SetStatus("Connection to database...")
+	statushooks.SetStatus(ctx, "Connection to database...")
 	client, err := createMaintenanceClient(ctx, port)
 	if err != nil {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		return fmt.Errorf("Connection to database... FAILED!")
 	}
 	defer func() {
-		status.SetStatus("Completing configuration")
+		statushooks.SetStatus(ctx, "Completing configuration")
 		client.Close()
 		doThreeStepPostgresExit(process)
 	}()
 
-	status.SetStatus("Generating database passwords...")
+	statushooks.SetStatus(ctx, "Generating database passwords...")
 	// generate a password file for use later
 	_, err = readPasswordFile()
 	if err != nil {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		log.Printf("[TRACE] readPassword failed: %v", err)
 		return fmt.Errorf("Generating database passwords... FAILED!")
 	}
@@ -271,18 +271,18 @@ func runInstall(ctx context.Context, firstInstall bool, status statushooks.Statu
 		return fmt.Errorf("Invalid database name '%s' - must start with either a lowercase character or an underscore", databaseName)
 	}
 
-	status.SetStatus("Configuring database...")
+	statushooks.SetStatus(ctx, "Configuring database...")
 	err = installDatabaseWithPermissions(ctx, databaseName, client)
 	if err != nil {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		log.Printf("[TRACE] installSteampipeDatabaseAndUser failed: %v", err)
 		return fmt.Errorf("Configuring database... FAILED!")
 	}
 
-	status.SetStatus("Configuring Steampipe...")
+	statushooks.SetStatus(ctx, "Configuring Steampipe...")
 	err = installForeignServer(ctx, client)
 	if err != nil {
-		status.SetStatus("")
+		statushooks.Done(ctx)
 		log.Printf("[TRACE] installForeignServer failed: %v", err)
 		return fmt.Errorf("Configuring Steampipe... FAILED!")
 	}

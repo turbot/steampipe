@@ -11,7 +11,7 @@ import (
 type EnsureSessionStateCallback = func(context.Context, *DatabaseSession) (err error, warnings []string)
 
 type Client interface {
-	Close() error
+	Close(ctx context.Context) error
 
 	ForeignSchemas() []string
 	ConnectionMap() *steampipeconfig.ConnectionDataMap

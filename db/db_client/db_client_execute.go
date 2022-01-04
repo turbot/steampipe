@@ -10,6 +10,7 @@ import (
 
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -84,7 +85,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	defer func() {
 		if err != nil {
 			// stop spinner in case of error
-			c.StatusHook.Done()
+			statushooks.Done(ctx)
 			// error - rollback transaction if we have one
 			if tx != nil {
 				tx.Rollback()
@@ -96,7 +97,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		}
 	}()
 
-	c.StatusHook.SetStatus("Loading results...")
+	statushooks.SetStatus(ctx, "Loading results...")
 
 	// start query
 	var rows *sql.Rows
@@ -157,7 +158,7 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
 		// we are done fetching results. time for display. clear the status indication
-		c.StatusHook.Done()
+		statushooks.Done(ctx)
 		// close the sql rows object
 		rows.Close()
 		if err := rows.Err(); err != nil {
@@ -186,7 +187,7 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 		continueToNext := true
 		select {
 		case <-ctx.Done():
-			c.StatusHook.SetStatus("Cancelling query")
+			statushooks.SetStatus(ctx, "Cancelling query")
 			continueToNext = false
 		default:
 			if rowResult, err := readRowContext(ctx, rows, cols, colTypes); err != nil {
@@ -197,7 +198,7 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 			}
 			// update the spinner message with the count of rows that have already been fetched
 			// this will not show if the spinner is not active
-			c.StatusHook.SetStatus(fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
+			statushooks.SetStatus(ctx, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
 			rowCount++
 		}
 		if !continueToNext {

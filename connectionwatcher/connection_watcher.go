@@ -4,8 +4,6 @@ import (
 	"context"
 	"log"
 
-	"github.com/turbot/steampipe/statushooks"
-
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
@@ -84,11 +82,12 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 	}
 	log.Printf("[TRACE] loaded updated config")
 
-	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher, statushooks.Null)
+	// TODO KAI DISABLE STATUSHOOKS
+	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher)
 	if err != nil {
 		log.Printf("[WARN] Error creating client to handle updated connection config: %s", err.Error())
 	}
-	defer client.Close()
+	defer client.Close(ctx)
 
 	log.Printf("[TRACE] loaded updated config")
 

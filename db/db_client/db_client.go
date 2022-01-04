@@ -8,8 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/turbot/steampipe/statushooks"
-
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/spf13/viper"
@@ -45,12 +43,9 @@ type DbClient struct {
 	// list of connection schemas
 	foreignSchemas []string
 	searchPath     []string
-
-	// status update hooks
-	StatusHook statushooks.StatusHooks
 }
 
-func NewDbClient(ctx context.Context, connectionString string, statusHook statushooks.StatusHooks) (*DbClient, error) {
+func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
@@ -69,12 +64,11 @@ func NewDbClient(ctx context.Context, connectionString string, statusHook status
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
 		sessions:                make(map[uint32]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
-		StatusHook:              statusHook,
 	}
 	client.connectionString = connectionString
 
 	if err := client.LoadForeignSchemaNames(ctx); err != nil {
-		client.Close()
+		client.Close(ctx)
 		return nil, err
 	}
 	return client, nil
@@ -120,7 +114,7 @@ func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallba
 
 // Close implements Client
 // closes the connection to the database and shuts down the backend
-func (c *DbClient) Close() error {
+func (c *DbClient) Close(context.Context) error {
 	log.Printf("[TRACE] DbClient.Close %v", c.dbClient)
 	if c.dbClient != nil {
 		c.sessionInitWaitGroup.Wait()

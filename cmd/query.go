@@ -6,12 +6,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
 	"strings"
 
 	"github.com/turbot/steampipe/statushooks"
-
-	"github.com/turbot/steampipe/statusspinner"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -106,14 +103,9 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
 	ctx := cmd.Context()
-	if !interactiveMode {
-		c, cancel := context.WithCancel(ctx)
-		startCancelHandler(cancel)
-		ctx = c
-	}
 
 	// load the workspace
-	w, err := loadWorkspacePromptingForVariables(ctx, nil)
+	w, err := loadWorkspacePromptingForVariables(ctx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	// se we have loaded a workspace - be sure to close it
@@ -148,7 +140,7 @@ func getPipedStdinData() string {
 	return stdinData
 }
 
-func loadWorkspacePromptingForVariables(ctx context.Context, statusHook statushooks.StatusHooks) (*workspace.Workspace, error) {
+func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspace, error) {
 	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
 
 	w, err := workspace.Load(workspacePath)
@@ -162,25 +154,15 @@ func loadWorkspacePromptingForVariables(ctx context.Context, statusHook statusho
 	}
 	// so we have missing variables - prompt for them
 	// first hide spinner
-	statusHook.Done()
+	statushooks.Done(ctx)
 	if err := interactive.PromptForMissingVariables(ctx, missingVariablesError.MissingVariables); err != nil {
 		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
 		return nil, err
 	}
 	// show spinner again
-	statusHook.SetStatus("")
+	// TODO KAI - NEEDED????
+	//statushooks.SetStatus(ctx, "")
 	// ok we should have all variables now - reload workspace
 	return workspace.Load(workspacePath)
 }
 
-func startCancelHandler(cancel context.CancelFunc) {
-	sigIntChannel := make(chan os.Signal, 1)
-	signal.Notify(sigIntChannel, os.Interrupt)
-	go func() {
-		<-sigIntChannel
-		log.Println("[TRACE] got SIGINT")
-		// call context cancellation function
-		cancel()
-		// leave the channel open - any subsequent interrupts hits will be ignored
-	}()
-}

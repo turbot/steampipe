@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/turbot/steampipe/statusspinner"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
@@ -48,7 +46,7 @@ type ReportClientInfo struct {
 }
 
 func NewServer(ctx context.Context) (*Server, error) {
-	var dbClient, err = db_local.GetLocalClient(ctx, constants.InvokerReport, statusspinner.NewStatusSpinner())
+	var dbClient, err = db_local.GetLocalClient(ctx, constants.InvokerReport)
 	if err != nil {
 		return nil, err
 	}
@@ -131,10 +129,10 @@ func (s *Server) Start() {
 	StartAPI(s.context, s.webSocket)
 }
 
-func (s *Server) Shutdown() {
+func (s *Server) Shutdown(ctx context.Context) {
 	// Close the DB client
 	if s.dbClient != nil {
-		s.dbClient.Close()
+		s.dbClient.Close(ctx)
 	}
 
 	if s.webSocket != nil {
