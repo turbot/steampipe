@@ -309,20 +309,6 @@ func handleCheckInitResult(initData *control.InitData) bool {
 	return shouldExit
 }
 
-func exportCheckResult(ctx context.Context, d *exportData) {
-	if utils.IsContextCancelled(ctx) {
-		return
-	}
-	d.waitGroup.Add(1)
-	go func() {
-		err := exportControlResults(ctx, d.executionTree, d.exportFormats)
-		if len(err) > 0 {
-			d.addErrors(err)
-		}
-		d.waitGroup.Done()
-	}()
-}
-
 func printTiming(args []string, durations []time.Duration) {
 	headers := []string{"", "Duration"}
 	var rows [][]string
