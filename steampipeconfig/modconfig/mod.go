@@ -57,6 +57,7 @@ type Mod struct {
 	Benchmarks map[string]*Benchmark
 	Reports    map[string]*Report
 	Panels     map[string]*Panel
+	Containers map[string]*Container
 	Variables  map[string]*Variable
 	Locals     map[string]*Local
 
@@ -66,7 +67,7 @@ type Mod struct {
 
 	// all children as an array of names - built before the 'children' array
 	flatChildren []string
-	// array of direct mod children - excluds resources which are children of othe rresources
+	// array of direct mod children - excludes resources which are children of other resources
 	children []ModTreeItem
 	metadata *ResourceMetadata
 }
@@ -80,6 +81,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Benchmarks: make(map[string]*Benchmark),
 		Reports:    make(map[string]*Report),
 		Panels:     make(map[string]*Panel),
+		Containers: make(map[string]*Container),
 		Variables:  make(map[string]*Variable),
 		Locals:     make(map[string]*Local),
 		ModPath:    modPath,
@@ -199,6 +201,17 @@ func (m *Mod) Equals(other *Mod) bool {
 	}
 	for k := range other.Panels {
 		if _, ok := m.Panels[k]; !ok {
+			return false
+		}
+	}
+	// containers
+	for k := range m.Containers {
+		if _, ok := other.Containers[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.Containers {
+		if _, ok := m.Containers[k]; !ok {
 			return false
 		}
 	}
@@ -478,21 +491,18 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 		}
 	}
 	for _, report := range m.Reports {
-		// check all child names of this benchmark for a matching name
+		// check all child names of this report for a matching name
 		for _, child := range report.GetChildren() {
 			if child.Name() == item.Name() {
 				parents = append(parents, report)
 			}
 		}
 	}
-	for _, panel := range m.Panels {
-		if panel.Name() == item.Name() {
-			parents = append(parents, m)
-		}
-		// check all child names of this benchmark for a matching name
-		for _, child := range panel.GetChildren() {
+	for _, container := range m.Containers {
+		// check all child names of this container for a matching name
+		for _, child := range container.GetChildren() {
 			if child.Name() == item.Name() {
-				parents = append(parents, panel)
+				parents = append(parents, container)
 			}
 		}
 	}
@@ -644,6 +654,10 @@ func (m *Mod) buildFlatChilden() {
 		idx++
 	}
 	for _, r := range m.Reports {
+		res[idx] = r.Name()
+		idx++
+	}
+	for _, r := range m.Containers {
 		res[idx] = r.Name()
 		idx++
 	}

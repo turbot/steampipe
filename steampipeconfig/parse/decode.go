@@ -443,10 +443,30 @@ func decodeControlArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlNam
 	return params, diags
 }
 
+func decodeContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Container, *decodeResult) {
+	res := &decodeResult{}
+	content, rest, diags := block.Body.PartialContent(ContainerBlockSchema)
+	res.handleDecodeDiags(diags)
+
+	fmt.Println(rest)
+
+	// get shell resource
+	container := modconfig.NewContainer(block)
+
+	diags = decodeProperty(content, "width", &container.Width, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeReportBlocks(container, content, runCtx)
+	res.handleDecodeDiags(diags)
+
+	return container, res
+}
 func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decodeResult) {
 	res := &decodeResult{}
-	content, diags := block.Body.Content(PanelBlockSchema)
+	content, rest, diags := block.Body.PartialContent(PanelBlockSchema)
 	res.handleDecodeDiags(diags)
+
+	fmt.Println(rest)
 
 	// get shell resource
 	panel := modconfig.NewPanel(block)

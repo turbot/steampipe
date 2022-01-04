@@ -87,12 +87,23 @@ var PanelBlockSchema = &hcl.BodySchema{
 		{Name: "height"},
 		{Name: "source"},
 		{Name: "sql"},
-		{Name: "panels"},
 		{Name: "base"},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
 			Type:       "panel",
+			LabelNames: []string{"name"},
+		},
+	},
+}
+var ContainerBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "width"},
+		{Name: "panels"},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "container",
 			LabelNames: []string{"name"},
 		},
 	},
