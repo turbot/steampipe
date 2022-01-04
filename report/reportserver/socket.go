@@ -59,7 +59,7 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 				reports := workspace.Mod.Reports
 				session.Write(buildAvailableReportsPayload(reports))
 			case "select_report":
-				fmt.Println(fmt.Sprintf("Got event: %v", request.Payload.Report))
+				fmt.Printf("Got event: %v\n", request.Payload.Report)
 				mutex.Lock()
 				reportClientInfo := socketSessions[session]
 				reportClientInfo.Report = &request.Payload.Report.FullName
