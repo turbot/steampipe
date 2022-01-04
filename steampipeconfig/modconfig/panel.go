@@ -24,13 +24,11 @@ type Panel struct {
 	Source *string `cty:"source" column:"source,text"`
 	SQL    *string `cty:"sql" column:"sql,text"`
 	Text   *string `cty:"text" column:"text,text"`
-	Panels []*Panel
 
 	DeclRange hcl.Range
 	Mod       *Mod `cty:"mod"`
 
-	Children []string   `column:"children,jsonb"`
-	Paths    []NodePath `column:"path,jsonb"`
+	Paths []NodePath `column:"path,jsonb"`
 
 	Base *Panel
 
@@ -94,21 +92,7 @@ func (p *Panel) Name() string {
 // OnDecoded implements HclResource
 func (p *Panel) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	p.setBaseProperties()
-	p.setChildNames()
 	return nil
-}
-
-func (p *Panel) setChildNames() {
-	numChildren := len(p.Panels)
-	if numChildren == 0 {
-		return
-	}
-	// set children names
-	p.Children = make([]string, numChildren)
-
-	for i, p := range p.Panels {
-		p.Children[i] = p.Name()
-	}
 }
 
 func (p *Panel) setBaseProperties() {
@@ -133,9 +117,6 @@ func (p *Panel) setBaseProperties() {
 	if p.SQL == nil {
 		p.SQL = p.Base.SQL
 	}
-	if p.Panels == nil {
-		p.Panels = p.Base.Panels
-	}
 }
 
 // AddReference implements HclResource
@@ -159,16 +140,7 @@ func (p *Panel) GetDeclRange() *hcl.Range {
 }
 
 // AddChild implements ModTreeItem
-func (p *Panel) AddChild(child ModTreeItem) error {
-	switch c := child.(type) {
-	case *Panel:
-		// avoid duplicates
-		if !p.containsPanel(c.Name()) {
-			p.Panels = append(p.Panels, c)
-		}
-	case *Report:
-		return fmt.Errorf("panels cannot contain reports")
-	}
+func (p *Panel) AddChild(ModTreeItem) error {
 	return nil
 }
 
@@ -185,11 +157,7 @@ func (p *Panel) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (p *Panel) GetChildren() []ModTreeItem {
-	children := make([]ModTreeItem, len(p.Panels))
-	for i, p := range p.Panels {
-		children[i] = p
-	}
-	return children
+	return nil
 }
 
 // GetTitle implements ModTreeItem
@@ -274,14 +242,4 @@ func (p *Panel) Diff(new *Panel) *ReportTreeItemDiffs {
 	res.populateChildDiffs(p, new)
 
 	return res
-}
-
-func (p *Panel) containsPanel(name string) bool {
-	// does this child already exist
-	for _, existingPanel := range p.Panels {
-		if existingPanel.Name() == name {
-			return true
-		}
-	}
-	return false
 }
