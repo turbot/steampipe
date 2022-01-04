@@ -32,7 +32,7 @@ type WorkspaceLock struct {
 func EmptyWorkspaceLock(existingLock *WorkspaceLock) *WorkspaceLock {
 	return &WorkspaceLock{
 		WorkspacePath:       existingLock.WorkspacePath,
-		ModInstallationPath: filepaths.WorkspaceLockPath(existingLock.WorkspacePath),
+		ModInstallationPath: filepaths.WorkspaceModPath(existingLock.WorkspacePath),
 		InstallCache:        make(DependencyVersionMap),
 		MissingVersions:     make(DependencyVersionMap),
 		installedMods:       existingLock.installedMods,
@@ -57,7 +57,7 @@ func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 	}
 	res := &WorkspaceLock{
 		WorkspacePath:       workspacePath,
-		ModInstallationPath: filepaths.WorkspaceLockPath(workspacePath),
+		ModInstallationPath: filepaths.WorkspaceModPath(workspacePath),
 		InstallCache:        installCache,
 		MissingVersions:     make(DependencyVersionMap),
 	}
