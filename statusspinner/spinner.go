@@ -73,6 +73,7 @@ func (s *StatusSpinner) SetStatus(msg string) {
 		s.spinner.Start()
 	}
 }
+
 func (s *StatusSpinner) Message(msgs ...string) {
 	if s.spinner.Active() {
 		s.spinner.Stop()
