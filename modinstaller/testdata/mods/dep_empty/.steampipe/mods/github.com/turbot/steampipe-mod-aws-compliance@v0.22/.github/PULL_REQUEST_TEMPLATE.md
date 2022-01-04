@@ -1,2 +1,0 @@
-### Checklist
-- [ ] Issue(s) linked
