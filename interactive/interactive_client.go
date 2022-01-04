@@ -19,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/query"
 	"github.com/turbot/steampipe/query/metaquery"
 	"github.com/turbot/steampipe/query/queryhistory"
 	"github.com/turbot/steampipe/query/queryresult"
@@ -35,10 +36,9 @@ const (
 	AfterPromptCloseRestart
 )
 
-// InteractiveClient :: wrapper over *LocalClient and *prompt.Prompt along
-// to facilitate interactive query prompt
+// InteractiveClient is a wrapper over a LocalClient and a Prompt to facilitate interactive query prompt
 type InteractiveClient struct {
-	initData                *db_common.QueryInitData
+	initData                *query.InitData
 	resultsStreamer         *queryresult.ResultStreamer
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
@@ -49,17 +49,14 @@ type InteractiveClient struct {
 	cancelActiveQuery context.CancelFunc
 	cancelPrompt      context.CancelFunc
 	// channel from which we read the result of the external initialisation process
-	initDataChan *chan *db_common.QueryInitData
+	initDataChan *chan *query.InitData
 	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
-
-	afterClose AfterPromptCloseAction
+	afterClose     AfterPromptCloseAction
 	// lock while execution is occurring to avoid errors/warnings being shown
-	executionLock sync.Mutex
-
+	executionLock  sync.Mutex
 	schemaMetadata *schema.Metadata
-
-	highlighter *Highlighter
+	highlighter    *Highlighter
 }
 
 func getHighlighter(theme string) *Highlighter {
@@ -70,7 +67,7 @@ func getHighlighter(theme string) *Highlighter {
 	)
 }
 
-func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+func newInteractiveClient(initChan *chan *query.InitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	c := &InteractiveClient{
 		resultsStreamer:         resultsStreamer,
 		interactiveQueryHistory: queryhistory.New(),

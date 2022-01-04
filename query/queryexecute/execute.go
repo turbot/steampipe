@@ -4,16 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/turbot/steampipe/db/db_common"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/interactive"
+	"github.com/turbot/steampipe/query"
 	"github.com/turbot/steampipe/utils"
 )
 
-func RunInteractiveSession(initChan *chan *db_common.QueryInitData) {
+func RunInteractiveSession(initChan *chan *query.InitData) {
 	utils.LogTime("execute.RunInteractiveSession start")
 	defer utils.LogTime("execute.RunInteractiveSession end")
 
@@ -29,7 +29,7 @@ func RunInteractiveSession(initChan *chan *db_common.QueryInitData) {
 	}
 }
 
-func RunBatchSession(ctx context.Context, initDataChan chan *db_common.QueryInitData) int {
+func RunBatchSession(ctx context.Context, initDataChan chan *query.InitData) int {
 	// wait for init
 	initData := <-initDataChan
 	if err := initData.Result.Error; err != nil {

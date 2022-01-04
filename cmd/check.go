@@ -10,20 +10,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/modinstaller"
-
 	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/control"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/modinstaller"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -87,7 +87,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
-	initData := &checkInitData{}
+	initData := &control.InitData{}
 	defer func() {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
@@ -95,12 +95,12 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			exitCode = 1
 		}
 
-		if initData.client != nil {
+		if initData.Client != nil {
 			log.Printf("[TRACE] close client")
-			initData.client.Close()
+			initData.Client.Close()
 		}
-		if initData.workspace != nil {
-			initData.workspace.Close()
+		if initData.Workspace != nil {
+			initData.Workspace.Close()
 		}
 	}()
 
@@ -122,9 +122,9 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// pull out useful properties
-	ctx := initData.ctx
-	workspace := initData.workspace
-	client := initData.client
+	ctx := initData.Ctx
+	workspace := initData.Workspace
+	client := initData.Client
 	failures := 0
 	var exportErrors []error
 	exportErrorsLock := sync.Mutex{}
@@ -154,7 +154,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.FailOnError(err)
 
 		if len(exportFormats) > 0 {
-			d := checkExportData{executionTree: executionTree, exportFormats: exportFormats, errorsLock: &exportErrorsLock, errors: exportErrors, waitGroup: &exportWaitGroup}
+			d := control.ExportData{ExecutionTree: executionTree, ExportFormats: exportFormats, ErrorsLock: &exportErrorsLock, Errors: exportErrors, WaitGroup: &exportWaitGroup}
 			exportCheckResult(ctx, &d)
 		}
 
@@ -189,16 +189,16 @@ func validateArgs(cmd *cobra.Command, args []string) bool {
 	return true
 }
 
-func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitData {
-	initData := &checkInitData{
-		result: &db_common.InitResult{},
+func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *control.InitData {
+	initData := &control.InitData{
+		Result: &db_common.InitResult{},
 	}
 
 	if viper.GetBool(constants.ArgModInstall) {
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
 		_, err := modinstaller.InstallWorkspaceDependencies(opts)
 		if err != nil {
-			initData.result.Error = err
+			initData.Result.Error = err
 			return initData
 		}
 	}
@@ -207,45 +207,45 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 
 	err := validateOutputFormat()
 	if err != nil {
-		initData.result.Error = err
+		initData.Result.Error = err
 		return initData
 	}
 
 	err = cmdconfig.ValidateConnectionStringArgs()
 	if err != nil {
-		initData.result.Error = err
+		initData.Result.Error = err
 		return initData
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	startCancelHandler(cancel)
-	initData.ctx = ctx
+	initData.Ctx = ctx
 
 	// set color schema
 	err = initialiseColorScheme()
 	if err != nil {
-		initData.result.Error = err
+		initData.Result.Error = err
 		return initData
 	}
 	// load workspace
-	initData.workspace, err = loadWorkspacePromptingForVariables(ctx, spinner)
+	initData.Workspace, err = loadWorkspacePromptingForVariables(ctx, spinner)
 	if err != nil {
 		if !utils.IsCancelledError(err) {
 			err = utils.PrefixError(err, "failed to load workspace")
 		}
-		initData.result.Error = err
+		initData.Result.Error = err
 		return initData
 	}
 
 	// check if the required plugins are installed
-	err = initData.workspace.CheckRequiredPluginsInstalled()
+	err = initData.Workspace.CheckRequiredPluginsInstalled()
 	if err != nil {
-		initData.result.Error = err
+		initData.Result.Error = err
 		return initData
 	}
 
-	if len(initData.workspace.Controls) == 0 {
-		initData.result.AddWarnings("no controls found in current workspace")
+	if len(initData.Workspace.Controls) == 0 {
+		initData.Result.AddWarnings("no controls found in current workspace")
 	}
 
 	display.UpdateSpinnerMessage(spinner, "Connecting to service...")
@@ -263,45 +263,45 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitDa
 	}
 
 	if err != nil {
-		initData.result.Error = err
+		initData.Result.Error = err
 		return initData
 	}
-	initData.client = client
+	initData.Client = client
 
-	refreshResult := initData.client.RefreshConnectionAndSearchPaths(ctx)
+	refreshResult := initData.Client.RefreshConnectionAndSearchPaths(ctx)
 	if refreshResult.Error != nil {
-		initData.result.Error = refreshResult.Error
+		initData.Result.Error = refreshResult.Error
 		return initData
 	}
-	initData.result.AddWarnings(refreshResult.Warnings...)
+	initData.Result.AddWarnings(refreshResult.Warnings...)
 
 	// setup the session data - prepared statements and introspection tables
-	sessionDataSource := workspace.NewSessionDataSource(initData.workspace, nil)
+	sessionDataSource := workspace.NewSessionDataSource(initData.Workspace, nil)
 
 	// register EnsureSessionData as a callback on the client.
 	// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 	// so our client object calls this callback to restore the session data
-	initData.client.SetEnsureSessionDataFunc(func(localCtx context.Context, conn *db_common.DatabaseSession) (error, []string) {
+	initData.Client.SetEnsureSessionDataFunc(func(localCtx context.Context, conn *db_common.DatabaseSession) (error, []string) {
 		return workspace.EnsureSessionData(localCtx, sessionDataSource, conn)
 	})
 
 	return initData
 }
 
-func handleCheckInitResult(initData *checkInitData) bool {
+func handleCheckInitResult(initData *control.InitData) bool {
 	// if there is an error or cancellation we bomb out
 	// check for the various kinds of failures
-	utils.FailOnError(initData.result.Error)
+	utils.FailOnError(initData.Result.Error)
 	// cancelled?
-	if initData.ctx != nil {
-		utils.FailOnError(initData.ctx.Err())
+	if initData.Ctx != nil {
+		utils.FailOnError(initData.Ctx.Err())
 	}
 
 	// if there is a usage warning we display it
-	initData.result.DisplayMessages()
+	initData.Result.DisplayMessages()
 
 	// if there is are any warnings, exit politely
-	shouldExit := len(initData.result.Warnings) > 0
+	shouldExit := len(initData.Result.Warnings) > 0
 
 	// alternative approach - only stop the control run if there are no controls
 	//shouldExit := initData.workspace == nil || len(initData.workspace.Controls) == 0
@@ -392,14 +392,14 @@ func initialiseColorScheme() error {
 	return nil
 }
 
-func exportCheckResult(ctx context.Context, d *checkExportData) {
-	d.waitGroup.Add(1)
+func exportCheckResult(ctx context.Context, d *control.ExportData) {
+	d.WaitGroup.Add(1)
 	go func() {
-		err := exportControlResults(ctx, d.executionTree, d.exportFormats)
+		err := exportControlResults(ctx, d.ExecutionTree, d.ExportFormats)
 		if len(err) > 0 {
-			d.addErrors(err)
+			d.AddErrors(err)
 		}
-		d.waitGroup.Done()
+		d.WaitGroup.Done()
 	}()
 }
 
