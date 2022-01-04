@@ -10,6 +10,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/steampipe/statushooks"
+
+	"github.com/turbot/steampipe/modinstaller"
+	"github.com/turbot/steampipe/statusspinner"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -109,11 +114,11 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	statusSpinner := statusspinner.NewStatusSpinner(statusspinner.WithMessage("Initializing..."))
+	statusHook := getStatusHook()
 
 	// initialise
-	initData = initialiseCheck(cmd.Context(), statusSpinner)
-	statusSpinner.Done()
+	initData = initialiseCheck(cmd.Context(), statusHook)
+	statusHook.Done()
 	if shouldExit := handleCheckInitResult(initData); shouldExit {
 		return
 	}
@@ -173,6 +178,13 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = failures
 }
 
+func getStatusHook() statushooks.StatusHooks {
+	if !viper.GetBool(constants.ArgProgress) {
+		return statushooks.Null
+	}
+	return statusspinner.NewStatusSpinner(statusspinner.WithMessage("Initializing..."))
+}
+
 func validateArgs(cmd *cobra.Command, args []string) bool {
 	if len(args) == 0 {
 		fmt.Println()
@@ -186,11 +198,10 @@ func validateArgs(cmd *cobra.Command, args []string) bool {
 	return true
 }
 
-func initialiseCheck(ctx context.Context, statusSpinner *statusspinner.StatusSpinner) *control.InitData {
+func initialiseCheck(ctx context.Context, statusHook statushooks.StatusHooks) *control.InitData {
 	initData := &control.InitData{
 		Result: &db_common.InitResult{},
 	}
-
 	if viper.GetBool(constants.ArgModInstall) {
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
 		_, err := modinstaller.InstallWorkspaceDependencies(opts)
@@ -199,8 +210,8 @@ func initialiseCheck(ctx context.Context, statusSpinner *statusspinner.StatusSpi
 			return initData
 		}
 	}
-
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
+	// TODO this is used to stop spinners during check/batch query results - find a better way
+	//cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	err := validateOutputFormat()
 	if err != nil {
@@ -225,7 +236,7 @@ func initialiseCheck(ctx context.Context, statusSpinner *statusspinner.StatusSpi
 		return initData
 	}
 	// load workspace
-	initData.Workspace, err = loadWorkspacePromptingForVariables(ctx, statusSpinner)
+	initData.Workspace, err = loadWorkspacePromptingForVariables(ctx, statusHook)
 	if err != nil {
 		if !utils.IsCancelledError(err) {
 			err = utils.PrefixError(err, "failed to load workspace")
@@ -245,14 +256,14 @@ func initialiseCheck(ctx context.Context, statusSpinner *statusspinner.StatusSpi
 		initData.Result.AddWarnings("no controls found in current workspace")
 	}
 
-	statusSpinner.SetStatus("Connecting to service...")
+	statusHook.SetStatus("Connecting to service...")
 	// get a client
 	var client db_common.Client
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		client, err = db_client.NewDbClient(ctx, connectionString, nil)
 	} else {
 		// when starting the database, installers may trigger their own spinners
-		client, err = db_local.GetLocalClient(ctx, constants.InvokerCheck, statusSpinner)
+		client, err = db_local.GetLocalClient(ctx, constants.InvokerCheck, statusHook)
 	}
 
 	if err != nil {

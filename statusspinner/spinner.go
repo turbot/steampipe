@@ -46,8 +46,7 @@ func WithDelay(delay time.Duration) StatusSpinnerOpt {
 }
 
 func NewStatusSpinner(opts ...StatusSpinnerOpt) *StatusSpinner {
-	enabled := viper.GetBool(constants.ConfigKeyShowInteractiveOutput) &&
-		!viper.GetBool(constants.ConfigKeyIsTerminalTTY)
+	enabled := viper.GetBool(constants.ConfigKeyIsTerminalTTY)
 	res := &StatusSpinner{enabled: enabled}
 
 	res.spinner = spinner.New(
@@ -74,13 +73,14 @@ func (s *StatusSpinner) SetStatus(msg string) {
 		s.spinner.Start()
 	}
 }
-
-// Done implements StatusHooks
-func (s *StatusSpinner) Done() {
-	if s.cancel != nil {
-		close(s.cancel)
+func (s *StatusSpinner) Message(msgs ...string) {
+	if s.spinner.Active() {
+		s.spinner.Stop()
+		defer s.spinner.Start()
 	}
-	s.closeSpinner()
+	for _, msg := range msgs {
+		fmt.Println(msg)
+	}
 }
 
 //// SetStatusAfterDelay implements StatusHooks
@@ -114,6 +114,14 @@ func (s *StatusSpinner) Done() {
 //	return spinner
 //}
 
+// Done implements StatusHooks
+func (s *StatusSpinner) Done() {
+	if s.cancel != nil {
+		close(s.cancel)
+	}
+	s.closeSpinner()
+}
+
 // UpdateSpinnerMessage updates the message of the given spinner
 func (s *StatusSpinner) UpdateSpinnerMessage(newMessage string) {
 	newMessage = s.truncateSpinnerMessageToScreen(newMessage)
@@ -143,12 +151,6 @@ func (s *StatusSpinner) truncateSpinnerMessageToScreen(msg string) string {
 		msg = fmt.Sprintf("%s ...", msg)
 	}
 	return msg
-}
-
-func (s *StatusSpinner) Show() {
-	if !s.spinner.Active() {
-		s.spinner.Start()
-	}
 }
 
 //// ShowSpinner shows a spinner with the given message
