@@ -24,9 +24,6 @@ type ControlProgressRenderer struct {
 	spinner    *spinner.Spinner
 	enabled    bool
 	executing  int
-
-	// status update hooks
-	statusHook statushooks.StatusHooks
 }
 
 func NewControlProgressRenderer(total int) *ControlProgressRenderer {
@@ -92,9 +89,9 @@ func (p *ControlProgressRenderer) OnControlError(ctx context.Context) {
 	}
 }
 
-func (p *ControlProgressRenderer) Finish() {
+func (p *ControlProgressRenderer) Finish(ctx context.Context) {
 	if p.enabled {
-		p.statusHook.Done()
+		statushooks.Done(ctx)
 	}
 }
 

@@ -10,6 +10,10 @@ var (
 	contextKeyStatusHook = contexthelpers.ContextKey("status_hook")
 )
 
+func Disable(ctx context.Context) context.Context {
+	return AddToContext(ctx, NullHooks)
+}
+
 func AddToContext(ctx context.Context, statusHooks StatusHooks) context.Context {
 	return context.WithValue(ctx, contextKeyStatusHook, statusHooks)
 }

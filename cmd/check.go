@@ -25,7 +25,6 @@ import (
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/modinstaller"
 	"github.com/turbot/steampipe/statushooks"
-	"github.com/turbot/steampipe/statusspinner"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -112,11 +111,13 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	statusHook := getStatusHook()
+	if !viper.GetBool(constants.ArgProgress) {
+		statushooks.Disable(ctx)
+	}
 
 	// initialise
 	initData = initialiseCheck(cmd.Context())
-	statusHook.Done()
+
 	if shouldExit := handleCheckInitResult(initData); shouldExit {
 		return
 	}
@@ -176,13 +177,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = failures
 }
 
-func getStatusHook() statushooks.StatusHooks {
-	if !viper.GetBool(constants.ArgProgress) {
-		return statushooks.NullHooks
-	}
-	return statusspinner.NewStatusSpinner(statusspinner.WithMessage("Initializing..."))
-}
-
 func validateArgs(cmd *cobra.Command, args []string) bool {
 	if len(args) == 0 {
 		fmt.Println()
@@ -197,6 +191,9 @@ func validateArgs(cmd *cobra.Command, args []string) bool {
 }
 
 func initialiseCheck(ctx context.Context) *control.InitData {
+	statushooks.SetStatus(ctx, "Initializing...")
+	defer statushooks.Done(ctx)
+
 	initData := &control.InitData{
 		Result: &db_common.InitResult{},
 	}
@@ -208,7 +205,7 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 			return initData
 		}
 	}
-	// TODO this is used to stop spinners during check/batch query results - find a better way
+	// TODO KAI this is used to stop spinners during check/batch query results - find a better way
 	//cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	err := validateOutputFormat()

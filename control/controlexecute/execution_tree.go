@@ -85,7 +85,7 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 
 	defer func() {
 		e.EndTime = time.Now()
-		e.progress.Finish()
+		e.progress.Finish(ctx)
 	}()
 
 	// the number of goroutines parallel to start
