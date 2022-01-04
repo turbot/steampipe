@@ -56,9 +56,15 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 		if err := m.addItemIntoResourceTree(panel); err != nil {
 			return err
 		}
-		if len(panel.GetChildren()) == 0 {
-			leafNodes = append(leafNodes, panel)
+		// panels cannot have children
+		leafNodes = append(leafNodes, panel)
+	}
+	for _, container := range sourceMod.Containers {
+		if err := m.addItemIntoResourceTree(container); err != nil {
+			return err
 		}
+		// containers cannot have children
+		leafNodes = append(leafNodes, container)
 	}
 	for _, report := range sourceMod.Reports {
 		if err := m.addItemIntoResourceTree(report); err != nil {
