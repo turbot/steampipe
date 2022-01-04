@@ -81,6 +81,7 @@ func newInteractiveClient(initData *query.InitData, resultsStreamer *queryresult
 		autocompleteOnEmpty:     false,
 		initResultChan:          make(chan *db_common.InitResult, 1),
 		highlighter:             getHighlighter(viper.GetString(constants.ArgTheme)),
+		statusHook:              statusHook,
 	}
 
 	// asynchronously wait for init to complete
@@ -114,8 +115,9 @@ func (c *InteractiveClient) InteractivePrompt() {
 		c.resultsStreamer.Close()
 	}()
 
-	fmt.Printf("Welcome to Steampipe v%s\n", version.SteampipeVersion.String())
-	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
+	c.statusHook.Message(
+		fmt.Sprintf("Welcome to Steampipe v%s\n", version.SteampipeVersion.String()),
+		fmt.Sprintf("For more information, type %s\n", constants.Bold(".help")))
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors
 	promptResultChan := make(chan utils.InteractiveExitStatus, 1)

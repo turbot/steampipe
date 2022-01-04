@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"strings"
 
+	"github.com/turbot/steampipe/statushooks"
+
 	"github.com/turbot/steampipe/statusspinner"
 
 	"github.com/spf13/cobra"
@@ -98,7 +100,8 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// enable spinner only in interactive mode
 	interactiveMode := len(args) == 0
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, interactiveMode)
+	// TODO this is used to stop spinners during check/batch query results - find a better way
+	//cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, interactiveMode)
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
@@ -145,7 +148,7 @@ func getPipedStdinData() string {
 	return stdinData
 }
 
-func loadWorkspacePromptingForVariables(ctx context.Context, statusSpinner *statusspinner.StatusSpinner) (*workspace.Workspace, error) {
+func loadWorkspacePromptingForVariables(ctx context.Context, statusHook statushooks.StatusHooks) (*workspace.Workspace, error) {
 	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
 
 	w, err := workspace.Load(workspacePath)
@@ -159,13 +162,13 @@ func loadWorkspacePromptingForVariables(ctx context.Context, statusSpinner *stat
 	}
 	// so we have missing variables - prompt for them
 	// first hide spinner
-	statusSpinner.Done()
+	statusHook.Done()
 	if err := interactive.PromptForMissingVariables(ctx, missingVariablesError.MissingVariables); err != nil {
 		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
 		return nil, err
 	}
-	// show spinner sgain
-	statusSpinner.Show()
+	// show spinner again
+	statusHook.SetStatus("")
 	// ok we should have all variables now - reload workspace
 	return workspace.Load(workspacePath)
 }
