@@ -34,7 +34,8 @@ type ConnectionPlugin struct {
 }
 
 // CreateConnectionPlugins instantiates plugins for specified connections, fetches schemas and sends connection config
-func CreateConnectionPlugins(connections ...*modconfig.Connection) (connectionPluginMap map[string]*ConnectionPlugin, err error) {
+func CreateConnectionPlugins(connections ...*modconfig.Connection) (connectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
+	res = &RefreshConnectionResult{}
 	log.Printf("[TRACE] CreateConnectionPlugin creating %d connections", len(connections))
 
 	// build result map
@@ -48,38 +49,36 @@ func CreateConnectionPlugins(connections ...*modconfig.Connection) (connectionPl
 	// get plugin manager
 	pluginManager, err := getPluginManager()
 	if err != nil {
-		return nil, err
+		res.Error = err
+		return nil, res
 	}
 
 	// ask the plugin manager for the reattach config for all required plugins
 	getResponse, err := pluginManager.Get(&proto.GetRequest{Connections: connectionNames})
 	if err != nil {
-		return nil, err
+		res.Error = err
+		return nil, res
 	}
-
-	var errors []error
 
 	// now create a connection plugin for each connection
 	for _, connection := range connections {
 		connectionPlugin, err := createConnectionPlugin(connection, getResponse)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("failed to start plugin '%s': %s", connection.PluginShortName, err))
+			res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", connection.PluginShortName, err))
 			continue
 		}
 
 		connectionPluginMap[connection.Name] = connectionPlugin
 	}
-	if len(errors) > 0 {
-		return nil, utils.CombineErrors(errors...)
-	}
 
 	// now get populate schemas for all these connection plugins
 	// - minimising the GetSchema calls we make to the unique schemas
 	if err := populateConnectionPluginSchemas(connections, connectionPluginMap); err != nil {
-		return nil, err
+		res.Error = err
+		return nil, res
 	}
 
-	return connectionPluginMap, nil
+	return connectionPluginMap, res
 }
 
 func populateConnectionPluginSchemas(connections []*modconfig.Connection, connectionPluginMap map[string]*ConnectionPlugin) error {
@@ -100,8 +99,13 @@ func populateConnectionPluginSchemas(connections []*modconfig.Connection, connec
 
 	// for every connection with unique schema, fetch the schema and then set in all connections which share this schema
 	for _, c := range connectionSchemaMap.UniqueSchemas() {
+		connectionPlugin, ok := connectionPluginMap[c]
+		if !ok {
+			// we must have had issues loading this plugin
+			continue
+		}
 		// retrieve the plugin schema from the schema map
-		pluginName := connectionPluginMap[c].PluginName
+		pluginName := connectionPlugin.PluginName
 		schema := pluginSchemaMap[pluginName]
 		// now set this schema for all connections which share it
 		for _, connectionUsingSchema := range connectionSchemaMap[c] {
