@@ -48,8 +48,6 @@ type InteractiveClient struct {
 	// NOTE: should ONLY be called by cancelActiveQueryIfAny
 	cancelActiveQuery context.CancelFunc
 	cancelPrompt      context.CancelFunc
-	// channel from which we read the result of the external initialisation process
-	initDataChan *chan *query.InitData
 	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
 	afterClose     AfterPromptCloseAction
@@ -67,13 +65,13 @@ func getHighlighter(theme string) *Highlighter {
 	)
 }
 
-func newInteractiveClient(initChan *chan *query.InitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+func newInteractiveClient(initData *query.InitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	c := &InteractiveClient{
+		initData:                initData,
 		resultsStreamer:         resultsStreamer,
 		interactiveQueryHistory: queryhistory.New(),
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
-		initDataChan:            initChan,
 		initResultChan:          make(chan *db_common.InitResult, 1),
 		highlighter:             getHighlighter(viper.GetString(constants.ArgTheme)),
 	}

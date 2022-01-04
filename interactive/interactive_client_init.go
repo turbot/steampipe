@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/workspace"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -24,11 +25,10 @@ func (c *InteractiveClient) readInitDataStream() {
 
 		}
 	}()
-	initData := <-*(c.initDataChan)
-	c.initData = initData
+	<-c.initData.Loaded
 
-	if initData.Result.Error != nil {
-		c.initResultChan <- initData.Result
+	if c.initData.Result.Error != nil {
+		c.initResultChan <- c.initData.Result
 		return
 	}
 
@@ -41,10 +41,10 @@ func (c *InteractiveClient) readInitDataStream() {
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
 		// provide an explicit error handler which re-renders the prompt after displaying the error
-		initData.Result.Error = c.initData.Workspace.SetupWatcher(c.initData.Client, c.workspaceWatcherErrorHandler)
+		c.initData.Result.Error = c.initData.Workspace.SetupWatcher(c.initData.Client, c.workspaceWatcherErrorHandler)
 
 	}
-	c.initResultChan <- initData.Result
+	c.initResultChan <- c.initData.Result
 }
 
 func (c *InteractiveClient) workspaceWatcherErrorHandler(err error) {
@@ -75,7 +75,7 @@ func (c *InteractiveClient) waitForInitData(ctx context.Context) error {
 }
 
 // return the workspace, or nil if not yet initialised
-func (c *InteractiveClient) workspace() db_common.WorkspaceResourceProvider {
+func (c *InteractiveClient) workspace() *workspace.Workspace {
 	if c.initData == nil {
 		return nil
 	}

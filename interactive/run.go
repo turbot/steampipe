@@ -9,10 +9,10 @@ import (
 )
 
 // RunInteractivePrompt starts the interactive query prompt
-func RunInteractivePrompt(initChan *chan *query.InitData) (*queryresult.ResultStreamer, error) {
+func RunInteractivePrompt(initData *query.InitData) (*queryresult.ResultStreamer, error) {
 	resultsStreamer := queryresult.NewResultStreamer()
 
-	interactiveClient, err := newInteractiveClient(initChan, resultsStreamer)
+	interactiveClient, err := newInteractiveClient(initData, resultsStreamer)
 	if err != nil {
 		utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
 		// do not bind shutdown to any cancellable context
