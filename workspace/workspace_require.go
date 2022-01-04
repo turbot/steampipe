@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/steampipe/steampipeconfig/version_map"
+	"github.com/turbot/steampipe/steampipeconfig/versionmap"
 
 	"github.com/Masterminds/semver"
 
@@ -54,7 +54,7 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 func (w *Workspace) getRequiredPlugins() map[string]*semver.Version {
 	if w.Mod.Require != nil {
 		requiredPluginVersions := w.Mod.Require.Plugins
-		requiredVersion := make(version_map.VersionMap)
+		requiredVersion := make(versionmap.VersionMap)
 		for _, pluginVersion := range requiredPluginVersions {
 			requiredVersion[pluginVersion.ShortName()] = pluginVersion.Version
 		}
@@ -63,8 +63,8 @@ func (w *Workspace) getRequiredPlugins() map[string]*semver.Version {
 	return nil
 }
 
-func (w *Workspace) getInstalledPlugins() (version_map.VersionMap, error) {
-	installedPlugins := make(version_map.VersionMap)
+func (w *Workspace) getInstalledPlugins() (versionmap.VersionMap, error) {
+	installedPlugins := make(versionmap.VersionMap)
 	installedPluginsData, _ := plugin.List(nil)
 	for _, plugin := range installedPluginsData {
 		org, name, _ := ociinstaller.NewSteampipeImageRef(plugin.Name).GetOrgNameAndStream()

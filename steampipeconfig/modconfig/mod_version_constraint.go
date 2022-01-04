@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/version_helpers"
+	"github.com/turbot/steampipe/versionhelpers"
 )
 
 const filePrefix = "file:"
@@ -18,7 +18,7 @@ type ModVersionConstraint struct {
 	Name          string `cty:"name" hcl:"name,label"`
 	VersionString string `cty:"version" hcl:"version"`
 	// only one of Constraint, Branch and FilePath will be set
-	Constraint *version_helpers.Constraints
+	Constraint *versionhelpers.Constraints
 	// // NOTE: aliases will be supported in the future
 	//Alias string `cty:"alias" hcl:"alias"`
 	// the branch to use
@@ -78,16 +78,16 @@ func (m *ModVersionConstraint) Initialise() hcl.Diagnostics {
 	var diags hcl.Diagnostics
 
 	if m.VersionString == "" {
-		m.Constraint, _ = version_helpers.NewConstraint("*")
+		m.Constraint, _ = versionhelpers.NewConstraint("*")
 		m.VersionString = "latest"
 		return diags
 	}
 	if m.VersionString == "latest" {
-		m.Constraint, _ = version_helpers.NewConstraint("*")
+		m.Constraint, _ = versionhelpers.NewConstraint("*")
 		return diags
 	}
 	// does the version parse as a semver version
-	if c, err := version_helpers.NewConstraint(m.VersionString); err == nil {
+	if c, err := versionhelpers.NewConstraint(m.VersionString); err == nil {
 		// no error
 		m.Constraint = c
 		return diags

@@ -13,9 +13,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/connection_watcher"
+	"github.com/turbot/steampipe/connectionwatcher"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/plugin_manager"
+	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/pluginmanager"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -41,13 +42,13 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 		log.Printf("[WARN] failed to load connection config: %s", err.Error())
 		os.Exit(1)
 	}
-	configMap := connection_watcher.NewConnectionConfigMap(steampipeConfig.Connections)
+	configMap := connectionwatcher.NewConnectionConfigMap(steampipeConfig.Connections)
 	log.Printf("[TRACE] loaded config map")
 
-	pluginManager := plugin_manager.NewPluginManager(configMap, logger)
+	pluginManager := pluginmanager.NewPluginManager(configMap, logger)
 
 	if shouldRunConnectionWatcher() {
-		connectionWatcher, err := connection_watcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
+		connectionWatcher, err := connectionwatcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
 		if err != nil {
 			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
 			utils.ShowError(err)
@@ -74,7 +75,7 @@ func shouldRunConnectionWatcher() bool {
 
 func createPluginManagerLog() hclog.Logger {
 	logName := fmt.Sprintf("plugin-%s.log", time.Now().Format("2006-01-02"))
-	logPath := filepath.Join(constants.LogDir(), logName)
+	logPath := filepath.Join(filepaths.LogDir(), logName)
 	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Printf("failed to open plugin manager log file: %s\n", err.Error())

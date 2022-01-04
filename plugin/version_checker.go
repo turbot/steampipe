@@ -25,7 +25,7 @@ func (vr *VersionCheckReport) ShortName() string {
 	return fmt.Sprintf("%s/%s", vr.CheckResponse.Org, vr.CheckResponse.Name)
 }
 
-// versionCheckPayload :: the payload that travels to-and-fro between steampipe and the server
+// the payload that travels to-and-fro between steampipe and the server
 type versionCheckPayload struct {
 	Org     string `json:"org"`
 	Name    string `json:"name"`
@@ -40,7 +40,7 @@ type VersionChecker struct {
 	signature      string
 }
 
-// GetUpdateReport :: looks up and reports the updated version of selective turbot plugins which are listed in versions.json
+// GetUpdateReport looks up and reports the updated version of selective turbot plugins which are listed in versions.json
 func GetUpdateReport(installationID string, check []*versionfile.InstalledVersion) map[string]VersionCheckReport {
 	versionChecker := new(VersionChecker)
 	versionChecker.signature = installationID
@@ -54,7 +54,7 @@ func GetUpdateReport(installationID string, check []*versionfile.InstalledVersio
 	return versionChecker.reportPluginUpdates()
 }
 
-// GetAllUpdateReport :: looks up and reports the updated version of all turbot plugins which are listed in versions.json
+// GetAllUpdateReport looks up and reports the updated version of all turbot plugins which are listed in versions.json
 func GetAllUpdateReport(installationID string) map[string]VersionCheckReport {
 	versionChecker := new(VersionChecker)
 	versionChecker.signature = installationID
@@ -194,7 +194,7 @@ func (v *VersionChecker) requestServerForLatest(payload []versionCheckPayload) [
 	}
 	defer resp.Body.Close()
 
-	responseData := []versionCheckPayload{}
+	var responseData []versionCheckPayload
 
 	err = json.Unmarshal(bodyBytes, &responseData)
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/filepaths"
 
 	"github.com/turbot/steampipe/utils"
 )
@@ -36,7 +37,7 @@ func GetState() (*RunningDBInstanceInfo, error) {
 	if !pidExists {
 		log.Printf("[TRACE] GetRunStatus - pid %v does not exist\n", info.Pid)
 		// nothing to do here
-		os.Remove(constants.RunningInfoFilePath())
+		os.Remove(filepaths.RunningInfoFilePath())
 		return nil, nil
 	}
 

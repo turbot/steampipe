@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/utils"
@@ -44,7 +45,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	if IsInstalled() {
 		// check if the FDW need updating, and init the db id required
-		err := PrepareDb(ctx, spinner)
+		err := prepareDb(ctx, spinner)
 		display.StopSpinner(spinner)
 		return err
 	}
@@ -103,33 +104,6 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	return nil
 }
 
-// PrepareDb updates the FDW if needed, and inits the database if required
-func PrepareDb(ctx context.Context, spinner *spinner.Spinner) error {
-	// check if FDW needs to be updated
-	if fdwNeedsUpdate() {
-		_, err := installFDW(ctx, false, spinner)
-		spinner.Stop()
-		if err != nil {
-			log.Printf("[TRACE] installFDW failed: %v", err)
-			return fmt.Errorf("Update steampipe-postgres-fdw... FAILED!")
-		}
-
-		fmt.Printf("%s was updated to %s. ", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
-		fmt.Println()
-
-	}
-
-	if needsInit() {
-		spinner.Start()
-		display.UpdateSpinnerMessage(spinner, "Cleanup any Steampipe processes...")
-		killInstanceIfAny(ctx)
-		if err := runInstall(ctx, false, spinner); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // IsInstalled checks and reports whether the embedded database is installed and setup
 func IsInstalled() bool {
 	utils.LogTime("db_local.IsInstalled start")
@@ -160,6 +134,33 @@ func IsInstalled() bool {
 	}
 
 	return true
+}
+
+// prepareDb updates the FDW if needed, and inits the database if required
+func prepareDb(ctx context.Context, spinner *spinner.Spinner) error {
+	// check if FDW needs to be updated
+	if fdwNeedsUpdate() {
+		_, err := installFDW(ctx, false, spinner)
+		spinner.Stop()
+		if err != nil {
+			log.Printf("[TRACE] installFDW failed: %v", err)
+			return fmt.Errorf("Update steampipe-postgres-fdw... FAILED!")
+		}
+
+		fmt.Printf("%s was updated to %s. ", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
+		fmt.Println()
+
+	}
+
+	if needsInit() {
+		spinner.Start()
+		display.UpdateSpinnerMessage(spinner, "Cleanup any Steampipe processes...")
+		killInstanceIfAny(ctx)
+		if err := runInstall(ctx, false, spinner); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func fdwNeedsUpdate() bool {
@@ -339,7 +340,7 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
 
 		// log directory
-		"-c", fmt.Sprintf("log_directory=%s", constants.LogDir()),
+		"-c", fmt.Sprintf("log_directory=%s", filepaths.LogDir()),
 
 		// Data Directory
 		"-D", getDataLocation())

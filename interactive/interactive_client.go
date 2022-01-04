@@ -12,15 +12,14 @@ import (
 	"github.com/alecthomas/chroma/formatters"
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
-	"github.com/spf13/viper"
-
 	"github.com/c-bata/go-prompt"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/autocomplete"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/query"
 	"github.com/turbot/steampipe/query/metaquery"
 	"github.com/turbot/steampipe/query/queryhistory"
 	"github.com/turbot/steampipe/query/queryresult"
@@ -37,10 +36,9 @@ const (
 	AfterPromptCloseRestart
 )
 
-// InteractiveClient :: wrapper over *LocalClient and *prompt.Prompt along
-// to facilitate interactive query prompt
+// InteractiveClient is a wrapper over a LocalClient and a Prompt to facilitate interactive query prompt
 type InteractiveClient struct {
-	initData                *db_common.QueryInitData
+	initData                *query.InitData
 	resultsStreamer         *queryresult.ResultStreamer
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
@@ -51,17 +49,14 @@ type InteractiveClient struct {
 	cancelActiveQuery context.CancelFunc
 	cancelPrompt      context.CancelFunc
 	// channel from which we read the result of the external initialisation process
-	initDataChan *chan *db_common.QueryInitData
+	initDataChan *chan *query.InitData
 	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
-
-	afterClose AfterPromptCloseAction
+	afterClose     AfterPromptCloseAction
 	// lock while execution is occurring to avoid errors/warnings being shown
-	executionLock sync.Mutex
-
+	executionLock  sync.Mutex
 	schemaMetadata *schema.Metadata
-
-	highlighter *Highlighter
+	highlighter    *Highlighter
 }
 
 func getHighlighter(theme string) *Highlighter {
@@ -72,7 +67,7 @@ func getHighlighter(theme string) *Highlighter {
 	)
 }
 
-func newInteractiveClient(initChan *chan *db_common.QueryInitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+func newInteractiveClient(initChan *chan *query.InitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	c := &InteractiveClient{
 		resultsStreamer:         resultsStreamer,
 		interactiveQueryHistory: queryhistory.New(),
@@ -512,7 +507,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 	if isFirstWord(text) {
 		// add all we know that can be the first words
 
-		//named queries
+		// named queries
 		s = append(s, c.namedQuerySuggestions()...)
 		// "select"
 		s = append(s, prompt.Suggest{Text: "select", Output: "select"}, prompt.Suggest{Text: "with", Output: "with"})
@@ -523,9 +518,8 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 	} else if metaquery.IsMetaQuery(text) {
 		client := c.client()
 		suggestions := metaquery.Complete(&metaquery.CompleterInput{
-			Query:       text,
-			Schema:      c.schemaMetadata,
-			Connections: client.ConnectionMap(),
+			Query:            text,
+			TableSuggestions: GetTableAutoCompleteSuggestions(c.schemaMetadata, client.ConnectionMap()),
 		})
 
 		s = append(s, suggestions...)
@@ -534,7 +528,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 
 		// only add table suggestions if the client is initialised
 		if queryInfo.EditingTable && c.isInitialised() && c.schemaMetadata != nil {
-			s = append(s, autocomplete.GetTableAutoCompleteSuggestions(c.schemaMetadata, c.initData.Client.ConnectionMap())...)
+			s = append(s, GetTableAutoCompleteSuggestions(c.schemaMetadata, c.initData.Client.ConnectionMap())...)
 		}
 
 		// Not sure this is working. comment out for now!

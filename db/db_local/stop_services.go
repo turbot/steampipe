@@ -12,9 +12,10 @@ import (
 	"github.com/briandowns/spinner"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/constants/runtime"
 	"github.com/turbot/steampipe/display"
-	"github.com/turbot/steampipe/plugin_manager"
-	"github.com/turbot/steampipe/runtime_constants"
+	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/pluginmanager"
 
 	"github.com/turbot/steampipe/utils"
 )
@@ -83,7 +84,7 @@ func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 	clientCount := 0
 	// get the total number of connected clients
 	// which are not us - determined by the unique application_name client parameter
-	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name != $1;", runtime_constants.PgClientAppName)
+	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name != $1;", runtime.PgClientAppName)
 	row.Scan(&clientCount)
 	// clientCount can never be zero, since the client we are using to run the query counts as a client
 	// deduct the open connections in the pool of this client
@@ -97,14 +98,14 @@ func StopServices(force bool, invoker constants.Invoker, spinner *spinner.Spinne
 
 	defer func() {
 		if e == nil {
-			os.Remove(constants.RunningInfoFilePath())
+			os.Remove(filepaths.RunningInfoFilePath())
 		}
 		utils.LogTime("db_local.StopDB end")
 	}()
 
 	// stop the plugin manager
 	// this means it may be stopped even if we fail to stop the service - that is ok - we will restart it if needed
-	pluginManagerStopError := plugin_manager.Stop()
+	pluginManagerStopError := pluginmanager.Stop()
 
 	// stop the DB Service
 	stopResult, dbStopError := stopDBService(spinner, force)

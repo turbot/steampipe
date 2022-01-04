@@ -8,7 +8,7 @@ import (
 
 // dbClient constants
 const (
-	// the number of clients to initialize in parallel
+	// MaxParallelClientInits is the number of clients to initialize in parallel
 	// if we start initializing all clients together, it leads to bad performance on all
 	MaxParallelClientInits = 3
 )
@@ -41,7 +41,7 @@ const (
 
 // schema names
 const (
-	// FunctionSchema :: schema container for all steampipe helper functions
+	// FunctionSchema is the schema container for all steampipe helper functions
 	FunctionSchema = "internal"
 
 	// CommandSchema is the schema which is used to send commands to the FDW

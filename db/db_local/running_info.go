@@ -9,6 +9,7 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -46,7 +47,7 @@ func (r *RunningDBInstanceInfo) Save() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(constants.RunningInfoFilePath(), content, 0644)
+	return os.WriteFile(filepaths.RunningInfoFilePath(), content, 0644)
 }
 
 func (r *RunningDBInstanceInfo) String() string {
@@ -68,23 +69,23 @@ func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
 	utils.LogTime("db.loadRunningInstanceInfo start")
 	defer utils.LogTime("db.loadRunningInstanceInfo end")
 
-	if !helpers.FileExists(constants.RunningInfoFilePath()) {
+	if !helpers.FileExists(filepaths.RunningInfoFilePath()) {
 		return nil, nil
 	}
 
-	fileContent, err := os.ReadFile(constants.RunningInfoFilePath())
+	fileContent, err := os.ReadFile(filepaths.RunningInfoFilePath())
 	if err != nil {
 		return nil, err
 	}
 	var info = new(RunningDBInstanceInfo)
 	err = json.Unmarshal(fileContent, info)
 	if err != nil {
-		log.Printf("[TRACE] failed to unmarshal database state file %s: %s\n", constants.RunningInfoFilePath(), err.Error())
+		log.Printf("[TRACE] failed to unmarshal database state file %s: %s\n", filepaths.RunningInfoFilePath(), err.Error())
 		return nil, nil
 	}
 	return info, nil
 }
 
 func removeRunningInstanceInfo() error {
-	return os.Remove(constants.RunningInfoFilePath())
+	return os.Remove(filepaths.RunningInfoFilePath())
 }

@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -31,7 +31,7 @@ func Remove(image string, pluginConnections map[string][]modconfig.Connection) e
 	// are any connections using this plugin???
 	conns := pluginConnections[fullPluginName]
 
-	installedTo := filepath.Join(constants.PluginDir(), filepath.FromSlash(fullPluginName))
+	installedTo := filepath.Join(filepaths.PluginDir(), filepath.FromSlash(fullPluginName))
 	_, err := os.Stat(installedTo)
 	if os.IsNotExist(err) {
 		return fmt.Errorf("plugin '%s' not found", image)
@@ -117,9 +117,9 @@ func List(pluginConnectionMap map[string][]modconfig.Connection) ([]PluginListIt
 
 	var installedPlugins []string
 
-	filepath.Walk(constants.PluginDir(), func(path string, info os.FileInfo, err error) error {
+	filepath.Walk(filepaths.PluginDir(), func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() && strings.HasSuffix(info.Name(), ".plugin") {
-			rel, err := filepath.Rel(constants.PluginDir(), filepath.Dir(path))
+			rel, err := filepath.Rel(filepaths.PluginDir(), filepath.Dir(path))
 			if err != nil {
 				return err
 			}

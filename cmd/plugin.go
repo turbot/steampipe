@@ -23,7 +23,6 @@ import (
 
 //  Plugin management commands
 func pluginCmd() *cobra.Command {
-
 	var cmd = &cobra.Command{
 		Use:   "plugin [command]",
 		Args:  cobra.NoArgs,
@@ -88,7 +87,6 @@ Examples:
 
 // Update plugins
 func pluginUpdateCmd() *cobra.Command {
-
 	var cmd = &cobra.Command{
 		Use:   "update [flags] [registry/org/]name[@version]",
 		Args:  cobra.ArbitraryArgs,
@@ -120,7 +118,6 @@ Examples:
 
 // List plugins
 func pluginListCmd() *cobra.Command {
-
 	var cmd = &cobra.Command{
 		Use:   "list",
 		Args:  cobra.NoArgs,
@@ -176,10 +173,8 @@ Example:
 
 // exitCode=1 For unknown errors resulting in panics
 // exitCode=2 For insufficient/wrong arguments passed in the command
-// exitCode=3 For errors related to loading state, loading version data or an issue contacting
-// the update server.
+// exitCode=3 For errors related to loading state, loading version data or an issue contacting the update server.
 // exitCode=4 For plugin listing failures
-
 func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runPluginInstallCmd install")
 	defer func() {
@@ -217,7 +212,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			installReports = append(installReports, display.InstallReport{
 				Plugin:         p,
 				Skipped:        true,
-				SkipReason:     display.ALREADY_INSTALLED,
+				SkipReason:     constants.PluginAlreadyInstalled,
 				IsUpdateReport: false,
 			})
 			continue
@@ -329,7 +324,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 				updateReports = append(updateReports, display.InstallReport{
 					Skipped:        true,
 					Plugin:         p,
-					SkipReason:     display.NOT_INSTALLED,
+					SkipReason:     constants.PluginNotInstalled,
 					IsUpdateReport: true,
 				})
 			}
@@ -362,7 +357,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			updateReports = append(updateReports, display.InstallReport{
 				Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
 				Skipped:        true,
-				SkipReason:     display.LATEST_ALREADY_INSTALLED,
+				SkipReason:     constants.PluginLatestAlreadyInstalled,
 				IsUpdateReport: true,
 			})
 			continue

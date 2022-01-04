@@ -1,0 +1,22 @@
+package control
+
+import (
+	"sync"
+
+	"github.com/turbot/steampipe/control/controldisplay"
+	"github.com/turbot/steampipe/control/controlexecute"
+)
+
+type ExportData struct {
+	ExecutionTree *controlexecute.ExecutionTree
+	ExportFormats []controldisplay.CheckExportTarget
+	ErrorsLock    *sync.Mutex
+	Errors        []error
+	WaitGroup     *sync.WaitGroup
+}
+
+func (e *ExportData) AddErrors(err []error) {
+	e.ErrorsLock.Lock()
+	e.Errors = append(e.Errors, err...)
+	e.ErrorsLock.Unlock()
+}

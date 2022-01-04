@@ -10,7 +10,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/plugin_manager"
+	"github.com/turbot/steampipe/pluginmanager"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -125,7 +125,7 @@ func (c *LocalDbClient) updateConnectionMap() error {
 func getSchemaQueries(updates steampipeconfig.ConnectionDataMap, failures []*steampipeconfig.ValidationFailure) []string {
 	var schemaQueries []string
 	for connectionName, connectionData := range updates {
-		remoteSchema := plugin_manager.PluginFQNToSchemaName(connectionData.Plugin)
+		remoteSchema := pluginmanager.PluginFQNToSchemaName(connectionData.Plugin)
 		log.Printf("[TRACE] update connection %s, plugin Name %s, schema %s, schemaQueries %v\n ", connectionName, connectionData.Plugin, remoteSchema, schemaQueries)
 		queries := updateConnectionQuery(connectionName, remoteSchema)
 		schemaQueries = append(schemaQueries, queries...)

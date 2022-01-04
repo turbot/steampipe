@@ -18,11 +18,10 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
-	"github.com/turbot/steampipe/plugin_manager"
+	"github.com/turbot/steampipe/pluginmanager"
 	"github.com/turbot/steampipe/utils"
 )
 
-// serviceCmd :: Service management commands
 func serviceCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "service [command]",
@@ -43,7 +42,7 @@ connection from any Postgres compatible database client.`,
 	return cmd
 }
 
-// serviceStartCmd :: handler for service start
+// handler for service start
 func serviceStartCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "start",
@@ -91,7 +90,7 @@ Report current status of the Steampipe database service.`,
 	return cmd
 }
 
-// serviceStopCmd :: handler for service stop
+// handler for service stop
 func serviceStopCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stop",
@@ -109,7 +108,7 @@ func serviceStopCmd() *cobra.Command {
 	return cmd
 }
 
-// serviceRestartCmd :: restarts the database service
+// restarts the database service
 func serviceRestartCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "restart",
@@ -147,7 +146,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	port := viper.GetInt(constants.ArgPort)
 	if port < 1 || port > 65535 {
-		panic("Invalid Port :: MUST be within range (1:65535)")
+		panic("Invalid port - must be within range (1:65535)")
 	}
 
 	listen := db_local.StartListenType(viper.GetString(constants.ArgListenAddress))
@@ -329,7 +328,7 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 		showAllStatus(cmd.Context())
 	} else {
 		dbState, dbStateErr := db_local.GetState()
-		pmState, pmStateErr := plugin_manager.LoadPluginManagerState()
+		pmState, pmStateErr := pluginmanager.LoadPluginManagerState()
 
 		if dbStateErr != nil || pmStateErr != nil {
 			utils.ShowError(composeStateError(dbStateErr, pmStateErr))
@@ -502,7 +501,7 @@ func getServiceProcessDetails(process *psutils.Process) (string, string, string,
 	return fmt.Sprintf("%d", process.Pid), installDir, port, listenType
 }
 
-func printStatus(dbState *db_local.RunningDBInstanceInfo, pmState *plugin_manager.PluginManagerState) {
+func printStatus(dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.PluginManagerState) {
 	if dbState == nil && !pmState.Running {
 		fmt.Println("Service is not running")
 		return

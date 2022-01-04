@@ -19,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/interactive"
+	"github.com/turbot/steampipe/query"
 	"github.com/turbot/steampipe/query/queryexecute"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -119,7 +120,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	defer w.Close()
 
 	// perform rest of initialisation async
-	initDataChan := make(chan *db_common.QueryInitData, 1)
+	initDataChan := make(chan *query.InitData, 1)
 	getQueryInitDataAsync(ctx, w, initDataChan, args)
 
 	if interactiveMode {
@@ -175,11 +176,11 @@ func loadWorkspacePromptingForVariables(ctx context.Context, spinner *spinner.Sp
 	return workspace.Load(workspacePath)
 }
 
-func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initDataChan chan *db_common.QueryInitData, args []string) {
+func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initDataChan chan *query.InitData, args []string) {
 	go func() {
 		utils.LogTime("cmd.getQueryInitDataAsync start")
 		defer utils.LogTime("cmd.getQueryInitDataAsync end")
-		initData := db_common.NewQueryInitData()
+		initData := query.NewInitData()
 		defer func() {
 			if r := recover(); r != nil {
 				initData.Result.Error = helpers.ToError(r)

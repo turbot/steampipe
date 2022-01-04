@@ -5,9 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
-	"github.com/turbot/steampipe/constants"
 
 	"github.com/turbot/steampipe/steampipeconfig/options"
 )
@@ -261,7 +260,7 @@ func TestLoadConfig(t *testing.T) {
 		}
 
 		// set SteampipeDir
-		constants.SteampipeDir = steampipeDir
+		filepaths.SteampipeDir = steampipeDir
 
 		// now load config
 		config, err := loadSteampipeConfig(workspaceDir, "")

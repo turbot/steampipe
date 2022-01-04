@@ -9,7 +9,8 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/mod_installer"
+	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/modinstaller"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
@@ -17,7 +18,6 @@ import (
 
 // mod management commands
 func modCmd() *cobra.Command {
-
 	var cmd = &cobra.Command{
 		Use:   "mod [command]",
 		Args:  cobra.NoArgs,
@@ -64,10 +64,10 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 
 	// if any mod names were passed as args, convert into formed mod names
 	opts := newInstallOpts(cmd, args...)
-	installData, err := mod_installer.InstallWorkspaceDependencies(opts)
+	installData, err := modinstaller.InstallWorkspaceDependencies(opts)
 	utils.FailOnError(err)
 
-	fmt.Println(mod_installer.BuildInstallSummary(installData))
+	fmt.Println(modinstaller.BuildInstallSummary(installData))
 }
 
 // uninstall
@@ -98,10 +98,10 @@ func runModUninstallCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	opts := newInstallOpts(cmd, args...)
-	installData, err := mod_installer.UninstallWorkspaceDependencies(opts)
+	installData, err := modinstaller.UninstallWorkspaceDependencies(opts)
 	utils.FailOnError(err)
 
-	fmt.Println(mod_installer.BuildUninstallSummary(installData))
+	fmt.Println(modinstaller.BuildUninstallSummary(installData))
 }
 
 // update
@@ -133,10 +133,10 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 
 	opts := newInstallOpts(cmd, args...)
 
-	installData, err := mod_installer.InstallWorkspaceDependencies(opts)
+	installData, err := modinstaller.InstallWorkspaceDependencies(opts)
 	utils.FailOnError(err)
 
-	fmt.Println(mod_installer.BuildInstallSummary(installData))
+	fmt.Println(modinstaller.BuildInstallSummary(installData))
 }
 
 // list
@@ -162,7 +162,7 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 	opts := newInstallOpts(cmd)
-	installer, err := mod_installer.NewModInstaller(opts)
+	installer, err := modinstaller.NewModInstaller(opts)
 	utils.FailOnError(err)
 
 	treeString := installer.GetModList()
@@ -201,13 +201,13 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 	}
 	mod := modconfig.CreateDefaultMod(workspacePath)
 	utils.FailOnError(mod.Save())
-	fmt.Printf("Created mod definition file '%s'\n", constants.ModFilePath(workspacePath))
+	fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
 }
 
 // helpers
 
-func newInstallOpts(cmd *cobra.Command, args ...string) *mod_installer.InstallOpts {
-	opts := &mod_installer.InstallOpts{
+func newInstallOpts(cmd *cobra.Command, args ...string) *modinstaller.InstallOpts {
+	opts := &modinstaller.InstallOpts{
 		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
 		DryRun:        viper.GetBool(constants.ArgDryRun),
 		ModArgs:       args,

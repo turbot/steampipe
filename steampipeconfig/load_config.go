@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig/options"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
@@ -25,7 +26,7 @@ func LoadSteampipeConfig(workspacePath string, commandName string) (*SteampipeCo
 	utils.LogTime("steampipeconfig.LoadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
 
-	_ = ensureDefaultConfigFile(constants.ConfigDir())
+	_ = ensureDefaultConfigFile(filepaths.ConfigDir())
 	config, err := loadSteampipeConfig(workspacePath, commandName)
 	if err != nil {
 		return nil, err
@@ -42,7 +43,7 @@ func LoadConnectionConfig() (*SteampipeConfig, error) {
 func ensureDefaultConfigFile(configFolder string) error {
 	defaultConfigFile := filepath.Join(configFolder, defaultConfigFileName)
 	if _, err := os.Stat(defaultConfigFile); os.IsNotExist(err) {
-		err = os.WriteFile(defaultConfigFile, []byte(constants.DefaultSPCContent), 0755)
+		err = os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0755)
 		if err != nil {
 			return err
 		}
@@ -65,7 +66,7 @@ func loadSteampipeConfig(workspacePath string, commandName string) (steampipeCon
 	// load config from the installation folder -  load all spc files from config directory
 	include := filehelpers.InclusionsFromExtensions(constants.ConnectionConfigExtensions)
 	loadOptions := &loadConfigOptions{include: include}
-	if err := loadConfig(constants.ConfigDir(), steampipeConfig, loadOptions); err != nil {
+	if err := loadConfig(filepaths.ConfigDir(), steampipeConfig, loadOptions); err != nil {
 		return nil, err
 	}
 
@@ -78,7 +79,7 @@ func loadSteampipeConfig(workspacePath string, commandName string) (steampipeCon
 		}
 
 		// only include workspace.spc from workspace directory
-		include = filehelpers.InclusionsFromFiles([]string{constants.WorkspaceConfigFileName})
+		include = filehelpers.InclusionsFromFiles([]string{filepaths.WorkspaceConfigFileName})
 		// update load options to ONLY allow terminal options
 		loadOptions = &loadConfigOptions{include: include, allowedOptions: []string{options.TerminalBlock}}
 		if err := loadConfig(workspacePath, steampipeConfig, loadOptions); err != nil {

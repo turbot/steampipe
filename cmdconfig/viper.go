@@ -7,20 +7,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/filepaths"
 )
-
-// InitViper initializes and configures an instance of viper
-func InitViper() {
-	v := viper.GetViper()
-	// set defaults
-	v.Set(constants.ConfigKeyShowInteractiveOutput, true)
-
-	if installDir, isSet := os.LookupEnv("STEAMPIPE_INSTALL_DIR"); isSet {
-		v.SetDefault(constants.ArgInstallDir, installDir)
-	} else {
-		v.SetDefault(constants.ArgInstallDir, "~/.steampipe")
-	}
-}
 
 // Viper fetches the global viper instance
 func Viper() *viper.Viper {
@@ -39,7 +27,7 @@ func SetViperDefaults(configMap map[string]interface{}) {
 func setBaseDefaults() {
 	defaults := map[string]interface{}{
 		constants.ArgUpdateCheck: true,
-		constants.ArgInstallDir:  constants.DefaultInstallDir,
+		constants.ArgInstallDir:  filepaths.DefaultInstallDir,
 	}
 
 	for k, v := range defaults {

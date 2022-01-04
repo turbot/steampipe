@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/task"
 	"github.com/turbot/steampipe/utils"
@@ -68,7 +69,7 @@ func InitCmd() {
 	utils.LogTime("cmd.root.InitCmd start")
 	defer utils.LogTime("cmd.root.InitCmd end")
 
-	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", constants.DefaultInstallDir))
+	rootCmd.PersistentFlags().String(constants.ArgInstallDir, filepaths.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", filepaths.DefaultInstallDir))
 	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace working directory")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceChDir, "", "Path to the workspace working directory")
 	rootCmd.PersistentFlags().String(constants.ArgCloudHost, "cloud.steampipe.io", "Steampipe Cloud host")
@@ -137,7 +138,7 @@ func setWorkspaceChDir() string {
 	return workspaceChdir
 }
 
-// CreateLogger :: create a hclog logger with the level specified by the SP_LOG env var
+// create a hclog logger with the level specified by the SP_LOG env var
 func createLogger() {
 	level := logging.LogLevel()
 
@@ -151,7 +152,7 @@ func createLogger() {
 	log.SetFlags(0)
 }
 
-// SteampipeDir :: set the top level ~/.steampipe folder (creates if it doesnt exist)
+// set the top level ~/.steampipe folder (creates if it doesnt exist)
 func setInstallDir() {
 	utils.LogTime("cmd.root.setInstallDir start")
 	defer utils.LogTime("cmd.root.setInstallDir end")
@@ -162,7 +163,7 @@ func setInstallDir() {
 		err = os.MkdirAll(installDir, 0755)
 		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
 	}
-	constants.SteampipeDir = installDir
+	filepaths.SteampipeDir = installDir
 }
 
 func AddCommands() {

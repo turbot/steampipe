@@ -14,11 +14,12 @@ import (
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
-	"github.com/turbot/steampipe/steampipeconfig/version_map"
+	"github.com/turbot/steampipe/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -232,12 +233,12 @@ func (w *Workspace) reset() {
 // check  whether the workspace contains a modfile
 // this will determine whether we load files recursively, and create pseudo resources for sql files
 func (w *Workspace) setModfileExists() {
-	modFilePath := constants.ModFilePath(w.Path)
+	modFilePath := filepaths.ModFilePath(w.Path)
 	_, err := os.Stat(modFilePath)
 	modFileExists := err == nil
 
 	if modFileExists {
-		log.Printf("[TRACE] modfile exists in workspace folder - creating pseudo-resources and loading files recusrively ")
+		log.Printf("[TRACE] modfile exists in workspace folder - creating pseudo-resources and loading files recursively ")
 		// only load/watch recursively if a mod sp file exists in the workspace folder
 		w.listFlag = filehelpers.FilesRecursive
 		w.loadPseudoResources = true
@@ -296,7 +297,7 @@ func (w *Workspace) getRunContext() (*parse.RunContext, error) {
 		parseFlag |= parse.CreatePseudoResources
 	}
 	// load the workspace lock
-	workspaceLock, err := version_map.LoadWorkspaceLock(w.Path)
+	workspaceLock, err := versionmap.LoadWorkspaceLock(w.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load installation cache from %s: %s", w.Path, err)
 	}
@@ -329,7 +330,7 @@ func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, 
 	}
 
 	// TODO load resource names for dependency mods
-	//modsPath := constants.WorkspaceModPath(w.Path)
+	//modsPath := file_paths.WorkspaceModPath(w.Path)
 	//dependencyResourceNames, err := w.loadModDependencyResourceNames(modsPath)
 	//if err != nil {
 	//	return nil, err
@@ -444,7 +445,7 @@ func (w *Workspace) loadExclusions() error {
 		fmt.Sprintf("%s/.*", w.Path),
 	}
 
-	ignorePath := filepath.Join(w.Path, constants.WorkspaceIgnoreFile)
+	ignorePath := filepath.Join(w.Path, filepaths.WorkspaceIgnoreFile)
 	file, err := os.Open(ignorePath)
 	if err != nil {
 		// if file does not exist, just return

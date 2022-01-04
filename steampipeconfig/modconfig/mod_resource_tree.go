@@ -62,7 +62,6 @@ func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
 	for _, p := range m.getParents(item) {
 		item.AddParent(p)
 		p.AddChild(item)
-
 	}
 	return nil
 }

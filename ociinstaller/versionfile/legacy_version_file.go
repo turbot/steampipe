@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/filepaths"
 )
 
 type LegacyVersionFile struct {
@@ -17,7 +17,7 @@ type LegacyVersionFile struct {
 
 // LoadLegacyVersionFile loads the legacy version file, or returns nil if it does not exist
 func LoadLegacyVersionFile() (*LegacyVersionFile, error) {
-	versionFilePath := constants.LegacyVersionFilePath()
+	versionFilePath := filepaths.LegacyVersionFilePath()
 	if helpers.FileExists(versionFilePath) {
 		return readLegacyVersionFile(versionFilePath)
 	}
@@ -56,9 +56,9 @@ func migrateVersionFiles() (*PluginVersionFile, *DatabaseVersionFile, error) {
 	}
 
 	log.Printf("[TRACE] migrating version file from '%s' to '%s' and '%s'\n",
-		constants.LegacyVersionFilePath(),
-		constants.DatabaseVersionFilePath(),
-		constants.PluginVersionFilePath())
+		filepaths.LegacyVersionFilePath(),
+		filepaths.DatabaseVersionFilePath(),
+		filepaths.PluginVersionFilePath())
 
 	pluginVersionFile := pluginVersionFileFromLegacy(legacyVersionFile)
 	databaseVersionFile := databaseVersionFileFromLegacy(legacyVersionFile)
@@ -78,7 +78,7 @@ func migrateVersionFiles() (*PluginVersionFile, *DatabaseVersionFile, error) {
 
 // delete the file on disk if it exists
 func (f *LegacyVersionFile) delete() {
-	versionFilePath := constants.LegacyVersionFilePath()
+	versionFilePath := filepaths.LegacyVersionFilePath()
 	if helpers.FileExists(versionFilePath) {
 		os.Remove(versionFilePath)
 	}

@@ -5,9 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/turbot/steampipe/plugin_manager"
-
-	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/pluginmanager"
 )
 
 type findPluginFolderTest struct {
@@ -18,20 +17,20 @@ type findPluginFolderTest struct {
 var testCasesFindPluginFolderTest map[string]findPluginFolderTest
 
 func init() {
-	constants.SteampipeDir = "~/.steampipe"
+	filepaths.SteampipeDir = "~/.steampipe"
 
 	testCasesFindPluginFolderTest = map[string]findPluginFolderTest{
 		"truncated 1": {
 			"hub.steampipe.io/plugins/test/test@sha256-a5ec85d93329-32c3ed1c",
-			filepath.Join(constants.PluginDir(), "hub.steampipe.io/plugins/test/test@sha256-a5ec85d9332910f42a2a9dd44d646eba95f77a0236289a1a14a14abbbdea7a42"),
+			filepath.Join(filepaths.PluginDir(), "hub.steampipe.io/plugins/test/test@sha256-a5ec85d9332910f42a2a9dd44d646eba95f77a0236289a1a14a14abbbdea7a42"),
 		},
 		"truncated 2 - 2 folders with same prefix": {
 			"hub.steampipe.io/plugins/test/test@sha256-5f77a0236289-94a0eea6",
-			filepath.Join(constants.PluginDir(), "hub.steampipe.io/plugins/test/test@sha256-5f77a0236289a1a14a14abbbdea7a42a5ec85d9332910f42a2a9dd44d646eba9"),
+			filepath.Join(filepaths.PluginDir(), "hub.steampipe.io/plugins/test/test@sha256-5f77a0236289a1a14a14abbbdea7a42a5ec85d9332910f42a2a9dd44d646eba9"),
 		},
 		"no truncation needed": {
 			"hub.steampipe.io/plugins/test/test@latest",
-			filepath.Join(constants.PluginDir(), "hub.steampipe.io/plugins/test/test@latest"),
+			filepath.Join(filepaths.PluginDir(), "hub.steampipe.io/plugins/test/test@latest"),
 		},
 	}
 }
@@ -47,7 +46,7 @@ func TestFindPluginFolderTest(t *testing.T) {
 	setupFindPluginFolderTest(directories)
 	for name, test := range testCasesFindPluginFolderTest {
 
-		path, err := plugin_manager.FindPluginFolder(test.schema)
+		path, err := pluginmanager.FindPluginFolder(test.schema)
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)
@@ -65,7 +64,7 @@ func TestFindPluginFolderTest(t *testing.T) {
 
 func setupFindPluginFolderTest(directories []string) {
 	for _, dir := range directories {
-		pluginFolder := filepath.Join(constants.PluginDir(), dir)
+		pluginFolder := filepath.Join(filepaths.PluginDir(), dir)
 		if err := os.MkdirAll(pluginFolder, 0755); err != nil {
 			panic(err)
 		}
@@ -73,6 +72,6 @@ func setupFindPluginFolderTest(directories []string) {
 }
 
 func cleanupFindPluginFolderTest(directories []string) {
-	pluginFolder := filepath.Join(constants.PluginDir(), "hub.steampipe.io/plugins/test")
+	pluginFolder := filepath.Join(filepaths.PluginDir(), "hub.steampipe.io/plugins/test")
 	os.RemoveAll(pluginFolder)
 }

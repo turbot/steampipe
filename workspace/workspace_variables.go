@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig"
-	"github.com/turbot/steampipe/steampipeconfig/input_vars"
+	"github.com/turbot/steampipe/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -56,11 +56,11 @@ func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
 	return variableMap, nil
 }
 
-func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable) (input_vars.InputValues, error) {
+func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable) (inputvars.InputValues, error) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
-	inputValuesUnparsed, diags := input_vars.CollectVariableValues(w.Path, variableFileArgs, variableArgs)
+	inputValuesUnparsed, diags := inputvars.CollectVariableValues(w.Path, variableFileArgs, variableArgs)
 	if diags.HasErrors() {
 		return nil, diags.Err()
 	}
@@ -68,13 +68,13 @@ func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable
 	if err := identifyMissingVariables(inputValuesUnparsed, variableMap); err != nil {
 		return nil, err
 	}
-	parsedValues, diags := input_vars.ParseVariableValues(inputValuesUnparsed, variableMap)
+	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap)
 
 	return parsedValues, diags.Err()
 }
 
-func validateVariables(variableMap map[string]*modconfig.Variable, variables input_vars.InputValues) error {
-	diags := input_vars.CheckInputVariables(variableMap, variables)
+func validateVariables(variableMap map[string]*modconfig.Variable, variables inputvars.InputValues) error {
+	diags := inputvars.CheckInputVariables(variableMap, variables)
 	if diags.HasErrors() {
 		displayValidationErrors(diags)
 		// return empty error
@@ -96,7 +96,7 @@ func displayValidationErrors(diags tfdiags.Diagnostics) {
 	}
 }
 
-func identifyMissingVariables(existing map[string]input_vars.UnparsedVariableValue, vcs map[string]*modconfig.Variable) error {
+func identifyMissingVariables(existing map[string]inputvars.UnparsedVariableValue, vcs map[string]*modconfig.Variable) error {
 	var needed []*modconfig.Variable
 
 	for name, vc := range vcs {
