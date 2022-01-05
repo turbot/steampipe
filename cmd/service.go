@@ -364,8 +364,6 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	var err error
 	var dbState *db_local.RunningDBInstanceInfo
 
-	statusSpinner := statusspinner.NewStatusSpinner(statusspinner.WithDelay(constants.SpinnerShowTimeout))
-
 	defer func() {
 		utils.LogTime("runServiceStopCmd end")
 		if r := recover(); r != nil {
@@ -378,7 +376,10 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 			}
 		}
 	}()
-	ctx := cmd.Context()
+
+	// create a status hooks with a short delay and add to context
+	s := statusspinner.NewStatusSpinner(statusspinner.WithDelay(constants.SpinnerShowTimeout))
+	ctx := statushooks.AddStatusHooksToContext(cmd.Context(), s)
 
 	force := cmdconfig.Viper().GetBool(constants.ArgForce)
 	if force {
@@ -386,17 +387,13 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	} else {
 		dbState, err = db_local.GetState()
 		if err != nil {
-			statusSpinner.Done()
 			utils.FailOnErrorWithMessage(err, "could not stop Steampipe service")
 		}
 		if dbState == nil {
-			// TODO - move all these dones to defer?
-			statusSpinner.Done()
 			fmt.Println("Steampipe service is not running.")
 			return
 		}
 		if dbState.Invoker != constants.InvokerService {
-			statusSpinner.Done()
 			printRunningImplicit(dbState.Invoker)
 			return
 		}
@@ -404,12 +401,10 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		// check if there are any connected clients to the service
 		connectedClientCount, err := db_local.GetCountOfThirdPartyClients(cmd.Context())
 		if err != nil {
-			statusSpinner.Done()
 			utils.FailOnErrorWithMessage(err, "error during service stop")
 		}
 
 		if connectedClientCount > 0 {
-			statusSpinner.Done()
 			printClientsConnected()
 			return
 		}
@@ -418,12 +413,9 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if err != nil {
-		statusSpinner.Done()
 		utils.ShowError(err)
 		return
 	}
-
-	statusSpinner.Done()
 
 	switch status {
 	case db_local.ServiceStopped:

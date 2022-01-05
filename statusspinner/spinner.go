@@ -38,7 +38,6 @@ func WithMessage(msg string) StatusSpinnerOpt {
 func WithDelay(delay time.Duration) StatusSpinnerOpt {
 	return func(s *StatusSpinner) {
 		s.delay = delay
-		s.cancel = make(chan struct{})
 	}
 }
 
@@ -62,9 +61,30 @@ func NewStatusSpinner(opts ...StatusSpinnerOpt) *StatusSpinner {
 func (s *StatusSpinner) SetStatus(msg string) {
 	s.UpdateSpinnerMessage(msg)
 	if !s.spinner.Active() {
-		// todo think about delay
-		s.spinner.Start()
+		s.startSpinner()
 	}
+}
+
+func (s *StatusSpinner) startSpinner() {
+	if s.cancel != nil {
+		// if there is a cancel channel, we are already waiting for the service to start after a delay
+		return
+	}
+	if s.delay == 0 {
+		s.spinner.Start()
+		return
+	}
+
+	s.cancel = make(chan struct{}, 1)
+	go func() {
+		select {
+		case <-s.cancel:
+		case <-time.After(s.delay):
+			s.spinner.Start()
+			s.cancel = nil
+		}
+		time.Sleep(50 * time.Millisecond)
+	}()
 }
 
 func (s *StatusSpinner) Message(msgs ...string) {
@@ -76,37 +96,6 @@ func (s *StatusSpinner) Message(msgs ...string) {
 		fmt.Println(msg)
 	}
 }
-
-//// SetStatusAfterDelay implements StatusHooks
-//// show the spinner with the given msg if the delay expires before the cancel chan is signalled
-////
-//// Example:
-//// - if delay is 2 seconds and 'cancel' fires after 2.5 seconds, the spinner will show for 0.5 seconds.
-//// - if `cancelStartIf` resolves after 1.5 seconds, the spinner will NOT be shown at all
-////
-//func (s *StatusSpinner) SetStatusAfterDelay(msg string, delay time.Duration, cancel chan bool) *spinner.Spinner {
-//	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
-//		return nil
-//	}
-//	// we do not expect there to already be a spinner
-//	s.closeSpinner()
-//
-//	msg = s.truncateSpinnerMessageToScreen(msg)
-//	spinner := newSpinner(msg)
-//
-//	go func() {
-//		select {
-//		case <-cancel:
-//		case <-time.After(delay):
-//			if spinner != nil && !spinner.Active() {
-//				spinner.Start()
-//			}
-//		}
-//		time.Sleep(50 * time.Millisecond)
-//	}()
-//
-//	return spinner
-//}
 
 // Done implements StatusHooks
 func (s *StatusSpinner) Done() {
