@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -275,6 +276,10 @@ func (r *ControlRun) getControlQueryContext(ctx context.Context) context.Context
 	shouldBeDoneBy := time.Now().Add(controlQueryTimeout)
 	// we don't use this cancel fn because, pgx prematurely cancels the PG connection when this cancel gets called in 'defer'
 	newCtx, _ := context.WithDeadline(ctx, shouldBeDoneBy)
+
+	// disable the status spinner
+	newCtx = statushooks.Disable(newCtx)
+
 	return newCtx
 }
 
