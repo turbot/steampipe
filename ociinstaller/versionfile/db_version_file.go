@@ -10,10 +10,6 @@ import (
 	"github.com/turbot/steampipe/filepaths"
 )
 
-const (
-	dbVersionFileName = "versions.json"
-)
-
 type DatabaseVersionFile struct {
 	FdwExtension InstalledVersion `json:"fdwExtension"`
 	EmbeddedDB   InstalledVersion `json:"embeddedDB"`

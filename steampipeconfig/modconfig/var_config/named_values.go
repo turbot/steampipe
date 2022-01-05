@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/hashicorp/terraform/addrs"
 	"github.com/turbot/steampipe/steampipeconfig/inputvars/typeexpr"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
@@ -132,11 +131,6 @@ func DecodeVariableBlock(block *hcl.Block, override bool) (*Variable, hcl.Diagno
 
 	for _, block := range content.Blocks {
 		switch block.Type {
-
-		//case "validation":
-		//	vv, moreDiags := decodeVariableValidationBlock(v.Name, block, override)
-		//	diags = append(diags, moreDiags...)
-		//	v.Validations = append(v.Validations, vv)
 
 		default:
 			// The above cases should be exhaustive for all block types
@@ -295,102 +289,6 @@ type VariableValidation struct {
 	ErrorMessage string
 
 	DeclRange hcl.Range
-}
-
-func decodeVariableValidationBlock(varName string, block *hcl.Block, override bool) (*VariableValidation, hcl.Diagnostics) {
-	var diags hcl.Diagnostics
-	vv := &VariableValidation{
-		DeclRange: block.DefRange,
-	}
-
-	if override {
-		// For now we'll just forbid overriding validation blocks, to simplify
-		// the initial design. If we can find a clear use-case for overriding
-		// validations in override files and there's a way to define it that
-		// isn't confusing then we could relax this.
-		diags = diags.Append(&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Can't override variable validation rules",
-			Detail:   "Variable \"validation\" blocks cannot be used in override files.",
-			Subject:  vv.DeclRange.Ptr(),
-		})
-		return vv, diags
-	}
-
-	content, moreDiags := block.Body.Content(variableValidationBlockSchema)
-	diags = append(diags, moreDiags...)
-
-	if attr, exists := content.Attributes["condition"]; exists {
-		vv.Condition = attr.Expr
-
-		// The validation condition can only refer to the variable itself,
-		// to ensure that the variable declaration can't create additional
-		// edges in the dependency graph.
-		goodRefs := 0
-		for _, traversal := range vv.Condition.Variables() {
-			ref, moreDiags := addrs.ParseRef(traversal)
-			if !moreDiags.HasErrors() {
-				if addr, ok := ref.Subject.(addrs.InputVariable); ok {
-					if addr.Name == varName {
-						goodRefs++
-						continue // Reference is valid
-					}
-				}
-			}
-			// If we fall out here then the reference is invalid.
-			diags = diags.Append(&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid reference in variable validation",
-				Detail:   fmt.Sprintf("The condition for variable %q can only refer to the variable itself, using var.%s.", varName, varName),
-				Subject:  traversal.SourceRange().Ptr(),
-			})
-		}
-		if goodRefs < 1 {
-			diags = diags.Append(&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid variable validation condition",
-				Detail:   fmt.Sprintf("The condition for variable %q must refer to var.%s in order to test incoming values.", varName, varName),
-				Subject:  attr.Expr.Range().Ptr(),
-			})
-		}
-	}
-
-	if attr, exists := content.Attributes["error_message"]; exists {
-		moreDiags := gohcl.DecodeExpression(attr.Expr, nil, &vv.ErrorMessage)
-		diags = append(diags, moreDiags...)
-		if !moreDiags.HasErrors() {
-			const errSummary = "Invalid validation error message"
-			switch {
-			case vv.ErrorMessage == "":
-				diags = diags.Append(&hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  errSummary,
-					Detail:   "An empty string is not a valid nor useful error message.",
-					Subject:  attr.Expr.Range().Ptr(),
-				})
-			case !looksLikeSentences(vv.ErrorMessage):
-				// Because we're going to include this string verbatim as part
-				// of a bigger error message written in our usual style in
-				// English, we'll require the given error message to conform
-				// to that. We might relax this in future if e.g. we start
-				// presenting these error messages in a different way, or if
-				// Terraform starts supporting producing error messages in
-				// other human languages, etc.
-				// For pragmatism we also allow sentences ending with
-				// exclamation points, but we don't mention it explicitly here
-				// because that's not really consistent with the Terraform UI
-				// writing style.
-				diags = diags.Append(&hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  errSummary,
-					Detail:   "The validation error message must be at least one full sentence starting with an uppercase letter and ending with a period or question mark.\n\nYour given message will be included as part of a larger Terraform error message, written as English prose. For broadly-shared modules we suggest using a similar writing style so that the overall result will be consistent.",
-					Subject:  attr.Expr.Range().Ptr(),
-				})
-			}
-		}
-	}
-
-	return vv, diags
 }
 
 // looksLikeSentence is a simple heuristic that encourages writing error

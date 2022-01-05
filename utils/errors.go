@@ -14,7 +14,6 @@ import (
 var (
 	colorErr    = color.RedString("Error")
 	colorWarn   = color.YellowString("Warning")
-	colorNotice = color.GreenString("Notice")
 )
 
 func init() {
