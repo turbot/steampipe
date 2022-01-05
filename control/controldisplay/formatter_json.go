@@ -10,7 +10,7 @@ import (
 
 type JSONFormatter struct{}
 
-func (j *JSONFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
+func (j JSONFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	reader, writer := io.Pipe()
 	encoder := json.NewEncoder(writer)
 	encoder.SetIndent(" ", " ")
@@ -25,6 +25,6 @@ func (j *JSONFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 	return reader, nil
 }
 
-func (j *JSONFormatter) FileExtension() string {
+func (j JSONFormatter) FileExtension() string {
 	return "json"
 }
