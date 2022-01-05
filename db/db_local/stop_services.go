@@ -91,6 +91,7 @@ func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
 func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (status StopStatus, e error) {
+
 	log.Printf("[TRACE] StopDB invoker %s, force %v", invoker, force)
 	utils.LogTime("db_local.StopDB start")
 
@@ -115,6 +116,7 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	if force {
 		// check if we have a process from another install-dir
 		statushooks.SetStatus(ctx, "Checking for running instances...")
+		defer statushooks.Done(ctx)
 		// do not use a context that can be cancelled
 		killInstanceIfAny(context.Background())
 		return ServiceStopped, nil
