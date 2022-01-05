@@ -3,7 +3,6 @@ package query
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -41,25 +40,19 @@ func NewInitData(ctx context.Context, w *workspace.Workspace, args []string) *In
 func (i *InitData) Cleanup() {
 	// cancel any ongoing operation
 	if i.cancel == nil {
-		log.Println("[TRACE] No CANCEL")
 		return
 	}
 
-	log.Println("[TRACE] cancelling initdata")
 	i.cancel()
 
 	// ensure that the initialisation was completed
 	// and that we are not in a race condition where
 	// the client is set after the cancel hits
 	<-i.Loaded
-	log.Println("[TRACE] after Loaded")
 
 	// if a client was initialised, close it
 	if i.Client != nil {
-		log.Println("[TRACE] Closing client in Cleanup")
 		i.Client.Close()
-	} else {
-		log.Println("[TRACE] Client was nil")
 	}
 }
 
@@ -83,27 +76,20 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	// set max DB connections to 1
 	viper.Set(constants.ArgMaxParallel, 1)
 
-	log.Println("[TRACE] Getting client")
 	c, err := getClient(ctx)
 	if err != nil {
-		log.Println("[TRACE] getClient ERROR:", err)
 		i.Result.Error = err
 		return
 	}
-	log.Println("[TRACE] Got client")
 	i.Client = c
-	log.Println("[TRACE] Set client")
 
-	log.Println("[TRACE] doing CheckRequiredPluginsInstalled ")
 	// check if the required plugins are installed
 	if err := w.CheckRequiredPluginsInstalled(); err != nil {
 		i.Result.Error = err
 		return
 	}
 	i.Workspace = w
-	log.Println("[TRACE] done CheckRequiredPluginsInstalled ")
 
-	log.Println("[TRACE] doing GetQueriesFromArgs ")
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	queries, preparedStatementSource, err := w.GetQueriesFromArgs(args)
 	if err != nil {
@@ -111,16 +97,13 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 		return
 	}
 	i.Queries = queries
-	log.Println("[TRACE] done GetQueriesFromArgs ")
 
-	log.Println("[TRACE] doing RefreshConnectionAndSearchPaths ")
 	res := i.Client.RefreshConnectionAndSearchPaths(ctx)
 	if res.Error != nil {
 		i.Result.Error = res.Error
 		return
 	}
 	i.Result.AddWarnings(res.Warnings...)
-	log.Println("[TRACE] done RefreshConnectionAndSearchPaths ")
 
 	// set up the session data - prepared statements and introspection tables
 	// this defaults to creating prepared statements for all queries

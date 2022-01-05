@@ -117,18 +117,15 @@ func (c *InteractiveClient) InteractivePrompt() {
 	for {
 		select {
 		case initResult := <-c.initResultChan:
-			log.Println("[TRACE] initResult := <-c.initResultChan:")
 			c.handleInitResult(promptCtx, initResult)
 			// if there was an error, handleInitResult will shut down the prompt
 			// - we must wait for it to shut down and not return immediately
 
 		case <-promptResultChan:
-			log.Println("[TRACE] <-promptResultChan:")
 			// persist saved history
 			c.interactiveQueryHistory.Persist()
 			// check post-close action
 			if c.afterClose == AfterPromptCloseExit {
-				log.Println("[TRACE] c.afterClose == AfterPromptCloseExit")
 				return
 			}
 			// create new context
