@@ -97,7 +97,7 @@ func (c *InteractiveClient) InteractivePrompt() {
 		signal.Stop(interruptSignalChannel)
 		close(interruptSignalChannel)
 
-		// init data cleanup
+		// cleanup the init data to ensure any services we started are stopped
 		c.initData.Cleanup()
 
 		// close the result stream

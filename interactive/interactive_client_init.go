@@ -6,13 +6,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/workspace"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/workspace"
 )
 
 var initTimeout = 40 * time.Second
