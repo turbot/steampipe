@@ -89,7 +89,16 @@ local
 
 @test "dependency scenario 2" {
   # install a mod(steampipe-mod-m3) which depends on a version(3.0) of another mod(steampipe-mod-m2)
-  steampipe mod install github.com/pskrbasu/steampipe-mod-m2
+  steampipe mod install github.com/pskrbasu/steampipe-mod-m3
+  run steampipe mod list
+  # should all the mods(both root level and dependants)
+}
+
+@test "dependency scenario 3" {
+  # install a mod(steampipe-mod-m2) 
+  steampipe mod install github.com/pskrbasu/steampipe-mod-m2@2.0
+  # install a mod(steampipe-mod-m3) which depends on a version(3.0) of another mod(steampipe-mod-m2)
+  steampipe mod install github.com/pskrbasu/steampipe-mod-m3
   run steampipe mod list
   # should list both the mods
 }
