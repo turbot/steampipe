@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -164,6 +165,9 @@ func (c *LocalDbClient) LoadForeignSchemaNames(ctx context.Context) error {
 // local only functions
 
 func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
+	// NOTE: disable any status updates - we do not want 'loading' output from any queries
+	ctx = statushooks.Disable(ctx)
+
 	res := c.refreshConnections(ctx)
 	if res.Error != nil {
 		return res
