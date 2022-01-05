@@ -15,7 +15,7 @@ import (
 func ExecuteReportNode(ctx context.Context, reportName string, workspace *workspace.Workspace, client db_common.Client) error {
 	// create context for the report execution
 	// (for now just disable all status messages - replace with event based?	)
-	reportCtx := statushooks.Disable(ctx)
+	reportCtx := statushooks.DisableStatusHooks(ctx)
 	executionTree, err := reportexecute.NewReportExecutionTree(reportName, client, workspace)
 	if err != nil {
 		return err

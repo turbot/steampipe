@@ -195,11 +195,11 @@ func Execute() int {
 // create the root context - create a status renderer and set as value
 func createRootContext() context.Context {
 	var statusRenderer statushooks.StatusHooks = statushooks.NullHooks
-	// we need to redo this check as the prerun is not called yet
+	// if the client is a TTY, inject a status spinner
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		statusRenderer = statusspinner.NewStatusSpinner()
 	}
 
-	ctx := statushooks.AddToContext(context.Background(), statusRenderer)
+	ctx := statushooks.AddStatusHooksToContext(context.Background(), statusRenderer)
 	return ctx
 }
