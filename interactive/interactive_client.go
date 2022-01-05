@@ -115,8 +115,8 @@ func (c *InteractiveClient) InteractivePrompt(ctx context.Context) {
 	}()
 
 	statushooks.Message(ctx,
-		fmt.Sprintf("Welcome to Steampipe v%s\n", version.SteampipeVersion.String()),
-		fmt.Sprintf("For more information, type %s\n", constants.Bold(".help")))
+		fmt.Sprintf("Welcome to Steampipe v%s", version.SteampipeVersion.String()),
+		fmt.Sprintf("For more information, type %s", constants.Bold(".help")))
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors
 	promptResultChan := make(chan utils.InteractiveExitStatus, 1)
