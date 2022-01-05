@@ -14,12 +14,12 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func RunInteractiveSession(initData *query.InitData) {
+func RunInteractiveSession(ctx context.Context, initData *query.InitData) {
 	utils.LogTime("execute.RunInteractiveSession start")
 	defer utils.LogTime("execute.RunInteractiveSession end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := interactive.RunInteractivePrompt(initData)
+	resultsStreamer, err := interactive.RunInteractivePrompt(ctx, initData)
 	utils.FailOnError(err)
 
 	// print the data as it comes

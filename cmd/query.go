@@ -113,7 +113,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	initData := query.NewInitData(ctx, w, args)
 
 	if interactiveMode {
-		queryexecute.RunInteractiveSession(initData)
+		queryexecute.RunInteractiveSession(ctx, initData)
 	} else {
 		// set global exit code
 		exitCode = queryexecute.RunBatchSession(ctx, initData)
@@ -160,4 +160,3 @@ func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
 	// ok we should have all variables now - reload workspace
 	return workspace.Load(workspacePath)
 }
-
