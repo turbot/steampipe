@@ -37,7 +37,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace, args []string) *In
 	return i
 }
 
-func (i *InitData) Cleanup() {
+func (i *InitData) Cleanup(ctx context.Context) {
 	// cancel any ongoing operation
 	if i.cancel != nil {
 		i.cancel()
@@ -50,7 +50,7 @@ func (i *InitData) Cleanup() {
 
 	// if a client was initialised, close it
 	if i.Client != nil {
-		i.Client.Close()
+		i.Client.Close(ctx)
 	}
 }
 

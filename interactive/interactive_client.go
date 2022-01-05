@@ -106,7 +106,7 @@ func (c *InteractiveClient) InteractivePrompt(ctx context.Context) {
 		close(interruptSignalChannel)
 
 		// cleanup the init data to ensure any services we started are stopped
-		c.initData.Cleanup()
+		c.initData.Cleanup(ctx)
 
 		// close the result stream
 		// this needs to be the last thing we do,

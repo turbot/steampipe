@@ -11,7 +11,7 @@ import (
 )
 
 // RunInteractivePrompt starts the interactive query prompt
-func RunInteractivePrompt(ctx context.Context,initData *query.InitData) (*queryresult.ResultStreamer, error) {
+func RunInteractivePrompt(ctx context.Context, initData *query.InitData) (*queryresult.ResultStreamer, error) {
 	resultsStreamer := queryresult.NewResultStreamer()
 
 	interactiveClient, err := newInteractiveClient(initData, resultsStreamer)
