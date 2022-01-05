@@ -97,8 +97,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// enable spinner only in interactive mode
 	interactiveMode := len(args) == 0
-	// TODO this is used to stop spinners during check/batch query results - find a better way
-	//cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, interactiveMode)
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 

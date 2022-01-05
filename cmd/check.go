@@ -115,7 +115,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// if progress is didabled, update context to contain a null status hooks object
+	// if progress is disabled, update context to contain a null status hooks object
 	if !viper.GetBool(constants.ArgProgress) {
 		statushooks.Disable(ctx)
 	}
@@ -208,9 +208,6 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 			return initData
 		}
 	}
-	// TODO KAI this is used to stop spinners during check/batch query results - find a better way
-	//cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
-
 	err := validateOutputFormat()
 	if err != nil {
 		initData.Result.Error = err

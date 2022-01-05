@@ -271,13 +271,14 @@ func (r *ControlRun) GetError() error {
 	return r.runError
 }
 
+// create a context with a deadline, and with status updates disabled (we do not want to show 'loading' results)
 func (r *ControlRun) getControlQueryContext(ctx context.Context) context.Context {
 	// create a context with a deadline
 	shouldBeDoneBy := time.Now().Add(controlQueryTimeout)
 	// we don't use this cancel fn because, pgx prematurely cancels the PG connection when this cancel gets called in 'defer'
 	newCtx, _ := context.WithDeadline(ctx, shouldBeDoneBy)
 
-	// disable the status spinner
+	// disable the status spinner to hide 'loading' results)
 	newCtx = statushooks.Disable(newCtx)
 
 	return newCtx
