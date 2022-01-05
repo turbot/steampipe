@@ -12,6 +12,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 	"golang.org/x/sync/semaphore"
@@ -40,9 +41,10 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 		workspace: workspace,
 		client:    client,
 	}
-	// if a "--where" or "--tag" parameter was passed, build a map of control manes used to filter the controls to run
-	// NOTE: not enabled yet
-	err := executionTree.populateControlFilterMap(ctx)
+	// if a "--where" or "--tag" parameter was passed, build a map of control names used to filter the controls to run
+	// create a context with status hooks disabled
+	noStatusCtx := statushooks.Disable(ctx)
+	err := executionTree.populateControlFilterMap(noStatusCtx)
 
 	if err != nil {
 		return nil, err

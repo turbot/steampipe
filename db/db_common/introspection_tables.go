@@ -19,25 +19,6 @@ import (
 // TagColumn is the tag used to specify the column name and type in the introspection tables
 const TagColumn = "column"
 
-func UpdateIntrospectionTables(workspaceResources *modconfig.WorkspaceResourceMaps, client Client) error {
-	utils.LogTime("db.UpdateIntrospectionTables start")
-	defer utils.LogTime("db.UpdateIntrospectionTables end")
-
-	// get the create sql for each table type
-	clearSql := getClearTablesSql()
-
-	// now get sql to populate the tables
-	insertSql := getTableInsertSql(workspaceResources)
-
-	sql := []string{clearSql, insertSql}
-	// execute the query, passing 'true' to disable the spinner
-	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"))
-	if err != nil {
-		return fmt.Errorf("failed to update introspection tables: %v", err)
-	}
-	return nil
-}
-
 func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, session *DatabaseSession) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
