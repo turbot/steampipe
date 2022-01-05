@@ -43,7 +43,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	}
 	// if a "--where" or "--tag" parameter was passed, build a map of control names used to filter the controls to run
 	// create a context with status hooks disabled
-	noStatusCtx := statushooks.Disable(ctx)
+	noStatusCtx := statushooks.DisableStatusHooks(ctx)
 	err := executionTree.populateControlFilterMap(noStatusCtx)
 
 	if err != nil {

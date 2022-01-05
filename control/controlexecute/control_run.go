@@ -279,7 +279,7 @@ func (r *ControlRun) getControlQueryContext(ctx context.Context) context.Context
 	newCtx, _ := context.WithDeadline(ctx, shouldBeDoneBy)
 
 	// disable the status spinner to hide 'loading' results)
-	newCtx = statushooks.Disable(newCtx)
+	newCtx = statushooks.DisableStatusHooks(newCtx)
 
 	return newCtx
 }
