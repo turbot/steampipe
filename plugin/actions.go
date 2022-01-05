@@ -60,7 +60,7 @@ func Remove(ctx context.Context, image string, pluginConnections map[string][]mo
 	connFiles := Unique(files)
 
 	if len(connFiles) > 0 {
-		statushooks.Done(ctx)
+
 		str := []string{fmt.Sprintf("\nUninstalled plugin %s\n\nNote: the following %s %s %s steampipe %s using the '%s' plugin:", image, utils.Pluralize("file", len(connFiles)), utils.Pluralize("has", len(connFiles)), utils.Pluralize("a", len(conns)), utils.Pluralize("connection", len(conns)), image)}
 		for _, file := range connFiles {
 			str = append(str, fmt.Sprintf("\n \t* file: %s", file))
@@ -78,7 +78,7 @@ func Remove(ctx context.Context, image string, pluginConnections map[string][]mo
 			}
 		}
 		str = append(str, fmt.Sprintf("\nPlease remove %s to continue using steampipe", utils.Pluralize("it", len(connFiles))))
-		fmt.Println(strings.Join(str, "\n"))
+		statushooks.Message(ctx, str...)
 		fmt.Println()
 	}
 	return err

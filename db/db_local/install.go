@@ -40,28 +40,25 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		close(doneChan)
 	}()
 
-	//status.SetStatusAfterDelay("", constants.SpinnerShowTimeout, doneChan)
-
 	if IsInstalled() {
 		// check if the FDW need updating, and init the db id required
 		err := prepareDb(ctx)
-		statushooks.Done(ctx)
 		return err
 	}
 
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
 	err = removeRunningInstanceInfo()
 	if err != nil && !os.IsNotExist(err) {
-		statushooks.Done(ctx)
 		log.Printf("[TRACE] removeRunningInstanceInfo failed: %v", err)
 		return fmt.Errorf("Cleanup any Steampipe processes... FAILED!")
 	}
 
 	log.Println("[TRACE] removing previous installation")
 	statushooks.SetStatus(ctx, "Prepare database install location...")
+	defer statushooks.Done(ctx)
+
 	err = os.RemoveAll(getDatabaseLocation())
 	if err != nil {
-		statushooks.Done(ctx)
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Prepare database install location... FAILED!")
 	}
@@ -69,14 +66,12 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	statushooks.SetStatus(ctx, "Download & install embedded PostgreSQL database...")
 	_, err = ociinstaller.InstallDB(ctx, constants.DefaultEmbeddedPostgresImage, getDatabaseLocation())
 	if err != nil {
-		statushooks.Done(ctx)
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Download & install embedded PostgreSQL database... FAILED!")
 	}
 
 	_, err = installFDW(ctx, true)
 	if err != nil {
-		statushooks.Done(ctx)
 		log.Printf("[TRACE] installFDW failed: %v", err)
 		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
 	}
@@ -84,7 +79,6 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	// run the database installation
 	err = runInstall(ctx, true)
 	if err != nil {
-		statushooks.Done(ctx)
 		return err
 	}
 
@@ -93,12 +87,10 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	statushooks.SetStatus(ctx, "Updating install records...")
 	err = updateDownloadedBinarySignature()
 	if err != nil {
-		statushooks.Done(ctx)
 		log.Printf("[TRACE] updateDownloadedBinarySignature failed: %v", err)
 		return fmt.Errorf("Updating install records... FAILED!")
 	}
 
-	statushooks.Done(ctx)
 	return nil
 }
 
@@ -139,7 +131,6 @@ func prepareDb(ctx context.Context) error {
 	// check if FDW needs to be updated
 	if fdwNeedsUpdate() {
 		_, err := installFDW(ctx, false)
-		statushooks.Done(ctx)
 		if err != nil {
 			log.Printf("[TRACE] installFDW failed: %v", err)
 			return fmt.Errorf("Update steampipe-postgres-fdw... FAILED!")
@@ -205,9 +196,11 @@ func runInstall(ctx context.Context, firstInstall bool) error {
 	defer utils.LogTime("db_local.runInstall end")
 
 	statushooks.SetStatus(ctx, "Cleaning up...")
+	defer statushooks.Done(ctx)
+
 	err := utils.RemoveDirectoryContents(getDataLocation())
 	if err != nil {
-		statushooks.Done(ctx)
+
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Prepare database install location... FAILED!")
 	}
@@ -215,7 +208,6 @@ func runInstall(ctx context.Context, firstInstall bool) error {
 	statushooks.SetStatus(ctx, "Initializing database...")
 	err = initDatabase()
 	if err != nil {
-		statushooks.Done(ctx)
 		log.Printf("[TRACE] initDatabase failed: %v", err)
 		return fmt.Errorf("Initializing database... FAILED!")
 	}
@@ -223,14 +215,12 @@ func runInstall(ctx context.Context, firstInstall bool) error {
 	statushooks.SetStatus(ctx, "Starting database...")
 	port, err := getNextFreePort()
 	if err != nil {
-		statushooks.Done(ctx)
 		log.Printf("[TRACE] getNextFreePort failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")
 	}
 
 	process, err := startServiceForInstall(port)
 	if err != nil {
-		statushooks.Done(ctx)
 		log.Printf("[TRACE] startServiceForInstall failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")
 	}
@@ -238,7 +228,6 @@ func runInstall(ctx context.Context, firstInstall bool) error {
 	statushooks.SetStatus(ctx, "Connection to database...")
 	client, err := createMaintenanceClient(ctx, port)
 	if err != nil {
-		statushooks.Done(ctx)
 		return fmt.Errorf("Connection to database... FAILED!")
 	}
 	defer func() {
@@ -251,7 +240,6 @@ func runInstall(ctx context.Context, firstInstall bool) error {
 	// generate a password file for use later
 	_, err = readPasswordFile()
 	if err != nil {
-		statushooks.Done(ctx)
 		log.Printf("[TRACE] readPassword failed: %v", err)
 		return fmt.Errorf("Generating database passwords... FAILED!")
 	}
@@ -274,7 +262,6 @@ func runInstall(ctx context.Context, firstInstall bool) error {
 	statushooks.SetStatus(ctx, "Configuring database...")
 	err = installDatabaseWithPermissions(ctx, databaseName, client)
 	if err != nil {
-		statushooks.Done(ctx)
 		log.Printf("[TRACE] installSteampipeDatabaseAndUser failed: %v", err)
 		return fmt.Errorf("Configuring database... FAILED!")
 	}
@@ -282,12 +269,11 @@ func runInstall(ctx context.Context, firstInstall bool) error {
 	statushooks.SetStatus(ctx, "Configuring Steampipe...")
 	err = installForeignServer(ctx, client)
 	if err != nil {
-		statushooks.Done(ctx)
 		log.Printf("[TRACE] installForeignServer failed: %v", err)
 		return fmt.Errorf("Configuring Steampipe... FAILED!")
 	}
 
-	return err
+	return nil
 }
 
 func resolveDatabaseName() string {
