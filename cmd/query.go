@@ -15,9 +15,6 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db/db_client"
-	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/interactive"
 	"github.com/turbot/steampipe/query"
 	"github.com/turbot/steampipe/query/queryexecute"
@@ -84,7 +81,6 @@ Examples:
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runQueryCmd start")
-
 	defer func() {
 		utils.LogTime("cmd.runQueryCmd end")
 		if r := recover(); r != nil {
@@ -119,15 +115,14 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// se we have loaded a workspace - be sure to close it
 	defer w.Close()
 
-	// perform rest of initialisation async
-	initDataChan := make(chan *query.InitData, 1)
-	getQueryInitDataAsync(ctx, w, initDataChan, args)
+	// start the initializer
+	initData := query.NewInitData(ctx, w, args)
 
 	if interactiveMode {
-		queryexecute.RunInteractiveSession(&initDataChan)
+		queryexecute.RunInteractiveSession(initData)
 	} else {
 		// set global exit code
-		exitCode = queryexecute.RunBatchSession(ctx, initDataChan)
+		exitCode = queryexecute.RunBatchSession(ctx, initData)
 	}
 }
 
@@ -174,85 +169,6 @@ func loadWorkspacePromptingForVariables(ctx context.Context, spinner *spinner.Sp
 	}
 	// ok we should have all variables now - reload workspace
 	return workspace.Load(workspacePath)
-}
-
-func getQueryInitDataAsync(ctx context.Context, w *workspace.Workspace, initDataChan chan *query.InitData, args []string) {
-	go func() {
-		utils.LogTime("cmd.getQueryInitDataAsync start")
-		defer utils.LogTime("cmd.getQueryInitDataAsync end")
-		initData := query.NewInitData()
-		defer func() {
-			if r := recover(); r != nil {
-				initData.Result.Error = helpers.ToError(r)
-			}
-			initDataChan <- initData
-			close(initDataChan)
-		}()
-
-		// set max DB connections to 1
-		viper.Set(constants.ArgMaxParallel, 1)
-		// get a db client (local or remote)
-		client, err := getClient(ctx)
-		if err != nil {
-			initData.Result.Error = err
-			return
-		}
-		initData.Client = client
-
-		// check if the required plugins are installed
-		if err := w.CheckRequiredPluginsInstalled(); err != nil {
-			initData.Result.Error = err
-			return
-		}
-		initData.Workspace = w
-
-		// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-		queries, preparedStatementSource, err := w.GetQueriesFromArgs(args)
-		if err != nil {
-			initData.Result.Error = err
-			return
-		}
-		initData.Queries = queries
-
-		res := client.RefreshConnectionAndSearchPaths(ctx)
-		if res.Error != nil {
-			initData.Result.Error = res.Error
-			return
-		}
-		initData.Result.AddWarnings(res.Warnings...)
-
-		// set up the session data - prepared statements and introspection tables
-		// this defaults to creating prepared statements for all queries
-		sessionDataSource := workspace.NewSessionDataSource(w, preparedStatementSource)
-
-		// register EnsureSessionData as a callback on the client.
-		// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
-		// so our client object calls this callback to restore the session data
-		initData.Client.SetEnsureSessionDataFunc(func(ctx context.Context, session *db_common.DatabaseSession) (error, []string) {
-			return workspace.EnsureSessionData(ctx, sessionDataSource, session)
-		})
-
-		// force creation of session data - se we see any prepared statement errors at once
-		sessionResult := initData.Client.AcquireSession(ctx)
-		initData.Result.AddWarnings(sessionResult.Warnings...)
-		if err != nil {
-			initData.Result.Error = fmt.Errorf("error acquiring database connection, %s", err.Error())
-		} else {
-			sessionResult.Session.Close(utils.IsContextCancelled(ctx))
-		}
-
-	}()
-}
-
-func getClient(ctx context.Context) (db_common.Client, error) {
-	var client db_common.Client
-	var err error
-	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-		client, err = db_client.NewDbClient(ctx, connectionString)
-	} else {
-		client, err = db_local.GetLocalClient(ctx, constants.InvokerQuery)
-	}
-	return client, err
 }
 
 func startCancelHandler(cancel context.CancelFunc) {

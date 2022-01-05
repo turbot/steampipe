@@ -93,6 +93,10 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 		res.Status = ServiceAlreadyRunning
 	}
 
+	if res.Error != nil {
+		return res
+	}
+
 	res.PluginManagerState, res.Error = pluginmanager.LoadPluginManagerState()
 	if res.Error != nil {
 		res.Status = ServiceFailedToStart
@@ -276,6 +280,10 @@ func resolvePassword() (string, error) {
 }
 
 func startPostgresProcess(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) (*exec.Cmd, error) {
+	if utils.IsContextCancelled(ctx) {
+		return nil, ctx.Err()
+	}
+
 	listenAddresses := "localhost"
 
 	if listen == ListenTypeNetwork {

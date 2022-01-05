@@ -13,12 +13,12 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func RunInteractiveSession(initChan *chan *query.InitData) {
+func RunInteractiveSession(initData *query.InitData) {
 	utils.LogTime("execute.RunInteractiveSession start")
 	defer utils.LogTime("execute.RunInteractiveSession end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := interactive.RunInteractivePrompt(initChan)
+	resultsStreamer, err := interactive.RunInteractivePrompt(initData)
 	utils.FailOnError(err)
 
 	// print the data as it comes
@@ -29,9 +29,9 @@ func RunInteractiveSession(initChan *chan *query.InitData) {
 	}
 }
 
-func RunBatchSession(ctx context.Context, initDataChan chan *query.InitData) int {
+func RunBatchSession(ctx context.Context, initData *query.InitData) int {
 	// wait for init
-	initData := <-initDataChan
+	<-initData.Loaded
 	if err := initData.Result.Error; err != nil {
 		utils.FailOnError(err)
 	}

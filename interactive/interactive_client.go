@@ -48,8 +48,6 @@ type InteractiveClient struct {
 	// NOTE: should ONLY be called by cancelActiveQueryIfAny
 	cancelActiveQuery context.CancelFunc
 	cancelPrompt      context.CancelFunc
-	// channel from which we read the result of the external initialisation process
-	initDataChan *chan *query.InitData
 	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
 	afterClose     AfterPromptCloseAction
@@ -67,13 +65,13 @@ func getHighlighter(theme string) *Highlighter {
 	)
 }
 
-func newInteractiveClient(initChan *chan *query.InitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+func newInteractiveClient(initData *query.InitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	c := &InteractiveClient{
+		initData:                initData,
 		resultsStreamer:         resultsStreamer,
 		interactiveQueryHistory: queryhistory.New(),
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
-		initDataChan:            initChan,
 		initResultChan:          make(chan *db_common.InitResult, 1),
 		highlighter:             getHighlighter(viper.GetString(constants.ArgTheme)),
 	}
@@ -88,7 +86,6 @@ func (c *InteractiveClient) InteractivePrompt() {
 	// start a cancel handler for the interactive client - this will call activeQueryCancelFunc if it is set
 	// (registered when we call createQueryContext)
 	interruptSignalChannel := c.startCancelHandler()
-
 	// create a cancel context for the prompt - this will set c.cancelPrompt
 	promptCtx := c.createPromptContext()
 
@@ -99,10 +96,9 @@ func (c *InteractiveClient) InteractivePrompt() {
 		// close up the SIGINT channel so that the receiver goroutine can quit
 		signal.Stop(interruptSignalChannel)
 		close(interruptSignalChannel)
-		// close the underlying client if it exists
-		if client := c.client(); client != nil {
-			client.Close()
-		}
+
+		// cleanup the init data to ensure any services we started are stopped
+		c.initData.Cleanup()
 
 		// close the result stream
 		// this needs to be the last thing we do,
