@@ -89,7 +89,11 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
 	initData := &control.InitData{}
-	var ctx context.Context
+
+	// setup a cancel context and start cancel handler
+	ctx, cancel := context.WithCancel(cmd.Context())
+	contexthelpers.StartCancelHandler(cancel)
+
 	defer func() {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
@@ -111,19 +115,18 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	// if progress is didabled, update context to contain a null status hooks object
 	if !viper.GetBool(constants.ArgProgress) {
 		statushooks.Disable(ctx)
 	}
 
 	// initialise
-	initData = initialiseCheck(cmd.Context())
-
-	if shouldExit := handleCheckInitResult(initData); shouldExit {
+	initData = initialiseCheck(ctx)
+	if shouldExit := handleCheckInitResult(ctx, initData); shouldExit {
 		return
 	}
 
 	// pull out useful properties
-	ctx = initData.Ctx
 	workspace := initData.Workspace
 	client := initData.Client
 	failures := 0
@@ -220,10 +223,6 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 		return initData
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	contexthelpers.StartCancelHandler(cancel)
-	initData.Ctx = ctx
-
 	// set color schema
 	err = initialiseColorScheme()
 	if err != nil {
@@ -287,13 +286,13 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 	return initData
 }
 
-func handleCheckInitResult(initData *control.InitData) bool {
+func handleCheckInitResult(ctx context.Context, initData *control.InitData) bool {
 	// if there is an error or cancellation we bomb out
 	// check for the various kinds of failures
 	utils.FailOnError(initData.Result.Error)
 	// cancelled?
-	if initData.Ctx != nil {
-		utils.FailOnError(initData.Ctx.Err())
+	if ctx != nil {
+		utils.FailOnError(ctx.Err())
 	}
 
 	// if there is a usage warning we display it

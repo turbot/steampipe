@@ -196,7 +196,7 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 			} else {
 				result.StreamRow(rowResult)
 			}
-			// update the spinner message with the count of rows that have already been fetched
+			// update the status message with the count of rows that have already been fetched
 			// this will not show if the spinner is not active
 			statushooks.SetStatus(ctx, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
 			rowCount++

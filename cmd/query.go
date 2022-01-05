@@ -153,15 +153,12 @@ func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
 		return nil, err
 	}
 	// so we have missing variables - prompt for them
-	// first hide spinner
+	// first hide spinner if it is there
 	statushooks.Done(ctx)
 	if err := interactive.PromptForMissingVariables(ctx, missingVariablesError.MissingVariables); err != nil {
 		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
 		return nil, err
 	}
-	// show spinner again
-	// TODO KAI - NEEDED????
-	//statushooks.SetStatus(ctx, "")
 	// ok we should have all variables now - reload workspace
 	return workspace.Load(workspacePath)
 }
