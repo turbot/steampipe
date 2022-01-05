@@ -43,11 +43,17 @@ type DbClient struct {
 	// list of connection schemas
 	foreignSchemas []string
 	searchPath     []string
+
+	// default-0 -- swaps to 1 when DbClient.Close if called
+	closed int32
 }
 
 func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
+
+	log.Println("[TRACE] db_client.NewDbClient start")
+	defer log.Println("[TRACE] db_client.NewDbClient end")
 
 	db, err := establishConnection(ctx, connectionString)
 
@@ -77,6 +83,9 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
 	utils.LogTime("db_client.establishConnection start")
 	defer utils.LogTime("db_client.establishConnection end")
+
+	log.Println("[TRACE] db_client.establishConnection start")
+	defer log.Println("[TRACE] db_client.establishConnection end")
 
 	connConfig, _ := pgx.ParseConfig(connStr)
 	connConfig.RuntimeParams = map[string]string{

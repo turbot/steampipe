@@ -86,7 +86,6 @@ func (c *InteractiveClient) InteractivePrompt() {
 	// start a cancel handler for the interactive client - this will call activeQueryCancelFunc if it is set
 	// (registered when we call createQueryContext)
 	interruptSignalChannel := c.startCancelHandler()
-
 	// create a cancel context for the prompt - this will set c.cancelPrompt
 	promptCtx := c.createPromptContext()
 
@@ -97,10 +96,9 @@ func (c *InteractiveClient) InteractivePrompt() {
 		// close up the SIGINT channel so that the receiver goroutine can quit
 		signal.Stop(interruptSignalChannel)
 		close(interruptSignalChannel)
-		// close the underlying client if it exists
-		if client := c.client(); client != nil {
-			client.Close()
-		}
+
+		// init data cleanup
+		c.initData.Cleanup()
 
 		// close the result stream
 		// this needs to be the last thing we do,
@@ -119,15 +117,18 @@ func (c *InteractiveClient) InteractivePrompt() {
 	for {
 		select {
 		case initResult := <-c.initResultChan:
+			log.Println("[TRACE] initResult := <-c.initResultChan:")
 			c.handleInitResult(promptCtx, initResult)
 			// if there was an error, handleInitResult will shut down the prompt
 			// - we must wait for it to shut down and not return immediately
 
 		case <-promptResultChan:
+			log.Println("[TRACE] <-promptResultChan:")
 			// persist saved history
 			c.interactiveQueryHistory.Persist()
 			// check post-close action
 			if c.afterClose == AfterPromptCloseExit {
+				log.Println("[TRACE] c.afterClose == AfterPromptCloseExit")
 				return
 			}
 			// create new context

@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -20,20 +21,46 @@ type InitData struct {
 	Workspace *workspace.Workspace
 	Client    db_common.Client
 	Result    *db_common.InitResult
+	cancel    context.CancelFunc
 }
 
 // NewInitData creates a new InitData object and returns it
 // it also starts an asynchronous population of the object
 // InitData.Done closes after asynchronous initialization completes
 func NewInitData(ctx context.Context, w *workspace.Workspace, args []string) *InitData {
-	i := &InitData{Result: &db_common.InitResult{}}
+	i := new(InitData)
+
+	i.Result = new(db_common.InitResult)
 	i.Loaded = make(chan struct{})
+
 	go i.init(ctx, w, args)
-	go func() {
-		<-ctx.Done()
-		fmt.Println("NewInitData ctx DONE")
-	}()
+
 	return i
+}
+
+func (i *InitData) Cleanup() {
+	// cancel any ongoing operation
+	if i.cancel == nil {
+		log.Println("[TRACE] No CANCEL")
+		return
+	}
+
+	log.Println("[TRACE] cancelling initdata")
+	i.cancel()
+
+	// ensure that the initialisation was completed
+	// and that we are not in a race condition where
+	// the client is set after the cancel hits
+	<-i.Loaded
+	log.Println("[TRACE] after Loaded")
+
+	// if a client was initialised, close it
+	if i.Client != nil {
+		log.Println("[TRACE] Closing client in Cleanup")
+		i.Client.Close()
+	} else {
+		log.Println("[TRACE] Client was nil")
+	}
 }
 
 func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []string) {
@@ -41,29 +68,42 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 		if r := recover(); r != nil {
 			i.Result.Error = helpers.ToError(r)
 		}
-		close(i.Loaded)
-		if utils.IsContextCancelled(ctx) && i.Client != nil {
-			i.Client.Close()
+		if i.Result.Error == nil {
+			i.Result.Error = ctx.Err()
 		}
+		i.cancel = nil
+		close(i.Loaded)
 	}()
+
+	// create a cancellable context so that we can cancel the initialisation
+	ctx, cancel := context.WithCancel(ctx)
+	// and store it
+	i.cancel = cancel
 
 	// set max DB connections to 1
 	viper.Set(constants.ArgMaxParallel, 1)
 
+	log.Println("[TRACE] Getting client")
 	c, err := getClient(ctx)
 	if err != nil {
+		log.Println("[TRACE] getClient ERROR:", err)
 		i.Result.Error = err
 		return
 	}
+	log.Println("[TRACE] Got client")
 	i.Client = c
+	log.Println("[TRACE] Set client")
 
+	log.Println("[TRACE] doing CheckRequiredPluginsInstalled ")
 	// check if the required plugins are installed
 	if err := w.CheckRequiredPluginsInstalled(); err != nil {
 		i.Result.Error = err
 		return
 	}
 	i.Workspace = w
+	log.Println("[TRACE] done CheckRequiredPluginsInstalled ")
 
+	log.Println("[TRACE] doing GetQueriesFromArgs ")
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	queries, preparedStatementSource, err := w.GetQueriesFromArgs(args)
 	if err != nil {
@@ -71,13 +111,16 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 		return
 	}
 	i.Queries = queries
+	log.Println("[TRACE] done GetQueriesFromArgs ")
 
+	log.Println("[TRACE] doing RefreshConnectionAndSearchPaths ")
 	res := i.Client.RefreshConnectionAndSearchPaths(ctx)
 	if res.Error != nil {
 		i.Result.Error = res.Error
 		return
 	}
 	i.Result.AddWarnings(res.Warnings...)
+	log.Println("[TRACE] done RefreshConnectionAndSearchPaths ")
 
 	// set up the session data - prepared statements and introspection tables
 	// this defaults to creating prepared statements for all queries
