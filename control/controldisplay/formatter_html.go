@@ -23,15 +23,8 @@ func (j *HTMLFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 	if err != nil {
 		return nil, err
 	}
-	reader, writer := io.Pipe()
-	go func() {
-		if err := t.Execute(writer, tree); err != nil {
-			writer.CloseWithError(err)
-		} else {
-			writer.Close()
-		}
-	}()
-	return reader, nil
+
+	return TemplateFormatter{template: t}.Format(ctx, tree)
 }
 
 func (j *HTMLFormatter) FileExtension() string {

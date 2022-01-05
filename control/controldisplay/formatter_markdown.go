@@ -14,7 +14,7 @@ type MarkdownFormatter struct{}
 //go:embed markdown_template/*
 var mdTemplateFS embed.FS
 
-func (j *MarkdownFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
+func (j MarkdownFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	t, err := template.
 		New("001.index.tmpl.md").
 		Funcs(formatterTemplateFuncMap).
@@ -22,17 +22,9 @@ func (j *MarkdownFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 	if err != nil {
 		return nil, err
 	}
-	reader, writer := io.Pipe()
-	go func() {
-		if err := t.Execute(writer, tree); err != nil {
-			writer.CloseWithError(err)
-		} else {
-			writer.Close()
-		}
-	}()
-	return reader, nil
+	return TemplateFormatter{template: t}.Format(ctx, tree)
 }
 
-func (j *MarkdownFormatter) FileExtension() string {
+func (j MarkdownFormatter) FileExtension() string {
 	return "md"
 }
