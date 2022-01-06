@@ -37,6 +37,7 @@ type Benchmark struct {
 	ChildNameStrings []string `column:"children,jsonb"`
 	DeclRange        hcl.Range
 
+	Paths           []NodePath `column:"path,jsonb"`
 	parents         []ModTreeItem
 	children        []ModTreeItem
 	metadata        *ResourceMetadata
@@ -232,13 +233,21 @@ func (b *Benchmark) GetChildren() []ModTreeItem {
 
 // GetPaths implements ModTreeItem
 func (b *Benchmark) GetPaths() []NodePath {
-	var res []NodePath
+	// lazy load
+	if len(b.Paths) == 0 {
+		b.SetPaths()
+	}
+
+	return b.Paths
+}
+
+// SetPaths implements ModTreeItem
+func (b *Benchmark) SetPaths() {
 	for _, parent := range b.parents {
 		for _, parentPath := range parent.GetPaths() {
-			res = append(res, append(parentPath, b.Name()))
+			b.Paths = append(b.Paths, append(parentPath, b.Name()))
 		}
 	}
-	return res
 }
 
 // Name implements ModTreeItem, HclResource, ResourceWithMetadata

@@ -29,6 +29,7 @@ type ModTreeItem interface {
 	GetTags() map[string]string
 	// GetPaths returns an array resource paths
 	GetPaths() []NodePath
+	SetPaths()
 	GetMod() *Mod
 }
 
