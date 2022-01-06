@@ -73,7 +73,7 @@ func getTestSuiteFromResultGroup(r *controlexecute.ResultGroup) *nunit3.TestSuit
 
 	thisSuite.ID = &r.GroupId
 	thisSuite.Name = &r.Title
-	thisSuite.Duration = &r.Duration
+	thisSuite.Duration = r.Duration.Seconds()
 
 	total := r.Summary.Status.Alarm + r.Summary.Status.Error + r.Summary.Status.Info + r.Summary.Status.Ok + r.Summary.Status.Skip
 	passed := r.Summary.Status.Info + r.Summary.Status.Ok
@@ -96,7 +96,7 @@ func getTestSuiteFromControlRun(r *controlexecute.ControlRun) *nunit3.TestSuite 
 	thisSuite := nunit3.NewTestSuite()
 	thisSuite.ID = &r.ControlId
 	thisSuite.Name = &r.Title
-	thisSuite.Duration = &r.Duration
+	thisSuite.Duration = r.Duration.Seconds()
 
 	thisSuite.AddProperty(nunit3.NewProperty("type", "control"))
 	thisSuite.AddProperty(nunit3.NewProperty("severity", r.Severity))
