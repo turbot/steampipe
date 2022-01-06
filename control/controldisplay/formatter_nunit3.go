@@ -2,38 +2,78 @@ package controldisplay
 
 import (
 	"context"
-	"embed"
+	"encoding/xml"
 	"io"
-	"text/template"
 
+	"github.com/turbot/steampipe/control/controldisplay/nunit3"
 	"github.com/turbot/steampipe/control/controlexecute"
 )
 
 type NUnit3Formatter struct{}
 
-//go:embed xml_template/*
-var xmlTemplateFS embed.FS
-
 func (j *NUnit3Formatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
-	t, err := template.
-		New("001.index.tmpl.xml").
-		Funcs(formatterTemplateFuncMap).
-		ParseFS(xmlTemplateFS, "xml_template/*")
-
-	if err != nil {
-		return nil, err
-	}
-	reader, writer := io.Pipe()
+	runChan := make(chan *nunit3.TestRun, 1)
 	go func() {
-		if err := t.Execute(writer, tree); err != nil {
-			writer.CloseWithError(err)
-		} else {
-			writer.Close()
-		}
+		runChan <- j.makeRun(ctx, tree)
+		close(runChan)
 	}()
+
+	reader, writer := io.Pipe()
+	xmlEncoder := xml.NewEncoder(writer)
+	go func() {
+		xmlEncoder.Indent(" ", " ")
+		run := <-runChan
+		xmlEncoder.Encode(run)
+		writer.Close()
+	}()
+
 	return reader, nil
 }
 
 func (j *NUnit3Formatter) FileExtension() string {
 	return "xml"
+}
+
+func (j *NUnit3Formatter) makeRun(ctx context.Context, tree *controlexecute.ExecutionTree) *nunit3.TestRun {
+	rootSuite := getTestSuiteFromResultGroup(tree.Root)
+	run := nunit3.NewTestRun()
+	for _, suite := range rootSuite.Suites {
+		run.AddTestSuite(suite)
+	}
+	return run
+}
+
+func getTestSuiteFromResultGroup(r *controlexecute.ResultGroup) *nunit3.TestSuite {
+	if r == nil {
+		return nil
+	}
+	thisSuite := nunit3.NewTestSuite()
+	thisSuite.AddProperty(nunit3.NewProperty("type", "group"))
+	for _, cRun := range r.ControlRuns {
+		thisSuite.AddTestSuite(getTestSuiteFromControlRun(cRun))
+	}
+	for _, group := range r.Groups {
+		thisSuite.AddTestSuite(getTestSuiteFromResultGroup(group))
+	}
+	return thisSuite
+}
+
+func getTestSuiteFromControlRun(r *controlexecute.ControlRun) *nunit3.TestSuite {
+	if r == nil {
+		return nil
+	}
+	thisSuite := nunit3.NewTestSuite()
+	thisSuite.AddProperty(nunit3.NewProperty("type", "control"))
+	for _, rows := range r.Rows {
+		thisSuite.AddTestCase(getTestCaseFromControlRunRow(rows))
+	}
+	return thisSuite
+}
+
+func getTestCaseFromControlRunRow(r *controlexecute.ResultRow) *nunit3.TestCase {
+	testCase := nunit3.NewTestCase()
+
+	testCase.Name = &r.Resource
+
+	return testCase
 }
