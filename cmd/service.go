@@ -458,10 +458,7 @@ func showAllStatus(ctx context.Context) {
 	close(doneFetchingDetailsChan)
 	display.StopSpinner(sp)
 
-	if err != nil {
-		utils.ShowError(err)
-		return
-	}
+	utils.FailOnError(err)
 
 	if len(processes) == 0 {
 		fmt.Println("There are no steampipe services running.")
