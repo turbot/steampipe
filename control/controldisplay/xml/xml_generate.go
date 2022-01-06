@@ -1,3 +1,3 @@
 package xml
 
-// go:generate
+//go:generate go run gen.go
