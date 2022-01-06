@@ -139,10 +139,8 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 		return ServiceStopFailed, err
 	}
 
-	statushooks.SetStatus(ctx, "Shutting down...")
-	defer statushooks.Done(ctx)
 
-	err = doThreeStepPostgresExit(process)
+	err = doThreeStepPostgresExit(ctx, process)
 	if err != nil {
 		// we couldn't stop it still.
 		// timeout
@@ -177,7 +175,7 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	checked that the service can indeed shutdown gracefully,
 	the sequence is there only as a backup.
 **/
-func doThreeStepPostgresExit(process *psutils.Process) error {
+func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) error {
 	utils.LogTime("db_local.doThreeStepPostgresExit start")
 	defer utils.LogTime("db_local.doThreeStepPostgresExit end")
 
@@ -192,6 +190,11 @@ func doThreeStepPostgresExit(process *psutils.Process) error {
 	exitSuccessful = waitForProcessExit(process, 2*time.Second)
 	if !exitSuccessful {
 		// process didn't quit
+
+		// set status, as this is taking time
+		statushooks.SetStatus(ctx, "Shutting down...")
+		defer statushooks.Done(ctx)
+
 		// try a SIGINT
 		err = process.SendSignal(syscall.SIGINT)
 		if err != nil {

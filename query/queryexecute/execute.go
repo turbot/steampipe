@@ -43,11 +43,7 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) int {
 		utils.FailOnError(err)
 	}
 	// ensure we close client
-	defer func() {
-		if initData.Client != nil {
-			initData.Client.Close(ctx)
-		}
-	}()
+	defer initData.Cleanup(ctx)
 
 	// display any initialisation messages/warnings
 	initData.Result.DisplayMessages()

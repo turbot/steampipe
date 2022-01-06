@@ -554,7 +554,7 @@ func killInstanceIfAny(ctx context.Context) bool {
 	for _, process := range processes {
 		wg.Add(1)
 		go func(p *psutils.Process) {
-			doThreeStepPostgresExit(p)
+			doThreeStepPostgresExit(ctx, p)
 			wg.Done()
 		}(process)
 	}

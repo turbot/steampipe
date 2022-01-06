@@ -233,7 +233,7 @@ func runInstall(ctx context.Context, firstInstall bool) error {
 	defer func() {
 		statushooks.SetStatus(ctx, "Completing configuration")
 		client.Close()
-		doThreeStepPostgresExit(process)
+		doThreeStepPostgresExit(ctx, process)
 	}()
 
 	statushooks.SetStatus(ctx, "Generating database passwords...")
