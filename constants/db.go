@@ -83,6 +83,8 @@ const (
 	IntrospectionTableControl   = "steampipe_control"
 	IntrospectionTableBenchmark = "steampipe_benchmark"
 	IntrospectionTableMod       = "steampipe_mod"
+	IntrospectionTableReport    = "steampipe_report"
+	IntrospectionTablePanel     = "steampipe_panel"
 	IntrospectionTableVariable  = "steampipe_variable"
 	IntrospectionTableReference = "steampipe_reference"
 )

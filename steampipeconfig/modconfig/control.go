@@ -36,6 +36,7 @@ type Control struct {
 	Mod        *Mod `cty:"mod"`
 	DeclRange  hcl.Range
 
+	Paths                 []NodePath
 	parents               []ModTreeItem
 	metadata              *ResourceMetadata
 	PreparedStatementName string `column:"prepared_statement_name,text"`
@@ -205,19 +206,27 @@ func (c *Control) Name() string {
 }
 
 // QualifiedNameWithVersion returns the name in format: '<modName>@version.control.<shortName>'
-func (q *Control) QualifiedNameWithVersion() string {
-	return fmt.Sprintf("%s.%s", q.Mod.NameWithVersion(), q.FullName)
+func (c *Control) QualifiedNameWithVersion() string {
+	return fmt.Sprintf("%s.%s", c.Mod.NameWithVersion(), c.FullName)
 }
 
 // GetPaths implements ModTreeItem
 func (c *Control) GetPaths() []NodePath {
-	var res []NodePath
+	// lazy load
+	if len(c.Paths) == 0 {
+		c.SetPaths()
+	}
+
+	return c.Paths
+}
+
+// SetPaths implements ModTreeItem
+func (c *Control) SetPaths() {
 	for _, parent := range c.parents {
 		for _, parentPath := range parent.GetPaths() {
-			res = append(res, append(parentPath, c.Name()))
+			c.Paths = append(c.Paths, append(parentPath, c.Name()))
 		}
 	}
-	return res
 }
 
 // CtyValue implements HclResource

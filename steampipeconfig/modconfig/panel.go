@@ -17,18 +17,20 @@ type Panel struct {
 	FullName  string `cty:"name"`
 	ShortName string
 
-	Title   *string `hcl:"title"`
-	Type    *string `hcl:"type"`
-	Width   *int    `hcl:"width"`
-	Height  *int    `hcl:"height"`
-	Source  *string `hcl:"source"`
-	SQL     *string `hcl:"source"`
-	Text    *string `hcl:"text"`
-	Reports []*Report
-	Panels  []*Panel
+	Title  *string `column:"title,text"`
+	Type   *string `column:"type,text"`
+	Width  *int    `column:"width,text"`
+	Height *int    `column:"height,text"`
+	Source *string `column:"source,text"`
+	SQL    *string `column:"sql,text"`
+	Text   *string `column:"text,text"`
+	Panels []*Panel
 
 	DeclRange hcl.Range
 	Mod       *Mod `cty:"mod"`
+
+	Children []string   `column:"children,jsonb"`
+	Paths    []NodePath `column:"path,jsonb"`
 
 	parents         []ModTreeItem
 	metadata        *ResourceMetadata
@@ -45,7 +47,7 @@ func NewPanel(block *hcl.Block) *Panel {
 	return panel
 }
 
-// PanelFromFile :: factory function
+// PanelFromFile creates a panel from a markdown file
 func PanelFromFile(modPath, filePath string) (MappableResource, []byte, error) {
 	p := &Panel{}
 	return p.InitialiseFromFile(modPath, filePath)
@@ -88,7 +90,23 @@ func (p *Panel) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (p *Panel) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+func (p *Panel) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	p.setChildNames()
+	return nil
+}
+
+func (p *Panel) setChildNames() {
+	numChildren := len(p.Panels)
+	if numChildren == 0 {
+		return
+	}
+	// set children names
+	p.Children = make([]string, numChildren)
+
+	for i, p := range p.Panels {
+		p.Children[i] = p.Name()
+	}
+}
 
 // AddReference implements HclResource
 func (p *Panel) AddReference(*ResourceReference) {}
@@ -119,10 +137,7 @@ func (p *Panel) AddChild(child ModTreeItem) error {
 			p.Panels = append(p.Panels, c)
 		}
 	case *Report:
-		// avoid duplicates
-		if !p.containsReport(c.Name()) {
-			p.Reports = append(p.Reports, c)
-		}
+		return fmt.Errorf("panels cannot contain reports")
 	}
 	return nil
 }
@@ -140,15 +155,9 @@ func (p *Panel) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (p *Panel) GetChildren() []ModTreeItem {
-	children := make([]ModTreeItem, len(p.Panels)+len(p.Reports))
-	idx := 0
-	for _, p := range p.Panels {
-		children[idx] = p
-		idx++
-	}
-	for _, r := range p.Reports {
-		children[idx] = r
-		idx++
+	children := make([]ModTreeItem, len(p.Panels))
+	for i, p := range p.Panels {
+		children[i] = p
 	}
 	return children
 }
@@ -170,13 +179,21 @@ func (p *Panel) GetTags() map[string]string {
 
 // GetPaths implements ModTreeItem
 func (p *Panel) GetPaths() []NodePath {
-	var res []NodePath
+	// lazy load
+	if len(p.Paths) == 0 {
+		p.SetPaths()
+	}
+
+	return p.Paths
+}
+
+// SetPaths implements ModTreeItem
+func (p *Panel) SetPaths() {
 	for _, parent := range p.parents {
 		for _, parentPath := range parent.GetPaths() {
-			res = append(res, append(parentPath, p.Name()))
+			p.Paths = append(p.Paths, append(parentPath, p.Name()))
 		}
 	}
-	return res
 }
 
 // GetMetadata implements ResourceWithMetadata
@@ -233,16 +250,6 @@ func (p *Panel) containsPanel(name string) bool {
 	// does this child already exist
 	for _, existingPanel := range p.Panels {
 		if existingPanel.Name() == name {
-			return true
-		}
-	}
-	return false
-}
-
-func (p *Panel) containsReport(name string) bool {
-	// does this child already exist
-	for _, existingReport := range p.Reports {
-		if existingReport.Name() == name {
 			return true
 		}
 	}
