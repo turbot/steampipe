@@ -1,3 +1,10 @@
+## v0.11.1 [2022-01-06]
+_Bug fixes_
+* Plugin instantiation failures should be reported as warnings not errors. ([#1283](https://github.com/turbot/steampipe/issues/1283))
+* Fix issue where database name is not printed in output of 'service start'. ([#1270](https://github.com/turbot/steampipe/issues/1270))
+* Fix issue where service is not shutdown if interrupted while interactive prompt is initialising. ([#1004](https://github.com/turbot/steampipe/issues/1004))
+* Add support for installer to detect running service when upgrading. ([#1269](https://github.com/turbot/steampipe/issues/1269))
+
 ## v0.11.0 [2021-12-21]
 _What's new?_
 * Add support for mod management commands: `mod install`, `mod update`, `mod uninstall`, `mod list`, `mod init`. ([#442](https://github.com/turbot/steampipe/issues/442), [#443](https://github.com/turbot/steampipe/issues/443))
