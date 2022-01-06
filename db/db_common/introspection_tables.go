@@ -54,14 +54,6 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	return strings.Join(createSql, "\n")
 }
 
-func getClearTablesSql() string {
-	var clearSql []string
-	for _, t := range constants.IntrospectionTableNames() {
-		clearSql = append(clearSql, fmt.Sprintf("delete from %s;", t))
-	}
-	return strings.Join(clearSql, "\n")
-}
-
 func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) string {
 	var insertSql []string
 

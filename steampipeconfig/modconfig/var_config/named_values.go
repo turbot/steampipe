@@ -346,16 +346,3 @@ var variableBlockSchema = &hcl.BodySchema{
 		},
 	},
 }
-
-var variableValidationBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name:     "condition",
-			Required: true,
-		},
-		{
-			Name:     "error_message",
-			Required: true,
-		},
-	},
-}

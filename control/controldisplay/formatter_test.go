@@ -37,15 +37,6 @@ var c22 = modconfig.Control{
 	Description: &desc,
 }
 
-func addControls() {
-	childBenchmark1.AddChild(&c11)
-	childBenchmark1.AddChild(&c12)
-	childBenchmark2.AddChild(&c21)
-	childBenchmark2.AddChild(&c22)
-	rootBenchmark.AddChild(&childBenchmark1)
-	rootBenchmark.AddChild(&childBenchmark2)
-}
-
 var tree = &controlexecute.ExecutionTree{
 	Root: &controlexecute.ResultGroup{
 		GroupId:     "DummyTest",

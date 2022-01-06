@@ -149,14 +149,6 @@ func setViperConfigFromArg(viperKey string) handler {
 	}
 }
 
-// set the value of `viperKey` in `viper` with a static value
-func setViperConfig(viperKey string, value interface{}) handler {
-	return func(ctx context.Context, input *HandlerInput) error {
-		cmdconfig.Viper().Set(viperKey, value)
-		return nil
-	}
-}
-
 // exit
 func doExit(ctx context.Context, input *HandlerInput) error {
 	input.ClosePrompt()
