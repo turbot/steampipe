@@ -48,7 +48,6 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			if moreDiags := resource.OnDecoded(block); diags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
-			// TODO NOT FOR VARIABLES???
 			if moreDiags := AddReferences(resource, block, runCtx); diags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
