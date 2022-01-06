@@ -38,72 +38,103 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			Detail:   err.Error()})
 	}
 	for _, block := range blocks {
-		// if opts specifies block types, check whether this type is included
-		if !runCtx.ShouldIncludeBlock(block) {
-			continue
-		}
-		// check name is valid
-		moreDiags := validateName(block)
+		resources, moreDiags := decodeBlock(runCtx, block)
 		if moreDiags.HasErrors() {
 			diags = append(diags, moreDiags...)
 			continue
 		}
-		switch block.Type {
-		case modconfig.BlockTypeLocals:
-			// special case decode logic for locals
-			locals, res := decodeLocals(block, runCtx)
-			for _, local := range locals {
-				// handle the result
-				// - if successful, add resource to mod and variables maps
-				// - if there are dependencies, add them to run context
-				moreDiags = handleDecodeResult(local, res, block, runCtx)
+		// call post decode hooks
+		for _, resource := range resources {
+			if moreDiags := resource.OnDecoded(block); diags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
-		case modconfig.BlockTypePanel:
-			// special case decode logic for locals
-			panel, res := decodePanel(block, runCtx)
-			moreDiags = handleDecodeResult(panel, res, block, runCtx)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-		case modconfig.BlockTypeReport:
-			// special case decode logic for locals
-			report, res := decodeReport(block, runCtx)
-			moreDiags = handleDecodeResult(report, res, block, runCtx)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-		case modconfig.BlockTypeVariable:
-			// special case decode logic for locals
-			variable, res := decodeVariable(block, runCtx)
-			moreDiags = handleDecodeResult(variable, res, block, runCtx)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-		case modconfig.BlockTypeControl:
-			// special case decode logic for locals
-			control, res := decodeControl(block, runCtx)
-			moreDiags = handleDecodeResult(control, res, block, runCtx)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-		case modconfig.BlockTypeQuery:
-			// special case decode logic for locals
-			query, res := decodeQuery(block, runCtx)
-			moreDiags = handleDecodeResult(query, res, block, runCtx)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-		default:
-			// all other blocks are treated the same:
-			resource, res := decodeResource(block, runCtx)
-			moreDiags = handleDecodeResult(resource, res, block, runCtx)
-			if moreDiags.HasErrors() {
+			// TODO NOT FOR VARIABLES???
+			if moreDiags := AddReferences(resource, block, runCtx); diags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
 		}
 	}
+
 	return diags
+}
+
+func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource, hcl.Diagnostics) {
+	var resources []modconfig.HclResource
+
+	var diags hcl.Diagnostics
+	// if opts specifies block types, check whether this type is included
+	if !runCtx.ShouldIncludeBlock(block) {
+		return nil, diags
+	}
+	// check name is valid
+	moreDiags := validateName(block)
+	if moreDiags.HasErrors() {
+		diags = append(diags, moreDiags...)
+		return nil, diags
+	}
+
+	switch block.Type {
+	case modconfig.BlockTypeLocals:
+		// special case decode logic for locals
+		locals, res := decodeLocals(block, runCtx)
+		for _, local := range locals {
+			// handle the result
+			// - if successful, add resource to mod and variables maps
+			// - if there are dependencies, add them to run context
+			moreDiags = handleDecodeResult(local, res, block, runCtx)
+			diags = append(diags, moreDiags...)
+			resources = append(resources, local)
+		}
+	case modconfig.BlockTypePanel:
+		// special case decode logic for locals
+		panel, res := decodePanel(block, runCtx)
+		moreDiags = handleDecodeResult(panel, res, block, runCtx)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+		}
+		resources = append(resources, panel)
+	case modconfig.BlockTypeReport:
+		// special case decode logic for locals
+		report, res := decodeReport(block, runCtx)
+		moreDiags = handleDecodeResult(report, res, block, runCtx)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+		}
+		resources = append(resources, report)
+	case modconfig.BlockTypeVariable:
+		// special case decode logic for locals
+		variable, res := decodeVariable(block, runCtx)
+		moreDiags = handleDecodeResult(variable, res, block, runCtx)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+		}
+		resources = append(resources, variable)
+	case modconfig.BlockTypeControl:
+		// special case decode logic for locals
+		control, res := decodeControl(block, runCtx)
+		moreDiags = handleDecodeResult(control, res, block, runCtx)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+		}
+		resources = append(resources, control)
+	case modconfig.BlockTypeQuery:
+		// special case decode logic for locals
+		query, res := decodeQuery(block, runCtx)
+		moreDiags = handleDecodeResult(query, res, block, runCtx)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+		}
+		resources = append(resources, query)
+	default:
+		// all other blocks are treated the same:
+		resource, res := decodeResource(block, runCtx)
+		moreDiags = handleDecodeResult(resource, res, block, runCtx)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+		}
+		resources = append(resources, resource)
+	}
+	return resources, diags
 }
 
 // generic decode function for any resource we do not have custom decode logic for
@@ -116,15 +147,6 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
-	// call post-decode hook
-	if res.Success() {
-		if diags := resource.OnDecoded(block); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-		if diags := AddReferences(resource, block, runCtx); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-	}
 	return resource, res
 }
 
@@ -191,13 +213,6 @@ func decodeVariable(block *hcl.Block, runCtx *RunContext) (*modconfig.Variable, 
 	// call post-decode hook
 	if res.Success() {
 		variable = modconfig.NewVariable(v)
-
-		if diags := variable.OnDecoded(block); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-		// TODO for now we do not implement storing references for variables
-		// - special case code is required to exclude types from the reference detection code
-		//AddReferences(variable, block)
 	}
 
 	return variable, res
@@ -263,16 +278,6 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
-
-	// call post-decode hook
-	if res.Success() {
-		if diags := q.OnDecoded(block); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-		if diags := AddReferences(q, block, runCtx); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-	}
 
 	return q, res
 }
@@ -406,16 +411,6 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
-	// call post-decode hook
-	if res.Success() {
-		if diags := c.OnDecoded(block); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-		if diags := AddReferences(c, block, runCtx); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-	}
-
 	return c, res
 }
 
@@ -492,6 +487,10 @@ func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Report, *dec
 
 	report := modconfig.NewReport(block)
 	diags = decodeProperty(content, "title", &report.Title, runCtx)
+	res.handleDecodeDiags(diags)
+	diags = decodeProperty(content, "panels", &report.Panels, runCtx)
+	res.handleDecodeDiags(diags)
+	diags = decodeProperty(content, "reports", &report.Reports, runCtx)
 	res.handleDecodeDiags(diags)
 
 	diags = decodeReportBlocks(report, content, runCtx)

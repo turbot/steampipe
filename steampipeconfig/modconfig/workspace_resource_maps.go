@@ -8,6 +8,8 @@ type WorkspaceResourceMaps struct {
 	Controls   map[string]*Control
 	Benchmarks map[string]*Benchmark
 	Variables  map[string]*Variable
+	Reports    map[string]*Report
+	Panels     map[string]*Panel
 	References map[string]*ResourceReference
 }
 
@@ -18,6 +20,8 @@ func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
 		Controls:   make(map[string]*Control),
 		Benchmarks: make(map[string]*Benchmark),
 		Variables:  make(map[string]*Variable),
+		Reports:    make(map[string]*Report),
+		Panels:     make(map[string]*Panel),
 		References: make(map[string]*ResourceReference),
 	}
 }
@@ -84,6 +88,16 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
+	for name := range other.Reports {
+		if _, ok := m.Reports[name]; !ok {
+			return false
+		}
+	}
+	for name := range other.Panels {
+		if _, ok := m.Panels[name]; !ok {
+			return false
+		}
+	}
 	for name, reference := range m.References {
 		if otherReference, ok := other.References[name]; !ok {
 			return false
@@ -146,5 +160,7 @@ func (m *WorkspaceResourceMaps) Empty() bool {
 		len(m.Controls)+
 		len(m.Benchmarks)+
 		len(m.Variables)+
+		len(m.Reports)+
+		len(m.Panels)+
 		len(m.References) == 0
 }

@@ -1,4 +1,4 @@
-	package modconfig
+package modconfig
 
 import (
 	"fmt"
@@ -55,7 +55,16 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 			return err
 		}
 	}
+	// now initialise all Paths properties
+	setPaths(m)
 	return nil
+}
+
+func setPaths(i ModTreeItem) {
+	i.SetPaths()
+	for _, c := range i.GetChildren() {
+		setPaths(c)
+	}
 }
 
 func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
