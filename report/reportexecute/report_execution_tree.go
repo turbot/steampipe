@@ -166,7 +166,7 @@ func (e *ReportExecutionTree) ExecuteNode(ctx context.Context, name string) erro
 }
 
 func (e *ReportExecutionTree) executePanelSQL(ctx context.Context, query string) ([][]interface{}, error) {
-	queryResult, err := e.client.ExecuteSync(ctx, query, true)
+	queryResult, err := e.client.ExecuteSync(ctx, query)
 	if err != nil {
 		return nil, err
 	}

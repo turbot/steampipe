@@ -1,16 +1,17 @@
 package controlexecute
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
+	"github.com/turbot/steampipe/statushooks"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
-
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/briandowns/spinner"
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -34,16 +35,16 @@ func NewControlProgressRenderer(total int) *ControlProgressRenderer {
 	}
 }
 
-func (p *ControlProgressRenderer) Start() {
+func (p *ControlProgressRenderer) Start(ctx context.Context) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 
 	if p.enabled {
-		p.spinner = display.ShowSpinner("Starting controls...")
+		statushooks.SetStatus(ctx, "Starting controls...")
 	}
 }
 
-func (p *ControlProgressRenderer) OnControlStart(control *modconfig.Control) {
+func (p *ControlProgressRenderer) OnControlStart(ctx context.Context, control *modconfig.Control) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 
@@ -54,43 +55,43 @@ func (p *ControlProgressRenderer) OnControlStart(control *modconfig.Control) {
 	p.pending--
 
 	if p.enabled {
-		display.UpdateSpinnerMessage(p.spinner, p.message())
+		statushooks.SetStatus(ctx, p.message())
 	}
 }
 
-func (p *ControlProgressRenderer) OnControlFinish() {
+func (p *ControlProgressRenderer) OnControlFinish(ctx context.Context) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	// decrement the parallel execution count
 	p.executing--
 	if p.enabled {
-		display.UpdateSpinnerMessage(p.spinner, p.message())
+		statushooks.SetStatus(ctx, p.message())
 	}
 }
 
-func (p *ControlProgressRenderer) OnControlComplete() {
+func (p *ControlProgressRenderer) OnControlComplete(ctx context.Context) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	p.complete++
 
 	if p.enabled {
-		display.UpdateSpinnerMessage(p.spinner, p.message())
+		statushooks.SetStatus(ctx, p.message())
 	}
 }
 
-func (p *ControlProgressRenderer) OnControlError() {
+func (p *ControlProgressRenderer) OnControlError(ctx context.Context) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	p.error++
 
 	if p.enabled {
-		display.UpdateSpinnerMessage(p.spinner, p.message())
+		statushooks.SetStatus(ctx, p.message())
 	}
 }
 
-func (p *ControlProgressRenderer) Finish() {
+func (p *ControlProgressRenderer) Finish(ctx context.Context) {
 	if p.enabled {
-		display.StopSpinner(p.spinner)
+		statushooks.Done(ctx)
 	}
 }
 

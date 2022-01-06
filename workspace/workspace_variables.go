@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -14,7 +15,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
+func (w *Workspace) getAllVariables(ctx context.Context) (map[string]*modconfig.Variable, error) {
 	// build options used to load workspace
 	runCtx, err := w.getRunContext()
 	if err != nil {
@@ -40,7 +41,7 @@ func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
 		return nil, err
 	}
 
-	if err := validateVariables(variableMap, inputVariables); err != nil {
+	if err := validateVariables(ctx, variableMap, inputVariables); err != nil {
 		return nil, err
 	}
 
@@ -73,21 +74,21 @@ func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable
 	return parsedValues, diags.Err()
 }
 
-func validateVariables(variableMap map[string]*modconfig.Variable, variables inputvars.InputValues) error {
+func validateVariables(ctx context.Context, variableMap map[string]*modconfig.Variable, variables inputvars.InputValues) error {
 	diags := inputvars.CheckInputVariables(variableMap, variables)
 	if diags.HasErrors() {
-		displayValidationErrors(diags)
+		displayValidationErrors(ctx, diags)
 		// return empty error
 		return modconfig.VariableValidationFailedError{}
 	}
 	return nil
 }
 
-func displayValidationErrors(diags tfdiags.Diagnostics) {
+func displayValidationErrors(ctx context.Context, diags tfdiags.Diagnostics) {
 	fmt.Println()
 	for i, diag := range diags {
 
-		utils.ShowError(fmt.Errorf("%s", constants.Bold(diag.Description().Summary)))
+		utils.ShowError(ctx, fmt.Errorf("%s", constants.Bold(diag.Description().Summary)))
 		fmt.Println(diag.Description().Detail)
 		if i < len(diags)-1 {
 			fmt.Println()

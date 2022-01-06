@@ -49,7 +49,7 @@ func NewGroupSummary() *GroupSummary {
 }
 
 // NewRootResultGroup creates a ResultGroup to act as the root node of a control execution tree
-func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.ModTreeItem) *ResultGroup {
+func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootItems ...modconfig.ModTreeItem) *ResultGroup {
 	root := &ResultGroup{
 		GroupId:    RootResultGroupName,
 		Groups:     []*ResultGroup{},
@@ -62,10 +62,10 @@ func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.Mod
 		// if root item is a benchmark, create new result group with root as parent
 		if control, ok := item.(*modconfig.Control); ok {
 			// if root item is a control, add control run
-			executionTree.AddControl(control, root)
+			executionTree.AddControl(ctx, control, root)
 		} else {
 			// create a result group for this item
-			itemGroup := NewResultGroup(executionTree, item, root)
+			itemGroup := NewResultGroup(ctx, executionTree, item, root)
 			root.Groups = append(root.Groups, itemGroup)
 		}
 	}
@@ -73,7 +73,7 @@ func NewRootResultGroup(executionTree *ExecutionTree, rootItems ...modconfig.Mod
 }
 
 // NewResultGroup creates a result group from a ModTreeItem
-func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ModTreeItem, parent *ResultGroup) *ResultGroup {
+func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem modconfig.ModTreeItem, parent *ResultGroup) *ResultGroup {
 	// only show qualified group names for controls from dependent mods
 	groupId := treeItem.Name()
 	if mod := treeItem.GetMod(); mod != nil && mod.Name() == executionTree.workspace.Mod.Name() {
@@ -96,7 +96,7 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ModTreeItem
 	for _, c := range treeItem.GetChildren() {
 		if benchmark, ok := c.(*modconfig.Benchmark); ok {
 			// create a result group for this item
-			benchmarkGroup := NewResultGroup(executionTree, benchmark, group)
+			benchmarkGroup := NewResultGroup(ctx, executionTree, benchmark, group)
 			// if the group has any control runs, add to tree
 			if benchmarkGroup.ControlRunCount() > 0 {
 				// create a new result group with 'group' as the parent
@@ -104,7 +104,7 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ModTreeItem
 			}
 		}
 		if control, ok := c.(*modconfig.Control); ok {
-			executionTree.AddControl(control, group)
+			executionTree.AddControl(ctx, control, group)
 		}
 	}
 
@@ -180,18 +180,18 @@ func (r *ResultGroup) execute(ctx context.Context, client db_common.Client, para
 
 	for _, controlRun := range r.ControlRuns {
 		if utils.IsContextCancelled(ctx) {
-			controlRun.SetError(ctx.Err())
+			controlRun.SetError(ctx, ctx.Err())
 			continue
 		}
 
 		if viper.GetBool(constants.ArgDryRun) {
-			controlRun.skip()
+			controlRun.skip(ctx)
 			continue
 		}
 
 		err := parallelismLock.Acquire(ctx, 1)
 		if err != nil {
-			controlRun.SetError(err)
+			controlRun.SetError(ctx, err)
 			continue
 		}
 
@@ -199,7 +199,7 @@ func (r *ResultGroup) execute(ctx context.Context, client db_common.Client, para
 			defer func() {
 				if r := recover(); r != nil {
 					// if the Execute panic'ed, set it as an error
-					run.SetError(helpers.ToError(r))
+					run.SetError(ctx, helpers.ToError(r))
 				}
 				// Release in defer, so that we don't retain the lock even if there's a panic inside
 				parallelismLock.Release(1)

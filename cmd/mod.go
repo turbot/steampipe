@@ -53,11 +53,12 @@ func modInstallCmd() *cobra.Command {
 }
 
 func runModInstallCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("cmd.runModInstallCmd")
 	defer func() {
 		utils.LogTime("cmd.runModInstallCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 	}()
@@ -88,17 +89,18 @@ func modUninstallCmd() *cobra.Command {
 }
 
 func runModUninstallCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("cmd.runModInstallCmd")
 	defer func() {
 		utils.LogTime("cmd.runModInstallCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 	}()
 
 	opts := newInstallOpts(cmd, args...)
-	installData, err := modinstaller.UninstallWorkspaceDependencies(opts)
+	installData, err := modinstaller.UninstallWorkspaceDependencies(ctx, opts)
 	utils.FailOnError(err)
 
 	fmt.Println(modinstaller.BuildUninstallSummary(installData))
@@ -122,11 +124,12 @@ func modUpdateCmd() *cobra.Command {
 }
 
 func runModUpdateCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("cmd.runModUpdateCmd")
 	defer func() {
 		utils.LogTime("cmd.runModUpdateCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 	}()
@@ -153,11 +156,12 @@ func modListCmd() *cobra.Command {
 }
 
 func runModListCmd(cmd *cobra.Command, _ []string) {
+	ctx := cmd.Context()
 	utils.LogTime("cmd.runModListCmd")
 	defer func() {
 		utils.LogTime("cmd.runModListCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 	}()
@@ -186,11 +190,12 @@ func modInitCmd() *cobra.Command {
 }
 
 func runModInitCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("cmd.runModInitCmd")
 	defer func() {
 		utils.LogTime("cmd.runModInitCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 	}()

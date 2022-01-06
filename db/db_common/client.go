@@ -11,7 +11,7 @@ import (
 type EnsureSessionStateCallback = func(context.Context, *DatabaseSession) (err error, warnings []string)
 
 type Client interface {
-	Close() error
+	Close(ctx context.Context) error
 
 	ForeignSchemas() []string
 	ConnectionMap() *steampipeconfig.ConnectionDataMap
@@ -22,11 +22,11 @@ type Client interface {
 
 	AcquireSession(context.Context) *AcquireSessionResult
 
-	ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error)
-	Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error)
+	ExecuteSync(ctx context.Context, query string) (*queryresult.SyncQueryResult, error)
+	Execute(ctx context.Context, query string) (res *queryresult.Result, err error)
 
-	ExecuteSyncInSession(ctx context.Context, session *DatabaseSession, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error)
-	ExecuteInSession(ctx context.Context, session *DatabaseSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error)
+	ExecuteSyncInSession(ctx context.Context, session *DatabaseSession, query string) (*queryresult.SyncQueryResult, error)
+	ExecuteInSession(ctx context.Context, session *DatabaseSession, query string, onComplete func()) (res *queryresult.Result, err error)
 
 	CacheOn(context.Context) error
 	CacheOff(context.Context) error

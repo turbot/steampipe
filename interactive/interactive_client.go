@@ -17,13 +17,14 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/contexthelpers"
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/query"
 	"github.com/turbot/steampipe/query/metaquery"
 	"github.com/turbot/steampipe/query/queryhistory"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
@@ -54,7 +55,11 @@ type InteractiveClient struct {
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock  sync.Mutex
 	schemaMetadata *schema.Metadata
-	highlighter    *Highlighter
+
+	highlighter *Highlighter
+
+	// status update hooks
+	statusHook statushooks.StatusHooks
 }
 
 func getHighlighter(theme string) *Highlighter {
@@ -65,7 +70,7 @@ func getHighlighter(theme string) *Highlighter {
 	)
 }
 
-func newInteractiveClient(initData *query.InitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+func newInteractiveClient(ctx context.Context, initData *query.InitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	c := &InteractiveClient{
 		initData:                initData,
 		resultsStreamer:         resultsStreamer,
@@ -75,30 +80,33 @@ func newInteractiveClient(initData *query.InitData, resultsStreamer *queryresult
 		initResultChan:          make(chan *db_common.InitResult, 1),
 		highlighter:             getHighlighter(viper.GetString(constants.ArgTheme)),
 	}
+
 	// asynchronously wait for init to complete
 	// we start this immediately rather than lazy loading as we want to handle errors asap
-	go c.readInitDataStream()
+	go c.readInitDataStream(ctx)
 	return c, nil
 }
 
 // InteractivePrompt starts an interactive prompt and return
-func (c *InteractiveClient) InteractivePrompt() {
+func (c *InteractiveClient) InteractivePrompt(ctx context.Context) {
 	// start a cancel handler for the interactive client - this will call activeQueryCancelFunc if it is set
 	// (registered when we call createQueryContext)
-	interruptSignalChannel := c.startCancelHandler()
+	interruptSignalChannel := contexthelpers.StartCancelHandler(c.cancelActiveQueryIfAny)
+
 	// create a cancel context for the prompt - this will set c.cancelPrompt
-	promptCtx := c.createPromptContext()
+	parentContext := ctx
+	ctx = c.createPromptContext(parentContext)
 
 	defer func() {
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 		}
 		// close up the SIGINT channel so that the receiver goroutine can quit
 		signal.Stop(interruptSignalChannel)
 		close(interruptSignalChannel)
 
 		// cleanup the init data to ensure any services we started are stopped
-		c.initData.Cleanup()
+		c.initData.Cleanup(ctx)
 
 		// close the result stream
 		// this needs to be the last thing we do,
@@ -106,18 +114,19 @@ func (c *InteractiveClient) InteractivePrompt() {
 		c.resultsStreamer.Close()
 	}()
 
-	fmt.Printf("Welcome to Steampipe v%s\n", version.SteampipeVersion.String())
-	fmt.Printf("For more information, type %s\n", constants.Bold(".help"))
+	statushooks.Message(ctx,
+		fmt.Sprintf("Welcome to Steampipe v%s", version.SteampipeVersion.String()),
+		fmt.Sprintf("For more information, type %s", constants.Bold(".help")))
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors
 	promptResultChan := make(chan utils.InteractiveExitStatus, 1)
-	c.runInteractivePromptAsync(promptCtx, &promptResultChan)
+	c.runInteractivePromptAsync(ctx, &promptResultChan)
 
 	// select results
 	for {
 		select {
 		case initResult := <-c.initResultChan:
-			c.handleInitResult(promptCtx, initResult)
+			c.handleInitResult(ctx, initResult)
 			// if there was an error, handleInitResult will shut down the prompt
 			// - we must wait for it to shut down and not return immediately
 
@@ -129,9 +138,9 @@ func (c *InteractiveClient) InteractivePrompt() {
 				return
 			}
 			// create new context
-			promptCtx = c.createPromptContext()
+			ctx = c.createPromptContext(parentContext)
 			// now run it again
-			c.runInteractivePromptAsync(promptCtx, &promptResultChan)
+			c.runInteractivePromptAsync(ctx, &promptResultChan)
 		}
 	}
 }
@@ -184,7 +193,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
 		fmt.Println()
-		utils.ShowError(initResult.Error)
+		utils.ShowError(ctx, initResult.Error)
 		return
 	}
 
@@ -231,7 +240,7 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 	}()
 
 	callExecutor := func(line string) {
-		c.executor(line)
+		c.executor(ctx, line)
 	}
 	completer := func(d prompt.Document) []prompt.Suggest {
 		return c.queryCompleter(d)
@@ -333,7 +342,7 @@ func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 	c.interactiveBuffer = []string{}
 }
 
-func (c *InteractiveClient) executor(line string) {
+func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	// take an execution lock, so that errors and warnings don't show up while
 	// we are underway
 	c.executionLock.Lock()
@@ -347,10 +356,10 @@ func (c *InteractiveClient) executor(line string) {
 	// we want to store even if we fail to resolve a query
 	c.interactiveQueryHistory.Push(line)
 
-	query, err := c.getQuery(line)
+	query, err := c.getQuery(ctx, line)
 	if query == "" {
 		if err != nil {
-			utils.ShowError(utils.HandleCancelError(err))
+			utils.ShowError(ctx, utils.HandleCancelError(err))
 		}
 		// restart the prompt
 		c.restartInteractiveSession()
@@ -358,20 +367,20 @@ func (c *InteractiveClient) executor(line string) {
 	}
 
 	// create a  context for the execution of the query
-	queryContext := c.createQueryContext()
+	queryContext := c.createQueryContext(ctx)
 
 	if metaquery.IsMetaQuery(query) {
 		if err := c.executeMetaquery(queryContext, query); err != nil {
-			utils.ShowError(err)
+			utils.ShowError(ctx, err)
 		}
 		// cancel the context
 		c.cancelActiveQueryIfAny()
 
 	} else {
 		// otherwise execute query
-		result, err := c.client().Execute(queryContext, query, false)
+		result, err := c.client().Execute(queryContext, query)
 		if err != nil {
-			utils.ShowError(utils.HandleCancelError(err))
+			utils.ShowError(ctx, utils.HandleCancelError(err))
 		} else {
 			c.resultsStreamer.StreamResult(result)
 		}
@@ -381,7 +390,7 @@ func (c *InteractiveClient) executor(line string) {
 	c.restartInteractiveSession()
 }
 
-func (c *InteractiveClient) getQuery(line string) (string, error) {
+func (c *InteractiveClient) getQuery(ctx context.Context, line string) (string, error) {
 	// if it's an empty line, then we don't need to do anything
 	if line == "" {
 		return "", nil
@@ -391,23 +400,20 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 	if !c.isInitialised() {
 		// create a context used purely to detect cancellation during initialisation
 		// this will also set c.cancelActiveQuery
-		queryContext := c.createQueryContext()
+		queryContext := c.createQueryContext(ctx)
 		defer func() {
 			// cancel this context
 			c.cancelActiveQueryIfAny()
 		}()
 
-		initDoneChan := make(chan bool)
-		sp := display.StartSpinnerAfterDelay("Initializing...", constants.SpinnerShowTimeout, initDoneChan)
+		statushooks.SetStatus(ctx, "Initializing...")
 		// wait for client initialisation to complete
-		if err := c.waitForInitData(queryContext); err != nil {
+		err := c.waitForInitData(queryContext)
+		statushooks.Done(ctx)
+		if err != nil {
 			// if it failed, report error and quit
-			close(initDoneChan)
-			display.StopSpinner(sp)
 			return "", err
 		}
-		close(initDoneChan)
-		display.StopSpinner(sp)
 	}
 
 	// push the current line into the buffer
@@ -420,7 +426,7 @@ func (c *InteractiveClient) getQuery(line string) (string, error) {
 	query, _, err := c.workspace().ResolveQueryAndArgs(queryString)
 	if err != nil {
 		// if we fail to resolve, show error but do not return it - we want to stay in the prompt
-		utils.ShowError(err)
+		utils.ShowError(ctx, err)
 		return "", nil
 	}
 	isNamedQuery := query != queryString

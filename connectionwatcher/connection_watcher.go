@@ -86,7 +86,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 	if err != nil {
 		log.Printf("[WARN] Error creating client to handle updated connection config: %s", err.Error())
 	}
-	defer client.Close()
+	defer client.Close(ctx)
 
 	log.Printf("[TRACE] loaded updated config")
 

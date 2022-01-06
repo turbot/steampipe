@@ -68,7 +68,7 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	client.connectionString = connectionString
 
 	if err := client.LoadForeignSchemaNames(ctx); err != nil {
-		client.Close()
+		client.Close(ctx)
 		return nil, err
 	}
 	return client, nil
@@ -114,7 +114,7 @@ func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallba
 
 // Close implements Client
 // closes the connection to the database and shuts down the backend
-func (c *DbClient) Close() error {
+func (c *DbClient) Close(context.Context) error {
 	log.Printf("[TRACE] DbClient.Close %v", c.dbClient)
 	if c.dbClient != nil {
 		c.sessionInitWaitGroup.Wait()

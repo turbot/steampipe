@@ -1,9 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/turbot/steampipe/statushooks"
+	"github.com/turbot/steampipe/statusspinner"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/mattn/go-isatty"
@@ -183,6 +187,19 @@ func Execute() int {
 	utils.LogTime("cmd.root.Execute start")
 	defer utils.LogTime("cmd.root.Execute end")
 
-	rootCmd.Execute()
+	ctx := createRootContext()
+	rootCmd.ExecuteContext(ctx)
 	return exitCode
+}
+
+// create the root context - create a status renderer and set as value
+func createRootContext() context.Context {
+	var statusRenderer statushooks.StatusHooks = statushooks.NullHooks
+	// if the client is a TTY, inject a status spinner
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		statusRenderer = statusspinner.NewStatusSpinner()
+	}
+
+	ctx := statushooks.AddStatusHooksToContext(context.Background(), statusRenderer)
+	return ctx
 }

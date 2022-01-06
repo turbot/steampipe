@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/contexthelpers"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/interactive"
@@ -13,34 +14,36 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func RunInteractiveSession(initData *query.InitData) {
+func RunInteractiveSession(ctx context.Context, initData *query.InitData) {
 	utils.LogTime("execute.RunInteractiveSession start")
 	defer utils.LogTime("execute.RunInteractiveSession end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := interactive.RunInteractivePrompt(initData)
+	resultsStreamer, err := interactive.RunInteractivePrompt(ctx, initData)
 	utils.FailOnError(err)
 
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		display.ShowOutput(r)
+		display.ShowOutput(ctx, r)
 		// signal to the resultStreamer that we are done with this chunk of the stream
 		resultsStreamer.AllResultsRead()
 	}
 }
 
 func RunBatchSession(ctx context.Context, initData *query.InitData) int {
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithCancel(ctx)
+
+	// start cancel handler to intercept interurpts and cancel the context
+	contexthelpers.StartCancelHandler(cancel)
+
 	// wait for init
 	<-initData.Loaded
 	if err := initData.Result.Error; err != nil {
 		utils.FailOnError(err)
 	}
 	// ensure we close client
-	defer func() {
-		if initData.Client != nil {
-			initData.Client.Close()
-		}
-	}()
+	defer initData.Cleanup(ctx)
 
 	// display any initialisation messages/warnings
 	initData.Result.DisplayMessages()
@@ -86,7 +89,7 @@ func executeQuery(ctx context.Context, queryString string, client db_common.Clie
 
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		display.ShowOutput(r)
+		display.ShowOutput(ctx, r)
 		// signal to the resultStreamer that we are done with this result
 		resultsStreamer.AllResultsRead()
 	}

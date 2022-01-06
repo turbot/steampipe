@@ -9,11 +9,12 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/shiena/ansicolor"
+	"github.com/turbot/steampipe/statushooks"
 )
 
 var (
-	colorErr    = color.RedString("Error")
-	colorWarn   = color.YellowString("Warning")
+	colorErr  = color.RedString("Error")
+	colorWarn = color.YellowString("Warning")
 )
 
 func init() {
@@ -34,20 +35,22 @@ func FailOnErrorWithMessage(err error, message string) {
 	}
 }
 
-func ShowError(err error) {
+func ShowError(ctx context.Context, err error) {
 	if err == nil {
 		return
 	}
 	err = HandleCancelError(err)
+	statushooks.Done(ctx)
 	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, TransformErrorToSteampipe(err))
 }
 
 // ShowErrorWithMessage displays the given error nicely with the given message
-func ShowErrorWithMessage(err error, message string) {
+func ShowErrorWithMessage(ctx context.Context, err error, message string) {
 	if err == nil {
 		return
 	}
 	err = HandleCancelError(err)
+	statushooks.Done(ctx)
 	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, TransformErrorToSteampipe(err))
 }
 

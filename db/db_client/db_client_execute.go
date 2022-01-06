@@ -8,12 +8,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/briandowns/spinner"
-	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -21,7 +18,7 @@ import (
 
 // ExecuteSync implements Client
 // execute a query against this client and wait for the result
-func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
+func (c *DbClient) ExecuteSync(ctx context.Context, query string) (*queryresult.SyncQueryResult, error) {
 	// acquire a session
 	sessionResult := c.AcquireSession(ctx)
 	if sessionResult.Error != nil {
@@ -32,17 +29,17 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, disableSpinner
 		// and not in call-time
 		sessionResult.Session.Close(utils.IsContextCancelled(ctx))
 	}()
-	return c.ExecuteSyncInSession(ctx, sessionResult.Session, query, disableSpinner)
+	return c.ExecuteSyncInSession(ctx, sessionResult.Session, query)
 }
 
 // ExecuteSyncInSession implements Client
 // execute a query against this client and wait for the result
-func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
+func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string) (*queryresult.SyncQueryResult, error) {
 	if query == "" {
 		return &queryresult.SyncQueryResult{}, nil
 	}
 
-	result, err := c.ExecuteInSession(ctx, session, query, nil, disableSpinner)
+	result, err := c.ExecuteInSession(ctx, session, query, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +58,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 // Execute implements Client
 // execute the query in the given Context
 // NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
-func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner bool) (*queryresult.Result, error) {
+func (c *DbClient) Execute(ctx context.Context, query string) (*queryresult.Result, error) {
 	// acquire a session
 	sessionResult := c.AcquireSession(ctx)
 	if sessionResult.Error != nil {
@@ -70,26 +67,29 @@ func (c *DbClient) Execute(ctx context.Context, query string, disableSpinner boo
 
 	// define callback to close session when the async execution is complete
 	closeSessionCallback := func() { sessionResult.Session.Close(utils.IsContextCancelled(ctx)) }
-	return c.ExecuteInSession(ctx, sessionResult.Session, query, closeSessionCallback, disableSpinner)
+	return c.ExecuteInSession(ctx, sessionResult.Session, query, closeSessionCallback)
 }
 
 // ExecuteInSession implements Client
 // execute the query in the given Context using the provided DatabaseSession
 // ExecuteInSession assumes no responsibility over the lifecycle of the DatabaseSession - that is the responsibility of the caller
 // NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
-func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
+func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func()) (res *queryresult.Result, err error) {
 	if query == "" {
 		return queryresult.NewQueryResult(nil), nil
 	}
 
 	startTime := time.Now()
-	// channel to flag to spinner that the query has run
-	var spinner *spinner.Spinner
+	var tx *sql.Tx
 
 	defer func() {
 		if err != nil {
 			// stop spinner in case of error
-			display.StopSpinner(spinner)
+			statushooks.Done(ctx)
+			// error - rollback transaction if we have one
+			if tx != nil {
+				tx.Rollback()
+			}
 			// call the completion callback - if one was provided
 			if onComplete != nil {
 				onComplete()
@@ -97,11 +97,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		}
 	}()
 
-	if !disableSpinner && cmdconfig.Viper().GetBool(constants.ConfigKeyShowInteractiveOutput) {
-		// if `show-interactive-output` is false, the spinner gets created, but is never shown
-		// so the s.Active() will always come back false . . .
-		spinner = display.ShowSpinner("Loading results...")
-	}
+	statushooks.SetStatus(ctx, "Loading results...")
 
 	// start query
 	var rows *sql.Rows
@@ -122,7 +118,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	// read the rows in a go routine
 	go func() {
 		// read in the rows and stream to the query result object
-		c.readRows(ctx, startTime, rows, result, spinner)
+		c.readRows(ctx, startTime, rows, result)
 		if onComplete != nil {
 			onComplete()
 		}
@@ -158,11 +154,11 @@ func (c *DbClient) startQuery(ctx context.Context, query string, conn *sql.Conn)
 	return
 }
 
-func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result, activeSpinner *spinner.Spinner) {
+func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result) {
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
-		// we are done fetching results. time for display. remove the spinner
-		display.StopSpinner(activeSpinner)
+		// we are done fetching results. time for display. clear the status indication
+		statushooks.Done(ctx)
 		// close the sql rows object
 		rows.Close()
 		if err := rows.Err(); err != nil {
@@ -191,7 +187,7 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 		continueToNext := true
 		select {
 		case <-ctx.Done():
-			display.UpdateSpinnerMessage(activeSpinner, "Cancelling query")
+			statushooks.SetStatus(ctx, "Cancelling query")
 			continueToNext = false
 		default:
 			if rowResult, err := readRowContext(ctx, rows, cols, colTypes); err != nil {
@@ -200,9 +196,9 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 			} else {
 				result.StreamRow(rowResult)
 			}
-			// update the spinner message with the count of rows that have already been fetched
+			// update the status message with the count of rows that have already been fetched
 			// this will not show if the spinner is not active
-			display.UpdateSpinnerMessage(activeSpinner, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
+			statushooks.SetStatus(ctx, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
 			rowCount++
 		}
 		if !continueToNext {

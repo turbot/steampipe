@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/contexthelpers"
 	"github.com/turbot/steampipe/control"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
@@ -24,6 +24,7 @@ import (
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/modinstaller"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -88,16 +89,21 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
 	initData := &control.InitData{}
+
+	// setup a cancel context and start cancel handler
+	ctx, cancel := context.WithCancel(cmd.Context())
+	contexthelpers.StartCancelHandler(cancel)
+
 	defer func() {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 
 		if initData.Client != nil {
 			log.Printf("[TRACE] close client")
-			initData.Client.Close()
+			initData.Client.Close(ctx)
 		}
 		if initData.Workspace != nil {
 			initData.Workspace.Close()
@@ -105,24 +111,22 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// verify we have an argument
-	if !validateArgs(cmd, args) {
+	if !validateArgs(ctx, cmd, args) {
 		return
 	}
 
-	var spinner *spinner.Spinner
-	if viper.GetBool(constants.ArgProgress) {
-		spinner = display.ShowSpinner("Initializing...")
+	// if progress is disabled, update context to contain a null status hooks object
+	if !viper.GetBool(constants.ArgProgress) {
+		statushooks.DisableStatusHooks(ctx)
 	}
 
 	// initialise
-	initData = initialiseCheck(cmd.Context(), spinner)
-	display.StopSpinner(spinner)
-	if shouldExit := handleCheckInitResult(initData); shouldExit {
+	initData = initialiseCheck(ctx)
+	if shouldExit := handleCheckInitResult(ctx, initData); shouldExit {
 		return
 	}
 
 	// pull out useful properties
-	ctx := initData.Ctx
 	workspace := initData.Workspace
 	client := initData.Client
 	failures := 0
@@ -165,7 +169,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exportWaitGroup.Wait()
 
 	if len(exportErrors) > 0 {
-		utils.ShowError(utils.CombineErrors(exportErrors...))
+		utils.ShowError(ctx, utils.CombineErrors(exportErrors...))
 	}
 
 	if shouldPrintTiming() {
@@ -176,10 +180,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = failures
 }
 
-func validateArgs(cmd *cobra.Command, args []string) bool {
+func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
 	if len(args) == 0 {
 		fmt.Println()
-		utils.ShowError(fmt.Errorf("you must provide at least one argument"))
+		utils.ShowError(ctx, fmt.Errorf("you must provide at least one argument"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -189,11 +193,13 @@ func validateArgs(cmd *cobra.Command, args []string) bool {
 	return true
 }
 
-func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *control.InitData {
+func initialiseCheck(ctx context.Context) *control.InitData {
+	statushooks.SetStatus(ctx, "Initializing...")
+	defer statushooks.Done(ctx)
+
 	initData := &control.InitData{
 		Result: &db_common.InitResult{},
 	}
-
 	if viper.GetBool(constants.ArgModInstall) {
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
 		_, err := modinstaller.InstallWorkspaceDependencies(opts)
@@ -202,9 +208,6 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *control.Ini
 			return initData
 		}
 	}
-
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
-
 	err := validateOutputFormat()
 	if err != nil {
 		initData.Result.Error = err
@@ -217,10 +220,6 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *control.Ini
 		return initData
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	startCancelHandler(cancel)
-	initData.Ctx = ctx
-
 	// set color schema
 	err = initialiseColorScheme()
 	if err != nil {
@@ -228,7 +227,7 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *control.Ini
 		return initData
 	}
 	// load workspace
-	initData.Workspace, err = loadWorkspacePromptingForVariables(ctx, spinner)
+	initData.Workspace, err = loadWorkspacePromptingForVariables(ctx)
 	if err != nil {
 		if !utils.IsCancelledError(err) {
 			err = utils.PrefixError(err, "failed to load workspace")
@@ -248,18 +247,14 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *control.Ini
 		initData.Result.AddWarnings("no controls found in current workspace")
 	}
 
-	display.UpdateSpinnerMessage(spinner, "Connecting to service...")
+	statushooks.SetStatus(ctx, "Connecting to service...")
 	// get a client
 	var client db_common.Client
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		client, err = db_client.NewDbClient(ctx, connectionString)
 	} else {
-		// stop the spinner
-		display.StopSpinner(spinner)
 		// when starting the database, installers may trigger their own spinners
 		client, err = db_local.GetLocalClient(ctx, constants.InvokerCheck)
-		// resume the spinner
-		display.ResumeSpinner(spinner)
 	}
 
 	if err != nil {
@@ -288,13 +283,13 @@ func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *control.Ini
 	return initData
 }
 
-func handleCheckInitResult(initData *control.InitData) bool {
+func handleCheckInitResult(ctx context.Context, initData *control.InitData) bool {
 	// if there is an error or cancellation we bomb out
 	// check for the various kinds of failures
 	utils.FailOnError(initData.Result.Error)
 	// cancelled?
-	if initData.Ctx != nil {
-		utils.FailOnError(initData.Ctx.Err())
+	if ctx != nil {
+		utils.FailOnError(ctx.Err())
 	}
 
 	// if there is a usage warning we display it

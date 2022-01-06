@@ -46,7 +46,7 @@ type ReportClientInfo struct {
 }
 
 func NewServer(ctx context.Context) (*Server, error) {
-	dbClient, err := db_local.GetLocalClient(ctx, constants.InvokerReport)
+	var dbClient, err = db_local.GetLocalClient(ctx, constants.InvokerReport)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 	}
 	refreshResult.ShowWarnings()
 
-	loadedWorkspace, err := workspace.Load(viper.GetString(constants.ArgWorkspaceChDir))
+	loadedWorkspace, err := workspace.Load(ctx, viper.GetString(constants.ArgWorkspaceChDir))
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 	}
 
 	loadedWorkspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
-	err = loadedWorkspace.SetupWatcher(dbClient, nil)
+	err = loadedWorkspace.SetupWatcher(ctx, dbClient, nil)
 
 	return server, err
 }
@@ -129,10 +129,10 @@ func (s *Server) Start() {
 	StartAPI(s.context, s.webSocket)
 }
 
-func (s *Server) Shutdown() {
+func (s *Server) Shutdown(ctx context.Context) {
 	// Close the DB client
 	if s.dbClient != nil {
-		s.dbClient.Close()
+		s.dbClient.Close(ctx)
 	}
 
 	if s.webSocket != nil {

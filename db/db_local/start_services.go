@@ -136,7 +136,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		// if there was an error and we started the service, stop it again
 		if res.Error != nil {
 			if res.Status == ServiceStarted {
-				StopServices(false, invoker, nil)
+				StopServices(ctx, false, invoker)
 			}
 			// remove the state file if we are going back with an error
 			removeRunningInstanceInfo()
@@ -554,7 +554,7 @@ func killInstanceIfAny(ctx context.Context) bool {
 	for _, process := range processes {
 		wg.Add(1)
 		go func(p *psutils.Process) {
-			doThreeStepPostgresExit(p)
+			doThreeStepPostgresExit(ctx, p)
 			wg.Done()
 		}(process)
 	}

@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
 	"strings"
 
-	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -18,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/interactive"
 	"github.com/turbot/steampipe/query"
 	"github.com/turbot/steampipe/query/queryexecute"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
@@ -80,11 +79,12 @@ Examples:
 }
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("cmd.runQueryCmd start")
 	defer func() {
 		utils.LogTime("cmd.runQueryCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 		}
 	}()
 
@@ -97,19 +97,11 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// enable spinner only in interactive mode
 	interactiveMode := len(args) == 0
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, interactiveMode)
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
-	ctx := cmd.Context()
-	if !interactiveMode {
-		c, cancel := context.WithCancel(ctx)
-		startCancelHandler(cancel)
-		ctx = c
-	}
-
 	// load the workspace
-	w, err := loadWorkspacePromptingForVariables(ctx, nil)
+	w, err := loadWorkspacePromptingForVariables(ctx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	// se we have loaded a workspace - be sure to close it
@@ -119,7 +111,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	initData := query.NewInitData(ctx, w, args)
 
 	if interactiveMode {
-		queryexecute.RunInteractiveSession(initData)
+		queryexecute.RunInteractiveSession(ctx, initData)
 	} else {
 		// set global exit code
 		exitCode = queryexecute.RunBatchSession(ctx, initData)
@@ -144,10 +136,10 @@ func getPipedStdinData() string {
 	return stdinData
 }
 
-func loadWorkspacePromptingForVariables(ctx context.Context, spinner *spinner.Spinner) (*workspace.Workspace, error) {
+func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspace, error) {
 	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
 
-	w, err := workspace.Load(workspacePath)
+	w, err := workspace.Load(ctx, workspacePath)
 	if err == nil {
 		return w, nil
 	}
@@ -156,29 +148,13 @@ func loadWorkspacePromptingForVariables(ctx context.Context, spinner *spinner.Sp
 	if !ok {
 		return nil, err
 	}
-	if spinner != nil {
-		spinner.Stop()
-	}
 	// so we have missing variables - prompt for them
+	// first hide spinner if it is there
+	statushooks.Done(ctx)
 	if err := interactive.PromptForMissingVariables(ctx, missingVariablesError.MissingVariables); err != nil {
 		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
 		return nil, err
 	}
-	if spinner != nil {
-		spinner.Start()
-	}
 	// ok we should have all variables now - reload workspace
-	return workspace.Load(workspacePath)
-}
-
-func startCancelHandler(cancel context.CancelFunc) {
-	sigIntChannel := make(chan os.Signal, 1)
-	signal.Notify(sigIntChannel, os.Interrupt)
-	go func() {
-		<-sigIntChannel
-		log.Println("[TRACE] got SIGINT")
-		// call context cancellation function
-		cancel()
-		// leave the channel open - any subsequent interrupts hits will be ignored
-	}()
+	return workspace.Load(ctx, workspacePath)
 }

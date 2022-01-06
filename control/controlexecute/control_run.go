@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -92,8 +93,8 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 	return res
 }
 
-func (r *ControlRun) skip() {
-	r.setRunStatus(ControlRunComplete)
+func (r *ControlRun) skip(ctx context.Context) {
+	r.setRunStatus(ctx, ControlRunComplete)
 }
 
 // set search path for this control run
@@ -196,14 +197,14 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	r.runStatus = ControlRunStarted
 
 	// update the current running control in the Progress renderer
-	r.executionTree.progress.OnControlStart(control)
-	defer r.executionTree.progress.OnControlFinish()
+	r.executionTree.progress.OnControlStart(ctx, control)
+	defer r.executionTree.progress.OnControlFinish(ctx)
 
 	// resolve the control query
 	r.Lifecycle.Add("query_resolution_start")
 	query, err := r.resolveControlQuery(control)
 	if err != nil {
-		r.SetError(err)
+		r.SetError(ctx, err)
 		return
 	}
 	r.Lifecycle.Add("query_resolution_finish")
@@ -211,7 +212,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] setting search path %s\n", control.Name())
 	r.Lifecycle.Add("set_search_path_start")
 	if err := r.setSearchPath(ctx, dbSession, client); err != nil {
-		r.SetError(err)
+		r.SetError(ctx, err)
 		return
 	}
 	r.Lifecycle.Add("set_search_path_finish")
@@ -225,7 +226,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	// NOTE no need to pass an OnComplete callback - we are already closing our session after waiting for results
 	log.Printf("[TRACE] execute start for, %s\n", control.Name())
 	r.Lifecycle.Add("query_start")
-	queryResult, err := client.ExecuteInSession(controlExecutionCtx, dbSession, query, nil, false)
+	queryResult, err := client.ExecuteInSession(controlExecutionCtx, dbSession, query, nil)
 	r.Lifecycle.Add("query_finish")
 	log.Printf("[TRACE] execute finish for, %s\n", control.Name())
 
@@ -243,7 +244,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 				log.Printf("[TRACE] control %s query failed again with plugin connectivity error %s - NOT retrying...", r.Control.Name(), err)
 			}
 		}
-		r.SetError(err)
+		r.SetError(ctx, err)
 		return
 	}
 
@@ -255,7 +256,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] finish result for, %s\n", control.Name())
 }
 
-func (r *ControlRun) SetError(err error) {
+func (r *ControlRun) SetError(ctx context.Context, err error) {
 	if err == nil {
 		return
 	}
@@ -263,18 +264,23 @@ func (r *ControlRun) SetError(err error) {
 
 	// update error count
 	r.Summary.Error++
-	r.setRunStatus(ControlRunError)
+	r.setRunStatus(ctx, ControlRunError)
 }
 
 func (r *ControlRun) GetError() error {
 	return r.runError
 }
 
+// create a context with a deadline, and with status updates disabled (we do not want to show 'loading' results)
 func (r *ControlRun) getControlQueryContext(ctx context.Context) context.Context {
 	// create a context with a deadline
 	shouldBeDoneBy := time.Now().Add(controlQueryTimeout)
 	// we don't use this cancel fn because, pgx prematurely cancels the PG connection when this cancel gets called in 'defer'
 	newCtx, _ := context.WithDeadline(ctx, shouldBeDoneBy)
+
+	// disable the status spinner to hide 'loading' results)
+	newCtx = statushooks.DisableStatusHooks(newCtx)
+
 	return newCtx
 }
 
@@ -304,20 +310,20 @@ func (r *ControlRun) waitForResults(ctx context.Context) {
 	// create a channel to which will be closed when gathering has been done
 	gatherDoneChan := make(chan string)
 	go func() {
-		r.gatherResults()
+		r.gatherResults(ctx)
 		close(gatherDoneChan)
 	}()
 
 	select {
 	// check for cancellation
 	case <-ctx.Done():
-		r.SetError(ctx.Err())
+		r.SetError(ctx, ctx.Err())
 	case <-gatherDoneChan:
 		// do nothing
 	}
 }
 
-func (r *ControlRun) gatherResults() {
+func (r *ControlRun) gatherResults(ctx context.Context) {
 	r.Lifecycle.Add("gather_start")
 	defer func() { r.Lifecycle.Add("gather_finish") }()
 	for {
@@ -326,14 +332,14 @@ func (r *ControlRun) gatherResults() {
 			// nil row means control run is complete
 			if row == nil {
 				// nil row means we are done
-				r.setRunStatus(ControlRunComplete)
+				r.setRunStatus(ctx, ControlRunComplete)
 				r.createdOrderedResultRows()
 				return
 			}
 			// if the row is in error then we terminate the run
 			if row.Error != nil {
 				// set error status and summary
-				r.SetError(row.Error)
+				r.SetError(ctx, row.Error)
 				// update the result group status with our status - this will be passed all the way up the execution tree
 				r.group.updateSummary(r.Summary)
 				return
@@ -342,7 +348,7 @@ func (r *ControlRun) gatherResults() {
 			// so all is ok - create another result row
 			result, err := NewResultRow(r.Control, row, r.queryResult.ColTypes)
 			if err != nil {
-				r.SetError(err)
+				r.SetError(ctx, err)
 				return
 			}
 			r.addResultRow(result)
@@ -380,7 +386,7 @@ func (r *ControlRun) createdOrderedResultRows() {
 	}
 }
 
-func (r *ControlRun) setRunStatus(status ControlRunStatus) {
+func (r *ControlRun) setRunStatus(ctx context.Context, status ControlRunStatus) {
 	r.stateLock.Lock()
 	r.runStatus = status
 	r.stateLock.Unlock()
@@ -388,12 +394,11 @@ func (r *ControlRun) setRunStatus(status ControlRunStatus) {
 	if r.Finished() {
 		// update Progress
 		if status == ControlRunError {
-			r.executionTree.progress.OnControlError()
+			r.executionTree.progress.OnControlError(ctx)
 		} else {
-			r.executionTree.progress.OnControlComplete()
+			r.executionTree.progress.OnControlComplete(ctx)
 		}
 
-		// TODO CANCEL QUERY IF NEEDED
 		r.doneChan <- true
 	}
 }

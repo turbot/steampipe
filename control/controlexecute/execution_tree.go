@@ -12,6 +12,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 	"golang.org/x/sync/semaphore"
@@ -40,9 +41,10 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 		workspace: workspace,
 		client:    client,
 	}
-	// if a "--where" or "--tag" parameter was passed, build a map of control manes used to filter the controls to run
-	// NOTE: not enabled yet
-	err := executionTree.populateControlFilterMap(ctx)
+	// if a "--where" or "--tag" parameter was passed, build a map of control names used to filter the controls to run
+	// create a context with status hooks disabled
+	noStatusCtx := statushooks.DisableStatusHooks(ctx)
+	err := executionTree.populateControlFilterMap(noStatusCtx)
 
 	if err != nil {
 		return nil, err
@@ -55,7 +57,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	}
 
 	// build tree of result groups, starting with a synthetic 'root' node
-	executionTree.Root = NewRootResultGroup(executionTree, rootItem)
+	executionTree.Root = NewRootResultGroup(ctx, executionTree, rootItem)
 
 	// after tree has built, ControlCount will be set - create progress rendered
 	executionTree.progress = NewControlProgressRenderer(len(executionTree.controlRuns))
@@ -65,7 +67,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 
 // AddControl checks whether control should be included in the tree
 // if so, creates a ControlRun, which is added to the parent group
-func (e *ExecutionTree) AddControl(control *modconfig.Control, group *ResultGroup) {
+func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Control, group *ResultGroup) {
 	// note we use short name to determine whether to include a control
 	if e.ShouldIncludeControl(control.ShortName) {
 		// create new ControlRun with treeItem as the parent
@@ -81,11 +83,11 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.StartTime = time.Now()
-	e.progress.Start()
+	e.progress.Start(ctx)
 
 	defer func() {
 		e.EndTime = time.Now()
-		e.progress.Finish()
+		e.progress.Finish(ctx)
 	}()
 
 	// the number of goroutines parallel to start
@@ -247,7 +249,7 @@ func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereC
 		query = fmt.Sprintf("select resource_name from %s where %s", constants.IntrospectionTableControl, whereClause)
 	}
 
-	res, err := e.client.ExecuteSync(ctx, query, false)
+	res, err := e.client.ExecuteSync(ctx, query)
 	if err != nil {
 		return nil, err
 	}
