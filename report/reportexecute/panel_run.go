@@ -55,17 +55,7 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 	if panel.SQL != nil {
 		r.runStatus = reportinterfaces.ReportRunReady
 	}
-	// create report runs for all children
-	for _, childReport := range panel.Reports {
-		childRun := NewReportRun(childReport, executionTree)
-		// if our child has not completed, we have not completed
-		if childRun.runStatus == reportinterfaces.ReportRunReady {
-			// add a dependency on this child
-			executionTree.AddDependency(r.Name, childRun.Name)
-			r.runStatus = reportinterfaces.ReportRunReady
-		}
-		r.ReportRuns = append(r.ReportRuns, childRun)
-	}
+
 	for _, childPanel := range panel.Panels {
 		childRun := NewPanelRun(childPanel, executionTree)
 		// if our child has not completed, we have not completed

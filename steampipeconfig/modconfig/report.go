@@ -12,15 +12,17 @@ import (
 type Report struct {
 	FullName  string `cty:"name"`
 	ShortName string
-	Title     *string
+	Title     *string `column:"title,text"`
 
-	Reports []*Report //`hcl:"report,block"`
-	Panels  []*Panel  //`hcl:"panel,block"`
+	Reports []*Report
+	Panels  []*Panel
 
-	Mod *Mod `cty:"mod"`
+	Children []string `column:"children,jsonb"`
+	Mod      *Mod     `cty:"mod"`
 
 	DeclRange hcl.Range
 
+	Paths           []NodePath `column:"path,jsonb"`
 	parents         []ModTreeItem
 	metadata        *ResourceMetadata
 	UnqualifiedName string
@@ -48,7 +50,26 @@ func (r *Report) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (r *Report) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+func (r *Report) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	r.setChildNames()
+
+	return nil
+}
+
+func (r *Report) setChildNames() {
+	numChildren := len(r.Panels) + len(r.Reports)
+	if numChildren == 0 {
+		return
+	}
+	// set children names
+	r.Children = make([]string, numChildren)
+	for i, p := range r.Panels {
+		r.Children[i] = p.Name()
+	}
+	for i, r := range r.Reports {
+		r.Children[i+len(r.Panels)] = r.Name()
+	}
+}
 
 // AddReference implements HclResource
 func (r *Report) AddReference(*ResourceReference) {
@@ -132,13 +153,20 @@ func (r *Report) GetTags() map[string]string {
 
 // GetPaths implements ModTreeItem
 func (r *Report) GetPaths() []NodePath {
-	var res []NodePath
+	// lazy load
+	if len(r.Paths) == 0 {
+		r.SetPaths()
+	}
+	return r.Paths
+}
+
+// SetPaths implements ModTreeItem
+func (r *Report) SetPaths() {
 	for _, parent := range r.parents {
 		for _, parentPath := range parent.GetPaths() {
-			res = append(res, append(parentPath, r.Name()))
+			r.Paths = append(r.Paths, append(parentPath, r.Name()))
 		}
 	}
-	return res
 }
 
 // GetMetadata implements ResourceWithMetadata

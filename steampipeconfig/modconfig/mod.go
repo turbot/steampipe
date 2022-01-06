@@ -383,6 +383,9 @@ func (m *Mod) GetPaths() []NodePath {
 	return []NodePath{{m.Name()}}
 }
 
+// SetPaths implements ModTreeItem
+func (m *Mod) SetPaths() {}
+
 // AddPseudoResource adds the pseudo resource to the mod,
 // as long as there is no existing resource of same name
 //

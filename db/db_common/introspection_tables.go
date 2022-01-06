@@ -50,6 +50,8 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Report{}, constants.IntrospectionTableReport, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Panel{}, constants.IntrospectionTablePanel, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
@@ -88,6 +90,18 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 		if _, added := resourcesAdded[variable.Name()]; !added {
 			resourcesAdded[variable.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
+		}
+	}
+	for _, report := range workspaceResources.Reports {
+		if _, added := resourcesAdded[report.Name()]; !added {
+			resourcesAdded[report.Name()] = true
+			insertSql = append(insertSql, getTableInsertSqlForResource(report, constants.IntrospectionTableReport))
+		}
+	}
+	for _, panel := range workspaceResources.Panels {
+		if _, added := resourcesAdded[panel.Name()]; !added {
+			resourcesAdded[panel.Name()] = true
+			insertSql = append(insertSql, getTableInsertSqlForResource(panel, constants.IntrospectionTablePanel))
 		}
 	}
 	for _, reference := range workspaceResources.References {
