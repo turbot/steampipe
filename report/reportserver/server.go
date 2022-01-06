@@ -57,7 +57,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 	}
 	refreshResult.ShowWarnings()
 
-	loadedWorkspace, err := workspace.Load(viper.GetString(constants.ArgWorkspaceChDir))
+	loadedWorkspace, err := workspace.Load(ctx, viper.GetString(constants.ArgWorkspaceChDir))
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 	}
 
 	loadedWorkspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
-	err = loadedWorkspace.SetupWatcher(dbClient, nil)
+	err = loadedWorkspace.SetupWatcher(ctx, dbClient, nil)
 
 	return server, err
 }

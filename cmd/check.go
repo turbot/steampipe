@@ -97,7 +97,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 
@@ -111,7 +111,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// verify we have an argument
-	if !validateArgs(cmd, args) {
+	if !validateArgs(ctx, cmd, args) {
 		return
 	}
 
@@ -169,7 +169,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exportWaitGroup.Wait()
 
 	if len(exportErrors) > 0 {
-		utils.ShowError(utils.CombineErrors(exportErrors...))
+		utils.ShowError(ctx, utils.CombineErrors(exportErrors...))
 	}
 
 	if shouldPrintTiming() {
@@ -180,10 +180,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = failures
 }
 
-func validateArgs(cmd *cobra.Command, args []string) bool {
+func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
 	if len(args) == 0 {
 		fmt.Println()
-		utils.ShowError(fmt.Errorf("you must provide at least one argument"))
+		utils.ShowError(ctx, fmt.Errorf("you must provide at least one argument"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()

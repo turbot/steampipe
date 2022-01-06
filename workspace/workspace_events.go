@@ -22,7 +22,7 @@ func (w *Workspace) RegisterReportEventHandler(handler reportevents.ReportEventH
 	w.reportEventHandlers = append(w.reportEventHandlers, handler)
 }
 
-func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsnotify.Event) {
+func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, events []fsnotify.Event) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
@@ -32,11 +32,11 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 	prevResourceMaps := w.GetResourceMaps()
 
 	// now reload the workspace
-	err := w.loadWorkspaceMod()
+	err := w.loadWorkspaceMod(ctx)
 	if err != nil {
 		// check the existing watcher error - if we are already in an error state, do not show error
 		if w.watcherError == nil {
-			w.fileWatcherErrorHandler(utils.PrefixError(err, "Failed to reload workspace"))
+			w.fileWatcherErrorHandler(ctx, utils.PrefixError(err, "Failed to reload workspace"))
 		}
 		// now set watcher error to new error
 		w.watcherError = err
@@ -53,7 +53,7 @@ func (w *Workspace) handleFileWatcherEvent(client db_common.Client, events []fsn
 		res := client.RefreshSessions(context.Background())
 		if res.Error != nil || len(res.Warnings) > 0 {
 			fmt.Println()
-			utils.ShowErrorWithMessage(res.Error, "error when refreshing session data")
+			utils.ShowErrorWithMessage(ctx, res.Error, "error when refreshing session data")
 			utils.ShowWarning(strings.Join(res.Warnings, "\n"))
 			if w.onFileWatcherEventMessages != nil {
 				w.onFileWatcherEventMessages()

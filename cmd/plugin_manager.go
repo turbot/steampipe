@@ -33,6 +33,7 @@ func pluginManagerCmd() *cobra.Command {
 }
 
 func runPluginManagerCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	logger := createPluginManagerLog()
 
 	log.Printf("[INFO] starting plugin manager")
@@ -51,7 +52,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 		connectionWatcher, err := connectionwatcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
 		if err != nil {
 			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
-			utils.ShowError(err)
+			utils.ShowError(ctx, err)
 			os.Exit(1)
 		}
 

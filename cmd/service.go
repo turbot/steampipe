@@ -21,7 +21,6 @@ import (
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/pluginmanager"
-	"github.com/turbot/steampipe/statusspinner"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -130,11 +129,12 @@ func serviceRestartCmd() *cobra.Command {
 }
 
 func runServiceStartCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("runServiceStartCmd start")
 	defer func() {
 		utils.LogTime("runServiceStartCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			if exitCode == 0 {
 				// there was an error and the exitcode
 				// was not set to a non-zero value.
@@ -166,7 +166,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnError(startResult.Error)
 
 	if startResult.Status == db_local.ServiceFailedToStart {
-		utils.ShowError(fmt.Errorf("steampipe service failed to start"))
+		utils.ShowError(ctx, fmt.Errorf("steampipe service failed to start"))
 		return
 	}
 
@@ -198,7 +198,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		utils.FailOnError(err)
 	}
 
-	printStatus(startResult.DbState, startResult.PluginManagerState)
+	printStatus(ctx, startResult.DbState, startResult.PluginManagerState)
 
 	if viper.GetBool(constants.ArgForeground) {
 		runServiceInForeground(ctx, invoker)
@@ -235,7 +235,7 @@ func runServiceInForeground(ctx context.Context, invoker constants.Invoker) {
 			count, err := db_local.GetCountOfThirdPartyClients(context.Background())
 			if err != nil {
 				// report the error in the off chance that there's one
-				utils.ShowError(err)
+				utils.ShowError(ctx, err)
 				return
 			}
 
@@ -257,11 +257,12 @@ func runServiceInForeground(ctx context.Context, invoker constants.Invoker) {
 }
 
 func runServiceRestartCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("runServiceRestartCmd start")
 	defer func() {
 		utils.LogTime("runServiceRestartCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			if exitCode == 0 {
 				// there was an error and the exitcode
 				// was not set to a non-zero value.
@@ -280,7 +281,6 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// stop db
-	ctx := cmd.Context()
 	stopStatus, err := db_local.StopServices(ctx, viper.GetBool(constants.ArgForce), constants.InvokerService)
 	utils.FailOnErrorWithMessage(err, "could not stop current instance")
 	if stopStatus != db_local.ServiceStopped {
@@ -311,16 +311,17 @@ to force a restart.
 	utils.FailOnError(err)
 	fmt.Println("Steampipe service restarted.")
 
-	printStatus(startResult.DbState, startResult.PluginManagerState)
+	printStatus(ctx, startResult.DbState, startResult.PluginManagerState)
 
 }
 
 func runServiceStatusCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("runServiceStatusCmd status")
 	defer func() {
 		utils.LogTime("runServiceStatusCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 		}
 	}()
 
@@ -335,10 +336,10 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 		pmState, pmStateErr := pluginmanager.LoadPluginManagerState()
 
 		if dbStateErr != nil || pmStateErr != nil {
-			utils.ShowError(composeStateError(dbStateErr, pmStateErr))
+			utils.ShowError(ctx, composeStateError(dbStateErr, pmStateErr))
 			return
 		}
-		printStatus(dbState, pmState)
+		printStatus(ctx, dbState, pmState)
 	}
 }
 
@@ -358,6 +359,7 @@ func composeStateError(dbStateErr error, pmStateErr error) error {
 }
 
 func runServiceStopCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("runServiceStopCmd stop")
 
 	var status db_local.StopStatus
@@ -367,7 +369,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("runServiceStopCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			if exitCode == 0 {
 				// there was an error and the exitcode
 				// was not set to a non-zero value.
@@ -376,10 +378,6 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 			}
 		}
 	}()
-
-	// create a status hooks with a short delay and add to context
-	s := statusspinner.NewStatusSpinner(statusspinner.WithDelay(constants.SpinnerShowTimeout))
-	ctx := statushooks.AddStatusHooksToContext(cmd.Context(), s)
 
 	force := cmdconfig.Viper().GetBool(constants.ArgForce)
 	if force {
@@ -413,7 +411,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if err != nil {
-		utils.ShowError(err)
+		utils.ShowError(ctx, err)
 		return
 	}
 
@@ -492,7 +490,7 @@ func getServiceProcessDetails(process *psutils.Process) (string, string, string,
 	return fmt.Sprintf("%d", process.Pid), installDir, port, listenType
 }
 
-func printStatus(dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.PluginManagerState) {
+func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.PluginManagerState) {
 	if dbState == nil && !pmState.Running {
 		fmt.Println("Service is not running")
 		return
@@ -547,7 +545,7 @@ To keep the service running after the %s session completes, use %s.
 		// the service is running, but the plugin_manager is not running and there's no state file
 		// meaning that it cannot be restarted by the FDW
 		// it's an ERROR
-		utils.ShowError(fmt.Errorf(`
+		utils.ShowError(ctx, fmt.Errorf(`
 Service is running, but the Plugin Manager cannot be recovered.
 Please use %s to recover the service
 `,

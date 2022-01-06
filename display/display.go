@@ -2,6 +2,7 @@ package display
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -20,17 +21,17 @@ import (
 )
 
 // ShowOutput :: displays the output using the proper formatter as applicable
-func ShowOutput(result *queryresult.Result) {
+func ShowOutput(ctx context.Context, result *queryresult.Result) {
 	output := cmdconfig.Viper().GetString(constants.ArgOutput)
 	if output == constants.OutputFormatJSON {
-		displayJSON(result)
+		displayJSON(ctx, result)
 	} else if output == constants.OutputFormatCSV {
-		displayCSV(result)
+		displayCSV(ctx, result)
 	} else if output == constants.OutputFormatLine {
-		displayLine(result)
+		displayLine(ctx, result)
 	} else {
 		// default
-		displayTable(result)
+		displayTable(ctx, result)
 	}
 }
 
@@ -102,7 +103,7 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 	return colConfigs, headerRow
 }
 
-func displayLine(result *queryresult.Result) {
+func displayLine(ctx context.Context, result *queryresult.Result) {
 	colNames := ColumnNames(result.ColTypes)
 	maxColNameLength := 0
 	for _, colName := range colNames {
@@ -158,7 +159,7 @@ func displayLine(result *queryresult.Result) {
 
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
-		utils.ShowError(err)
+		utils.ShowError(ctx, err)
 		return
 	}
 }
@@ -173,7 +174,7 @@ func getTerminalColumnsRequiredForString(str string) int {
 	return colsRequired
 }
 
-func displayJSON(result *queryresult.Result) {
+func displayJSON(ctx context.Context, result *queryresult.Result) {
 	var jsonOutput []map[string]interface{}
 
 	// define function to add each row to the JSON output
@@ -188,7 +189,7 @@ func displayJSON(result *queryresult.Result) {
 
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
-		utils.ShowError(err)
+		utils.ShowError(ctx, err)
 		return
 	}
 	// display the JSON
@@ -202,7 +203,7 @@ func displayJSON(result *queryresult.Result) {
 	fmt.Println()
 }
 
-func displayCSV(result *queryresult.Result) {
+func displayCSV(ctx context.Context, result *queryresult.Result) {
 	csvWriter := csv.NewWriter(os.Stdout)
 	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
 
@@ -219,17 +220,17 @@ func displayCSV(result *queryresult.Result) {
 
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
-		utils.ShowError(err)
+		utils.ShowError(ctx, err)
 		return
 	}
 
 	csvWriter.Flush()
 	if csvWriter.Error() != nil {
-		utils.ShowErrorWithMessage(csvWriter.Error(), "unable to print csv")
+		utils.ShowErrorWithMessage(ctx, csvWriter.Error(), "unable to print csv")
 	}
 }
 
-func displayTable(result *queryresult.Result) {
+func displayTable(ctx context.Context, result *queryresult.Result) {
 	// the buffer to put the output data in
 	outbuf := bytes.NewBufferString("")
 
@@ -271,14 +272,14 @@ func displayTable(result *queryresult.Result) {
 	if err != nil {
 		// display the error
 		fmt.Println()
-		utils.ShowError(err)
+		utils.ShowError(ctx, err)
 		fmt.Println()
 	}
 	// write out the table to the buffer
 	t.Render()
 
 	// page out the table
-	ShowPaged(outbuf.String())
+	ShowPaged(ctx, outbuf.String())
 
 	// if timer is turned on
 	if cmdconfig.Viper().GetBool(constants.ArgTimer) {

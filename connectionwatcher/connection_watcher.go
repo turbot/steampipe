@@ -82,7 +82,6 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 	}
 	log.Printf("[TRACE] loaded updated config")
 
-	// TODO KAI DISABLE STATUSHOOKS
 	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher)
 	if err != nil {
 		log.Printf("[WARN] Error creating client to handle updated connection config: %s", err.Error())

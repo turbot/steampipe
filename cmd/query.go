@@ -8,8 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/turbot/steampipe/statushooks"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -18,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/interactive"
 	"github.com/turbot/steampipe/query"
 	"github.com/turbot/steampipe/query/queryexecute"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
@@ -80,11 +79,12 @@ Examples:
 }
 
 func runQueryCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("cmd.runQueryCmd start")
 	defer func() {
 		utils.LogTime("cmd.runQueryCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 		}
 	}()
 
@@ -99,8 +99,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	interactiveMode := len(args) == 0
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
-
-	ctx := cmd.Context()
 
 	// load the workspace
 	w, err := loadWorkspacePromptingForVariables(ctx)
@@ -141,7 +139,7 @@ func getPipedStdinData() string {
 func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspace, error) {
 	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
 
-	w, err := workspace.Load(workspacePath)
+	w, err := workspace.Load(ctx, workspacePath)
 	if err == nil {
 		return w, nil
 	}
@@ -158,5 +156,5 @@ func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
 		return nil, err
 	}
 	// ok we should have all variables now - reload workspace
-	return workspace.Load(workspacePath)
+	return workspace.Load(ctx, workspacePath)
 }

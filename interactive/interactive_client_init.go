@@ -16,11 +16,11 @@ import (
 
 var initTimeout = 40 * time.Second
 
-func (c *InteractiveClient) readInitDataStream() {
+func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			c.interactivePrompt.ClearScreen()
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 
 		}
 	}()
@@ -40,15 +40,15 @@ func (c *InteractiveClient) readInitDataStream() {
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
 		// provide an explicit error handler which re-renders the prompt after displaying the error
-		c.initData.Result.Error = c.initData.Workspace.SetupWatcher(c.initData.Client, c.workspaceWatcherErrorHandler)
+		c.initData.Result.Error = c.initData.Workspace.SetupWatcher(ctx, c.initData.Client, c.workspaceWatcherErrorHandler)
 
 	}
 	c.initResultChan <- c.initData.Result
 }
 
-func (c *InteractiveClient) workspaceWatcherErrorHandler(err error) {
+func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {
 	fmt.Println()
-	utils.ShowError(err)
+	utils.ShowError(ctx, err)
 	c.interactivePrompt.Render()
 }
 

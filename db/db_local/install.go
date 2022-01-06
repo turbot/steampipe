@@ -200,7 +200,6 @@ func runInstall(ctx context.Context, firstInstall bool) error {
 
 	err := utils.RemoveDirectoryContents(getDataLocation())
 	if err != nil {
-
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Prepare database install location... FAILED!")
 	}

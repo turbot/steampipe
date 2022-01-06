@@ -54,7 +54,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	// we can shut down the database
 	stopStatus, err := StopServices(ctx, false, invoker)
 	if err != nil {
-		utils.ShowError(err)
+		utils.ShowError(ctx, err)
 	}
 	if stopStatus == ServiceStopped {
 		return
@@ -63,7 +63,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	// shutdown failed - try to force stop
 	_, err = StopServices(ctx, true, invoker)
 	if err != nil {
-		utils.ShowError(err)
+		utils.ShowError(ctx, err)
 	}
 
 }
@@ -138,7 +138,6 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	if err != nil {
 		return ServiceStopFailed, err
 	}
-
 
 	err = doThreeStepPostgresExit(ctx, process)
 	if err != nil {

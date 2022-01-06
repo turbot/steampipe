@@ -399,7 +399,6 @@ func (r *ControlRun) setRunStatus(ctx context.Context, status ControlRunStatus) 
 			r.executionTree.progress.OnControlComplete(ctx)
 		}
 
-		// TODO CANCEL QUERY IF NEEDED
 		r.doneChan <- true
 	}
 }

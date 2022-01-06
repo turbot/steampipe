@@ -2,6 +2,7 @@ package display
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -15,9 +16,9 @@ import (
 )
 
 // ShowPaged displays the `content` in a system dependent pager
-func ShowPaged(content string) {
+func ShowPaged(ctx context.Context, content string) {
 	if isPagerNeeded(content) && (runtime.GOOS == "darwin" || runtime.GOOS == "linux") {
-		nixPager(content)
+		nixPager(ctx, content)
 	} else {
 		nullPager(content)
 	}
@@ -59,11 +60,11 @@ func nullPager(content string) {
 	fmt.Print(content)
 }
 
-func nixPager(content string) {
+func nixPager(ctx context.Context, content string) {
 	if isLessAvailable() {
-		execPager(exec.Command("less", "-SRXF"), content)
+		execPager(ctx, exec.Command("less", "-SRXF"), content)
 	} else if isMoreAvailable() {
-		execPager(exec.Command("more"), content)
+		execPager(ctx, exec.Command("more"), content)
 	} else {
 		nullPager(content)
 	}
@@ -79,13 +80,13 @@ func isMoreAvailable() bool {
 	return err == nil
 }
 
-func execPager(cmd *exec.Cmd, content string) {
+func execPager(ctx context.Context, cmd *exec.Cmd, content string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = strings.NewReader(content)
 	// run the command - it will block until the pager is exited
 	err := cmd.Run()
 	if err != nil {
-		utils.ShowErrorWithMessage(err, "could not display results")
+		utils.ShowErrorWithMessage(ctx, err, "could not display results")
 	}
 }

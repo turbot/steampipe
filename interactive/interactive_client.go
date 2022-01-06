@@ -70,7 +70,7 @@ func getHighlighter(theme string) *Highlighter {
 	)
 }
 
-func newInteractiveClient(initData *query.InitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+func newInteractiveClient(ctx context.Context, initData *query.InitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
 	c := &InteractiveClient{
 		initData:                initData,
 		resultsStreamer:         resultsStreamer,
@@ -83,7 +83,7 @@ func newInteractiveClient(initData *query.InitData, resultsStreamer *queryresult
 
 	// asynchronously wait for init to complete
 	// we start this immediately rather than lazy loading as we want to handle errors asap
-	go c.readInitDataStream()
+	go c.readInitDataStream(ctx)
 	return c, nil
 }
 
@@ -99,7 +99,7 @@ func (c *InteractiveClient) InteractivePrompt(ctx context.Context) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 		}
 		// close up the SIGINT channel so that the receiver goroutine can quit
 		signal.Stop(interruptSignalChannel)
@@ -193,7 +193,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
 		fmt.Println()
-		utils.ShowError(initResult.Error)
+		utils.ShowError(ctx, initResult.Error)
 		return
 	}
 
@@ -359,7 +359,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	query, err := c.getQuery(ctx, line)
 	if query == "" {
 		if err != nil {
-			utils.ShowError(utils.HandleCancelError(err))
+			utils.ShowError(ctx, utils.HandleCancelError(err))
 		}
 		// restart the prompt
 		c.restartInteractiveSession()
@@ -371,7 +371,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 
 	if metaquery.IsMetaQuery(query) {
 		if err := c.executeMetaquery(queryContext, query); err != nil {
-			utils.ShowError(err)
+			utils.ShowError(ctx, err)
 		}
 		// cancel the context
 		c.cancelActiveQueryIfAny()
@@ -380,7 +380,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 		// otherwise execute query
 		result, err := c.client().Execute(queryContext, query)
 		if err != nil {
-			utils.ShowError(utils.HandleCancelError(err))
+			utils.ShowError(ctx, utils.HandleCancelError(err))
 		} else {
 			c.resultsStreamer.StreamResult(result)
 		}
@@ -426,7 +426,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) (string, 
 	query, _, err := c.workspace().ResolveQueryAndArgs(queryString)
 	if err != nil {
 		// if we fail to resolve, show error but do not return it - we want to stay in the prompt
-		utils.ShowError(err)
+		utils.ShowError(ctx, err)
 		return "", nil
 	}
 	isNamedQuery := query != queryString

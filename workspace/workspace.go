@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -42,7 +43,7 @@ type Workspace struct {
 	exclusions []string
 	// should we load/watch files recursively
 	listFlag                filehelpers.ListFlag
-	fileWatcherErrorHandler func(error)
+	fileWatcherErrorHandler func(context.Context, error)
 	watcherError            error
 	// event handlers
 	reportEventHandlers []reportevents.ReportEventHandler
@@ -53,7 +54,7 @@ type Workspace struct {
 }
 
 // Load creates a Workspace and loads the workspace mod
-func Load(workspacePath string) (*Workspace, error) {
+func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	utils.LogTime("workspace.Load start")
 	defer utils.LogTime("workspace.Load end")
 
@@ -72,7 +73,7 @@ func Load(workspacePath string) (*Workspace, error) {
 	}
 
 	// load the workspace mod
-	if err := workspace.loadWorkspaceMod(); err != nil {
+	if err := workspace.loadWorkspaceMod(ctx); err != nil {
 		return nil, err
 	}
 
@@ -101,7 +102,7 @@ func LoadResourceNames(workspacePath string) (*modconfig.WorkspaceResources, err
 	return workspace.loadWorkspaceResourceName()
 }
 
-func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(error)) error {
+func (w *Workspace) SetupWatcher(ctx context.Context, client db_common.Client, errorHandler func(context.Context, error)) error {
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
@@ -112,7 +113,7 @@ func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(erro
 		// decide how to handle them
 		// OnError: errCallback,
 		OnChange: func(events []fsnotify.Event) {
-			w.handleFileWatcherEvent(client, events)
+			w.handleFileWatcherEvent(ctx, client, events)
 		},
 	}
 	watcher, err := utils.NewWatcher(watcherOptions)
@@ -127,9 +128,9 @@ func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(erro
 	// after a file watcher event
 	w.fileWatcherErrorHandler = errorHandler
 	if w.fileWatcherErrorHandler == nil {
-		w.fileWatcherErrorHandler = func(err error) {
+		w.fileWatcherErrorHandler = func(ctx context.Context, err error) {
 			fmt.Println()
-			utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
+			utils.ShowErrorWithMessage(ctx, err, "Failed to reload mod from file watcher")
 		}
 	}
 
@@ -249,11 +250,11 @@ func (w *Workspace) setModfileExists() {
 	}
 }
 
-func (w *Workspace) loadWorkspaceMod() error {
+func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	// clear all resource maps
 	w.reset()
 	// load and evaluate all variables
-	inputVariables, err := w.getAllVariables()
+	inputVariables, err := w.getAllVariables(ctx)
 	if err != nil {
 		return err
 	}

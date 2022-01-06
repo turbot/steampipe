@@ -177,11 +177,12 @@ Example:
 // exitCode=3 For errors related to loading state, loading version data or an issue contacting the update server.
 // exitCode=4 For plugin listing failures
 func runPluginInstallCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("runPluginInstallCmd install")
 	defer func() {
 		utils.LogTime("runPluginInstallCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 	}()
@@ -194,7 +195,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	if len(plugins) == 0 {
 		fmt.Println()
-		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to install"))
+		utils.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to install"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -261,11 +262,12 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 }
 
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("runPluginUpdateCmd install")
 	defer func() {
 		utils.LogTime("runPluginUpdateCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 	}()
@@ -276,7 +278,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	plugins, err := resolveUpdatePluginsFromArgs(args)
 	if err != nil {
 		fmt.Println()
-		utils.ShowError(err)
+		utils.ShowError(ctx, err)
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -286,7 +288,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 	state, err := statefile.LoadState()
 	if err != nil {
-		utils.ShowError(fmt.Errorf("could not load state"))
+		utils.ShowError(ctx, fmt.Errorf("could not load state"))
 		exitCode = 3
 		return
 	}
@@ -294,7 +296,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	// load up the version file data
 	versionData, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
-		utils.ShowError(fmt.Errorf("error loading current plugin data"))
+		utils.ShowError(ctx, fmt.Errorf("error loading current plugin data"))
 		exitCode = 3
 		return
 	}
@@ -348,7 +350,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
 		// in which case we get back an empty map
-		utils.ShowError(fmt.Errorf("there was an issue contacting the update server. Please try later"))
+		utils.ShowError(ctx, fmt.Errorf("there was an issue contacting the update server. Please try later"))
 		exitCode = 3
 		return
 	}
@@ -461,25 +463,26 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports []display.Instal
 }
 
 func runPluginListCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("runPluginListCmd list")
 	defer func() {
 		utils.LogTime("runPluginListCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 	}()
 
 	pluginConnectionMap, err := getPluginConnectionMap(cmd.Context())
 	if err != nil {
-		utils.ShowErrorWithMessage(err, "Plugin Listing failed")
+		utils.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
 		exitCode = 4
 		return
 	}
 
 	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
-		utils.ShowErrorWithMessage(err, "Plugin Listing failed")
+		utils.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
 		exitCode = 4
 	}
 	headers := []string{"Name", "Version", "Connections"}
@@ -491,19 +494,20 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 }
 
 func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("runPluginUninstallCmd uninstall")
 
 	defer func() {
 		utils.LogTime("runPluginUninstallCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 	}()
 
 	if len(args) == 0 {
 		fmt.Println()
-		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to uninstall"))
+		utils.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to uninstall"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -511,17 +515,16 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	ctx := cmd.Context()
 	connectionMap, err := getPluginConnectionMap(ctx)
 	if err != nil {
-		utils.ShowError(err)
+		utils.ShowError(ctx, err)
 		exitCode = 4
 		return
 	}
 
 	for _, p := range args {
 		if err := plugin.Remove(ctx, p, connectionMap); err != nil {
-			utils.ShowErrorWithMessage(err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
+			utils.ShowErrorWithMessage(ctx, err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
 		}
 	}
 }

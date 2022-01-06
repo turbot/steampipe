@@ -1,16 +1,18 @@
 package modinstaller
 
 import (
+	"context"
+
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/utils"
 )
 
-func UninstallWorkspaceDependencies(opts *InstallOpts) (*InstallData, error) {
+func UninstallWorkspaceDependencies(ctx context.Context, opts *InstallOpts) (*InstallData, error) {
 	utils.LogTime("cmd.UninstallWorkspaceDependencies")
 	defer func() {
 		utils.LogTime("cmd.UninstallWorkspaceDependencies end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 		}
 	}()
 

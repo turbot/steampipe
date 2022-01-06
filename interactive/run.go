@@ -14,11 +14,10 @@ import (
 func RunInteractivePrompt(ctx context.Context, initData *query.InitData) (*queryresult.ResultStreamer, error) {
 	resultsStreamer := queryresult.NewResultStreamer()
 
-	interactiveClient, err := newInteractiveClient(initData, resultsStreamer)
+	interactiveClient, err := newInteractiveClient(ctx, initData, resultsStreamer)
 	if err != nil {
-		utils.ShowErrorWithMessage(err, "interactive client failed to initialize")
+		utils.ShowErrorWithMessage(ctx, err, "interactive client failed to initialize")
 		// do not bind shutdown to any cancellable context
-		// TODO CLEAR DELAY on status hook???
 		db_local.ShutdownService(ctx, constants.InvokerQuery)
 		return nil, err
 	}

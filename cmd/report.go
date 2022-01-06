@@ -29,11 +29,12 @@ func reportCmd() *cobra.Command {
 }
 
 func runReportCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	logging.LogTime("runReportCmd start")
 	defer func() {
 		logging.LogTime("runReportCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 		}
 	}()
 
