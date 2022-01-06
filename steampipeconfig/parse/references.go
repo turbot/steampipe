@@ -13,11 +13,18 @@ var referenceBlockTypes = []string{
 	modconfig.BlockTypeQuery,
 	modconfig.BlockTypeControl,
 	modconfig.BlockTypeBenchmark,
+	modconfig.BlockTypeReport,
+	modconfig.BlockTypePanel,
 	modconfig.BlockTypeParam,
 	"local"}
 
 // AddReferences populates the 'References' resource field, used for the introspection tables
 func AddReferences(resource modconfig.HclResource, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
+	// NOTE: exclude locals
+	if block.Type == modconfig.BlockTypeLocals {
+		return nil
+	}
+
 	var diags hcl.Diagnostics
 	for _, attr := range block.Body.(*hclsyntax.Body).Attributes {
 		for _, v := range attr.Expr.Variables() {
