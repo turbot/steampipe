@@ -145,7 +145,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 
 		// get the export formats for this argument
-		exportFormats, err := getExportTargets(arg)
+		exportTargets, err := getExportTargets(arg)
 		utils.FailOnError(err)
 
 		// create the execution tree
@@ -157,8 +157,14 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		err = displayControlResults(ctx, executionTree)
 		utils.FailOnError(err)
 
-		if len(exportFormats) > 0 {
-			d := control.ExportData{ExecutionTree: executionTree, ExportFormats: exportFormats, ErrorsLock: &exportErrorsLock, Errors: exportErrors, WaitGroup: &exportWaitGroup}
+		if len(exportTargets) > 0 {
+			d := control.ExportData{
+				ExecutionTree: executionTree,
+				Targets:       exportTargets,
+				ErrorsLock:    &exportErrorsLock,
+				Errors:        exportErrors,
+				WaitGroup:     &exportWaitGroup,
+			}
 			exportCheckResult(ctx, &d)
 		}
 
@@ -320,7 +326,7 @@ func shouldPrintTiming() bool {
 	outputFormat := viper.GetString(constants.ArgOutput)
 
 	return (viper.GetBool(constants.ArgTimer) && !viper.GetBool(constants.ArgDryRun)) &&
-		(outputFormat == constants.OutputFormatText || outputFormat == constants.OutputFormatBrief)
+		(outputFormat == constants.CheckOutputFormatText || outputFormat == constants.CheckOutputFormatBrief)
 }
 
 func validateOutputFormat() error {
@@ -330,7 +336,7 @@ func validateOutputFormat() error {
 		// could not get a formatter
 		return err
 	}
-	if outputFormat == constants.OutputFormatNone {
+	if outputFormat == constants.CheckOutputFormatNone {
 		// set progress to false
 		viper.Set(constants.ArgProgress, false)
 	}
@@ -347,6 +353,7 @@ func validateExportTargets(exportTargets []controldisplay.CheckExportTarget) err
 			targetErrors = append(targetErrors, err)
 		}
 	}
+
 	if len(targetErrors) > 0 {
 		message := fmt.Sprintf("%d export %s failed validation", len(targetErrors), utils.Pluralize("target", len(targetErrors)))
 		return utils.CombineErrorsWithPrefix(message, targetErrors...)
@@ -376,7 +383,7 @@ func initialiseColorScheme() error {
 func exportCheckResult(ctx context.Context, d *control.ExportData) {
 	d.WaitGroup.Add(1)
 	go func() {
-		err := exportControlResults(ctx, d.ExecutionTree, d.ExportFormats)
+		err := exportControlResults(ctx, d.ExecutionTree, d.Targets)
 		if len(err) > 0 {
 			d.AddErrors(err)
 		}
@@ -396,16 +403,16 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 	return err
 }
 
-func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, formats []controldisplay.CheckExportTarget) []error {
+func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, targets []controldisplay.CheckExportTarget) []error {
 	errors := []error{}
-	for _, format := range formats {
+	for _, target := range targets {
 		if utils.IsContextCancelled(ctx) {
 			// set the error
 			errors = append(errors, ctx.Err())
 			// and skip forward
 			continue
 		}
-		formatter, err := controldisplay.GetExportFormatter(format.Format)
+		formatter, err := controldisplay.GetExportFormatter(target.Format)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -416,11 +423,11 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 			continue
 		}
 		if utils.IsContextCancelled(ctx) {
-			errors = append(errors, err)
+			errors = append(errors, ctx.Err())
 			continue
 		}
 		// create the output file
-		destination, err := os.Create(format.File)
+		destination, err := os.Create(target.File)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -449,28 +456,29 @@ func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, err
 
 		parts := strings.SplitN(export, ":", 2)
 
-		var format, fileName string
+		var formatOrFilename, fileName string
 
 		if len(parts) == 2 {
-			// we have two distinct parts - life is good
-			format = parts[0]
+			// we have two distinct parts - format:output_file
+			formatOrFilename = parts[0]
 			fileName = parts[1]
 			fileName, targetError = helpers.Tildefy(fileName)
 		} else {
-			format = parts[0]
+			// there was no split-point
+			formatOrFilename = parts[0]
 
 			// try to get an export formatter
-			if formatter, fmtError := controldisplay.GetExportFormatter(format); fmtError != nil {
-				// this is not a valid format. assume it is a file name
-				fileName = format
-				// now infer the format from the file name
-				format, targetError = controldisplay.InferFormatFromExportFileName(fileName)
-			} else {
+			if formatter, fmtError := controldisplay.GetExportFormatter(formatOrFilename); fmtError == nil {
 				// the format was valid, generate default filename
 				fileName = generateDefaultExportFileName(formatter, executing)
+			} else {
+				// this is not a valid format. assume it is a file name
+				fileName = formatOrFilename
+				// now infer the format from the file name
+				formatOrFilename, targetError = controldisplay.InferFormatFromExportFileName(fileName)
 			}
 		}
-		formats = append(formats, controldisplay.NewCheckExportTarget(format, fileName, targetError))
+		formats = append(formats, controldisplay.NewCheckExportTarget(formatOrFilename, fileName, targetError))
 	}
 	err := validateExportTargets(formats)
 

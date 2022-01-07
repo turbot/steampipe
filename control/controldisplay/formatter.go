@@ -28,20 +28,20 @@ func (m FormatterMap) keys() []string {
 }
 
 var outputFormatters FormatterMap = FormatterMap{
-	constants.OutputFormatNone:     &NullFormatter{},
-	constants.OutputFormatCSV:      &CSVFormatter{},
-	constants.OutputFormatJSON:     &JSONFormatter{},
-	constants.OutputFormatText:     &TextFormatter{},
-	constants.OutputFormatBrief:    &TextFormatter{},
-	constants.OutputFormatHTML:     &HTMLFormatter{},
-	constants.OutputFormatMarkdown: &MarkdownFormatter{},
+	constants.CheckOutputFormatNone:     &NullFormatter{},
+	constants.CheckOutputFormatCSV:      &CSVFormatter{},
+	constants.CheckOutputFormatJSON:     &JSONFormatter{},
+	constants.CheckOutputFormatText:     &TextFormatter{},
+	constants.CheckOutputFormatBrief:    &TextFormatter{},
+	constants.CheckOutputFormatHTML:     &HTMLFormatter{},
+	constants.CheckOutputFormatMarkdown: &MarkdownFormatter{},
 }
 
 var exportFormatters FormatterMap = FormatterMap{
-	constants.OutputFormatCSV:      &CSVFormatter{},
-	constants.OutputFormatJSON:     &JSONFormatter{},
-	constants.OutputFormatHTML:     &HTMLFormatter{},
-	constants.OutputFormatMarkdown: &MarkdownFormatter{},
+	constants.CheckOutputFormatCSV:      &CSVFormatter{},
+	constants.CheckOutputFormatJSON:     &JSONFormatter{},
+	constants.CheckOutputFormatHTML:     &HTMLFormatter{},
+	constants.CheckOutputFormatMarkdown: &MarkdownFormatter{},
 }
 
 type CheckExportTarget struct {
@@ -66,7 +66,11 @@ type Formatter interface {
 func GetExportFormatter(exportFormat string) (Formatter, error) {
 	formatter, found := exportFormatters[exportFormat]
 	if !found {
-		return nil, fmt.Errorf("invalid export format '%s' - must be one of %s", exportFormat, exportFormatters.keys())
+		f, err := tryTemplateFormatter(exportFormat)
+		if err != nil {
+			return nil, fmt.Errorf("invalid export format '%s' - must be one of %s", exportFormat, exportFormatters.keys())
+		}
+		formatter = f
 	}
 	return formatter, nil
 }
@@ -87,13 +91,28 @@ func InferFormatFromExportFileName(filename string) (string, error) {
 	case ".json":
 		return constants.OutputFormatJSON, nil
 	case ".html", ".htm":
-		return constants.OutputFormatHTML, nil
+		return constants.CheckOutputFormatHTML, nil
 	case ".md", ".markdown":
-		return constants.OutputFormatMarkdown, nil
+		return constants.CheckOutputFormatMarkdown, nil
 	default:
 		// could not infer format
 		return "", fmt.Errorf("could not infer valid export format from filename '%s'", filename)
 	}
+}
+
+func tryTemplateFormatter(exportFormat string) (*TemplateFormatter, error) {
+	stat, err := os.Stat(exportFormat)
+	if err != nil {
+		return nil, err
+	}
+	if stat.IsDir() {
+		return nil, fmt.Errorf("cannot parse directory")
+	}
+	template, err := template.ParseFiles(exportFormat)
+	if err != nil {
+		return nil, err
+	}
+	return &TemplateFormatter{template: template, outputExtension: "spex"}, nil
 }
 
 // NullFormatter is to be used when no output is expected. It always returns a `io.Reader` which
