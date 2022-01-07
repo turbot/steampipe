@@ -88,15 +88,12 @@ var PanelBlockSchema = &hcl.BodySchema{
 		{Name: "source"},
 		{Name: "sql"},
 		{Name: "panels"},
+		{Name: "base"},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
 			Type:       "panel",
 			LabelNames: []string{"name"},
-		},
-		{
-			Type:       "report",
-			LabelNames: []string{"type"},
 		},
 	},
 }
