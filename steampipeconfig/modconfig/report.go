@@ -12,13 +12,15 @@ import (
 type Report struct {
 	FullName  string `cty:"name"`
 	ShortName string
-	Title     *string `column:"title,text"`
+	Title     *string `cty:"title" column:"title,text"`
 
 	Reports []*Report
 	Panels  []*Panel
 
 	Children []string `column:"children,jsonb"`
 	Mod      *Mod     `cty:"mod"`
+
+	Base *Report
 
 	DeclRange hcl.Range
 
@@ -51,6 +53,7 @@ func (r *Report) Name() string {
 
 // OnDecoded implements HclResource
 func (r *Report) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	r.setBaseProperties()
 	r.setChildNames()
 
 	return nil
@@ -74,6 +77,21 @@ func (r *Report) setChildNames() {
 // AddReference implements HclResource
 func (r *Report) AddReference(*ResourceReference) {
 	// TODO
+}
+
+func (p *Report) setBaseProperties() {
+	if p.Base == nil {
+		return
+	}
+	if p.Title == nil {
+		p.Title = p.Base.Title
+	}
+	if p.Panels == nil {
+		p.Panels = p.Base.Panels
+	}
+	if p.Reports == nil {
+		p.Reports = p.Base.Reports
+	}
 }
 
 // SetMod implements HclResource

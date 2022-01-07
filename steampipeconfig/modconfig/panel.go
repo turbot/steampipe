@@ -17,13 +17,13 @@ type Panel struct {
 	FullName  string `cty:"name"`
 	ShortName string
 
-	Title  *string `column:"title,text"`
-	Type   *string `column:"type,text"`
-	Width  *int    `column:"width,text"`
-	Height *int    `column:"height,text"`
-	Source *string `column:"source,text"`
-	SQL    *string `column:"sql,text"`
-	Text   *string `column:"text,text"`
+	Title  *string `cty:"title" column:"title,text"`
+	Type   *string `cty:"type" column:"type,text"`
+	Width  *int    `cty:"width" column:"width,text"`
+	Height *int    `cty:"height" column:"height,text"`
+	Source *string `cty:"source" column:"source,text"`
+	SQL    *string `cty:"sql" column:"sql,text"`
+	Text   *string `cty:"text" column:"text,text"`
 	Panels []*Panel
 
 	DeclRange hcl.Range
@@ -31,6 +31,8 @@ type Panel struct {
 
 	Children []string   `column:"children,jsonb"`
 	Paths    []NodePath `column:"path,jsonb"`
+
+	Base *Panel
 
 	parents         []ModTreeItem
 	metadata        *ResourceMetadata
@@ -91,6 +93,7 @@ func (p *Panel) Name() string {
 
 // OnDecoded implements HclResource
 func (p *Panel) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	p.setBaseProperties()
 	p.setChildNames()
 	return nil
 }
@@ -105,6 +108,33 @@ func (p *Panel) setChildNames() {
 
 	for i, p := range p.Panels {
 		p.Children[i] = p.Name()
+	}
+}
+
+func (p *Panel) setBaseProperties() {
+	if p.Base == nil {
+		return
+	}
+	if p.Title == nil {
+		p.Title = p.Base.Title
+	}
+	if p.Type == nil {
+		p.Type = p.Base.Type
+	}
+	if p.Width == nil {
+		p.Width = p.Base.Width
+	}
+	if p.Height == nil {
+		p.Height = p.Base.Height
+	}
+	if p.Source == nil {
+		p.Source = p.Base.Source
+	}
+	if p.SQL == nil {
+		p.SQL = p.Base.SQL
+	}
+	if p.Panels == nil {
+		p.Panels = p.Base.Panels
 	}
 }
 
