@@ -7,7 +7,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// PanelRun is a struct representing a  a panel run - will contain one or more result items (i.e. for one or more resources)
+// PanelRun is a struct representing a panel run
 type PanelRun struct {
 	Name   string          `json:"name"`
 	Title  string          `json:"title,omitempty"`
