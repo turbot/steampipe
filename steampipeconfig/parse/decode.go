@@ -472,6 +472,9 @@ func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decod
 	diags = decodeProperty(content, "sql", &panel.SQL, runCtx)
 	res.handleDecodeDiags(diags)
 
+	diags = decodeProperty(content, "base", &panel.Base, runCtx)
+	res.handleDecodeDiags(diags)
+
 	diags = decodeReportBlocks(panel, content, runCtx)
 	res.handleDecodeDiags(diags)
 
@@ -490,6 +493,8 @@ func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Report, *dec
 	diags = decodeProperty(content, "panels", &report.Panels, runCtx)
 	res.handleDecodeDiags(diags)
 	diags = decodeProperty(content, "reports", &report.Reports, runCtx)
+	res.handleDecodeDiags(diags)
+	diags = decodeProperty(content, "base", &report.Base, runCtx)
 	res.handleDecodeDiags(diags)
 
 	diags = decodeReportBlocks(report, content, runCtx)
