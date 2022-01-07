@@ -155,7 +155,7 @@ func (e *ReportExecutionTree) ExecuteNode(ctx context.Context, name string) erro
 		// panel should now be complete, i.e. all it's children should be complete
 		if !panel.ChildrenComplete() {
 			// this error will be passed up the execution tree and raised as a report error for the root node
-			return fmt.Errorf("panel '%s' should be complete, but it has inomplete children", panel.Name)
+			return fmt.Errorf("panel '%s' should be complete, but it has incomplete children", panel.Name)
 		}
 		// set complete status on panel - this will raise panel complete event
 		panel.SetComplete()

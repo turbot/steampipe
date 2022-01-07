@@ -1,4 +1,4 @@
 control "c1"{
     description = "control 1"
-    query = m2.query.m2_q1
+    query = aws_compliance.query.acm_certificate_expires_30_days
 }
