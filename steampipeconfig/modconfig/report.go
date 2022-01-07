@@ -63,11 +63,11 @@ func (r *Report) setChildNames() {
 	}
 	// set children names
 	r.Children = make([]string, numChildren)
-	for i, p := range r.Panels {
-		r.Children[i] = p.Name()
+	for i, child := range r.Panels {
+		r.Children[i] = child.Name()
 	}
-	for i, r := range r.Reports {
-		r.Children[i+len(r.Panels)] = r.Name()
+	for i, child := range r.Reports {
+		r.Children[i+len(r.Panels)] = child.Name()
 	}
 }
 
