@@ -13,8 +13,8 @@ type ReportRun struct {
 	Title string `json:"title,omitempty"`
 
 	// children
-	PanelRuns  []*PanelRun  `json:"panels,omitempty"`
-	ReportRuns []*ReportRun `json:"reports,omitempty"`
+	PanelRuns     []*PanelRun     `json:"panels,omitempty"`
+	ContainerRuns []*ContainerRun `json:"containers,omitempty"`
 
 	Error error `json:"error,omitempty"`
 
@@ -33,16 +33,16 @@ func NewReportRun(report *modconfig.Report, executionTree *ReportExecutionTree) 
 		runStatus: reportinterfaces.ReportRunComplete,
 	}
 
-	// create report runs for all children
-	for _, childReport := range report.Reports {
-		childRun := NewReportRun(childReport, executionTree)
+	// create container runs for all children
+	for _, childContainer := range report.Containers {
+		childRun := NewContainerRun(childContainer, executionTree)
 		// if our child has not completed, we have not completed
 		if childRun.runStatus == reportinterfaces.ReportRunReady {
 			// add dependency on this child
 			r.executionTree.AddDependency(r.Name, childRun.Name)
 			r.runStatus = reportinterfaces.ReportRunReady
 		}
-		r.ReportRuns = append(r.ReportRuns, childRun)
+		r.ContainerRuns = append(r.ContainerRuns, childRun)
 	}
 	for _, childPanel := range report.Panels {
 		childRun := NewPanelRun(childPanel, executionTree)
@@ -97,7 +97,7 @@ func (r *ReportRun) ChildrenComplete() bool {
 			return false
 		}
 	}
-	for _, report := range r.ReportRuns {
+	for _, report := range r.ContainerRuns {
 		if !report.RunComplete() {
 			return false
 		}

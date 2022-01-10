@@ -9,7 +9,6 @@ import (
 // BuildResourceTree builds the control tree structure by setting the parent property for each control and benchmar
 // NOTE: this also builds the sorted benchmark list
 func (m *Mod) BuildResourceTree(loadedDependencyMods ModMap) error {
-	m.buildFlatChilden()
 	if err := m.addResourcesIntoTree(m); err != nil {
 		return err
 	}
@@ -52,6 +51,8 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 		// controls cannot have children - all controls are leaves
 		leafNodes = append(leafNodes, control)
 	}
+	// we add panels and reports into tree - as they may be children of Mod
+	// any nested children of Container or Report (which may be Container or Panel) will already be in the tree)
 	for _, panel := range sourceMod.Panels {
 		if err := m.addItemIntoResourceTree(panel); err != nil {
 			return err
@@ -59,13 +60,7 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 		// panels cannot have children
 		leafNodes = append(leafNodes, panel)
 	}
-	for _, container := range sourceMod.Containers {
-		if err := m.addItemIntoResourceTree(container); err != nil {
-			return err
-		}
-		// containers cannot have children
-		leafNodes = append(leafNodes, container)
-	}
+
 	for _, report := range sourceMod.Reports {
 		if err := m.addItemIntoResourceTree(report); err != nil {
 			return err
@@ -130,6 +125,15 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		} else {
 			m.Panels[name] = r
+		}
+	case *Container:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.Containers[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item))
+			break
+		} else {
+			m.Containers[name] = r
 		}
 
 	case *Report:

@@ -11,6 +11,7 @@ const (
 	BlockTypeControl   = "control"
 	BlockTypeBenchmark = "benchmark"
 	BlockTypeReport    = "report"
+	BlockTypeContainer = "container"
 	BlockTypePanel     = "panel"
 	BlockTypeLocals    = "locals"
 	BlockTypeVariable  = "variable"

@@ -35,6 +35,7 @@ type Workspace struct {
 	Benchmarks map[string]*modconfig.Benchmark
 	Mods       map[string]*modconfig.Mod
 	Reports    map[string]*modconfig.Report
+	Containers map[string]*modconfig.Container
 	Panels     map[string]*modconfig.Panel
 	Variables  map[string]*modconfig.Variable
 
@@ -282,6 +283,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	w.Benchmarks = w.buildBenchmarkMap(runCtx.LoadedDependencyMods)
 	w.Reports = w.buildReportMap(runCtx.LoadedDependencyMods)
 	w.Panels = w.buildPanelMap(runCtx.LoadedDependencyMods)
+	w.Containers = w.buildContainerMap(runCtx.LoadedDependencyMods)
 	// set variables on workspace
 	w.Variables = m.Variables
 	// todo what to key mod map with
@@ -348,9 +350,8 @@ func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig
 
 	// for LOCAL resources, add map entries keyed by both short name: query.<shortName> and  long name: <modName>.query.<shortName?
 	for _, q := range w.Mod.Queries {
-		// add 'local' alias
-		res[q.Name()] = q
 		res[q.UnqualifiedName] = q
+		res[q.Name()] = q
 	}
 
 	// for mod dependencies, add resources keyed by long name only
@@ -370,8 +371,8 @@ func (w *Workspace) buildControlMap(modMap modconfig.ModMap) map[string]*modconf
 
 	// for LOCAL resources, add map entries keyed by both short name: control.<shortName> and  long name: <modName>.control.<shortName?
 	for _, c := range w.Mod.Controls {
-		res[c.Name()] = c
 		res[c.UnqualifiedName] = c
+		res[c.Name()] = c
 	}
 
 	// for mode dependencies, add resources keyed by long name only
@@ -408,8 +409,8 @@ func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfi
 
 	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
 	for _, r := range w.Mod.Reports {
-		res[r.Name()] = r
 		res[r.UnqualifiedName] = r
+		res[r.Name()] = r
 	}
 
 	// for mod dependencies, add resources keyed by long name only
@@ -427,15 +428,32 @@ func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig
 
 	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
 	for _, p := range w.Mod.Panels {
-		res[fmt.Sprintf("local.%s", p.Name())] = p
-		res[p.Name()] = p
 		res[p.UnqualifiedName] = p
+		res[p.Name()] = p
 	}
 
 	// for mod dependencies, add resources keyed by long name only
 	for _, mod := range modMap {
 		for _, p := range mod.Panels {
 			res[p.Name()] = p
+		}
+	}
+	return res
+}
+func (w *Workspace) buildContainerMap(modMap modconfig.ModMap) map[string]*modconfig.Container {
+	//  build a list of long and short names for these queries
+	var res = make(map[string]*modconfig.Container)
+
+	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
+	for _, c := range w.Mod.Containers {
+		res[c.UnqualifiedName] = c
+		res[c.Name()] = c
+	}
+
+	// for mod dependencies, add resources keyed by long name only
+	for _, mod := range modMap {
+		for _, c := range mod.Containers {
+			res[c.Name()] = c
 		}
 	}
 	return res
