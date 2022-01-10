@@ -77,11 +77,13 @@ func NewResultGroup(executionTree *ExecutionTree, treeItem modconfig.ModTreeItem
 	// only show qualified group names for controls from dependent mods
 	groupId := treeItem.Name()
 	if mod := treeItem.GetMod(); mod != nil && mod.Name() == executionTree.workspace.Mod.Name() {
+		// TODO: We should be able to use the unqualified name for the Root Mod.
+		// https://github.com/turbot/steampipe/issues/1301
 		groupId = modconfig.UnqualifiedResourceName(groupId)
 	}
 
 	group := &ResultGroup{
-		GroupId:     groupId,
+		GroupId:     treeItem.Name(),
 		Title:       treeItem.GetTitle(),
 		Description: treeItem.GetDescription(),
 		Tags:        treeItem.GetTags(),
