@@ -28,3 +28,32 @@ func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 func (tf TemplateFormatter) FileExtension() string {
 	return tf.outputExtension
 }
+
+// var AvailableFolders = []string{
+// 	// this list will be extracted from the filesystem
+// 	"html",
+// 	"brief.html",
+// 	"nunit3.xml",
+// 	"markdown.md",
+// 	"txt.dat",
+// 	"custom.txt",
+// 	"foo.xml",
+// }
+
+// func GetTemplateFormatter(export string, input string) (*TemplateFormatterFactoryData, error) {
+// 	fff := TemplateFormatterFactoryData{}
+
+// 	for _, folder := range AvailableFolders {
+// 		// logic
+// 	}
+
+// 	return &fff, nil
+// }
+
+// type TemplateFormatterFactoryData struct {
+// 	SourceTemplateFolder string
+// 	TargetFileName       string
+// 	TargetFileExtension  string
+// }
+
+// given a set of available folder names
