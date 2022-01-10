@@ -64,8 +64,8 @@ type Mod struct {
 	ModPath   string
 	DeclRange hcl.Range
 
-	// all children as an array of hcl resources - built before the 'children' array
-	flatChildren []HclResource
+	// all children as an array of names - built before the 'children' array
+	flatChildren []string
 	// array of direct mod children - excluds resources which are children of othe rresources
 	children []ModTreeItem
 	metadata *ResourceMetadata
@@ -497,7 +497,7 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 		}
 	}
 	// if this item has no parents and is a child of the mod, set the mod as parent
-	if len(parents) == 0 && m.hasChild(item) {
+	if len(parents) == 0 && m.hasChild(item.Name()) {
 		parents = []ModTreeItem{m}
 
 	}
@@ -505,9 +505,9 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 }
 
 // is the given item a child of the mod
-func (m *Mod) hasChild(item ModTreeItem) bool {
+func (m *Mod) hasChild(childName string) bool {
 	for _, c := range m.flatChildren {
-		if c.Name() == item.Name() {
+		if c == childName {
 			return true
 		}
 	}
@@ -628,35 +628,35 @@ func (m *Mod) GetModDependency(modName string) *ModVersionConstraint {
 }
 
 func (m *Mod) buildFlatChilden() {
-	res := make([]HclResource, len(m.Queries)+len(m.Controls)+len(m.Benchmarks)+len(m.Reports)+len(m.Panels)+len(m.Variables)+len(m.Locals))
+	res := make([]string, len(m.Queries)+len(m.Controls)+len(m.Benchmarks)+len(m.Reports)+len(m.Panels)+len(m.Variables)+len(m.Locals))
 
 	idx := 0
 	for _, r := range m.Queries {
-		res[idx] = r
+		res[idx] = r.Name()
 		idx++
 	}
 	for _, r := range m.Controls {
-		res[idx] = r
+		res[idx] = r.Name()
 		idx++
 	}
 	for _, r := range m.Benchmarks {
-		res[idx] = r
+		res[idx] = r.Name()
 		idx++
 	}
 	for _, r := range m.Reports {
-		res[idx] = r
+		res[idx] = r.Name()
 		idx++
 	}
 	for _, r := range m.Panels {
-		res[idx] = r
+		res[idx] = r.Name()
 		idx++
 	}
 	for _, r := range m.Variables {
-		res[idx] = r
+		res[idx] = r.Name()
 		idx++
 	}
 	for _, r := range m.Locals {
-		res[idx] = r
+		res[idx] = r.Name()
 		idx++
 	}
 	m.flatChildren = res
