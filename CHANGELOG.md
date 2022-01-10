@@ -1,3 +1,7 @@
+## v0.11.2 [2022-01-10]
+_Bug fixes_
+* Fix issue where `steampipe check` table output only displays the summary. ([#1300](https://github.com/turbot/steampipe/issues/1300))
+
 ## v0.11.1 [2022-01-06]
 _Bug fixes_
 * Plugin instantiation failures should be reported as warnings not errors. ([#1283](https://github.com/turbot/steampipe/issues/1283))
