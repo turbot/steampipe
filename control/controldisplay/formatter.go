@@ -2,6 +2,7 @@ package controldisplay
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -42,6 +43,7 @@ var exportFormatters FormatterMap = FormatterMap{
 	constants.CheckOutputFormatJSON:     &JSONFormatter{},
 	constants.CheckOutputFormatHTML:     &HTMLFormatter{},
 	constants.CheckOutputFormatMarkdown: &MarkdownFormatter{},
+	constants.CheckOutputFormatNUnit3:   &Nunit3Formatter{},
 }
 
 type CheckExportTarget struct {
@@ -132,6 +134,20 @@ var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 	"steampipeversion": func() string { return version.SteampipeVersion.String() },
 	"workingdir":       func() string { wd, _ := os.Getwd(); return wd },
 	"asstr":            func(i reflect.Value) string { return fmt.Sprintf("%v", i) },
+	"dict": func(values ...interface{}) (map[string]interface{}, error) {
+		if len(values)%2 != 0 {
+			return nil, errors.New("invalid dict call")
+		}
+		dict := make(map[string]interface{}, len(values)/2)
+		for i := 0; i < len(values); i += 2 {
+			key, ok := values[i].(string)
+			if !ok {
+				return nil, errors.New("dict keys must be strings")
+			}
+			dict[key] = values[i+1]
+		}
+		return dict, nil
+	},
 	"statusicon": func(status string) string {
 		switch strings.ToLower(status) {
 		case "ok":

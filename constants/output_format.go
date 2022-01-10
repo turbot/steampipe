@@ -15,4 +15,5 @@ const (
 	CheckOutputFormatJSON     = "json"
 	CheckOutputFormatHTML     = "html"
 	CheckOutputFormatMarkdown = "md"
+	CheckOutputFormatNUnit3   = "nunit3"
 )

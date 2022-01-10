@@ -9,6 +9,10 @@ type StatusSummary struct {
 	Error int `json:"error"`
 }
 
+func (s *StatusSummary) PassedCount() int {
+	return s.Ok + s.Info
+}
+
 func (s *StatusSummary) FailedCount() int {
 	return s.Alarm + s.Error
 }
