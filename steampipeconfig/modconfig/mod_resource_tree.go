@@ -34,37 +34,47 @@ func (m *Mod) BuildResourceTree(loadedDependencyMods ModMap) error {
 }
 
 func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
+	var leafNodes []ModTreeItem
 	for _, benchmark := range sourceMod.Benchmarks {
 		// add benchmark into control tree
 		if err := m.addItemIntoResourceTree(benchmark); err != nil {
 			return err
+		}
+		if len(benchmark.GetChildren()) == 0 {
+			leafNodes = append(leafNodes, benchmark)
 		}
 	}
 	for _, control := range sourceMod.Controls {
 		if err := m.addItemIntoResourceTree(control); err != nil {
 			return err
 		}
+
+		// controls cannot have children - all controls are leaves
+		leafNodes = append(leafNodes, control)
 	}
 	for _, panel := range sourceMod.Panels {
 		if err := m.addItemIntoResourceTree(panel); err != nil {
 			return err
+		}
+		if len(panel.GetChildren()) == 0 {
+			leafNodes = append(leafNodes, panel)
 		}
 	}
 	for _, report := range sourceMod.Reports {
 		if err := m.addItemIntoResourceTree(report); err != nil {
 			return err
 		}
+		if len(report.GetChildren()) == 0 {
+			leafNodes = append(leafNodes, report)
+		}
+
 	}
 	// now initialise all Paths properties
-	setPaths(m)
-	return nil
-}
-
-func setPaths(i ModTreeItem) {
-	i.SetPaths()
-	for _, c := range i.GetChildren() {
-		setPaths(c)
+	for _, l := range leafNodes {
+		l.SetPaths()
 	}
+
+	return nil
 }
 
 func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
