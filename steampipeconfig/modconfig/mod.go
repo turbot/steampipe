@@ -65,8 +65,6 @@ type Mod struct {
 	ModPath   string
 	DeclRange hcl.Range
 
-	// all children as an array of names - built before the 'children' array
-	flatChildren []string
 	// array of direct mod children - excludes resources which are children of other resources
 	children []ModTreeItem
 	metadata *ResourceMetadata
@@ -84,9 +82,10 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Containers: make(map[string]*Container),
 		Variables:  make(map[string]*Variable),
 		Locals:     make(map[string]*Local),
-		ModPath:    modPath,
-		DeclRange:  defRange,
-		Require:    newRequire(),
+
+		ModPath:   modPath,
+		DeclRange: defRange,
+		Require:   newRequire(),
 	}
 
 	// try to derive mod version from the path
@@ -507,20 +506,40 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 		}
 	}
 	// if this item has no parents and is a child of the mod, set the mod as parent
-	if len(parents) == 0 && m.hasChild(item.Name()) {
+	if len(parents) == 0 && m.containsResource(item.Name()) {
 		parents = []ModTreeItem{m}
 
 	}
 	return parents
 }
 
-// is the given item a child of the mod
-func (m *Mod) hasChild(childName string) bool {
-	for _, c := range m.flatChildren {
-		if c == childName {
-			return true
-		}
+// does the mod contain a resource with this name?
+func (m *Mod) containsResource(childName string) bool {
+	if _, ok := m.Queries[childName]; ok {
+		return true
 	}
+	if _, ok := m.Controls[childName]; ok {
+		return true
+	}
+	if _, ok := m.Benchmarks[childName]; ok {
+		return true
+	}
+	if _, ok := m.Reports[childName]; ok {
+		return true
+	}
+	if _, ok := m.Panels[childName]; ok {
+		return true
+	}
+	if _, ok := m.Containers[childName]; ok {
+		return true
+	}
+	if _, ok := m.Variables[childName]; ok {
+		return true
+	}
+	if _, ok := m.Locals[childName]; ok {
+		return true
+	}
+
 	return false
 }
 
@@ -635,45 +654,6 @@ func (m *Mod) GetModDependency(modName string) *ModVersionConstraint {
 		return nil
 	}
 	return m.Require.GetModDependency(modName)
-}
-
-func (m *Mod) buildFlatChilden() {
-	res := make([]string, len(m.Queries)+len(m.Controls)+len(m.Benchmarks)+len(m.Reports)+len(m.Panels)+len(m.Variables)+len(m.Locals))
-
-	idx := 0
-	for _, r := range m.Queries {
-		res[idx] = r.Name()
-		idx++
-	}
-	for _, r := range m.Controls {
-		res[idx] = r.Name()
-		idx++
-	}
-	for _, r := range m.Benchmarks {
-		res[idx] = r.Name()
-		idx++
-	}
-	for _, r := range m.Reports {
-		res[idx] = r.Name()
-		idx++
-	}
-	for _, r := range m.Containers {
-		res[idx] = r.Name()
-		idx++
-	}
-	for _, r := range m.Panels {
-		res[idx] = r.Name()
-		idx++
-	}
-	for _, r := range m.Variables {
-		res[idx] = r.Name()
-		idx++
-	}
-	for _, r := range m.Locals {
-		res[idx] = r.Name()
-		idx++
-	}
-	m.flatChildren = res
 }
 
 func (m *Mod) loadNonModDataInModFile() ([]byte, error) {

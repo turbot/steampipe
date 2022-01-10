@@ -53,6 +53,21 @@ func (p *Container) Name() string {
 	return p.FullName
 }
 
+// AddReference implements HclResource
+func (p *Container) AddReference(*ResourceReference) {}
+
+// SetMod implements HclResource
+func (p *Container) SetMod(mod *Mod) {
+	p.Mod = mod
+	p.UnqualifiedName = p.FullName
+	p.FullName = fmt.Sprintf("%s.%s", mod.ShortName, p.FullName)
+}
+
+// GetDeclRange implements HclResource
+func (p *Container) GetDeclRange() *hcl.Range {
+	return &p.DeclRange
+}
+
 // OnDecoded implements HclResource
 func (p *Container) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	p.setChildNames()

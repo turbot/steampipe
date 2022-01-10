@@ -78,6 +78,42 @@ var ModBlockSchema = &hcl.BodySchema{
 	},
 }
 
+var ReportBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "title"},
+		{Name: "panels"},
+		{Name: "containers"},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "panel",
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       "container",
+			LabelNames: []string{"type"},
+		},
+	},
+}
+
+var ContainerBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "width"},
+		{Name: "panels"},
+		{Name: "containers"},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "container",
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       "panel",
+			LabelNames: []string{"name"},
+		},
+	},
+}
+
 var PanelBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "title"},
@@ -88,42 +124,6 @@ var PanelBlockSchema = &hcl.BodySchema{
 		{Name: "source"},
 		{Name: "sql"},
 		{Name: "base"},
-	},
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type:       "panel",
-			LabelNames: []string{"name"},
-		},
-	},
-}
-var ContainerBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{Name: "width"},
-		{Name: "panels"},
-	},
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type:       "container",
-			LabelNames: []string{"name"},
-		},
-	},
-}
-
-var ReportBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{Name: "title"},
-		{Name: "panels"},
-		{Name: "reports"},
-	},
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type:       "panel",
-			LabelNames: []string{"name"},
-		},
-		{
-			Type:       "report",
-			LabelNames: []string{"type"},
-		},
 	},
 }
 
