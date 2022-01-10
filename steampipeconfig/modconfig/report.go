@@ -14,8 +14,8 @@ type Report struct {
 	ShortName string
 	Title     *string `cty:"title" column:"title,text"`
 
-	Reports []*Report
-	Panels  []*Panel
+	Containers []*Container
+	Panels     []*Panel
 
 	Children []string `column:"children,jsonb"`
 	Mod      *Mod     `cty:"mod"`
@@ -57,7 +57,7 @@ func (r *Report) OnDecoded(*hcl.Block) hcl.Diagnostics {
 }
 
 func (r *Report) setChildNames() {
-	numChildren := len(r.Panels) + len(r.Reports)
+	numChildren := len(r.Panels) + len(r.Containers)
 	if numChildren == 0 {
 		return
 	}
@@ -66,7 +66,7 @@ func (r *Report) setChildNames() {
 	for i, child := range r.Panels {
 		r.Children[i] = child.Name()
 	}
-	for i, child := range r.Reports {
+	for i, child := range r.Containers {
 		r.Children[i+len(r.Panels)] = child.Name()
 	}
 }
@@ -101,10 +101,10 @@ func (r *Report) AddChild(child ModTreeItem) error {
 		if !r.containsPanel(c.Name()) {
 			r.Panels = append(r.Panels, c)
 		}
-	case *Report:
+	case *Container:
 		// avoid duplicates
-		if !r.containsReport(c.Name()) {
-			r.Reports = append(r.Reports, c)
+		if !r.containsContainer(c.Name()) {
+			r.Containers = append(r.Containers, c)
 		}
 	}
 	return nil
@@ -123,13 +123,13 @@ func (r *Report) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (r *Report) GetChildren() []ModTreeItem {
-	children := make([]ModTreeItem, len(r.Panels)+len(r.Reports))
+	children := make([]ModTreeItem, len(r.Panels)+len(r.Containers))
 	idx := 0
 	for _, p := range r.Panels {
 		children[idx] = p
 		idx++
 	}
-	for _, r := range r.Reports {
+	for _, r := range r.Containers {
 		children[idx] = r
 		idx++
 	}
@@ -203,9 +203,9 @@ func (r *Report) containsPanel(name string) bool {
 	return false
 }
 
-func (r *Report) containsReport(name string) bool {
+func (r *Report) containsContainer(name string) bool {
 	// does this child already exist
-	for _, existingReport := range r.Reports {
+	for _, existingReport := range r.Containers {
 		if existingReport.Name() == name {
 			return true
 		}

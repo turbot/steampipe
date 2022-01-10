@@ -84,6 +84,14 @@ func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource,
 			diags = append(diags, moreDiags...)
 			resources = append(resources, local)
 		}
+	case modconfig.BlockTypeContainer:
+		// special case decode logic for locals
+		container, res := decodeContainer(block, runCtx)
+		moreDiags = handleDecodeResult(container, res, block, runCtx)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+		}
+		resources = append(resources, container)
 	case modconfig.BlockTypePanel:
 		// special case decode logic for locals
 		panel, res := decodePanel(block, runCtx)
@@ -443,12 +451,35 @@ func decodeControlArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlNam
 	return params, diags
 }
 
-func decodeContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Container, *decodeResult) {
+func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Report, *decodeResult) {
 	res := &decodeResult{}
-	content, rest, diags := block.Body.PartialContent(ContainerBlockSchema)
+
+	content, diags := block.Body.Content(ReportBlockSchema)
 	res.handleDecodeDiags(diags)
 
-	fmt.Println(rest)
+	report := modconfig.NewReport(block)
+	diags = decodeProperty(content, "title", &report.Title, runCtx)
+	res.handleDecodeDiags(diags)
+	diags = decodeProperty(content, "panels", &report.Panels, runCtx)
+	res.handleDecodeDiags(diags)
+	diags = decodeProperty(content, "containers", &report.Containers, runCtx)
+	res.handleDecodeDiags(diags)
+
+	for _, b := range content.Blocks {
+		resources, moreDiags := decodeBlock(runCtx, b)
+		res.handleDecodeDiags(moreDiags)
+		// NOTE - we must set parent and children here - we cannot rely on Mod.BuildResourceTree
+		// this works for benchmarks as there is a child name property
+		addChildResources(resources, report)
+	}
+
+	return report, res
+}
+
+func decodeContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Container, *decodeResult) {
+	res := &decodeResult{}
+	content, _, diags := block.Body.PartialContent(ContainerBlockSchema)
+	res.handleDecodeDiags(diags)
 
 	// get shell resource
 	container := modconfig.NewContainer(block)
@@ -456,17 +487,37 @@ func decodeContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Container
 	diags = decodeProperty(content, "width", &container.Width, runCtx)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeReportBlocks(container, content, runCtx)
+	diags = decodeProperty(content, "panels", &container.Panels, runCtx)
 	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "containers", &container.Containers, runCtx)
+	res.handleDecodeDiags(diags)
+
+	for _, b := range content.Blocks {
+		resources, moreDiags := decodeBlock(runCtx, b)
+		res.handleDecodeDiags(moreDiags)
+		// NOTE - we must set parent and children here - we cannot rely on Mod.BuildResourceTree
+		// this works for benchmarks as there is a child name property
+		addChildResources(resources, container)
+	}
 
 	return container, res
 }
+
+// add the child resources to the parent (as long as they convert to ModTreeItem)
+func addChildResources(childResources []modconfig.HclResource, parent modconfig.ModTreeItem) {
+	for _, childResource := range childResources {
+		if treeItem, ok := childResource.(modconfig.ModTreeItem); ok {
+			treeItem.AddParent(parent)
+			parent.AddChild(treeItem)
+		}
+	}
+}
+
 func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decodeResult) {
 	res := &decodeResult{}
-	content, rest, diags := block.Body.PartialContent(PanelBlockSchema)
+	content, _, diags := block.Body.PartialContent(PanelBlockSchema)
 	res.handleDecodeDiags(diags)
-
-	fmt.Println(rest)
 
 	// get shell resource
 	panel := modconfig.NewPanel(block)
@@ -495,56 +546,12 @@ func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decod
 	diags = decodeProperty(content, "base", &panel.Base, runCtx)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeReportBlocks(panel, content, runCtx)
-	res.handleDecodeDiags(diags)
+	for _, b := range content.Blocks {
+		_, moreDiags := decodeBlock(runCtx, b)
+		res.handleDecodeDiags(moreDiags)
+	}
 
 	return panel, res
-}
-
-func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Report, *decodeResult) {
-	res := &decodeResult{}
-
-	content, diags := block.Body.Content(ReportBlockSchema)
-	res.handleDecodeDiags(diags)
-
-	report := modconfig.NewReport(block)
-	diags = decodeProperty(content, "title", &report.Title, runCtx)
-	res.handleDecodeDiags(diags)
-	diags = decodeProperty(content, "panels", &report.Panels, runCtx)
-	res.handleDecodeDiags(diags)
-	diags = decodeProperty(content, "reports", &report.Reports, runCtx)
-	res.handleDecodeDiags(diags)
-	diags = decodeProperty(content, "base", &report.Base, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeReportBlocks(report, content, runCtx)
-	res.handleDecodeDiags(diags)
-
-	return report, res
-}
-
-func decodeReportBlocks(resource modconfig.ModTreeItem, content *hcl.BodyContent, runCtx *RunContext) hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	for _, b := range content.Blocks {
-		var childResource modconfig.ModTreeItem
-		var decodeResult *decodeResult
-		switch b.Type {
-		case modconfig.BlockTypePanel:
-			childResource, decodeResult = decodePanel(b, runCtx)
-		case modconfig.BlockTypeReport:
-			childResource, decodeResult = decodeReport(b, runCtx)
-		}
-
-		// add this panel to the mod
-		moreDiags := handleDecodeResult(childResource.(modconfig.HclResource), decodeResult, b, runCtx)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
-		if decodeResult.Success() {
-			resource.AddChild(childResource)
-		}
-	}
-	return diags
 }
 
 func decodeProperty(content *hcl.BodyContent, property string, dest interface{}, runCtx *RunContext) hcl.Diagnostics {

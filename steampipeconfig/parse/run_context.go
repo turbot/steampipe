@@ -148,6 +148,10 @@ func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 		moreDiags := r.storeResourceInCtyMap(p)
 		diags = append(diags, moreDiags...)
 	}
+	for _, c := range mod.Containers {
+		moreDiags := r.storeResourceInCtyMap(c)
+		diags = append(diags, moreDiags...)
+	}
 
 	// rebuild the eval context
 	r.buildEvalContext()
@@ -242,7 +246,7 @@ func (r *RunContext) BlocksToDecode() (hcl.Blocks, error) {
 	return blocksToDecode, nil
 }
 
-// EvalComplete returns whether  all elements in the dependency tree fully evaluated
+// EvalComplete returns whether all elements in the dependency tree fully evaluated
 func (r *RunContext) EvalComplete() bool {
 	return len(r.UnresolvedBlocks) == 0
 }
