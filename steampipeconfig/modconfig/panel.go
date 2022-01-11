@@ -2,27 +2,22 @@ package modconfig
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
-// Panel is a struct representing the Report resource
+// Panel is a struct representing the Panel resource
 type Panel struct {
 	FullName  string `cty:"name"`
 	ShortName string
 
-	Title  *string `cty:"title" column:"title,text"`
-	Type   *string `cty:"type" column:"type,text"`
-	Width  *int    `cty:"width" column:"width,text"`
-	Source *string `cty:"source" column:"source,text"`
-	SQL    *string `cty:"sql" column:"sql,text"`
-	Text   *string `cty:"text" column:"text,text"`
+	Title *string `cty:"title" column:"title,text"`
+	Type  *string `cty:"type" column:"type,text"`
+	Width *int    `cty:"width" column:"width,text"`
+	SQL   *string `cty:"sql" column:"sql,text"`
+	Text  *string `cty:"text" column:"text,text"`
 
 	DeclRange hcl.Range
 	Mod       *Mod `cty:"mod"`
@@ -43,37 +38,6 @@ func NewPanel(block *hcl.Block) *Panel {
 		DeclRange:       block.DefRange,
 	}
 	return panel
-}
-
-// PanelFromFile creates a panel from a markdown file
-func PanelFromFile(modPath, filePath string) (MappableResource, []byte, error) {
-	p := &Panel{}
-	return p.InitialiseFromFile(modPath, filePath)
-}
-
-// InitialiseFromFile implements MappableResource
-func (p *Panel) InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error) {
-	// only valid for sql files
-	if filepath.Ext(filePath) != constants.MarkdownExtension {
-		return nil, nil, fmt.Errorf("Panel.InitialiseFromFile must be called with markdown files only - filepath: '%s'", filePath)
-	}
-
-	markdownBytes, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, nil, err
-	}
-	markdown := string(markdownBytes)
-
-	// get a sluggified version of the filename
-	name, err := PseudoResourceNameFromPath(modPath, filePath)
-	if err != nil {
-		return nil, nil, err
-	}
-	p.ShortName = name
-	p.FullName = fmt.Sprintf("panel.%s", name)
-	p.Text = &markdown
-	p.Source = utils.ToStringPointer("steampipe.panel.markdown")
-	return p, markdownBytes, nil
 }
 
 // CtyValue implements HclResource
@@ -105,9 +69,6 @@ func (p *Panel) setBaseProperties() {
 	}
 	if p.Width == nil {
 		p.Width = p.Base.Width
-	}
-	if p.Source == nil {
-		p.Source = p.Base.Source
 	}
 	if p.SQL == nil {
 		p.SQL = p.Base.SQL
@@ -206,9 +167,6 @@ func (p *Panel) Diff(new *Panel) *ReportTreeItemDiffs {
 	}
 	if typehelpers.SafeString(p.Title) != typehelpers.SafeString(new.Title) {
 		res.AddPropertyDiff("Title")
-	}
-	if typehelpers.SafeString(p.Source) != typehelpers.SafeString(new.Source) {
-		res.AddPropertyDiff("Source")
 	}
 	if typehelpers.SafeString(p.SQL) != typehelpers.SafeString(new.SQL) {
 		res.AddPropertyDiff("SQL")
