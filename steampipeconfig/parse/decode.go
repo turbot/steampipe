@@ -38,104 +38,86 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			Detail:   err.Error()})
 	}
 	for _, block := range blocks {
-		resources, moreDiags := decodeBlock(runCtx, block)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
+		_, res := decodeBlock(runCtx, block)
+		if !res.Success() {
+			diags = append(diags, res.Diags...)
 			continue
 		}
-		// call post decode hooks
-		for _, resource := range resources {
-			if moreDiags := resource.OnDecoded(block); diags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-			if moreDiags := AddReferences(resource, block, runCtx); diags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-		}
+
 	}
 
 	return diags
 }
 
-func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource, hcl.Diagnostics) {
+func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource, *decodeResult) {
+	var resource modconfig.HclResource
 	var resources []modconfig.HclResource
+	var res = &decodeResult{}
 
-	var diags hcl.Diagnostics
 	// if opts specifies block types, check whether this type is included
 	if !runCtx.ShouldIncludeBlock(block) {
-		return nil, diags
+		return nil, res
 	}
 	// check name is valid
-	moreDiags := validateName(block)
-	if moreDiags.HasErrors() {
-		diags = append(diags, moreDiags...)
-		return nil, diags
+	diags := validateName(block)
+	if diags.HasErrors() {
+		res.addDiags(diags)
+		return nil, res
 	}
 
 	switch block.Type {
 	case modconfig.BlockTypeLocals:
 		// special case decode logic for locals
-		locals, res := decodeLocals(block, runCtx)
+		var locals []*modconfig.Local
+		locals, res = decodeLocals(block, runCtx)
 		for _, local := range locals {
 			// handle the result
 			// - if successful, add resource to mod and variables maps
 			// - if there are dependencies, add them to run context
-			moreDiags = handleDecodeResult(local, res, block, runCtx)
-			diags = append(diags, moreDiags...)
+			diags = handleDecodeResult(local, res, block, runCtx)
+			diags = append(diags, diags...)
 			resources = append(resources, local)
 		}
+
 	case modconfig.BlockTypeContainer:
-		container, res := decodeContainer(block, runCtx)
-		moreDiags = handleDecodeResult(container, res, block, runCtx)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
-		resources = append(resources, container)
+		resource, res = decodeContainer(block, runCtx)
+		resources = append(resources, resource)
 	case modconfig.BlockTypePanel:
-		panel, res := decodePanel(block, runCtx)
-		moreDiags = handleDecodeResult(panel, res, block, runCtx)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
-		resources = append(resources, panel)
+		resource, res = decodePanel(block, runCtx)
+		resources = append(resources, resource)
 	case modconfig.BlockTypeReport:
-		report, res := decodeReport(block, runCtx)
-		moreDiags = handleDecodeResult(report, res, block, runCtx)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
-		resources = append(resources, report)
+		resource, res = decodeReport(block, runCtx)
+		resources = append(resources, resource)
 	case modconfig.BlockTypeVariable:
-		variable, res := decodeVariable(block, runCtx)
-		moreDiags = handleDecodeResult(variable, res, block, runCtx)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
-		resources = append(resources, variable)
+		resource, res = decodeVariable(block, runCtx)
+		resources = append(resources, resource)
 	case modconfig.BlockTypeControl:
-		control, res := decodeControl(block, runCtx)
-		moreDiags = handleDecodeResult(control, res, block, runCtx)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
-		resources = append(resources, control)
+		resource, res = decodeControl(block, runCtx)
+		resources = append(resources, resource)
 	case modconfig.BlockTypeQuery:
-		query, res := decodeQuery(block, runCtx)
-		moreDiags = handleDecodeResult(query, res, block, runCtx)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
-		resources = append(resources, query)
+		resource, res = decodeQuery(block, runCtx)
+		resources = append(resources, resource)
 	default:
 		// all other blocks are treated the same:
-		resource, res := decodeResource(block, runCtx)
-		moreDiags = handleDecodeResult(resource, res, block, runCtx)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
+		resource, res = decodeResource(block, runCtx)
 		resources = append(resources, resource)
 	}
-	return resources, diags
+
+	for _, resource := range resources {
+		// handle depdnencies
+		handleDecodeResult(resource, res, block, runCtx)
+		// if successful, call post decode hooks and set references
+		if res.Success() {
+			if diags = resource.OnDecoded(block); diags.HasErrors() {
+				res.addDiags(diags)
+			}
+			if diags := AddReferences(resource, block, runCtx); diags.HasErrors() {
+				res.addDiags(diags)
+			}
+		}
+	}
+
+	return resources, res
 }
 
 // generic decode function for any resource we do not have custom decode logic for
@@ -470,22 +452,29 @@ func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContai
 	res.handleDecodeDiags(diags)
 	diags = decodeProperty(content, "children", &report.ChildNames, runCtx)
 	res.handleDecodeDiags(diags)
+	diags = decodeProperty(content, "base", &report.Base, runCtx)
+	res.handleDecodeDiags(diags)
 
 	// if children are declared inline as blocks, add them
 	var children []modconfig.ModTreeItem
 	for _, b := range content.Blocks {
-		resources, moreDiags := decodeBlock(runCtx, b)
-		res.handleDecodeDiags(moreDiags)
+		resources, blockRes := decodeBlock(runCtx, b)
+		res.Merge(blockRes)
+		if !blockRes.Success() {
+			continue
+		}
 		for _, childResource := range resources {
+			// add into child names array - will get added into children by OnDecoded
+			report.ChildNames = append(report.ChildNames, modconfig.NamedItem{Name: childResource.Name()})
 			if child, ok := childResource.(modconfig.ModTreeItem); ok {
 				children = append(children, child)
 			}
 		}
 	}
-	report.SetChildren(children)
 
 	return report, res
 }
+
 func decodeContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContainer, *decodeResult) {
 	res := &decodeResult{}
 
@@ -495,19 +484,25 @@ func decodeContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportCon
 	container := modconfig.NewReportContainer(block)
 	diags = decodeProperty(content, "children", &container.ChildNames, runCtx)
 	res.handleDecodeDiags(diags)
+	diags = decodeProperty(content, "base", &container.Base, runCtx)
+	res.handleDecodeDiags(diags)
 
 	// if children are declared inline as blocks, add them
 	var children []modconfig.ModTreeItem
 	for _, b := range content.Blocks {
-		resources, moreDiags := decodeBlock(runCtx, b)
-		res.handleDecodeDiags(moreDiags)
+		resources, blockRes := decodeBlock(runCtx, b)
+		res.Merge(blockRes)
+		if !blockRes.Success() {
+			continue
+		}
 		for _, childResource := range resources {
+			// add into child names array - will get added into children by OnDecoded
+			container.ChildNames = append(container.ChildNames, modconfig.NamedItem{Name: childResource.Name()})
 			if child, ok := childResource.(modconfig.ModTreeItem); ok {
 				children = append(children, child)
 			}
 		}
 	}
-	container.SetChildren(children)
 
 	return container, res
 }
@@ -540,11 +535,6 @@ func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decod
 
 	diags = decodeProperty(content, "base", &panel.Base, runCtx)
 	res.handleDecodeDiags(diags)
-
-	for _, b := range content.Blocks {
-		_, moreDiags := decodeBlock(runCtx, b)
-		res.handleDecodeDiags(moreDiags)
-	}
 
 	return panel, res
 }

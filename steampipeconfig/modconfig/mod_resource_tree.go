@@ -70,6 +70,15 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 		}
 
 	}
+	for _, container := range sourceMod.Containers {
+		if err := m.addItemIntoResourceTree(container); err != nil {
+			return err
+		}
+		if len(container.GetChildren()) == 0 {
+			leafNodes = append(leafNodes, container)
+		}
+
+	}
 	// now initialise all Paths properties
 	for _, l := range leafNodes {
 		l.SetPaths()
