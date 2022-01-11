@@ -55,9 +55,9 @@ type Mod struct {
 	Queries    map[string]*Query
 	Controls   map[string]*Control
 	Benchmarks map[string]*Benchmark
-	Reports    map[string]*Report
+	Reports    map[string]*ReportContainer
+	Containers map[string]*ReportContainer
 	Panels     map[string]*Panel
-	Containers map[string]*Container
 	Variables  map[string]*Variable
 	Locals     map[string]*Local
 
@@ -77,9 +77,9 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Queries:    make(map[string]*Query),
 		Controls:   make(map[string]*Control),
 		Benchmarks: make(map[string]*Benchmark),
-		Reports:    make(map[string]*Report),
+		Reports:    make(map[string]*ReportContainer),
+		Containers: make(map[string]*ReportContainer),
 		Panels:     make(map[string]*Panel),
-		Containers: make(map[string]*Container),
 		Variables:  make(map[string]*Variable),
 		Locals:     make(map[string]*Local),
 

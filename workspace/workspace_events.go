@@ -63,7 +63,7 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 	w.raiseReportChangedEvents(w.getPanelMap(), prevPanels, w.getReportMap(), prevReports)
 }
 
-func (w *Workspace) raiseReportChangedEvents(panels, prevPanels map[string]*modconfig.Panel, reports, prevReports map[string]*modconfig.Report) {
+func (w *Workspace) raiseReportChangedEvents(panels, prevPanels map[string]*modconfig.Panel, reports, prevReports map[string]*modconfig.ReportContainer) {
 	event := &reportevents.ReportChanged{}
 
 	// first detect detect changes to existing panels/reports and removed panels and reports

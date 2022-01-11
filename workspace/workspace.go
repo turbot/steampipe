@@ -34,8 +34,8 @@ type Workspace struct {
 	Controls   map[string]*modconfig.Control
 	Benchmarks map[string]*modconfig.Benchmark
 	Mods       map[string]*modconfig.Mod
-	Reports    map[string]*modconfig.Report
-	Containers map[string]*modconfig.Container
+	Reports    map[string]*modconfig.ReportContainer
+	Containers map[string]*modconfig.ReportContainer
 	Panels     map[string]*modconfig.Panel
 	Variables  map[string]*modconfig.Variable
 
@@ -230,7 +230,7 @@ func (w *Workspace) reset() {
 	w.Controls = make(map[string]*modconfig.Control)
 	w.Benchmarks = make(map[string]*modconfig.Benchmark)
 	w.Mods = make(map[string]*modconfig.Mod)
-	w.Reports = make(map[string]*modconfig.Report)
+	w.Reports = make(map[string]*modconfig.ReportContainer)
 	w.Panels = make(map[string]*modconfig.Panel)
 }
 
@@ -403,9 +403,9 @@ func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) map[string]*modco
 	return res
 }
 
-func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfig.Report {
+func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfig.ReportContainer {
 	//  build a list of long and short names for these queries
-	var res = make(map[string]*modconfig.Report)
+	var res = make(map[string]*modconfig.ReportContainer)
 
 	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
 	for _, r := range w.Mod.Reports {
@@ -440,9 +440,9 @@ func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig
 	}
 	return res
 }
-func (w *Workspace) buildContainerMap(modMap modconfig.ModMap) map[string]*modconfig.Container {
+func (w *Workspace) buildContainerMap(modMap modconfig.ModMap) map[string]*modconfig.ReportContainer {
 	//  build a list of long and short names for these queries
-	var res = make(map[string]*modconfig.Container)
+	var res = make(map[string]*modconfig.ReportContainer)
 
 	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
 	for _, c := range w.Mod.Containers {
@@ -508,8 +508,8 @@ func (w *Workspace) getPanelMap() map[string]*modconfig.Panel {
 
 // return a map of all unique reports, keyed by name
 // not we cannot just use Reports as this contains duplicates (qualified and unqualified version)
-func (w *Workspace) getReportMap() map[string]*modconfig.Report {
-	reports := make(map[string]*modconfig.Report, len(w.Reports))
+func (w *Workspace) getReportMap() map[string]*modconfig.ReportContainer {
+	reports := make(map[string]*modconfig.ReportContainer, len(w.Reports))
 	for _, p := range w.Reports {
 		// refetch the name property to avoid duplicates
 		// (as we save resources with qualified and unqualified name)

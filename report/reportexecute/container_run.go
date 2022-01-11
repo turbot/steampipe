@@ -28,7 +28,7 @@ type ContainerRun struct {
 	executionTree *ReportExecutionTree
 }
 
-func NewContainerRun(container *modconfig.Container, executionTree *ReportExecutionTree) *ContainerRun {
+func NewContainerRun(container *modconfig.ReportContainer, executionTree *ReportExecutionTree) *ContainerRun {
 	r := &ContainerRun{
 		Name:          container.Name(),
 		executionTree: executionTree,
@@ -43,7 +43,7 @@ func NewContainerRun(container *modconfig.Container, executionTree *ReportExecut
 
 	for _, child := range container.GetChildren() {
 		switch i := child.(type) {
-		case *modconfig.Container:
+		case *modconfig.ReportContainer:
 			childRun := NewContainerRun(i, executionTree)
 			// if our child has not completed, we have not completed
 			if childRun.runStatus == reportinterfaces.ReportRunReady {

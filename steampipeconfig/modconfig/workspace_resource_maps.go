@@ -8,7 +8,7 @@ type WorkspaceResourceMaps struct {
 	Controls   map[string]*Control
 	Benchmarks map[string]*Benchmark
 	Variables  map[string]*Variable
-	Reports    map[string]*Report
+	Reports    map[string]*ReportContainer
 	Panels     map[string]*Panel
 	References map[string]*ResourceReference
 }
@@ -20,7 +20,7 @@ func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
 		Controls:   make(map[string]*Control),
 		Benchmarks: make(map[string]*Benchmark),
 		Variables:  make(map[string]*Variable),
-		Reports:    make(map[string]*Report),
+		Reports:    make(map[string]*ReportContainer),
 		Panels:     make(map[string]*Panel),
 		References: make(map[string]*ResourceReference),
 	}

@@ -9,10 +9,10 @@ type ReportChanged struct {
 	ChangedReports []*modconfig.ReportTreeItemDiffs
 
 	NewPanels  []*modconfig.Panel
-	NewReports []*modconfig.Report
+	NewReports []*modconfig.ReportContainer
 
 	DeletedPanels  []*modconfig.Panel
-	DeletedReports []*modconfig.Report
+	DeletedReports []*modconfig.ReportContainer
 }
 
 // IsReportEvent implements ReportEvent interface
