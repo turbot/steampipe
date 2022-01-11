@@ -168,6 +168,8 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResourc
 		resource = modconfig.NewQuery(block)
 	case modconfig.BlockTypeControl:
 		resource = modconfig.NewControl(block)
+	case modconfig.BlockTypeContainer:
+		resource = modconfig.NewContainer(block)
 	case modconfig.BlockTypeReport:
 		resource = modconfig.NewReport(block)
 	case modconfig.BlockTypePanel:
@@ -487,17 +489,27 @@ func decodeContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Container
 	diags = decodeProperty(content, "width", &container.Width, runCtx)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeProperty(content, "panels", &container.Panels, runCtx)
+	diags = decodeProperty(content, "children", &container.ChildNames, runCtx)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeProperty(content, "containers", &container.Containers, runCtx)
-	res.handleDecodeDiags(diags)
+	// it is not valid to both declare a children property and declare children inline
+	// this only blocks defined in ther schema are to declare children
+	if len(container.ChildNames) > 0 && len(content.Blocks) > 0 {
+		res.handleDecodeDiags(hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("container '%s' both defines a 'children' property and has inline children", container.FullName),
+				Subject:  &block.DefRange,
+			},
+		})
+		return nil, res
+	}
 
 	for _, b := range content.Blocks {
 		resources, moreDiags := decodeBlock(runCtx, b)
 		res.handleDecodeDiags(moreDiags)
-		// NOTE - we must set parent and children here - we cannot rely on Mod.BuildResourceTree
-		// this works for benchmarks as there is a child name property
+		// NOTE - for any children declared inline, we add them here.
+		// any children defined by children property are added in OnDecoded
 		addChildResources(resources, container)
 	}
 
