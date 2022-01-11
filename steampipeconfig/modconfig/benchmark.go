@@ -17,8 +17,10 @@ type Benchmark struct {
 	FullName        string `cty:"name"`
 	UnqualifiedName string
 
-	ChildNames       []NamedItem `cty:"children" hcl:"children,optional"`
-	ChildNameStrings []string    `column:"children,jsonb"`
+	// used to allow setting children via the 'children' property
+	ChildNames []NamedItem `cty:"children" hcl:"children,optional"`
+	// used purely for introspection tables
+	ChildNameStrings []string `column:"children,jsonb"`
 
 	Description   *string           `cty:"description" hcl:"description" column:"description,text"`
 	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`

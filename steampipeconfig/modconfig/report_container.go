@@ -14,15 +14,19 @@ type ReportContainer struct {
 	FullName        string `cty:"name"`
 	UnqualifiedName string
 
-	ChildNames       []NamedItem `cty:"children" `
-	ChildNameStrings []string    `column:"children,jsonb"`
+	// used to allow setting children via the 'children' property
+	ChildNames []NamedItem `cty:"child_names"`
+	// used for introspection tables
+	ChildNameStrings []string `cty:"children" column:"children,jsonb"`
 
 	Title *string `cty:"title" column:"title,text"`
 	Width *int    `cty:"width"  column:"width,text"`
 
 	Mod       *Mod `cty:"mod"`
 	DeclRange hcl.Range
-	Paths     []NodePath `column:"path,jsonb"`
+
+	Base  *ReportContainer
+	Paths []NodePath `column:"path,jsonb"`
 
 	parents  []ModTreeItem
 	children []ModTreeItem
@@ -34,8 +38,8 @@ type ReportContainer struct {
 func NewReportContainer(block *hcl.Block) *ReportContainer {
 	report := &ReportContainer{
 		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("report.%s", block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("report.%s", block.Labels[0]),
+		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 		DeclRange:       block.DefRange,
 		hclType:         block.Type,
 	}
@@ -56,29 +60,31 @@ func (r *ReportContainer) Name() string {
 // OnDecoded implements HclResource
 func (r *ReportContainer) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 	var res hcl.Diagnostics
-	if len(r.ChildNames) == 0 {
-		return nil
+
+	r.setBaseProperties()
+	// if children were specified using the 'children' field, add them
+	if len(r.ChildNames) > 0 {
+		r.ChildNameStrings, res = getChildNames(r.ChildNames, r.Name(), block)
+		// in order to populate the children in the order specified, we create an empty array and populate by index in AddChild
+		r.children = make([]ModTreeItem, len(r.ChildNameStrings))
 	}
 
-	// validate each child name appears only once
-	nameMap := make(map[string]bool)
-	r.ChildNameStrings = make([]string, len(r.ChildNames))
-	for i, n := range r.ChildNames {
-		if nameMap[n.Name] {
-			res = append(res, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("container '%s' has duplicate child name '%s'", r.FullName, n.Name),
-				Subject:  &block.DefRange})
-
-			continue
-		}
-		r.ChildNameStrings[i] = n.Name
-		nameMap[n.Name] = true
-	}
-
-	// in order to populate the children in the order specified, we create an empty array and populate by index in AddChild
-	r.children = make([]ModTreeItem, len(r.ChildNameStrings))
 	return res
+}
+
+func (p *ReportContainer) setBaseProperties() {
+	if p.Base == nil {
+		return
+	}
+	if p.Title == nil {
+		p.Title = p.Base.Title
+	}
+	if p.Width == nil {
+		p.Width = p.Base.Width
+	}
+	if len(p.ChildNames) == 0 {
+		p.ChildNames = p.Base.ChildNames
+	}
 }
 
 // AddReference implements HclResource
@@ -138,15 +144,6 @@ func (r *ReportContainer) GetParents() []ModTreeItem {
 // GetChildren implements ModTreeItem
 func (r *ReportContainer) GetChildren() []ModTreeItem {
 	return r.children
-}
-
-// SetChildren is used to set the children when they are declared inline
-func (r *ReportContainer) SetChildren(children []ModTreeItem) {
-	r.ChildNameStrings = make([]string, len(children))
-	for i, c := range children {
-		r.ChildNameStrings[i] = c.Name()
-	}
-	r.children = children
 }
 
 // GetTitle implements ModTreeItem
