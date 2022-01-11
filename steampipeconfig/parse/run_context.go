@@ -74,9 +74,6 @@ func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string,
 	}
 	// add root node - this will depend on all other nodes
 	c.dependencyGraph = c.newDependencyGraph()
-
-	// add enums to the variables which may be referenced from within the hcl
-	c.addSteampipeEnums()
 	c.buildEvalContext()
 
 	return c
@@ -298,31 +295,6 @@ func (r *RunContext) FormatDependencies() string {
 	}
 
 	return helpers.Tabify(strings.Join(depStrings, "\n"), "   ")
-}
-
-// add enums to the referenceValues which may be referenced from within the hcl
-func (r *RunContext) addSteampipeEnums() {
-	r.referenceValues["local"]["steampipe"] = map[string]cty.Value{
-		"panel": cty.ObjectVal(map[string]cty.Value{
-			"markdown":         cty.StringVal("steampipe.panel.markdown"),
-			"barchart":         cty.StringVal("steampipe.panel.barchart"),
-			"stackedbarchart":  cty.StringVal("steampipe.panel.stackedbarchart"),
-			"counter":          cty.StringVal("steampipe.panel.counter"),
-			"linechart":        cty.StringVal("steampipe.panel.linechart"),
-			"multilinechart":   cty.StringVal("steampipe.panel.multilinechart"),
-			"piechart":         cty.StringVal("steampipe.panel.piechart"),
-			"placeholder":      cty.StringVal("steampipe.panel.placeholder"),
-			"control_list":     cty.StringVal("steampipe.panel.control_list"),
-			"control_progress": cty.StringVal("steampipe.panel.control_progress"),
-			"control_table":    cty.StringVal("steampipe.panel.control_table"),
-			"graph":            cty.StringVal("steampipe.panel.graph"),
-			"sankey_diagram":   cty.StringVal("steampipe.panel.sankey_diagram"),
-			"status":           cty.StringVal("steampipe.panel.status"),
-			"table":            cty.StringVal("steampipe.panel.table"),
-			"resource_detail":  cty.StringVal("steampipe.panel.resource_detail"),
-			"resource_tags":    cty.StringVal("steampipe.panel.resource_tags"),
-		}),
-	}
 }
 
 func (r *RunContext) newDependencyGraph() *topsort.Graph {
