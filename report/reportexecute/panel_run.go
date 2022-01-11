@@ -9,14 +9,13 @@ import (
 
 // PanelRun is a struct representing a panel run
 type PanelRun struct {
-	Name   string          `json:"name"`
-	Title  string          `json:"title,omitempty"`
-	Text   string          `json:"text,omitempty"`
-	Type   string          `json:"type,omitempty"`
-	Width  int             `json:"width,omitempty"`
-	Source string          `json:"source,omitempty"`
-	SQL    string          `json:"sql,omitempty"`
-	Data   [][]interface{} `json:"data,omitempty"`
+	Name  string          `json:"name"`
+	Title string          `json:"title,omitempty"`
+	Text  string          `json:"text,omitempty"`
+	Type  string          `json:"type,omitempty"`
+	Width int             `json:"width,omitempty"`
+	SQL   string          `json:"sql,omitempty"`
+	Data  [][]interface{} `json:"data,omitempty"`
 
 	Error error `json:"error,omitempty"`
 
@@ -30,7 +29,6 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 		Title:         typehelpers.SafeString(panel.Title),
 		Text:          typehelpers.SafeString(panel.Text),
 		Type:          typehelpers.SafeString(panel.Type),
-		Source:        typehelpers.SafeString(panel.Source),
 		SQL:           typehelpers.SafeString(panel.SQL),
 		executionTree: executionTree,
 
