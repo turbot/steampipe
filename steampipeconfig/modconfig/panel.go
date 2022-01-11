@@ -28,9 +28,8 @@ type Panel struct {
 	DeclRange hcl.Range
 	Mod       *Mod `cty:"mod"`
 
+	Base  *Panel
 	Paths []NodePath `column:"path,jsonb"`
-
-	Base *Panel
 
 	parents         []ModTreeItem
 	metadata        *ResourceMetadata

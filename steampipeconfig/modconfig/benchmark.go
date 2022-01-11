@@ -11,20 +11,15 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-type NamedItem struct {
-	Name string `cty:"name"`
-}
-
-func (c NamedItem) String() string {
-	return c.Name
-}
-
 // Benchmark is a struct representing the Benchmark resource
 type Benchmark struct {
-	ShortName string
-	FullName  string `cty:"name"`
+	ShortName       string
+	FullName        string `cty:"name"`
+	UnqualifiedName string
 
-	ChildNames    []NamedItem       `cty:"children" hcl:"children,optional"`
+	ChildNames       []NamedItem `cty:"children" hcl:"children,optional"`
+	ChildNameStrings []string    `column:"children,jsonb"`
+
 	Description   *string           `cty:"description" hcl:"description" column:"description,text"`
 	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
 	Tags          map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
@@ -32,16 +27,13 @@ type Benchmark struct {
 
 	// list of all block referenced by the resource
 	References []*ResourceReference
+	Mod        *Mod `cty:"mod"`
+	DeclRange  hcl.Range
+	Paths      []NodePath `column:"path,jsonb"`
 
-	Mod              *Mod     `cty:"mod"`
-	ChildNameStrings []string `column:"children,jsonb"`
-	DeclRange        hcl.Range
-
-	Paths           []NodePath `column:"path,jsonb"`
-	parents         []ModTreeItem
-	children        []ModTreeItem
-	metadata        *ResourceMetadata
-	UnqualifiedName string
+	parents  []ModTreeItem
+	children []ModTreeItem
+	metadata *ResourceMetadata
 }
 
 func NewBenchmark(block *hcl.Block) *Benchmark {
@@ -116,7 +108,7 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 		nameMap[n.Name] = true
 	}
 
-	// in order to populate th echildren in the order specified, we create an empty array and populate by index in AddChild
+	// in order to populate the children in the order specified, we create an empty array and populate by index in AddChild
 	b.children = make([]ModTreeItem, len(b.ChildNameStrings))
 	return res
 }

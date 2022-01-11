@@ -9,22 +9,22 @@ import (
 
 // Container is a struct representing the Report resource
 type Container struct {
-	FullName  string `cty:"name"`
-	ShortName string
-
-	Width      *int `cty:"width" column:"width,text"`
-	Containers []*Container
-	Panels     []*Panel
-
-	DeclRange hcl.Range
-	Mod       *Mod `cty:"mod"`
-
-	Children []string   `column:"children,jsonb"`
-	Paths    []NodePath `column:"path,jsonb"`
-
-	parents         []ModTreeItem
-	metadata        *ResourceMetadata
+	ShortName       string
+	FullName        string `cty:"name"`
 	UnqualifiedName string
+
+	ChildNames       []NamedItem `cty:"children" hcl:"children,optional"`
+	ChildNameStrings []string    `column:"children,jsonb"`
+
+	Width *int `cty:"width" hcl:"width" column:"width,text"`
+
+	Mod       *Mod `cty:"mod"`
+	DeclRange hcl.Range
+	Paths     []NodePath `column:"path,jsonb"`
+
+	parents  []ModTreeItem
+	children []ModTreeItem
+	metadata *ResourceMetadata
 }
 
 func NewContainer(block *hcl.Block) *Container {
@@ -69,23 +69,53 @@ func (p *Container) GetDeclRange() *hcl.Range {
 }
 
 // OnDecoded implements HclResource
-func (p *Container) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	p.setChildNames()
-	return nil
+func (p *Container) OnDecoded(block *hcl.Block) hcl.Diagnostics {
+	var res hcl.Diagnostics
+	if len(p.ChildNames) == 0 {
+		return nil
+	}
+
+	// validate each child name appears only once
+	nameMap := make(map[string]bool)
+	p.ChildNameStrings = make([]string, len(p.ChildNames))
+	for i, n := range p.ChildNames {
+		if nameMap[n.Name] {
+			res = append(res, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("container '%s' has duplicate child name '%s'", p.FullName, n.Name),
+				Subject:  &block.DefRange})
+
+			continue
+		}
+		p.ChildNameStrings[i] = n.Name
+		nameMap[n.Name] = true
+	}
+
+	// in order to populate the children in the order specified, we create an empty array and populate by index in AddChild
+	p.children = make([]ModTreeItem, len(p.ChildNameStrings))
+	return res
 }
 
 // AddChild implements ModTreeItem
 func (p *Container) AddChild(child ModTreeItem) error {
-	switch c := child.(type) {
-	case *Panel:
-		// avoid duplicates
-		if !p.containsPanel(c.Name()) {
-			p.Panels = append(p.Panels, c)
-		}
-	case *Report:
-		return fmt.Errorf("panels cannot contain reports")
+	// if ChildNames is NOT set, children must hav ebeen declared inline
+	if len(p.ChildNames) == 0 {
+		p.children = append(p.children, child)
+		p.ChildNameStrings = append(p.ChildNameStrings, child.Name())
+		return nil
 	}
-	return nil
+
+	// so a children property must have been populated
+
+	// now find which position this child is in the array
+	for i, name := range p.ChildNameStrings {
+		if name == child.Name() {
+			p.children[i] = child
+			return nil
+		}
+	}
+
+	return fmt.Errorf("container '%s' has no child '%s'", p.Name(), child.Name())
 }
 
 // AddParent implements ModTreeItem
@@ -101,11 +131,7 @@ func (p *Container) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (p *Container) GetChildren() []ModTreeItem {
-	children := make([]ModTreeItem, len(p.Panels))
-	for i, p := range p.Panels {
-		children[i] = p
-	}
-	return children
+	return p.children
 }
 
 // GetTitle implements ModTreeItem
@@ -140,37 +166,4 @@ func (p *Container) SetPaths() {
 			p.Paths = append(p.Paths, append(parentPath, p.Name()))
 		}
 	}
-}
-
-func (p *Container) setChildNames() {
-	numChildren := len(p.Containers)
-	if numChildren == 0 {
-		return
-	}
-	// set children names
-	p.Children = make([]string, numChildren)
-
-	for i, p := range p.Containers {
-		p.Children[i] = p.Name()
-	}
-}
-
-func (p *Container) containsContainer(name string) bool {
-	// does this child already exist
-	for _, existingContainer := range p.Containers {
-		if existingContainer.Name() == name {
-			return true
-		}
-	}
-	return false
-}
-
-func (p *Container) containsPanel(name string) bool {
-	// does this child already exist
-	for _, existingPanel := range p.Panels {
-		if existingPanel.Name() == name {
-			return true
-		}
-	}
-	return false
 }
