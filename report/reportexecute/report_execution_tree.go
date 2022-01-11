@@ -20,7 +20,7 @@ type ReportExecutionTree struct {
 	client          db_common.Client
 	containers      map[string]*ContainerRun
 	panels          map[string]*PanelRun
-	reports         map[string]*ReportRun
+	reports         map[string]*ContainerRun
 	workspace       *workspace.Workspace
 }
 
@@ -31,7 +31,7 @@ func NewReportExecutionTree(reportName string, client db_common.Client, workspac
 		client:     client,
 		containers: make(map[string]*ContainerRun),
 		panels:     make(map[string]*PanelRun),
-		reports:    make(map[string]*ReportRun),
+		reports:    make(map[string]*ContainerRun),
 		workspace:  workspace,
 	}
 
@@ -64,7 +64,7 @@ func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterface
 		if !ok {
 			return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
 		}
-		root = NewReportRun(report, e)
+		root = NewContainerRun(report, e)
 	case modconfig.BlockTypeContainer:
 		container, ok := e.workspace.Containers[reportName]
 		if !ok {

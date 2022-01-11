@@ -81,8 +81,9 @@ var ModBlockSchema = &hcl.BodySchema{
 var ReportBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "title"},
-		{Name: "panels"},
-		{Name: "containers"},
+		{Name: "width"},
+		{Name: "children"},
+		{Name: "base"},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
@@ -99,8 +100,8 @@ var ReportBlockSchema = &hcl.BodySchema{
 var ContainerBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "width"},
-		{Name: "panels"},
-		{Name: "containers"},
+		{Name: "children"},
+		{Name: "base"},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
@@ -120,7 +121,6 @@ var PanelBlockSchema = &hcl.BodySchema{
 		{Name: "text"},
 		{Name: "type"},
 		{Name: "width"},
-		{Name: "height"},
 		{Name: "source"},
 		{Name: "sql"},
 		{Name: "base"},

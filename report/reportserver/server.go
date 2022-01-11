@@ -83,7 +83,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 	return server, err
 }
 
-func buildAvailableReportsPayload(reports map[string]*modconfig.Report) []byte {
+func buildAvailableReportsPayload(reports map[string]*modconfig.ReportContainer) []byte {
 	reportsPayload := make(map[string]string)
 	for _, report := range reports {
 		reportsPayload[report.FullName] = types.SafeString(report.Title)
