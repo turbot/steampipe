@@ -14,16 +14,11 @@ type PanelRun struct {
 	Text   string          `json:"text,omitempty"`
 	Type   string          `json:"type,omitempty"`
 	Width  int             `json:"width,omitempty"`
-	Height int             `json:"height,omitempty"`
 	Source string          `json:"source,omitempty"`
 	SQL    string          `json:"sql,omitempty"`
 	Data   [][]interface{} `json:"data,omitempty"`
 
 	Error error `json:"error,omitempty"`
-
-	// children
-	PanelRuns  []*PanelRun  `json:"panels,omitempty"`
-	ReportRuns []*ReportRun `json:"reports,omitempty"`
 
 	runStatus     reportinterfaces.ReportRunStatus
 	executionTree *ReportExecutionTree
@@ -45,10 +40,6 @@ func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *Pa
 	}
 	if panel.Width != nil {
 		r.Width = *panel.Width
-	}
-
-	if panel.Height != nil {
-		r.Height = *panel.Height
 	}
 
 	// if we have sql, set status to ready
@@ -94,15 +85,5 @@ func (r *PanelRun) RunComplete() bool {
 
 // ChildrenComplete implements ReportNodeRun
 func (r *PanelRun) ChildrenComplete() bool {
-	for _, panel := range r.PanelRuns {
-		if panel.runStatus != reportinterfaces.ReportRunComplete {
-			return false
-		}
-	}
-	for _, report := range r.ReportRuns {
-		if report.runStatus != reportinterfaces.ReportRunComplete {
-			return false
-		}
-	}
 	return true
 }

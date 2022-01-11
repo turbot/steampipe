@@ -126,24 +126,26 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		} else {
 			m.Panels[name] = r
 		}
-	case *Container:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Containers[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.Containers[name] = r
-		}
 
-	case *Report:
+	case *ReportContainer:
 		name := r.Name()
-		// check for dupes
-		if _, ok := m.Reports[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
+		// report struct may either be a `report` or a `container`
+		if r.IsReport() {
+			// check for dupes
+			if _, ok := m.Reports[name]; ok {
+				diags = append(diags, duplicateResourceDiagnostics(item))
+				break
+			} else {
+				m.Reports[name] = r
+			}
 		} else {
-			m.Reports[name] = r
+			// check for dupes
+			if _, ok := m.Containers[name]; ok {
+				diags = append(diags, duplicateResourceDiagnostics(item))
+				break
+			} else {
+				m.Containers[name] = r
+			}
 		}
 
 	case *Variable:

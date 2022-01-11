@@ -50,7 +50,7 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Report{}, constants.IntrospectionTableReport, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportContainer{}, constants.IntrospectionTableReport, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Panel{}, constants.IntrospectionTablePanel, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
 	return strings.Join(createSql, "\n")

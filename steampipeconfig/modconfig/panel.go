@@ -20,7 +20,6 @@ type Panel struct {
 	Title  *string `cty:"title" column:"title,text"`
 	Type   *string `cty:"type" column:"type,text"`
 	Width  *int    `cty:"width" column:"width,text"`
-	Height *int    `cty:"height" column:"height,text"`
 	Source *string `cty:"source" column:"source,text"`
 	SQL    *string `cty:"sql" column:"sql,text"`
 	Text   *string `cty:"text" column:"text,text"`
@@ -106,9 +105,6 @@ func (p *Panel) setBaseProperties() {
 	}
 	if p.Width == nil {
 		p.Width = p.Base.Width
-	}
-	if p.Height == nil {
-		p.Height = p.Base.Height
 	}
 	if p.Source == nil {
 		p.Source = p.Base.Source
@@ -229,13 +225,6 @@ func (p *Panel) Diff(new *Panel) *ReportTreeItemDiffs {
 		}
 	} else if *p.Width != *new.Width {
 		res.AddPropertyDiff("Width")
-	}
-	if p.Height == nil || new.Height == nil {
-		if !(p.Height == nil && new.Height == nil) {
-			res.AddPropertyDiff("Height")
-		}
-	} else if *p.Height != *new.Height {
-		res.AddPropertyDiff("Height")
 	}
 
 	res.populateChildDiffs(p, new)
