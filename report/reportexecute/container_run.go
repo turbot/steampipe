@@ -1,6 +1,8 @@
 package reportexecute
 
 import (
+	"fmt"
+
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -10,26 +12,25 @@ import (
 type ReportContainerRun struct {
 	Name string `json:"name"`
 
-	Text   string          `json:"text,omitempty"`
-	Type   string          `json:"type,omitempty"`
-	Width  int             `json:"width,omitempty"`
-	Height int             `json:"height,omitempty"`
-	Source string          `json:"source,omitempty"`
-	SQL    string          `json:"sql,omitempty"`
-	Data   [][]interface{} `json:"data,omitempty"`
-
-	Error error `json:"error,omitempty"`
-
-	// children
+	Text     string                           `json:"text,omitempty"`
+	Type     string                           `json:"type,omitempty"`
+	Width    int                              `json:"width,omitempty"`
+	Height   int                              `json:"height,omitempty"`
+	Source   string                           `json:"source,omitempty"`
+	SQL      string                           `json:"sql,omitempty"`
+	Data     [][]interface{}                  `json:"data,omitempty"`
+	Error    error                            `json:"error,omitempty"`
 	Children []reportinterfaces.ReportNodeRun `json:"children,omitempty"`
 
 	runStatus     reportinterfaces.ReportRunStatus
 	executionTree *ReportExecutionTree
 }
 
-func NewReportContainerRun(container *modconfig.ReportContainer, executionTree *ReportExecutionTree) *ReportContainerRun {
+func NewReportContainerRun(container *modconfig.ReportContainer, parentName string, executionTree *ReportExecutionTree) *ReportContainerRun {
+
 	r := &ReportContainerRun{
-		Name:          container.Name(),
+		// the name is the path, i.e. dot-separated concatenation of parent names
+		Name:          fmt.Sprintf("%s.%s", parentName, container.UnqualifiedName),
 		executionTree: executionTree,
 
 		// set to complete, optimistically
@@ -44,9 +45,9 @@ func NewReportContainerRun(container *modconfig.ReportContainer, executionTree *
 		var childRun reportinterfaces.ReportNodeRun
 		switch i := child.(type) {
 		case *modconfig.ReportContainer:
-			childRun = NewReportContainerRun(i, executionTree)
+			childRun = NewReportContainerRun(i, r.Name, executionTree)
 		case *modconfig.Panel:
-			childRun = NewPanelRun(i, executionTree)
+			childRun = NewPanelRun(i, r.Name, executionTree)
 		}
 
 		// should never happen - container children must be either container or panel
