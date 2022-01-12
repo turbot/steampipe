@@ -1,9 +1,4 @@
-[  
-    {{ range .ControlRuns -}} 
-        {{ range .Rows }}
-            {{ template "control_run_template" . -}}
-        {{ end -}}
-    {{ end -}}
+[  {{ range .ControlRuns -}} {{ range .Rows }} {{ template "control_run_template" . -}} {{ end -}} {{ end }}
 ]
 {{ define "control_run_template" }}
 {
@@ -11,25 +6,31 @@
     "Id": "{{ .Control.FullName }}",
     "ProductArn": "arn:aws:securityhub:ap-south-1:453319552164:product/453319552164/default",
     "ProductFields": {
-        "ProviderName": "Steampipe"
+        "ProviderName": "Steampipe",
+        "ProviderVersion": "{{ steampipeversion }}"
     },
     "GeneratorId": "steampipe-{{ .Control.ShortName }}",
     "AwsAccountId": "453319552164",
     "Types": [
         "automated"
     ],
-    "UpdatedAt": "2022-01-11T06:46:55Z",
-    "CreatedAt": "2022-01-11T06:46:55Z",
+    "UpdatedAt": "{{ timenow }}",
+    "CreatedAt": "{{ timenow }}",
     "Title": "{{ .Control.Title }}",
-    "Description": "{{ .Control.Description }}",
+    "Description": "{{ .Control.Description }}",{{ with .Control.Severity }}
+    "Severity": {
+        "Label": "{{ . | ToUpper}}"
+    },{{ else }}
+    "Severity": {
+        "Label": "INFORMATIONAL"
+    },{{ end }}
     "Resources": [
-        {
-            "Type": "AwsAccount",
-            "Id": "NONE_PROVIDED"
+        { 
+            "Type": "Other",
+            "Id": "{{ .Resource }}"
         }
     ],
     "Compliance": {
-        "Status": "{{ .Status }}"
+        "Status": "{{ .Status | StatusMap }}"
     }
-},
-{{ end -}}
+},{{ end -}}

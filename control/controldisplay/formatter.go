@@ -11,6 +11,7 @@ import (
 >>>>>>> b61642c (wiring up)
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
@@ -168,5 +169,24 @@ var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 			return "summary-total-error"
 		}
 		return ""
+	},
+	"ToUpper": func(text string) string {
+		return strings.ToUpper(text)
+	},
+	"StatusMap": func(status string) string {
+		switch status {
+		case "ok":
+			return "PASSED"
+		case "error":
+			return "WARNING"
+		case "alarm":
+			return "FAILED"
+		case "skip", "info":
+			return "NOT_AVAILABLE"
+		}
+		return ""
+	},
+	"timenow": func() string {
+		return time.Now().Format(time.RFC3339)
 	},
 }
