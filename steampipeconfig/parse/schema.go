@@ -122,13 +122,19 @@ var ContainerBlockSchema = &hcl.BodySchema{
 var PanelBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "title"},
-		{Name: "text"},
 		{Name: "type"},
 		{Name: "width"},
-		{Name: "source"},
 		{Name: "sql"},
 		{Name: "base"},
 	},
+}
+
+func PanelBlockSchemaAttributesMap() map[string]bool {
+	var res = make(map[string]bool)
+	for _, a := range PanelBlockSchema.Attributes {
+		res[a.Name] = true
+	}
+	return res
 }
 
 var ControlBlockSchema = &hcl.BodySchema{

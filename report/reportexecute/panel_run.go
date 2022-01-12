@@ -18,7 +18,7 @@ type PanelRun struct {
 	SQL   string `json:"sql,omitempty"`
 	Text  string `json:"text,omitempty"`
 
-	//Properties map[string]string
+	Properties map[string]string
 
 	Data  [][]interface{} `json:"data,omitempty"`
 	Error error           `json:"error,omitempty"`
@@ -30,10 +30,9 @@ type PanelRun struct {
 func NewPanelRun(panel *modconfig.Panel, parentName string, executionTree *ReportExecutionTree) *PanelRun {
 	r := &PanelRun{
 		// the name is the path, i.e. dot-separated concatenation of parent names
-		Name:  fmt.Sprintf("%s.%s", parentName, panel.UnqualifiedName),
-		Title: typehelpers.SafeString(panel.Title),
-		Text:  typehelpers.SafeString(panel.Text),
-		//Properties:    panel.Properties,
+		Name:          fmt.Sprintf("%s.%s", parentName, panel.UnqualifiedName),
+		Title:         typehelpers.SafeString(panel.Title),
+		Properties:    panel.Properties,
 		Type:          typehelpers.SafeString(panel.Type),
 		SQL:           typehelpers.SafeString(panel.SQL),
 		executionTree: executionTree,

@@ -13,13 +13,11 @@ type Panel struct {
 	FullName  string `cty:"name"`
 	ShortName string
 
-	Title *string `cty:"title" column:"title,text"`
-	Type  *string `cty:"type" column:"type,text"`
-	Width *int    `cty:"width" column:"width,text"`
-	SQL   *string `cty:"sql" column:"sql,text"`
-	Text  *string `cty:"text" column:"text,text"`
-
-	//Properties	map[string]string `cty:"sql" column:"sql,text"`
+	Title      *string           `cty:"title" column:"title,text"`
+	Type       *string           `cty:"type" column:"type,text"`
+	Width      *int              `cty:"width" column:"width,text"`
+	SQL        *string           `cty:"sql" column:"sql,text"`
+	Properties map[string]string `cty:"properties" column:"sql,json"`
 
 	DeclRange hcl.Range
 	Mod       *Mod `cty:"mod"`
@@ -38,6 +36,7 @@ func NewPanel(block *hcl.Block) *Panel {
 		FullName:        fmt.Sprintf("panel.%s", block.Labels[0]),
 		UnqualifiedName: fmt.Sprintf("panel.%s", block.Labels[0]),
 		DeclRange:       block.DefRange,
+		Properties:      make(map[string]string),
 	}
 	return panel
 }
@@ -75,9 +74,12 @@ func (p *Panel) setBaseProperties() {
 	if p.SQL == nil {
 		p.SQL = p.Base.SQL
 	}
-	if p.Text == nil {
-		p.Text = p.Base.Text
+	for k, v := range p.Base.Properties {
+		if _, ok := p.Properties[k]; !ok {
+			p.Properties[k] = v
+		}
 	}
+
 }
 
 // AddReference implements HclResource
@@ -176,9 +178,12 @@ func (p *Panel) Diff(new *Panel) *ReportTreeItemDiffs {
 	if typehelpers.SafeString(p.SQL) != typehelpers.SafeString(new.SQL) {
 		res.AddPropertyDiff("SQL")
 	}
-	if typehelpers.SafeString(p.Text) != typehelpers.SafeString(new.Text) {
-		res.AddPropertyDiff("Text")
+	for k, v := range p.Properties {
+		if new.Properties[k] != v {
+			res.AddPropertyDiff(fmt.Sprintf("Properties.%s", k))
+		}
 	}
+
 	if typehelpers.SafeString(p.Type) != typehelpers.SafeString(new.Type) {
 		res.AddPropertyDiff("Type")
 	}
