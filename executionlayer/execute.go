@@ -25,7 +25,7 @@ func ExecuteReportNode(ctx context.Context, reportName string, workspace *worksp
 		workspace.PublishReportEvent(&reportevents.ExecutionStarted{ReportNode: executionTree.Root})
 
 		if err := executionTree.Execute(reportCtx); err != nil {
-			if executionTree.Root.GetRunStatus() == reportinterfaces.ReportRunError {
+			if executionTree.Root.GetRunStatus() != reportinterfaces.ReportRunError {
 				// set error state on the root node
 				executionTree.Root.SetError(err)
 			}

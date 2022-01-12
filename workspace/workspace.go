@@ -518,6 +518,17 @@ func (w *Workspace) getReportMap() map[string]*modconfig.ReportContainer {
 	return reports
 }
 
+// return a map of all unique containers, keyed by name
+func (w *Workspace) getContainerMap() map[string]*modconfig.ReportContainer {
+	containers := make(map[string]*modconfig.ReportContainer, len(w.Containers))
+	for _, p := range w.Containers {
+		// refetch the name property to avoid duplicates
+		// (as we save resources with qualified and unqualified name)
+		containers[p.Name()] = p
+	}
+	return containers
+}
+
 // GetQueriesFromArgs retrieves queries from args
 //
 // For each arg check if it is a named query or a file, before falling back to treating it as sql

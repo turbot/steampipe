@@ -454,6 +454,8 @@ func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContai
 	res.handleDecodeDiags(diags)
 	diags = decodeProperty(content, "base", &report.Base, runCtx)
 	res.handleDecodeDiags(diags)
+	diags = decodeProperty(content, "width", &report.Width, runCtx)
+	res.handleDecodeDiags(diags)
 
 	// if children are declared inline as blocks, add them
 	var children []modconfig.ModTreeItem
@@ -485,6 +487,8 @@ func decodeContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportCon
 	diags = decodeProperty(content, "children", &container.ChildNames, runCtx)
 	res.handleDecodeDiags(diags)
 	diags = decodeProperty(content, "base", &container.Base, runCtx)
+	res.handleDecodeDiags(diags)
+	diags = decodeProperty(content, "width", &container.Width, runCtx)
 	res.handleDecodeDiags(diags)
 
 	// if children are declared inline as blocks, add them
