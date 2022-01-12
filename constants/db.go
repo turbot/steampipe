@@ -84,14 +84,11 @@ const (
 	IntrospectionTableBenchmark = "steampipe_benchmark"
 	IntrospectionTableMod       = "steampipe_mod"
 	IntrospectionTableReport    = "steampipe_report"
+	IntrospectionTableContainer = "steampipe_container"
 	IntrospectionTablePanel     = "steampipe_panel"
 	IntrospectionTableVariable  = "steampipe_variable"
 	IntrospectionTableReference = "steampipe_reference"
 )
-
-func IntrospectionTableNames() []string {
-	return []string{IntrospectionTableControl, IntrospectionTableBenchmark, IntrospectionTableQuery, IntrospectionTableMod, IntrospectionTableVariable, IntrospectionTableReference}
-}
 
 // Invoker is a pseudoEnum for the command/operation which starts the service
 type Invoker string
