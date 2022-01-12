@@ -504,11 +504,13 @@ func decodeContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportCon
 
 func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decodeResult) {
 	res := &decodeResult{}
-	content, _, diags := block.Body.PartialContent(PanelBlockSchema)
-	res.handleDecodeDiags(diags)
+	content, rest, diags := block.Body.PartialContent(PanelBlockSchema)
 
 	// get shell resource
 	panel := modconfig.NewPanel(block)
+
+	// populate dynamic properties
+	diags = populatePanelDynamicProperties(rest, panel, runCtx)
 
 	diags = decodeProperty(content, "title", &panel.Title, runCtx)
 	res.handleDecodeDiags(diags)
@@ -519,9 +521,6 @@ func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decod
 	diags = decodeProperty(content, "width", &panel.Width, runCtx)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeProperty(content, "text", &panel.Text, runCtx)
-	res.handleDecodeDiags(diags)
-
 	diags = decodeProperty(content, "sql", &panel.SQL, runCtx)
 	res.handleDecodeDiags(diags)
 
@@ -529,6 +528,28 @@ func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decod
 	res.handleDecodeDiags(diags)
 
 	return panel, res
+}
+
+func populatePanelDynamicProperties(rest hcl.Body, panel *modconfig.Panel, runCtx *RunContext) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	b, ok := rest.(*hclsyntax.Body)
+	if ok {
+		// build map of extra attributes
+		panelAttributesMap := PanelBlockSchemaAttributesMap()
+		for _, attr := range b.Attributes {
+			if !panelAttributesMap[attr.Name] {
+				var val string
+				moreDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &val)
+
+				if moreDiags.HasErrors() {
+					diags = append(diags, moreDiags...)
+					continue
+				}
+				panel.Properties[attr.Name] = val
+			}
+		}
+	}
+	return diags
 }
 
 func decodeProperty(content *hcl.BodyContent, property string, dest interface{}, runCtx *RunContext) hcl.Diagnostics {
