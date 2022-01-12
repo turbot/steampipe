@@ -199,6 +199,14 @@ func (r *ReportContainer) Diff(new *ReportContainer) *ReportTreeItemDiffs {
 		res.AddPropertyDiff("Title")
 	}
 
+	if r.Width == nil || new.Width == nil {
+		if !(r.Width == nil && new.Width == nil) {
+			res.AddPropertyDiff("Width")
+		}
+	} else if *r.Width != *new.Width {
+		res.AddPropertyDiff("Width")
+	}
+
 	res.populateChildDiffs(r, new)
 	return res
 }
