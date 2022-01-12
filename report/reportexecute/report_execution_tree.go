@@ -60,7 +60,7 @@ func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterface
 		if !ok {
 			return nil, fmt.Errorf("panel '%s' does not exist in workspace", reportName)
 		}
-		root = NewPanelRun(panel, "", e)
+		root = NewPanelRun(panel, rootParentName, e)
 	case modconfig.BlockTypeReport:
 		report, ok := e.workspace.Reports[reportName]
 		if !ok {
