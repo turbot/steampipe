@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -105,6 +106,15 @@ func buildWorkspaceErrorPayload(e *reportevents.WorkspaceError) []byte {
 	return jsonString
 }
 
+func buildPanelCompletePayload(event *reportevents.PanelComplete) []byte {
+	payload := ExecutionPayload{
+		Action:     "panel_complete",
+		ReportNode: event.Panel,
+	}
+	jsonString, _ := json.Marshal(payload)
+	return jsonString
+}
+
 func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) []byte {
 	payload := ExecutionPayload{
 		Action:     "execution_started",
@@ -185,6 +195,16 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 	case *reportevents.PanelComplete:
 		fmt.Println("Got panel complete event", *e)
+		payload := buildPanelCompletePayload(e)
+		panelName := e.Panel.GetName()
+		s.mutex.Lock()
+		for session, repoInfo := range s.reportClients {
+			// If this session is interested in this report, broadcast to it
+			if (repoInfo.Report != nil) && strings.HasPrefix(panelName, *repoInfo.Report) {
+				session.Write(payload)
+			}
+		}
+		s.mutex.Unlock()
 
 	case *reportevents.ReportChanged:
 		fmt.Println("Got report changed event", *e)
