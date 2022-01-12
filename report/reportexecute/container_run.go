@@ -64,11 +64,7 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parentName stri
 		r.Children = append(r.Children, childRun)
 	}
 	// add r into execution tree
-	if container.IsReport() {
-		executionTree.reports[r.Name] = r
-	} else {
-		executionTree.containers[r.Name] = r
-	}
+	executionTree.runs[r.Name] = r
 	return r
 }
 

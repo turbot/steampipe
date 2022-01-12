@@ -11,12 +11,15 @@ import (
 
 // PanelRun is a struct representing a panel run
 type PanelRun struct {
-	Name  string          `json:"name"`
-	Title string          `json:"title,omitempty"`
-	Text  string          `json:"text,omitempty"`
-	Type  string          `json:"type,omitempty"`
-	Width int             `json:"width,omitempty"`
-	SQL   string          `json:"sql,omitempty"`
+	Name  string `json:"name"`
+	Title string `json:"title,omitempty"`
+	Type  string `json:"type,omitempty"`
+	Width int    `json:"width,omitempty"`
+	SQL   string `json:"sql,omitempty"`
+	Text  string `json:"text,omitempty"`
+
+	//Properties map[string]string
+
 	Data  [][]interface{} `json:"data,omitempty"`
 	Error error           `json:"error,omitempty"`
 
@@ -27,9 +30,10 @@ type PanelRun struct {
 func NewPanelRun(panel *modconfig.Panel, parentName string, executionTree *ReportExecutionTree) *PanelRun {
 	r := &PanelRun{
 		// the name is the path, i.e. dot-separated concatenation of parent names
-		Name:          fmt.Sprintf("%s.%s", parentName, panel.UnqualifiedName),
-		Title:         typehelpers.SafeString(panel.Title),
-		Text:          typehelpers.SafeString(panel.Text),
+		Name:  fmt.Sprintf("%s.%s", parentName, panel.UnqualifiedName),
+		Title: typehelpers.SafeString(panel.Title),
+		Text:  typehelpers.SafeString(panel.Text),
+		//Properties:    panel.Properties,
 		Type:          typehelpers.SafeString(panel.Type),
 		SQL:           typehelpers.SafeString(panel.SQL),
 		executionTree: executionTree,
@@ -48,7 +52,7 @@ func NewPanelRun(panel *modconfig.Panel, parentName string, executionTree *Repor
 	}
 
 	// add r into execution tree
-	executionTree.panels[r.Name] = r
+	executionTree.runs[r.Name] = r
 	return r
 }
 
