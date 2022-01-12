@@ -5,43 +5,166 @@ import (
 )
 
 type Testcase struct {
-	input    string // --export
-	expected TemplateFormatterFactoryData
+	input    string // --export <val>
+	expected interface{}
 }
 
-var testCases map[string]Testcase = map[string]Testcase{}
-
-var testData = map[string]TemplateFormatterFactoryData{
-	"html":              {SourceTemplateFolder: "html", TargetFileExtension: "html"},
-	"brief":             {SourceTemplateFolder: "brief.html", TargetFileExtension: "html"},
-	"nunit3":            {SourceTemplateFolder: "nunit3.xml", TargetFileExtension: "xml"},
-	"markdown":          {SourceTemplateFolder: "markdown.md", TargetFileExtension: "md"},
-	"txt":               {SourceTemplateFolder: "txt.dat", TargetFileExtension: "dat"},
-	"foo":               {SourceTemplateFolder: "foo.xml", TargetFileExtension: "xml"},
-	"brief.html":        {SourceTemplateFolder: "brief.html", TargetFileExtension: "html"},
-	"nunit3.xml":        {SourceTemplateFolder: "nunit3.xml", TargetFileExtension: "xml"},
-	"markdown.md":       {SourceTemplateFolder: "markdown.md", TargetFileExtension: "md"},
-	"txt.dat":           {SourceTemplateFolder: "txt.dat", TargetFileExtension: "dat"},
-	"custom.txt":        {SourceTemplateFolder: "custom.txt", TargetFileExtension: "txt"},
-	"foo.xml":           {SourceTemplateFolder: "foo.xml", TargetFileExtension: "xml"},
-	"output.html":       {SourceTemplateFolder: "html", TargetFileExtension: "html"},
-	"output.md":         {SourceTemplateFolder: "markdown.md", TargetFileExtension: "md"},
-	"output.txt":        {SourceTemplateFolder: "custom.txt", TargetFileExtension: "txt"},
-	"output.dat":        {SourceTemplateFolder: "txt.dat", TargetFileExtension: "dat"},
-	"output.brief.html": {SourceTemplateFolder: "brief.html", TargetFileExtension: "html"},
-	"output.nunit3.xml": {SourceTemplateFolder: "nunit3.xml", TargetFileExtension: "xml"},
-	"output.foo.xml":    {SourceTemplateFolder: "foo.xml", TargetFileExtension: "xml"},
-}
-
-func TestTemplateExport(t *testing.T) {
-	for i, d := range testData {
-		fff, err := GetTemplateFormatter(i, "all")
+func TestExportFormat(t *testing.T) {
+	for name, test := range exportFormatTestCases {
+		fff, _, err := GetExportTemplate(test.input)
 		if err != nil {
-			t.Error(err)
+			if test.expected != "ERROR" {
+				t.Errorf("Test: '%s'' FAILED with unexpected error: %v", name, err)
+			}
+			continue
 		}
-
-		if d.SourceTemplateFolder != fff.SourceTemplateFolder || d.TargetFileExtension != fff.TargetFileExtension {
-			t.Logf(`"expected:%v" is not equal to "output:%v"`, d, fff)
+		if test.expected == "ERROR" {
+			t.Errorf("Test: '%s'' FAILED - expected error", name)
+			continue
+		}
+		expectedFormat := test.expected.(ExportTemplate)
+		if !FormatEqual(fff, &expectedFormat) {
+			t.Errorf("Test: '%s'' FAILED : expected:\n%s\n\ngot:\n%s", name, expectedFormat, fff)
 		}
 	}
+}
+
+func FormatEqual(l, r *ExportTemplate) bool {
+	return (l.FormatFullName == r.FormatFullName)
+}
+
+var exportFormatTestCases map[string]Testcase = map[string]Testcase{
+	"html": {
+		input: "html",
+		expected: ExportTemplate{
+			FormatFullName:  "html.html",
+			OutputExtension: ".html",
+		},
+	},
+	"brief": {
+		input: "brief",
+		expected: ExportTemplate{
+			FormatFullName:  "brief.html",
+			OutputExtension: ".html",
+		},
+	},
+	"nunit3": {
+		input: "nunit3",
+		expected: ExportTemplate{
+			FormatFullName:  "nunit3.xml",
+			OutputExtension: ".xml",
+		},
+	},
+	"markdown": {
+		input: "markdown",
+		expected: ExportTemplate{
+			FormatFullName:  "markdown.md",
+			OutputExtension: ".md",
+		},
+	},
+	"txt": {
+		input: "txt",
+		expected: ExportTemplate{
+			FormatFullName:  "txt.dat",
+			OutputExtension: ".dat",
+		},
+	},
+	"foo": {
+		input: "foo",
+		expected: ExportTemplate{
+			FormatFullName:  "foo.xml",
+			OutputExtension: ".xml",
+		},
+	},
+	"brief.html": {
+		input: "brief.html",
+		expected: ExportTemplate{
+			FormatFullName:  "brief.html",
+			OutputExtension: ".html",
+		},
+	},
+	"nunit3.xml": {
+		input: "nunit3.xml",
+		expected: ExportTemplate{
+			FormatFullName:  "nunit3.xml",
+			OutputExtension: ".xml",
+		},
+	},
+	"markdown.md": {
+		input: "markdown.md",
+		expected: ExportTemplate{
+			FormatFullName:  "markdown.md",
+			OutputExtension: ".md",
+		},
+	},
+	"txt.dat": {
+		input: "txt.dat",
+		expected: ExportTemplate{
+			FormatFullName:  "txt.dat",
+			OutputExtension: ".dat",
+		},
+	},
+	"custom.txt": {
+		input: "custom.txt",
+		expected: ExportTemplate{
+			FormatFullName:  "custom.txt",
+			OutputExtension: ".txt",
+		},
+	},
+	"foo.xml": {
+		input: "foo.xml",
+		expected: ExportTemplate{
+			FormatFullName:  "foo.xml",
+			OutputExtension: ".xml",
+		},
+	},
+	"output.html": {
+		input: "output.html",
+		expected: ExportTemplate{
+			FormatFullName:  "html.html",
+			OutputExtension: ".html",
+		},
+	},
+	"output.md": {
+		input: "output.md",
+		expected: ExportTemplate{
+			FormatFullName:  "markdown.md",
+			OutputExtension: ".md",
+		},
+	},
+	"output.txt": {
+		input: "output.txt",
+		expected: ExportTemplate{
+			FormatFullName:  "custom.txt",
+			OutputExtension: ".txt",
+		},
+	},
+	"output.dat": {
+		input: "output.dat",
+		expected: ExportTemplate{
+			FormatFullName:  "txt.dat",
+			OutputExtension: ".dat",
+		},
+	},
+	"output.brief.html": {
+		input: "output.brief.html",
+		expected: ExportTemplate{
+			FormatFullName:  "brief.html",
+			OutputExtension: ".html",
+		},
+	},
+	"output.nuni3.xml": {
+		input: "output.nunit3.xml",
+		expected: ExportTemplate{
+			FormatFullName:  "nunit3.xml",
+			OutputExtension: ".xml",
+		},
+	},
+	"output.foo.xml": {
+		input: "output.foo.xml",
+		expected: ExportTemplate{
+			FormatFullName:  "foo.xml",
+			OutputExtension: ".xml",
+		},
+	},
 }

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"text/template"
@@ -15,6 +14,8 @@ import (
 	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/version"
 )
+
+var ErrFormatterNotFound = errors.New("Formatter not found")
 
 type FormatterMap map[string]Formatter
 
@@ -28,35 +29,41 @@ func (m FormatterMap) keys() []string {
 	return keys
 }
 
+var ValidOutputFormats = []string{
+	constants.CheckOutputFormatNone,
+	constants.CheckOutputFormatCSV,
+	constants.CheckOutputFormatJSON,
+	constants.CheckOutputFormatText,
+	constants.CheckOutputFormatBrief,
+	constants.CheckOutputFormatHTML,
+	constants.CheckOutputFormatMarkdown,
+}
+
 var outputFormatters FormatterMap = FormatterMap{
-	constants.CheckOutputFormatNone:     &NullFormatter{},
-	constants.CheckOutputFormatCSV:      &CSVFormatter{},
-	constants.CheckOutputFormatJSON:     &JSONFormatter{},
-	constants.CheckOutputFormatText:     &TextFormatter{},
-	constants.CheckOutputFormatBrief:    &TextFormatter{},
-	constants.CheckOutputFormatHTML:     &HTMLFormatter{},
-	constants.CheckOutputFormatMarkdown: &MarkdownFormatter{},
+	constants.CheckOutputFormatNone:  &NullFormatter{},
+	constants.CheckOutputFormatCSV:   &CSVFormatter{},
+	constants.CheckOutputFormatJSON:  &JSONFormatter{},
+	constants.CheckOutputFormatText:  &TextFormatter{},
+	constants.CheckOutputFormatBrief: &TextFormatter{},
 }
 
 var exportFormatters FormatterMap = FormatterMap{
-	constants.CheckOutputFormatCSV:      &CSVFormatter{},
-	constants.CheckOutputFormatJSON:     &JSONFormatter{},
-	constants.CheckOutputFormatHTML:     &HTMLFormatter{},
-	constants.CheckOutputFormatMarkdown: &MarkdownFormatter{},
-	constants.CheckOutputFormatNUnit3:   &Nunit3Formatter{},
+	constants.CheckOutputFormatCSV:  &CSVFormatter{},
+	constants.CheckOutputFormatJSON: &JSONFormatter{},
+	// constants.CheckOutputFormatHTML:     &HTMLFormatter{},
+	// constants.CheckOutputFormatMarkdown: &MarkdownFormatter{},
+	// constants.CheckOutputFormatNUnit3:   &Nunit3Formatter{},
 }
 
 type CheckExportTarget struct {
-	Format string
-	File   string
-	Error  error
+	Formatter Formatter
+	File      string
 }
 
-func NewCheckExportTarget(format string, file string, err error) CheckExportTarget {
+func NewCheckExportTarget(formatter Formatter, file string) CheckExportTarget {
 	return CheckExportTarget{
-		Format: format,
-		File:   file,
-		Error:  err,
+		Formatter: formatter,
+		File:      file,
 	}
 }
 
@@ -65,56 +72,23 @@ type Formatter interface {
 	FileExtension() string
 }
 
-func GetExportFormatter(exportFormat string) (Formatter, error) {
-	formatter, found := exportFormatters[exportFormat]
-	if !found {
-		f, err := tryTemplateFormatter(exportFormat)
-		if err != nil {
-			return nil, fmt.Errorf("invalid export format '%s' - must be one of %s", exportFormat, exportFormatters.keys())
-		}
-		formatter = f
-	}
-	return formatter, nil
+func GetDefinedExportFormatter(arg string) (Formatter, bool) {
+	formatter, found := exportFormatters[arg]
+	return formatter, found
 }
 
-func GetOutputFormatter(outputFormat string) (Formatter, error) {
+func GetTemplateExportFormatter(arg string) (Formatter, string, error) {
+	templateFormat, fileName, err := GetExportTemplate(arg)
+	if err != nil {
+		return nil, "", err
+	}
+	formatter, err := CreateTemplateFormatter(*templateFormat)
+	return formatter, fileName, err
+}
+
+func GetDefinedOutputFormatter(outputFormat string) (Formatter, bool) {
 	formatter, found := outputFormatters[outputFormat]
-	if !found {
-		return nil, fmt.Errorf("invalid output format '%s' - must be one of %s", outputFormat, outputFormatters.keys())
-	}
-	return formatter, nil
-}
-
-func InferFormatFromExportFileName(filename string) (string, error) {
-	extension := filepath.Ext(filename)
-	switch extension {
-	case ".csv":
-		return constants.OutputFormatCSV, nil
-	case ".json":
-		return constants.OutputFormatJSON, nil
-	case ".html", ".htm":
-		return constants.CheckOutputFormatHTML, nil
-	case ".md", ".markdown":
-		return constants.CheckOutputFormatMarkdown, nil
-	default:
-		// could not infer format
-		return "", fmt.Errorf("could not infer valid export format from filename '%s'", filename)
-	}
-}
-
-func tryTemplateFormatter(exportFormat string) (*TemplateFormatter, error) {
-	stat, err := os.Stat(exportFormat)
-	if err != nil {
-		return nil, err
-	}
-	if stat.IsDir() {
-		return nil, fmt.Errorf("cannot parse directory")
-	}
-	template, err := template.ParseFiles(exportFormat)
-	if err != nil {
-		return nil, err
-	}
-	return &TemplateFormatter{template: template, outputExtension: "spex"}, nil
+	return formatter, found
 }
 
 // NullFormatter is to be used when no output is expected. It always returns a `io.Reader` which
