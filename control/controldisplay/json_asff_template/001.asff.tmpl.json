@@ -4,13 +4,13 @@
 {
     "SchemaVersion": "2018-10-08",
     "Id": "{{ .Control.FullName }}",
-    "ProductArn": "arn:aws:securityhub:ap-south-1:453319552164:product/453319552164/default",
+    "ProductArn": "arn:aws:securityhub:{{ . | GetDimensionRegion }}:{{ . | GetDimensionAccount }}:product/{{ . | GetDimensionAccount }}/default",
     "ProductFields": {
         "ProviderName": "Steampipe",
         "ProviderVersion": "{{ steampipeversion }}"
     },
     "GeneratorId": "steampipe-{{ .Control.ShortName }}",
-    "AwsAccountId": "453319552164",
+    "AwsAccountId": "{{ . | GetDimensionAccount }}",
     "Types": [
         "automated"
     ],

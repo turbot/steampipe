@@ -189,4 +189,16 @@ var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 	"timenow": func() string {
 		return time.Now().Format(time.RFC3339)
 	},
+	"GetDimensionRegion": func(row *controlexecute.ResultRow) string {
+		if row.Dimensions[0].Key == "region" {
+			return row.Dimensions[0].Value
+		}
+		return "ap-south-1"
+	},
+	"GetDimensionAccount": func(row *controlexecute.ResultRow) string {
+		if row.Dimensions[0].Key == "account_id" {
+			return row.Dimensions[0].Value
+		}
+		return row.Dimensions[1].Value
+	},
 }
