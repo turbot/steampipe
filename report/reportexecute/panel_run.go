@@ -11,14 +11,12 @@ import (
 
 // PanelRun is a struct representing a panel run
 type PanelRun struct {
-	Name  string `json:"name"`
-	Title string `json:"title,omitempty"`
-	Type  string `json:"type,omitempty"`
-	Width int    `json:"width,omitempty"`
-	SQL   string `json:"sql,omitempty"`
-	Text  string `json:"text,omitempty"`
-
-	Properties map[string]string
+	Name       string            `json:"name"`
+	Title      string            `json:"title,omitempty"`
+	Type       string            `json:"type,omitempty"`
+	Width      int               `json:"width,omitempty"`
+	SQL        string            `json:"sql,omitempty"`
+	Properties map[string]string `json:"properties,omitempty"`
 
 	Data  [][]interface{} `json:"data,omitempty"`
 	Error error           `json:"error,omitempty"`
