@@ -141,6 +141,22 @@ func (e *ReportExecutionTree) ExecuteNode(ctx context.Context, name string) erro
 		report.SetComplete()
 		return nil
 	}
+	if parsedName.ItemType == modconfig.BlockTypeContainer {
+
+		container, ok := e.containers[name]
+		if !ok {
+			// this error will be passed up the execution tree and raised as a report error for the root node
+			return fmt.Errorf("container '%s' not found in execution tree", name)
+		}
+		// panel should now be complete, i.e. all it's children should be complete
+		if !container.ChildrenComplete() {
+			// this error will be passed up the execution tree and raised as a report error for the root node
+			return fmt.Errorf("panel '%s' should be complete, but it has incomplete children", container.Name)
+		}
+		// set complete status on report - this will raise panel complete event
+		container.SetComplete()
+		return nil
+	}
 
 	if parsedName.ItemType == modconfig.BlockTypePanel {
 		panel, ok := e.panels[name]
