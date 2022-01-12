@@ -104,17 +104,8 @@ func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource,
 	}
 
 	for _, resource := range resources {
-		// handle depdnencies
+		// handle dependencies
 		handleDecodeResult(resource, res, block, runCtx)
-		// if successful, call post decode hooks and set references
-		if res.Success() {
-			if diags = resource.OnDecoded(block); diags.HasErrors() {
-				res.addDiags(diags)
-			}
-			if diags := AddReferences(resource, block, runCtx); diags.HasErrors() {
-				res.addDiags(diags)
-			}
-		}
 	}
 
 	return resources, res
@@ -555,6 +546,16 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	if res.Success() {
+		// call post decode hook
+		// NOTE: must do this BEFORE adding resource to run context to ensure we respect the base property
+		if moreDiags := resource.OnDecoded(block); diags.HasErrors() {
+			diags = append(diags, moreDiags...)
+		}
+		// add references
+		if moreDiags := AddReferences(resource, block, runCtx); diags.HasErrors() {
+			res.addDiags(moreDiags)
+		}
+
 		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
 		if _, ok := resource.(*modconfig.Mod); !ok {
 			resource.SetMod(runCtx.CurrentMod)

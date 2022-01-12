@@ -6,8 +6,8 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// ContainerRun is a struct representing a container run
-type ContainerRun struct {
+// ReportContainerRun is a struct representing a container run
+type ReportContainerRun struct {
 	Name string `json:"name"`
 
 	Text   string          `json:"text,omitempty"`
@@ -27,8 +27,8 @@ type ContainerRun struct {
 	executionTree *ReportExecutionTree
 }
 
-func NewContainerRun(container *modconfig.ReportContainer, executionTree *ReportExecutionTree) *ContainerRun {
-	r := &ContainerRun{
+func NewReportContainerRun(container *modconfig.ReportContainer, executionTree *ReportExecutionTree) *ReportContainerRun {
+	r := &ReportContainerRun{
 		Name:          container.Name(),
 		executionTree: executionTree,
 
@@ -44,7 +44,7 @@ func NewContainerRun(container *modconfig.ReportContainer, executionTree *Report
 		var childRun reportinterfaces.ReportNodeRun
 		switch i := child.(type) {
 		case *modconfig.ReportContainer:
-			childRun = NewContainerRun(i, executionTree)
+			childRun = NewReportContainerRun(i, executionTree)
 		case *modconfig.Panel:
 			childRun = NewPanelRun(i, executionTree)
 		}
@@ -63,22 +63,26 @@ func NewContainerRun(container *modconfig.ReportContainer, executionTree *Report
 		r.Children = append(r.Children, childRun)
 	}
 	// add r into execution tree
-	executionTree.containers[r.Name] = r
+	if container.IsReport() {
+		executionTree.reports[r.Name] = r
+	} else {
+		executionTree.containers[r.Name] = r
+	}
 	return r
 }
 
 // GetName implements ReportNodeRun
-func (r *ContainerRun) GetName() string {
+func (r *ReportContainerRun) GetName() string {
 	return r.Name
 }
 
 // GetRunStatus implements ReportNodeRun
-func (r *ContainerRun) GetRunStatus() reportinterfaces.ReportRunStatus {
+func (r *ReportContainerRun) GetRunStatus() reportinterfaces.ReportRunStatus {
 	return r.runStatus
 }
 
 // SetError implements ReportNodeRun
-func (r *ContainerRun) SetError(err error) {
+func (r *ReportContainerRun) SetError(err error) {
 	r.Error = err
 	r.runStatus = reportinterfaces.ReportRunError
 	// raise container error event
@@ -87,19 +91,19 @@ func (r *ContainerRun) SetError(err error) {
 }
 
 // SetComplete implements ReportNodeRun
-func (r *ContainerRun) SetComplete() {
+func (r *ReportContainerRun) SetComplete() {
 	r.runStatus = reportinterfaces.ReportRunComplete
 	// raise container complete event
 	r.executionTree.workspace.PublishReportEvent(&reportevents.ContainerComplete{Container: r})
 }
 
 // RunComplete implements ReportNodeRun
-func (r *ContainerRun) RunComplete() bool {
+func (r *ReportContainerRun) RunComplete() bool {
 	return r.runStatus == reportinterfaces.ReportRunComplete
 }
 
 // ChildrenComplete implements ReportNodeRun
-func (r *ContainerRun) ChildrenComplete() bool {
+func (r *ReportContainerRun) ChildrenComplete() bool {
 	for _, container := range r.Children {
 		if container.GetRunStatus() != reportinterfaces.ReportRunComplete {
 			return false
