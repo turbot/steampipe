@@ -24,15 +24,16 @@ type ReportExecutionTree struct {
 	workspace       *workspace.Workspace
 }
 
-// NewReportExecutionTree creates a result group from a ModTreeItem
+// NewReportExecutionTree creates a result group from a ModTreeIt
 func NewReportExecutionTree(reportName string, client db_common.Client, workspace *workspace.Workspace) (*ReportExecutionTree, error) {
 	// now populate the ReportExecutionTree
 	reportExecutionTree := &ReportExecutionTree{
-		client:     client,
-		containers: make(map[string]*ContainerRun),
-		panels:     make(map[string]*PanelRun),
-		reports:    make(map[string]*ContainerRun),
-		workspace:  workspace,
+		client:          client,
+		dependencyGraph: topsort.NewGraph(),
+		containers:      make(map[string]*ContainerRun),
+		panels:          make(map[string]*PanelRun),
+		reports:         make(map[string]*ContainerRun),
+		workspace:       workspace,
 	}
 
 	// create the root run node (either a report run or a panel run)

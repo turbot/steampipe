@@ -21,8 +21,7 @@ type ContainerRun struct {
 	Error error `json:"error,omitempty"`
 
 	// children
-	ContainerRuns []*ContainerRun `json:"containers,omitempty"`
-	PanelRuns     []*PanelRun     `json:"reports,omitempty"`
+	Children []reportinterfaces.ReportNodeRun `json:"children,omitempty"`
 
 	runStatus     reportinterfaces.ReportRunStatus
 	executionTree *ReportExecutionTree
@@ -42,26 +41,26 @@ func NewContainerRun(container *modconfig.ReportContainer, executionTree *Report
 	}
 
 	for _, child := range container.GetChildren() {
+		var childRun reportinterfaces.ReportNodeRun
 		switch i := child.(type) {
 		case *modconfig.ReportContainer:
-			childRun := NewContainerRun(i, executionTree)
-			// if our child has not completed, we have not completed
-			if childRun.runStatus == reportinterfaces.ReportRunReady {
-				// add dependency on this child
-				r.executionTree.AddDependency(r.Name, childRun.Name)
-				r.runStatus = reportinterfaces.ReportRunReady
-			}
-			r.ContainerRuns = append(r.ContainerRuns, childRun)
+			childRun = NewContainerRun(i, executionTree)
 		case *modconfig.Panel:
-			childRun := NewPanelRun(i, executionTree)
-			// if our child has not completed, we have not completed
-			if childRun.runStatus == reportinterfaces.ReportRunReady {
-				// add dependency on this child
-				r.executionTree.AddDependency(r.Name, childRun.Name)
-				r.runStatus = reportinterfaces.ReportRunReady
-			}
-			r.PanelRuns = append(r.PanelRuns, childRun)
+			childRun = NewPanelRun(i, executionTree)
 		}
+
+		// should never happen - container children must be either container or panel
+		if childRun == nil {
+			continue
+		}
+
+		// if our child has not completed, we have not completed
+		if childRun.GetRunStatus() == reportinterfaces.ReportRunReady {
+			// add dependency on this child
+			r.executionTree.AddDependency(r.Name, childRun.GetName())
+			r.runStatus = reportinterfaces.ReportRunReady
+		}
+		r.Children = append(r.Children, childRun)
 	}
 	// add r into execution tree
 	executionTree.containers[r.Name] = r
@@ -101,13 +100,8 @@ func (r *ContainerRun) RunComplete() bool {
 
 // ChildrenComplete implements ReportNodeRun
 func (r *ContainerRun) ChildrenComplete() bool {
-	for _, container := range r.ContainerRuns {
-		if container.runStatus != reportinterfaces.ReportRunComplete {
-			return false
-		}
-	}
-	for _, report := range r.PanelRuns {
-		if report.runStatus != reportinterfaces.ReportRunComplete {
+	for _, container := range r.Children {
+		if container.GetRunStatus() != reportinterfaces.ReportRunComplete {
 			return false
 		}
 	}
