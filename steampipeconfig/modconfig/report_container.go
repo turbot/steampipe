@@ -46,6 +46,11 @@ func NewReportContainer(block *hcl.Block) *ReportContainer {
 	return report
 }
 
+func (r *ReportContainer) Equals(other *ReportContainer) bool {
+	diff := r.Diff(other)
+	return !diff.HasChanges()
+}
+
 // CtyValue implements HclResource
 func (r *ReportContainer) CtyValue() (cty.Value, error) {
 	return getCtyValue(r)
@@ -72,18 +77,18 @@ func (r *ReportContainer) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 	return res
 }
 
-func (p *ReportContainer) setBaseProperties() {
-	if p.Base == nil {
+func (r *ReportContainer) setBaseProperties() {
+	if r.Base == nil {
 		return
 	}
-	if p.Title == nil {
-		p.Title = p.Base.Title
+	if r.Title == nil {
+		r.Title = r.Base.Title
 	}
-	if p.Width == nil {
-		p.Width = p.Base.Width
+	if r.Width == nil {
+		r.Width = r.Base.Width
 	}
-	if len(p.ChildNames) == 0 {
-		p.ChildNames = p.Base.ChildNames
+	if len(r.ChildNames) == 0 {
+		r.ChildNames = r.Base.ChildNames
 	}
 }
 
@@ -189,25 +194,29 @@ func (r *ReportContainer) SetMetadata(metadata *ResourceMetadata) {
 	r.metadata = metadata
 }
 
-func (r *ReportContainer) Diff(new *ReportContainer) *ReportTreeItemDiffs {
+func (r *ReportContainer) Diff(other *ReportContainer) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
 		Item: r,
 		Name: r.Name(),
 	}
 
-	if typehelpers.SafeString(r.Title) != typehelpers.SafeString(new.Title) {
+	if r.FullName != other.FullName {
+		res.AddPropertyDiff("Name")
+	}
+
+	if typehelpers.SafeString(r.Title) != typehelpers.SafeString(other.Title) {
 		res.AddPropertyDiff("Title")
 	}
 
-	if r.Width == nil || new.Width == nil {
-		if !(r.Width == nil && new.Width == nil) {
+	if r.Width == nil || other.Width == nil {
+		if !(r.Width == nil && other.Width == nil) {
 			res.AddPropertyDiff("Width")
 		}
-	} else if *r.Width != *new.Width {
+	} else if *r.Width != *other.Width {
 		res.AddPropertyDiff("Width")
 	}
 
-	res.populateChildDiffs(r, new)
+	res.populateChildDiffs(r, other)
 	return res
 }
 

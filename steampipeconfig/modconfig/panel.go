@@ -17,7 +17,7 @@ type Panel struct {
 	Type       *string           `cty:"type" column:"type,text"`
 	Width      *int              `cty:"width" column:"width,text"`
 	SQL        *string           `cty:"sql" column:"sql,text"`
-	Properties map[string]string `cty:"properties" column:"sql,json"`
+	Properties map[string]string `cty:"properties" column:"properties,jsonb"`
 
 	DeclRange hcl.Range
 	Mod       *Mod `cty:"mod"`
@@ -39,6 +39,11 @@ func NewPanel(block *hcl.Block) *Panel {
 		Properties:      make(map[string]string),
 	}
 	return panel
+}
+
+func (p *Panel) Equals(other *Panel) bool {
+	diff := p.Diff(other)
+	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
@@ -167,28 +172,31 @@ func (p *Panel) SetMetadata(metadata *ResourceMetadata) {
 	p.metadata = metadata
 }
 
-func (p *Panel) Diff(new *Panel) *ReportTreeItemDiffs {
+func (p *Panel) Diff(other *Panel) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
 		Item: p,
 		Name: p.Name(),
 	}
-	if typehelpers.SafeString(p.Title) != typehelpers.SafeString(new.Title) {
+	if p.FullName != other.FullName {
+		res.AddPropertyDiff("Name")
+	}
+	if typehelpers.SafeString(p.Title) != typehelpers.SafeString(other.Title) {
 		res.AddPropertyDiff("Title")
 	}
-	if typehelpers.SafeString(p.SQL) != typehelpers.SafeString(new.SQL) {
+	if typehelpers.SafeString(p.SQL) != typehelpers.SafeString(other.SQL) {
 		res.AddPropertyDiff("SQL")
 	}
 	for k, v := range p.Properties {
-		if new.Properties[k] != v {
+		if other.Properties[k] != v {
 			res.AddPropertyDiff(fmt.Sprintf("Properties.%s", k))
 		}
 	}
 
-	if typehelpers.SafeString(p.Type) != typehelpers.SafeString(new.Type) {
+	if typehelpers.SafeString(p.Type) != typehelpers.SafeString(other.Type) {
 		res.AddPropertyDiff("Type")
 	}
 
-	res.populateChildDiffs(p, new)
+	res.populateChildDiffs(p, other)
 
 	return res
 }
