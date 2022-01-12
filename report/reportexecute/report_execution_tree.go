@@ -18,9 +18,9 @@ type ReportExecutionTree struct {
 	Root            reportinterfaces.ReportNodeRun
 	dependencyGraph *topsort.Graph
 	client          db_common.Client
-	containers      map[string]*ContainerRun
+	containers      map[string]*ReportContainerRun
 	panels          map[string]*PanelRun
-	reports         map[string]*ContainerRun
+	reports         map[string]*ReportContainerRun
 	workspace       *workspace.Workspace
 }
 
@@ -30,9 +30,9 @@ func NewReportExecutionTree(reportName string, client db_common.Client, workspac
 	reportExecutionTree := &ReportExecutionTree{
 		client:          client,
 		dependencyGraph: topsort.NewGraph(),
-		containers:      make(map[string]*ContainerRun),
+		containers:      make(map[string]*ReportContainerRun),
 		panels:          make(map[string]*PanelRun),
-		reports:         make(map[string]*ContainerRun),
+		reports:         make(map[string]*ReportContainerRun),
 		workspace:       workspace,
 	}
 
@@ -65,15 +65,15 @@ func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterface
 		if !ok {
 			return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
 		}
-		root = NewContainerRun(report, e)
+		root = NewReportContainerRun(report, e)
 	case modconfig.BlockTypeContainer:
 		container, ok := e.workspace.Containers[reportName]
 		if !ok {
 			return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
 		}
-		root = NewContainerRun(container, e)
+		root = NewReportContainerRun(container, e)
 	default:
-		return nil, fmt.Errorf("invalid bloxk type '%s' passed to ExecuteReport", reportName)
+		return nil, fmt.Errorf("invalid block type '%s' passed to ExecuteReport", reportName)
 	}
 	return root, nil
 }
