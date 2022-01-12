@@ -186,6 +186,15 @@ func (p *Panel) Diff(other *Panel) *ReportTreeItemDiffs {
 	if typehelpers.SafeString(p.SQL) != typehelpers.SafeString(other.SQL) {
 		res.AddPropertyDiff("SQL")
 	}
+
+	if p.Width == nil || other.Width == nil {
+		if !(p.Width == nil && other.Width == nil) {
+			res.AddPropertyDiff("Width")
+		}
+	} else if *p.Width != *other.Width {
+		res.AddPropertyDiff("Width")
+	}
+
 	for k, v := range p.Properties {
 		if other.Properties[k] != v {
 			res.AddPropertyDiff(fmt.Sprintf("Properties.%s", k))
