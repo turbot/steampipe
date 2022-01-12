@@ -9,6 +9,7 @@ type WorkspaceResourceMaps struct {
 	Benchmarks map[string]*Benchmark
 	Variables  map[string]*Variable
 	Reports    map[string]*ReportContainer
+	Containers map[string]*ReportContainer
 	Panels     map[string]*Panel
 	References map[string]*ResourceReference
 }
@@ -21,6 +22,7 @@ func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
 		Benchmarks: make(map[string]*Benchmark),
 		Variables:  make(map[string]*Variable),
 		Reports:    make(map[string]*ReportContainer),
+		Containers: make(map[string]*ReportContainer),
 		Panels:     make(map[string]*Panel),
 		References: make(map[string]*ResourceReference),
 	}
@@ -39,6 +41,7 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
+
 	for name, query := range m.Queries {
 		if otherQuery, ok := other.Queries[name]; !ok {
 			return false
@@ -46,12 +49,12 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
-
 	for name := range other.Queries {
 		if _, ok := m.Queries[name]; !ok {
 			return false
 		}
 	}
+
 	for name, control := range m.Controls {
 		if otherControl, ok := other.Controls[name]; !ok {
 			return false
@@ -64,6 +67,7 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
+
 	for name, benchmark := range m.Benchmarks {
 		if otherBenchmark, ok := other.Benchmarks[name]; !ok {
 			return false
@@ -76,6 +80,7 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
+
 	for name, variable := range m.Variables {
 		if otherVariable, ok := other.Variables[name]; !ok {
 			return false
@@ -88,8 +93,37 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
+
+	for name, report := range m.Reports {
+		if otherReport, ok := other.Reports[name]; !ok {
+			return false
+		} else if !report.Equals(otherReport) {
+			return false
+		}
+	}
 	for name := range other.Reports {
 		if _, ok := m.Reports[name]; !ok {
+			return false
+		}
+	}
+
+	for name, container := range m.Containers {
+		if otherReport, ok := other.Containers[name]; !ok {
+			return false
+		} else if !container.Equals(otherReport) {
+			return false
+		}
+	}
+	for name := range other.Containers {
+		if _, ok := m.Containers[name]; !ok {
+			return false
+		}
+	}
+
+	for name, panel := range m.Panels {
+		if otherReport, ok := other.Panels[name]; !ok {
+			return false
+		} else if !panel.Equals(otherReport) {
 			return false
 		}
 	}
@@ -98,6 +132,7 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
+
 	for name, reference := range m.References {
 		if otherReference, ok := other.References[name]; !ok {
 			return false
@@ -161,6 +196,7 @@ func (m *WorkspaceResourceMaps) Empty() bool {
 		len(m.Benchmarks)+
 		len(m.Variables)+
 		len(m.Reports)+
+		len(m.Containers)+
 		len(m.Panels)+
 		len(m.References) == 0
 }

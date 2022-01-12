@@ -117,8 +117,8 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	// force creation of session data - se we see any prepared statement errors at once
 	sessionResult := i.Client.AcquireSession(ctx)
 	i.Result.AddWarnings(sessionResult.Warnings...)
-	if err != nil {
-		i.Result.Error = fmt.Errorf("error acquiring database connection, %s", err.Error())
+	if sessionResult.Error != nil {
+		i.Result.Error = fmt.Errorf("error acquiring database connection, %s", sessionResult.Error.Error())
 	} else {
 		sessionResult.Session.Close(utils.IsContextCancelled(ctx))
 	}

@@ -211,6 +211,7 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 		Benchmarks: w.Benchmarks,
 		Variables:  w.Variables,
 		Reports:    w.Reports,
+		Containers: w.Containers,
 		Panels:     w.Panels,
 	}
 	workspaceMap.PopulateReferences()
