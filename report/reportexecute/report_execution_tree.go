@@ -18,9 +18,7 @@ type ReportExecutionTree struct {
 	Root            reportinterfaces.ReportNodeRun
 	dependencyGraph *topsort.Graph
 	client          db_common.Client
-	containers      map[string]*ReportContainerRun
-	panels          map[string]*PanelRun
-	reports         map[string]*ReportContainerRun
+	runs            map[string]reportinterfaces.ReportNodeRun
 	workspace       *workspace.Workspace
 }
 
@@ -30,9 +28,7 @@ func NewReportExecutionTree(reportName string, client db_common.Client, workspac
 	reportExecutionTree := &ReportExecutionTree{
 		client:          client,
 		dependencyGraph: topsort.NewGraph(),
-		containers:      make(map[string]*ReportContainerRun),
-		panels:          make(map[string]*PanelRun),
-		reports:         make(map[string]*ReportContainerRun),
+		runs:            make(map[string]reportinterfaces.ReportNodeRun),
 		workspace:       workspace,
 	}
 
@@ -52,7 +48,7 @@ func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterface
 		return nil, err
 	}
 
-	rootParentName := e.workspace.Mod.Name()
+	rootParentName := e.workspace.Mod.ShortName
 	var root reportinterfaces.ReportNodeRun
 	switch parsedName.ItemType {
 	case modconfig.BlockTypePanel:
@@ -122,72 +118,40 @@ func (e *ReportExecutionTree) runStatus() reportinterfaces.ReportRunStatus {
 }
 
 func (e *ReportExecutionTree) ExecuteNode(ctx context.Context, name string) error {
-	parsedName, err := modconfig.ParseResourceName(name)
-	if err != nil {
-		return err
+	runNode, ok := e.runs[name]
+	if !ok {
+		// this error will be passed up the execution tree and raised as a report error for the root node
+		return fmt.Errorf("'%s' not found in execution tree", name)
 	}
-
-	if parsedName.ItemType == modconfig.BlockTypeReport {
-		report, ok := e.reports[name]
-		if !ok {
-			// this error will be passed up the execution tree and raised as a report error for the root node
-			return fmt.Errorf("report '%s' not found in execution tree", name)
-		}
+	switch run := runNode.(type) {
+	case *ReportContainerRun:
 		// panel should now be complete, i.e. all it's children should be complete
-		if !report.ChildrenComplete() {
+		if !run.ChildrenComplete() {
 			// this error will be passed up the execution tree and raised as a report error for the root node
-			return fmt.Errorf("panel '%s' should be complete, but it has incomplete children", report.Name)
+			return fmt.Errorf("'%s' should be complete, but it has incomplete children", run.Name)
 		}
 		// set complete status on report - this will raise panel complete event
-		report.SetComplete()
+		run.SetComplete()
 		return nil
-	}
-	if parsedName.ItemType == modconfig.BlockTypeContainer {
-
-		container, ok := e.containers[name]
-		if !ok {
-			// this error will be passed up the execution tree and raised as a report error for the root node
-			return fmt.Errorf("container '%s' not found in execution tree", name)
-		}
-		// panel should now be complete, i.e. all it's children should be complete
-		if !container.ChildrenComplete() {
-			// this error will be passed up the execution tree and raised as a report error for the root node
-			return fmt.Errorf("panel '%s' should be complete, but it has incomplete children", container.Name)
-		}
-		// set complete status on report - this will raise panel complete event
-		container.SetComplete()
-		return nil
-	}
-
-	if parsedName.ItemType == modconfig.BlockTypePanel {
-		panel, ok := e.panels[name]
-		if !ok {
-			// this error will be passed up the execution tree and raised as a report error for the root node
-			return fmt.Errorf("panel '%s' not found in execution tree", name)
-		}
+	case *PanelRun:
 		// if panel has sql execute it
-		if panel.SQL != "" {
-			data, err := e.executePanelSQL(ctx, panel.SQL)
+		if run.SQL != "" {
+			data, err := e.executePanelSQL(ctx, run.SQL)
 			if err != nil {
 				// set the error status on the panel - this will raise panel error event
-				panel.SetError(err)
+				run.SetError(err)
 
 				return err
 			}
 
-			panel.Data = data
-		}
-		// panel should now be complete, i.e. all it's children should be complete
-		if !panel.ChildrenComplete() {
-			// this error will be passed up the execution tree and raised as a report error for the root node
-			return fmt.Errorf("panel '%s' should be complete, but it has incomplete children", panel.Name)
+			run.Data = data
 		}
 		// set complete status on panel - this will raise panel complete event
-		panel.SetComplete()
-
+		run.SetComplete()
 		return nil
+	default:
+		return fmt.Errorf("invalid block type '%s' passed to ReportExecutionTree.ExecuteNode", name)
 	}
-	return fmt.Errorf("invalid block type '%s' passed to ReportExecutionTree.ExecuteNode", name)
 }
 
 func (e *ReportExecutionTree) executePanelSQL(ctx context.Context, query string) ([][]interface{}, error) {

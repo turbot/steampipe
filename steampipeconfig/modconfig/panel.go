@@ -19,6 +19,8 @@ type Panel struct {
 	SQL   *string `cty:"sql" column:"sql,text"`
 	Text  *string `cty:"text" column:"text,text"`
 
+	//Properties	map[string]string `cty:"sql" column:"sql,text"`
+
 	DeclRange hcl.Range
 	Mod       *Mod `cty:"mod"`
 
@@ -179,13 +181,6 @@ func (p *Panel) Diff(new *Panel) *ReportTreeItemDiffs {
 	}
 	if typehelpers.SafeString(p.Type) != typehelpers.SafeString(new.Type) {
 		res.AddPropertyDiff("Type")
-	}
-	if p.Width == nil || new.Width == nil {
-		if !(p.Width == nil && new.Width == nil) {
-			res.AddPropertyDiff("Width")
-		}
-	} else if *p.Width != *new.Width {
-		res.AddPropertyDiff("Width")
 	}
 
 	res.populateChildDiffs(p, new)
