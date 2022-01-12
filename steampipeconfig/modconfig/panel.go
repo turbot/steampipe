@@ -73,6 +73,9 @@ func (p *Panel) setBaseProperties() {
 	if p.SQL == nil {
 		p.SQL = p.Base.SQL
 	}
+	if p.Text == nil {
+		p.Text = p.Base.Text
+	}
 }
 
 // AddReference implements HclResource
