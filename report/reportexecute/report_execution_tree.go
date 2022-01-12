@@ -52,6 +52,7 @@ func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterface
 		return nil, err
 	}
 
+	rootParentName := e.workspace.Mod.Name()
 	var root reportinterfaces.ReportNodeRun
 	switch parsedName.ItemType {
 	case modconfig.BlockTypePanel:
@@ -59,19 +60,19 @@ func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterface
 		if !ok {
 			return nil, fmt.Errorf("panel '%s' does not exist in workspace", reportName)
 		}
-		root = NewPanelRun(panel, e)
+		root = NewPanelRun(panel, "", e)
 	case modconfig.BlockTypeReport:
 		report, ok := e.workspace.Reports[reportName]
 		if !ok {
 			return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
 		}
-		root = NewReportContainerRun(report, e)
+		root = NewReportContainerRun(report, rootParentName, e)
 	case modconfig.BlockTypeContainer:
 		container, ok := e.workspace.Containers[reportName]
 		if !ok {
 			return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
 		}
-		root = NewReportContainerRun(container, e)
+		root = NewReportContainerRun(container, rootParentName, e)
 	default:
 		return nil, fmt.Errorf("invalid block type '%s' passed to ExecuteReport", reportName)
 	}

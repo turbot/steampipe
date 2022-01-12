@@ -1,6 +1,8 @@
 package reportexecute
 
 import (
+	"fmt"
+
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/report/reportinterfaces"
@@ -16,16 +18,16 @@ type PanelRun struct {
 	Width int             `json:"width,omitempty"`
 	SQL   string          `json:"sql,omitempty"`
 	Data  [][]interface{} `json:"data,omitempty"`
-
-	Error error `json:"error,omitempty"`
+	Error error           `json:"error,omitempty"`
 
 	runStatus     reportinterfaces.ReportRunStatus
 	executionTree *ReportExecutionTree
 }
 
-func NewPanelRun(panel *modconfig.Panel, executionTree *ReportExecutionTree) *PanelRun {
+func NewPanelRun(panel *modconfig.Panel, parentName string, executionTree *ReportExecutionTree) *PanelRun {
 	r := &PanelRun{
-		Name:          panel.Name(),
+		// the name is the path, i.e. dot-separated concatenation of parent names
+		Name:          fmt.Sprintf("%s.%s", parentName, panel.UnqualifiedName),
 		Title:         typehelpers.SafeString(panel.Title),
 		Text:          typehelpers.SafeString(panel.Text),
 		Type:          typehelpers.SafeString(panel.Type),
