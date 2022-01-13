@@ -3,387 +3,10 @@
     
     
     
-<test-suite id="control.cis_v140_1_20" name="aws_compliance.control.cis_v140_1_20" duration="2.229776583" testcasecount="17" total="17" passed="0" failed="17" skipped="0">
+<test-suite id="control.cis_v140_1_20" name="aws_compliance.control.cis_v140_1_20" duration="2.406095542" testcasecount="17" total="17" passed="0" failed="17" skipped="0">
     
         
 <test-case id="cis_v140_1_20::0" name="aws_compliance.control.cis_v140_1_20::0" result="Failed">
-<properties>
-    <property>
-     <key>steampipe:status</key>
-     <value>alarm</value>
-    </property>
-    <property>
-     <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in eu-west-2.</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:region</key>
-    <value>eu-west-2</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
-    </property>
-    
-</properties>
-<reason>
-<message><![CDATA[Access analyzer not enabled in eu-west-2.]]></message>
-</reason>
-</test-case>
-
-    
-        
-<test-case id="cis_v140_1_20::1" name="aws_compliance.control.cis_v140_1_20::1" result="Failed">
-<properties>
-    <property>
-     <key>steampipe:status</key>
-     <value>alarm</value>
-    </property>
-    <property>
-     <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in ap-southeast-2.</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:region</key>
-    <value>ap-southeast-2</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
-    </property>
-    
-</properties>
-<reason>
-<message><![CDATA[Access analyzer not enabled in ap-southeast-2.]]></message>
-</reason>
-</test-case>
-
-    
-        
-<test-case id="cis_v140_1_20::2" name="aws_compliance.control.cis_v140_1_20::2" result="Failed">
-<properties>
-    <property>
-     <key>steampipe:status</key>
-     <value>alarm</value>
-    </property>
-    <property>
-     <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in ca-central-1.</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:region</key>
-    <value>ca-central-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
-    </property>
-    
-</properties>
-<reason>
-<message><![CDATA[Access analyzer not enabled in ca-central-1.]]></message>
-</reason>
-</test-case>
-
-    
-        
-<test-case id="cis_v140_1_20::3" name="aws_compliance.control.cis_v140_1_20::3" result="Failed">
-<properties>
-    <property>
-     <key>steampipe:status</key>
-     <value>alarm</value>
-    </property>
-    <property>
-     <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in ap-northeast-1.</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:region</key>
-    <value>ap-northeast-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
-    </property>
-    
-</properties>
-<reason>
-<message><![CDATA[Access analyzer not enabled in ap-northeast-1.]]></message>
-</reason>
-</test-case>
-
-    
-        
-<test-case id="cis_v140_1_20::4" name="aws_compliance.control.cis_v140_1_20::4" result="Failed">
-<properties>
-    <property>
-     <key>steampipe:status</key>
-     <value>alarm</value>
-    </property>
-    <property>
-     <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in us-west-2.</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:region</key>
-    <value>us-west-2</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
-    </property>
-    
-</properties>
-<reason>
-<message><![CDATA[Access analyzer not enabled in us-west-2.]]></message>
-</reason>
-</test-case>
-
-    
-        
-<test-case id="cis_v140_1_20::5" name="aws_compliance.control.cis_v140_1_20::5" result="Failed">
-<properties>
-    <property>
-     <key>steampipe:status</key>
-     <value>alarm</value>
-    </property>
-    <property>
-     <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in eu-west-3.</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:region</key>
-    <value>eu-west-3</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
-    </property>
-    
-</properties>
-<reason>
-<message><![CDATA[Access analyzer not enabled in eu-west-3.]]></message>
-</reason>
-</test-case>
-
-    
-        
-<test-case id="cis_v140_1_20::6" name="aws_compliance.control.cis_v140_1_20::6" result="Failed">
-<properties>
-    <property>
-     <key>steampipe:status</key>
-     <value>alarm</value>
-    </property>
-    <property>
-     <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in ap-northeast-3.</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:region</key>
-    <value>ap-northeast-3</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
-    </property>
-    
-</properties>
-<reason>
-<message><![CDATA[Access analyzer not enabled in ap-northeast-3.]]></message>
-</reason>
-</test-case>
-
-    
-        
-<test-case id="cis_v140_1_20::7" name="aws_compliance.control.cis_v140_1_20::7" result="Failed">
-<properties>
-    <property>
-     <key>steampipe:status</key>
-     <value>alarm</value>
-    </property>
-    <property>
-     <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in eu-north-1.</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:region</key>
-    <value>eu-north-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
-    </property>
-    
-</properties>
-<reason>
-<message><![CDATA[Access analyzer not enabled in eu-north-1.]]></message>
-</reason>
-</test-case>
-
-    
-        
-<test-case id="cis_v140_1_20::8" name="aws_compliance.control.cis_v140_1_20::8" result="Failed">
-<properties>
-    <property>
-     <key>steampipe:status</key>
-     <value>alarm</value>
-    </property>
-    <property>
-     <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in eu-central-1.</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:region</key>
-    <value>eu-central-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
-    </property>
-    
-</properties>
-<reason>
-<message><![CDATA[Access analyzer not enabled in eu-central-1.]]></message>
-</reason>
-</test-case>
-
-    
-        
-<test-case id="cis_v140_1_20::9" name="aws_compliance.control.cis_v140_1_20::9" result="Failed">
-<properties>
-    <property>
-     <key>steampipe:status</key>
-     <value>alarm</value>
-    </property>
-    <property>
-     <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in sa-east-1.</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:region</key>
-    <value>sa-east-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
-    </property>
-    
-</properties>
-<reason>
-<message><![CDATA[Access analyzer not enabled in sa-east-1.]]></message>
-</reason>
-</test-case>
-
-    
-        
-<test-case id="cis_v140_1_20::10" name="aws_compliance.control.cis_v140_1_20::10" result="Failed">
-<properties>
-    <property>
-     <key>steampipe:status</key>
-     <value>alarm</value>
-    </property>
-    <property>
-     <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in ap-northeast-2.</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:region</key>
-    <value>ap-northeast-2</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
-    </property>
-    
-</properties>
-<reason>
-<message><![CDATA[Access analyzer not enabled in ap-northeast-2.]]></message>
-</reason>
-</test-case>
-
-    
-        
-<test-case id="cis_v140_1_20::11" name="aws_compliance.control.cis_v140_1_20::11" result="Failed">
-<properties>
-    <property>
-     <key>steampipe:status</key>
-     <value>alarm</value>
-    </property>
-    <property>
-     <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in eu-west-1.</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:region</key>
-    <value>eu-west-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
-    </property>
-    
-</properties>
-<reason>
-<message><![CDATA[Access analyzer not enabled in eu-west-1.]]></message>
-</reason>
-</test-case>
-
-    
-        
-<test-case id="cis_v140_1_20::12" name="aws_compliance.control.cis_v140_1_20::12" result="Failed">
-<properties>
-    <property>
-     <key>steampipe:status</key>
-     <value>alarm</value>
-    </property>
-    <property>
-     <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in ap-southeast-1.</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:region</key>
-    <value>ap-southeast-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
-    </property>
-    
-</properties>
-<reason>
-<message><![CDATA[Access analyzer not enabled in ap-southeast-1.]]></message>
-</reason>
-</test-case>
-
-    
-        
-<test-case id="cis_v140_1_20::13" name="aws_compliance.control.cis_v140_1_20::13" result="Failed">
 <properties>
     <property>
      <key>steampipe:status</key>
@@ -412,7 +35,7 @@
 
     
         
-<test-case id="cis_v140_1_20::14" name="aws_compliance.control.cis_v140_1_20::14" result="Failed">
+<test-case id="cis_v140_1_20::1" name="aws_compliance.control.cis_v140_1_20::1" result="Failed">
 <properties>
     <property>
      <key>steampipe:status</key>
@@ -420,12 +43,12 @@
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in us-east-1.</value>
+     <value>Access analyzer not enabled in sa-east-1.</value>
     </property>
     
     <property>
     <key>steampipe:dimension:region</key>
-    <value>us-east-1</value>
+    <value>sa-east-1</value>
     </property>
     
     <property>
@@ -435,13 +58,42 @@
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in us-east-1.]]></message>
+<message><![CDATA[Access analyzer not enabled in sa-east-1.]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::15" name="aws_compliance.control.cis_v140_1_20::15" result="Failed">
+<test-case id="cis_v140_1_20::2" name="aws_compliance.control.cis_v140_1_20::2" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Access analyzer not enabled in eu-central-1.</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:region</key>
+    <value>eu-central-1</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:account_id</key>
+    <value>453319552164</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Access analyzer not enabled in eu-central-1.]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="cis_v140_1_20::3" name="aws_compliance.control.cis_v140_1_20::3" result="Failed">
 <properties>
     <property>
      <key>steampipe:status</key>
@@ -470,7 +122,239 @@
 
     
         
-<test-case id="cis_v140_1_20::16" name="aws_compliance.control.cis_v140_1_20::16" result="Failed">
+<test-case id="cis_v140_1_20::4" name="aws_compliance.control.cis_v140_1_20::4" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Access analyzer not enabled in ap-southeast-1.</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:region</key>
+    <value>ap-southeast-1</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:account_id</key>
+    <value>453319552164</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Access analyzer not enabled in ap-southeast-1.]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="cis_v140_1_20::5" name="aws_compliance.control.cis_v140_1_20::5" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Access analyzer not enabled in ap-southeast-2.</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:region</key>
+    <value>ap-southeast-2</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:account_id</key>
+    <value>453319552164</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Access analyzer not enabled in ap-southeast-2.]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="cis_v140_1_20::6" name="aws_compliance.control.cis_v140_1_20::6" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Access analyzer not enabled in ap-northeast-1.</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:region</key>
+    <value>ap-northeast-1</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:account_id</key>
+    <value>453319552164</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Access analyzer not enabled in ap-northeast-1.]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="cis_v140_1_20::7" name="aws_compliance.control.cis_v140_1_20::7" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Access analyzer not enabled in ap-northeast-2.</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:region</key>
+    <value>ap-northeast-2</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:account_id</key>
+    <value>453319552164</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Access analyzer not enabled in ap-northeast-2.]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="cis_v140_1_20::8" name="aws_compliance.control.cis_v140_1_20::8" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Access analyzer not enabled in ap-northeast-3.</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:region</key>
+    <value>ap-northeast-3</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:account_id</key>
+    <value>453319552164</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Access analyzer not enabled in ap-northeast-3.]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="cis_v140_1_20::9" name="aws_compliance.control.cis_v140_1_20::9" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Access analyzer not enabled in eu-west-2.</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:region</key>
+    <value>eu-west-2</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:account_id</key>
+    <value>453319552164</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Access analyzer not enabled in eu-west-2.]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="cis_v140_1_20::10" name="aws_compliance.control.cis_v140_1_20::10" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Access analyzer not enabled in us-east-1.</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:region</key>
+    <value>us-east-1</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:account_id</key>
+    <value>453319552164</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Access analyzer not enabled in us-east-1.]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="cis_v140_1_20::11" name="aws_compliance.control.cis_v140_1_20::11" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Access analyzer not enabled in eu-west-3.</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:region</key>
+    <value>eu-west-3</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:account_id</key>
+    <value>453319552164</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Access analyzer not enabled in eu-west-3.]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="cis_v140_1_20::12" name="aws_compliance.control.cis_v140_1_20::12" result="Failed">
 <properties>
     <property>
      <key>steampipe:status</key>
@@ -494,6 +378,122 @@
 </properties>
 <reason>
 <message><![CDATA[Access analyzer not enabled in ap-south-1.]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="cis_v140_1_20::13" name="aws_compliance.control.cis_v140_1_20::13" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Access analyzer not enabled in eu-west-1.</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:region</key>
+    <value>eu-west-1</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:account_id</key>
+    <value>453319552164</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Access analyzer not enabled in eu-west-1.]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="cis_v140_1_20::14" name="aws_compliance.control.cis_v140_1_20::14" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Access analyzer not enabled in eu-north-1.</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:region</key>
+    <value>eu-north-1</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:account_id</key>
+    <value>453319552164</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Access analyzer not enabled in eu-north-1.]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="cis_v140_1_20::15" name="aws_compliance.control.cis_v140_1_20::15" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Access analyzer not enabled in us-west-2.</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:region</key>
+    <value>us-west-2</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:account_id</key>
+    <value>453319552164</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Access analyzer not enabled in us-west-2.]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="cis_v140_1_20::16" name="aws_compliance.control.cis_v140_1_20::16" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Access analyzer not enabled in ca-central-1.</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:region</key>
+    <value>ca-central-1</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:account_id</key>
+    <value>453319552164</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Access analyzer not enabled in ca-central-1.]]></message>
 </reason>
 </test-case>
 
