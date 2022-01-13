@@ -23,20 +23,13 @@ type loadModTest struct {
 	expected interface{}
 }
 
-var runCtx = &parse.RunContext{
-	Flags: parse.CreatePseudoResources | parse.CreateDefaultMod,
-	ListOptions: &filehelpers.ListOptions{
-		Exclude: []string{fmt.Sprintf("**/%s*", filepaths.WorkspaceDataDir)},
-		Flags:   filehelpers.Files,
-	},
-}
 var testCasesLoadMod map[string]loadModTest
 
 func init() {
 	filepaths.SteampipeDir = "~/.steampipe"
 	testCasesLoadMod = map[string]loadModTest{
 		"no_mod_sql_files": {
-			source: "test_data/mods/no_mod_sql_files",
+			source: "testdata/mods/no_mod_sql_files",
 			expected: &modconfig.Mod{
 				ShortName: "local",
 				FullName:  "mod.local",
@@ -55,7 +48,7 @@ func init() {
 				}},
 		},
 		"no_mod_hcl_queries": {
-			source: "test_data/mods/no_mod_hcl_queries",
+			source: "testdata/mods/no_mod_hcl_queries",
 			expected: &modconfig.Mod{
 				ShortName: "local",
 				Title:     toStringPointer("no_mod_hcl_queries"),
@@ -63,14 +56,14 @@ func init() {
 				Queries: map[string]*modconfig.Query{
 					"q1": {
 						ShortName:   "q1",
-						FullName:    "query.q1",
+						FullName:    "m1.query.q1",
 						Title:       toStringPointer("Q1"),
 						Description: toStringPointer("THIS IS QUERY 1"),
 						SQL:         toStringPointer("select 1"),
 					},
 					"q2": {
 						ShortName:   "q2",
-						FullName:    "query.q2",
+						FullName:    "m1.query.q2",
 						Title:       toStringPointer("Q2"),
 						Description: toStringPointer("THIS IS QUERY 2"),
 						SQL:         toStringPointer("select 2"),
@@ -79,11 +72,11 @@ func init() {
 			},
 		},
 		"single_mod_duplicate_query": {
-			source:   "test_data/mods/single_mod_duplicate_query",
+			source:   "testdata/mods/single_mod_duplicate_query",
 			expected: "ERROR",
 		},
 		"single_mod_no_query": {
-			source: "test_data/mods/single_mod_no_query",
+			source: "testdata/mods/single_mod_no_query",
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
@@ -92,7 +85,7 @@ func init() {
 			},
 		},
 		"single_mod_one_query": {
-			source: "test_data/mods/single_mod_one_query",
+			source: "testdata/mods/single_mod_one_query",
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
@@ -101,7 +94,7 @@ func init() {
 				Queries: map[string]*modconfig.Query{
 					"q1": {
 						ShortName:   "q1",
-						FullName:    "query.q1",
+						FullName:    "m1.query.q1",
 						Title:       toStringPointer("Q1"),
 						Description: toStringPointer("THIS IS QUERY 1"),
 						SQL:         toStringPointer("select 1"),
@@ -110,7 +103,7 @@ func init() {
 			},
 		},
 		"query_with_paramdefs": {
-			source: "test_data/mods/query_with_paramdefs",
+			source: "testdata/mods/query_with_paramdefs",
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
@@ -119,7 +112,7 @@ func init() {
 				Queries: map[string]*modconfig.Query{
 					"q1": {
 						ShortName:   "q1",
-						FullName:    "query.q1",
+						FullName:    "m1.query.q1",
 						Title:       toStringPointer("Q1"),
 						Description: toStringPointer("THIS IS QUERY 1"),
 						SQL:         toStringPointer("select 1"),
@@ -138,7 +131,7 @@ func init() {
 			},
 		},
 		"query_with_paramdefs_control_with_named_params": {
-			source: "test_data/mods/query_with_paramdefs_control_with_named_params",
+			source: "testdata/mods/query_with_paramdefs_control_with_named_params",
 			expected: `Name: mod.m1
 Title: M1
 Description: THIS IS M1 
@@ -172,7 +165,7 @@ Benchmarks:
 `,
 		},
 		"single_mod_one_query_one_control": {
-			source: "test_data/mods/single_mod_one_query_one_control",
+			source: "testdata/mods/single_mod_one_query_one_control",
 			expected: `Name: mod.m1
 Title: M1
 Description: THIS IS M1 
@@ -198,7 +191,7 @@ Benchmarks:
 `,
 		},
 		"controls_and_groups": {
-			source: "test_data/mods/controls_and_groups",
+			source: "testdata/mods/controls_and_groups",
 			expected: `Name: mod.m1
 Title: M1
 Description: THIS IS M1 
@@ -307,15 +300,15 @@ Benchmarks:
 	`,
 		},
 		"controls_and_groups_circular": {
-			source:   "test_data/mods/controls_and_groups_circular",
+			source:   "testdata/mods/controls_and_groups_circular",
 			expected: "ERROR",
 		},
 		"controls_and_groups_duplicate_child": {
-			source:   "test_data/mods/controls_and_groups_duplicate_child",
+			source:   "testdata/mods/controls_and_groups_duplicate_child",
 			expected: "ERROR",
 		},
 		"single_mod_one_sql_file": {
-			source: "test_data/mods/single_mod_one_sql_file",
+			source: "testdata/mods/single_mod_one_sql_file",
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
@@ -326,7 +319,7 @@ Benchmarks:
 			},
 		},
 		"single_mod_sql_file_and_hcl_query": {
-			source: "test_data/mods/single_mod_sql_file_and_hcl_query",
+			source: "testdata/mods/single_mod_sql_file_and_hcl_query",
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
@@ -335,7 +328,7 @@ Benchmarks:
 				Queries: map[string]*modconfig.Query{
 					"query.q1": {
 						ShortName:   "q1",
-						FullName:    "query.q1",
+						FullName:    "m1.query.q1",
 						Title:       toStringPointer("Q1"),
 						Description: toStringPointer("THIS IS QUERY 1"),
 						SQL:         toStringPointer("select 1"),
@@ -349,7 +342,7 @@ Benchmarks:
 			},
 		},
 		"single_mod_two_queries_diff_files": {
-			source: "test_data/mods/single_mod_two_queries_diff_files",
+			source: "testdata/mods/single_mod_two_queries_diff_files",
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
@@ -358,14 +351,14 @@ Benchmarks:
 				Queries: map[string]*modconfig.Query{
 					"q1": {
 						ShortName:   "q1",
-						FullName:    "query.q1",
+						FullName:    "m1.query.q1",
 						Title:       toStringPointer("Q1"),
 						Description: toStringPointer("THIS IS QUERY 1"),
 						SQL:         toStringPointer("select 1"),
 					},
 					"q2": {
 						ShortName:   "q2",
-						FullName:    "query.q2",
+						FullName:    "m1.query.q2",
 						Title:       toStringPointer("Q2"),
 						Description: toStringPointer("THIS IS QUERY 2"),
 						SQL:         toStringPointer("select 2"),
@@ -374,7 +367,7 @@ Benchmarks:
 			},
 		},
 		"single_mod_two_queries_same_file": {
-			source: "test_data/mods/single_mod_two_queries_same_file",
+			source: "testdata/mods/single_mod_two_queries_same_file",
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
@@ -383,14 +376,14 @@ Benchmarks:
 				Queries: map[string]*modconfig.Query{
 					"q1": {
 						ShortName:   "q1",
-						FullName:    "query.q1",
+						FullName:    "m1.query.q1",
 						Title:       toStringPointer("Q1"),
 						Description: toStringPointer("THIS IS QUERY 1"),
 						SQL:         toStringPointer("select 1"),
 					},
 					"q2": {
 						ShortName:   "q2",
-						FullName:    "query.q2",
+						FullName:    "m1.query.q2",
 						Title:       toStringPointer("Q2"),
 						Description: toStringPointer("THIS IS QUERY 2"),
 						SQL:         toStringPointer("select 2"),
@@ -399,7 +392,7 @@ Benchmarks:
 			},
 		},
 		"single_mod_two_sql_files": {
-			source: "test_data/mods/single_mod_two_sql_files",
+			source: "testdata/mods/single_mod_two_sql_files",
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
@@ -420,11 +413,11 @@ Benchmarks:
 			},
 		},
 		"two_mods": {
-			source:   "test_data/mods/two_mods",
+			source:   "testdata/mods/two_mods",
 			expected: "ERROR",
 		},
 		"requires_single_simple": {
-			source: "test_data/mods/requires_single_versioned",
+			source: "testdata/mods/requires_single_versioned",
 			expected: &modconfig.Mod{
 				ShortName: "m1",
 				FullName:  "mod.m1",
@@ -440,7 +433,7 @@ Benchmarks:
 			},
 		},
 		"requires_single_simple_aliased": {
-			source: "test_data/mods/requires_single_versioned_aliased",
+			source: "testdata/mods/requires_single_versioned_aliased",
 			expected: &modconfig.Mod{
 				ShortName: "m1",
 				FullName:  "mod.m1",
@@ -475,6 +468,15 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	if err != nil {
 		t.Errorf("failed to build absolute config filepath from %s", test.source)
 	}
+
+	var runCtx = parse.NewRunContext(
+		nil,
+		modPath,
+		parse.CreatePseudoResources|parse.CreateDefaultMod,
+		&filehelpers.ListOptions{
+			Exclude: []string{fmt.Sprintf("**/%s*", filepaths.WorkspaceDataDir)},
+			Flags:   filehelpers.Files,
+		})
 
 	// set working directory to the mod path
 	os.Chdir(modPath)
@@ -511,7 +513,7 @@ type loadResourceNamesTest struct {
 
 var testCasesLoadResourceNames = map[string]loadResourceNamesTest{
 	"test_load_mod_resource_names_workspace": {
-		source: "test_data/mods/test_load_mod_resource_names_workspace",
+		source: "testdata/mods/test_load_mod_resource_names_workspace",
 		expected: &modconfig.WorkspaceResources{
 			Benchmark: map[string]bool{"benchmark.test_workspace": true},
 			Control:   map[string]bool{"control.test_workspace_1": true, "control.test_workspace_2": true, "control.test_workspace_3": true},
@@ -524,6 +526,14 @@ func TestLoadModResourceNames(t *testing.T) {
 	for name, test := range testCasesLoadResourceNames {
 
 		modPath, _ := filepath.Abs(test.source)
+		var runCtx = parse.NewRunContext(
+			nil,
+			modPath,
+			parse.CreatePseudoResources|parse.CreateDefaultMod,
+			&filehelpers.ListOptions{
+				Exclude: []string{fmt.Sprintf("**/%s*", filepaths.WorkspaceDataDir)},
+				Flags:   filehelpers.Files,
+			})
 		names, err := LoadModResourceNames(modPath, runCtx)
 
 		if err != nil {
