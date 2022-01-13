@@ -3,7 +3,7 @@
     
     
     
-<test-suite id="control.cis_v140_1_20" name="aws_compliance.control.cis_v140_1_20" duration="2.229776583s" testcasecount="17" total="17" passed="0" failed="17" skipped="0">
+<test-suite id="control.cis_v140_1_20" name="aws_compliance.control.cis_v140_1_20" duration="2.229776583" testcasecount="17" total="17" passed="0" failed="17" skipped="0">
     
         
 <test-case id="cis_v140_1_20::0" name="aws_compliance.control.cis_v140_1_20::0" result="Failed">
