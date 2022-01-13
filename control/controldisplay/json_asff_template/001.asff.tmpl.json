@@ -1,0 +1,35 @@
+[  
+    {{ range .ControlRuns -}} 
+        {{ range .Rows }}
+            {{ template "control_run_template" . -}}
+        {{ end -}}
+    {{ end -}}
+]
+{{ define "control_run_template" }}
+{
+    "SchemaVersion": "2018-10-08",
+    "Id": "{{ .Control.FullName }}",
+    "ProductArn": "arn:aws:securityhub:ap-south-1:453319552164:product/453319552164/default",
+    "ProductFields": {
+        "ProviderName": "Steampipe"
+    },
+    "GeneratorId": "steampipe-{{ .Control.ShortName }}",
+    "AwsAccountId": "453319552164",
+    "Types": [
+        "automated"
+    ],
+    "UpdatedAt": "2022-01-11T06:46:55Z",
+    "CreatedAt": "2022-01-11T06:46:55Z",
+    "Title": "{{ .Control.Title }}",
+    "Description": "{{ .Control.Description }}",
+    "Resources": [
+        {
+            "Type": "AwsAccount",
+            "Id": "NONE_PROVIDED"
+        }
+    ],
+    "Compliance": {
+        "Status": "{{ .Status }}"
+    }
+},
+{{ end -}}

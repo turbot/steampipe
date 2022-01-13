@@ -55,6 +55,7 @@ var exportFormatters FormatterMap = FormatterMap{
 	// constants.CheckOutputFormatHTML:     &HTMLFormatter{},
 	// constants.CheckOutputFormatMarkdown: &MarkdownFormatter{},
 	// constants.CheckOutputFormatNUnit3:   &Nunit3Formatter{},
+	constants.CheckOutputFormatAsffJson: &AsffJsonFormatter{},
 }
 
 type CheckExportTarget struct {
