@@ -3,10 +3,8 @@ package controldisplay
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
-	"reflect"
 	"strings"
 	"text/template"
 
@@ -94,7 +92,6 @@ func (j *NullFormatter) FileExtension() string {
 var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 	"steampipeversion": func() string { return version.SteampipeVersion.String() },
 	"workingdir":       func() string { wd, _ := os.Getwd(); return wd },
-	"asstr":            func(i reflect.Value) string { return fmt.Sprintf("%v", i) },
 	"dict": func(values ...interface{}) (map[string]interface{}, error) {
 		if len(values)%2 != 0 {
 			return nil, errors.New("invalid dict call")

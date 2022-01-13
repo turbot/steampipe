@@ -41,7 +41,7 @@
     <tr>
       <th></th>
       <th>TOTAL</th>
-      <th>{{ asstr .TotalCount }}</th>
+      <th>{{ .TotalCount }}</th>
     </tr>
   </thead>
   <tbody>
@@ -93,7 +93,7 @@
       <td class="{{ summarystatusclass "info" .Info}}">{{ .Info }}</td>
       <td class="{{ summarystatusclass "alarm" .Alarm}}">{{ .Alarm }}</td>
       <td class="{{ summarystatusclass "error" .Error}}">{{ .Error }}</td>
-      <td>{{ asstr .TotalCount }}</td>
+      <td>{{ .TotalCount }}</td>
     </tr>
   </tbody>
 </table>
