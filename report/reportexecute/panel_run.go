@@ -1,7 +1,11 @@
 package reportexecute
 
 import (
+	"context"
 	"fmt"
+	"log"
+
+	"github.com/turbot/steampipe/query/queryresult"
 
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/report/reportevents"
@@ -21,19 +25,21 @@ type PanelRun struct {
 	Data  [][]interface{} `json:"data,omitempty"`
 	Error error           `json:"error,omitempty"`
 
+	parent        reportinterfaces.ReportNodeParent
 	runStatus     reportinterfaces.ReportRunStatus
 	executionTree *ReportExecutionTree
 }
 
-func NewPanelRun(panel *modconfig.Panel, parentName string, executionTree *ReportExecutionTree) *PanelRun {
+func NewPanelRun(panel *modconfig.Panel, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) *PanelRun {
 	r := &PanelRun{
 		// the name is the path, i.e. dot-separated concatenation of parent names
-		Name:          fmt.Sprintf("%s.%s", parentName, panel.UnqualifiedName),
+		Name:          fmt.Sprintf("%s.%s", parent.GetName(), panel.UnqualifiedName),
 		Title:         typehelpers.SafeString(panel.Title),
 		Properties:    panel.Properties,
 		Type:          typehelpers.SafeString(panel.Type),
 		SQL:           typehelpers.SafeString(panel.SQL),
 		executionTree: executionTree,
+		parent:        parent,
 
 		// set to complete, optimistically
 		// if any children have SQL we will set this to ReportRunReady instead
@@ -53,6 +59,53 @@ func NewPanelRun(panel *modconfig.Panel, parentName string, executionTree *Repor
 	return r
 }
 
+// Execute implements ReportRunNode
+func (r *PanelRun) Execute(ctx context.Context) error {
+	log.Printf("[WARN] %s Execute start", r.Name)
+	// if panel has sql execute it
+	if r.SQL != "" {
+		data, err := r.executePanelSQL(ctx, r.SQL)
+		if err != nil {
+			log.Printf("[WARN] %s SQL error %v", r.Name, err)
+			// set the error status on the panel - this will raise panel error event
+			r.SetError(err)
+			return err
+		}
+
+		r.Data = data
+		log.Printf("[WARN] %s SetComplete", r.Name)
+		// set complete status on panel - this will raise panel complete event
+		r.SetComplete()
+	}
+	log.Printf("[WARN] %s Execute DONE", r.Name)
+	return nil
+}
+
+func (r *PanelRun) executePanelSQL(ctx context.Context, query string) ([][]interface{}, error) {
+	log.Printf("[WARN] !!!!!!!!!!!!!!!!!!!!!! EXECUTE SQL START %s !!!!!!!!!!!!!!!!!!!!!!", r.Name)
+	queryResult, err := r.executionTree.client.ExecuteSync(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	var res = make([][]interface{}, len(queryResult.Rows)+1)
+	var columns = make([]interface{}, len(queryResult.ColTypes))
+	for i, c := range queryResult.ColTypes {
+		columns[i] = c.Name()
+	}
+	res[0] = columns
+	for i, row := range queryResult.Rows {
+		rowData := make([]interface{}, len(queryResult.ColTypes))
+		for j, columnVal := range row.(*queryresult.RowResult).Data {
+			rowData[j] = columnVal
+		}
+		res[i+1] = rowData
+	}
+
+	log.Printf("[WARN] $$$$$$$$$$$$$$$$$$ EXECUTE SQL END %s $$$$$$$$$$$$$$$$$$ ", r.Name)
+
+	return res, nil
+}
+
 // GetName implements ReportNodeRun
 func (r *PanelRun) GetName() string {
 	return r.Name
@@ -69,6 +122,8 @@ func (r *PanelRun) SetError(err error) {
 	r.runStatus = reportinterfaces.ReportRunError
 	// raise panel error event
 	r.executionTree.workspace.PublishReportEvent(&reportevents.PanelError{Panel: r})
+	// tell parent we are done
+	r.parent.ChildCompleteChan() <- r
 
 }
 
@@ -76,12 +131,15 @@ func (r *PanelRun) SetError(err error) {
 func (r *PanelRun) SetComplete() {
 	r.runStatus = reportinterfaces.ReportRunComplete
 	// raise panel complete event
+	log.Printf("[WARN] **************** PANEL DONE EVENT %s ***************", r.Name)
 	r.executionTree.workspace.PublishReportEvent(&reportevents.PanelComplete{Panel: r})
+	// tell parent we are done
+	r.parent.ChildCompleteChan() <- r
 }
 
 // RunComplete implements ReportNodeRun
 func (r *PanelRun) RunComplete() bool {
-	return r.runStatus == reportinterfaces.ReportRunComplete
+	return r.runStatus == reportinterfaces.ReportRunComplete || r.runStatus == reportinterfaces.ReportRunError
 }
 
 // ChildrenComplete implements ReportNodeRun

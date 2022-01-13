@@ -1,14 +1,12 @@
-package executionlayer
+package reportexecute
 
 import (
 	"context"
 
-	"github.com/turbot/steampipe/statushooks"
-
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/report/reportevents"
-	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/report/reportinterfaces"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/workspace"
 )
 
@@ -16,7 +14,7 @@ func ExecuteReportNode(ctx context.Context, reportName string, workspace *worksp
 	// create context for the report execution
 	// (for now just disable all status messages - replace with event based?	)
 	reportCtx := statushooks.DisableStatusHooks(ctx)
-	executionTree, err := reportexecute.NewReportExecutionTree(reportName, client, workspace)
+	executionTree, err := NewReportExecutionTree(reportName, client, workspace)
 	if err != nil {
 		return err
 	}

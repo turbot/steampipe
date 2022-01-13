@@ -9,18 +9,17 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/go-kit/types"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
-	"gopkg.in/olahol/melody.v1"
-
-	"github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/executionlayer"
 	"github.com/turbot/steampipe/report/reportevents"
+	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
+	"gopkg.in/olahol/melody.v1"
 )
 
 type Server struct {
@@ -274,7 +273,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 		for _, changedReportName := range changedReportNames {
 			if helpers.StringSliceContains(reportsBeingWatched, changedReportName) {
-				executionlayer.ExecuteReportNode(s.context, changedReportName, s.workspace, s.dbClient)
+				reportexecute.ExecuteReportNode(s.context, changedReportName, s.workspace, s.dbClient)
 			}
 		}
 
@@ -290,7 +289,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 		for _, newReportName := range newReportNames {
 			if helpers.StringSliceContains(reportsBeingWatched, newReportName) {
-				executionlayer.ExecuteReportNode(s.context, newReportName, s.workspace, s.dbClient)
+				reportexecute.ExecuteReportNode(s.context, newReportName, s.workspace, s.dbClient)
 			}
 		}
 
