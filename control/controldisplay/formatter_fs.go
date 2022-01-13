@@ -12,6 +12,14 @@ import (
 //go:embed templates/*
 var builtinTemplateFS embed.FS
 
+// EnsureTemplates scans the '$STEAMPIPE_INSTALL_DIR/templates' directory and
+// copies over any missing templates as defined in the 'templates' package
+//
+// The name of the folder in the 'templates' package is used to identify
+// templates in '$STEAMPIPE_INSTALL_DIR/templates' - where it is expected
+// that a directory with the same name will exist. If said directory does
+// not exist, it is copied over from 'templates'
+//
 func EnsureTemplates() error {
 	dirs, err := fs.ReadDir(builtinTemplateFS, "templates")
 	if err != nil {
