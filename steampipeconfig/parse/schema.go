@@ -101,24 +101,6 @@ var ReportBlockSchema = &hcl.BodySchema{
 	},
 }
 
-var ContainerBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{Name: "width"},
-		{Name: "children"},
-		{Name: "base"},
-	},
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type:       "container",
-			LabelNames: []string{"name"},
-		},
-		{
-			Type:       "panel",
-			LabelNames: []string{"name"},
-		},
-	},
-}
-
 var PanelBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "title"},
