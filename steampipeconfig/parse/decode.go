@@ -71,11 +71,6 @@ func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource,
 		var locals []*modconfig.Local
 		locals, res = decodeLocals(block, runCtx)
 		for _, local := range locals {
-			// handle the result
-			// - if successful, add resource to mod and variables maps
-			// - if there are dependencies, add them to run context
-			diags = handleDecodeResult(local, res, block, runCtx)
-			diags = append(diags, diags...)
 			resources = append(resources, local)
 		}
 
@@ -104,7 +99,9 @@ func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource,
 	}
 
 	for _, resource := range resources {
-		// handle dependencies
+		// handle the result
+		// - if successful, add resource to mod and variables maps
+		// - if there are dependencies, add them to run context
 		handleDecodeResult(resource, res, block, runCtx)
 	}
 
