@@ -89,7 +89,7 @@ func (b *Benchmark) GetDeclRange() *hcl.Range {
 
 // OnDecoded implements HclResource
 func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
-	var res hcl.Diagnostics
+	var diags hcl.Diagnostics
 	if len(b.ChildNames) == 0 {
 		return nil
 	}
@@ -99,7 +99,7 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 	b.ChildNameStrings = make([]string, len(b.ChildNames))
 	for i, n := range b.ChildNames {
 		if nameMap[n.Name] {
-			res = append(res, &hcl.Diagnostic{
+			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  fmt.Sprintf("benchmark '%s' has duplicate child name '%s'", b.FullName, n.Name),
 				Subject:  &block.DefRange})
@@ -112,7 +112,7 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 
 	// in order to populate the children in the order specified, we create an empty array and populate by index in AddChild
 	b.children = make([]ModTreeItem, len(b.ChildNameStrings))
-	return res
+	return diags
 }
 
 // AddReference implements HclResource

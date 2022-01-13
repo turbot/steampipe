@@ -525,46 +525,40 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 // - generate and set resource metadata
 // - add resource to RunContext (which adds it to the mod)handleDecodeResult
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
-	var diags hcl.Diagnostics
 	if res.Success() {
 		// call post decode hook
 		// NOTE: must do this BEFORE adding resource to run context to ensure we respect the base property
-		if moreDiags := resource.OnDecoded(block); diags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
+		moreDiags := resource.OnDecoded(block)
+		res.addDiags(moreDiags)
+
 		// add references
-		if moreDiags := AddReferences(resource, block, runCtx); diags.HasErrors() {
-			res.addDiags(moreDiags)
-		}
+		moreDiags = AddReferences(resource, block, runCtx)
+		res.addDiags(moreDiags)
 
 		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
 		if _, ok := resource.(*modconfig.Mod); !ok {
 			resource.SetMod(runCtx.CurrentMod)
 			// add resource to mod - this will fail if the mod already has a resource with the same name
 			moreDiags := runCtx.CurrentMod.AddResource(resource)
-			diags = append(diags, moreDiags...)
+			res.addDiags(moreDiags)
 		}
 
 		// if resource supports metadata, save it
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
 			body := block.Body.(*hclsyntax.Body)
-			diags = addResourceMetadata(resourceWithMetadata, body.SrcRange, runCtx)
+			moreDiags = addResourceMetadata(resourceWithMetadata, body.SrcRange, runCtx)
+			res.addDiags(moreDiags)
 		}
 
 		// add resource into the run context
-		moreDiags := runCtx.AddResource(resource)
-		diags = append(diags, moreDiags...)
-
+		moreDiags = runCtx.AddResource(resource)
+		res.addDiags(moreDiags)
 	} else {
-		if res.Diags.HasErrors() {
-			diags = append(diags, res.Diags...)
-		}
 		if len(res.Depends) > 0 {
 			runCtx.AddDependencies(block, resource.Name(), res.Depends)
 		}
 	}
-	// update result diags
-	res.Diags = diags
+	// return the diags
 	return res.Diags
 }
 
