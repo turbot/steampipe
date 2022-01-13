@@ -172,19 +172,6 @@ var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 	"ToUpper": func(text string) string {
 		return strings.ToUpper(text)
 	},
-	"StatusMap": func(status string) string {
-		switch status {
-		case "ok":
-			return "PASSED"
-		case "error":
-			return "WARNING"
-		case "alarm":
-			return "FAILED"
-		case "skip", "info":
-			return "NOT_AVAILABLE"
-		}
-		return ""
-	},
 	"timenow": func() string {
 		return time.Now().Format(time.RFC3339)
 	},
@@ -199,5 +186,8 @@ var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 			return row.Dimensions[0].Value
 		}
 		return row.Dimensions[1].Value
+	},
+	"DurationInFloat": func(t time.Duration) float64 {
+		return t.Seconds()
 	},
 }

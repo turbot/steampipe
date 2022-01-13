@@ -31,6 +31,8 @@
         }
     ],
     "Compliance": {
-        "Status": "{{ .Status | StatusMap }}"
+        "Status": "{{ template "statusmap" .Status -}}"
     }
 },{{ end -}}
+
+{{ define "statusmap" }}{{ if eq . "ok" }}PASSED{{ end -}}{{ if eq . "error" }}WARNING{{ end -}}{{ if eq . "alarm" }}FAILED{{ end -}}{{ if eq . "skip" }}NOT_AVAILABLE{{ end -}}{{ if eq . "info" }}NOT_AVAILABLE{{ end -}}{{ end -}}
