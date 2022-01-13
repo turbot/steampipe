@@ -3,6 +3,7 @@ package reportexecute
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/turbot/steampipe/query/queryresult"
 
@@ -60,23 +61,28 @@ func NewPanelRun(panel *modconfig.Panel, parent reportinterfaces.ReportNodeParen
 
 // Execute implements ReportRunNode
 func (r *PanelRun) Execute(ctx context.Context) error {
+	log.Printf("[WARN] %s Execute start", r.Name)
 	// if panel has sql execute it
 	if r.SQL != "" {
 		data, err := r.executePanelSQL(ctx, r.SQL)
 		if err != nil {
+			log.Printf("[WARN] %s SQL error %v", r.Name, err)
 			// set the error status on the panel - this will raise panel error event
 			r.SetError(err)
 			return err
 		}
 
 		r.Data = data
+		log.Printf("[WARN] %s SetComplete", r.Name)
 		// set complete status on panel - this will raise panel complete event
 		r.SetComplete()
 	}
+	log.Printf("[WARN] %s Execute DONE", r.Name)
 	return nil
 }
 
 func (r *PanelRun) executePanelSQL(ctx context.Context, query string) ([][]interface{}, error) {
+	log.Printf("[WARN] !!!!!!!!!!!!!!!!!!!!!! EXECUTE SQL START %s !!!!!!!!!!!!!!!!!!!!!!", r.Name)
 	queryResult, err := r.executionTree.client.ExecuteSync(ctx, query)
 	if err != nil {
 		return nil, err
@@ -94,6 +100,8 @@ func (r *PanelRun) executePanelSQL(ctx context.Context, query string) ([][]inter
 		}
 		res[i+1] = rowData
 	}
+
+	log.Printf("[WARN] $$$$$$$$$$$$$$$$$$ EXECUTE SQL END %s $$$$$$$$$$$$$$$$$$ ", r.Name)
 
 	return res, nil
 }
@@ -114,6 +122,8 @@ func (r *PanelRun) SetError(err error) {
 	r.runStatus = reportinterfaces.ReportRunError
 	// raise panel error event
 	r.executionTree.workspace.PublishReportEvent(&reportevents.PanelError{Panel: r})
+	// tell parent we are done
+	r.parent.ChildCompleteChan() <- r
 
 }
 
@@ -121,13 +131,15 @@ func (r *PanelRun) SetError(err error) {
 func (r *PanelRun) SetComplete() {
 	r.runStatus = reportinterfaces.ReportRunComplete
 	// raise panel complete event
+	log.Printf("[WARN] **************** PANEL DONE EVENT %s ***************", r.Name)
 	r.executionTree.workspace.PublishReportEvent(&reportevents.PanelComplete{Panel: r})
-	r.parent.ChildCompleteChan() <- true
+	// tell parent we are done
+	r.parent.ChildCompleteChan() <- r
 }
 
 // RunComplete implements ReportNodeRun
 func (r *PanelRun) RunComplete() bool {
-	return r.runStatus == reportinterfaces.ReportRunComplete
+	return r.runStatus == reportinterfaces.ReportRunComplete || r.runStatus == reportinterfaces.ReportRunError
 }
 
 // ChildrenComplete implements ReportNodeRun

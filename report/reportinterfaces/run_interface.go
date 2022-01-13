@@ -23,5 +23,5 @@ type ReportNodeRun interface {
 
 type ReportNodeParent interface {
 	GetName() string
-	ChildCompleteChan() chan bool
+	ChildCompleteChan() chan ReportNodeRun
 }
