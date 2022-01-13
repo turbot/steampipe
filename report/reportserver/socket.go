@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"sync"
 
-	"gopkg.in/olahol/melody.v1"
-
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/executionlayer"
+	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/workspace"
+	"gopkg.in/olahol/melody.v1"
 )
 
 type ClientRequestReportPayload struct {
@@ -64,7 +63,7 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 				reportClientInfo := socketSessions[session]
 				reportClientInfo.Report = &request.Payload.Report.FullName
 				mutex.Unlock()
-				executionlayer.ExecuteReportNode(ctx, request.Payload.Report.FullName, workspace, dbClient)
+				reportexecute.ExecuteReportNode(ctx, request.Payload.Report.FullName, workspace, dbClient)
 			}
 		}
 	})

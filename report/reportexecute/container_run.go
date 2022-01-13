@@ -1,7 +1,11 @@
 package reportexecute
 
 import (
+	"context"
 	"fmt"
+	"log"
+
+	"github.com/turbot/steampipe/utils"
 
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/report/reportinterfaces"
@@ -22,32 +26,36 @@ type ReportContainerRun struct {
 	Error    error                            `json:"error,omitempty"`
 	Children []reportinterfaces.ReportNodeRun `json:"children,omitempty"`
 
+	parent        reportinterfaces.ReportNodeParent
 	runStatus     reportinterfaces.ReportRunStatus
 	executionTree *ReportExecutionTree
+	childComplete chan (reportinterfaces.ReportNodeRun)
 }
 
-func NewReportContainerRun(container *modconfig.ReportContainer, parentName string, executionTree *ReportExecutionTree) *ReportContainerRun {
+func NewReportContainerRun(container *modconfig.ReportContainer, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) *ReportContainerRun {
 
+	children := container.GetChildren()
 	r := &ReportContainerRun{
 		// the name is the path, i.e. dot-separated concatenation of parent names
-		Name:          fmt.Sprintf("%s.%s", parentName, container.UnqualifiedName),
+		Name:          fmt.Sprintf("%s.%s", parent.GetName(), container.UnqualifiedName),
 		executionTree: executionTree,
-
+		parent:        parent,
 		// set to complete, optimistically
 		// if any children have SQL we will set this to ReportRunReady instead
-		runStatus: reportinterfaces.ReportRunComplete,
+		runStatus:     reportinterfaces.ReportRunComplete,
+		childComplete: make(chan reportinterfaces.ReportNodeRun, len(children)),
 	}
 	if container.Width != nil {
 		r.Width = *container.Width
 	}
 
-	for _, child := range container.GetChildren() {
+	for _, child := range children {
 		var childRun reportinterfaces.ReportNodeRun
 		switch i := child.(type) {
 		case *modconfig.ReportContainer:
-			childRun = NewReportContainerRun(i, r.Name, executionTree)
+			childRun = NewReportContainerRun(i, r, executionTree)
 		case *modconfig.Panel:
-			childRun = NewPanelRun(i, r.Name, executionTree)
+			childRun = NewPanelRun(i, r, executionTree)
 		}
 
 		// should never happen - container children must be either container or panel
@@ -57,8 +65,6 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parentName stri
 
 		// if our child has not completed, we have not completed
 		if childRun.GetRunStatus() == reportinterfaces.ReportRunReady {
-			// add dependency on this child
-			r.executionTree.AddDependency(r.Name, childRun.GetName())
 			r.runStatus = reportinterfaces.ReportRunReady
 		}
 		r.Children = append(r.Children, childRun)
@@ -66,6 +72,56 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parentName stri
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
 	return r
+}
+
+// Execute implements ReportRunNode
+// execute all children and wait for them to complete
+func (r *ReportContainerRun) Execute(ctx context.Context) error {
+	log.Printf("[WARN] %s Execute", r.Name)
+
+	errChan := make(chan error, len(r.Children))
+	// execute all children asynchronously
+	for _, child := range r.Children {
+		go r.executeChild(ctx, child, errChan)
+	}
+
+	//log.Printf("[WARN] %s wait for completion", r.Name)
+	// wait for children to complete
+	var errors []error
+	for !r.ChildrenComplete() {
+		select {
+		case <-r.childComplete:
+			// recheck ChildrenComplete
+			//log.Printf("[WARN] %s got childComplete from %s", r.Name, child.GetName())
+
+		case err := <-errChan:
+			errors = append(errors, err)
+			// TODO TIMEOUT??
+		}
+	}
+
+	//log.Printf("[WARN] %s ChildrenComplete", r.Name)
+
+	// so all children have completed - check for errors
+	err := utils.CombineErrors(errors...)
+	if err == nil {
+		log.Printf("[WARN] %s ALL DONE", r.Name)
+		// set complete status on report - this will raise panel complete event
+		r.SetComplete()
+	} else {
+		r.SetError(err)
+	}
+
+	return err
+}
+
+func (r *ReportContainerRun) executeChild(ctx context.Context, child reportinterfaces.ReportNodeRun, errChan chan error) {
+	//log.Printf("[WARN] %s call Execute for %s", r.Name, child.GetName())
+
+	err := child.Execute(ctx)
+	if err != nil {
+		errChan <- err
+	}
 }
 
 // GetName implements ReportNodeRun
@@ -79,11 +135,13 @@ func (r *ReportContainerRun) GetRunStatus() reportinterfaces.ReportRunStatus {
 }
 
 // SetError implements ReportNodeRun
+// tell parent we are done
 func (r *ReportContainerRun) SetError(err error) {
 	r.Error = err
 	r.runStatus = reportinterfaces.ReportRunError
 	// raise container error event
 	r.executionTree.workspace.PublishReportEvent(&reportevents.ContainerError{Container: r})
+	r.parent.ChildCompleteChan() <- r
 
 }
 
@@ -92,19 +150,28 @@ func (r *ReportContainerRun) SetComplete() {
 	r.runStatus = reportinterfaces.ReportRunComplete
 	// raise container complete event
 	r.executionTree.workspace.PublishReportEvent(&reportevents.ContainerComplete{Container: r})
+	// tell parent we are done
+	r.parent.ChildCompleteChan() <- r
 }
 
 // RunComplete implements ReportNodeRun
 func (r *ReportContainerRun) RunComplete() bool {
-	return r.runStatus == reportinterfaces.ReportRunComplete
+	return r.runStatus == reportinterfaces.ReportRunComplete || r.runStatus == reportinterfaces.ReportRunError
 }
 
 // ChildrenComplete implements ReportNodeRun
 func (r *ReportContainerRun) ChildrenComplete() bool {
-	for _, container := range r.Children {
-		if container.GetRunStatus() != reportinterfaces.ReportRunComplete {
+	//log.Printf("[WARN] %s ChildrenComplete", r.Name)
+	for _, child := range r.Children {
+		if !child.RunComplete() {
+			log.Printf("[WARN] %s child %s is not complete", r.Name, child.GetName())
 			return false
 		}
 	}
+
 	return true
+}
+
+func (r *ReportContainerRun) ChildCompleteChan() chan reportinterfaces.ReportNodeRun {
+	return r.childComplete
 }

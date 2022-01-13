@@ -1,5 +1,7 @@
 package reportinterfaces
 
+import "context"
+
 type ReportRunStatus uint32
 
 const (
@@ -10,10 +12,16 @@ const (
 )
 
 type ReportNodeRun interface {
+	Execute(ctx context.Context) error
 	GetName() string
 	GetRunStatus() ReportRunStatus
 	SetError(err error)
 	SetComplete()
 	RunComplete() bool
 	ChildrenComplete() bool
+}
+
+type ReportNodeParent interface {
+	GetName() string
+	ChildCompleteChan() chan ReportNodeRun
 }
