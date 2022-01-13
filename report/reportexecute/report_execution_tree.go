@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/turbot/steampipe/utils"
+
 	"github.com/stevenle/topsort"
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
@@ -20,6 +21,7 @@ type ReportExecutionTree struct {
 	client          db_common.Client
 	runs            map[string]reportinterfaces.ReportNodeRun
 	workspace       *workspace.Workspace
+	runComplete     chan (bool)
 }
 
 // NewReportExecutionTree creates a result group from a ModTreeIt
@@ -30,6 +32,7 @@ func NewReportExecutionTree(reportName string, client db_common.Client, workspac
 		dependencyGraph: topsort.NewGraph(),
 		runs:            make(map[string]reportinterfaces.ReportNodeRun),
 		workspace:       workspace,
+		runComplete:     make(chan (bool), 1),
 	}
 
 	// create the root run node (either a report run or a panel run)
@@ -47,8 +50,7 @@ func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterface
 	if err != nil {
 		return nil, err
 	}
-
-	rootParentName := e.workspace.Mod.ShortName
+	// TODO CAN THIS BE ANYTHING OTHER THAN A REPORT??
 	var root reportinterfaces.ReportNodeRun
 	switch parsedName.ItemType {
 	case modconfig.BlockTypePanel:
@@ -56,19 +58,19 @@ func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterface
 		if !ok {
 			return nil, fmt.Errorf("panel '%s' does not exist in workspace", reportName)
 		}
-		root = NewPanelRun(panel, rootParentName, e)
+		root = NewPanelRun(panel, e, e)
 	case modconfig.BlockTypeReport:
 		report, ok := e.workspace.Reports[reportName]
 		if !ok {
 			return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
 		}
-		root = NewReportContainerRun(report, rootParentName, e)
+		root = NewReportContainerRun(report, e, e)
 	case modconfig.BlockTypeContainer:
 		container, ok := e.workspace.Containers[reportName]
 		if !ok {
 			return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
 		}
-		root = NewReportContainerRun(container, rootParentName, e)
+		root = NewReportContainerRun(container, e, e)
 	default:
 		return nil, fmt.Errorf("invalid block type '%s' passed to ExecuteReport", reportName)
 	}
@@ -90,14 +92,33 @@ func (e *ReportExecutionTree) Execute(ctx context.Context) error {
 		return err
 	}
 	fmt.Println(executionOrder)
+	errorChan := make(chan error, len(executionOrder))
 	for _, name := range executionOrder {
-		err = e.ExecuteNode(ctx, name)
-		if err != nil {
-			return err
+		runNode, ok := e.runs[name]
+		if !ok {
+			// should never happen
+			return fmt.Errorf("'%s' not found in execution tree", name)
+		}
+		go func() {
+			if err := runNode.Execute(ctx); err != nil {
+				errorChan <- err
+			}
+		}()
+	}
+
+	// wait for root completion
+	var errors []error
+	for {
+		select {
+		case <-e.runComplete:
+			break
+		case err := <-errorChan:
+			errors = append(errors, err)
+			// TODO TIMEOUT??
 		}
 	}
 
-	return nil
+	return utils.CombineErrors(errors...)
 }
 
 // AddDependency adds a dependency relationship to our dependency graph
@@ -117,61 +138,13 @@ func (e *ReportExecutionTree) runStatus() reportinterfaces.ReportRunStatus {
 	return e.Root.GetRunStatus()
 }
 
-func (e *ReportExecutionTree) ExecuteNode(ctx context.Context, name string) error {
-	runNode, ok := e.runs[name]
-	if !ok {
-		// this error will be passed up the execution tree and raised as a report error for the root node
-		return fmt.Errorf("'%s' not found in execution tree", name)
-	}
-	switch run := runNode.(type) {
-	case *ReportContainerRun:
-		// panel should now be complete, i.e. all it's children should be complete
-		if !run.ChildrenComplete() {
-			// this error will be passed up the execution tree and raised as a report error for the root node
-			return fmt.Errorf("'%s' should be complete, but it has incomplete children", run.Name)
-		}
-		// set complete status on report - this will raise panel complete event
-		run.SetComplete()
-		return nil
-	case *PanelRun:
-		// if panel has sql execute it
-		if run.SQL != "" {
-			data, err := e.executePanelSQL(ctx, run.SQL)
-			if err != nil {
-				// set the error status on the panel - this will raise panel error event
-				run.SetError(err)
-
-				return err
-			}
-
-			run.Data = data
-		}
-		// set complete status on panel - this will raise panel complete event
-		run.SetComplete()
-		return nil
-	default:
-		return fmt.Errorf("invalid block type '%s' passed to ReportExecutionTree.ExecuteNode", name)
-	}
+// GetName implements ReportNodeParent
+// use mod chort name - this will be the root name for all child runs
+func (e *ReportExecutionTree) GetName() string {
+	return e.workspace.Mod.ShortName
 }
 
-func (e *ReportExecutionTree) executePanelSQL(ctx context.Context, query string) ([][]interface{}, error) {
-	queryResult, err := e.client.ExecuteSync(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	var res = make([][]interface{}, len(queryResult.Rows)+1)
-	var columns = make([]interface{}, len(queryResult.ColTypes))
-	for i, c := range queryResult.ColTypes {
-		columns[i] = c.Name()
-	}
-	res[0] = columns
-	for i, row := range queryResult.Rows {
-		rowData := make([]interface{}, len(queryResult.ColTypes))
-		for j, columnVal := range row.(*queryresult.RowResult).Data {
-			rowData[j] = columnVal
-		}
-		res[i+1] = rowData
-	}
-
-	return res, nil
+// ChildCompleteChan implements ReportNodeParent
+func (e *ReportExecutionTree) ChildCompleteChan() chan bool {
+	return e.runComplete
 }
