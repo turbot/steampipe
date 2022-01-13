@@ -1,5 +1,5 @@
-[  {{ range .ControlRuns -}} {{ range .Rows }} {{ template "control_run_template" . -}} {{ end -}} {{ end }}
-]
+{{ define "outlet" }}[  {{ range .ControlRuns -}} {{ range .Rows }} {{ template "control_run_template" . -}} {{ end -}} {{ end }}
+] {{ end }}
 {{ define "control_run_template" }}
 {
     "SchemaVersion": "2018-10-08",
