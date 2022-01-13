@@ -74,13 +74,10 @@ func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource,
 			resources = append(resources, local)
 		}
 
-	case modconfig.BlockTypeContainer:
-		resource, res = decodeContainer(block, runCtx)
-		resources = append(resources, resource)
 	case modconfig.BlockTypePanel:
 		resource, res = decodePanel(block, runCtx)
 		resources = append(resources, resource)
-	case modconfig.BlockTypeReport:
+	case modconfig.BlockTypeContainer, modconfig.BlockTypeReport:
 		resource, res = decodeReport(block, runCtx)
 		resources = append(resources, resource)
 	case modconfig.BlockTypeVariable:
@@ -463,40 +460,6 @@ func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContai
 	}
 
 	return report, res
-}
-
-func decodeContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContainer, *decodeResult) {
-	res := &decodeResult{}
-
-	content, diags := block.Body.Content(ContainerBlockSchema)
-	res.handleDecodeDiags(diags)
-
-	container := modconfig.NewReportContainer(block)
-	diags = decodeProperty(content, "children", &container.ChildNames, runCtx)
-	res.handleDecodeDiags(diags)
-	diags = decodeProperty(content, "base", &container.Base, runCtx)
-	res.handleDecodeDiags(diags)
-	diags = decodeProperty(content, "width", &container.Width, runCtx)
-	res.handleDecodeDiags(diags)
-
-	// if children are declared inline as blocks, add them
-	var children []modconfig.ModTreeItem
-	for _, b := range content.Blocks {
-		resources, blockRes := decodeBlock(runCtx, b)
-		res.Merge(blockRes)
-		if !blockRes.Success() {
-			continue
-		}
-		for _, childResource := range resources {
-			// add into child names array - will get added into children by OnDecoded
-			container.ChildNames = append(container.ChildNames, modconfig.NamedItem{Name: childResource.Name()})
-			if child, ok := childResource.(modconfig.ModTreeItem); ok {
-				children = append(children, child)
-			}
-		}
-	}
-
-	return container, res
 }
 
 func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decodeResult) {
