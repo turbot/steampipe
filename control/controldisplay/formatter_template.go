@@ -20,6 +20,7 @@ var ErrTemplateNotFound = errors.New("template not found")
 type TemplateFormatter struct {
 	outputExtension string
 	template        *template.Template
+	name            string
 }
 
 func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
@@ -35,7 +36,11 @@ func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 }
 
 func (tf TemplateFormatter) FileExtension() string {
-	return tf.outputExtension
+	if strings.HasSuffix(tf.outputExtension, tf.name) {
+		return tf.outputExtension
+	} else {
+		return fmt.Sprintf("%s%s", tf.name, tf.outputExtension)
+	}
 }
 
 func CreateTemplateFormatter(input ExportTemplate) (*TemplateFormatter, error) {
@@ -46,10 +51,10 @@ func CreateTemplateFormatter(input ExportTemplate) (*TemplateFormatter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &TemplateFormatter{outputExtension: input.OutputExtension, template: t}, nil
+	return &TemplateFormatter{name: input.FormatName, outputExtension: input.OutputExtension, template: t}, nil
 }
 
-func GetExportTemplate(export string) (format *ExportTemplate, filename string, err error) {
+func GetExportTemplate(export string, allowFilenameEvaluation bool) (format *ExportTemplate, filename string, err error) {
 	available, err := loadAvailableTemplates()
 	if err != nil {
 		return nil, "", err
@@ -62,6 +67,10 @@ func GetExportTemplate(export string) (format *ExportTemplate, filename string, 
 		}
 	}
 
+	if !allowFilenameEvaluation {
+		return nil, "", ErrTemplateNotFound
+	}
+
 	// if the above didn't match, then the input argument is a file name
 	filename = export
 
@@ -72,7 +81,7 @@ func GetExportTemplate(export string) (format *ExportTemplate, filename string, 
 }
 
 func findTemplateByFilename(export string, available []*ExportTemplate) (format *ExportTemplate, err error) {
-	// does the export end with this exact format?
+	// does the filename end with this exact format?
 	for _, t := range available {
 		if strings.HasSuffix(export, t.FormatFullName) {
 			return t, nil
@@ -80,6 +89,10 @@ func findTemplateByFilename(export string, available []*ExportTemplate) (format 
 	}
 
 	extension := filepath.Ext(export)
+	if len(extension) == 0 {
+		// we don't have anything to work with
+		return nil, ErrTemplateNotFound
+	}
 	matchingTemplates := []*ExportTemplate{}
 
 	// does the given extension match with one of the template extension?
@@ -96,8 +109,7 @@ func findTemplateByFilename(export string, available []*ExportTemplate) (format 
 				return match, nil
 			}
 		}
-		// there's ambiguity
-		fmt.Println(matchingTemplates)
+		// there's ambiguity - we have more than one matching templates based on extension
 		return nil, ErrAmbiguousTemplate
 	}
 

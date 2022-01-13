@@ -341,37 +341,6 @@ func shouldPrintTiming() bool {
 		(outputFormat == constants.CheckOutputFormatText || outputFormat == constants.CheckOutputFormatBrief)
 }
 
-func validateOutputFormat() error {
-	outputFormat := viper.GetString(constants.ArgOutput)
-	if !helpers.StringSliceContains(controldisplay.ValidOutputFormats, outputFormat) {
-		return fmt.Errorf("invalid output format '%s' - must be one of %s", outputFormat, strings.Join(controldisplay.ValidOutputFormats, ","))
-	}
-	if outputFormat == constants.CheckOutputFormatNone {
-		// set progress to false
-		viper.Set(constants.ArgProgress, false)
-	}
-	return nil
-}
-
-// func validateExportTargets(exportTargets []controldisplay.CheckExportTarget) error {
-// 	var targetErrors []error
-
-// 	for _, exportTarget := range exportTargets {
-// 		if exportTarget.Error != nil {
-// 			targetErrors = append(targetErrors, exportTarget.Error)
-// 		} else if _, err := controldisplay.GetDefinedExportFormatter(exportTarget.Format); err != nil {
-// 			targetErrors = append(targetErrors, err)
-// 		}
-// 	}
-
-// 	if len(targetErrors) > 0 {
-// 		message := fmt.Sprintf("%d export %s failed validation", len(targetErrors), utils.Pluralize("target", len(targetErrors)))
-// 		return utils.CombineErrorsWithPrefix(message, targetErrors...)
-// 	}
-// 	return nil
-
-// }
-
 func initialiseColorScheme() error {
 	theme := viper.GetString(constants.ArgTheme)
 	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
@@ -491,7 +460,18 @@ func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, err
 			fileName = generateDefaultExportFileName(formatter, executing)
 		}
 
-		targets = append(targets, controldisplay.NewCheckExportTarget(formatter, fileName))
+		newTarget := controldisplay.NewCheckExportTarget(formatter, fileName)
+		isAlreadyAdded := false
+		for _, t := range targets {
+			if t.File == newTarget.File {
+				isAlreadyAdded = true
+				break
+			}
+		}
+
+		if !isAlreadyAdded {
+			targets = append(targets, newTarget)
+		}
 	}
 
 	return targets, utils.CombineErrors(targetErrors...)
@@ -502,7 +482,7 @@ func parseExportArg(arg string) (formatter controldisplay.Formatter, targetFileN
 	if formatter, found = controldisplay.GetDefinedExportFormatter(arg); found {
 		return
 	}
-	return controldisplay.GetTemplateExportFormatter(arg)
+	return controldisplay.GetTemplateExportFormatter(arg, true)
 }
 
 func parseOutputArg(arg string) (formatter controldisplay.Formatter, targetFileName string, err error) {
@@ -510,7 +490,7 @@ func parseOutputArg(arg string) (formatter controldisplay.Formatter, targetFileN
 	if formatter, found = controldisplay.GetDefinedOutputFormatter(arg); found {
 		return
 	}
-	return controldisplay.GetTemplateExportFormatter(arg)
+	return controldisplay.GetTemplateExportFormatter(arg, false)
 }
 
 func generateDefaultExportFileName(formatter controldisplay.Formatter, executing string) string {
