@@ -11,7 +11,7 @@ type Testcase struct {
 
 func TestExportFormat(t *testing.T) {
 	for name, test := range exportFormatTestCases {
-		fff, _, err := GetExportTemplate(test.input, true)
+		fff, _, err := GetExportTemplate(test.input)
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf("Test: '%s'' FAILED with unexpected error: %v", name, err)

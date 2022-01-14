@@ -5,6 +5,10 @@ import (
 	"errors"
 	"io"
 	"os"
+<<<<<<< HEAD
+=======
+	"reflect"
+>>>>>>> b61642c (wiring up)
 	"strings"
 	"text/template"
 
@@ -27,6 +31,16 @@ func (m FormatterMap) keys() []string {
 	return keys
 }
 
+var ValidOutputFormats = []string{
+	constants.CheckOutputFormatNone,
+	constants.CheckOutputFormatCSV,
+	constants.CheckOutputFormatJSON,
+	constants.CheckOutputFormatText,
+	constants.CheckOutputFormatBrief,
+	constants.CheckOutputFormatHTML,
+	constants.CheckOutputFormatMarkdown,
+}
+
 var outputFormatters FormatterMap = FormatterMap{
 	constants.CheckOutputFormatNone:  &NullFormatter{},
 	constants.CheckOutputFormatCSV:   &CSVFormatter{},
@@ -38,6 +52,9 @@ var outputFormatters FormatterMap = FormatterMap{
 var exportFormatters FormatterMap = FormatterMap{
 	constants.CheckOutputFormatCSV:  &CSVFormatter{},
 	constants.CheckOutputFormatJSON: &JSONFormatter{},
+	// constants.CheckOutputFormatHTML:     &HTMLFormatter{},
+	// constants.CheckOutputFormatMarkdown: &MarkdownFormatter{},
+	// constants.CheckOutputFormatNUnit3:   &Nunit3Formatter{},
 }
 
 type CheckExportTarget struct {
@@ -62,8 +79,8 @@ func GetDefinedExportFormatter(arg string) (Formatter, bool) {
 	return formatter, found
 }
 
-func GetTemplateExportFormatter(arg string, allowFilenameEvaluation bool) (Formatter, string, error) {
-	templateFormat, fileName, err := GetExportTemplate(arg, allowFilenameEvaluation)
+func GetTemplateExportFormatter(arg string) (Formatter, string, error) {
+	templateFormat, fileName, err := GetExportTemplate(arg)
 	if err != nil {
 		return nil, "", err
 	}
