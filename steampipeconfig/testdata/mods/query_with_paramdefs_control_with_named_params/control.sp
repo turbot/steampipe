@@ -8,5 +8,5 @@ control "c1"{
     param "p2" {
         default = "val2"
     }
-    args = ["my val1", "my val 2"]
+    args = ["my val1", "my val2"]
 }

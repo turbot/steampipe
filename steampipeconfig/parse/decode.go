@@ -43,7 +43,6 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			diags = append(diags, res.Diags...)
 			continue
 		}
-
 	}
 
 	return diags

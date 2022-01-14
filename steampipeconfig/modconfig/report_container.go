@@ -70,8 +70,6 @@ func (r *ReportContainer) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 	// if children were specified using the 'children' field, add them
 	if len(r.ChildNames) > 0 {
 		r.ChildNameStrings, res = getChildNames(r.ChildNames, r.Name(), block)
-		// in order to populate the children in the order specified, we create an empty array and populate by index in AddChild
-		r.children = make([]ModTreeItem, len(r.ChildNameStrings))
 	}
 
 	return res
@@ -117,6 +115,12 @@ func (r *ReportContainer) GetDeclRange() *hcl.Range {
 // AddChild implements ModTreeItem
 // this ic called from mod.addItemIntoResourceTree
 func (r *ReportContainer) AddChild(child ModTreeItem) error {
+	// lazy instantiate the array
+	if r.children == nil {
+		// in order to populate the children in the order specified, we create an empty array and populate by index in AddChild
+		r.children = make([]ModTreeItem, len(r.ChildNameStrings))
+	}
+
 	// if children are declared inline (as opposed to via the 'children' property) they will already have been added
 	if len(r.ChildNames) == 0 {
 		return nil
