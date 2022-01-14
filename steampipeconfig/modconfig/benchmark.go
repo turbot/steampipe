@@ -17,10 +17,12 @@ type Benchmark struct {
 	FullName        string `cty:"name"`
 	UnqualifiedName string
 
-	// used to allow setting children via the 'children' property
-	ChildNames []NamedItem `cty:"children" hcl:"children,optional"`
-	// used purely for introspection tables
+	// child names as NamedItem structs - used to allow setting children via the 'children' property
+	ChildNames []NamedItem `cty:"child_names"`
+	// used for introspection tables
 	ChildNameStrings []string `column:"children,jsonb"`
+	// the actual children
+	Children []ModTreeItem
 
 	Description   *string           `cty:"description" hcl:"description" column:"description,text"`
 	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
@@ -34,7 +36,6 @@ type Benchmark struct {
 	Paths      []NodePath `column:"path,jsonb"`
 
 	parents  []ModTreeItem
-	children []ModTreeItem
 	metadata *ResourceMetadata
 }
 
@@ -89,28 +90,7 @@ func (b *Benchmark) GetDeclRange() *hcl.Range {
 
 // OnDecoded implements HclResource
 func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	if len(b.ChildNames) == 0 {
-		return nil
-	}
-
-	// validate each child name appears only once
-	nameMap := make(map[string]bool)
-	b.ChildNameStrings = make([]string, len(b.ChildNames))
-	for i, n := range b.ChildNames {
-		if nameMap[n.Name] {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("benchmark '%s' has duplicate child name '%s'", b.FullName, n.Name),
-				Subject:  &block.DefRange})
-
-			continue
-		}
-		b.ChildNameStrings[i] = n.Name
-		nameMap[n.Name] = true
-	}
-
-	return diags
+	return nil
 }
 
 // AddReference implements HclResource
@@ -133,7 +113,7 @@ func (b *Benchmark) GetMod() *Mod {
 func (b *Benchmark) String() string {
 	// build list of children's names
 	var children []string
-	for _, child := range b.children {
+	for _, child := range b.Children {
 		children = append(children, child.Name())
 	}
 	// build list of parents names
@@ -161,7 +141,7 @@ func (b *Benchmark) String() string {
 // GetChildControls return a flat list of controls underneath the benchmark in the tree
 func (b *Benchmark) GetChildControls() []*Control {
 	var res []*Control
-	for _, child := range b.children {
+	for _, child := range b.Children {
 		if control, ok := child.(*Control); ok {
 			res = append(res, control)
 		} else if benchmark, ok := child.(*Benchmark); ok {
@@ -169,30 +149,6 @@ func (b *Benchmark) GetChildControls() []*Control {
 		}
 	}
 	return res
-}
-
-// AddChild implements ModTreeItem
-func (b *Benchmark) AddChild(child ModTreeItem) error {
-	// lazy instantiate the array
-	if b.children == nil {
-		// in order to populate the children in the order specified, we create an empty array and populate by index in AddChild
-		b.children = make([]ModTreeItem, len(b.ChildNameStrings))
-	}
-
-	// mod cannot be added as a child
-	if _, ok := child.(*Mod); ok {
-		return fmt.Errorf("mod cannot be added as a child")
-	}
-
-	// now find which position this child is in the array
-	for i, name := range b.ChildNameStrings {
-		if name == child.Name() {
-			b.children[i] = child
-			return nil
-		}
-	}
-
-	return fmt.Errorf("benchmark '%s' has no child '%s'", b.Name(), child.Name())
 }
 
 // AddParent implements ModTreeItem
@@ -226,7 +182,7 @@ func (b *Benchmark) GetTags() map[string]string {
 
 // GetChildren implements ModTreeItem
 func (b *Benchmark) GetChildren() []ModTreeItem {
-	return b.children
+	return b.Children
 }
 
 // GetPaths implements ModTreeItem

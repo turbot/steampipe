@@ -107,11 +107,6 @@ func (p *Panel) GetDeclRange() *hcl.Range {
 	return &p.DeclRange
 }
 
-// AddChild implements ModTreeItem
-func (p *Panel) AddChild(ModTreeItem) error {
-	return nil
-}
-
 // AddParent implements ModTreeItem
 func (p *Panel) AddParent(parent ModTreeItem) error {
 	p.parents = append(p.parents, parent)

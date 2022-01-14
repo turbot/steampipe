@@ -21,7 +21,6 @@ type MappableResource interface {
 // i.e. Control, Benchmark, Report, Panel
 type ModTreeItem interface {
 	AddParent(ModTreeItem) error
-	AddChild(child ModTreeItem) error
 	GetChildren() []ModTreeItem
 	Name() string
 	GetTitle() string

@@ -1,7 +1,6 @@
 package modconfig
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -158,11 +157,6 @@ func (c *Control) GetParentNames() []string {
 		parents = append(parents, p.Name())
 	}
 	return parents
-}
-
-// AddChild implements ModTreeItem - controls cannot have children so just return error
-func (c *Control) AddChild(child ModTreeItem) error {
-	return errors.New("cannot add child to a control")
 }
 
 // AddParent implements ModTreeItem

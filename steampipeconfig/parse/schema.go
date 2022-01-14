@@ -100,6 +100,15 @@ var ReportBlockSchema = &hcl.BodySchema{
 		},
 	},
 }
+var BenchmarkBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "children"},
+		{Name: "description"},
+		{Name: "documentation"},
+		{Name: "tags"},
+		{Name: "title"},
+	},
+}
 
 var PanelBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
