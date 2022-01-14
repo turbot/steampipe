@@ -77,13 +77,16 @@ func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource,
 		resource, res = decodePanel(block, runCtx)
 		resources = append(resources, resource)
 	case modconfig.BlockTypeContainer, modconfig.BlockTypeReport:
-		resource, res = decodeReport(block, runCtx)
+		resource, res = decodeContainerReport(block, runCtx)
 		resources = append(resources, resource)
 	case modconfig.BlockTypeVariable:
 		resource, res = decodeVariable(block, runCtx)
 		resources = append(resources, resource)
 	case modconfig.BlockTypeControl:
 		resource, res = decodeControl(block, runCtx)
+		resources = append(resources, resource)
+	case modconfig.BlockTypeBenchmark:
+		resource, res = decodeBenchmark(block, runCtx)
 		resources = append(resources, resource)
 	case modconfig.BlockTypeQuery:
 		resource, res = decodeQuery(block, runCtx)
@@ -392,6 +395,7 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
+
 	return c, res
 }
 
@@ -425,7 +429,7 @@ func decodeControlArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlNam
 	return params, diags
 }
 
-func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContainer, *decodeResult) {
+func decodeContainerReport(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContainer, *decodeResult) {
 	res := &decodeResult{}
 
 	content, diags := block.Body.Content(ReportBlockSchema)
@@ -434,31 +438,73 @@ func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContai
 	report := modconfig.NewReportContainer(block)
 	diags = decodeProperty(content, "title", &report.Title, runCtx)
 	res.handleDecodeDiags(diags)
+
 	diags = decodeProperty(content, "children", &report.ChildNames, runCtx)
 	res.handleDecodeDiags(diags)
+
 	diags = decodeProperty(content, "base", &report.Base, runCtx)
 	res.handleDecodeDiags(diags)
+
 	diags = decodeProperty(content, "width", &report.Width, runCtx)
 	res.handleDecodeDiags(diags)
 
-	// if children are declared inline as blocks, add them
-	var children []modconfig.ModTreeItem
-	for _, b := range content.Blocks {
-		resources, blockRes := decodeBlock(runCtx, b)
-		res.Merge(blockRes)
-		if !blockRes.Success() {
-			continue
-		}
-		for _, childResource := range resources {
-			// add into child names array - will get added into children by OnDecoded
-			report.ChildNames = append(report.ChildNames, modconfig.NamedItem{Name: childResource.Name()})
-			if child, ok := childResource.(modconfig.ModTreeItem); ok {
-				children = append(children, child)
-			}
-		}
+	if len(report.ChildNames) > 0 && len(content.Blocks) > 0 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s defines both 'children' property and has children declared inline%s", report.Name()),
+			Subject:  &block.TypeRange,
+		})
+		res.handleDecodeDiags(diags)
+	}
+
+	// now add children
+	if res.Success() {
+		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypePanel}
+		children, diags := decodeChildren(report.ChildNames, block, supportedChildren, runCtx)
+		res.handleDecodeDiags(diags)
+
+		// now set children and child name strings
+		report.Children = children
+		report.ChildNameStrings = getChildNameString(children)
 	}
 
 	return report, res
+}
+
+func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark, *decodeResult) {
+	res := &decodeResult{}
+
+	content, diags := block.Body.Content(BenchmarkBlockSchema)
+	res.handleDecodeDiags(diags)
+
+	benchmark := modconfig.NewBenchmark(block)
+
+	diags = decodeProperty(content, "children", &benchmark.ChildNames, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "description", &benchmark.Description, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "documentation", &benchmark.Documentation, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "tags", &benchmark.Tags, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "title", &benchmark.Title, runCtx)
+	res.handleDecodeDiags(diags)
+
+	// now add children
+	if res.Success() {
+		supportedChildren := []string{modconfig.BlockTypeBenchmark, modconfig.BlockTypeControl}
+		children, diags := decodeChildren(benchmark.ChildNames, block, supportedChildren, runCtx)
+		res.handleDecodeDiags(diags)
+
+		// now set children and child name strings
+		benchmark.Children = children
+		benchmark.ChildNameStrings = getChildNameString(children)
+	}
+	return benchmark, res
 }
 
 func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decodeResult) {

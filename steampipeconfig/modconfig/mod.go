@@ -680,3 +680,18 @@ func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
 	}
 	return []byte(strings.Join(resLines, "\n")), nil
 }
+
+func (m *Mod) GetChildResource(parsedName *ParsedResourceName) (resource ModTreeItem, found bool) {
+	longName := fmt.Sprintf("%s.%s.%s", m.ShortName, parsedName.ItemType, parsedName.Name)
+	switch parsedName.ItemType {
+	case BlockTypeBenchmark:
+		resource, found = m.Benchmarks[longName]
+	case BlockTypeControl:
+		resource, found = m.Controls[longName]
+	case BlockTypeReport:
+		resource, found = m.Reports[longName]
+	case BlockTypeContainer:
+		resource, found = m.Containers[longName]
+	}
+	return resource, found
+}

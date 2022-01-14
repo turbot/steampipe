@@ -14,10 +14,12 @@ type ReportContainer struct {
 	FullName        string `cty:"name"`
 	UnqualifiedName string
 
-	// used to allow setting children via the 'children' property
+	// child names as NamedItem structs - used to allow setting children via the 'children' property
 	ChildNames []NamedItem `cty:"child_names"`
 	// used for introspection tables
 	ChildNameStrings []string `cty:"children" column:"children,jsonb"`
+	// the actual children
+	Children []ModTreeItem
 
 	Title *string `cty:"title" column:"title,text"`
 	Width *int    `cty:"width"  column:"width,text"`
@@ -29,7 +31,6 @@ type ReportContainer struct {
 	Paths []NodePath `column:"path,jsonb"`
 
 	parents  []ModTreeItem
-	children []ModTreeItem
 	metadata *ResourceMetadata
 
 	hclType string
@@ -64,15 +65,8 @@ func (r *ReportContainer) Name() string {
 
 // OnDecoded implements HclResource
 func (r *ReportContainer) OnDecoded(block *hcl.Block) hcl.Diagnostics {
-	var res hcl.Diagnostics
-
 	r.setBaseProperties()
-	// if children were specified using the 'children' field, add them
-	if len(r.ChildNames) > 0 {
-		r.ChildNameStrings, res = getChildNames(r.ChildNames, r.Name(), block)
-	}
-
-	return res
+	return nil
 }
 
 func (r *ReportContainer) setBaseProperties() {
@@ -112,33 +106,6 @@ func (r *ReportContainer) GetDeclRange() *hcl.Range {
 	return &r.DeclRange
 }
 
-// AddChild implements ModTreeItem
-// this ic called from mod.addItemIntoResourceTree
-func (r *ReportContainer) AddChild(child ModTreeItem) error {
-	// lazy instantiate the array
-	if r.children == nil {
-		// in order to populate the children in the order specified, we create an empty array and populate by index in AddChild
-		r.children = make([]ModTreeItem, len(r.ChildNameStrings))
-	}
-
-	// if children are declared inline (as opposed to via the 'children' property) they will already have been added
-	if len(r.ChildNames) == 0 {
-		return nil
-	}
-
-	// so a children property must have been populated
-
-	// now find which position this child is in the array
-	for i, name := range r.ChildNameStrings {
-		if name == child.Name() {
-			r.children[i] = child
-			return nil
-		}
-	}
-
-	return fmt.Errorf("container '%s' has no child '%s'", r.Name(), child.Name())
-}
-
 // AddParent implements ModTreeItem
 func (r *ReportContainer) AddParent(parent ModTreeItem) error {
 	r.parents = append(r.parents, parent)
@@ -152,7 +119,7 @@ func (r *ReportContainer) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (r *ReportContainer) GetChildren() []ModTreeItem {
-	return r.children
+	return r.Children
 }
 
 // GetTitle implements ModTreeItem
