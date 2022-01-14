@@ -3,7 +3,7 @@ benchmark "cg_1"{
 }
 
 benchmark "cg_1_1"{
-    children = [benchmark.cg_1_1_1, benchmark.cg_1_1_2, control.c3]
+    children = [benchmark.cg_1_1_1, benchmark.cg_1_1_2]
 }
 
 benchmark "cg_1_2"{

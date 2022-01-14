@@ -223,85 +223,81 @@ func init() {
 		//		},
 		//	},
 		//},
-		"controls_and_groups": {
-			source: "testdata/mods/controls_and_groups",
-			expected: &modconfig.Mod{
-				ShortName:   "m1",
-				FullName:    "mod.m1",
-				Require:     modconfig.NewRequire(),
-				Title:       toStringPointer("M1"),
-				Description: toStringPointer("THIS IS M1"),
-				Queries: map[string]*modconfig.Query{
-					"m1.query.q1": {
-						ShortName: "q1",
-						FullName:  "m1.query.q1",
-						SQL:       toStringPointer("select 1"),
-					},
-				},
-				Controls: map[string]*modconfig.Control{
-					"m1.control.c1": {
-						ShortName: "c1",
-						FullName:  "m1.control.c1",
-						SQL:       toStringPointer("select 'pass' as result"),
-					},
-					"m1.control.c2": {
-						ShortName: "c2",
-						FullName:  "m1.control.c2",
-						SQL:       toStringPointer("select 'pass' as result"),
-					},
-					"m1.control.c3": {
-						ShortName: "c3",
-						FullName:  "m1.control.c3",
-						SQL:       toStringPointer("select 'pass' as result"),
-					},
-					"m1.control.c4": {
-						ShortName: "c4",
-						FullName:  "m1.control.c4",
-						SQL:       toStringPointer("select 'pass' as result"),
-					},
-					"m1.control.c5": {
-						ShortName: "c5",
-						FullName:  "m1.control.c5",
-						SQL:       toStringPointer("select 'pass' as result"),
-					},
-					"m1.control.c6": {
-						ShortName: "c6",
-						FullName:  "m1.control.c6",
-						SQL:       toStringPointer("select 'fail' as result"),
-					},
-				},
-				Benchmarks: map[string]*modconfig.Benchmark{
-					"m1.benchmark.cg_1": {
-						ShortName:        "cg_1",
-						FullName:         "m1.benchmark.cg_1",
-						ChildNames:       []modconfig.NamedItem{{Name: "m1.benchmark.cg_1_1"}, {Name: "m1.benchmark.cg_1_2"}},
-						ChildNameStrings: []string{"m1.benchmark.cg_1_1", "m1.benchmark.cg_1_2"},
-					},
-					"m1.benchmark.cg_1_1": {
-						ShortName:        "cg_1_1",
-						FullName:         "m1.benchmark.cg_1_1",
-						ChildNames:       []modconfig.NamedItem{{Name: "m1.benchmark.cg_1_1_1"}, {Name: "m1.benchmark.cg_1_1_2"}},
-						ChildNameStrings: []string{"m1.benchmark.cg_1_1_1", "m1.benchmark.cg_1_1_1"},
-					},
-					"m1.benchmark.cg_1_2": {
-						ShortName: "cg_1_2",
-						FullName:  "m1.benchmark.cg_1_2",
-					},
-					"m1.benchmark.cg_1_1_1": {
-						ShortName:        "cg_1_1_1",
-						FullName:         "m1.benchmark.cg_1_1_1",
-						ChildNames:       []modconfig.NamedItem{{Name: "m1.control.c1"}},
-						ChildNameStrings: []string{"m1.control.c1"},
-					},
-					"m1.benchmark.cg_1_1_2": {
-						ShortName:        "cg_1_1_2",
-						FullName:         "m1.benchmark.cg_1_1_2",
-						ChildNames:       []modconfig.NamedItem{{Name: "m1.control.c2"}, {Name: "m1.control.c4"}, {Name: "m1.control.c5"}},
-						ChildNameStrings: []string{"m1.control.c2", "m1.control.c4", "m1.control.c5"},
-					},
-				},
-			},
-		},
+		//"controls_and_groups": {
+		//	source: "testdata/mods/controls_and_groups",
+		//	expected: &modconfig.Mod{
+		//		ShortName:   "m1",
+		//		FullName:    "mod.m1",
+		//		Require:     modconfig.NewRequire(),
+		//		Title:       toStringPointer("M1"),
+		//		Description: toStringPointer("THIS IS M1"),
+		//		Queries: map[string]*modconfig.Query{
+		//			"m1.query.q1": {
+		//				ShortName: "q1",
+		//				FullName:  "m1.query.q1",
+		//				SQL:       toStringPointer("select 1"),
+		//			},
+		//		},
+		//		Controls: map[string]*modconfig.Control{
+		//			"m1.control.c1": {
+		//				ShortName: "c1",
+		//				FullName:  "m1.control.c1",
+		//				SQL:       toStringPointer("select 'pass' as result"),
+		//			},
+		//			"m1.control.c2": {
+		//				ShortName: "c2",
+		//				FullName:  "m1.control.c2",
+		//				SQL:       toStringPointer("select 'pass' as result"),
+		//			},
+		//			"m1.control.c3": {
+		//				ShortName: "c3",
+		//				FullName:  "m1.control.c3",
+		//				SQL:       toStringPointer("select 'pass' as result"),
+		//			},
+		//			"m1.control.c4": {
+		//				ShortName: "c4",
+		//				FullName:  "m1.control.c4",
+		//				SQL:       toStringPointer("select 'pass' as result"),
+		//			},
+		//			"m1.control.c5": {
+		//				ShortName: "c5",
+		//				FullName:  "m1.control.c5",
+		//				SQL:       toStringPointer("select 'pass' as result"),
+		//			},
+		//			"m1.control.c6": {
+		//				ShortName: "c6",
+		//				FullName:  "m1.control.c6",
+		//				SQL:       toStringPointer("select 'fail' as result"),
+		//			},
+		//		},
+		//		Benchmarks: map[string]*modconfig.Benchmark{
+		//			"m1.benchmark.cg_1": {
+		//				ShortName:  "cg_1",
+		//				FullName:   "m1.benchmark.cg_1",
+		//				ChildNames: []modconfig.NamedItem{{Name: "m1.benchmark.cg_1_1"}, {Name: "m1.benchmark.cg_1_2"}},
+		//			},
+		//			"m1.benchmark.cg_1_1": {
+		//				ShortName:  "cg_1_1",
+		//				FullName:   "m1.benchmark.cg_1_1",
+		//				ChildNames: []modconfig.NamedItem{{Name: "m1.benchmark.cg_1_1_1"}, {Name: "m1.benchmark.cg_1_1_2"}},
+		//			},
+		//			"m1.benchmark.cg_1_2": {
+		//				ShortName: "cg_1_2",
+		//				FullName:  "m1.benchmark.cg_1_2",
+		//			},
+		//			"m1.benchmark.cg_1_1_1": {
+		//				ShortName:  "cg_1_1_1",
+		//				FullName:   "m1.benchmark.cg_1_1_1",
+		//				ChildNames: []modconfig.NamedItem{{Name: "m1.control.c1"}},
+		//			},
+		//			"m1.benchmark.cg_1_1_2": {
+		//				ShortName:  "cg_1_1_2",
+		//				FullName:   "m1.benchmark.cg_1_1_2",
+		//				ChildNames: []modconfig.NamedItem{{Name: "m1.control.c2"}, {Name: "m1.control.c4"}, {Name: "m1.control.c5"}},
+		//			},
+		//		},
+		//	},
+		//},
 		//"controls_and_groups_circular": {
 		//	source:   "testdata/mods/controls_and_groups_circular",
 		//	expected: "ERROR",
@@ -318,7 +314,7 @@ func init() {
 		//		Require:     modconfig.NewRequire(),
 		//		Title:       toStringPointer("M1"),
 		//		Description: toStringPointer("THIS IS M1"),
-		//		Queries: map[string]*modconfig.Query{"q1": {ShortName: "q1", FullName: "query.q1",
+		//		Queries: map[string]*modconfig.Query{"m1.query.q1": {ShortName: "q1", FullName: "m1.query.q1",
 		//			SQL: toStringPointer("select 1")}},
 		//	},
 		//},
@@ -331,16 +327,16 @@ func init() {
 		//		Title:       toStringPointer("M1"),
 		//		Description: toStringPointer("THIS IS M1"),
 		//		Queries: map[string]*modconfig.Query{
-		//			"query.q1": {
+		//			"m1.query.q1": {
 		//				ShortName:   "q1",
 		//				FullName:    "m1.query.q1",
 		//				Title:       toStringPointer("Q1"),
 		//				Description: toStringPointer("THIS IS QUERY 1"),
 		//				SQL:         toStringPointer("select 1"),
 		//			},
-		//			"query.q2": {
+		//			"m1.query.q2": {
 		//				ShortName: "q2",
-		//				FullName:  "query.q2",
+		//				FullName:  "m1.query.q2",
 		//				SQL:       toStringPointer("select 2"),
 		//			},
 		//		},
@@ -355,14 +351,14 @@ func init() {
 		//		Title:       toStringPointer("M1"),
 		//		Description: toStringPointer("THIS IS M1"),
 		//		Queries: map[string]*modconfig.Query{
-		//			"q1": {
+		//			"m1.query.q1": {
 		//				ShortName:   "q1",
 		//				FullName:    "m1.query.q1",
 		//				Title:       toStringPointer("Q1"),
 		//				Description: toStringPointer("THIS IS QUERY 1"),
 		//				SQL:         toStringPointer("select 1"),
 		//			},
-		//			"q2": {
+		//			"m1.query.q2": {
 		//				ShortName:   "q2",
 		//				FullName:    "m1.query.q2",
 		//				Title:       toStringPointer("Q2"),
@@ -381,14 +377,14 @@ func init() {
 		//		Title:       toStringPointer("M1"),
 		//		Description: toStringPointer("THIS IS M1"),
 		//		Queries: map[string]*modconfig.Query{
-		//			"q1": {
+		//			"m1.query.q1": {
 		//				ShortName:   "q1",
 		//				FullName:    "m1.query.q1",
 		//				Title:       toStringPointer("Q1"),
 		//				Description: toStringPointer("THIS IS QUERY 1"),
 		//				SQL:         toStringPointer("select 1"),
 		//			},
-		//			"q2": {
+		//			"m1.query.q2": {
 		//				ShortName:   "q2",
 		//				FullName:    "m1.query.q2",
 		//				Title:       toStringPointer("Q2"),
@@ -407,56 +403,23 @@ func init() {
 		//		Title:       toStringPointer("M1"),
 		//		Description: toStringPointer("THIS IS M1"),
 		//		Queries: map[string]*modconfig.Query{
-		//			"q1": {
+		//			"m1.query.q1": {
 		//				ShortName: "q1",
-		//				FullName:  "query.q1",
+		//				FullName:  "m1.query.q1",
 		//				SQL:       toStringPointer("select 1"),
 		//			},
-		//			"q2": {
+		//			"m1.query.q2": {
 		//				ShortName: "q2",
-		//				FullName:  "query.q2",
+		//				FullName:  "m1.query.q2",
 		//				SQL:       toStringPointer("select 2"),
 		//			},
 		//		},
 		//	},
 		//},
-		//"two_mods": {
-		//	source:   "testdata/mods/two_mods",
-		//	expected: "ERROR",
-		//},
-		//"requires_single_simple": {
-		//	source: "testdata/mods/requires_single_versioned",
-		//	expected: &modconfig.Mod{
-		//		ShortName: "m1",
-		//		FullName:  "mod.m1",
-		//		Require: &modconfig.Require{
-		//			SteampipeVersionString: "v0.8.0",
-		//			Mods: []*modconfig.ModVersionConstraint{
-		//				{
-		//					Name:          "github.com/turbot/aws-core",
-		//					VersionString: "v1.0",
-		//				},
-		//			},
-		//		},
-		//	},
-		//},
-		//"requires_single_simple_aliased": {
-		//	source: "testdata/mods/requires_single_versioned_aliased",
-		//	expected: &modconfig.Mod{
-		//		ShortName: "m1",
-		//		FullName:  "mod.m1",
-		//		Require: &modconfig.Require{
-		//			SteampipeVersionString: "v0.8.0",
-		//			Mods: []*modconfig.ModVersionConstraint{
-		//				{
-		//					Name:          "github.com/turbot/aws-core",
-		//					VersionString: "v1.0",
-		//					//Alias:         utils.ToStringPointer("core"),
-		//				},
-		//			},
-		//		},
-		//	},
-		//},
+		"two_mods": {
+			source:   "testdata/mods/two_mods",
+			expected: "ERROR",
+		},
 	}
 }
 
@@ -504,14 +467,43 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	}
 
 	expectedMod := test.expected.(*modconfig.Mod)
+
+	// ensure parents and children are set correctly in expected mod (this is normally done as part of decode)
+	setChildren(expectedMod)
 	expectedMod.BuildResourceTree(nil)
 	expectedStr := expectedMod.String()
 	actualString := mod.String()
 
 	if expectedStr != actualString {
 		fmt.Printf("")
+
 		t.Errorf("Test: '%s'' FAILED : expected:\n\n%s\n\ngot:\n\n%s", name, expectedStr, actualString)
 	}
+}
+
+func setChildren(mod *modconfig.Mod) {
+	for _, benchmark := range mod.Benchmarks {
+		for _, childName := range benchmark.ChildNames {
+			parsed, _ := modconfig.ParseResourceName(childName.Name)
+			child, _ := mod.GetChildResource(parsed)
+			benchmark.Children = append(benchmark.Children, child)
+		}
+	}
+	for _, container := range mod.Containers {
+		for _, childName := range container.ChildNames {
+			parsed, _ := modconfig.ParseResourceName(childName.Name)
+			child, _ := mod.GetChildResource(parsed)
+			container.Children = append(container.Children, child)
+		}
+	}
+	for _, report := range mod.Reports {
+		for _, childName := range report.ChildNames {
+			parsed, _ := modconfig.ParseResourceName(childName.Name)
+			child, _ := mod.GetChildResource(parsed)
+			report.Children = append(report.Children, child)
+		}
+	}
+
 }
 
 type loadResourceNamesTest struct {
