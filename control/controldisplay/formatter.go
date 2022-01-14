@@ -5,10 +5,6 @@ import (
 	"errors"
 	"io"
 	"os"
-<<<<<<< HEAD
-=======
-	"reflect"
->>>>>>> b61642c (wiring up)
 	"strings"
 	"text/template"
 	"time"
