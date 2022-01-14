@@ -72,7 +72,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe check - export csv" {
   cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check control.sample_control_mixed_results_1 --export=./test.csv --progress=false
+  run steampipe check control.sample_control_mixed_results_1 --export=csv --progress=false
   assert_equal "$(cat ./test.csv)" "$(cat $TEST_DATA_DIR/expected_check_csv.csv)"
   rm -f ./test.csv
   cd -
@@ -80,7 +80,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe check - export json" {
   cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check control.sample_control_mixed_results_1 --export=./test.json --progress=false
+  run steampipe check control.sample_control_mixed_results_1 --export=json --progress=false
   assert_equal "$(cat ./test.json)" "$(cat $TEST_DATA_DIR/expected_check_json.json)"
   rm -f ./test.json
   cd -
