@@ -207,15 +207,12 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 	initData := &control.InitData{
 		Result: &db_common.InitResult{},
 	}
-<<<<<<< HEAD
-=======
 
 	if err := controldisplay.EnsureTemplates(); err != nil {
 		initData.Result.Error = err
 		return initData
 	}
 
->>>>>>> b61642ce (wiring up)
 	if viper.GetBool(constants.ArgModInstall) {
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
 		_, err := modinstaller.InstallWorkspaceDependencies(opts)
@@ -224,8 +221,6 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 			return initData
 		}
 	}
-
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
 
 	if viper.GetString(constants.ArgOutput) == constants.CheckOutputFormatNone {
 		// set progress to false
