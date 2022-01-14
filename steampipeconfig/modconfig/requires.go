@@ -21,7 +21,7 @@ type Require struct {
 	modMap map[string]*ModVersionConstraint
 }
 
-func newRequire() *Require {
+func NewRequire() *Require {
 	r := &Require{}
 	r.initialise()
 	return r

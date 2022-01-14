@@ -85,7 +85,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 
 		ModPath:   modPath,
 		DeclRange: defRange,
-		Require:   newRequire(),
+		Require:   NewRequire(),
 	}
 
 	// try to derive mod version from the path
@@ -291,7 +291,7 @@ func (m *Mod) String() string {
 	}
 
 	versionString := ""
-	if m.VersionString == "" {
+	if m.VersionString != "" {
 		versionString = fmt.Sprintf("\nVersion: v%s", m.VersionString)
 	}
 	var requiresStrings []string
@@ -311,8 +311,7 @@ func (m *Mod) String() string {
 
 	return fmt.Sprintf(`Name: %s
 Title: %s
-Description: %s 
-Version: %s
+Description: %s%s
 Queries: 
 %s
 Controls: 

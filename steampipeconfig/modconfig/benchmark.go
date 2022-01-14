@@ -110,8 +110,6 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 		nameMap[n.Name] = true
 	}
 
-	// in order to populate the children in the order specified, we create an empty array and populate by index in AddChild
-	b.children = make([]ModTreeItem, len(b.ChildNameStrings))
 	return diags
 }
 
@@ -175,6 +173,12 @@ func (b *Benchmark) GetChildControls() []*Control {
 
 // AddChild implements ModTreeItem
 func (b *Benchmark) AddChild(child ModTreeItem) error {
+	// lazy instantiate the array
+	if b.children == nil {
+		// in order to populate the children in the order specified, we create an empty array and populate by index in AddChild
+		b.children = make([]ModTreeItem, len(b.ChildNameStrings))
+	}
+
 	// mod cannot be added as a child
 	if _, ok := child.(*Mod); ok {
 		return fmt.Errorf("mod cannot be added as a child")

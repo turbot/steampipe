@@ -38,5 +38,5 @@ control "c5"{
 }
 
 control "c6"{
-    sql = "select 'FAIL' as result"
+    sql = "select 'fail' as result"
 }
