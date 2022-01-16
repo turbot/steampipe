@@ -179,12 +179,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # cache functionality check since cache=false in options
     cd $CONFIG_PARSING_TEST_MOD
-    run steampipe check benchmark.config_parsing_benchmark --export=output.json --max-parallel 1
+    run steampipe check benchmark.config_parsing_benchmark --export json --max-parallel 1
 
     # store the date from 1st control in `content`
-    content=$(cat output.json | jq '.groups[].controls[0].results[0].resource')
+    content=$(cat benchmark.*.json | jq '.groups[].controls[0].results[0].resource')
     # store the date from 2nd control in `new_content`
-    new_content=$(cat output.json | jq '.groups[].controls[1].results[0].resource')
+    new_content=$(cat benchmark.*.json | jq '.groups[].controls[1].results[0].resource')
     echo $content
     echo $new_content
 
@@ -196,7 +196,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     fi
     assert_equal "$flag" "0"
 
-    rm -f output.json
+    rm -f benchmark.*.json
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.spc
 }
 
@@ -207,12 +207,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # cache functionality check since cache=false in options
     cd $CONFIG_PARSING_TEST_MOD
-    run steampipe check benchmark.config_parsing_benchmark --export=output.json --max-parallel 1
+    run steampipe check benchmark.config_parsing_benchmark --export json --max-parallel 1
 
     # store the date from 1st control in `content`
-    content=$(cat output.json | jq '.groups[].controls[0].results[0].resource')
+    content=$(cat benchmark.*.json | jq '.groups[].controls[0].results[0].resource')
     # store the date from 2nd control in `new_content`
-    new_content=$(cat output.json | jq '.groups[].controls[1].results[0].resource')
+    new_content=$(cat benchmark.*.json | jq '.groups[].controls[1].results[0].resource')
     echo $content
     echo $new_content
 
@@ -224,7 +224,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     fi
     assert_equal "$flag" "0"
     
-    rm -f output.json
+    rm -f benchmark.*.json
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.yml
 }
 
