@@ -11,7 +11,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/MasterMinds/sprig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/version"
@@ -91,19 +90,6 @@ func (j *NullFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 func (j *NullFormatter) FileExtension() string {
 	// will not be called
 	return ""
-}
-
-func templateFuncs() template.FuncMap {
-	removeFromSprigMap := []string{"env", "expandenv"}
-	funcs := sprig.TxtFuncMap()
-	for _, remove := range removeFromSprigMap {
-		delete(funcs, remove)
-	}
-	for k, v := range formatterTemplateFuncMap {
-		funcs[k] = v
-	}
-
-	return funcs
 }
 
 var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
