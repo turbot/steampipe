@@ -41,14 +41,14 @@ func (ft ExportTemplate) String() string {
 	return fmt.Sprintf("( %s %s %s %s )", ft.TemplatePath, ft.FormatName, ft.OutputExtension, ft.FormatFullName)
 }
 
-// GetExportTemplate accepts the export argument and tries to figure out the template to use
-// if an exact match to the available templates is not found, and if 'allowFilenameEvaluation' is true
+// ResolveExportTemplate accepts the export argument and resolves the template to use.
+// If an exact match to the available templates is not found, and if 'allowFilenameEvaluation' is true
 // then the 'export' value is parsed as a filename and the suffix is used to match to available templates
 // returns
 // - the export template to use
 // - the path of the file to write to
 // - error (if any)
-func GetExportTemplate(export string, allowFilenameEvaluation bool) (format *ExportTemplate, targetFilename string, err error) {
+func ResolveExportTemplate(export string, allowFilenameEvaluation bool) (format *ExportTemplate, targetFilename string, err error) {
 	available, err := loadAvailableTemplates()
 	if err != nil {
 		return nil, "", err

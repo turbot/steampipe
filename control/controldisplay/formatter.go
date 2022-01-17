@@ -66,7 +66,7 @@ func GetDefinedExportFormatter(arg string) (Formatter, bool) {
 }
 
 func GetTemplateExportFormatter(arg string, allowFilenameEvaluation bool) (Formatter, string, error) {
-	templateFormat, fileName, err := GetExportTemplate(arg, allowFilenameEvaluation)
+	templateFormat, fileName, err := ResolveExportTemplate(arg, allowFilenameEvaluation)
 	if err != nil {
 		return nil, "", err
 	}
