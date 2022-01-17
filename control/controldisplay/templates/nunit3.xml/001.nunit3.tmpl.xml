@@ -31,7 +31,7 @@
 {{ end }}
 
 {{ define "control_row_template" }}
-<test-case id="{{ .row.Control.ShortName }}::{{ .idx }}" name="{{ .row.Control.FullName }}::{{ .idx }}" result="{{ .row.PassedOrFailed }}">
+<test-case id="{{ .row.Control.ShortName }}::{{ .idx }}" name="{{ .row.Control.FullName }}::{{ .idx }}" result="{{ template "statusmap" .row.Status }}">
 <properties>
     <property>
      <key>steampipe:status</key>
@@ -53,3 +53,5 @@
 </reason>
 </test-case>
 {{ end }}
+
+{{ define "statusmap" }}{{ if eq . "ok" }}Passed{{ end -}}{{ if eq . "info" }}Passed{{ end -}}{{ if eq . "error" }}Failed{{ end -}}{{ if eq . "alarm" }}Failed{{ end -}}{{ if eq . "skip" }}Skipped{{ end -}}{{ end -}}
