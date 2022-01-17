@@ -110,21 +110,6 @@ var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 		}
 		return dict, nil
 	},
-	"statusicon": func(status string) string {
-		switch strings.ToLower(status) {
-		case "ok":
-			return "✅"
-		case "skip":
-			return "⇨"
-		case "info":
-			return "ℹ"
-		case "alarm":
-			return "❌"
-		case "error":
-			return "❗"
-		}
-		return ""
-	},
 	"summarystatusclass": func(status string, total int) string {
 		switch strings.ToLower(status) {
 		case "ok":

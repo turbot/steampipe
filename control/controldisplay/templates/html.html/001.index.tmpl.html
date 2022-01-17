@@ -176,7 +176,7 @@
 
 {{ define "control_run_table_row_template" }}
 <tr>
-  <td class="align-center" title="Resource: {{ .Resource }}">{{ statusicon .Status }}</td>
+  <td class="align-center" title="Resource: {{ .Resource }}">{{ template "statusicon" .Status }}</td>
   <td title="Resource: {{ .Resource }}">{{ .Reason }}</td>
   <td>
     {{ range .Dimensions }}
@@ -185,3 +185,5 @@
   </td>
 </tr>
 {{ end }}
+
+{{ define "statusicon" }}{{ if eq . "ok" }}✅{{ end -}}{{ if eq . "skip" }}⇨{{ end -}}{{ if eq . "info" }}ℹ{{ end -}}{{ if eq . "alarm" }}❌{{ end -}}{{ if eq . "error" }}❗{{ end -}}{{ end -}}
