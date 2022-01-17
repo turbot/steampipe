@@ -453,6 +453,9 @@ func (r *RunContext) PopDecodeBlock() *hcl.Block {
 }
 
 func (r *RunContext) GetAnonymousResourceName(block *hcl.Block) string {
+
+	//return strings.Replace(uuid.New().String(), "-", "", -1)
+
 	count := r.anonymousResources[block.Type]
 	r.anonymousResources[block.Type] = count + 1
 	parts := make([]string, len(r.decodeStack))
@@ -460,5 +463,5 @@ func (r *RunContext) GetAnonymousResourceName(block *hcl.Block) string {
 	for i, b := range r.decodeStack {
 		parts[i] = fmt.Sprintf("%s_%s", b.Type, b.Labels[0])
 	}
-	return fmt.Sprintf("%s%d", strings.Join(parts, "_"), count)
+	return fmt.Sprintf("%s_%s_%d", strings.Join(parts, "_"), block.Type, count)
 }

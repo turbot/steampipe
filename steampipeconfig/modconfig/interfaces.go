@@ -57,8 +57,3 @@ type QueryProvider interface {
 	GetParams() []*ParamDef
 	GetPreparedStatementName() string
 }
-
-type AnonymousResource interface {
-	SetName(string)
-	HclType() string
-}
