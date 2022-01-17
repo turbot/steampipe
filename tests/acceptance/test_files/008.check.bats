@@ -107,20 +107,20 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
-# @test "steampipe check - export md" {
-#   cd $CONTROL_RENDERING_TEST_MOD
-#   run steampipe check control.sample_control_mixed_results_1 --export=./test.md --progress=false
+@test "steampipe check - export md" {
+  cd $CONTROL_RENDERING_TEST_MOD
+  run steampipe check control.sample_control_mixed_results_1 --export test.md --progress=false
   
-#   # checking for OS type, since sed command is different for linux and OSX
-#   # removing the 41st line, since it contains file locations and timestamps
-#   if [[ "$OSTYPE" == "darwin"* ]]; then
-#     run sed -i ".md" "41d" ./test.md
-#   else
-#     run sed -i "41d" ./test.md
-#   fi
+  # checking for OS type, since sed command is different for linux and OSX
+  # removing the 41st line, since it contains file locations and timestamps
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    run sed -i ".md" "42d" test.md
+  else
+    run sed -i "42d" test.md
+  fi
 
-#   assert_equal "$(cat ./test.md)" "$(cat $TEST_DATA_DIR/expected_check_markdown.md)"
-#   rm -rf ./test.md*
-#   cd -
-# }
+  assert_equal "$(cat test.md)" "$(cat $TEST_DATA_DIR/expected_check_markdown.md)"
+  rm -rf test.md*
+  cd -
+}
 
