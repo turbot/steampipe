@@ -124,3 +124,19 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
+@test "steampipe check - export nunit3" {
+  cd $CONTROL_RENDERING_TEST_MOD
+  run steampipe check control.sample_control_mixed_results_1 --export test.xml --progress=false
+
+  # checking for OS type, since sed command is different for linux and OSX
+  # removing the 6th line, since it contains duration, and duration will be different in each run
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    run sed -i ".xml" "6d" test.xml
+  else
+    run sed -i "6d" test.xml
+  fi
+
+  assert_equal "$(cat test.xml)" "$(cat $TEST_DATA_DIR/expected_check_nunit3.xml)"
+  rm -f test.xml*
+  cd -
+}
