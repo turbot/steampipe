@@ -88,22 +88,22 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe check - export html" {
   cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check control.sample_control_mixed_results_1 --export=html --progress=false
+  run steampipe check control.sample_control_mixed_results_1 --export test.html --progress=false
   
   # checking for OS type, since sed command is different for linux and OSX
   # removing the 641st line, since it contains file locations and timestamps
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".html" "642d" *.html
-    run sed -i ".html" "642d" *.html
-    run sed -i ".html" "642d" *.html
+    run sed -i ".html" "642d" test.html
+    run sed -i ".html" "642d" test.html
+    run sed -i ".html" "642d" test.html
   else
-    run sed -i "642" *.html
-    run sed -i "642" *.html
-    run sed -i "642" *.html
+    run sed -i "642" test.html
+    run sed -i "642" test.html
+    run sed -i "642" test.html
   fi
 
-  assert_equal "$(cat *.html)" "$(cat $TEST_DATA_DIR/expected_check_html.html)"
-  rm -rf *.html.*
+  assert_equal "$(cat test.html)" "$(cat $TEST_DATA_DIR/expected_check_html.html)"
+  rm -rf test.html*
   cd -
 }
 
