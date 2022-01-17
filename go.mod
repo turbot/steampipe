@@ -54,7 +54,7 @@ require (
 	google.golang.org/grpc v1.41.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
-	sigs.k8s.io/yaml v1.1.0
+	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
