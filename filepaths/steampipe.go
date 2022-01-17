@@ -33,7 +33,7 @@ func steampipeSubDir(dirName string) string {
 	return subDir
 }
 
-// PluginDir returns the path to the templates directory (creates if missing)
+// TemplateDir returns the path to the templates directory (creates if missing)
 func TemplateDir() string {
 	return steampipeSubDir("templates")
 }

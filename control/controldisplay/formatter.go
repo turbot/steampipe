@@ -70,7 +70,7 @@ func GetTemplateExportFormatter(arg string, allowFilenameEvaluation bool) (Forma
 	if err != nil {
 		return nil, "", err
 	}
-	formatter, err := CreateTemplateFormatter(*templateFormat)
+	formatter, err := NewTemplateFormatter(*templateFormat)
 	return formatter, fileName, err
 }
 
