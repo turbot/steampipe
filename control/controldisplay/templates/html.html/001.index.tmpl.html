@@ -1,3 +1,4 @@
+{{ define "outlet" }}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -6,10 +7,10 @@
   <style>
     /**
        {{- template "normalize_css" -}}
-       **/
+    **/
     /**
        {{- template "style_css" -}}
-       **/
+    **/
   </style>
   <meta charset="UTF-8">
   <link rel="icon" href='{{ template "favicon" }}' type="image/svg+xml" sizes="any">
@@ -32,6 +33,7 @@
 </body>
 
 </html>
+{{ end }}
 
 {{ define "root_summary" }}
 <table role="table">
@@ -39,7 +41,7 @@
     <tr>
       <th></th>
       <th>TOTAL</th>
-      <th>{{ asstr .TotalCount }}</th>
+      <th>{{ .TotalCount }}</th>
     </tr>
   </thead>
   <tbody>
@@ -91,7 +93,7 @@
       <td class="{{ summarystatusclass "info" .Info}}">{{ .Info }}</td>
       <td class="{{ summarystatusclass "alarm" .Alarm}}">{{ .Alarm }}</td>
       <td class="{{ summarystatusclass "error" .Error}}">{{ .Error }}</td>
-      <td>{{ asstr .TotalCount }}</td>
+      <td>{{ .TotalCount }}</td>
     </tr>
   </tbody>
 </table>
@@ -174,7 +176,7 @@
 
 {{ define "control_run_table_row_template" }}
 <tr>
-  <td class="align-center" title="Resource: {{ .Resource }}">{{ statusicon .Status }}</td>
+  <td class="align-center" title="Resource: {{ .Resource }}">{{ template "statusicon" .Status }}</td>
   <td title="Resource: {{ .Resource }}">{{ .Reason }}</td>
   <td>
     {{ range .Dimensions }}
@@ -183,3 +185,5 @@
   </td>
 </tr>
 {{ end }}
+
+{{ define "statusicon" }}{{ if eq . "ok" }}✅{{ end -}}{{ if eq . "skip" }}⇨{{ end -}}{{ if eq . "info" }}ℹ{{ end -}}{{ if eq . "alarm" }}❌{{ end -}}{{ if eq . "error" }}❗{{ end -}}{{ end -}}

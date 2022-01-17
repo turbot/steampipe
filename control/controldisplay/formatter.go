@@ -2,18 +2,21 @@ package controldisplay
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/version"
 )
+
+var ErrFormatterNotFound = errors.New("Formatter not found")
 
 type FormatterMap map[string]Formatter
 
@@ -28,33 +31,27 @@ func (m FormatterMap) keys() []string {
 }
 
 var outputFormatters FormatterMap = FormatterMap{
-	constants.OutputFormatNone:     &NullFormatter{},
-	constants.OutputFormatCSV:      &CSVFormatter{},
-	constants.OutputFormatJSON:     &JSONFormatter{},
-	constants.OutputFormatText:     &TextFormatter{},
-	constants.OutputFormatBrief:    &TextFormatter{},
-	constants.OutputFormatHTML:     &HTMLFormatter{},
-	constants.OutputFormatMarkdown: &MarkdownFormatter{},
+	constants.CheckOutputFormatNone:  &NullFormatter{},
+	constants.CheckOutputFormatCSV:   &CSVFormatter{},
+	constants.CheckOutputFormatJSON:  &JSONFormatter{},
+	constants.CheckOutputFormatText:  &TextFormatter{},
+	constants.CheckOutputFormatBrief: &TextFormatter{},
 }
 
 var exportFormatters FormatterMap = FormatterMap{
-	constants.OutputFormatCSV:      &CSVFormatter{},
-	constants.OutputFormatJSON:     &JSONFormatter{},
-	constants.OutputFormatHTML:     &HTMLFormatter{},
-	constants.OutputFormatMarkdown: &MarkdownFormatter{},
+	constants.CheckOutputFormatCSV:  &CSVFormatter{},
+	constants.CheckOutputFormatJSON: &JSONFormatter{},
 }
 
 type CheckExportTarget struct {
-	Format string
-	File   string
-	Error  error
+	Formatter Formatter
+	File      string
 }
 
-func NewCheckExportTarget(format string, file string, err error) CheckExportTarget {
+func NewCheckExportTarget(formatter Formatter, file string) CheckExportTarget {
 	return CheckExportTarget{
-		Format: format,
-		File:   file,
-		Error:  err,
+		Formatter: formatter,
+		File:      file,
 	}
 }
 
@@ -63,37 +60,23 @@ type Formatter interface {
 	FileExtension() string
 }
 
-func GetExportFormatter(exportFormat string) (Formatter, error) {
-	formatter, found := exportFormatters[exportFormat]
-	if !found {
-		return nil, fmt.Errorf("invalid export format '%s' - must be one of %s", exportFormat, exportFormatters.keys())
-	}
-	return formatter, nil
+func GetDefinedExportFormatter(arg string) (Formatter, bool) {
+	formatter, found := exportFormatters[arg]
+	return formatter, found
 }
 
-func GetOutputFormatter(outputFormat string) (Formatter, error) {
+func GetTemplateExportFormatter(arg string, allowFilenameEvaluation bool) (Formatter, string, error) {
+	templateFormat, fileName, err := ResolveExportTemplate(arg, allowFilenameEvaluation)
+	if err != nil {
+		return nil, "", err
+	}
+	formatter, err := NewTemplateFormatter(*templateFormat)
+	return formatter, fileName, err
+}
+
+func GetDefinedOutputFormatter(outputFormat string) (Formatter, bool) {
 	formatter, found := outputFormatters[outputFormat]
-	if !found {
-		return nil, fmt.Errorf("invalid output format '%s' - must be one of %s", outputFormat, outputFormatters.keys())
-	}
-	return formatter, nil
-}
-
-func InferFormatFromExportFileName(filename string) (string, error) {
-	extension := filepath.Ext(filename)
-	switch extension {
-	case ".csv":
-		return constants.OutputFormatCSV, nil
-	case ".json":
-		return constants.OutputFormatJSON, nil
-	case ".html", ".htm":
-		return constants.OutputFormatHTML, nil
-	case ".md", ".markdown":
-		return constants.OutputFormatMarkdown, nil
-	default:
-		// could not infer format
-		return "", fmt.Errorf("could not infer valid export format from filename '%s'", filename)
-	}
+	return formatter, found
 }
 
 // NullFormatter is to be used when no output is expected. It always returns a `io.Reader` which
@@ -113,20 +96,19 @@ var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 	"steampipeversion": func() string { return version.SteampipeVersion.String() },
 	"workingdir":       func() string { wd, _ := os.Getwd(); return wd },
 	"asstr":            func(i reflect.Value) string { return fmt.Sprintf("%v", i) },
-	"statusicon": func(status string) string {
-		switch strings.ToLower(status) {
-		case "ok":
-			return "✅"
-		case "skip":
-			return "⇨"
-		case "info":
-			return "ℹ"
-		case "alarm":
-			return "❌"
-		case "error":
-			return "❗"
+	"dict": func(values ...interface{}) (map[string]interface{}, error) {
+		if len(values)%2 != 0 {
+			return nil, errors.New("invalid dict call")
 		}
-		return ""
+		dict := make(map[string]interface{}, len(values)/2)
+		for i := 0; i < len(values); i += 2 {
+			key, ok := values[i].(string)
+			if !ok {
+				return nil, errors.New("dict keys must be strings")
+			}
+			dict[key] = values[i+1]
+		}
+		return dict, nil
 	},
 	"summarystatusclass": func(status string, total int) string {
 		switch strings.ToLower(status) {
@@ -157,5 +139,26 @@ var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 			return "summary-total-error"
 		}
 		return ""
+	},
+	"ToUpper": func(text string) string {
+		return strings.ToUpper(text)
+	},
+	"timenow": func() string {
+		return time.Now().Format(time.RFC3339)
+	},
+	"GetDimensionRegion": func(row *controlexecute.ResultRow) string {
+		if row.Dimensions[0].Key == "region" {
+			return row.Dimensions[0].Value
+		}
+		return "ap-south-1"
+	},
+	"GetDimensionAccount": func(row *controlexecute.ResultRow) string {
+		if row.Dimensions[0].Key == "account_id" {
+			return row.Dimensions[0].Value
+		}
+		return row.Dimensions[1].Value
+	},
+	"DurationInFloat": func(t time.Duration) float64 {
+		return t.Seconds()
 	},
 }

@@ -32,7 +32,7 @@ type ExecutionTree struct {
 	// map of dimension property name to property value to color map
 	DimensionColorGenerator *DimensionColorGenerator
 	// flat list of all control runs
-	controlRuns []*ControlRun
+	ControlRuns []*ControlRun
 }
 
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg string) (*ExecutionTree, error) {
@@ -60,7 +60,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	executionTree.Root = NewRootResultGroup(ctx, executionTree, rootItem)
 
 	// after tree has built, ControlCount will be set - create progress rendered
-	executionTree.progress = NewControlProgressRenderer(len(executionTree.controlRuns))
+	executionTree.progress = NewControlProgressRenderer(len(executionTree.ControlRuns))
 
 	return executionTree, nil
 }
@@ -75,7 +75,7 @@ func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Contr
 		// add it into the group
 		group.ControlRuns = append(group.ControlRuns, controlRun)
 		// also add it into the execution tree control run list
-		e.controlRuns = append(e.controlRuns, controlRun)
+		e.ControlRuns = append(e.ControlRuns, controlRun)
 	}
 }
 
@@ -280,7 +280,7 @@ func (e *ExecutionTree) GetAllTags() []string {
 	// map keep track which tags have been added as columns
 	tagColumnMap := make(map[string]bool)
 	var tagColumns []string
-	for _, r := range e.controlRuns {
+	for _, r := range e.ControlRuns {
 		if r.Control.Tags != nil {
 			for tag := range r.Control.Tags {
 				if !tagColumnMap[tag] {

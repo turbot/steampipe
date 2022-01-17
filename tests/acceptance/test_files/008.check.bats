@@ -72,55 +72,71 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe check - export csv" {
   cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check control.sample_control_mixed_results_1 --export=csv:./test.csv --progress=false
-  assert_equal "$(cat ./test.csv)" "$(cat $TEST_DATA_DIR/expected_check_csv.csv)"
-  rm -f ./test.csv
+  run steampipe check control.sample_control_mixed_results_1 --export=csv --progress=false
+  assert_equal "$(cat *.csv)" "$(cat $TEST_DATA_DIR/expected_check_csv.csv)"
+  rm -f *.csv
   cd -
 }
 
 @test "steampipe check - export json" {
   cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check control.sample_control_mixed_results_1 --export=json:./test.json --progress=false
-  assert_equal "$(cat ./test.json)" "$(cat $TEST_DATA_DIR/expected_check_json.json)"
-  rm -f ./test.json
+  run steampipe check control.sample_control_mixed_results_1 --export=json --progress=false
+  assert_equal "$(cat *.json)" "$(cat $TEST_DATA_DIR/expected_check_json.json)"
+  rm -f *.json
   cd -
 }
 
 @test "steampipe check - export html" {
   cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check control.sample_control_mixed_results_1 --export=html:./test.html --progress=false
+  run steampipe check control.sample_control_mixed_results_1 --export test.html --progress=false
   
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 641st line, since it contains file locations and timestamps
+  # removing the 642nd line, since it contains file locations and timestamps
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".html" "641d" ./test.html
-    run sed -i ".html" "641d" ./test.html
-    run sed -i ".html" "641d" ./test.html
+    run sed -i ".html" "642d" test.html
+    run sed -i ".html" "642d" test.html
+    run sed -i ".html" "642d" test.html
   else
-    run sed -i "641d" ./test.html
-    run sed -i "641d" ./test.html
-    run sed -i "641d" ./test.html
+    run sed -i "642d" test.html
+    run sed -i "642d" test.html
+    run sed -i "642d" test.html
   fi
 
-  assert_equal "$(cat ./test.html)" "$(cat $TEST_DATA_DIR/expected_check_html.html)"
-  rm -rf ./test.html*
+  assert_equal "$(cat test.html)" "$(cat $TEST_DATA_DIR/expected_check_html.html)"
+  rm -rf test.html*
   cd -
 }
 
 @test "steampipe check - export md" {
   cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check control.sample_control_mixed_results_1 --export=md:./test.md --progress=false
+  run steampipe check control.sample_control_mixed_results_1 --export test.md --progress=false
   
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 41st line, since it contains file locations and timestamps
+  # removing the 42nd line, since it contains file locations and timestamps
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".md" "41d" ./test.md
+    run sed -i ".md" "42d" test.md
   else
-    run sed -i "41d" ./test.md
+    run sed -i "42d" test.md
   fi
 
-  assert_equal "$(cat ./test.md)" "$(cat $TEST_DATA_DIR/expected_check_markdown.md)"
-  rm -rf ./test.md*
+  assert_equal "$(cat test.md)" "$(cat $TEST_DATA_DIR/expected_check_markdown.md)"
+  rm -rf test.md*
   cd -
 }
 
+@test "steampipe check - export nunit3" {
+  cd $CONTROL_RENDERING_TEST_MOD
+  run steampipe check control.sample_control_mixed_results_1 --export test.xml --progress=false
+
+  # checking for OS type, since sed command is different for linux and OSX
+  # removing the 6th line, since it contains duration, and duration will be different in each run
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    run sed -i ".xml" "6d" test.xml
+  else
+    run sed -i "6d" test.xml
+  fi
+
+  assert_equal "$(cat test.xml)" "$(cat $TEST_DATA_DIR/expected_check_nunit3.xml)"
+  rm -f test.xml*
+  cd -
+}

@@ -1,0 +1,512 @@
+
+<test-run testcasecount="21" total="21" passed="13" failed="7" skipped="1">
+    
+    
+    
+    
+        
+<test-case id="sample_control_mixed_results_1::0" name="control_rendering_test_mod.control.sample_control_mixed_results_1::0" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>error</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource has some error</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>16</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource has some error]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::1" name="control_rendering_test_mod.control.sample_control_mixed_results_1::1" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>error</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource has some error</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>17</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource has some error]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::2" name="control_rendering_test_mod.control.sample_control_mixed_results_1::2" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource does not satisfy condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>11</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource does not satisfy condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::3" name="control_rendering_test_mod.control.sample_control_mixed_results_1::3" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource does not satisfy condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>12</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource does not satisfy condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::4" name="control_rendering_test_mod.control.sample_control_mixed_results_1::4" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource does not satisfy condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>13</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource does not satisfy condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::5" name="control_rendering_test_mod.control.sample_control_mixed_results_1::5" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource does not satisfy condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>14</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource does not satisfy condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::6" name="control_rendering_test_mod.control.sample_control_mixed_results_1::6" result="Failed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>alarm</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource does not satisfy condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>15</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource does not satisfy condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::7" name="control_rendering_test_mod.control.sample_control_mixed_results_1::7" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>info</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Information</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>19</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Information]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::8" name="control_rendering_test_mod.control.sample_control_mixed_results_1::8" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>info</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Information</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>20</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Information]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::9" name="control_rendering_test_mod.control.sample_control_mixed_results_1::9" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>info</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Information</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>21</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Information]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::10" name="control_rendering_test_mod.control.sample_control_mixed_results_1::10" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>ok</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource satisfies condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>1</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::11" name="control_rendering_test_mod.control.sample_control_mixed_results_1::11" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>ok</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource satisfies condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>2</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::12" name="control_rendering_test_mod.control.sample_control_mixed_results_1::12" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>ok</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource satisfies condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>3</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::13" name="control_rendering_test_mod.control.sample_control_mixed_results_1::13" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>ok</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource satisfies condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>4</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::14" name="control_rendering_test_mod.control.sample_control_mixed_results_1::14" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>ok</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource satisfies condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>5</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::15" name="control_rendering_test_mod.control.sample_control_mixed_results_1::15" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>ok</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource satisfies condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>6</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::16" name="control_rendering_test_mod.control.sample_control_mixed_results_1::16" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>ok</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource satisfies condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>7</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::17" name="control_rendering_test_mod.control.sample_control_mixed_results_1::17" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>ok</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource satisfies condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>8</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::18" name="control_rendering_test_mod.control.sample_control_mixed_results_1::18" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>ok</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource satisfies condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>9</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::19" name="control_rendering_test_mod.control.sample_control_mixed_results_1::19" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>ok</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource satisfies condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>10</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::20" name="control_rendering_test_mod.control.sample_control_mixed_results_1::20" result="Skipped">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>skip</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource is skipped</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>18</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource is skipped]]></message>
+</reason>
+</test-case>
+
+    
+</test-suite>
+</test-run>

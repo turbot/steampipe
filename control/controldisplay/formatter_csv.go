@@ -16,7 +16,7 @@ type CSVFormatter struct {
 	csvWriter *csv.Writer
 }
 
-func (j *CSVFormatter) Format(_ context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
+func (j CSVFormatter) Format(_ context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	resultColumns := newResultColumns(tree)
 	renderer := newGroupCsvRenderer()
 	outBuffer := bytes.NewBufferString("")
@@ -33,6 +33,6 @@ func (j *CSVFormatter) Format(_ context.Context, tree *controlexecute.ExecutionT
 	return res, nil
 }
 
-func (j *CSVFormatter) FileExtension() string {
-	return "csv"
+func (j CSVFormatter) FileExtension() string {
+	return ".csv"
 }

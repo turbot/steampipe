@@ -1,13 +1,20 @@
 package constants
 
 const (
-	OutputFormatNone     = "none"
-	OutputFormatText     = "text"
-	OutputFormatBrief    = "brief"
-	OutputFormatCSV      = "csv"
-	OutputFormatJSON     = "json"
-	OutputFormatHTML     = "html"
-	OutputFormatMarkdown = "md"
-	OutputFormatTable    = "table"
-	OutputFormatLine     = "line"
+	// query output format
+	OutputFormatCSV   = "csv"
+	OutputFormatJSON  = "json"
+	OutputFormatTable = "table"
+	OutputFormatLine  = "line"
+
+	// check output format
+	CheckOutputFormatNone     = "none"
+	CheckOutputFormatText     = "text"
+	CheckOutputFormatBrief    = "brief"
+	CheckOutputFormatCSV      = "csv"
+	CheckOutputFormatJSON     = "json"
+	CheckOutputFormatHTML     = "html"
+	CheckOutputFormatMarkdown = "md"
+	CheckOutputFormatNUnit3   = "nunit3"
+	CheckOutputFormatAsffJson = "json-asff"
 )
