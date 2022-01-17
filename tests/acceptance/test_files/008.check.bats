@@ -91,7 +91,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe check control.sample_control_mixed_results_1 --export test.html --progress=false
   
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 641st line, since it contains file locations and timestamps
+  # removing the 642nd line, since it contains file locations and timestamps
   if [[ "$OSTYPE" == "darwin"* ]]; then
     run sed -i ".html" "642d" test.html
     run sed -i ".html" "642d" test.html
@@ -112,7 +112,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe check control.sample_control_mixed_results_1 --export test.md --progress=false
   
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 41st line, since it contains file locations and timestamps
+  # removing the 42nd line, since it contains file locations and timestamps
   if [[ "$OSTYPE" == "darwin"* ]]; then
     run sed -i ".md" "42d" test.md
   else
