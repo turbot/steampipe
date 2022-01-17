@@ -53,6 +53,9 @@ func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource,
 	var resources []modconfig.HclResource
 	var res = &decodeResult{}
 
+	runCtx.PushDecodeBlock(block)
+	defer runCtx.PopDecodeBlock()
+
 	// if opts specifies block types, check whether this type is included
 	if !runCtx.ShouldIncludeBlock(block) {
 		return nil, res
@@ -62,6 +65,11 @@ func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource,
 	if diags.HasErrors() {
 		res.addDiags(diags)
 		return nil, res
+	}
+
+	// if this block is anonymous, give it a unique name
+	if len(block.Labels) == 0 {
+		block.Labels = append(block.Labels, runCtx.GetAnonymousResourceName(block))
 	}
 
 	switch block.Type {
