@@ -1,6 +1,6 @@
 {{ define "outlet" }}
-<test-run duration="{{ .Root.Duration }}" testcasecount="{{ .Root.Summary.Status.TotalCount }}" total="{{ .Root.Summary.Status.TotalCount }}" passed="{{ .Root.Summary.Status.PassedCount }}" failed="{{ .Root.Summary.Status.FailedCount }}" skipped="{{ .Root.Summary.Status.Skip }}">
-    {{ range (index .Root.Groups 0).Groups  }}
+<test-run testcasecount="{{ .Root.Summary.Status.TotalCount }}" total="{{ .Root.Summary.Status.TotalCount }}" passed="{{ .Root.Summary.Status.PassedCount }}" failed="{{ .Root.Summary.Status.FailedCount }}" skipped="{{ .Root.Summary.Status.Skip }}">
+    {{ range .Root.Groups  }}
         {{ template "group_template" . }}
     {{ end }}
     
@@ -11,7 +11,7 @@
 {{ end }}
 
 {{ define "group_template" }}
-<test-suite id="{{ .GroupId }}" name="{{ .Title }}" duration="{{ .Duration }}" testcasecount="{{ .Summary.Status.TotalCount }}" total="{{ .Summary.Status.TotalCount }}" passed="{{ .Summary.Status.PassedCount }}" failed="{{ .Summary.Status.FailedCount }}" skipped="{{ .Summary.Status.Skip }}">
+<test-suite id="{{ .GroupId }}" name="{{ .Title }}" duration="{{ .Duration | DurationInFloat }}" testcasecount="{{ .Summary.Status.TotalCount }}" total="{{ .Summary.Status.TotalCount }}" passed="{{ .Summary.Status.PassedCount }}" failed="{{ .Summary.Status.FailedCount }}" skipped="{{ .Summary.Status.Skip }}">
     {{ range .Groups }}
         {{ template "group_template" . }}
     {{ end }}
@@ -23,7 +23,7 @@
 {{ end }}
 
 {{ define "control_run_template" }}
-<test-suite id="{{ .ControlId }}" name="{{ .Control.FullName }}" duration="{{ .Duration }}" testcasecount="{{ .Summary.TotalCount }}" total="{{ .Summary.TotalCount }}" passed="{{ .Summary.PassedCount }}" failed="{{ .Summary.FailedCount }}" skipped="{{ .Summary.Skip }}">
+<test-suite id="{{ .ControlId }}" name="{{ .Control.FullName }}" duration="{{ .Duration | DurationInFloat }}" testcasecount="{{ .Summary.TotalCount }}" total="{{ .Summary.TotalCount }}" passed="{{ .Summary.PassedCount }}" failed="{{ .Summary.FailedCount }}" skipped="{{ .Summary.Skip }}">
     {{ range $index,$row := .Rows }}
         {{ template "control_row_template" dict "idx" $index "row" $row }}
     {{ end }}
