@@ -36,10 +36,12 @@ func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 }
 
 func (tf TemplateFormatter) FileExtension() string {
-	if strings.HasSuffix(tf.outputExtension, tf.name) {
-		return tf.outputExtension
+	extension := strings.TrimPrefix(tf.outputExtension, ".")
+
+	if extension == tf.name {
+		return extension
 	} else {
-		return fmt.Sprintf("%s%s", tf.name, tf.outputExtension)
+		return fmt.Sprintf("%s.%s", tf.name, extension)
 	}
 }
 
