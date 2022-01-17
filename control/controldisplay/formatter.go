@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
@@ -153,5 +154,26 @@ var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 			return "summary-total-error"
 		}
 		return ""
+	},
+	"ToUpper": func(text string) string {
+		return strings.ToUpper(text)
+	},
+	"timenow": func() string {
+		return time.Now().Format(time.RFC3339)
+	},
+	"GetDimensionRegion": func(row *controlexecute.ResultRow) string {
+		if row.Dimensions[0].Key == "region" {
+			return row.Dimensions[0].Value
+		}
+		return "ap-south-1"
+	},
+	"GetDimensionAccount": func(row *controlexecute.ResultRow) string {
+		if row.Dimensions[0].Key == "account_id" {
+			return row.Dimensions[0].Value
+		}
+		return row.Dimensions[1].Value
+	},
+	"DurationInFloat": func(t time.Duration) float64 {
+		return t.Seconds()
 	},
 }
