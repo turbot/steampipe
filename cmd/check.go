@@ -371,22 +371,12 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 		fmt.Println(err)
 		return err
 	}
-	formattedReader, err := formatter.Format(ctx, executionTree)
+	reader, err := formatter.Format(ctx, executionTree)
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(os.Stdout, formattedReader)
+	_, err = io.Copy(os.Stdout, reader)
 	return err
-
-	// outputFormat := viper.GetString(constants.ArgOutput)
-	// formatter, _ := controldisplay.GetOutputFormatter(outputFormat)
-	// formattedReader, err := formatter.Format(ctx, executionTree)
-	// if err != nil {
-	// 	return err
-	// }
-	// _, err = io.Copy(os.Stdout, formattedReader)
-
-	// return err
 }
 
 func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, targets []controldisplay.CheckExportTarget) []error {
@@ -399,7 +389,7 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 			continue
 		}
 
-		formattedReader, err := target.Formatter.Format(ctx, executionTree)
+		dataToExport, err := target.Formatter.Format(ctx, executionTree)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -414,7 +404,7 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 			errors = append(errors, err)
 			continue
 		}
-		_, err = io.Copy(destination, formattedReader)
+		_, err = io.Copy(destination, dataToExport)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -472,6 +462,7 @@ func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, err
 	return targets, utils.CombineErrors(targetErrors...)
 }
 
+// parseExportArg parses the flag value and returns a Formatter based on the value
 func parseExportArg(arg string) (formatter controldisplay.Formatter, targetFileName string, err error) {
 	var found bool
 	if formatter, found = controldisplay.GetDefinedExportFormatter(arg); found {
@@ -480,6 +471,7 @@ func parseExportArg(arg string) (formatter controldisplay.Formatter, targetFileN
 	return controldisplay.GetTemplateExportFormatter(arg, true)
 }
 
+// parseOutputArg parses the --output flag value and returns the Formatter that can format the data
 func parseOutputArg(arg string) (formatter controldisplay.Formatter, targetFileName string, err error) {
 	var found bool
 	if formatter, found = controldisplay.GetDefinedOutputFormatter(arg); found {
@@ -491,5 +483,5 @@ func parseOutputArg(arg string) (formatter controldisplay.Formatter, targetFileN
 func generateDefaultExportFileName(formatter controldisplay.Formatter, executing string) string {
 	now := time.Now()
 	timeFormatted := fmt.Sprintf("%d%02d%02d-%02d%02d%02d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
-	return fmt.Sprintf("%s-%s.%s", executing, timeFormatted, formatter.FileExtension())
+	return fmt.Sprintf("%s-%s%s", executing, timeFormatted, formatter.FileExtension())
 }

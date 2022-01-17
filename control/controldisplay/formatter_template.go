@@ -3,7 +3,6 @@ package controldisplay
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -17,10 +16,11 @@ import (
 var ErrAmbiguousTemplate = errors.New("ambiguous templates found")
 var ErrTemplateNotFound = errors.New("template not found")
 
+// TemplateFormatter implements the 'Formatter' interface and exposes a generic template based output mechanism
+// for 'check' execution trees
 type TemplateFormatter struct {
-	outputExtension string
-	template        *template.Template
-	name            string
+	template     *template.Template
+	exportFormat ExportTemplate
 }
 
 func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
@@ -36,12 +36,12 @@ func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 }
 
 func (tf TemplateFormatter) FileExtension() string {
-	extension := strings.TrimPrefix(tf.outputExtension, ".")
-
-	if extension == tf.name {
-		return extension
+	// if the extension is the same as the format name, return just the extension
+	if tf.exportFormat.DefaultTemplateForExtension {
+		return tf.exportFormat.OutputExtension
 	} else {
-		return fmt.Sprintf("%s.%s", tf.name, extension)
+		// otherwise return the fullname
+		return tf.exportFormat.FormatFullName
 	}
 }
 
@@ -53,9 +53,12 @@ func CreateTemplateFormatter(input ExportTemplate) (*TemplateFormatter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &TemplateFormatter{name: input.FormatName, outputExtension: input.OutputExtension, template: t}, nil
+	return &TemplateFormatter{exportFormat: input, template: t}, nil
 }
 
+// GetExportTemplate accepts the export argument and tries to figure out the template to use
+// if an exact match to the available templates is not found, and if 'allowFilenameEvaluation' is true
+// then the 'export' value is parsed as a filename and the suffix is used to match to available templates
 func GetExportTemplate(export string, allowFilenameEvaluation bool) (format *ExportTemplate, filename string, err error) {
 	available, err := loadAvailableTemplates()
 	if err != nil {
@@ -130,40 +133,8 @@ func loadAvailableTemplates() ([]*ExportTemplate, error) {
 	}
 	templates := make([]*ExportTemplate, len(templateDirectories))
 	for idx, f := range templateDirectories {
-		templates[idx] = NewFormatTemplateFromDirectoryName(filepath.Join(templateDir, f.Name()))
+		templates[idx] = NewExportTemplate(filepath.Join(templateDir, f.Name()))
 	}
 
 	return templates, nil
-}
-
-func NewFormatTemplateFromDirectoryName(directory string) *ExportTemplate {
-	format := new(ExportTemplate)
-	format.TemplatePath = directory
-
-	directory = filepath.Base(directory)
-
-	// try splitting by a .(dot)
-	lastDotIndex := strings.LastIndex(directory, ".")
-	if lastDotIndex == -1 {
-		format.OutputExtension = fmt.Sprintf(".%s", directory)
-		format.FormatName = directory
-		format.DefaultTemplateForExtension = true
-	} else {
-		format.OutputExtension = filepath.Ext(directory)
-		format.FormatName = strings.TrimSuffix(directory, filepath.Ext(directory))
-	}
-	format.FormatFullName = fmt.Sprintf("%s%s", format.FormatName, format.OutputExtension)
-	return format
-}
-
-type ExportTemplate struct {
-	TemplatePath                string
-	FormatName                  string
-	OutputExtension             string
-	FormatFullName              string
-	DefaultTemplateForExtension bool
-}
-
-func (ft ExportTemplate) String() string {
-	return fmt.Sprintf("( %s %s %s %s )", ft.TemplatePath, ft.FormatName, ft.OutputExtension, ft.FormatFullName)
 }

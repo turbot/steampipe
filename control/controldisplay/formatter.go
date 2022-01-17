@@ -11,6 +11,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/MasterMinds/sprig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/version"

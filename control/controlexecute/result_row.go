@@ -22,21 +22,6 @@ type ResultRow struct {
 	Control    *modconfig.Control `json:"-" csv:"control_id:UnqualifiedName,control_title:Title,control_description:Description"`
 }
 
-func (r *ResultRow) PassedOrFailed() string {
-	var stat string
-	switch r.Status {
-	case "ok", "info":
-		stat = "Passed"
-	case "error", "alarm":
-		stat = "Failed"
-	case "skip":
-		stat = "Skipped"
-	default:
-		stat = "Inconclusive"
-	}
-	return stat
-}
-
 // AddDimension checks whether a column value is a scalar type, and if so adds it to the Dimensions map
 func (r *ResultRow) AddDimension(c *sql.ColumnType, val interface{}) {
 	switch c.ScanType().Kind() {

@@ -34,5 +34,5 @@ func (j CSVFormatter) Format(_ context.Context, tree *controlexecute.ExecutionTr
 }
 
 func (j CSVFormatter) FileExtension() string {
-	return "csv"
+	return ".csv"
 }

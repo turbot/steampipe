@@ -26,5 +26,5 @@ func (j JSONFormatter) Format(ctx context.Context, tree *controlexecute.Executio
 }
 
 func (j JSONFormatter) FileExtension() string {
-	return "json"
+	return ".json"
 }
