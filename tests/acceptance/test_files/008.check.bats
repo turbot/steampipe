@@ -97,9 +97,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i ".html" "642d" test.html
     run sed -i ".html" "642d" test.html
   else
-    run sed -i "642" test.html
-    run sed -i "642" test.html
-    run sed -i "642" test.html
+    run sed -i "642d" test.html
+    run sed -i "642d" test.html
+    run sed -i "642d" test.html
   fi
 
   assert_equal "$(cat test.html)" "$(cat $TEST_DATA_DIR/expected_check_html.html)"
