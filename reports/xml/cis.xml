@@ -1,70 +1,60 @@
 
-<test-run testcasecount="17" total="17" passed="0" failed="17" skipped="0">
+<test-run testcasecount="21" total="21" passed="13" failed="7" skipped="1">
     
     
     
-<test-suite id="control.cis_v140_1_20" name="aws_compliance.control.cis_v140_1_20" duration="2.406095542" testcasecount="17" total="17" passed="0" failed="17" skipped="0">
+<test-suite id="control.sample_control_mixed_results_1" name="control_rendering_test_mod.control.sample_control_mixed_results_1" duration="0.033502417" testcasecount="21" total="21" passed="13" failed="7" skipped="1">
     
         
-<test-case id="cis_v140_1_20::0" name="aws_compliance.control.cis_v140_1_20::0" result="Failed">
+<test-case id="sample_control_mixed_results_1::0" name="control_rendering_test_mod.control.sample_control_mixed_results_1::0" result="Failed">
 <properties>
     <property>
      <key>steampipe:status</key>
-     <value>alarm</value>
+     <value>error</value>
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in us-west-1.</value>
+     <value>Resource has some error</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>us-west-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>16</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in us-west-1.]]></message>
+<message><![CDATA[Resource has some error]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::1" name="aws_compliance.control.cis_v140_1_20::1" result="Failed">
+<test-case id="sample_control_mixed_results_1::1" name="control_rendering_test_mod.control.sample_control_mixed_results_1::1" result="Failed">
 <properties>
     <property>
      <key>steampipe:status</key>
-     <value>alarm</value>
+     <value>error</value>
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in sa-east-1.</value>
+     <value>Resource has some error</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>sa-east-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>17</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in sa-east-1.]]></message>
+<message><![CDATA[Resource has some error]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::2" name="aws_compliance.control.cis_v140_1_20::2" result="Failed">
+<test-case id="sample_control_mixed_results_1::2" name="control_rendering_test_mod.control.sample_control_mixed_results_1::2" result="Failed">
 <properties>
     <property>
      <key>steampipe:status</key>
@@ -72,28 +62,23 @@
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in eu-central-1.</value>
+     <value>Resource does not satisfy condition</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>eu-central-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>11</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in eu-central-1.]]></message>
+<message><![CDATA[Resource does not satisfy condition]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::3" name="aws_compliance.control.cis_v140_1_20::3" result="Failed">
+<test-case id="sample_control_mixed_results_1::3" name="control_rendering_test_mod.control.sample_control_mixed_results_1::3" result="Failed">
 <properties>
     <property>
      <key>steampipe:status</key>
@@ -101,28 +86,23 @@
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in us-east-2.</value>
+     <value>Resource does not satisfy condition</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>us-east-2</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>12</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in us-east-2.]]></message>
+<message><![CDATA[Resource does not satisfy condition]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::4" name="aws_compliance.control.cis_v140_1_20::4" result="Failed">
+<test-case id="sample_control_mixed_results_1::4" name="control_rendering_test_mod.control.sample_control_mixed_results_1::4" result="Failed">
 <properties>
     <property>
      <key>steampipe:status</key>
@@ -130,28 +110,23 @@
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in ap-southeast-1.</value>
+     <value>Resource does not satisfy condition</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>ap-southeast-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>13</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in ap-southeast-1.]]></message>
+<message><![CDATA[Resource does not satisfy condition]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::5" name="aws_compliance.control.cis_v140_1_20::5" result="Failed">
+<test-case id="sample_control_mixed_results_1::5" name="control_rendering_test_mod.control.sample_control_mixed_results_1::5" result="Failed">
 <properties>
     <property>
      <key>steampipe:status</key>
@@ -159,28 +134,23 @@
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in ap-southeast-2.</value>
+     <value>Resource does not satisfy condition</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>ap-southeast-2</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>14</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in ap-southeast-2.]]></message>
+<message><![CDATA[Resource does not satisfy condition]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::6" name="aws_compliance.control.cis_v140_1_20::6" result="Failed">
+<test-case id="sample_control_mixed_results_1::6" name="control_rendering_test_mod.control.sample_control_mixed_results_1::6" result="Failed">
 <properties>
     <property>
      <key>steampipe:status</key>
@@ -188,312 +158,353 @@
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in ap-northeast-1.</value>
+     <value>Resource does not satisfy condition</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>ap-northeast-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>15</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in ap-northeast-1.]]></message>
+<message><![CDATA[Resource does not satisfy condition]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::7" name="aws_compliance.control.cis_v140_1_20::7" result="Failed">
+<test-case id="sample_control_mixed_results_1::7" name="control_rendering_test_mod.control.sample_control_mixed_results_1::7" result="Passed">
 <properties>
     <property>
      <key>steampipe:status</key>
-     <value>alarm</value>
+     <value>info</value>
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in ap-northeast-2.</value>
+     <value>Information</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>ap-northeast-2</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>19</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in ap-northeast-2.]]></message>
+<message><![CDATA[Information]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::8" name="aws_compliance.control.cis_v140_1_20::8" result="Failed">
+<test-case id="sample_control_mixed_results_1::8" name="control_rendering_test_mod.control.sample_control_mixed_results_1::8" result="Passed">
 <properties>
     <property>
      <key>steampipe:status</key>
-     <value>alarm</value>
+     <value>info</value>
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in ap-northeast-3.</value>
+     <value>Information</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>ap-northeast-3</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>20</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in ap-northeast-3.]]></message>
+<message><![CDATA[Information]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::9" name="aws_compliance.control.cis_v140_1_20::9" result="Failed">
+<test-case id="sample_control_mixed_results_1::9" name="control_rendering_test_mod.control.sample_control_mixed_results_1::9" result="Passed">
 <properties>
     <property>
      <key>steampipe:status</key>
-     <value>alarm</value>
+     <value>info</value>
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in eu-west-2.</value>
+     <value>Information</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>eu-west-2</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>21</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in eu-west-2.]]></message>
+<message><![CDATA[Information]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::10" name="aws_compliance.control.cis_v140_1_20::10" result="Failed">
+<test-case id="sample_control_mixed_results_1::10" name="control_rendering_test_mod.control.sample_control_mixed_results_1::10" result="Passed">
 <properties>
     <property>
      <key>steampipe:status</key>
-     <value>alarm</value>
+     <value>ok</value>
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in us-east-1.</value>
+     <value>Resource satisfies condition</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>us-east-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>1</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in us-east-1.]]></message>
+<message><![CDATA[Resource satisfies condition]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::11" name="aws_compliance.control.cis_v140_1_20::11" result="Failed">
+<test-case id="sample_control_mixed_results_1::11" name="control_rendering_test_mod.control.sample_control_mixed_results_1::11" result="Passed">
 <properties>
     <property>
      <key>steampipe:status</key>
-     <value>alarm</value>
+     <value>ok</value>
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in eu-west-3.</value>
+     <value>Resource satisfies condition</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>eu-west-3</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>2</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in eu-west-3.]]></message>
+<message><![CDATA[Resource satisfies condition]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::12" name="aws_compliance.control.cis_v140_1_20::12" result="Failed">
+<test-case id="sample_control_mixed_results_1::12" name="control_rendering_test_mod.control.sample_control_mixed_results_1::12" result="Passed">
 <properties>
     <property>
      <key>steampipe:status</key>
-     <value>alarm</value>
+     <value>ok</value>
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in ap-south-1.</value>
+     <value>Resource satisfies condition</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>ap-south-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>3</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in ap-south-1.]]></message>
+<message><![CDATA[Resource satisfies condition]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::13" name="aws_compliance.control.cis_v140_1_20::13" result="Failed">
+<test-case id="sample_control_mixed_results_1::13" name="control_rendering_test_mod.control.sample_control_mixed_results_1::13" result="Passed">
 <properties>
     <property>
      <key>steampipe:status</key>
-     <value>alarm</value>
+     <value>ok</value>
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in eu-west-1.</value>
+     <value>Resource satisfies condition</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>eu-west-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>4</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in eu-west-1.]]></message>
+<message><![CDATA[Resource satisfies condition]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::14" name="aws_compliance.control.cis_v140_1_20::14" result="Failed">
+<test-case id="sample_control_mixed_results_1::14" name="control_rendering_test_mod.control.sample_control_mixed_results_1::14" result="Passed">
 <properties>
     <property>
      <key>steampipe:status</key>
-     <value>alarm</value>
+     <value>ok</value>
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in eu-north-1.</value>
+     <value>Resource satisfies condition</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>eu-north-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>5</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in eu-north-1.]]></message>
+<message><![CDATA[Resource satisfies condition]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::15" name="aws_compliance.control.cis_v140_1_20::15" result="Failed">
+<test-case id="sample_control_mixed_results_1::15" name="control_rendering_test_mod.control.sample_control_mixed_results_1::15" result="Passed">
 <properties>
     <property>
      <key>steampipe:status</key>
-     <value>alarm</value>
+     <value>ok</value>
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in us-west-2.</value>
+     <value>Resource satisfies condition</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>us-west-2</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>6</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in us-west-2.]]></message>
+<message><![CDATA[Resource satisfies condition]]></message>
 </reason>
 </test-case>
 
     
         
-<test-case id="cis_v140_1_20::16" name="aws_compliance.control.cis_v140_1_20::16" result="Failed">
+<test-case id="sample_control_mixed_results_1::16" name="control_rendering_test_mod.control.sample_control_mixed_results_1::16" result="Passed">
 <properties>
     <property>
      <key>steampipe:status</key>
-     <value>alarm</value>
+     <value>ok</value>
     </property>
     <property>
      <key>steampipe:reason</key>
-     <value>Access analyzer not enabled in ca-central-1.</value>
+     <value>Resource satisfies condition</value>
     </property>
     
     <property>
-    <key>steampipe:dimension:region</key>
-    <value>ca-central-1</value>
-    </property>
-    
-    <property>
-    <key>steampipe:dimension:account_id</key>
-    <value>453319552164</value>
+    <key>steampipe:dimension:id</key>
+    <value>7</value>
     </property>
     
 </properties>
 <reason>
-<message><![CDATA[Access analyzer not enabled in ca-central-1.]]></message>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::17" name="control_rendering_test_mod.control.sample_control_mixed_results_1::17" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>ok</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource satisfies condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>8</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::18" name="control_rendering_test_mod.control.sample_control_mixed_results_1::18" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>ok</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource satisfies condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>9</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::19" name="control_rendering_test_mod.control.sample_control_mixed_results_1::19" result="Passed">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>ok</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource satisfies condition</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>10</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource satisfies condition]]></message>
+</reason>
+</test-case>
+
+    
+        
+<test-case id="sample_control_mixed_results_1::20" name="control_rendering_test_mod.control.sample_control_mixed_results_1::20" result="Skipped">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>skip</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>Resource is skipped</value>
+    </property>
+    
+    <property>
+    <key>steampipe:dimension:id</key>
+    <value>18</value>
+    </property>
+    
+</properties>
+<reason>
+<message><![CDATA[Resource is skipped]]></message>
 </reason>
 </test-case>
 
