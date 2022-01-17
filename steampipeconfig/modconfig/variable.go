@@ -78,7 +78,7 @@ func (v *Variable) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (v *Variable) SetMod(mod *Mod) {
 	v.Mod = mod
-	v.UnqualifiedName = v.FullName
+	// add mod name to full name
 	v.FullName = fmt.Sprintf("%s.%s", mod.ShortName, v.FullName)
 }
 

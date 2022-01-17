@@ -173,7 +173,7 @@ func (q *Query) AddReference(ref *ResourceReference) {
 // SetMod implements HclResource
 func (q *Query) SetMod(mod *Mod) {
 	q.Mod = mod
-	q.UnqualifiedName = q.FullName
+	// add mod name to full name
 	q.FullName = fmt.Sprintf("%s.%s", mod.ShortName, q.FullName)
 }
 

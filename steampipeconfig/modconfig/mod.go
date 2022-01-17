@@ -490,16 +490,16 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 	}
 	for _, report := range m.Reports {
 		// check all child names of this report for a matching name
-		for _, childName := range report.ChildNames {
-			if childName.Name == item.Name() {
+		for _, child := range report.GetChildren() {
+			if child.Name() == item.Name() {
 				parents = append(parents, report)
 			}
 		}
 	}
 	for _, container := range m.Containers {
 		// check all child names of this container for a matching name
-		for _, childName := range container.ChildNames {
-			if childName.Name == item.Name() {
+		for _, child := range container.GetChildren() {
+			if child.Name() == item.Name() {
 				parents = append(parents, container)
 			}
 		}
