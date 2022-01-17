@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -14,12 +15,8 @@ type ReportContainer struct {
 	FullName        string `cty:"name"`
 	UnqualifiedName string
 
-	// child names as NamedItem structs - used to allow setting children via the 'children' property
-	ChildNames []NamedItem `cty:"child_names"`
 	// used for introspection tables
 	ChildNameStrings []string `cty:"children" column:"children,jsonb"`
-	// the actual children
-	Children []ModTreeItem
 
 	Title *string `cty:"title" column:"title,text"`
 	Width *int    `cty:"width"  column:"width,text"`
@@ -30,6 +27,8 @@ type ReportContainer struct {
 	Base  *ReportContainer
 	Paths []NodePath `column:"path,jsonb"`
 
+	// the actual children
+	children []ModTreeItem
 	parents  []ModTreeItem
 	metadata *ResourceMetadata
 
@@ -38,12 +37,22 @@ type ReportContainer struct {
 
 func NewReportContainer(block *hcl.Block) *ReportContainer {
 	report := &ReportContainer{
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		DeclRange:       block.DefRange,
-		hclType:         block.Type,
+		DeclRange: block.DefRange,
+		hclType:   block.Type,
 	}
+	// report name is defined in hcl
+	if report.IsReport() {
+		report.ShortName = block.Labels[0]
+		// mod name is added later
+		report.FullName = fmt.Sprintf("%s.%s", block.Type, block.Labels[0])
+		report.UnqualifiedName = report.FullName
+	}
+	// if the block has a name, set the name
+	anonymous := len(block.Labels) == 0
+	if !anonymous {
+		report.SetName(block.Labels[0])
+	}
+
 	return report
 }
 
@@ -79,9 +88,6 @@ func (r *ReportContainer) setBaseProperties() {
 	if r.Width == nil {
 		r.Width = r.Base.Width
 	}
-	if len(r.ChildNames) == 0 {
-		r.ChildNames = r.Base.ChildNames
-	}
 }
 
 // AddReference implements HclResource
@@ -92,8 +98,13 @@ func (r *ReportContainer) AddReference(*ResourceReference) {
 // SetMod implements HclResource
 func (r *ReportContainer) SetMod(mod *Mod) {
 	r.Mod = mod
-	r.UnqualifiedName = r.FullName
-	r.FullName = fmt.Sprintf("%s.%s", mod.ShortName, r.FullName)
+
+	// if this is a top level resource, and not a child, the resource names will already be set
+	// - we need to update the full name to include the mod
+	if r.UnqualifiedName != "" {
+		// add mod name to full name
+		r.FullName = fmt.Sprintf("%s.%s", mod.ShortName, r.UnqualifiedName)
+	}
 }
 
 // GetMod implements HclResource
@@ -104,6 +115,40 @@ func (r *ReportContainer) GetMod() *Mod {
 // GetDeclRange implements HclResource
 func (r *ReportContainer) GetDeclRange() *hcl.Range {
 	return &r.DeclRange
+}
+
+// SetName implements AnonymousResource
+func (r *ReportContainer) SetName(name string) {
+	// if name is already set, do nothing
+	if r.ShortName != "" {
+		return
+	}
+
+	r.ShortName = name
+	r.UnqualifiedName = fmt.Sprintf("%s.%s", r.hclType, name)
+
+	//  if this is a child resource, the mod name and metadata will already have been set
+	// (because of the decode order)
+	// we need top set FullName to inmclude the mof name, and update the resource name in the metadata
+	if r.Mod != nil {
+		// set the full name
+		r.FullName = fmt.Sprintf("%s.%s", r.Mod.ShortName, r.UnqualifiedName)
+		// update the name in metadata
+		r.metadata.ResourceName = r.ShortName
+
+	} else {
+		// if mod is not yet set, just set the full name to the unqualified name for now
+		r.FullName = r.UnqualifiedName
+	}
+
+	// now set child name
+	r.setChildNames()
+
+}
+
+// HclType implements AnonymousResource
+func (r *ReportContainer) HclType() string {
+	return r.hclType
 }
 
 // AddParent implements ModTreeItem
@@ -119,7 +164,7 @@ func (r *ReportContainer) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (r *ReportContainer) GetChildren() []ModTreeItem {
-	return r.Children
+	return r.children
 }
 
 // GetTitle implements ModTreeItem
@@ -193,4 +238,39 @@ func (r *ReportContainer) Diff(other *ReportContainer) *ReportTreeItemDiffs {
 
 func (r *ReportContainer) IsReport() bool {
 	return r.hclType == "report"
+}
+
+func (r *ReportContainer) SetChildren(children []ModTreeItem) {
+	r.children = children
+
+	// the children will be anonymous
+	// if we have a name, set child names
+	if r.ShortName != "" {
+		r.setChildNames()
+	}
+}
+
+func (r *ReportContainer) setChildNames() {
+	// sanitise the parent (our) name
+	parentName := strings.Replace(r.ShortName, ".", "_", -1)
+	// build map so we can generate indexes for each child resource type
+	childIndexes := make(map[string]int)
+	r.ChildNameStrings = make([]string, len(r.children))
+	for i, child := range r.children {
+		// all children are anonymous
+		anonymousChild, ok := child.(AnonymousResource)
+		if !ok {
+			panic("all children must support AnonymousResource")
+		}
+		// get the 0-based index for this child type
+		hclType := anonymousChild.HclType()
+		idx := childIndexes[hclType]
+		childIndexes[hclType] = idx + 1
+
+		// set the name
+		name := fmt.Sprintf("%s_%s_%d", parentName, hclType, idx)
+		anonymousChild.SetName(name)
+		// also store the name
+		r.ChildNameStrings[i] = child.Name()
+	}
 }

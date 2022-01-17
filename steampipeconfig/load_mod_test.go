@@ -493,14 +493,14 @@ func setChildren(mod *modconfig.Mod) {
 		for _, childName := range container.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName.Name)
 			child, _ := mod.GetChildResource(parsed)
-			container.Children = append(container.Children, child)
+			container.children = append(container.children, child)
 		}
 	}
 	for _, report := range mod.Reports {
 		for _, childName := range report.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName.Name)
 			child, _ := mod.GetChildResource(parsed)
-			report.Children = append(report.Children, child)
+			report.children = append(report.children, child)
 		}
 	}
 

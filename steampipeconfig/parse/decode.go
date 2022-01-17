@@ -439,33 +439,24 @@ func decodeContainerReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 	diags = decodeProperty(content, "title", &report.Title, runCtx)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeProperty(content, "children", &report.ChildNames, runCtx)
-	res.handleDecodeDiags(diags)
-
 	diags = decodeProperty(content, "base", &report.Base, runCtx)
 	res.handleDecodeDiags(diags)
 
 	diags = decodeProperty(content, "width", &report.Width, runCtx)
 	res.handleDecodeDiags(diags)
 
-	if len(report.ChildNames) > 0 && len(content.Blocks) > 0 {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s defines both 'children' property and has children declared inline%s", report.Name()),
-			Subject:  &block.TypeRange,
-		})
-		res.handleDecodeDiags(diags)
+	// now add children
+	if !res.Success() {
+		return report, res
 	}
 
-	// now add children
-	if res.Success() {
-		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypePanel}
-		children, diags := decodeChildren(report.ChildNames, block, supportedChildren, runCtx)
-		res.handleDecodeDiags(diags)
-
-		// now set children and child name strings
-		report.Children = children
-		report.ChildNameStrings = getChildNameString(children)
+	var children []modconfig.ModTreeItem
+	if len(content.Blocks) > 0 {
+		var childrenRes *decodeResult
+		children, childrenRes = decodeInlineChildren(content, runCtx)
+		// now set children
+		report.SetChildren(children)
+		res.Merge(childrenRes)
 	}
 
 	return report, res
@@ -570,6 +561,7 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 // - generate and set resource metadata
 // - add resource to RunContext (which adds it to the mod)handleDecodeResult
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
+	anonymousResource := len(block.Labels) == 0
 	if res.Success() {
 		// call post decode hook
 		// NOTE: must do this BEFORE adding resource to run context to ensure we respect the base property
@@ -583,9 +575,13 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
 		if _, ok := resource.(*modconfig.Mod); !ok {
 			resource.SetMod(runCtx.CurrentMod)
-			// add resource to mod - this will fail if the mod already has a resource with the same name
-			moreDiags := runCtx.CurrentMod.AddResource(resource)
-			res.addDiags(moreDiags)
+			// if resource is NOT anonymous, add resource to mod
+			// - this will fail if the mod already has a resource with the same name
+			if !anonymousResource {
+				// we cannot add anonymous resources at this point - they will be added after their names are set
+				moreDiags = runCtx.CurrentMod.AddResource(resource)
+				res.addDiags(moreDiags)
+			}
 		}
 
 		// if resource supports metadata, save it
@@ -595,9 +591,11 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 			res.addDiags(moreDiags)
 		}
 
-		// add resource into the run context
-		moreDiags = runCtx.AddResource(resource)
-		res.addDiags(moreDiags)
+		// // if resource is NOT anonymous, add into the run context
+		if !anonymousResource {
+			moreDiags = runCtx.AddResource(resource)
+			res.addDiags(moreDiags)
+		}
 	} else {
 		if len(res.Depends) > 0 {
 			runCtx.AddDependencies(block, resource.Name(), res.Depends)

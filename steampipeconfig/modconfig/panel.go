@@ -10,8 +10,9 @@ import (
 
 // Panel is a struct representing the Panel resource
 type Panel struct {
-	FullName  string `cty:"name"`
-	ShortName string
+	FullName        string `cty:"name"`
+	ShortName       string
+	UnqualifiedName string
 
 	Title      *string           `cty:"title" column:"title,text"`
 	Type       *string           `cty:"type" column:"type,text"`
@@ -25,19 +26,22 @@ type Panel struct {
 	Base  *Panel
 	Paths []NodePath `column:"path,jsonb"`
 
-	parents         []ModTreeItem
-	metadata        *ResourceMetadata
-	UnqualifiedName string
+	parents  []ModTreeItem
+	metadata *ResourceMetadata
 }
 
 func NewPanel(block *hcl.Block) *Panel {
 	panel := &Panel{
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("panel.%s", block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("panel.%s", block.Labels[0]),
-		DeclRange:       block.DefRange,
-		Properties:      make(map[string]string),
+		DeclRange:  block.DefRange,
+		Properties: make(map[string]string),
 	}
+
+	// if the block has a name, set the name
+	anonymous := len(block.Labels) == 0
+	if !anonymous {
+		panel.SetName(block.Labels[0])
+	}
+
 	return panel
 }
 
@@ -51,7 +55,7 @@ func (p *Panel) CtyValue() (cty.Value, error) {
 	return getCtyValue(p)
 }
 
-// Name implements HclResource
+// Name implements HclResource, ModTreeItem
 // return name in format: 'panel.<shortName>'
 func (p *Panel) Name() string {
 	return p.FullName
@@ -84,7 +88,6 @@ func (p *Panel) setBaseProperties() {
 			p.Properties[k] = v
 		}
 	}
-
 }
 
 // AddReference implements HclResource
@@ -93,8 +96,12 @@ func (p *Panel) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (p *Panel) SetMod(mod *Mod) {
 	p.Mod = mod
-	p.UnqualifiedName = p.FullName
-	p.FullName = fmt.Sprintf("%s.%s", mod.ShortName, p.FullName)
+	// if this is a top level resource, and not a child, the resource names will already be set
+	// - we need to update the full name to include the mod
+	if p.UnqualifiedName != "" {
+		// add mod name to full name
+		p.FullName = fmt.Sprintf("%s.%s", p.Mod.ShortName, p.UnqualifiedName)
+	}
 }
 
 // GetMod implements HclResource
@@ -105,6 +112,31 @@ func (p *Panel) GetMod() *Mod {
 // GetDeclRange implements HclResource
 func (p *Panel) GetDeclRange() *hcl.Range {
 	return &p.DeclRange
+}
+
+// SetName implements AnonymousResource
+func (p *Panel) SetName(name string) {
+	p.ShortName = name
+	p.UnqualifiedName = fmt.Sprintf("panel.%s", name)
+
+	//  if this is a child resource, the mod name and metadata will already have been set
+	// (because of the decode order)
+	// we need top set FullName to inmclude the mof name, and update the resource name in the metadata
+	if p.Mod != nil {
+		// set the full name
+		p.FullName = fmt.Sprintf("%s.%s", p.Mod.ShortName, p.UnqualifiedName)
+		// update the name in metadata
+		p.metadata.ResourceName = p.ShortName
+
+	} else {
+		// for named resources, mod will not be set yet
+		p.FullName = p.UnqualifiedName
+	}
+}
+
+// HclType implements AnonymousResource
+func (*Panel) HclType() string {
+	return BlockTypePanel
 }
 
 // AddParent implements ModTreeItem

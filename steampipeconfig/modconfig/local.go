@@ -51,6 +51,7 @@ func (l *Local) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (l *Local) SetMod(mod *Mod) {
 	l.Mod = mod
+	// add mod name to full name
 	l.FullName = fmt.Sprintf("%s.%s", mod.ShortName, l.FullName)
 }
 

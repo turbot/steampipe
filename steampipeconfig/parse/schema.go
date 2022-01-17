@@ -91,12 +91,10 @@ var ReportBlockSchema = &hcl.BodySchema{
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type:       "container",
-			LabelNames: []string{"type"},
+			Type: "container",
 		},
 		{
-			Type:       "panel",
-			LabelNames: []string{"name"},
+			Type: "panel",
 		},
 	},
 }

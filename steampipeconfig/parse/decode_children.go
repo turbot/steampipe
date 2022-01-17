@@ -8,11 +8,25 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-func decodeChildren(childNames []modconfig.NamedItem, block *hcl.Block, supportedChildren []string, runCtx *RunContext) ([]modconfig.ModTreeItem, hcl.Diagnostics) {
-	if len(childNames) == 0 {
-		return nil, nil
+func decodeInlineChildren(content *hcl.BodyContent, runCtx *RunContext) ([]modconfig.ModTreeItem, *decodeResult) {
+	var res = &decodeResult{}
+	// if children are declared inline as blocks, add them
+	var children []modconfig.ModTreeItem
+	for _, b := range content.Blocks {
+		resources, blockRes := decodeBlock(runCtx, b)
+		res.Merge(blockRes)
+		if !blockRes.Success() {
+			continue
+		}
+		for _, childResource := range resources {
+			if child, ok := childResource.(modconfig.ModTreeItem); ok {
+				children = append(children, child)
+			}
+		}
 	}
-	//
+	return children, res
+}
+func decodeChildren(childNames []modconfig.NamedItem, block *hcl.Block, supportedChildren []string, runCtx *RunContext) ([]modconfig.ModTreeItem, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	diags = checkForDuplicateChildren(childNames, block)
 	if diags.HasErrors() {
