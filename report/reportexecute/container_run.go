@@ -2,7 +2,6 @@ package reportexecute
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/turbot/steampipe/utils"
@@ -36,8 +35,7 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 
 	children := container.GetChildren()
 	r := &ReportContainerRun{
-		// the name is the path, i.e. dot-separated concatenation of parent names
-		Name:          fmt.Sprintf("%s.%s", parent.GetName(), container.UnqualifiedName),
+		Name:          container.Name(),
 		executionTree: executionTree,
 		parent:        parent,
 		// set to complete, optimistically

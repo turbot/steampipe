@@ -213,20 +213,20 @@ func (r *ReportContainer) SetChildren(children []ModTreeItem) {
 }
 
 // SetName implements AnonymousResource
-func (p *ReportContainer) SetName(name string) {
-	p.ShortName = name
-	p.UnqualifiedName = fmt.Sprintf("panel.%s", name)
+func (r *ReportContainer) SetName(name string) {
+	r.ShortName = name
+	r.UnqualifiedName = fmt.Sprintf("%s.%s", r.hclType, name)
 	// set the full name
-	p.FullName = fmt.Sprintf("%s.%s", p.Mod.ShortName, p.UnqualifiedName)
+	r.FullName = fmt.Sprintf("%s.%s", r.Mod.ShortName, r.UnqualifiedName)
 	// update the name in metadata
-	p.metadata.ResourceName = p.ShortName
+	r.metadata.ResourceName = r.ShortName
 
-	p.setChildNames()
+	r.setChildNames()
 }
 
 // HclType implements AnonymousResource
-func (*ReportContainer) HclType() string {
-	return BlockTypePanel
+func (r *ReportContainer) HclType() string {
+	return r.hclType
 }
 
 func (r *ReportContainer) setChildNames() {
@@ -248,6 +248,5 @@ func (r *ReportContainer) setChildNames() {
 		// set the name
 		name := fmt.Sprintf("%s_%s_%d", parentName, hclType, idx)
 		anonymousChild.SetName(name)
-
 	}
 }
