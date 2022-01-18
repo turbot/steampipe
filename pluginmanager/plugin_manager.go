@@ -196,7 +196,7 @@ func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*pb.Connecti
 }
 
 func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
-	log.Printf("[WARN] PluginManager Shutdown %v", m.Plugins)
+	log.Printf("[TRACE] PluginManager Shutdown %v", m.Plugins)
 
 	m.mut.Lock()
 	defer func() {
@@ -207,7 +207,7 @@ func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResp
 	}()
 
 	for _, p := range m.Plugins {
-		log.Printf("[WARN] killing plugin %v", p.reattach.Pid)
+		log.Printf("[TRACE] killing plugin %v", p.reattach.Pid)
 		p.client.Kill()
 	}
 	return &pb.ShutdownResponse{}, nil
@@ -258,7 +258,7 @@ func (m *PluginManager) waitForPluginLoad(connection string, p *runningPlugin) e
 
 	select {
 	case <-p.initialized:
-		log.Printf("[WARN] initialized: %d", p.reattach.Pid)
+		log.Printf("[TRACE] initialized: %d", p.reattach.Pid)
 		return nil
 
 	case <-time.After(time.Duration(pluginStartTimeoutSecs) * time.Second):
