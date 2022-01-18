@@ -454,7 +454,14 @@ func decodeContainerReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 
 	diags = decodeProperty(content, "base", &report.Base, runCtx)
 	res.handleDecodeDiags(diags)
-
+	if report.Base != nil && len(report.Base.ChildNames) > 0 {
+		supportedChildren := []string{modconfig.BlockTypePanel, modconfig.BlockTypeContainer}
+		// TODO: we should be passing in the block for the Base resource - but this is only used
+		// for diags and we do not expect to get any (as this function has already succeeded
+		// when the base was originally parsed)
+		children, _ := resolveChildrenFromNames(report.Base.ChildNames, block, supportedChildren, runCtx)
+		report.Base.SetChildren(children)
+	}
 	diags = decodeProperty(content, "width", &report.Width, runCtx)
 	res.handleDecodeDiags(diags)
 
@@ -501,7 +508,7 @@ func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark
 	// now add children
 	if res.Success() {
 		supportedChildren := []string{modconfig.BlockTypeBenchmark, modconfig.BlockTypeControl}
-		children, diags := decodeChildren(benchmark.ChildNames, block, supportedChildren, runCtx)
+		children, diags := resolveChildrenFromNames(benchmark.ChildNames.StringList(), block, supportedChildren, runCtx)
 		res.handleDecodeDiags(diags)
 
 		// now set children and child name strings

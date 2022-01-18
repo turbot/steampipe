@@ -26,7 +26,8 @@ func decodeInlineChildren(content *hcl.BodyContent, runCtx *RunContext) ([]modco
 	}
 	return children, res
 }
-func decodeChildren(childNames []modconfig.NamedItem, block *hcl.Block, supportedChildren []string, runCtx *RunContext) ([]modconfig.ModTreeItem, hcl.Diagnostics) {
+
+func resolveChildrenFromNames(childNames []string, block *hcl.Block, supportedChildren []string, runCtx *RunContext) ([]modconfig.ModTreeItem, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	diags = checkForDuplicateChildren(childNames, block)
 	if diags.HasErrors() {
@@ -37,32 +38,21 @@ func decodeChildren(childNames []modconfig.NamedItem, block *hcl.Block, supporte
 	children := make([]modconfig.ModTreeItem, len(childNames))
 
 	for i, childName := range childNames {
-		parsedName, err := modconfig.ParseResourceName(childName.Name)
+		parsedName, err := modconfig.ParseResourceName(childName)
 		if err != nil || !helpers.StringSliceContains(supportedChildren, parsedName.ItemType) {
 			diags = append(diags, childErrorDiagnostic(childName, block))
 			continue
 		}
 
 		// now get the resource from the parent mod
-		var mod *modconfig.Mod
-		if parsedName.Mod == runCtx.CurrentMod.ShortName {
-			mod = runCtx.CurrentMod
-		} else {
-			// we need to iterate through dependency mods - we cannot use parsedName.Mod as key as it is short name
-			for _, dep := range runCtx.LoadedDependencyMods {
-				if dep.ShortName == parsedName.Mod {
-					mod = dep
-					break
-				}
-			}
-			if mod == nil {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("Could not resolve mod for child %s", childName),
-					Subject:  &block.TypeRange,
-				})
-				break
-			}
+		var mod = runCtx.GetMod(parsedName.Mod)
+		if mod == nil {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("Could not resolve mod for child %s", childName),
+				Subject:  &block.TypeRange,
+			})
+			break
 		}
 
 		child, found := mod.GetChildResource(parsedName)
@@ -84,26 +74,26 @@ func decodeChildren(childNames []modconfig.NamedItem, block *hcl.Block, supporte
 	return children, nil
 }
 
-func checkForDuplicateChildren(names []modconfig.NamedItem, block *hcl.Block) hcl.Diagnostics {
+func checkForDuplicateChildren(names []string, block *hcl.Block) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	// validate each child name appears only once
 	nameMap := make(map[string]int)
 	for _, n := range names {
-		nameCount := nameMap[n.Name]
+		nameCount := nameMap[n]
 		// raise an error if this name appears more than once (but only raise 1 error per name)
 		if nameCount == 1 {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("'%s.%s' has duplicate child name '%s'", block.Type, block.Labels[0], n.Name),
+				Summary:  fmt.Sprintf("'%s.%s' has duplicate child name '%s'", block.Type, block.Labels[0], n),
 				Subject:  &block.DefRange})
 		}
-		nameMap[n.Name] = nameCount + 1
+		nameMap[n] = nameCount + 1
 	}
 
 	return diags
 }
 
-func childErrorDiagnostic(childName modconfig.NamedItem, block *hcl.Block) *hcl.Diagnostic {
+func childErrorDiagnostic(childName string, block *hcl.Block) *hcl.Diagnostic {
 	return &hcl.Diagnostic{
 		Severity: hcl.DiagError,
 		Summary:  fmt.Sprintf("Invalid child %s", childName),

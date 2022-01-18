@@ -18,7 +18,7 @@ type Benchmark struct {
 	UnqualifiedName string
 
 	// child names as NamedItem structs - used to allow setting children via the 'children' property
-	ChildNames []NamedItem `cty:"child_names"`
+	ChildNames NamedItemList `cty:"child_names"`
 	// used for introspection tables
 	ChildNameStrings []string `column:"children,jsonb"`
 	// the actual children

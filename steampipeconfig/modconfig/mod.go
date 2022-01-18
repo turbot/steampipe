@@ -692,6 +692,8 @@ func (m *Mod) GetChildResource(parsedName *ParsedResourceName) (resource ModTree
 		resource, found = m.Reports[longName]
 	case BlockTypeContainer:
 		resource, found = m.Containers[longName]
+	case BlockTypePanel:
+		resource, found = m.Panels[longName]
 	}
 	return resource, found
 }
