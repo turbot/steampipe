@@ -43,12 +43,9 @@ func (tf TemplateFormatter) FileExtension() string {
 }
 
 func NewTemplateFormatter(input ExportTemplate) (*TemplateFormatter, error) {
-	t, err := template.New("outlet").
+	t := template.Must(template.New("outlet").
 		Funcs(formatterTemplateFuncMap).
-		ParseFS(os.DirFS(input.TemplatePath), "*")
+		ParseFS(os.DirFS(input.TemplatePath), "*"))
 
-	if err != nil {
-		return nil, err
-	}
 	return &TemplateFormatter{exportFormat: input, template: t}, nil
 }
