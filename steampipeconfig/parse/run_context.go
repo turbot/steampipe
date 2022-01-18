@@ -225,7 +225,7 @@ func (r *RunContext) BlocksToDecode() (hcl.Blocks, error) {
 	}
 
 	// NOTE: a block may appear more than once in unresolved blocks
-	// if it defines muleiple unresolved resources, e.g a locals block
+	// if it defines multiple unresolved resources, e.g a locals block
 
 	// make a map of blocks we have already included, keyed by the block def range
 	blocksMap := make(map[string]bool)
