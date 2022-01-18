@@ -3,21 +3,21 @@
 {{ define "control_run_template" }}
 {
     "SchemaVersion": "2018-10-08",
-    "Id": "{{ .Control.FullName }}",
-    "ProductArn": "arn:aws:securityhub:{{ . | GetDimensionRegion }}:{{ . | GetDimensionAccount }}:product/{{ . | GetDimensionAccount }}/default",
+    "Id": "{{ .Run.Control.FullName }}",
+    "ProductArn": "arn:aws:securityhub:{{ .GetDimensionValue "region" }}:{{ .GetDimensionValue "account_id" }}:product/{{ .GetDimensionValue "account_id" }}/default",
     "ProductFields": {
         "ProviderName": "Steampipe",
         "ProviderVersion": "{{ steampipeversion }}"
     },
-    "GeneratorId": "steampipe-{{ .Control.ShortName }}",
-    "AwsAccountId": "{{ . | GetDimensionAccount }}",
+    "GeneratorId": "steampipe-{{ .Run.Control.ShortName }}",
+    "AwsAccountId": "{{ .GetDimensionValue "account_id" }}",
     "Types": [
         "automated"
     ],
     "UpdatedAt": "{{ timenow }}",
     "CreatedAt": "{{ timenow }}",
-    "Title": "{{ .Control.Title }}",
-    "Description": "{{ .Control.Description }}",{{ with .Control.Severity }}
+    "Title": "{{ .Run.Control.Title }}",
+    "Description": "{{ .Run.Control.Description }}",{{ with .Run.Control.Severity }}
     "Severity": {
         "Label": "{{ . | ToUpper}}"
     },{{ else }}
