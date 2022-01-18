@@ -22,6 +22,8 @@ type ReportContainer struct {
 
 	Base  *ReportContainer
 	Paths []NodePath `column:"path,jsonb"`
+	// store children in a way which can be serialised via cty
+	ChildNames []string `cty:"children"`
 
 	// the actual children
 	children []ModTreeItem
@@ -81,6 +83,10 @@ func (r *ReportContainer) setBaseProperties() {
 	}
 	if r.Width == nil {
 		r.Width = r.Base.Width
+	}
+	if len(r.children) == 0 {
+		r.children = r.Base.GetChildren()
+		r.ChildNames = r.Base.ChildNames
 	}
 }
 
@@ -203,44 +209,8 @@ func (r *ReportContainer) IsReport() bool {
 
 func (r *ReportContainer) SetChildren(children []ModTreeItem) {
 	r.children = children
+	r.ChildNames = make([]string, len(children))
+	for i, c := range children {
+		r.ChildNames[i] = c.Name()
+	}
 }
-
-//
-//// SetName implements AnonymousResource
-//func (r *ReportContainer) SetName(name string) {
-//	r.ShortName = name
-//	r.UnqualifiedName = fmt.Sprintf("%s.%s", r.hclType, name)
-//	// set the full name
-//	r.FullName = fmt.Sprintf("%s.%s", r.Mod.ShortName, r.UnqualifiedName)
-//	// update the name in metadata
-//	r.metadata.ResourceName = r.ShortName
-//
-//	r.setChildNames()
-//}
-//
-//// HclType implements AnonymousResource
-//func (r *ReportContainer) HclType() string {
-//	return r.hclType
-//}
-//
-//func (r *ReportContainer) setChildNames() {
-//	// sanitise the parent (our) name
-//	parentName := strings.Replace(r.ShortName, ".", "_", -1)
-//	// build map so we can generate indexes for each child resource type
-//	childIndexes := make(map[string]int)
-//	for _, child := range r.children {
-//		// all children are anonymous
-//		anonymousChild, ok := child.(AnonymousResource)
-//		if !ok {
-//			panic("all children must support AnonymousResource")
-//		}
-//		// get the 0-based index for this child type
-//		hclType := anonymousChild.HclType()
-//		idx := childIndexes[hclType]
-//		childIndexes[hclType] = idx + 1
-//
-//		// set the name
-//		name := fmt.Sprintf("%s_%s_%d", parentName, hclType, idx)
-//		anonymousChild.SetName(name)
-//	}
-//}

@@ -471,3 +471,17 @@ func (r *RunContext) IsBlockAnonymous(block *hcl.Block) bool {
 	}
 	return r.anonymousBlocks[block]
 }
+
+func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
+	if modShortName == r.CurrentMod.ShortName {
+		return r.CurrentMod
+	}
+	// we need to iterate through dependency mods - we cannot use modShortNameas key as it is short name
+	for _, dep := range r.LoadedDependencyMods {
+		if dep.ShortName == modShortName {
+			return dep
+
+		}
+	}
+	return nil
+}

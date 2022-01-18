@@ -8,3 +8,13 @@ type NamedItem struct {
 func (c NamedItem) String() string {
 	return c.Name
 }
+
+type NamedItemList []NamedItem
+
+func (l NamedItemList) StringList() []string {
+	res := make([]string, len(l))
+	for i, n := range l {
+		res[i] = n.Name
+	}
+	return res
+}
