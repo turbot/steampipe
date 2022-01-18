@@ -11,6 +11,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/MasterMinds/sprig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/version"
@@ -90,6 +91,19 @@ func (j *NullFormatter) FileExtension() string {
 	return ""
 }
 
+func templateFuncs() template.FuncMap {
+	removeFromSprigMap := []string{"env", "expandenv"}
+	funcs := sprig.TxtFuncMap()
+	for _, remove := range removeFromSprigMap {
+		delete(funcs, remove)
+	}
+	for k, v := range formatterTemplateFuncMap {
+		funcs[k] = v
+	}
+
+	return funcs
+}
+
 var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 	"steampipeversion": func() string { return version.SteampipeVersion.String() },
 	"workingdir":       func() string { wd, _ := os.Getwd(); return wd },
@@ -137,9 +151,6 @@ var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 			return "summary-total-error"
 		}
 		return ""
-	},
-	"ToUpper": func(text string) string {
-		return strings.ToUpper(text)
 	},
 	"timenow": func() string {
 		return time.Now().Format(time.RFC3339)
