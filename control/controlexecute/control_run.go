@@ -46,13 +46,14 @@ type ControlRun struct {
 	BackendPid int64 `json:"-"`
 
 	// the result
-	ControlId   string                  `json:"control_id"`
-	Description string                  `json:"description"`
-	Severity    string                  `json:"severity"`
-	Tags        map[string]string       `json:"tags"`
-	Title       string                  `json:"title"`
-	RowMap      map[string][]*ResultRow `json:"-"`
-	Rows        []*ResultRow            `json:"results"`
+	ControlId     string                  `json:"control_id"`
+	Description   string                  `json:"description"`
+	Severity      string                  `json:"severity"`
+	Tags          map[string]string       `json:"tags"`
+	Title         string                  `json:"title"`
+	RowMap        map[string][]*ResultRow `json:"-"`
+	Rows          []*ResultRow            `json:"results"`
+	DimensionKeys []string                `json:"-"`
 
 	// the query result stream
 	queryResult *queryresult.Result
@@ -326,6 +327,17 @@ func (r *ControlRun) waitForResults(ctx context.Context) {
 func (r *ControlRun) gatherResults(ctx context.Context) {
 	r.Lifecycle.Add("gather_start")
 	defer func() { r.Lifecycle.Add("gather_finish") }()
+
+	defer func() {
+		for _, row := range r.Rows {
+			for _, dim := range row.Dimensions {
+				r.DimensionKeys = append(r.DimensionKeys, dim.Key)
+			}
+		}
+		r.DimensionKeys = utils.StringSliceDistinct(r.DimensionKeys)
+		r.group.addDimensionKeys(r.DimensionKeys...)
+	}()
+
 	for {
 		select {
 		case row := <-*r.queryResult.RowChan:
@@ -346,7 +358,7 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 			}
 
 			// so all is ok - create another result row
-			result, err := NewResultRow(r.Control, row, r.queryResult.ColTypes)
+			result, err := NewResultRow(r, row, r.queryResult.ColTypes)
 			if err != nil {
 				r.SetError(ctx, err)
 				return
