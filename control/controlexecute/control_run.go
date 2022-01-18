@@ -54,6 +54,8 @@ type ControlRun struct {
 	RowMap        map[string][]*ResultRow `json:"-"`
 	Rows          []*ResultRow            `json:"results"`
 	DimensionKeys []string                `json:"-"`
+	Group         *ResultGroup            `json:"-"`
+	Tree          *ExecutionTree          `json:"-"`
 
 	// the query result stream
 	queryResult *queryresult.Result
@@ -61,9 +63,7 @@ type ControlRun struct {
 	stateLock   sync.Mutex
 	doneChan    chan bool
 
-	group         *ResultGroup
-	executionTree *ExecutionTree
-	attempts      int
+	attempts int
 }
 
 func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree *ExecutionTree) *ControlRun {
@@ -84,10 +84,10 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 
 		Lifecycle: utils.NewLifecycleTimer(),
 
-		executionTree: executionTree,
-		runStatus:     ControlRunReady,
+		Tree:      executionTree,
+		runStatus: ControlRunReady,
 
-		group:    group,
+		Group:    group,
 		doneChan: make(chan bool, 1),
 	}
 	res.Lifecycle.Add("constructed")
@@ -166,16 +166,16 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	// function to cleanup and update status after control run completion
 	defer func() {
 		// update the result group status with our status - this will be passed all the way up the execution tree
-		r.group.updateSummary(r.Summary)
+		r.Group.updateSummary(r.Summary)
 		if len(r.Severity) != 0 {
-			r.group.updateSeverityCounts(r.Severity, r.Summary)
+			r.Group.updateSeverityCounts(r.Severity, r.Summary)
 		}
 		r.Lifecycle.Add("execute_end")
 		r.Duration = time.Since(startTime)
-		if r.group != nil {
-			r.group.addDuration(r.Duration)
+		if r.Group != nil {
+			r.Group.addDuration(r.Duration)
 		}
-		log.Printf("[TRACE] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.executionTree.progress.executing)
+		log.Printf("[TRACE] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.Tree.progress.executing)
 	}()
 
 	// get a db connection
@@ -198,8 +198,8 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	r.runStatus = ControlRunStarted
 
 	// update the current running control in the Progress renderer
-	r.executionTree.progress.OnControlStart(ctx, control)
-	defer r.executionTree.progress.OnControlFinish(ctx)
+	r.Tree.progress.OnControlStart(ctx, control)
+	defer r.Tree.progress.OnControlFinish(ctx)
 
 	// resolve the control query
 	r.Lifecycle.Add("query_resolution_start")
@@ -297,7 +297,7 @@ func (r *ControlRun) Finished() bool {
 }
 
 func (r *ControlRun) resolveControlQuery(control *modconfig.Control) (string, error) {
-	query, err := r.executionTree.workspace.ResolveControlQuery(control, nil)
+	query, err := r.Tree.workspace.ResolveControlQuery(control, nil)
 	if err != nil {
 		return "", fmt.Errorf(`cannot run %s - failed to resolve query "%s": %s`, control.Name(), typehelpers.SafeString(control.SQL), err.Error())
 	}
@@ -335,7 +335,7 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 			}
 		}
 		r.DimensionKeys = utils.StringSliceDistinct(r.DimensionKeys)
-		r.group.addDimensionKeys(r.DimensionKeys...)
+		r.Group.addDimensionKeys(r.DimensionKeys...)
 	}()
 
 	for {
@@ -353,7 +353,7 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 				// set error status and summary
 				r.SetError(ctx, row.Error)
 				// update the result group status with our status - this will be passed all the way up the execution tree
-				r.group.updateSummary(r.Summary)
+				r.Group.updateSummary(r.Summary)
 				return
 			}
 
@@ -406,9 +406,9 @@ func (r *ControlRun) setRunStatus(ctx context.Context, status ControlRunStatus) 
 	if r.Finished() {
 		// update Progress
 		if status == ControlRunError {
-			r.executionTree.progress.OnControlError(ctx)
+			r.Tree.progress.OnControlError(ctx)
 		} else {
-			r.executionTree.progress.OnControlComplete(ctx)
+			r.Tree.progress.OnControlComplete(ctx)
 		}
 
 		r.doneChan <- true

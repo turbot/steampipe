@@ -23,13 +23,13 @@ type ResultRow struct {
 }
 
 // GetDimensionValue returns the value for a dimension key. Returns an empty string with 'false' if not found
-func (r *ResultRow) GetDimensionValue(key string) (string, bool) {
+func (r *ResultRow) GetDimensionValue(key string) string {
 	for _, dim := range r.Dimensions {
 		if dim.Key == key {
-			return dim.Value, true
+			return dim.Value
 		}
 	}
-	return "", false
+	return ""
 }
 
 // AddDimension checks whether a column value is a scalar type, and if so adds it to the Dimensions map
