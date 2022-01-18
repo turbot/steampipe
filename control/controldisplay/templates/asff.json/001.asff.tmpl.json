@@ -19,7 +19,7 @@
     "Title": "{{ .Run.Control.Title }}",
     "Description": "{{ .Run.Control.Description }}",{{ with .Run.Control.Severity }}
     "Severity": {
-        "Label": "{{ . | ToUpper}}"
+        "Label": "{{ upper . }}"
     },{{ else }}
     "Severity": {
         "Label": "INFORMATIONAL"
