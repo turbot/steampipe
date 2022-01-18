@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -29,31 +28,18 @@ type ReportContainer struct {
 	parents  []ModTreeItem
 	metadata *ResourceMetadata
 
-	hclType string
+	hclType   string
+	anonymous bool
 }
 
 func NewReportContainer(block *hcl.Block) *ReportContainer {
-	report := &ReportContainer{
-		DeclRange: block.DefRange,
-		hclType:   block.Type,
+	return &ReportContainer{
+		DeclRange:       block.DefRange,
+		hclType:         block.Type,
+		ShortName:       block.Labels[0],
+		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
-
-	if len(block.Labels) > 0 {
-		name := block.Labels[0]
-		report.ShortName = name
-		report.FullName = fmt.Sprintf("%s.%s", block.Type, name)
-		report.UnqualifiedName = fmt.Sprintf("%s.%s", block.Type, name)
-	}
-
-	// report name is defined in hcl
-	if report.IsReport() {
-		report.ShortName = block.Labels[0]
-		// mod name is added later
-		report.FullName = fmt.Sprintf("%s.%s", block.Type, block.Labels[0])
-		report.UnqualifiedName = report.FullName
-	}
-
-	return report
 }
 
 func (r *ReportContainer) Equals(other *ReportContainer) bool {
@@ -70,6 +56,14 @@ func (r *ReportContainer) CtyValue() (cty.Value, error) {
 // return name in format: 'report.<shortName>'
 func (r *ReportContainer) Name() string {
 	return r.FullName
+}
+
+func (r *ReportContainer) SetAnonymous(anonymous bool) {
+	r.anonymous = anonymous
+}
+
+func (r *ReportContainer) IsAnonymous() bool {
+	return r.anonymous
 }
 
 // OnDecoded implements HclResource
@@ -121,7 +115,6 @@ func (r *ReportContainer) GetDeclRange() *hcl.Range {
 func (r *ReportContainer) AddParent(parent ModTreeItem) error {
 	r.parents = append(r.parents, parent)
 
-	r.setChildNames()
 	return nil
 }
 
@@ -212,41 +205,42 @@ func (r *ReportContainer) SetChildren(children []ModTreeItem) {
 	r.children = children
 }
 
-// SetName implements AnonymousResource
-func (r *ReportContainer) SetName(name string) {
-	r.ShortName = name
-	r.UnqualifiedName = fmt.Sprintf("%s.%s", r.hclType, name)
-	// set the full name
-	r.FullName = fmt.Sprintf("%s.%s", r.Mod.ShortName, r.UnqualifiedName)
-	// update the name in metadata
-	r.metadata.ResourceName = r.ShortName
-
-	r.setChildNames()
-}
-
-// HclType implements AnonymousResource
-func (r *ReportContainer) HclType() string {
-	return r.hclType
-}
-
-func (r *ReportContainer) setChildNames() {
-	// sanitise the parent (our) name
-	parentName := strings.Replace(r.ShortName, ".", "_", -1)
-	// build map so we can generate indexes for each child resource type
-	childIndexes := make(map[string]int)
-	for _, child := range r.children {
-		// all children are anonymous
-		anonymousChild, ok := child.(AnonymousResource)
-		if !ok {
-			panic("all children must support AnonymousResource")
-		}
-		// get the 0-based index for this child type
-		hclType := anonymousChild.HclType()
-		idx := childIndexes[hclType]
-		childIndexes[hclType] = idx + 1
-
-		// set the name
-		name := fmt.Sprintf("%s_%s_%d", parentName, hclType, idx)
-		anonymousChild.SetName(name)
-	}
-}
+//
+//// SetName implements AnonymousResource
+//func (r *ReportContainer) SetName(name string) {
+//	r.ShortName = name
+//	r.UnqualifiedName = fmt.Sprintf("%s.%s", r.hclType, name)
+//	// set the full name
+//	r.FullName = fmt.Sprintf("%s.%s", r.Mod.ShortName, r.UnqualifiedName)
+//	// update the name in metadata
+//	r.metadata.ResourceName = r.ShortName
+//
+//	r.setChildNames()
+//}
+//
+//// HclType implements AnonymousResource
+//func (r *ReportContainer) HclType() string {
+//	return r.hclType
+//}
+//
+//func (r *ReportContainer) setChildNames() {
+//	// sanitise the parent (our) name
+//	parentName := strings.Replace(r.ShortName, ".", "_", -1)
+//	// build map so we can generate indexes for each child resource type
+//	childIndexes := make(map[string]int)
+//	for _, child := range r.children {
+//		// all children are anonymous
+//		anonymousChild, ok := child.(AnonymousResource)
+//		if !ok {
+//			panic("all children must support AnonymousResource")
+//		}
+//		// get the 0-based index for this child type
+//		hclType := anonymousChild.HclType()
+//		idx := childIndexes[hclType]
+//		childIndexes[hclType] = idx + 1
+//
+//		// set the name
+//		name := fmt.Sprintf("%s_%s_%d", parentName, hclType, idx)
+//		anonymousChild.SetName(name)
+//	}
+//}

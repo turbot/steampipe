@@ -53,6 +53,11 @@ type RunContext struct {
 	BlockTypeExclusions []string
 	Variables           map[string]*modconfig.Variable
 
+	// map with the index of each anonymous resource type
+	anonymousResources map[string]int
+	decodeStack        hcl.Blocks
+	anonymousBlocks    map[*hcl.Block]bool
+
 	dependencyGraph *topsort.Graph
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
@@ -68,6 +73,8 @@ func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string,
 		ListOptions:          listOptions,
 		LoadedDependencyMods: make(modconfig.ModMap),
 		UnresolvedBlocks:     make(map[string]*unresolvedBlock),
+		anonymousResources:   make(map[string]int),
+		anonymousBlocks:      make(map[*hcl.Block]bool),
 		referenceValues: map[string]ReferenceTypeValueMap{
 			"local": make(ReferenceTypeValueMap),
 		},
@@ -435,4 +442,32 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	}
 
 	return nil
+}
+
+func (r *RunContext) PushDecodeBlock(block *hcl.Block) {
+	r.decodeStack = append(r.decodeStack, block)
+}
+func (r *RunContext) PopDecodeBlock() *hcl.Block {
+	n := len(r.decodeStack) - 1
+	res := r.decodeStack[n]
+	r.decodeStack = r.decodeStack[:n]
+	return res
+}
+
+func (r *RunContext) GetAnonymousResourceName(block *hcl.Block) string {
+	count := r.anonymousResources[block.Type]
+	r.anonymousResources[block.Type] = count + 1
+	parts := make([]string, len(r.decodeStack))
+
+	for i, b := range r.decodeStack {
+		parts[i] = fmt.Sprintf("%s_%s", b.Type, b.Labels[0])
+	}
+	return fmt.Sprintf("%s_%s_%d", strings.Join(parts, "_"), block.Type, count)
+}
+
+func (r *RunContext) IsBlockAnonymous(block *hcl.Block) bool {
+	if len(block.Labels) == 0 {
+		r.anonymousBlocks[block] = true
+	}
+	return r.anonymousBlocks[block]
 }

@@ -27,7 +27,7 @@ func NewReportExecutionTree(reportName string, client db_common.Client, workspac
 		client:      client,
 		runs:        make(map[string]reportinterfaces.ReportNodeRun),
 		workspace:   workspace,
-		runComplete: make(chan (reportinterfaces.ReportNodeRun), 1),
+		runComplete: make(chan reportinterfaces.ReportNodeRun, 1),
 	}
 
 	// create the root run node (either a report run or a panel run)

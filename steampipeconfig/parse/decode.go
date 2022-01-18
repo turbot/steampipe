@@ -57,20 +57,21 @@ func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource,
 	if !runCtx.ShouldIncludeBlock(block) {
 		return nil, res
 	}
+	// if this block is anonymous, give it a unique name
+	anonymousBlock := runCtx.IsBlockAnonymous(block)
+	if anonymousBlock {
+		// replace the labels
+		block.Labels = []string{runCtx.GetAnonymousResourceName(block)}
+	}
+	runCtx.PushDecodeBlock(block)
+	defer runCtx.PopDecodeBlock()
+
 	// check name is valid
 	diags := validateName(block)
 	if diags.HasErrors() {
 		res.addDiags(diags)
 		return nil, res
 	}
-
-	//// if this block is anonymous, give it a unique name
-	//if len(block.Labels) == 0 {
-	//	block.Labels = append(block.Labels, runCtx.GetAnonymousResourceName(block))
-	//}
-	//
-	//runCtx.PushDecodeBlock(block)
-	//defer runCtx.PopDecodeBlock()
 
 	switch block.Type {
 	case modconfig.BlockTypeLocals:
@@ -106,6 +107,10 @@ func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource,
 	}
 
 	for _, resource := range resources {
+		// if this resource type implements AnonymousResource, set its anonymous status
+		if anon, ok := resource.(modconfig.AnonymousResource); ok {
+			anon.SetAnonymous(anonymousBlock)
+		}
 		// handle the result
 		// - if successful, add resource to mod and variables maps
 		// - if there are dependencies, add them to run context
