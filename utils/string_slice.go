@@ -1,5 +1,6 @@
 package utils
 
+// TODO: investigate turbot/go-kit/helpers
 func StringSliceDistinct(slice []string) []string {
 	var res []string
 	occurenceMap := make(map[string]struct{})
