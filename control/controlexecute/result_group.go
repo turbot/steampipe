@@ -2,7 +2,6 @@ package controlexecute
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -116,7 +115,6 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 }
 
 func (r *ResultGroup) addDimensionKeys(keys ...string) {
-	fmt.Println("ResultGroup.addDimensionKeys", keys)
 	r.updateLock.Lock()
 	defer r.updateLock.Unlock()
 	r.DimensionKeys = append(r.DimensionKeys, keys...)
