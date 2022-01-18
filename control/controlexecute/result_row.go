@@ -9,17 +9,18 @@ import (
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
 // ResultRow is the result of a control execution for a single resource
 type ResultRow struct {
-	Reason     string      `json:"reason" csv:"reason"`
-	Resource   string      `json:"resource" csv:"resource"`
-	Status     string      `json:"status" csv:"status"`
-	Dimensions []Dimension `json:"dimensions"`
-	Run        *ControlRun `json:"-"`
-	// Control    *modconfig.Control `json:"-" csv:"control_id:UnqualifiedName,control_title:Title,control_description:Description"`
+	Reason     string             `json:"reason" csv:"reason"`
+	Resource   string             `json:"resource" csv:"resource"`
+	Status     string             `json:"status" csv:"status"`
+	Dimensions []Dimension        `json:"dimensions"`
+	Run        *ControlRun        `json:"-"`
+	Control    *modconfig.Control `json:"-" csv:"control_id:UnqualifiedName,control_title:Title,control_description:Description"`
 }
 
 // GetDimensionValue returns the value for a dimension key. Returns an empty string with 'false' if not found
@@ -48,7 +49,8 @@ func NewResultRow(run *ControlRun, row *queryresult.RowResult, colTypes []*sql.C
 		return nil, err
 	}
 	res := &ResultRow{
-		Run: run,
+		Run:     run,
+		Control: run.Control,
 	}
 
 	// was there a SQL error _executing the control
