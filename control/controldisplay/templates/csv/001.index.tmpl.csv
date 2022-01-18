@@ -1,0 +1,24 @@
+{{ define "outlet" }}
+group_id,title,description,control_id,control_title,control_description,reason,resource,status{{ range .Root.DimensionKeys }},dim-{{ . }}{{ end }}{{range .Root.AllTagKeys }},{{ . }}{{ end }}
+{{ range .Root.Groups }}{{ template "result_group_template" . }}{{ end }}
+{{ end }}
+
+{{ define "result_group_template" }}
+{{ range .ControlRuns }}{{ template "control_run_template" . }}{{ end }}
+{{ range .Groups }}{{ template "result_group_template" . }}{{ end }}
+{{ end }}
+
+{{ define "control_run_template" }}{{ range .Rows }}{{ template "control_row_template" . }}{{ end }}{{ end }}
+
+{{ define "control_row_template" }}
+{{ template "group_details" . }}{{ template "control_details" . }}{{ template "reason_resource_status" . }}{{ template "dimensions" . }}{{ template "tags" . }}{{ end }}
+
+{{ define "group_details" }}{{ .Run.Group.GroupId }},{{ .Run.Group.Title }},{{ .Run.Group.Description }}{{ end }}
+
+{{ define "control_details" }}{{ .Run.ControlId }},{{ .Run.Title }},{{ .Run.Description }}{{ end }}
+
+{{ define "reason_resource_status" }}{{ .Reason }},{{ .Resource }},{{ .Status }}{{ end }}
+
+{{ define "dimensions" }}{{ $row := . }}{{ range .Run.Tree.Root.DimensionKeys }},{{ $row.GetDimensionValue . }}{{ end }}{{ end }}
+
+{{ define "tags" }}{{ $row := . }}{{ range .Run.Tree.Root.AllTagKeys }},{{ index $row.Run.Tags . }}{{ end }}{{ end }}
