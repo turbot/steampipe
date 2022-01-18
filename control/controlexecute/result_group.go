@@ -2,6 +2,7 @@ package controlexecute
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -31,9 +32,10 @@ type ResultGroup struct {
 	Severity    map[string]StatusSummary `json:"-"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
-	GroupItem modconfig.ModTreeItem `json:"-"`
-	Parent    *ResultGroup          `json:"-"`
-	Duration  time.Duration         `json:"-"`
+	GroupItem     modconfig.ModTreeItem `json:"-"`
+	Parent        *ResultGroup          `json:"-"`
+	Duration      time.Duration         `json:"-"`
+	DimensionKeys []string              `json:"-"`
 
 	// lock to prevent multiple control_runs updating this
 	updateLock *sync.Mutex
@@ -111,6 +113,33 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 	}
 
 	return group
+}
+
+func (r *ResultGroup) addDimensionKeys(keys ...string) {
+	fmt.Println("ResultGroup.addDimensionKeys", keys)
+	r.updateLock.Lock()
+	defer r.updateLock.Unlock()
+	r.DimensionKeys = append(r.DimensionKeys, keys...)
+	if r.Parent != nil {
+		r.Parent.addDimensionKeys(keys...)
+	}
+	r.DimensionKeys = utils.StringSliceDistinct(r.DimensionKeys)
+}
+
+func (r *ResultGroup) AllTagKeys() []string {
+	tags := []string{}
+	for k := range r.Tags {
+		tags = append(tags, k)
+	}
+	for _, child := range r.Groups {
+		tags = append(tags, child.AllTagKeys()...)
+	}
+	for _, run := range r.ControlRuns {
+		for k := range run.Control.Tags {
+			tags = append(tags, k)
+		}
+	}
+	return utils.StringSliceDistinct(tags)
 }
 
 // populateGroupMap mutates the passed in a map to return all child result groups
