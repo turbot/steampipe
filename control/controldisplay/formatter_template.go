@@ -3,6 +3,7 @@ package controldisplay
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"text/template"
@@ -38,7 +39,7 @@ func (tf TemplateFormatter) FileExtension() string {
 		return tf.exportFormat.OutputExtension
 	} else {
 		// otherwise return the fullname
-		return tf.exportFormat.FormatFullName
+		return fmt.Sprintf(".%s", tf.exportFormat.FormatFullName)
 	}
 }
 
