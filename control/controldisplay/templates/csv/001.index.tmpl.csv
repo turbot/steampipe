@@ -1,12 +1,7 @@
-{{ define "outlet" }}
-group_id,title,description,control_id,control_title,control_description,reason,resource,status{{ range .Root.DimensionKeys }},dim-{{ . }}{{ end }}{{range .Root.AllTagKeys }},{{ . }}{{ end }}
-{{ range .Root.Groups }}{{ template "result_group_template" . }}{{ end }}
+{{ define "outlet" }}group_id,group_title,group_description,control_id,control_title,control_description,reason,resource,status{{ range .Root.DimensionKeys }},dim-{{ . }}{{ end }}{{range .Root.AllTagKeys }},{{ . }}{{ end }}{{ range .Root.Groups }}{{ template "result_group_template" . }}{{ end }}
 {{ end }}
 
-{{ define "result_group_template" }}
-{{ range .ControlRuns }}{{ template "control_run_template" . }}{{ end }}
-{{ range .Groups }}{{ template "result_group_template" . }}{{ end }}
-{{ end }}
+{{ define "result_group_template" }}{{ range .ControlRuns }}{{ template "control_run_template" . }}{{ end }}{{ range .Groups }}{{ template "result_group_template" . }}{{ end }}{{ end }}
 
 {{ define "control_run_template" }}{{ range .Rows }}{{ template "control_row_template" . }}{{ end }}{{ end }}
 
