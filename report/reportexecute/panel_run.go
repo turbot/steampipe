@@ -30,7 +30,6 @@ type PanelRun struct {
 
 func NewPanelRun(panel *modconfig.Panel, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) *PanelRun {
 	r := &PanelRun{
-		// the name is the path, i.e. dot-separated concatenation of parent names
 		Name:          panel.Name(),
 		Title:         typehelpers.SafeString(panel.Title),
 		Properties:    panel.Properties,
