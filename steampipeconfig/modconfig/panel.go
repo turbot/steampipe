@@ -31,17 +31,19 @@ type Panel struct {
 }
 
 func NewPanel(block *hcl.Block) *Panel {
-	name := "anon____________"
+	panel := &Panel{
+		DeclRange:  block.DefRange,
+		Properties: make(map[string]string),
+	}
+
 	if len(block.Labels) > 0 {
-		name = block.Labels[0]
+		name := block.Labels[0]
+		panel.ShortName = name
+		panel.FullName = fmt.Sprintf("%s.%s", block.Type, name)
+		panel.UnqualifiedName = fmt.Sprintf("%s.%s", block.Type, name)
 	}
-	return &Panel{
-		DeclRange:       block.DefRange,
-		Properties:      make(map[string]string),
-		ShortName:       name,
-		FullName:        fmt.Sprintf("%s.%s", block.Type, name),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, name),
-	}
+
+	return panel
 }
 
 func (p *Panel) Equals(other *Panel) bool {
@@ -95,10 +97,8 @@ func (p *Panel) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (p *Panel) SetMod(mod *Mod) {
 	p.Mod = mod
-	// if this is a top level resource, and not a child, the resource names will already be set
-	// - we need to update the full name to include the mod
+	// if this resource has a name, update to include the mod
 	if p.UnqualifiedName != "" {
-		// add mod name to full name
 		p.FullName = fmt.Sprintf("%s.%s", p.Mod.ShortName, p.UnqualifiedName)
 	}
 }
@@ -209,4 +209,19 @@ func (p *Panel) Diff(other *Panel) *ReportTreeItemDiffs {
 	res.populateChildDiffs(p, other)
 
 	return res
+}
+
+// SetName implements AnonymousResource
+func (p *Panel) SetName(name string) {
+	p.ShortName = name
+	p.UnqualifiedName = fmt.Sprintf("panel.%s", name)
+	// set the full name
+	p.FullName = fmt.Sprintf("%s.%s", p.Mod.ShortName, p.UnqualifiedName)
+	// update the name in metadata
+	p.metadata.ResourceName = p.ShortName
+}
+
+// HclType implements AnonymousResource
+func (*Panel) HclType() string {
+	return BlockTypePanel
 }

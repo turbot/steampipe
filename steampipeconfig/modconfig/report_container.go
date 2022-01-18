@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -13,9 +14,6 @@ type ReportContainer struct {
 	ShortName       string
 	FullName        string `cty:"name"`
 	UnqualifiedName string
-
-	// used for introspection tables
-	//ChildNameStrings []string `cty:"children" column:"children,jsonb"`
 
 	Title *string `cty:"title" column:"title,text"`
 	Width *int    `cty:"width"  column:"width,text"`
@@ -35,18 +33,18 @@ type ReportContainer struct {
 }
 
 func NewReportContainer(block *hcl.Block) *ReportContainer {
-	name := "anon____________"
-	if len(block.Labels) > 0 {
-		name = block.Labels[0]
+	report := &ReportContainer{
+		DeclRange: block.DefRange,
+		hclType:   block.Type,
 	}
 
-	report := &ReportContainer{
-		DeclRange:       block.DefRange,
-		hclType:         block.Type,
-		ShortName:       name,
-		FullName:        fmt.Sprintf("%s.%s", block.Type, name),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, name),
+	if len(block.Labels) > 0 {
+		name := block.Labels[0]
+		report.ShortName = name
+		report.FullName = fmt.Sprintf("%s.%s", block.Type, name)
+		report.UnqualifiedName = fmt.Sprintf("%s.%s", block.Type, name)
 	}
+
 	// report name is defined in hcl
 	if report.IsReport() {
 		report.ShortName = block.Labels[0]
@@ -122,6 +120,8 @@ func (r *ReportContainer) GetDeclRange() *hcl.Range {
 // AddParent implements ModTreeItem
 func (r *ReportContainer) AddParent(parent ModTreeItem) error {
 	r.parents = append(r.parents, parent)
+
+	r.setChildNames()
 	return nil
 }
 
@@ -210,4 +210,44 @@ func (r *ReportContainer) IsReport() bool {
 
 func (r *ReportContainer) SetChildren(children []ModTreeItem) {
 	r.children = children
+}
+
+// SetName implements AnonymousResource
+func (p *ReportContainer) SetName(name string) {
+	p.ShortName = name
+	p.UnqualifiedName = fmt.Sprintf("panel.%s", name)
+	// set the full name
+	p.FullName = fmt.Sprintf("%s.%s", p.Mod.ShortName, p.UnqualifiedName)
+	// update the name in metadata
+	p.metadata.ResourceName = p.ShortName
+
+	p.setChildNames()
+}
+
+// HclType implements AnonymousResource
+func (*ReportContainer) HclType() string {
+	return BlockTypePanel
+}
+
+func (r *ReportContainer) setChildNames() {
+	// sanitise the parent (our) name
+	parentName := strings.Replace(r.ShortName, ".", "_", -1)
+	// build map so we can generate indexes for each child resource type
+	childIndexes := make(map[string]int)
+	for _, child := range r.children {
+		// all children are anonymous
+		anonymousChild, ok := child.(AnonymousResource)
+		if !ok {
+			panic("all children must support AnonymousResource")
+		}
+		// get the 0-based index for this child type
+		hclType := anonymousChild.HclType()
+		idx := childIndexes[hclType]
+		childIndexes[hclType] = idx + 1
+
+		// set the name
+		name := fmt.Sprintf("%s_%s_%d", parentName, hclType, idx)
+		anonymousChild.SetName(name)
+
+	}
 }
