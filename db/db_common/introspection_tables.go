@@ -100,12 +100,20 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 		}
 	}
 	for _, container := range workspaceResources.Containers {
+		// skip anonymous containers
+		if container.IsAnonymous() {
+			continue
+		}
 		if _, added := resourcesAdded[container.Name()]; !added {
 			resourcesAdded[container.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(container, constants.IntrospectionTableContainer))
 		}
 	}
 	for _, panel := range workspaceResources.Panels {
+		// skip anonymous panels
+		if panel.IsAnonymous() {
+			continue
+		}
 		if _, added := resourcesAdded[panel.Name()]; !added {
 			resourcesAdded[panel.Name()] = true
 			insertSql = append(insertSql, getTableInsertSqlForResource(panel, constants.IntrospectionTablePanel))

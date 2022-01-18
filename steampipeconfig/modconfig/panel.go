@@ -26,21 +26,18 @@ type Panel struct {
 	Base  *Panel
 	Paths []NodePath `column:"path,jsonb"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents   []ModTreeItem
+	metadata  *ResourceMetadata
+	anonymous bool
 }
 
 func NewPanel(block *hcl.Block) *Panel {
 	panel := &Panel{
-		DeclRange:  block.DefRange,
-		Properties: make(map[string]string),
-	}
-
-	if len(block.Labels) > 0 {
-		name := block.Labels[0]
-		panel.ShortName = name
-		panel.FullName = fmt.Sprintf("%s.%s", block.Type, name)
-		panel.UnqualifiedName = fmt.Sprintf("%s.%s", block.Type, name)
+		DeclRange:       block.DefRange,
+		Properties:      make(map[string]string),
+		ShortName:       block.Labels[0],
+		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
 
 	return panel
@@ -60,6 +57,14 @@ func (p *Panel) CtyValue() (cty.Value, error) {
 // return name in format: 'panel.<shortName>'
 func (p *Panel) Name() string {
 	return p.FullName
+}
+
+func (p *Panel) SetAnonymous(anonymous bool) {
+	p.anonymous = anonymous
+}
+
+func (p *Panel) IsAnonymous() bool {
+	return p.anonymous
 }
 
 // OnDecoded implements HclResource
@@ -211,17 +216,18 @@ func (p *Panel) Diff(other *Panel) *ReportTreeItemDiffs {
 	return res
 }
 
-// SetName implements AnonymousResource
-func (p *Panel) SetName(name string) {
-	p.ShortName = name
-	p.UnqualifiedName = fmt.Sprintf("panel.%s", name)
-	// set the full name
-	p.FullName = fmt.Sprintf("%s.%s", p.Mod.ShortName, p.UnqualifiedName)
-	// update the name in metadata
-	p.metadata.ResourceName = p.ShortName
-}
-
-// HclType implements AnonymousResource
-func (*Panel) HclType() string {
-	return BlockTypePanel
-}
+//
+//// SetName implements AnonymousResource
+//func (p *Panel) SetName(name string) {
+//	p.ShortName = name
+//	p.UnqualifiedName = fmt.Sprintf("panel.%s", name)
+//	// set the full name
+//	p.FullName = fmt.Sprintf("%s.%s", p.Mod.ShortName, p.UnqualifiedName)
+//	// update the name in metadata
+//	p.metadata.ResourceName = p.ShortName
+//}
+//
+//// HclType implements AnonymousResource
+//func (*Panel) HclType() string {
+//	return BlockTypePanel
+//}

@@ -43,6 +43,12 @@ type HclResource interface {
 	GetDeclRange() *hcl.Range
 }
 
+// AnonymousResource must be implemented by any resource which supports anonymous hcl blocks
+type AnonymousResource interface {
+	SetAnonymous(bool)
+	IsAnonymous() bool
+}
+
 // ResourceWithMetadata must be implenented by resources which supports reflection metadata
 type ResourceWithMetadata interface {
 	Name() string
@@ -56,9 +62,4 @@ type QueryProvider interface {
 	ModName() string
 	GetParams() []*ParamDef
 	GetPreparedStatementName() string
-}
-
-type AnonymousResource interface {
-	SetName(string)
-	HclType() string
 }
