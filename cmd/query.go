@@ -43,6 +43,7 @@ Examples:
   # Run a specific query directly
   steampipe query "select * from cloud"`,
 
+		// TODO KAI REVISIT THIS
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			workspace, err := workspace.LoadResourceNames(viper.GetString(constants.ArgWorkspaceChDir))
 			if err != nil {

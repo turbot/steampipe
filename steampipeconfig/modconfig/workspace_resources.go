@@ -2,11 +2,12 @@ package modconfig
 
 import "sort"
 
+// TODO KAI WHAT ARE THESE USED FOR
 type WorkspaceResources struct {
 	Query     map[string]bool
 	Control   map[string]bool
 	Benchmark map[string]bool
-	//Panel  map[string]bool
+	//ReportCounter  map[string]bool
 }
 
 func NewWorkspaceResources() *WorkspaceResources {
@@ -14,7 +15,7 @@ func NewWorkspaceResources() *WorkspaceResources {
 		Query:     make(map[string]bool),
 		Control:   make(map[string]bool),
 		Benchmark: make(map[string]bool),
-		//Panel: make(map[string]bool),
+		//ReportCounter: make(map[string]bool),
 	}
 }
 func (r *WorkspaceResources) Merge(other *WorkspaceResources) *WorkspaceResources {
@@ -27,9 +28,6 @@ func (r *WorkspaceResources) Merge(other *WorkspaceResources) *WorkspaceResource
 	for k := range other.Benchmark {
 		r.Benchmark[k] = true
 	}
-	//for k := range other.Panel{
-	//	r.Panel[k] = true
-	//}
 	return r
 }
 

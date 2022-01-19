@@ -5,24 +5,49 @@ import (
 )
 
 type ReportChanged struct {
-	ChangedPanels  []*modconfig.ReportTreeItemDiffs
-	ChangedReports []*modconfig.ReportTreeItemDiffs
+	ChangedReports    []*modconfig.ReportTreeItemDiffs
+	ChangedContainers []*modconfig.ReportTreeItemDiffs
+	ChangedTexts      []*modconfig.ReportTreeItemDiffs
+	ChangedTables     []*modconfig.ReportTreeItemDiffs
+	ChangedCounters   []*modconfig.ReportTreeItemDiffs
+	ChangedCharts     []*modconfig.ReportTreeItemDiffs
 
-	NewPanels  []*modconfig.Panel
-	NewReports []*modconfig.ReportContainer
+	NewReports    []*modconfig.ReportContainer
+	NewContainers []*modconfig.ReportContainer
+	NewTexts      []*modconfig.ReportText
+	NewTables     []*modconfig.ReportTable
+	NewCounters   []*modconfig.ReportCounter
+	NewCharts     []*modconfig.ReportChart
 
-	DeletedPanels  []*modconfig.Panel
-	DeletedReports []*modconfig.ReportContainer
+	DeletedReports    []*modconfig.ReportContainer
+	DeletedContainers []*modconfig.ReportContainer
+	DeletedTexts      []*modconfig.ReportText
+	DeletedTables     []*modconfig.ReportTable
+	DeletedCounters   []*modconfig.ReportCounter
+	DeletedCharts     []*modconfig.ReportChart
 }
 
 // IsReportEvent implements ReportEvent interface
 func (*ReportChanged) IsReportEvent() {}
 
 func (c *ReportChanged) HasChanges() bool {
-	return len(c.ChangedPanels)+
+	return len(c.ChangedCounters)+
 		len(c.ChangedReports)+
-		len(c.NewPanels)+
+		len(c.ChangedContainers)+
+		len(c.ChangedTexts)+
+		len(c.ChangedTables)+
+		len(c.ChangedCounters)+
+		len(c.ChangedCharts)+
 		len(c.NewReports)+
-		len(c.DeletedPanels)+
-		len(c.DeletedReports) > 0
+		len(c.NewContainers)+
+		len(c.NewTexts)+
+		len(c.NewTables)+
+		len(c.NewCounters)+
+		len(c.NewCharts)+
+		len(c.DeletedReports)+
+		len(c.DeletedContainers)+
+		len(c.DeletedTexts)+
+		len(c.DeletedTables)+
+		len(c.DeletedCounters)+
+		len(c.DeletedCharts) > 0
 }

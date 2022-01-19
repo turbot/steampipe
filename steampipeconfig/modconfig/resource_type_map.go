@@ -15,9 +15,6 @@ var ResourceTypeMap = map[string]factoryFunc{
 	constants.SqlExtension: func(modPath, filePath string) (MappableResource, []byte, error) {
 		return QueryFromFile(modPath, filePath)
 	},
-	//constants.MarkdownExtension: func(modPath, filePath string) (MappableResource, []byte, error) {
-	//	return PanelFromFile(modPath, filePath)
-	//},
 }
 
 func RegisteredFileExtensions() []string {

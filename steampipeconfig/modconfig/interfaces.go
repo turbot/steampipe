@@ -18,7 +18,7 @@ type MappableResource interface {
 }
 
 // ModTreeItem must be implemented by elements of the mod resource hierarchy
-// i.e. Control, Benchmark, Report, Panel
+// i.e. Control, Benchmark, Report
 type ModTreeItem interface {
 	AddParent(ModTreeItem) error
 	GetChildren() []ModTreeItem

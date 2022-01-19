@@ -34,51 +34,24 @@ func (m *Mod) BuildResourceTree(loadedDependencyMods ModMap) error {
 
 func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 	var leafNodes []ModTreeItem
-	for _, benchmark := range sourceMod.Benchmarks {
-		// add benchmark into control tree
-		if err := m.addItemIntoResourceTree(benchmark); err != nil {
-			return err
-		}
-		if len(benchmark.GetChildren()) == 0 {
-			leafNodes = append(leafNodes, benchmark)
-		}
-	}
-	for _, control := range sourceMod.Controls {
-		if err := m.addItemIntoResourceTree(control); err != nil {
-			return err
-		}
+	var err error
 
-		// controls cannot have children - all controls are leaves
-		leafNodes = append(leafNodes, control)
-	}
-	// we add panels and reports into tree - as they may be children of Mod
-	// any nested children of Container or Report (which may be Container or Panel) will already be in the tree)
-	for _, panel := range sourceMod.Panels {
-		if err := m.addItemIntoResourceTree(panel); err != nil {
-			return err
+	resourceFunc := func(item HclResource) bool {
+		if treeItem, ok := item.(ModTreeItem); ok {
+			if err = m.addItemIntoResourceTree(treeItem); err != nil {
+				// stop walking
+				return false
+			}
+			if len(treeItem.GetChildren()) == 0 {
+				leafNodes = append(leafNodes, treeItem)
+			}
 		}
-		// panels cannot have children
-		leafNodes = append(leafNodes, panel)
+		// continue walking
+		return true
 	}
 
-	for _, report := range sourceMod.Reports {
-		if err := m.addItemIntoResourceTree(report); err != nil {
-			return err
-		}
-		if len(report.GetChildren()) == 0 {
-			leafNodes = append(leafNodes, report)
-		}
+	m.WalkResources(resourceFunc)
 
-	}
-	for _, container := range sourceMod.Containers {
-		if err := m.addItemIntoResourceTree(container); err != nil {
-			return err
-		}
-		if len(container.GetChildren()) == 0 {
-			leafNodes = append(leafNodes, container)
-		}
-
-	}
 	// now initialise all Paths properties
 	for _, l := range leafNodes {
 		l.SetPaths()
@@ -130,16 +103,6 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 			m.Benchmarks[name] = r
 		}
 
-	case *Panel:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Panels[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.Panels[name] = r
-		}
-
 	case *ReportContainer:
 		name := r.Name()
 		// report struct may either be a `report` or a `container`
@@ -153,12 +116,48 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 			}
 		} else {
 			// check for dupes
-			if _, ok := m.Containers[name]; ok {
+			if _, ok := m.ReportContainers[name]; ok {
 				diags = append(diags, duplicateResourceDiagnostics(item))
 				break
 			} else {
-				m.Containers[name] = r
+				m.ReportContainers[name] = r
 			}
+		}
+	case *ReportTable:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.ReportTables[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item))
+			break
+		} else {
+			m.ReportTables[name] = r
+		}
+	case *ReportText:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.ReportTexts[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item))
+			break
+		} else {
+			m.ReportTexts[name] = r
+		}
+	case *ReportCounter:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.ReportCounters[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item))
+			break
+		} else {
+			m.ReportCounters[name] = r
+		}
+	case *ReportChart:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.ReportCharts[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item))
+			break
+		} else {
+			m.ReportCharts[name] = r
 		}
 
 	case *Variable:

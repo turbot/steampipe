@@ -55,8 +55,10 @@ func resolveChildrenFromNames(childNames []string, block *hcl.Block, supportedCh
 			break
 		}
 
-		child, found := mod.GetChildResource(parsedName)
-		if !found {
+		resource, found := mod.GetResource(parsedName)
+		// ensure this item is a mod tree item
+		child, ok := resource.(modconfig.ModTreeItem)
+		if !found || !ok {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  fmt.Sprintf("Could not resolve child %s", childName),

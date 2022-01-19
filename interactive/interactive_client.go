@@ -26,6 +26,7 @@ import (
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
 )
@@ -554,25 +555,41 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 		return nil
 	}
 	// add all the queries in the workspace
+	for queryName, q := range c.workspace().GetLocalQueryMap() {
+		res = append(res, c.addQuerySuggestion(q, queryName))
+	}
 	for queryName, q := range c.workspace().GetQueryMap() {
-		description := "named query"
-		if q.Description != nil {
-			description += fmt.Sprintf(": %s", *q.Description)
-		}
-		res = append(res, prompt.Suggest{Text: queryName, Output: queryName, Description: description})
+		res = append(res, c.addQuerySuggestion(q, queryName))
 	}
+
 	// add all the controls in the workspace
-	for controlName, c := range c.workspace().GetControlMap() {
-		description := "control"
-		if c.Description != nil {
-			description += fmt.Sprintf(": %s", *c.Description)
-		}
-		res = append(res, prompt.Suggest{Text: controlName, Output: controlName, Description: description})
+	for controlName, control := range c.workspace().GetLocalControlMap() {
+		res = append(res, c.addControlSuggestion(control, controlName))
 	}
+	for controlName, control := range c.workspace().GetControlMap() {
+		res = append(res, c.addControlSuggestion(control, controlName))
+	}
+
 	sort.Slice(res, func(i, j int) bool {
 		return res[i].Text < res[j].Text
 	})
 	return res
+}
+
+func (c *InteractiveClient) addQuerySuggestion(query *modconfig.Query, queryName string) prompt.Suggest {
+	description := "named query"
+	if query.Description != nil {
+		description += fmt.Sprintf(": %s", *query.Description)
+	}
+	return prompt.Suggest{Text: queryName, Output: queryName, Description: description}
+}
+
+func (c *InteractiveClient) addControlSuggestion(control *modconfig.Control, controlName string) prompt.Suggest {
+	description := "control"
+	if control.Description != nil {
+		description += fmt.Sprintf(": %s", *control.Description)
+	}
+	return prompt.Suggest{Text: controlName, Output: controlName, Description: description}
 }
 
 func (c *InteractiveClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, connectionSchemaMap steampipeconfig.ConnectionSchemaMap) error {

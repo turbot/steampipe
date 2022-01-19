@@ -227,6 +227,7 @@ func findInstalledDependency(modDependency *modconfig.ModVersionConstraint, pare
 	return "", nil, fmt.Errorf("mod satisfying '%s' is not installed", modDependency)
 }
 
+// TODO KAI WHAT IS THIS FOR???
 // LoadModResourceNames parses all hcl files in modPath and returns the names of all resources
 func LoadModResourceNames(modPath string, runCtx *parse.RunContext) (resources *modconfig.WorkspaceResources, err error) {
 	// TODO support dependencies

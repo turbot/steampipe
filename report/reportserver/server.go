@@ -105,10 +105,10 @@ func buildWorkspaceErrorPayload(e *reportevents.WorkspaceError) []byte {
 	return jsonString
 }
 
-func buildPanelCompletePayload(event *reportevents.PanelComplete) []byte {
+func buildCounterCompletePayload(event *reportevents.CounterComplete) []byte {
 	payload := ExecutionPayload{
-		Action:     "panel_complete",
-		ReportNode: event.Panel,
+		Action:     "counter_complete",
+		ReportNode: event.Counter,
 	}
 	jsonString, _ := json.Marshal(payload)
 	return jsonString
@@ -159,9 +159,9 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 	/*
 		WORKSPACE_ERROR
 		EXECUTION_STARTED
-		PANEL_CHANGED
-		PANEL_ERROR
-		PANEL_COMPLETE
+		COUNTER_CHANGED
+		COUNTER_ERROR
+		COUNTER_COMPLETE
 		REPORT_CHANGED
 		REPORT_ERROR
 		REPORT_COMPLETE
@@ -189,17 +189,17 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		}
 		s.mutex.Unlock()
 
-	case *reportevents.PanelError:
-		fmt.Println("Got panel error event", *e)
+	case *reportevents.CounterError:
+		fmt.Println("Got counter error event", *e)
 
-	case *reportevents.PanelComplete:
-		fmt.Println("Got panel complete event", *e)
-		payload := buildPanelCompletePayload(e)
-		panelName := e.Panel.GetName()
+	case *reportevents.CounterComplete:
+		fmt.Println("Got counter complete event", *e)
+		payload := buildCounterCompletePayload(e)
+		counterName := e.Counter.GetName()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
 			// If this session is interested in this report, broadcast to it
-			if (repoInfo.Report != nil) && strings.HasPrefix(panelName, *repoInfo.Report) {
+			if (repoInfo.Report != nil) && strings.HasPrefix(counterName, *repoInfo.Report) {
 				session.Write(payload)
 			}
 		}
@@ -209,11 +209,11 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		fmt.Println("Got report changed event", *e)
 		deletedReports := e.DeletedReports
 		newReports := e.NewReports
-		changedPanels := e.ChangedPanels
+		changedCounters := e.ChangedCounters
 		changedReports := e.ChangedReports
 
 		// If nothing has changed, ignore
-		if len(deletedReports) == 0 && len(newReports) == 0 && len(changedPanels) == 0 && len(changedReports) == 0 {
+		if len(deletedReports) == 0 && len(newReports) == 0 && len(changedCounters) == 0 && len(changedReports) == 0 {
 			return
 		}
 
@@ -226,8 +226,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			s.webSocket.Broadcast(buildAvailableReportsPayload(s.workspace.Mod.Reports))
 		}
 
-		// If we have no changed panels or reports, ignore the message for now
-		if len(deletedReports) == 0 && len(newReports) == 0 && len(changedPanels) == 0 && len(changedReports) == 0 {
+		// If we have no changed counters or reports, ignore the message for now
+		if len(deletedReports) == 0 && len(newReports) == 0 && len(changedCounters) == 0 && len(changedReports) == 0 {
 			return
 		}
 
@@ -247,9 +247,9 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		var changedReportNames []string
 		var newReportNames []string
 
-		// Capture the changed panels and make a note of the report(s) they're in
-		for _, changedPanel := range changedPanels {
-			paths := changedPanel.Item.GetPaths()
+		// Capture the changed counters and make a note of the report(s) they're in
+		for _, changedCounter := range changedCounters {
+			paths := changedCounter.Item.GetPaths()
 			for _, nodePath := range paths {
 				for _, nodeName := range nodePath {
 					resourceParts, _ := modconfig.ParseResourceName(nodeName)
