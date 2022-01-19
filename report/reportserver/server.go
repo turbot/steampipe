@@ -144,19 +144,15 @@ func getReportsInterestedInResourceChanges(reportsBeingWatched []string, existin
 			for _, nodeName := range nodePath {
 				resourceParts, _ := modconfig.ParseResourceName(nodeName)
 				// We only care about changes from these resource types
-				if resourceParts.ItemType != modconfig.BlockTypeContainer &&
-					resourceParts.ItemType != modconfig.BlockTypeChart &&
-					resourceParts.ItemType != modconfig.BlockTypeCounter &&
-					resourceParts.ItemType != modconfig.BlockTypeTable &&
-					resourceParts.ItemType != modconfig.BlockTypeText {
+				if resourceParts.ItemType != modconfig.BlockTypeReport {
 					continue
 				}
 
-				for _, reportName := range reportsBeingWatched {
-					if strings.HasPrefix(nodeName, reportName) && !helpers.StringSliceContains(existingChangedReportNames, reportName) {
-						changedReportNames = append(changedReportNames, reportName)
-					}
+				if helpers.StringSliceContains(existingChangedReportNames, nodeName) || helpers.StringSliceContains(changedReportNames, nodeName) || !helpers.StringSliceContains(reportsBeingWatched, nodeName) {
+					continue
 				}
+
+				changedReportNames = append(changedReportNames, nodeName)
 			}
 		}
 	}
