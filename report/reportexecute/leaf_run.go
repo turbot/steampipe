@@ -21,7 +21,7 @@ type LeafRun struct {
 	Error         error                       `json:"error,omitempty"`
 	ReportNode    modconfig.ReportingLeafNode `json:"properties"`
 	NodeType      string                      `json:"node_type"`
-	Path          []string                    `json:"path"`
+	Path          []string                    `json:"-"`
 	parent        reportinterfaces.ReportNodeParent
 	runStatus     reportinterfaces.ReportRunStatus
 	executionTree *ReportExecutionTree

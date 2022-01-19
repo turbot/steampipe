@@ -23,7 +23,7 @@ type ReportContainerRun struct {
 	Error    error                            `json:"error,omitempty"`
 	Children []reportinterfaces.ReportNodeRun `json:"children,omitempty"`
 	NodeType string                           `json:"node_type"`
-	Path     []string                         `json:"path"`
+	Path     []string                         `json:"-"`
 
 	parent        reportinterfaces.ReportNodeParent
 	runStatus     reportinterfaces.ReportRunStatus
