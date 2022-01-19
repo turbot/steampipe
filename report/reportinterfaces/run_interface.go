@@ -18,7 +18,7 @@ const (
 type ReportNodeRun interface {
 	Execute(ctx context.Context) error
 	GetName() string
-	GetPaths() modconfig.NodePath
+	GetPath() modconfig.NodePath
 	GetRunStatus() ReportRunStatus
 	SetError(err error)
 	SetComplete()
