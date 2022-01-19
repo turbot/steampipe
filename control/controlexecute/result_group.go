@@ -3,6 +3,7 @@ package controlexecute
 import (
 	"context"
 	"log"
+	"sort"
 	"sync"
 	"time"
 
@@ -127,7 +128,9 @@ func (r *ResultGroup) AllTagKeys() []string {
 			tags = append(tags, k)
 		}
 	}
-	return utils.StringSliceDistinct(tags)
+	tags = utils.StringSliceDistinct(tags)
+	sort.Strings(tags)
+	return tags
 }
 
 // GetGroupByName finds an immediate child ResultGroup with a specific name
