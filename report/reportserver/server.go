@@ -105,9 +105,9 @@ func buildWorkspaceErrorPayload(e *reportevents.WorkspaceError) []byte {
 	return jsonString
 }
 
-func buildCounterCompletePayload(event *reportevents.LeafNodeComplete) []byte {
+func buildLeafNodeCompletePayload(event *reportevents.LeafNodeComplete) []byte {
 	payload := ExecutionPayload{
-		Action:     "counter_complete",
+		Action:     "leaf_node_complete",
 		ReportNode: event.Node,
 	}
 	jsonString, _ := json.Marshal(payload)
@@ -193,11 +193,11 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		s.mutex.Unlock()
 
 	case *reportevents.LeafNodeError:
-		fmt.Println("Got counter error event", *e)
+		fmt.Println("Got leaf node error event", *e)
 
 	case *reportevents.LeafNodeComplete:
-		fmt.Println("Got counter complete event", *e)
-		payload := buildCounterCompletePayload(e)
+		fmt.Println("Got leaf node complete event", *e)
+		payload := buildLeafNodeCompletePayload(e)
 		counterName := e.Node.GetName()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
