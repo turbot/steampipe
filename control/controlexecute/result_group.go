@@ -3,6 +3,7 @@ package controlexecute
 import (
 	"context"
 	"log"
+	"sort"
 	"sync"
 	"time"
 
@@ -31,9 +32,10 @@ type ResultGroup struct {
 	Severity    map[string]StatusSummary `json:"-"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
-	GroupItem modconfig.ModTreeItem `json:"-"`
-	Parent    *ResultGroup          `json:"-"`
-	Duration  time.Duration         `json:"-"`
+	GroupItem     modconfig.ModTreeItem `json:"-"`
+	Parent        *ResultGroup          `json:"-"`
+	Duration      time.Duration         `json:"-"`
+	DimensionKeys []string              `json:"-"`
 
 	// lock to prevent multiple control_runs updating this
 	updateLock *sync.Mutex
@@ -113,6 +115,75 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 	return group
 }
 
+func (r *ResultGroup) AllTagKeys() []string {
+	tags := []string{}
+	for k := range r.Tags {
+		tags = append(tags, k)
+	}
+	for _, child := range r.Groups {
+		tags = append(tags, child.AllTagKeys()...)
+	}
+	for _, run := range r.ControlRuns {
+		for k := range run.Control.Tags {
+			tags = append(tags, k)
+		}
+	}
+	tags = utils.StringSliceDistinct(tags)
+	sort.Strings(tags)
+	return tags
+}
+
+// GetGroupByName finds an immediate child ResultGroup with a specific name
+func (r *ResultGroup) GetGroupByName(name string) *ResultGroup {
+	for _, group := range r.Groups {
+		if group.GroupId == name {
+			return group
+		}
+	}
+	return nil
+}
+
+// GetChildGroupByName finds a nested child ResultGroup with a specific name
+func (r *ResultGroup) GetChildGroupByName(name string) *ResultGroup {
+	for _, group := range r.Groups {
+		if group.GroupId == name {
+			return group
+		}
+		if child := group.GetChildGroupByName(name); child != nil {
+			return child
+		}
+	}
+	return nil
+}
+
+// GetControlRunByName finds a child ControlRun with a specific control name
+func (r *ResultGroup) GetControlRunByName(name string) *ControlRun {
+	for _, run := range r.ControlRuns {
+		if run.Control.Name() == name {
+			return run
+		}
+	}
+	return nil
+}
+
+func (r *ResultGroup) ControlRunCount() int {
+	count := len(r.ControlRuns)
+	for _, g := range r.Groups {
+		count += g.ControlRunCount()
+	}
+	return count
+}
+
+func (r *ResultGroup) addDimensionKeys(keys ...string) {
+	r.updateLock.Lock()
+	defer r.updateLock.Unlock()
+	r.DimensionKeys = append(r.DimensionKeys, keys...)
+	if r.Parent != nil {
+		r.Parent.addDimensionKeys(keys...)
+	}
+	r.DimensionKeys = utils.StringSliceDistinct(r.DimensionKeys)
+}
+
 // populateGroupMap mutates the passed in a map to return all child result groups
 func (r *ResultGroup) populateGroupMap(groupMap map[string]*ResultGroup) {
 	if groupMap == nil {
@@ -182,7 +253,7 @@ func (r *ResultGroup) execute(ctx context.Context, client db_common.Client, para
 
 	for _, controlRun := range r.ControlRuns {
 		if utils.IsContextCancelled(ctx) {
-			controlRun.SetError(ctx, ctx.Err())
+			controlRun.setError(ctx, ctx.Err())
 			continue
 		}
 
@@ -193,7 +264,7 @@ func (r *ResultGroup) execute(ctx context.Context, client db_common.Client, para
 
 		err := parallelismLock.Acquire(ctx, 1)
 		if err != nil {
-			controlRun.SetError(ctx, err)
+			controlRun.setError(ctx, err)
 			continue
 		}
 
@@ -201,7 +272,7 @@ func (r *ResultGroup) execute(ctx context.Context, client db_common.Client, para
 			defer func() {
 				if r := recover(); r != nil {
 					// if the Execute panic'ed, set it as an error
-					run.SetError(ctx, helpers.ToError(r))
+					run.setError(ctx, helpers.ToError(r))
 				}
 				// Release in defer, so that we don't retain the lock even if there's a panic inside
 				parallelismLock.Release(1)
@@ -212,45 +283,4 @@ func (r *ResultGroup) execute(ctx context.Context, client db_common.Client, para
 	for _, child := range r.Groups {
 		child.execute(ctx, client, parallelismLock)
 	}
-}
-
-// GetGroupByName finds an immediate child ResultGroup with a specific name
-func (r *ResultGroup) GetGroupByName(name string) *ResultGroup {
-	for _, group := range r.Groups {
-		if group.GroupId == name {
-			return group
-		}
-	}
-	return nil
-}
-
-// GetChildGroupByName finds a nested child ResultGroup with a specific name
-func (r *ResultGroup) GetChildGroupByName(name string) *ResultGroup {
-	for _, group := range r.Groups {
-		if group.GroupId == name {
-			return group
-		}
-		if child := group.GetChildGroupByName(name); child != nil {
-			return child
-		}
-	}
-	return nil
-}
-
-// GetControlRunByName finds a child ControlRun with a specific control name
-func (r *ResultGroup) GetControlRunByName(name string) *ControlRun {
-	for _, run := range r.ControlRuns {
-		if run.Control.Name() == name {
-			return run
-		}
-	}
-	return nil
-}
-
-func (r *ResultGroup) ControlRunCount() int {
-	count := len(r.ControlRuns)
-	for _, g := range r.Groups {
-		count += g.ControlRunCount()
-	}
-	return count
 }

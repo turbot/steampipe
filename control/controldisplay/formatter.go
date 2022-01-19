@@ -3,14 +3,13 @@ package controldisplay
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
-	"reflect"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/MasterMinds/sprig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/version"
@@ -92,73 +91,28 @@ func (j *NullFormatter) FileExtension() string {
 	return ""
 }
 
+func templateFuncs() template.FuncMap {
+	useFromSprigMap := []string{"upper", "toJson", "quote", "dict", "add", "now"}
+
+	var funcs template.FuncMap = template.FuncMap{}
+	sprigMap := sprig.TxtFuncMap()
+	for _, use := range useFromSprigMap {
+		f, found := sprigMap[use]
+		if found {
+			funcs[use] = f
+		}
+	}
+	for k, v := range formatterTemplateFuncMap {
+		funcs[k] = v
+	}
+
+	return funcs
+}
+
 var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 	"steampipeversion": func() string { return version.SteampipeVersion.String() },
 	"workingdir":       func() string { wd, _ := os.Getwd(); return wd },
-	"asstr":            func(i reflect.Value) string { return fmt.Sprintf("%v", i) },
-	"dict": func(values ...interface{}) (map[string]interface{}, error) {
-		if len(values)%2 != 0 {
-			return nil, errors.New("invalid dict call")
-		}
-		dict := make(map[string]interface{}, len(values)/2)
-		for i := 0; i < len(values); i += 2 {
-			key, ok := values[i].(string)
-			if !ok {
-				return nil, errors.New("dict keys must be strings")
-			}
-			dict[key] = values[i+1]
-		}
-		return dict, nil
-	},
-	"summarystatusclass": func(status string, total int) string {
-		switch strings.ToLower(status) {
-		case "ok":
-			if total > 0 {
-				return "summary-total-ok highlight"
-			}
-			return "summary-total-ok"
-		case "skip":
-			if total > 0 {
-				return "summary-total-skip highlight"
-			}
-			return "summary-total-skip"
-		case "info":
-			if total > 0 {
-				return "summary-total-info highlight"
-			}
-			return "summary-total-info"
-		case "alarm":
-			if total > 0 {
-				return "summary-total-alarm highlight"
-			}
-			return "summary-total-alarm"
-		case "error":
-			if total > 0 {
-				return "summary-total-error highlight"
-			}
-			return "summary-total-error"
-		}
-		return ""
-	},
-	"ToUpper": func(text string) string {
-		return strings.ToUpper(text)
-	},
-	"timenow": func() string {
-		return time.Now().Format(time.RFC3339)
-	},
-	"GetDimensionRegion": func(row *controlexecute.ResultRow) string {
-		if row.Dimensions[0].Key == "region" {
-			return row.Dimensions[0].Value
-		}
-		return "ap-south-1"
-	},
-	"GetDimensionAccount": func(row *controlexecute.ResultRow) string {
-		if row.Dimensions[0].Key == "account_id" {
-			return row.Dimensions[0].Value
-		}
-		return row.Dimensions[1].Value
-	},
-	"DurationInFloat": func(t time.Duration) float64 {
+	"DurationInSeconds": func(t time.Duration) float64 {
 		return t.Seconds()
 	},
 }

@@ -1,4 +1,4 @@
-{{ define "outlet" }}
+{{ define "output" }}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -19,15 +19,15 @@
 <body>
   <div class="container">
     {{/* we expect 0 or 1 root control runs */}}
-    {{ range .Root.ControlRuns -}}
+    {{ range .Data.Root.ControlRuns -}}
     {{ template "control_run_template" . -}}
     {{ end }}
     {{/* we expect 0 or 1 root groups */}}
-    {{ range .Root.Groups -}}
+    {{ range .Data.Root.Groups -}}
     {{ template "root_group_template" . -}}
     {{ end }}
-    <footer><em>Report run at <code>{{ .StartTime.Format "2006-01-02 15:04:05" }}</code> using <a href="https://steampipe.io"
-          rel="nofollow"><code>Steampipe {{ steampipeversion }}</code></a> in dir
+    <footer><em>Report run at <code>{{ .Data.StartTime.Format "2006-01-02 15:04:05" }}</code> using <a href="https://steampipe.io"
+          rel="nofollow"><code>Steampipe {{ .Constants.SteampipeVersion }}</code></a> in dir
         <code>{{ workingdir }}</code>.</em></footer>
   </div>
 </body>
@@ -48,27 +48,27 @@
     <tr>
       <td class="align-center">✅</td>
       <td>OK</td>
-      <td class="{{ summarystatusclass "ok" .Ok}}">{{ .Ok }}</td>
+      <td class="{{ template "summaryokclass" .Ok }}">{{ .Ok }}</td>
     </tr>
     <tr>
       <td class="align-center">⇨</td>
       <td>Skip</td>
-      <td class="{{ summarystatusclass "skip" .Skip}}">{{ .Skip }}</td>
+      <td class="{{ template "summaryskipclass" .Skip}}">{{ .Skip }}</td>
     </tr>
     <tr>
       <td class="align-center">ℹ</td>
       <td>Info</td>
-      <td class="{{ summarystatusclass "info" .Info}}">{{ .Info }}</td>
+      <td class="{{ template "summaryinfoclass" .Info}}">{{ .Info }}</td>
     </tr>
     <tr>
       <td class="align-center">❌</td>
       <td>Alarm</td>
-      <td class="{{ summarystatusclass "alarm" .Alarm}}">{{ .Alarm }}</td>
+      <td class="{{ template "summaryalarmclass" .Alarm}}">{{ .Alarm }}</td>
     </tr>
     <tr>
       <td class="align-center">❗</td>
       <td>Error</td>
-      <td class="{{ summarystatusclass "error" .Error}}">{{ .Error }}</td>
+      <td class="{{ template "summaryerrorclass" .Error}}">{{ .Error }}</td>
     </tr>
   </tbody>
 </table>
@@ -88,11 +88,11 @@
   </thead>
   <tbody>
     <tr>
-      <td class="{{ summarystatusclass "ok" .Ok}}">{{ .Ok }}</td>
-      <td class="{{ summarystatusclass "skip" .Skip}}">{{ .Skip }}</td>
-      <td class="{{ summarystatusclass "info" .Info}}">{{ .Info }}</td>
-      <td class="{{ summarystatusclass "alarm" .Alarm}}">{{ .Alarm }}</td>
-      <td class="{{ summarystatusclass "error" .Error}}">{{ .Error }}</td>
+      <td class="{{ template "summaryokclass" .Ok }}">{{ .Ok }}</td>
+      <td class="{{ template "summaryskipclass" .Skip }}">{{ .Skip }}</td>
+      <td class="{{ template "summaryinfoclass" .Info }}">{{ .Info }}</td>
+      <td class="{{ template "summaryalarmclass" .Alarm }}">{{ .Alarm }}</td>
+      <td class="{{ template "summaryerrorclass" .Error }}">{{ .Error }}</td>
       <td>{{ .TotalCount }}</td>
     </tr>
   </tbody>
@@ -187,3 +187,9 @@
 {{ end }}
 
 {{ define "statusicon" }}{{ if eq . "ok" }}✅{{ end -}}{{ if eq . "skip" }}⇨{{ end -}}{{ if eq . "info" }}ℹ{{ end -}}{{ if eq . "alarm" }}❌{{ end -}}{{ if eq . "error" }}❗{{ end -}}{{ end -}}
+
+{{ define "summaryokclass" }}{{ if gt . 0 }}summary-total-ok highlight{{ end -}}{{ if eq . 0 }}summary-total-ok{{ end -}}{{ end -}}
+{{ define "summaryskipclass" }}{{ if gt . 0 }}summary-total-skip highlight{{ end -}}{{ if eq . 0 }}summary-total-skip{{ end -}}{{ end -}}
+{{ define "summaryinfoclass" }}{{ if gt . 0 }}summary-total-info highlight{{ end -}}{{ if eq . 0 }}summary-total-info{{ end -}}{{ end -}}
+{{ define "summaryalarmclass" }}{{ if gt . 0 }}summary-total-alarm highlight{{ end -}}{{ if eq . 0 }}summary-total-alarm{{ end -}}{{ end -}}
+{{ define "summaryerrorclass" }}{{ if gt . 0 }}summary-total-error highlight{{ end -}}{{ if eq . 0 }}summary-total-error{{ end -}}{{ end -}}
