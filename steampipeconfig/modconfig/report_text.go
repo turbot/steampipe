@@ -95,11 +95,7 @@ func (t *ReportText) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (t *ReportText) SetMod(mod *Mod) {
 	t.Mod = mod
-	// if this resource has a name, update to include the mod
-	// TODO kai is this conditional needed?
-	if t.UnqualifiedName != "" {
-		t.FullName = fmt.Sprintf("%s.%s", t.Mod.ShortName, t.UnqualifiedName)
-	}
+	t.FullName = fmt.Sprintf("%s.%s", t.Mod.ShortName, t.UnqualifiedName)
 }
 
 // GetMod implements HclResource

@@ -85,6 +85,7 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 		insertSql = append(insertSql, getTableInsertSqlForResource(container, constants.IntrospectionTableContainer))
 	}
 	for _, table := range workspaceResources.ReportTables {
+		// TODO KAI delete when we are sure
 		// skip anonymous panels
 		//if table.IsAnonymous() {
 		//	continue
