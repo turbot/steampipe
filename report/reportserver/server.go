@@ -105,10 +105,10 @@ func buildWorkspaceErrorPayload(e *reportevents.WorkspaceError) []byte {
 	return jsonString
 }
 
-func buildCounterCompletePayload(event *reportevents.CounterComplete) []byte {
+func buildCounterCompletePayload(event *reportevents.LeafNodeComplete) []byte {
 	payload := ExecutionPayload{
 		Action:     "counter_complete",
-		ReportNode: event.Counter,
+		ReportNode: event.Node,
 	}
 	jsonString, _ := json.Marshal(payload)
 	return jsonString
@@ -128,7 +128,10 @@ func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte
 		Action:     "execution_complete",
 		ReportNode: event.Report,
 	}
-	jsonString, _ := json.Marshal(payload)
+	jsonString, err := json.MarshalIndent(payload, "", "  ")
+	fmt.Println(err)
+	a := string(jsonString)
+	fmt.Println(a)
 	return jsonString
 }
 
@@ -189,13 +192,13 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		}
 		s.mutex.Unlock()
 
-	case *reportevents.CounterError:
+	case *reportevents.LeafNodeError:
 		fmt.Println("Got counter error event", *e)
 
-	case *reportevents.CounterComplete:
+	case *reportevents.LeafNodeComplete:
 		fmt.Println("Got counter complete event", *e)
 		payload := buildCounterCompletePayload(e)
-		counterName := e.Counter.GetName()
+		counterName := e.Node.GetName()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
 			// If this session is interested in this report, broadcast to it

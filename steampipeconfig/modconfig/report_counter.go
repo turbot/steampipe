@@ -10,21 +10,20 @@ import (
 
 // ReportCounter is a struct representing a leaf reporting node
 type ReportCounter struct {
-	FullName        string `cty:"name"`
-	ShortName       string
-	UnqualifiedName string
+	FullName        string `cty:"name" json:"-"`
+	ShortName       string `json:"-"`
+	UnqualifiedName string `json:"-"`
 
-	Title *string        `cty:"title" hcl:"title" column:"title,text"`
-	Type  *string        `cty:"type" hcl:"type" column:"type,text"`
-	Style *string        `cty:"style" hcl:"style" column:"style,text"`
-	Width *int           `cty:"width" hcl:"width" column:"width,text"`
-	SQL   *string        `cty:"sql" hcl:"sql" column:"sql,text"`
-	Base  *ReportCounter `hcl:"base"`
+	Title *string        `cty:"title" hcl:"title" column:"title,text" json:"title,omitempty"`
+	Type  *string        `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Style *string        `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
+	Width *int           `cty:"width" hcl:"width" column:"width,text"  json:"width,omitempty"`
+	SQL   *string        `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Base  *ReportCounter `hcl:"base" json:"-"`
 
-	DeclRange hcl.Range
-	Mod       *Mod `cty:"mod"`
-
-	Paths []NodePath `column:"path,jsonb"`
+	DeclRange hcl.Range  `json:"-"`
+	Mod       *Mod       `cty:"mod" json:"-"`
+	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
 	parents   []ModTreeItem
 	metadata  *ResourceMetadata
@@ -40,173 +39,178 @@ func NewReportCounter(block *hcl.Block) *ReportCounter {
 	}
 }
 
-func (p *ReportCounter) Equals(other *ReportCounter) bool {
-	diff := p.Diff(other)
+func (c *ReportCounter) Equals(other *ReportCounter) bool {
+	diff := c.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (p *ReportCounter) CtyValue() (cty.Value, error) {
-	return getCtyValue(p)
+func (c *ReportCounter) CtyValue() (cty.Value, error) {
+	return getCtyValue(c)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'counter.<shortName>'
-func (p *ReportCounter) Name() string {
-	return p.FullName
+func (c *ReportCounter) Name() string {
+	return c.FullName
 }
 
-func (p *ReportCounter) SetAnonymous(anonymous bool) {
-	p.anonymous = anonymous
+func (c *ReportCounter) SetAnonymous(anonymous bool) {
+	c.anonymous = anonymous
 }
 
-func (p *ReportCounter) IsAnonymous() bool {
-	return p.anonymous
+func (c *ReportCounter) IsAnonymous() bool {
+	return c.anonymous
 }
 
 // OnDecoded implements HclResource
-func (p *ReportCounter) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	p.setBaseProperties()
+func (c *ReportCounter) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	c.setBaseProperties()
 	return nil
 }
 
-func (p *ReportCounter) setBaseProperties() {
-	if p.Base == nil {
+func (c *ReportCounter) setBaseProperties() {
+	if c.Base == nil {
 		return
 	}
-	if p.Title == nil {
-		p.Title = p.Base.Title
+	if c.Title == nil {
+		c.Title = c.Base.Title
 	}
-	if p.Type == nil {
-		p.Type = p.Base.Type
+	if c.Type == nil {
+		c.Type = c.Base.Type
 	}
-	if p.Style == nil {
-		p.Style = p.Base.Style
+	if c.Style == nil {
+		c.Style = c.Base.Style
 	}
 
-	if p.Width == nil {
-		p.Width = p.Base.Width
+	if c.Width == nil {
+		c.Width = c.Base.Width
 	}
-	if p.SQL == nil {
-		p.SQL = p.Base.SQL
+	if c.SQL == nil {
+		c.SQL = c.Base.SQL
 	}
 }
 
 // AddReference implements HclResource
-func (p *ReportCounter) AddReference(*ResourceReference) {}
+func (c *ReportCounter) AddReference(*ResourceReference) {}
 
 // SetMod implements HclResource
-func (p *ReportCounter) SetMod(mod *Mod) {
-	p.Mod = mod
+func (c *ReportCounter) SetMod(mod *Mod) {
+	c.Mod = mod
 	// if this resource has a name, update to include the mod
 	// TODO kai is this conditional needed?
-	if p.UnqualifiedName != "" {
-		p.FullName = fmt.Sprintf("%s.%s", p.Mod.ShortName, p.UnqualifiedName)
+	if c.UnqualifiedName != "" {
+		c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
 	}
 }
 
 // GetMod implements HclResource
-func (p *ReportCounter) GetMod() *Mod {
-	return p.Mod
+func (c *ReportCounter) GetMod() *Mod {
+	return c.Mod
 }
 
 // GetDeclRange implements HclResource
-func (p *ReportCounter) GetDeclRange() *hcl.Range {
-	return &p.DeclRange
+func (c *ReportCounter) GetDeclRange() *hcl.Range {
+	return &c.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (p *ReportCounter) AddParent(parent ModTreeItem) error {
-	p.parents = append(p.parents, parent)
+func (c *ReportCounter) AddParent(parent ModTreeItem) error {
+	c.parents = append(c.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (p *ReportCounter) GetParents() []ModTreeItem {
-	return p.parents
+func (c *ReportCounter) GetParents() []ModTreeItem {
+	return c.parents
 }
 
 // GetChildren implements ModTreeItem
-func (p *ReportCounter) GetChildren() []ModTreeItem {
+func (c *ReportCounter) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (p *ReportCounter) GetTitle() string {
-	return typehelpers.SafeString(p.Title)
+func (c *ReportCounter) GetTitle() string {
+	return typehelpers.SafeString(c.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (p *ReportCounter) GetDescription() string {
+func (c *ReportCounter) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (p *ReportCounter) GetTags() map[string]string {
+func (c *ReportCounter) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (p *ReportCounter) GetPaths() []NodePath {
+func (c *ReportCounter) GetPaths() []NodePath {
 	// lazy load
-	if len(p.Paths) == 0 {
-		p.SetPaths()
+	if len(c.Paths) == 0 {
+		c.SetPaths()
 	}
 
-	return p.Paths
+	return c.Paths
 }
 
 // SetPaths implements ModTreeItem
-func (p *ReportCounter) SetPaths() {
-	for _, parent := range p.parents {
+func (c *ReportCounter) SetPaths() {
+	for _, parent := range c.parents {
 		for _, parentPath := range parent.GetPaths() {
-			p.Paths = append(p.Paths, append(parentPath, p.Name()))
+			c.Paths = append(c.Paths, append(parentPath, c.Name()))
 		}
 	}
 }
 
 // GetMetadata implements ResourceWithMetadata
-func (p *ReportCounter) GetMetadata() *ResourceMetadata {
-	return p.metadata
+func (c *ReportCounter) GetMetadata() *ResourceMetadata {
+	return c.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata
-func (p *ReportCounter) SetMetadata(metadata *ResourceMetadata) {
-	p.metadata = metadata
+func (c *ReportCounter) SetMetadata(metadata *ResourceMetadata) {
+	c.metadata = metadata
 }
 
-func (p *ReportCounter) Diff(other *ReportCounter) *ReportTreeItemDiffs {
+func (c *ReportCounter) Diff(other *ReportCounter) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
-		Item: p,
-		Name: p.Name(),
+		Item: c,
+		Name: c.Name(),
 	}
-	if p.FullName != other.FullName {
+	if c.FullName != other.FullName {
 		res.AddPropertyDiff("Name")
 	}
-	if typehelpers.SafeString(p.Title) != typehelpers.SafeString(other.Title) {
+	if typehelpers.SafeString(c.Title) != typehelpers.SafeString(other.Title) {
 		res.AddPropertyDiff("Title")
 	}
-	if typehelpers.SafeString(p.SQL) != typehelpers.SafeString(other.SQL) {
+	if typehelpers.SafeString(c.SQL) != typehelpers.SafeString(other.SQL) {
 		res.AddPropertyDiff("SQL")
 	}
 
-	if p.Width == nil || other.Width == nil {
-		if !(p.Width == nil && other.Width == nil) {
+	if c.Width == nil || other.Width == nil {
+		if !(c.Width == nil && other.Width == nil) {
 			res.AddPropertyDiff("Width")
 		}
-	} else if *p.Width != *other.Width {
+	} else if *c.Width != *other.Width {
 		res.AddPropertyDiff("Width")
 	}
 
-	if typehelpers.SafeString(p.Type) != typehelpers.SafeString(other.Type) {
+	if typehelpers.SafeString(c.Type) != typehelpers.SafeString(other.Type) {
 		res.AddPropertyDiff("Type")
 	}
 
-	if typehelpers.SafeString(p.Style) != typehelpers.SafeString(other.Style) {
+	if typehelpers.SafeString(c.Style) != typehelpers.SafeString(other.Style) {
 		res.AddPropertyDiff("Style")
 	}
 
-	res.populateChildDiffs(p, other)
+	res.populateChildDiffs(c, other)
 
 	return res
+}
+
+// GetSQL implements ReportLeafNode
+func (c *ReportCounter) GetSQL() *string {
+	return c.SQL
 }

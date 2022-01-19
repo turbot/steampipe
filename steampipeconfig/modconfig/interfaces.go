@@ -49,7 +49,7 @@ type AnonymousResource interface {
 	IsAnonymous() bool
 }
 
-// ResourceWithMetadata must be implenented by resources which supports reflection metadata
+// ResourceWithMetadata must be implemented by resources which supports reflection metadata
 type ResourceWithMetadata interface {
 	Name() string
 	GetMetadata() *ResourceMetadata
@@ -62,4 +62,10 @@ type QueryProvider interface {
 	ModName() string
 	GetParams() []*ParamDef
 	GetPreparedStatementName() string
+}
+
+// ReportingLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
+type ReportingLeafNode interface {
+	Name() string
+	GetSQL() *string
 }

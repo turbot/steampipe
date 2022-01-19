@@ -45,32 +45,16 @@ func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterface
 	if err != nil {
 		return nil, err
 	}
-	// TODO CAN THIS BE ANYTHING OTHER THAN A REPORT??
-	// TODO KAI SUPPORT OTHER TYPES?
-	var root reportinterfaces.ReportNodeRun
-	switch parsedName.ItemType {
-	case modconfig.BlockTypeCounter:
-		counter, ok := e.workspace.ReportCounters[reportName]
-		if !ok {
-			return nil, fmt.Errorf("counter '%s' does not exist in workspace", reportName)
-		}
-		root = NewCounterRun(counter, e, e)
-	case modconfig.BlockTypeReport:
-		report, ok := e.workspace.Reports[reportName]
-		if !ok {
-			return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
-		}
-		root = NewReportContainerRun(report, e, e)
-	case modconfig.BlockTypeContainer:
-		container, ok := e.workspace.ReportContainers[reportName]
-		if !ok {
-			return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
-		}
-		root = NewReportContainerRun(container, e, e)
-	default:
-		return nil, fmt.Errorf("invalid block type '%s' passed to ExecuteReport", reportName)
+
+	if parsedName.ItemType != modconfig.BlockTypeReport {
+		return nil, fmt.Errorf("reporting type %s cannot be executed directly - only reports may be executed", parsedName.ItemType)
 	}
-	return root, nil
+	report, ok := e.workspace.Reports[reportName]
+	if !ok {
+		return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
+	}
+	return NewReportContainerRun(report, e, e)
+
 }
 
 func (e *ReportExecutionTree) Execute(ctx context.Context) error {

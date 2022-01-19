@@ -4,35 +4,30 @@ import (
 	"context"
 	"log"
 
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// CounterRun is a struct representing a counter run
-type CounterRun struct {
-	Name  string `json:"name"`
-	Title string `json:"title,omitempty"`
-	Type  string `json:"type,omitempty"`
-	Width int    `json:"width,omitempty"`
-	SQL   string `json:"sql,omitempty"`
+// LeafRun is a struct representing the execution of a leaf reporting node
+type LeafRun struct {
+	Name string `json:"name"`
 
-	Data  [][]interface{} `json:"data,omitempty"`
-	Error error           `json:"error,omitempty"`
-
+	SQL           string                      `json:"sql,omitempty"`
+	Data          [][]interface{}             `json:"data,omitempty"`
+	Error         error                       `json:"error,omitempty"`
+	ReportNode    modconfig.ReportingLeafNode `json:"properties"`
+	NodeType      string                      `json:"node_type"`
 	parent        reportinterfaces.ReportNodeParent
 	runStatus     reportinterfaces.ReportRunStatus
 	executionTree *ReportExecutionTree
 }
 
-func NewCounterRun(counter *modconfig.ReportCounter, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) *CounterRun {
-	r := &CounterRun{
-		Name:          counter.Name(),
-		Title:         typehelpers.SafeString(counter.Title),
-		Type:          typehelpers.SafeString(counter.Type),
-		SQL:           typehelpers.SafeString(counter.SQL),
+func NewLeafRun(resource modconfig.ReportingLeafNode, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*LeafRun, error) {
+	r := &LeafRun{
+		Name:          resource.Name(),
+		ReportNode:    resource,
 		executionTree: executionTree,
 		parent:        parent,
 
@@ -40,22 +35,25 @@ func NewCounterRun(counter *modconfig.ReportCounter, parent reportinterfaces.Rep
 		// if any children have SQL we will set this to ReportRunReady instead
 		runStatus: reportinterfaces.ReportRunComplete,
 	}
-	if counter.Width != nil {
-		r.Width = *counter.Width
-	}
 
+	parsedName, err := modconfig.ParseResourceName((resource.Name()))
+	if err != nil {
+		return nil, err
+	}
+	r.NodeType = parsedName.ItemType
 	// if we have sql, set status to ready
-	if counter.SQL != nil {
+	if sql := resource.GetSQL(); sql != nil {
 		r.runStatus = reportinterfaces.ReportRunReady
+		r.SQL = *sql
 	}
 
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
-	return r
+	return r, nil
 }
 
 // Execute implements ReportRunNode
-func (r *CounterRun) Execute(ctx context.Context) error {
+func (r *LeafRun) Execute(ctx context.Context) error {
 	log.Printf("[WARN] %s Execute start", r.Name)
 	// if counter has sql execute it
 	if r.SQL != "" {
@@ -76,7 +74,7 @@ func (r *CounterRun) Execute(ctx context.Context) error {
 	return nil
 }
 
-func (r *CounterRun) executeCounterSQL(ctx context.Context, query string) ([][]interface{}, error) {
+func (r *LeafRun) executeCounterSQL(ctx context.Context, query string) ([][]interface{}, error) {
 	log.Printf("[WARN] !!!!!!!!!!!!!!!!!!!!!! EXECUTE SQL START %s !!!!!!!!!!!!!!!!!!!!!!", r.Name)
 	queryResult, err := r.executionTree.client.ExecuteSync(ctx, query)
 	if err != nil {
@@ -102,42 +100,42 @@ func (r *CounterRun) executeCounterSQL(ctx context.Context, query string) ([][]i
 }
 
 // GetName implements ReportNodeRun
-func (r *CounterRun) GetName() string {
+func (r *LeafRun) GetName() string {
 	return r.Name
 }
 
 // GetRunStatus implements ReportNodeRun
-func (r *CounterRun) GetRunStatus() reportinterfaces.ReportRunStatus {
+func (r *LeafRun) GetRunStatus() reportinterfaces.ReportRunStatus {
 	return r.runStatus
 }
 
 // SetError implements ReportNodeRun
-func (r *CounterRun) SetError(err error) {
+func (r *LeafRun) SetError(err error) {
 	r.Error = err
 	r.runStatus = reportinterfaces.ReportRunError
 	// raise counter error event
-	r.executionTree.workspace.PublishReportEvent(&reportevents.CounterError{Counter: r})
+	r.executionTree.workspace.PublishReportEvent(&reportevents.LeafNodeError{Node: r})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
 
 }
 
 // SetComplete implements ReportNodeRun
-func (r *CounterRun) SetComplete() {
+func (r *LeafRun) SetComplete() {
 	r.runStatus = reportinterfaces.ReportRunComplete
 	// raise counter complete event
 	log.Printf("[WARN] **************** COUNTER DONE EVENT %s ***************", r.Name)
-	r.executionTree.workspace.PublishReportEvent(&reportevents.CounterComplete{Counter: r})
+	r.executionTree.workspace.PublishReportEvent(&reportevents.LeafNodeComplete{Node: r})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
 }
 
 // RunComplete implements ReportNodeRun
-func (r *CounterRun) RunComplete() bool {
+func (r *LeafRun) RunComplete() bool {
 	return r.runStatus == reportinterfaces.ReportRunComplete || r.runStatus == reportinterfaces.ReportRunError
 }
 
 // ChildrenComplete implements ReportNodeRun
-func (r *CounterRun) ChildrenComplete() bool {
+func (r *LeafRun) ChildrenComplete() bool {
 	return true
 }

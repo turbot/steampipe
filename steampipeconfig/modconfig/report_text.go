@@ -10,20 +10,20 @@ import (
 
 // ReportText is a struct representing a leaf reporting node
 type ReportText struct {
-	FullName        string `cty:"name"`
-	ShortName       string
-	UnqualifiedName string
+	FullName        string `cty:"name" json:"-"`
+	ShortName       string `json:"-"`
+	UnqualifiedName string `json:"-"`
 
-	Title *string     `cty:"title" hcl:"title" column:"title,text"`
-	Type  *string     `cty:"type" hcl:"type" column:"type,text"`
-	Value *string     `cty:"value" hcl:"value" column:"value,text"`
-	Width *int        `cty:"width" hcl:"width" column:"width,text"`
-	Base  *ReportText `hcl:"base"`
+	Title *string `cty:"title" hcl:"title" column:"title,text" json:"title,omitempty"`
+	Type  *string     `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Value *string     `cty:"value" hcl:"value" column:"value,text"  json:"value,omitempty"`
+	Width *int        `cty:"width" hcl:"width" column:"width,text"  json:"width,omitempty"`
+	Base  *ReportText `hcl:"base" json:"-"`
 
-	DeclRange hcl.Range
-	Mod       *Mod `cty:"mod"`
+	DeclRange hcl.Range `json:"-"`
+	Mod       *Mod      `cty:"mod" json:"-"`
 
-	Paths []NodePath `column:"path,jsonb"`
+	Paths []NodePath `column:"path,jsonb" json:"-"`
 
 	parents   []ModTreeItem
 	metadata  *ResourceMetadata
@@ -39,167 +39,172 @@ func NewReportText(block *hcl.Block) *ReportText {
 	}
 }
 
-func (p *ReportText) Equals(other *ReportText) bool {
-	diff := p.Diff(other)
+func (t *ReportText) Equals(other *ReportText) bool {
+	diff := t.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (p *ReportText) CtyValue() (cty.Value, error) {
-	return getCtyValue(p)
+func (t *ReportText) CtyValue() (cty.Value, error) {
+	return getCtyValue(t)
 }
 
-// Name implements HclResource, ModTreeItem
+// Name implements HclResource, ModTreeItem, ReportLeafNode
 // return name in format: 'text.<shortName>'
-func (p *ReportText) Name() string {
-	return p.FullName
+func (t *ReportText) Name() string {
+	return t.FullName
 }
 
-func (p *ReportText) SetAnonymous(anonymous bool) {
-	p.anonymous = anonymous
+func (t *ReportText) SetAnonymous(anonymous bool) {
+	t.anonymous = anonymous
 }
 
-func (p *ReportText) IsAnonymous() bool {
-	return p.anonymous
+func (t *ReportText) IsAnonymous() bool {
+	return t.anonymous
 }
 
 // OnDecoded implements HclResource
-func (p *ReportText) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	p.setBaseProperties()
+func (t *ReportText) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	t.setBaseProperties()
 	return nil
 }
 
-func (p *ReportText) setBaseProperties() {
-	if p.Base == nil {
+func (t *ReportText) setBaseProperties() {
+	if t.Base == nil {
 		return
 	}
-	if p.Title == nil {
-		p.Title = p.Base.Title
+	if t.Title == nil {
+		t.Title = t.Base.Title
 	}
-	if p.Type == nil {
-		p.Type = p.Base.Type
+	if t.Type == nil {
+		t.Type = t.Base.Type
 	}
-	if p.Value == nil {
-		p.Value = p.Base.Value
+	if t.Value == nil {
+		t.Value = t.Base.Value
 	}
 
-	if p.Width == nil {
-		p.Width = p.Base.Width
+	if t.Width == nil {
+		t.Width = t.Base.Width
 	}
 }
 
 // AddReference implements HclResource
-func (p *ReportText) AddReference(*ResourceReference) {}
+func (t *ReportText) AddReference(*ResourceReference) {}
 
 // SetMod implements HclResource
-func (p *ReportText) SetMod(mod *Mod) {
-	p.Mod = mod
+func (t *ReportText) SetMod(mod *Mod) {
+	t.Mod = mod
 	// if this resource has a name, update to include the mod
 	// TODO kai is this conditional needed?
-	if p.UnqualifiedName != "" {
-		p.FullName = fmt.Sprintf("%s.%s", p.Mod.ShortName, p.UnqualifiedName)
+	if t.UnqualifiedName != "" {
+		t.FullName = fmt.Sprintf("%s.%s", t.Mod.ShortName, t.UnqualifiedName)
 	}
 }
 
 // GetMod implements HclResource
-func (p *ReportText) GetMod() *Mod {
-	return p.Mod
+func (t *ReportText) GetMod() *Mod {
+	return t.Mod
 }
 
 // GetDeclRange implements HclResource
-func (p *ReportText) GetDeclRange() *hcl.Range {
-	return &p.DeclRange
+func (t *ReportText) GetDeclRange() *hcl.Range {
+	return &t.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (p *ReportText) AddParent(parent ModTreeItem) error {
-	p.parents = append(p.parents, parent)
+func (t *ReportText) AddParent(parent ModTreeItem) error {
+	t.parents = append(t.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (p *ReportText) GetParents() []ModTreeItem {
-	return p.parents
+func (t *ReportText) GetParents() []ModTreeItem {
+	return t.parents
 }
 
 // GetChildren implements ModTreeItem
-func (p *ReportText) GetChildren() []ModTreeItem {
+func (t *ReportText) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (p *ReportText) GetTitle() string {
-	return typehelpers.SafeString(p.Title)
+func (t *ReportText) GetTitle() string {
+	return typehelpers.SafeString(t.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (p *ReportText) GetDescription() string {
+func (t *ReportText) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (p *ReportText) GetTags() map[string]string {
+func (t *ReportText) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (p *ReportText) GetPaths() []NodePath {
+func (t *ReportText) GetPaths() []NodePath {
 	// lazy load
-	if len(p.Paths) == 0 {
-		p.SetPaths()
+	if len(t.Paths) == 0 {
+		t.SetPaths()
 	}
 
-	return p.Paths
+	return t.Paths
 }
 
 // SetPaths implements ModTreeItem
-func (p *ReportText) SetPaths() {
-	for _, parent := range p.parents {
+func (t *ReportText) SetPaths() {
+	for _, parent := range t.parents {
 		for _, parentPath := range parent.GetPaths() {
-			p.Paths = append(p.Paths, append(parentPath, p.Name()))
+			t.Paths = append(t.Paths, append(parentPath, t.Name()))
 		}
 	}
 }
 
 // GetMetadata implements ResourceWithMetadata
-func (p *ReportText) GetMetadata() *ResourceMetadata {
-	return p.metadata
+func (t *ReportText) GetMetadata() *ResourceMetadata {
+	return t.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata
-func (p *ReportText) SetMetadata(metadata *ResourceMetadata) {
-	p.metadata = metadata
+func (t *ReportText) SetMetadata(metadata *ResourceMetadata) {
+	t.metadata = metadata
 }
 
-func (p *ReportText) Diff(other *ReportText) *ReportTreeItemDiffs {
+func (t *ReportText) Diff(other *ReportText) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
-		Item: p,
-		Name: p.Name(),
+		Item: t,
+		Name: t.Name(),
 	}
-	if p.FullName != other.FullName {
+	if t.FullName != other.FullName {
 		res.AddPropertyDiff("Name")
 	}
-	if typehelpers.SafeString(p.Title) != typehelpers.SafeString(other.Title) {
+	if typehelpers.SafeString(t.Title) != typehelpers.SafeString(other.Title) {
 		res.AddPropertyDiff("Title")
 	}
 
-	if p.Width == nil || other.Width == nil {
-		if !(p.Width == nil && other.Width == nil) {
+	if t.Width == nil || other.Width == nil {
+		if !(t.Width == nil && other.Width == nil) {
 			res.AddPropertyDiff("Width")
 		}
-	} else if *p.Width != *other.Width {
+	} else if *t.Width != *other.Width {
 		res.AddPropertyDiff("Width")
 	}
 
-	if typehelpers.SafeString(p.Type) != typehelpers.SafeString(other.Type) {
+	if typehelpers.SafeString(t.Type) != typehelpers.SafeString(other.Type) {
 		res.AddPropertyDiff("Type")
 	}
 
-	if typehelpers.SafeString(p.Value) != typehelpers.SafeString(other.Value) {
+	if typehelpers.SafeString(t.Value) != typehelpers.SafeString(other.Value) {
 		res.AddPropertyDiff("Style")
 	}
 
-	res.populateChildDiffs(p, other)
+	res.populateChildDiffs(t, other)
 
 	return res
+}
+
+// GetSQL implements ReportLeafNode
+func (t *ReportText) GetSQL() *string {
+	return nil
 }

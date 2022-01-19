@@ -10,26 +10,24 @@ import (
 
 // ReportChart is a struct representing a leaf reporting node
 type ReportChart struct {
-	FullName        string `cty:"name"`
-	ShortName       string
-	UnqualifiedName string
+	FullName        string `cty:"name" json:"-"`
+	ShortName       string `json:"-"`
+	UnqualifiedName string `json:"-"`
 
-	Title *string `cty:"title" hcl:"title" column:"title,text"`
-	Type  *string `cty:"type" hcl:"type" column:"type,text"`
+	Title *string      `cty:"title" hcl:"title" column:"title,text" json:"title,omitempty"`
+	Type  *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Width *int         `cty:"width" hcl:"width" column:"width,text"  json:"width,omitempty"`
+	SQL   *string      `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Base  *ReportChart `hcl:"base" json:"-"`
 
 	// TODO KAI
 	//Legend *string `cty:"legend" hcl:"legend" column:"legend,jsonb"`
 	//Series *string `cty:"series" hcl:"series" column:"series,jsonb"`
 	//Axes *string `cty:"axes" hcl:"axes" column:"axes,jsonb"`
 
-	Width *int         `cty:"width" hcl:"width" column:"width,text"`
-	SQL   *string      `cty:"sql" hcl:"sql" column:"sql,text"`
-	Base  *ReportChart `hcl:"base"`
-
-	DeclRange hcl.Range
-	Mod       *Mod `cty:"mod"`
-
-	Paths []NodePath `column:"path,jsonb"`
+	DeclRange hcl.Range  `json:"-"`
+	Mod       *Mod       `cty:"mod" json:"-"`
+	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
 	parents   []ModTreeItem
 	metadata  *ResourceMetadata
@@ -45,169 +43,174 @@ func NewReportChart(block *hcl.Block) *ReportChart {
 	}
 }
 
-func (p *ReportChart) Equals(other *ReportChart) bool {
-	diff := p.Diff(other)
+func (c *ReportChart) Equals(other *ReportChart) bool {
+	diff := c.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (p *ReportChart) CtyValue() (cty.Value, error) {
-	return getCtyValue(p)
+func (c *ReportChart) CtyValue() (cty.Value, error) {
+	return getCtyValue(c)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'chart.<shortName>'
-func (p *ReportChart) Name() string {
-	return p.FullName
+func (c *ReportChart) Name() string {
+	return c.FullName
 }
 
-func (p *ReportChart) SetAnonymous(anonymous bool) {
-	p.anonymous = anonymous
+func (c *ReportChart) SetAnonymous(anonymous bool) {
+	c.anonymous = anonymous
 }
 
-func (p *ReportChart) IsAnonymous() bool {
-	return p.anonymous
+func (c *ReportChart) IsAnonymous() bool {
+	return c.anonymous
 }
 
 // OnDecoded implements HclResource
-func (p *ReportChart) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	p.setBaseProperties()
+func (c *ReportChart) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	c.setBaseProperties()
 	return nil
 }
 
-func (p *ReportChart) setBaseProperties() {
-	if p.Base == nil {
+func (c *ReportChart) setBaseProperties() {
+	if c.Base == nil {
 		return
 	}
-	if p.Title == nil {
-		p.Title = p.Base.Title
+	if c.Title == nil {
+		c.Title = c.Base.Title
 	}
-	if p.Type == nil {
-		p.Type = p.Base.Type
+	if c.Type == nil {
+		c.Type = c.Base.Type
 	}
 	// TODO KAI legens,series,axes
 
-	if p.Width == nil {
-		p.Width = p.Base.Width
+	if c.Width == nil {
+		c.Width = c.Base.Width
 	}
-	if p.SQL == nil {
-		p.SQL = p.Base.SQL
+	if c.SQL == nil {
+		c.SQL = c.Base.SQL
 	}
 }
 
 // AddReference implements HclResource
-func (p *ReportChart) AddReference(*ResourceReference) {}
+func (c *ReportChart) AddReference(*ResourceReference) {}
 
 // SetMod implements HclResource
-func (p *ReportChart) SetMod(mod *Mod) {
-	p.Mod = mod
+func (c *ReportChart) SetMod(mod *Mod) {
+	c.Mod = mod
 	// if this resource has a name, update to include the mod
 	// TODO kai is this conditional needed?
-	if p.UnqualifiedName != "" {
-		p.FullName = fmt.Sprintf("%s.%s", p.Mod.ShortName, p.UnqualifiedName)
+	if c.UnqualifiedName != "" {
+		c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
 	}
 }
 
 // GetMod implements HclResource
-func (p *ReportChart) GetMod() *Mod {
-	return p.Mod
+func (c *ReportChart) GetMod() *Mod {
+	return c.Mod
 }
 
 // GetDeclRange implements HclResource
-func (p *ReportChart) GetDeclRange() *hcl.Range {
-	return &p.DeclRange
+func (c *ReportChart) GetDeclRange() *hcl.Range {
+	return &c.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (p *ReportChart) AddParent(parent ModTreeItem) error {
-	p.parents = append(p.parents, parent)
+func (c *ReportChart) AddParent(parent ModTreeItem) error {
+	c.parents = append(c.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (p *ReportChart) GetParents() []ModTreeItem {
-	return p.parents
+func (c *ReportChart) GetParents() []ModTreeItem {
+	return c.parents
 }
 
 // GetChildren implements ModTreeItem
-func (p *ReportChart) GetChildren() []ModTreeItem {
+func (c *ReportChart) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (p *ReportChart) GetTitle() string {
-	return typehelpers.SafeString(p.Title)
+func (c *ReportChart) GetTitle() string {
+	return typehelpers.SafeString(c.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (p *ReportChart) GetDescription() string {
+func (c *ReportChart) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (p *ReportChart) GetTags() map[string]string {
+func (c *ReportChart) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (p *ReportChart) GetPaths() []NodePath {
+func (c *ReportChart) GetPaths() []NodePath {
 	// lazy load
-	if len(p.Paths) == 0 {
-		p.SetPaths()
+	if len(c.Paths) == 0 {
+		c.SetPaths()
 	}
 
-	return p.Paths
+	return c.Paths
 }
 
 // SetPaths implements ModTreeItem
-func (p *ReportChart) SetPaths() {
-	for _, parent := range p.parents {
+func (c *ReportChart) SetPaths() {
+	for _, parent := range c.parents {
 		for _, parentPath := range parent.GetPaths() {
-			p.Paths = append(p.Paths, append(parentPath, p.Name()))
+			c.Paths = append(c.Paths, append(parentPath, c.Name()))
 		}
 	}
 }
 
 // GetMetadata implements ResourceWithMetadata
-func (p *ReportChart) GetMetadata() *ResourceMetadata {
-	return p.metadata
+func (c *ReportChart) GetMetadata() *ResourceMetadata {
+	return c.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata
-func (p *ReportChart) SetMetadata(metadata *ResourceMetadata) {
-	p.metadata = metadata
+func (c *ReportChart) SetMetadata(metadata *ResourceMetadata) {
+	c.metadata = metadata
 }
 
-func (p *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
+func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
-		Item: p,
-		Name: p.Name(),
+		Item: c,
+		Name: c.Name(),
 	}
-	if p.FullName != other.FullName {
+	if c.FullName != other.FullName {
 		res.AddPropertyDiff("Name")
 	}
-	if typehelpers.SafeString(p.Title) != typehelpers.SafeString(other.Title) {
+	if typehelpers.SafeString(c.Title) != typehelpers.SafeString(other.Title) {
 		res.AddPropertyDiff("Title")
 	}
-	if typehelpers.SafeString(p.SQL) != typehelpers.SafeString(other.SQL) {
+	if typehelpers.SafeString(c.SQL) != typehelpers.SafeString(other.SQL) {
 		res.AddPropertyDiff("SQL")
 	}
 
-	if p.Width == nil || other.Width == nil {
-		if !(p.Width == nil && other.Width == nil) {
+	if c.Width == nil || other.Width == nil {
+		if !(c.Width == nil && other.Width == nil) {
 			res.AddPropertyDiff("Width")
 		}
-	} else if *p.Width != *other.Width {
+	} else if *c.Width != *other.Width {
 		res.AddPropertyDiff("Width")
 	}
 
-	if typehelpers.SafeString(p.Type) != typehelpers.SafeString(other.Type) {
+	if typehelpers.SafeString(c.Type) != typehelpers.SafeString(other.Type) {
 		res.AddPropertyDiff("Type")
 	}
 
 	// TODO KAI legens,series,axes
 
-	res.populateChildDiffs(p, other)
+	res.populateChildDiffs(c, other)
 
 	return res
+}
+
+// GetSQL implements ReportLeafNode
+func (c *ReportChart) GetSQL() *string {
+	return c.SQL
 }
