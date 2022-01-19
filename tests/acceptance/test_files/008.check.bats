@@ -56,12 +56,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
-@test "steampipe check - output csv - no header" {
-  cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check control.sample_control_mixed_results_1 --output=csv --progress=false --header=false
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_check_csv_noheader.csv)"
-  cd -
-}
+# @test "steampipe check - output csv - no header" {
+#   cd $CONTROL_RENDERING_TEST_MOD
+#   run steampipe check control.sample_control_mixed_results_1 --output=csv --progress=false --header=false
+#   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_check_csv_noheader.csv)"
+#   cd -
+# }
 
 @test "steampipe check - output json" {
   cd $CONTROL_RENDERING_TEST_MOD
