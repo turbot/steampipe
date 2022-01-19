@@ -8,6 +8,37 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
+// TODO KAI pretty sure we can remove all cty properties from report leaves as they cannot be referred to
+
+type ReportChartLegend struct {
+	Display  *string `cty:"display" hcl:"display" json:"display,omitempty"`
+	Position *string `cty:"position" hcl:"position" json:"position,omitempty"`
+}
+
+type ReportChartSeries struct {
+	Title *string `cty:"title" hcl:"title" json:"title,omitempty"`
+	Color *string `cty:"color" hcl:"color" json:"color,omitempty"`
+}
+
+type ReportChartLabels struct {
+	Display *string `cty:"display" hcl:"display" json:"display,omitempty"`
+	Format  *string `cty:"format" hcl:"format" json:"format,omitempty"`
+}
+
+type ReportChartAxes struct {
+	X struct {
+		Title  *string           `cty:"title" hcl:"title" json:"title,omitempty"`
+		Labels ReportChartLabels `cty:"title" hcl:"labels,block" json:"labels,omitempty"`
+	}
+	Y struct {
+		Title  *string           `cty:"title" hcl:"title" json:"title,omitempty"`
+		Labels ReportChartLabels `cty:"title" hcl:"labels,block" json:"labels,omitempty"`
+		Min    *int              `cty:"min" hcl:"min" json:"min,omitempty"`
+		Max    *int              `cty:"max" hcl:"max " json:"max,omitempty"`
+		Steps  *int              `cty:"steps" hcl:"steps " json:"steps,omitempty"`
+	}
+}
+
 // ReportChart is a struct representing a leaf reporting node
 type ReportChart struct {
 	FullName        string `cty:"name" json:"-"`
@@ -219,4 +250,9 @@ func (c *ReportChart) GetWidth() int {
 		return 0
 	}
 	return *c.Width
+}
+
+// GetUnqualifiedName implements ReportLeafNode
+func (c *ReportChart) GetUnqualifiedName() string {
+	return c.UnqualifiedName
 }

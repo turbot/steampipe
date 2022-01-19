@@ -212,3 +212,8 @@ func (t *ReportTable) GetWidth() int {
 	}
 	return *t.Width
 }
+
+// GetUnqualifiedName implements ReportLeafNode
+func (t *ReportTable) GetUnqualifiedName() string {
+	return t.UnqualifiedName
+}

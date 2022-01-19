@@ -34,7 +34,7 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 
 	children := container.GetChildren()
 	r := &ReportContainerRun{
-		Name:          container.Name(),
+		Name:          fmt.Sprintf("%s.%s", parent.GetName(), container.UnqualifiedName),
 		NodeType:      container.HclType,
 		executionTree: executionTree,
 		parent:        parent,
@@ -161,6 +161,8 @@ func (r *ReportContainerRun) SetError(err error) {
 func (r *ReportContainerRun) SetComplete() {
 	r.runStatus = reportinterfaces.ReportRunComplete
 	// raise container complete event
+	log.Printf("[WARN] ******************** PublishReportEvent ContainerComplete\n")
+
 	r.executionTree.workspace.PublishReportEvent(&reportevents.ContainerComplete{Container: r})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
