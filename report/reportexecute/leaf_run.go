@@ -2,6 +2,7 @@ package reportexecute
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/turbot/steampipe/query/queryresult"
@@ -28,7 +29,7 @@ type LeafRun struct {
 
 func NewLeafRun(resource modconfig.ReportingLeafNode, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*LeafRun, error) {
 	r := &LeafRun{
-		Name:          resource.Name(),
+		Name:          fmt.Sprintf("%s.%s", parent.GetName(), resource.GetUnqualifiedName()),
 		Title:         resource.GetTitle(),
 		Width:         resource.GetWidth(),
 		SQL:           resource.GetSQL(),
@@ -128,7 +129,7 @@ func (r *LeafRun) SetError(err error) {
 func (r *LeafRun) SetComplete() {
 	r.runStatus = reportinterfaces.ReportRunComplete
 	// raise counter complete event
-	log.Printf("[WARN] **************** COUNTER DONE EVENT %s ***************", r.Name)
+	log.Printf("[WARN] **************** LeafRun DONE EVENT %s ***************", r.Name)
 	r.executionTree.workspace.PublishReportEvent(&reportevents.LeafNodeComplete{Node: r})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r

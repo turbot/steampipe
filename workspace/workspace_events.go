@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
@@ -159,6 +160,7 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 	}
 
 	if event.HasChanges() {
+		log.Printf("[WARN] **************** ReportChanged EVENT ***************\n")
 		w.PublishReportEvent(event)
 	}
 }

@@ -44,173 +44,178 @@ func NewReportContainer(block *hcl.Block) *ReportContainer {
 	}
 }
 
-func (r *ReportContainer) Equals(other *ReportContainer) bool {
-	diff := r.Diff(other)
+func (c *ReportContainer) Equals(other *ReportContainer) bool {
+	diff := c.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (r *ReportContainer) CtyValue() (cty.Value, error) {
-	return getCtyValue(r)
+func (c *ReportContainer) CtyValue() (cty.Value, error) {
+	return getCtyValue(c)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'report.<shortName>'
-func (r *ReportContainer) Name() string {
-	return r.FullName
+func (c *ReportContainer) Name() string {
+	return c.FullName
 }
 
-func (r *ReportContainer) SetAnonymous(anonymous bool) {
-	r.anonymous = anonymous
+func (c *ReportContainer) SetAnonymous(anonymous bool) {
+	c.anonymous = anonymous
 }
 
-func (r *ReportContainer) IsAnonymous() bool {
-	return r.anonymous
+func (c *ReportContainer) IsAnonymous() bool {
+	return c.anonymous
 }
 
 // OnDecoded implements HclResource
-func (r *ReportContainer) OnDecoded(block *hcl.Block) hcl.Diagnostics {
-	r.setBaseProperties()
+func (c *ReportContainer) OnDecoded(block *hcl.Block) hcl.Diagnostics {
+	c.setBaseProperties()
 	return nil
 }
 
-func (r *ReportContainer) setBaseProperties() {
-	if r.Base == nil {
+func (c *ReportContainer) setBaseProperties() {
+	if c.Base == nil {
 		return
 	}
-	if r.Title == nil {
-		r.Title = r.Base.Title
+	if c.Title == nil {
+		c.Title = c.Base.Title
 	}
-	if r.Width == nil {
-		r.Width = r.Base.Width
+	if c.Width == nil {
+		c.Width = c.Base.Width
 	}
-	if len(r.children) == 0 {
-		r.children = r.Base.GetChildren()
-		r.ChildNames = r.Base.ChildNames
+	if len(c.children) == 0 {
+		c.children = c.Base.GetChildren()
+		c.ChildNames = c.Base.ChildNames
 	}
 }
 
 // AddReference implements HclResource
-func (r *ReportContainer) AddReference(*ResourceReference) {
+func (c *ReportContainer) AddReference(*ResourceReference) {
 	// TODO
 }
 
 // SetMod implements HclResource
-func (r *ReportContainer) SetMod(mod *Mod) {
-	r.Mod = mod
+func (c *ReportContainer) SetMod(mod *Mod) {
+	c.Mod = mod
 
 	// if this is a top level resource, and not a child, the resource names will already be set
 	// - we need to update the full name to include the mod
-	if r.UnqualifiedName != "" {
+	if c.UnqualifiedName != "" {
 		// add mod name to full name
-		r.FullName = fmt.Sprintf("%s.%s", mod.ShortName, r.UnqualifiedName)
+		c.FullName = fmt.Sprintf("%s.%s", mod.ShortName, c.UnqualifiedName)
 	}
 }
 
 // GetMod implements HclResource
-func (r *ReportContainer) GetMod() *Mod {
-	return r.Mod
+func (c *ReportContainer) GetMod() *Mod {
+	return c.Mod
 }
 
 // GetDeclRange implements HclResource
-func (r *ReportContainer) GetDeclRange() *hcl.Range {
-	return &r.DeclRange
+func (c *ReportContainer) GetDeclRange() *hcl.Range {
+	return &c.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (r *ReportContainer) AddParent(parent ModTreeItem) error {
-	r.parents = append(r.parents, parent)
+func (c *ReportContainer) AddParent(parent ModTreeItem) error {
+	c.parents = append(c.parents, parent)
 
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (r *ReportContainer) GetParents() []ModTreeItem {
-	return r.parents
+func (c *ReportContainer) GetParents() []ModTreeItem {
+	return c.parents
 }
 
 // GetChildren implements ModTreeItem
-func (r *ReportContainer) GetChildren() []ModTreeItem {
-	return r.children
+func (c *ReportContainer) GetChildren() []ModTreeItem {
+	return c.children
 }
 
 // GetTitle implements ModTreeItem
-func (r *ReportContainer) GetTitle() string {
-	return typehelpers.SafeString(r.Title)
+func (c *ReportContainer) GetTitle() string {
+	return typehelpers.SafeString(c.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (r *ReportContainer) GetDescription() string {
+func (c *ReportContainer) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (r *ReportContainer) GetTags() map[string]string {
+func (c *ReportContainer) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (r *ReportContainer) GetPaths() []NodePath {
+func (c *ReportContainer) GetPaths() []NodePath {
 	// lazy load
-	if len(r.Paths) == 0 {
-		r.SetPaths()
+	if len(c.Paths) == 0 {
+		c.SetPaths()
 	}
-	return r.Paths
+	return c.Paths
 }
 
 // SetPaths implements ModTreeItem
-func (r *ReportContainer) SetPaths() {
-	for _, parent := range r.parents {
+func (c *ReportContainer) SetPaths() {
+	for _, parent := range c.parents {
 		for _, parentPath := range parent.GetPaths() {
-			r.Paths = append(r.Paths, append(parentPath, r.Name()))
+			c.Paths = append(c.Paths, append(parentPath, c.Name()))
 		}
 	}
 }
 
 // GetMetadata implements ResourceWithMetadata
-func (r *ReportContainer) GetMetadata() *ResourceMetadata {
-	return r.metadata
+func (c *ReportContainer) GetMetadata() *ResourceMetadata {
+	return c.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata
-func (r *ReportContainer) SetMetadata(metadata *ResourceMetadata) {
-	r.metadata = metadata
+func (c *ReportContainer) SetMetadata(metadata *ResourceMetadata) {
+	c.metadata = metadata
 }
 
-func (r *ReportContainer) Diff(other *ReportContainer) *ReportTreeItemDiffs {
+func (c *ReportContainer) Diff(other *ReportContainer) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
-		Item: r,
-		Name: r.Name(),
+		Item: c,
+		Name: c.Name(),
 	}
 
-	if r.FullName != other.FullName {
+	if c.FullName != other.FullName {
 		res.AddPropertyDiff("Name")
 	}
 
-	if typehelpers.SafeString(r.Title) != typehelpers.SafeString(other.Title) {
+	if typehelpers.SafeString(c.Title) != typehelpers.SafeString(other.Title) {
 		res.AddPropertyDiff("Title")
 	}
 
-	if r.Width == nil || other.Width == nil {
-		if !(r.Width == nil && other.Width == nil) {
+	if c.Width == nil || other.Width == nil {
+		if !(c.Width == nil && other.Width == nil) {
 			res.AddPropertyDiff("Width")
 		}
-	} else if *r.Width != *other.Width {
+	} else if *c.Width != *other.Width {
 		res.AddPropertyDiff("Width")
 	}
 
-	res.populateChildDiffs(r, other)
+	res.populateChildDiffs(c, other)
 	return res
 }
 
-func (r *ReportContainer) IsReport() bool {
-	return r.HclType == "report"
+func (c *ReportContainer) IsReport() bool {
+	return c.HclType == "report"
 }
 
-func (r *ReportContainer) SetChildren(children []ModTreeItem) {
-	r.children = children
-	r.ChildNames = make([]string, len(children))
-	for i, c := range children {
-		r.ChildNames[i] = c.Name()
+func (c *ReportContainer) SetChildren(children []ModTreeItem) {
+	c.children = children
+	c.ChildNames = make([]string, len(children))
+	for i, child := range children {
+		c.ChildNames[i] = child.Name()
 	}
+}
+
+// GetUnqualifiedName implements ReportLeafNode
+func (c *ReportContainer) GetUnqualifiedName() string {
+	return c.UnqualifiedName
 }
