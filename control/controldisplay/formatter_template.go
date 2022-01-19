@@ -20,7 +20,7 @@ type TemplateFormatter struct {
 func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	reader, writer := io.Pipe()
 	go func() {
-		if err := tf.template.ExecuteTemplate(writer, "outlet", tree); err != nil {
+		if err := tf.template.ExecuteTemplate(writer, "output", tree); err != nil {
 			writer.CloseWithError(err)
 		} else {
 			writer.Close()

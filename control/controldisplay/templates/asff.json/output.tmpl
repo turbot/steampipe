@@ -1,4 +1,4 @@
-{{ define "outlet" }}[  {{ range $runIdx,$run := .ControlRuns -}} {{ range $rowIdx,$row := $run.Rows }} {{ if gt (add $runIdx $rowIdx) 0 }},{{end}} {{ template "control_row_template" $row -}} {{ end -}} {{ end }}
+{{ define "output" }}[  {{ range $runIdx,$run := .ControlRuns -}} {{ range $rowIdx,$row := $run.Rows }} {{ if gt (add $runIdx $rowIdx) 0 }},{{end}} {{ template "control_row_template" $row -}} {{ end -}} {{ end }}
 ] {{ end }}
 {{ define "control_row_template" }} {{ if .Run.MatchTag "plugin" "aws" }}
 {
