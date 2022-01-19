@@ -14,11 +14,13 @@ type ReportCounter struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Title *string        `cty:"title" hcl:"title" column:"title,text" json:"title,omitempty"`
+	// these properties are JSON serialised by the parent LeafRun
+	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
+
 	Type  *string        `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Style *string        `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
-	Width *int           `cty:"width" hcl:"width" column:"width,text"  json:"width,omitempty"`
-	SQL   *string        `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
 	Base  *ReportCounter `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
@@ -211,6 +213,14 @@ func (c *ReportCounter) Diff(other *ReportCounter) *ReportTreeItemDiffs {
 }
 
 // GetSQL implements ReportLeafNode
-func (c *ReportCounter) GetSQL() *string {
-	return c.SQL
+func (c *ReportCounter) GetSQL() string {
+	return typehelpers.SafeString(c.SQL)
+}
+
+// GetWidth implements ReportLeafNode
+func (c *ReportCounter) GetWidth() int {
+	if c.Width == nil {
+		return 0
+	}
+	return *c.Width
 }

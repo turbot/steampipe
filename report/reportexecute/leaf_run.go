@@ -14,6 +14,8 @@ import (
 type LeafRun struct {
 	Name string `json:"name"`
 
+	Title         string                      `json:"title,omitempty"`
+	Width         int                         `json:"width,omitempty"`
 	SQL           string                      `json:"sql,omitempty"`
 	Data          [][]interface{}             `json:"data,omitempty"`
 	Error         error                       `json:"error,omitempty"`
@@ -27,6 +29,9 @@ type LeafRun struct {
 func NewLeafRun(resource modconfig.ReportingLeafNode, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*LeafRun, error) {
 	r := &LeafRun{
 		Name:          resource.Name(),
+		Title:         resource.GetTitle(),
+		Width:         resource.GetWidth(),
+		SQL:           resource.GetSQL(),
 		ReportNode:    resource,
 		executionTree: executionTree,
 		parent:        parent,
@@ -36,15 +41,14 @@ func NewLeafRun(resource modconfig.ReportingLeafNode, parent reportinterfaces.Re
 		runStatus: reportinterfaces.ReportRunComplete,
 	}
 
-	parsedName, err := modconfig.ParseResourceName((resource.Name()))
+	parsedName, err := modconfig.ParseResourceName(resource.Name())
 	if err != nil {
 		return nil, err
 	}
 	r.NodeType = parsedName.ItemType
 	// if we have sql, set status to ready
-	if sql := resource.GetSQL(); sql != nil {
+	if r.SQL != "" {
 		r.runStatus = reportinterfaces.ReportRunReady
-		r.SQL = *sql
 	}
 
 	// add r into execution tree

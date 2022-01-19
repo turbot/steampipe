@@ -16,13 +16,10 @@ import (
 type ReportContainerRun struct {
 	Name string `json:"name"`
 
-	Text     string                           `json:"text,omitempty"`
-	Type     string                           `json:"type,omitempty"`
 	Width    int                              `json:"width,omitempty"`
 	Height   int                              `json:"height,omitempty"`
 	Source   string                           `json:"source,omitempty"`
 	SQL      string                           `json:"sql,omitempty"`
-	Data     [][]interface{}                  `json:"data,omitempty"`
 	Error    error                            `json:"error,omitempty"`
 	Children []reportinterfaces.ReportNodeRun `json:"children,omitempty"`
 

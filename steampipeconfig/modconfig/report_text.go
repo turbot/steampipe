@@ -14,16 +14,17 @@ type ReportText struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Title *string `cty:"title" hcl:"title" column:"title,text" json:"title,omitempty"`
+	// these properties are JSON serialised by the parent LeafRun
+	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+
 	Type  *string     `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Value *string     `cty:"value" hcl:"value" column:"value,text"  json:"value,omitempty"`
-	Width *int        `cty:"width" hcl:"width" column:"width,text"  json:"width,omitempty"`
 	Base  *ReportText `hcl:"base" json:"-"`
 
-	DeclRange hcl.Range `json:"-"`
-	Mod       *Mod      `cty:"mod" json:"-"`
-
-	Paths []NodePath `column:"path,jsonb" json:"-"`
+	DeclRange hcl.Range  `json:"-"`
+	Mod       *Mod       `cty:"mod" json:"-"`
+	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
 	parents   []ModTreeItem
 	metadata  *ResourceMetadata
@@ -196,7 +197,7 @@ func (t *ReportText) Diff(other *ReportText) *ReportTreeItemDiffs {
 	}
 
 	if typehelpers.SafeString(t.Value) != typehelpers.SafeString(other.Value) {
-		res.AddPropertyDiff("Style")
+		res.AddPropertyDiff("Value")
 	}
 
 	res.populateChildDiffs(t, other)
@@ -205,6 +206,14 @@ func (t *ReportText) Diff(other *ReportText) *ReportTreeItemDiffs {
 }
 
 // GetSQL implements ReportLeafNode
-func (t *ReportText) GetSQL() *string {
-	return nil
+func (t *ReportText) GetSQL() string {
+	return ""
+}
+
+// GetWidth implements ReportLeafNode
+func (t *ReportText) GetWidth() int {
+	if t.Width == nil {
+		return 0
+	}
+	return *t.Width
 }
