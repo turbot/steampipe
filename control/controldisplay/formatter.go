@@ -92,10 +92,15 @@ func (j *NullFormatter) FileExtension() string {
 }
 
 func templateFuncs() template.FuncMap {
-	removeFromSprigMap := []string{"env", "expandenv"}
-	funcs := sprig.TxtFuncMap()
-	for _, remove := range removeFromSprigMap {
-		delete(funcs, remove)
+	useFromSprigMap := []string{"upper", "toJson", "quote", "dict", "add", "now"}
+
+	var funcs template.FuncMap = template.FuncMap{}
+	sprigMap := sprig.TxtFuncMap()
+	for _, use := range useFromSprigMap {
+		f, found := sprigMap[use]
+		if found {
+			funcs[use] = f
+		}
 	}
 	for k, v := range formatterTemplateFuncMap {
 		funcs[k] = v
