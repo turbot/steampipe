@@ -65,7 +65,10 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 				return nil, fmt.Errorf("child %s does not implement ReportingLeafNode", i.Name())
 			}
 
-			childRun = NewLeafRun(leafNode, r, executionTree)
+			childRun, err = NewLeafRun(leafNode, r, executionTree)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// should never happen - container children must be either container or counter
