@@ -2,7 +2,6 @@ package controldisplay
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,9 +9,6 @@ import (
 
 	"github.com/turbot/steampipe/control/controlexecute"
 )
-
-var ErrAmbiguousTemplate = errors.New("ambiguous templates found")
-var ErrTemplateNotFound = errors.New("template not found")
 
 // TemplateFormatter implements the 'Formatter' interface and exposes a generic template based output mechanism
 // for 'check' execution trees

@@ -62,7 +62,7 @@ func ResolveExportTemplate(export string, allowFilenameEvaluation bool) (format 
 	}
 
 	if !allowFilenameEvaluation {
-		return nil, "", ErrTemplateNotFound
+		return nil, "", fmt.Errorf("template %s not found", export)
 	}
 
 	// if the above didn't match, then the input argument is a file name
@@ -85,7 +85,7 @@ func findTemplateByFilename(export string, available []*ExportTemplate) (format 
 	extension := filepath.Ext(export)
 	if len(extension) == 0 {
 		// we don't have anything to work with
-		return nil, ErrTemplateNotFound
+		return nil, fmt.Errorf("template %s not found", export)
 	}
 	matchingTemplates := []*ExportTemplate{}
 
@@ -97,21 +97,23 @@ func findTemplateByFilename(export string, available []*ExportTemplate) (format 
 	}
 
 	if len(matchingTemplates) > 1 {
+		matchNames := []string{}
 		// find out if any of them has preference
 		for _, match := range matchingTemplates {
 			if match.DefaultTemplateForExtension {
 				return match, nil
 			}
+			matchNames = append(matchNames, match.FormatName)
 		}
 		// there's ambiguity - we have more than one matching templates based on extension
-		return nil, ErrAmbiguousTemplate
+		return nil, fmt.Errorf("ambiguous templates found: %v", matchNames)
 	}
 
 	if len(matchingTemplates) == 1 {
 		return matchingTemplates[0], nil
 	}
 
-	return nil, ErrTemplateNotFound
+	return nil, fmt.Errorf("template %s not found", export)
 }
 
 func loadAvailableTemplates() ([]*ExportTemplate, error) {
