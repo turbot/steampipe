@@ -35,7 +35,7 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 	children := container.GetChildren()
 	r := &ReportContainerRun{
 		Name:          container.Name(),
-		NodeType:      modconfig.BlockTypeContainer,
+		NodeType:      container.HclType,
 		executionTree: executionTree,
 		parent:        parent,
 		// set to complete, optimistically

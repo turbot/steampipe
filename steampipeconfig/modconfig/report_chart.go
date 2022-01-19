@@ -101,11 +101,7 @@ func (c *ReportChart) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (c *ReportChart) SetMod(mod *Mod) {
 	c.Mod = mod
-	// if this resource has a name, update to include the mod
-	// TODO kai is this conditional needed?
-	if c.UnqualifiedName != "" {
-		c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
-	}
+	c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
 }
 
 // GetMod implements HclResource

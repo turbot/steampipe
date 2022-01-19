@@ -30,14 +30,14 @@ type ReportContainer struct {
 	parents  []ModTreeItem
 	metadata *ResourceMetadata
 
-	hclType   string
+	HclType   string
 	anonymous bool
 }
 
 func NewReportContainer(block *hcl.Block) *ReportContainer {
 	return &ReportContainer{
 		DeclRange:       block.DefRange,
-		hclType:         block.Type,
+		HclType:         block.Type,
 		ShortName:       block.Labels[0],
 		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
@@ -204,7 +204,7 @@ func (r *ReportContainer) Diff(other *ReportContainer) *ReportTreeItemDiffs {
 }
 
 func (r *ReportContainer) IsReport() bool {
-	return r.hclType == "report"
+	return r.HclType == "report"
 }
 
 func (r *ReportContainer) SetChildren(children []ModTreeItem) {
