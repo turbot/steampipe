@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -223,11 +222,11 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 	case *reportevents.LeafNodeComplete:
 		fmt.Println("Got leaf node complete event", *e)
 		payload := buildLeafNodeCompletePayload(e)
-		nodeName := e.Node.GetName()
+		paths := e.Node.GetPath()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
 			// If this session is interested in this report, broadcast to it
-			if (repoInfo.Report != nil) && strings.HasPrefix(nodeName, *repoInfo.Report) {
+			if (repoInfo.Report != nil) && helpers.StringSliceContains(paths, *repoInfo.Report) {
 				session.Write(payload)
 			}
 		}
