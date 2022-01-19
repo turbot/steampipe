@@ -112,9 +112,6 @@ func templateFuncs() template.FuncMap {
 var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 	"steampipeversion": func() string { return version.SteampipeVersion.String() },
 	"workingdir":       func() string { wd, _ := os.Getwd(); return wd },
-	"timenow": func() string {
-		return time.Now().Format(time.RFC3339)
-	},
 	"DurationInSeconds": func(t time.Duration) float64 {
 		return t.Seconds()
 	},
