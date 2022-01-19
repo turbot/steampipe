@@ -14,11 +14,13 @@ type ReportChart struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Title *string      `cty:"title" hcl:"title" column:"title,text" json:"title,omitempty"`
-	Type  *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Width *int         `cty:"width" hcl:"width" column:"width,text"  json:"width,omitempty"`
-	SQL   *string      `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Base  *ReportChart `hcl:"base" json:"-"`
+	// these properties are JSON serialised by the parent LeafRun
+	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
+
+	Type *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Base *ReportChart `hcl:"base" json:"-"`
 
 	// TODO KAI
 	//Legend *string `cty:"legend" hcl:"legend" column:"legend,jsonb"`
@@ -211,6 +213,14 @@ func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
 }
 
 // GetSQL implements ReportLeafNode
-func (c *ReportChart) GetSQL() *string {
-	return c.SQL
+func (c *ReportChart) GetSQL() string {
+	return typehelpers.SafeString(c.SQL)
+}
+
+// GetWidth implements ReportLeafNode
+func (c *ReportChart) GetWidth() int {
+	if c.Width == nil {
+		return 0
+	}
+	return *c.Width
 }

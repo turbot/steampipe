@@ -185,7 +185,6 @@ func (w *Workspace) buildCounterMap(modMap modconfig.ModMap) map[string]*modconf
 	var res = make(map[string]*modconfig.ReportCounter)
 
 	for _, p := range w.Mod.ReportCounters {
-		res[p.UnqualifiedName] = p
 		res[p.Name()] = p
 	}
 
@@ -201,7 +200,6 @@ func (w *Workspace) buildReportContainerMap(modMap modconfig.ModMap) map[string]
 	var res = make(map[string]*modconfig.ReportContainer)
 
 	for _, c := range w.Mod.ReportContainers {
-		res[c.UnqualifiedName] = c
 		res[c.Name()] = c
 	}
 
@@ -217,7 +215,6 @@ func (w *Workspace) buildReportTextMap(modMap modconfig.ModMap) map[string]*modc
 	var res = make(map[string]*modconfig.ReportText)
 
 	for _, c := range w.Mod.ReportTexts {
-		res[c.UnqualifiedName] = c
 		res[c.Name()] = c
 	}
 
@@ -233,7 +230,6 @@ func (w *Workspace) buildReportTableMap(modMap modconfig.ModMap) map[string]*mod
 	var res = make(map[string]*modconfig.ReportTable)
 
 	for _, c := range w.Mod.ReportTables {
-		res[c.UnqualifiedName] = c
 		res[c.Name()] = c
 	}
 
@@ -249,7 +245,6 @@ func (w *Workspace) buildReportChartMap(modMap modconfig.ModMap) map[string]*mod
 	var res = make(map[string]*modconfig.ReportChart)
 
 	for _, c := range w.Mod.ReportCharts {
-		res[c.UnqualifiedName] = c
 		res[c.Name()] = c
 	}
 
@@ -260,65 +255,3 @@ func (w *Workspace) buildReportChartMap(modMap modconfig.ModMap) map[string]*mod
 	}
 	return res
 }
-
-//
-//// resource map access
-//// return a map of all unique counters, keyed by name
-//// not we cannot just use CounterMap as this contains duplicates (qualified and unqualified version)
-//func (w *Workspace) getUniqueCounterMap() map[string]*modconfig.ReportCounter {
-//	counters := make(map[string]*modconfig.ReportCounter, len(w.ReportCounters))
-//	for _, p := range w.ReportCounters {
-//		// refetch the name property to avoid duplicates
-//		// (as we save resources with qualified and unqualified name)
-//		counters[p.Name()] = p
-//	}
-//	return counters
-//}
-//
-//// return a map of all unique reports, keyed by name
-//// not we cannot just use Reports as this contains duplicates (qualified and unqualified version)
-//func (w *Workspace) getUniqueReportMap() map[string]*modconfig.ReportContainer {
-//	reports := make(map[string]*modconfig.ReportContainer, len(w.Reports))
-//	for _, p := range w.Reports {
-//		// refetch the name property to avoid duplicates
-//		// (as we save resources with qualified and unqualified name)
-//		reports[p.Name()] = p
-//	}
-//	return reports
-//}
-//
-//// return a map of all unique containers, keyed by name
-//// TODO KAI is this needed - if so add other reporting types
-//func (w *Workspace) getUniqueReportContainerMap() map[string]*modconfig.ReportContainer {
-//	containers := make(map[string]*modconfig.ReportContainer, len(w.ReportContainers))
-//	for _, p := range w.ReportContainers {
-//		// refetch the name property to avoid duplicates
-//		// (as we save resources with qualified and unqualified name)
-//		containers[p.Name()] = p
-//	}
-//	return containers
-//}
-//
-//// return a map of all unique charts, keyed by name
-//// TODO KAI is this needed - if so add other reporting types
-//func (w *Workspace) getUniqueReportChartMap() map[string]*modconfig.ReportChart {
-//	charts := make(map[string]*modconfig.ReportChart, len(w.ReportCharts))
-//	for _, p := range w.ReportCharts {
-//		// refetch the name property to avoid duplicates
-//		// (as we save resources with qualified and unqualified name)
-//		charts[p.Name()] = p
-//	}
-//	return charts
-//}
-//
-//// return a map of all unique texts, keyed by name
-//// TODO KAI is this needed - if so add other reporting types
-//func (w *Workspace) getUniqueReportTextMap() map[string]*modconfig.ReportText {
-//	texts := make(map[string]*modconfig.ReportText, len(w.ReportTexts))
-//	for _, p := range w.ReportTexts {
-//		// refetch the name property to avoid duplicates
-//		// (as we save resources with qualified and unqualified name)
-//		texts[p.Name()] = p
-//	}
-//	return texts
-//}

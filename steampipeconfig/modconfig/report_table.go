@@ -14,16 +14,17 @@ type ReportTable struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Title *string      `cty:"title" hcl:"title" column:"title,text" json:"title,omitempty"`
-	Type  *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Width *int         `cty:"width" hcl:"width" column:"width,text"  json:"width,omitempty"`
-	SQL   *string      `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Base  *ReportTable `hcl:"base" json:"-"`
+	// these properties are JSON serialised by the parent LeafRun
+	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 
-	DeclRange hcl.Range `json:"-"`
-	Mod       *Mod      `cty:"mod" json:"-"`
+	Type *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Base *ReportTable `hcl:"base" json:"-"`
 
-	Paths []NodePath `column:"path,jsonb" json:"-"`
+	DeclRange hcl.Range  `json:"-"`
+	Mod       *Mod       `cty:"mod" json:"-"`
+	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
 	parents   []ModTreeItem
 	metadata  *ResourceMetadata
@@ -127,7 +128,7 @@ func (t *ReportTable) GetChildren() []ModTreeItem {
 	return nil
 }
 
-// GetTitle implements ModTreeItem
+// GetTitle implements ModTreeItem, ReportLeafNode
 func (t *ReportTable) GetTitle() string {
 	return typehelpers.SafeString(t.Title)
 }
@@ -204,6 +205,14 @@ func (t *ReportTable) Diff(other *ReportTable) *ReportTreeItemDiffs {
 }
 
 // GetSQL implements ReportLeafNode
-func (t *ReportTable) GetSQL() *string {
-	return t.SQL
+func (t *ReportTable) GetSQL() string {
+	return typehelpers.SafeString(t.SQL)
+}
+
+// GetWidth implements ReportLeafNode
+func (t *ReportTable) GetWidth() int {
+	if t.Width == nil {
+		return 0
+	}
+	return *t.Width
 }

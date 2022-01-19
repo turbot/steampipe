@@ -58,7 +58,7 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 			}
 		}
 	}
-	w.raiseReportChangedEvents(w.GetResourceMaps(), prevResourceMaps)
+	w.raiseReportChangedEvents(resourceMaps, prevResourceMaps)
 }
 
 func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *modconfig.WorkspaceResourceMaps) {

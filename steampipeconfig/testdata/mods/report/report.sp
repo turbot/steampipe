@@ -13,6 +13,6 @@ report "r1" {
 
 container "foo" {
     text {
-        value = "SOME TEXT"
+        value = "SOME TEXT____"
     }
 }

@@ -67,5 +67,7 @@ type QueryProvider interface {
 // ReportingLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
 type ReportingLeafNode interface {
 	Name() string
-	GetSQL() *string
+	GetTitle() string
+	GetWidth() int
+	GetSQL() string
 }
