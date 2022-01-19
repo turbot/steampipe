@@ -73,7 +73,19 @@ var ModBlockSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       modconfig.BlockTypePanel,
+			Type:       modconfig.BlockTypeTable,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeText,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeCounter,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeChart,
 			LabelNames: []string{"name"},
 		},
 		{
@@ -91,10 +103,19 @@ var ReportBlockSchema = &hcl.BodySchema{
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type: "container",
+			Type: modconfig.BlockTypeContainer,
 		},
 		{
-			Type: "panel",
+			Type: modconfig.BlockTypeTable,
+		},
+		{
+			Type: modconfig.BlockTypeText,
+		},
+		{
+			Type: modconfig.BlockTypeCounter,
+		},
+		{
+			Type: modconfig.BlockTypeChart,
 		},
 	},
 }
@@ -106,24 +127,6 @@ var BenchmarkBlockSchema = &hcl.BodySchema{
 		{Name: "tags"},
 		{Name: "title"},
 	},
-}
-
-var PanelBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{Name: "title"},
-		{Name: "type"},
-		{Name: "width"},
-		{Name: "sql"},
-		{Name: "base"},
-	},
-}
-
-func PanelBlockSchemaAttributesMap() map[string]bool {
-	var res = make(map[string]bool)
-	for _, a := range PanelBlockSchema.Attributes {
-		res[a.Name] = true
-	}
-	return res
 }
 
 var ControlBlockSchema = &hcl.BodySchema{

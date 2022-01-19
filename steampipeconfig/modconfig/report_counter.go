@@ -8,22 +8,22 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// Panel is a struct representing the Panel resource
-type Panel struct {
+// ReportCounter is a struct representing a leaf reporting node
+type ReportCounter struct {
 	FullName        string `cty:"name"`
 	ShortName       string
 	UnqualifiedName string
 
-	Title      *string           `cty:"title" column:"title,text"`
-	Type       *string           `cty:"type" column:"type,text"`
-	Width      *int              `cty:"width" column:"width,text"`
-	SQL        *string           `cty:"sql" column:"sql,text"`
-	Properties map[string]string `cty:"properties" column:"properties,jsonb"`
+	Title *string        `cty:"title" hcl:"title" column:"title,text"`
+	Type  *string        `cty:"type" hcl:"type" column:"type,text"`
+	Style *string        `cty:"style" hcl:"style" column:"style,text"`
+	Width *int           `cty:"width" hcl:"width" column:"width,text"`
+	SQL   *string        `cty:"sql" hcl:"sql" column:"sql,text"`
+	Base  *ReportCounter `hcl:"base"`
 
 	DeclRange hcl.Range
 	Mod       *Mod `cty:"mod"`
 
-	Base  *Panel
 	Paths []NodePath `column:"path,jsonb"`
 
 	parents   []ModTreeItem
@@ -31,49 +31,46 @@ type Panel struct {
 	anonymous bool
 }
 
-func NewPanel(block *hcl.Block) *Panel {
-	panel := &Panel{
+func NewReportCounter(block *hcl.Block) *ReportCounter {
+	return &ReportCounter{
 		DeclRange:       block.DefRange,
-		Properties:      make(map[string]string),
 		ShortName:       block.Labels[0],
 		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
-
-	return panel
 }
 
-func (p *Panel) Equals(other *Panel) bool {
+func (p *ReportCounter) Equals(other *ReportCounter) bool {
 	diff := p.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (p *Panel) CtyValue() (cty.Value, error) {
+func (p *ReportCounter) CtyValue() (cty.Value, error) {
 	return getCtyValue(p)
 }
 
 // Name implements HclResource, ModTreeItem
-// return name in format: 'panel.<shortName>'
-func (p *Panel) Name() string {
+// return name in format: 'counter.<shortName>'
+func (p *ReportCounter) Name() string {
 	return p.FullName
 }
 
-func (p *Panel) SetAnonymous(anonymous bool) {
+func (p *ReportCounter) SetAnonymous(anonymous bool) {
 	p.anonymous = anonymous
 }
 
-func (p *Panel) IsAnonymous() bool {
+func (p *ReportCounter) IsAnonymous() bool {
 	return p.anonymous
 }
 
 // OnDecoded implements HclResource
-func (p *Panel) OnDecoded(*hcl.Block) hcl.Diagnostics {
+func (p *ReportCounter) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	p.setBaseProperties()
 	return nil
 }
 
-func (p *Panel) setBaseProperties() {
+func (p *ReportCounter) setBaseProperties() {
 	if p.Base == nil {
 		return
 	}
@@ -83,74 +80,74 @@ func (p *Panel) setBaseProperties() {
 	if p.Type == nil {
 		p.Type = p.Base.Type
 	}
+	if p.Style == nil {
+		p.Style = p.Base.Style
+	}
+
 	if p.Width == nil {
 		p.Width = p.Base.Width
 	}
 	if p.SQL == nil {
 		p.SQL = p.Base.SQL
 	}
-	for k, v := range p.Base.Properties {
-		if _, ok := p.Properties[k]; !ok {
-			p.Properties[k] = v
-		}
-	}
 }
 
 // AddReference implements HclResource
-func (p *Panel) AddReference(*ResourceReference) {}
+func (p *ReportCounter) AddReference(*ResourceReference) {}
 
 // SetMod implements HclResource
-func (p *Panel) SetMod(mod *Mod) {
+func (p *ReportCounter) SetMod(mod *Mod) {
 	p.Mod = mod
 	// if this resource has a name, update to include the mod
+	// TODO kai is this conditional needed?
 	if p.UnqualifiedName != "" {
 		p.FullName = fmt.Sprintf("%s.%s", p.Mod.ShortName, p.UnqualifiedName)
 	}
 }
 
 // GetMod implements HclResource
-func (p *Panel) GetMod() *Mod {
+func (p *ReportCounter) GetMod() *Mod {
 	return p.Mod
 }
 
 // GetDeclRange implements HclResource
-func (p *Panel) GetDeclRange() *hcl.Range {
+func (p *ReportCounter) GetDeclRange() *hcl.Range {
 	return &p.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (p *Panel) AddParent(parent ModTreeItem) error {
+func (p *ReportCounter) AddParent(parent ModTreeItem) error {
 	p.parents = append(p.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (p *Panel) GetParents() []ModTreeItem {
+func (p *ReportCounter) GetParents() []ModTreeItem {
 	return p.parents
 }
 
 // GetChildren implements ModTreeItem
-func (p *Panel) GetChildren() []ModTreeItem {
+func (p *ReportCounter) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (p *Panel) GetTitle() string {
+func (p *ReportCounter) GetTitle() string {
 	return typehelpers.SafeString(p.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (p *Panel) GetDescription() string {
+func (p *ReportCounter) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (p *Panel) GetTags() map[string]string {
+func (p *ReportCounter) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (p *Panel) GetPaths() []NodePath {
+func (p *ReportCounter) GetPaths() []NodePath {
 	// lazy load
 	if len(p.Paths) == 0 {
 		p.SetPaths()
@@ -160,7 +157,7 @@ func (p *Panel) GetPaths() []NodePath {
 }
 
 // SetPaths implements ModTreeItem
-func (p *Panel) SetPaths() {
+func (p *ReportCounter) SetPaths() {
 	for _, parent := range p.parents {
 		for _, parentPath := range parent.GetPaths() {
 			p.Paths = append(p.Paths, append(parentPath, p.Name()))
@@ -169,16 +166,16 @@ func (p *Panel) SetPaths() {
 }
 
 // GetMetadata implements ResourceWithMetadata
-func (p *Panel) GetMetadata() *ResourceMetadata {
+func (p *ReportCounter) GetMetadata() *ResourceMetadata {
 	return p.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata
-func (p *Panel) SetMetadata(metadata *ResourceMetadata) {
+func (p *ReportCounter) SetMetadata(metadata *ResourceMetadata) {
 	p.metadata = metadata
 }
 
-func (p *Panel) Diff(other *Panel) *ReportTreeItemDiffs {
+func (p *ReportCounter) Diff(other *ReportCounter) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
 		Item: p,
 		Name: p.Name(),
@@ -201,33 +198,15 @@ func (p *Panel) Diff(other *Panel) *ReportTreeItemDiffs {
 		res.AddPropertyDiff("Width")
 	}
 
-	for k, v := range p.Properties {
-		if other.Properties[k] != v {
-			res.AddPropertyDiff(fmt.Sprintf("Properties.%s", k))
-		}
-	}
-
 	if typehelpers.SafeString(p.Type) != typehelpers.SafeString(other.Type) {
 		res.AddPropertyDiff("Type")
+	}
+
+	if typehelpers.SafeString(p.Style) != typehelpers.SafeString(other.Style) {
+		res.AddPropertyDiff("Style")
 	}
 
 	res.populateChildDiffs(p, other)
 
 	return res
 }
-
-//
-//// SetName implements AnonymousResource
-//func (p *Panel) SetName(name string) {
-//	p.ShortName = name
-//	p.UnqualifiedName = fmt.Sprintf("panel.%s", name)
-//	// set the full name
-//	p.FullName = fmt.Sprintf("%s.%s", p.Mod.ShortName, p.UnqualifiedName)
-//	// update the name in metadata
-//	p.metadata.ResourceName = p.ShortName
-//}
-//
-//// HclType implements AnonymousResource
-//func (*Panel) HclType() string {
-//	return BlockTypePanel
-//}

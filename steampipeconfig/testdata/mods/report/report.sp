@@ -2,21 +2,17 @@ report "r1" {
 
         base = container.foo
 }
-//
-//panel "name" {
-//    title = "foo"
-//    width = 100
-//    height = 10
-//    source = "THIS IS A PANEL OK"
-//    sql = "select 1"
-//}
+
+counter "name" {
+    title = "foo"
+    width = 100
+    sql = "select 1"
+}
 
 
 
 container "foo" {
-    panel {
+    counter {
         type = "markdown"
-        text = "## Some title1"
-
     }
 }

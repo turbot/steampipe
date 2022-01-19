@@ -127,35 +127,17 @@ func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 
 	moreDiags := r.storeResourceInCtyMap(mod)
 	diags = append(diags, moreDiags...)
-	// add mod resources
-	for _, q := range mod.Queries {
-		moreDiags := r.storeResourceInCtyMap(q)
-		diags = append(diags, moreDiags...)
+
+	resourceFunc := func(item modconfig.HclResource) bool {
+		// add all mod resources except variables into cty map
+		if _, ok := item.(*modconfig.Variable); !ok {
+			moreDiags := r.storeResourceInCtyMap(item)
+			diags = append(diags, moreDiags...)
+		}
+		// continue walking
+		return true
 	}
-	for _, c := range mod.Controls {
-		moreDiags := r.storeResourceInCtyMap(c)
-		diags = append(diags, moreDiags...)
-	}
-	for _, b := range mod.Benchmarks {
-		moreDiags := r.storeResourceInCtyMap(b)
-		diags = append(diags, moreDiags...)
-	}
-	for _, l := range mod.Locals {
-		moreDiags := r.storeResourceInCtyMap(l)
-		diags = append(diags, moreDiags...)
-	}
-	for _, rpt := range mod.Reports {
-		moreDiags := r.storeResourceInCtyMap(rpt)
-		diags = append(diags, moreDiags...)
-	}
-	for _, p := range mod.Panels {
-		moreDiags := r.storeResourceInCtyMap(p)
-		diags = append(diags, moreDiags...)
-	}
-	for _, c := range mod.Containers {
-		moreDiags := r.storeResourceInCtyMap(c)
-		diags = append(diags, moreDiags...)
-	}
+	mod.WalkResources(resourceFunc)
 
 	// rebuild the eval context
 	r.buildEvalContext()

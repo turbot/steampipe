@@ -26,10 +26,7 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	// store prev resources so we can detect diffs
-	prevPanels := w.getPanelMap()
-	prevReports := w.getReportMap()
-	prevContainers := w.getContainerMap()
+	// TODO KAI THINK ABOUT LOCKING
 	prevResourceMaps := w.GetResourceMaps()
 
 	// now reload the workspace
@@ -61,59 +58,106 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 			}
 		}
 	}
-	w.raiseReportChangedEvents(w.getPanelMap(), prevPanels, w.getReportMap(), prevReports, w.getContainerMap(), prevContainers)
+	w.raiseReportChangedEvents(w.GetResourceMaps(), prevResourceMaps)
 }
 
-func (w *Workspace) raiseReportChangedEvents(panels, prevPanels map[string]*modconfig.Panel, reports, prevReports, containers, prevContainers map[string]*modconfig.ReportContainer) {
+func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *modconfig.WorkspaceResourceMaps) {
 	event := &reportevents.ReportChanged{}
 
-	// first detect detect changes to existing panels/reports and removed panels and reports
-	for name, prevPanel := range prevPanels {
-		if currentPanel, ok := panels[name]; ok {
-			diff := prevPanel.Diff(currentPanel)
-			if diff.HasChanges() {
-				event.ChangedPanels = append(event.ChangedPanels, diff)
-			}
-		} else {
-			event.DeletedPanels = append(event.DeletedPanels, prevPanel)
-		}
-	}
-	for name, prevReport := range prevReports {
-		if currentReport, ok := reports[name]; ok {
-			diff := prevReport.Diff(currentReport)
+	// first detect changes to existing resources and deletions
+	for name, prev := range prevResourceMaps.Reports {
+		if current, ok := resourceMaps.Reports[name]; ok {
+			diff := prev.Diff(current)
 			if diff.HasChanges() {
 				event.ChangedReports = append(event.ChangedReports, diff)
 			}
 		} else {
-			event.DeletedReports = append(event.DeletedReports, prevReport)
+			event.DeletedReports = append(event.DeletedReports, prev)
 		}
 	}
-	for name, prevContainer := range prevContainers {
-		if currentContainer, ok := containers[name]; ok {
-			diff := prevContainer.Diff(currentContainer)
+	for name, prev := range prevResourceMaps.ReportContainers {
+		if current, ok := resourceMaps.ReportContainers[name]; ok {
+			diff := prev.Diff(current)
 			if diff.HasChanges() {
-				event.ChangedReports = append(event.ChangedReports, diff)
+				event.ChangedContainers = append(event.ChangedContainers, diff)
 			}
 		} else {
-			event.DeletedReports = append(event.DeletedReports, prevContainer)
+			event.DeletedContainers = append(event.DeletedContainers, prev)
 		}
 	}
-	// now detect new panels/reports/containers
-	for name, p := range panels {
-		if _, ok := prevPanels[name]; !ok {
-			event.NewPanels = append(event.NewPanels, p)
+	for name, prev := range prevResourceMaps.ReportTables {
+		if current, ok := resourceMaps.ReportTables[name]; ok {
+			diff := prev.Diff(current)
+			if diff.HasChanges() {
+				event.ChangedTables = append(event.ChangedTables, diff)
+			}
+		} else {
+			event.DeletedTables = append(event.DeletedTables, prev)
 		}
 	}
-	for name, p := range reports {
-		if _, ok := prevReports[name]; !ok {
+	for name, prev := range prevResourceMaps.ReportCharts {
+		if current, ok := resourceMaps.ReportCharts[name]; ok {
+			diff := prev.Diff(current)
+			if diff.HasChanges() {
+				event.ChangedCharts = append(event.ChangedCharts, diff)
+			}
+		} else {
+			event.DeletedCharts = append(event.DeletedCharts, prev)
+		}
+	}
+	for name, prev := range prevResourceMaps.ReportCounters {
+		if current, ok := resourceMaps.ReportCounters[name]; ok {
+			diff := prev.Diff(current)
+			if diff.HasChanges() {
+				event.ChangedCounters = append(event.ChangedCounters, diff)
+			}
+		} else {
+			event.DeletedCounters = append(event.DeletedCounters, prev)
+		}
+	}
+	for name, prev := range prevResourceMaps.ReportTexts {
+		if current, ok := resourceMaps.ReportTexts[name]; ok {
+			diff := prev.Diff(current)
+			if diff.HasChanges() {
+				event.ChangedTexts = append(event.ChangedTexts, diff)
+			}
+		} else {
+			event.DeletedTexts = append(event.DeletedTexts, prev)
+		}
+	}
+
+	// now detect new resources
+	for name, p := range resourceMaps.Reports {
+		if _, ok := prevResourceMaps.Reports[name]; !ok {
 			event.NewReports = append(event.NewReports, p)
 		}
 	}
-	for name, p := range containers {
-		if _, ok := prevContainers[name]; !ok {
-			event.NewReports = append(event.NewReports, p)
+	for name, p := range resourceMaps.ReportContainers {
+		if _, ok := prevResourceMaps.ReportContainers[name]; !ok {
+			event.NewContainers = append(event.NewContainers, p)
 		}
 	}
+	for name, p := range resourceMaps.ReportTables {
+		if _, ok := prevResourceMaps.ReportTables[name]; !ok {
+			event.NewTables = append(event.NewTables, p)
+		}
+	}
+	for name, p := range resourceMaps.ReportCharts {
+		if _, ok := prevResourceMaps.ReportCharts[name]; !ok {
+			event.NewCharts = append(event.NewCharts, p)
+		}
+	}
+	for name, p := range resourceMaps.ReportCounters {
+		if _, ok := prevResourceMaps.ReportCounters[name]; !ok {
+			event.NewCounters = append(event.NewCounters, p)
+		}
+	}
+	for name, p := range resourceMaps.ReportTexts {
+		if _, ok := prevResourceMaps.ReportTexts[name]; !ok {
+			event.NewTexts = append(event.NewTexts, p)
+		}
+	}
+
 	if event.HasChanges() {
 		w.PublishReportEvent(event)
 	}

@@ -82,9 +82,6 @@ func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource,
 			resources = append(resources, local)
 		}
 
-	case modconfig.BlockTypePanel:
-		resource, res = decodePanel(block, runCtx)
-		resources = append(resources, resource)
 	case modconfig.BlockTypeContainer, modconfig.BlockTypeReport:
 		resource, res = decodeContainerReport(block, runCtx)
 		resources = append(resources, resource)
@@ -149,14 +146,20 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResour
 		resource = modconfig.NewQuery(block)
 	case modconfig.BlockTypeControl:
 		resource = modconfig.NewControl(block)
-	case modconfig.BlockTypeContainer:
-		resource = modconfig.NewReportContainer(block)
-	case modconfig.BlockTypeReport:
-		resource = modconfig.NewReportContainer(block)
-	case modconfig.BlockTypePanel:
-		resource = modconfig.NewPanel(block)
 	case modconfig.BlockTypeBenchmark:
 		resource = modconfig.NewBenchmark(block)
+	case modconfig.BlockTypeReport:
+		resource = modconfig.NewReportContainer(block)
+	case modconfig.BlockTypeContainer:
+		resource = modconfig.NewReportContainer(block)
+	case modconfig.BlockTypeTable:
+		resource = modconfig.NewReportTable(block)
+	case modconfig.BlockTypeText:
+		resource = modconfig.NewReportText(block)
+	case modconfig.BlockTypeCounter:
+		resource = modconfig.NewReportCounter(block)
+	case modconfig.BlockTypeChart:
+		resource = modconfig.NewReportChart(block)
 	default:
 		return nil, hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -455,7 +458,7 @@ func decodeContainerReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 	diags = decodeProperty(content, "base", &report.Base, runCtx)
 	res.handleDecodeDiags(diags)
 	if report.Base != nil && len(report.Base.ChildNames) > 0 {
-		supportedChildren := []string{modconfig.BlockTypePanel, modconfig.BlockTypeContainer}
+		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeTable, modconfig.BlockTypeText, modconfig.BlockTypeCounter, modconfig.BlockTypeChart}
 		// TODO: we should be passing in the block for the Base resource - but this is only used
 		// for diags and we do not expect to get any (as this function has already succeeded
 		// when the base was originally parsed)
@@ -516,56 +519,6 @@ func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark
 		benchmark.ChildNameStrings = getChildNameString(children)
 	}
 	return benchmark, res
-}
-
-func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decodeResult) {
-	res := &decodeResult{}
-	content, rest, diags := block.Body.PartialContent(PanelBlockSchema)
-
-	// get shell resource
-	panel := modconfig.NewPanel(block)
-
-	// populate dynamic properties
-	diags = populatePanelDynamicProperties(rest, panel, runCtx)
-
-	diags = decodeProperty(content, "title", &panel.Title, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeProperty(content, "type", &panel.Type, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeProperty(content, "width", &panel.Width, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeProperty(content, "sql", &panel.SQL, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeProperty(content, "base", &panel.Base, runCtx)
-	res.handleDecodeDiags(diags)
-
-	return panel, res
-}
-
-func populatePanelDynamicProperties(rest hcl.Body, panel *modconfig.Panel, runCtx *RunContext) hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	b, ok := rest.(*hclsyntax.Body)
-	if ok {
-		// build map of extra attributes
-		panelAttributesMap := PanelBlockSchemaAttributesMap()
-		for _, attr := range b.Attributes {
-			if !panelAttributesMap[attr.Name] {
-				var val string
-				moreDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &val)
-
-				if moreDiags.HasErrors() {
-					diags = append(diags, moreDiags...)
-					continue
-				}
-				panel.Properties[attr.Name] = val
-			}
-		}
-	}
-	return diags
 }
 
 func decodeProperty(content *hcl.BodyContent, property string, dest interface{}, runCtx *RunContext) hcl.Diagnostics {

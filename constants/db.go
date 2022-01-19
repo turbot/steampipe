@@ -79,15 +79,18 @@ var ReservedConnectionNames = []string{
 
 // introspection table names
 const (
-	IntrospectionTableQuery     = "steampipe_query"
-	IntrospectionTableControl   = "steampipe_control"
-	IntrospectionTableBenchmark = "steampipe_benchmark"
-	IntrospectionTableMod       = "steampipe_mod"
-	IntrospectionTableReport    = "steampipe_report"
-	IntrospectionTableContainer = "steampipe_container"
-	IntrospectionTablePanel     = "steampipe_panel"
-	IntrospectionTableVariable  = "steampipe_variable"
-	IntrospectionTableReference = "steampipe_reference"
+	IntrospectionTableQuery         = "steampipe_query"
+	IntrospectionTableControl       = "steampipe_control"
+	IntrospectionTableBenchmark     = "steampipe_benchmark"
+	IntrospectionTableMod           = "steampipe_mod"
+	IntrospectionTableReport        = "steampipe_report"
+	IntrospectionTableContainer     = "steampipe_report_container"
+	IntrospectionTableReportTable   = "steampipe_report_table"
+	IntrospectionTableReportText    = "steampipe_report_text"
+	IntrospectionTableReportCounter = "steampipe_report_counter"
+	IntrospectionTableReportChart   = "steampipe_report_chart"
+	IntrospectionTableVariable      = "steampipe_variable"
+	IntrospectionTableReference     = "steampipe_reference"
 )
 
 // Invoker is a pseudoEnum for the command/operation which starts the service

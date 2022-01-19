@@ -19,13 +19,13 @@ type Query struct {
 	ShortName string `cty:"short_name"`
 	FullName  string `cty:"name"`
 
-	Description      *string            `cty:"description" column:"description,text"`
-	Documentation    *string            `cty:"documentation"  column:"documentation,text"`
-	SearchPath       *string            `cty:"search_path"column:"search_path,text"`
-	SearchPathPrefix *string            `cty:"search_path_prefix" column:"search_path_prefix,text"`
-	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
-	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
-	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
+	Description      *string           `cty:"description" column:"description,text"`
+	Documentation    *string           `cty:"documentation"  column:"documentation,text"`
+	SearchPath       *string           `cty:"search_path"column:"search_path,text"`
+	SearchPathPrefix *string           `cty:"search_path_prefix" column:"search_path_prefix,text"`
+	SQL              *string           `cty:"sql" hcl:"sql" column:"sql,text"`
+	Tags             map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
+	Title            *string           `cty:"title" hcl:"title" column:"title,text"`
 
 	Params []*ParamDef `cty:"params" column:"params,jsonb"`
 	// list of all blocks referenced by the resource
@@ -61,8 +61,8 @@ func (q *Query) Equals(other *Query) bool {
 		if other.Tags == nil {
 			return false
 		}
-		for k, v := range *q.Tags {
-			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
+		for k, v := range q.Tags {
+			if otherVal, ok := (other.Tags)[k]; !ok && v != otherVal {
 				return false
 			}
 		}
@@ -113,7 +113,6 @@ func (q *Query) String() string {
 	return res
 }
 
-// QueryFromFile :: factory function
 func QueryFromFile(modPath, filePath string) (MappableResource, []byte, error) {
 	q := &Query{}
 	return q.InitialiseFromFile(modPath, filePath)

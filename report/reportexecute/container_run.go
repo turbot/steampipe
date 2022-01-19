@@ -52,11 +52,11 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 		switch i := child.(type) {
 		case *modconfig.ReportContainer:
 			childRun = NewReportContainerRun(i, r, executionTree)
-		case *modconfig.Panel:
-			childRun = NewPanelRun(i, r, executionTree)
+		case *modconfig.ReportCounter:
+			childRun = NewCounterRun(i, r, executionTree)
 		}
 
-		// should never happen - container children must be either container or panel
+		// should never happen - container children must be either container or counter
 		if childRun == nil {
 			continue
 		}
@@ -104,7 +104,7 @@ func (r *ReportContainerRun) Execute(ctx context.Context) error {
 	err := utils.CombineErrors(errors...)
 	if err == nil {
 		log.Printf("[WARN] %s ALL DONE", r.Name)
-		// set complete status on report - this will raise panel complete event
+		// set complete status on report - this will raise counter complete event
 		r.SetComplete()
 	} else {
 		r.SetError(err)

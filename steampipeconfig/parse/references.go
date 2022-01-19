@@ -14,7 +14,11 @@ var referenceBlockTypes = []string{
 	modconfig.BlockTypeControl,
 	modconfig.BlockTypeBenchmark,
 	modconfig.BlockTypeReport,
-	modconfig.BlockTypePanel,
+	modconfig.BlockTypeContainer,
+	modconfig.BlockTypeTable,
+	modconfig.BlockTypeText,
+	modconfig.BlockTypeCounter,
+	modconfig.BlockTypeChart,
 	modconfig.BlockTypeParam,
 	"local"}
 

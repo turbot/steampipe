@@ -52,14 +52,17 @@ type Mod struct {
 	VersionString string `cty:"version"`
 	Version       *semver.Version
 
-	Queries    map[string]*Query
-	Controls   map[string]*Control
-	Benchmarks map[string]*Benchmark
-	Reports    map[string]*ReportContainer
-	Containers map[string]*ReportContainer
-	Panels     map[string]*Panel
-	Variables  map[string]*Variable
-	Locals     map[string]*Local
+	Queries          map[string]*Query
+	Controls         map[string]*Control
+	Benchmarks       map[string]*Benchmark
+	Reports          map[string]*ReportContainer
+	ReportContainers map[string]*ReportContainer
+	ReportTables     map[string]*ReportTable
+	ReportTexts      map[string]*ReportText
+	ReportCounters   map[string]*ReportCounter
+	ReportCharts     map[string]*ReportChart
+	Variables        map[string]*Variable
+	Locals           map[string]*Local
 
 	// ModPath is the installation location of the mod
 	ModPath   string
@@ -72,16 +75,19 @@ type Mod struct {
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	mod := &Mod{
-		ShortName:  shortName,
-		FullName:   fmt.Sprintf("mod.%s", shortName),
-		Queries:    make(map[string]*Query),
-		Controls:   make(map[string]*Control),
-		Benchmarks: make(map[string]*Benchmark),
-		Reports:    make(map[string]*ReportContainer),
-		Containers: make(map[string]*ReportContainer),
-		Panels:     make(map[string]*Panel),
-		Variables:  make(map[string]*Variable),
-		Locals:     make(map[string]*Local),
+		ShortName:        shortName,
+		FullName:         fmt.Sprintf("mod.%s", shortName),
+		Queries:          make(map[string]*Query),
+		Controls:         make(map[string]*Control),
+		Benchmarks:       make(map[string]*Benchmark),
+		Reports:          make(map[string]*ReportContainer),
+		ReportContainers: make(map[string]*ReportContainer),
+		ReportTables:     make(map[string]*ReportTable),
+		ReportTexts:      make(map[string]*ReportText),
+		ReportCounters:   make(map[string]*ReportCounter),
+		ReportCharts:     make(map[string]*ReportChart),
+		Variables:        make(map[string]*Variable),
+		Locals:           make(map[string]*Local),
 
 		ModPath:   modPath,
 		DeclRange: defRange,
@@ -192,25 +198,58 @@ func (m *Mod) Equals(other *Mod) bool {
 			return false
 		}
 	}
-	// panels
-	for k := range m.Panels {
-		if _, ok := other.Panels[k]; !ok {
+	// report containers
+	for k := range m.ReportContainers {
+		if _, ok := other.ReportContainers[k]; !ok {
 			return false
 		}
 	}
-	for k := range other.Panels {
-		if _, ok := m.Panels[k]; !ok {
+	for k := range other.ReportContainers {
+		if _, ok := m.ReportContainers[k]; !ok {
 			return false
 		}
 	}
-	// containers
-	for k := range m.Containers {
-		if _, ok := other.Containers[k]; !ok {
+	// report tables
+	for k := range m.ReportTables {
+		if _, ok := other.ReportTables[k]; !ok {
 			return false
 		}
 	}
-	for k := range other.Containers {
-		if _, ok := m.Containers[k]; !ok {
+	for k := range other.ReportTables {
+		if _, ok := m.ReportTables[k]; !ok {
+			return false
+		}
+	}
+	// report texts
+	for k := range m.ReportTexts {
+		if _, ok := other.ReportTexts[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportTexts {
+		if _, ok := m.ReportTexts[k]; !ok {
+			return false
+		}
+	}
+	// report counters
+	for k := range m.ReportCounters {
+		if _, ok := other.ReportCounters[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportCounters {
+		if _, ok := m.ReportCounters[k]; !ok {
+			return false
+		}
+	}
+	// report charts
+	for k := range m.ReportCharts {
+		if _, ok := other.ReportCharts[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportCharts {
+		if _, ok := m.ReportCharts[k]; !ok {
 			return false
 		}
 	}
@@ -473,75 +512,6 @@ func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
 	m.metadata = metadata
 }
 
-// get the parent item for this ModTreeItem
-func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
-	var parents []ModTreeItem
-
-	for _, benchmark := range m.Benchmarks {
-		if benchmark.ChildNames == nil {
-			continue
-		}
-		// check all child names of this benchmark for a matching name
-		for _, childName := range benchmark.ChildNames {
-			if childName.Name == item.Name() {
-				parents = append(parents, benchmark)
-			}
-		}
-	}
-	for _, report := range m.Reports {
-		// check all child names of this report for a matching name
-		for _, child := range report.GetChildren() {
-			if child.Name() == item.Name() {
-				parents = append(parents, report)
-			}
-		}
-	}
-	for _, container := range m.Containers {
-		// check all child names of this container for a matching name
-		for _, child := range container.GetChildren() {
-			if child.Name() == item.Name() {
-				parents = append(parents, container)
-			}
-		}
-	}
-	// if this item has no parents and is a child of the mod, set the mod as parent
-	if len(parents) == 0 && m.containsResource(item.Name()) {
-		parents = []ModTreeItem{m}
-
-	}
-	return parents
-}
-
-// does the mod contain a resource with this name?
-func (m *Mod) containsResource(childName string) bool {
-	if _, ok := m.Queries[childName]; ok {
-		return true
-	}
-	if _, ok := m.Controls[childName]; ok {
-		return true
-	}
-	if _, ok := m.Benchmarks[childName]; ok {
-		return true
-	}
-	if _, ok := m.Reports[childName]; ok {
-		return true
-	}
-	if _, ok := m.Panels[childName]; ok {
-		return true
-	}
-	if _, ok := m.Containers[childName]; ok {
-		return true
-	}
-	if _, ok := m.Variables[childName]; ok {
-		return true
-	}
-	if _, ok := m.Locals[childName]; ok {
-		return true
-	}
-
-	return false
-}
-
 // GetChildControls return a flat list of controls underneath the mod
 func (m *Mod) GetChildControls() []*Control {
 	var res []*Control
@@ -679,21 +649,4 @@ func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
 		}
 	}
 	return []byte(strings.Join(resLines, "\n")), nil
-}
-
-func (m *Mod) GetChildResource(parsedName *ParsedResourceName) (resource ModTreeItem, found bool) {
-	longName := fmt.Sprintf("%s.%s.%s", m.ShortName, parsedName.ItemType, parsedName.Name)
-	switch parsedName.ItemType {
-	case BlockTypeBenchmark:
-		resource, found = m.Benchmarks[longName]
-	case BlockTypeControl:
-		resource, found = m.Controls[longName]
-	case BlockTypeReport:
-		resource, found = m.Reports[longName]
-	case BlockTypeContainer:
-		resource, found = m.Containers[longName]
-	case BlockTypePanel:
-		resource, found = m.Panels[longName]
-	}
-	return resource, found
 }

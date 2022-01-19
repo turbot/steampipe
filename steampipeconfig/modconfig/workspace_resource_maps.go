@@ -3,28 +3,34 @@ package modconfig
 // WorkspaceResourceMaps is a struct containing maps of all mod resource types
 // This is provided to avoid db needing to reference workspace package
 type WorkspaceResourceMaps struct {
-	Mods       map[string]*Mod
-	Queries    map[string]*Query
-	Controls   map[string]*Control
-	Benchmarks map[string]*Benchmark
-	Variables  map[string]*Variable
-	Reports    map[string]*ReportContainer
-	Containers map[string]*ReportContainer
-	Panels     map[string]*Panel
-	References map[string]*ResourceReference
+	Mods             map[string]*Mod
+	Queries          map[string]*Query
+	Controls         map[string]*Control
+	Benchmarks       map[string]*Benchmark
+	Variables        map[string]*Variable
+	Reports          map[string]*ReportContainer
+	ReportContainers map[string]*ReportContainer
+	ReportTables     map[string]*ReportTable
+	ReportTexts      map[string]*ReportText
+	ReportCounters   map[string]*ReportCounter
+	ReportCharts     map[string]*ReportChart
+	References       map[string]*ResourceReference
 }
 
 func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
 	return &WorkspaceResourceMaps{
-		Mods:       make(map[string]*Mod),
-		Queries:    make(map[string]*Query),
-		Controls:   make(map[string]*Control),
-		Benchmarks: make(map[string]*Benchmark),
-		Variables:  make(map[string]*Variable),
-		Reports:    make(map[string]*ReportContainer),
-		Containers: make(map[string]*ReportContainer),
-		Panels:     make(map[string]*Panel),
-		References: make(map[string]*ResourceReference),
+		Mods:             make(map[string]*Mod),
+		Queries:          make(map[string]*Query),
+		Controls:         make(map[string]*Control),
+		Benchmarks:       make(map[string]*Benchmark),
+		Variables:        make(map[string]*Variable),
+		Reports:          make(map[string]*ReportContainer),
+		ReportContainers: make(map[string]*ReportContainer),
+		ReportTables:     make(map[string]*ReportTable),
+		ReportTexts:      make(map[string]*ReportText),
+		ReportCounters:   make(map[string]*ReportCounter),
+		ReportCharts:     make(map[string]*ReportChart),
+		References:       make(map[string]*ResourceReference),
 	}
 }
 
@@ -107,28 +113,67 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 		}
 	}
 
-	for name, container := range m.Containers {
-		if otherReport, ok := other.Containers[name]; !ok {
+	for name, container := range m.ReportContainers {
+		if otherReport, ok := other.ReportContainers[name]; !ok {
 			return false
 		} else if !container.Equals(otherReport) {
 			return false
 		}
 	}
-	for name := range other.Containers {
-		if _, ok := m.Containers[name]; !ok {
+	for name := range other.ReportContainers {
+		if _, ok := m.ReportContainers[name]; !ok {
 			return false
 		}
 	}
 
-	for name, panel := range m.Panels {
-		if otherReport, ok := other.Panels[name]; !ok {
+	for name, tables := range m.ReportTables {
+		if otherReport, ok := other.ReportTables[name]; !ok {
 			return false
-		} else if !panel.Equals(otherReport) {
+		} else if !tables.Equals(otherReport) {
 			return false
 		}
 	}
-	for name := range other.Panels {
-		if _, ok := m.Panels[name]; !ok {
+	for name := range other.ReportTables {
+		if _, ok := m.ReportTables[name]; !ok {
+			return false
+		}
+	}
+
+	for name, texts := range m.ReportTexts {
+		if otherReport, ok := other.ReportTexts[name]; !ok {
+			return false
+		} else if !texts.Equals(otherReport) {
+			return false
+		}
+	}
+	for name := range other.ReportTexts {
+		if _, ok := m.ReportTexts[name]; !ok {
+			return false
+		}
+	}
+
+	for name, counters := range m.ReportCounters {
+		if otherReport, ok := other.ReportCounters[name]; !ok {
+			return false
+		} else if !counters.Equals(otherReport) {
+			return false
+		}
+	}
+	for name := range other.ReportCounters {
+		if _, ok := m.ReportCounters[name]; !ok {
+			return false
+		}
+	}
+
+	for name, charts := range m.ReportCharts {
+		if otherReport, ok := other.ReportCharts[name]; !ok {
+			return false
+		} else if !charts.Equals(otherReport) {
+			return false
+		}
+	}
+	for name := range other.ReportCharts {
+		if _, ok := m.ReportCharts[name]; !ok {
 			return false
 		}
 	}
@@ -140,6 +185,7 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
+
 	for name := range other.References {
 		if _, ok := m.References[name]; !ok {
 			return false
@@ -187,6 +233,8 @@ func (m *WorkspaceResourceMaps) PopulateReferences() {
 			m.References[ref.String()] = ref
 		}
 	}
+
+	// TODO KAI OTHER REFERENCEQ TYPES
 }
 
 func (m *WorkspaceResourceMaps) Empty() bool {
@@ -196,7 +244,10 @@ func (m *WorkspaceResourceMaps) Empty() bool {
 		len(m.Benchmarks)+
 		len(m.Variables)+
 		len(m.Reports)+
-		len(m.Containers)+
-		len(m.Panels)+
+		len(m.ReportContainers)+
+		len(m.ReportTables)+
+		len(m.ReportTexts)+
+		len(m.ReportCounters)+
+		len(m.ReportCharts)+
 		len(m.References) == 0
 }

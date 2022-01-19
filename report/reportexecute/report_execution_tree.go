@@ -30,7 +30,7 @@ func NewReportExecutionTree(reportName string, client db_common.Client, workspac
 		runComplete: make(chan reportinterfaces.ReportNodeRun, 1),
 	}
 
-	// create the root run node (either a report run or a panel run)
+	// create the root run node (either a report run or a counter run)
 	root, err := reportExecutionTree.createRootItem(reportName)
 	if err != nil {
 		return nil, err
@@ -46,14 +46,15 @@ func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterface
 		return nil, err
 	}
 	// TODO CAN THIS BE ANYTHING OTHER THAN A REPORT??
+	// TODO KAI SUPPORT OTHER TYPES?
 	var root reportinterfaces.ReportNodeRun
 	switch parsedName.ItemType {
-	case modconfig.BlockTypePanel:
-		panel, ok := e.workspace.Panels[reportName]
+	case modconfig.BlockTypeCounter:
+		counter, ok := e.workspace.ReportCounters[reportName]
 		if !ok {
-			return nil, fmt.Errorf("panel '%s' does not exist in workspace", reportName)
+			return nil, fmt.Errorf("counter '%s' does not exist in workspace", reportName)
 		}
-		root = NewPanelRun(panel, e, e)
+		root = NewCounterRun(counter, e, e)
 	case modconfig.BlockTypeReport:
 		report, ok := e.workspace.Reports[reportName]
 		if !ok {
@@ -61,7 +62,7 @@ func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterface
 		}
 		root = NewReportContainerRun(report, e, e)
 	case modconfig.BlockTypeContainer:
-		container, ok := e.workspace.Containers[reportName]
+		container, ok := e.workspace.ReportContainers[reportName]
 		if !ok {
 			return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
 		}
@@ -77,7 +78,7 @@ func (e *ReportExecutionTree) Execute(ctx context.Context) error {
 	defer log.Println("[WARN]", "end ReportExecutionTree.Execute")
 
 	if e.runStatus() == reportinterfaces.ReportRunComplete {
-		// there must be no sql panels to execute
+		// there must be no sql counters to execute
 		log.Println("[WARN]", "execution tree already complete")
 		return nil
 	}
