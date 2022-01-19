@@ -7,7 +7,7 @@
     "ProductArn": "arn:aws:securityhub:{{ .GetDimensionValue "region" }}:{{ .GetDimensionValue "account_id" }}:product/{{ .GetDimensionValue "account_id" }}/default",
     "ProductFields": {
         "ProviderName": "Steampipe",
-        "ProviderVersion": "{{ .Constants.SteampipeVersion }}"
+        "ProviderVersion": "{{ steampipeversion }}"
     },
     "GeneratorId": "steampipe-{{ .Run.Control.ShortName }}",
     "AwsAccountId": "{{ .GetDimensionValue "account_id" }}",
