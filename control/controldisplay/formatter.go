@@ -115,7 +115,7 @@ var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 	"timenow": func() string {
 		return time.Now().Format(time.RFC3339)
 	},
-	"DurationInFloat": func(t time.Duration) float64 {
+	"DurationInSeconds": func(t time.Duration) float64 {
 		return t.Seconds()
 	},
 }
