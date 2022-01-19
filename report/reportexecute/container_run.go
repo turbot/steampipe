@@ -2,6 +2,7 @@ package reportexecute
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/turbot/steampipe/utils"
@@ -31,7 +32,7 @@ type ReportContainerRun struct {
 	childComplete chan (reportinterfaces.ReportNodeRun)
 }
 
-func NewReportContainerRun(container *modconfig.ReportContainer, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) *ReportContainerRun {
+func NewReportContainerRun(container *modconfig.ReportContainer, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*ReportContainerRun, error) {
 
 	children := container.GetChildren()
 	r := &ReportContainerRun{
@@ -49,11 +50,22 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 
 	for _, child := range children {
 		var childRun reportinterfaces.ReportNodeRun
+		var err error
 		switch i := child.(type) {
 		case *modconfig.ReportContainer:
-			childRun = NewReportContainerRun(i, r, executionTree)
-		case *modconfig.ReportCounter:
-			childRun = NewCounterRun(i, r, executionTree)
+			childRun, err = NewReportContainerRun(i, r, executionTree)
+			if err != nil {
+				return nil, err
+			}
+
+		default:
+			// ensure this item is a ReportingLeafNode
+			leafNode, ok := i.(modconfig.ReportingLeafNode)
+			if !ok {
+				return nil, fmt.Errorf("child %s does not implement ReportingLeafNode", i.Name())
+			}
+
+			childRun = NewLeafRun(leafNode, r, executionTree)
 		}
 
 		// should never happen - container children must be either container or counter
@@ -69,7 +81,7 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 	}
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
-	return r
+	return r, nil
 }
 
 // Execute implements ReportRunNode

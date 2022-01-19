@@ -2,9 +2,9 @@ package reportevents
 
 import "github.com/turbot/steampipe/report/reportinterfaces"
 
-type CounterError struct {
-	Counter reportinterfaces.ReportNodeRun
+type LeafNodeError struct {
+	Node reportinterfaces.ReportNodeRun
 }
 
 // IsReportEvent implements ReportEvent interface
-func (*CounterError) IsReportEvent() {}
+func (*LeafNodeError) IsReportEvent() {}
