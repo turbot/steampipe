@@ -94,6 +94,11 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 	return res
 }
 
+func (r *ControlRun) MatchTag(key string, value string) bool {
+	val, found := r.Tags[key]
+	return found && (val == value)
+}
+
 func (r *ControlRun) skip(ctx context.Context) {
 	r.setRunStatus(ctx, ControlRunComplete)
 }
