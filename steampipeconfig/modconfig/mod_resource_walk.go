@@ -66,8 +66,8 @@ func (m *Mod) WalkResources(resourceFunc func(item HclResource) bool) {
 func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 	var parents []ModTreeItem
 
-	resourceFunc := func(item HclResource) bool {
-		if treeItem, ok := item.(ModTreeItem); ok {
+	resourceFunc := func(parent HclResource) bool {
+		if treeItem, ok := parent.(ModTreeItem); ok {
 			for _, child := range treeItem.GetChildren() {
 				if child.Name() == item.Name() {
 					parents = append(parents, treeItem)

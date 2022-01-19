@@ -38,7 +38,7 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 
 	resourceFunc := func(item HclResource) bool {
 		if treeItem, ok := item.(ModTreeItem); ok {
-			if err = m.addItemIntoResourceTree(treeItem); err != nil {
+			if err = sourceMod.addItemIntoResourceTree(treeItem); err != nil {
 				// stop walking
 				return false
 			}
@@ -50,7 +50,7 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 		return true
 	}
 
-	m.WalkResources(resourceFunc)
+	sourceMod.WalkResources(resourceFunc)
 
 	// now initialise all Paths properties
 	for _, l := range leafNodes {
