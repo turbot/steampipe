@@ -16,6 +16,7 @@ import (
 type ReportContainerRun struct {
 	Name string `json:"name"`
 
+	Title    string                           `json:"title,omitempty"`
 	Width    int                              `json:"width,omitempty"`
 	Height   int                              `json:"height,omitempty"`
 	Source   string                           `json:"source,omitempty"`
@@ -46,6 +47,10 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 		runStatus:     reportinterfaces.ReportRunComplete,
 		childComplete: make(chan reportinterfaces.ReportNodeRun, len(children)),
 	}
+	if container.Title != nil {
+		r.Title = *container.Title
+	}
+
 	if container.Width != nil {
 		r.Width = *container.Width
 	}
