@@ -94,9 +94,35 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 	return res
 }
 
+func (r *ControlRun) GetRunStatus() ControlRunStatus {
+	r.stateLock.Lock()
+	defer r.stateLock.Unlock()
+	return r.runStatus
+}
+
+func (r *ControlRun) Finished() bool {
+	status := r.GetRunStatus()
+	return status == ControlRunComplete || status == ControlRunError
+}
+
 func (r *ControlRun) MatchTag(key string, value string) bool {
 	val, found := r.Tags[key]
 	return found && (val == value)
+}
+
+func (r *ControlRun) GetError() error {
+	return r.runError
+}
+
+func (r *ControlRun) setError(ctx context.Context, err error) {
+	if err == nil {
+		return
+	}
+	r.runError = utils.TransformErrorToSteampipe(err)
+
+	// update error count
+	r.Summary.Error++
+	r.setRunStatus(ctx, ControlRunError)
 }
 
 func (r *ControlRun) skip(ctx context.Context) {
@@ -210,7 +236,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	r.Lifecycle.Add("query_resolution_start")
 	query, err := r.resolveControlQuery(control)
 	if err != nil {
-		r.SetError(ctx, err)
+		r.setError(ctx, err)
 		return
 	}
 	r.Lifecycle.Add("query_resolution_finish")
@@ -218,7 +244,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] setting search path %s\n", control.Name())
 	r.Lifecycle.Add("set_search_path_start")
 	if err := r.setSearchPath(ctx, dbSession, client); err != nil {
-		r.SetError(ctx, err)
+		r.setError(ctx, err)
 		return
 	}
 	r.Lifecycle.Add("set_search_path_finish")
@@ -250,7 +276,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 				log.Printf("[TRACE] control %s query failed again with plugin connectivity error %s - NOT retrying...", r.Control.Name(), err)
 			}
 		}
-		r.SetError(ctx, err)
+		r.setError(ctx, err)
 		return
 	}
 
@@ -260,21 +286,6 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] wait result for, %s\n", control.Name())
 	r.waitForResults(ctx)
 	log.Printf("[TRACE] finish result for, %s\n", control.Name())
-}
-
-func (r *ControlRun) SetError(ctx context.Context, err error) {
-	if err == nil {
-		return
-	}
-	r.runError = utils.TransformErrorToSteampipe(err)
-
-	// update error count
-	r.Summary.Error++
-	r.setRunStatus(ctx, ControlRunError)
-}
-
-func (r *ControlRun) GetError() error {
-	return r.runError
 }
 
 // create a context with a deadline, and with status updates disabled (we do not want to show 'loading' results)
@@ -288,17 +299,6 @@ func (r *ControlRun) getControlQueryContext(ctx context.Context) context.Context
 	newCtx = statushooks.DisableStatusHooks(newCtx)
 
 	return newCtx
-}
-
-func (r *ControlRun) GetRunStatus() ControlRunStatus {
-	r.stateLock.Lock()
-	defer r.stateLock.Unlock()
-	return r.runStatus
-}
-
-func (r *ControlRun) Finished() bool {
-	status := r.GetRunStatus()
-	return status == ControlRunComplete || status == ControlRunError
 }
 
 func (r *ControlRun) resolveControlQuery(control *modconfig.Control) (string, error) {
@@ -323,7 +323,7 @@ func (r *ControlRun) waitForResults(ctx context.Context) {
 	select {
 	// check for cancellation
 	case <-ctx.Done():
-		r.SetError(ctx, ctx.Err())
+		r.setError(ctx, ctx.Err())
 	case <-gatherDoneChan:
 		// do nothing
 	}
@@ -356,7 +356,7 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 			// if the row is in error then we terminate the run
 			if row.Error != nil {
 				// set error status and summary
-				r.SetError(ctx, row.Error)
+				r.setError(ctx, row.Error)
 				// update the result group status with our status - this will be passed all the way up the execution tree
 				r.Group.updateSummary(r.Summary)
 				return
@@ -365,7 +365,7 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 			// so all is ok - create another result row
 			result, err := NewResultRow(r, row, r.queryResult.ColTypes)
 			if err != nil {
-				r.SetError(ctx, err)
+				r.setError(ctx, err)
 				return
 			}
 			r.addResultRow(result)
