@@ -14,8 +14,8 @@
     "Types": [
         "automated"
     ],
-    "UpdatedAt": "{{ timenow }}",
-    "CreatedAt": "{{ timenow }}",
+    "UpdatedAt": "{{ now.Format "2006-01-02T15:04:05Z07:00" }}",
+    "CreatedAt": "{{ now.Format "2006-01-02T15:04:05Z07:00" }}",
     "Title": {{ toJson .Run.Control.Title }},
     "Description": {{ toJson .Run.Control.Description }},{{ with .Run.Control.Severity }}
     "Severity": {
