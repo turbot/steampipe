@@ -110,6 +110,11 @@ func (r *LeafRun) GetName() string {
 	return r.Name
 }
 
+// GetPath implements ReportNodeRun
+func (r *LeafRun) GetPath() modconfig.NodePath {
+	return r.Path
+}
+
 // GetRunStatus implements ReportNodeRun
 func (r *LeafRun) GetRunStatus() reportinterfaces.ReportRunStatus {
 	return r.runStatus

@@ -144,6 +144,11 @@ func (r *ReportContainerRun) GetName() string {
 	return r.Name
 }
 
+// GetPath implements ReportNodeRun
+func (r *ReportContainerRun) GetPath() modconfig.NodePath {
+	return r.Path
+}
+
 // GetRunStatus implements ReportNodeRun
 func (r *ReportContainerRun) GetRunStatus() reportinterfaces.ReportRunStatus {
 	return r.runStatus
