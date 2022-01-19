@@ -1,4 +1,4 @@
-{{ define "outlet" }}
+{{ define "output" }}
 <test-run testcasecount="{{ .Root.Summary.Status.TotalCount }}" total="{{ .Root.Summary.Status.TotalCount }}" passed="{{ .Root.Summary.Status.PassedCount }}" failed="{{ .Root.Summary.Status.FailedCount }}" skipped="{{ .Root.Summary.Status.Skip }}">
     {{ range .Root.Groups  }}
         {{ template "group_template" . }}
