@@ -8,12 +8,12 @@
 {{ define "control_row_template" }}
 {{ template "group_details" . }},{{ template "control_details" . }},{{ template "reason_resource_status" . }}{{ template "dimensions" . }}{{ template "tags" . }}{{ end }}
 
-{{ define "group_details" }}{{ .Run.Group.GroupId }},{{ .Run.Group.Title }},{{ .Run.Group.Description }}{{ end }}
+{{ define "group_details" }}{{ quote .Run.Group.GroupId }},{{ quote .Run.Group.Title }},{{ quote .Run.Group.Description }}{{ end }}
 
-{{ define "control_details" }}{{ .Run.ControlId }},{{ .Run.Title }},{{ .Run.Description }}{{ end }}
+{{ define "control_details" }}{{ quote .Run.ControlId }},{{ quote .Run.Title }},{{ quote .Run.Description }}{{ end }}
 
-{{ define "reason_resource_status" }}{{ .Reason }},{{ .Resource }},{{ .Status }}{{ end }}
+{{ define "reason_resource_status" }}{{ quote .Reason }},{{ quote .Resource }},{{ quote .Status }}{{ end }}
 
-{{ define "dimensions" }}{{ $row := . }}{{ range .Run.Tree.Root.DimensionKeys }},{{ $row.GetDimensionValue . }}{{ end }}{{ end }}
+{{ define "dimensions" }}{{ $row := . }}{{ range .Run.Tree.Root.DimensionKeys }},{{ quote ($row.GetDimensionValue .) }}{{ end }}{{ end }}
 
-{{ define "tags" }}{{ $row := . }}{{ range .Run.Tree.Root.AllTagKeys }},{{ index $row.Run.Tags . }}{{ end }}{{ end }}
+{{ define "tags" }}{{ $row := . }}{{ range .Run.Tree.Root.AllTagKeys }},{{ quote (index $row.Run.Tags .) }}{{ end }}{{ end }}
