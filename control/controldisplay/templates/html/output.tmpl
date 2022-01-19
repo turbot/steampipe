@@ -19,15 +19,15 @@
 <body>
   <div class="container">
     {{/* we expect 0 or 1 root control runs */}}
-    {{ range .Root.ControlRuns -}}
+    {{ range .Data.Root.ControlRuns -}}
     {{ template "control_run_template" . -}}
     {{ end }}
     {{/* we expect 0 or 1 root groups */}}
-    {{ range .Root.Groups -}}
+    {{ range .Data.Root.Groups -}}
     {{ template "root_group_template" . -}}
     {{ end }}
-    <footer><em>Report run at <code>{{ .StartTime.Format "2006-01-02 15:04:05" }}</code> using <a href="https://steampipe.io"
-          rel="nofollow"><code>Steampipe {{ steampipeversion }}</code></a> in dir
+    <footer><em>Report run at <code>{{ .Data.StartTime.Format "2006-01-02 15:04:05" }}</code> using <a href="https://steampipe.io"
+          rel="nofollow"><code>Steampipe {{ .Constants.SteampipeVersion }}</code></a> in dir
         <code>{{ workingdir }}</code>.</em></footer>
   </div>
 </body>

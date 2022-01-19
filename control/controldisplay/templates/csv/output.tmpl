@@ -1,4 +1,4 @@
-{{ define "output" }}group_id,group_title,group_description,control_id,control_title,control_description,reason,resource,status{{ range .Root.DimensionKeys }},{{ . }}{{ end }}{{range .Root.AllTagKeys }},{{ . }}{{ end }}{{ template "result_group_template" .Root }}
+{{ define "output" }}group_id,group_title,group_description,control_id,control_title,control_description,reason,resource,status{{ range .Data.Root.DimensionKeys }},{{ . }}{{ end }}{{range .Data.Root.AllTagKeys }},{{ . }}{{ end }}{{ template "result_group_template" .Data.Root }}
 {{ end }}
 
 {{ define "result_group_template" }}{{ range .ControlRuns }}{{ template "control_run_template" . }}{{ end }}{{ range .Groups }}{{ template "result_group_template" . }}{{ end }}{{ end }}

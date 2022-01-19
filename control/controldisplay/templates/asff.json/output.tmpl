@@ -1,4 +1,4 @@
-{{ define "output" }}[  {{ range $runIdx,$run := .ControlRuns -}} {{ range $rowIdx,$row := $run.Rows }} {{ if gt (add $runIdx $rowIdx) 0 }},{{end}} {{ template "control_row_template" $row -}} {{ end -}} {{ end }}
+{{ define "output" }}[  {{ range $runIdx,$run := .Data.ControlRuns -}} {{ range $rowIdx,$row := $run.Rows }} {{ if gt (add $runIdx $rowIdx) 0 }},{{end}} {{ template "control_row_template" $row -}} {{ end -}} {{ end }}
 ] {{ end }}
 {{ define "control_row_template" }} {{ if .Run.MatchTag "plugin" "aws" }}
 {
@@ -7,7 +7,7 @@
     "ProductArn": "arn:aws:securityhub:{{ .GetDimensionValue "region" }}:{{ .GetDimensionValue "account_id" }}:product/{{ .GetDimensionValue "account_id" }}/default",
     "ProductFields": {
         "ProviderName": "Steampipe",
-        "ProviderVersion": "{{ steampipeversion }}"
+        "ProviderVersion": "{{ .Constants.SteampipeVersion }}"
     },
     "GeneratorId": "steampipe-{{ .Run.Control.ShortName }}",
     "AwsAccountId": "{{ .GetDimensionValue "account_id" }}",

@@ -1,10 +1,10 @@
 {{ define "output" }}
-<test-run testcasecount="{{ .Root.Summary.Status.TotalCount }}" total="{{ .Root.Summary.Status.TotalCount }}" passed="{{ .Root.Summary.Status.PassedCount }}" failed="{{ .Root.Summary.Status.FailedCount }}" skipped="{{ .Root.Summary.Status.Skip }}">
-    {{ range .Root.Groups  }}
+<test-run testcasecount="{{ .Data.Root.Summary.Status.TotalCount }}" total="{{ .Data.Root.Summary.Status.TotalCount }}" passed="{{ .Data.Root.Summary.Status.PassedCount }}" failed="{{ .Data.Root.Summary.Status.FailedCount }}" skipped="{{ .Data.Root.Summary.Status.Skip }}">
+    {{ range .Data.Root.Groups  }}
         {{ template "group_template" . }}
     {{ end }}
     
-    {{ range .Root.ControlRuns -}}
+    {{ range .Data.Root.ControlRuns -}}
         {{ template "control_run_template" . -}}
     {{ end -}}
 </test-run>
