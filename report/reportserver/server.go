@@ -135,6 +135,35 @@ func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte
 	return jsonString
 }
 
+func getReportsInterestedInResourceChanges(reportsBeingWatched []string, existingChangedReportNames []string, changedItems []*modconfig.ReportTreeItemDiffs) []string {
+	var changedReportNames []string
+
+	for _, changedItem := range changedItems {
+		paths := changedItem.Item.GetPaths()
+		for _, nodePath := range paths {
+			for _, nodeName := range nodePath {
+				resourceParts, _ := modconfig.ParseResourceName(nodeName)
+				// We only care about changes from these resource types
+				if resourceParts.ItemType != modconfig.BlockTypeContainer &&
+					resourceParts.ItemType != modconfig.BlockTypeChart &&
+					resourceParts.ItemType != modconfig.BlockTypeCounter &&
+					resourceParts.ItemType != modconfig.BlockTypeTable &&
+					resourceParts.ItemType != modconfig.BlockTypeText {
+					continue
+				}
+
+				for _, reportName := range reportsBeingWatched {
+					if strings.HasPrefix(nodeName, reportName) && !helpers.StringSliceContains(existingChangedReportNames, reportName) {
+						changedReportNames = append(changedReportNames, reportName)
+					}
+				}
+			}
+		}
+	}
+
+	return changedReportNames
+}
+
 // Starts the API server
 func (s *Server) Start() {
 	go Init(s.context, s.webSocket, s.workspace, s.dbClient, s.reportClients, s.mutex)
@@ -198,11 +227,11 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 	case *reportevents.LeafNodeComplete:
 		fmt.Println("Got leaf node complete event", *e)
 		payload := buildLeafNodeCompletePayload(e)
-		counterName := e.Node.GetName()
+		nodeName := e.Node.GetName()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
 			// If this session is interested in this report, broadcast to it
-			if (repoInfo.Report != nil) && strings.HasPrefix(counterName, *repoInfo.Report) {
+			if (repoInfo.Report != nil) && strings.HasPrefix(nodeName, *repoInfo.Report) {
 				session.Write(payload)
 			}
 		}
@@ -212,11 +241,23 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		fmt.Println("Got report changed event", *e)
 		deletedReports := e.DeletedReports
 		newReports := e.NewReports
+
+		changedContainers := e.ChangedContainers
+		changedCharts := e.ChangedCharts
 		changedCounters := e.ChangedCounters
+		changedTables := e.ChangedTables
+		changedTexts := e.ChangedTexts
 		changedReports := e.ChangedReports
 
 		// If nothing has changed, ignore
-		if len(deletedReports) == 0 && len(newReports) == 0 && len(changedCounters) == 0 && len(changedReports) == 0 {
+		if len(deletedReports) == 0 &&
+			len(newReports) == 0 &&
+			len(changedContainers) == 0 &&
+			len(changedCharts) == 0 &&
+			len(changedCounters) == 0 &&
+			len(changedTables) == 0 &&
+			len(changedTexts) == 0 &&
+			len(changedReports) == 0 {
 			return
 		}
 
@@ -227,11 +268,6 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		// If) any deleted/new/changed reports, emit an available reports message to clients
 		if len(deletedReports) != 0 || len(newReports) != 0 || len(changedReports) != 0 {
 			s.webSocket.Broadcast(buildAvailableReportsPayload(s.workspace.Mod.Reports))
-		}
-
-		// If we have no changed counters or reports, ignore the message for now
-		if len(deletedReports) == 0 && len(newReports) == 0 && len(changedCounters) == 0 && len(changedReports) == 0 {
-			return
 		}
 
 		var reportsBeingWatched []string
@@ -250,22 +286,12 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		var changedReportNames []string
 		var newReportNames []string
 
-		// Capture the changed counters and make a note of the report(s) they're in
-		for _, changedCounter := range changedCounters {
-			paths := changedCounter.Item.GetPaths()
-			for _, nodePath := range paths {
-				for _, nodeName := range nodePath {
-					resourceParts, _ := modconfig.ParseResourceName(nodeName)
-					if resourceParts.ItemType != modconfig.BlockTypeReport {
-						continue
-					}
-					if helpers.StringSliceContains(changedReportNames, nodeName) {
-						continue
-					}
-					changedReportNames = append(changedReportNames, nodeName)
-				}
-			}
-		}
+		// Process the changed items and make a note of the report(s) they're in
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedContainers)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedCharts)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedCounters)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedTables)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedTexts)...)
 
 		for _, changedReport := range changedReports {
 			if helpers.StringSliceContains(changedReportNames, changedReport.Name) {
