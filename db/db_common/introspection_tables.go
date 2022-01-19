@@ -82,40 +82,36 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 		insertSql = append(insertSql, getTableInsertSqlForResource(report, constants.IntrospectionTableReport))
 	}
 	for _, container := range workspaceResources.ReportContainers {
-		// skip anonymous containers
-		if container.IsAnonymous() {
-			continue
-		}
 		insertSql = append(insertSql, getTableInsertSqlForResource(container, constants.IntrospectionTableContainer))
 	}
 	for _, table := range workspaceResources.ReportTables {
 		// skip anonymous panels
-		if table.IsAnonymous() {
-			continue
-		}
+		//if table.IsAnonymous() {
+		//	continue
+		//}
 		insertSql = append(insertSql, getTableInsertSqlForResource(table, constants.IntrospectionTableReportTable))
 	}
 	for _, text := range workspaceResources.ReportTexts {
 		// skip anonymous panels
-		if text.IsAnonymous() {
-			continue
-		}
+		//if text.IsAnonymous() {
+		//	continue
+		//}
 		insertSql = append(insertSql, getTableInsertSqlForResource(text, constants.IntrospectionTableReportText))
 
 	}
 	for _, counter := range workspaceResources.ReportCounters {
 		// skip anonymous panels
-		if counter.IsAnonymous() {
-			continue
-		}
+		//if counter.IsAnonymous() {
+		//	continue
+		//}
 		insertSql = append(insertSql, getTableInsertSqlForResource(counter, constants.IntrospectionTableReportCounter))
 
 	}
 	for _, chart := range workspaceResources.ReportCharts {
 		// skip anonymous panels
-		if chart.IsAnonymous() {
-			continue
-		}
+		//if chart.IsAnonymous() {
+		//	continue
+		//}
 		insertSql = append(insertSql, getTableInsertSqlForResource(chart, constants.IntrospectionTableReportChart))
 
 	}
