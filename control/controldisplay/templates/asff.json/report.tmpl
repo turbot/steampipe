@@ -1,6 +1,6 @@
-{{ define "outlet" }}[  {{ range .ControlRuns -}} {{ range .Rows }} {{ template "control_run_template" . -}} {{ end -}} {{ end }}
+{{ define "outlet" }}[  {{ range .ControlRuns -}} {{ range .Rows }} {{ template "control_row_template" . -}} {{ end -}} {{ end }}
 ] {{ end }}
-{{ define "control_run_template" }}
+{{ define "control_row_template" }} {{ if .Run.MatchTag "plugin" "aws" }}
 {
     "SchemaVersion": "2018-10-08",
     "Id": "{{ .Run.Control.FullName }}",
@@ -16,8 +16,8 @@
     ],
     "UpdatedAt": "{{ timenow }}",
     "CreatedAt": "{{ timenow }}",
-    "Title": "{{ .Run.Control.Title }}",
-    "Description": "{{ .Run.Control.Description }}",{{ with .Run.Control.Severity }}
+    "Title": {{ toJson .Run.Control.Title }},
+    "Description": {{ toJson .Run.Control.Description }},{{ with .Run.Control.Severity }}
     "Severity": {
         "Label": "{{ upper . }}"
     },{{ else }}
@@ -33,6 +33,6 @@
     "Compliance": {
         "Status": "{{ template "statusmap" .Status -}}"
     }
-},{{ end -}}
+},{{ end -}} {{ end -}}
 
 {{ define "statusmap" }}{{ if eq . "ok" }}PASSED{{ end -}}{{ if eq . "error" }}WARNING{{ end -}}{{ if eq . "alarm" }}FAILED{{ end -}}{{ if eq . "skip" }}NOT_AVAILABLE{{ end -}}{{ if eq . "info" }}NOT_AVAILABLE{{ end -}}{{ end -}}
