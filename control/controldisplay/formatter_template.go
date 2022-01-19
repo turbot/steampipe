@@ -7,8 +7,24 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
+	"github.com/turbot/steampipe/version"
 )
+
+type TemplateRenderConfig struct {
+	RenderHeader bool
+}
+type TemplateRenderConstants struct {
+	SteampipeVersion string
+}
+
+type TemplateRenderContext struct {
+	Constants TemplateRenderConstants
+	Config    TemplateRenderConfig
+	Data      *controlexecute.ExecutionTree
+}
 
 // TemplateFormatter implements the 'Formatter' interface and exposes a generic template based output mechanism
 // for 'check' execution trees
@@ -20,7 +36,17 @@ type TemplateFormatter struct {
 func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	reader, writer := io.Pipe()
 	go func() {
-		if err := tf.template.ExecuteTemplate(writer, "output", tree); err != nil {
+		renderContext := TemplateRenderContext{
+			Constants: TemplateRenderConstants{
+				SteampipeVersion: version.SteampipeVersion.String(),
+			},
+			Config: TemplateRenderConfig{
+				RenderHeader: viper.GetBool(constants.ArgHeader),
+			},
+			Data: tree,
+		}
+
+		if err := tf.template.ExecuteTemplate(writer, "output", renderContext); err != nil {
 			writer.CloseWithError(err)
 		} else {
 			writer.Close()

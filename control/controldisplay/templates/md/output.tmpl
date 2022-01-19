@@ -1,15 +1,15 @@
 {{ define "output" }}
 {{/* we expect 0 or 1 root control runs */}}
-{{ range .Root.ControlRuns -}}
+{{ range .Data.Root.ControlRuns -}}
 {{ template "control_run_template" . -}}
 {{ end }}
 {{/* we expect 0 or 1 root groups */}}
-{{ range .Root.Groups -}}
+{{ range .Data.Root.Groups -}}
 {{ template "root_group_template" . -}}
 {{ end }}
 
 \
-_Report run at `{{ .StartTime.Format "2006-01-02 15:04:05" }}` using [`Steampipe {{ steampipeversion }}`](https://steampipe.io) in dir `{{ workingdir }}`._
+_Report run at `{{ .Data.StartTime.Format "2006-01-02 15:04:05" }}` using [`Steampipe {{ .Constants.SteampipeVersion }}`](https://steampipe.io) in dir `{{ workingdir }}`._
 {{ end }}
 
 {{/* templates */}}
