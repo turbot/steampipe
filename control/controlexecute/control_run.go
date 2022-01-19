@@ -312,6 +312,7 @@ func (r *ControlRun) waitForResults(ctx context.Context) {
 	gatherDoneChan := make(chan string)
 	go func() {
 		r.gatherResults(ctx)
+		r.dedupAndFloatDimensionKeys()
 		close(gatherDoneChan)
 	}()
 
@@ -328,24 +329,14 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 	r.Lifecycle.Add("gather_start")
 	defer func() { r.Lifecycle.Add("gather_finish") }()
 
-	defer func() {
-		for _, row := range r.Rows {
-			for _, dim := range row.Dimensions {
-				r.DimensionKeys = append(r.DimensionKeys, dim.Key)
-			}
-		}
-		r.DimensionKeys = utils.StringSliceDistinct(r.DimensionKeys)
-		r.Group.addDimensionKeys(r.DimensionKeys...)
-	}()
-
 	for {
 		select {
 		case row := <-*r.queryResult.RowChan:
 			// nil row means control run is complete
 			if row == nil {
 				// nil row means we are done
-				r.setRunStatus(ctx, ControlRunComplete)
 				r.createdOrderedResultRows()
+				r.setRunStatus(ctx, ControlRunComplete)
 				return
 			}
 			// if the row is in error then we terminate the run
@@ -370,10 +361,21 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 	}
 }
 
+func (r *ControlRun) dedupAndFloatDimensionKeys() {
+	r.DimensionKeys = utils.StringSliceDistinct(r.DimensionKeys)
+	if len(r.DimensionKeys) > 0 {
+		r.Group.addDimensionKeys(r.DimensionKeys...)
+	}
+}
+
 // add the result row to our results and update the summary with the row status
 func (r *ControlRun) addResultRow(row *ResultRow) {
 	// update results
 	r.RowMap[row.Status] = append(r.RowMap[row.Status], row)
+
+	for _, dim := range row.Dimensions {
+		r.DimensionKeys = append(r.DimensionKeys, dim.Key)
+	}
 
 	// update summary
 	switch row.Status {
