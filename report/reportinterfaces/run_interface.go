@@ -1,6 +1,10 @@
 package reportinterfaces
 
-import "context"
+import (
+	"context"
+
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+)
 
 type ReportRunStatus uint32
 
@@ -14,6 +18,7 @@ const (
 type ReportNodeRun interface {
 	Execute(ctx context.Context) error
 	GetName() string
+	GetPaths() modconfig.NodePath
 	GetRunStatus() ReportRunStatus
 	SetError(err error)
 	SetComplete()
