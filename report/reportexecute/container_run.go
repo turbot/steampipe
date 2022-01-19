@@ -22,6 +22,7 @@ type ReportContainerRun struct {
 	SQL      string                           `json:"sql,omitempty"`
 	Error    error                            `json:"error,omitempty"`
 	Children []reportinterfaces.ReportNodeRun `json:"children,omitempty"`
+	NodeType string                           `json:"node_type"`
 
 	parent        reportinterfaces.ReportNodeParent
 	runStatus     reportinterfaces.ReportRunStatus
@@ -34,6 +35,7 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 	children := container.GetChildren()
 	r := &ReportContainerRun{
 		Name:          container.Name(),
+		NodeType:      modconfig.BlockTypeContainer,
 		executionTree: executionTree,
 		parent:        parent,
 		// set to complete, optimistically
