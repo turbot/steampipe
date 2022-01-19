@@ -71,4 +71,5 @@ type ReportingLeafNode interface {
 	GetTitle() string
 	GetWidth() int
 	GetSQL() string
+	GetPaths() []NodePath
 }

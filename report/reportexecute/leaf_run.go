@@ -2,7 +2,6 @@ package reportexecute
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/turbot/steampipe/query/queryresult"
@@ -22,6 +21,7 @@ type LeafRun struct {
 	Error         error                       `json:"error,omitempty"`
 	ReportNode    modconfig.ReportingLeafNode `json:"properties"`
 	NodeType      string                      `json:"node_type"`
+	Path          []string                    `json:"path"`
 	parent        reportinterfaces.ReportNodeParent
 	runStatus     reportinterfaces.ReportRunStatus
 	executionTree *ReportExecutionTree
@@ -29,10 +29,11 @@ type LeafRun struct {
 
 func NewLeafRun(resource modconfig.ReportingLeafNode, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*LeafRun, error) {
 	r := &LeafRun{
-		Name:          fmt.Sprintf("%s.%s", parent.GetName(), resource.GetUnqualifiedName()),
+		Name:          resource.Name(),
 		Title:         resource.GetTitle(),
 		Width:         resource.GetWidth(),
 		SQL:           resource.GetSQL(),
+		Path:          resource.GetPaths()[0],
 		ReportNode:    resource,
 		executionTree: executionTree,
 		parent:        parent,
