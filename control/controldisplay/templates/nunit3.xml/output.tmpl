@@ -54,4 +54,20 @@
 </test-case>
 {{ end }}
 
-{{ define "statusmap" }}{{ if eq . "ok" }}Passed{{ end -}}{{ if eq . "info" }}Passed{{ end -}}{{ if eq . "error" }}Failed{{ end -}}{{ if eq . "alarm" }}Failed{{ end -}}{{ if eq . "skip" }}Skipped{{ end -}}{{ end -}}
+{{ define "statusmap" }}
+    {{- if eq . "ok" -}}
+        Passed
+    {{- end -}}
+    {{- if eq . "info" -}}
+        Passed
+    {{- end -}}
+    {{- if eq . "error" -}}
+        Failed
+    {{- end -}}
+    {{- if eq . "alarm" -}}
+        Failed
+    {{- end -}}
+    {{- if eq . "skip" -}}
+        Skipped
+    {{- end -}}
+{{- end -}}
