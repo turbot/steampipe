@@ -186,10 +186,65 @@
 </tr>
 {{ end }}
 
-{{ define "statusicon" }}{{ if eq . "ok" }}✅{{ end -}}{{ if eq . "skip" }}⇨{{ end -}}{{ if eq . "info" }}ℹ{{ end -}}{{ if eq . "alarm" }}❌{{ end -}}{{ if eq . "error" }}❗{{ end -}}{{ end -}}
+{{ define "statusicon" }}
+  {{- if eq . "ok" -}}
+    ✅
+  {{- end -}}
+  {{- if eq . "skip" -}}
+    ⇨
+  {{- end -}}
+  {{- if eq . "info" -}}
+    ℹ
+  {{- end -}}
+  {{- if eq . "alarm" -}}
+    ❌
+  {{- end -}}
+  {{- if eq . "error" -}}
+    ❗
+  {{- end -}}
+{{- end -}}
 
-{{ define "summaryokclass" }}{{ if gt . 0 }}summary-total-ok highlight{{ end -}}{{ if eq . 0 }}summary-total-ok{{ end -}}{{ end -}}
-{{ define "summaryskipclass" }}{{ if gt . 0 }}summary-total-skip highlight{{ end -}}{{ if eq . 0 }}summary-total-skip{{ end -}}{{ end -}}
-{{ define "summaryinfoclass" }}{{ if gt . 0 }}summary-total-info highlight{{ end -}}{{ if eq . 0 }}summary-total-info{{ end -}}{{ end -}}
-{{ define "summaryalarmclass" }}{{ if gt . 0 }}summary-total-alarm highlight{{ end -}}{{ if eq . 0 }}summary-total-alarm{{ end -}}{{ end -}}
-{{ define "summaryerrorclass" }}{{ if gt . 0 }}summary-total-error highlight{{ end -}}{{ if eq . 0 }}summary-total-error{{ end -}}{{ end -}}
+{{ define "summaryokclass" }}
+  {{- if gt . 0 -}}
+    summary-total-ok highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-ok
+  {{- end -}}
+{{- end -}}
+
+{{ define "summaryskipclass" }}
+  {{- if gt . 0 -}}
+    summary-total-skip highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-skip
+  {{- end -}}
+{{- end -}}
+
+{{- define "summaryinfoclass" }}
+  {{- if gt . 0 -}}
+    summary-total-info highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-info
+  {{- end -}}
+{{- end -}}
+
+{{- define "summaryalarmclass" }}
+  {{- if gt . 0 -}}
+    summary-total-alarm highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-alarm
+  {{- end -}}
+{{- end -}}
+
+{{- define "summaryerrorclass" }}
+  {{- if gt . 0 -}}
+    summary-total-error highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-error
+  {{- end -}}
+{{- end -}}
