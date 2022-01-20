@@ -17,9 +17,9 @@
    {
     "results": [
      {
-      "status": "error",
       "reason": "Resource has some error",
       "resource": "steampipe",
+      "status": "error",
       "dimensions": [
        {
         "key": "id",
@@ -28,9 +28,9 @@
       ]
      },
      {
-      "status": "error",
       "reason": "Resource has some error",
       "resource": "steampipe",
+      "status": "error",
       "dimensions": [
        {
         "key": "id",
@@ -39,9 +39,9 @@
       ]
      },
      {
-      "status": "alarm",
       "reason": "Resource does not satisfy condition",
       "resource": "steampipe",
+      "status": "alarm",
       "dimensions": [
        {
         "key": "id",
@@ -50,9 +50,9 @@
       ]
      },
      {
-      "status": "alarm",
       "reason": "Resource does not satisfy condition",
       "resource": "steampipe",
+      "status": "alarm",
       "dimensions": [
        {
         "key": "id",
@@ -61,9 +61,9 @@
       ]
      },
      {
-      "status": "alarm",
       "reason": "Resource does not satisfy condition",
       "resource": "steampipe",
+      "status": "alarm",
       "dimensions": [
        {
         "key": "id",
@@ -72,9 +72,9 @@
       ]
      },
      {
-      "status": "alarm",
       "reason": "Resource does not satisfy condition",
       "resource": "steampipe",
+      "status": "alarm",
       "dimensions": [
        {
         "key": "id",
@@ -83,9 +83,9 @@
       ]
      },
      {
-      "status": "alarm",
       "reason": "Resource does not satisfy condition",
       "resource": "steampipe",
+      "status": "alarm",
       "dimensions": [
        {
         "key": "id",
@@ -94,9 +94,9 @@
       ]
      },
      {
-      "status": "info",
       "reason": "Information",
       "resource": "steampipe",
+      "status": "info",
       "dimensions": [
        {
         "key": "id",
@@ -105,9 +105,9 @@
       ]
      },
      {
-      "status": "info",
       "reason": "Information",
       "resource": "steampipe",
+      "status": "info",
       "dimensions": [
        {
         "key": "id",
@@ -116,9 +116,9 @@
       ]
      },
      {
-      "status": "info",
       "reason": "Information",
       "resource": "steampipe",
+      "status": "info",
       "dimensions": [
        {
         "key": "id",
@@ -127,9 +127,9 @@
       ]
      },
      {
-      "status": "ok",
       "reason": "Resource satisfies condition",
       "resource": "steampipe",
+      "status": "ok",
       "dimensions": [
        {
         "key": "id",
@@ -138,9 +138,9 @@
       ]
      },
      {
-      "status": "ok",
       "reason": "Resource satisfies condition",
       "resource": "steampipe",
+      "status": "ok",
       "dimensions": [
        {
         "key": "id",
@@ -149,9 +149,9 @@
       ]
      },
      {
-      "status": "ok",
       "reason": "Resource satisfies condition",
       "resource": "steampipe",
+      "status": "ok",
       "dimensions": [
        {
         "key": "id",
@@ -160,9 +160,9 @@
       ]
      },
      {
-      "status": "ok",
       "reason": "Resource satisfies condition",
       "resource": "steampipe",
+      "status": "ok",
       "dimensions": [
        {
         "key": "id",
@@ -171,9 +171,9 @@
       ]
      },
      {
-      "status": "ok",
       "reason": "Resource satisfies condition",
       "resource": "steampipe",
+      "status": "ok",
       "dimensions": [
        {
         "key": "id",
@@ -182,9 +182,9 @@
       ]
      },
      {
-      "status": "ok",
       "reason": "Resource satisfies condition",
       "resource": "steampipe",
+      "status": "ok",
       "dimensions": [
        {
         "key": "id",
@@ -193,9 +193,9 @@
       ]
      },
      {
-      "status": "ok",
       "reason": "Resource satisfies condition",
       "resource": "steampipe",
+      "status": "ok",
       "dimensions": [
        {
         "key": "id",
@@ -204,9 +204,9 @@
       ]
      },
      {
-      "status": "ok",
       "reason": "Resource satisfies condition",
       "resource": "steampipe",
+      "status": "ok",
       "dimensions": [
        {
         "key": "id",
@@ -215,9 +215,9 @@
       ]
      },
      {
-      "status": "ok",
       "reason": "Resource satisfies condition",
       "resource": "steampipe",
+      "status": "ok",
       "dimensions": [
        {
         "key": "id",
@@ -226,9 +226,9 @@
       ]
      },
      {
-      "status": "ok",
       "reason": "Resource satisfies condition",
       "resource": "steampipe",
+      "status": "ok",
       "dimensions": [
        {
         "key": "id",
@@ -237,9 +237,9 @@
       ]
      },
      {
-      "status": "skip",
       "reason": "Resource is skipped",
       "resource": "steampipe",
+      "status": "skip",
       "dimensions": [
        {
         "key": "id",
