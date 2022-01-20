@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/utils"
+
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/zclconf/go-cty/cty"
@@ -173,26 +175,24 @@ func (t *ReportText) Diff(other *ReportText) *ReportTreeItemDiffs {
 		Item: t,
 		Name: t.Name(),
 	}
-	if t.FullName != other.FullName {
-		res.AddPropertyDiff("Name")
-	}
-	if typehelpers.SafeString(t.Title) != typehelpers.SafeString(other.Title) {
+
+	if utils.SafeStringsEqual(t.FullName, other.FullName) {
 		res.AddPropertyDiff("Title")
 	}
 
-	if t.Width == nil || other.Width == nil {
-		if !(t.Width == nil && other.Width == nil) {
-			res.AddPropertyDiff("Width")
-		}
-	} else if *t.Width != *other.Width {
+	if utils.SafeStringsEqual(t.Title, other.Title) {
+		res.AddPropertyDiff("Title")
+	}
+
+	if utils.SafeIntEqual(t.Width, other.Width) {
 		res.AddPropertyDiff("Width")
 	}
 
-	if typehelpers.SafeString(t.Type) != typehelpers.SafeString(other.Type) {
+	if utils.SafeStringsEqual(t.Type, other.Type) {
 		res.AddPropertyDiff("Type")
 	}
 
-	if typehelpers.SafeString(t.Value) != typehelpers.SafeString(other.Value) {
+	if utils.SafeStringsEqual(t.Value, other.Value) {
 		res.AddPropertyDiff("Value")
 	}
 

@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/utils"
+
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/zclconf/go-cty/cty"
@@ -173,25 +175,21 @@ func (t *ReportTable) Diff(other *ReportTable) *ReportTreeItemDiffs {
 		Item: t,
 		Name: t.Name(),
 	}
-	if t.FullName != other.FullName {
+	if utils.SafeStringsEqual(t.FullName, other.FullName) {
 		res.AddPropertyDiff("Name")
 	}
-	if typehelpers.SafeString(t.Title) != typehelpers.SafeString(other.Title) {
+	if utils.SafeStringsEqual(t.Title, other.Title) {
 		res.AddPropertyDiff("Title")
 	}
-	if typehelpers.SafeString(t.SQL) != typehelpers.SafeString(other.SQL) {
+	if !utils.SafeStringsEqual(t.SQL, other.SQL) {
 		res.AddPropertyDiff("SQL")
 	}
 
-	if t.Width == nil || other.Width == nil {
-		if !(t.Width == nil && other.Width == nil) {
-			res.AddPropertyDiff("Width")
-		}
-	} else if *t.Width != *other.Width {
+	if utils.SafeIntEqual(t.Width, other.Width) {
 		res.AddPropertyDiff("Width")
 	}
 
-	if typehelpers.SafeString(t.Type) != typehelpers.SafeString(other.Type) {
+	if utils.SafeStringsEqual(t.Type, other.Type) {
 		res.AddPropertyDiff("Type")
 	}
 
