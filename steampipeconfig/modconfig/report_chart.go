@@ -3,45 +3,14 @@ package modconfig
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/utils"
+
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // TODO KAI pretty sure we can remove all cty properties from report leaves as they cannot be referred to
-
-type ReportChartLegend struct {
-	Display  *string `cty:"display" hcl:"display" json:"display,omitempty"`
-	Position *string `cty:"position" hcl:"position" json:"position,omitempty"`
-}
-
-type ReportChartSeries struct {
-	Name  string  `hcl:"name,label"`
-	Title *string `cty:"title" hcl:"title" json:"title,omitempty"`
-	Color *string `cty:"color" hcl:"color" json:"color,omitempty"`
-}
-
-type ReportChartLabels struct {
-	Display *string `cty:"display" hcl:"display" json:"display,omitempty"`
-	Format  *string `cty:"format" hcl:"format" json:"format,omitempty"`
-}
-
-type ReportChartAxesX struct {
-	Title  *string           `cty:"title" hcl:"title" json:"title,omitempty"`
-	Labels ReportChartLabels `cty:"title" hcl:"labels,block" json:"labels,omitempty"`
-}
-
-type ReportChartAxesY struct {
-	Title  *string            `cty:"title" hcl:"title" json:"title,omitempty"`
-	Labels *ReportChartLabels `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
-	Min    *int               `cty:"min" hcl:"min" json:"min,omitempty"`
-	Max    *int               `cty:"max" hcl:"max" json:"max,omitempty"`
-	Steps  *int               `cty:"steps" hcl:"steps" json:"steps,omitempty"`
-}
-type ReportChartAxes struct {
-	X *ReportChartAxesX `cty:"x" hcl:"x,block" json:"x,omitempty"`
-	Y *ReportChartAxesY `cty:"y" hcl:"y,block" json:"y,omitempty"`
-}
 
 // ReportChart is a struct representing a leaf reporting node
 type ReportChart struct {
@@ -222,29 +191,52 @@ func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
 		Item: c,
 		Name: c.Name(),
 	}
-	if c.FullName != other.FullName {
+
+	if utils.SafeStringsEqual(c.FullName, other.FullName) {
 		res.AddPropertyDiff("Name")
 	}
-	if typehelpers.SafeString(c.Title) != typehelpers.SafeString(other.Title) {
+
+	if utils.SafeStringsEqual(c.Title, other.Title) {
 		res.AddPropertyDiff("Title")
 	}
-	if typehelpers.SafeString(c.SQL) != typehelpers.SafeString(other.SQL) {
+
+	if utils.SafeStringsEqual(c.SQL, other.SQL) {
 		res.AddPropertyDiff("SQL")
 	}
 
-	if c.Width == nil || other.Width == nil {
-		if !(c.Width == nil && other.Width == nil) {
-			res.AddPropertyDiff("Width")
-		}
-	} else if *c.Width != *other.Width {
+	if utils.SafeIntEqual(c.Width, other.Width) {
 		res.AddPropertyDiff("Width")
 	}
 
-	if typehelpers.SafeString(c.Type) != typehelpers.SafeString(other.Type) {
+	if utils.SafeStringsEqual(c.Type, other.Type) {
 		res.AddPropertyDiff("Type")
 	}
 
-	// TODO KAI legens,series,axes
+	if len(c.SeriesList) != len(other.SeriesList) {
+		res.AddPropertyDiff("Series")
+	} else {
+		for i, s := range c.Series {
+			if !s.Equals(other.Series[i]) {
+				res.AddPropertyDiff("Series")
+			}
+		}
+	}
+
+	if c.Legend != nil {
+		if !c.Legend.Equals(other.Legend) {
+			res.AddPropertyDiff("Series")
+		}
+	} else if other.Legend != nil {
+		res.AddPropertyDiff("Series")
+	}
+
+	if c.Axes != nil {
+		if !c.Axes.Equals(other.Axes) {
+			res.AddPropertyDiff("Series")
+		}
+	} else if other.Axes != nil {
+		res.AddPropertyDiff("Series")
+	}
 
 	res.populateChildDiffs(c, other)
 
