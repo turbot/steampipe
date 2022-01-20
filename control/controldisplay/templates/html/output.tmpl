@@ -28,7 +28,7 @@
     {{ end }}
     <footer><em>Report run at <code>{{ .Data.StartTime.Format "2006-01-02 15:04:05" }}</code> using <a href="https://steampipe.io"
           rel="nofollow"><code>Steampipe {{ .Constants.SteampipeVersion }}</code></a> in dir
-        <code>{{ workingdir }}</code>.</em></footer>
+        <code>{{ .Constants.WorkingDir }}</code>.</em></footer>
   </div>
 </body>
 
