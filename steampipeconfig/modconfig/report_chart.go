@@ -16,6 +16,7 @@ type ReportChartLegend struct {
 }
 
 type ReportChartSeries struct {
+	Name  string  `hcl:"name,label"`
 	Title *string `cty:"title" hcl:"title" json:"title,omitempty"`
 	Color *string `cty:"color" hcl:"color" json:"color,omitempty"`
 }
@@ -25,18 +26,21 @@ type ReportChartLabels struct {
 	Format  *string `cty:"format" hcl:"format" json:"format,omitempty"`
 }
 
+type ReportChartAxesX struct {
+	Title  *string           `cty:"title" hcl:"title" json:"title,omitempty"`
+	Labels ReportChartLabels `cty:"title" hcl:"labels,block" json:"labels,omitempty"`
+}
+
+type ReportChartAxesY struct {
+	Title  *string            `cty:"title" hcl:"title" json:"title,omitempty"`
+	Labels *ReportChartLabels `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
+	Min    *int               `cty:"min" hcl:"min" json:"min,omitempty"`
+	Max    *int               `cty:"max" hcl:"max" json:"max,omitempty"`
+	Steps  *int               `cty:"steps" hcl:"steps" json:"steps,omitempty"`
+}
 type ReportChartAxes struct {
-	X struct {
-		Title  *string           `cty:"title" hcl:"title" json:"title,omitempty"`
-		Labels ReportChartLabels `cty:"title" hcl:"labels,block" json:"labels,omitempty"`
-	}
-	Y struct {
-		Title  *string           `cty:"title" hcl:"title" json:"title,omitempty"`
-		Labels ReportChartLabels `cty:"title" hcl:"labels,block" json:"labels,omitempty"`
-		Min    *int              `cty:"min" hcl:"min" json:"min,omitempty"`
-		Max    *int              `cty:"max" hcl:"max " json:"max,omitempty"`
-		Steps  *int              `cty:"steps" hcl:"steps " json:"steps,omitempty"`
-	}
+	X *ReportChartAxesX `cty:"x" hcl:"x,block" json:"x,omitempty"`
+	Y *ReportChartAxesY `cty:"y" hcl:"y,block" json:"y,omitempty"`
 }
 
 // ReportChart is a struct representing a leaf reporting node
@@ -53,10 +57,11 @@ type ReportChart struct {
 	Type *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Base *ReportChart `hcl:"base" json:"-"`
 
-	// TODO KAI
-	//Legend *string `cty:"legend" hcl:"legend" column:"legend,jsonb"`
-	//Series *string `cty:"series" hcl:"series" column:"series,jsonb"`
-	//Axes *string `cty:"axes" hcl:"axes" column:"axes,jsonb"`
+	Legend     *ReportChartLegend   `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
+	SeriesList []*ReportChartSeries `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
+	Axes       *ReportChartAxes     `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
+
+	Series map[string]*ReportChartSeries `cty:"series" json:"series"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
@@ -103,6 +108,13 @@ func (c *ReportChart) IsAnonymous() bool {
 // OnDecoded implements HclResource
 func (c *ReportChart) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	c.setBaseProperties()
+	// populate series map
+	if len(c.SeriesList) > 0 {
+		c.Series = make(map[string]*ReportChartSeries, len(c.SeriesList))
+		for _, s := range c.SeriesList {
+			c.Series[s.Name] = s
+		}
+	}
 	return nil
 }
 
