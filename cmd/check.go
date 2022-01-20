@@ -474,10 +474,10 @@ func parseExportArg(arg string) (formatter controldisplay.Formatter, targetFileN
 	// Tactical fix to resolve CSV and JSON filename exports
 	// We need this till we build out the templates for CSV and JSON
 	ext := filepath.Ext(arg)
-	if strings.HasSuffix(ext, constants.CsvExtension) {
+	if ext == constants.CsvExtension {
 		return controldisplay.CSVFormatter{}, arg, nil
 	}
-	if strings.HasSuffix(ext, constants.JsonExtension) && !strings.HasSuffix(arg, "asff.json") {
+	if ext == constants.JsonExtension && !strings.HasSuffix(arg, "asff.json") {
 		return controldisplay.JSONFormatter{}, arg, nil
 	}
 	// fix ends
