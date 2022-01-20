@@ -110,5 +110,5 @@ func templateFuncs() template.FuncMap {
 
 var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
 	"workingdir":        func() string { wd, _ := os.Getwd(); return wd },
-	"DurationInSeconds": func(t time.Duration) float64 { return t.Seconds() },
+	"durationInSeconds": func(t time.Duration) float64 { return t.Seconds() },
 }
