@@ -66,7 +66,7 @@ func (m *ModVersionConstraint) HasVersion() bool {
 }
 
 func (m *ModVersionConstraint) String() string {
-	return fmt.Sprintf("%s", m.FullName())
+	return m.FullName()
 }
 
 // Initialise parses the version and name properties
