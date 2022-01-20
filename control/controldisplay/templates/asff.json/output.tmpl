@@ -7,7 +7,7 @@
                 {{- if $row.Run.MatchTag "plugin" "aws" -}} 
                     {{ if $first_row_rendered -}},{{ end }}
                     {{- template "control_row_template" $row -}} 
-                    {{ $r = true }}
+                    {{ $first_row_rendered = true }}
                 {{- end -}} 
             {{- end -}} 
     {{- end -}} 
