@@ -148,14 +148,16 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResour
 		resource = modconfig.NewReportContainer(block)
 	case modconfig.BlockTypeContainer:
 		resource = modconfig.NewReportContainer(block)
+	case modconfig.BlockTypeChart:
+		resource = modconfig.NewReportChart(block)
+	case modconfig.BlockTypeCounter:
+		resource = modconfig.NewReportCounter(block)
+	case modconfig.BlockTypeImage:
+		resource = modconfig.NewReportImage(block)
 	case modconfig.BlockTypeTable:
 		resource = modconfig.NewReportTable(block)
 	case modconfig.BlockTypeText:
 		resource = modconfig.NewReportText(block)
-	case modconfig.BlockTypeCounter:
-		resource = modconfig.NewReportCounter(block)
-	case modconfig.BlockTypeChart:
-		resource = modconfig.NewReportChart(block)
 	default:
 		return nil, hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -454,7 +456,7 @@ func decodeContainerReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 	diags = decodeProperty(content, "base", &report.Base, runCtx)
 	res.handleDecodeDiags(diags)
 	if report.Base != nil && len(report.Base.ChildNames) > 0 {
-		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeTable, modconfig.BlockTypeText, modconfig.BlockTypeCounter, modconfig.BlockTypeChart}
+		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeChart, modconfig.BlockTypeCounter, modconfig.BlockTypeImage, modconfig.BlockTypeTable, modconfig.BlockTypeText}
 		// TODO: we should be passing in the block for the Base resource - but this is only used
 		// for diags and we do not expect to get any (as this function has already succeeded
 		// when the base was originally parsed)

@@ -14,6 +14,7 @@ const (
 	BlockTypeContainer = "container"
 	BlockTypeChart     = "chart"
 	BlockTypeCounter   = "counter"
+	BlockTypeImage     = "image"
 	BlockTypeTable     = "table"
 	BlockTypeText      = "text"
 	BlockTypeLocals    = "locals"

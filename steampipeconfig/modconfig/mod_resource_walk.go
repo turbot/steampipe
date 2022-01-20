@@ -30,12 +30,7 @@ func (m *Mod) WalkResources(resourceFunc func(item HclResource) bool) {
 			return
 		}
 	}
-	for _, r := range m.ReportTables {
-		if !resourceFunc(r) {
-			return
-		}
-	}
-	for _, r := range m.ReportTexts {
+	for _, r := range m.ReportCharts {
 		if !resourceFunc(r) {
 			return
 		}
@@ -45,7 +40,17 @@ func (m *Mod) WalkResources(resourceFunc func(item HclResource) bool) {
 			return
 		}
 	}
-	for _, r := range m.ReportCharts {
+	for _, r := range m.ReportImages {
+		if !resourceFunc(r) {
+			return
+		}
+	}
+	for _, r := range m.ReportTables {
+		if !resourceFunc(r) {
+			return
+		}
+	}
+	for _, r := range m.ReportTexts {
 		if !resourceFunc(r) {
 			return
 		}
@@ -116,14 +121,16 @@ func (m *Mod) GetResource(parsedName *ParsedResourceName) (resource HclResource,
 		resource, found = m.Reports[longName]
 	case BlockTypeContainer:
 		resource, found = m.ReportContainers[longName]
+	case BlockTypeChart:
+		resource, found = m.ReportCharts[longName]
+	case BlockTypeCounter:
+		resource, found = m.ReportCounters[longName]
+	case BlockTypeImage:
+		resource, found = m.ReportImages[longName]
 	case BlockTypeTable:
 		resource, found = m.ReportTables[longName]
 	case BlockTypeText:
 		resource, found = m.ReportTexts[longName]
-	case BlockTypeCounter:
-		resource, found = m.ReportCounters[longName]
-	case BlockTypeChart:
-		resource, found = m.ReportCharts[longName]
 	}
 	return resource, found
 

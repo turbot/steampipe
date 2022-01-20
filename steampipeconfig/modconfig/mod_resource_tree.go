@@ -123,6 +123,33 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 				m.ReportContainers[name] = r
 			}
 		}
+	case *ReportChart:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.ReportCharts[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item))
+			break
+		} else {
+			m.ReportCharts[name] = r
+		}
+	case *ReportCounter:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.ReportCounters[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item))
+			break
+		} else {
+			m.ReportCounters[name] = r
+		}
+	case *ReportImage:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.ReportImages[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item))
+			break
+		} else {
+			m.ReportImages[name] = r
+		}
 	case *ReportTable:
 		name := r.Name()
 		// check for dupes
@@ -140,24 +167,6 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		} else {
 			m.ReportTexts[name] = r
-		}
-	case *ReportCounter:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.ReportCounters[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.ReportCounters[name] = r
-		}
-	case *ReportChart:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.ReportCharts[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.ReportCharts[name] = r
 		}
 
 	case *Variable:

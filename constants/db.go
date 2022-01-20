@@ -85,10 +85,11 @@ const (
 	IntrospectionTableMod           = "steampipe_mod"
 	IntrospectionTableReport        = "steampipe_report"
 	IntrospectionTableContainer     = "steampipe_report_container"
+	IntrospectionTableReportChart   = "steampipe_report_chart"
+	IntrospectionTableReportCounter = "steampipe_report_counter"
+	IntrospectionTableReportImage   = "steampipe_report_image"
 	IntrospectionTableReportTable   = "steampipe_report_table"
 	IntrospectionTableReportText    = "steampipe_report_text"
-	IntrospectionTableReportCounter = "steampipe_report_counter"
-	IntrospectionTableReportChart   = "steampipe_report_chart"
 	IntrospectionTableVariable      = "steampipe_variable"
 	IntrospectionTableReference     = "steampipe_reference"
 )

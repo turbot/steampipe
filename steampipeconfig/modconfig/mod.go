@@ -57,10 +57,11 @@ type Mod struct {
 	Benchmarks       map[string]*Benchmark
 	Reports          map[string]*ReportContainer
 	ReportContainers map[string]*ReportContainer
+	ReportCharts     map[string]*ReportChart
+	ReportCounters   map[string]*ReportCounter
+	ReportImages     map[string]*ReportImage
 	ReportTables     map[string]*ReportTable
 	ReportTexts      map[string]*ReportText
-	ReportCounters   map[string]*ReportCounter
-	ReportCharts     map[string]*ReportChart
 	Variables        map[string]*Variable
 	Locals           map[string]*Local
 
@@ -82,10 +83,11 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Benchmarks:       make(map[string]*Benchmark),
 		Reports:          make(map[string]*ReportContainer),
 		ReportContainers: make(map[string]*ReportContainer),
+		ReportCharts:     make(map[string]*ReportChart),
+		ReportCounters:   make(map[string]*ReportCounter),
+		ReportImages:     make(map[string]*ReportImage),
 		ReportTables:     make(map[string]*ReportTable),
 		ReportTexts:      make(map[string]*ReportText),
-		ReportCounters:   make(map[string]*ReportCounter),
-		ReportCharts:     make(map[string]*ReportChart),
 		Variables:        make(map[string]*Variable),
 		Locals:           make(map[string]*Local),
 
@@ -209,6 +211,39 @@ func (m *Mod) Equals(other *Mod) bool {
 			return false
 		}
 	}
+	// report charts
+	for k := range m.ReportCharts {
+		if _, ok := other.ReportCharts[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportCharts {
+		if _, ok := m.ReportCharts[k]; !ok {
+			return false
+		}
+	}
+	// report counters
+	for k := range m.ReportCounters {
+		if _, ok := other.ReportCounters[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportCounters {
+		if _, ok := m.ReportCounters[k]; !ok {
+			return false
+		}
+	}
+	// report images
+	for k := range m.ReportImages {
+		if _, ok := other.ReportImages[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportImages {
+		if _, ok := m.ReportImages[k]; !ok {
+			return false
+		}
+	}
 	// report tables
 	for k := range m.ReportTables {
 		if _, ok := other.ReportTables[k]; !ok {
@@ -228,28 +263,6 @@ func (m *Mod) Equals(other *Mod) bool {
 	}
 	for k := range other.ReportTexts {
 		if _, ok := m.ReportTexts[k]; !ok {
-			return false
-		}
-	}
-	// report counters
-	for k := range m.ReportCounters {
-		if _, ok := other.ReportCounters[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.ReportCounters {
-		if _, ok := m.ReportCounters[k]; !ok {
-			return false
-		}
-	}
-	// report charts
-	for k := range m.ReportCharts {
-		if _, ok := other.ReportCharts[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.ReportCharts {
-		if _, ok := m.ReportCharts[k]; !ok {
 			return false
 		}
 	}
