@@ -480,7 +480,6 @@ func parseExportArg(arg string) (formatter controldisplay.Formatter, targetFileN
 	if ext == constants.JsonExtension && !strings.HasSuffix(arg, "asff.json") {
 		return controldisplay.JSONFormatter{}, arg, nil
 	}
-	// fix ends
 
 	return controldisplay.GetTemplateExportFormatter(arg, true)
 }
