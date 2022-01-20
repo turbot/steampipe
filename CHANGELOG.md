@@ -1,3 +1,10 @@
+## v0.12.0 [2022-01-20]
+_What's new?_
+* Add support for template based `check` export and output. ([#1289](https://github.com/turbot/steampipe/issues/1289))
+
+_Bug fixes_
+* Fixes issue where plugins, FDW and Postgres were logging using a different timestamp formats. Now all timestamps use `UTC` ([#927](https://github.com/turbot/steampipe/issues/927))
+
 ## v0.11.2 [2022-01-10]
 _Bug fixes_
 * Fix issue where `steampipe check` table output only displays the summary. ([#1300](https://github.com/turbot/steampipe/issues/1300))
