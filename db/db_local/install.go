@@ -180,6 +180,7 @@ func installFDW(ctx context.Context, firstSetup bool) (string, error) {
 		}()
 	}
 	statushooks.SetStatus(ctx, fmt.Sprintf("Download & install %s...", constants.Bold("steampipe-postgres-fdw")))
+	defer statushooks.Done(ctx)
 	return ociinstaller.InstallFdw(ctx, constants.DefaultFdwImage, getDatabaseLocation())
 }
 
