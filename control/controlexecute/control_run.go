@@ -29,45 +29,41 @@ const (
 	ControlRunError
 )
 
-// ControlRun is a struct representing a  a control run - will contain one or more result items (i.e. for one or more resources)
+// ControlRun is a struct representing the execution of a control run. It will contain one or more result items (i.e. for one or more resources).
 type ControlRun struct {
-	runError error `json:"-"`
-
-	// the parent control
+	// the control being run
 	Control *modconfig.Control `json:"-"`
-	Summary StatusSummary      `json:"-"`
-
+	// control summary
+	Summary StatusSummary `json:"-"`
+	// result rows
+	Rows []*ResultRow `json:"results"`
+	// a list of distinct dimension keys from the results of this control
+	DimensionKeys []string `json:"-"`
 	// execution duration
 	Duration time.Duration `json:"-"`
 
+	// properties from control
+	ControlId   string            `json:"control_id"`
+	Description string            `json:"description"`
+	Severity    string            `json:"severity"`
+	Tags        map[string]string `json:"tags"`
+	Title       string            `json:"title"`
+
+	// parent result group
+	Group *ResultGroup `json:"-"`
+	// execution tree
+	Tree *ExecutionTree `json:"-"`
 	// used to trace the events within the duration of a control execution
 	Lifecycle *utils.LifecycleTimer `json:"-"`
 
-	BackendPid int64 `json:"-"`
-
-	// the result
-	ControlId string `json:"control_id"`
-	// control description
-	Description string `json:"description"`
-	Severity    string `json:"severity"`
-	// tags for the control
-	Tags   map[string]string       `json:"tags"`
-	Title  string                  `json:"title"`
-	RowMap map[string][]*ResultRow `json:"-"`
-	// result rows
-	Rows []*ResultRow `json:"results"`
-	// a list of dimension keys
-	DimensionKeys []string       `json:"-"`
-	Group         *ResultGroup   `json:"-"`
-	Tree          *ExecutionTree `json:"-"`
-
 	// the query result stream
 	queryResult *queryresult.Result
+	rowMap      map[string][]*ResultRow `json:"-"`
 	runStatus   ControlRunStatus
+	runError    error
 	stateLock   sync.Mutex
 	doneChan    chan bool
-
-	attempts int
+	attempts    int
 }
 
 func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree *ExecutionTree) *ControlRun {
@@ -84,7 +80,7 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 		Severity:    typehelpers.SafeString(control.Severity),
 		Title:       typehelpers.SafeString(control.Title),
 		Tags:        control.GetTags(),
-		RowMap:      make(map[string][]*ResultRow),
+		rowMap:      make(map[string][]*ResultRow),
 
 		Lifecycle: utils.NewLifecycleTimer(),
 
@@ -383,7 +379,7 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 // add the result row to our results and update the summary with the row status
 func (r *ControlRun) addResultRow(row *ResultRow) {
 	// update results
-	r.RowMap[row.Status] = append(r.RowMap[row.Status], row)
+	r.rowMap[row.Status] = append(r.rowMap[row.Status], row)
 
 	// update summary
 	switch row.Status {
@@ -404,7 +400,7 @@ func (r *ControlRun) addResultRow(row *ResultRow) {
 func (r *ControlRun) createdOrderedResultRows() {
 	statusOrder := []string{constants.ControlError, constants.ControlAlarm, constants.ControlInfo, constants.ControlOk, constants.ControlSkip}
 	for _, status := range statusOrder {
-		r.Rows = append(r.Rows, r.RowMap[status]...)
+		r.Rows = append(r.Rows, r.rowMap[status]...)
 	}
 }
 

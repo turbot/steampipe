@@ -27,16 +27,19 @@ type ResultGroup struct {
 	Description string            `json:"description" csv:"description"`
 	Tags        map[string]string `json:"tags"`
 	// the overall summary of the group
-	Summary     *GroupSummary            `json:"summary"`
-	Groups      []*ResultGroup           `json:"groups"`
+	Summary *GroupSummary `json:"summary"`
+	// child result groups
+	Groups []*ResultGroup `json:"groups"`
+	// child control runs
 	ControlRuns []*ControlRun            `json:"controls"`
 	Severity    map[string]StatusSummary `json:"-"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
-	GroupItem     modconfig.ModTreeItem `json:"-"`
-	Parent        *ResultGroup          `json:"-"`
-	Duration      time.Duration         `json:"-"`
-	DimensionKeys []string              `json:"-"`
+	GroupItem modconfig.ModTreeItem `json:"-"`
+	Parent    *ResultGroup          `json:"-"`
+	Duration  time.Duration         `json:"-"`
+	// a list of distinct dimension keys from descendant controls
+	DimensionKeys []string `json:"-"`
 
 	// lock to prevent multiple control_runs updating this
 	updateLock *sync.Mutex

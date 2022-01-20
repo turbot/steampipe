@@ -15,15 +15,17 @@ import (
 
 // ResultRow is the result of a control execution for a single resource
 type ResultRow struct {
-	// reason for the status
-	Reason   string `json:"reason" csv:"reason"`
-	Resource string `json:"resource" csv:"resource"`
-	// status of the row
+	// status of the row (ok, info, alarm, error, skip)
 	Status string `json:"status" csv:"status"`
-	// dimensions related to the row
+	// reason for the status
+	Reason string `json:"reason" csv:"reason"`
+	// resource name
+	Resource string `json:"resource" csv:"resource"`
+	// dimensions for this row
 	Dimensions []Dimension `json:"dimensions"`
-	Run        *ControlRun `json:"-"`
-	// control details
+	// parent control run
+	Run *ControlRun `json:"-"`
+	// source control
 	Control *modconfig.Control `json:"-" csv:"control_id:UnqualifiedName,control_title:Title,control_description:Description"`
 }
 
