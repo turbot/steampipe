@@ -1,18 +1,20 @@
 {{ define "output" }}
+{{ $r := false }}
 [  {{ range $runIdx,$run := .Data.ControlRuns -}} 
         {{- range $rowIdx,$row := $run.Rows -}} 
             {{- if gt (add $runIdx $rowIdx) 0 -}} 
                 {{- if $row.Run.MatchTag "plugin" "aws" -}} 
-                    , 
+                    {{ if $r }},{{ end }}
+                    {{- template "control_row_template" $row -}} 
+                    {{ $r = true }}
                 {{- end }} 
             {{- end -}} 
-        {{- template "control_row_template" $row -}} 
     {{- end -}} 
     {{- end }}
 ]
 {{ end }}
 
-{{ define "control_row_template" }} {{ if .Run.MatchTag "plugin" "aws" }}
+{{ define "control_row_template" }} 
 {
     "SchemaVersion": "2018-10-08",
     "Id": "{{ .Run.Control.FullName }}",
@@ -45,7 +47,7 @@
     "Compliance": {
         "Status": "{{ template "statusmap" .Status -}}"
     }
-}{{ end -}} {{ end -}}
+} {{ end -}}
 
 {{ define "statusmap" }}
     {{- if eq . "ok" -}}
