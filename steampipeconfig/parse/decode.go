@@ -159,7 +159,7 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResour
 	default:
 		return nil, hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("resourceForBlock called for unsupported block type %s"),
+			Summary:  fmt.Sprintf("resourceForBlock called for unsupported block type %s", block.Type),
 			Subject:  &block.DefRange,
 		},
 		}

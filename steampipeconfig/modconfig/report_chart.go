@@ -10,8 +10,6 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// TODO KAI pretty sure we can remove all cty properties from report leaves as they cannot be referred to
-
 // ReportChart is a struct representing a leaf reporting node
 type ReportChart struct {
 	FullName        string `cty:"name" json:"-"`
