@@ -48,7 +48,6 @@ jobs:
           
       - name: go mod tidy
         uses: evantorrie/mott-the-tidier@v1-beta
-        if: steps.mod-cache.outputs.cache-hit != 'true' && steps.build-cache.outputs.cache-hit != 'true'
         with:
           gomods: |
             **/go.mod
