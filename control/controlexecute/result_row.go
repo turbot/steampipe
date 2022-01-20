@@ -15,9 +15,12 @@ import (
 
 // ResultRow is the result of a control execution for a single resource
 type ResultRow struct {
-	Reason     string      `json:"reason" csv:"reason"`
-	Resource   string      `json:"resource" csv:"resource"`
-	Status     string      `json:"status" csv:"status"`
+	// reason for the status
+	Reason   string `json:"reason" csv:"reason"`
+	Resource string `json:"resource" csv:"resource"`
+	// status of the row
+	Status string `json:"status" csv:"status"`
+	// dimensions related to the row
 	Dimensions []Dimension `json:"dimensions"`
 	Run        *ControlRun `json:"-"`
 	// control details

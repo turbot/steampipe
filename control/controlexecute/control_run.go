@@ -46,12 +46,14 @@ type ControlRun struct {
 	BackendPid int64 `json:"-"`
 
 	// the result
-	ControlId   string                  `json:"control_id"`
-	Description string                  `json:"description"`
-	Severity    string                  `json:"severity"`
-	Tags        map[string]string       `json:"tags"`
-	Title       string                  `json:"title"`
-	RowMap      map[string][]*ResultRow `json:"-"`
+	ControlId string `json:"control_id"`
+	// control description
+	Description string `json:"description"`
+	Severity    string `json:"severity"`
+	// tags for the control
+	Tags   map[string]string       `json:"tags"`
+	Title  string                  `json:"title"`
+	RowMap map[string][]*ResultRow `json:"-"`
 	// result rows
 	Rows []*ResultRow `json:"results"`
 	// a list of dimension keys
@@ -107,6 +109,7 @@ func (r *ControlRun) Finished() bool {
 	return status == ControlRunComplete || status == ControlRunError
 }
 
+// MatchTag returns the value corresponding to the input key. Returns 'false' if not found
 func (r *ControlRun) MatchTag(key string, value string) bool {
 	val, found := r.Tags[key]
 	return found && (val == value)
