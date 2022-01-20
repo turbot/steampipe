@@ -185,15 +185,15 @@ func (c *ReportContainer) Diff(other *ReportContainer) *ReportTreeItemDiffs {
 		Name: c.Name(),
 	}
 
-	if utils.SafeStringsEqual(c.FullName, other.FullName) {
+	if !utils.SafeStringsEqual(c.FullName, other.FullName) {
 		res.AddPropertyDiff("Name")
 	}
 
-	if utils.SafeStringsEqual(c.Title, other.Title) {
+	if !utils.SafeStringsEqual(c.Title, other.Title) {
 		res.AddPropertyDiff("Title")
 	}
 
-	if utils.SafeIntEqual(c.Width, other.Width) {
+	if !utils.SafeIntEqual(c.Width, other.Width) {
 		res.AddPropertyDiff("Width")
 	}
 

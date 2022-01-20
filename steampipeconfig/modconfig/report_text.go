@@ -176,23 +176,23 @@ func (t *ReportText) Diff(other *ReportText) *ReportTreeItemDiffs {
 		Name: t.Name(),
 	}
 
-	if utils.SafeStringsEqual(t.FullName, other.FullName) {
+	if !utils.SafeStringsEqual(t.FullName, other.FullName) {
 		res.AddPropertyDiff("Title")
 	}
 
-	if utils.SafeStringsEqual(t.Title, other.Title) {
+	if !utils.SafeStringsEqual(t.Title, other.Title) {
 		res.AddPropertyDiff("Title")
 	}
 
-	if utils.SafeIntEqual(t.Width, other.Width) {
+	if !utils.SafeIntEqual(t.Width, other.Width) {
 		res.AddPropertyDiff("Width")
 	}
 
-	if utils.SafeStringsEqual(t.Type, other.Type) {
+	if !utils.SafeStringsEqual(t.Type, other.Type) {
 		res.AddPropertyDiff("Type")
 	}
 
-	if utils.SafeStringsEqual(t.Value, other.Value) {
+	if !utils.SafeStringsEqual(t.Value, other.Value) {
 		res.AddPropertyDiff("Value")
 	}
 
