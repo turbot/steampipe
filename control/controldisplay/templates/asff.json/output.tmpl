@@ -1,5 +1,17 @@
-{{ define "output" }}[  {{ range $runIdx,$run := .Data.ControlRuns -}} {{ range $rowIdx,$row := $run.Rows }} {{ if gt (add $runIdx $rowIdx) 0 }} {{ if $row.Run.MatchTag "plugin" "aws" }} , {{ end }} {{end}} {{ template "control_row_template" $row -}} {{ end -}} {{ end }}
-] {{ end }}
+{{ define "output" }}
+[  {{ range $runIdx,$run := .Data.ControlRuns -}} 
+        {{- range $rowIdx,$row := $run.Rows -}} 
+            {{- if gt (add $runIdx $rowIdx) 0 -}} 
+                {{- if $row.Run.MatchTag "plugin" "aws" -}} 
+                    , 
+                {{- end }} 
+            {{- end -}} 
+        {{- template "control_row_template" $row -}} 
+    {{- end -}} 
+    {{- end }}
+]
+{{ end }}
+
 {{ define "control_row_template" }} {{ if .Run.MatchTag "plugin" "aws" }}
 {
     "SchemaVersion": "2018-10-08",
@@ -35,4 +47,20 @@
     }
 }{{ end -}} {{ end -}}
 
-{{ define "statusmap" }}{{ if eq . "ok" }}PASSED{{ end -}}{{ if eq . "error" }}WARNING{{ end -}}{{ if eq . "alarm" }}FAILED{{ end -}}{{ if eq . "skip" }}NOT_AVAILABLE{{ end -}}{{ if eq . "info" }}NOT_AVAILABLE{{ end -}}{{ end -}}
+{{ define "statusmap" }}
+    {{- if eq . "ok" -}}
+        PASSED
+    {{- end -}}
+    {{- if eq . "error" -}}
+        WARNING
+    {{- end -}}
+    {{- if eq . "alarm" -}}
+        FAILED
+    {{- end -}}
+    {{- if eq . "skip" -}}
+        NOT_AVAILABLE
+    {{- end -}}
+    {{- if eq . "info" -}}
+        NOT_AVAILABLE
+    {{- end -}}
+{{- end -}}
