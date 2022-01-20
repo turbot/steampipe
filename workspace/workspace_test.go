@@ -20,7 +20,6 @@ type loadWorkspaceTest struct {
 }
 
 var toStringPointer = utils.ToStringPointer
-var m3alias = "m3"
 
 var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 	"single mod": {

@@ -11,8 +11,6 @@ import (
 	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
 )
 
-const maxRetries = 2
-
 // PluginManagerClient is the client used by steampipe to access the plugin manager
 type PluginManagerClient struct {
 	manager            pluginshared.PluginManager
