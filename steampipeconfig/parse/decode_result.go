@@ -1,7 +1,6 @@
 package parse
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -18,7 +17,7 @@ func (d dependency) String() string {
 	for i, t := range d.Traversals {
 		traversalStrings[i] = hclhelpers.TraversalAsString(t)
 	}
-	return fmt.Sprintf(`%s` /*d.Range.String(), */, strings.Join(traversalStrings, ","))
+	return strings.Join(traversalStrings, ",")
 }
 
 // struct to hold the result of a decoding operation

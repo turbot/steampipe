@@ -216,7 +216,7 @@ func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (stri
 			return "", err
 		}
 
-		res := PgEscapeString(fmt.Sprintf(`%s`, string(jsonBytes)))
+		res := PgEscapeString(string(jsonBytes))
 		return res, nil
 	case "integer", "numeric", "decimal", "boolean":
 		return typeHelpers.ToString(item), nil
