@@ -46,16 +46,18 @@ type ControlRun struct {
 	BackendPid int64 `json:"-"`
 
 	// the result
-	ControlId     string                  `json:"control_id"`
-	Description   string                  `json:"description"`
-	Severity      string                  `json:"severity"`
-	Tags          map[string]string       `json:"tags"`
-	Title         string                  `json:"title"`
-	RowMap        map[string][]*ResultRow `json:"-"`
-	Rows          []*ResultRow            `json:"results"`
-	DimensionKeys []string                `json:"-"`
-	Group         *ResultGroup            `json:"-"`
-	Tree          *ExecutionTree          `json:"-"`
+	ControlId   string                  `json:"control_id"`
+	Description string                  `json:"description"`
+	Severity    string                  `json:"severity"`
+	Tags        map[string]string       `json:"tags"`
+	Title       string                  `json:"title"`
+	RowMap      map[string][]*ResultRow `json:"-"`
+	// result rows
+	Rows []*ResultRow `json:"results"`
+	// a list of dimension keys
+	DimensionKeys []string       `json:"-"`
+	Group         *ResultGroup   `json:"-"`
+	Tree          *ExecutionTree `json:"-"`
 
 	// the query result stream
 	queryResult *queryresult.Result
