@@ -21,7 +21,6 @@ type ReportTable struct {
 	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 
-	Type *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Base *ReportTable `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
@@ -69,9 +68,6 @@ func (t *ReportTable) setBaseProperties() {
 	}
 	if t.Title == nil {
 		t.Title = t.Base.Title
-	}
-	if t.Type == nil {
-		t.Type = t.Base.Type
 	}
 
 	if t.Width == nil {
@@ -178,10 +174,6 @@ func (t *ReportTable) Diff(other *ReportTable) *ReportTreeItemDiffs {
 
 	if !utils.SafeIntEqual(t.Width, other.Width) {
 		res.AddPropertyDiff("Width")
-	}
-
-	if !utils.SafeStringsEqual(t.Type, other.Type) {
-		res.AddPropertyDiff("Type")
 	}
 
 	res.populateChildDiffs(t, other)
