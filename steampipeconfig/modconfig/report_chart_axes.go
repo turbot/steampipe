@@ -43,8 +43,8 @@ func (a ReportChartAxes) Equals(other *ReportChartAxes) bool {
 }
 
 type ReportChartAxesX struct {
-	Title  *string            `cty:"title" hcl:"title" json:"title,omitempty"`
-	Labels *ReportChartLabels `cty:"title" hcl:"labels,block" json:"labels,omitempty"`
+	Title  *ReportChartAxisTitle `cty:"title" hcl:"title,block" json:"title,omitempty"`
+	Labels *ReportChartLabels    `cty:"title" hcl:"labels,block" json:"labels,omitempty"`
 }
 
 func (x ReportChartAxesX) Equals(other *ReportChartAxesX) bool {
@@ -52,9 +52,14 @@ func (x ReportChartAxesX) Equals(other *ReportChartAxesX) bool {
 		return false
 	}
 
-	if !utils.SafeStringsEqual(x.Title, other.Title) {
+	if x.Title != nil {
+		if !x.Title.Equals(other.Title) {
+			return false
+		}
+	} else if other.Title != nil {
 		return false
 	}
+
 	if x.Labels != nil {
 		return x.Labels.Equals(other.Labels)
 	} else if other.Labels != nil {
@@ -65,11 +70,10 @@ func (x ReportChartAxesX) Equals(other *ReportChartAxesX) bool {
 }
 
 type ReportChartAxesY struct {
-	Title  *string            `cty:"title" hcl:"title" json:"title,omitempty"`
-	Labels *ReportChartLabels `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
-	Min    *int               `cty:"min" hcl:"min" json:"min,omitempty"`
-	Max    *int               `cty:"max" hcl:"max" json:"max,omitempty"`
-	Steps  *int               `cty:"steps" hcl:"steps" json:"steps,omitempty"`
+	Title  *ReportChartAxisTitle `cty:"title" hcl:"title,block" json:"title,omitempty"`
+	Labels *ReportChartLabels    `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
+	Min    *int                  `cty:"min" hcl:"min" json:"min,omitempty"`
+	Max    *int                  `cty:"max" hcl:"max" json:"max,omitempty"`
 }
 
 func (y ReportChartAxesY) Equals(other *ReportChartAxesY) bool {
@@ -77,10 +81,16 @@ func (y ReportChartAxesY) Equals(other *ReportChartAxesY) bool {
 		return false
 	}
 
-	if !(utils.SafeStringsEqual(y.Title, other.Title) &&
-		utils.SafeIntEqual(y.Min, other.Min) &&
-		utils.SafeIntEqual(y.Max, other.Max) &&
-		utils.SafeIntEqual(y.Steps, other.Steps)) {
+	if !(utils.SafeIntEqual(y.Min, other.Min) &&
+		utils.SafeIntEqual(y.Max, other.Max)) {
+		return false
+	}
+
+	if y.Title != nil {
+		if !y.Title.Equals(other.Title) {
+			return false
+		}
+	} else if other.Title != nil {
 		return false
 	}
 
@@ -89,5 +99,25 @@ func (y ReportChartAxesY) Equals(other *ReportChartAxesY) bool {
 	} else if other.Labels != nil {
 		return false
 	}
+	return true
+}
+
+type ReportChartAxisTitle struct {
+	Display *string `cty:"display" hcl:"display" json:"display,omitempty"`
+	Align   *string `cty:"align" hcl:"align" json:"align,omitempty"`
+	Value   *string `cty:"value" hcl:"value" json:"value,omitempty"`
+}
+
+func (t ReportChartAxisTitle) Equals(other *ReportChartAxisTitle) bool {
+	if other == nil {
+		return false
+	}
+
+	if !(utils.SafeStringsEqual(t.Display, other.Display) &&
+		utils.SafeStringsEqual(t.Align, other.Align) &&
+		utils.SafeStringsEqual(t.Value, other.Value)) {
+		return false
+	}
+
 	return true
 }
