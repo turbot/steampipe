@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os"
 	"strings"
 	"text/template"
 	"time"
@@ -109,6 +108,5 @@ func templateFuncs() template.FuncMap {
 }
 
 var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
-	"workingdir":        func() string { wd, _ := os.Getwd(); return wd },
 	"durationInSeconds": func(t time.Duration) float64 { return t.Seconds() },
 }

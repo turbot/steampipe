@@ -18,6 +18,7 @@ type TemplateRenderConfig struct {
 }
 type TemplateRenderConstants struct {
 	SteampipeVersion string
+	WorkingDir       string
 }
 
 type TemplateRenderContext struct {
@@ -36,9 +37,15 @@ type TemplateFormatter struct {
 func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	reader, writer := io.Pipe()
 	go func() {
+		workingDirectory, err := os.Getwd()
+		if err != nil {
+			writer.CloseWithError(err)
+			return
+		}
 		renderContext := TemplateRenderContext{
 			Constants: TemplateRenderConstants{
 				SteampipeVersion: version.SteampipeVersion.String(),
+				WorkingDir:       workingDirectory,
 			},
 			Config: TemplateRenderConfig{
 				RenderHeader: viper.GetBool(constants.ArgHeader),

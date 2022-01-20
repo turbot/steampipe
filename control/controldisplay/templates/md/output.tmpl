@@ -9,7 +9,7 @@
 {{ end }}
 
 \
-_Report run at `{{ .Data.StartTime.Format "2006-01-02 15:04:05" }}` using [`Steampipe {{ .Constants.SteampipeVersion }}`](https://steampipe.io) in dir `{{ workingdir }}`._
+_Report run at `{{ .Data.StartTime.Format "2006-01-02 15:04:05" }}` using [`Steampipe {{ .Constants.SteampipeVersion }}`](https://steampipe.io) in dir `{{ .Constants.WorkingDir }}`._
 {{ end }}
 
 {{/* templates */}}
