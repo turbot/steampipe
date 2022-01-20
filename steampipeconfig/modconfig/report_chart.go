@@ -29,6 +29,7 @@ type ReportChart struct {
 	Legend     *ReportChartLegend   `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
 	SeriesList []*ReportChartSeries `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
 	Axes       *ReportChartAxes     `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
+	Grouping   *string              `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
 
 	Series map[string]*ReportChartSeries `cty:"series" json:"series"`
 
@@ -210,6 +211,10 @@ func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
 
 	if !utils.SafeStringsEqual(c.Type, other.Type) {
 		res.AddPropertyDiff("Type")
+	}
+
+	if !utils.SafeStringsEqual(c.Grouping, other.Grouping) {
+		res.AddPropertyDiff("Grouping")
 	}
 
 	if len(c.SeriesList) != len(other.SeriesList) {
