@@ -10,8 +10,9 @@
 </test-run>
 {{ end }}
 
+{{/* sub template for result groups */}}
 {{ define "group_template" }}
-<test-suite id="{{ .GroupId }}" name="{{ .Title }}" duration="{{ .Duration | DurationInSeconds }}" testcasecount="{{ .Summary.Status.TotalCount }}" total="{{ .Summary.Status.TotalCount }}" passed="{{ .Summary.Status.PassedCount }}" failed="{{ .Summary.Status.FailedCount }}" skipped="{{ .Summary.Status.Skip }}">
+<test-suite id="{{ .GroupId }}" name="{{ .Title }}" duration="{{ .Duration | durationInSeconds }}" testcasecount="{{ .Summary.Status.TotalCount }}" total="{{ .Summary.Status.TotalCount }}" passed="{{ .Summary.Status.PassedCount }}" failed="{{ .Summary.Status.FailedCount }}" skipped="{{ .Summary.Status.Skip }}">
     {{ range .Groups }}
         {{ template "group_template" . }}
     {{ end }}
@@ -22,14 +23,16 @@
 </test-suite>
 {{ end }}
 
+{{/* sub template for control runs */}}
 {{ define "control_run_template" }}
-<test-suite id="{{ .ControlId }}" name="{{ .Control.FullName }}" duration="{{ .Duration | DurationInSeconds }}" testcasecount="{{ .Summary.TotalCount }}" total="{{ .Summary.TotalCount }}" passed="{{ .Summary.PassedCount }}" failed="{{ .Summary.FailedCount }}" skipped="{{ .Summary.Skip }}">
+<test-suite id="{{ .ControlId }}" name="{{ .Control.FullName }}" duration="{{ .Duration | durationInSeconds }}" testcasecount="{{ .Summary.TotalCount }}" total="{{ .Summary.TotalCount }}" passed="{{ .Summary.PassedCount }}" failed="{{ .Summary.FailedCount }}" skipped="{{ .Summary.Skip }}">
     {{ range $index,$row := .Rows }}
         {{ template "control_row_template" dict "idx" $index "row" $row }}
     {{ end }}
 </test-suite>
 {{ end }}
 
+{{/* sub template for control rows */}}
 {{ define "control_row_template" }}
 <test-case id="{{ .row.Control.ShortName }}::{{ .idx }}" name="{{ .row.Control.FullName }}::{{ .idx }}" result="{{ template "statusmap" .row.Status }}">
 <properties>
@@ -54,4 +57,21 @@
 </test-case>
 {{ end }}
 
-{{ define "statusmap" }}{{ if eq . "ok" }}Passed{{ end -}}{{ if eq . "info" }}Passed{{ end -}}{{ if eq . "error" }}Failed{{ end -}}{{ if eq . "alarm" }}Failed{{ end -}}{{ if eq . "skip" }}Skipped{{ end -}}{{ end -}}
+{{/* mapping steampipe statuses with NUnit3 status values */}}
+{{ define "statusmap" }}
+    {{- if eq . "ok" -}}
+        Passed
+    {{- end -}}
+    {{- if eq . "info" -}}
+        Passed
+    {{- end -}}
+    {{- if eq . "error" -}}
+        Failed
+    {{- end -}}
+    {{- if eq . "alarm" -}}
+        Failed
+    {{- end -}}
+    {{- if eq . "skip" -}}
+        Skipped
+    {{- end -}}
+{{- end -}}

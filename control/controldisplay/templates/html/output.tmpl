@@ -28,7 +28,7 @@
     {{ end }}
     <footer><em>Report run at <code>{{ .Data.StartTime.Format "2006-01-02 15:04:05" }}</code> using <a href="https://steampipe.io"
           rel="nofollow"><code>Steampipe {{ .Constants.SteampipeVersion }}</code></a> in dir
-        <code>{{ workingdir }}</code>.</em></footer>
+        <code>{{ .Constants.WorkingDir }}</code>.</em></footer>
   </div>
 </body>
 
@@ -186,10 +186,65 @@
 </tr>
 {{ end }}
 
-{{ define "statusicon" }}{{ if eq . "ok" }}✅{{ end -}}{{ if eq . "skip" }}⇨{{ end -}}{{ if eq . "info" }}ℹ{{ end -}}{{ if eq . "alarm" }}❌{{ end -}}{{ if eq . "error" }}❗{{ end -}}{{ end -}}
+{{ define "statusicon" }}
+  {{- if eq . "ok" -}}
+    ✅
+  {{- end -}}
+  {{- if eq . "skip" -}}
+    ⇨
+  {{- end -}}
+  {{- if eq . "info" -}}
+    ℹ
+  {{- end -}}
+  {{- if eq . "alarm" -}}
+    ❌
+  {{- end -}}
+  {{- if eq . "error" -}}
+    ❗
+  {{- end -}}
+{{- end -}}
 
-{{ define "summaryokclass" }}{{ if gt . 0 }}summary-total-ok highlight{{ end -}}{{ if eq . 0 }}summary-total-ok{{ end -}}{{ end -}}
-{{ define "summaryskipclass" }}{{ if gt . 0 }}summary-total-skip highlight{{ end -}}{{ if eq . 0 }}summary-total-skip{{ end -}}{{ end -}}
-{{ define "summaryinfoclass" }}{{ if gt . 0 }}summary-total-info highlight{{ end -}}{{ if eq . 0 }}summary-total-info{{ end -}}{{ end -}}
-{{ define "summaryalarmclass" }}{{ if gt . 0 }}summary-total-alarm highlight{{ end -}}{{ if eq . 0 }}summary-total-alarm{{ end -}}{{ end -}}
-{{ define "summaryerrorclass" }}{{ if gt . 0 }}summary-total-error highlight{{ end -}}{{ if eq . 0 }}summary-total-error{{ end -}}{{ end -}}
+{{ define "summaryokclass" }}
+  {{- if gt . 0 -}}
+    summary-total-ok highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-ok
+  {{- end -}}
+{{- end -}}
+
+{{ define "summaryskipclass" }}
+  {{- if gt . 0 -}}
+    summary-total-skip highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-skip
+  {{- end -}}
+{{- end -}}
+
+{{- define "summaryinfoclass" }}
+  {{- if gt . 0 -}}
+    summary-total-info highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-info
+  {{- end -}}
+{{- end -}}
+
+{{- define "summaryalarmclass" }}
+  {{- if gt . 0 -}}
+    summary-total-alarm highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-alarm
+  {{- end -}}
+{{- end -}}
+
+{{- define "summaryerrorclass" }}
+  {{- if gt . 0 -}}
+    summary-total-error highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-error
+  {{- end -}}
+{{- end -}}

@@ -18,21 +18,22 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-// ExecutionTree is a structure representing the control hierarchy
+// ExecutionTree is a structure representing the control execution hierarchy
 type ExecutionTree struct {
+	// root node of the execution tree
 	Root      *ResultGroup
 	StartTime time.Time
 	EndTime   time.Time
+	// map of dimension property name to property value to color map
+	DimensionColorGenerator *DimensionColorGenerator
+	// flat list of all control runs
+	ControlRuns []*ControlRun
 
 	workspace *workspace.Workspace
 	client    db_common.Client
 	// an optional map of control names used to filter the controls which are run
 	controlNameFilterMap map[string]bool
 	progress             *ControlProgressRenderer
-	// map of dimension property name to property value to color map
-	DimensionColorGenerator *DimensionColorGenerator
-	// flat list of all control runs
-	ControlRuns []*ControlRun
 }
 
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg string) (*ExecutionTree, error) {

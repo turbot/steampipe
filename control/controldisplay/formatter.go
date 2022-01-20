@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os"
 	"strings"
 	"text/template"
 	"time"
@@ -12,7 +11,6 @@ import (
 	"github.com/MasterMinds/sprig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
-	"github.com/turbot/steampipe/version"
 )
 
 var ErrFormatterNotFound = errors.New("Formatter not found")
@@ -110,9 +108,5 @@ func templateFuncs() template.FuncMap {
 }
 
 var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
-	"steampipeversion": func() string { return version.SteampipeVersion.String() },
-	"workingdir":       func() string { wd, _ := os.Getwd(); return wd },
-	"DurationInSeconds": func(t time.Duration) float64 {
-		return t.Seconds()
-	},
+	"durationInSeconds": func(t time.Duration) float64 { return t.Seconds() },
 }

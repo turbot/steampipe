@@ -18,6 +18,7 @@ type TemplateRenderConfig struct {
 }
 type TemplateRenderConstants struct {
 	SteampipeVersion string
+	WorkingDir       string
 }
 
 type TemplateRenderContext struct {
@@ -36,9 +37,15 @@ type TemplateFormatter struct {
 func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	reader, writer := io.Pipe()
 	go func() {
+		workingDirectory, err := os.Getwd()
+		if err != nil {
+			writer.CloseWithError(err)
+			return
+		}
 		renderContext := TemplateRenderContext{
 			Constants: TemplateRenderConstants{
 				SteampipeVersion: version.SteampipeVersion.String(),
+				WorkingDir:       workingDirectory,
 			},
 			Config: TemplateRenderConfig{
 				RenderHeader: viper.GetBool(constants.ArgHeader),
@@ -46,7 +53,18 @@ func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 			Data: tree,
 		}
 
-		if err := tf.template.ExecuteTemplate(writer, "output", renderContext); err != nil {
+		// overwrite the "render_context" function to return the current render context
+		templateFuncs := templateFuncs()
+		templateFuncs["render_context"] = func() TemplateRenderContext { return renderContext }
+
+		t, err := tf.template.Clone()
+		if err != nil {
+			writer.CloseWithError(err)
+			return
+		}
+		t = t.Funcs(templateFuncs)
+
+		if err := t.ExecuteTemplate(writer, "output", renderContext); err != nil {
 			writer.CloseWithError(err)
 		} else {
 			writer.Close()
@@ -66,8 +84,16 @@ func (tf TemplateFormatter) FileExtension() string {
 }
 
 func NewTemplateFormatter(input ExportTemplate) (*TemplateFormatter, error) {
+	templateFuncs := templateFuncs()
+
+	// add a stub "render_context" function
+	// this will be overwritten before we execute the template
+	// if we don't put this here, then templates which use this
+	// won't parse and will throw Error: template: ****: function "render_context" not defined
+	templateFuncs["render_context"] = func() TemplateRenderContext { return TemplateRenderContext{} }
+
 	t := template.Must(template.New("outlet").
-		Funcs(templateFuncs()).
+		Funcs(templateFuncs).
 		ParseFS(os.DirFS(input.TemplatePath), "*"))
 
 	return &TemplateFormatter{exportFormat: input, template: t}, nil

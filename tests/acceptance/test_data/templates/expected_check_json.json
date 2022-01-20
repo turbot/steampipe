@@ -15,11 +15,6 @@
   "groups": [],
   "controls": [
    {
-    "control_id": "control.sample_control_mixed_results_1",
-    "description": "Sample control that returns 10 OK, 5 ALARM, 2 ERROR, 1 SKIP and 3 INFO",
-    "severity": "high",
-    "tags": {},
-    "title": "Sample control with all possible statuses(severity=high)",
     "results": [
      {
       "reason": "Resource has some error",
@@ -252,7 +247,12 @@
        }
       ]
      }
-    ]
+    ],
+    "control_id": "control.sample_control_mixed_results_1",
+    "description": "Sample control that returns 10 OK, 5 ALARM, 2 ERROR, 1 SKIP and 3 INFO",
+    "severity": "high",
+    "tags": {},
+    "title": "Sample control with all possible statuses(severity=high)"
    }
   ]
  }
