@@ -28,9 +28,8 @@ type ReportText struct {
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
-	parents   []ModTreeItem
-	metadata  *ResourceMetadata
-	anonymous bool
+	parents  []ModTreeItem
+	metadata *ResourceMetadata
 }
 
 func NewReportText(block *hcl.Block) *ReportText {
@@ -56,14 +55,6 @@ func (t *ReportText) CtyValue() (cty.Value, error) {
 // return name in format: 'text.<shortName>'
 func (t *ReportText) Name() string {
 	return t.FullName
-}
-
-func (t *ReportText) SetAnonymous(anonymous bool) {
-	t.anonymous = anonymous
-}
-
-func (t *ReportText) IsAnonymous() bool {
-	return t.anonymous
 }
 
 // OnDecoded implements HclResource

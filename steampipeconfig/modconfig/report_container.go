@@ -32,8 +32,7 @@ type ReportContainer struct {
 	parents  []ModTreeItem
 	metadata *ResourceMetadata
 
-	HclType   string
-	anonymous bool
+	HclType string
 }
 
 func NewReportContainer(block *hcl.Block) *ReportContainer {
@@ -60,14 +59,6 @@ func (c *ReportContainer) CtyValue() (cty.Value, error) {
 // return name in format: 'report.<shortName>'
 func (c *ReportContainer) Name() string {
 	return c.FullName
-}
-
-func (c *ReportContainer) SetAnonymous(anonymous bool) {
-	c.anonymous = anonymous
-}
-
-func (c *ReportContainer) IsAnonymous() bool {
-	return c.anonymous
 }
 
 // OnDecoded implements HclResource
