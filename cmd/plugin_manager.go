@@ -82,7 +82,11 @@ func createPluginManagerLog() hclog.Logger {
 		fmt.Printf("failed to open plugin manager log file: %s\n", err.Error())
 		os.Exit(3)
 	}
-	logger := logging.NewLogger(&hclog.LoggerOptions{Output: f})
+	logger := logging.NewLogger(&hclog.LoggerOptions{
+		Output:     f,
+		TimeFn:     func() time.Time { return time.Now().UTC() },
+		TimeFormat: "2006-01-02 15:04:05.000 UTC",
+	})
 	log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
 	log.SetPrefix("")
 	log.SetFlags(0)
