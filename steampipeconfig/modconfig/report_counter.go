@@ -29,9 +29,8 @@ type ReportCounter struct {
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
-	parents   []ModTreeItem
-	metadata  *ResourceMetadata
-	anonymous bool
+	parents  []ModTreeItem
+	metadata *ResourceMetadata
 }
 
 func NewReportCounter(block *hcl.Block) *ReportCounter {
@@ -57,14 +56,6 @@ func (c *ReportCounter) CtyValue() (cty.Value, error) {
 // return name in format: 'counter.<shortName>'
 func (c *ReportCounter) Name() string {
 	return c.FullName
-}
-
-func (c *ReportCounter) SetAnonymous(anonymous bool) {
-	c.anonymous = anonymous
-}
-
-func (c *ReportCounter) IsAnonymous() bool {
-	return c.anonymous
 }
 
 // OnDecoded implements HclResource

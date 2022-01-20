@@ -37,9 +37,8 @@ type ReportChart struct {
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
-	parents   []ModTreeItem
-	metadata  *ResourceMetadata
-	anonymous bool
+	parents  []ModTreeItem
+	metadata *ResourceMetadata
 }
 
 func NewReportChart(block *hcl.Block) *ReportChart {
@@ -65,14 +64,6 @@ func (c *ReportChart) CtyValue() (cty.Value, error) {
 // return name in format: 'chart.<shortName>'
 func (c *ReportChart) Name() string {
 	return c.FullName
-}
-
-func (c *ReportChart) SetAnonymous(anonymous bool) {
-	c.anonymous = anonymous
-}
-
-func (c *ReportChart) IsAnonymous() bool {
-	return c.anonymous
 }
 
 // OnDecoded implements HclResource

@@ -104,10 +104,6 @@ func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource,
 	}
 
 	for _, resource := range resources {
-		// if this resource type implements AnonymousResource, set its anonymous status
-		if anon, ok := resource.(modconfig.AnonymousResource); ok {
-			anon.SetAnonymous(anonymousBlock)
-		}
 		// handle the result
 		// - if successful, add resource to mod and variables maps
 		// - if there are dependencies, add them to run context
