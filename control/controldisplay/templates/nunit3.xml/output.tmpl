@@ -10,6 +10,7 @@
 </test-run>
 {{ end }}
 
+{{/* sub template for result groups */}}
 {{ define "group_template" }}
 <test-suite id="{{ .GroupId }}" name="{{ .Title }}" duration="{{ .Duration | DurationInSeconds }}" testcasecount="{{ .Summary.Status.TotalCount }}" total="{{ .Summary.Status.TotalCount }}" passed="{{ .Summary.Status.PassedCount }}" failed="{{ .Summary.Status.FailedCount }}" skipped="{{ .Summary.Status.Skip }}">
     {{ range .Groups }}
@@ -22,6 +23,7 @@
 </test-suite>
 {{ end }}
 
+{{/* sub template for control runs */}}
 {{ define "control_run_template" }}
 <test-suite id="{{ .ControlId }}" name="{{ .Control.FullName }}" duration="{{ .Duration | DurationInSeconds }}" testcasecount="{{ .Summary.TotalCount }}" total="{{ .Summary.TotalCount }}" passed="{{ .Summary.PassedCount }}" failed="{{ .Summary.FailedCount }}" skipped="{{ .Summary.Skip }}">
     {{ range $index,$row := .Rows }}
@@ -30,6 +32,7 @@
 </test-suite>
 {{ end }}
 
+{{/* sub template for control rows */}}
 {{ define "control_row_template" }}
 <test-case id="{{ .row.Control.ShortName }}::{{ .idx }}" name="{{ .row.Control.FullName }}::{{ .idx }}" result="{{ template "statusmap" .row.Status }}">
 <properties>
@@ -54,6 +57,7 @@
 </test-case>
 {{ end }}
 
+{{/* mapping steampipe statuses with NUnit3 status values */}}
 {{ define "statusmap" }}
     {{- if eq . "ok" -}}
         Passed
