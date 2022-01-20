@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/statusspinner"
@@ -146,7 +147,12 @@ func setWorkspaceChDir() string {
 func createLogger() {
 	level := logging.LogLevel()
 
-	options := &hclog.LoggerOptions{Name: "steampipe", Level: hclog.LevelFromString(level)}
+	options := &hclog.LoggerOptions{
+		Name:       "steampipe",
+		Level:      hclog.LevelFromString(level),
+		TimeFn:     func() time.Time { return time.Now().UTC() },
+		TimeFormat: "2006-01-02 15:04:05.000 UTC",
+	}
 	if options.Output == nil {
 		options.Output = os.Stderr
 	}

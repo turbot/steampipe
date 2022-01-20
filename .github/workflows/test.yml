@@ -32,6 +32,7 @@ jobs:
 
       # used to speedup go test
       - name: Go Build Cache
+        id: build-cache
         uses: actions/cache@v2
         with:
           path: ${{ steps.go-cache-paths.outputs.go-build }}
@@ -39,10 +40,18 @@ jobs:
 
       # Cache go mod cache, used to speedup builds
       - name: Go Mod Cache
+        id: mod-cache
         uses: actions/cache@v2
         with:
           path: ${{ steps.go-cache-paths.outputs.go-mod }}
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
+          
+      - name: go mod tidy
+        uses: evantorrie/mott-the-tidier@v1-beta
+        with:
+          gomods: |
+            **/go.mod
+            -tools/go.mod
 
       - name: Run Unit Tests
         run: |
