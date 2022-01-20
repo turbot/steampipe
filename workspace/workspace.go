@@ -37,10 +37,11 @@ type Workspace struct {
 	Mods             map[string]*modconfig.Mod
 	Reports          map[string]*modconfig.ReportContainer
 	ReportContainers map[string]*modconfig.ReportContainer
+	ReportCharts     map[string]*modconfig.ReportChart
 	ReportCounters   map[string]*modconfig.ReportCounter
+	ReportImages     map[string]*modconfig.ReportImage
 	ReportTables     map[string]*modconfig.ReportTable
 	ReportTexts      map[string]*modconfig.ReportText
-	ReportCharts     map[string]*modconfig.ReportChart
 	Variables        map[string]*modconfig.Variable
 
 	//local  resources keyed by unqualifed name
@@ -168,10 +169,11 @@ func (w *Workspace) reset() {
 	w.Mods = make(map[string]*modconfig.Mod)
 	w.Reports = make(map[string]*modconfig.ReportContainer)
 	w.ReportContainers = make(map[string]*modconfig.ReportContainer)
+	w.ReportCharts = make(map[string]*modconfig.ReportChart)
+	w.ReportCounters = make(map[string]*modconfig.ReportCounter)
+	w.ReportImages = make(map[string]*modconfig.ReportImage)
 	w.ReportTables = make(map[string]*modconfig.ReportTable)
 	w.ReportTexts = make(map[string]*modconfig.ReportText)
-	w.ReportCounters = make(map[string]*modconfig.ReportCounter)
-	w.ReportCharts = make(map[string]*modconfig.ReportChart)
 	w.LocalQueries = make(map[string]*modconfig.Query)
 	w.LocalControls = make(map[string]*modconfig.Control)
 	w.LocalBenchmarks = make(map[string]*modconfig.Benchmark)
@@ -225,11 +227,12 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	w.Controls, w.LocalControls = w.buildControlMap(runCtx.LoadedDependencyMods)
 	w.Benchmarks, w.LocalBenchmarks = w.buildBenchmarkMap(runCtx.LoadedDependencyMods)
 	w.Reports = w.buildReportMap(runCtx.LoadedDependencyMods)
-	w.ReportCounters = w.buildCounterMap(runCtx.LoadedDependencyMods)
 	w.ReportContainers = w.buildReportContainerMap(runCtx.LoadedDependencyMods)
+	w.ReportCharts = w.buildReportChartMap(runCtx.LoadedDependencyMods)
+	w.ReportCounters = w.buildReportCounterMap(runCtx.LoadedDependencyMods)
+	w.ReportImages = w.buildReportImageMap(runCtx.LoadedDependencyMods)
 	w.ReportTables = w.buildReportTableMap(runCtx.LoadedDependencyMods)
 	w.ReportTexts = w.buildReportTextMap(runCtx.LoadedDependencyMods)
-	w.ReportCharts = w.buildReportChartMap(runCtx.LoadedDependencyMods)
 
 	// set variables on workspace
 	w.Variables = m.Variables

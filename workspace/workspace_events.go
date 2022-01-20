@@ -86,16 +86,6 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 			event.DeletedContainers = append(event.DeletedContainers, prev)
 		}
 	}
-	for name, prev := range prevResourceMaps.ReportTables {
-		if current, ok := resourceMaps.ReportTables[name]; ok {
-			diff := prev.Diff(current)
-			if diff.HasChanges() {
-				event.ChangedTables = append(event.ChangedTables, diff)
-			}
-		} else {
-			event.DeletedTables = append(event.DeletedTables, prev)
-		}
-	}
 	for name, prev := range prevResourceMaps.ReportCharts {
 		if current, ok := resourceMaps.ReportCharts[name]; ok {
 			diff := prev.Diff(current)
@@ -114,6 +104,26 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 			}
 		} else {
 			event.DeletedCounters = append(event.DeletedCounters, prev)
+		}
+	}
+	for name, prev := range prevResourceMaps.ReportImages {
+		if current, ok := resourceMaps.ReportImages[name]; ok {
+			diff := prev.Diff(current)
+			if diff.HasChanges() {
+				event.ChangedImages = append(event.ChangedImages, diff)
+			}
+		} else {
+			event.DeletedImages = append(event.DeletedImages, prev)
+		}
+	}
+	for name, prev := range prevResourceMaps.ReportTables {
+		if current, ok := resourceMaps.ReportTables[name]; ok {
+			diff := prev.Diff(current)
+			if diff.HasChanges() {
+				event.ChangedTables = append(event.ChangedTables, diff)
+			}
+		} else {
+			event.DeletedTables = append(event.DeletedTables, prev)
 		}
 	}
 	for name, prev := range prevResourceMaps.ReportTexts {
@@ -138,11 +148,6 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 			event.NewContainers = append(event.NewContainers, p)
 		}
 	}
-	for name, p := range resourceMaps.ReportTables {
-		if _, ok := prevResourceMaps.ReportTables[name]; !ok {
-			event.NewTables = append(event.NewTables, p)
-		}
-	}
 	for name, p := range resourceMaps.ReportCharts {
 		if _, ok := prevResourceMaps.ReportCharts[name]; !ok {
 			event.NewCharts = append(event.NewCharts, p)
@@ -151,6 +156,16 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 	for name, p := range resourceMaps.ReportCounters {
 		if _, ok := prevResourceMaps.ReportCounters[name]; !ok {
 			event.NewCounters = append(event.NewCounters, p)
+		}
+	}
+	for name, p := range resourceMaps.ReportImages {
+		if _, ok := prevResourceMaps.ReportImages[name]; !ok {
+			event.NewImages = append(event.NewImages, p)
+		}
+	}
+	for name, p := range resourceMaps.ReportTables {
+		if _, ok := prevResourceMaps.ReportTables[name]; !ok {
+			event.NewTables = append(event.NewTables, p)
 		}
 	}
 	for name, p := range resourceMaps.ReportTexts {

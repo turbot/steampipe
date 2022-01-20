@@ -10,10 +10,11 @@ type WorkspaceResourceMaps struct {
 	Variables        map[string]*Variable
 	Reports          map[string]*ReportContainer
 	ReportContainers map[string]*ReportContainer
+	ReportCharts     map[string]*ReportChart
+	ReportCounters   map[string]*ReportCounter
+	ReportImages     map[string]*ReportImage
 	ReportTables     map[string]*ReportTable
 	ReportTexts      map[string]*ReportText
-	ReportCounters   map[string]*ReportCounter
-	ReportCharts     map[string]*ReportChart
 	References       map[string]*ResourceReference
 }
 
@@ -26,10 +27,11 @@ func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
 		Variables:        make(map[string]*Variable),
 		Reports:          make(map[string]*ReportContainer),
 		ReportContainers: make(map[string]*ReportContainer),
+		ReportCharts:     make(map[string]*ReportChart),
+		ReportCounters:   make(map[string]*ReportCounter),
+		ReportImages:     make(map[string]*ReportImage),
 		ReportTables:     make(map[string]*ReportTable),
 		ReportTexts:      make(map[string]*ReportText),
-		ReportCounters:   make(map[string]*ReportCounter),
-		ReportCharts:     make(map[string]*ReportChart),
 		References:       make(map[string]*ResourceReference),
 	}
 }
@@ -126,6 +128,45 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 		}
 	}
 
+	for name, charts := range m.ReportCharts {
+		if otherReport, ok := other.ReportCharts[name]; !ok {
+			return false
+		} else if !charts.Equals(otherReport) {
+			return false
+		}
+	}
+	for name := range other.ReportCharts {
+		if _, ok := m.ReportCharts[name]; !ok {
+			return false
+		}
+	}
+
+	for name, counters := range m.ReportCounters {
+		if otherReport, ok := other.ReportCounters[name]; !ok {
+			return false
+		} else if !counters.Equals(otherReport) {
+			return false
+		}
+	}
+	for name := range other.ReportCounters {
+		if _, ok := m.ReportCounters[name]; !ok {
+			return false
+		}
+	}
+
+	for name, images := range m.ReportImages {
+		if otherImage, ok := other.ReportImages[name]; !ok {
+			return false
+		} else if !images.Equals(otherImage) {
+			return false
+		}
+	}
+	for name := range other.ReportImages {
+		if _, ok := m.ReportImages[name]; !ok {
+			return false
+		}
+	}
+
 	for name, tables := range m.ReportTables {
 		if otherReport, ok := other.ReportTables[name]; !ok {
 			return false
@@ -148,32 +189,6 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 	}
 	for name := range other.ReportTexts {
 		if _, ok := m.ReportTexts[name]; !ok {
-			return false
-		}
-	}
-
-	for name, counters := range m.ReportCounters {
-		if otherReport, ok := other.ReportCounters[name]; !ok {
-			return false
-		} else if !counters.Equals(otherReport) {
-			return false
-		}
-	}
-	for name := range other.ReportCounters {
-		if _, ok := m.ReportCounters[name]; !ok {
-			return false
-		}
-	}
-
-	for name, charts := range m.ReportCharts {
-		if otherReport, ok := other.ReportCharts[name]; !ok {
-			return false
-		} else if !charts.Equals(otherReport) {
-			return false
-		}
-	}
-	for name := range other.ReportCharts {
-		if _, ok := m.ReportCharts[name]; !ok {
 			return false
 		}
 	}
@@ -245,9 +260,10 @@ func (m *WorkspaceResourceMaps) Empty() bool {
 		len(m.Variables)+
 		len(m.Reports)+
 		len(m.ReportContainers)+
+		len(m.ReportCharts)+
+		len(m.ReportCounters)+
+		len(m.ReportImages)+
 		len(m.ReportTables)+
 		len(m.ReportTexts)+
-		len(m.ReportCounters)+
-		len(m.ReportCharts)+
 		len(m.References) == 0
 }

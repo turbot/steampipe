@@ -52,10 +52,11 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportContainer{}, constants.IntrospectionTableReport, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportContainer{}, constants.IntrospectionTableContainer, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportChart{}, constants.IntrospectionTableReportChart, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportCounter{}, constants.IntrospectionTableReportCounter, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportImage{}, constants.IntrospectionTableReportImage, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportTable{}, constants.IntrospectionTableReportTable, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportText{}, constants.IntrospectionTableReportText, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportCounter{}, constants.IntrospectionTableReportCounter, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportChart{}, constants.IntrospectionTableReportChart, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
@@ -84,20 +85,20 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	for _, container := range workspaceResources.ReportContainers {
 		insertSql = append(insertSql, getTableInsertSqlForResource(container, constants.IntrospectionTableContainer))
 	}
+	for _, chart := range workspaceResources.ReportCharts {
+		insertSql = append(insertSql, getTableInsertSqlForResource(chart, constants.IntrospectionTableReportChart))
+	}
+	for _, counter := range workspaceResources.ReportCounters {
+		insertSql = append(insertSql, getTableInsertSqlForResource(counter, constants.IntrospectionTableReportCounter))
+	}
+	for _, image := range workspaceResources.ReportImages {
+		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableReportImage))
+	}
 	for _, table := range workspaceResources.ReportTables {
 		insertSql = append(insertSql, getTableInsertSqlForResource(table, constants.IntrospectionTableReportTable))
 	}
 	for _, text := range workspaceResources.ReportTexts {
 		insertSql = append(insertSql, getTableInsertSqlForResource(text, constants.IntrospectionTableReportText))
-
-	}
-	for _, counter := range workspaceResources.ReportCounters {
-		insertSql = append(insertSql, getTableInsertSqlForResource(counter, constants.IntrospectionTableReportCounter))
-
-	}
-	for _, chart := range workspaceResources.ReportCharts {
-		insertSql = append(insertSql, getTableInsertSqlForResource(chart, constants.IntrospectionTableReportChart))
-
 	}
 	for _, reference := range workspaceResources.References {
 		insertSql = append(insertSql, getTableInsertSqlForResource(reference, constants.IntrospectionTableReference))
