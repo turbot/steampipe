@@ -1,11 +1,11 @@
 {{ define "output" }}
-{{- $r := false -}}
+{{- $first_row_rendered := false -}}
 [  {{- range $runIdx,$run := .Data.ControlRuns -}} 
         {{- range $rowIdx,$row := $run.Rows -}} 
             {{- if gt (add $runIdx $rowIdx) 0 -}} 
                 {{/* check if the control is related to aws */}}
                 {{- if $row.Run.MatchTag "plugin" "aws" -}} 
-                    {{ if $r -}},{{ end }}
+                    {{ if $first_row_rendered -}},{{ end }}
                     {{- template "control_row_template" $row -}} 
                     {{ $r = true }}
                 {{- end -}} 
