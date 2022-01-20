@@ -15,12 +15,12 @@ import (
 
 // ResultRow is the result of a control execution for a single resource
 type ResultRow struct {
-	// status of the row (ok, info, alarm, error, skip)
-	Status string `json:"status" csv:"status"`
 	// reason for the status
 	Reason string `json:"reason" csv:"reason"`
 	// resource name
 	Resource string `json:"resource" csv:"resource"`
+	// status of the row (ok, info, alarm, error, skip)
+	Status string `json:"status" csv:"status"`
 	// dimensions for this row
 	Dimensions []Dimension `json:"dimensions"`
 	// parent control run
