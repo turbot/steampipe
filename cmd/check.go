@@ -464,11 +464,6 @@ func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, err
 
 // parseExportArg parses the flag value and returns a Formatter based on the value
 func parseExportArg(arg string) (formatter controldisplay.Formatter, targetFileName string, err error) {
-	var found bool
-	if formatter, found = controldisplay.GetDefinedExportFormatter(arg); found {
-		return
-	}
-
 	return controldisplay.GetTemplateExportFormatter(arg, true)
 }
 
