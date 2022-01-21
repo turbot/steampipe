@@ -22,6 +22,7 @@ type ReportImage struct {
 	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 
 	Src *string `cty:"src" hcl:"src" column:"src,text"  json:"src,omitempty"`
+	Alt *string `cty:"alt" hcl:"alt" column:"alt,text"  json:"alt,omitempty"`
 
 	Base *ReportImage `hcl:"base" json:"-"`
 
@@ -73,6 +74,9 @@ func (c *ReportImage) setBaseProperties() {
 	}
 	if c.Src == nil {
 		c.Src = c.Base.Src
+	}
+	if c.Alt == nil {
+		c.Alt = c.Base.Alt
 	}
 	if c.Width == nil {
 		c.Width = c.Base.Width
@@ -184,6 +188,10 @@ func (c *ReportImage) Diff(other *ReportImage) *ReportTreeItemDiffs {
 
 	if !utils.SafeStringsEqual(c.Src, other.Src) {
 		res.AddPropertyDiff("Src")
+	}
+
+	if !utils.SafeStringsEqual(c.Alt, other.Alt) {
+		res.AddPropertyDiff("Alt")
 	}
 
 	res.populateChildDiffs(c, other)
