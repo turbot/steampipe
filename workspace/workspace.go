@@ -38,6 +38,7 @@ type Workspace struct {
 	Reports          map[string]*modconfig.ReportContainer
 	ReportContainers map[string]*modconfig.ReportContainer
 	ReportCharts     map[string]*modconfig.ReportChart
+	ReportControls   map[string]*modconfig.ReportControl
 	ReportCounters   map[string]*modconfig.ReportCounter
 	ReportImages     map[string]*modconfig.ReportImage
 	ReportTables     map[string]*modconfig.ReportTable
@@ -170,6 +171,7 @@ func (w *Workspace) reset() {
 	w.Reports = make(map[string]*modconfig.ReportContainer)
 	w.ReportContainers = make(map[string]*modconfig.ReportContainer)
 	w.ReportCharts = make(map[string]*modconfig.ReportChart)
+	w.ReportControls = make(map[string]*modconfig.ReportControl)
 	w.ReportCounters = make(map[string]*modconfig.ReportCounter)
 	w.ReportImages = make(map[string]*modconfig.ReportImage)
 	w.ReportTables = make(map[string]*modconfig.ReportTable)
@@ -229,6 +231,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	w.Reports = w.buildReportMap(runCtx.LoadedDependencyMods)
 	w.ReportContainers = w.buildReportContainerMap(runCtx.LoadedDependencyMods)
 	w.ReportCharts = w.buildReportChartMap(runCtx.LoadedDependencyMods)
+	w.ReportControls = w.buildReportControlMap(runCtx.LoadedDependencyMods)
 	w.ReportCounters = w.buildReportCounterMap(runCtx.LoadedDependencyMods)
 	w.ReportImages = w.buildReportImageMap(runCtx.LoadedDependencyMods)
 	w.ReportTables = w.buildReportTableMap(runCtx.LoadedDependencyMods)

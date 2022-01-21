@@ -86,6 +86,7 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 		Reports:          w.Reports,
 		ReportContainers: w.ReportContainers,
 		ReportCharts:     w.ReportCharts,
+		ReportControls:   w.ReportControls,
 		ReportCounters:   w.ReportCounters,
 		ReportImages:     w.ReportImages,
 		ReportTables:     w.ReportTables,
@@ -207,6 +208,21 @@ func (w *Workspace) buildReportChartMap(modMap modconfig.ModMap) map[string]*mod
 	for _, mod := range modMap {
 		for _, c := range mod.ReportCharts {
 			res[c.Name()] = c
+		}
+	}
+	return res
+}
+
+func (w *Workspace) buildReportControlMap(modMap modconfig.ModMap) map[string]*modconfig.ReportControl {
+	var res = make(map[string]*modconfig.ReportControl)
+
+	for _, p := range w.Mod.ReportControls {
+		res[p.Name()] = p
+	}
+
+	for _, mod := range modMap {
+		for _, p := range mod.ReportControls {
+			res[p.Name()] = p
 		}
 	}
 	return res

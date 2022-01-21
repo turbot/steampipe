@@ -229,7 +229,19 @@ func (c *Control) CtyValue() (cty.Value, error) {
 }
 
 // OnDecoded implements HclResource
-func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics {
+
+	// verify the control has either a query or a sql attribute
+	if c.Query == nil && c.SQL == nil {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s must define either a 'sql' property or a 'query' property", c.FullName),
+			Subject:  &c.DeclRange,
+		}}
+	}
+
+	return nil
+}
 
 // AddReference implements HclResource
 func (c *Control) AddReference(ref *ResourceReference) {
@@ -280,4 +292,42 @@ func (c *Control) GetPreparedStatementName() string {
 // ModName implements QueryProvider
 func (c *Control) ModName() string {
 	return c.Mod.NameWithVersion()
+}
+
+// Merge will merge the other control with ourselves
+// - any property we do not have set it taken from other
+func (c *Control) Merge(other *Control) {
+	if c.Description == nil {
+		c.Description = other.Description
+	}
+	if c.Documentation == nil {
+		c.Documentation = other.Documentation
+	}
+	if c.SearchPath == nil {
+		c.SearchPath = other.SearchPath
+	}
+	if c.SearchPathPrefix == nil {
+		c.SearchPathPrefix = other.SearchPathPrefix
+	}
+	if c.Severity == nil {
+		c.Severity = other.Severity
+	}
+	if c.SQL == nil {
+		c.SQL = other.SQL
+	}
+	if c.Tags == nil {
+		c.Tags = other.Tags
+	}
+	if c.Title == nil {
+		c.Title = other.Title
+	}
+	if c.Query == nil {
+		c.Query = other.Query
+	}
+	if c.Args == nil {
+		c.Args = other.Args
+	}
+	if c.Params == nil {
+		c.Params = other.Params
+	}
 }

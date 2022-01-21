@@ -59,6 +59,7 @@ type Mod struct {
 	ReportContainers map[string]*ReportContainer
 	ReportCharts     map[string]*ReportChart
 	ReportCounters   map[string]*ReportCounter
+	ReportControls   map[string]*ReportControl
 	ReportImages     map[string]*ReportImage
 	ReportTables     map[string]*ReportTable
 	ReportTexts      map[string]*ReportText
@@ -84,6 +85,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Reports:          make(map[string]*ReportContainer),
 		ReportContainers: make(map[string]*ReportContainer),
 		ReportCharts:     make(map[string]*ReportChart),
+		ReportControls:   make(map[string]*ReportControl),
 		ReportCounters:   make(map[string]*ReportCounter),
 		ReportImages:     make(map[string]*ReportImage),
 		ReportTables:     make(map[string]*ReportTable),
@@ -230,6 +232,17 @@ func (m *Mod) Equals(other *Mod) bool {
 	}
 	for k := range other.ReportCounters {
 		if _, ok := m.ReportCounters[k]; !ok {
+			return false
+		}
+	}
+	// report controls
+	for k := range m.ReportControls {
+		if _, ok := other.ReportControls[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportControls {
+		if _, ok := m.ReportControls[k]; !ok {
 			return false
 		}
 	}

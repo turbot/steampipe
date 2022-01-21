@@ -8,6 +8,7 @@ type ReportChanged struct {
 	ChangedReports    []*modconfig.ReportTreeItemDiffs
 	ChangedContainers []*modconfig.ReportTreeItemDiffs
 	ChangedCharts     []*modconfig.ReportTreeItemDiffs
+	ChangedControls   []*modconfig.ReportTreeItemDiffs
 	ChangedCounters   []*modconfig.ReportTreeItemDiffs
 	ChangedImages     []*modconfig.ReportTreeItemDiffs
 	ChangedTables     []*modconfig.ReportTreeItemDiffs
@@ -16,6 +17,7 @@ type ReportChanged struct {
 	NewReports    []*modconfig.ReportContainer
 	NewContainers []*modconfig.ReportContainer
 	NewCharts     []*modconfig.ReportChart
+	NewControls   []*modconfig.ReportControl
 	NewCounters   []*modconfig.ReportCounter
 	NewImages     []*modconfig.ReportImage
 	NewTables     []*modconfig.ReportTable
@@ -24,6 +26,7 @@ type ReportChanged struct {
 	DeletedReports    []*modconfig.ReportContainer
 	DeletedContainers []*modconfig.ReportContainer
 	DeletedCharts     []*modconfig.ReportChart
+	DeletedControls   []*modconfig.ReportControl
 	DeletedCounters   []*modconfig.ReportCounter
 	DeletedImages     []*modconfig.ReportImage
 	DeletedTables     []*modconfig.ReportTable
@@ -37,6 +40,7 @@ func (c *ReportChanged) HasChanges() bool {
 	return len(c.ChangedReports)+
 		len(c.ChangedContainers)+
 		len(c.ChangedCharts)+
+		len(c.ChangedControls)+
 		len(c.ChangedCounters)+
 		len(c.ChangedImages)+
 		len(c.ChangedTables)+
@@ -44,6 +48,7 @@ func (c *ReportChanged) HasChanges() bool {
 		len(c.NewReports)+
 		len(c.NewContainers)+
 		len(c.NewCharts)+
+		len(c.NewControls)+
 		len(c.NewCounters)+
 		len(c.NewImages)+
 		len(c.NewTables)+
@@ -51,6 +56,7 @@ func (c *ReportChanged) HasChanges() bool {
 		len(c.DeletedReports)+
 		len(c.DeletedContainers)+
 		len(c.DeletedCharts)+
+		len(c.DeletedControls)+
 		len(c.DeletedCounters)+
 		len(c.DeletedImages)+
 		len(c.DeletedTables)+

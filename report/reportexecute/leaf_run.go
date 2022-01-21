@@ -60,10 +60,12 @@ func NewLeafRun(resource modconfig.ReportingLeafNode, parent reportinterfaces.Re
 
 // Execute implements ReportRunNode
 func (r *LeafRun) Execute(ctx context.Context) error {
+	// todo check whether leafnode has an execute function
+
 	log.Printf("[WARN] %s Execute start", r.Name)
 	// if counter has sql execute it
 	if r.SQL != "" {
-		data, err := r.executeCounterSQL(ctx, r.SQL)
+		data, err := r.executeLeafNodeSQL(ctx, r.SQL)
 		if err != nil {
 			log.Printf("[WARN] %s SQL error %v", r.Name, err)
 			// set the error status on the counter - this will raise counter error event
@@ -80,7 +82,7 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 	return nil
 }
 
-func (r *LeafRun) executeCounterSQL(ctx context.Context, query string) ([][]interface{}, error) {
+func (r *LeafRun) executeLeafNodeSQL(ctx context.Context, query string) ([][]interface{}, error) {
 	log.Printf("[WARN] !!!!!!!!!!!!!!!!!!!!!! EXECUTE SQL START %s !!!!!!!!!!!!!!!!!!!!!!", r.Name)
 	queryResult, err := r.executionTree.client.ExecuteSync(ctx, query)
 	if err != nil {
