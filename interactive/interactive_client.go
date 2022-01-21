@@ -554,19 +554,20 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 	if !c.isInitialised() {
 		return nil
 	}
+	resourceMaps := c.workspace().GetResourceMaps()
 	// add all the queries in the workspace
-	for queryName, q := range c.workspace().GetLocalQueryMap() {
+	for queryName, q := range resourceMaps.LocalQueries {
 		res = append(res, c.addQuerySuggestion(q, queryName))
 	}
-	for queryName, q := range c.workspace().GetQueryMap() {
+	for queryName, q := range resourceMaps.Queries {
 		res = append(res, c.addQuerySuggestion(q, queryName))
 	}
 
 	// add all the controls in the workspace
-	for controlName, control := range c.workspace().GetLocalControlMap() {
+	for controlName, control := range resourceMaps.LocalControls {
 		res = append(res, c.addControlSuggestion(control, controlName))
 	}
-	for controlName, control := range c.workspace().GetControlMap() {
+	for controlName, control := range resourceMaps.Controls {
 		res = append(res, c.addControlSuggestion(control, controlName))
 	}
 

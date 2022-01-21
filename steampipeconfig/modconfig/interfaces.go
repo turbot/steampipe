@@ -67,3 +67,8 @@ type ReportingLeafNode interface {
 	GetSQL() string
 	GetPaths() []NodePath
 }
+
+type ResourceMapsProvider interface {
+	GetResourceMaps() *WorkspaceResourceMaps
+	//Mod()*Mod
+}

@@ -1,7 +1,5 @@
 package modconfig
 
-import "fmt"
-
 // WalkResources calls resourceFunc for every resource in the mod
 // if any resourceFunc returns false, return immediately
 func (m *Mod) WalkResources(resourceFunc func(item HclResource) bool) {
@@ -117,36 +115,4 @@ func (m *Mod) containsResource(childName string) bool {
 	}
 	m.WalkResources(resourceFunc)
 	return res
-}
-
-func (m *Mod) GetResource(parsedName *ParsedResourceName) (resource HclResource, found bool) {
-	longName := fmt.Sprintf("%s.%s.%s", m.ShortName, parsedName.ItemType, parsedName.Name)
-
-	switch parsedName.ItemType {
-	case BlockTypeBenchmark:
-		resource, found = m.Benchmarks[longName]
-	case BlockTypeControl:
-		resource, found = m.Controls[longName]
-		if !found {
-			resource, found = m.ReportControls[longName]
-		}
-	case BlockTypeReport:
-		resource, found = m.Reports[longName]
-	case BlockTypeContainer:
-		resource, found = m.ReportContainers[longName]
-	case BlockTypeChart:
-		resource, found = m.ReportCharts[longName]
-	case BlockTypeCounter:
-		resource, found = m.ReportCounters[longName]
-	case BlockTypeHierarchy:
-		resource, found = m.ReportHierarchies[longName]
-	case BlockTypeImage:
-		resource, found = m.ReportImages[longName]
-	case BlockTypeTable:
-		resource, found = m.ReportTables[longName]
-	case BlockTypeText:
-		resource, found = m.ReportTexts[longName]
-	}
-	return resource, found
-
 }

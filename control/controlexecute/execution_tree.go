@@ -80,7 +80,7 @@ func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Contr
 	}
 }
 
-func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) int {
+func (e *ExecutionTree) Execute(ctx context.Context) int {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.StartTime = time.Now()
@@ -92,13 +92,16 @@ func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) in
 	}()
 
 	// the number of goroutines parallel to start
-	maxParallelGoRoutines := viper.GetInt64(constants.ArgMaxParallel)
+	var maxParallelGoRoutines int64 = constants.DefaultMaxConnections
+	if viper.IsSet(constants.ArgMaxParallel) {
+		maxParallelGoRoutines = viper.GetInt64(constants.ArgMaxParallel)
+	}
 
 	// to limit the number of parallel controls go routines started
 	parallelismLock := semaphore.NewWeighted(maxParallelGoRoutines)
 
 	// just execute the root - it will traverse the tree
-	e.Root.execute(ctx, client, parallelismLock)
+	e.Root.execute(ctx, e.client, parallelismLock)
 
 	executeFinishWaitCtx := ctx
 	if ctx.Err() != nil {
@@ -208,30 +211,24 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeIt
 	}
 
 	// what resource type is arg?
-	name, err := modconfig.ParseResourceName(arg)
+	parsedName, err := modconfig.ParseResourceName(arg)
 	if err != nil {
 		// just log error
 		return nil, fmt.Errorf("failed to parse check argument '%s': %v", arg, err)
 	}
 
-	switch name.ItemType {
-	case modconfig.BlockTypeControl:
-		// check whether the arg is a control name
-		if control, ok := e.workspace.Controls[arg]; ok {
-			return control, nil
-		}
-	case modconfig.BlockTypeBenchmark:
-		// look in the workspace control group map for this control group
-		if benchmark, ok := e.workspace.Benchmarks[arg]; ok {
-			return benchmark, nil
-		}
-	case modconfig.BlockTypeMod:
-		// get all controls for the mod
-		if mod, ok := e.workspace.Mods[arg]; ok {
-			return mod, nil
-		}
+	resource, found := modconfig.GetResource(e.workspace, parsedName)
+
+	// if the resource is a ReportControl, get its underlying control
+	if reportControl, ok := resource.(*modconfig.ReportControl); ok {
+		resource = reportControl.GetControl()
 	}
-	return nil, fmt.Errorf("no controls found matching argument '%s'", arg)
+
+	root, ok := resource.(modconfig.ModTreeItem)
+	if !found || !ok {
+		return nil, fmt.Errorf("no resources found matching argument '%s'", arg)
+	}
+	return root, nil
 }
 
 // Get a map of control names from the introspection table steampipe_control

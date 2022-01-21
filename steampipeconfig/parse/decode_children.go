@@ -55,7 +55,7 @@ func resolveChildrenFromNames(childNames []string, block *hcl.Block, supportedCh
 			break
 		}
 
-		resource, found := mod.GetResource(parsedName)
+		resource, found := modconfig.GetResource(mod, parsedName)
 		// ensure this item is a mod tree item
 		child, ok := resource.(modconfig.ModTreeItem)
 		if !found || !ok {

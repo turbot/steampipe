@@ -28,60 +28,24 @@ func (w *Workspace) GetControl(controlName string) (*modconfig.Control, bool) {
 	return nil, false
 }
 
-func (w *Workspace) GetControlMap() map[string]*modconfig.Control {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	return w.Controls
-}
-
-func (w *Workspace) GetLocalControlMap() map[string]*modconfig.Control {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	return w.LocalControls
-}
-
-func (w *Workspace) GetQueryMap() map[string]*modconfig.Query {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	return w.Queries
-}
-
-func (w *Workspace) GetLocalQueryMap() map[string]*modconfig.Query {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	return w.LocalQueries
-}
-
-// GetChildControls builds a flat list of all controls in the worlspace, including dependencies
-func (w *Workspace) GetChildControls() []*modconfig.Control {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-	var result []*modconfig.Control
-	// the workspace resource maps have duplicate entries, keyed by long and short name.
-	// keep track of which controls we have identified in order to avoid dupes
-	controlsMatched := make(map[string]bool)
-	for _, c := range w.Controls {
-		if _, alreadyMatched := controlsMatched[c.Name()]; !alreadyMatched {
-			controlsMatched[c.Name()] = true
-			result = append(result, c)
-		}
-	}
-	return result
-}
-
-// GetResourceMaps returns all resource maps
-// TODO KAI CHECK LACK OF LOCKING IS OK HERE
-// NOTE: this function DOES NOT LOCK the load lock so should only be called in a context where the file watcher is not running
+// GetResourceMaps implements ResourceMapsProvider
 func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
-	workspaceMap := &modconfig.WorkspaceResourceMaps{
+	w.loadLock.Lock()
+	defer w.loadLock.Unlock()
+
+	return w.resourceMaps
+}
+
+func (w *Workspace) populateResourceMaps() {
+	w.resourceMaps = &modconfig.WorkspaceResourceMaps{
+		Mod:               w.Mod,
 		Mods:              make(map[string]*modconfig.Mod),
+		LocalQueries:      w.LocalQueries,
 		Queries:           w.Queries,
 		Controls:          w.Controls,
+		LocalControls:     w.LocalControls,
 		Benchmarks:        w.Benchmarks,
+		LocalBenchmarks:   w.LocalBenchmarks,
 		Variables:         w.Variables,
 		Reports:           w.Reports,
 		ReportContainers:  w.ReportContainers,
@@ -93,15 +57,11 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 		ReportTables:      w.ReportTables,
 		ReportTexts:       w.ReportTexts,
 	}
-	workspaceMap.PopulateReferences()
-
-	// TODO add in all mod dependencies
+	w.resourceMaps.PopulateReferences()
 
 	if !w.Mod.IsDefaultMod() {
-		workspaceMap.Mods[w.Mod.Name()] = w.Mod
+		w.resourceMaps.Mods[w.Mod.Name()] = w.Mod
 	}
-
-	return workspaceMap
 }
 
 // resource map building

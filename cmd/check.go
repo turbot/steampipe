@@ -154,7 +154,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
 
 		// execute controls synchronously (execute returns the number of failures)
-		failures += executionTree.Execute(ctx, client)
+		failures += executionTree.Execute(ctx)
 		err = displayControlResults(ctx, executionTree)
 		utils.FailOnError(err)
 

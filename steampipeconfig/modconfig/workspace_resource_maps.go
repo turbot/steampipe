@@ -3,6 +3,9 @@ package modconfig
 // WorkspaceResourceMaps is a struct containing maps of all mod resource types
 // This is provided to avoid db needing to reference workspace package
 type WorkspaceResourceMaps struct {
+	// the parent mod
+	Mod *Mod
+	// all mods (including deps)
 	Mods              map[string]*Mod
 	Queries           map[string]*Query
 	Controls          map[string]*Control
@@ -18,10 +21,15 @@ type WorkspaceResourceMaps struct {
 	ReportTables      map[string]*ReportTable
 	ReportTexts       map[string]*ReportText
 	References        map[string]*ResourceReference
+
+	LocalQueries    map[string]*Query
+	LocalControls   map[string]*Control
+	LocalBenchmarks map[string]*Benchmark
 }
 
-func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
+func NewWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
 	return &WorkspaceResourceMaps{
+		Mod:               mod,
 		Mods:              make(map[string]*Mod),
 		Queries:           make(map[string]*Query),
 		Controls:          make(map[string]*Control),
@@ -37,6 +45,9 @@ func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
 		ReportTables:      make(map[string]*ReportTable),
 		ReportTexts:       make(map[string]*ReportText),
 		References:        make(map[string]*ResourceReference),
+		LocalQueries:      make(map[string]*Query),
+		LocalControls:     make(map[string]*Control),
+		LocalBenchmarks:   make(map[string]*Benchmark),
 	}
 }
 
