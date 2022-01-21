@@ -84,6 +84,11 @@ func templateFuncs() template.FuncMap {
 	sprigMap := sprig.TxtFuncMap()
 	for _, use := range useFromSprigMap {
 		f, found := sprigMap[use]
+		if !found {
+			// guarantee that when a function is expected to be present
+			// it does not slip through any cracks
+			panic(fmt.Sprintf("%s not found", use))
+		}
 		if found {
 			funcs[use] = f
 		}
