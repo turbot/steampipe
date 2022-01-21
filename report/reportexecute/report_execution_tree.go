@@ -62,7 +62,7 @@ func (e *ReportExecutionTree) Execute(ctx context.Context) error {
 	defer log.Println("[WARN]", "end ReportExecutionTree.Execute")
 
 	if e.runStatus() == reportinterfaces.ReportRunComplete {
-		// there must be no sql counters to execute
+		// there must be no nodes to execute
 		log.Println("[WARN]", "execution tree already complete")
 		return nil
 	}

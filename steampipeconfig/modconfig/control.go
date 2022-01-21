@@ -230,7 +230,6 @@ func (c *Control) CtyValue() (cty.Value, error) {
 
 // OnDecoded implements HclResource
 func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics {
-
 	// verify the control has either a query or a sql attribute
 	if c.Query == nil && c.SQL == nil {
 		return hcl.Diagnostics{&hcl.Diagnostic{

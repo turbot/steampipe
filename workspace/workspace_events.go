@@ -27,8 +27,9 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	// TODO KAI THINK ABOUT LOCKING
-	prevResourceMaps := w.GetResourceMaps()
+	// get the pre-load resource maps
+	// NOTE: do not call GetResourceMaps - we DO NOT want to lock loadLock
+	prevResourceMaps := w.resourceMaps
 
 	// now reload the workspace
 	err := w.loadWorkspaceMod(ctx)
@@ -46,7 +47,10 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 
 	// clear watcher error
 	w.watcherError = nil
-	resourceMaps := w.GetResourceMaps()
+
+	// reload the resource maps
+	resourceMaps := w.resourceMaps
+
 	// if resources have changed, update introspection tables and prepared statements
 	if !prevResourceMaps.Equals(resourceMaps) {
 		res := client.RefreshSessions(context.Background())

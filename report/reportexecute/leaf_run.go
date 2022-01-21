@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -59,24 +60,30 @@ func NewLeafRun(resource modconfig.ReportingLeafNode, parent reportinterfaces.Re
 
 // Execute implements ReportRunNode
 func (r *LeafRun) Execute(ctx context.Context) error {
-	// todo check whether leafnode has an execute function
-
-	log.Printf("[WARN] %s Execute start", r.Name)
-	// if counter has sql execute it
-	if r.SQL != "" {
-		data, err := r.executeLeafNodeSQL(ctx, r.SQL)
-		if err != nil {
-			log.Printf("[WARN] %s SQL error %v", r.Name, err)
-			// set the error status on the counter - this will raise counter error event
-			r.SetError(err)
-			return err
-		}
-
-		r.Data = data
-		log.Printf("[WARN] %s SetComplete", r.Name)
-		// set complete status on counter - this will raise counter complete event
-		r.SetComplete()
+	if r.SQL == "" {
+		return nil
 	}
+
+	var err error
+	switch node := r.ReportNode.(type) {
+	case *modconfig.ReportControl:
+		r.Data, err = r.executeControl(ctx, node)
+	default:
+		log.Printf("[WARN] %s Execute start", r.Name)
+		// if counter has sql execute it
+		r.Data, err = r.executeLeafNodeSQL(ctx, r.SQL)
+	}
+	if err != nil {
+		log.Printf("[WARN] %s SQL error %v", r.Name, err)
+		// set the error status on the counter - this will raise counter error event
+		r.SetError(err)
+		return err
+	}
+
+	log.Printf("[WARN] %s SetComplete", r.Name)
+	// set complete status on counter - this will raise counter complete event
+	r.SetComplete()
+
 	log.Printf("[WARN] %s Execute DONE", r.Name)
 	return nil
 }
@@ -92,6 +99,15 @@ func (r *LeafRun) executeLeafNodeSQL(ctx context.Context, query string) (*LeafDa
 	log.Printf("[WARN] $$$$$$$$$$$$$$$$$$ EXECUTE SQL END %s $$$$$$$$$$$$$$$$$$ ", r.Name)
 
 	return res, nil
+}
+
+func (r *LeafRun) executeControl(ctx context.Context, reportControl *modconfig.ReportControl) (*LeafData, error) {
+	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, reportControl.Name())
+	if err != nil {
+		return nil, err
+	}
+	executionTree.Execute(ctx)
+	return nil, nil
 }
 
 // GetName implements ReportNodeRun

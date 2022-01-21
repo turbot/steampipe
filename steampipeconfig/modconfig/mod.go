@@ -74,6 +74,8 @@ type Mod struct {
 	// array of direct mod children - excludes resources which are children of other resources
 	children []ModTreeItem
 	metadata *ResourceMetadata
+	// convenient aggregation of all resources
+	resourceMaps *WorkspaceResourceMaps
 }
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
@@ -516,11 +518,15 @@ func (m *Mod) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 		m.Require = m.LegacyRequire
 	}
 
+	// populate resource maps
+	m.populateResourceMaps()
+
 	// initialise our Require
 	if m.Require == nil {
 		return nil
 	}
 	return m.Require.initialise()
+
 }
 
 // AddReference implements HclResource
@@ -551,13 +557,9 @@ func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
 	m.metadata = metadata
 }
 
-// GetChildControls return a flat list of controls underneath the mod
-func (m *Mod) GetChildControls() []*Control {
-	var res []*Control
-	for _, control := range m.Controls {
-		res = append(res, control)
-	}
-	return res
+// GetResourceMaps implements ResourceMapsProvider
+func (m *Mod) GetResourceMaps() *WorkspaceResourceMaps {
+	return m.resourceMaps
 }
 
 func (m *Mod) AddModDependencies(modVersions map[string]*ModVersionConstraint) {
@@ -688,4 +690,29 @@ func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
 		}
 	}
 	return []byte(strings.Join(resLines, "\n")), nil
+}
+
+func (m *Mod) populateResourceMaps() {
+	m.resourceMaps = &WorkspaceResourceMaps{
+		Mod:               m,
+		Mods:              make(map[string]*Mod),
+		Queries:           m.Queries,
+		Controls:          m.Controls,
+		Benchmarks:        m.Benchmarks,
+		Variables:         m.Variables,
+		Reports:           m.Reports,
+		ReportContainers:  m.ReportContainers,
+		ReportCharts:      m.ReportCharts,
+		ReportControls:    m.ReportControls,
+		ReportCounters:    m.ReportCounters,
+		ReportHierarchies: m.ReportHierarchies,
+		ReportImages:      m.ReportImages,
+		ReportTables:      m.ReportTables,
+		ReportTexts:       m.ReportTexts,
+	}
+	m.resourceMaps.PopulateReferences()
+
+	if !m.IsDefaultMod() {
+		m.resourceMaps.Mods[m.Name()] = m
+	}
 }

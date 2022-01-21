@@ -1,5 +1,5 @@
 control "c1"{
-  sql = "select 'pass' as result"
+  sql = query.manual_control.sql
 }
 
 report "r1"{

@@ -3,10 +3,9 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -20,6 +19,7 @@ type ReportControl struct {
 	Title *string  `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width *int     `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	Base  *Control `hcl:"base" json:"-"`
+	SQL   *string  `cty:"sql" hcl:"sql" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
@@ -38,6 +38,7 @@ func NewReportControl(block *hcl.Block, control *Control) *ReportControl {
 		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 		control:         control,
+		SQL:             control.SQL,
 	}
 }
 
@@ -76,6 +77,10 @@ func (c *ReportControl) setBaseProperties() {
 	if c.Title == nil {
 		c.Title = c.Base.Title
 	}
+	if c.SQL == nil {
+		c.SQL = c.Base.SQL
+	}
+
 	// now merge the control properties
 	c.control.Merge(c.Base)
 }
@@ -86,6 +91,8 @@ func (c *ReportControl) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (c *ReportControl) SetMod(mod *Mod) {
 	c.Mod = mod
+	// set mod for our underlying control
+	c.control.SetMod(mod)
 	c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
 }
 
@@ -172,6 +179,10 @@ func (c *ReportControl) Diff(other *ReportControl) *ReportTreeItemDiffs {
 		res.AddPropertyDiff("Title")
 	}
 
+	if !utils.SafeStringsEqual(c.SQL, other.SQL) {
+		res.AddPropertyDiff("Title")
+	}
+
 	if !utils.SafeIntEqual(c.Width, other.Width) {
 		res.AddPropertyDiff("Width")
 	}
@@ -187,7 +198,7 @@ func (c *ReportControl) Diff(other *ReportControl) *ReportTreeItemDiffs {
 
 // GetSQL implements ReportLeafNode
 func (c *ReportControl) GetSQL() string {
-	return ""
+	return typehelpers.SafeString(c.SQL)
 }
 
 // GetWidth implements ReportLeafNode
@@ -201,4 +212,8 @@ func (c *ReportControl) GetWidth() int {
 // GetUnqualifiedName implements ReportLeafNode
 func (c *ReportControl) GetUnqualifiedName() string {
 	return c.UnqualifiedName
+}
+
+func (c *ReportControl) GetControl() *Control {
+	return c.control
 }
