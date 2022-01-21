@@ -116,6 +116,16 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 			event.DeletedCounters = append(event.DeletedCounters, prev)
 		}
 	}
+	for name, prev := range prevResourceMaps.ReportHierarchies {
+		if current, ok := resourceMaps.ReportHierarchies[name]; ok {
+			diff := prev.Diff(current)
+			if diff.HasChanges() {
+				event.ChangedHierarchies = append(event.ChangedHierarchies, diff)
+			}
+		} else {
+			event.DeletedHierarchies = append(event.DeletedHierarchies, prev)
+		}
+	}
 	for name, prev := range prevResourceMaps.ReportImages {
 		if current, ok := resourceMaps.ReportImages[name]; ok {
 			diff := prev.Diff(current)
@@ -171,6 +181,11 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 	for name, p := range resourceMaps.ReportCounters {
 		if _, ok := prevResourceMaps.ReportCounters[name]; !ok {
 			event.NewCounters = append(event.NewCounters, p)
+		}
+	}
+	for name, p := range resourceMaps.ReportHierarchies {
+		if _, ok := prevResourceMaps.ReportHierarchies[name]; !ok {
+			event.NewHierarchies = append(event.NewHierarchies, p)
 		}
 	}
 	for name, p := range resourceMaps.ReportImages {

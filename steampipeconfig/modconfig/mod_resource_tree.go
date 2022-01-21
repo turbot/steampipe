@@ -102,7 +102,6 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		} else {
 			m.Benchmarks[name] = r
 		}
-
 	case *ReportContainer:
 		name := r.Name()
 		// report struct may either be a `report` or a `container`
@@ -132,6 +131,15 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		} else {
 			m.ReportCharts[name] = r
 		}
+	case *ReportControl:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.ReportControls[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item))
+			break
+		} else {
+			m.ReportControls[name] = r
+		}
 	case *ReportCounter:
 		name := r.Name()
 		// check for dupes
@@ -141,14 +149,14 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		} else {
 			m.ReportCounters[name] = r
 		}
-	case *ReportControl:
+	case *ReportHierarchy:
 		name := r.Name()
 		// check for dupes
-		if _, ok := m.ReportControls[name]; ok {
+		if _, ok := m.ReportHierarchies[name]; ok {
 			diags = append(diags, duplicateResourceDiagnostics(item))
 			break
 		} else {
-			m.ReportControls[name] = r
+			m.ReportHierarchies[name] = r
 		}
 	case *ReportImage:
 		name := r.Name()

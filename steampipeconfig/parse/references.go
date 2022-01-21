@@ -17,6 +17,7 @@ var referenceBlockTypes = []string{
 	modconfig.BlockTypeContainer,
 	modconfig.BlockTypeChart,
 	modconfig.BlockTypeCounter,
+	modconfig.BlockTypeHierarchy,
 	modconfig.BlockTypeImage,
 	modconfig.BlockTypeTable,
 	modconfig.BlockTypeText,

@@ -81,6 +81,10 @@ var ModBlockSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
+			Type:       modconfig.BlockTypeHierarchy,
+			LabelNames: []string{"name"},
+		},
+		{
 			Type:       modconfig.BlockTypeImage,
 			LabelNames: []string{"name"},
 		},
@@ -117,6 +121,9 @@ var ReportBlockSchema = &hcl.BodySchema{
 		},
 		{
 			Type: modconfig.BlockTypeCounter,
+		},
+		{
+			Type: modconfig.BlockTypeHierarchy,
 		},
 		{
 			Type: modconfig.BlockTypeImage,
