@@ -35,6 +35,11 @@ func (m *Mod) WalkResources(resourceFunc func(item HclResource) bool) {
 			return
 		}
 	}
+	for _, r := range m.ReportControls {
+		if !resourceFunc(r) {
+			return
+		}
+	}
 	for _, r := range m.ReportCounters {
 		if !resourceFunc(r) {
 			return
@@ -117,6 +122,9 @@ func (m *Mod) GetResource(parsedName *ParsedResourceName) (resource HclResource,
 		resource, found = m.Benchmarks[longName]
 	case BlockTypeControl:
 		resource, found = m.Controls[longName]
+		if !found {
+			resource, found = m.ReportControls[longName]
+		}
 	case BlockTypeReport:
 		resource, found = m.Reports[longName]
 	case BlockTypeContainer:

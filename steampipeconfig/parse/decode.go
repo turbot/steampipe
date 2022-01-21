@@ -38,7 +38,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			Detail:   err.Error()})
 	}
 	for _, block := range blocks {
-		_, res := decodeBlock(runCtx, block)
+		_, res := decodeBlock(block, runCtx.CurrentMod, runCtx)
 		if !res.Success() {
 			diags = append(diags, res.Diags...)
 			continue
@@ -48,7 +48,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 	return diags
 }
 
-func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource, *decodeResult) {
+func decodeBlock(block *hcl.Block, parent modconfig.ModTreeItem, runCtx *RunContext) ([]modconfig.HclResource, *decodeResult) {
 	var resource modconfig.HclResource
 	var resources []modconfig.HclResource
 	var res = &decodeResult{}
@@ -83,14 +83,20 @@ func decodeBlock(runCtx *RunContext, block *hcl.Block) ([]modconfig.HclResource,
 		}
 
 	case modconfig.BlockTypeContainer, modconfig.BlockTypeReport:
-		resource, res = decodeContainerReport(block, runCtx)
+		resource, res = decodeReportContainer(block, runCtx)
 		resources = append(resources, resource)
 	case modconfig.BlockTypeVariable:
 		resource, res = decodeVariable(block, runCtx)
 		resources = append(resources, resource)
 	case modconfig.BlockTypeControl:
-		resource, res = decodeControl(block, runCtx)
-		resources = append(resources, resource)
+		switch parent.(type) {
+		case *modconfig.ReportContainer:
+			resource, res = decodeReportControl(block, runCtx)
+			resources = append(resources, resource)
+		default:
+			resource, res = decodeControl(block, runCtx)
+			resources = append(resources, resource)
+		}
 	case modconfig.BlockTypeBenchmark:
 		resource, res = decodeBenchmark(block, runCtx)
 		resources = append(resources, resource)
@@ -398,19 +404,35 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 		}
 	}
 
-	// verify the control has either a query or a sql attribute
-	if c.Query == nil && c.SQL == nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s must define either a 'sql' property or a 'query' property", c.FullName),
-			Subject:  &block.DefRange,
-		})
-	}
-
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
 	return c, res
+}
+
+func decodeReportControl(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportControl, *decodeResult) {
+	// first decode the block as a control
+	control, res := decodeControl(block, runCtx)
+	if !res.Success() {
+		return nil, res
+	}
+
+	// now decode the block as a controlReport
+	// (we can still use ControlBlockSchema as it includes the report properties)
+	content, diags := block.Body.Content(ControlBlockSchema)
+	res.handleDecodeDiags(diags)
+
+	reportControl := modconfig.NewReportControl(block, control)
+	diags = decodeProperty(content, "title", &reportControl.Title, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "base", &reportControl.Base, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "width", &reportControl.Width, runCtx)
+	res.handleDecodeDiags(diags)
+
+	return reportControl, res
 }
 
 func decodeControlArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName string) (*modconfig.QueryArgs, hcl.Diagnostics) {
@@ -443,7 +465,7 @@ func decodeControlArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlNam
 	return params, diags
 }
 
-func decodeContainerReport(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContainer, *decodeResult) {
+func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContainer, *decodeResult) {
 	res := &decodeResult{}
 
 	content, diags := block.Body.Content(ReportBlockSchema)
@@ -474,7 +496,7 @@ func decodeContainerReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 	var children []modconfig.ModTreeItem
 	if len(content.Blocks) > 0 {
 		var childrenRes *decodeResult
-		children, childrenRes = decodeInlineChildren(content, runCtx)
+		children, childrenRes = decodeInlineChildren(content, report, runCtx)
 		// now set children
 		report.SetChildren(children)
 		res.Merge(childrenRes)

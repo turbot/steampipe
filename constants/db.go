@@ -86,6 +86,7 @@ const (
 	IntrospectionTableReport        = "steampipe_report"
 	IntrospectionTableContainer     = "steampipe_report_container"
 	IntrospectionTableReportChart   = "steampipe_report_chart"
+	IntrospectionTableReportControl = "steampipe_report_control"
 	IntrospectionTableReportCounter = "steampipe_report_counter"
 	IntrospectionTableReportImage   = "steampipe_report_image"
 	IntrospectionTableReportTable   = "steampipe_report_table"
