@@ -31,19 +31,20 @@ type Workspace struct {
 
 	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
 
-	Queries          map[string]*modconfig.Query
-	Controls         map[string]*modconfig.Control
-	Benchmarks       map[string]*modconfig.Benchmark
-	Mods             map[string]*modconfig.Mod
-	Reports          map[string]*modconfig.ReportContainer
-	ReportContainers map[string]*modconfig.ReportContainer
-	ReportCharts     map[string]*modconfig.ReportChart
-	ReportControls   map[string]*modconfig.ReportControl
-	ReportCounters   map[string]*modconfig.ReportCounter
-	ReportImages     map[string]*modconfig.ReportImage
-	ReportTables     map[string]*modconfig.ReportTable
-	ReportTexts      map[string]*modconfig.ReportText
-	Variables        map[string]*modconfig.Variable
+	Queries           map[string]*modconfig.Query
+	Controls          map[string]*modconfig.Control
+	Benchmarks        map[string]*modconfig.Benchmark
+	Mods              map[string]*modconfig.Mod
+	Reports           map[string]*modconfig.ReportContainer
+	ReportContainers  map[string]*modconfig.ReportContainer
+	ReportCharts      map[string]*modconfig.ReportChart
+	ReportControls    map[string]*modconfig.ReportControl
+	ReportCounters    map[string]*modconfig.ReportCounter
+	ReportHierarchies map[string]*modconfig.ReportHierarchy
+	ReportImages      map[string]*modconfig.ReportImage
+	ReportTables      map[string]*modconfig.ReportTable
+	ReportTexts       map[string]*modconfig.ReportText
+	Variables         map[string]*modconfig.Variable
 
 	//local  resources keyed by unqualifed name
 	LocalQueries    map[string]*modconfig.Query
@@ -173,6 +174,7 @@ func (w *Workspace) reset() {
 	w.ReportCharts = make(map[string]*modconfig.ReportChart)
 	w.ReportControls = make(map[string]*modconfig.ReportControl)
 	w.ReportCounters = make(map[string]*modconfig.ReportCounter)
+	w.ReportHierarchies = make(map[string]*modconfig.ReportHierarchy)
 	w.ReportImages = make(map[string]*modconfig.ReportImage)
 	w.ReportTables = make(map[string]*modconfig.ReportTable)
 	w.ReportTexts = make(map[string]*modconfig.ReportText)
@@ -233,6 +235,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	w.ReportCharts = w.buildReportChartMap(runCtx.LoadedDependencyMods)
 	w.ReportControls = w.buildReportControlMap(runCtx.LoadedDependencyMods)
 	w.ReportCounters = w.buildReportCounterMap(runCtx.LoadedDependencyMods)
+	w.ReportHierarchies = w.buildReportHierarchyMap(runCtx.LoadedDependencyMods)
 	w.ReportImages = w.buildReportImageMap(runCtx.LoadedDependencyMods)
 	w.ReportTables = w.buildReportTableMap(runCtx.LoadedDependencyMods)
 	w.ReportTexts = w.buildReportTextMap(runCtx.LoadedDependencyMods)

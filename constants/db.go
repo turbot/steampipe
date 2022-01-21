@@ -79,20 +79,21 @@ var ReservedConnectionNames = []string{
 
 // introspection table names
 const (
-	IntrospectionTableQuery         = "steampipe_query"
-	IntrospectionTableControl       = "steampipe_control"
-	IntrospectionTableBenchmark     = "steampipe_benchmark"
-	IntrospectionTableMod           = "steampipe_mod"
-	IntrospectionTableReport        = "steampipe_report"
-	IntrospectionTableContainer     = "steampipe_report_container"
-	IntrospectionTableReportChart   = "steampipe_report_chart"
-	IntrospectionTableReportControl = "steampipe_report_control"
-	IntrospectionTableReportCounter = "steampipe_report_counter"
-	IntrospectionTableReportImage   = "steampipe_report_image"
-	IntrospectionTableReportTable   = "steampipe_report_table"
-	IntrospectionTableReportText    = "steampipe_report_text"
-	IntrospectionTableVariable      = "steampipe_variable"
-	IntrospectionTableReference     = "steampipe_reference"
+	IntrospectionTableQuery           = "steampipe_query"
+	IntrospectionTableControl         = "steampipe_control"
+	IntrospectionTableBenchmark       = "steampipe_benchmark"
+	IntrospectionTableMod             = "steampipe_mod"
+	IntrospectionTableReport          = "steampipe_report"
+	IntrospectionTableContainer       = "steampipe_report_container"
+	IntrospectionTableReportChart     = "steampipe_report_chart"
+	IntrospectionTableReportControl   = "steampipe_report_control"
+	IntrospectionTableReportCounter   = "steampipe_report_counter"
+	IntrospectionTableReportHierarchy = "steampipe_report_hierarchy"
+	IntrospectionTableReportImage     = "steampipe_report_image"
+	IntrospectionTableReportTable     = "steampipe_report_table"
+	IntrospectionTableReportText      = "steampipe_report_text"
+	IntrospectionTableVariable        = "steampipe_variable"
+	IntrospectionTableReference       = "steampipe_reference"
 )
 
 // Invoker is a pseudoEnum for the command/operation which starts the service

@@ -10,8 +10,8 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// ReportChart is a struct representing a leaf reporting node
-type ReportChart struct {
+// ReportHierarchy is a struct representing a leaf reporting node
+type ReportHierarchy struct {
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
@@ -21,15 +21,8 @@ type ReportChart struct {
 	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 
-	Type *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Base *ReportChart `hcl:"base" json:"-"`
-
-	Legend     *ReportChartLegend   `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
-	SeriesList []*ReportChartSeries `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
-	Axes       *ReportChartAxes     `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
-	Grouping   *string              `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
-
-	Series map[string]*ReportChartSeries `cty:"series" json:"series"`
+	Type *string          `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Base *ReportHierarchy `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
@@ -39,8 +32,8 @@ type ReportChart struct {
 	metadata *ResourceMetadata
 }
 
-func NewReportChart(block *hcl.Block) *ReportChart {
-	return &ReportChart{
+func NewReportHierarchy(block *hcl.Block) *ReportHierarchy {
+	return &ReportHierarchy{
 		DeclRange:       block.DefRange,
 		ShortName:       block.Labels[0],
 		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
@@ -48,36 +41,29 @@ func NewReportChart(block *hcl.Block) *ReportChart {
 	}
 }
 
-func (c *ReportChart) Equals(other *ReportChart) bool {
+func (c *ReportHierarchy) Equals(other *ReportHierarchy) bool {
 	diff := c.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (c *ReportChart) CtyValue() (cty.Value, error) {
+func (c *ReportHierarchy) CtyValue() (cty.Value, error) {
 	return getCtyValue(c)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'chart.<shortName>'
-func (c *ReportChart) Name() string {
+func (c *ReportHierarchy) Name() string {
 	return c.FullName
 }
 
 // OnDecoded implements HclResource
-func (c *ReportChart) OnDecoded(*hcl.Block) hcl.Diagnostics {
+func (c *ReportHierarchy) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	c.setBaseProperties()
-	// populate series map
-	if len(c.SeriesList) > 0 {
-		c.Series = make(map[string]*ReportChartSeries, len(c.SeriesList))
-		for _, s := range c.SeriesList {
-			c.Series[s.Name] = s
-		}
-	}
 	return nil
 }
 
-func (c *ReportChart) setBaseProperties() {
+func (c *ReportHierarchy) setBaseProperties() {
 	if c.Base == nil {
 		return
 	}
@@ -86,23 +72,6 @@ func (c *ReportChart) setBaseProperties() {
 	}
 	if c.Type == nil {
 		c.Type = c.Base.Type
-	}
-	// TODO KAI legens,series,axes
-
-	if c.Axes == nil {
-		c.Axes = c.Base.Axes
-	}
-	if c.Grouping == nil {
-		c.Grouping = c.Base.Grouping
-	}
-	if c.Legend == nil {
-		c.Legend = c.Base.Legend
-	}
-	if c.Series == nil {
-		c.Series = c.Base.Series
-	}
-	if c.SeriesList == nil {
-		c.SeriesList = c.Base.SeriesList
 	}
 
 	if c.Width == nil {
@@ -114,57 +83,57 @@ func (c *ReportChart) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (c *ReportChart) AddReference(*ResourceReference) {}
+func (c *ReportHierarchy) AddReference(*ResourceReference) {}
 
 // SetMod implements HclResource
-func (c *ReportChart) SetMod(mod *Mod) {
+func (c *ReportHierarchy) SetMod(mod *Mod) {
 	c.Mod = mod
 	c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
 }
 
 // GetMod implements HclResource
-func (c *ReportChart) GetMod() *Mod {
+func (c *ReportHierarchy) GetMod() *Mod {
 	return c.Mod
 }
 
 // GetDeclRange implements HclResource
-func (c *ReportChart) GetDeclRange() *hcl.Range {
+func (c *ReportHierarchy) GetDeclRange() *hcl.Range {
 	return &c.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (c *ReportChart) AddParent(parent ModTreeItem) error {
+func (c *ReportHierarchy) AddParent(parent ModTreeItem) error {
 	c.parents = append(c.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (c *ReportChart) GetParents() []ModTreeItem {
+func (c *ReportHierarchy) GetParents() []ModTreeItem {
 	return c.parents
 }
 
 // GetChildren implements ModTreeItem
-func (c *ReportChart) GetChildren() []ModTreeItem {
+func (c *ReportHierarchy) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (c *ReportChart) GetTitle() string {
+func (c *ReportHierarchy) GetTitle() string {
 	return typehelpers.SafeString(c.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (c *ReportChart) GetDescription() string {
+func (c *ReportHierarchy) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (c *ReportChart) GetTags() map[string]string {
+func (c *ReportHierarchy) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (c *ReportChart) GetPaths() []NodePath {
+func (c *ReportHierarchy) GetPaths() []NodePath {
 	// lazy load
 	if len(c.Paths) == 0 {
 		c.SetPaths()
@@ -174,7 +143,7 @@ func (c *ReportChart) GetPaths() []NodePath {
 }
 
 // SetPaths implements ModTreeItem
-func (c *ReportChart) SetPaths() {
+func (c *ReportHierarchy) SetPaths() {
 	for _, parent := range c.parents {
 		for _, parentPath := range parent.GetPaths() {
 			c.Paths = append(c.Paths, append(parentPath, c.Name()))
@@ -183,16 +152,16 @@ func (c *ReportChart) SetPaths() {
 }
 
 // GetMetadata implements ResourceWithMetadata
-func (c *ReportChart) GetMetadata() *ResourceMetadata {
+func (c *ReportHierarchy) GetMetadata() *ResourceMetadata {
 	return c.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata
-func (c *ReportChart) SetMetadata(metadata *ResourceMetadata) {
+func (c *ReportHierarchy) SetMetadata(metadata *ResourceMetadata) {
 	c.metadata = metadata
 }
 
-func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
+func (c *ReportHierarchy) Diff(other *ReportHierarchy) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
 		Item: c,
 		Name: c.Name(),
@@ -218,48 +187,18 @@ func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
 		res.AddPropertyDiff("Type")
 	}
 
-	if !utils.SafeStringsEqual(c.Grouping, other.Grouping) {
-		res.AddPropertyDiff("Grouping")
-	}
-
-	if len(c.SeriesList) != len(other.SeriesList) {
-		res.AddPropertyDiff("Series")
-	} else {
-		for i, s := range c.Series {
-			if !s.Equals(other.Series[i]) {
-				res.AddPropertyDiff("Series")
-			}
-		}
-	}
-
-	if c.Legend != nil {
-		if !c.Legend.Equals(other.Legend) {
-			res.AddPropertyDiff("Series")
-		}
-	} else if other.Legend != nil {
-		res.AddPropertyDiff("Series")
-	}
-
-	if c.Axes != nil {
-		if !c.Axes.Equals(other.Axes) {
-			res.AddPropertyDiff("Series")
-		}
-	} else if other.Axes != nil {
-		res.AddPropertyDiff("Series")
-	}
-
 	res.populateChildDiffs(c, other)
 
 	return res
 }
 
 // GetSQL implements ReportLeafNode
-func (c *ReportChart) GetSQL() string {
+func (c *ReportHierarchy) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)
 }
 
 // GetWidth implements ReportLeafNode
-func (c *ReportChart) GetWidth() int {
+func (c *ReportHierarchy) GetWidth() int {
 	if c.Width == nil {
 		return 0
 	}
@@ -267,6 +206,6 @@ func (c *ReportChart) GetWidth() int {
 }
 
 // GetUnqualifiedName implements ReportLeafNode
-func (c *ReportChart) GetUnqualifiedName() string {
+func (c *ReportHierarchy) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }

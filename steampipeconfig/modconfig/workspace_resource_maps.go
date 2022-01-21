@@ -3,38 +3,40 @@ package modconfig
 // WorkspaceResourceMaps is a struct containing maps of all mod resource types
 // This is provided to avoid db needing to reference workspace package
 type WorkspaceResourceMaps struct {
-	Mods             map[string]*Mod
-	Queries          map[string]*Query
-	Controls         map[string]*Control
-	Benchmarks       map[string]*Benchmark
-	Variables        map[string]*Variable
-	Reports          map[string]*ReportContainer
-	ReportContainers map[string]*ReportContainer
-	ReportCharts     map[string]*ReportChart
-	ReportControls   map[string]*ReportControl
-	ReportCounters   map[string]*ReportCounter
-	ReportImages     map[string]*ReportImage
-	ReportTables     map[string]*ReportTable
-	ReportTexts      map[string]*ReportText
-	References       map[string]*ResourceReference
+	Mods              map[string]*Mod
+	Queries           map[string]*Query
+	Controls          map[string]*Control
+	Benchmarks        map[string]*Benchmark
+	Variables         map[string]*Variable
+	Reports           map[string]*ReportContainer
+	ReportContainers  map[string]*ReportContainer
+	ReportCharts      map[string]*ReportChart
+	ReportControls    map[string]*ReportControl
+	ReportCounters    map[string]*ReportCounter
+	ReportHierarchies map[string]*ReportHierarchy
+	ReportImages      map[string]*ReportImage
+	ReportTables      map[string]*ReportTable
+	ReportTexts       map[string]*ReportText
+	References        map[string]*ResourceReference
 }
 
 func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
 	return &WorkspaceResourceMaps{
-		Mods:             make(map[string]*Mod),
-		Queries:          make(map[string]*Query),
-		Controls:         make(map[string]*Control),
-		Benchmarks:       make(map[string]*Benchmark),
-		Variables:        make(map[string]*Variable),
-		Reports:          make(map[string]*ReportContainer),
-		ReportContainers: make(map[string]*ReportContainer),
-		ReportCharts:     make(map[string]*ReportChart),
-		ReportControls:   make(map[string]*ReportControl),
-		ReportCounters:   make(map[string]*ReportCounter),
-		ReportImages:     make(map[string]*ReportImage),
-		ReportTables:     make(map[string]*ReportTable),
-		ReportTexts:      make(map[string]*ReportText),
-		References:       make(map[string]*ResourceReference),
+		Mods:              make(map[string]*Mod),
+		Queries:           make(map[string]*Query),
+		Controls:          make(map[string]*Control),
+		Benchmarks:        make(map[string]*Benchmark),
+		Variables:         make(map[string]*Variable),
+		Reports:           make(map[string]*ReportContainer),
+		ReportContainers:  make(map[string]*ReportContainer),
+		ReportCharts:      make(map[string]*ReportChart),
+		ReportControls:    make(map[string]*ReportControl),
+		ReportCounters:    make(map[string]*ReportCounter),
+		ReportHierarchies: make(map[string]*ReportHierarchy),
+		ReportImages:      make(map[string]*ReportImage),
+		ReportTables:      make(map[string]*ReportTable),
+		ReportTexts:       make(map[string]*ReportText),
+		References:        make(map[string]*ResourceReference),
 	}
 }
 
@@ -169,6 +171,19 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 		}
 	}
 
+	for name, hierarchies := range m.ReportHierarchies {
+		if otherHierarchy, ok := other.ReportHierarchies[name]; !ok {
+			return false
+		} else if !hierarchies.Equals(otherHierarchy) {
+			return false
+		}
+	}
+	for name := range other.ReportHierarchies {
+		if _, ok := m.ReportHierarchies[name]; !ok {
+			return false
+		}
+	}
+
 	for name, images := range m.ReportImages {
 		if otherImage, ok := other.ReportImages[name]; !ok {
 			return false
@@ -278,6 +293,7 @@ func (m *WorkspaceResourceMaps) Empty() bool {
 		len(m.ReportCharts)+
 		len(m.ReportControls)+
 		len(m.ReportCounters)+
+		len(m.ReportHierarchies)+
 		len(m.ReportImages)+
 		len(m.ReportTables)+
 		len(m.ReportTexts)+

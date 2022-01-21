@@ -52,19 +52,20 @@ type Mod struct {
 	VersionString string `cty:"version"`
 	Version       *semver.Version
 
-	Queries          map[string]*Query
-	Controls         map[string]*Control
-	Benchmarks       map[string]*Benchmark
-	Reports          map[string]*ReportContainer
-	ReportContainers map[string]*ReportContainer
-	ReportCharts     map[string]*ReportChart
-	ReportCounters   map[string]*ReportCounter
-	ReportControls   map[string]*ReportControl
-	ReportImages     map[string]*ReportImage
-	ReportTables     map[string]*ReportTable
-	ReportTexts      map[string]*ReportText
-	Variables        map[string]*Variable
-	Locals           map[string]*Local
+	Queries           map[string]*Query
+	Controls          map[string]*Control
+	Benchmarks        map[string]*Benchmark
+	Reports           map[string]*ReportContainer
+	ReportContainers  map[string]*ReportContainer
+	ReportCharts      map[string]*ReportChart
+	ReportCounters    map[string]*ReportCounter
+	ReportControls    map[string]*ReportControl
+	ReportHierarchies map[string]*ReportHierarchy
+	ReportImages      map[string]*ReportImage
+	ReportTables      map[string]*ReportTable
+	ReportTexts       map[string]*ReportText
+	Variables         map[string]*Variable
+	Locals            map[string]*Local
 
 	// ModPath is the installation location of the mod
 	ModPath   string
@@ -77,21 +78,22 @@ type Mod struct {
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	mod := &Mod{
-		ShortName:        shortName,
-		FullName:         fmt.Sprintf("mod.%s", shortName),
-		Queries:          make(map[string]*Query),
-		Controls:         make(map[string]*Control),
-		Benchmarks:       make(map[string]*Benchmark),
-		Reports:          make(map[string]*ReportContainer),
-		ReportContainers: make(map[string]*ReportContainer),
-		ReportCharts:     make(map[string]*ReportChart),
-		ReportControls:   make(map[string]*ReportControl),
-		ReportCounters:   make(map[string]*ReportCounter),
-		ReportImages:     make(map[string]*ReportImage),
-		ReportTables:     make(map[string]*ReportTable),
-		ReportTexts:      make(map[string]*ReportText),
-		Variables:        make(map[string]*Variable),
-		Locals:           make(map[string]*Local),
+		ShortName:         shortName,
+		FullName:          fmt.Sprintf("mod.%s", shortName),
+		Queries:           make(map[string]*Query),
+		Controls:          make(map[string]*Control),
+		Benchmarks:        make(map[string]*Benchmark),
+		Reports:           make(map[string]*ReportContainer),
+		ReportContainers:  make(map[string]*ReportContainer),
+		ReportCharts:      make(map[string]*ReportChart),
+		ReportControls:    make(map[string]*ReportControl),
+		ReportCounters:    make(map[string]*ReportCounter),
+		ReportHierarchies: make(map[string]*ReportHierarchy),
+		ReportImages:      make(map[string]*ReportImage),
+		ReportTables:      make(map[string]*ReportTable),
+		ReportTexts:       make(map[string]*ReportText),
+		Variables:         make(map[string]*Variable),
+		Locals:            make(map[string]*Local),
 
 		ModPath:   modPath,
 		DeclRange: defRange,
@@ -224,6 +226,17 @@ func (m *Mod) Equals(other *Mod) bool {
 			return false
 		}
 	}
+	// report controls
+	for k := range m.ReportControls {
+		if _, ok := other.ReportControls[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportControls {
+		if _, ok := m.ReportControls[k]; !ok {
+			return false
+		}
+	}
 	// report counters
 	for k := range m.ReportCounters {
 		if _, ok := other.ReportCounters[k]; !ok {
@@ -235,14 +248,14 @@ func (m *Mod) Equals(other *Mod) bool {
 			return false
 		}
 	}
-	// report controls
-	for k := range m.ReportControls {
-		if _, ok := other.ReportControls[k]; !ok {
+	// report hierarchies
+	for k := range m.ReportHierarchies {
+		if _, ok := other.ReportHierarchies[k]; !ok {
 			return false
 		}
 	}
-	for k := range other.ReportControls {
-		if _, ok := m.ReportControls[k]; !ok {
+	for k := range other.ReportHierarchies {
+		if _, ok := m.ReportHierarchies[k]; !ok {
 			return false
 		}
 	}

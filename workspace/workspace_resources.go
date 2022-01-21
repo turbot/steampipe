@@ -78,19 +78,20 @@ func (w *Workspace) GetChildControls() []*modconfig.Control {
 // NOTE: this function DOES NOT LOCK the load lock so should only be called in a context where the file watcher is not running
 func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 	workspaceMap := &modconfig.WorkspaceResourceMaps{
-		Mods:             make(map[string]*modconfig.Mod),
-		Queries:          w.Queries,
-		Controls:         w.Controls,
-		Benchmarks:       w.Benchmarks,
-		Variables:        w.Variables,
-		Reports:          w.Reports,
-		ReportContainers: w.ReportContainers,
-		ReportCharts:     w.ReportCharts,
-		ReportControls:   w.ReportControls,
-		ReportCounters:   w.ReportCounters,
-		ReportImages:     w.ReportImages,
-		ReportTables:     w.ReportTables,
-		ReportTexts:      w.ReportTexts,
+		Mods:              make(map[string]*modconfig.Mod),
+		Queries:           w.Queries,
+		Controls:          w.Controls,
+		Benchmarks:        w.Benchmarks,
+		Variables:         w.Variables,
+		Reports:           w.Reports,
+		ReportContainers:  w.ReportContainers,
+		ReportCharts:      w.ReportCharts,
+		ReportControls:    w.ReportControls,
+		ReportCounters:    w.ReportCounters,
+		ReportHierarchies: w.ReportHierarchies,
+		ReportImages:      w.ReportImages,
+		ReportTables:      w.ReportTables,
+		ReportTexts:       w.ReportTexts,
 	}
 	workspaceMap.PopulateReferences()
 
@@ -237,6 +238,21 @@ func (w *Workspace) buildReportCounterMap(modMap modconfig.ModMap) map[string]*m
 
 	for _, mod := range modMap {
 		for _, p := range mod.ReportCounters {
+			res[p.Name()] = p
+		}
+	}
+	return res
+}
+
+func (w *Workspace) buildReportHierarchyMap(modMap modconfig.ModMap) map[string]*modconfig.ReportHierarchy {
+	var res = make(map[string]*modconfig.ReportHierarchy)
+
+	for _, p := range w.Mod.ReportHierarchies {
+		res[p.Name()] = p
+	}
+
+	for _, mod := range modMap {
+		for _, p := range mod.ReportHierarchies {
 			res[p.Name()] = p
 		}
 	}
