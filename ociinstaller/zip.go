@@ -37,15 +37,6 @@ func ungzip(sourceFile string, destDir string) (string, error) {
 	return destFile, nil
 }
 
-func ensureParentPath(path string, fileMode os.FileMode) error {
-	parentPath := filepath.Dir(path)
-	_, err := os.Stat(parentPath)
-	if os.IsNotExist(err) {
-		return os.MkdirAll(parentPath, fileMode)
-	}
-	return err
-}
-
 func fileExists(filePath string) bool {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return false

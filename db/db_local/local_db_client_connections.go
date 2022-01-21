@@ -109,19 +109,6 @@ func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampip
 	return connectionQueries, res
 }
 
-func (c *LocalDbClient) updateConnectionMap() error {
-	// load the connection state and cache it!
-	log.Println("[TRACE]", "retrieving connection map")
-	connectionMap, err := steampipeconfig.GetConnectionState(c.client.ForeignSchemas())
-	if err != nil {
-		return err
-	}
-	log.Println("[TRACE]", "setting connection map")
-	c.connectionMap = &connectionMap
-
-	return nil
-}
-
 func getSchemaQueries(updates steampipeconfig.ConnectionDataMap, failures []*steampipeconfig.ValidationFailure) []string {
 	var schemaQueries []string
 	for connectionName, connectionData := range updates {

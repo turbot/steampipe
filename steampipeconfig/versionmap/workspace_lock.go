@@ -73,12 +73,6 @@ func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 	return res, nil
 }
 
-// populate MissingVersions and UnreferencedVersions
-func (l *WorkspaceLock) validate() error {
-
-	return nil
-}
-
 // getInstalledMods returns a map installed mods, and the versions installed for each
 func (l *WorkspaceLock) getInstalledMods() error {
 	// recursively search for all the mod.sp files under the .steampipe/mods folder, then build the mod name from the file path
