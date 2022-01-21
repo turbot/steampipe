@@ -175,7 +175,10 @@ func (l *WorkspaceLock) Save() error {
 
 // Delete deletes the lock file
 func (l *WorkspaceLock) Delete() error {
-	return os.Remove(filepaths.WorkspaceLockPath(l.WorkspacePath))
+	if helpers.FileExists(filepaths.WorkspaceLockPath(l.WorkspacePath)) {
+		return os.Remove(filepaths.WorkspaceLockPath(l.WorkspacePath))
+	}
+	return nil
 }
 
 // DeleteMods removes mods from the lock file then, if it is empty, deletes the file

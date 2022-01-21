@@ -59,7 +59,10 @@ func readRow(rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]inter
 	for i := range columnValues {
 		resultPtrs[i] = &columnValues[i]
 	}
-	rows.Scan(resultPtrs...)
+	err := rows.Scan(resultPtrs...)
+	if err != nil {
+		return nil, err
+	}
 
 	return populateRow(columnValues, colTypes), nil
 }
