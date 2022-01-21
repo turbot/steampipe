@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 
-	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -17,7 +16,7 @@ type LeafRun struct {
 	Title         string                      `json:"title,omitempty"`
 	Width         int                         `json:"width,omitempty"`
 	SQL           string                      `json:"sql,omitempty"`
-	Data          [][]interface{}             `json:"data,omitempty"`
+	Data          *LeafData                   `json:"data,omitempty"`
 	Error         error                       `json:"error,omitempty"`
 	ReportNode    modconfig.ReportingLeafNode `json:"properties"`
 	NodeType      string                      `json:"node_type"`
@@ -82,25 +81,13 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 	return nil
 }
 
-func (r *LeafRun) executeLeafNodeSQL(ctx context.Context, query string) ([][]interface{}, error) {
+func (r *LeafRun) executeLeafNodeSQL(ctx context.Context, query string) (*LeafData, error) {
 	log.Printf("[WARN] !!!!!!!!!!!!!!!!!!!!!! EXECUTE SQL START %s !!!!!!!!!!!!!!!!!!!!!!", r.Name)
 	queryResult, err := r.executionTree.client.ExecuteSync(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	var res = make([][]interface{}, len(queryResult.Rows)+1)
-	var columns = make([]interface{}, len(queryResult.ColTypes))
-	for i, c := range queryResult.ColTypes {
-		columns[i] = c.Name()
-	}
-	res[0] = columns
-	for i, row := range queryResult.Rows {
-		rowData := make([]interface{}, len(queryResult.ColTypes))
-		for j, columnVal := range row.(*queryresult.RowResult).Data {
-			rowData[j] = columnVal
-		}
-		res[i+1] = rowData
-	}
+	var res = NewLeafData(queryResult)
 
 	log.Printf("[WARN] $$$$$$$$$$$$$$$$$$ EXECUTE SQL END %s $$$$$$$$$$$$$$$$$$ ", r.Name)
 
