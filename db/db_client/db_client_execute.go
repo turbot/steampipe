@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/spf13/viper"
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/statushooks"
@@ -194,6 +197,12 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 				result.StreamError(err)
 				continueToNext = false
 			} else {
+				// TACTICAL
+				// determine whether to stop the spinner as soon as we stream a row or to wait for completeion
+				if isStreamingOutput(viper.GetString(constants.ArgOutput)) {
+					statushooks.Done(ctx)
+				}
+
 				result.StreamRow(rowResult)
 			}
 			// update the status message with the count of rows that have already been fetched
@@ -208,6 +217,10 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 
 	// set the time that it took for this one to execute
 	result.Duration <- time.Since(start)
+}
+
+func isStreamingOutput(outputFormat string) bool {
+	return helpers.StringSliceContains([]string{constants.OutputFormatCSV, constants.OutputFormatLine}, outputFormat)
 }
 
 func readRowContext(ctx context.Context, rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]interface{}, error) {
