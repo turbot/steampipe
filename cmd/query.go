@@ -113,6 +113,8 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	if interactiveMode {
 		queryexecute.RunInteractiveSession(ctx, initData)
 	} else {
+		// NOTE: disable any status updates - we do not want 'loading' output from any queries
+		ctx = statushooks.DisableStatusHooks(ctx)
 		// set global exit code
 		exitCode = queryexecute.RunBatchSession(ctx, initData)
 	}
