@@ -66,7 +66,7 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 
 	var err error
 	switch node := r.ReportNode.(type) {
-	case *modconfig.ReportControl:
+	case *modconfig.Control:
 		r.Data, err = r.executeControl(ctx, node)
 	default:
 		log.Printf("[WARN] %s Execute start", r.Name)
@@ -101,7 +101,7 @@ func (r *LeafRun) executeLeafNodeSQL(ctx context.Context, query string) (*LeafDa
 	return res, nil
 }
 
-func (r *LeafRun) executeControl(ctx context.Context, reportControl *modconfig.ReportControl) (*LeafData, error) {
+func (r *LeafRun) executeControl(ctx context.Context, reportControl *modconfig.Control) (*LeafData, error) {
 	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, reportControl.Name())
 	if err != nil {
 		return nil, err

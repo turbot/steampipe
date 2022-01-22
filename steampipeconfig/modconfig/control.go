@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/steampipe/utils"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -12,34 +14,36 @@ import (
 
 // Control is a struct representing the Control resource
 type Control struct {
-	ShortName        string
-	FullName         string            `cty:"name"`
-	Description      *string           `cty:"description" column:"description,text"`
-	Documentation    *string           `cty:"documentation"  column:"documentation,text"`
-	SearchPath       *string           `cty:"search_path"  column:"search_path,text"`
-	SearchPathPrefix *string           `cty:"search_path_prefix"  column:"search_path_prefix,text"`
-	Severity         *string           `cty:"severity"  column:"severity,text"`
-	SQL              *string           `cty:"sql"  column:"sql,text"`
-	Tags             map[string]string `cty:"tags"  column:"tags,jsonb"`
-	Title            *string           `cty:"title"  column:"title,text"`
+	ShortName        string            `json:"-"`
+	FullName         string            `cty:"name" json:"-"`
+	Description      *string           `cty:"description" column:"description,text" json:"-"`
+	Documentation    *string           `cty:"documentation"  column:"documentation,text" json:"-"`
+	SearchPath       *string           `cty:"search_path"  column:"search_path,text" json:"-"`
+	SearchPathPrefix *string           `cty:"search_path_prefix"  column:"search_path_prefix,text" json:"-"`
+	Severity         *string           `cty:"severity"  column:"severity,text" json:"-"`
+	SQL              *string           `cty:"sql"  column:"sql,text" json:"-"`
+	Tags             map[string]string `cty:"tags"  column:"tags,jsonb" json:"-"`
+	Title            *string           `cty:"title"  column:"title,text" json:"-"`
 	Query            *Query
 	// args
 	// arguments may be specified by either a map of named args or as a list of positional args
 	// we apply special decode logic to convert the params block into a QueryArgs object
 	// with either an args map or list assigned
-	Args   *QueryArgs  `cty:"args" column:"args,jsonb"`
-	Params []*ParamDef `cty:"params" column:"params,jsonb"`
+	Args                  *QueryArgs           `cty:"args" column:"args,jsonb" json:"-"`
+	Params                []*ParamDef          `cty:"params" column:"params,jsonb" json:"-"`
+	References            []*ResourceReference `json:"-"`
+	Mod                   *Mod                 `cty:"mod" json:"-"`
+	DeclRange             hcl.Range            `json:"-"`
+	PreparedStatementName string               `column:"prepared_statement_name,text" json:"-"`
+	UnqualifiedName       string               `json:"-"`
 
-	// list of all blocks referenced by the resource
-	References []*ResourceReference
-	Mod        *Mod `cty:"mod"`
-	DeclRange  hcl.Range
+	// report specific properties
+	Base  *Control   `hcl:"base" json:"-"`
+	Width *int       `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Paths []NodePath `json:"-"`
 
-	Paths                 []NodePath
-	parents               []ModTreeItem
-	metadata              *ResourceMetadata
-	PreparedStatementName string `column:"prepared_statement_name,text"`
-	UnqualifiedName       string
+	parents  []ModTreeItem
+	metadata *ResourceMetadata
 }
 
 func NewControl(block *hcl.Block) *Control {
@@ -230,6 +234,7 @@ func (c *Control) CtyValue() (cty.Value, error) {
 
 // OnDecoded implements HclResource
 func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	c.setBaseProperties()
 	// verify the control has either a query or a sql attribute
 	if c.Query == nil && c.SQL == nil {
 		return hcl.Diagnostics{&hcl.Diagnostic{
@@ -293,40 +298,151 @@ func (c *Control) ModName() string {
 	return c.Mod.NameWithVersion()
 }
 
-// Merge will merge the other control with ourselves
-// - any property we do not have set it taken from other
-func (c *Control) Merge(other *Control) {
+// GetSQL implements ReportLeafNode
+func (c *Control) GetSQL() string {
+	return typehelpers.SafeString(c.SQL)
+}
+
+// GetWidth implements ReportLeafNode
+func (c *Control) GetWidth() int {
+	if c.Width == nil {
+		return 0
+	}
+	return *c.Width
+}
+
+// GetUnqualifiedName implements ReportLeafNode
+func (c *Control) GetUnqualifiedName() string {
+	return c.UnqualifiedName
+}
+
+func (c *Control) Diff(other *Control) *ReportTreeItemDiffs {
+	res := &ReportTreeItemDiffs{
+		Item: c,
+		Name: c.Name(),
+	}
+
+	if !utils.SafeStringsEqual(c.FullName, other.FullName) {
+		res.AddPropertyDiff("Name")
+	}
+	if !utils.SafeStringsEqual(c.Description, other.Description) {
+		res.AddPropertyDiff("Description")
+	}
+	if !utils.SafeStringsEqual(c.Documentation, other.Documentation) {
+		res.AddPropertyDiff("Documentation")
+	}
+	if !utils.SafeStringsEqual(c.SearchPath, other.SearchPath) {
+		res.AddPropertyDiff("SearchPath")
+	}
+	if !utils.SafeStringsEqual(c.SearchPathPrefix, other.SearchPathPrefix) {
+		res.AddPropertyDiff("SearchPathPrefix")
+	}
+	if !utils.SafeStringsEqual(c.Severity, other.Severity) {
+		res.AddPropertyDiff("Severity")
+	}
+	if !utils.SafeStringsEqual(c.Title, other.Title) {
+		res.AddPropertyDiff("Title")
+	}
+	if !utils.SafeStringsEqual(c.SQL, other.SQL) {
+		res.AddPropertyDiff("SQL")
+	}
+	if !utils.SafeStringsEqual(c.Title, other.Title) {
+		res.AddPropertyDiff("Title")
+	}
+	if !utils.SafeIntEqual(c.Width, other.Width) {
+		res.AddPropertyDiff("Width")
+	}
+	if len(c.Tags) != len(other.Tags) {
+		res.AddPropertyDiff("Tags")
+	} else {
+		for k, v := range c.Tags {
+			if otherVal := other.Tags[k]; v != otherVal {
+				res.AddPropertyDiff("Tags")
+			}
+		}
+	}
+
+	// args
+	if c.Args == nil {
+		if other.Args != nil {
+			res.AddPropertyDiff("Args")
+		}
+	} else {
+		// we have args
+		if other.Args == nil {
+			res.AddPropertyDiff("Args")
+		} else {
+			if !c.Args.Equals(other.Args) {
+				res.AddPropertyDiff("Args")
+			}
+		}
+	}
+
+	// query
+	if c.Query == nil {
+		if other.Query != nil {
+			res.AddPropertyDiff("Query")
+		}
+	} else {
+		// we have query
+		if other.Query == nil {
+			res.AddPropertyDiff("Query")
+		} else {
+			if !c.Query.Equals(other.Query) {
+				res.AddPropertyDiff("Query")
+			}
+		}
+	}
+
+	// params
+	if len(c.Params) != len(other.Params) {
+		res.AddPropertyDiff("Params")
+	} else {
+		for i, p := range c.Params {
+			if !p.Equals(other.Params[i]) {
+				res.AddPropertyDiff("Params")
+			}
+		}
+	}
+	return res
+}
+
+func (c *Control) setBaseProperties() {
+	if c.Base == nil {
+		return
+	}
+
 	if c.Description == nil {
-		c.Description = other.Description
+		c.Description = c.Base.Description
 	}
 	if c.Documentation == nil {
-		c.Documentation = other.Documentation
+		c.Documentation = c.Base.Documentation
 	}
 	if c.SearchPath == nil {
-		c.SearchPath = other.SearchPath
+		c.SearchPath = c.Base.SearchPath
 	}
 	if c.SearchPathPrefix == nil {
-		c.SearchPathPrefix = other.SearchPathPrefix
+		c.SearchPathPrefix = c.Base.SearchPathPrefix
 	}
 	if c.Severity == nil {
-		c.Severity = other.Severity
+		c.Severity = c.Base.Severity
 	}
 	if c.SQL == nil {
-		c.SQL = other.SQL
+		c.SQL = c.Base.SQL
 	}
 	if c.Tags == nil {
-		c.Tags = other.Tags
+		c.Tags = c.Base.Tags
 	}
 	if c.Title == nil {
-		c.Title = other.Title
+		c.Title = c.Base.Title
 	}
 	if c.Query == nil {
-		c.Query = other.Query
+		c.Query = c.Base.Query
 	}
 	if c.Args == nil {
-		c.Args = other.Args
+		c.Args = c.Base.Args
 	}
 	if c.Params == nil {
-		c.Params = other.Params
+		c.Params = c.Base.Params
 	}
 }

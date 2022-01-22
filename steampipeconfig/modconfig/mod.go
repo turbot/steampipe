@@ -59,7 +59,6 @@ type Mod struct {
 	ReportContainers  map[string]*ReportContainer
 	ReportCharts      map[string]*ReportChart
 	ReportCounters    map[string]*ReportCounter
-	ReportControls    map[string]*ReportControl
 	ReportHierarchies map[string]*ReportHierarchy
 	ReportImages      map[string]*ReportImage
 	ReportTables      map[string]*ReportTable
@@ -88,7 +87,6 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Reports:           make(map[string]*ReportContainer),
 		ReportContainers:  make(map[string]*ReportContainer),
 		ReportCharts:      make(map[string]*ReportChart),
-		ReportControls:    make(map[string]*ReportControl),
 		ReportCounters:    make(map[string]*ReportCounter),
 		ReportHierarchies: make(map[string]*ReportHierarchy),
 		ReportImages:      make(map[string]*ReportImage),
@@ -225,17 +223,6 @@ func (m *Mod) Equals(other *Mod) bool {
 	}
 	for k := range other.ReportCharts {
 		if _, ok := m.ReportCharts[k]; !ok {
-			return false
-		}
-	}
-	// report controls
-	for k := range m.ReportControls {
-		if _, ok := other.ReportControls[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.ReportControls {
-		if _, ok := m.ReportControls[k]; !ok {
 			return false
 		}
 	}
@@ -703,7 +690,6 @@ func (m *Mod) populateResourceMaps() {
 		Reports:           m.Reports,
 		ReportContainers:  m.ReportContainers,
 		ReportCharts:      m.ReportCharts,
-		ReportControls:    m.ReportControls,
 		ReportCounters:    m.ReportCounters,
 		ReportHierarchies: m.ReportHierarchies,
 		ReportImages:      m.ReportImages,

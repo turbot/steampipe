@@ -100,8 +100,8 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 			event.DeletedCharts = append(event.DeletedCharts, prev)
 		}
 	}
-	for name, prev := range prevResourceMaps.ReportControls {
-		if current, ok := resourceMaps.ReportControls[name]; ok {
+	for name, prev := range prevResourceMaps.Controls {
+		if current, ok := resourceMaps.Controls[name]; ok {
 			diff := prev.Diff(current)
 			if diff.HasChanges() {
 				event.ChangedControls = append(event.ChangedControls, diff)
@@ -177,8 +177,8 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 			event.NewCharts = append(event.NewCharts, p)
 		}
 	}
-	for name, p := range resourceMaps.ReportControls {
-		if _, ok := prevResourceMaps.ReportControls[name]; !ok {
+	for name, p := range resourceMaps.Controls {
+		if _, ok := prevResourceMaps.Controls[name]; !ok {
 			event.NewControls = append(event.NewControls, p)
 		}
 	}
