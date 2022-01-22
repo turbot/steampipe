@@ -1,3 +1,7 @@
+## v0.12.1 [2022-01-22]
+_Bug fixes_
+* When running queries with `csv` output, "loading results..." remains on screen after displaying results. ([#1342](https://github.com/turbot/steampipe/issues/1340))
+
 ## v0.12.0 [2022-01-20]
 _What's new?_
 * Update `check` to support template based export and output formats. ([#1289](https://github.com/turbot/steampipe/issues/1289))
