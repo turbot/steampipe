@@ -219,11 +219,6 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeIt
 
 	resource, found := modconfig.GetResource(e.workspace, parsedName)
 
-	// if the resource is a ReportControl, get its underlying control
-	if reportControl, ok := resource.(*modconfig.ReportControl); ok {
-		resource = reportControl.GetControl()
-	}
-
 	root, ok := resource.(modconfig.ModTreeItem)
 	if !found || !ok {
 		return nil, fmt.Errorf("no resources found matching argument '%s'", arg)

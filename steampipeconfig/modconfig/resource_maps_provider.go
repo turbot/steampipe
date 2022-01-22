@@ -8,12 +8,6 @@ func GetResource(provider ResourceMapsProvider, parsedName *ParsedResourceName) 
 	if modName == "" {
 		modName = resourceMaps.Mod.ShortName
 	}
-	resource, found = getResourceForModName(resourceMaps, parsedName, modName, resource, found)
-
-	return resource, found
-}
-
-func getResourceForModName(resourceMaps *WorkspaceResourceMaps, parsedName *ParsedResourceName, modName string, resource HclResource, found bool) (HclResource, bool) {
 	longName := fmt.Sprintf("%s.%s.%s", modName, parsedName.ItemType, parsedName.Name)
 
 	switch parsedName.ItemType {
@@ -21,10 +15,6 @@ func getResourceForModName(resourceMaps *WorkspaceResourceMaps, parsedName *Pars
 		resource, found = resourceMaps.Benchmarks[longName]
 	case BlockTypeControl:
 		resource, found = resourceMaps.Controls[longName]
-		if !found {
-			// if this was not a Control, is it a ReportControl
-			resource, found = resourceMaps.ReportControls[longName]
-		}
 	case BlockTypeReport:
 		resource, found = resourceMaps.Reports[longName]
 	case BlockTypeContainer:

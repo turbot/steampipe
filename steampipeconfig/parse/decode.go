@@ -38,7 +38,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			Detail:   err.Error()})
 	}
 	for _, block := range blocks {
-		_, res := decodeBlock(block, runCtx.CurrentMod, runCtx)
+		_, res := decodeBlock(block, runCtx)
 		if !res.Success() {
 			diags = append(diags, res.Diags...)
 			continue
@@ -48,7 +48,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 	return diags
 }
 
-func decodeBlock(block *hcl.Block, parent modconfig.ModTreeItem, runCtx *RunContext) ([]modconfig.HclResource, *decodeResult) {
+func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource, *decodeResult) {
 	var resource modconfig.HclResource
 	var resources []modconfig.HclResource
 	var res = &decodeResult{}
@@ -89,14 +89,9 @@ func decodeBlock(block *hcl.Block, parent modconfig.ModTreeItem, runCtx *RunCont
 		resource, res = decodeVariable(block, runCtx)
 		resources = append(resources, resource)
 	case modconfig.BlockTypeControl:
-		switch parent.(type) {
-		case *modconfig.ReportContainer:
-			resource, res = decodeReportControl(block, runCtx)
-			resources = append(resources, resource)
-		default:
-			resource, res = decodeControl(block, runCtx)
-			resources = append(resources, resource)
-		}
+		resource, res = decodeControl(block, runCtx)
+		resources = append(resources, resource)
+
 	case modconfig.BlockTypeBenchmark:
 		resource, res = decodeBenchmark(block, runCtx)
 		resources = append(resources, resource)
@@ -334,30 +329,30 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 		})
 	}
 
-	if attr, exists := content.Attributes["description"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Description)
-		diags = append(diags, valDiags...)
-	}
-	if attr, exists := content.Attributes["documentation"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Documentation)
-		diags = append(diags, valDiags...)
-	}
-	if attr, exists := content.Attributes["search_path"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SearchPath)
-		diags = append(diags, valDiags...)
-	}
-	if attr, exists := content.Attributes["search_path_prefix"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SearchPathPrefix)
-		diags = append(diags, valDiags...)
-	}
-	if attr, exists := content.Attributes["severity"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Severity)
-		diags = append(diags, valDiags...)
-	}
-	if attr, exists := content.Attributes["sql"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SQL)
-		diags = append(diags, valDiags...)
-	}
+	diags = decodeProperty(content, "base", &c.Base, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "width", &c.Width, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "description", &c.Description, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "documentation", &c.Documentation, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "search_path", &c.SearchPath, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "search_path_prefix", &c.SearchPathPrefix, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "severity", &c.Severity, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "sql", &c.SQL, runCtx)
+	res.handleDecodeDiags(diags)
+
 	if attr, exists := content.Attributes["query"]; exists {
 		// either Query or SQL property may be set -  if Query property already set, error
 		if c.SQL != nil {
@@ -367,19 +362,17 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 				Subject:  &attr.Range,
 			})
 		} else {
-			valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Query)
-			diags = append(diags, valDiags...)
+			diags = decodeProperty(content, "query", &c.Query, runCtx)
+			res.handleDecodeDiags(diags)
 		}
 	}
 
-	if attr, exists := content.Attributes["tags"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Tags)
-		diags = append(diags, valDiags...)
-	}
-	if attr, exists := content.Attributes["title"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Title)
-		diags = append(diags, valDiags...)
-	}
+	diags = decodeProperty(content, "tags", &c.Tags, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "title", &c.Title, runCtx)
+	res.handleDecodeDiags(diags)
+
 	if attr, exists := content.Attributes["args"]; exists {
 		if params, diags := decodeControlArgs(attr, runCtx.EvalCtx, c.FullName); !diags.HasErrors() {
 			c.Args = params
@@ -410,31 +403,6 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 	res.handleDecodeDiags(diags)
 
 	return c, res
-}
-
-func decodeReportControl(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportControl, *decodeResult) {
-	// first decode the block as a control
-	control, res := decodeControl(block, runCtx)
-	if !res.Success() {
-		return nil, res
-	}
-
-	// now decode the block as a controlReport
-	// (we can still use ControlBlockSchema as it includes the report properties)
-	content, diags := block.Body.Content(ControlBlockSchema)
-	res.handleDecodeDiags(diags)
-
-	reportControl := modconfig.NewReportControl(block, control)
-	diags = decodeProperty(content, "title", &reportControl.Title, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeProperty(content, "base", &reportControl.Base, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeProperty(content, "width", &reportControl.Width, runCtx)
-	res.handleDecodeDiags(diags)
-
-	return reportControl, res
 }
 
 func decodeControlArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName string) (*modconfig.QueryArgs, hcl.Diagnostics) {
@@ -498,7 +466,7 @@ func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 	var children []modconfig.ModTreeItem
 	if len(content.Blocks) > 0 {
 		var childrenRes *decodeResult
-		children, childrenRes = decodeInlineChildren(content, report, runCtx)
+		children, childrenRes = decodeInlineChildren(content, runCtx)
 		// now set children
 		report.SetChildren(children)
 		res.Merge(childrenRes)

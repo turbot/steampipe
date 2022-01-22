@@ -18,7 +18,7 @@ type ReportChanged struct {
 	NewReports     []*modconfig.ReportContainer
 	NewContainers  []*modconfig.ReportContainer
 	NewCharts      []*modconfig.ReportChart
-	NewControls    []*modconfig.ReportControl
+	NewControls    []*modconfig.Control
 	NewCounters    []*modconfig.ReportCounter
 	NewHierarchies []*modconfig.ReportHierarchy
 	NewImages      []*modconfig.ReportImage
@@ -28,7 +28,7 @@ type ReportChanged struct {
 	DeletedReports     []*modconfig.ReportContainer
 	DeletedContainers  []*modconfig.ReportContainer
 	DeletedCharts      []*modconfig.ReportChart
-	DeletedControls    []*modconfig.ReportControl
+	DeletedControls    []*modconfig.Control
 	DeletedCounters    []*modconfig.ReportCounter
 	DeletedHierarchies []*modconfig.ReportHierarchy
 	DeletedImages      []*modconfig.ReportImage

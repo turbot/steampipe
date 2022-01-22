@@ -90,9 +90,6 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	for _, chart := range workspaceResources.ReportCharts {
 		insertSql = append(insertSql, getTableInsertSqlForResource(chart, constants.IntrospectionTableReportChart))
 	}
-	for _, counter := range workspaceResources.ReportControls {
-		insertSql = append(insertSql, getTableInsertSqlForResource(counter, constants.IntrospectionTableReportControl))
-	}
 	for _, counter := range workspaceResources.ReportCounters {
 		insertSql = append(insertSql, getTableInsertSqlForResource(counter, constants.IntrospectionTableReportCounter))
 	}

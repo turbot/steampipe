@@ -8,12 +8,12 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-func decodeInlineChildren(content *hcl.BodyContent, parent modconfig.ModTreeItem, runCtx *RunContext) ([]modconfig.ModTreeItem, *decodeResult) {
+func decodeInlineChildren(content *hcl.BodyContent, runCtx *RunContext) ([]modconfig.ModTreeItem, *decodeResult) {
 	var res = &decodeResult{}
 	// if children are declared inline as blocks, add them
 	var children []modconfig.ModTreeItem
 	for _, b := range content.Blocks {
-		resources, blockRes := decodeBlock(b, parent, runCtx)
+		resources, blockRes := decodeBlock(b, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue
