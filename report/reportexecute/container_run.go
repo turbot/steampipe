@@ -63,8 +63,8 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 			if err != nil {
 				return nil, err
 			}
-		case *modconfig.Benchmark:
-			childRun, err = NewBenchmarkRun(i, r, executionTree)
+		case *modconfig.Benchmark, *modconfig.Control:
+			childRun, err = NewCheckRun(i.(modconfig.ReportingLeafNode), r, executionTree)
 			if err != nil {
 				return nil, err
 			}

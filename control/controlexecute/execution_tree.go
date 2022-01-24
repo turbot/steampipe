@@ -20,14 +20,13 @@ import (
 
 // ExecutionTree is a structure representing the control execution hierarchy
 type ExecutionTree struct {
-	// root node of the execution tree
-	Root      *ResultGroup
-	StartTime time.Time
-	EndTime   time.Time
-	// map of dimension property name to property value to color map
-	DimensionColorGenerator *DimensionColorGenerator
+	Root *ResultGroup `json:"root"`
 	// flat list of all control runs
-	ControlRuns []*ControlRun
+	ControlRuns []*ControlRun `json:"control_runs"`
+	StartTime   time.Time     `json:"start_time"`
+	EndTime     time.Time     `json:"end_time"`
+	// map of dimension property name to property value to color map
+	DimensionColorGenerator *DimensionColorGenerator `json:"-"`
 
 	workspace *workspace.Workspace
 	client    db_common.Client
