@@ -490,7 +490,7 @@ func setChildren(mod *modconfig.Mod) {
 	for _, benchmark := range mod.Benchmarks {
 		for _, childName := range benchmark.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName.Name)
-			child, _ := mod.GetResource(parsed)
+			child, _ := modconfig.GetResource(mod, parsed)
 			benchmark.Children = append(benchmark.Children, child.(modconfig.ModTreeItem))
 		}
 	}
@@ -498,7 +498,7 @@ func setChildren(mod *modconfig.Mod) {
 		var children []modconfig.ModTreeItem
 		for _, childName := range container.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName)
-			child, _ := mod.GetResource(parsed)
+			child, _ := modconfig.GetResource(mod, parsed)
 			children = append(children, child.(modconfig.ModTreeItem))
 		}
 		container.SetChildren(children)
@@ -508,7 +508,7 @@ func setChildren(mod *modconfig.Mod) {
 		var children []modconfig.ModTreeItem
 		for _, childName := range report.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName)
-			child, _ := mod.GetResource(parsed)
+			child, _ := modconfig.GetResource(mod, parsed)
 			children = append(children, child.(modconfig.ModTreeItem))
 		}
 		report.SetChildren(children)
