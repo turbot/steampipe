@@ -1,15 +1,16 @@
 {{ define "output" }}
-{{ if render_context.Config.RenderHeader }}
+{{- if render_context.Config.RenderHeader -}}
 group_id,title,description,control_id,control_title,control_description,reason,resource,status{{ range .Data.Root.DimensionKeys }},{{ . }}{{ end }}{{range .Data.Root.AllTagKeys }},{{ . }}{{ end }}
-{{- end -}}{{ template "result_group_template" .Data.Root }}
+{{ end -}}
+{{ template "result_group_template" .Data.Root }}
 {{ end }}
 
 {{ define "result_group_template" }}{{ range .ControlRuns }}{{ template "control_run_template" . }}{{ end }}{{ range .Groups }}{{ template "result_group_template" . }}{{ end }}{{ end }}
 
-{{ define "control_run_template" }}{{ range .Rows }}{{ template "control_row_template" . }}{{ end }}{{ end }}
+{{ define "control_run_template" }}{{ range .Rows }}{{ template "control_row_template" . }}
+{{ end }}{{ end }}
 
-{{ define "control_row_template" }}{{ template "group_details" . }},{{ template "control_details" . }},{{ template "reason_resource_status" . }}{{ template "dimensions" . }}{{ template "tags" . }}
-{{ end }}
+{{ define "control_row_template" }}{{ template "group_details" . }},{{ template "control_details" . }},{{ template "reason_resource_status" . }}{{ template "dimensions" . }}{{ template "tags" . }}{{ end }}
 
 {{ define "group_details" }}{{ toCsvCell .Run.Group.GroupId }},{{ toCsvCell .Run.Group.Title }},{{ toCsvCell .Run.Group.Description }}{{ end }}
 
