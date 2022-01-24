@@ -1,124 +1,72 @@
-{{ define "output" }}
-{
-	"group_id": "root_result_group",
-  "title": "",
-  "description": "",
-  "tags": {},
-	{{ template "root_result_summary" }},
-	"groups": [
-		{
-			{{ template "result_group" }}
-		}
-	],
-	"controls": [
-		{{ range .Data.Root.ControlRuns }}
-		{
-			{{ template "control_run" }}
-		}
-		{{ end }}
-	],
-}
+{{ define "output" -}}
+	{{ template "result_group" .Data.Root }}
 {{ end }}
 
 {{/* sub template for result groups */}}
-{{ define "result_group" }}
-	"group_id": {{ toJson .Data.Root.GroupId }}
-	"title": {{ toJson .Data.Root.Title }}
-	"description": {{ toJson .Data.Root.Description }}
-	"tags": {{ toJson .Data.Root.Tags }}
-	{{ template "root_result_summary" }},
+{{ define "result_group" -}}
+{
+	"group_id": {{ toJson .GroupId }},
+	"title": {{ toJson .Title }},
+	"description": {{ toJson .Description }},
+	"tags": {{ toJson .Tags }},
+	{{ template "group_summary" . }}
 	"groups": [
-		{{ range .Data.Root.Groups }}
-		{
-			{{ template "group" }}
-		}
-		{{ end }}
+		{{- range .Groups -}}
+			{{ template "result_group" . -}}
+		{{ end -}}
 	],
 	"controls": [
-		{{ range .Data.Root.ControlRuns }}
-		{
-			{{ template "control_run" }}
-		}
-		{{ end }}
+		{{- range .ControlRuns -}}
+			{{ template "control_run" . -}}
+		{{ end -}}
 	]
+}
 {{ end }}
 
-{{/* sub template for groups */}}
-{{ define "group" }}
-	"group_id": {{ toJson .GroupId }}
-	"title": {{ toJson .Title }}
-	"description": {{ toJson .Description }}
-	"tags": {{ toJson .Tags }}
-	{{ template "group_summary" }},
-	"groups": [
-		{{ range .Groups }}
-		{
-			{{ template "group" }}
-		}
-		{{ end }}
-	],
-	"controls": [
-		{{ range .ControlRuns }}
-		{
-			{{ template "control_run" }}
-		}
-		{{ end }}
-	]
-{{ end }}
+
 
 {{/* sub template for control runs */}}
 {{ define "control_run" }}
-	"results": [
-		{{ range .Rows }}
-		{
-			{{ template "control_row" }}
-		}
-		{{ end }}
-	],
-	"control_id": {{ toJson .ControlId }},
-	"description": {{ toJson .Description }},
-	"severity": {{ toJson .Severity }},
-	"tags": {{ toJson .Tags }},
-	"title": {{ toJson .Title }}
+	{
+		"results": [
+			{{- range .Rows -}}
+				{{- template "control_row" . -}}
+			{{- end }}
+		],
+		"control_id": {{ toJson .ControlId }},
+		"description": {{ toJson .Description }},
+		"severity": {{ toJson .Severity }},
+		"tags": {{ toJson .Tags }},
+		"title": {{ toJson .Title }}
+	},
 {{ end }}
 
 {{/* sub template for control rows */}}
 {{ define "control_row" }}
-		"reason": {{ toJson .Reason }},
-		"resource": {{ toJson .Resource }},
-		"status": {{ toJson .Status }},
-		"dimensions": [
-			{{ range .Dimensions }}
-				{
-					"key": {{ toJson .Key }}
-					"value": {{ toJson .Value }}
-				}
-			{{ end }}
-	}
-{{ end }}
-
-{{/* sub template for overall summary */}}
-{{ define "root_result_summary" }}
-	"summary": {
-		"status": {
-			"alarm": {{ .Data.Root.Summary.Status.Alarm }}
-			"ok": {{ .Data.Root.Summary.Status.Ok }}
-			"info": {{ .Data.Root.Summary.Status.Info }}
-			"skip": {{ .Data.Root.Summary.Status.Skip }}
-			"error": {{ .Data.Root.Summary.Status.Error }}
-		}
-	}
+		{
+			"reason": {{ toJson .Reason }},
+			"resource": {{ toJson .Resource }},
+			"status": {{ toJson .Status }},
+			"dimensions": [
+				{{ range .Dimensions }}
+					{
+						"key": {{ toJson .Key }},
+						"value": {{ toJson .Value }}
+					}
+				{{ end }}
+			]
+		},
 {{ end }}
 
 {{/* sub template for group summary */}}
-{{ define "group_summary" }}
+{{ define "group_summary" -}}
 	"summary": {
 		"status": {
-			"alarm": {{ .Summary.Status.Alarm }}
-			"ok": {{ .Summary.Status.Ok }}
-			"info": {{ .Summary.Status.Info }}
-			"skip": {{ .Summary.Status.Skip }}
+			"alarm": {{ .Summary.Status.Alarm }},
+			"ok": {{ .Summary.Status.Ok }},
+			"info": {{ .Summary.Status.Info }},
+			"skip": {{ .Summary.Status.Skip }},
 			"error": {{ .Summary.Status.Error }}
 		}
-	}
-{{ end }}
+	},
+{{- end }}
