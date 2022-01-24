@@ -4,6 +4,7 @@
 
 {{/* sub template for result groups */}}
 {{ define "result_group" -}}
+{{- $length_run := (sub (len .ControlRuns) 1) -}}
 {
 	"group_id": {{ toJson .GroupId }},
 	"title": {{ toJson .Title }},
@@ -16,9 +17,14 @@
 		{{ end -}}
 	],
 	"controls": [
-		{{- range .ControlRuns -}}
+		{{- range $runIdx,$run := .ControlRuns -}}
+		{{- if ne $runIdx $length_run -}}
+			{{ template "control_run" . -}},
+		{{- end }}
+		{{- if eq $runIdx $length_run -}}
 			{{ template "control_run" . -}}
-		{{ end -}}
+		{{- end }}
+		{{- end }}
 	]
 }
 {{ end }}
@@ -27,10 +33,16 @@
 
 {{/* sub template for control runs */}}
 {{ define "control_run" }}
+{{- $length_row := (sub (len .Rows) 1) -}}
 	{
 		"results": [
-			{{- range .Rows -}}
+			{{- range $rowIdx,$row := .Rows -}}
+			{{- if ne $rowIdx $length_row -}}
+				{{- template "control_row" . -}},
+			{{- end }}
+			{{- if eq $rowIdx $length_row -}}
 				{{- template "control_row" . -}}
+			{{- end }}
 			{{- end }}
 		],
 		"control_id": {{ toJson .ControlId }},
@@ -38,8 +50,8 @@
 		"severity": {{ toJson .Severity }},
 		"tags": {{ toJson .Tags }},
 		"title": {{ toJson .Title }}
-	},
-{{ end }}
+	}
+{{- end }}
 
 {{/* sub template for control rows */}}
 {{ define "control_row" }}
@@ -48,15 +60,15 @@
 			"resource": {{ toJson .Resource }},
 			"status": {{ toJson .Status }},
 			"dimensions": [
-				{{ range .Dimensions }}
+				{{ range .Dimensions -}}
 					{
 						"key": {{ toJson .Key }},
 						"value": {{ toJson .Value }}
 					}
-				{{ end }}
+				{{ end -}}
 			]
-		},
-{{ end }}
+		}
+{{- end }}
 
 {{/* sub template for group summary */}}
 {{ define "group_summary" -}}
