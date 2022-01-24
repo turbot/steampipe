@@ -4,6 +4,7 @@
 
 {{/* sub template for result groups */}}
 {{ define "result_group" -}}
+{{- $length_grp := (sub (len .Groups) 1) -}}
 {{- $length_run := (sub (len .ControlRuns) 1) -}}
 {
 	"group_id": {{ toJson .GroupId }},
@@ -12,20 +13,31 @@
 	"tags": {{ toJson .Tags }},
 	{{ template "group_summary" . }}
 	"groups": [
-		{{- range .Groups -}}
+		{{- range $grpIdx,$grp := .Groups -}}
+		{{- if ne $grpIdx $length_grp }}
+			{{ template "result_group" . -}},
+		{{- end}}
+		{{- if eq $grpIdx $length_grp }}
 			{{ template "result_group" . -}}
-		{{ end -}}
+		{{- end}}
+		{{- end -}}
 	],
-	"controls": [
+	"controls": 
+	{{- if gt (len .ControlRuns) 0 -}}
+	 [
 		{{- range $runIdx,$run := .ControlRuns -}}
 		{{- if ne $runIdx $length_run -}}
-			{{ template "control_run" . -}},
+			{{- template "control_run" . -}},
 		{{- end }}
 		{{- if eq $runIdx $length_run -}}
-			{{ template "control_run" . -}}
+			{{- template "control_run" . -}}
 		{{- end }}
-		{{- end }}
+		{{- end -}}
 	]
+	{{- end -}}
+	{{- if eq (len .ControlRuns) 0 -}}
+	 null
+	{{- end }}
 }
 {{ end }}
 
