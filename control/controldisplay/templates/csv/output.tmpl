@@ -1,4 +1,8 @@
-{{- define "output" -}}{{- if render_context.Config.RenderHeader -}}group_id,title,description,control_id,control_title,control_description,reason,resource,status{{ range .Data.Root.DimensionKeys }},{{ . }}{{ end }}{{range .Data.Root.AllTagKeys }},{{ . }}{{ end }}{{- end -}}{{- template "result_group_template" .Data.Root }}
+{{ define "output" }}
+{{ if render_context.Config.RenderHeader }}
+group_id,title,description,control_id,control_title,control_description,reason,resource,status{{ range .Data.Root.DimensionKeys }},{{ . }}{{ end }}{{range .Data.Root.AllTagKeys }},{{ . }}{{ end }}
+{{- end -}}
+{{ template "result_group_template" .Data.Root }}
 {{ end }}
 
 {{ define "result_group_template" }}{{ range .ControlRuns }}{{ template "control_run_template" . }}{{ end }}{{ range .Groups }}{{ template "result_group_template" . }}{{ end }}{{ end }}
