@@ -55,7 +55,6 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportChart{}, constants.IntrospectionTableReportChart, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportCounter{}, constants.IntrospectionTableReportCounter, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportHierarchy{}, constants.IntrospectionTableReportHierarchy, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.IntrospectionTableReportControl, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportImage{}, constants.IntrospectionTableReportImage, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportTable{}, constants.IntrospectionTableReportTable, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportText{}, constants.IntrospectionTableReportText, commonColumnSql))
@@ -93,8 +92,8 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	for _, counter := range workspaceResources.ReportCounters {
 		insertSql = append(insertSql, getTableInsertSqlForResource(counter, constants.IntrospectionTableReportCounter))
 	}
-	for _, counter := range workspaceResources.ReportHierarchies {
-		insertSql = append(insertSql, getTableInsertSqlForResource(counter, constants.IntrospectionTableReportHierarchy))
+	for _, hierarchy := range workspaceResources.ReportHierarchies {
+		insertSql = append(insertSql, getTableInsertSqlForResource(hierarchy, constants.IntrospectionTableReportHierarchy))
 	}
 	for _, image := range workspaceResources.ReportImages {
 		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableReportImage))

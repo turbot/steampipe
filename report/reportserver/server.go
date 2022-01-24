@@ -238,8 +238,9 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		newReports := e.NewReports
 
 		changedContainers := e.ChangedContainers
-		changedCharts := e.ChangedCharts
+		changedBenchmarks := e.ChangedBenchmarks
 		changedControls := e.ChangedControls
+		changedCharts := e.ChangedCharts
 		changedCounters := e.ChangedCounters
 		changedHierarchies := e.ChangedHierarchies
 		changedImages := e.ChangedImages
@@ -251,8 +252,9 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		if len(deletedReports) == 0 &&
 			len(newReports) == 0 &&
 			len(changedContainers) == 0 &&
-			len(changedCharts) == 0 &&
+			len(changedBenchmarks) == 0 &&
 			len(changedControls) == 0 &&
+			len(changedCharts) == 0 &&
 			len(changedCounters) == 0 &&
 			len(changedHierarchies) == 0 &&
 			len(changedImages) == 0 &&
@@ -289,8 +291,9 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 		// Process the changed items and make a note of the report(s) they're in
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedContainers)...)
-		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedCharts)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedBenchmarks)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedControls)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedCharts)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedCounters)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedHierarchies)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedImages)...)

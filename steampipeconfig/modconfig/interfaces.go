@@ -70,5 +70,4 @@ type ReportingLeafNode interface {
 
 type ResourceMapsProvider interface {
 	GetResourceMaps() *WorkspaceResourceMaps
-	//Mod()*Mod
 }

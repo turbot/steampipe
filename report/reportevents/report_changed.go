@@ -7,8 +7,9 @@ import (
 type ReportChanged struct {
 	ChangedReports     []*modconfig.ReportTreeItemDiffs
 	ChangedContainers  []*modconfig.ReportTreeItemDiffs
-	ChangedCharts      []*modconfig.ReportTreeItemDiffs
 	ChangedControls    []*modconfig.ReportTreeItemDiffs
+	ChangedBenchmarks  []*modconfig.ReportTreeItemDiffs
+	ChangedCharts      []*modconfig.ReportTreeItemDiffs
 	ChangedCounters    []*modconfig.ReportTreeItemDiffs
 	ChangedHierarchies []*modconfig.ReportTreeItemDiffs
 	ChangedImages      []*modconfig.ReportTreeItemDiffs
@@ -17,8 +18,9 @@ type ReportChanged struct {
 
 	NewReports     []*modconfig.ReportContainer
 	NewContainers  []*modconfig.ReportContainer
-	NewCharts      []*modconfig.ReportChart
 	NewControls    []*modconfig.Control
+	NewBenchmarks  []*modconfig.Benchmark
+	NewCharts      []*modconfig.ReportChart
 	NewCounters    []*modconfig.ReportCounter
 	NewHierarchies []*modconfig.ReportHierarchy
 	NewImages      []*modconfig.ReportImage
@@ -27,8 +29,9 @@ type ReportChanged struct {
 
 	DeletedReports     []*modconfig.ReportContainer
 	DeletedContainers  []*modconfig.ReportContainer
-	DeletedCharts      []*modconfig.ReportChart
 	DeletedControls    []*modconfig.Control
+	DeletedBenchmarks  []*modconfig.Benchmark
+	DeletedCharts      []*modconfig.ReportChart
 	DeletedCounters    []*modconfig.ReportCounter
 	DeletedHierarchies []*modconfig.ReportHierarchy
 	DeletedImages      []*modconfig.ReportImage
@@ -42,8 +45,9 @@ func (*ReportChanged) IsReportEvent() {}
 func (c *ReportChanged) HasChanges() bool {
 	return len(c.ChangedReports)+
 		len(c.ChangedContainers)+
-		len(c.ChangedCharts)+
+		len(c.ChangedBenchmarks)+
 		len(c.ChangedControls)+
+		len(c.ChangedCharts)+
 		len(c.ChangedCounters)+
 		len(c.ChangedHierarchies)+
 		len(c.ChangedImages)+
@@ -51,8 +55,9 @@ func (c *ReportChanged) HasChanges() bool {
 		len(c.ChangedTexts)+
 		len(c.NewReports)+
 		len(c.NewContainers)+
-		len(c.NewCharts)+
+		len(c.NewBenchmarks)+
 		len(c.NewControls)+
+		len(c.NewCharts)+
 		len(c.NewCounters)+
 		len(c.NewHierarchies)+
 		len(c.NewImages)+
@@ -60,8 +65,9 @@ func (c *ReportChanged) HasChanges() bool {
 		len(c.NewTexts)+
 		len(c.DeletedReports)+
 		len(c.DeletedContainers)+
-		len(c.DeletedCharts)+
+		len(c.DeletedBenchmarks)+
 		len(c.DeletedControls)+
+		len(c.DeletedCharts)+
 		len(c.DeletedCounters)+
 		len(c.DeletedHierarchies)+
 		len(c.DeletedImages)+

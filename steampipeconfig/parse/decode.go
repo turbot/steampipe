@@ -449,9 +449,8 @@ func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 	res.handleDecodeDiags(diags)
 	if report.Base != nil && len(report.Base.ChildNames) > 0 {
 		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeChart, modconfig.BlockTypeControl, modconfig.BlockTypeCounter, modconfig.BlockTypeHierarchy, modconfig.BlockTypeImage, modconfig.BlockTypeTable, modconfig.BlockTypeText}
-		// TODO: we should be passing in the block for the Base resource - but this is only used
-		// for diags and we do not expect to get any (as this function has already succeeded
-		// when the base was originally parsed)
+		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
+		// and we do not expect to get any (as this function has already succeeded when the base was originally parsed)
 		children, _ := resolveChildrenFromNames(report.Base.ChildNames, block, supportedChildren, runCtx)
 		report.Base.SetChildren(children)
 	}
@@ -506,8 +505,21 @@ func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark
 
 		// now set children and child name strings
 		benchmark.Children = children
-		benchmark.ChildNameStrings = getChildNameString(children)
+		benchmark.ChildNameStrings = getChildNameStringsFromModTreeItem(children)
 	}
+
+	// decode report specific properties
+	diags = decodeProperty(content, "base", &benchmark.Base, runCtx)
+	res.handleDecodeDiags(diags)
+	if benchmark.Base != nil && len(benchmark.Base.ChildNames) > 0 {
+		supportedChildren := []string{modconfig.BlockTypeBenchmark, modconfig.BlockTypeControl}
+		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
+		// and we do not expect to get any (as this function has already succeeded when the base was originally parsed)
+		children, _ := resolveChildrenFromNames(benchmark.Base.ChildNameStrings, block, supportedChildren, runCtx)
+		benchmark.Base.Children = children
+	}
+	diags = decodeProperty(content, "width", &benchmark.Width, runCtx)
+	res.handleDecodeDiags(diags)
 	return benchmark, res
 }
 

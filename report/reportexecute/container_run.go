@@ -33,7 +33,6 @@ type ReportContainerRun struct {
 }
 
 func NewReportContainerRun(container *modconfig.ReportContainer, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*ReportContainerRun, error) {
-
 	children := container.GetChildren()
 	r := &ReportContainerRun{
 		Name:          container.Name(),
@@ -61,6 +60,11 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 		switch i := child.(type) {
 		case *modconfig.ReportContainer:
 			childRun, err = NewReportContainerRun(i, r, executionTree)
+			if err != nil {
+				return nil, err
+			}
+		case *modconfig.Benchmark:
+			childRun, err = NewBenchmarkRun(i, r, executionTree)
 			if err != nil {
 				return nil, err
 			}
@@ -136,7 +140,7 @@ func (r *ReportContainerRun) Execute(ctx context.Context) error {
 }
 
 func (r *ReportContainerRun) executeChild(ctx context.Context, child reportinterfaces.ReportNodeRun, errChan chan error) {
-	//log.Printf("[WARN] %s call Execute for %s", r.Name, child.GetName())
+	log.Printf("[WARN] %s call Execute for %s", r.Name, child.GetName())
 
 	err := child.Execute(ctx)
 	if err != nil {
