@@ -33,7 +33,7 @@ require (
 	github.com/mattn/go-isatty v0.0.14
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/olekukonko/tablewriter v0.0.4
-	github.com/opencontainers/image-spec v1.0.1
+	github.com/opencontainers/image-spec v1.0.2
 	github.com/otiai10/copy v1.7.0
 	github.com/sethvargo/go-retry v0.1.0
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18
