@@ -10,3 +10,8 @@ report "r1"{
     base = benchmark.b1
   }
 }
+report "r2"{
+  control {
+    base = control.c1
+  }
+}

@@ -15,32 +15,32 @@ import (
 // Control is a struct representing the Control resource
 type Control struct {
 	ShortName        string            `json:"-"`
-	FullName         string            `cty:"name" json:"-"`
-	Description      *string           `cty:"description" column:"description,text" json:"-"`
-	Documentation    *string           `cty:"documentation"  column:"documentation,text" json:"-"`
-	SearchPath       *string           `cty:"search_path"  column:"search_path,text" json:"-"`
-	SearchPathPrefix *string           `cty:"search_path_prefix"  column:"search_path_prefix,text" json:"-"`
-	Severity         *string           `cty:"severity"  column:"severity,text" json:"-"`
-	SQL              *string           `cty:"sql"  column:"sql,text" json:"-"`
-	Tags             map[string]string `cty:"tags"  column:"tags,jsonb" json:"-"`
-	Title            *string           `cty:"title"  column:"title,text" json:"-"`
+	FullName         string            `cty:"name"`
+	Description      *string           `cty:"description" column:"description,text"`
+	Documentation    *string           `cty:"documentation"  column:"documentation,text"`
+	SearchPath       *string           `cty:"search_path"  column:"search_path,text"`
+	SearchPathPrefix *string           `cty:"search_path_prefix"  column:"search_path_prefix,text"`
+	Severity         *string           `cty:"severity"  column:"severity,text"`
+	SQL              *string           `cty:"sql"  column:"sql,text"`
+	Tags             map[string]string `cty:"tags"  column:"tags,jsonb"`
+	Title            *string           `cty:"title"  column:"title,text"`
 	Query            *Query
 	// args
 	// arguments may be specified by either a map of named args or as a list of positional args
 	// we apply special decode logic to convert the params block into a QueryArgs object
 	// with either an args map or list assigned
-	Args                  *QueryArgs           `cty:"args" column:"args,jsonb" json:"-"`
-	Params                []*ParamDef          `cty:"params" column:"params,jsonb" json:"-"`
+	Args                  *QueryArgs           `cty:"args" column:"args,jsonb"`
+	Params                []*ParamDef          `cty:"params" column:"params,jsonb"`
 	References            []*ResourceReference `json:"-"`
-	Mod                   *Mod                 `cty:"mod" json:"-"`
+	Mod                   *Mod                 `cty:"mod"`
 	DeclRange             hcl.Range            `json:"-"`
-	PreparedStatementName string               `column:"prepared_statement_name,text" json:"-"`
+	PreparedStatementName string               `column:"prepared_statement_name,text"`
 	UnqualifiedName       string               `json:"-"`
 	Paths                 []NodePath           `json:"-"`
 
 	// report specific properties
-	Base  *Control `hcl:"base" json:"-"`
-	Width *int     `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Base  *Control `hcl:"base"`
+	Width *int     `cty:"width" hcl:"width" column:"width,text" `
 
 	parents  []ModTreeItem
 	metadata *ResourceMetadata
