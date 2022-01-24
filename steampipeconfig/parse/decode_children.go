@@ -103,7 +103,7 @@ func childErrorDiagnostic(childName string, block *hcl.Block) *hcl.Diagnostic {
 	}
 }
 
-func getChildNameString(children []modconfig.ModTreeItem) []string {
+func getChildNameStringsFromModTreeItem(children []modconfig.ModTreeItem) []string {
 	res := make([]string, len(children))
 	for i, n := range children {
 		res[i] = n.Name()

@@ -36,11 +36,11 @@ type Control struct {
 	DeclRange             hcl.Range            `json:"-"`
 	PreparedStatementName string               `column:"prepared_statement_name,text" json:"-"`
 	UnqualifiedName       string               `json:"-"`
+	Paths                 []NodePath           `json:"-"`
 
 	// report specific properties
-	Base  *Control   `hcl:"base" json:"-"`
-	Width *int       `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Paths []NodePath `json:"-"`
+	Base  *Control `hcl:"base" json:"-"`
+	Width *int     `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 
 	parents  []ModTreeItem
 	metadata *ResourceMetadata
@@ -345,9 +345,6 @@ func (c *Control) Diff(other *Control) *ReportTreeItemDiffs {
 	}
 	if !utils.SafeStringsEqual(c.SQL, other.SQL) {
 		res.AddPropertyDiff("SQL")
-	}
-	if !utils.SafeStringsEqual(c.Title, other.Title) {
-		res.AddPropertyDiff("Title")
 	}
 	if !utils.SafeIntEqual(c.Width, other.Width) {
 		res.AddPropertyDiff("Width")

@@ -117,6 +117,9 @@ var ReportBlockSchema = &hcl.BodySchema{
 			Type: modconfig.BlockTypeChart,
 		},
 		{
+			Type: modconfig.BlockTypeBenchmark,
+		},
+		{
 			Type: modconfig.BlockTypeControl,
 		},
 		{
@@ -144,6 +147,9 @@ var BenchmarkBlockSchema = &hcl.BodySchema{
 		{Name: "documentation"},
 		{Name: "tags"},
 		{Name: "title"},
+		// for report benchmark blocks
+		{Name: "width"},
+		{Name: "base"},
 	},
 }
 
@@ -159,7 +165,7 @@ var ControlBlockSchema = &hcl.BodySchema{
 		{Name: "tags"},
 		{Name: "title"},
 		{Name: "args"},
-		// for ReportControl blocks
+		// for report control blocks
 		{Name: "width"},
 		{Name: "base"},
 	},
