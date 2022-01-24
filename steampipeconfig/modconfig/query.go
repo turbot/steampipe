@@ -38,6 +38,15 @@ type Query struct {
 	UnqualifiedName       string
 }
 
+func NewQuery(block *hcl.Block) *Query {
+	return &Query{
+		ShortName:       block.Labels[0],
+		UnqualifiedName: fmt.Sprintf("query.%s", block.Labels[0]),
+		FullName:        fmt.Sprintf("query.%s", block.Labels[0]),
+		DeclRange:       block.DefRange,
+	}
+}
+
 func (q *Query) Equals(other *Query) bool {
 	res := q.ShortName == other.ShortName &&
 		q.FullName == other.FullName &&
@@ -79,14 +88,6 @@ func (q *Query) Equals(other *Query) bool {
 	}
 
 	return true
-}
-
-func NewQuery(block *hcl.Block) *Query {
-	return &Query{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("query.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
-	}
 }
 
 func (q *Query) CtyValue() (cty.Value, error) {
@@ -141,6 +142,7 @@ func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 		return nil, nil, err
 	}
 	q.ShortName = name
+	q.UnqualifiedName = fmt.Sprintf("query.%s", name)
 	q.FullName = fmt.Sprintf("query.%s", name)
 	q.SQL = &sql
 	return q, sqlBytes, nil

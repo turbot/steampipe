@@ -14,7 +14,7 @@ import (
 
 // Control is a struct representing the Control resource
 type Control struct {
-	ShortName        string            `json:"-"`
+	ShortName        string
 	FullName         string            `cty:"name"`
 	Description      *string           `cty:"description" column:"description,text"`
 	Documentation    *string           `cty:"documentation"  column:"documentation,text"`
@@ -29,14 +29,14 @@ type Control struct {
 	// arguments may be specified by either a map of named args or as a list of positional args
 	// we apply special decode logic to convert the params block into a QueryArgs object
 	// with either an args map or list assigned
-	Args                  *QueryArgs           `cty:"args" column:"args,jsonb"`
-	Params                []*ParamDef          `cty:"params" column:"params,jsonb"`
-	References            []*ResourceReference `json:"-"`
-	Mod                   *Mod                 `cty:"mod"`
-	DeclRange             hcl.Range            `json:"-"`
-	PreparedStatementName string               `column:"prepared_statement_name,text"`
-	UnqualifiedName       string               `json:"-"`
-	Paths                 []NodePath           `json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb"`
+	References            []*ResourceReference
+	Mod                   *Mod `cty:"mod"`
+	DeclRange             hcl.Range
+	PreparedStatementName string `column:"prepared_statement_name,text"`
+	UnqualifiedName       string
+	Paths                 []NodePath
 
 	// report specific properties
 	Base  *Control `hcl:"base"`

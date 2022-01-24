@@ -213,5 +213,5 @@ func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
 // does this resource name look like a control or query
 func isNamedQueryOrControl(name string) bool {
 	parsedResourceName, err := modconfig.ParseResourceName(name)
-	return err == nil && parsedResourceName.ItemType == "query" || parsedResourceName.ItemType == "control"
+	return err == nil && (parsedResourceName.ItemType == "query" || parsedResourceName.ItemType == "control")
 }
