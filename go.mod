@@ -10,7 +10,7 @@ require (
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/briandowns/spinner v1.11.1
 	github.com/c-bata/go-prompt v0.2.6
-	github.com/containerd/containerd v1.4.11
+	github.com/containerd/containerd v1.4.12
 	github.com/deislabs/oras v0.8.1
 	github.com/evanphx/json-patch v4.11.0+incompatible
 	github.com/fatih/color v1.9.0
