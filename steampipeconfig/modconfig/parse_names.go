@@ -16,6 +16,7 @@ const (
 	BlockTypeCounter   = "counter"
 	BlockTypeHierarchy = "hierarchy"
 	BlockTypeImage     = "image"
+	BlockTypeInput     = "input"
 	BlockTypeTable     = "table"
 	BlockTypeText      = "text"
 	BlockTypeLocals    = "locals"

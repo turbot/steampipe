@@ -150,6 +150,16 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 			event.DeletedImages = append(event.DeletedImages, prev)
 		}
 	}
+	for name, prev := range prevResourceMaps.ReportInputs {
+		if current, ok := resourceMaps.ReportInputs[name]; ok {
+			diff := prev.Diff(current)
+			if diff.HasChanges() {
+				event.ChangedInputs = append(event.ChangedInputs, diff)
+			}
+		} else {
+			event.DeletedInputs = append(event.DeletedInputs, prev)
+		}
+	}
 	for name, prev := range prevResourceMaps.ReportTables {
 		if current, ok := resourceMaps.ReportTables[name]; ok {
 			diff := prev.Diff(current)
@@ -210,6 +220,11 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 	for name, p := range resourceMaps.ReportImages {
 		if _, ok := prevResourceMaps.ReportImages[name]; !ok {
 			event.NewImages = append(event.NewImages, p)
+		}
+	}
+	for name, p := range resourceMaps.ReportInputs {
+		if _, ok := prevResourceMaps.ReportInputs[name]; !ok {
+			event.NewInputs = append(event.NewInputs, p)
 		}
 	}
 	for name, p := range resourceMaps.ReportTables {

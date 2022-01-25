@@ -89,6 +89,7 @@ const (
 	IntrospectionTableReportCounter   = "steampipe_report_counter"
 	IntrospectionTableReportHierarchy = "steampipe_report_hierarchy"
 	IntrospectionTableReportImage     = "steampipe_report_image"
+	IntrospectionTableReportInput     = "steampipe_report_input"
 	IntrospectionTableReportTable     = "steampipe_report_table"
 	IntrospectionTableReportText      = "steampipe_report_text"
 	IntrospectionTableVariable        = "steampipe_variable"

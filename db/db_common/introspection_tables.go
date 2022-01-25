@@ -56,6 +56,7 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportCounter{}, constants.IntrospectionTableReportCounter, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportHierarchy{}, constants.IntrospectionTableReportHierarchy, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportImage{}, constants.IntrospectionTableReportImage, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportInput{}, constants.IntrospectionTableReportInput, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportTable{}, constants.IntrospectionTableReportTable, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportText{}, constants.IntrospectionTableReportText, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
@@ -97,6 +98,9 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	}
 	for _, image := range workspaceResources.ReportImages {
 		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableReportImage))
+	}
+	for _, image := range workspaceResources.ReportInputs {
+		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableReportInput))
 	}
 	for _, table := range workspaceResources.ReportTables {
 		insertSql = append(insertSql, getTableInsertSqlForResource(table, constants.IntrospectionTableReportTable))

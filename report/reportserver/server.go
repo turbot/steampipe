@@ -276,6 +276,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		changedCounters := e.ChangedCounters
 		changedHierarchies := e.ChangedHierarchies
 		changedImages := e.ChangedImages
+		changedInputs := e.ChangedInputs
 		changedTables := e.ChangedTables
 		changedTexts := e.ChangedTexts
 		changedReports := e.ChangedReports
@@ -290,6 +291,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			len(changedCounters) == 0 &&
 			len(changedHierarchies) == 0 &&
 			len(changedImages) == 0 &&
+			len(changedInputs) == 0 &&
 			len(changedTables) == 0 &&
 			len(changedTexts) == 0 &&
 			len(changedReports) == 0 {
@@ -329,6 +331,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedCounters)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedHierarchies)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedImages)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedInputs)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedTables)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedTexts)...)
 
