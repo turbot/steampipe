@@ -28,16 +28,14 @@ func (m FormatterMap) keys() []string {
 }
 
 var outputFormatters FormatterMap = FormatterMap{
-	constants.CheckOutputFormatNone: &NullFormatter{},
-	constants.CheckOutputFormatCSV:  &CSVFormatter{},
-	// constants.CheckOutputFormatJSON:  &JSONFormatter{},
+	constants.CheckOutputFormatNone:  &NullFormatter{},
+	constants.CheckOutputFormatCSV:   &CSVFormatter{},
 	constants.CheckOutputFormatText:  &TextFormatter{},
 	constants.CheckOutputFormatBrief: &TextFormatter{},
 }
 
 var exportFormatters FormatterMap = FormatterMap{
 	constants.CheckOutputFormatCSV: &CSVFormatter{},
-	// constants.CheckOutputFormatJSON: &JSONFormatter{},
 }
 
 type CheckExportTarget struct {
