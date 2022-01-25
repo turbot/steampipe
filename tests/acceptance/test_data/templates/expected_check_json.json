@@ -4,255 +4,255 @@
   "description": "",
   "tags": {},
   "summary": {
-   "status": {
-    "alarm": 5,
-    "ok": 10,
-    "info": 3,
-    "skip": 1,
-    "error": 2
-   }
+    "status": {
+      "alarm": 5,
+      "ok": 10,
+      "info": 3,
+      "skip": 1,
+      "error": 2
+    }
   },
   "groups": [],
   "controls": [
-   {
-    "results": [
-     {
-      "reason": "Resource has some error",
-      "resource": "steampipe",
-      "status": "error",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "16"
-       }
-      ]
-     },
-     {
-      "reason": "Resource has some error",
-      "resource": "steampipe",
-      "status": "error",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "17"
-       }
-      ]
-     },
-     {
-      "reason": "Resource does not satisfy condition",
-      "resource": "steampipe",
-      "status": "alarm",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "11"
-       }
-      ]
-     },
-     {
-      "reason": "Resource does not satisfy condition",
-      "resource": "steampipe",
-      "status": "alarm",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "12"
-       }
-      ]
-     },
-     {
-      "reason": "Resource does not satisfy condition",
-      "resource": "steampipe",
-      "status": "alarm",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "13"
-       }
-      ]
-     },
-     {
-      "reason": "Resource does not satisfy condition",
-      "resource": "steampipe",
-      "status": "alarm",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "14"
-       }
-      ]
-     },
-     {
-      "reason": "Resource does not satisfy condition",
-      "resource": "steampipe",
-      "status": "alarm",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "15"
-       }
-      ]
-     },
-     {
-      "reason": "Information",
-      "resource": "steampipe",
-      "status": "info",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "19"
-       }
-      ]
-     },
-     {
-      "reason": "Information",
-      "resource": "steampipe",
-      "status": "info",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "20"
-       }
-      ]
-     },
-     {
-      "reason": "Information",
-      "resource": "steampipe",
-      "status": "info",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "21"
-       }
-      ]
-     },
-     {
-      "reason": "Resource satisfies condition",
-      "resource": "steampipe",
-      "status": "ok",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "1"
-       }
-      ]
-     },
-     {
-      "reason": "Resource satisfies condition",
-      "resource": "steampipe",
-      "status": "ok",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "2"
-       }
-      ]
-     },
-     {
-      "reason": "Resource satisfies condition",
-      "resource": "steampipe",
-      "status": "ok",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "3"
-       }
-      ]
-     },
-     {
-      "reason": "Resource satisfies condition",
-      "resource": "steampipe",
-      "status": "ok",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "4"
-       }
-      ]
-     },
-     {
-      "reason": "Resource satisfies condition",
-      "resource": "steampipe",
-      "status": "ok",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "5"
-       }
-      ]
-     },
-     {
-      "reason": "Resource satisfies condition",
-      "resource": "steampipe",
-      "status": "ok",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "6"
-       }
-      ]
-     },
-     {
-      "reason": "Resource satisfies condition",
-      "resource": "steampipe",
-      "status": "ok",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "7"
-       }
-      ]
-     },
-     {
-      "reason": "Resource satisfies condition",
-      "resource": "steampipe",
-      "status": "ok",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "8"
-       }
-      ]
-     },
-     {
-      "reason": "Resource satisfies condition",
-      "resource": "steampipe",
-      "status": "ok",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "9"
-       }
-      ]
-     },
-     {
-      "reason": "Resource satisfies condition",
-      "resource": "steampipe",
-      "status": "ok",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "10"
-       }
-      ]
-     },
-     {
-      "reason": "Resource is skipped",
-      "resource": "steampipe",
-      "status": "skip",
-      "dimensions": [
-       {
-        "key": "id",
-        "value": "18"
-       }
-      ]
-     }
-    ],
-    "control_id": "control.sample_control_mixed_results_1",
-    "description": "Sample control that returns 10 OK, 5 ALARM, 2 ERROR, 1 SKIP and 3 INFO",
-    "severity": "high",
-    "tags": {},
-    "title": "Sample control with all possible statuses(severity=high)"
-   }
+    {
+      "results": [
+        {
+          "reason": "Resource has some error",
+          "resource": "steampipe",
+          "status": "error",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "16"
+            }
+          ]
+        },
+        {
+          "reason": "Resource has some error",
+          "resource": "steampipe",
+          "status": "error",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "17"
+            }
+          ]
+        },
+        {
+          "reason": "Resource does not satisfy condition",
+          "resource": "steampipe",
+          "status": "alarm",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "11"
+            }
+          ]
+        },
+        {
+          "reason": "Resource does not satisfy condition",
+          "resource": "steampipe",
+          "status": "alarm",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "12"
+            }
+          ]
+        },
+        {
+          "reason": "Resource does not satisfy condition",
+          "resource": "steampipe",
+          "status": "alarm",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "13"
+            }
+          ]
+        },
+        {
+          "reason": "Resource does not satisfy condition",
+          "resource": "steampipe",
+          "status": "alarm",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "14"
+            }
+          ]
+        },
+        {
+          "reason": "Resource does not satisfy condition",
+          "resource": "steampipe",
+          "status": "alarm",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "15"
+            }
+          ]
+        },
+        {
+          "reason": "Information",
+          "resource": "steampipe",
+          "status": "info",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "19"
+            }
+          ]
+        },
+        {
+          "reason": "Information",
+          "resource": "steampipe",
+          "status": "info",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "20"
+            }
+          ]
+        },
+        {
+          "reason": "Information",
+          "resource": "steampipe",
+          "status": "info",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "21"
+            }
+          ]
+        },
+        {
+          "reason": "Resource satisfies condition",
+          "resource": "steampipe",
+          "status": "ok",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "reason": "Resource satisfies condition",
+          "resource": "steampipe",
+          "status": "ok",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "2"
+            }
+          ]
+        },
+        {
+          "reason": "Resource satisfies condition",
+          "resource": "steampipe",
+          "status": "ok",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "3"
+            }
+          ]
+        },
+        {
+          "reason": "Resource satisfies condition",
+          "resource": "steampipe",
+          "status": "ok",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "4"
+            }
+          ]
+        },
+        {
+          "reason": "Resource satisfies condition",
+          "resource": "steampipe",
+          "status": "ok",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "5"
+            }
+          ]
+        },
+        {
+          "reason": "Resource satisfies condition",
+          "resource": "steampipe",
+          "status": "ok",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "6"
+            }
+          ]
+        },
+        {
+          "reason": "Resource satisfies condition",
+          "resource": "steampipe",
+          "status": "ok",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "7"
+            }
+          ]
+        },
+        {
+          "reason": "Resource satisfies condition",
+          "resource": "steampipe",
+          "status": "ok",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "8"
+            }
+          ]
+        },
+        {
+          "reason": "Resource satisfies condition",
+          "resource": "steampipe",
+          "status": "ok",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "9"
+            }
+          ]
+        },
+        {
+          "reason": "Resource satisfies condition",
+          "resource": "steampipe",
+          "status": "ok",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "10"
+            }
+          ]
+        },
+        {
+          "reason": "Resource is skipped",
+          "resource": "steampipe",
+          "status": "skip",
+          "dimensions": [
+            {
+              "key": "id",
+              "value": "18"
+            }
+          ]
+        }
+      ],
+      "control_id": "control.sample_control_mixed_results_1",
+      "description": "Sample control that returns 10 OK, 5 ALARM, 2 ERROR, 1 SKIP and 3 INFO",
+      "severity": "high",
+      "tags": {},
+      "title": "Sample control with all possible statuses(severity=high)"
+    }
   ]
- }
+}

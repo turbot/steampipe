@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -468,17 +467,6 @@ func parseExportArg(arg string) (formatter controldisplay.Formatter, targetFileN
 	var found bool
 	if formatter, found = controldisplay.GetDefinedExportFormatter(arg); found {
 		return
-	}
-
-	// no defined formatter
-	// Tactical fix to resolve CSV and JSON filename exports
-	// We need this till we build out the templates for CSV and JSON
-	ext := filepath.Ext(arg)
-	if ext == constants.CsvExtension {
-		return controldisplay.CSVFormatter{}, arg, nil
-	}
-	if ext == constants.JsonExtension && !strings.HasSuffix(arg, "asff.json") {
-		return controldisplay.JSONFormatter{}, arg, nil
 	}
 
 	return controldisplay.GetTemplateExportFormatter(arg, true)
