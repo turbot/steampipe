@@ -17,16 +17,6 @@ var ErrFormatterNotFound = errors.New("Formatter not found")
 
 type FormatterMap map[string]Formatter
 
-func (m FormatterMap) keys() []string {
-	keys := make([]string, len(m))
-	i := 0
-	for key := range m {
-		keys[i] = key
-		i++
-	}
-	return keys
-}
-
 var outputFormatters FormatterMap = FormatterMap{
 	constants.CheckOutputFormatNone:  &NullFormatter{},
 	constants.CheckOutputFormatCSV:   &CSVFormatter{},

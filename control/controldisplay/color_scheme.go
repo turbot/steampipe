@@ -168,14 +168,6 @@ func (c *ControlColorScheme) Initialise(def *ControlColorSchemaDefinition) error
 	return nil
 }
 
-func (c ControlColorScheme) initialiseColor(color string, dest *colorFunc, validationErrors []string) {
-	if f, ok := constants.Colors[color]; ok {
-		*dest = f
-	} else {
-		validationErrors = append(validationErrors, color)
-	}
-}
-
 var ColorSchemes = map[string]*ControlColorSchemaDefinition{
 	"dark": {
 		GroupTitle:           "bold-bright-white",
