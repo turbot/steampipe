@@ -72,9 +72,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe check - export csv" {
   cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check control.sample_control_mixed_results_1 --export=csv --progress=false
-  assert_equal "$(cat *.csv)" "$(cat $TEST_DATA_DIR/expected_check_csv.csv)"
-  rm -f *.csv
+  run steampipe check control.sample_control_mixed_results_1 --export test.csv --progress=false
+  assert_equal "$(cat test.csv)" "$(cat $TEST_DATA_DIR/expected_check_csv.csv)"
+  rm -f test.csv
   cd -
 }
 
