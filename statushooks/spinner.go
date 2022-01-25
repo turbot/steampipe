@@ -1,4 +1,4 @@
-package statusspinner
+package statushooks
 
 import (
 	"fmt"
