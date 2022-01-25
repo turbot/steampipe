@@ -32,13 +32,15 @@ func (m *Mod) BuildResourceTree(loadedDependencyMods ModMap) error {
 	return nil
 }
 
+// add all resource in sourceMod into _our_ resource tree
 func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 	var leafNodes []ModTreeItem
 	var err error
 
 	resourceFunc := func(item HclResource) bool {
 		if treeItem, ok := item.(ModTreeItem); ok {
-			if err = sourceMod.addItemIntoResourceTree(treeItem); err != nil {
+			// NOTE: add resource into _our_ resource tree, i.e. mod 'm'
+			if err = m.addItemIntoResourceTree(treeItem); err != nil {
 				// stop walking
 				return false
 			}
@@ -50,6 +52,7 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 		return true
 	}
 
+	// iterate through all resources in source mod
 	sourceMod.WalkResources(resourceFunc)
 
 	// now initialise all Paths properties
