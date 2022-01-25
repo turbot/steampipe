@@ -90,7 +90,7 @@ func (j *NullFormatter) FileExtension() string {
 }
 
 func templateFuncs() template.FuncMap {
-	useFromSprigMap := []string{"upper", "toJson", "quote", "dict", "add", "now", "sub"}
+	useFromSprigMap := []string{"upper", "toJson", "quote", "dict", "add", "now", "toPrettyJson"}
 
 	var funcs template.FuncMap = template.FuncMap{}
 	sprigMap := sprig.TxtFuncMap()
