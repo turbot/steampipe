@@ -38,6 +38,7 @@ type ErrorPayload struct {
 type ExecutionPayload struct {
 	Action     string                         `json:"action"`
 	ReportNode reportinterfaces.ReportNodeRun `json:"report_node"`
+	Data       interface{}
 }
 
 type ReportClientInfo struct {
@@ -104,6 +105,22 @@ func buildWorkspaceErrorPayload(e *reportevents.WorkspaceError) []byte {
 	return jsonString
 }
 
+func buildLeafNodeProgressPayload(event *reportevents.LeafNodeProgress) []byte {
+	payload := ExecutionPayload{
+		Action:     "leaf_node_progress",
+		ReportNode: event.Node,
+		Data:       event.Data,
+	}
+	//jsonString, _ := json.Marshal(payload)
+	//return jsonString
+	jsonString, err := json.MarshalIndent(payload, "", "  ")
+	fmt.Println(err)
+	a := string(jsonString)
+	fmt.Println(a)
+
+	return jsonString
+}
+
 func buildLeafNodeCompletePayload(event *reportevents.LeafNodeComplete) []byte {
 	payload := ExecutionPayload{
 		Action:     "leaf_node_complete",
@@ -127,6 +144,8 @@ func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte
 		Action:     "execution_complete",
 		ReportNode: event.Report,
 	}
+	//jsonString, _ := json.Marshal(payload)
+	//return jsonString
 	jsonString, err := json.MarshalIndent(payload, "", "  ")
 	fmt.Println(err)
 	a := string(jsonString)
@@ -218,6 +237,19 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 	case *reportevents.LeafNodeError:
 		fmt.Println("Got leaf node error event", *e)
+
+	case *reportevents.LeafNodeProgress:
+		fmt.Println("Got leaf node complete event", *e)
+		payload := buildLeafNodeProgressPayload(e)
+		paths := e.Node.GetPath()
+		s.mutex.Lock()
+		for session, repoInfo := range s.reportClients {
+			// If this session is interested in this report, broadcast to it
+			if (repoInfo.Report != nil) && helpers.StringSliceContains(paths, *repoInfo.Report) {
+				session.Write(payload)
+			}
+		}
+		s.mutex.Unlock()
 
 	case *reportevents.LeafNodeComplete:
 		fmt.Println("Got leaf node complete event", *e)

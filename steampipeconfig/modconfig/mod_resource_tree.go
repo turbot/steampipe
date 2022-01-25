@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 )
 
-// BuildResourceTree builds the control tree structure by setting the parent property for each control and benchmar
+// BuildResourceTree builds the control tree structure by setting the parent property for each control and benchmark
 // NOTE: this also builds the sorted benchmark list
 func (m *Mod) BuildResourceTree(loadedDependencyMods ModMap) error {
 	if err := m.addResourcesIntoTree(m); err != nil {

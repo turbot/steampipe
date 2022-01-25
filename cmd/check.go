@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -19,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/control"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
+	"github.com/turbot/steampipe/control/controlhooks"
 	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
@@ -94,6 +96,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	// setup a cancel context and start cancel handler
 	ctx, cancel := context.WithCancel(cmd.Context())
 	contexthelpers.StartCancelHandler(cancel)
+	// create a context with check status hooks
+	ctx = createCheckContext(ctx)
 
 	defer func() {
 		utils.LogTime("runCheckCmd end")
@@ -185,6 +189,17 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// set global exit code
 	exitCode = failures
+}
+
+// create the context for the check run - add a control status renderer
+func createCheckContext(ctx context.Context) context.Context {
+	var controlHooks controlhooks.ControlHooks = controlhooks.NullHooks
+	// if the client is a TTY, inject a status spinner
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		controlHooks = controlhooks.NewControlStatusHooks()
+	}
+
+	return controlhooks.AddControlHooksToContext(ctx, controlHooks)
 }
 
 func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {

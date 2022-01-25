@@ -16,7 +16,7 @@ import (
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/plugin"
 	"github.com/turbot/steampipe/statefile"
-	"github.com/turbot/steampipe/statusspinner"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -206,7 +206,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
 
-	statusSpinner := statusspinner.NewStatusSpinner()
+	statusSpinner := statushooks.NewStatusSpinner()
 
 	for _, p := range plugins {
 		isPluginExists, _ := plugin.Exists(p)
@@ -343,7 +343,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	statusSpinner := statusspinner.NewStatusSpinner(statusspinner.WithMessage("Checking for available updates"))
+	statusSpinner := statushooks.NewStatusSpinner(statushooks.WithMessage("Checking for available updates"))
 	reports := plugin.GetUpdateReport(state.InstallationID, runUpdatesFor)
 	statusSpinner.Done()
 

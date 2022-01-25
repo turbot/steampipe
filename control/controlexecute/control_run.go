@@ -207,7 +207,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 		if r.Group != nil {
 			r.Group.addDuration(r.Duration)
 		}
-		log.Printf("[TRACE] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.Tree.progress.executing)
+		log.Printf("[TRACE] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.Tree.progress.Executing)
 	}()
 
 	// get a db connection

@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/turbot/steampipe/control/controlexecute"
+	"github.com/turbot/steampipe/control/controlhooks"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -69,6 +70,8 @@ func (r *CheckRun) Execute(ctx context.Context) error {
 		r.SetError(err)
 		return err
 	}
+	// create a context with a ControlEventHooks to report control execution progress
+	ctx = controlhooks.AddControlHooksToContext(ctx, NewControlEventHooks(r))
 	executionTree.Execute(ctx)
 	r.ControlExecutionTree = executionTree
 

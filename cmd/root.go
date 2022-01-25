@@ -7,9 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/turbot/steampipe/statushooks"
-	"github.com/turbot/steampipe/statusspinner"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -19,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/task"
 	"github.com/turbot/steampipe/utils"
@@ -199,12 +197,12 @@ func Execute() int {
 	return exitCode
 }
 
-// create the root context - create a status renderer and set as value
+// create the root context - add a status renderer
 func createRootContext() context.Context {
 	var statusRenderer statushooks.StatusHooks = statushooks.NullHooks
 	// if the client is a TTY, inject a status spinner
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		statusRenderer = statusspinner.NewStatusSpinner()
+		statusRenderer = statushooks.NewStatusSpinner()
 	}
 
 	ctx := statushooks.AddStatusHooksToContext(context.Background(), statusRenderer)
