@@ -91,7 +91,7 @@ func (r *Runner) shouldRun() bool {
 
 	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
-	if isServiceStopCmd(cmd) || isBatchQueryCmd(cmd, cmdArgs) || isCompletionCmd(cmd) {
+	if isPluginManagerCmd(cmd) || isServiceStopCmd(cmd) || isBatchQueryCmd(cmd, cmdArgs) || isCompletionCmd(cmd) {
 		// no scheduled tasks for `service stop` and `query <sql>`
 		return false
 	}
@@ -115,6 +115,9 @@ func isServiceStopCmd(cmd *cobra.Command) bool {
 
 func isCompletionCmd(cmd *cobra.Command) bool {
 	return cmd.Name() == "completion"
+}
+func isPluginManagerCmd(cmd *cobra.Command) bool {
+	return cmd.Name() == "plugin-manager"
 }
 
 func isBatchQueryCmd(cmd *cobra.Command, cmdArgs []string) bool {
