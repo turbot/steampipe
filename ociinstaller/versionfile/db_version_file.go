@@ -90,14 +90,6 @@ func (f *DatabaseVersionFile) write(path string) error {
 	return os.WriteFile(path, versionFileJSON, 0644)
 }
 
-// delete the file on disk if it exists
-func (f *DatabaseVersionFile) delete() {
-	versionFilePath := filepaths.DatabaseVersionFilePath()
-	if helpers.FileExists(versionFilePath) {
-		os.Remove(versionFilePath)
-	}
-}
-
 // FormatTime :: format time as RFC3339 in UTC
 func FormatTime(localTime time.Time) string {
 	loc, _ := time.LoadLocation("UTC")

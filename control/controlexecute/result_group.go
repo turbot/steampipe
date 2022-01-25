@@ -188,24 +188,6 @@ func (r *ResultGroup) addDimensionKeys(keys ...string) {
 	r.DimensionKeys = utils.StringSliceDistinct(r.DimensionKeys)
 }
 
-// populateGroupMap mutates the passed in a map to return all child result groups
-func (r *ResultGroup) populateGroupMap(groupMap map[string]*ResultGroup) {
-	if groupMap == nil {
-		groupMap = make(map[string]*ResultGroup)
-	}
-	// add self
-	groupMap[r.GroupId] = r
-	for _, g := range r.Groups {
-		g.populateGroupMap(groupMap)
-	}
-}
-
-// addResult adds a result to the list, updates the summary status
-// (this also updates the status of our parent, all the way up the tree)
-func (r *ResultGroup) addResult(run *ControlRun) {
-	r.ControlRuns = append(r.ControlRuns, run)
-}
-
 func (r *ResultGroup) addDuration(d time.Duration) {
 	r.updateLock.Lock()
 	defer r.updateLock.Unlock()
