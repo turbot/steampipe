@@ -40,6 +40,7 @@ type Workspace struct {
 	ReportCounters    map[string]*modconfig.ReportCounter
 	ReportHierarchies map[string]*modconfig.ReportHierarchy
 	ReportImages      map[string]*modconfig.ReportImage
+	ReportInputs      map[string]*modconfig.ReportInput
 	ReportTables      map[string]*modconfig.ReportTable
 	ReportTexts       map[string]*modconfig.ReportText
 	Variables         map[string]*modconfig.Variable
@@ -175,6 +176,7 @@ func (w *Workspace) reset() {
 	w.ReportCounters = make(map[string]*modconfig.ReportCounter)
 	w.ReportHierarchies = make(map[string]*modconfig.ReportHierarchy)
 	w.ReportImages = make(map[string]*modconfig.ReportImage)
+	w.ReportInputs = make(map[string]*modconfig.ReportInput)
 	w.ReportTables = make(map[string]*modconfig.ReportTable)
 	w.ReportTexts = make(map[string]*modconfig.ReportText)
 	w.LocalQueries = make(map[string]*modconfig.Query)
@@ -235,6 +237,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	w.ReportCounters = w.buildReportCounterMap(runCtx.LoadedDependencyMods)
 	w.ReportHierarchies = w.buildReportHierarchyMap(runCtx.LoadedDependencyMods)
 	w.ReportImages = w.buildReportImageMap(runCtx.LoadedDependencyMods)
+	w.ReportInputs = w.buildReportInputMap(runCtx.LoadedDependencyMods)
 	w.ReportTables = w.buildReportTableMap(runCtx.LoadedDependencyMods)
 	w.ReportTexts = w.buildReportTextMap(runCtx.LoadedDependencyMods)
 

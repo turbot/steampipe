@@ -13,6 +13,7 @@ type ReportChanged struct {
 	ChangedCounters    []*modconfig.ReportTreeItemDiffs
 	ChangedHierarchies []*modconfig.ReportTreeItemDiffs
 	ChangedImages      []*modconfig.ReportTreeItemDiffs
+	ChangedInputs      []*modconfig.ReportTreeItemDiffs
 	ChangedTables      []*modconfig.ReportTreeItemDiffs
 	ChangedTexts       []*modconfig.ReportTreeItemDiffs
 
@@ -24,6 +25,7 @@ type ReportChanged struct {
 	NewCounters    []*modconfig.ReportCounter
 	NewHierarchies []*modconfig.ReportHierarchy
 	NewImages      []*modconfig.ReportImage
+	NewInputs      []*modconfig.ReportInput
 	NewTables      []*modconfig.ReportTable
 	NewTexts       []*modconfig.ReportText
 
@@ -35,6 +37,7 @@ type ReportChanged struct {
 	DeletedCounters    []*modconfig.ReportCounter
 	DeletedHierarchies []*modconfig.ReportHierarchy
 	DeletedImages      []*modconfig.ReportImage
+	DeletedInputs      []*modconfig.ReportInput
 	DeletedTables      []*modconfig.ReportTable
 	DeletedTexts       []*modconfig.ReportText
 }
@@ -51,6 +54,7 @@ func (c *ReportChanged) HasChanges() bool {
 		len(c.ChangedCounters)+
 		len(c.ChangedHierarchies)+
 		len(c.ChangedImages)+
+		len(c.ChangedInputs)+
 		len(c.ChangedTables)+
 		len(c.ChangedTexts)+
 		len(c.NewReports)+
@@ -61,6 +65,7 @@ func (c *ReportChanged) HasChanges() bool {
 		len(c.NewCounters)+
 		len(c.NewHierarchies)+
 		len(c.NewImages)+
+		len(c.NewInputs)+
 		len(c.NewTables)+
 		len(c.NewTexts)+
 		len(c.DeletedReports)+
@@ -71,6 +76,7 @@ func (c *ReportChanged) HasChanges() bool {
 		len(c.DeletedCounters)+
 		len(c.DeletedHierarchies)+
 		len(c.DeletedImages)+
+		len(c.DeletedInputs)+
 		len(c.DeletedTables)+
 		len(c.DeletedTexts) > 0
 }

@@ -17,6 +17,7 @@ type WorkspaceResourceMaps struct {
 	ReportCounters    map[string]*ReportCounter
 	ReportHierarchies map[string]*ReportHierarchy
 	ReportImages      map[string]*ReportImage
+	ReportInputs      map[string]*ReportInput
 	ReportTables      map[string]*ReportTable
 	ReportTexts       map[string]*ReportText
 	References        map[string]*ResourceReference
@@ -40,6 +41,7 @@ func NewWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
 		ReportCounters:    make(map[string]*ReportCounter),
 		ReportHierarchies: make(map[string]*ReportHierarchy),
 		ReportImages:      make(map[string]*ReportImage),
+		ReportInputs:      make(map[string]*ReportInput),
 		ReportTables:      make(map[string]*ReportTable),
 		ReportTexts:       make(map[string]*ReportText),
 		References:        make(map[string]*ResourceReference),
@@ -193,6 +195,19 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 		}
 	}
 
+	for name, images := range m.ReportInputs {
+		if otherImage, ok := other.ReportInputs[name]; !ok {
+			return false
+		} else if !images.Equals(otherImage) {
+			return false
+		}
+	}
+	for name := range other.ReportInputs {
+		if _, ok := m.ReportInputs[name]; !ok {
+			return false
+		}
+	}
+
 	for name, tables := range m.ReportTables {
 		if otherReport, ok := other.ReportTables[name]; !ok {
 			return false
@@ -290,6 +305,7 @@ func (m *WorkspaceResourceMaps) Empty() bool {
 		len(m.ReportCounters)+
 		len(m.ReportHierarchies)+
 		len(m.ReportImages)+
+		len(m.ReportInputs)+
 		len(m.ReportTables)+
 		len(m.ReportTexts)+
 		len(m.References) == 0

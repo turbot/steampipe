@@ -53,6 +53,7 @@ func (w *Workspace) populateResourceMaps() {
 		ReportCounters:    w.ReportCounters,
 		ReportHierarchies: w.ReportHierarchies,
 		ReportImages:      w.ReportImages,
+		ReportInputs:      w.ReportInputs,
 		ReportTables:      w.ReportTables,
 		ReportTexts:       w.ReportTexts,
 	}
@@ -212,6 +213,21 @@ func (w *Workspace) buildReportImageMap(modMap modconfig.ModMap) map[string]*mod
 
 	for _, mod := range modMap {
 		for _, p := range mod.ReportImages {
+			res[p.Name()] = p
+		}
+	}
+	return res
+}
+
+func (w *Workspace) buildReportInputMap(modMap modconfig.ModMap) map[string]*modconfig.ReportInput {
+	var res = make(map[string]*modconfig.ReportInput)
+
+	for _, p := range w.Mod.ReportInputs {
+		res[p.Name()] = p
+	}
+
+	for _, mod := range modMap {
+		for _, p := range mod.ReportInputs {
 			res[p.Name()] = p
 		}
 	}

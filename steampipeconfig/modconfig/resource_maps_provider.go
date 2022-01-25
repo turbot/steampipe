@@ -27,6 +27,8 @@ func GetResource(provider ResourceMapsProvider, parsedName *ParsedResourceName) 
 		resource, found = resourceMaps.ReportHierarchies[longName]
 	case BlockTypeImage:
 		resource, found = resourceMaps.ReportImages[longName]
+	case BlockTypeInput:
+		resource, found = resourceMaps.ReportInputs[longName]
 	case BlockTypeTable:
 		resource, found = resourceMaps.ReportTables[longName]
 	case BlockTypeText:
