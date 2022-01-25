@@ -20,14 +20,12 @@ type FormatterMap map[string]Formatter
 var outputFormatters FormatterMap = FormatterMap{
 	constants.CheckOutputFormatNone:  &NullFormatter{},
 	constants.CheckOutputFormatCSV:   &CSVFormatter{},
-	constants.CheckOutputFormatJSON:  &JSONFormatter{},
 	constants.CheckOutputFormatText:  &TextFormatter{},
 	constants.CheckOutputFormatBrief: &TextFormatter{},
 }
 
 var exportFormatters FormatterMap = FormatterMap{
-	constants.CheckOutputFormatCSV:  &CSVFormatter{},
-	constants.CheckOutputFormatJSON: &JSONFormatter{},
+	constants.CheckOutputFormatCSV: &CSVFormatter{},
 }
 
 type CheckExportTarget struct {
@@ -80,7 +78,7 @@ func (j *NullFormatter) FileExtension() string {
 }
 
 func templateFuncs() template.FuncMap {
-	useFromSprigMap := []string{"upper", "toJson", "quote", "dict", "add", "now"}
+	useFromSprigMap := []string{"upper", "toJson", "quote", "dict", "add", "now", "toPrettyJson"}
 
 	var funcs template.FuncMap = template.FuncMap{}
 	sprigMap := sprig.TxtFuncMap()
