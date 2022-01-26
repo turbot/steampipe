@@ -22,7 +22,7 @@
 # vendor/
 
 # Report server
-/report/reportserver/assets
+/report/reportassets/assets.zip
 
 # Report UI
 /ui/report/.idea
