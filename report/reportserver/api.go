@@ -5,8 +5,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path"
+	"runtime"
 	"time"
 
 	"github.com/gin-contrib/static"
@@ -14,6 +16,24 @@ import (
 	"github.com/turbot/steampipe/filepaths"
 	"gopkg.in/olahol/melody.v1"
 )
+
+// https://stackoverflow.com/questions/39320371/how-start-web-server-to-open-page-in-browser-in-golang
+func openBrowser(url string) error {
+	var cmd string
+	var args []string
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = "cmd"
+		args = []string{"/c", "start"}
+	case "darwin":
+		cmd = "open"
+	default: // "linux", "freebsd", "openbsd", "netbsd"
+		cmd = "xdg-open"
+	}
+	args = append(args, url)
+	return exec.Command(cmd, args...).Start()
+}
 
 func StartAPI(ctx context.Context, webSocket *melody.Melody) {
 	router := gin.Default()
@@ -42,6 +62,8 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) {
 			log.Printf("listen: %s\n", err)
 		}
 	}()
+
+	_ = openBrowser("http://localhost:3001")
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
