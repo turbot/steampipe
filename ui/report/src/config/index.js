@@ -1,1 +1,1 @@
-export const SOCKET_SERVER_URL = "ws://localhost:3001/ws";
+export const SOCKET_SERVER_URL = "ws://localhost:9194/ws";

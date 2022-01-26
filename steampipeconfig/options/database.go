@@ -19,7 +19,7 @@ func (d *Database) ConfigMap() map[string]interface{} {
 	// only add keys which are non null
 	res := map[string]interface{}{}
 	if d.Port != nil {
-		res[constants.ArgPort] = d.Port
+		res[constants.ArgDatabasePort] = d.Port
 	}
 	if d.Listen != nil {
 		res[constants.ArgListenAddress] = d.Listen

@@ -2,6 +2,9 @@ package reportserver
 
 import (
 	"context"
+	"fmt"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 	"log"
 	"net/http"
 	"os"
@@ -51,8 +54,10 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) {
 		c.File(path.Join(assetsDirectory, "index.html"))
 	})
 
+	reportServerPort := viper.GetInt(constants.ArgReportServerPort)
+
 	srv := &http.Server{
-		Addr:    ":3001",
+		Addr:    fmt.Sprintf(":%d", reportServerPort),
 		Handler: router,
 	}
 
@@ -63,7 +68,7 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) {
 		}
 	}()
 
-	_ = openBrowser("http://localhost:3001")
+	_ = openBrowser(fmt.Sprintf("http://localhost:%d", reportServerPort))
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
