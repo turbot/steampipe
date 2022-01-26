@@ -9,6 +9,7 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/contexthelpers"
+	"github.com/turbot/steampipe/report/reportassets"
 	"github.com/turbot/steampipe/report/reportserver"
 	"github.com/turbot/steampipe/utils"
 )
@@ -38,16 +39,14 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// ensure report assets are present and extract if not
+	err := reportassets.Ensure()
+	utils.FailOnError(err)
+
 	ctx, cancel := context.WithCancel(cmd.Context())
 	contexthelpers.StartCancelHandler(cancel)
 
-	// start db if necessary
-	//err := db_local.EnsureDbAndStartService(constants.InvokerReport, true)
-	//utils.FailOnErrorWithMessage(err, "failed to start service")
-	//defer db_local.ShutdownService(constants.InvokerReport)
-
 	server, err := reportserver.NewServer(ctx)
-
 	if err != nil {
 		utils.FailOnError(err)
 	}
@@ -55,4 +54,5 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	defer server.Shutdown(ctx)
 
 	server.Start()
+
 }

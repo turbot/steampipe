@@ -68,27 +68,28 @@ func LogDir() string {
 	return steampipeSubDir("logs")
 }
 
-// TempDir returns the path to the steampipe tmp directory (creates if missing)
-func TempDir() string {
-	return steampipeSubDir("tmp")
-}
-
 // LegacyVersionFilePath returns the legacy version file path
 func LegacyVersionFilePath() string {
-	path := filepath.Join(InternalDir(), versionFileName)
-	return path
+	return filepath.Join(InternalDir(), versionFileName)
 }
 
 // PluginVersionFilePath returns the plugin version file path
 func PluginVersionFilePath() string {
-	path := filepath.Join(PluginDir(), versionFileName)
-	return path
+	return filepath.Join(PluginDir(), versionFileName)
 }
 
 // DatabaseVersionFilePath returns the plugin version file path
 func DatabaseVersionFilePath() string {
-	path := filepath.Join(DatabaseDir(), versionFileName)
-	return path
+	return filepath.Join(DatabaseDir(), versionFileName)
+}
+
+func ReportAssetsPath() string {
+	return steampipeSubDir(filepath.Join(filepath.Join("report", "assets")))
+}
+
+// ReportAssetsVersionFilePath returns the report assets version file path
+func ReportAssetsVersionFilePath() string {
+	return filepath.Join(ReportAssetsPath(), versionFileName)
 }
 
 func RunningInfoFilePath() string {

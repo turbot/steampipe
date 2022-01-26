@@ -60,7 +60,7 @@ func LoadDatabaseVersionFile() (*DatabaseVersionFile, error) {
 func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 	file, _ := os.ReadFile(path)
 	var data DatabaseVersionFile
-	if err := json.Unmarshal([]byte(file), &data); err != nil {
+	if err := json.Unmarshal(file, &data); err != nil {
 		log.Println("[ERROR]", "Error while reading DB version file", err)
 		return nil, err
 	}

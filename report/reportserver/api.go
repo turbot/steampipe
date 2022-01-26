@@ -7,19 +7,18 @@ import (
 	"os"
 	"os/signal"
 	"path"
-	"runtime"
 	"time"
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/turbot/steampipe/filepaths"
 	"gopkg.in/olahol/melody.v1"
 )
 
 func StartAPI(ctx context.Context, webSocket *melody.Melody) {
 	router := gin.Default()
 
-	_, filename, _, _ := runtime.Caller(1)
-	assetsDirectory := path.Join(path.Dir(filename), "assets")
+	assetsDirectory := filepaths.ReportAssetsPath()
 
 	router.Use(static.Serve("/", static.LocalFile(assetsDirectory, true)))
 

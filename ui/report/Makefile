@@ -2,7 +2,7 @@
 package: zip
 
 zip: version
-	zip -r -D build/artifacts.zip build/*
+		cd build && zip -r -D ../../../report/reportassets/bin/assets.zip *
 
 version: build
 	go run scripts/version.go
