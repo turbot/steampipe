@@ -7,6 +7,8 @@ import (
 	"sync"
 
 	"github.com/spf13/viper"
+	"gopkg.in/olahol/melody.v1"
+
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
 	typeHelpers "github.com/turbot/go-kit/types"
@@ -18,7 +20,6 @@ import (
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
-	"gopkg.in/olahol/melody.v1"
 )
 
 type Server struct {
