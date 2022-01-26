@@ -1,10 +1,10 @@
 {
   "name": "steampipe-reports",
-  "version": "0.1.0",
+  "version": "0.13.0",
   "private": true,
   "scripts": {
     "start": "craco start",
-    "build": "craco build",
+    "build": "GENERATE_SOURCEMAP=false craco build",
     "test": "craco test",
     "eject": "react-scripts eject",
     "prettify": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
