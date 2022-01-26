@@ -14,20 +14,18 @@ import (
 
 // ReportContainerRun is a struct representing a container run
 type ReportContainerRun struct {
-	Name string `json:"name"`
-
-	Title    string                           `json:"title,omitempty"`
-	Width    int                              `json:"width,omitempty"`
-	Height   int                              `json:"height,omitempty"`
-	Source   string                           `json:"source,omitempty"`
-	SQL      string                           `json:"sql,omitempty"`
-	Error    error                            `json:"error,omitempty"`
-	Children []reportinterfaces.ReportNodeRun `json:"children,omitempty"`
-	NodeType string                           `json:"node_type"`
-	Path     []string                         `json:"-"`
-
+	Name          string                           `json:"name"`
+	Title         string                           `json:"title,omitempty"`
+	Width         int                              `json:"width,omitempty"`
+	Height        int                              `json:"height,omitempty"`
+	Source        string                           `json:"source,omitempty"`
+	SQL           string                           `json:"sql,omitempty"`
+	Error         error                            `json:"error,omitempty"`
+	Children      []reportinterfaces.ReportNodeRun `json:"children,omitempty"`
+	NodeType      string                           `json:"node_type"`
+	Status        reportinterfaces.ReportRunStatus `json:"status"`
+	Path          []string                         `json:"-"`
 	parent        reportinterfaces.ReportNodeParent
-	runStatus     reportinterfaces.ReportRunStatus
 	executionTree *ReportExecutionTree
 	childComplete chan (reportinterfaces.ReportNodeRun)
 }
@@ -43,7 +41,7 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 
 		// set to complete, optimistically
 		// if any children have SQL we will set this to ReportRunReady instead
-		runStatus:     reportinterfaces.ReportRunComplete,
+		Status:        reportinterfaces.ReportRunComplete,
 		childComplete: make(chan reportinterfaces.ReportNodeRun, len(children)),
 	}
 	if container.Title != nil {
@@ -89,7 +87,7 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 
 		// if our child has not completed, we have not completed
 		if childRun.GetRunStatus() == reportinterfaces.ReportRunReady {
-			r.runStatus = reportinterfaces.ReportRunReady
+			r.Status = reportinterfaces.ReportRunReady
 		}
 		r.Children = append(r.Children, childRun)
 	}
@@ -160,14 +158,14 @@ func (r *ReportContainerRun) GetPath() modconfig.NodePath {
 
 // GetRunStatus implements ReportNodeRun
 func (r *ReportContainerRun) GetRunStatus() reportinterfaces.ReportRunStatus {
-	return r.runStatus
+	return r.Status
 }
 
 // SetError implements ReportNodeRun
 // tell parent we are done
 func (r *ReportContainerRun) SetError(err error) {
 	r.Error = err
-	r.runStatus = reportinterfaces.ReportRunError
+	r.Status = reportinterfaces.ReportRunError
 	// raise container error event
 	r.executionTree.workspace.PublishReportEvent(&reportevents.ContainerError{Container: r})
 	r.parent.ChildCompleteChan() <- r
@@ -176,7 +174,7 @@ func (r *ReportContainerRun) SetError(err error) {
 
 // SetComplete implements ReportNodeRun
 func (r *ReportContainerRun) SetComplete() {
-	r.runStatus = reportinterfaces.ReportRunComplete
+	r.Status = reportinterfaces.ReportRunComplete
 	// raise container complete event
 	log.Printf("[WARN] ******************** PublishReportEvent ContainerComplete\n")
 
@@ -187,7 +185,7 @@ func (r *ReportContainerRun) SetComplete() {
 
 // RunComplete implements ReportNodeRun
 func (r *ReportContainerRun) RunComplete() bool {
-	return r.runStatus == reportinterfaces.ReportRunComplete || r.runStatus == reportinterfaces.ReportRunError
+	return r.Status == reportinterfaces.ReportRunComplete || r.Status == reportinterfaces.ReportRunError
 }
 
 // ChildrenComplete implements ReportNodeRun

@@ -18,6 +18,10 @@ func NewControlEventHooks(r *CheckRun) *ControlEventHooks {
 	}
 }
 
+func (c *ControlEventHooks) OnStart(ctx context.Context, _ *controlhooks.ControlProgress) {
+	// nothing to do
+}
+
 func (c *ControlEventHooks) OnControlEvent(ctx context.Context, _ *controlhooks.ControlProgress) {
 	event := &reportevents.LeafNodeProgress{Node: c.CheckRun}
 	c.CheckRun.executionTree.workspace.PublishReportEvent(event)

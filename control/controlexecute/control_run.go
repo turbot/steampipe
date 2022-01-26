@@ -207,7 +207,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 		if r.Group != nil {
 			r.Group.addDuration(r.Duration)
 		}
-		log.Printf("[TRACE] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.Tree.progress.Executing)
+		log.Printf("[TRACE] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.Tree.Progress.Executing)
 	}()
 
 	// get a db connection
@@ -230,8 +230,8 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	r.runStatus = ControlRunStarted
 
 	// update the current running control in the Progress renderer
-	r.Tree.progress.OnControlStart(ctx, control)
-	defer r.Tree.progress.OnControlFinish(ctx)
+	r.Tree.Progress.OnControlStart(ctx, control)
+	defer r.Tree.Progress.OnControlFinish(ctx)
 
 	// resolve the control query
 	r.Lifecycle.Add("query_resolution_start")
@@ -412,9 +412,9 @@ func (r *ControlRun) setRunStatus(ctx context.Context, status ControlRunStatus) 
 	if r.Finished() {
 		// update Progress
 		if status == ControlRunError {
-			r.Tree.progress.OnControlError(ctx)
+			r.Tree.Progress.OnControlError(ctx)
 		} else {
-			r.Tree.progress.OnControlComplete(ctx)
+			r.Tree.Progress.OnControlComplete(ctx)
 		}
 
 		r.doneChan <- true

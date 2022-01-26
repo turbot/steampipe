@@ -6,13 +6,12 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-type ReportRunStatus uint32
+type ReportRunStatus string
 
 const (
-	ReportRunReady ReportRunStatus = 1 << iota
-	ReportRunStarted
-	ReportRunComplete
-	ReportRunError
+	ReportRunReady    ReportRunStatus = "ready"
+	ReportRunComplete                 = "complete"
+	ReportRunError                    = "error"
 )
 
 type ReportNodeRun interface {
