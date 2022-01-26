@@ -66,11 +66,10 @@ func CreateConnectionPlugins(connections ...*modconfig.Connection) (connectionPl
 		if err != nil {
 			res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", connection.PluginShortName, err))
 			continue
+		} else {
+			connectionPluginMap[connection.Name] = connectionPlugin
 		}
-
-		connectionPluginMap[connection.Name] = connectionPlugin
 	}
-
 	// now get populate schemas for all these connection plugins
 	// - minimising the GetSchema calls we make to the unique schemas
 	if err := populateConnectionPluginSchemas(connections, connectionPluginMap); err != nil {
