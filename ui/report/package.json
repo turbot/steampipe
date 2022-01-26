@@ -9,8 +9,7 @@
     "eject": "react-scripts eject",
     "prettify": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
     "storybook": "start-storybook -p 6006 -s public",
-    "build-storybook": "build-storybook -s public",
-    "prepare": "husky install"
+    "build-storybook": "build-storybook -s public"
   },
   "dependencies": {
     "@cassiozen/usestatemachine": "1.0.1",
@@ -67,7 +66,6 @@
     "@types/react": "17.0.38",
     "@types/react-dom": "17.0.11",
     "autoprefixer": "10.4.2",
-    "husky": "7.0.4",
     "lint-staged": "12.3.1",
     "npm-run-all": "4.1.5",
     "prettier": "2.5.1",
