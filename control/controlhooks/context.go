@@ -34,5 +34,5 @@ func OnControlEvent(ctx context.Context, p *ControlProgress) {
 }
 
 func OnDone(ctx context.Context, p *ControlProgress) {
-	ControlHooksFromContext(ctx).OnControlEvent(ctx, p)
+	ControlHooksFromContext(ctx).OnDone(ctx, p)
 }
