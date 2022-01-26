@@ -38,7 +38,6 @@ type ErrorPayload struct {
 type ExecutionPayload struct {
 	Action     string                         `json:"action"`
 	ReportNode reportinterfaces.ReportNodeRun `json:"report_node"`
-	Data       interface{}
 }
 
 type ReportClientInfo struct {
@@ -109,7 +108,6 @@ func buildLeafNodeProgressPayload(event *reportevents.LeafNodeProgress) []byte {
 	payload := ExecutionPayload{
 		Action:     "leaf_node_progress",
 		ReportNode: event.Node,
-		Data:       event.Data,
 	}
 	//jsonString, _ := json.Marshal(payload)
 	//return jsonString

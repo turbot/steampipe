@@ -15,8 +15,7 @@ import (
 
 // CheckRun is a struct representing the execution of a leaf reporting node
 type CheckRun struct {
-	Name string `json:"name"`
-
+	Name                 string                        `json:"name"`
 	Title                string                        `json:"title,omitempty"`
 	Width                int                           `json:"width,omitempty"`
 	Error                error                         `json:"error,omitempty"`
@@ -72,8 +71,8 @@ func (r *CheckRun) Execute(ctx context.Context) error {
 	}
 	// create a context with a ControlEventHooks to report control execution progress
 	ctx = controlhooks.AddControlHooksToContext(ctx, NewControlEventHooks(r))
-	executionTree.Execute(ctx)
 	r.ControlExecutionTree = executionTree
+	executionTree.Execute(ctx)
 
 	log.Printf("[WARN] %s SetComplete", r.Name)
 	// set complete status on counter - this will raise counter complete event
