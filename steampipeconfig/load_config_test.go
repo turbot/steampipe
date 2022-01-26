@@ -253,10 +253,13 @@ func TestLoadConfig(t *testing.T) {
 			workspaceDir = "test_data/workspaces/empty"
 		}
 		steampipeDir, err := filepath.Abs(test.steampipeDir)
-		workspaceDir, err = filepath.Abs(workspaceDir)
-
 		if err != nil {
 			t.Errorf("failed to build absolute config filepath from %s", test.steampipeDir)
+		}
+
+		workspaceDir, err = filepath.Abs(workspaceDir)
+		if err != nil {
+			t.Errorf("failed to build absolute config filepath from %s", workspaceDir)
 		}
 
 		// set SteampipeDir

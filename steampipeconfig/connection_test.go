@@ -427,6 +427,9 @@ func TestGetConnectionsToUpdate(t *testing.T) {
 		setup(test)
 
 		config, err := LoadSteampipeConfig(wd, "")
+		if err != nil {
+			t.Fatalf("LoadSteampipeConfig failed with unexpected error: %v", err)
+		}
 		if config == nil {
 			t.Fatalf("Could not load config")
 		}
