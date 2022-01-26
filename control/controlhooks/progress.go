@@ -28,7 +28,7 @@ func (p *ControlProgress) Start(ctx context.Context) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 
-	OnControlEvent(ctx, p)
+	OnStart(ctx, p)
 }
 
 func (p *ControlProgress) OnControlStart(ctx context.Context, control *modconfig.Control) {

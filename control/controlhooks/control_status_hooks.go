@@ -21,25 +21,29 @@ func NewControlStatusHooks() *ControlStatusHooks {
 	}
 }
 
+func (c *ControlStatusHooks) OnStart(ctx context.Context, _ *ControlProgress) {
+	if !c.Enabled {
+		return
+	}
+
+	statushooks.SetStatus(ctx, "Starting controls...")
+}
+
 func (c *ControlStatusHooks) OnControlEvent(ctx context.Context, p *ControlProgress) {
 	if !c.Enabled {
 		return
 	}
 
-	var message string
-	if p.Total == 0 {
-		message = "Starting controls..."
-	} else {
-		message = fmt.Sprintf("Running %d %s. (%d complete, %d running, %d pending, %d %s)",
-			p.Total,
-			utils.Pluralize("control", p.Total),
-			p.Complete,
-			p.Executing,
-			p.Pending,
-			p.Error,
-			utils.Pluralize("error", p.Error),
-		)
-	}
+	message := fmt.Sprintf("Running %d %s. (%d complete, %d running, %d pending, %d %s)",
+		p.Total,
+		utils.Pluralize("control", p.Total),
+		p.Complete,
+		p.Executing,
+		p.Pending,
+		p.Error,
+		utils.Pluralize("error", p.Error),
+	)
+
 	statushooks.SetStatus(ctx, message)
 
 }

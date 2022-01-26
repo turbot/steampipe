@@ -25,6 +25,10 @@ func ControlHooksFromContext(ctx context.Context) ControlHooks {
 	return NullHooks
 }
 
+func OnStart(ctx context.Context, p *ControlProgress) {
+	ControlHooksFromContext(ctx).OnStart(ctx, p)
+}
+
 func OnControlEvent(ctx context.Context, p *ControlProgress) {
 	ControlHooksFromContext(ctx).OnControlEvent(ctx, p)
 }

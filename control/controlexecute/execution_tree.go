@@ -23,9 +23,10 @@ import (
 type ExecutionTree struct {
 	Root *ResultGroup `json:"root"`
 	// flat list of all control runs
-	ControlRuns []*ControlRun `json:"control_runs"`
-	StartTime   time.Time     `json:"start_time"`
-	EndTime     time.Time     `json:"end_time"`
+	ControlRuns []*ControlRun                 `json:"control_runs"`
+	StartTime   time.Time                     `json:"start_time"`
+	EndTime     time.Time                     `json:"end_time"`
+	Progress    *controlhooks.ControlProgress `json:"progress"`
 	// map of dimension property name to property value to color map
 	DimensionColorGenerator *DimensionColorGenerator `json:"-"`
 
@@ -33,7 +34,6 @@ type ExecutionTree struct {
 	client    db_common.Client
 	// an optional map of control names used to filter the controls which are run
 	controlNameFilterMap map[string]bool
-	progress             *controlhooks.ControlProgress
 }
 
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg string) (*ExecutionTree, error) {
@@ -61,7 +61,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	executionTree.Root = NewRootResultGroup(ctx, executionTree, rootItem)
 
 	// after tree has built, ControlCount will be set - create progress rendered
-	executionTree.progress = controlhooks.NewControlProgress(len(executionTree.ControlRuns))
+	executionTree.Progress = controlhooks.NewControlProgress(len(executionTree.ControlRuns))
 
 	return executionTree, nil
 }
@@ -84,11 +84,11 @@ func (e *ExecutionTree) Execute(ctx context.Context) int {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.StartTime = time.Now()
-	e.progress.Start(ctx)
+	e.Progress.Start(ctx)
 
 	defer func() {
 		e.EndTime = time.Now()
-		e.progress.Finish(ctx)
+		e.Progress.Finish(ctx)
 	}()
 
 	// the number of goroutines parallel to start
