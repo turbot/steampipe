@@ -5,7 +5,7 @@ zip: version
 	zip -r -D build/artifacts.zip build/*
 
 version: build
-	echo "versioning"
+	go run scripts/version.go
 
 build: install
 	yarn build
