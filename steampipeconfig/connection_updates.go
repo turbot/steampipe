@@ -140,7 +140,7 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
 	// - remove these from list of plugins to create
 	connectionsToCreate := removeConnectionsFromList(updateConnections, alreadyCreatedConnectionPlugins)
-	// now crerate them
+	// now create them
 	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate...)
 	if res.Error != nil {
 		return res
