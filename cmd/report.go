@@ -25,7 +25,8 @@ func reportCmd() *cobra.Command {
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for report")
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for report").
+		AddIntFlag(constants.ArgReportServerPort, "", constants.ReportServerDefaultPort, "Report server port.")
 	return cmd
 }
 
