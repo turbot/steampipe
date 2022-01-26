@@ -1,0 +1,212 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.theme-steampipe-default {
+  /*!* Background colors *!*/
+  /*--color-bg-app: theme('colors.white');*/
+  /*--color-bg-report: theme('colors.white');*/
+
+  /*!* Control colors *!*/
+  --color-alert: #da1e28;
+  --color-alert-light: rgba(218, 30, 40, 0.3);
+  --color-alert-inverse: theme("colors.white");
+  --color-orange: #ff832b;
+  --color-orange-inverse: theme("colors.white");
+  --color-yellow: #f1c21b;
+  --color-yellow-inverse: theme("colors.white");
+  --color-ok: #198038;
+  --color-ok-inverse: theme("colors.white");
+  --color-info: #3185fc;
+  --color-info-inverse: theme("colors.white");
+  --color-tbd: theme("colors.gray.300");
+  --color-tbd-inverse: theme("colors.white");
+
+  /*!* Counters *!*/
+  /*--color-bg-counter: theme('colors.white');*/
+
+  /*!* Borders *!*/
+  /*--color-table-border: theme('colors.gray.200');*/
+  /*--color-table-divide: theme('colors.gray.200');*/
+  /*--color-table-head: theme('colors.steampipe-black');*/
+
+  /*!* Tables *!*/
+  /*--color-bg-table-head: theme('colors.gray.50');*/
+
+  /*!* Text *!*/
+  /*--color-text-default: theme('colors.steampipe-black');*/
+
+  /* Primary colours */
+  --color-success: #0070f3;
+  --color-error: #e00;
+  --color-warning: #f9a825;
+  --color-background: #fff;
+  --color-foreground: #000;
+  --color-foreground-light: #515151;
+  --color-foreground-lighter: #666;
+  --color-foreground-lightest: #ccc;
+  --color-link: #2645c5;
+  --color-black-scale-1: #fafafa;
+  --color-black-scale-2: #eaeaea;
+  --color-black-scale-3: #d3d3d3;
+  --color-black-scale-4: #888;
+  --color-black-scale-5: #666;
+  --color-black-scale-6: #444;
+  --color-black-scale-7: #333;
+  --color-black-scale-8: #111;
+  --color-secondary: var(--color-black-scale-5);
+
+  /* General colors */
+  --color-divider: theme("colors.gray.300");
+  --color-nav: #fafbfc;
+  --color-nav-border: #dee2e6;
+
+  /* Visual colors */
+  --color-danger: rgb(238, 0, 0);
+  /*--color-info: rgb(0, 112, 243);*/
+
+  /* Borders */
+  --color-table-border: theme("colors.gray.200");
+  --color-table-divide: theme("colors.gray.200");
+  --color-table-head: var(--color-black-scale-6);
+  --color-table-alternating-row: #fcfcfc;
+}
+
+.theme-steampipe-dark {
+  /*!* Background colors *!*/
+  /*--color-bg-app: #181717;*/
+  /*--color-bg-report: #181717;*/
+
+  /*!* Control colors *!*/
+  --color-alert: #fa4d56;
+  --color-alert-light: rgba(250, 77, 86, 0.3);
+  --color-alert-inverse: theme("colors.white");
+  --color-orange: #ff832b;
+  --color-orange-inverse: theme("colors.white");
+  --color-yellow: #f1c21b;
+  --color-yellow-inverse: theme("colors.white");
+  --color-ok: #24a148;
+  --color-ok-inverse: theme("colors.white");
+  --color-info: #4589ff;
+  --color-info-inverse: theme("colors.white");
+  --color-tbd: theme("colors.gray.400");
+  --color-tbd-inverse: theme("colors.white");
+
+  /*!* Counters *!*/
+  /*--color-bg-counter: theme('colors.gray.100');*/
+
+  /*!* Borders *!*/
+  /*--color-table-border: theme('colors.gray.700');*/
+  /*--color-table-divide: theme('colors.gray.700');*/
+  /*--color-table-head: theme('colors.gray.300');*/
+
+  /*!* Tables *!*/
+  /*--color-bg-table-head: rgba(255, 255,255,0.1);*/
+
+  /*!* Text *!*/
+  /*--color-text-default: theme('colors.white');*/
+
+  /* Primary colours */
+  --color-success: #0070f3;
+  --color-error: red;
+  --color-warning: #f9a825;
+  --color-background: #090e15;
+  --color-foreground: #fff;
+  --color-foreground-light: #ccc;
+  --color-foreground-lighter: #666;
+  --color-foreground-lightest: #515151;
+  --color-link: #0070f3;
+  --color-black-scale-1: #111;
+  --color-black-scale-2: #333;
+  --color-black-scale-3: #444;
+  --color-black-scale-4: #666;
+  --color-black-scale-5: #888;
+  --color-black-scale-6: #999;
+  --color-black-scale-7: #eaeaea;
+  --color-black-scale-8: #fafafa;
+  --color-secondary: var(--color-black-scale-5);
+
+  /* General colors */
+  --color-divider: theme("colors.gray.300");
+  --color-nav: var(--color-background);
+  --color-nav-border: #333;
+
+  /* Visual colors */
+  --color-danger: rgb(255, 0, 0);
+  /*--color-info: rgb(0, 112, 243);*/
+
+  /* Borders */
+  --color-table-border: theme("colors.gray.700");
+  --color-table-divide: theme("colors.gray.700");
+  --color-table-head: var(--color-black-scale-6);
+  --color-table-alternating-row: #23282f;
+}
+
+/*.theme-startup {*/
+/*    --color-bg-primary: #ff73b3;*/
+/*    --color-bg-secondary: #6f72b9;*/
+/*    --color-bg-default: #fff;*/
+/*    --color-bg-inverse: #5255ac;*/
+
+/*    --color-text-primary: #fff;*/
+/*    --color-text-secondary: #44467b;*/
+/*    --color-text-default: #373737;*/
+/*    --color-text-default-soft: #6a6a6a;*/
+/*    --color-text-inverse: #fff;*/
+/*    --color-text-inverse-soft: rgba(255, 255, 255, 0.7);*/
+
+/*    --font-display: Futura, Trebuchet MS, Arial, sans-serif;*/
+/*    --font-body: Futura, Trebuchet MS, Arial, sans-serif;*/
+
+/*    --font-weight-normal: 400;*/
+/*    --font-weight-display: 600;*/
+/*    --font-weight-btn: 600;*/
+
+/*    --rounded-btn: 9999px;*/
+/*}*/
+
+@layer base {
+  html {
+    font-size: 14px;
+  }
+}
+
+@layer components {
+  /* Base */
+  .link {
+    @apply no-underline cursor-pointer outline-none;
+  }
+
+  .link-highlight {
+    @apply link text-link;
+  }
+}
+
+.sb-show-main.sb-main-padded {
+  padding: 0;
+}
+
+/*@page {*/
+/*    margin: 10px;*/
+/*}*/
+
+@media print {
+  div {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    /*display: table;*/
+  }
+
+  canvas.chart-canvas {
+    min-height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    height: auto !important;
+    width: auto !important;
+    /*display: none;*/
+  }
+
+  /*.report-chart {*/
+  /*    max-width: 100%;*/
+  /*}*/
+}
