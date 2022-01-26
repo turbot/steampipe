@@ -13,7 +13,7 @@ import (
 	"github.com/turbot/steampipe/version"
 )
 
-//go:embed bin/assets.zip
+//go:embed assets.zip
 var reportAssets []byte
 
 const assetsZipFileName = "assets.zip"
