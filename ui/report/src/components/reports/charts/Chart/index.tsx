@@ -7,40 +7,18 @@ import Charts, {
 import ErrorPanel from "../../Error";
 import Icon from "../../../Icon";
 import useMediaMode from "../../../../hooks/useMediaMode";
-import {
-  ArcElement,
-  BarElement,
-  CategoryScale,
-  Chart as ChartJS,
-  Legend,
-  LinearScale,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-} from "chart.js";
+import { Chart as ChartJS, registerables } from "chart.js";
 import { buildChartDataInputs, LeafNodeData } from "../../common";
 import { Chart as ReactChartJS } from "react-chartjs-2";
 import { ColorGenerator } from "../../../../utils/color";
-import { get, has, merge, property, set } from "lodash";
+import { PanelDefinition, useReport } from "../../../../hooks/useReport";
+import { get, has, merge, set } from "lodash";
 import { useEffect, useRef, useState } from "react";
 import { usePanel } from "../../../../hooks/usePanel";
-import { PanelDefinition, useReport } from "../../../../hooks/useReport";
 import { useTheme } from "../../../../hooks/useTheme";
 import { zoomIcon } from "../../../../constants/icons";
 
-ChartJS.register(
-  ArcElement,
-  BarElement,
-  CategoryScale,
-  // ChartDataLabels,
-  LineElement,
-  LinearScale,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(...registerables);
 
 ChartJS.defaults.font.size = 12.25;
 
