@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
+
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/cmdconfig"
@@ -16,12 +17,14 @@ import (
 
 func reportCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:              "report [report]",
+		Use:              "report",
 		TraverseChildren: true,
 		Args:             cobra.ArbitraryArgs,
 		Run:              runReportCmd,
-		Short:            "Run a report",
-		Long:             `Run a report...TODO better description!`,
+		Short:            "Start the local report UI",
+		Long: `Starts a local web server that enables real-time development of reports within the current mod.
+
+The current mod is the working directory, or the directory specified by the --workspace-chdir flag.`,
 	}
 
 	cmdconfig.OnCmd(cmd).
