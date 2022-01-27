@@ -119,7 +119,11 @@ func (r *ControlRun) setError(ctx context.Context, err error) {
 	if err == nil {
 		return
 	}
-	r.runError = utils.TransformErrorToSteampipe(err)
+	if r.runError == context.DeadlineExceeded {
+		r.runError = fmt.Errorf("control execution timed out")
+	} else {
+		r.runError = utils.TransformErrorToSteampipe(err)
+	}
 
 	// update error count
 	r.Summary.Error++
