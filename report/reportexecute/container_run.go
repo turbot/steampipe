@@ -107,22 +107,17 @@ func (r *ReportContainerRun) Execute(ctx context.Context) error {
 		go r.executeChild(ctx, child, errChan)
 	}
 
-	//log.Printf("[WARN] %s wait for completion", r.Name)
 	// wait for children to complete
 	var errors []error
 	for !r.ChildrenComplete() {
 		select {
 		case <-r.childComplete:
-			// recheck ChildrenComplete
-			//log.Printf("[WARN] %s got childComplete from %s", r.Name, child.GetName())
-
+			// fall through to recheck ChildrenComplete
 		case err := <-errChan:
 			errors = append(errors, err)
 			// TODO TIMEOUT??
 		}
 	}
-
-	//log.Printf("[WARN] %s ChildrenComplete", r.Name)
 
 	// so all children have completed - check for errors
 	err := utils.CombineErrors(errors...)
@@ -190,7 +185,6 @@ func (r *ReportContainerRun) RunComplete() bool {
 
 // ChildrenComplete implements ReportNodeRun
 func (r *ReportContainerRun) ChildrenComplete() bool {
-	//log.Printf("[WARN] %s ChildrenComplete", r.Name)
 	for _, child := range r.Children {
 		if !child.RunComplete() {
 			log.Printf("[WARN] %s child %s is not complete", r.Name, child.GetName())
