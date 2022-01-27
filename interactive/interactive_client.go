@@ -58,9 +58,6 @@ type InteractiveClient struct {
 	schemaMetadata *schema.Metadata
 
 	highlighter *Highlighter
-
-	// status update hooks
-	statusHook statushooks.StatusHooks
 }
 
 func getHighlighter(theme string) *Highlighter {
