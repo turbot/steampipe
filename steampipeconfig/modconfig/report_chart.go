@@ -87,8 +87,6 @@ func (c *ReportChart) setBaseProperties() {
 	if c.Type == nil {
 		c.Type = c.Base.Type
 	}
-	// TODO KAI legens,series,axes
-
 	if c.Axes == nil {
 		c.Axes = c.Base.Axes
 	}

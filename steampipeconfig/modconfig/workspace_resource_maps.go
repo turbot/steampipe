@@ -290,7 +290,7 @@ func (m *WorkspaceResourceMaps) PopulateReferences() {
 		}
 	}
 
-	// TODO KAI OTHER REFERENCEQ TYPES
+	// TODO add other reference types - https://github.com/turbot/steampipe/issues/1331
 }
 
 func (m *WorkspaceResourceMaps) Empty() bool {

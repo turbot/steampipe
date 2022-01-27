@@ -376,8 +376,8 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 	res.handleDecodeDiags(diags)
 
 	if attr, exists := content.Attributes["args"]; exists {
-		if params, diags := decodeControlArgs(attr, runCtx.EvalCtx, c.FullName); !diags.HasErrors() {
-			c.Args = params
+		if args, diags := decodeControlArgs(attr, runCtx.EvalCtx, c.FullName); !diags.HasErrors() {
+			c.Args = args
 		}
 	}
 

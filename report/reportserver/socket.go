@@ -49,10 +49,9 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 	webSocket.HandleMessage(func(session *melody.Session, msg []byte) {
 		fmt.Println("Got message", string(msg))
 		var request ClientRequest
-		if err := json.Unmarshal(msg, &request); err != nil {
-			// what???
-			// TODO how to handle error
-		} else {
+		// if we could not decode message - ignore
+		if err := json.Unmarshal(msg, &request); err == nil {
+
 			switch request.Action {
 			case "available_reports":
 				reports := workspace.Mod.Reports
