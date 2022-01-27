@@ -54,7 +54,7 @@ const Text = (props: TextProps) => {
   const type = props.properties.type ? props.properties.type : "markdown";
   return (
     <>
-      {type === "raw" && <>{props.properties.value}</>}
+      {type === "raw" && <pre>{props.properties.value}</pre>}
       {type === "markdown" && <Markdown value={props.properties.value} />}
     </>
   );
