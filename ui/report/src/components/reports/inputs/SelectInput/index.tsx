@@ -1,19 +1,39 @@
-import Icon from "../../../Icon";
-import { classNames } from "../../../../utils/styles";
-import { Fragment, useState } from "react";
+import Select from "react-select";
 import { IInput, InputProps } from "../index";
-import { Listbox, Transition } from "@headlessui/react";
-import {
-  openSelectMenuIcon,
-  selectMenuItemSelectedIcon,
-} from "../../../../constants/icons";
-
-interface SelectInputItem {
-  label: string;
-  value: any;
-}
 
 const SelectInput = (props: InputProps) => {
+  return (
+    <form>
+      {props.title && (
+        <label
+          className="mb-2 text-sm"
+          id={`${props.name}.label`}
+          htmlFor={`${props.name}.input`}
+        >
+          {props.title}
+        </label>
+      )}
+      <Select
+        aria-labelledby={`${props.name}.input`}
+        className="basic-single"
+        classNamePrefix="select"
+        menuPortalTarget={document.body}
+        inputId={`${props.name}.input`}
+        isDisabled={!props.data}
+        isLoading={!props.data}
+        isClearable
+        isRtl={false}
+        isSearchable
+        name={props.name}
+        options={props.data?.items}
+        placeholder={
+          (props.properties && props.properties.placeholder) ||
+          "Please select..."
+        }
+      />
+    </form>
+  );
+
   // const [selected, setSelected] = useState<SelectInputItem | null>(null);
   // console.log(props.data);
 
@@ -104,29 +124,29 @@ const SelectInput = (props: InputProps) => {
   //   </Listbox>
   // );
 
-  return (
-    <div>
-      <label
-        htmlFor={props.name}
-        className="block text-sm font-medium text-gray-700"
-      >
-        {props.title}
-      </label>
-      <select
-        id={props.name}
-        name="location"
-        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-black-scale-3 bg-background focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-        // defaultValue="Canada"
-      >
-        <option value={undefined}>Please select...</option>
-        {(props.data ? props.data.items || [] : []).map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
+  // return (
+  //   <div>
+  //     <label
+  //       htmlFor={props.name}
+  //       className="block text-sm font-medium text-gray-700"
+  //     >
+  //       {props.title}
+  //     </label>
+  //     <select
+  //       id={props.name}
+  //       name="location"
+  //       className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-black-scale-3 bg-background focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+  //       // defaultValue="Canada"
+  //     >
+  //       <option value={undefined}>Please select...</option>
+  //       {(props.data ? props.data.items || [] : []).map((option) => (
+  //         <option key={option.value} value={option.value}>
+  //           {option.label}
+  //         </option>
+  //       ))}
+  //     </select>
+  //   </div>
+  // );
 };
 
 const definition: IInput = {
