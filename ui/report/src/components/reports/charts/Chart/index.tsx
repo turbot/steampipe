@@ -559,8 +559,9 @@ export type ChartDefinition = PanelDefinition & {
 };
 
 const renderChart = (definition: ChartDefinition) => {
+  // We default to column charts if not specified
   const {
-    properties: { type },
+    properties: { type = "column" },
   } = definition;
   const chart = Charts[type];
 
