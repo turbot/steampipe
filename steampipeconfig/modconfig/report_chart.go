@@ -240,10 +240,10 @@ func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
 
 	if c.Axes != nil {
 		if !c.Axes.Equals(other.Axes) {
-			res.AddPropertyDiff("Series")
+			res.AddPropertyDiff("Axes")
 		}
 	} else if other.Axes != nil {
-		res.AddPropertyDiff("Series")
+		res.AddPropertyDiff("Axes")
 	}
 
 	res.populateChildDiffs(c, other)
