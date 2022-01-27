@@ -1,6 +1,10 @@
+## v0.12.2 [2022-01-27]
+_Bug fixes_
+* Fix occasional `Unrecognized remote plugin message` errors on startup when running update checks. ([#1354](https://github.com/turbot/steampipe/issues/1354))
+
 ## v0.12.1 [2022-01-22]
 _Bug fixes_
-* When running queries with `csv` output, "loading results..." remains on screen after displaying results. ([#1342](https://github.com/turbot/steampipe/issues/1340))
+* When running queries with `csv` output, "loading results..." remains on screen after displaying results. ([#1340](https://github.com/turbot/steampipe/issues/1340))
 
 ## v0.12.0 [2022-01-20]
 _What's new?_
