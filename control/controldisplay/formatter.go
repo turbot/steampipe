@@ -5,10 +5,7 @@ import (
 	"errors"
 	"io"
 	"strings"
-	"text/template"
-	"time"
 
-	"github.com/MasterMinds/sprig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlexecute"
 )
@@ -19,13 +16,8 @@ type FormatterMap map[string]Formatter
 
 var outputFormatters FormatterMap = FormatterMap{
 	constants.CheckOutputFormatNone:  &NullFormatter{},
-	constants.CheckOutputFormatCSV:   &CSVFormatter{},
 	constants.CheckOutputFormatText:  &TextFormatter{},
 	constants.CheckOutputFormatBrief: &TextFormatter{},
-}
-
-var exportFormatters FormatterMap = FormatterMap{
-	constants.CheckOutputFormatCSV: &CSVFormatter{},
 }
 
 type CheckExportTarget struct {
@@ -43,11 +35,6 @@ func NewCheckExportTarget(formatter Formatter, file string) CheckExportTarget {
 type Formatter interface {
 	Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error)
 	FileExtension() string
-}
-
-func GetDefinedExportFormatter(arg string) (Formatter, bool) {
-	formatter, found := exportFormatters[arg]
-	return formatter, found
 }
 
 func GetTemplateExportFormatter(arg string, allowFilenameEvaluation bool) (Formatter, string, error) {
@@ -75,26 +62,4 @@ func (j *NullFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 func (j *NullFormatter) FileExtension() string {
 	// will not be called
 	return ""
-}
-
-func templateFuncs() template.FuncMap {
-	useFromSprigMap := []string{"upper", "toJson", "quote", "dict", "add", "now", "toPrettyJson"}
-
-	var funcs template.FuncMap = template.FuncMap{}
-	sprigMap := sprig.TxtFuncMap()
-	for _, use := range useFromSprigMap {
-		f, found := sprigMap[use]
-		if found {
-			funcs[use] = f
-		}
-	}
-	for k, v := range formatterTemplateFuncMap {
-		funcs[k] = v
-	}
-
-	return funcs
-}
-
-var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
-	"durationInSeconds": func(t time.Duration) float64 { return t.Seconds() },
 }
