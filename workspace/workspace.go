@@ -49,7 +49,6 @@ type Workspace struct {
 	reportEventHandlers []reportevents.ReportEventHandler
 	// callback function to reset display after the file watche displays messages
 	onFileWatcherEventMessages func()
-	modFileExists              bool
 	loadPseudoResources        bool
 }
 
@@ -661,8 +660,8 @@ func (w *Workspace) ResolveControlQuery(control *modconfig.Control, args *modcon
 func (w *Workspace) resolveControlArgs(control *modconfig.Control, args *modconfig.QueryArgs) (*modconfig.QueryArgs, error) {
 	// if no args were provided,  set args to control args (which may also be nil!)
 	if args == nil || args.Empty() {
+		log.Printf("[TRACE] using control args: %s", control.Args)
 		return control.Args, nil
-		log.Printf("[TRACE] using control args: %s", args)
 	}
 	// so command line args were provided
 	// check if the control supports them (it will NOT is it specifies a 'query' property)

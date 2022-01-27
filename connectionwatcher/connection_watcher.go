@@ -18,7 +18,6 @@ import (
 
 type ConnectionWatcher struct {
 	fileWatcherErrorHandler   func(error)
-	watcherError              error
 	watcher                   *utils.FileWatcher
 	onConnectionConfigChanged func(configMap map[string]*pb.ConnectionConfig)
 	count                     int
