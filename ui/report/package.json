@@ -38,6 +38,7 @@
     "react-markdown": "8.0.0",
     "react-placeholder": "4.1.0",
     "react-router-dom": "6.2.1",
+    "react-select": "5.2.2",
     "react-table": "7.7.0",
     "remark-gfm": "3.0.1",
     "uuid": "8.3.2",

@@ -7,6 +7,7 @@ export type BaseInputProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
 export type InputProperties = {
   type: InputType;
+  placeholder?: string;
 };
 
 export type InputProps = BaseInputProps & {
