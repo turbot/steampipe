@@ -1,6 +1,8 @@
+import Error from "../Error";
 import gfm from "remark-gfm"; // Support for strikethrough, tables, tasklists and URLs
 import ReactMarkdown from "react-markdown";
 import { BasePrimitiveProps } from "../common";
+import { classNames } from "../../../utils/styles";
 
 const getLongPanelClasses = () => {
   // switch (type) {
@@ -37,12 +39,12 @@ const Markdown = ({ value }) => {
     <>
       {isLong ? (
         <div className={panelClasses}>
-          <div className="p-2 sm:p-1 prose prose-sm max-w-none">
+          <div className="p-2 sm:p-1 prose prose-sm max-w-none break-all">
             <ReactMarkdown remarkPlugins={[gfm]}>{value}</ReactMarkdown>
           </div>
         </div>
       ) : (
-        <article className={panelClasses}>
+        <article className={classNames(panelClasses, "break-all")}>
           <ReactMarkdown remarkPlugins={[gfm]}>{value}</ReactMarkdown>
         </article>
       )}
@@ -50,14 +52,24 @@ const Markdown = ({ value }) => {
   );
 };
 
+const Raw = ({ value }) => (
+  <pre className="whitespace-pre-wrap break-all">{value}</pre>
+);
+
+const renderText = (type, value) => {
+  switch (type) {
+    case "markdown":
+      return <Markdown value={value} />;
+    case "raw":
+      return <Raw value={value} />;
+    default:
+      return <Error error={`Unsupported text type ${type}`} />;
+  }
+};
+
 const Text = (props: TextProps) => {
   const type = props.properties.type ? props.properties.type : "markdown";
-  return (
-    <>
-      {type === "raw" && <pre>{props.properties.value}</pre>}
-      {type === "markdown" && <Markdown value={props.properties.value} />}
-    </>
-  );
+  return renderText(type, props.properties ? props.properties.value : null);
 };
 
 export default Text;
