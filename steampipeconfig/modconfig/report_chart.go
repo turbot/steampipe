@@ -3,11 +3,11 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/zclconf/go-cty/cty"
+
+	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 )
 
 // ReportChart is a struct representing a leaf reporting node
