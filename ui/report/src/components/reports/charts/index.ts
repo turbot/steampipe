@@ -64,7 +64,7 @@ export type ChartProperties = {
 };
 
 export type ChartProps = BaseChartProps & {
-  properties: ChartProperties;
+  properties?: ChartProperties;
 };
 
 export type ChartType = "bar" | "column" | "donut" | "line" | "pie" | "table";
