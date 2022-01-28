@@ -509,7 +509,9 @@ func setup(test getConnectionsToUpdateTest) {
 
 func setupTestConfig(test getConnectionsToUpdateTest) {
 	for i, config := range test.required {
-		os.WriteFile(connectionConfigPath(i), []byte(config), 0644)
+		if err := os.WriteFile(connectionConfigPath(i), []byte(config), 0644); err != nil {
+			log.Fatal(err)
+		}
 	}
 	os.MkdirAll(filepaths.InternalDir(), os.ModePerm)
 	writeJson(test.current, filepaths.ConnectionStatePath())

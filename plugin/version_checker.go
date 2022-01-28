@@ -102,7 +102,11 @@ func (v *VersionChecker) reportPluginUpdates() map[string]VersionCheckReport {
 	for _, plugin := range v.pluginsToCheck {
 		versionFileData.Plugins[plugin.Name].LastCheckedDate = versionfile.FormatTime(time.Now())
 	}
-	versionFileData.Save()
+
+	if err = versionFileData.Save(); err != nil {
+		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not save versionfile")
+		return nil
+	}
 
 	return reports
 }
