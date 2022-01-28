@@ -1,5 +1,6 @@
 import React from "react";
-import SelectInput from "./SelectInput";
+import MultiSelectInput from "./MultiSelectInput";
+import SingleSelectInput from "./SingleSelectInput";
 import Table from "../Table";
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 
@@ -14,7 +15,7 @@ export type InputProps = BaseInputProps & {
   properties: InputProperties;
 };
 
-export type InputType = "select" | "table";
+export type InputType = "multi" | "select" | "table";
 
 export interface IInput {
   type: InputType;
@@ -27,7 +28,8 @@ const TableWrapper: IInput = {
 };
 
 const inputs = {
-  [SelectInput.type]: SelectInput,
+  [SingleSelectInput.type]: SingleSelectInput,
+  [MultiSelectInput.type]: MultiSelectInput,
   [TableWrapper.type]: TableWrapper,
 };
 
