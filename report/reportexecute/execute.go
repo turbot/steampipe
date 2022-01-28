@@ -2,7 +2,6 @@ package reportexecute
 
 import (
 	"context"
-	"log"
 
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/report/reportevents"
@@ -12,7 +11,6 @@ import (
 )
 
 func ExecuteReportNode(ctx context.Context, reportName string, workspace *workspace.Workspace, client db_common.Client) error {
-	log.Printf("[WARN] **************** ExecuteReportNode ***************\n")
 	// create context for the report execution
 	// (for now just disable all status messages - replace with event based?	)
 	reportCtx := statushooks.DisableStatusHooks(ctx)

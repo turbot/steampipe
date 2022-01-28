@@ -3,7 +3,6 @@ package reportexecute
 import (
 	"context"
 	"fmt"
-	"log"
 	"reflect"
 
 	"github.com/turbot/steampipe/control/controlexecute"
@@ -64,7 +63,6 @@ func NewCheckRun(resource modconfig.ReportingLeafNode, parent reportinterfaces.R
 func (r *CheckRun) Execute(ctx context.Context) error {
 	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, r.ReportNode.Name())
 	if err != nil {
-		log.Printf("[WARN] %s Control execution error %v", r.Name, err)
 		// set the error status on the counter - this will raise counter error event
 		r.SetError(err)
 		return err
@@ -74,11 +72,9 @@ func (r *CheckRun) Execute(ctx context.Context) error {
 	r.ControlExecutionTree = executionTree
 	executionTree.Execute(ctx)
 
-	log.Printf("[WARN] %s SetComplete", r.Name)
 	// set complete status on counter - this will raise counter complete event
 	r.SetComplete()
 
-	log.Printf("[WARN] %s Execute DONE", r.Name)
 	return nil
 }
 
@@ -112,7 +108,6 @@ func (r *CheckRun) SetError(err error) {
 func (r *CheckRun) SetComplete() {
 	r.runStatus = reportinterfaces.ReportRunComplete
 	// raise counter complete event
-	log.Printf("[WARN] **************** CheckRun DONE EVENT %s ***************", r.Name)
 	r.executionTree.workspace.PublishReportEvent(&reportevents.LeafNodeComplete{Node: r})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r

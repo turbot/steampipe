@@ -3,7 +3,6 @@ package reportexecute
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/turbot/steampipe/utils"
 
@@ -99,8 +98,6 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 // Execute implements ReportRunNode
 // execute all children and wait for them to complete
 func (r *ReportContainerRun) Execute(ctx context.Context) error {
-	log.Printf("[WARN] %s Execute", r.Name)
-
 	errChan := make(chan error, len(r.Children))
 	// execute all children asynchronously
 	for _, child := range r.Children {
@@ -122,7 +119,6 @@ func (r *ReportContainerRun) Execute(ctx context.Context) error {
 	// so all children have completed - check for errors
 	err := utils.CombineErrors(errors...)
 	if err == nil {
-		log.Printf("[WARN] %s ALL DONE", r.Name)
 		// set complete status on report - this will raise counter complete event
 		r.SetComplete()
 	} else {
@@ -133,8 +129,6 @@ func (r *ReportContainerRun) Execute(ctx context.Context) error {
 }
 
 func (r *ReportContainerRun) executeChild(ctx context.Context, child reportinterfaces.ReportNodeRun, errChan chan error) {
-	log.Printf("[WARN] %s call Execute for %s", r.Name, child.GetName())
-
 	err := child.Execute(ctx)
 	if err != nil {
 		errChan <- err
@@ -171,8 +165,6 @@ func (r *ReportContainerRun) SetError(err error) {
 func (r *ReportContainerRun) SetComplete() {
 	r.Status = reportinterfaces.ReportRunComplete
 	// raise container complete event
-	log.Printf("[WARN] ******************** PublishReportEvent ContainerComplete\n")
-
 	r.executionTree.workspace.PublishReportEvent(&reportevents.ContainerComplete{Container: r})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
@@ -187,7 +179,6 @@ func (r *ReportContainerRun) RunComplete() bool {
 func (r *ReportContainerRun) ChildrenComplete() bool {
 	for _, child := range r.Children {
 		if !child.RunComplete() {
-			log.Printf("[WARN] %s child %s is not complete", r.Name, child.GetName())
 			return false
 		}
 	}

@@ -2,7 +2,6 @@ package reportexecute
 
 import (
 	"context"
-	"log"
 
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/report/reportinterfaces"
@@ -64,25 +63,16 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 	}
 
 	var err error
-	log.Printf("[WARN] %s Execute start", r.Name)
-	log.Printf("[WARN] !!!!!!!!!!!!!!!!!!!!!! EXECUTE SQL START %s !!!!!!!!!!!!!!!!!!!!!!", r.Name)
 	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.SQL)
 	if err != nil {
-		log.Printf("[WARN] %s SQL error %v", r.Name, err)
 		// set the error status on the counter - this will raise counter error event
 		r.SetError(err)
 		return err
 
 	}
 	r.Data = NewLeafData(queryResult)
-
-	log.Printf("[WARN] $$$$$$$$$$$$$$$$$$ EXECUTE SQL END %s $$$$$$$$$$$$$$$$$$ ", r.Name)
-
-	log.Printf("[WARN] %s SetComplete", r.Name)
 	// set complete status on counter - this will raise counter complete event
 	r.SetComplete()
-
-	log.Printf("[WARN] %s Execute DONE", r.Name)
 	return nil
 }
 
@@ -116,7 +106,6 @@ func (r *LeafRun) SetError(err error) {
 func (r *LeafRun) SetComplete() {
 	r.runStatus = reportinterfaces.ReportRunComplete
 	// raise counter complete event
-	log.Printf("[WARN] **************** LeafRun DONE EVENT %s ***************", r.Name)
 	r.executionTree.workspace.PublishReportEvent(&reportevents.LeafNodeComplete{Node: r})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r

@@ -46,7 +46,7 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*pb.Conn
 	// set the file watcher error handler, which will get called when there are parsing errors
 	// after a file watcher event
 	w.fileWatcherErrorHandler = func(err error) {
-		log.Printf("[WARN] Failed to reload connection config: %s", err.Error())
+		log.Printf("[WARN] failed to reload connection config: %s", err.Error())
 	}
 
 	watcher.Start()
@@ -76,14 +76,14 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 	log.Printf("[TRACE] ConnectionWatcher handleFileWatcherEvent")
 	config, err := steampipeconfig.LoadConnectionConfig()
 	if err != nil {
-		log.Printf("[WARN] Error loading updated connection config: %s", err.Error())
+		log.Printf("[WARN] error loading updated connection config: %s", err.Error())
 		return
 	}
 	log.Printf("[TRACE] loaded updated config")
 
 	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher)
 	if err != nil {
-		log.Printf("[WARN] Error creating client to handle updated connection config: %s", err.Error())
+		log.Printf("[WARN] error creating client to handle updated connection config: %s", err.Error())
 	}
 	defer client.Close(ctx)
 
