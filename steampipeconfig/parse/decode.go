@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
 	"github.com/turbot/steampipe/utils"
@@ -116,17 +115,31 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 	res := &decodeResult{}
 	// get shell resource
 	resource, diags := resourceForBlock(block, runCtx)
-	// handle any resulting diags, which may specify dependencies
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(nil, nil, diags, runCtx)
 	if diags.HasErrors() {
 		return nil, res
 	}
 
 	diags = gohcl.DecodeBody(block.Body, runCtx.EvalCtx, resource)
-	// handle any resulting diags, which may specify dependencies
-	res.handleDecodeDiags(diags)
-
+	if len(diags) > 0 {
+		// hack get the content
+		content, contentsDiags := getBodyContent(block, resource, diags)
+		res.handleDecodeDiags(nil, nil, contentsDiags, runCtx)
+		// handle any resulting diags, which may specify dependencies
+		res.handleDecodeDiags(content, resource, diags, runCtx)
+	}
 	return resource, res
+}
+
+func getBodyContent(block *hcl.Block, resource modconfig.HclResource, diags hcl.Diagnostics) (*hcl.BodyContent, hcl.Diagnostics) {
+	schema, partial := gohcl.ImpliedBodySchema(resource)
+	var content *hcl.BodyContent
+	if partial {
+		content, _, diags = block.Body.PartialContent(schema)
+	} else {
+		content, diags = block.Body.Content(schema)
+	}
+	return content, diags
 }
 
 // return a shell resource for the given block
@@ -194,7 +207,7 @@ func decodeLocals(block *hcl.Block, runCtx *RunContext) ([]*modconfig.Local, *de
 		// try to evaluate expression
 		val, diags := attr.Expr.Value(runCtx.EvalCtx)
 		// handle any resulting diags, which may specify dependencies
-		res.handleDecodeDiags(diags)
+		res.handleDecodeDiags(nil, nil, diags, runCtx)
 
 		// add to our list
 		locals = append(locals, modconfig.NewLocal(name, val, attr.Range))
@@ -206,9 +219,10 @@ func decodeVariable(block *hcl.Block, runCtx *RunContext) (*modconfig.Variable, 
 	res := &decodeResult{}
 
 	var variable *modconfig.Variable
-	v, diags := var_config.DecodeVariableBlock(block, false)
+	content, diags := block.Body.Content(VariableBlockSchema)
+	v, diags := var_config.DecodeVariableBlock(block, content, false)
 	// handle any resulting diags, which may specify dependencies
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, variable, diags, runCtx)
 
 	// call post-decode hook
 	if res.Success() {
@@ -314,7 +328,7 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 	queryProvider.SetParams(params)
 
 	// handle any resulting diags, which may specify dependencies
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, c, diags, runCtx)
 
 	return resource, res
 }
@@ -351,16 +365,16 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName strin
 
 func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContainer, *decodeResult) {
 	res := &decodeResult{}
+	report := modconfig.NewReportContainer(block)
 
 	content, diags := block.Body.Content(ReportBlockSchema)
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, report, diags, runCtx)
 
-	report := modconfig.NewReportContainer(block)
 	diags = decodeProperty(content, "title", &report.Title, runCtx)
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, report, diags, runCtx)
 
 	diags = decodeProperty(content, "base", &report.Base, runCtx)
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, report, diags, runCtx)
 	if report.Base != nil && len(report.Base.ChildNames) > 0 {
 		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeCard, modconfig.BlockTypeChart, modconfig.BlockTypeControl, modconfig.BlockTypeHierarchy, modconfig.BlockTypeImage, modconfig.BlockTypeInput, modconfig.BlockTypeTable, modconfig.BlockTypeText}
 		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
@@ -369,7 +383,7 @@ func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 		report.Base.SetChildren(children)
 	}
 	diags = decodeProperty(content, "width", &report.Width, runCtx)
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, report, diags, runCtx)
 
 	// now add children
 	if !res.Success() {
@@ -420,31 +434,30 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, runCtx *RunContext) (
 func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark, *decodeResult) {
 	res := &decodeResult{}
 
-	content, diags := block.Body.Content(BenchmarkBlockSchema)
-	res.handleDecodeDiags(diags)
-
 	benchmark := modconfig.NewBenchmark(block)
+	content, diags := block.Body.Content(BenchmarkBlockSchema)
+	res.handleDecodeDiags(content, benchmark, diags, runCtx)
 
 	diags = decodeProperty(content, "children", &benchmark.ChildNames, runCtx)
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, benchmark, diags, runCtx)
 
 	diags = decodeProperty(content, "description", &benchmark.Description, runCtx)
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, benchmark, diags, runCtx)
 
 	diags = decodeProperty(content, "documentation", &benchmark.Documentation, runCtx)
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, benchmark, diags, runCtx)
 
 	diags = decodeProperty(content, "tags", &benchmark.Tags, runCtx)
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, benchmark, diags, runCtx)
 
 	diags = decodeProperty(content, "title", &benchmark.Title, runCtx)
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, benchmark, diags, runCtx)
 
 	// now add children
 	if res.Success() {
 		supportedChildren := []string{modconfig.BlockTypeBenchmark, modconfig.BlockTypeControl}
 		children, diags := resolveChildrenFromNames(benchmark.ChildNames.StringList(), block, supportedChildren, runCtx)
-		res.handleDecodeDiags(diags)
+		res.handleDecodeDiags(content, benchmark, diags, runCtx)
 
 		// now set children and child name strings
 		benchmark.Children = children
@@ -453,7 +466,7 @@ func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark
 
 	// decode report specific properties
 	diags = decodeProperty(content, "base", &benchmark.Base, runCtx)
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, benchmark, diags, runCtx)
 	if benchmark.Base != nil && len(benchmark.Base.ChildNames) > 0 {
 		supportedChildren := []string{modconfig.BlockTypeBenchmark, modconfig.BlockTypeControl}
 		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
@@ -462,7 +475,7 @@ func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark
 		benchmark.Base.Children = children
 	}
 	diags = decodeProperty(content, "width", &benchmark.Width, runCtx)
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, benchmark, diags, runCtx)
 	return benchmark, res
 }
 
@@ -536,14 +549,6 @@ func addResourceMetadata(resourceWithMetadata modconfig.ResourceWithMetadata, sr
 		resourceWithMetadata.SetMetadata(metadata)
 	}
 	return diags
-}
-
-// determine whether the diag is a dependency error, and if so, return a dependency object
-func isDependencyError(diag *hcl.Diagnostic) *dependency {
-	if helpers.StringSliceContains(missingVariableErrors, diag.Summary) {
-		return &dependency{diag.Expression.Range(), diag.Expression.Variables()}
-	}
-	return nil
 }
 
 func validateName(block *hcl.Block) hcl.Diagnostics {

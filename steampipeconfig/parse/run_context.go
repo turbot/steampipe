@@ -167,7 +167,7 @@ func (r *RunContext) ClearDependencies() {
 // AddDependencies :: the block could not be resolved as it has dependencies
 // 1) store block as unresolved
 // 2) add dependencies to our tree of dependencies
-func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies []*dependency) hcl.Diagnostics {
+func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies []*modconfig.ResourceDependency) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	// store unresolved block
 	r.UnresolvedBlocks[name] = &unresolvedBlock{Name: name, Block: block, Dependencies: dependencies}

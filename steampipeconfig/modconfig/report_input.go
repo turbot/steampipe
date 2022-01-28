@@ -12,25 +12,22 @@ import (
 
 // ReportInput is a struct representing a leaf reporting node
 type ReportInput struct {
+	HclResourceBase
+
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Type  *string `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Style *string `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
+	Title  *string      `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width  *int         `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Type   *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 
 	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Query                 *Query      `hcl:"query" json:"-"`
-	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
-
-	Type *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Base *ReportInput `hcl:"base" json:"-"`
+	SQL    *string      `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Style *string `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
+	Result *string      `hcl:"result" json:"result"`
+	Base   *ReportInput `hcl:"base" json:"-"`
 
 
 	DeclRange hcl.Range  `json:"-"`

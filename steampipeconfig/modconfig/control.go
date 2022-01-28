@@ -4,16 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // Control is a struct representing the Control resource
 type Control struct {
+	HclResourceBase
+
 	ShortName        string
 	FullName         string            `cty:"name"`
 	Description      *string           `cty:"description" hcl:"description" column:"description,text"`

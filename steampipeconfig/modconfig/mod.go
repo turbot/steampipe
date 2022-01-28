@@ -23,6 +23,8 @@ const defaultModName = "local"
 
 // Mod is a struct representing a Mod resource
 type Mod struct {
+	HclResourceBase
+
 	// ShortName is the mod name, e.g. azure_thrifty
 	ShortName string `cty:"short_name" hcl:"name,label"`
 	// FullName is the mod name prefixed with 'mod', e.g. mod.azure_thrifty

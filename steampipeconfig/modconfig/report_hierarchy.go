@@ -12,6 +12,8 @@ import (
 
 // ReportHierarchy is a struct representing a leaf reporting node
 type ReportHierarchy struct {
+	HclResourceBase
+
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`

@@ -12,6 +12,8 @@ import (
 
 // ReportContainer is a struct representing the Report and Container resource
 type ReportContainer struct {
+	HclResourceBase
+
 	ShortName       string
 	FullName        string `cty:"name"`
 	UnqualifiedName string

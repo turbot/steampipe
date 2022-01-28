@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+
 	"github.com/hashicorp/hcl/v2"
 )
 
 type unresolvedBlock struct {
 	Name         string
 	Block        *hcl.Block
-	Dependencies []*dependency
+	Dependencies []*modconfig.ResourceDependency
 }
 
 func (b unresolvedBlock) String() string {

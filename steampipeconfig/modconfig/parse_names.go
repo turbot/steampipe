@@ -37,6 +37,18 @@ type ParsedPropertyPath struct {
 	PropertyPath []string
 }
 
+func (p *ParsedPropertyPath) PropertyPathString() string {
+	return strings.Join(p.PropertyPath, ".")
+}
+
+func (p *ParsedPropertyPath) ToParsedResourceName() *ParsedResourceName {
+	return &ParsedResourceName{
+		Mod:      p.Mod,
+		ItemType: p.ItemType,
+		Name:     p.Name,
+	}
+}
+
 func ParseResourceName(fullName string) (res *ParsedResourceName, err error) {
 	if fullName == "" {
 		return &ParsedResourceName{}, nil

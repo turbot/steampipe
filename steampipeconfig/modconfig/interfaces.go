@@ -34,6 +34,10 @@ type ModTreeItem interface {
 
 // HclResource must be implemented by resources defined in HCL
 type HclResource interface {
+	// implemented by HclResourceBase
+	AddRuntimeDependencies(*ResourceDependency)
+	GetRuntimeDependencies() map[string]*ResourceDependency
+
 	Name() string
 	CtyValue() (cty.Value, error)
 	OnDecoded(*hcl.Block) hcl.Diagnostics

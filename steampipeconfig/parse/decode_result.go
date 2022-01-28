@@ -1,29 +1,16 @@
 package parse
 
 import (
-	"strings"
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe/steampipeconfig/hclhelpers"
 )
-
-type dependency struct {
-	Range      hcl.Range
-	Traversals []hcl.Traversal
-}
-
-func (d dependency) String() string {
-	traversalStrings := make([]string, len(d.Traversals))
-	for i, t := range d.Traversals {
-		traversalStrings[i] = hclhelpers.TraversalAsString(t)
-	}
-	return strings.Join(traversalStrings, ",")
-}
 
 // struct to hold the result of a decoding operation
 type decodeResult struct {
 	Diags   hcl.Diagnostics
-	Depends []*dependency
+	Depends []*modconfig.ResourceDependency
 }
 
 // Merge merges this decode result with another
@@ -38,19 +25,39 @@ func (p *decodeResult) Success() bool {
 	return !p.Diags.HasErrors() && len(p.Depends) == 0
 }
 
-// if the diags contains dependency errors, add dependencies to the result
+// if the diags containsdependency errors, add dependencies to the result
 // otherwise add diags to the result
-func (p *decodeResult) handleDecodeDiags(diags hcl.Diagnostics) {
+func (p *decodeResult) handleDecodeDiags(bodyContent *hcl.BodyContent, resource modconfig.HclResource, diags hcl.Diagnostics, runCtx *RunContext) {
+	var allDependencies []*modconfig.ResourceDependency
 	for _, diag := range diags {
 		if dependency := isDependencyError(diag); dependency != nil {
-			// was this error caused by a missing dependency?
-			p.Depends = append(p.Depends, dependency)
+			allDependencies = append(allDependencies, dependency)
+
+			// so it was adependency error - determine whether this is a RUN TIMEdependency
+			// - if so, do not raise a dependency error but instead store in the resources run time dependencies
+			if dependencyResource, is := dependency.IsRunTimeDependency(runCtx.CurrentMod); is {
+				if err := dependency.SetAsRuntimeDependency(dependencyResource, bodyContent); err != nil {
+					resource.AddRuntimeDependencies(dependency)
+				}
+
+			} else {
+				// was this error caused by a missing dependency?
+				p.Depends = append(p.Depends, dependency)
+			}
 		}
 	}
 	// only register errors if there are NOT any missing variables
-	if diags.HasErrors() && len(p.Depends) == 0 {
+	if diags.HasErrors() && len(allDependencies) == 0 {
 		p.addDiags(diags)
 	}
+}
+
+// determine whether the diag is a dependency error, and if so, return a dependency object
+func isDependencyError(diag *hcl.Diagnostic) *modconfig.ResourceDependency {
+	if helpers.StringSliceContains(missingVariableErrors, diag.Summary) {
+		return &modconfig.ResourceDependency{Range: diag.Expression.Range(), Traversals: diag.Expression.Variables()}
+	}
+	return nil
 }
 
 func (p *decodeResult) addDiags(diags hcl.Diagnostics) {

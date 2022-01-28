@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/stevenle/topsort"
+
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
@@ -22,6 +24,8 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/utils"
 )
+
+const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
 
 type Workspace struct {
 	Path                string
@@ -65,6 +69,9 @@ type Workspace struct {
 	loadPseudoResources        bool
 	// convenient aggregation of all resources
 	resourceMaps *modconfig.WorkspaceResourceMaps
+
+	// runtime dependency tree
+	runtimeDependencyGraph *topsort.Graph
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -228,6 +235,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 
 	// now set workspace properties
 	w.Mod = m
+
 	w.Queries, w.LocalQueries = w.buildQueryMap(runCtx.LoadedDependencyMods)
 	w.Controls, w.LocalControls = w.buildControlMap(runCtx.LoadedDependencyMods)
 	w.Benchmarks, w.LocalBenchmarks = w.buildBenchmarkMap(runCtx.LoadedDependencyMods)
@@ -249,7 +257,9 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 
 	// populate the workspace resource map
 	w.populateResourceMaps()
-	return nil
+
+	// build runtime dependency tree
+	return w.buildRuntimeDependencyTree()
 }
 
 // build options used to load workspace
@@ -335,4 +345,35 @@ func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, 
 	//}
 
 	return workspaceResourceNames, nil
+}
+
+func (w *Workspace) buildRuntimeDependencyTree() error {
+	w.runtimeDependencyGraph = topsort.NewGraph()
+	// add root node - this will depend on all other nodes
+	w.runtimeDependencyGraph.AddNode(rootRuntimeDependencyNode)
+
+	resourceFunc := func(resource modconfig.HclResource) bool {
+		runtimeDependencies := resource.GetRuntimeDependencies()
+		if len(runtimeDependencies) == 0 {
+			return true
+		}
+		name := resource.Name()
+		if !w.runtimeDependencyGraph.ContainsNode(name) {
+			w.runtimeDependencyGraph.AddNode(name)
+		}
+
+		for _, dependency := range runtimeDependencies {
+			w.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name)
+			w.runtimeDependencyGraph.AddEdge(name, dependency.SourceResource.Name())
+		}
+		// continue walking
+		return true
+	}
+	w.Mod.WalkResources(resourceFunc)
+
+	// ensure that dependencies can be resolved
+	if _, err := w.runtimeDependencyGraph.TopSort(rootRuntimeDependencyNode); err != nil {
+		return fmt.Errorf("runtime depedencies cannot be resolved: %s", err.Error())
+	}
+	return nil
 }

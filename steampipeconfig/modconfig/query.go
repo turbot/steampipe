@@ -16,6 +16,8 @@ import (
 
 // Query is a struct representing the Query resource
 type Query struct {
+	HclResourceBase
+
 	ShortName string `cty:"short_name"`
 	FullName  string `cty:"name"`
 

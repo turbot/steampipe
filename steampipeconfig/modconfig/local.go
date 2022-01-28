@@ -9,6 +9,8 @@ import (
 
 // Local is a struct representing a Local resource
 type Local struct {
+	HclResourceBase
+
 	ShortName string
 	FullName  string `cty:"name"`
 

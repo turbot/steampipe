@@ -5,16 +5,17 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // Benchmark is a struct representing the Benchmark resource
 type Benchmark struct {
+	HclResourceBase
+
 	ShortName       string
 	FullName        string `cty:"name"`
 	UnqualifiedName string

@@ -179,3 +179,25 @@ var ParamDefBlockSchema = &hcl.BodySchema{
 		{Name: "default"},
 	},
 }
+
+var VariableBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: "description",
+		},
+		{
+			Name: "default",
+		},
+		{
+			Name: "type",
+		},
+		{
+			Name: "sensitive",
+		},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type: "validation",
+		},
+	},
+}
