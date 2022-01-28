@@ -44,7 +44,7 @@ func (a ReportChartAxes) Equals(other *ReportChartAxes) bool {
 
 type ReportChartAxesX struct {
 	Title  *ReportChartAxisTitle `cty:"title" hcl:"title,block" json:"title,omitempty"`
-	Labels *ReportChartLabels    `cty:"title" hcl:"labels,block" json:"labels,omitempty"`
+	Labels *ReportChartLabels    `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
 }
 
 func (x ReportChartAxesX) Equals(other *ReportChartAxesX) bool {
