@@ -20,7 +20,7 @@ func NewLeafDataColumnType(sqlType *sql.ColumnType) *LeafDataColumnType {
 
 type LeafData struct {
 	Columns []*LeafDataColumnType `json:"columns"`
-	Rows    [][]interface{}       `json:"items"`
+	Rows    [][]interface{}       `json:"rows"`
 }
 
 func NewLeafData(result *queryresult.SyncQueryResult) *LeafData {
