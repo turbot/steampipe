@@ -1,0 +1,38 @@
+name: Build And Release UI Assets
+
+on:
+  # workflow_dispatch:
+  #   inputs:
+  #     branch:
+  #       description: "The branch that will be built"
+  #       required: true
+  #     tag:
+  #       description: "The release tag that will be set"
+  #       required: true
+  pull_request:
+
+env:
+  PROJECT_ID: steampipe
+  IMAGE_NAME: fdw
+  CORE_REPO: us-docker.pkg.dev/steampipe/steampipe
+  ORG: turbot
+  CONFIG_SCHEMA_VERSION: "2020-11-18"
+  
+jobs:
+  build:
+    name: Build Assets
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      
+    - name: Setup Node
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'
+
+    - name: Setup GO
+      uses: actions/setup-go@v2
+      with:
+        go-version: '^1.16.0' # The Go version to download (if necessary) and use.
+
