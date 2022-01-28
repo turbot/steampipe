@@ -19,13 +19,13 @@ func NewLeafDataColumnType(sqlType *sql.ColumnType) *LeafDataColumnType {
 }
 
 type LeafData struct {
-	Columns []*LeafDataColumnType    `json:"columns"`
-	Items   []map[string]interface{} `json:"items"`
+	Columns []*LeafDataColumnType `json:"columns"`
+	Rows    [][]interface{}       `json:"items"`
 }
 
 func NewLeafData(result *queryresult.SyncQueryResult) *LeafData {
 	leafData := &LeafData{
-		Items:   make([]map[string]interface{}, len(result.Rows)),
+		Rows:    make([][]interface{}, len(result.Rows)),
 		Columns: make([]*LeafDataColumnType, len(result.ColTypes)),
 	}
 
@@ -33,11 +33,11 @@ func NewLeafData(result *queryresult.SyncQueryResult) *LeafData {
 		leafData.Columns[i] = NewLeafDataColumnType(c)
 	}
 	for rowIdx, row := range result.Rows {
-		rowData := make(map[string]interface{}, len(result.ColTypes))
+		rowData := make([]interface{}, len(result.ColTypes))
 		for columnIdx, columnVal := range row.(*queryresult.RowResult).Data {
-			rowData[leafData.Columns[columnIdx].Name] = columnVal
+			rowData[columnIdx] = columnVal
 		}
-		leafData.Items[rowIdx] = rowData
+		leafData.Rows[rowIdx] = rowData
 	}
 	return leafData
 }
