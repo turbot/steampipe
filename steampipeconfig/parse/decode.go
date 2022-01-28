@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
 	"github.com/turbot/steampipe/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // A consistent detail message for all "not a valid identifier" diagnostics.
@@ -295,7 +296,8 @@ func decodeParam(block *hcl.Block, runCtx *RunContext, parentName string) (*modc
 		diags = append(diags, valDiags...)
 	}
 	if attr, exists := content.Attributes["default"]; exists {
-		v, diags := attr.Expr.Value(runCtx.EvalCtx)
+		var v cty.Value
+		v, diags = attr.Expr.Value(runCtx.EvalCtx)
 		if diags.HasErrors() {
 			return nil, diags
 		}
