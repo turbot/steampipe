@@ -177,7 +177,7 @@ func buildLeafNodeCompletePayload(event *reportevents.LeafNodeComplete) ([]byte,
 	a := string(jsonString)
 	fmt.Println(a)
 
-	return jsonString
+	return jsonString, err
 }
 
 func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) ([]byte, error) {
