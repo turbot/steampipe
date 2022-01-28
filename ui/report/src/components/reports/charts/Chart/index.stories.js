@@ -20,9 +20,9 @@ DefaultsToColumn.args = {
       { name: "Count", data_type_name: "INT8" },
     ],
     items: [
-      { Type: "User", Count: 12 },
-      { Type: "Policy", Count: 93 },
-      { Type: "Role", Count: 48 },
+      ["User", 12],
+      ["Policy", 93],
+      ["Role", 48],
     ],
   },
 };

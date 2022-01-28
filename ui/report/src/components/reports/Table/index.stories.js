@@ -34,12 +34,12 @@ Basic.args = {
       { name: "Region", data_type_name: "TEXT" },
       { name: "Resource Count", data_type_name: "INT8" },
     ],
-    items: [
-      { Region: "us-east-1", "Resource Count": 246 },
-      { Region: "us-east-2", "Resource Count": 146 },
-      { Region: "us-west-1", "Resource Count": 57 },
-      { Region: "eu-west-1", "Resource Count": 290 },
-      { Region: "eu-west-2", "Resource Count": 198 },
+    rows: [
+      ["us-east-1", 246],
+      ["us-east-2", 146],
+      ["us-west-1", 57],
+      ["eu-west-1", 290],
+      ["eu-west-2", 198],
     ],
   },
 };
@@ -51,14 +51,14 @@ Nulls.args = {
       { name: "Color", data_type_name: "TEXT" },
       { name: "Value", data_type_name: "INT8" },
     ],
-    items: [
-      { Color: "red", Value: 10 },
-      { Color: "orange", Value: null },
-      { Color: "yellow", Value: 5 },
-      { Color: "green", Value: null },
-      { Color: "blue", Value: 2 },
-      { Color: "indigo", Value: null },
-      { Color: "violet", Value: 0 },
+    rows: [
+      ["red", 10],
+      ["orange", null],
+      ["yellow", 5],
+      ["green", null],
+      ["blue", 2],
+      ["indigo", null],
+      ["violet", 0],
     ],
   },
 };

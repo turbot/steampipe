@@ -34,7 +34,7 @@ export const SimpleDataFormat = Template.bind({});
 SimpleDataFormat.args = {
   data: {
     columns: [{ name: "EC2 Instances", data_type_name: "INT8" }],
-    items: [{ "EC2 Instances": 106 }],
+    rows: [[106]],
   },
 };
 
@@ -43,7 +43,7 @@ SimpleDataFormatInfo.storyName = "Simple Data Format (info)";
 SimpleDataFormatInfo.args = {
   data: {
     columns: [{ name: "EC2 Instances", data_type_name: "INT8" }],
-    items: [{ "EC2 Instances": 106 }],
+    rows: [[106]],
   },
   properties: { style: "info" },
 };
@@ -53,7 +53,7 @@ SimpleDataFormatAlert.storyName = "Simple Data Format (alert)";
 SimpleDataFormatAlert.args = {
   data: {
     columns: [{ name: "Public Buckets", data_type_name: "INT8" }],
-    items: [{ "Public Buckets": 5 }],
+    rows: [[5]],
   },
   properties: { style: "alert" },
 };
@@ -63,7 +63,7 @@ SimpleDataFormatOK.storyName = "Simple Data Format (ok)";
 SimpleDataFormatOK.args = {
   data: {
     columns: [{ name: "Encrypted EC2 Instances", data_type_name: "INT8" }],
-    items: [{ "Encrypted EC2 Instances": 5 }],
+    rows: [[5]],
   },
   properties: { style: "ok" },
 };
@@ -73,7 +73,7 @@ SimpleDataFormatThousands.storyName = "Simple Data Format (thousands)";
 SimpleDataFormatThousands.args = {
   data: {
     columns: [{ name: "EC2 Instances", data_type_name: "INT8" }],
-    items: [{ "EC2 Instances": 1236 }],
+    rows: [[1236]],
   },
   properties: { style: "info" },
 };
@@ -83,7 +83,7 @@ SimpleDataFormatMillions.storyName = "Simple Data Format (millions)";
 SimpleDataFormatMillions.args = {
   data: {
     columns: [{ name: "Log Lines", data_type_name: "INT8" }],
-    items: [{ "Log Lines": 5236174 }],
+    rows: [[5236174]],
   },
   properties: { style: "info" },
 };
@@ -95,7 +95,7 @@ FormalDataFormat.args = {
       { name: "label", data_type_name: "TEXT" },
       { name: "value", data_type_name: "INT8" },
     ],
-    items: [{ label: "EC2 Instances", value: 106 }],
+    rows: [["EC2 Instances", 106]],
   },
 };
 
@@ -108,7 +108,7 @@ FormalDataFormatInfo.args = {
       { name: "value", data_type_name: "INT8" },
       { name: "style", data_type_name: "TEXT" },
     ],
-    items: [{ label: "EC2 Instances", value: 106, style: "info" }],
+    rows: [["EC2 Instances", 106, "info"]],
   },
 };
 
@@ -121,7 +121,7 @@ FormalDataFormatAlert.args = {
       { name: "value", data_type_name: "INT8" },
       { name: "style", data_type_name: "TEXT" },
     ],
-    items: [{ label: "Public Buckets", value: 5, style: "alert" }],
+    rows: [["Public Buckets", 5, "alert"]],
   },
 };
 
@@ -134,7 +134,7 @@ FormalDataFormatOK.args = {
       { name: "value", data_type_name: "INT8" },
       { name: "style", data_type_name: "TEXT" },
     ],
-    items: [{ label: "Encrypted EC2 Instances", value: 5, style: "ok" }],
+    rows: [["Encrypted EC2 Instances", 5, "ok"]],
   },
 };
 
@@ -146,7 +146,7 @@ FormalDataFormatAsTable.args = {
       { name: "value", data_type_name: "INT8" },
       { name: "style", data_type_name: "TEXT" },
     ],
-    items: [{ label: "Encrypted EC2 Instances", value: 5, style: "ok" }],
+    rows: [["Encrypted EC2 Instances", 5, "ok"]],
   },
   properties: {
     type: "table",

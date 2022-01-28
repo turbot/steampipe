@@ -17,13 +17,11 @@ export interface LeafNodeDataColumn {
   data_type_name: string;
 }
 
-export interface LeafNodeDataItem {
-  [key: string]: any;
-}
+export type LeafNodeDataRow = any[];
 
 export interface LeafNodeData {
   columns: LeafNodeDataColumn[];
-  items: LeafNodeDataItem[];
+  rows: LeafNodeDataRow[];
 }
 
 export interface ExecutablePrimitiveProps {
@@ -234,16 +232,13 @@ const buildChartDataInputs = (
   let min = 0;
   let max = 0;
 
-  const firstCol = rawData.columns[0];
-
-  for (const row of rawData.items) {
-    labels.push(row[firstCol.name]);
+  for (const row of rawData.rows) {
+    labels.push(row[0]);
   }
   for (let seriesIndex = 1; seriesIndex <= seriesLength; seriesIndex++) {
     const data: any[] = [];
-    const colForIndex = rawData.columns[seriesIndex];
-    for (const row of rawData.items) {
-      const dataValue = row[colForIndex.name];
+    for (const row of rawData.rows) {
+      const dataValue = row[seriesIndex];
       if (dataValue < min) {
         min = dataValue;
       }
@@ -252,7 +247,7 @@ const buildChartDataInputs = (
       }
       data.push(dataValue);
     }
-    const seriesName = colForIndex.name;
+    const seriesName = rawData.columns[seriesIndex].name;
     let seriesOverrides;
     if (properties.series && properties.series[seriesName]) {
       seriesOverrides = properties.series[seriesName];

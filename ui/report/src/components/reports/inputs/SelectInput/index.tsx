@@ -1,7 +1,26 @@
 import Select from "react-select";
 import { IInput, InputProps } from "../index";
+import { useMemo } from "react";
+import { getColumnIndex } from "../../../../utils/data";
 
 const SelectInput = (props: InputProps) => {
+  const options = useMemo(() => {
+    if (!props.data || !props.data.columns || !props.data.rows) {
+      return [];
+    }
+    const labelColIndex = getColumnIndex(props.data.columns, "label");
+    const valueColIndex = getColumnIndex(props.data.columns, "value");
+
+    if (labelColIndex === -1 || valueColIndex === -1) {
+      return [];
+    }
+
+    return props.data.rows.map((row) => ({
+      label: row[labelColIndex],
+      value: row[valueColIndex],
+    }));
+  }, [props.data]);
+
   return (
     <form>
       {props.title && (
@@ -25,7 +44,7 @@ const SelectInput = (props: InputProps) => {
         isRtl={false}
         isSearchable
         name={props.name}
-        options={props.data?.items}
+        options={options}
         placeholder={
           (props.properties && props.properties.placeholder) ||
           "Please select..."

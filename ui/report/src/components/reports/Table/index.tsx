@@ -3,7 +3,7 @@ import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
   LeafNodeDataColumn,
-  LeafNodeDataItem,
+  LeafNodeDataRow,
 } from "../common";
 import {
   sortAscendingIcon,
@@ -24,15 +24,21 @@ const getColumns = (columns: LeafNodeDataColumn[]) => {
   return columns.map((col) => ({ Header: col.name, accessor: col.name }));
 };
 
-const getData = (columns: ColumnInfo[], items: LeafNodeDataItem) => {
+const getData = (columns: ColumnInfo[], rows: LeafNodeDataRow) => {
   if (!columns || columns.length === 0) {
     return [];
   }
 
-  if (!items || items.length === 0) {
+  if (!rows || rows.length === 0) {
     return [];
   }
-  return items;
+  return rows.map((r) => {
+    const rowData = {};
+    for (let colIndex = 0; colIndex < r.length; colIndex++) {
+      rowData[columns[colIndex].accessor] = r[colIndex];
+    }
+    return rowData;
+  });
 };
 
 // const TablePaging = ({
@@ -149,7 +155,7 @@ const Table = (props: TableProps) => {
     [props.data]
   );
   const rowData = useMemo(
-    () => getData(columns, props.data ? props.data.items : []),
+    () => getData(columns, props.data ? props.data.rows : []),
     [columns, props.data]
   );
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =

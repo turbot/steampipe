@@ -19,4 +19,4 @@ const hasColumn = (columns: LeafNodeDataColumn[], name: string): boolean => {
   return getColumnIndex(columns, name) >= 0;
 };
 
-export { hasColumn };
+export { getColumnIndex, hasColumn };

@@ -27,24 +27,18 @@ Error.args = {
   error: "Something went wrong!",
 };
 
-export const Simple = Template.bind({});
-Simple.args = {
+export const SingleSeries = Template.bind({});
+SingleSeries.storyName = "Single Series";
+SingleSeries.args = {
   data: {
     columns: [
-      { name: "Date", data_type_name: "TEXT" },
-      { name: "Cost ($)", data_type_name: "INT8" },
+      { name: "Type", data_type_name: "TEXT" },
+      { name: "Count", data_type_name: "INT8" },
     ],
-    items: [
-      { Date: "2020-02-01", "Cost ($)": 84.45 },
-      { Date: "2020-02-02", "Cost ($)": 92.23 },
-      { Date: "2020-02-03", "Cost ($)": 101.3 },
-      { Date: "2020-02-04", "Cost ($)": 110.5 },
-      { Date: "2020-02-05", "Cost ($)": 174.95 },
-      { Date: "2020-02-06", "Cost ($)": 130.23 },
-      { Date: "2020-02-07", "Cost ($)": 150.2 },
-      { Date: "2020-02-08", "Cost ($)": 160 },
-      { Date: "2020-02-09", "Cost ($)": 172.12 },
-      { Date: "2020-02-10", "Cost ($)": 190 },
+    rows: [
+      ["User", 12],
+      ["Policy", 93],
+      ["Role", 48],
     ],
   },
 };
@@ -56,23 +50,23 @@ LargeSeries.args = {
       { name: "Region", data_type_name: "TEXT" },
       { name: "Total", data_type_name: "INT8" },
     ],
-    items: [
-      { Region: "us-east-1", Total: 14 },
-      { Region: "eu-central-1", Total: 6 },
-      { Region: "ap-south-1", Total: 4 },
-      { Region: "ap-southeast-1", Total: 3 },
-      { Region: "ap-southeast-2", Total: 2 },
-      { Region: "ca-central-1", Total: 2 },
-      { Region: "eu-north-1", Total: 2 },
-      { Region: "eu-west-1", Total: 1 },
-      { Region: "eu-west-2", Total: 1 },
-      { Region: "eu-west-3", Total: 1 },
-      { Region: "sa-east-1", Total: 1 },
-      { Region: "us-east-2", Total: 1 },
-      { Region: "us-west-1", Total: 1 },
-      { Region: "ap-northeast-1", Total: 1 },
-      { Region: "us-west-2", Total: 1 },
-      { Region: "ap-northeast-2", Total: 1 },
+    rows: [
+      ["us-east-1", 14],
+      ["eu-central-1", 6],
+      ["ap-south-1", 4],
+      ["ap-southeast-1", 3],
+      ["ap-southeast-2", 2],
+      ["ca-central-1", 2],
+      ["eu-north-1", 2],
+      ["eu-west-1", 1],
+      ["eu-west-2", 1],
+      ["eu-west-3", 1],
+      ["sa-east-1", 1],
+      ["us-east-2", 1],
+      ["us-west-1", 1],
+      ["ap-northeast-1", 1],
+      ["us-west-2", 1],
+      ["ap-northeast-2", 1],
     ],
   },
 };
@@ -88,15 +82,10 @@ MultiSeries.args = {
       { name: "Children", data_type_name: "INT8" },
     ],
     items: [
-      { Country: "England", Men: 16000000, Women: 13000000, Children: 8000000 },
-      { Country: "Scotland", Men: 8000000, Women: 7000000, Children: 3000000 },
-      { Country: "Wales", Men: 5000000, Women: 3000000, Children: 2500000 },
-      {
-        Country: "Northern Ireland",
-        Men: 3000000,
-        Women: 2000000,
-        Children: 1000000,
-      },
+      ["England", 16000000, 13000000, 8000000],
+      ["Scotland", 8000000, 7000000, 3000000],
+      ["Wales", 5000000, 3000000, 2500000],
+      ["Northern Ireland", 3000000, 2000000, 1000000],
     ],
   },
 };
@@ -111,16 +100,11 @@ MultiSeriesOverrides.args = {
       { name: "Women", data_type_name: "INT8" },
       { name: "Children", data_type_name: "INT8" },
     ],
-    items: [
-      { Country: "England", Men: 16000000, Women: 13000000, Children: 8000000 },
-      { Country: "Scotland", Men: 8000000, Women: 7000000, Children: 3000000 },
-      { Country: "Wales", Men: 5000000, Women: 3000000, Children: 2500000 },
-      {
-        Country: "Northern Ireland",
-        Men: 3000000,
-        Women: 2000000,
-        Children: 1000000,
-      },
+    rows: [
+      ["England", 16000000, 13000000, 8000000],
+      ["Scotland", 8000000, 7000000, 3000000],
+      ["Wales", 5000000, 3000000, 2500000],
+      ["Northern Ireland", 3000000, 2000000, 1000000],
     ],
   },
   properties: {
@@ -141,10 +125,10 @@ SingleSeriesLegend.args = {
       { name: "Type", data_type_name: "TEXT" },
       { name: "Count", data_type_name: "INT8" },
     ],
-    items: [
-      { Type: "User", Count: 12 },
-      { Type: "Policy", Count: 93 },
-      { Type: "Role", Count: 48 },
+    rows: [
+      ["User", 12],
+      ["Policy", 93],
+      ["Role", 48],
     ],
   },
   properties: {
@@ -162,10 +146,10 @@ SingleSeriesLegendPosition.args = {
       { name: "Type", data_type_name: "TEXT" },
       { name: "Count", data_type_name: "INT8" },
     ],
-    items: [
-      { Type: "User", Count: 12 },
-      { Type: "Policy", Count: 93 },
-      { Type: "Role", Count: 48 },
+    rows: [
+      ["User", 12],
+      ["Policy", 93],
+      ["Role", 48],
     ],
   },
   properties: {
@@ -184,10 +168,10 @@ SingleSeriesXAxisTitle.args = {
       { name: "Type", data_type_name: "TEXT" },
       { name: "Count", data_type_name: "INT8" },
     ],
-    items: [
-      { Type: "User", Count: 12 },
-      { Type: "Policy", Count: 93 },
-      { Type: "Role", Count: 48 },
+    rows: [
+      ["User", 12],
+      ["Policy", 93],
+      ["Role", 48],
     ],
   },
   properties: {
@@ -210,10 +194,10 @@ SingleSeriesXAxisNoLabels.args = {
       { name: "Type", data_type_name: "TEXT" },
       { name: "Count", data_type_name: "INT8" },
     ],
-    items: [
-      { Type: "User", Count: 12 },
-      { Type: "Policy", Count: 93 },
-      { Type: "Role", Count: 48 },
+    rows: [
+      ["User", 12],
+      ["Policy", 93],
+      ["Role", 48],
     ],
   },
   properties: {
@@ -235,10 +219,10 @@ SingleSeriesYAxisNoLabels.args = {
       { name: "Type", data_type_name: "TEXT" },
       { name: "Count", data_type_name: "INT8" },
     ],
-    items: [
-      { Type: "User", Count: 12 },
-      { Type: "Policy", Count: 93 },
-      { Type: "Role", Count: 48 },
+    rows: [
+      ["User", 12],
+      ["Policy", 93],
+      ["Role", 48],
     ],
   },
   properties: {

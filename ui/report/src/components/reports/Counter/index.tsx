@@ -10,7 +10,7 @@ import {
   LeafNodeData,
 } from "../common";
 import { get } from "lodash";
-import { hasColumn } from "../../../utils/data";
+import { getColumnIndex, hasColumn } from "../../../utils/data";
 
 const getWrapperClasses = (style) => {
   switch (style) {
@@ -81,9 +81,9 @@ const useCounterState = ({ data, properties }: CounterProps) => {
 
     if (
       !data.columns ||
-      !data.items ||
+      !data.rows ||
       data.columns.length === 0 ||
-      data.items.length === 0
+      data.rows.length === 0
     ) {
       setCalculatedProperties({
         loading: false,
@@ -97,24 +97,24 @@ const useCounterState = ({ data, properties }: CounterProps) => {
     const dataFormat = getDataFormat(data);
 
     if (dataFormat === "simple") {
-      const item = data.items[0];
-      const kvps = Object.entries(item);
-      const [label, value] = kvps[0];
-      // const label = get(data, "items[0][0]");
-      // const value = get(data, "[1][0]");
+      const firstCol = data.columns[0];
+      const row = data.rows[0];
       setCalculatedProperties({
         loading: false,
-        label,
-        value,
+        label: firstCol.name,
+        value: row[0],
         style: properties.style ? properties.style : null,
       });
     } else {
-      const hasLabelCol = hasColumn(data.columns, "label");
-      const formalLabel = hasLabelCol ? get(data, `items[0].label`) : null;
-      const hasValueCol = hasColumn(data.columns, "value");
-      const formalValue = hasValueCol ? get(data, `items[0].value`) : null;
-      const hasStyleCol = hasColumn(data.columns, "style");
-      const formalStyle = hasStyleCol ? get(data, `items[0].style`) : null;
+      const labelColIndex = getColumnIndex(data.columns, "label");
+      const formalLabel =
+        labelColIndex >= 0 ? get(data, `rows[0][${labelColIndex}]`) : null;
+      const valueColIndex = getColumnIndex(data.columns, "value");
+      const formalValue =
+        valueColIndex >= 0 ? get(data, `rows[0][${valueColIndex}]`) : null;
+      const styleColIndex = getColumnIndex(data.columns, "style");
+      const formalStyle =
+        styleColIndex >= 0 ? get(data, `rows[0][${styleColIndex}]`) : null;
       setCalculatedProperties({
         loading: false,
         label: formalLabel,
