@@ -322,16 +322,13 @@ func (b *Benchmark) setBaseProperties() {
 	if b.Base == nil {
 		return
 	}
-
 	if b.Description == nil {
 		b.Description = b.Base.Description
 	}
 	if b.Documentation == nil {
 		b.Documentation = b.Base.Documentation
 	}
-	if b.Tags == nil {
-		b.Tags = b.Base.Tags
-	}
+	b.Tags = utils.MergeStringMaps(b.Tags, b.Base.Tags)
 	if b.Title == nil {
 		b.Title = b.Base.Title
 	}

@@ -7,11 +7,20 @@ type ReportChartLegend struct {
 	Position *string `cty:"position" hcl:"position" json:"position,omitempty"`
 }
 
-func (l ReportChartLegend) Equals(other *ReportChartLegend) bool {
+func (l *ReportChartLegend) Equals(other *ReportChartLegend) bool {
 	if other == nil {
 		return false
 	}
 
 	return utils.SafeStringsEqual(l.Display, other.Display) &&
 		utils.SafeStringsEqual(l.Position, other.Position)
+}
+
+func (l *ReportChartLegend) Merge(other *ReportChartLegend) {
+	if l.Display == nil {
+		l.Display = other.Display
+	}
+	if l.Position == nil {
+		l.Position = other.Position
+	}
 }

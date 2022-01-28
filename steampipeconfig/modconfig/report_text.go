@@ -76,7 +76,6 @@ func (t *ReportText) setBaseProperties() {
 	if t.Value == nil {
 		t.Value = t.Base.Value
 	}
-
 	if t.Width == nil {
 		t.Width = t.Base.Width
 	}

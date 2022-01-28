@@ -9,7 +9,7 @@ type ReportChartAxes struct {
 	Y *ReportChartAxesY `cty:"y" hcl:"y,block" json:"y,omitempty"`
 }
 
-func (a ReportChartAxes) Equals(other *ReportChartAxes) bool {
+func (a *ReportChartAxes) Equals(other *ReportChartAxes) bool {
 	if other == nil {
 		return false
 	}
@@ -42,12 +42,21 @@ func (a ReportChartAxes) Equals(other *ReportChartAxes) bool {
 
 }
 
+func (a *ReportChartAxes) Merge(other *ReportChartAxes) {
+	if other == nil {
+		return
+	}
+	a.X.Merge(other.X)
+	a.Y.Merge(other.Y)
+
+}
+
 type ReportChartAxesX struct {
 	Title  *ReportChartAxisTitle `cty:"title" hcl:"title,block" json:"title,omitempty"`
 	Labels *ReportChartLabels    `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
 }
 
-func (x ReportChartAxesX) Equals(other *ReportChartAxesX) bool {
+func (x *ReportChartAxesX) Equals(other *ReportChartAxesX) bool {
 	if other == nil {
 		return false
 	}
@@ -69,6 +78,19 @@ func (x ReportChartAxesX) Equals(other *ReportChartAxesX) bool {
 	return true
 }
 
+func (x *ReportChartAxesX) Merge(other *ReportChartAxesX) {
+	if x.Title == nil {
+		x.Title = other.Title
+	} else {
+		x.Title.Merge(other.Title)
+	}
+	if x.Labels == nil {
+		x.Labels = other.Labels
+	} else {
+		x.Labels.Merge(other.Labels)
+	}
+}
+
 type ReportChartAxesY struct {
 	Title  *ReportChartAxisTitle `cty:"title" hcl:"title,block" json:"title,omitempty"`
 	Labels *ReportChartLabels    `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
@@ -76,7 +98,7 @@ type ReportChartAxesY struct {
 	Max    *int                  `cty:"max" hcl:"max" json:"max,omitempty"`
 }
 
-func (y ReportChartAxesY) Equals(other *ReportChartAxesY) bool {
+func (y *ReportChartAxesY) Equals(other *ReportChartAxesY) bool {
 	if other == nil {
 		return false
 	}
@@ -102,13 +124,32 @@ func (y ReportChartAxesY) Equals(other *ReportChartAxesY) bool {
 	return true
 }
 
+func (y *ReportChartAxesY) Merge(other *ReportChartAxesY) {
+	if y.Title == nil {
+		y.Title = other.Title
+	} else {
+		y.Title.Merge(other.Title)
+	}
+	if y.Labels == nil {
+		y.Labels = other.Labels
+	} else {
+		y.Labels.Merge(other.Labels)
+	}
+	if y.Min == nil {
+		y.Min = other.Min
+	}
+	if y.Max == nil {
+		y.Max = other.Max
+	}
+}
+
 type ReportChartAxisTitle struct {
 	Display *string `cty:"display" hcl:"display" json:"display,omitempty"`
 	Align   *string `cty:"align" hcl:"align" json:"align,omitempty"`
 	Value   *string `cty:"value" hcl:"value" json:"value,omitempty"`
 }
 
-func (t ReportChartAxisTitle) Equals(other *ReportChartAxisTitle) bool {
+func (t *ReportChartAxisTitle) Equals(other *ReportChartAxisTitle) bool {
 	if other == nil {
 		return false
 	}
@@ -120,4 +161,16 @@ func (t ReportChartAxisTitle) Equals(other *ReportChartAxisTitle) bool {
 	}
 
 	return true
+}
+
+func (t *ReportChartAxisTitle) Merge(other *ReportChartAxisTitle) {
+	if t.Display == nil {
+		t.Display = other.Display
+	}
+	if t.Align == nil {
+		t.Align = other.Align
+	}
+	if t.Value == nil {
+		t.Value = other.Value
+	}
 }

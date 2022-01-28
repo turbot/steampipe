@@ -18,11 +18,11 @@ type ReportContainer struct {
 
 	Title *string `cty:"title" column:"title,text"`
 	Width *int    `cty:"width"  column:"width,text"`
+	Base  *ReportContainer
 
 	Mod       *Mod `cty:"mod"`
 	DeclRange hcl.Range
 
-	Base  *ReportContainer
 	Paths []NodePath `column:"path,jsonb"`
 	// store children in a way which can be serialised via cty
 	ChildNames []string `cty:"children"`

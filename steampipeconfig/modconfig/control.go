@@ -427,9 +427,7 @@ func (c *Control) setBaseProperties() {
 	if c.SQL == nil {
 		c.SQL = c.Base.SQL
 	}
-	if c.Tags == nil {
-		c.Tags = c.Base.Tags
-	}
+	c.Tags = utils.MergeStringMaps(c.Tags, c.Base.Tags)
 	if c.Title == nil {
 		c.Title = c.Base.Title
 	}

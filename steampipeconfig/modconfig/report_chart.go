@@ -24,10 +24,10 @@ type ReportChart struct {
 	Type *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Base *ReportChart `hcl:"base" json:"-"`
 
-	Legend     *ReportChartLegend   `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
-	SeriesList []*ReportChartSeries `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
-	Axes       *ReportChartAxes     `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
-	Grouping   *string              `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
+	Legend     *ReportChartLegend    `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
+	SeriesList ReportChartSeriesList `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
+	Axes       *ReportChartAxes      `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
+	Grouping   *string               `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
 
 	Series map[string]*ReportChartSeries `cty:"series" json:"series"`
 
@@ -89,18 +89,22 @@ func (c *ReportChart) setBaseProperties() {
 	}
 	if c.Axes == nil {
 		c.Axes = c.Base.Axes
+	} else {
+		c.Axes.Merge(c.Base.Axes)
 	}
 	if c.Grouping == nil {
 		c.Grouping = c.Base.Grouping
 	}
 	if c.Legend == nil {
 		c.Legend = c.Base.Legend
-	}
-	if c.Series == nil {
-		c.Series = c.Base.Series
+	} else {
+		c.Legend.Merge(c.Base.Legend)
 	}
 	if c.SeriesList == nil {
 		c.SeriesList = c.Base.SeriesList
+	} else {
+
+		c.SeriesList.Merge(c.Base.SeriesList)
 	}
 
 	if c.Width == nil {
