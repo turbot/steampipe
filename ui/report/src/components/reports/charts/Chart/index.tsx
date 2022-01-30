@@ -5,7 +5,6 @@ import Charts, {
   ChartType,
 } from "../index";
 import ErrorPanel from "../../Error";
-import Icon from "../../../Icon";
 import useMediaMode from "../../../../hooks/useMediaMode";
 import { Chart as ChartJS, registerables } from "chart.js";
 import { buildChartDataInputs, LeafNodeData } from "../../common";
@@ -16,7 +15,7 @@ import { get, has, merge, set } from "lodash";
 import { useEffect, useRef, useState } from "react";
 import { usePanel } from "../../../../hooks/usePanel";
 import { useTheme } from "../../../../hooks/useTheme";
-import { zoomIcon } from "../../../../constants/icons";
+import { ZoomIcon } from "../../../../constants/icons";
 
 ChartJS.register(...registerables);
 
@@ -511,7 +510,7 @@ const Chart = ({ data, inputs, theme, themeWrapperRef }) => {
                 dispatch({ type: "select_panel", panel: panelDefinition })
               }
             >
-              <Icon icon={zoomIcon} />
+              <ZoomIcon className="h-5 w-5 text-black-scale-4" />
             </div>
           )}
           <ReactChartJS

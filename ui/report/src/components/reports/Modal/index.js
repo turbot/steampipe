@@ -1,5 +1,4 @@
-import Icon from "../../Icon";
-import { closeIcon } from "../../../constants/icons";
+import { CloseIcon } from "../../../constants/icons";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useState } from "react";
 
@@ -52,11 +51,7 @@ const Modal = ({ icon, message, title }) => {
                   onClick={() => setOpen(false)}
                 >
                   <span className="sr-only">Close</span>
-                  <Icon
-                    className="h-6 w-6"
-                    icon={closeIcon}
-                    aria-hidden="true"
-                  />
+                  <CloseIcon className="h-6 w-6" aria-hidden="true" />
                 </button>
               </div>
               <div className="sm:flex sm:items-start">

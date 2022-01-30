@@ -1,4 +1,3 @@
-import Icon from "../../Icon";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
@@ -6,8 +5,8 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import {
-  sortAscendingIcon,
-  sortDescendingIcon,
+  SortAscendingIcon,
+  SortDescendingIcon,
 } from "../../../constants/icons";
 import { useMemo } from "react";
 import { useSortBy, useTable } from "react-table";
@@ -176,16 +175,19 @@ const Table = (props: TableProps) => {
                   className="px-4 py-3 text-left text-sm font-normal tracking-wider whitespace-nowrap"
                 >
                   {column.render("Header")}
-                  <Icon
-                    className={column.isSorted ? "ml-1" : "ml-1 invisible"}
-                    icon={
-                      column.isSortedDesc
-                        ? sortDescendingIcon
-                        : sortAscendingIcon
-                    }
-                    onClick={undefined}
-                    rotation={undefined}
-                  />
+                  {column.isSortedDesc ? (
+                    <SortDescendingIcon
+                      className={
+                        column.isSorted ? "ml-1" : "ml-1 h-2 w-2 invisible"
+                      }
+                    />
+                  ) : (
+                    <SortAscendingIcon
+                      className={
+                        column.isSorted ? "ml-1" : "ml-1 h-2 w-2 invisible"
+                      }
+                    />
+                  )}
                 </th>
               ))}
             </tr>

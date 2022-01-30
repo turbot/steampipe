@@ -1,60 +1,44 @@
-import { CheckIcon, MoonIcon, SunIcon } from "@heroicons/react/solid";
 import {
-  faCaretDown as falCaretDown,
-  faCaretUp as falCaretUp,
-  faChevronDoubleLeft as falChevronDoubleLeft,
-  faChevronDoubleRight as falChevronDoubleRight,
-  faChevronLeft as falChevronLeft,
-  faChevronRight as falChevronRight,
-  faCircleNotch as falCircleNotch,
-  faExpandArrows as falExpandArrows,
-  faHorizontalRule as falHorizontalRule,
-  faTag as falTag,
-  faTags as falTags,
-  faTimes as falTimes,
-} from "@fortawesome/pro-light-svg-icons";
+  ArrowsExpandIcon as ArrowsExpandIconOutline,
+  ExclamationCircleIcon as ExclamationCircleIconOutline,
+  TagIcon as TagIconOutline,
+} from "@heroicons/react/outline";
 import {
-  faCheck as fasCheck,
-  faExclamationCircle as fasExclamationCircle,
-  faInfoCircle as fasInfoCircle,
-  faQuestion as fasQuestion,
-  faSort as fasSort,
-  faTimes as fasTimes,
-  faTimesCircle as fasTimesCircle,
-} from "@fortawesome/pro-solid-svg-icons";
-import { faSteampipe as fabSteampipe } from "../components/Icon/faSteampipe";
+  CheckIcon as CheckIconSolid,
+  ChevronDownIcon as ChevronDownIconSolid,
+  ChevronUpIcon as ChevronUpIconSolid,
+  InformationCircleIcon as InformationCircleIconSolid,
+  MinusIcon as MinusIconSolid,
+  MoonIcon as MoonIconSolid,
+  QuestionMarkCircleIcon as QuestionMarkCircleIconSolid,
+  SunIcon as SunIconSolid,
+  XCircleIcon as XCircleIconSolid,
+  XIcon as XIconSolid,
+} from "@heroicons/react/solid";
+import { faCircleNotch } from "@fortawesome/free-solid-svg-icons";
 
 // General
-export const closeIcon = falTimes;
-export const DarkIcon = MoonIcon;
-export const emptyIcon = falCircleNotch;
-export const errorIcon = fasExclamationCircle;
-export const LightIcon = SunIcon;
-export const loadingIcon = falCircleNotch;
-export const steampipeIcon = fabSteampipe;
-export const zoomIcon = falExpandArrows;
-
-// Report primitives
-export const openSelectMenuIcon = fasSort;
+export const CloseIcon = XIconSolid;
+export const DarkIcon = MoonIconSolid;
+export const emptyIcon = faCircleNotch;
+export const ErrorIcon = ExclamationCircleIconOutline;
+export const LightIcon = SunIconSolid;
+export const loadingIcon = faCircleNotch;
+export const ZoomIcon = ArrowsExpandIconOutline;
 
 // Counter
-export const alertIcon = fasTimesCircle;
-export const nilIcon = falHorizontalRule;
-export const infoIcon = fasInfoCircle;
+export const AlertIcon = XCircleIconSolid;
+export const NilIcon = MinusIconSolid;
 
 // Control
-export const alarmIcon = fasTimes;
-export const okIcon = fasCheck;
-export const tbdIcon = fasQuestion;
+export const AlarmIcon = XIconSolid;
+export const InfoIcon = InformationCircleIconSolid;
+export const OKIcon = CheckIconSolid;
+export const TBDIcon = QuestionMarkCircleIconSolid;
 
 // Resource
-export const tagIcon = falTag;
-export const tagsIcon = falTags;
+export const TagIcon = TagIconOutline;
 
 // Table
-export const firstPageIcon = falChevronDoubleLeft;
-export const lastPageIcon = falChevronDoubleRight;
-export const nextPageIcon = falChevronRight;
-export const previousPageIcon = falChevronLeft;
-export const sortAscendingIcon = falCaretUp;
-export const sortDescendingIcon = falCaretDown;
+export const SortAscendingIcon = ChevronUpIconSolid;
+export const SortDescendingIcon = ChevronDownIconSolid;

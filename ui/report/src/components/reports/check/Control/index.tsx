@@ -1,14 +1,13 @@
 import CheckCounter from "../common/CheckCounter";
-import Icon from "../../../Icon";
 import LayoutPanel from "../../layout/common/LayoutPanel";
 import LoadingIndicator from "../../LoadingIndicator";
 import React, { useMemo } from "react";
 import {
-  alarmIcon,
-  infoIcon,
-  okIcon,
-  sortAscendingIcon,
-  sortDescendingIcon,
+  AlarmIcon,
+  InfoIcon,
+  OKIcon,
+  SortAscendingIcon,
+  SortDescendingIcon,
 } from "../../../../constants/icons";
 import {
   CheckLeafNodeDataControl,
@@ -56,12 +55,19 @@ const ControlsTable = ({ loading, control }: ControlsTableProps) => {
                 )}
               >
                 {column.render("Header")}
-                <Icon
-                  className={column.isSorted ? "ml-1" : "ml-1 invisible"}
-                  icon={
-                    column.isSortedDesc ? sortDescendingIcon : sortAscendingIcon
-                  }
-                />
+                {column.isSortedDesc ? (
+                  <SortDescendingIcon
+                    className={
+                      column.isSorted ? "ml-1" : "ml-1 h-2 w-2 invisible"
+                    }
+                  />
+                ) : (
+                  <SortAscendingIcon
+                    className={
+                      column.isSorted ? "ml-1" : "ml-1 h-2 w-2 invisible"
+                    }
+                  />
+                )}
               </th>
             ))}
           </tr>
@@ -84,24 +90,27 @@ const ControlsTable = ({ loading, control }: ControlsTableProps) => {
                         {["ALARM", "ERROR", "INVALID"].includes(
                           cell.value.toUpperCase()
                         ) && (
-                          <div className="whitespace-nowrap text-alert">
-                            <Icon
-                              icon={alarmIcon}
-                              title={`Control in ${cell.value} status`}
-                            />
+                          <div
+                            className="whitespace-nowrap text-alert"
+                            title={`Control in ${cell.value} status`}
+                          >
+                            <AlarmIcon />
                           </div>
                         )}
                         {cell.value.toUpperCase() === "OK" && (
-                          <div className="whitespace-nowrap text-ok">
-                            <Icon icon={okIcon} title="Control in OK status" />
+                          <div
+                            className="whitespace-nowrap text-ok"
+                            title="Control in OK status"
+                          >
+                            <OKIcon />
                           </div>
                         )}
                         {cell.value.toUpperCase() === "INFO" && (
-                          <div className="whitespace-nowrap text-tbd">
-                            <Icon
-                              icon={infoIcon}
-                              title="Control in info status"
-                            />
+                          <div
+                            className="whitespace-nowrap text-tbd"
+                            title="Control in info status"
+                          >
+                            <InfoIcon />
                           </div>
                         )}
                       </>

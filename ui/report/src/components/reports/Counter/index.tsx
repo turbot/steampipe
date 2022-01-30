@@ -1,16 +1,15 @@
-import Icon from "../../Icon";
 import IntegerDisplay from "../../IntegerDisplay";
 import LoadingIndicator from "../LoadingIndicator";
 import React, { useEffect, useState } from "react";
 import Table from "../Table";
-import { alertIcon, infoIcon, nilIcon, okIcon } from "../../../constants/icons";
+import { AlertIcon, InfoIcon, NilIcon, OKIcon } from "../../../constants/icons";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
   LeafNodeData,
 } from "../common";
 import { get } from "lodash";
-import { getColumnIndex, hasColumn } from "../../../utils/data";
+import { getColumnIndex } from "../../../utils/data";
 
 const getWrapperClasses = (style) => {
   switch (style) {
@@ -163,7 +162,9 @@ const Counter = (props: CounterProps) => {
               }
             >
               {state.loading && "Loading..."}
-              {!state.loading && !state.label && <Icon icon={nilIcon} />}
+              {!state.loading && !state.label && (
+                <NilIcon className="h-5 w-5" />
+              )}
               {!state.loading && state.label}
             </dt>
             <dd className="flex items-baseline mt-2">
@@ -173,7 +174,7 @@ const Counter = (props: CounterProps) => {
                 {state.loading && <LoadingIndicator />}
                 {!state.loading &&
                   (state.value === null || state.value === undefined) && (
-                    <Icon icon={nilIcon} />
+                    <NilIcon className="h-8 w-8" />
                   )}
                 <IntegerDisplay
                   className="md:hidden"
@@ -189,18 +190,18 @@ const Counter = (props: CounterProps) => {
             </dd>
           </div>
           {state.style === "alert" && (
-            <div className="text-white opacity-30 text-3xl py-2 px-3">
-              <Icon icon={alertIcon} />
+            <div className="py-2 px-3">
+              <AlertIcon className="text-white opacity-30 text-3xl h-8 w-8" />
             </div>
           )}
           {state.style === "ok" && (
-            <div className="text-white opacity-30 text-3xl py-2 px-3">
-              <Icon icon={okIcon} />
+            <div className="py-2 px-3">
+              <OKIcon className="block text-white opacity-30 h-8 w-8" />
             </div>
           )}
           {state.style === "info" && (
-            <div className="text-white opacity-30 text-3xl py-2 px-3">
-              <Icon icon={infoIcon} />
+            <div className="py-2 px-3">
+              <InfoIcon className="text-white opacity-30 text-3xl h-8 w-8" />
             </div>
           )}
         </div>
