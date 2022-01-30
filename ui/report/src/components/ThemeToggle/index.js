@@ -1,5 +1,4 @@
-import Icon from "../Icon";
-import { darkIcon, lightIcon } from "../../constants/icons";
+import { DarkIcon, LightIcon } from "../../constants/icons";
 import { ThemeNames, useTheme } from "../../hooks/useTheme";
 
 const ThemeToggle = () => {
@@ -40,7 +39,7 @@ const ThemeToggle = () => {
           }
           aria-hidden="true"
         >
-          <Icon icon={lightIcon} />
+          <LightIcon />
         </span>
         <span
           className={
@@ -51,7 +50,7 @@ const ThemeToggle = () => {
           }
           aria-hidden="true"
         >
-          <Icon icon={darkIcon} />
+          <DarkIcon />
         </span>
       </span>
     </button>

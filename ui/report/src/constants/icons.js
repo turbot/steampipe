@@ -1,7 +1,7 @@
+import { CheckIcon, MoonIcon, SunIcon } from "@heroicons/react/solid";
 import {
   faCaretDown as falCaretDown,
   faCaretUp as falCaretUp,
-  faCheck as falCheck,
   faChevronDoubleLeft as falChevronDoubleLeft,
   faChevronDoubleRight as falChevronDoubleRight,
   faChevronLeft as falChevronLeft,
@@ -17,10 +17,8 @@ import {
   faCheck as fasCheck,
   faExclamationCircle as fasExclamationCircle,
   faInfoCircle as fasInfoCircle,
-  faMoon as fasMoon,
   faQuestion as fasQuestion,
   faSort as fasSort,
-  faSun as fasSun,
   faTimes as fasTimes,
   faTimesCircle as fasTimesCircle,
 } from "@fortawesome/pro-solid-svg-icons";
@@ -28,17 +26,16 @@ import { faSteampipe as fabSteampipe } from "../components/Icon/faSteampipe";
 
 // General
 export const closeIcon = falTimes;
-export const darkIcon = fasMoon;
+export const DarkIcon = MoonIcon;
 export const emptyIcon = falCircleNotch;
 export const errorIcon = fasExclamationCircle;
-export const lightIcon = fasSun;
+export const LightIcon = SunIcon;
 export const loadingIcon = falCircleNotch;
 export const steampipeIcon = fabSteampipe;
 export const zoomIcon = falExpandArrows;
 
 // Report primitives
 export const openSelectMenuIcon = fasSort;
-export const selectMenuItemSelectedIcon = falCheck;
 
 // Counter
 export const alertIcon = fasTimesCircle;
