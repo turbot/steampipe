@@ -1,17 +1,28 @@
 import Select from "react-select";
+import useQueryParam from "../../../../hooks/useQueryParam";
 import { getColumnIndex } from "../../../../utils/data";
-import { IInput, InputProps } from "../index";
+import { InputProps } from "../index";
 import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
 import { useEffect, useMemo, useState } from "react";
+
+interface SelectOption {
+  label: string;
+  value: string;
+}
 
 type SelectInputProps = InputProps & {
   multi?: boolean;
 };
 
 const SelectInput = (props: SelectInputProps) => {
+  const [initialisedFromUrl, setInitialisedFromUrl] = useState(false);
+  const [urlValue, setUrlValue] = useQueryParam(props.name);
+  const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
+    null
+  );
   const [_, setRandomVal] = useState(0);
   const { theme, wrapperRef } = useTheme();
-  const options = useMemo(() => {
+  const options: SelectOption[] = useMemo(() => {
     if (!props.data || !props.data.columns || !props.data.rows) {
       return [];
     }
@@ -27,6 +38,58 @@ const SelectInput = (props: SelectInputProps) => {
       value: row[valueColIndex],
     }));
   }, [props.data]);
+
+  useEffect(() => {
+    // If we've already set a value...
+    if (initialisedFromUrl) {
+      return;
+    }
+
+    if (!urlValue) {
+      setInitialisedFromUrl(true);
+      return;
+    }
+
+    // If we haven't got the data we need yet...
+    if (!options || options.length === 0) {
+      return;
+    }
+
+    const parsedUrlValue = props.multi ? urlValue.split(",") : urlValue;
+
+    const foundOption = props.multi
+      ? options.filter((option) => parsedUrlValue.indexOf(option.value) >= 0)
+      : options.find((option) => option.value === parsedUrlValue);
+
+    if (!foundOption) {
+      setInitialisedFromUrl(true);
+      return;
+    }
+
+    setValue(foundOption);
+    setInitialisedFromUrl(true);
+  }, [props.multi, initialisedFromUrl, urlValue, options, value]);
+
+  useEffect(() => {
+    if (!initialisedFromUrl) {
+      return;
+    }
+
+    // @ts-ignore
+    if (!value || value.length === 0) {
+      setUrlValue(null);
+      return;
+    }
+
+    if (props.multi) {
+      // @ts-ignore
+      setUrlValue(value.map((v) => v.value).join(","));
+    } else {
+      // @ts-ignore
+      setUrlValue(value.value);
+    }
+    // setUrlValue(props.multi ? value.join);
+  }, [props.multi, initialisedFromUrl, value]);
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
   useEffect(() => setRandomVal(Math.random()), [theme.name]);
@@ -111,12 +174,15 @@ const SelectInput = (props: SelectInputProps) => {
         isMulti={props.multi}
         // menuIsOpen
         name={props.name}
+        // @ts-ignore
+        onChange={(value) => setValue(value)}
         options={options}
         placeholder={
           (props.properties && props.properties.placeholder) ||
           "Please select..."
         }
         styles={customStyles}
+        value={value}
       />
     </form>
   );
