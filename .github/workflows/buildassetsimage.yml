@@ -1,15 +1,14 @@
 name: Build And Release UI Assets
 
 on:
-  # workflow_dispatch:
-  #   inputs:
-  #     branch:
-  #       description: "The branch that will be built"
-  #       required: true
-  #     tag:
-  #       description: "The release tag that will be set"
-  #       required: true
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "The branch that will be built"
+        required: true
+      tag:
+        description: "The release tag/version that will be set"
+        required: true
 
 env:
   PROJECT_ID: steampipe
@@ -17,7 +16,7 @@ env:
   CORE_REPO: us-docker.pkg.dev/steampipe/steampipe
   ORG: turbot
   CONFIG_SCHEMA_VERSION: "2020-11-18"
-  VERSION: "0.1.0"
+  VERSION: ${{ github.event.inputs.tag }}
   
 jobs:
   build:
@@ -26,6 +25,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.inputs.branch }}
 
     - name: Setup Node
       uses: actions/setup-node@v2
@@ -136,7 +137,6 @@ jobs:
     - name: Verify ORAS
       run: oras version
 
-    # push to the registry
     - name: Push to registry
       run: |-
         oras push ${{ steps.image_ref.outputs.REF }} \
@@ -150,3 +150,10 @@ jobs:
       with:
         image-to-tag: "${{ steps.image_ref.outputs.REF }}"
         image-version: ${{ env.VERSION }}
+        
+    - name: Tag Asset Release
+      run: |
+        git config user.name "Steampipe GitHub Actions Bot"
+        git config user.email noreply@github.com
+        git tag assets-${{ github.event.inputs.tag }}
+        git push origin assets-${{ github.event.inputs.tag }}
