@@ -1,5 +1,8 @@
 report "r1"{
+    input "i1"{
+    }
+
     text {
-        value = "hi you"
+        value = self.input.i1
     }
 }

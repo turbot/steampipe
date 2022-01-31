@@ -115,6 +115,10 @@ var ReportBlockSchema = &hcl.BodySchema{
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
+			Type:       modconfig.BlockTypeInput,
+			LabelNames: []string{"name"},
+		},
+		{
 			Type: modconfig.BlockTypeContainer,
 		},
 		{
@@ -134,9 +138,6 @@ var ReportBlockSchema = &hcl.BodySchema{
 		},
 		{
 			Type: modconfig.BlockTypeImage,
-		},
-		{
-			Type: modconfig.BlockTypeInput,
 		},
 		{
 			Type: modconfig.BlockTypeTable,

@@ -341,7 +341,7 @@ func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, 
 }
 
 func (w *Workspace) verifyResourceRuntimeDependencies() error {
-	for _, r := range w.ReportContainers {
+	for _, r := range w.Reports {
 		if err := r.BuildRuntimeDependencyTree(); err != nil {
 			return err
 		}
