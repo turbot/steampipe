@@ -128,7 +128,7 @@ jobs:
     - run: |- 
         cat config.json
         cat annotations.json
-        cat versions.json
+        cat ./report/versions.json
         REF="$CORE_REPO/$IMAGE_NAME:$GITHUB_RUN_ID"
         echo $REF
 
