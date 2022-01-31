@@ -20,7 +20,7 @@ func InstallPlugin(ctx context.Context, imageRef string) (*SteampipeImage, error
 	ref := NewSteampipeImageRef(imageRef)
 	imageDownloader := NewOciDownloader()
 
-	image, err := imageDownloader.Download(ctx, ref.ActualImageRef(), "plugin", tempDir.Path)
+	image, err := imageDownloader.Download(ctx, ref.ActualImageRef(), ImageTypePlugin, tempDir.Path)
 	if err != nil {
 		return nil, err
 	}

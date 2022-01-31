@@ -62,11 +62,11 @@ func MediaTypeForPlatform(imageType string) string {
 // SharedMediaTypes returns media types that are NOT specific to the os and arch (readmes, control files, etc)
 func SharedMediaTypes(imageType string) []string {
 	switch imageType {
-	case "db":
+	case ImageTypeDatabase:
 		return []string{MediaTypeDbDocLayer, MediaTypeDbLicenseLayer}
-	case "fdw":
+	case ImageTypeFdw:
 		return []string{MediaTypeFdwDocLayer, MediaTypeFdwLicenseLayer, MediaTypeFdwControlLayer, MediaTypeFdwSqlLayer}
-	case "plugin":
+	case ImageTypePlugin:
 		return []string{MediaTypePluginDocsLayer, MediaTypePluginSpcLayer, MediaTypePluginLicenseLayer}
 	}
 	return nil
