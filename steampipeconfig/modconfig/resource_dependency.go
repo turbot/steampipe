@@ -43,15 +43,14 @@ func (d *ResourceDependency) IsRunTimeDependency() bool {
 	// map is keyed by resource type and contains a list of properties
 	runTimeDependencyPropertyPaths := map[string][]string{"input": {"result"}}
 
-	// is this property a supported runtimedependency property
+	// is this property a supported runtime dependency property
 	if supportedProperties, ok := runTimeDependencyPropertyPaths[parsedPropertyPath.ItemType]; ok {
-		if !helpers.StringSliceContains(supportedProperties, parsedPropertyPath.PropertyPathString()) {
-			return false
+		if helpers.StringSliceContains(supportedProperties, parsedPropertyPath.PropertyPathString()) {
+			return true
 		}
 	}
 
-	// does the parent resource exist in the mod
-	return true
+	return false
 }
 
 func (d *ResourceDependency) SetAsRuntimeDependency(bodyContent *hcl.BodyContent) error {

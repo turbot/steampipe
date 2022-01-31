@@ -261,7 +261,6 @@ func decodeParam(block *hcl.Block, runCtx *RunContext, parentName string) (*modc
 		}
 	}
 	return def, diags
-
 }
 
 func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
