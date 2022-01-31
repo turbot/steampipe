@@ -65,7 +65,7 @@ jobs:
     - name: Move Build Assets
       run: |-
         mkdir -p report_ui_build
-        mv ./ui/report/build report_ui_build
+        mv ./ui/report/build/* report_ui_build/
         ls -la report_ui_build
 
     - name: Create a version file
