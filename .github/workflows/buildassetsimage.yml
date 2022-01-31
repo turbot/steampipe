@@ -46,8 +46,6 @@ jobs:
     - name: Setup Yarn
       run: |-
         unset CI
-        npm config set "@fortawesome:registry" https://npm.fontawesome.com/
-        npm config set "//npm.fontawesome.com/:_authToken" ${{ secrets.FONTAWESOME_TOKEN }}
         rm -rf ./build
       working-directory: ./ui/report
 
