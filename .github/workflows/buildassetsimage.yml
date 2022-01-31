@@ -66,6 +66,16 @@ jobs:
         mkdir -p report
         mv ./ui/report/build ./report
 
+    - name: Create a version file
+      run: |-
+        JSON_STRING=$( jq -n \
+            --arg version "$VERSION" \
+          '{
+              "version":$version,
+          }' )
+
+          echo $JSON_STRING > ./report/versions.json
+
     - name: Get GCloud CLI
       uses: google-github-actions/setup-gcloud@v0.4.0
       with:
@@ -118,6 +128,7 @@ jobs:
     - run: |- 
         cat config.json
         cat annotations.json
+        cat versions.json
         REF="$CORE_REPO/$IMAGE_NAME:$GITHUB_RUN_ID"
         echo $REF
 
