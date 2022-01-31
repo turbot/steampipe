@@ -10,7 +10,7 @@ import (
 	versionfile "github.com/turbot/steampipe/ociinstaller/versionfile"
 )
 
-// InstallFdw Installs the Steampipe Postgres foreign data wrapper from an OCI image
+// InstallFdw installs the Steampipe Postgres foreign data wrapper from an OCI image
 func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
 	imageRef := constants.FdwImageRef
 	tempDir := NewTempDir(imageRef)
