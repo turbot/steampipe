@@ -66,6 +66,7 @@ jobs:
       run: |-
         mkdir -p report
         mv ./ui/report/build report_ui_build
+        ls -la report_ui_build
 
     - name: Create a version file
       run: |-
