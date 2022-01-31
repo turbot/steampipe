@@ -109,6 +109,7 @@ const getBaseOptions = (type, data, min, max, theme, themeWrapperRef) => {
   // @ts-ignore
   const style = window.getComputedStyle(themeWrapperRef);
   const foreground = style.getPropertyValue("--color-foreground");
+  console.log(foreground);
   const foregroundLightest = style.getPropertyValue(
     "--color-foreground-lightest"
   );
@@ -137,6 +138,7 @@ const getBaseOptions = (type, data, min, max, theme, themeWrapperRef) => {
                 color: foreground,
               },
               grid: {
+                borderColor: foregroundLightest,
                 display: false,
                 color: foregroundLightest,
               },
@@ -150,6 +152,7 @@ const getBaseOptions = (type, data, min, max, theme, themeWrapperRef) => {
                 color: foreground,
               },
               grid: {
+                borderColor: foregroundLightest,
                 display: false,
                 color: foregroundLightest,
               },
