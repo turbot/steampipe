@@ -15,15 +15,12 @@ import {
   XCircleIcon as XCircleIconSolid,
   XIcon as XIconSolid,
 } from "@heroicons/react/solid";
-import { faCircleNotch } from "@fortawesome/free-solid-svg-icons";
 
 // General
 export const CloseIcon = XIconSolid;
 export const DarkIcon = MoonIconSolid;
-export const emptyIcon = faCircleNotch;
 export const ErrorIcon = ExclamationCircleIconOutline;
 export const LightIcon = SunIconSolid;
-export const loadingIcon = faCircleNotch;
 export const ZoomIcon = ArrowsExpandIconOutline;
 
 // Counter
