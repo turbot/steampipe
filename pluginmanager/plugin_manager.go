@@ -28,7 +28,6 @@ type PluginManager struct {
 	pb.UnimplementedPluginManagerServer
 
 	Plugins          map[string]*runningPlugin
-	configDir        string
 	mut              sync.Mutex
 	connectionConfig map[string]*pb.ConnectionConfig
 	logger           hclog.Logger

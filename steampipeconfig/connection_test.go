@@ -438,8 +438,8 @@ func TestGetConnectionsToUpdate(t *testing.T) {
 		updates, res := NewConnectionUpdates([]string{"a", "b"})
 
 		if res.Error != nil && test.expected != "ERROR" {
-			continue
 			t.Fatalf("NewConnectionUpdates failed with unexpected error: %v", err)
+			continue
 		}
 
 		expectedUpdates := test.expected.(*ConnectionUpdates)
@@ -521,7 +521,7 @@ func resetConfig(test getConnectionsToUpdateTest) {
 	connectionStatePath := filepaths.ConnectionStatePath()
 
 	os.Remove(connectionStatePath)
-    for i := range test.required {
+	for i := range test.required {
 		os.Remove(connectionConfigPath(i))
 	}
 }

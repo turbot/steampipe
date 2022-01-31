@@ -31,7 +31,7 @@ func Complete(input *CompleterInput) []prompt.Suggest {
 
 func completerFromArgsOf(cmd string) completer {
 	return func(input *CompleterInput) []prompt.Suggest {
-		metaQueryDefinition, _ := metaQueryDefinitions[cmd]
+		metaQueryDefinition := metaQueryDefinitions[cmd]
 		suggestions := make([]prompt.Suggest, len(metaQueryDefinition.args))
 		for idx, arg := range metaQueryDefinition.args {
 			suggestions[idx] = prompt.Suggest{Text: arg.value, Description: arg.description, Output: arg.value}

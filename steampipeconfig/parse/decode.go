@@ -291,24 +291,25 @@ func decodeParam(block *hcl.Block, runCtx *RunContext, parentName string) (*modc
 	content, diags := block.Body.Content(ParamDefBlockSchema)
 
 	if attr, exists := content.Attributes["description"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &def.Description)
-		diags = append(diags, valDiags...)
+		moreDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &def.Description)
+		diags = append(diags, moreDiags...)
 	}
 	if attr, exists := content.Attributes["default"]; exists {
-		v, diags := attr.Expr.Value(runCtx.EvalCtx)
-		if diags.HasErrors() {
-			return nil, diags
-		}
-		// convert the raw default into a postgres representation
-		if valStr, err := ctyToPostgresString(v); err == nil {
-			def.Default = utils.ToStringPointer(valStr)
-		} else {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("%s has invalid parameter config", parentName),
-				Detail:   err.Error(),
-				Subject:  &attr.Range,
-			})
+		v, moreDiags := attr.Expr.Value(runCtx.EvalCtx)
+		diags = append(diags, moreDiags...)
+
+		if !moreDiags.HasErrors() {
+			// convert the raw default into a postgres representation
+			if valStr, err := ctyToPostgresString(v); err == nil {
+				def.Default = utils.ToStringPointer(valStr)
+			} else {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  fmt.Sprintf("%s has invalid parameter config", parentName),
+					Detail:   err.Error(),
+					Subject:  &attr.Range,
+				})
+			}
 		}
 	}
 	return def, diags
