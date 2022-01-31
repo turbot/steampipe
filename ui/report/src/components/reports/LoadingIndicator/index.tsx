@@ -1,5 +1,6 @@
 import Icon from "../../Icon";
 import { loadingIcon } from "../../../constants/icons";
+import { classNames } from "../../../utils/styles";
 
 interface LoadingIndicatorProps {
   className?: string;
@@ -7,7 +8,7 @@ interface LoadingIndicatorProps {
 
 const LoadingIndicator = ({ className }: LoadingIndicatorProps) => (
   <Icon
-    className={className ? className : undefined}
+    className={classNames(className, "text-black-scale-4")}
     icon={loadingIcon}
     spin={true}
   />
