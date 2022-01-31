@@ -75,7 +75,7 @@ jobs:
               "version":$version,
           }' )
 
-          echo $JSON_STRING > ./report/versions.json
+          echo $JSON_STRING > ./report_ui_build/versions.json
 
     - name: Get GCloud CLI
       uses: google-github-actions/setup-gcloud@v0.4.0
