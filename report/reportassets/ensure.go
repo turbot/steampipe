@@ -1,52 +1,42 @@
 package reportassets
 
 import (
-	_ "embed"
+	"context"
 	"encoding/json"
 	"log"
 	"os"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/ociinstaller"
+	"github.com/turbot/steampipe/statushooks"
 )
 
-//
-////go:embed assets.zip
-//var reportAssets []byte
-//
-//const assetsZipFileName = "assets.zip"
+func Ensure(ctx context.Context) error {
+	// load report assets versions.json
+	versionFile, err := loadReportAssetVersionFile()
+	if err != nil {
+		return err
+	}
 
-func Ensure() error {
-	//// load report assets versions.json
-	//versionFile, err := LoadReportAssetVersionFile()
-	//if err != nil {
-	//	return err
-	//}
-	//if versionFile.Version == version.SteampipeVersion.String() {
-	//	return nil
-	//}
-	//
-	//reportAssetsPath := filepaths.ReportAssetsPath()
-	//
-	//zipPath := filepath.Join(os.TempDir(), assetsZipFileName)
-	//err = os.WriteFile(zipPath, reportAssets, 0744)
-	//defer os.RemoveAll(zipPath)
-	//
-	//if _, err := utils.Unzip(zipPath, reportAssetsPath); err != nil {
-	//	return err
-	//}
+	if versionFile.Version == constants.AssetsVersion {
+		return nil
+	}
 
-	return nil
+	statushooks.SetStatus(ctx, "Installing reporting server...")
+	defer statushooks.Done(ctx)
+	reportAssetsPath := filepaths.ReportAssetsPath()
+	return ociinstaller.InstallAssets(ctx, reportAssetsPath)
 }
 
 type ReportAssetsVersionFile struct {
 	Version string `json:"version"`
 }
 
-func LoadReportAssetVersionFile() (*ReportAssetsVersionFile, error) {
+func loadReportAssetVersionFile() (*ReportAssetsVersionFile, error) {
 	versionFilePath := filepaths.ReportAssetsVersionFilePath()
 	if !helpers.FileExists(versionFilePath) {
-
 		return &ReportAssetsVersionFile{}, nil
 	}
 

@@ -44,7 +44,7 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// ensure report assets are present and extract if not
-	err := reportassets.Ensure()
+	err := reportassets.Ensure(ctx)
 	utils.FailOnError(err)
 
 	ctx, cancel := context.WithCancel(cmd.Context())
