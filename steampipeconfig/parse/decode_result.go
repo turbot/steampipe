@@ -26,7 +26,7 @@ type decodeResult struct {
 	Depends []*dependency
 }
 
-// Merge :: merge this decode result with another
+// Merge merges this decode result with another
 func (p *decodeResult) Merge(other *decodeResult) *decodeResult {
 	p.Diags = append(p.Diags, other.Diags...)
 	p.Depends = append(p.Depends, other.Depends...)

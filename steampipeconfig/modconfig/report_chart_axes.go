@@ -46,9 +46,16 @@ func (a *ReportChartAxes) Merge(other *ReportChartAxes) {
 	if other == nil {
 		return
 	}
-	a.X.Merge(other.X)
-	a.Y.Merge(other.Y)
-
+	if a.X == nil {
+		a.X = other.X
+	} else {
+		a.X.Merge(other.X)
+	}
+	if a.Y == nil {
+		a.Y = other.Y
+	} else {
+		a.Y.Merge(other.Y)
+	}
 }
 
 type ReportChartAxesX struct {
