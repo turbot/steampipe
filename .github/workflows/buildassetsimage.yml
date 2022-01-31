@@ -17,30 +17,31 @@ env:
   CORE_REPO: us-docker.pkg.dev/steampipe/steampipe
   ORG: turbot
   CONFIG_SCHEMA_VERSION: "2020-11-18"
+  VERSION: "0.1.0"
   
 jobs:
   build:
-    name: Build Assets
+    name: Build and Push Assets
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-      
+
     - name: Setup Node
       uses: actions/setup-node@v2
       with:
         node-version: '16'
-        
+
     - name: Get yarn cache directory path
       id: yarn-cache-dir-path
-      run: echo "::set-output name=dir::$(yarn cache dir)"
+      run: echo "::set-output name=yarncache::$(yarn cache dir)"
 
     - uses: actions/cache@v2
       id: yarn-cache
       with:
-        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+        path: ${{ steps.yarn-cache-dir-path.outputs.yarncache }}
         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-    
+
     - name: Setup Yarn
       run: |-
         unset CI
@@ -48,19 +49,19 @@ jobs:
         npm config set "//npm.fontawesome.com/:_authToken" ${{ secrets.FONTAWESOME_TOKEN }}
         rm -rf ./build
       working-directory: ./ui/report
-      
+
     - name: YARN Install
       run: |-
         unset CI
         yarn install
       working-directory: ./ui/report
-      
+
     - name: YARN Build
       run: |-
         unset CI
         yarn build
       working-directory: ./ui/report
-      
+
     - name: Move
       run: |-
         mkdir -p report
@@ -123,19 +124,28 @@ jobs:
               }
           }' )
 
-          echo $JSON_STRING > annotations.json
+          echo $JSON_STRING > annotations.json        
 
-    - run: |- 
+    - name: Generate Image REF
+      id: image_ref
+      run: |
         cat config.json
         cat annotations.json
-        cat ./report/versions.json
+        cat report/versions.json
         REF="$CORE_REPO/$IMAGE_NAME:$GITHUB_RUN_ID"
-        echo $REF
+        echo "::set-output name=REF::$REF"
 
-      # push to the registry
-    - run: |-
-        REF="$CORE_REPO/$IMAGE_NAME:$GITHUB_RUN_ID"
-        oras push $REF \
+    # push to the registry
+    - name: Push to registry
+      run: |-
+        oras push ${{ steps.image_ref.outputs.REF }} \
           --manifest-config config.json:application/vnd.turbot.steampipe.config.v1+json \
           --manifest-annotations annotations.json \
           report:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
+
+    - name: Set version tags
+      uses: ./.github/actions/semver-tags
+      id: semver
+      with:
+        image-to-tag: "${{ steps.image_ref.outputs.REF }}"
+        image-version: ${{ env.VERSION }}
