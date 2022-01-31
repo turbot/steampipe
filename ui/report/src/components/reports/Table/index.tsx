@@ -10,6 +10,7 @@ import {
 } from "../../../constants/icons";
 import { useMemo } from "react";
 import { useSortBy, useTable } from "react-table";
+import { classNames } from "../../../utils/styles";
 
 interface ColumnInfo {
   Header: string;
@@ -176,16 +177,13 @@ const Table = (props: TableProps) => {
                 >
                   {column.render("Header")}
                   {column.isSortedDesc ? (
-                    <SortDescendingIcon
-                      className={
-                        column.isSorted ? "ml-1" : "ml-1 h-2 w-2 invisible"
-                      }
-                    />
+                    <SortDescendingIcon className="inline-block h-4 w-4" />
                   ) : (
                     <SortAscendingIcon
-                      className={
-                        column.isSorted ? "ml-1" : "ml-1 h-2 w-2 invisible"
-                      }
+                      className={classNames(
+                        "inline-block h-4 w-4",
+                        !column.isSorted ? "invisible" : null
+                      )}
                     />
                   )}
                 </th>
