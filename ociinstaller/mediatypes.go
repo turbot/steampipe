@@ -42,6 +42,8 @@ const (
 
 	MediaTypeFdwControlLayer = "application/vnd.turbot.steampipe.fdw.control.layer.v1+text"
 	MediaTypeFdwSqlLayer     = "application/vnd.turbot.steampipe.fdw.sql.layer.v1+text"
+
+	MediaTypeAssetReportLayer = "application/vnd.turbot.steampipe.assets.report.layer.v1+tar"
 )
 
 // MediaTypeForPlatform returns media types for binaries for this OS and architecture
@@ -62,6 +64,8 @@ func MediaTypeForPlatform(imageType string) string {
 // SharedMediaTypes returns media types that are NOT specific to the os and arch (readmes, control files, etc)
 func SharedMediaTypes(imageType string) []string {
 	switch imageType {
+	case ImageTypeAssets:
+		return []string{MediaTypeAssetReportLayer}
 	case ImageTypeDatabase:
 		return []string{MediaTypeDbDocLayer, MediaTypeDbLicenseLayer}
 	case ImageTypeFdw:

@@ -16,6 +16,7 @@ type SteampipeImage struct {
 	Plugin        *PluginImage
 	Database      *DbImage
 	Fdw           *HubImage
+	Assets        *AssetsImage
 	resolver      *remotes.Resolver
 }
 
@@ -37,6 +38,9 @@ type HubImage struct {
 	LicenseFile string
 	ControlFile string
 	SqlFile     string
+}
+type AssetsImage struct {
+	ReportUI string
 }
 
 func (o *ociDownloader) newSteampipeImage() *SteampipeImage {
@@ -83,6 +87,8 @@ func (o *ociDownloader) Download(ctx context.Context, ref string, imageType stri
 		Image.Fdw, err = getHubImageData(layers)
 	case ImageTypePlugin:
 		Image.Plugin, err = getPluginImageData(layers)
+	case ImageTypeAssets:
+		Image.Assets, err = getAssetImageData(layers)
 
 	default:
 		return nil, errors.New("invalid Type - Image types are: plugin, db, fdw")
@@ -92,6 +98,18 @@ func (o *ociDownloader) Download(ctx context.Context, ref string, imageType stri
 		return nil, err
 	}
 	return Image, nil
+}
+
+func getAssetImageData(layers []ocispec.Descriptor) (*AssetsImage, error) {
+	var assetImage AssetsImage
+
+	// get the report dir
+	foundLayers := findLayersForMediaType(layers, MediaTypeAssetReportLayer)
+	if len(foundLayers) > 0 {
+		assetImage.ReportUI = foundLayers[0].Annotations["org.opencontainers.image.title"]
+	}
+
+	return &assetImage, nil
 }
 
 func getDBImageData(layers []ocispec.Descriptor) (*DbImage, error) {
