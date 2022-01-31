@@ -15,7 +15,7 @@ func InstallAssets(ctx context.Context, dest string) error {
 	tempDir := NewTempDir(imageRef)
 	defer tempDir.Delete()
 
-	// download the blobs.
+	// download the blobs
 	imageDownloader := NewOciDownloader()
 	image, err := imageDownloader.Download(ctx, imageRef, ImageTypeAssets, tempDir.Path)
 	if err != nil {
