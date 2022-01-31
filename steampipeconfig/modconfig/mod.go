@@ -519,7 +519,7 @@ func (m *Mod) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 	}
 
 	// populate resource maps
-	m.populateResourceMaps()
+	m.PopulateResourceMaps()
 
 	// initialise our Require
 	if m.Require == nil {
@@ -692,7 +692,7 @@ func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
 	return []byte(strings.Join(resLines, "\n")), nil
 }
 
-func (m *Mod) populateResourceMaps() {
+func (m *Mod) PopulateResourceMaps() {
 	m.resourceMaps = &WorkspaceResourceMaps{
 		Mod:               m,
 		Mods:              make(map[string]*Mod),

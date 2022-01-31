@@ -20,7 +20,7 @@ type ReportExecutionTree struct {
 	runComplete chan (reportinterfaces.ReportNodeRun)
 }
 
-// NewReportExecutionTree creates a result group from a ModTreeIt
+// NewReportExecutionTree creates a result group from a ModTreeItem
 func NewReportExecutionTree(reportName string, client db_common.Client, workspace *workspace.Workspace) (*ReportExecutionTree, error) {
 	// now populate the ReportExecutionTree
 	reportExecutionTree := &ReportExecutionTree{

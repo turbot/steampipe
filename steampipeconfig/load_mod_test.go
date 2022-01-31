@@ -343,10 +343,10 @@ func init() {
 				},
 			},
 		},
-		"single_mod_sql_file_and_clashing_hcl_query": {
-			source:   "testdata/mods/single_mod_sql_file_and_clashing_hcl_query",
-			expected: "ERROR",
-		},
+		//"single_mod_sql_file_and_clashing_hcl_query": {
+		//	source:   "testdata/mods/single_mod_sql_file_and_clashing_hcl_query",
+		//	expected: "ERROR",
+		//},
 		"single_mod_two_queries_diff_files": {
 			source: "testdata/mods/single_mod_two_queries_diff_files",
 			expected: &modconfig.Mod{
@@ -472,7 +472,7 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	}
 
 	expectedMod := test.expected.(*modconfig.Mod)
-
+	expectedMod.PopulateResourceMaps()
 	// ensure parents and children are set correctly in expected mod (this is normally done as part of decode)
 	setChildren(expectedMod)
 	expectedMod.BuildResourceTree(nil)
