@@ -65,7 +65,7 @@ jobs:
     - name: Move
       run: |-
         mkdir -p report
-        mv ./ui/report/build ./report
+        mv ./ui/report/build ../report
 
     - name: Create a version file
       run: |-
@@ -141,7 +141,7 @@ jobs:
         oras push ${{ steps.image_ref.outputs.REF }} \
           --manifest-config config.json:application/vnd.turbot.steampipe.config.v1+json \
           --manifest-annotations annotations.json \
-          ./report/:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
+          ../report/:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
 
     - name: Set version tags
       uses: ./.github/actions/semver-tags
