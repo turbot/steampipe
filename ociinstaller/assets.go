@@ -9,7 +9,7 @@ import (
 	"github.com/turbot/steampipe/filepaths"
 )
 
-// InstallAssets Installs the Steampipe report server assets
+// InstallAssets installs the Steampipe report server assets
 func InstallAssets(ctx context.Context, dest string) error {
 	imageRef := constants.AssetsImageRef
 	tempDir := NewTempDir(imageRef)
