@@ -69,7 +69,35 @@ var ModBlockSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       modconfig.BlockTypePanel,
+			Type:       modconfig.BlockTypeContainer,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeChart,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeCounter,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeHierarchy,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeImage,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeInput,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeTable,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeText,
 			LabelNames: []string{"name"},
 		},
 		{
@@ -78,41 +106,57 @@ var ModBlockSchema = &hcl.BodySchema{
 	},
 }
 
-var PanelBlockSchema = &hcl.BodySchema{
+var ReportBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "title"},
-		{Name: "text"},
-		{Name: "type"},
 		{Name: "width"},
-		{Name: "height"},
-		{Name: "source"},
-		{Name: "sql"},
+		{Name: "children"},
+		{Name: "base"},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type:       "panel",
-			LabelNames: []string{"name"},
+			Type: modconfig.BlockTypeContainer,
 		},
 		{
-			Type:       "report",
-			LabelNames: []string{"type"},
+			Type: modconfig.BlockTypeChart,
+		},
+		{
+			Type: modconfig.BlockTypeBenchmark,
+		},
+		{
+			Type: modconfig.BlockTypeControl,
+		},
+		{
+			Type: modconfig.BlockTypeCounter,
+		},
+		{
+			Type: modconfig.BlockTypeHierarchy,
+		},
+		{
+			Type: modconfig.BlockTypeImage,
+		},
+		{
+			Type: modconfig.BlockTypeInput,
+		},
+		{
+			Type: modconfig.BlockTypeTable,
+		},
+		{
+			Type: modconfig.BlockTypeText,
 		},
 	},
 }
 
-var ReportBlockSchema = &hcl.BodySchema{
+var BenchmarkBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
+		{Name: "children"},
+		{Name: "description"},
+		{Name: "documentation"},
+		{Name: "tags"},
 		{Name: "title"},
-	},
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type:       "panel",
-			LabelNames: []string{"name"},
-		},
-		{
-			Type:       "report",
-			LabelNames: []string{"type"},
-		},
+		// for report benchmark blocks
+		{Name: "width"},
+		{Name: "base"},
 	},
 }
 
@@ -128,6 +172,9 @@ var ControlBlockSchema = &hcl.BodySchema{
 		{Name: "tags"},
 		{Name: "title"},
 		{Name: "args"},
+		// for report control blocks
+		{Name: "width"},
+		{Name: "base"},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
@@ -154,6 +201,7 @@ var QueryBlockSchema = &hcl.BodySchema{
 		},
 	},
 }
+
 var ParamDefBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "description"},

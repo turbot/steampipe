@@ -52,39 +52,54 @@ type Mod struct {
 	VersionString string `cty:"version"`
 	Version       *semver.Version
 
-	Queries    map[string]*Query
-	Controls   map[string]*Control
-	Benchmarks map[string]*Benchmark
-	Reports    map[string]*Report
-	Panels     map[string]*Panel
-	Variables  map[string]*Variable
-	Locals     map[string]*Local
+	Queries           map[string]*Query
+	Controls          map[string]*Control
+	Benchmarks        map[string]*Benchmark
+	Reports           map[string]*ReportContainer
+	ReportContainers  map[string]*ReportContainer
+	ReportCharts      map[string]*ReportChart
+	ReportCounters    map[string]*ReportCounter
+	ReportHierarchies map[string]*ReportHierarchy
+	ReportImages      map[string]*ReportImage
+	ReportInputs      map[string]*ReportInput
+	ReportTables      map[string]*ReportTable
+	ReportTexts       map[string]*ReportText
+	Variables         map[string]*Variable
+	Locals            map[string]*Local
 
 	// ModPath is the installation location of the mod
 	ModPath   string
 	DeclRange hcl.Range
 
-	// all children as an array of hcl resources - built before the 'children' array
-	flatChildren []HclResource
-	// array of direct mod children - excluds resources which are children of othe rresources
+	// array of direct mod children - excludes resources which are children of other resources
 	children []ModTreeItem
 	metadata *ResourceMetadata
+	// convenient aggregation of all resources
+	resourceMaps *WorkspaceResourceMaps
 }
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	mod := &Mod{
-		ShortName:  shortName,
-		FullName:   fmt.Sprintf("mod.%s", shortName),
-		Queries:    make(map[string]*Query),
-		Controls:   make(map[string]*Control),
-		Benchmarks: make(map[string]*Benchmark),
-		Reports:    make(map[string]*Report),
-		Panels:     make(map[string]*Panel),
-		Variables:  make(map[string]*Variable),
-		Locals:     make(map[string]*Local),
-		ModPath:    modPath,
-		DeclRange:  defRange,
-		Require:    newRequire(),
+		ShortName:         shortName,
+		FullName:          fmt.Sprintf("mod.%s", shortName),
+		Queries:           make(map[string]*Query),
+		Controls:          make(map[string]*Control),
+		Benchmarks:        make(map[string]*Benchmark),
+		Reports:           make(map[string]*ReportContainer),
+		ReportContainers:  make(map[string]*ReportContainer),
+		ReportCharts:      make(map[string]*ReportChart),
+		ReportCounters:    make(map[string]*ReportCounter),
+		ReportHierarchies: make(map[string]*ReportHierarchy),
+		ReportImages:      make(map[string]*ReportImage),
+		ReportInputs:      make(map[string]*ReportInput),
+		ReportTables:      make(map[string]*ReportTable),
+		ReportTexts:       make(map[string]*ReportText),
+		Variables:         make(map[string]*Variable),
+		Locals:            make(map[string]*Local),
+
+		ModPath:   modPath,
+		DeclRange: defRange,
+		Require:   NewRequire(),
 	}
 
 	// try to derive mod version from the path
@@ -191,14 +206,91 @@ func (m *Mod) Equals(other *Mod) bool {
 			return false
 		}
 	}
-	// panels
-	for k := range m.Panels {
-		if _, ok := other.Panels[k]; !ok {
+	// report containers
+	for k := range m.ReportContainers {
+		if _, ok := other.ReportContainers[k]; !ok {
 			return false
 		}
 	}
-	for k := range other.Panels {
-		if _, ok := m.Panels[k]; !ok {
+	for k := range other.ReportContainers {
+		if _, ok := m.ReportContainers[k]; !ok {
+			return false
+		}
+	}
+	// report charts
+	for k := range m.ReportCharts {
+		if _, ok := other.ReportCharts[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportCharts {
+		if _, ok := m.ReportCharts[k]; !ok {
+			return false
+		}
+	}
+	// report counters
+	for k := range m.ReportCounters {
+		if _, ok := other.ReportCounters[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportCounters {
+		if _, ok := m.ReportCounters[k]; !ok {
+			return false
+		}
+	}
+	// report hierarchies
+	for k := range m.ReportHierarchies {
+		if _, ok := other.ReportHierarchies[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportHierarchies {
+		if _, ok := m.ReportHierarchies[k]; !ok {
+			return false
+		}
+	}
+	// report images
+	for k := range m.ReportImages {
+		if _, ok := other.ReportImages[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportImages {
+		if _, ok := m.ReportImages[k]; !ok {
+			return false
+		}
+	}
+	// report inputs
+	for k := range m.ReportInputs {
+		if _, ok := other.ReportInputs[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportInputs {
+		if _, ok := m.ReportInputs[k]; !ok {
+			return false
+		}
+	}
+	// report tables
+	for k := range m.ReportTables {
+		if _, ok := other.ReportTables[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportTables {
+		if _, ok := m.ReportTables[k]; !ok {
+			return false
+		}
+	}
+	// report texts
+	for k := range m.ReportTexts {
+		if _, ok := other.ReportTexts[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportTexts {
+		if _, ok := m.ReportTexts[k]; !ok {
 			return false
 		}
 	}
@@ -279,7 +371,7 @@ func (m *Mod) String() string {
 	}
 
 	versionString := ""
-	if m.VersionString == "" {
+	if m.VersionString != "" {
 		versionString = fmt.Sprintf("\nVersion: v%s", m.VersionString)
 	}
 	var requiresStrings []string
@@ -299,8 +391,7 @@ func (m *Mod) String() string {
 
 	return fmt.Sprintf(`Name: %s
 Title: %s
-Description: %s 
-Version: %s
+Description: %s%s
 Queries: 
 %s
 Controls: 
@@ -383,6 +474,9 @@ func (m *Mod) GetPaths() []NodePath {
 	return []NodePath{{m.Name()}}
 }
 
+// SetPaths implements ModTreeItem
+func (m *Mod) SetPaths() {}
+
 // AddPseudoResource adds the pseudo resource to the mod,
 // as long as there is no existing resource of same name
 //
@@ -424,11 +518,15 @@ func (m *Mod) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 		m.Require = m.LegacyRequire
 	}
 
+	// populate resource maps
+	m.PopulateResourceMaps()
+
 	// initialise our Require
 	if m.Require == nil {
 		return nil
 	}
 	return m.Require.initialise()
+
 }
 
 // AddReference implements HclResource
@@ -459,65 +557,9 @@ func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
 	m.metadata = metadata
 }
 
-// get the parent item for this ModTreeItem
-func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
-	var parents []ModTreeItem
-
-	for _, benchmark := range m.Benchmarks {
-		if benchmark.ChildNames == nil {
-			continue
-		}
-		// check all child names of this benchmark for a matching name
-		for _, childName := range benchmark.ChildNames {
-			if childName.Name == item.Name() {
-				parents = append(parents, benchmark)
-			}
-		}
-	}
-	for _, report := range m.Reports {
-		// check all child names of this benchmark for a matching name
-		for _, child := range report.GetChildren() {
-			if child.Name() == item.Name() {
-				parents = append(parents, report)
-			}
-		}
-	}
-	for _, panel := range m.Panels {
-		if panel.Name() == item.Name() {
-			parents = append(parents, m)
-		}
-		// check all child names of this benchmark for a matching name
-		for _, child := range panel.GetChildren() {
-			if child.Name() == item.Name() {
-				parents = append(parents, panel)
-			}
-		}
-	}
-	// if this item has no parents and is a child of the mod, set the mod as parent
-	if len(parents) == 0 && m.hasChild(item) {
-		parents = []ModTreeItem{m}
-
-	}
-	return parents
-}
-
-// is the given item a child of the mod
-func (m *Mod) hasChild(item ModTreeItem) bool {
-	for _, c := range m.flatChildren {
-		if c.Name() == item.Name() {
-			return true
-		}
-	}
-	return false
-}
-
-// GetChildControls return a flat list of controls underneath the mod
-func (m *Mod) GetChildControls() []*Control {
-	var res []*Control
-	for _, control := range m.Controls {
-		res = append(res, control)
-	}
-	return res
+// GetResourceMaps implements ResourceMapsProvider
+func (m *Mod) GetResourceMaps() *WorkspaceResourceMaps {
+	return m.resourceMaps
 }
 
 func (m *Mod) AddModDependencies(modVersions map[string]*ModVersionConstraint) {
@@ -624,41 +666,6 @@ func (m *Mod) GetModDependency(modName string) *ModVersionConstraint {
 	return m.Require.GetModDependency(modName)
 }
 
-func (m *Mod) buildFlatChilden() {
-	res := make([]HclResource, len(m.Queries)+len(m.Controls)+len(m.Benchmarks)+len(m.Reports)+len(m.Panels)+len(m.Variables)+len(m.Locals))
-
-	idx := 0
-	for _, r := range m.Queries {
-		res[idx] = r
-		idx++
-	}
-	for _, r := range m.Controls {
-		res[idx] = r
-		idx++
-	}
-	for _, r := range m.Benchmarks {
-		res[idx] = r
-		idx++
-	}
-	for _, r := range m.Reports {
-		res[idx] = r
-		idx++
-	}
-	for _, r := range m.Panels {
-		res[idx] = r
-		idx++
-	}
-	for _, r := range m.Variables {
-		res[idx] = r
-		idx++
-	}
-	for _, r := range m.Locals {
-		res[idx] = r
-		idx++
-	}
-	m.flatChildren = res
-}
-
 func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
 	modFilePath := filepaths.ModFilePath(m.ModPath)
 	if !helpers.FileExists(modFilePath) {
@@ -683,4 +690,29 @@ func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
 		}
 	}
 	return []byte(strings.Join(resLines, "\n")), nil
+}
+
+func (m *Mod) PopulateResourceMaps() {
+	m.resourceMaps = &WorkspaceResourceMaps{
+		Mod:               m,
+		Mods:              make(map[string]*Mod),
+		Queries:           m.Queries,
+		Controls:          m.Controls,
+		Benchmarks:        m.Benchmarks,
+		Variables:         m.Variables,
+		Reports:           m.Reports,
+		ReportContainers:  m.ReportContainers,
+		ReportCharts:      m.ReportCharts,
+		ReportCounters:    m.ReportCounters,
+		ReportHierarchies: m.ReportHierarchies,
+		ReportImages:      m.ReportImages,
+		ReportInputs:      m.ReportInputs,
+		ReportTables:      m.ReportTables,
+		ReportTexts:       m.ReportTexts,
+	}
+	m.resourceMaps.PopulateReferences()
+
+	if !m.IsDefaultMod() {
+		m.resourceMaps.Mods[m.Name()] = m
+	}
 }

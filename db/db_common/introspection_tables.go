@@ -50,6 +50,15 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportContainer{}, constants.IntrospectionTableReport, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportContainer{}, constants.IntrospectionTableContainer, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportChart{}, constants.IntrospectionTableReportChart, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportCounter{}, constants.IntrospectionTableReportCounter, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportHierarchy{}, constants.IntrospectionTableReportHierarchy, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportImage{}, constants.IntrospectionTableReportImage, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportInput{}, constants.IntrospectionTableReportInput, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportTable{}, constants.IntrospectionTableReportTable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportText{}, constants.IntrospectionTableReportText, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
@@ -57,44 +66,50 @@ func getCreateTablesSql(commonColumnSql []string) string {
 func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) string {
 	var insertSql []string
 
-	// the maps will have the same resource keyed by long and short name - avoid dupes
-	resourcesAdded := make(map[string]bool)
-
 	for _, control := range workspaceResources.Controls {
-		if _, added := resourcesAdded[control.Name()]; !added {
-			resourcesAdded[control.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.IntrospectionTableControl))
-		}
+		insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.IntrospectionTableControl))
 	}
 	for _, query := range workspaceResources.Queries {
-		if _, added := resourcesAdded[query.Name()]; !added {
-			resourcesAdded[query.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.IntrospectionTableQuery))
-		}
+		insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.IntrospectionTableQuery))
 	}
 	for _, benchmark := range workspaceResources.Benchmarks {
-		if _, added := resourcesAdded[benchmark.Name()]; !added {
-			resourcesAdded[benchmark.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.IntrospectionTableBenchmark))
-		}
+		insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.IntrospectionTableBenchmark))
 	}
 	for _, mod := range workspaceResources.Mods {
-		if _, added := resourcesAdded[mod.Name()]; !added {
-			resourcesAdded[mod.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.IntrospectionTableMod))
-		}
+		insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.IntrospectionTableMod))
 	}
 	for _, variable := range workspaceResources.Variables {
-		if _, added := resourcesAdded[variable.Name()]; !added {
-			resourcesAdded[variable.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
-		}
+		insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
+	}
+	for _, report := range workspaceResources.Reports {
+		insertSql = append(insertSql, getTableInsertSqlForResource(report, constants.IntrospectionTableReport))
+	}
+	for _, container := range workspaceResources.ReportContainers {
+		insertSql = append(insertSql, getTableInsertSqlForResource(container, constants.IntrospectionTableContainer))
+	}
+	for _, chart := range workspaceResources.ReportCharts {
+		insertSql = append(insertSql, getTableInsertSqlForResource(chart, constants.IntrospectionTableReportChart))
+	}
+	for _, counter := range workspaceResources.ReportCounters {
+		insertSql = append(insertSql, getTableInsertSqlForResource(counter, constants.IntrospectionTableReportCounter))
+	}
+	for _, hierarchy := range workspaceResources.ReportHierarchies {
+		insertSql = append(insertSql, getTableInsertSqlForResource(hierarchy, constants.IntrospectionTableReportHierarchy))
+	}
+	for _, image := range workspaceResources.ReportImages {
+		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableReportImage))
+	}
+	for _, image := range workspaceResources.ReportInputs {
+		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableReportInput))
+	}
+	for _, table := range workspaceResources.ReportTables {
+		insertSql = append(insertSql, getTableInsertSqlForResource(table, constants.IntrospectionTableReportTable))
+	}
+	for _, text := range workspaceResources.ReportTexts {
+		insertSql = append(insertSql, getTableInsertSqlForResource(text, constants.IntrospectionTableReportText))
 	}
 	for _, reference := range workspaceResources.References {
-		if _, added := resourcesAdded[reference.Name()]; !added {
-			resourcesAdded[reference.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(reference, constants.IntrospectionTableReference))
-		}
+		insertSql = append(insertSql, getTableInsertSqlForResource(reference, constants.IntrospectionTableReference))
 	}
 
 	return strings.Join(insertSql, "\n")

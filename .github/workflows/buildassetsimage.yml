@@ -1,0 +1,157 @@
+name: Build And Release UI Assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "The branch that will be built"
+        required: true
+      tag:
+        description: "The release tag/version that will be set"
+        required: true
+
+env:
+  PROJECT_ID: steampipe
+  IMAGE_NAME: assets
+  CORE_REPO: us-docker.pkg.dev/steampipe/steampipe
+  ORG: turbot
+  CONFIG_SCHEMA_VERSION: "2020-11-18"
+  VERSION: ${{ github.event.inputs.tag }}
+  
+jobs:
+  build:
+    name: Build and Push Assets
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.inputs.branch }}
+
+    - name: Setup Node
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'
+
+    - name: Get yarn cache directory path
+      id: yarn-cache-dir-path
+      run: echo "::set-output name=yarncache::$(yarn cache dir)"
+
+    - uses: actions/cache@v2
+      id: yarn-cache
+      with:
+        path: ${{ steps.yarn-cache-dir-path.outputs.yarncache }}
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+
+    - name: Setup Yarn
+      run: |-
+        unset CI
+        rm -rf ./build
+      working-directory: ./ui/report
+
+    - name: YARN Install
+      run: |-
+        unset CI
+        yarn install
+      working-directory: ./ui/report
+
+    - name: YARN Build
+      run: |-
+        unset CI
+        yarn build
+      working-directory: ./ui/report
+
+    - name: Move Build Assets
+      run: |-
+        mkdir -p report_ui_build
+        mv ./ui/report/build/* report_ui_build/
+        ls -la report_ui_build
+
+    - name: Create a version file
+      run: |-
+        JSON_STRING=$( jq -n \
+            --arg version "$VERSION" \
+          '{
+              "version":$version,
+          }' )
+
+          echo $JSON_STRING > ./report_ui_build/versions.json
+
+    - name: Create Image Config File
+      run: |-
+        JSON_STRING=$( jq -n \
+          --arg name "$IMAGE_NAME" \
+          --arg organization "$ORG" \
+          --arg version "$VERSION" \
+          --arg schemaVersion "$CONFIG_SCHEMA_VERSION" \
+          '{schemaVersion: $schemaVersion, assets: { name: $name, organization: $organization, version: $version} }' )
+
+        echo $JSON_STRING > config.json
+
+    - name: Create Image Annotations File
+      run: |-
+        JSON_STRING=$( jq -n \
+            --arg title "$IMAGE_NAME" \
+            --arg desc "$ORG" \
+            --arg version "$VERSION" \
+            --arg timestamp "$(date +%FT%T%z)" \
+            --arg vendor "Turbot HQ, Inc." \
+          '{
+              "$manifest": {
+                  "org.opencontainers.image.title": $title,
+                  "org.opencontainers.image.description": $desc,
+                  "org.opencontainers.image.version": $version,
+                  "org.opencontainers.image.created": $timestamp,
+                  "org.opencontainers.image.vendor":  $vendor
+              }
+          }' )
+
+          echo $JSON_STRING > annotations.json        
+
+    - name: Generate Image REF
+      id: image_ref
+      run: |
+        cat config.json
+        cat annotations.json
+        cat report_ui_build/versions.json
+        REF="$CORE_REPO/$IMAGE_NAME:$GITHUB_RUN_ID"
+        echo "::set-output name=REF::$REF"
+
+    - name: Get GCloud CLI
+      uses: google-github-actions/setup-gcloud@v0.4.0
+      with:
+        service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
+        project_id: ${{ env.PROJECT_ID }}
+        export_default_credentials: true
+
+    - name: Setup GCloud CLI
+      run: |- 
+        echo ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
+        gcloud config list
+        gcloud components install beta
+        gcloud components install alpha --quiet
+        gcloud beta auth configure-docker us-docker.pkg.dev
+
+    - name: Verify ORAS
+      run: oras version
+
+    - name: Push to registry
+      run: |-
+        oras push ${{ steps.image_ref.outputs.REF }} \
+          --manifest-config config.json:application/vnd.turbot.steampipe.config.v1+json \
+          --manifest-annotations annotations.json \
+          report_ui_build:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
+
+    - name: Set version tags
+      uses: ./.github/actions/semver-tags
+      id: semver
+      with:
+        image-to-tag: "${{ steps.image_ref.outputs.REF }}"
+        image-version: ${{ env.VERSION }}
+        
+    - name: Tag Asset Release
+      run: |
+        git config user.name "Steampipe GitHub Actions Bot"
+        git config user.email noreply@github.com
+        git tag assets-${{ github.event.inputs.tag }}
+        git push origin assets-${{ github.event.inputs.tag }}

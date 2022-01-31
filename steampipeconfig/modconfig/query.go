@@ -19,13 +19,13 @@ type Query struct {
 	ShortName string `cty:"short_name"`
 	FullName  string `cty:"name"`
 
-	Description      *string            `cty:"description" column:"description,text"`
-	Documentation    *string            `cty:"documentation"  column:"documentation,text"`
-	SearchPath       *string            `cty:"search_path"column:"search_path,text"`
-	SearchPathPrefix *string            `cty:"search_path_prefix" column:"search_path_prefix,text"`
-	SQL              *string            `cty:"sql" hcl:"sql" column:"sql,text"`
-	Tags             *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
-	Title            *string            `cty:"title" hcl:"title" column:"title,text"`
+	Description      *string           `cty:"description" column:"description,text"`
+	Documentation    *string           `cty:"documentation"  column:"documentation,text"`
+	SearchPath       *string           `cty:"search_path"column:"search_path,text"`
+	SearchPathPrefix *string           `cty:"search_path_prefix" column:"search_path_prefix,text"`
+	SQL              *string           `cty:"sql" hcl:"sql" column:"sql,text"`
+	Tags             map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
+	Title            *string           `cty:"title" hcl:"title" column:"title,text"`
 
 	Params []*ParamDef `cty:"params" column:"params,jsonb"`
 	// list of all blocks referenced by the resource
@@ -36,6 +36,15 @@ type Query struct {
 	PreparedStatementName string `column:"prepared_statement_name,text"`
 	metadata              *ResourceMetadata
 	UnqualifiedName       string
+}
+
+func NewQuery(block *hcl.Block) *Query {
+	return &Query{
+		ShortName:       block.Labels[0],
+		UnqualifiedName: fmt.Sprintf("query.%s", block.Labels[0]),
+		FullName:        fmt.Sprintf("query.%s", block.Labels[0]),
+		DeclRange:       block.DefRange,
+	}
 }
 
 func (q *Query) Equals(other *Query) bool {
@@ -61,8 +70,8 @@ func (q *Query) Equals(other *Query) bool {
 		if other.Tags == nil {
 			return false
 		}
-		for k, v := range *q.Tags {
-			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
+		for k, v := range q.Tags {
+			if otherVal, ok := (other.Tags)[k]; !ok && v != otherVal {
 				return false
 			}
 		}
@@ -79,14 +88,6 @@ func (q *Query) Equals(other *Query) bool {
 	}
 
 	return true
-}
-
-func NewQuery(block *hcl.Block) *Query {
-	return &Query{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("query.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
-	}
 }
 
 func (q *Query) CtyValue() (cty.Value, error) {
@@ -113,7 +114,6 @@ func (q *Query) String() string {
 	return res
 }
 
-// QueryFromFile :: factory function
 func QueryFromFile(modPath, filePath string) (MappableResource, []byte, error) {
 	q := &Query{}
 	return q.InitialiseFromFile(modPath, filePath)
@@ -142,6 +142,7 @@ func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 		return nil, nil, err
 	}
 	q.ShortName = name
+	q.UnqualifiedName = fmt.Sprintf("query.%s", name)
 	q.FullName = fmt.Sprintf("query.%s", name)
 	q.SQL = &sql
 	return q, sqlBytes, nil
@@ -173,7 +174,7 @@ func (q *Query) AddReference(ref *ResourceReference) {
 // SetMod implements HclResource
 func (q *Query) SetMod(mod *Mod) {
 	q.Mod = mod
-	q.UnqualifiedName = q.FullName
+	// add mod name to full name
 	q.FullName = fmt.Sprintf("%s.%s", mod.ShortName, q.FullName)
 }
 

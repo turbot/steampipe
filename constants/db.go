@@ -30,13 +30,13 @@ const (
 	DatabaseVersion = "12.1.0"
 	FdwVersion      = "0.3.2"
 
-	// DefaultEmbeddedPostgresImage :: The 12.1.0 image uses the older jar format 12.1.0-v2 is the same version of postgres,
+	// PostgresImageRef is the OCI Image ref for the databse binaries
+	// The 12.1.0 image uses the older jar format 12.1.0-v2 is the same version of postgres,
 	// just packaged as gzipped tar files (consistent with oras, faster to unzip).  Once everyone is
 	// on a newer build, we can delete the old image move the 12.1.0 tag to the new image, and
 	// change this back for consistency
-	//DefaultEmbeddedPostgresImage = "us-docker.pkg.dev/steampipe/steampipe/db:" + DatabaseVersion
-	DefaultEmbeddedPostgresImage = "us-docker.pkg.dev/steampipe/steampipe/db:12.1.0-v2"
-	DefaultFdwImage              = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
+	PostgresImageRef = "us-docker.pkg.dev/steampipe/steampipe/db:12.1.0-v2"
+	FdwImageRef      = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
 )
 
 // schema names
@@ -79,17 +79,22 @@ var ReservedConnectionNames = []string{
 
 // introspection table names
 const (
-	IntrospectionTableQuery     = "steampipe_query"
-	IntrospectionTableControl   = "steampipe_control"
-	IntrospectionTableBenchmark = "steampipe_benchmark"
-	IntrospectionTableMod       = "steampipe_mod"
-	IntrospectionTableVariable  = "steampipe_variable"
-	IntrospectionTableReference = "steampipe_reference"
+	IntrospectionTableQuery           = "steampipe_query"
+	IntrospectionTableControl         = "steampipe_control"
+	IntrospectionTableBenchmark       = "steampipe_benchmark"
+	IntrospectionTableMod             = "steampipe_mod"
+	IntrospectionTableReport          = "steampipe_report"
+	IntrospectionTableContainer       = "steampipe_report_container"
+	IntrospectionTableReportChart     = "steampipe_report_chart"
+	IntrospectionTableReportCounter   = "steampipe_report_counter"
+	IntrospectionTableReportHierarchy = "steampipe_report_hierarchy"
+	IntrospectionTableReportImage     = "steampipe_report_image"
+	IntrospectionTableReportInput     = "steampipe_report_input"
+	IntrospectionTableReportTable     = "steampipe_report_table"
+	IntrospectionTableReportText      = "steampipe_report_text"
+	IntrospectionTableVariable        = "steampipe_variable"
+	IntrospectionTableReference       = "steampipe_reference"
 )
-
-func IntrospectionTableNames() []string {
-	return []string{IntrospectionTableControl, IntrospectionTableBenchmark, IntrospectionTableQuery, IntrospectionTableMod, IntrospectionTableVariable, IntrospectionTableReference}
-}
 
 // Invoker is a pseudoEnum for the command/operation which starts the service
 type Invoker string

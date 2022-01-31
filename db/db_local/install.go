@@ -64,7 +64,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	statushooks.SetStatus(ctx, "Download & install embedded PostgreSQL database...")
-	_, err = ociinstaller.InstallDB(ctx, constants.DefaultEmbeddedPostgresImage, getDatabaseLocation())
+	_, err = ociinstaller.InstallDB(ctx, constants.PostgresImageRef, getDatabaseLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Download & install embedded PostgreSQL database... FAILED!")
@@ -181,7 +181,7 @@ func installFDW(ctx context.Context, firstSetup bool) (string, error) {
 	}
 	statushooks.SetStatus(ctx, fmt.Sprintf("Download & install %s...", constants.Bold("steampipe-postgres-fdw")))
 	defer statushooks.Done(ctx)
-	return ociinstaller.InstallFdw(ctx, constants.DefaultFdwImage, getDatabaseLocation())
+	return ociinstaller.InstallFdw(ctx, getDatabaseLocation())
 }
 
 func needsInit() bool {

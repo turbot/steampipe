@@ -22,7 +22,7 @@ func (d *ReportTreeItemDiffs) AddRemovedItem(name string) {
 }
 
 func (d *ReportTreeItemDiffs) populateChildDiffs(old ModTreeItem, new ModTreeItem) {
-	// build map of panel and report names
+	// build map of child names
 	oldChildMap := make(map[string]bool)
 	newChildMap := make(map[string]bool)
 

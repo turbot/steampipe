@@ -7,16 +7,16 @@ import (
 	"sync"
 
 	"github.com/spf13/viper"
-	"github.com/turbot/go-kit/helpers"
-	typeHelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/db/db_local"
 	"gopkg.in/olahol/melody.v1"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
+	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/executionlayer"
+	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/report/reportevents"
+	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
@@ -83,7 +83,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 	return server, err
 }
 
-func buildAvailableReportsPayload(reports map[string]*modconfig.Report) []byte {
+func buildAvailableReportsPayload(reports map[string]*modconfig.ReportContainer) []byte {
 	reportsPayload := make(map[string]string)
 	for _, report := range reports {
 		reportsPayload[report.FullName] = types.SafeString(report.Title)
@@ -105,6 +105,30 @@ func buildWorkspaceErrorPayload(e *reportevents.WorkspaceError) []byte {
 	return jsonString
 }
 
+func buildLeafNodeProgressPayload(event *reportevents.LeafNodeProgress) []byte {
+	payload := ExecutionPayload{
+		Action:     "leaf_node_progress",
+		ReportNode: event.Node,
+	}
+	//jsonString, _ := json.Marshal(payload)
+	//return jsonString
+	jsonString, err := json.MarshalIndent(payload, "", "  ")
+	fmt.Println(err)
+	a := string(jsonString)
+	fmt.Println(a)
+
+	return jsonString
+}
+
+func buildLeafNodeCompletePayload(event *reportevents.LeafNodeComplete) []byte {
+	payload := ExecutionPayload{
+		Action:     "leaf_node_complete",
+		ReportNode: event.Node,
+	}
+	jsonString, _ := json.Marshal(payload)
+	return jsonString
+}
+
 func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) []byte {
 	payload := ExecutionPayload{
 		Action:     "execution_started",
@@ -119,8 +143,38 @@ func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte
 		Action:     "execution_complete",
 		ReportNode: event.Report,
 	}
-	jsonString, _ := json.Marshal(payload)
+	//jsonString, _ := json.Marshal(payload)
+	//return jsonString
+	jsonString, err := json.MarshalIndent(payload, "", "  ")
+	fmt.Println(err)
+	a := string(jsonString)
+	fmt.Println(a)
 	return jsonString
+}
+
+func getReportsInterestedInResourceChanges(reportsBeingWatched []string, existingChangedReportNames []string, changedItems []*modconfig.ReportTreeItemDiffs) []string {
+	var changedReportNames []string
+
+	for _, changedItem := range changedItems {
+		paths := changedItem.Item.GetPaths()
+		for _, nodePath := range paths {
+			for _, nodeName := range nodePath {
+				resourceParts, _ := modconfig.ParseResourceName(nodeName)
+				// We only care about changes from these resource types
+				if resourceParts.ItemType != modconfig.BlockTypeReport {
+					continue
+				}
+
+				if helpers.StringSliceContains(existingChangedReportNames, nodeName) || helpers.StringSliceContains(changedReportNames, nodeName) || !helpers.StringSliceContains(reportsBeingWatched, nodeName) {
+					continue
+				}
+
+				changedReportNames = append(changedReportNames, nodeName)
+			}
+		}
+	}
+
+	return changedReportNames
 }
 
 // Starts the API server
@@ -150,9 +204,9 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 	/*
 		WORKSPACE_ERROR
 		EXECUTION_STARTED
-		PANEL_CHANGED
-		PANEL_ERROR
-		PANEL_COMPLETE
+		COUNTER_CHANGED
+		COUNTER_ERROR
+		COUNTER_COMPLETE
 		REPORT_CHANGED
 		REPORT_ERROR
 		REPORT_COMPLETE
@@ -180,21 +234,66 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		}
 		s.mutex.Unlock()
 
-	case *reportevents.PanelError:
-		fmt.Println("Got panel error event", *e)
+	case *reportevents.LeafNodeError:
+		fmt.Println("Got leaf node error event", *e)
 
-	case *reportevents.PanelComplete:
-		fmt.Println("Got panel complete event", *e)
+	case *reportevents.LeafNodeProgress:
+		fmt.Println("Got leaf node complete event", *e)
+		payload := buildLeafNodeProgressPayload(e)
+		paths := e.Node.GetPath()
+		s.mutex.Lock()
+		for session, repoInfo := range s.reportClients {
+			// If this session is interested in this report, broadcast to it
+			if (repoInfo.Report != nil) && helpers.StringSliceContains(paths, *repoInfo.Report) {
+				session.Write(payload)
+			}
+		}
+		s.mutex.Unlock()
+
+	case *reportevents.LeafNodeComplete:
+		fmt.Println("Got leaf node complete event", *e)
+		payload := buildLeafNodeCompletePayload(e)
+		paths := e.Node.GetPath()
+		s.mutex.Lock()
+		for session, repoInfo := range s.reportClients {
+			// If this session is interested in this report, broadcast to it
+			if (repoInfo.Report != nil) && helpers.StringSliceContains(paths, *repoInfo.Report) {
+				session.Write(payload)
+			}
+		}
+		s.mutex.Unlock()
 
 	case *reportevents.ReportChanged:
 		fmt.Println("Got report changed event", *e)
 		deletedReports := e.DeletedReports
 		newReports := e.NewReports
-		changedPanels := e.ChangedPanels
+
+		changedContainers := e.ChangedContainers
+		changedBenchmarks := e.ChangedBenchmarks
+		changedControls := e.ChangedControls
+		changedCharts := e.ChangedCharts
+		changedCounters := e.ChangedCounters
+		changedHierarchies := e.ChangedHierarchies
+		changedImages := e.ChangedImages
+		changedInputs := e.ChangedInputs
+		changedTables := e.ChangedTables
+		changedTexts := e.ChangedTexts
 		changedReports := e.ChangedReports
 
 		// If nothing has changed, ignore
-		if len(deletedReports) == 0 && len(newReports) == 0 && len(changedPanels) == 0 && len(changedReports) == 0 {
+		if len(deletedReports) == 0 &&
+			len(newReports) == 0 &&
+			len(changedContainers) == 0 &&
+			len(changedBenchmarks) == 0 &&
+			len(changedControls) == 0 &&
+			len(changedCharts) == 0 &&
+			len(changedCounters) == 0 &&
+			len(changedHierarchies) == 0 &&
+			len(changedImages) == 0 &&
+			len(changedInputs) == 0 &&
+			len(changedTables) == 0 &&
+			len(changedTexts) == 0 &&
+			len(changedReports) == 0 {
 			return
 		}
 
@@ -205,11 +304,6 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		// If) any deleted/new/changed reports, emit an available reports message to clients
 		if len(deletedReports) != 0 || len(newReports) != 0 || len(changedReports) != 0 {
 			s.webSocket.Broadcast(buildAvailableReportsPayload(s.workspace.Mod.Reports))
-		}
-
-		// If we have no changed panels or reports, ignore the message for now
-		if len(deletedReports) == 0 && len(newReports) == 0 && len(changedPanels) == 0 && len(changedReports) == 0 {
-			return
 		}
 
 		var reportsBeingWatched []string
@@ -228,22 +322,17 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		var changedReportNames []string
 		var newReportNames []string
 
-		// Capture the changed panels and make a note of the report(s) they're in
-		for _, changedPanel := range changedPanels {
-			paths := changedPanel.Item.GetPaths()
-			for _, nodePath := range paths {
-				for _, nodeName := range nodePath {
-					resourceParts, _ := modconfig.ParseResourceName(nodeName)
-					if resourceParts.ItemType != modconfig.BlockTypeReport {
-						continue
-					}
-					if helpers.StringSliceContains(changedReportNames, nodeName) {
-						continue
-					}
-					changedReportNames = append(changedReportNames, nodeName)
-				}
-			}
-		}
+		// Process the changed items and make a note of the report(s) they're in
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedContainers)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedBenchmarks)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedControls)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedCharts)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedCounters)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedHierarchies)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedImages)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedInputs)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedTables)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedTexts)...)
 
 		for _, changedReport := range changedReports {
 			if helpers.StringSliceContains(changedReportNames, changedReport.Name) {
@@ -254,7 +343,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 		for _, changedReportName := range changedReportNames {
 			if helpers.StringSliceContains(reportsBeingWatched, changedReportName) {
-				executionlayer.ExecuteReportNode(s.context, changedReportName, s.workspace, s.dbClient)
+				reportexecute.ExecuteReportNode(s.context, changedReportName, s.workspace, s.dbClient)
 			}
 		}
 
@@ -270,7 +359,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 		for _, newReportName := range newReportNames {
 			if helpers.StringSliceContains(reportsBeingWatched, newReportName) {
-				executionlayer.ExecuteReportNode(s.context, newReportName, s.workspace, s.dbClient)
+				reportexecute.ExecuteReportNode(s.context, newReportName, s.workspace, s.dbClient)
 			}
 		}
 

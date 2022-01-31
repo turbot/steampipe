@@ -12,7 +12,6 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/filepaths"
@@ -30,13 +29,26 @@ type Workspace struct {
 	Mod                 *modconfig.Mod
 
 	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
-	Queries    map[string]*modconfig.Query
-	Controls   map[string]*modconfig.Control
-	Benchmarks map[string]*modconfig.Benchmark
-	Mods       map[string]*modconfig.Mod
-	Reports    map[string]*modconfig.Report
-	Panels     map[string]*modconfig.Panel
-	Variables  map[string]*modconfig.Variable
+
+	Queries           map[string]*modconfig.Query
+	Controls          map[string]*modconfig.Control
+	Benchmarks        map[string]*modconfig.Benchmark
+	Mods              map[string]*modconfig.Mod
+	Reports           map[string]*modconfig.ReportContainer
+	ReportContainers  map[string]*modconfig.ReportContainer
+	ReportCharts      map[string]*modconfig.ReportChart
+	ReportCounters    map[string]*modconfig.ReportCounter
+	ReportHierarchies map[string]*modconfig.ReportHierarchy
+	ReportImages      map[string]*modconfig.ReportImage
+	ReportInputs      map[string]*modconfig.ReportInput
+	ReportTables      map[string]*modconfig.ReportTable
+	ReportTexts       map[string]*modconfig.ReportText
+	Variables         map[string]*modconfig.Variable
+
+	//local  resources keyed by unqualifed name
+	LocalQueries    map[string]*modconfig.Query
+	LocalControls   map[string]*modconfig.Control
+	LocalBenchmarks map[string]*modconfig.Benchmark
 
 	watcher    *utils.FileWatcher
 	loadLock   sync.Mutex
@@ -49,7 +61,10 @@ type Workspace struct {
 	reportEventHandlers []reportevents.ReportEventHandler
 	// callback function to reset display after the file watche displays messages
 	onFileWatcherEventMessages func()
+	modFileExists              bool
 	loadPseudoResources        bool
+	// convenient aggregation of all resources
+	resourceMaps *modconfig.WorkspaceResourceMaps
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -149,85 +164,24 @@ func (w *Workspace) Close() {
 	}
 }
 
-func (w *Workspace) GetQueryMap() map[string]*modconfig.Query {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	return w.Queries
-}
-
-func (w *Workspace) GetQuery(queryName string) (*modconfig.Query, bool) {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	if query, ok := w.Queries[queryName]; ok {
-		return query, true
-	}
-	return nil, false
-}
-
-func (w *Workspace) GetControlMap() map[string]*modconfig.Control {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	return w.Controls
-}
-
-func (w *Workspace) GetControl(controlName string) (*modconfig.Control, bool) {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	if control, ok := w.Controls[controlName]; ok {
-		return control, true
-	}
-	return nil, false
-}
-
-// GetChildControls builds a flat list of all controls in the worlspace, including dependencies
-func (w *Workspace) GetChildControls() []*modconfig.Control {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-	var result []*modconfig.Control
-	// the workspace resource maps have duplicate entries, keyed by long and short name.
-	// keep track of which controls we have identified in order to avoid dupes
-	controlsMatched := make(map[string]bool)
-	for _, c := range w.Controls {
-		if _, alreadyMatched := controlsMatched[c.Name()]; !alreadyMatched {
-			controlsMatched[c.Name()] = true
-			result = append(result, c)
-		}
-	}
-	return result
-}
-
-// GetResourceMaps returns all resource maps
-// NOTE: this function DOES NOT LOCK the load lock so should only be called in a context where the file watcher is not running
-func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
-	workspaceMap := &modconfig.WorkspaceResourceMaps{
-		Mods:       make(map[string]*modconfig.Mod),
-		Queries:    w.Queries,
-		Controls:   w.Controls,
-		Benchmarks: w.Benchmarks,
-		Variables:  w.Variables,
-	}
-	workspaceMap.PopulateReferences()
-
-	// TODO add in all mod dependencies
-	if !w.Mod.IsDefaultMod() {
-		workspaceMap.Mods[w.Mod.Name()] = w.Mod
-	}
-
-	return workspaceMap
-}
-
 // clear all resource maps
 func (w *Workspace) reset() {
 	w.Queries = make(map[string]*modconfig.Query)
 	w.Controls = make(map[string]*modconfig.Control)
 	w.Benchmarks = make(map[string]*modconfig.Benchmark)
 	w.Mods = make(map[string]*modconfig.Mod)
-	w.Reports = make(map[string]*modconfig.Report)
-	w.Panels = make(map[string]*modconfig.Panel)
+	w.Reports = make(map[string]*modconfig.ReportContainer)
+	w.ReportContainers = make(map[string]*modconfig.ReportContainer)
+	w.ReportCharts = make(map[string]*modconfig.ReportChart)
+	w.ReportCounters = make(map[string]*modconfig.ReportCounter)
+	w.ReportHierarchies = make(map[string]*modconfig.ReportHierarchy)
+	w.ReportImages = make(map[string]*modconfig.ReportImage)
+	w.ReportInputs = make(map[string]*modconfig.ReportInput)
+	w.ReportTables = make(map[string]*modconfig.ReportTable)
+	w.ReportTexts = make(map[string]*modconfig.ReportText)
+	w.LocalQueries = make(map[string]*modconfig.Query)
+	w.LocalControls = make(map[string]*modconfig.Control)
+	w.LocalBenchmarks = make(map[string]*modconfig.Benchmark)
 }
 
 // check  whether the workspace contains a modfile
@@ -274,18 +228,27 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 
 	// now set workspace properties
 	w.Mod = m
-	w.Queries = w.buildQueryMap(runCtx.LoadedDependencyMods)
-	w.Controls = w.buildControlMap(runCtx.LoadedDependencyMods)
-	w.Benchmarks = w.buildBenchmarkMap(runCtx.LoadedDependencyMods)
+	w.Queries, w.LocalQueries = w.buildQueryMap(runCtx.LoadedDependencyMods)
+	w.Controls, w.LocalControls = w.buildControlMap(runCtx.LoadedDependencyMods)
+	w.Benchmarks, w.LocalBenchmarks = w.buildBenchmarkMap(runCtx.LoadedDependencyMods)
 	w.Reports = w.buildReportMap(runCtx.LoadedDependencyMods)
-	w.Panels = w.buildPanelMap(runCtx.LoadedDependencyMods)
+	w.ReportContainers = w.buildReportContainerMap(runCtx.LoadedDependencyMods)
+	w.ReportCharts = w.buildReportChartMap(runCtx.LoadedDependencyMods)
+	w.ReportCounters = w.buildReportCounterMap(runCtx.LoadedDependencyMods)
+	w.ReportHierarchies = w.buildReportHierarchyMap(runCtx.LoadedDependencyMods)
+	w.ReportImages = w.buildReportImageMap(runCtx.LoadedDependencyMods)
+	w.ReportInputs = w.buildReportInputMap(runCtx.LoadedDependencyMods)
+	w.ReportTables = w.buildReportTableMap(runCtx.LoadedDependencyMods)
+	w.ReportTexts = w.buildReportTextMap(runCtx.LoadedDependencyMods)
+
 	// set variables on workspace
 	w.Variables = m.Variables
-	// todo what to key mod map with
 	w.Mods = runCtx.LoadedDependencyMods
 	// NOTE: add in the workspace mod to the dependency mods
 	w.Mods[w.Mod.Name()] = w.Mod
 
+	// populate the workspace resource map
+	w.populateResourceMaps()
 	return nil
 }
 
@@ -315,127 +278,6 @@ func (w *Workspace) getRunContext() (*parse.RunContext, error) {
 		})
 
 	return runCtx, nil
-}
-
-func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
-	// build options used to load workspace
-	runCtx, err := w.getRunContext()
-	if err != nil {
-		return nil, err
-	}
-
-	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, runCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO load resource names for dependency mods
-	//modsPath := file_paths.WorkspaceModPath(w.Path)
-	//dependencyResourceNames, err := w.loadModDependencyResourceNames(modsPath)
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	return workspaceResourceNames, nil
-}
-
-func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig.Query {
-	//  build a list of long and short names for these queries
-	var res = make(map[string]*modconfig.Query)
-
-	// for LOCAL resources, add map entries keyed by both short name: query.<shortName> and  long name: <modName>.query.<shortName?
-	for _, q := range w.Mod.Queries {
-		// add 'local' alias
-		res[q.Name()] = q
-		res[q.UnqualifiedName] = q
-	}
-
-	// for mod dependencies, add resources keyed by long name only
-	for _, mod := range modMap {
-		for _, q := range mod.Queries {
-			// if this mod is a direct dependency of the workspace mod, add it to the map _without_ a verison
-			res[q.Name()] = q
-
-		}
-	}
-	return res
-}
-
-func (w *Workspace) buildControlMap(modMap modconfig.ModMap) map[string]*modconfig.Control {
-	//  build a list of long and short names for these queries
-	var res = make(map[string]*modconfig.Control)
-
-	// for LOCAL resources, add map entries keyed by both short name: control.<shortName> and  long name: <modName>.control.<shortName?
-	for _, c := range w.Mod.Controls {
-		res[c.Name()] = c
-		res[c.UnqualifiedName] = c
-	}
-
-	// for mode dependencies, add resources keyed by long name only
-	for _, mod := range modMap {
-		for _, c := range mod.Controls {
-			res[c.Name()] = c
-		}
-	}
-	return res
-}
-
-func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) map[string]*modconfig.Benchmark {
-	//  build a list of long and short names for these queries
-	var res = make(map[string]*modconfig.Benchmark)
-
-	// for LOCAL resources, add map entries keyed by both unqualified name: benchmark.<shortName> and full name: <modName>.benchmark.<shortName?
-	for _, b := range w.Mod.Benchmarks {
-		res[b.UnqualifiedName] = b
-		res[b.Name()] = b
-	}
-
-	// for mod dependencies, add resources keyed by long name only
-	for _, mod := range modMap {
-		for _, c := range mod.Benchmarks {
-			res[c.Name()] = c
-		}
-	}
-	return res
-}
-
-func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfig.Report {
-	//  build a list of long and short names for these queries
-	var res = make(map[string]*modconfig.Report)
-
-	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
-	for _, r := range w.Mod.Reports {
-		res[r.Name()] = r
-		res[r.UnqualifiedName] = r
-	}
-
-	// for mod dependencies, add resources keyed by long name only
-	for _, mod := range modMap {
-		for _, r := range mod.Reports {
-			res[r.Name()] = r
-		}
-	}
-	return res
-}
-
-func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig.Panel {
-	//  build a list of long and short names for these queries
-	var res = make(map[string]*modconfig.Panel)
-
-	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
-	for _, p := range w.Mod.Panels {
-		res[fmt.Sprintf("local.%s", p.Name())] = p
-		res[p.Name()] = p
-		res[p.UnqualifiedName] = p
-	}
-
-	// for mod dependencies, add resources keyed by long name only
-	for _, mod := range modMap {
-		for _, p := range mod.Panels {
-			res[p.Name()] = p
-		}
-	}
-	return res
 }
 
 func (w *Workspace) loadExclusions() error {
@@ -473,230 +315,24 @@ func (w *Workspace) loadExclusions() error {
 	return nil
 }
 
-// return a map of all unique panels, keyed by name
-// not we cannot just use PanelMap as this contains duplicates (qualified and unqualified version)
-func (w *Workspace) getPanelMap() map[string]*modconfig.Panel {
-	panels := make(map[string]*modconfig.Panel, len(w.Panels))
-	for _, p := range w.Panels {
-		// refetch the name property to avoid duplicates
-		// (as we save resources with qualified and unqualified name)
-		panels[p.Name()] = p
-	}
-	return panels
-}
-
-// return a map of all unique reports, keyed by name
-// not we cannot just use Reports as this contains duplicates (qualified and unqualified version)
-func (w *Workspace) getReportMap() map[string]*modconfig.Report {
-	reports := make(map[string]*modconfig.Report, len(w.Reports))
-	for _, p := range w.Reports {
-		// refetch the name property to avoid duplicates
-		// (as we save resources with qualified and unqualified name)
-		reports[p.Name()] = p
-	}
-	return reports
-}
-
-// GetQueriesFromArgs retrieves queries from args
-//
-// For each arg check if it is a named query or a file, before falling back to treating it as sql
-func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.WorkspaceResourceMaps, error) {
-	utils.LogTime("execute.GetQueriesFromArgs start")
-	defer utils.LogTime("execute.GetQueriesFromArgs end")
-
-	var queries []string
-	// build map of prepared statement providers
-	var resourceMap = modconfig.NewWorkspaceResourceMaps()
-	for _, arg := range args {
-		query, queryProvider, err := w.ResolveQueryAndArgs(arg)
-		if err != nil {
-			return nil, nil, err
-		}
-		if len(query) > 0 {
-			queries = append(queries, query)
-			resourceMap.AddQueryProvider(queryProvider)
-		}
-	}
-	return queries, resourceMap, nil
-}
-
-// ResolveQueryAndArgs attempts to resolve 'arg' to a query and query args
-func (w *Workspace) ResolveQueryAndArgs(sqlString string) (string, modconfig.QueryProvider, error) {
-	var args = &modconfig.QueryArgs{}
-
-	var err error
-
-	// if this looks like a named query or named control invocation, parse the sql string for arguments
-	if isNamedQueryOrControl(sqlString) {
-		sqlString, args, err = parse.ParsePreparedStatementInvocation(sqlString)
-		if err != nil {
-			return "", nil, err
-		}
-	}
-
-	return w.resolveQuery(sqlString, args)
-}
-
-func (w *Workspace) resolveQuery(sqlString string, args *modconfig.QueryArgs) (string, modconfig.QueryProvider, error) {
-	// query or control providing the named query
-
-	var queryProvider modconfig.QueryProvider
-
-	log.Printf("[TRACE] resolveQuery %s args %s", sqlString, args)
-	// 1) check if this is a control
-	if control, ok := w.GetControl(sqlString); ok {
-		queryProvider = control
-		log.Printf("[TRACE] query string is a control: %s", control.FullName)
-
-		// copy control SQL into query and continue resolution
-		var err error
-		sqlString, err = w.ResolveControlQuery(control, args)
-		if err != nil {
-			return "", nil, err
-		}
-		log.Printf("[TRACE] resolved control query: %s", sqlString)
-		return sqlString, queryProvider, nil
-	}
-
-	// 2) is this a named query
-	if namedQuery, ok := w.GetQuery(sqlString); ok {
-		queryProvider = namedQuery
-		sql, err := w.resolveNamedQuery(namedQuery, args)
-		if err != nil {
-			return "", nil, err
-		}
-		return sql, queryProvider, nil
-	}
-
-	// 	3) is this a file
-	fileQuery, fileExists, err := w.getQueryFromFile(sqlString)
-	if fileExists {
-		if err != nil {
-			return "", nil, fmt.Errorf("ResolveQueryAndArgs failed: error opening file '%s': %v", sqlString, err)
-		}
-		if len(fileQuery) == 0 {
-			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", sqlString))
-			// (just return the empty string - it will be filtered above)
-		}
-		return fileQuery, queryProvider, nil
-	}
-
-	// 4) so we have not managed to resolve this - if it looks like a named query or control, return an error
-	if isNamedQueryOrControl(sqlString) {
-		return "", nil, fmt.Errorf("'%s' not found in workspace", sqlString)
-	}
-
-	// 5) just use the query string as is and assume it is valid SQL
-	return sqlString, queryProvider, nil
-}
-
-func (w *Workspace) resolveNamedQuery(namedQuery *modconfig.Query, args *modconfig.QueryArgs) (string, error) {
-	/// if there are no params, just return the sql
-	if len(namedQuery.Params) == 0 {
-		return typehelpers.SafeString(namedQuery.SQL), nil
-	}
-
-	// so there are params - this will be a prepared statement
-	sql, err := modconfig.GetPreparedStatementExecuteSQL(namedQuery, args)
+func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
+	// build options used to load workspace
+	runCtx, err := w.getRunContext()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return sql, nil
-}
 
-// ResolveControlQuery resolves the query for the given Control
-func (w *Workspace) ResolveControlQuery(control *modconfig.Control, args *modconfig.QueryArgs) (string, error) {
-	args, err := w.resolveControlArgs(control, args)
+	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, runCtx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	log.Printf("[TRACE] ResolveControlQuery for %s", control.FullName)
+	// TODO load resource names for dependency mods
+	//modsPath := file_paths.WorkspaceModPath(w.Path)
+	//dependencyResourceNames, err := w.loadModDependencyResourceNames(modsPath)
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	// verify we have either SQL or a Query defined
-	if control.SQL == nil && control.Query == nil {
-		// this should never happen as we should catch it in the parsing stage
-		return "", fmt.Errorf("%s must define either a 'sql' property or a 'query' property", control.FullName)
-	}
-
-	// determine the source for the query
-	// - this will either be the control itself or any named query the control refers to
-	// either via its SQL property (passing a query name) or Query property (using a reference to a query object)
-
-	// if a query is provided, us that to resolve the sql
-	if control.Query != nil {
-		return w.resolveNamedQuery(control.Query, args)
-	}
-
-	// if the control has SQL set, use that
-	if control.SQL != nil {
-		controlSQL := typehelpers.SafeString(control.SQL)
-		log.Printf("[TRACE] control defines inline SQL")
-
-		// if the control SQL refers to a named query, this is the same as if the control 'Query' property is set
-		if namedQuery, ok := w.GetQuery(controlSQL); ok {
-			// in this case, it is NOT valid for the control to define its own Param definitions
-			if control.Params != nil {
-				return "", fmt.Errorf("%s has an 'SQL' property which refers to %s, so it cannot define 'param' blocks", control.FullName, namedQuery.FullName)
-			}
-			return w.resolveNamedQuery(namedQuery, args)
-		}
-		// so the control sql is NOT a named query
-		// if there are NO params, use the control SQL as is
-		if len(control.Params) == 0 {
-			return controlSQL, nil
-		}
-		// so the control sql is NOT a named query
-		// if there are NO params, use the control SQL as is
-		if len(control.Params) == 0 {
-			return controlSQL, nil
-		}
-	}
-
-	// so the control defines SQL and has params - it is a prepared statement
-	return modconfig.GetPreparedStatementExecuteSQL(control, args)
-}
-
-func (w *Workspace) resolveControlArgs(control *modconfig.Control, args *modconfig.QueryArgs) (*modconfig.QueryArgs, error) {
-	// if no args were provided,  set args to control args (which may also be nil!)
-	if args == nil || args.Empty() {
-		log.Printf("[TRACE] using control args: %s", control.Args)
-		return control.Args, nil
-	}
-	// so command line args were provided
-	// check if the control supports them (it will NOT is it specifies a 'query' property)
-	if control.Query != nil {
-		return nil, fmt.Errorf("%s defines a query property and so does not support command line arguments", control.FullName)
-	}
-	log.Printf("[TRACE] using command line args: %s", args)
-
-	// so the control defines SQL and has params - it is a prepared statement
-	return args, nil
-}
-
-func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
-	// get absolute filename
-	path, err := filepath.Abs(filename)
-	if err != nil {
-		return "", false, nil
-	}
-	// does it exist?
-	if _, err := os.Stat(path); err != nil {
-		// if this gives any error, return not exist. we may get a not found or a path too long for example
-		return "", false, nil
-	}
-
-	// read file
-	fileBytes, err := os.ReadFile(path)
-	if err != nil {
-		return "", true, err
-	}
-
-	return string(fileBytes), true, nil
-}
-
-// does this resource name look like a control or query
-func isNamedQueryOrControl(name string) bool {
-	parsedResourceName, err := modconfig.ParseResourceName(name)
-	return err == nil && parsedResourceName.ItemType == "query" || parsedResourceName.ItemType == "control"
+	return workspaceResourceNames, nil
 }

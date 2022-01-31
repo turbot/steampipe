@@ -37,10 +37,6 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 	// make map of resource name to create SQL
 	sqlMap := make(map[string]string)
 	for _, query := range resourceMaps.Queries {
-		// query map contains long and short names for queries - have we already created this query
-		if _, ok := sqlMap[query.FullName]; ok {
-			continue
-		}
 		// if the query does not have parameters, it is NOT a prepared statement
 		if len(query.Params) == 0 {
 			continue
@@ -53,10 +49,6 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 	}
 
 	for _, control := range resourceMaps.Controls {
-		// query map contains long and short names for queries - have we already created this query
-		if _, ok := sqlMap[control.FullName]; ok {
-			continue
-		}
 		// only create prepared statements for controls with inline SQL
 		if control.SQL == nil {
 			continue

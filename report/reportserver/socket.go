@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"sync"
 
-	"gopkg.in/olahol/melody.v1"
-
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/executionlayer"
+	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/workspace"
+	"gopkg.in/olahol/melody.v1"
 )
 
 type ClientRequestReportPayload struct {
@@ -50,10 +49,9 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 	webSocket.HandleMessage(func(session *melody.Session, msg []byte) {
 		fmt.Println("Got message", string(msg))
 		var request ClientRequest
-		if err := json.Unmarshal(msg, &request); err != nil {
-			// what???
-			// TODO how to handle error
-		} else {
+		// if we could not decode message - ignore
+		if err := json.Unmarshal(msg, &request); err == nil {
+
 			switch request.Action {
 			case "available_reports":
 				reports := workspace.Mod.Reports
@@ -64,7 +62,7 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 				reportClientInfo := socketSessions[session]
 				reportClientInfo.Report = &request.Payload.Report.FullName
 				mutex.Unlock()
-				executionlayer.ExecuteReportNode(ctx, request.Payload.Report.FullName, workspace, dbClient)
+				reportexecute.ExecuteReportNode(ctx, request.Payload.Report.FullName, workspace, dbClient)
 			}
 		}
 	})

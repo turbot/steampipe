@@ -16,6 +16,7 @@ type SteampipeImage struct {
 	Plugin        *PluginImage
 	Database      *DbImage
 	Fdw           *HubImage
+	Assets        *AssetsImage
 	resolver      *remotes.Resolver
 }
 
@@ -38,6 +39,9 @@ type HubImage struct {
 	ControlFile string
 	SqlFile     string
 }
+type AssetsImage struct {
+	ReportUI string
+}
 
 func (o *ociDownloader) newSteampipeImage() *SteampipeImage {
 	SteampipeImage := &SteampipeImage{
@@ -46,6 +50,13 @@ func (o *ociDownloader) newSteampipeImage() *SteampipeImage {
 	o.Images = append(o.Images, SteampipeImage)
 	return SteampipeImage
 }
+
+const (
+	ImageTypeDatabase = "db"
+	ImageTypeFdw      = "fdw"
+	ImageTypeAssets   = "assets"
+	ImageTypePlugin   = "plugin"
+)
 
 func (o *ociDownloader) Download(ctx context.Context, ref string, imageType string, destDir string) (*SteampipeImage, error) {
 	var mediaTypes []string
@@ -65,20 +76,22 @@ func (o *ociDownloader) Download(ctx context.Context, ref string, imageType stri
 	Image.OCIDescriptor = imageDesc
 	Image.Config, err = newSteampipeImageConfig(configBytes)
 	if err != nil {
-		return nil, errors.New("Invalid image - missing $config")
+		return nil, errors.New("invalid image - missing $config")
 	}
 
 	// Get the metadata
 	switch imageType {
-	case "db":
+	case ImageTypeDatabase:
 		Image.Database, err = getDBImageData(layers)
-	case "fdw":
+	case ImageTypeFdw:
 		Image.Fdw, err = getHubImageData(layers)
-	case "plugin":
+	case ImageTypePlugin:
 		Image.Plugin, err = getPluginImageData(layers)
+	case ImageTypeAssets:
+		Image.Assets, err = getAssetImageData(layers)
 
 	default:
-		return nil, errors.New("Invalid Type - Image types are: plugin, db, fdw")
+		return nil, errors.New("invalid Type - Image types are: plugin, db, fdw")
 	}
 
 	if err != nil {
@@ -87,39 +100,51 @@ func (o *ociDownloader) Download(ctx context.Context, ref string, imageType stri
 	return Image, nil
 }
 
+func getAssetImageData(layers []ocispec.Descriptor) (*AssetsImage, error) {
+	var assetImage AssetsImage
+
+	// get the report dir
+	foundLayers := findLayersForMediaType(layers, MediaTypeAssetReportLayer)
+	if len(foundLayers) > 0 {
+		assetImage.ReportUI = foundLayers[0].Annotations["org.opencontainers.image.title"]
+	}
+
+	return &assetImage, nil
+}
+
 func getDBImageData(layers []ocispec.Descriptor) (*DbImage, error) {
-	var DbImage DbImage
+	res := &DbImage{}
 
 	// get the binary jar file
 	foundLayers := findLayersForMediaType(layers, MediaTypeForPlatform("db"))
 	if len(foundLayers) != 1 {
-		return nil, fmt.Errorf("Invalid Image - Image should contain 1 installation file per platform, found %d", len(foundLayers))
+		return nil, fmt.Errorf("invalid Image - Image should contain 1 installation file per platform, found %d", len(foundLayers))
 	}
-	DbImage.ArchiveDir = foundLayers[0].Annotations["org.opencontainers.image.title"]
+	res.ArchiveDir = foundLayers[0].Annotations["org.opencontainers.image.title"]
 
 	// get the readme file info
 	foundLayers = findLayersForMediaType(layers, MediaTypeDbDocLayer)
 	if len(foundLayers) > 0 {
-		DbImage.ReadmeFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
+		res.ReadmeFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 	}
 
 	// get the license file info
 	foundLayers = findLayersForMediaType(layers, MediaTypeDbLicenseLayer)
 	if len(foundLayers) > 0 {
-		DbImage.LicenseFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
+		res.LicenseFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 	}
-	return &DbImage, nil
+	return res, nil
 }
 
 func getHubImageData(layers []ocispec.Descriptor) (*HubImage, error) {
-	var HubImage HubImage
+	res := &HubImage{}
 
 	// get the binary (steampipe-postgres-fdw.so) info
 	foundLayers := findLayersForMediaType(layers, MediaTypeForPlatform("fdw"))
 	if len(foundLayers) != 1 {
 		return nil, fmt.Errorf("Invalid Image - Image should contain 1 binary file per platform, found %d", len(foundLayers))
 	}
-	HubImage.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
+	res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 	//sourcePath := filepath.Join(tempDir.Path, fileName)
 
 	// get the control file info
@@ -127,58 +152,58 @@ func getHubImageData(layers []ocispec.Descriptor) (*HubImage, error) {
 	if len(foundLayers) != 1 {
 		return nil, fmt.Errorf("Invalid Image - Image should contain 1 control file, found %d", len(foundLayers))
 	}
-	HubImage.ControlFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
+	res.ControlFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 
 	// get the sql file info
 	foundLayers = findLayersForMediaType(layers, MediaTypeFdwSqlLayer)
 	if len(foundLayers) != 1 {
 		return nil, fmt.Errorf("Invalid Image - Image should contain 1 SQL file, found %d", len(foundLayers))
 	}
-	HubImage.SqlFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
+	res.SqlFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 
 	// get the readme file info
 	foundLayers = findLayersForMediaType(layers, MediaTypeFdwDocLayer)
 	if len(foundLayers) > 0 {
-		HubImage.ReadmeFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
+		res.ReadmeFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 	}
 
 	// get the license file info
 	foundLayers = findLayersForMediaType(layers, MediaTypeFdwLicenseLayer)
 	if len(foundLayers) > 0 {
-		HubImage.LicenseFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
+		res.LicenseFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 	}
-	return &HubImage, nil
+	return res, nil
 }
 
 func getPluginImageData(layers []ocispec.Descriptor) (*PluginImage, error) {
-	var PluginImage PluginImage
+	res := &PluginImage{}
 
 	// get the binary plugin file info
 	foundLayers := findLayersForMediaType(layers, MediaTypeForPlatform("plugin"))
 	if len(foundLayers) != 1 {
-		return nil, fmt.Errorf("Invalid Image - Image should contain 1 binary file per platform, found %d", len(foundLayers))
+		return nil, fmt.Errorf("invalid Image - Image should contain 1 binary file per platform, found %d", len(foundLayers))
 	}
-	PluginImage.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
+	res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 
 	// get the docs dir
 	foundLayers = findLayersForMediaType(layers, MediaTypePluginDocsLayer)
 	if len(foundLayers) > 0 {
-		PluginImage.DocsDir = foundLayers[0].Annotations["org.opencontainers.image.title"]
+		res.DocsDir = foundLayers[0].Annotations["org.opencontainers.image.title"]
 	}
 
 	// get the .spc config / connections file dir
 	foundLayers = findLayersForMediaType(layers, MediaTypePluginSpcLayer)
 	if len(foundLayers) > 0 {
-		PluginImage.ConfigFileDir = foundLayers[0].Annotations["org.opencontainers.image.title"]
+		res.ConfigFileDir = foundLayers[0].Annotations["org.opencontainers.image.title"]
 	}
 
 	// get the license file info
 	foundLayers = findLayersForMediaType(layers, MediaTypePluginLicenseLayer)
 	if len(foundLayers) > 0 {
-		PluginImage.LicenseFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
+		res.LicenseFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 	}
 
-	return &PluginImage, nil
+	return res, nil
 }
 
 func findLayersForMediaType(layers []ocispec.Descriptor, mediaType string) []ocispec.Descriptor {

@@ -3,22 +3,51 @@ package modconfig
 // WorkspaceResourceMaps is a struct containing maps of all mod resource types
 // This is provided to avoid db needing to reference workspace package
 type WorkspaceResourceMaps struct {
-	Mods       map[string]*Mod
-	Queries    map[string]*Query
-	Controls   map[string]*Control
-	Benchmarks map[string]*Benchmark
-	Variables  map[string]*Variable
-	References map[string]*ResourceReference
+	// the parent mod
+	Mod *Mod
+	// all mods (including deps)
+	Mods              map[string]*Mod
+	Queries           map[string]*Query
+	Controls          map[string]*Control
+	Benchmarks        map[string]*Benchmark
+	Variables         map[string]*Variable
+	Reports           map[string]*ReportContainer
+	ReportContainers  map[string]*ReportContainer
+	ReportCharts      map[string]*ReportChart
+	ReportCounters    map[string]*ReportCounter
+	ReportHierarchies map[string]*ReportHierarchy
+	ReportImages      map[string]*ReportImage
+	ReportInputs      map[string]*ReportInput
+	ReportTables      map[string]*ReportTable
+	ReportTexts       map[string]*ReportText
+	References        map[string]*ResourceReference
+
+	LocalQueries    map[string]*Query
+	LocalControls   map[string]*Control
+	LocalBenchmarks map[string]*Benchmark
 }
 
-func NewWorkspaceResourceMaps() *WorkspaceResourceMaps {
+func NewWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
 	return &WorkspaceResourceMaps{
-		Mods:       make(map[string]*Mod),
-		Queries:    make(map[string]*Query),
-		Controls:   make(map[string]*Control),
-		Benchmarks: make(map[string]*Benchmark),
-		Variables:  make(map[string]*Variable),
-		References: make(map[string]*ResourceReference),
+		Mod:               mod,
+		Mods:              make(map[string]*Mod),
+		Queries:           make(map[string]*Query),
+		Controls:          make(map[string]*Control),
+		Benchmarks:        make(map[string]*Benchmark),
+		Variables:         make(map[string]*Variable),
+		Reports:           make(map[string]*ReportContainer),
+		ReportContainers:  make(map[string]*ReportContainer),
+		ReportCharts:      make(map[string]*ReportChart),
+		ReportCounters:    make(map[string]*ReportCounter),
+		ReportHierarchies: make(map[string]*ReportHierarchy),
+		ReportImages:      make(map[string]*ReportImage),
+		ReportInputs:      make(map[string]*ReportInput),
+		ReportTables:      make(map[string]*ReportTable),
+		ReportTexts:       make(map[string]*ReportText),
+		References:        make(map[string]*ResourceReference),
+		LocalQueries:      make(map[string]*Query),
+		LocalControls:     make(map[string]*Control),
+		LocalBenchmarks:   make(map[string]*Benchmark),
 	}
 }
 
@@ -35,6 +64,7 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
+
 	for name, query := range m.Queries {
 		if otherQuery, ok := other.Queries[name]; !ok {
 			return false
@@ -42,12 +72,12 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
-
 	for name := range other.Queries {
 		if _, ok := m.Queries[name]; !ok {
 			return false
 		}
 	}
+
 	for name, control := range m.Controls {
 		if otherControl, ok := other.Controls[name]; !ok {
 			return false
@@ -60,6 +90,7 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
+
 	for name, benchmark := range m.Benchmarks {
 		if otherBenchmark, ok := other.Benchmarks[name]; !ok {
 			return false
@@ -72,6 +103,7 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
+
 	for name, variable := range m.Variables {
 		if otherVariable, ok := other.Variables[name]; !ok {
 			return false
@@ -84,6 +116,124 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
+
+	for name, report := range m.Reports {
+		if otherReport, ok := other.Reports[name]; !ok {
+			return false
+		} else if !report.Equals(otherReport) {
+			return false
+		}
+	}
+	for name := range other.Reports {
+		if _, ok := m.Reports[name]; !ok {
+			return false
+		}
+	}
+
+	for name, container := range m.ReportContainers {
+		if otherReport, ok := other.ReportContainers[name]; !ok {
+			return false
+		} else if !container.Equals(otherReport) {
+			return false
+		}
+	}
+	for name := range other.ReportContainers {
+		if _, ok := m.ReportContainers[name]; !ok {
+			return false
+		}
+	}
+
+	for name, charts := range m.ReportCharts {
+		if otherReport, ok := other.ReportCharts[name]; !ok {
+			return false
+		} else if !charts.Equals(otherReport) {
+			return false
+		}
+	}
+	for name := range other.ReportCharts {
+		if _, ok := m.ReportCharts[name]; !ok {
+			return false
+		}
+	}
+
+	for name, counters := range m.ReportCounters {
+		if otherReport, ok := other.ReportCounters[name]; !ok {
+			return false
+		} else if !counters.Equals(otherReport) {
+			return false
+		}
+	}
+	for name := range other.ReportCounters {
+		if _, ok := m.ReportCounters[name]; !ok {
+			return false
+		}
+	}
+
+	for name, hierarchies := range m.ReportHierarchies {
+		if otherHierarchy, ok := other.ReportHierarchies[name]; !ok {
+			return false
+		} else if !hierarchies.Equals(otherHierarchy) {
+			return false
+		}
+	}
+	for name := range other.ReportHierarchies {
+		if _, ok := m.ReportHierarchies[name]; !ok {
+			return false
+		}
+	}
+
+	for name, images := range m.ReportImages {
+		if otherImage, ok := other.ReportImages[name]; !ok {
+			return false
+		} else if !images.Equals(otherImage) {
+			return false
+		}
+	}
+	for name := range other.ReportImages {
+		if _, ok := m.ReportImages[name]; !ok {
+			return false
+		}
+	}
+
+	for name, images := range m.ReportInputs {
+		if otherImage, ok := other.ReportInputs[name]; !ok {
+			return false
+		} else if !images.Equals(otherImage) {
+			return false
+		}
+	}
+	for name := range other.ReportInputs {
+		if _, ok := m.ReportInputs[name]; !ok {
+			return false
+		}
+	}
+
+	for name, tables := range m.ReportTables {
+		if otherReport, ok := other.ReportTables[name]; !ok {
+			return false
+		} else if !tables.Equals(otherReport) {
+			return false
+		}
+	}
+	for name := range other.ReportTables {
+		if _, ok := m.ReportTables[name]; !ok {
+			return false
+		}
+	}
+
+	for name, texts := range m.ReportTexts {
+		if otherReport, ok := other.ReportTexts[name]; !ok {
+			return false
+		} else if !texts.Equals(otherReport) {
+			return false
+		}
+	}
+	for name := range other.ReportTexts {
+		if _, ok := m.ReportTexts[name]; !ok {
+			return false
+		}
+	}
+
 	for name, reference := range m.References {
 		if otherReference, ok := other.References[name]; !ok {
 			return false
@@ -91,6 +241,7 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 			return false
 		}
 	}
+
 	for name := range other.References {
 		if _, ok := m.References[name]; !ok {
 			return false
@@ -138,6 +289,8 @@ func (m *WorkspaceResourceMaps) PopulateReferences() {
 			m.References[ref.String()] = ref
 		}
 	}
+
+	// TODO add other reference types - https://github.com/turbot/steampipe/issues/1331
 }
 
 func (m *WorkspaceResourceMaps) Empty() bool {
@@ -146,5 +299,14 @@ func (m *WorkspaceResourceMaps) Empty() bool {
 		len(m.Controls)+
 		len(m.Benchmarks)+
 		len(m.Variables)+
+		len(m.Reports)+
+		len(m.ReportContainers)+
+		len(m.ReportCharts)+
+		len(m.ReportCounters)+
+		len(m.ReportHierarchies)+
+		len(m.ReportImages)+
+		len(m.ReportInputs)+
+		len(m.ReportTables)+
+		len(m.ReportTexts)+
 		len(m.References) == 0
 }

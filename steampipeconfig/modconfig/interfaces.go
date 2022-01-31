@@ -18,10 +18,9 @@ type MappableResource interface {
 }
 
 // ModTreeItem must be implemented by elements of the mod resource hierarchy
-// i.e. Control, Benchmark, Report, Panel
+// i.e. Control, Benchmark, Report
 type ModTreeItem interface {
 	AddParent(ModTreeItem) error
-	AddChild(child ModTreeItem) error
 	GetChildren() []ModTreeItem
 	Name() string
 	GetTitle() string
@@ -29,6 +28,7 @@ type ModTreeItem interface {
 	GetTags() map[string]string
 	// GetPaths returns an array resource paths
 	GetPaths() []NodePath
+	SetPaths()
 	GetMod() *Mod
 }
 
@@ -43,7 +43,7 @@ type HclResource interface {
 	GetDeclRange() *hcl.Range
 }
 
-// ResourceWithMetadata must be implenented by resources which supports reflection metadata
+// ResourceWithMetadata must be implemented by resources which supports reflection metadata
 type ResourceWithMetadata interface {
 	Name() string
 	GetMetadata() *ResourceMetadata
@@ -56,4 +56,18 @@ type QueryProvider interface {
 	ModName() string
 	GetParams() []*ParamDef
 	GetPreparedStatementName() string
+}
+
+// ReportingLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
+type ReportingLeafNode interface {
+	Name() string
+	GetUnqualifiedName() string
+	GetTitle() string
+	GetWidth() int
+	GetSQL() string
+	GetPaths() []NodePath
+}
+
+type ResourceMapsProvider interface {
+	GetResourceMaps() *WorkspaceResourceMaps
 }

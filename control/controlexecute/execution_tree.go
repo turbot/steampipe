@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/control/controlhooks"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/statushooks"
@@ -20,20 +21,19 @@ import (
 
 // ExecutionTree is a structure representing the control execution hierarchy
 type ExecutionTree struct {
-	// root node of the execution tree
-	Root      *ResultGroup
-	StartTime time.Time
-	EndTime   time.Time
-	// map of dimension property name to property value to color map
-	DimensionColorGenerator *DimensionColorGenerator
+	Root *ResultGroup `json:"root"`
 	// flat list of all control runs
-	ControlRuns []*ControlRun
+	ControlRuns []*ControlRun                 `json:"control_runs"`
+	StartTime   time.Time                     `json:"start_time"`
+	EndTime     time.Time                     `json:"end_time"`
+	Progress    *controlhooks.ControlProgress `json:"progress"`
+	// map of dimension property name to property value to color map
+	DimensionColorGenerator *DimensionColorGenerator `json:"-"`
 
 	workspace *workspace.Workspace
 	client    db_common.Client
 	// an optional map of control names used to filter the controls which are run
 	controlNameFilterMap map[string]bool
-	progress             *ControlProgressRenderer
 }
 
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg string) (*ExecutionTree, error) {
@@ -61,7 +61,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	executionTree.Root = NewRootResultGroup(ctx, executionTree, rootItem)
 
 	// after tree has built, ControlCount will be set - create progress rendered
-	executionTree.progress = NewControlProgressRenderer(len(executionTree.ControlRuns))
+	executionTree.Progress = controlhooks.NewControlProgress(len(executionTree.ControlRuns))
 
 	return executionTree, nil
 }
@@ -80,25 +80,28 @@ func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Contr
 	}
 }
 
-func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) int {
+func (e *ExecutionTree) Execute(ctx context.Context) int {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.StartTime = time.Now()
-	e.progress.Start(ctx)
+	e.Progress.Start(ctx)
 
 	defer func() {
 		e.EndTime = time.Now()
-		e.progress.Finish(ctx)
+		e.Progress.Finish(ctx)
 	}()
 
 	// the number of goroutines parallel to start
-	maxParallelGoRoutines := viper.GetInt64(constants.ArgMaxParallel)
+	var maxParallelGoRoutines int64 = constants.DefaultMaxConnections
+	if viper.IsSet(constants.ArgMaxParallel) {
+		maxParallelGoRoutines = viper.GetInt64(constants.ArgMaxParallel)
+	}
 
 	// to limit the number of parallel controls go routines started
 	parallelismLock := semaphore.NewWeighted(maxParallelGoRoutines)
 
 	// just execute the root - it will traverse the tree
-	e.Root.execute(ctx, client, parallelismLock)
+	e.Root.execute(ctx, e.client, parallelismLock)
 
 	executeFinishWaitCtx := ctx
 	if ctx.Err() != nil {
@@ -208,30 +211,19 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeIt
 	}
 
 	// what resource type is arg?
-	name, err := modconfig.ParseResourceName(arg)
+	parsedName, err := modconfig.ParseResourceName(arg)
 	if err != nil {
 		// just log error
 		return nil, fmt.Errorf("failed to parse check argument '%s': %v", arg, err)
 	}
 
-	switch name.ItemType {
-	case modconfig.BlockTypeControl:
-		// check whether the arg is a control name
-		if control, ok := e.workspace.Controls[arg]; ok {
-			return control, nil
-		}
-	case modconfig.BlockTypeBenchmark:
-		// look in the workspace control group map for this control group
-		if benchmark, ok := e.workspace.Benchmarks[arg]; ok {
-			return benchmark, nil
-		}
-	case modconfig.BlockTypeMod:
-		// get all controls for the mod
-		if mod, ok := e.workspace.Mods[arg]; ok {
-			return mod, nil
-		}
+	resource, found := modconfig.GetResource(e.workspace, parsedName)
+
+	root, ok := resource.(modconfig.ModTreeItem)
+	if !found || !ok {
+		return nil, fmt.Errorf("no resources found matching argument '%s'", arg)
 	}
-	return nil, fmt.Errorf("no controls found matching argument '%s'", arg)
+	return root, nil
 }
 
 // Get a map of control names from the introspection table steampipe_control

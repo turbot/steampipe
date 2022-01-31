@@ -61,7 +61,7 @@ connection from any Postgres compatible database client.`,
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service start").
 		// for now default port to -1 so we fall back to the default of the deprecated arg
-		AddIntFlag(constants.ArgPort, "", constants.DatabaseDefaultPort, "Database service port.").
+		AddIntFlag(constants.ArgDatabasePort, "", constants.DatabaseDefaultPort, "Database service port.").
 		// for now default listen address to empty so we fall back to the default of the deprecated arg
 		AddStringFlag(constants.ArgListenAddress, "", string(db_local.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open)").
 		AddStringFlag(constants.ArgServicePassword, "", "", "Set the database password for this session").
@@ -147,7 +147,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt, os.Kill)
 	defer cancel()
 
-	port := viper.GetInt(constants.ArgPort)
+	port := viper.GetInt(constants.ArgDatabasePort)
 	if port < 1 || port > 65535 {
 		panic("Invalid port - must be within range (1:65535)")
 	}

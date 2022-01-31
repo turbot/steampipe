@@ -35,12 +35,13 @@ type Variable struct {
 
 func NewVariable(v *var_config.Variable) *Variable {
 	return &Variable{
-		ShortName:   v.Name,
-		Description: v.Description,
-		FullName:    fmt.Sprintf("var.%s", v.Name),
-		Default:     v.Default,
-		Type:        v.Type,
-		ParsingMode: v.ParsingMode,
+		ShortName:       v.Name,
+		Description:     v.Description,
+		FullName:        fmt.Sprintf("var.%s", v.Name),
+		UnqualifiedName: fmt.Sprintf("var.%s", v.Name),
+		Default:         v.Default,
+		Type:            v.Type,
+		ParsingMode:     v.ParsingMode,
 
 		DeclRange: v.DeclRange,
 	}
@@ -78,7 +79,7 @@ func (v *Variable) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (v *Variable) SetMod(mod *Mod) {
 	v.Mod = mod
-	v.UnqualifiedName = v.FullName
+	// add mod name to full name
 	v.FullName = fmt.Sprintf("%s.%s", mod.ShortName, v.FullName)
 }
 

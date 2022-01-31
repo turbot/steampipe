@@ -263,7 +263,6 @@ func loadMappableResourceNames(modPath string, content *hcl.BodyContent) (map[st
 			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
 			hclResources[name] = true
 		}
-		// TODO Panel
 	}
 	return hclResources, nil
 }
@@ -299,10 +298,6 @@ func ParseModResourceNames(fileData map[string][]byte) (*modconfig.WorkspaceReso
 			// for any mappable resource, store the resource name
 			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
 			resources.Benchmark[name] = true
-			//case modconfig.BlockTypePanel:
-			//	// for any mappable resource, store the resource name
-			//	name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
-			//	resources.Panel[name]=true
 		}
 	}
 	return resources, nil

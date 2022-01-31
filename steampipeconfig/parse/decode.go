@@ -38,98 +38,102 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			Detail:   err.Error()})
 	}
 	for _, block := range blocks {
-		// if opts specifies block types, check whether this type is included
-		if !runCtx.ShouldIncludeBlock(block) {
+		_, res := decodeBlock(block, runCtx)
+		if !res.Success() {
+			diags = append(diags, res.Diags...)
 			continue
-		}
-		// check name is valid
-		moreDiags := validateName(block)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-			continue
-		}
-		switch block.Type {
-		case modconfig.BlockTypeLocals:
-			// special case decode logic for locals
-			locals, res := decodeLocals(block, runCtx)
-			for _, local := range locals {
-				// handle the result
-				// - if successful, add resource to mod and variables maps
-				// - if there are dependencies, add them to run context
-				moreDiags = handleDecodeResult(local, res, block, runCtx)
-				diags = append(diags, moreDiags...)
-			}
-		case modconfig.BlockTypePanel:
-			// special case decode logic for locals
-			panel, res := decodePanel(block, runCtx)
-			moreDiags = handleDecodeResult(panel, res, block, runCtx)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-		case modconfig.BlockTypeReport:
-			// special case decode logic for locals
-			report, res := decodeReport(block, runCtx)
-			moreDiags = handleDecodeResult(report, res, block, runCtx)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-		case modconfig.BlockTypeVariable:
-			// special case decode logic for locals
-			variable, res := decodeVariable(block, runCtx)
-			moreDiags = handleDecodeResult(variable, res, block, runCtx)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-		case modconfig.BlockTypeControl:
-			// special case decode logic for locals
-			control, res := decodeControl(block, runCtx)
-			moreDiags = handleDecodeResult(control, res, block, runCtx)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-		case modconfig.BlockTypeQuery:
-			// special case decode logic for locals
-			query, res := decodeQuery(block, runCtx)
-			moreDiags = handleDecodeResult(query, res, block, runCtx)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-		default:
-			// all other blocks are treated the same:
-			resource, res := decodeResource(block, runCtx)
-			moreDiags = handleDecodeResult(resource, res, block, runCtx)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
 		}
 	}
+
 	return diags
+}
+
+func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource, *decodeResult) {
+	var resource modconfig.HclResource
+	var resources []modconfig.HclResource
+	var res = &decodeResult{}
+
+	// if opts specifies block types, check whether this type is included
+	if !runCtx.ShouldIncludeBlock(block) {
+		return nil, res
+	}
+	// if this block is anonymous, give it a unique name
+	anonymousBlock := runCtx.IsBlockAnonymous(block)
+	if anonymousBlock {
+		// replace the labels
+		block.Labels = []string{runCtx.GetAnonymousResourceName(block)}
+	}
+	runCtx.PushDecodeBlock(block)
+	defer runCtx.PopDecodeBlock()
+
+	// check name is valid
+	diags := validateName(block)
+	if diags.HasErrors() {
+		res.addDiags(diags)
+		return nil, res
+	}
+
+	switch block.Type {
+	case modconfig.BlockTypeLocals:
+		// special case decode logic for locals
+		var locals []*modconfig.Local
+		locals, res = decodeLocals(block, runCtx)
+		for _, local := range locals {
+			resources = append(resources, local)
+		}
+
+	case modconfig.BlockTypeContainer, modconfig.BlockTypeReport:
+		resource, res = decodeReportContainer(block, runCtx)
+		resources = append(resources, resource)
+	case modconfig.BlockTypeVariable:
+		resource, res = decodeVariable(block, runCtx)
+		resources = append(resources, resource)
+	case modconfig.BlockTypeControl:
+		resource, res = decodeControl(block, runCtx)
+		resources = append(resources, resource)
+
+	case modconfig.BlockTypeBenchmark:
+		resource, res = decodeBenchmark(block, runCtx)
+		resources = append(resources, resource)
+	case modconfig.BlockTypeQuery:
+		resource, res = decodeQuery(block, runCtx)
+		resources = append(resources, resource)
+	default:
+		// all other blocks are treated the same:
+		resource, res = decodeResource(block, runCtx)
+		resources = append(resources, resource)
+	}
+
+	for _, resource := range resources {
+		// handle the result
+		// - if successful, add resource to mod and variables maps
+		// - if there are dependencies, add them to run context
+		handleDecodeResult(resource, res, block, runCtx)
+	}
+
+	return resources, res
 }
 
 // generic decode function for any resource we do not have custom decode logic for
 func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
-	// get shell resource
-	resource := resourceForBlock(block, runCtx)
-
 	res := &decodeResult{}
-	diags := gohcl.DecodeBody(block.Body, runCtx.EvalCtx, resource)
+	// get shell resource
+	resource, diags := resourceForBlock(block, runCtx)
+	// handle any resulting diags, which may specify dependencies
+	res.handleDecodeDiags(diags)
+	if diags.HasErrors() {
+		return nil, res
+	}
+
+	diags = gohcl.DecodeBody(block.Body, runCtx.EvalCtx, resource)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
-	// call post-decode hook
-	if res.Success() {
-		if diags := resource.OnDecoded(block); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-		if diags := AddReferences(resource, block, runCtx); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-	}
 	return resource, res
 }
 
 // return a shell resource for the given block
-func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResource {
+func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, hcl.Diagnostics) {
 	var resource modconfig.HclResource
 	switch block.Type {
 	case modconfig.BlockTypeMod:
@@ -139,14 +143,35 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) modconfig.HclResourc
 		resource = modconfig.NewQuery(block)
 	case modconfig.BlockTypeControl:
 		resource = modconfig.NewControl(block)
-	case modconfig.BlockTypeReport:
-		resource = modconfig.NewReport(block)
-	case modconfig.BlockTypePanel:
-		resource = modconfig.NewPanel(block)
 	case modconfig.BlockTypeBenchmark:
 		resource = modconfig.NewBenchmark(block)
+	case modconfig.BlockTypeReport:
+		resource = modconfig.NewReportContainer(block)
+	case modconfig.BlockTypeContainer:
+		resource = modconfig.NewReportContainer(block)
+	case modconfig.BlockTypeChart:
+		resource = modconfig.NewReportChart(block)
+	case modconfig.BlockTypeCounter:
+		resource = modconfig.NewReportCounter(block)
+	case modconfig.BlockTypeHierarchy:
+		resource = modconfig.NewReportHierarchy(block)
+	case modconfig.BlockTypeImage:
+		resource = modconfig.NewReportImage(block)
+	case modconfig.BlockTypeInput:
+		resource = modconfig.NewReportInput(block)
+	case modconfig.BlockTypeTable:
+		resource = modconfig.NewReportTable(block)
+	case modconfig.BlockTypeText:
+		resource = modconfig.NewReportText(block)
+	default:
+		return nil, hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("resourceForBlock called for unsupported block type %s", block.Type),
+			Subject:  &block.DefRange,
+		},
+		}
 	}
-	return resource
+	return resource, nil
 }
 
 func decodeLocals(block *hcl.Block, runCtx *RunContext) ([]*modconfig.Local, *decodeResult) {
@@ -191,13 +216,6 @@ func decodeVariable(block *hcl.Block, runCtx *RunContext) (*modconfig.Variable, 
 	// call post-decode hook
 	if res.Success() {
 		variable = modconfig.NewVariable(v)
-
-		if diags := variable.OnDecoded(block); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-		// TODO for now we do not implement storing references for variables
-		// - special case code is required to exclude types from the reference detection code
-		//AddReferences(variable, block)
 	}
 
 	return variable, res
@@ -264,16 +282,6 @@ func decodeQuery(block *hcl.Block, runCtx *RunContext) (*modconfig.Query, *decod
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
-	// call post-decode hook
-	if res.Success() {
-		if diags := q.OnDecoded(block); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-		if diags := AddReferences(q, block, runCtx); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-	}
-
 	return q, res
 }
 
@@ -323,30 +331,30 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 		})
 	}
 
-	if attr, exists := content.Attributes["description"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Description)
-		diags = append(diags, valDiags...)
-	}
-	if attr, exists := content.Attributes["documentation"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Documentation)
-		diags = append(diags, valDiags...)
-	}
-	if attr, exists := content.Attributes["search_path"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SearchPath)
-		diags = append(diags, valDiags...)
-	}
-	if attr, exists := content.Attributes["search_path_prefix"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SearchPathPrefix)
-		diags = append(diags, valDiags...)
-	}
-	if attr, exists := content.Attributes["severity"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Severity)
-		diags = append(diags, valDiags...)
-	}
-	if attr, exists := content.Attributes["sql"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.SQL)
-		diags = append(diags, valDiags...)
-	}
+	diags = decodeProperty(content, "base", &c.Base, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "width", &c.Width, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "description", &c.Description, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "documentation", &c.Documentation, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "search_path", &c.SearchPath, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "search_path_prefix", &c.SearchPathPrefix, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "severity", &c.Severity, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "sql", &c.SQL, runCtx)
+	res.handleDecodeDiags(diags)
+
 	if attr, exists := content.Attributes["query"]; exists {
 		// either Query or SQL property may be set -  if Query property already set, error
 		if c.SQL != nil {
@@ -356,22 +364,20 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 				Subject:  &attr.Range,
 			})
 		} else {
-			valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Query)
-			diags = append(diags, valDiags...)
+			diags = decodeProperty(content, "query", &c.Query, runCtx)
+			res.handleDecodeDiags(diags)
 		}
 	}
 
-	if attr, exists := content.Attributes["tags"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Tags)
-		diags = append(diags, valDiags...)
-	}
-	if attr, exists := content.Attributes["title"]; exists {
-		valDiags := gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, &c.Title)
-		diags = append(diags, valDiags...)
-	}
+	diags = decodeProperty(content, "tags", &c.Tags, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "title", &c.Title, runCtx)
+	res.handleDecodeDiags(diags)
+
 	if attr, exists := content.Attributes["args"]; exists {
-		if params, diags := decodeControlArgs(attr, runCtx.EvalCtx, c.FullName); !diags.HasErrors() {
-			c.Args = params
+		if args, diags := decodeControlArgs(attr, runCtx.EvalCtx, c.FullName); !diags.HasErrors() {
+			c.Args = args
 		}
 	}
 
@@ -395,26 +401,8 @@ func decodeControl(block *hcl.Block, runCtx *RunContext) (*modconfig.Control, *d
 		}
 	}
 
-	// verify the control has either a query or a sql attribute
-	if c.Query == nil && c.SQL == nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s must define either a 'sql' property or a 'query' property", c.FullName),
-			Subject:  &block.DefRange,
-		})
-	}
-
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
-	// call post-decode hook
-	if res.Success() {
-		if diags := c.OnDecoded(block); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-		if diags := AddReferences(c, block, runCtx); diags.HasErrors() {
-			res.addDiags(diags)
-		}
-	}
 
 	return c, res
 }
@@ -449,79 +437,92 @@ func decodeControlArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlNam
 	return params, diags
 }
 
-func decodePanel(block *hcl.Block, runCtx *RunContext) (*modconfig.Panel, *decodeResult) {
-	res := &decodeResult{}
-	content, diags := block.Body.Content(PanelBlockSchema)
-	res.handleDecodeDiags(diags)
-
-	// get shell resource
-	panel := modconfig.NewPanel(block)
-
-	diags = decodeProperty(content, "title", &panel.Title, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeProperty(content, "type", &panel.Type, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeProperty(content, "width", &panel.Width, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeProperty(content, "height", &panel.Height, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeProperty(content, "source", &panel.Source, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeProperty(content, "text", &panel.Text, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeProperty(content, "sql", &panel.SQL, runCtx)
-	res.handleDecodeDiags(diags)
-
-	diags = decodeReportBlocks(panel, content, runCtx)
-	res.handleDecodeDiags(diags)
-
-	return panel, res
-}
-
-func decodeReport(block *hcl.Block, runCtx *RunContext) (*modconfig.Report, *decodeResult) {
+func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContainer, *decodeResult) {
 	res := &decodeResult{}
 
 	content, diags := block.Body.Content(ReportBlockSchema)
 	res.handleDecodeDiags(diags)
 
-	report := modconfig.NewReport(block)
+	report := modconfig.NewReportContainer(block)
 	diags = decodeProperty(content, "title", &report.Title, runCtx)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeReportBlocks(report, content, runCtx)
+	diags = decodeProperty(content, "base", &report.Base, runCtx)
 	res.handleDecodeDiags(diags)
+	if report.Base != nil && len(report.Base.ChildNames) > 0 {
+		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeChart, modconfig.BlockTypeControl, modconfig.BlockTypeCounter, modconfig.BlockTypeHierarchy, modconfig.BlockTypeImage, modconfig.BlockTypeInput, modconfig.BlockTypeTable, modconfig.BlockTypeText}
+		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
+		// and we do not expect to get any (as this function has already succeeded when the base was originally parsed)
+		children, _ := resolveChildrenFromNames(report.Base.ChildNames, block, supportedChildren, runCtx)
+		report.Base.SetChildren(children)
+	}
+	diags = decodeProperty(content, "width", &report.Width, runCtx)
+	res.handleDecodeDiags(diags)
+
+	// now add children
+	if !res.Success() {
+		return report, res
+	}
+
+	var children []modconfig.ModTreeItem
+	if len(content.Blocks) > 0 {
+		var childrenRes *decodeResult
+		children, childrenRes = decodeInlineChildren(content, runCtx)
+		// now set children
+		report.SetChildren(children)
+		res.Merge(childrenRes)
+	}
 
 	return report, res
 }
 
-func decodeReportBlocks(resource modconfig.ModTreeItem, content *hcl.BodyContent, runCtx *RunContext) hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	for _, b := range content.Blocks {
-		var childResource modconfig.ModTreeItem
-		var decodeResult *decodeResult
-		switch b.Type {
-		case modconfig.BlockTypePanel:
-			childResource, decodeResult = decodePanel(b, runCtx)
-		case modconfig.BlockTypeReport:
-			childResource, decodeResult = decodeReport(b, runCtx)
-		}
+func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark, *decodeResult) {
+	res := &decodeResult{}
 
-		// add this panel to the mod
-		moreDiags := handleDecodeResult(childResource.(modconfig.HclResource), decodeResult, b, runCtx)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-		}
-		if decodeResult.Success() {
-			resource.AddChild(childResource)
-		}
+	content, diags := block.Body.Content(BenchmarkBlockSchema)
+	res.handleDecodeDiags(diags)
+
+	benchmark := modconfig.NewBenchmark(block)
+
+	diags = decodeProperty(content, "children", &benchmark.ChildNames, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "description", &benchmark.Description, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "documentation", &benchmark.Documentation, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "tags", &benchmark.Tags, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "title", &benchmark.Title, runCtx)
+	res.handleDecodeDiags(diags)
+
+	// now add children
+	if res.Success() {
+		supportedChildren := []string{modconfig.BlockTypeBenchmark, modconfig.BlockTypeControl}
+		children, diags := resolveChildrenFromNames(benchmark.ChildNames.StringList(), block, supportedChildren, runCtx)
+		res.handleDecodeDiags(diags)
+
+		// now set children and child name strings
+		benchmark.Children = children
+		benchmark.ChildNameStrings = getChildNameStringsFromModTreeItem(children)
 	}
-	return diags
+
+	// decode report specific properties
+	diags = decodeProperty(content, "base", &benchmark.Base, runCtx)
+	res.handleDecodeDiags(diags)
+	if benchmark.Base != nil && len(benchmark.Base.ChildNames) > 0 {
+		supportedChildren := []string{modconfig.BlockTypeBenchmark, modconfig.BlockTypeControl}
+		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
+		// and we do not expect to get any (as this function has already succeeded when the base was originally parsed)
+		children, _ := resolveChildrenFromNames(benchmark.Base.ChildNameStrings, block, supportedChildren, runCtx)
+		benchmark.Base.Children = children
+	}
+	diags = decodeProperty(content, "width", &benchmark.Width, runCtx)
+	res.handleDecodeDiags(diags)
+	return benchmark, res
 }
 
 func decodeProperty(content *hcl.BodyContent, property string, dest interface{}, runCtx *RunContext) hcl.Diagnostics {
@@ -537,36 +538,47 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 // - generate and set resource metadata
 // - add resource to RunContext (which adds it to the mod)handleDecodeResult
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
-	var diags hcl.Diagnostics
+	anonymousResource := len(block.Labels) == 0
 	if res.Success() {
+		// call post decode hook
+		// NOTE: must do this BEFORE adding resource to run context to ensure we respect the base property
+		moreDiags := resource.OnDecoded(block)
+		res.addDiags(moreDiags)
+
+		// add references
+		moreDiags = AddReferences(resource, block, runCtx)
+		res.addDiags(moreDiags)
+
 		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
 		if _, ok := resource.(*modconfig.Mod); !ok {
 			resource.SetMod(runCtx.CurrentMod)
-			// add resource to mod - this will fail if the mod already has a resource with the same name
-			moreDiags := runCtx.CurrentMod.AddResource(resource)
-			diags = append(diags, moreDiags...)
+			// if resource is NOT anonymous, add resource to mod
+			// - this will fail if the mod already has a resource with the same name
+			if !anonymousResource {
+				// we cannot add anonymous resources at this point - they will be added after their names are set
+				moreDiags = runCtx.CurrentMod.AddResource(resource)
+				res.addDiags(moreDiags)
+			}
 		}
 
 		// if resource supports metadata, save it
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
 			body := block.Body.(*hclsyntax.Body)
-			diags = addResourceMetadata(resourceWithMetadata, body.SrcRange, runCtx)
+			moreDiags = addResourceMetadata(resourceWithMetadata, body.SrcRange, runCtx)
+			res.addDiags(moreDiags)
 		}
 
-		// add resource into the run context
-		moreDiags := runCtx.AddResource(resource)
-		diags = append(diags, moreDiags...)
-
+		// // if resource is NOT anonymous, add into the run context
+		if !anonymousResource {
+			moreDiags = runCtx.AddResource(resource)
+			res.addDiags(moreDiags)
+		}
 	} else {
-		if res.Diags.HasErrors() {
-			diags = append(diags, res.Diags...)
-		}
 		if len(res.Depends) > 0 {
 			runCtx.AddDependencies(block, resource.Name(), res.Depends)
 		}
 	}
-	// update result diags
-	res.Diags = diags
+	// return the diags
 	return res.Diags
 }
 

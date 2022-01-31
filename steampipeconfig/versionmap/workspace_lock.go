@@ -288,5 +288,5 @@ func (l *WorkspaceLock) Incomplete() bool {
 
 // Empty returns whether the install cache is empty
 func (l *WorkspaceLock) Empty() bool {
-	return len(l.InstallCache) == 0
+	return l == nil || len(l.InstallCache) == 0
 }

@@ -161,9 +161,11 @@ func WorkspacesEqual(expected, actual *Workspace) (bool, string) {
 	if actual.Mod.String() != expected.Mod.String() {
 		errors = append(errors, fmt.Sprintf("workspace mods do not match - expected \n\n%s\n\nbut got\n\n%s\n", expected.Mod.String(), actual.Mod.String()))
 	}
+	expectedMaps := expected.GetResourceMaps()
+	actualMaps := actual.GetResourceMaps()
 
-	for name, expectedQuery := range expected.GetQueryMap() {
-		actualQuery, ok := actual.GetQueryMap()[name]
+	for name, expectedQuery := range expectedMaps.Queries {
+		actualQuery, ok := actualMaps.Queries[name]
 		if ok {
 			if expectedQuery.String() != actualQuery.String() {
 				errors = append(errors, fmt.Sprintf("query %s expected\n\n%s\n\n, got\na\n%s\n\n", name, expectedQuery.String(), actualQuery.String()))
@@ -172,8 +174,8 @@ func WorkspacesEqual(expected, actual *Workspace) (bool, string) {
 			errors = append(errors, fmt.Sprintf("mod map missing expected key %s", name))
 		}
 	}
-	for name := range actual.GetQueryMap() {
-		if _, ok := expected.GetQueryMap()[name]; ok {
+	for name := range actualMaps.Queries {
+		if _, ok := expectedMaps.Queries[name]; ok {
 			errors = append(errors, fmt.Sprintf("unexpected query %s in query map", name))
 		}
 	}

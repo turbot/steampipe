@@ -51,13 +51,18 @@ type RunContext struct {
 	BlockTypes []string
 	// if set, exclude these block types
 	BlockTypeExclusions []string
+	Variables           map[string]*modconfig.Variable
+
+	// map with the index of each anonymous resource type
+	anonymousResources map[string]int
+	decodeStack        hcl.Blocks
+	anonymousBlocks    map[*hcl.Block]bool
 
 	dependencyGraph *topsort.Graph
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
 	blocks          hcl.Blocks
-	Variables       map[string]*modconfig.Variable
 }
 
 func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
@@ -68,15 +73,14 @@ func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string,
 		ListOptions:          listOptions,
 		LoadedDependencyMods: make(modconfig.ModMap),
 		UnresolvedBlocks:     make(map[string]*unresolvedBlock),
+		anonymousResources:   make(map[string]int),
+		anonymousBlocks:      make(map[*hcl.Block]bool),
 		referenceValues: map[string]ReferenceTypeValueMap{
 			"local": make(ReferenceTypeValueMap),
 		},
 	}
 	// add root node - this will depend on all other nodes
 	c.dependencyGraph = c.newDependencyGraph()
-
-	// add enums to the variables which may be referenced from within the hcl
-	c.addSteampipeEnums()
 	c.buildEvalContext()
 
 	return c
@@ -123,31 +127,17 @@ func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 
 	moreDiags := r.storeResourceInCtyMap(mod)
 	diags = append(diags, moreDiags...)
-	// add mod resources
-	for _, q := range mod.Queries {
-		moreDiags := r.storeResourceInCtyMap(q)
-		diags = append(diags, moreDiags...)
+
+	resourceFunc := func(item modconfig.HclResource) bool {
+		// add all mod resources except variables into cty map
+		if _, ok := item.(*modconfig.Variable); !ok {
+			moreDiags := r.storeResourceInCtyMap(item)
+			diags = append(diags, moreDiags...)
+		}
+		// continue walking
+		return true
 	}
-	for _, c := range mod.Controls {
-		moreDiags := r.storeResourceInCtyMap(c)
-		diags = append(diags, moreDiags...)
-	}
-	for _, b := range mod.Benchmarks {
-		moreDiags := r.storeResourceInCtyMap(b)
-		diags = append(diags, moreDiags...)
-	}
-	for _, l := range mod.Locals {
-		moreDiags := r.storeResourceInCtyMap(l)
-		diags = append(diags, moreDiags...)
-	}
-	for _, rpt := range mod.Reports {
-		moreDiags := r.storeResourceInCtyMap(rpt)
-		diags = append(diags, moreDiags...)
-	}
-	for _, p := range mod.Panels {
-		moreDiags := r.storeResourceInCtyMap(p)
-		diags = append(diags, moreDiags...)
-	}
+	mod.WalkResources(resourceFunc)
 
 	// rebuild the eval context
 	r.buildEvalContext()
@@ -224,7 +214,7 @@ func (r *RunContext) BlocksToDecode() (hcl.Blocks, error) {
 	}
 
 	// NOTE: a block may appear more than once in unresolved blocks
-	// if it defines muleiple unresolved resources, e.g a locals block
+	// if it defines multiple unresolved resources, e.g a locals block
 
 	// make a map of blocks we have already included, keyed by the block def range
 	blocksMap := make(map[string]bool)
@@ -242,7 +232,7 @@ func (r *RunContext) BlocksToDecode() (hcl.Blocks, error) {
 	return blocksToDecode, nil
 }
 
-// EvalComplete returns whether  all elements in the dependency tree fully evaluated
+// EvalComplete returns whether all elements in the dependency tree fully evaluated
 func (r *RunContext) EvalComplete() bool {
 	return len(r.UnresolvedBlocks) == 0
 }
@@ -294,31 +284,6 @@ func (r *RunContext) FormatDependencies() string {
 	}
 
 	return helpers.Tabify(strings.Join(depStrings, "\n"), "   ")
-}
-
-// add enums to the referenceValues which may be referenced from within the hcl
-func (r *RunContext) addSteampipeEnums() {
-	r.referenceValues["local"]["steampipe"] = map[string]cty.Value{
-		"panel": cty.ObjectVal(map[string]cty.Value{
-			"markdown":         cty.StringVal("steampipe.panel.markdown"),
-			"barchart":         cty.StringVal("steampipe.panel.barchart"),
-			"stackedbarchart":  cty.StringVal("steampipe.panel.stackedbarchart"),
-			"counter":          cty.StringVal("steampipe.panel.counter"),
-			"linechart":        cty.StringVal("steampipe.panel.linechart"),
-			"multilinechart":   cty.StringVal("steampipe.panel.multilinechart"),
-			"piechart":         cty.StringVal("steampipe.panel.piechart"),
-			"placeholder":      cty.StringVal("steampipe.panel.placeholder"),
-			"control_list":     cty.StringVal("steampipe.panel.control_list"),
-			"control_progress": cty.StringVal("steampipe.panel.control_progress"),
-			"control_table":    cty.StringVal("steampipe.panel.control_table"),
-			"graph":            cty.StringVal("steampipe.panel.graph"),
-			"sankey_diagram":   cty.StringVal("steampipe.panel.sankey_diagram"),
-			"status":           cty.StringVal("steampipe.panel.status"),
-			"table":            cty.StringVal("steampipe.panel.table"),
-			"resource_detail":  cty.StringVal("steampipe.panel.resource_detail"),
-			"resource_tags":    cty.StringVal("steampipe.panel.resource_tags"),
-		}),
-	}
 }
 
 func (r *RunContext) newDependencyGraph() *topsort.Graph {
@@ -458,5 +423,47 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 		r.referenceValues[modName] = variablesForMod
 	}
 
+	return nil
+}
+
+func (r *RunContext) PushDecodeBlock(block *hcl.Block) {
+	r.decodeStack = append(r.decodeStack, block)
+}
+func (r *RunContext) PopDecodeBlock() *hcl.Block {
+	n := len(r.decodeStack) - 1
+	res := r.decodeStack[n]
+	r.decodeStack = r.decodeStack[:n]
+	return res
+}
+
+func (r *RunContext) GetAnonymousResourceName(block *hcl.Block) string {
+	count := r.anonymousResources[block.Type]
+	r.anonymousResources[block.Type] = count + 1
+	parts := make([]string, len(r.decodeStack))
+
+	for i, b := range r.decodeStack {
+		parts[i] = fmt.Sprintf("%s_%s", b.Type, b.Labels[0])
+	}
+	return fmt.Sprintf("%s_%s_%d", strings.Join(parts, "_"), block.Type, count)
+}
+
+func (r *RunContext) IsBlockAnonymous(block *hcl.Block) bool {
+	if len(block.Labels) == 0 {
+		r.anonymousBlocks[block] = true
+	}
+	return r.anonymousBlocks[block]
+}
+
+func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
+	if modShortName == r.CurrentMod.ShortName {
+		return r.CurrentMod
+	}
+	// we need to iterate through dependency mods - we cannot use modShortNameas key as it is short name
+	for _, dep := range r.LoadedDependencyMods {
+		if dep.ShortName == modShortName {
+			return dep
+
+		}
+	}
 	return nil
 }

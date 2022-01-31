@@ -22,7 +22,16 @@
 # vendor/
 
 # Report server
-/report/reportserver/static/
+/report/reportassets/assets.zip
+
+# Report UI
+/ui/report/.idea
+/ui/report/.vscode
+/ui/report/build
+/ui/report/node_modules
+/ui/report/output
+/ui/report/yarn-debug.log*
+/ui/report/yarn-error.log*
 
 # Dist directory is created by goreleaser
 /dist
