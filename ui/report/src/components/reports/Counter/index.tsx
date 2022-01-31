@@ -163,18 +163,18 @@ const Counter = (props: CounterProps) => {
             >
               {state.loading && "Loading..."}
               {!state.loading && !state.label && (
-                <NilIcon className="h-5 w-5" />
+                <NilIcon className="h-5 w-5 text-black-scale-4" />
               )}
               {!state.loading && state.label}
             </dt>
             <dd className="flex items-baseline mt-2">
-              <div
-                className={"text-3xl font-light " + getTextClasses(state.style)}
-              >
-                {state.loading && <LoadingIndicator />}
+              <div className={"font-light " + getTextClasses(state.style)}>
+                {state.loading && (
+                  <LoadingIndicator className="h-8 w-8 text-black-scale-4" />
+                )}
                 {!state.loading &&
                   (state.value === null || state.value === undefined) && (
-                    <NilIcon className="h-8 w-8" />
+                    <NilIcon className="h-8 w-8 text-black-scale-4" />
                   )}
                 <IntegerDisplay
                   className="md:hidden"
