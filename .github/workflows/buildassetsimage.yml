@@ -62,9 +62,9 @@ jobs:
         yarn build
       working-directory: ./ui/report
 
-    - name: Move
+    - name: Move Build Assets
       run: |-
-        mkdir -p report
+        mkdir -p report_ui_build
         mv ./ui/report/build report_ui_build
         ls -la report_ui_build
 
@@ -77,24 +77,6 @@ jobs:
           }' )
 
           echo $JSON_STRING > ./report_ui_build/versions.json
-
-    - name: Get GCloud CLI
-      uses: google-github-actions/setup-gcloud@v0.4.0
-      with:
-        service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
-        project_id: ${{ env.PROJECT_ID }}
-        export_default_credentials: true
-
-    - name: Setup GCloud CLI
-      run: |- 
-        echo ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
-        gcloud config list
-        gcloud components install beta
-        gcloud components install alpha --quiet
-        gcloud beta auth configure-docker us-docker.pkg.dev
-
-    - name: Verify ORAS
-      run: oras version
 
     - name: Create Image Config File
       run: |-
@@ -132,9 +114,27 @@ jobs:
       run: |
         cat config.json
         cat annotations.json
-        cat report/versions.json
+        cat report_ui_build/versions.json
         REF="$CORE_REPO/$IMAGE_NAME:$GITHUB_RUN_ID"
         echo "::set-output name=REF::$REF"
+
+    - name: Get GCloud CLI
+      uses: google-github-actions/setup-gcloud@v0.4.0
+      with:
+        service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
+        project_id: ${{ env.PROJECT_ID }}
+        export_default_credentials: true
+
+    - name: Setup GCloud CLI
+      run: |- 
+        echo ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
+        gcloud config list
+        gcloud components install beta
+        gcloud components install alpha --quiet
+        gcloud beta auth configure-docker us-docker.pkg.dev
+
+    - name: Verify ORAS
+      run: oras version
 
     # push to the registry
     - name: Push to registry
