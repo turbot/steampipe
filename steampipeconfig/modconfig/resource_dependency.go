@@ -30,13 +30,13 @@ func (d *ResourceDependency) String() string {
 // - there is a single traversal
 // - the property referenced is one of the defined runtime dependency properties
 // - the dependency resource exists in the mod
-func (d *ResourceDependency) IsRunTimeDependency(mod *Mod) (HclResource, bool) {
+func (d *ResourceDependency) IsRunTimeDependency() bool {
 	if len(d.Traversals) > 1 {
-		return nil, false
+		return false
 	}
 	parsedPropertyPath, err := ParseResourcePropertyPath(hclhelpers.TraversalAsString(d.Traversals[0]))
 	if err != nil {
-		return nil, false
+		return false
 	}
 
 	// supported runtime dependencies
@@ -46,16 +46,15 @@ func (d *ResourceDependency) IsRunTimeDependency(mod *Mod) (HclResource, bool) {
 	// is this property a supported runtimedependency property
 	if supportedProperties, ok := runTimeDependencyPropertyPaths[parsedPropertyPath.ItemType]; ok {
 		if !helpers.StringSliceContains(supportedProperties, parsedPropertyPath.PropertyPathString()) {
-			return nil, false
+			return false
 		}
 	}
 
 	// does the parent resource exist in the mod
-	return GetResource(mod, parsedPropertyPath.ToParsedResourceName())
+	return true
 }
 
-func (d *ResourceDependency) SetAsRuntimeDependency(resource HclResource, bodyContent *hcl.BodyContent) error {
-	d.SourceResource = resource
+func (d *ResourceDependency) SetAsRuntimeDependency(bodyContent *hcl.BodyContent) error {
 	d.TargetProperties = d.getPropertiesFromContent(bodyContent)
 	if len(d.TargetProperties) == 0 {
 		return fmt.Errorf("failed toresolve any properties using dependency %s", d)

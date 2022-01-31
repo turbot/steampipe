@@ -37,6 +37,7 @@ type ExecutionTree struct {
 }
 
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg string) (*ExecutionTree, error) {
+	// TODO kai FAIL IF any resources in the tree have runtime dependencies
 	// now populate the ExecutionTree
 	executionTree := &ExecutionTree{
 		workspace: workspace,

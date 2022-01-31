@@ -26,7 +26,7 @@ type ReportContainerRun struct {
 	Path          []string                         `json:"-"`
 	parent        reportinterfaces.ReportNodeParent
 	executionTree *ReportExecutionTree
-	childComplete chan (reportinterfaces.ReportNodeRun)
+	childComplete chan reportinterfaces.ReportNodeRun
 }
 
 func NewReportContainerRun(container *modconfig.ReportContainer, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*ReportContainerRun, error) {
@@ -98,6 +98,7 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 // Execute implements ReportRunNode
 // execute all children and wait for them to complete
 func (r *ReportContainerRun) Execute(ctx context.Context) error {
+
 	errChan := make(chan error, len(r.Children))
 	// execute all children asynchronously
 	for _, child := range r.Children {

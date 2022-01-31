@@ -3,12 +3,14 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
+	"github.com/stevenle/topsort"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
+
+const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
 
 // ReportContainer is a struct representing the Report and Container resource
 type ReportContainer struct {
@@ -31,9 +33,10 @@ type ReportContainer struct {
 	ChildNames []string `cty:"children" column:"children,jsonb"`
 
 	// the actual children
-	children []ModTreeItem
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	children               []ModTreeItem
+	parents                []ModTreeItem
+	metadata               *ResourceMetadata
+	runtimeDependencyGraph *topsort.Graph
 
 	HclType string
 }
@@ -210,4 +213,44 @@ func (c *ReportContainer) SetChildren(children []ModTreeItem) {
 // GetUnqualifiedName implements ReportLeafNode
 func (c *ReportContainer) GetUnqualifiedName() string {
 	return c.UnqualifiedName
+}
+
+func (c *ReportContainer) WalkResources(resourceFunc func(resource HclResource) bool) {
+	for _, child := range c.children {
+		resourceFunc(child.(HclResource))
+		if childContainer, ok := child.(*ReportContainer); ok {
+			childContainer.WalkResources(resourceFunc)
+		}
+	}
+}
+
+func (c *ReportContainer) BuildRuntimeDependencyTree() error {
+	c.runtimeDependencyGraph = topsort.NewGraph()
+	// add root node - this will depend on all other nodes
+	c.runtimeDependencyGraph.AddNode(rootRuntimeDependencyNode)
+
+	resourceFunc := func(resource HclResource) bool {
+		runtimeDependencies := resource.GetRuntimeDependencies()
+		if len(runtimeDependencies) == 0 {
+			return true
+		}
+		name := resource.Name()
+		if !c.runtimeDependencyGraph.ContainsNode(name) {
+			c.runtimeDependencyGraph.AddNode(name)
+		}
+
+		for _, dependency := range runtimeDependencies {
+			c.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name)
+			c.runtimeDependencyGraph.AddEdge(name, dependency.SourceResource.Name())
+		}
+		// continue walking
+		return true
+	}
+	c.WalkResources(resourceFunc)
+
+	// ensure that dependencies can be resolved
+	if _, err := c.runtimeDependencyGraph.TopSort(rootRuntimeDependencyNode); err != nil {
+		return fmt.Errorf("runtime depedencies cannot be resolved: %s", err.Error())
+	}
+	return nil
 }
