@@ -33,13 +33,15 @@ Basic.args = {
     columns: [
       { name: "Region", data_type_name: "TEXT" },
       { name: "Resource Count", data_type_name: "INT8" },
+      { name: "Encrypted", data_type_name: "BOOL" },
+      { name: "Info", data_type_name: "JSONB" },
     ],
     rows: [
-      ["us-east-1", 246],
-      ["us-east-2", 146],
-      ["us-west-1", 57],
-      ["eu-west-1", 290],
-      ["eu-west-2", 198],
+      ["us-east-1", 246, true, null],
+      ["us-east-2", 146, false, { foo: "bar" }],
+      ["us-west-1", 57, true, { bar: "foo" }],
+      ["eu-west-1", 290, false, { foobar: "barfoo" }],
+      ["eu-west-2", 198, true, null],
     ],
   },
 };

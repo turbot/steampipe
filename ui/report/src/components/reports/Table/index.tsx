@@ -1,16 +1,17 @@
+import moment from "moment";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
   LeafNodeDataColumn,
   LeafNodeDataRow,
 } from "../common";
+import { classNames } from "../../../utils/styles";
 import {
   SortAscendingIcon,
   SortDescendingIcon,
 } from "../../../constants/icons";
 import { useMemo } from "react";
 import { useSortBy, useTable } from "react-table";
-import { classNames } from "../../../utils/styles";
 
 interface ColumnInfo {
   Header: string;
@@ -21,7 +22,11 @@ const getColumns = (columns: LeafNodeDataColumn[]) => {
   if (!columns || columns.length === 0) {
     return [];
   }
-  return columns.map((col) => ({ Header: col.name, accessor: col.name }));
+  return columns.map((col) => ({
+    Header: col.name,
+    accessor: col.name,
+    data_type_name: col.data_type_name,
+  }));
 };
 
 const getData = (columns: ColumnInfo[], rows: LeafNodeDataRow) => {
@@ -139,12 +144,58 @@ const getData = (columns: ColumnInfo[], rows: LeafNodeDataRow) => {
 //   );
 // };
 
-const CellValue = ({ value }) => {
-  if (value === undefined || value === null) {
+const CellValue = ({ column, value }) => {
+  const dataType = column.data_type_name.toLowerCase();
+  if (value === null || value === undefined) {
     return <span className="text-black-scale-3">null</span>;
   }
-  return value;
+  if (dataType === "bool") {
+    return (
+      <span className={classNames(value ? "" : "text-foreground-light")}>
+        {value.toString()}
+      </span>
+    );
+  }
+  if (dataType === "jsonb") {
+    return <>{JSON.stringify(value, null, 2)}</>;
+  }
+  if (dataType === "timestamptz") {
+    return <>{moment(value).format()}</>;
+  }
+  if (dataType === "text") {
+    if (value.match("^https?://")) {
+      return (
+        <a
+          className="text-link"
+          target="_blank"
+          rel="noopener noreferrer"
+          href={value}
+        >
+          {value}
+        </a>
+      );
+    }
+    const mdMatch = value.match("^\\[(.*)\\]\\((https?://.*)\\)$");
+    if (mdMatch) {
+      return (
+        <a target="_blank" rel="noopener noreferrer" href={mdMatch[2]}>
+          {mdMatch[1]}
+        </a>
+      );
+    }
+    // return <span style={{ color: "#ffbb1b" }}>{value}</span>;
+    // return <span style={{ color: "#779fc8" }}>{value}</span>;
+    return <span>{value}</span>;
+  }
+  return <>{JSON.stringify(value)}</>;
 };
+
+// const CellValue = ({ value }) => {
+//   if (value === undefined || value === null) {
+//     return <span className="text-black-scale-3">null</span>;
+//   }
+//   return value;
+// };
 
 export type TableProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
@@ -209,13 +260,13 @@ const Table = (props: TableProps) => {
             prepareRow(row);
             return (
               <tr {...row.getRowProps()}>
-                {row.cells.map((cell) => {
+                {row.cells.map((cell, index) => {
                   return (
                     <td
                       {...cell.getCellProps()}
                       className="px-4 py-4 align-top content-center text-sm whitespace-nowrap"
                     >
-                      <CellValue value={cell.value} />
+                      <CellValue column={columns[index]} value={cell.value} />
                     </td>
                   );
                 })}
