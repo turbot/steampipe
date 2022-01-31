@@ -12,7 +12,6 @@ require (
 	github.com/c-bata/go-prompt v0.2.6
 	github.com/containerd/containerd v1.4.12
 	github.com/deislabs/oras v0.8.1
-	github.com/evanphx/json-patch v4.11.0+incompatible
 	github.com/fatih/color v1.9.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/gertd/go-pluralize v0.1.7
@@ -20,7 +19,7 @@ require (
 	github.com/gin-gonic/gin v1.7.2
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/go-cleanhttp v0.5.1
+	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-hclog v1.1.0
 	github.com/hashicorp/go-plugin v1.4.3
 	github.com/hashicorp/go-version v1.4.0
