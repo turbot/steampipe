@@ -1,0 +1,130 @@
+name: Build And Release UI Assets
+
+on:
+  # workflow_dispatch:
+  #   inputs:
+  #     branch:
+  #       description: "The branch that will be built"
+  #       required: true
+  #     tag:
+  #       description: "The release tag that will be set"
+  #       required: true
+  pull_request:
+
+env:
+  PROJECT_ID: steampipe
+  IMAGE_NAME: assets
+  CORE_REPO: us-docker.pkg.dev/steampipe/steampipe
+  ORG: turbot
+  CONFIG_SCHEMA_VERSION: "2020-11-18"
+  
+jobs:
+  build:
+    name: Build Assets
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      
+    - name: Setup Node
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'
+        
+    - name: Get yarn cache directory path
+      id: yarn-cache-dir-path
+      run: echo "::set-output name=dir::$(yarn cache dir)"
+
+    - uses: actions/cache@v2
+      id: yarn-cache
+      with:
+        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+    
+    - name: Setup Yarn
+      run: |-
+        unset CI
+        npm config set "@fortawesome:registry" https://npm.fontawesome.com/
+        npm config set "//npm.fontawesome.com/:_authToken" ${{ secrets.FONTAWESOME_TOKEN }}
+        rm -rf ./build
+      working-directory: ./ui/report
+      
+    - name: YARN Install
+      run: |-
+        unset CI
+        yarn install
+      working-directory: ./ui/report
+      
+    - name: YARN Build
+      run: |-
+        unset CI
+        yarn build
+      working-directory: ./ui/report
+      
+    - name: Move
+      run: |-
+        mkdir -p report
+        mv ./ui/report/build ./report
+
+    - name: Get GCloud CLI
+      uses: google-github-actions/setup-gcloud@v0.4.0
+      with:
+        service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
+        project_id: ${{ env.PROJECT_ID }}
+        export_default_credentials: true
+
+    - name: Setup GCloud CLI
+      run: |- 
+        echo ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
+        gcloud config list
+        gcloud components install beta
+        gcloud components install alpha --quiet
+        gcloud beta auth configure-docker us-docker.pkg.dev
+
+    - name: Verify ORAS
+      run: oras version
+
+    - name: Create Image Config File
+      run: |-
+        JSON_STRING=$( jq -n \
+          --arg name "$IMAGE_NAME" \
+          --arg organization "$ORG" \
+          --arg version "$VERSION" \
+          --arg schemaVersion "$CONFIG_SCHEMA_VERSION" \
+          '{schemaVersion: $schemaVersion, assets: { name: $name, organization: $organization, version: $version} }' )
+
+        echo $JSON_STRING > config.json
+
+    - name: Create Image Annotations File
+      run: |-
+        JSON_STRING=$( jq -n \
+            --arg title "$IMAGE_NAME" \
+            --arg desc "$ORG" \
+            --arg version "$VERSION" \
+            --arg timestamp "$(date +%FT%T%z)" \
+            --arg vendor "Turbot HQ, Inc." \
+          '{
+              "$manifest": {
+                  "org.opencontainers.image.title": $title,
+                  "org.opencontainers.image.description": $desc,
+                  "org.opencontainers.image.version": $version,
+                  "org.opencontainers.image.created": $timestamp,
+                  "org.opencontainers.image.vendor":  $vendor
+              }
+          }' )
+
+          echo $JSON_STRING > annotations.json
+
+    - run: |- 
+        cat config.json
+        cat annotations.json
+        REF="$CORE_REPO/$IMAGE_NAME:$GITHUB_RUN_ID"
+        echo $REF
+
+      # push to the registry
+    - run: |-
+        REF="$CORE_REPO/$IMAGE_NAME:$GITHUB_RUN_ID"
+        oras push $REF \
+          --manifest-config config.json:application/vnd.turbot.steampipe.config.v1+json \
+          --manifest-annotations annotations.json \
+          report:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
