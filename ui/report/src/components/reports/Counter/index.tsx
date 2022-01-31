@@ -128,13 +128,13 @@ const useCounterState = ({ data, properties }: CounterProps) => {
 
 const Counter = (props: CounterProps) => {
   const state = useCounterState(props);
-  //
+
   // return (
   //   <div className="w-full h-24 bg-ok border border-black-scale-2 text-foreground">
   //     {state.value}
   //   </div>
   // );
-  //
+
   // return (
   //   <div className="px-4 py-5 bg-green-200 shadow rounded-lg overflow-hidden sm:p-6">
   //     <dt className="text-sm font-medium text-gray-500 truncate">
@@ -168,7 +168,9 @@ const Counter = (props: CounterProps) => {
               {!state.loading && state.label}
             </dt>
             <dd className="flex items-baseline mt-2">
-              <div className={"font-light " + getTextClasses(state.style)}>
+              <div
+                className={"text-3xl font-light " + getTextClasses(state.style)}
+              >
                 {state.loading && (
                   <LoadingIndicator className="h-8 w-8 text-black-scale-4" />
                 )}

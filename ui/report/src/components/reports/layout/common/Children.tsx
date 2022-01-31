@@ -53,6 +53,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                   definition={child}
                   ready={true}
                   showExpand={showPanelExpand}
+                  type="benchmark"
                 >
                   <Benchmark {...child} />
                 </Panel>
@@ -70,6 +71,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                   definition={child}
                   ready={!!child.data}
                   showExpand={showPanelExpand}
+                  type="chart"
                 >
                   <Chart {...child} />
                 </Panel>
@@ -87,6 +89,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                   definition={child}
                   ready={true}
                   showExpand={showPanelExpand}
+                  type="control"
                 >
                   <Control {...child} />
                 </Panel>
@@ -104,8 +107,26 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                   definition={child}
                   ready={true}
                   showExpand={showPanelExpand}
+                  type="counter"
                 >
                   <Counter {...child} />
+                </Panel>
+              )}
+            />
+          );
+        case "error":
+          return (
+            <ChildWithTitle
+              key={child.name}
+              child={child}
+              level="panel"
+              renderChild={() => (
+                <Panel
+                  definition={child}
+                  showExpand={showPanelExpand}
+                  type="error"
+                >
+                  <ErrorPanel error={`Unknown resource type: ${child.name}`} />
                 </Panel>
               )}
             />
@@ -121,6 +142,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                   definition={child}
                   ready={child.sql ? !!child.data : !!child.properties.src}
                   showExpand={showPanelExpand}
+                  type="image"
                 >
                   <Image {...child} />
                 </Panel>
@@ -134,22 +156,10 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               definition={child}
               ready={true}
               showExpand={showPanelExpand}
+              type="input"
             >
               <Input {...child} />
             </Panel>
-          );
-        case "text":
-          return (
-            <ChildWithTitle
-              key={child.name}
-              child={child}
-              level="panel"
-              renderChild={() => (
-                <Panel definition={child} showExpand={showPanelExpand}>
-                  <Text {...child} />
-                </Panel>
-              )}
-            />
           );
         case "table":
           return (
@@ -162,21 +172,26 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                   definition={child}
                   ready={!!child.data}
                   showExpand={showPanelExpand}
+                  type="table"
                 >
                   <Table {...child} />
                 </Panel>
               )}
             />
           );
-        case "error":
+        case "text":
           return (
             <ChildWithTitle
               key={child.name}
               child={child}
               level="panel"
               renderChild={() => (
-                <Panel definition={child} showExpand={showPanelExpand}>
-                  <ErrorPanel error={`Unknown resource type: ${child.name}`} />
+                <Panel
+                  definition={child}
+                  showExpand={showPanelExpand}
+                  type="text"
+                >
+                  <Text {...child} />
                 </Panel>
               )}
             />

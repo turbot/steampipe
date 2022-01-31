@@ -41,8 +41,12 @@ export const PanelStoryDecorator = ({
                 ...(properties || {}),
                 ...additionalProperties,
               },
+              sql: "storybook",
             },
           ],
+        },
+        sqlDataMap: {
+          storybook: definition.data,
         },
       }}
     >

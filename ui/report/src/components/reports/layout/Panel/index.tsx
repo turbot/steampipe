@@ -1,41 +1,94 @@
 import Error from "../../Error";
 import Placeholder from "../../Placeholder";
-import React, { memo } from "react";
+import React, { memo, useEffect, useState } from "react";
 import useDimensions from "../../../../hooks/useDimensions";
 import { BaseChartProps } from "../../charts";
 import { classNames } from "../../../../utils/styles";
 import { CounterProps } from "../../Counter";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
+import { PanelDefinition, PanelType } from "../../../../hooks/useReport";
 import { PanelProvider } from "../../../../hooks/usePanel";
 import { TableProps } from "../../Table";
-import { PanelDefinition } from "../../../../hooks/useReport";
-
-// const renderPrimitive = (definition: PanelDefinition) => {
-//   const { type, data, error, ...rest } = definition;
-//   const primitive = Primitives[type];
-//
-//   if (!primitive) {
-//     return <ErrorPanel error={`Unknown panel type ${type}`} />;
-//   }
-//
-//   const Component = primitive.component;
-//   return <Component data={data} error={error} {...rest} />;
-// };
 
 interface PanelProps {
   children: null | JSX.Element | JSX.Element[];
-  definition: BaseChartProps | CounterProps | PanelDefinition | TableProps;
+  definition:
+    | BaseChartProps
+    | CounterProps
+    // | ImageProps
+    | PanelDefinition
+    | TableProps;
   ready?: boolean;
   showExpand?: boolean;
+  type: PanelType;
 }
+
+// const getReadyStatusForPanelType = (
+//   type: PanelType,
+//   definition: PanelDefinition
+// ): boolean => {
+//   switch (type) {
+//     case "benchmark":
+//     case "control":
+//     case "counter":
+//     case "error":
+//     case "input":
+//     case "text":
+//       return true;
+//     case "chart":
+//     case "table":
+//       // console.log("Checking chart", {
+//       //   currentData: data,
+//       //   newDefinition: definition,
+//       // });
+//       return !!definition.data;
+//     case "image":
+//       return definition.sql
+//         ? !!definition.data
+//         : definition.properties
+//         ? !!definition.properties.src
+//         : false;
+//     default:
+//       return false;
+//   }
+// };
 
 const Panel = ({
   children,
   definition,
-  ready = true,
   showExpand = true,
+  ready = true,
+  type,
 }: PanelProps) => {
   const [panelRef, dimensions] = useDimensions();
+  // const { sqlDataMap } = useReport();
+  // console.log(sqlDataMap);
+  // const [data, setData] = useState(
+  //   definition.sql ? sqlDataMap[definition.sql] : null
+  // );
+  // const [ready, setReady] = useState(
+  //   getReadyStatusForPanelType(type, definition)
+  // );
+  //
+  // useEffect(() => {
+  //   // const newData = definition.sql ? sqlDataMap[definition.sql] : null;
+  //   // if (definition.sql) {
+  //   //   console.log(newData);
+  //   //   setData(newData);
+  //   // }
+  //   // if (definition.data) {
+  //   //   // console.log(
+  //   //   //   "Panel definition now has data",
+  //   //   //   definition.name,
+  //   //   //   definition.data
+  //   //   // );
+  //   //   setData(definition.data);
+  //   // }
+  //   setReady(getReadyStatusForPanelType(type, definition));
+  // }, [type, definition]);
+
+  // console.log({ name: definition.name, data, ready });
+
   // const height = useMemo(() => {
   //   // Fail safe
   //   if (!definition) {
@@ -99,6 +152,7 @@ const Panel = ({
           <PlaceholderComponent
             animate={!!children}
             ready={ready || !!definition.error}
+            // type={type}
           >
             <ErrorComponent error={definition.error} />
             <>{!definition.error ? children : null}</>

@@ -1,4 +1,6 @@
 import findPathDeep from "deepdash/findPathDeep";
+import paths from "deepdash/paths";
+import pickDeep from "deepdash/pickDeep";
 import { CheckLeafNodeExecutionTree } from "../components/reports/check/common";
 import {
   createContext,
@@ -26,6 +28,7 @@ interface IReportContext {
   report: ReportDefinition | null;
   selectedPanel: PanelDefinition | null;
   selectedReport: AvailableReport | null;
+  sqlDataMap: SQLDataMap;
 }
 
 interface AvailableReport {
@@ -43,6 +46,21 @@ export interface ContainerDefinition {
 
 export interface PanelProperties {
   [key: string]: any;
+}
+
+export type PanelType =
+  | "benchmark"
+  | "chart"
+  | "control"
+  | "counter"
+  | "error"
+  | "image"
+  | "input"
+  | "text"
+  | "table";
+
+export interface SQLDataMap {
+  [sql: string]: LeafNodeData;
 }
 
 export interface PanelDefinition {
@@ -104,6 +122,46 @@ const updateSelectedReport = (
   }
 };
 
+function buildSqlDataMap(report: ReportDefinition): SQLDataMap {
+  // const justSQL = pickDeep(report, ["sql"]);
+  // console.log(justSQL);
+  const sqlPaths = paths(report, { leavesOnly: true }).filter((path) =>
+    path.endsWith(".sql")
+  );
+  // console.log(sqlPaths);
+  const sqlDataMap = {};
+  for (const sqlPath of sqlPaths) {
+    const sql = get(report, sqlPath);
+    // console.log(report, sql);
+    const dataPath = `${sqlPath.substring(0, sqlPath.indexOf(".sql"))}.data`;
+    const data = get(report, dataPath);
+    if (!sqlDataMap[sql]) {
+      sqlDataMap[sql] = data;
+    }
+  }
+  // console.log(sqlDataMap);
+  return sqlDataMap;
+}
+
+function addDataToReport(
+  report: ReportDefinition,
+  sqlDataMap: SQLDataMap
+): ReportDefinition {
+  const sqlPaths = paths(report, { leavesOnly: true }).filter((path) =>
+    path.endsWith(".sql")
+  );
+  for (const sqlPath of sqlPaths) {
+    const sql = get(report, sqlPath);
+    const data = sqlDataMap[sql];
+    if (!data) {
+      continue;
+    }
+    const dataPath = `${sqlPath.substring(0, sqlPath.indexOf(".sql"))}.data`;
+    set(report, dataPath, data);
+  }
+  return report;
+}
+
 function reducer(state, action) {
   switch (action.type) {
     case "available_reports":
@@ -124,23 +182,38 @@ function reducer(state, action) {
       };
     case "execution_started":
       // console.log("execution_started", { action, state });
-      if (
-        state.state === "complete" &&
-        get(state, "report.name") === action.report_node.name
-      ) {
-        // console.log("Ignoring report execution started event", {
-        //   action,
-        //   state,
-        // });
-        return state;
-      }
-      return { ...state, error: null, report: action.report_node };
+      // if (
+      //   state.state === "complete" &&
+      //   get(state, "report.name") === action.report_node.name
+      // ) {
+      //   // console.log("Ignoring report execution started event", {
+      //   //   action,
+      //   //   state,
+      //   // });
+      //   return state;
+      // }
+      // console.log("Started", action.report_node);
+      const reportWithData = addDataToReport(
+        action.report_node,
+        state.sqlDataMap
+      );
+      return {
+        ...state,
+        error: null,
+        report: reportWithData,
+        state: "running",
+      };
     case "execution_complete":
+      // console.log("Complete", action.report_node);
+      // Build map of SQL to data
+      const sqlDataMap = buildSqlDataMap(action.report_node);
+      // console.log(sqlDataMap);
       // Replace the whole report as this event contains everything
       return {
         ...state,
         error: null,
         report: action.report_node,
+        sqlDataMap,
         state: "complete",
       };
     case "leaf_node_progress":
@@ -210,6 +283,7 @@ const ReportProvider = ({ children }) => {
     report: null,
     selectedPanel: null,
     selectedReport: null,
+    sqlDataMap: {},
   });
 
   const { reportName } = useParams();
