@@ -30,7 +30,8 @@ const (
 	DatabaseVersion = "12.1.0"
 	FdwVersion      = "0.3.2"
 
-	// PostgresImageRef :: The 12.1.0 image uses the older jar format 12.1.0-v2 is the same version of postgres,
+	// PostgresImageRef is the OCI Image ref for the databse binaries
+	// The 12.1.0 image uses the older jar format 12.1.0-v2 is the same version of postgres,
 	// just packaged as gzipped tar files (consistent with oras, faster to unzip).  Once everyone is
 	// on a newer build, we can delete the old image move the 12.1.0 tag to the new image, and
 	// change this back for consistency
