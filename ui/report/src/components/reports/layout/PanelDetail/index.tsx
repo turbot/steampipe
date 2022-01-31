@@ -21,7 +21,10 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
           </>
         </NeutralButton>
       </div>
-      <Children children={[definition]} showPanelExpand={false} />
+      <Children
+        children={[{ ...definition, width: 12 }]}
+        showPanelExpand={false}
+      />
     </LayoutPanel>
   );
 };
