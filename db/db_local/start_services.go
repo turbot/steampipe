@@ -485,6 +485,7 @@ func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
 func ensurePgExtensions(ctx context.Context, rootClient *sql.DB) error {
 	extensions := []string{
 		"tablefunc",
+		"ltree",
 	}
 
 	errors := []error{}
