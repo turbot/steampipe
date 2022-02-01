@@ -17,11 +17,15 @@ type ReportHierarchy struct {
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title *string          `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int             `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL   *string          `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Type  *string          `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Base  *ReportHierarchy `hcl:"base" json:"-"`
+	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
+	Type  *string `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+
+	Base *ReportHierarchy `hcl:"base" json:"-"`
+
+	CategoryList ReportHierarchyCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
+	Categories   map[string]*ReportHierarchyCategory `cty:"categories" json:"categories"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
@@ -40,171 +44,194 @@ func NewReportHierarchy(block *hcl.Block) *ReportHierarchy {
 	}
 }
 
-func (c *ReportHierarchy) Equals(other *ReportHierarchy) bool {
-	diff := c.Diff(other)
+func (h *ReportHierarchy) Equals(other *ReportHierarchy) bool {
+	diff := h.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (c *ReportHierarchy) CtyValue() (cty.Value, error) {
-	return getCtyValue(c)
+func (h *ReportHierarchy) CtyValue() (cty.Value, error) {
+	return getCtyValue(h)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'chart.<shortName>'
-func (c *ReportHierarchy) Name() string {
-	return c.FullName
+func (h *ReportHierarchy) Name() string {
+	return h.FullName
 }
 
 // OnDecoded implements HclResource
-func (c *ReportHierarchy) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	c.setBaseProperties()
+func (h *ReportHierarchy) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	h.setBaseProperties()
+	// populate categories map
+	if len(h.CategoryList) > 0 {
+		h.Categories = make(map[string]*ReportHierarchyCategory, len(h.CategoryList))
+		for _, c := range h.CategoryList {
+			h.Categories[c.Name] = c
+		}
+	}
 	return nil
 }
 
-func (c *ReportHierarchy) setBaseProperties() {
-	if c.Base == nil {
+func (h *ReportHierarchy) setBaseProperties() {
+	if h.Base == nil {
 		return
 	}
-	if c.Title == nil {
-		c.Title = c.Base.Title
+	if h.Title == nil {
+		h.Title = h.Base.Title
 	}
-	if c.Type == nil {
-		c.Type = c.Base.Type
+	if h.Type == nil {
+		h.Type = h.Base.Type
 	}
 
-	if c.Width == nil {
-		c.Width = c.Base.Width
+	if h.Width == nil {
+		h.Width = h.Base.Width
 	}
-	if c.SQL == nil {
-		c.SQL = c.Base.SQL
+	if h.SQL == nil {
+		h.SQL = h.Base.SQL
+	}
+	if h.CategoryList == nil {
+		h.CategoryList = h.Base.CategoryList
+	} else {
+
+		h.CategoryList.Merge(h.Base.CategoryList)
 	}
 }
 
 // AddReference implements HclResource
-func (c *ReportHierarchy) AddReference(*ResourceReference) {}
+func (h *ReportHierarchy) AddReference(*ResourceReference) {}
 
 // SetMod implements HclResource
-func (c *ReportHierarchy) SetMod(mod *Mod) {
-	c.Mod = mod
-	c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
+func (h *ReportHierarchy) SetMod(mod *Mod) {
+	h.Mod = mod
+	h.FullName = fmt.Sprintf("%s.%s", h.Mod.ShortName, h.UnqualifiedName)
 }
 
 // GetMod implements HclResource
-func (c *ReportHierarchy) GetMod() *Mod {
-	return c.Mod
+func (h *ReportHierarchy) GetMod() *Mod {
+	return h.Mod
 }
 
 // GetDeclRange implements HclResource
-func (c *ReportHierarchy) GetDeclRange() *hcl.Range {
-	return &c.DeclRange
+func (h *ReportHierarchy) GetDeclRange() *hcl.Range {
+	return &h.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (c *ReportHierarchy) AddParent(parent ModTreeItem) error {
-	c.parents = append(c.parents, parent)
+func (h *ReportHierarchy) AddParent(parent ModTreeItem) error {
+	h.parents = append(h.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (c *ReportHierarchy) GetParents() []ModTreeItem {
-	return c.parents
+func (h *ReportHierarchy) GetParents() []ModTreeItem {
+	return h.parents
 }
 
 // GetChildren implements ModTreeItem
-func (c *ReportHierarchy) GetChildren() []ModTreeItem {
+func (h *ReportHierarchy) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (c *ReportHierarchy) GetTitle() string {
-	return typehelpers.SafeString(c.Title)
+func (h *ReportHierarchy) GetTitle() string {
+	return typehelpers.SafeString(h.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (c *ReportHierarchy) GetDescription() string {
+func (h *ReportHierarchy) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (c *ReportHierarchy) GetTags() map[string]string {
+func (h *ReportHierarchy) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (c *ReportHierarchy) GetPaths() []NodePath {
+func (h *ReportHierarchy) GetPaths() []NodePath {
 	// lazy load
-	if len(c.Paths) == 0 {
-		c.SetPaths()
+	if len(h.Paths) == 0 {
+		h.SetPaths()
 	}
 
-	return c.Paths
+	return h.Paths
 }
 
 // SetPaths implements ModTreeItem
-func (c *ReportHierarchy) SetPaths() {
-	for _, parent := range c.parents {
+func (h *ReportHierarchy) SetPaths() {
+	for _, parent := range h.parents {
 		for _, parentPath := range parent.GetPaths() {
-			c.Paths = append(c.Paths, append(parentPath, c.Name()))
+			h.Paths = append(h.Paths, append(parentPath, h.Name()))
 		}
 	}
 }
 
 // GetMetadata implements ResourceWithMetadata
-func (c *ReportHierarchy) GetMetadata() *ResourceMetadata {
-	return c.metadata
+func (h *ReportHierarchy) GetMetadata() *ResourceMetadata {
+	return h.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata
-func (c *ReportHierarchy) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
+func (h *ReportHierarchy) SetMetadata(metadata *ResourceMetadata) {
+	h.metadata = metadata
 }
 
-func (c *ReportHierarchy) Diff(other *ReportHierarchy) *ReportTreeItemDiffs {
+func (h *ReportHierarchy) Diff(other *ReportHierarchy) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
-		Item: c,
-		Name: c.Name(),
+		Item: h,
+		Name: h.Name(),
 	}
 
-	if !utils.SafeStringsEqual(c.FullName, other.FullName) {
+	if !utils.SafeStringsEqual(h.FullName, other.FullName) {
 		res.AddPropertyDiff("Name")
 	}
 
-	if !utils.SafeStringsEqual(c.Title, other.Title) {
+	if !utils.SafeStringsEqual(h.Title, other.Title) {
 		res.AddPropertyDiff("Title")
 	}
 
-	if !utils.SafeStringsEqual(c.SQL, other.SQL) {
+	if !utils.SafeStringsEqual(h.SQL, other.SQL) {
 		res.AddPropertyDiff("SQL")
 	}
 
-	if !utils.SafeIntEqual(c.Width, other.Width) {
+	if !utils.SafeIntEqual(h.Width, other.Width) {
 		res.AddPropertyDiff("Width")
 	}
 
-	if !utils.SafeStringsEqual(c.Type, other.Type) {
+	if !utils.SafeStringsEqual(h.Type, other.Type) {
 		res.AddPropertyDiff("Type")
 	}
 
-	res.populateChildDiffs(c, other)
+	if len(h.CategoryList) != len(other.CategoryList) {
+		res.AddPropertyDiff("Categories")
+	} else {
+		for i, c := range h.Categories {
+			if !c.Equals(other.Categories[i]) {
+				res.AddPropertyDiff("Categories")
+			}
+		}
+	}
+
+	res.populateChildDiffs(h, other)
 
 	return res
 }
 
 // GetSQL implements ReportLeafNode
-func (c *ReportHierarchy) GetSQL() string {
-	return typehelpers.SafeString(c.SQL)
+func (h *ReportHierarchy) GetSQL() string {
+	return typehelpers.SafeString(h.SQL)
 }
 
 // GetWidth implements ReportLeafNode
-func (c *ReportHierarchy) GetWidth() int {
-	if c.Width == nil {
+func (h *ReportHierarchy) GetWidth() int {
+	if h.Width == nil {
 		return 0
 	}
-	return *c.Width
+	return *h.Width
 }
 
 // GetUnqualifiedName implements ReportLeafNode
-func (c *ReportHierarchy) GetUnqualifiedName() string {
-	return c.UnqualifiedName
+func (h *ReportHierarchy) GetUnqualifiedName() string {
+	return h.UnqualifiedName
 }
