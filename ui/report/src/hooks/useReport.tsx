@@ -54,6 +54,7 @@ export type PanelType =
   | "control"
   | "counter"
   | "error"
+  | "hierarchy"
   | "image"
   | "input"
   | "text"
