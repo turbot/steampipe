@@ -141,7 +141,7 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	// - remove these from list of plugins to create
 	connectionsToCreate := removeConnectionsFromList(updateConnections, alreadyCreatedConnectionPlugins)
 	// now create them
-	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate...)
+	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate, &CreateConnectionPluginOptions{SetConnectionConfig: true})
 	if res.Error != nil {
 		return res
 	}
@@ -188,7 +188,7 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 		}
 	}
 
-	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections()...)
+	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections(), &CreateConnectionPluginOptions{SetConnectionConfig: true})
 	if res.Error != nil {
 		return nil, nil, res.Error
 	}
