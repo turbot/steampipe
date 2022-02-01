@@ -38,6 +38,10 @@ const getBaseOptions = (type, data, links) => {
         focus: "adjacency",
         blurScope: "coordinateSystem",
       },
+      lineStyle: {
+        color: "source",
+        curveness: 0.5,
+      },
       data,
       links,
       //data: objectData.map(o => ),
