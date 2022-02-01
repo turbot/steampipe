@@ -18,15 +18,31 @@ interface ColumnInfo {
   accessor: string;
 }
 
-const getColumns = (columns: LeafNodeDataColumn[]) => {
-  if (!columns || columns.length === 0) {
-    return [];
+const getColumns = (
+  cols: LeafNodeDataColumn[],
+  properties?: TableProperties
+) => {
+  if (!cols || cols.length === 0) {
+    return { columns: [], hiddenColumns: [] };
   }
-  return columns.map((col) => ({
-    Header: col.name,
-    accessor: col.name,
-    data_type_name: col.data_type_name,
-  }));
+
+  const hiddenColumns: string[] = [];
+  const columns = cols.map((col) => {
+    if (
+      properties &&
+      properties.columns &&
+      properties.columns[col.name] &&
+      properties.columns[col.name].display === "none"
+    ) {
+      hiddenColumns.push(col.name);
+    }
+    return {
+      Header: col.name,
+      accessor: col.name,
+      data_type_name: col.data_type_name,
+    };
+  });
+  return { columns, hiddenColumns };
 };
 
 const getData = (columns: ColumnInfo[], rows: LeafNodeDataRow) => {
@@ -197,12 +213,28 @@ const CellValue = ({ column, value }) => {
 //   return value;
 // };
 
-export type TableProps = BasePrimitiveProps & ExecutablePrimitiveProps;
+interface TableColumnOptions {
+  display?: string;
+}
+
+type TableColumns = {
+  [column: string]: TableColumnOptions;
+};
+
+export type TableProperties = {
+  columns?: TableColumns;
+};
+
+export type BaseTableProps = BasePrimitiveProps & ExecutablePrimitiveProps;
+
+export type TableProps = BaseTableProps & {
+  properties?: TableProperties;
+};
 
 // TODO retain full width on mobile, no padding
 const Table = (props: TableProps) => {
-  const columns = useMemo(
-    () => getColumns(props.data ? props.data.columns : []),
+  const { columns, hiddenColumns } = useMemo(
+    () => getColumns(props.data ? props.data.columns : [], props.properties),
     [props.data]
   );
   const rowData = useMemo(
@@ -210,7 +242,10 @@ const Table = (props: TableProps) => {
     [columns, props.data]
   );
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
-    useTable({ columns, data: rowData }, useSortBy);
+    useTable(
+      { columns, data: rowData, initialState: { hiddenColumns } },
+      useSortBy
+    );
   return props.data ? (
     <>
       <table
