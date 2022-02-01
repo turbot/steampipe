@@ -23,14 +23,13 @@ func NewTempDir(path string) *tempDir {
 }
 
 func getOrCreateTempDir(ref string) string {
-	pluginCacheDir := filepath.Join(filepaths.PluginDir(), safeDirName(fmt.Sprintf("tmp-%s", generateTempDirName())))
+	cacheDir := filepath.Join(filepaths.TmpDir(true), safeDirName(fmt.Sprintf("tmp-%s", generateTempDirName())))
 
-	if _, err := os.Stat(pluginCacheDir); os.IsNotExist(err) {
-		err = os.MkdirAll(pluginCacheDir, 0755)
+	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
+		err = os.MkdirAll(cacheDir, 0755)
 		utils.FailOnErrorWithMessage(err, "could not create cache directory")
 	}
-
-	return pluginCacheDir
+	return cacheDir
 }
 
 func (d *tempDir) Delete() error {

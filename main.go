@@ -10,6 +10,7 @@ import (
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/turbot/steampipe/cmd"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -23,6 +24,7 @@ func main() {
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
 		}
+		os.RemoveAll(filepaths.TmpDir(false))
 		utils.LogTime("main end")
 		utils.DisplayProfileData()
 		os.Exit(exitCode)
