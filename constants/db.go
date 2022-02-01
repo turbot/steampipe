@@ -28,7 +28,7 @@ const (
 // constants for installing db and fdw images
 const (
 	DatabaseVersion = "12.1.0"
-	FdwVersion      = "0.3.2"
+	FdwVersion      = "0.3.3"
 
 	// PostgresImageRef is the OCI Image ref for the databse binaries
 	// The 12.1.0 image uses the older jar format 12.1.0-v2 is the same version of postgres,
