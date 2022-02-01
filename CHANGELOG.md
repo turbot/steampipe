@@ -1,6 +1,7 @@
 ## v0.12.3 [2022-02-01]
 _Bug fixes_
 * Ensure SetConnectionConfig is only called once. ([#1368](https://github.com/turbot/steampipe/issues/1368))
+* Plugin validation error causes buildConnectionUpdateQueries to crash. ([#1387](https://github.com/turbot/steampipe/issues/1387))
 
 ## v0.12.2 [2022-01-27]
 _Bug fixes_
