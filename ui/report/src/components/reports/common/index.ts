@@ -1,6 +1,8 @@
 import moment from "moment";
 import { ChartProperties, ChartType } from "../charts";
-import { themeColors } from "../charts/Chart";
+import { ColorGenerator } from "../../../utils/color";
+import { HierarchyProperties, HierarchyType } from "../hierarchies";
+import { raw } from "@storybook/react";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -15,6 +17,18 @@ export interface BasePrimitiveProps {
 export interface LeafNodeDataColumn {
   name: string;
   data_type_name: string;
+}
+
+export interface HierarchyDataRow {
+  id: string;
+  category: string;
+  parent: string | null;
+}
+
+export interface HierarchyDataRowEdge {
+  source: string;
+  target: string;
+  value: number;
 }
 
 export type LeafNodeDataRow = any[];
@@ -282,10 +296,156 @@ const buildChartDataInputs = (
   };
 };
 
+const buildHierarchyDataInputs = (
+  rawData: LeafNodeData,
+  type: HierarchyType,
+  properties: HierarchyProperties
+) => {
+  let colorIndex = 0;
+  const builtData = [];
+  const categories = {};
+  const usedIds = {};
+  const objectData = rawData.rows.map((dataRow) => {
+    const row: HierarchyDataRow = { parent: null, category: "", id: "" };
+    for (let colIndex = 0; colIndex < rawData.columns.length; colIndex++) {
+      const column = rawData.columns[colIndex];
+      row[column.name] = dataRow[colIndex];
+    }
+
+    if (row.category && !categories[row.category]) {
+      categories[row.category] = { color: themeColors[colorIndex++] };
+    }
+
+    if (!usedIds[row.id]) {
+      builtData.push({
+        ...row,
+        itemStyle: {
+          // @ts-ignore
+          color: categories[row.category].color,
+        },
+      });
+      usedIds[row.id] = true;
+    }
+    return row;
+  });
+  const edges: HierarchyDataRowEdge[] = [];
+  const edgeValues = {};
+  for (const d of objectData) {
+    // TODO remove <null> after Kai fixes base64 issue and removes col string conversion
+    if (d.parent === null || d.parent === "<null>") {
+      d.parent = null;
+      continue;
+    }
+    edges.push({ source: d.parent, target: d.id, value: 0.01 });
+    edgeValues[d.parent] = (edgeValues[d.parent] || 0) + 0.01;
+  }
+  for (const e of edges) {
+    var v = 0;
+    if (edgeValues[e.target]) {
+      for (const e2 of edges) {
+        if (e.target === e2.source) {
+          v += edgeValues[e2.target] || 0.01;
+        }
+      }
+      e.value = v;
+    }
+  }
+
+  return {
+    data: builtData,
+    links: edges,
+  };
+};
+
+// TODO color scheme - need to find something better?
+const generateColors = () => {
+  // return [
+  //   "#6388b4",
+  //   "#ffae34",
+  //   "#ef6f6a",
+  //   "#8cc2ca",
+  //   "#55ad89",
+  //   "#c3bc3f",
+  //   "#bb7693",
+  //   "#baa094",
+  //   "#a9b5ae",
+  //   "#767676",
+  // ];
+  // return [
+  //   "#4f6980",
+  //   "#849db1",
+  //   "#a2ceaa",
+  //   "#638b66",
+  //   "#bfbb60",
+  //   "#f47942",
+  //   "#fbb04e",
+  //   "#b66353",
+  //   "#d7ce9f",
+  //   "#b9aa97",
+  //   "#7e756d",
+  // ];
+  // return [
+  //   "#1f77b4",
+  //   "#aec7e8",
+  //   "#ff7f0e",
+  //   "#ffbb78",
+  //   "#2ca02c",
+  //   "#98df8a",
+  //   "#d62728",
+  //   "#ff9896",
+  //   "#9467bd",
+  //   "#c5b0d5",
+  //   "#8c564b",
+  //   "#c49c94",
+  //   "#e377c2",
+  //   "#f7b6d2",
+  //   "#7f7f7f",
+  //   "#c7c7c7",
+  //   "#bcbd22",
+  //   "#dbdb8d",
+  //   "#17becf",
+  //   "#9edae5",
+  // ];
+  // tableau.Tableau20
+  return [
+    "#4E79A7",
+    "#A0CBE8",
+    "#F28E2B",
+    "#FFBE7D",
+    "#59A14F",
+    "#8CD17D",
+    "#B6992D",
+    "#F1CE63",
+    "#499894",
+    "#86BCB6",
+    "#E15759",
+    "#FF9D9A",
+    "#79706E",
+    "#BAB0AC",
+    "#D37295",
+    "#FABFD2",
+    "#B07AA1",
+    "#D4A6C8",
+    "#9D7660",
+    "#D7B5A6",
+  ];
+  const colorGenerator = new ColorGenerator(24, 5);
+  const colors: string[] = [];
+  for (let i = 0; i < 20; i++) {
+    const nextColor = colorGenerator.nextColor();
+    colors.push(nextColor.hex);
+  }
+  return colors;
+};
+
+const themeColors = generateColors();
+
 export {
   adjustMinValue,
   adjustMaxValue,
   buildChartDataInputs,
+  buildHierarchyDataInputs,
   buildSeriesDataInputs,
   buildSeriesInputs,
+  themeColors,
 };

@@ -20,7 +20,6 @@ interface PanelProps {
     | TableProps;
   ready?: boolean;
   showExpand?: boolean;
-  type: PanelType;
 }
 
 // const getReadyStatusForPanelType = (
@@ -58,7 +57,6 @@ const Panel = ({
   definition,
   showExpand = true,
   ready = true,
-  type,
 }: PanelProps) => {
   const [panelRef, dimensions] = useDimensions();
   // const { sqlDataMap } = useReport();
