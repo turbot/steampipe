@@ -23,7 +23,7 @@ type ReportTable struct {
 
 	Base *ReportTable `hcl:"base" json:"-"`
 
-	ColumnList ReportTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
+	ColumnList ReportTableColumnList         `cty:"column_list" hcl:"column,block" column:"column,jsonb" json:"-"`
 	Columns    map[string]*ReportTableColumn `cty:"columns" json:"columns"`
 
 	DeclRange hcl.Range  `json:"-"`
@@ -89,6 +89,7 @@ func (t *ReportTable) setBaseProperties() {
 	if t.ColumnList == nil {
 		t.ColumnList = t.Base.ColumnList
 	} else {
+
 		t.ColumnList.Merge(t.Base.ColumnList)
 	}
 }
