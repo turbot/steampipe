@@ -89,7 +89,6 @@ func (t *ReportTable) setBaseProperties() {
 	if t.ColumnList == nil {
 		t.ColumnList = t.Base.ColumnList
 	} else {
-
 		t.ColumnList.Merge(t.Base.ColumnList)
 	}
 }
