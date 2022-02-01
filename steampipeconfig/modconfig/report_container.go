@@ -11,6 +11,7 @@ import (
 )
 
 const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
+const runtimeDependencyReportScope = "self"
 
 // ReportContainer is a struct representing the Report and Container resource
 type ReportContainer struct {
@@ -30,8 +31,9 @@ type ReportContainer struct {
 	DeclRange hcl.Range
 	Paths     []NodePath `column:"path,jsonb"`
 	// store children in a way which can be serialised via cty
-	ChildNames []string `cty:"children" column:"children,jsonb"`
-
+	ChildNames    []string       `cty:"children" column:"children,jsonb"`
+	Inputs        []*ReportInput ` column:"inputs,json" cty:"inputs"`
+	selfInputsMap map[string]*ReportInput
 	// the actual children
 	children               []ModTreeItem
 	parents                []ModTreeItem
@@ -215,24 +217,35 @@ func (c *ReportContainer) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }
 
-func (c *ReportContainer) WalkResources(resourceFunc func(resource HclResource) bool) {
+func (c *ReportContainer) WalkResources(resourceFunc func(resource HclResource) (bool, error)) error {
 	for _, child := range c.children {
-		resourceFunc(child.(HclResource))
+		continueWalking, err := resourceFunc(child.(HclResource))
+		if err != nil {
+			return err
+		}
+		if !continueWalking {
+			break
+		}
+
 		if childContainer, ok := child.(*ReportContainer); ok {
-			childContainer.WalkResources(resourceFunc)
+			if err := childContainer.WalkResources(resourceFunc); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func (c *ReportContainer) BuildRuntimeDependencyTree() error {
+func (c *ReportContainer) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) error {
 	c.runtimeDependencyGraph = topsort.NewGraph()
 	// add root node - this will depend on all other nodes
 	c.runtimeDependencyGraph.AddNode(rootRuntimeDependencyNode)
 
-	resourceFunc := func(resource HclResource) bool {
+	resourceFunc := func(resource HclResource) (bool, error) {
 		runtimeDependencies := resource.GetRuntimeDependencies()
 		if len(runtimeDependencies) == 0 {
-			return true
+			// continue walking
+			return true, nil
 		}
 		name := resource.Name()
 		if !c.runtimeDependencyGraph.ContainsNode(name) {
@@ -240,17 +253,44 @@ func (c *ReportContainer) BuildRuntimeDependencyTree() error {
 		}
 
 		for _, dependency := range runtimeDependencies {
-			c.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name)
-			c.runtimeDependencyGraph.AddEdge(name, dependency.SourceResource.Name())
+			// try to resolve the target resource
+			if err := dependency.ResolveResource(c, workspace); err != nil {
+				return false, err
+			}
+			if err := c.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name); err != nil {
+				return false, err
+			}
+			depString := dependency.String()
+			if !c.runtimeDependencyGraph.ContainsNode(depString) {
+				c.runtimeDependencyGraph.AddNode(depString)
+			}
+			if err := c.runtimeDependencyGraph.AddEdge(name, dependency.String()); err != nil {
+				return false, err
+			}
 		}
 		// continue walking
-		return true
+		return true, nil
 	}
-	c.WalkResources(resourceFunc)
+	if err := c.WalkResources(resourceFunc); err != nil {
+		return err
+	}
 
 	// ensure that dependencies can be resolved
 	if _, err := c.runtimeDependencyGraph.TopSort(rootRuntimeDependencyNode); err != nil {
 		return fmt.Errorf("runtime depedencies cannot be resolved: %s", err.Error())
 	}
 	return nil
+}
+
+func (c *ReportContainer) SetInputs(inputs []*ReportInput) {
+	c.Inputs = inputs
+	c.selfInputsMap = make(map[string]*ReportInput)
+	for _, i := range inputs {
+		c.selfInputsMap[i.UnqualifiedName] = i
+	}
+}
+
+func (c *ReportContainer) GetInput(name string) (*ReportInput, bool) {
+	input, found := c.selfInputsMap[name]
+	return input, found
 }

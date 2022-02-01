@@ -35,8 +35,8 @@ type ModTreeItem interface {
 // HclResource must be implemented by resources defined in HCL
 type HclResource interface {
 	// implemented by HclResourceBase
-	AddRuntimeDependencies(*ResourceDependency)
-	GetRuntimeDependencies() map[string]*ResourceDependency
+	AddRuntimeDependencies(*RuntimeDependency)
+	GetRuntimeDependencies() map[string]*RuntimeDependency
 
 	Name() string
 	CtyValue() (cty.Value, error)
@@ -87,6 +87,7 @@ type ReportingLeafNode interface {
 	GetWidth() int
 	GetPaths() []NodePath
 	GetSQL() string
+	GetRuntimeDependencies() map[string]*RuntimeDependency
 }
 
 type ResourceMapsProvider interface {

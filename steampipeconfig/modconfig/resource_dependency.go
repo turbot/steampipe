@@ -2,75 +2,45 @@ package modconfig
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/hclhelpers"
 )
 
-type ResourceDependency struct {
+type RuntimeDependency struct {
+	Traversal        hcl.Traversal
 	SourceResource   HclResource
 	TargetProperties []string
-	Range            hcl.Range
-	Traversals       []hcl.Traversal
 }
 
-func (d *ResourceDependency) String() string {
-	traversalStrings := make([]string, len(d.Traversals))
-	for i, t := range d.Traversals {
-		traversalStrings[i] = hclhelpers.TraversalAsString(t)
-	}
-	return strings.Join(traversalStrings, ",")
+func (d *RuntimeDependency) String() string {
+	return hclhelpers.TraversalAsString(d.Traversal)
 }
 
-// IsRunTimeDependency determines whether this is a runtime dependency
-// adependency is run time if:
-// - there is a single traversal
-// - the property referenced is one of the defined runtime dependency properties
-// - the dependency resource exists in the mod
-func (d *ResourceDependency) IsRunTimeDependency() bool {
-	if len(d.Traversals) > 1 {
-		return false
-	}
-	parsedPropertyPath, err := ParseResourcePropertyPath(hclhelpers.TraversalAsString(d.Traversals[0]))
+func (d *RuntimeDependency) ResolveResource(c *ReportContainer, workspace ResourceMapsProvider) error {
+	// NOTE: for now this code assumes the runtime dependency resource is a ReportInput
+	// as this is (currently) the only type
+	// when the is expanded, this code will beed to change
+
+	var resource HclResource
+	var found bool
+	dependencyPath, err := ParseResourcePropertyPath(hclhelpers.TraversalAsString(d.Traversal))
 	if err != nil {
-		return false
+		return err
+	}
+	resourceName := dependencyPath.ToResourceName()
+
+	// if this dependency has a 'self' 'prefix, resolve from the current report container
+	if dependencyPath.Scope == runtimeDependencyReportScope {
+		resource, found = c.GetInput(resourceName)
+	} else {
+		// otherwise resolve from the workspace
+		resource, found = workspace.GetResourceMaps().ReportInputs[resourceName]
+	}
+	if !found {
+		return fmt.Errorf("could not resolve runtime depdency resource %s", dependencyPath)
 	}
 
-	// supported runtime dependencies
-	// map is keyed by resource type and contains a list of properties
-	runTimeDependencyPropertyPaths := map[string][]string{"input": {"result"}}
-
-	// is this property a supported runtime dependency property
-	if supportedProperties, ok := runTimeDependencyPropertyPaths[parsedPropertyPath.ItemType]; ok {
-		if helpers.StringSliceContains(supportedProperties, parsedPropertyPath.PropertyPathString()) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (d *ResourceDependency) SetAsRuntimeDependency(bodyContent *hcl.BodyContent) error {
-	d.TargetProperties = d.getPropertiesFromContent(bodyContent)
-	if len(d.TargetProperties) == 0 {
-		return fmt.Errorf("failed toresolve any properties using dependency %s", d)
-	}
+	d.SourceResource = resource
 	return nil
-}
-
-// getPropertiesFromContent finds any attributes in the given content which depend on this dependency
-func (d *ResourceDependency) getPropertiesFromContent(content *hcl.BodyContent) []string {
-	var res []string
-	for _, a := range content.Attributes {
-		if scopeTraversal, ok := a.Expr.(*hclsyntax.ScopeTraversalExpr); ok {
-			if len(d.Traversals) == 1 &&
-				hclhelpers.TraversalsEqual(d.Traversals[0], scopeTraversal.Traversal) {
-				res = append(res, a.Name)
-			}
-		}
-	}
-	return res
 }

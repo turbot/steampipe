@@ -336,6 +336,6 @@ func (b *Benchmark) setBaseProperties() {
 	if len(b.Children) == 0 {
 		b.Children = b.Base.Children
 		b.ChildNameStrings = b.Base.ChildNameStrings
-		b.Children = b.Children
+		b.ChildNames = b.Base.ChildNames
 	}
 }

@@ -58,6 +58,11 @@ func NewLeafRun(resource modconfig.ReportingLeafNode, parent reportinterfaces.Re
 
 // Execute implements ReportRunNode
 func (r *LeafRun) Execute(ctx context.Context) error {
+	// if there are any unresolved runtime dependencies, wait for them
+	if err := r.waitForRuntimeDepdendencies(); err != nil {
+		return err
+	}
+
 	if r.SQL == "" {
 		return nil
 	}
@@ -119,4 +124,15 @@ func (r *LeafRun) RunComplete() bool {
 // ChildrenComplete implements ReportNodeRun
 func (r *LeafRun) ChildrenComplete() bool {
 	return true
+}
+
+func (r *LeafRun) waitForRuntimeDepdendencies() error {
+	runtimeDependencies := r.ReportNode.GetRuntimeDependencies()
+
+	for _, v := range runtimeDependencies {
+		if err := r.executionTree.waitForRuntimeDependency(v); err != nil {
+			return err
+		}
+	}
+	return nil
 }

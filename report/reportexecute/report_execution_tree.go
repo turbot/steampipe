@@ -84,3 +84,7 @@ func (e *ReportExecutionTree) GetName() string {
 func (e *ReportExecutionTree) ChildCompleteChan() chan reportinterfaces.ReportNodeRun {
 	return e.runComplete
 }
+
+func (e *ReportExecutionTree) waitForRuntimeDependency(dependency *modconfig.RuntimeDependency) error {
+	return nil
+}

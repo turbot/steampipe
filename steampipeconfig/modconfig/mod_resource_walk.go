@@ -1,5 +1,6 @@
 package modconfig
 
+// TODO KAI also support error return
 // WalkResources calls resourceFunc for every resource in the mod
 // if any resourceFunc returns false, return immediately
 func (m *Mod) WalkResources(resourceFunc func(item HclResource) bool) {

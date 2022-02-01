@@ -24,6 +24,7 @@ type ReportContainerRun struct {
 	NodeType      string                           `json:"node_type"`
 	Status        reportinterfaces.ReportRunStatus `json:"status"`
 	Path          []string                         `json:"-"`
+	reportNode    *modconfig.ReportContainer
 	parent        reportinterfaces.ReportNodeParent
 	executionTree *ReportExecutionTree
 	childComplete chan reportinterfaces.ReportNodeRun
@@ -37,6 +38,7 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 		Path:          container.Paths[0],
 		executionTree: executionTree,
 		parent:        parent,
+		reportNode:    container,
 
 		// set to complete, optimistically
 		// if any children have SQL we will set this to ReportRunReady instead
