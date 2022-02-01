@@ -27,7 +27,7 @@ func (p *decodeResult) Success() bool {
 
 // if the diags containsdependency errors, add dependencies to the result
 // otherwise add diags to the result
-func (p *decodeResult) handleDecodeDiags(bodyContent *hcl.BodyContent, resource modconfig.HclResource, diags hcl.Diagnostics, runCtx *RunContext) {
+func (p *decodeResult) handleDecodeDiags(bodyContent *hcl.BodyContent, resource modconfig.HclResource, diags hcl.Diagnostics) {
 	var allDependencies []*modconfig.ResourceDependency
 	for _, diag := range diags {
 		if dependency := isDependencyError(diag); dependency != nil {
@@ -36,8 +36,9 @@ func (p *decodeResult) handleDecodeDiags(bodyContent *hcl.BodyContent, resource 
 			// so it was a dependency error - determine whether this is a RUN TIMEdependency
 			// - if so, do not raise a dependency error but instead store in the resources run time dependencies
 			if dependency.IsRunTimeDependency() {
-				if err := dependency.SetAsRuntimeDependency(bodyContent); err != nil {
-					resource.AddRuntimeDependencies(dependency)
+				runtimeDependency, err := dependency.ToRuntimeDependency(bodyContent)
+				if err == nil {
+					resource.AddRuntimeDependencies(runtimeDependency)
 				}
 
 			} else {

@@ -95,9 +95,8 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
 	}
 
-	content, moreDiags := body.Content(ModBlockSchema)
-	if moreDiags.HasErrors() {
-		diags = append(diags, moreDiags...)
+	content, diags := body.Content(ModBlockSchema)
+	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
 	}
 
@@ -112,8 +111,11 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 			if hclBody, ok := block.Body.(*hclsyntax.Body); ok {
 				defRange = hclBody.SrcRange
 			}
-			mod := modconfig.NewMod(block.Labels[0], modPath, defRange)
-			diags := gohcl.DecodeBody(block.Body, evalCtx, mod)
+			mod, err := modconfig.NewMod(block.Labels[0], modPath, defRange)
+			if err != nil {
+				return nil, err
+			}
+			diags = gohcl.DecodeBody(block.Body, evalCtx, mod)
 			if diags.HasErrors() {
 				return nil, plugin.DiagsToError("Failed to decode mod hcl file", diags)
 			}
@@ -154,7 +156,9 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 
 	// if variables were passed in runcontext, add to the mod
 	for _, v := range runCtx.Variables {
-		mod.AddResource(v)
+		if diags = mod.AddResource(v); diags.HasErrors() {
+			return nil, plugin.DiagsToError("Failed to add resource to mod", diags)
+		}
 	}
 
 	// add pseudo resources to the mod
@@ -162,12 +166,13 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 
 	// add this mod to run context - this it to ensure all pseudo resources get added
 	runCtx.SetDecodeContent(content, fileData)
-	runCtx.AddMod(mod)
+	if diags = runCtx.AddMod(mod); diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to add mod to run context", diags)
+	}
 
 	// perform initial decode to get dependencies
 	// (if there are no dependencies, this is all that is needed)
-	diags = decode(runCtx)
-	if diags.HasErrors() {
+	if diags = decode(runCtx); diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
 	}
 

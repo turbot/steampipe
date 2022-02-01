@@ -204,8 +204,10 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 		fmt.Println("Working folder already contains a mod definition file")
 		return
 	}
-	mod := modconfig.CreateDefaultMod(workspacePath)
-	utils.FailOnError(mod.Save())
+	mod, err := modconfig.CreateDefaultMod(workspacePath)
+	utils.FailOnError(err)
+	err = mod.Save()
+	utils.FailOnError(err)
 	fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
 }
 

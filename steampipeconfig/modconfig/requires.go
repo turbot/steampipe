@@ -7,6 +7,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe/version"
 )
 
@@ -21,25 +22,24 @@ type Require struct {
 	modMap map[string]*ModVersionConstraint
 }
 
-func NewRequire() *Require {
+func NewRequire() (*Require, error) {
 	r := &Require{}
-	r.initialise()
-	return r
+	if err := r.initialise(); err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
-func (r *Require) initialise() hcl.Diagnostics {
+func (r *Require) initialise() error {
 	var diags hcl.Diagnostics
 	r.modMap = make(map[string]*ModVersionConstraint)
 
 	if r.SteampipeVersionString != "" {
 		steampipeVersion, err := semver.NewVersion(strings.TrimPrefix(r.SteampipeVersionString, "v"))
 		if err != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("invalid required steampipe version %s", r.SteampipeVersionString),
-				Subject:  &r.DeclRange,
-			})
+			return fmt.Errorf("invalid required steampipe version %s", r.SteampipeVersionString)
 		}
+
 		r.SteampipeVersion = steampipeVersion
 	}
 
@@ -55,7 +55,7 @@ func (r *Require) initialise() hcl.Diagnostics {
 			r.modMap[m.Name] = m
 		}
 	}
-	return diags
+	return plugin.DiagsToError("failed to initialise Require struct", diags)
 }
 
 func (r *Require) ValidateSteampipeVersion(modName string) error {

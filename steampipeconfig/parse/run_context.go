@@ -177,30 +177,41 @@ func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies
 		r.dependencyGraph.AddNode(name)
 	}
 	// add root dependency
-	r.dependencyGraph.AddEdge(rootDependencyNode, name)
+	if err := r.dependencyGraph.AddEdge(rootDependencyNode, name); err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "failed to add root dependency to graph",
+			Detail:   err.Error()})
+	}
 
 	for _, dep := range dependencies {
 		// each dependency object may have multiple traversals
 		for _, t := range dep.Traversals {
-			d := hclhelpers.TraversalAsString(t)
+			parsedPropertyPath, err := modconfig.ParseResourcePropertyPath(hclhelpers.TraversalAsString(t))
 
-			// 'd' may be a property path - when storing dependencies we only care about the resource names
-			dependencyResource, err := modconfig.PropertyPathToResourceName(d)
 			if err != nil {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
-					Summary:  "failed to convert cty value - asJson failed",
+					Summary:  "failed to parse dependency",
 					Detail:   err.Error()})
 				continue
 
 			}
-			if !r.dependencyGraph.ContainsNode(dependencyResource) {
-				r.dependencyGraph.AddNode(dependencyResource)
+
+			// 'd' may be a property path - when storing dependencies we only care about the resource names
+			dependencyResourceName := parsedPropertyPath.ToResourceName()
+			if !r.dependencyGraph.ContainsNode(dependencyResourceName) {
+				r.dependencyGraph.AddNode(dependencyResourceName)
 			}
-			r.dependencyGraph.AddEdge(name, dependencyResource)
+			if err := r.dependencyGraph.AddEdge(name, dependencyResourceName); err != nil {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "failed to add dependency to graph",
+					Detail:   err.Error()})
+			}
 		}
 	}
-	return nil
+	return diags
 }
 
 // BlocksToDecode builds a list of blocks to decode, the order of which is determined by the depdnency order
@@ -370,9 +381,8 @@ func (r *RunContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.D
 	}
 
 	// remove this resource from unparsed blocks
-	if _, ok := r.UnresolvedBlocks[resource.Name()]; ok {
-		delete(r.UnresolvedBlocks, resource.Name())
-	}
+	delete(r.UnresolvedBlocks, resource.Name())
+
 	return nil
 }
 

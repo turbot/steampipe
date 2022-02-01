@@ -23,7 +23,7 @@ type Query struct {
 
 	Description      *string           `cty:"description" column:"description,text"`
 	Documentation    *string           `cty:"documentation"  column:"documentation,text"`
-	SearchPath       *string           `cty:"search_path"column:"search_path,text"`
+	SearchPath       *string           `cty:"search_path" column:"search_path,text"`
 	SearchPathPrefix *string           `cty:"search_path_prefix" column:"search_path_prefix,text"`
 	SQL              *string           `cty:"sql" hcl:"sql" column:"sql,text"`
 	Tags             map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`

@@ -80,7 +80,11 @@ type Mod struct {
 	resourceMaps *WorkspaceResourceMaps
 }
 
-func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
+func NewMod(shortName, modPath string, defRange hcl.Range) (*Mod, error) {
+	require, err := NewRequire()
+	if err != nil {
+		return nil, err
+	}
 	mod := &Mod{
 		ShortName:         shortName,
 		FullName:          fmt.Sprintf("mod.%s", shortName),
@@ -101,12 +105,12 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 
 		ModPath:   modPath,
 		DeclRange: defRange,
-		Require:   NewRequire(),
+		Require:   require,
 	}
 
 	// try to derive mod version from the path
 	mod.setVersion()
-	return mod
+	return mod, nil
 }
 
 func (m *Mod) setVersion() {
@@ -323,11 +327,14 @@ func (m *Mod) Equals(other *Mod) bool {
 }
 
 // CreateDefaultMod creates a default mod created for a workspace with no mod definition
-func CreateDefaultMod(modPath string) *Mod {
-	m := NewMod(defaultModName, modPath, hcl.Range{})
+func CreateDefaultMod(modPath string) (*Mod, error) {
+	m, err := NewMod(defaultModName, modPath, hcl.Range{})
+	if err != nil {
+		return nil, err
+	}
 	folderName := filepath.Base(modPath)
 	m.Title = &folderName
-	return m
+	return m, nil
 }
 
 // IsDefaultMod returns whether this mod is a default mod created for a workspace with no mod definition
@@ -527,7 +534,15 @@ func (m *Mod) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 	if m.Require == nil {
 		return nil
 	}
-	return m.Require.initialise()
+	err := m.Require.initialise()
+	if err != nil {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  err.Error(),
+			Subject:  &block.DefRange,
+		}}
+	}
+	return nil
 
 }
 

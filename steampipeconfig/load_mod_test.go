@@ -27,13 +27,14 @@ var testCasesLoadMod map[string]loadModTest
 
 func init() {
 	filepaths.SteampipeDir = "~/.steampipe"
+	require, _ := modconfig.NewRequire()
 	testCasesLoadMod = map[string]loadModTest{
 		"no_mod_sql_files": {
 			source: "testdata/mods/no_mod_sql_files",
 			expected: &modconfig.Mod{
 				ShortName: "local",
 				FullName:  "mod.local",
-				Require:   modconfig.NewRequire(),
+				Require:   require,
 				Title:     toStringPointer("no_mod_sql_files"),
 				Queries: map[string]*modconfig.Query{
 					"local.query.q1": {
@@ -54,7 +55,7 @@ func init() {
 				ShortName: "local",
 				Title:     toStringPointer("no_mod_hcl_queries"),
 				FullName:  "mod.local",
-				Require:   modconfig.NewRequire(),
+				Require:   require,
 				Queries: map[string]*modconfig.Query{
 					"local.query.q1": {
 						ShortName:   "q1",
@@ -82,7 +83,7 @@ func init() {
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
-				Require:     modconfig.NewRequire(),
+				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
 			},
@@ -92,7 +93,7 @@ func init() {
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
-				Require:     modconfig.NewRequire(),
+				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
 				Queries: map[string]*modconfig.Query{
@@ -111,7 +112,7 @@ func init() {
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
-				Require:     modconfig.NewRequire(),
+				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
 				Queries: map[string]*modconfig.Query{
@@ -144,7 +145,7 @@ func init() {
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
-				Require:     modconfig.NewRequire(),
+				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
 				Queries: map[string]*modconfig.Query{
@@ -200,7 +201,7 @@ func init() {
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
-				Require:     modconfig.NewRequire(),
+				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
 				Queries: map[string]*modconfig.Query{
@@ -228,7 +229,7 @@ func init() {
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
-				Require:     modconfig.NewRequire(),
+				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
 				Queries: map[string]*modconfig.Query{
@@ -311,7 +312,7 @@ func init() {
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
-				Require:     modconfig.NewRequire(),
+				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
 				Queries: map[string]*modconfig.Query{"m1.query.q1": {ShortName: "q1", FullName: "m1.query.q1",
@@ -324,7 +325,7 @@ func init() {
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
-				Require:     modconfig.NewRequire(),
+				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
 				Queries: map[string]*modconfig.Query{
@@ -352,7 +353,7 @@ func init() {
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
-				Require:     modconfig.NewRequire(),
+				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
 				Queries: map[string]*modconfig.Query{
@@ -378,7 +379,7 @@ func init() {
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
-				Require:     modconfig.NewRequire(),
+				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
 				Queries: map[string]*modconfig.Query{
@@ -404,7 +405,7 @@ func init() {
 			expected: &modconfig.Mod{
 				ShortName:   "m1",
 				FullName:    "mod.m1",
-				Require:     modconfig.NewRequire(),
+				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
 				Queries: map[string]*modconfig.Query{

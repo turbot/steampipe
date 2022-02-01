@@ -3,6 +3,6 @@ report "r1"{
     }
 
     text {
-        value = self.input.i1
+        value = self.input.i1.result
     }
 }

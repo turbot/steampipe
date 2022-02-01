@@ -8,11 +8,16 @@ import (
 
 // BuildResourceTree builds the control tree structure by setting the parent property for each control and benchmark
 // NOTE: this also builds the sorted benchmark list
-func (m *Mod) BuildResourceTree(loadedDependencyMods ModMap) error {
+func (m *Mod) BuildResourceTree(loadedDependencyMods ModMap) (err error) {
+	defer func() {
+		if err == nil {
+			err = m.validateResourceTree()
+		}
+	}()
+
 	if err := m.addResourcesIntoTree(m); err != nil {
 		return err
 	}
-	defer m.validateResourceTree()
 
 	if !m.HasDependentMods() {
 		return nil
@@ -66,7 +71,9 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
 	for _, p := range m.getParents(item) {
 		// if we are the parent, add as a child
-		item.AddParent(p)
+		if err := item.AddParent(p); err != nil {
+			return err
+		}
 		if p == m {
 			m.children = append(m.children, item)
 		}
