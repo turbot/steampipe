@@ -313,7 +313,18 @@ const buildHierarchyDataInputs = (
     }
 
     if (row.category && !categories[row.category]) {
-      categories[row.category] = { color: themeColors[colorIndex++] };
+      let color;
+      if (
+        properties.categories &&
+        properties.categories[row.category] &&
+        properties.categories[row.category].color
+      ) {
+        color = properties.categories[row.category].color;
+        colorIndex++;
+      } else {
+        color = themeColors[colorIndex++];
+      }
+      categories[row.category] = { color };
     }
 
     if (!usedIds[row.id]) {
