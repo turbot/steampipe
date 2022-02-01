@@ -78,52 +78,49 @@ const ControlsTable = ({ loading, control }: ControlsTableProps) => {
           prepareRow(row);
           return (
             <tr {...row.getRowProps()}>
-              {row.cells.map((cell) => {
-                console.log(cell.column.Header, cell.value);
-                return (
-                  <td
-                    {...cell.getCellProps()}
-                    className="px-4 py-4 align-top content-center text-sm whitespace-nowrap"
-                  >
-                    {cell.column.Header === "Status" && (
-                      <>
-                        {["ALARM", "ERROR", "INVALID"].includes(
-                          cell.value.toUpperCase()
-                        ) && (
-                          <div
-                            className="whitespace-nowrap text-alert"
-                            title={`Control in ${cell.value} status`}
-                          >
-                            <AlarmIcon />
-                          </div>
-                        )}
-                        {cell.value.toUpperCase() === "OK" && (
-                          <div
-                            className="whitespace-nowrap text-ok"
-                            title="Control in OK status"
-                          >
-                            <OKIcon />
-                          </div>
-                        )}
-                        {cell.value.toUpperCase() === "INFO" && (
-                          <div
-                            className="whitespace-nowrap text-tbd"
-                            title="Control in info status"
-                          >
-                            <InfoIcon />
-                          </div>
-                        )}
-                      </>
-                    )}
-                    {cell.column.Header === "Reason" && (
-                      <div className="text-black-scale-5 italic">
-                        {cell.value}
-                      </div>
-                    )}
-                    {cell.column.Header === "Resource" && cell.value}
-                  </td>
-                );
-              })}
+              {row.cells.map((cell) => (
+                <td
+                  {...cell.getCellProps()}
+                  className="px-4 py-4 align-top content-center text-sm whitespace-nowrap"
+                >
+                  {cell.column.Header === "Status" && (
+                    <>
+                      {["ALARM", "ERROR", "INVALID"].includes(
+                        cell.value.toUpperCase()
+                      ) && (
+                        <div
+                          className="whitespace-nowrap text-alert"
+                          title={`Control in ${cell.value} status`}
+                        >
+                          <AlarmIcon />
+                        </div>
+                      )}
+                      {cell.value.toUpperCase() === "OK" && (
+                        <div
+                          className="whitespace-nowrap text-ok"
+                          title="Control in OK status"
+                        >
+                          <OKIcon />
+                        </div>
+                      )}
+                      {cell.value.toUpperCase() === "INFO" && (
+                        <div
+                          className="whitespace-nowrap text-tbd"
+                          title="Control in info status"
+                        >
+                          <InfoIcon />
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {cell.column.Header === "Reason" && (
+                    <div className="text-black-scale-5 italic">
+                      {cell.value}
+                    </div>
+                  )}
+                  {cell.column.Header === "Resource" && cell.value}
+                </td>
+              ))}
             </tr>
           );
         })}
