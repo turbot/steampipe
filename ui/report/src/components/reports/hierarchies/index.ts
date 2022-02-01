@@ -5,8 +5,18 @@ import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 
 export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
+interface HierarchyCategoryOptions {
+  title?: string;
+  color?: string;
+}
+
+type HierarchyCategories = {
+  [category: string]: HierarchyCategoryOptions;
+};
+
 export type HierarchyProperties = {
   type: HierarchyType;
+  categories?: HierarchyCategories;
 };
 
 export type HierarchyProps = BaseChartProps & {
