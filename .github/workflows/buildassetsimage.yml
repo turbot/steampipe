@@ -6,9 +6,10 @@ on:
       branch:
         description: "The branch that will be built"
         required: true
-      tag:
-        description: "The release tag/version that will be set"
+      version:
+        description: "The desired semver compatible version string (MUST to be prefixed with a 'v')"
         required: true
+  pull_request:
 
 env:
   PROJECT_ID: steampipe
@@ -16,13 +17,33 @@ env:
   CORE_REPO: us-docker.pkg.dev/steampipe/steampipe
   ORG: turbot
   CONFIG_SCHEMA_VERSION: "2020-11-18"
-  VERSION: ${{ github.event.inputs.tag }}
+  VERSION: ${{ github.event.inputs.version }}
   
 jobs:
   build:
     name: Build and Push Assets
     runs-on: ubuntu-latest
     steps:
+
+    - name: Get latest version tag
+      run: |-
+        echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+    - name: Trim tag
+      run: |-
+        echo $VERSION
+        trim=${VERSION#"v"}
+        echo $trim
+        echo "VERSION=${trim}" >> $GITHUB_ENV
+
+    - name: Validate Version String
+      run: |-
+        if [[ $VERSION =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+          echo "Version OK: $VERSION"
+        else
+          echo "Invalid version: $VERSION"
+          exit 1
+        fi
     - name: Checkout
       uses: actions/checkout@v2
       with:
