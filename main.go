@@ -24,7 +24,9 @@ func main() {
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
 		}
-		os.RemoveAll(filepaths.TmpDir(false))
+		if len(filepaths.SteampipeDir) > 0 {
+			os.RemoveAll(filepaths.TmpDir(false))
+		}
 		utils.LogTime("main end")
 		utils.DisplayProfileData()
 		os.Exit(exitCode)
