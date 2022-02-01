@@ -30,6 +30,10 @@ export type TextProps = BasePrimitiveProps & {
 };
 
 const Markdown = ({ value }) => {
+  if (!value) {
+    return null;
+  }
+
   // Use standard prose styles from Tailwind
   // Do not restrict width, that's the job of the wrapping panel
   const isLong = value.split("\n").length > 3;
@@ -52,9 +56,12 @@ const Markdown = ({ value }) => {
   );
 };
 
-const Raw = ({ value }) => (
-  <pre className="whitespace-pre-wrap break-all">{value}</pre>
-);
+const Raw = ({ value }) => {
+  if (!value) {
+    return null;
+  }
+  return <pre className="whitespace-pre-wrap break-all">{value}</pre>;
+};
 
 const renderText = (type, value) => {
   switch (type) {
