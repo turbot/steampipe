@@ -23,6 +23,9 @@ type ReportTable struct {
 
 	Base *ReportTable `hcl:"base" json:"-"`
 
+	ColumnList ReportTableColumnList         `cty:"column_list" hcl:"column,block" column:"column,jsonb" json:"-"`
+	Columns    map[string]*ReportTableColumn `cty:"columns" json:"columns"`
+
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
@@ -59,6 +62,13 @@ func (t *ReportTable) Name() string {
 // OnDecoded implements HclResource
 func (t *ReportTable) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	t.setBaseProperties()
+	// populate columns map
+	if len(t.ColumnList) > 0 {
+		t.Columns = make(map[string]*ReportTableColumn, len(t.ColumnList))
+		for _, c := range t.ColumnList {
+			t.Columns[c.Name] = c
+		}
+	}
 	return nil
 }
 
@@ -75,6 +85,12 @@ func (t *ReportTable) setBaseProperties() {
 	}
 	if t.SQL == nil {
 		t.SQL = t.Base.SQL
+	}
+	if t.ColumnList == nil {
+		t.ColumnList = t.Base.ColumnList
+	} else {
+
+		t.ColumnList.Merge(t.Base.ColumnList)
 	}
 }
 
@@ -174,6 +190,16 @@ func (t *ReportTable) Diff(other *ReportTable) *ReportTreeItemDiffs {
 
 	if !utils.SafeIntEqual(t.Width, other.Width) {
 		res.AddPropertyDiff("Width")
+	}
+
+	if len(t.ColumnList) != len(other.ColumnList) {
+		res.AddPropertyDiff("Columns")
+	} else {
+		for i, c := range t.Columns {
+			if !c.Equals(other.Columns[i]) {
+				res.AddPropertyDiff("Columns")
+			}
+		}
 	}
 
 	res.populateChildDiffs(t, other)

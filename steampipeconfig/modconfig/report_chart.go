@@ -236,10 +236,10 @@ func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
 
 	if c.Legend != nil {
 		if !c.Legend.Equals(other.Legend) {
-			res.AddPropertyDiff("Series")
+			res.AddPropertyDiff("Legend")
 		}
 	} else if other.Legend != nil {
-		res.AddPropertyDiff("Series")
+		res.AddPropertyDiff("Legend")
 	}
 
 	if c.Axes != nil {
