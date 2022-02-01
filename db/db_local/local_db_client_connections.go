@@ -82,7 +82,7 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 
 func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampipeconfig.ConnectionUpdates) ([]string, *steampipeconfig.RefreshConnectionResult) {
 	var connectionQueries []string
-	var res *steampipeconfig.RefreshConnectionResult
+	res := &steampipeconfig.RefreshConnectionResult{}
 	numUpdates := len(connectionUpdates.Update)
 
 	log.Printf("[TRACE] buildConnectionUpdateQueries: num updates %d", numUpdates)
