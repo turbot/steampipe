@@ -5,8 +5,8 @@ on:
       branch:
         description: "The branch that will be built"
         required: true
-      tag:
-        description: "The release tag that will be set"
+      version:
+        description: "The desired semver compatible version string (MUST to be prefixed with a 'v')"
         required: true
 
 env:
@@ -158,8 +158,8 @@ jobs:
         run: |
           git config user.name "Steampipe GitHub Actions Bot"
           git config user.email noreply@github.com
-          git tag ${{ github.event.inputs.tag }}
-          git push origin ${{ github.event.inputs.tag }}
+          git tag ${{ github.event.inputs.version }}
+          git push origin ${{ github.event.inputs.version }}
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2

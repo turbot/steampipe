@@ -24,11 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-    - name: Get latest version tag
-      run: |-
-        echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-
-    - name: Trim tag
+    - name: Trim version prefix
       run: |-
         echo $VERSION
         trim=${VERSION#"v"}
@@ -43,6 +39,7 @@ jobs:
           echo "Invalid version: $VERSION"
           exit 1
         fi
+
     - name: Checkout
       uses: actions/checkout@v2
       with:
