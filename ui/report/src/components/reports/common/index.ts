@@ -2,7 +2,6 @@ import moment from "moment";
 import { ChartProperties, ChartType } from "../charts";
 import { ColorGenerator } from "../../../utils/color";
 import { HierarchyProperties, HierarchyType } from "../hierarchies";
-import { raw } from "@storybook/react";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
