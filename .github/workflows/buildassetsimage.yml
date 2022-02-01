@@ -9,7 +9,6 @@ on:
       version:
         description: "The desired semver compatible version string (MUST to be prefixed with a 'v')"
         required: true
-  pull_request:
 
 env:
   PROJECT_ID: steampipe
