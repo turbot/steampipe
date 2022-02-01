@@ -14,6 +14,7 @@ import {
   PanelDefinition,
 } from "../../../../hooks/useReport";
 import { RenderChart as Chart } from "../../charts/Chart";
+import { RenderHierarchy as Hierarchy } from "../../hierarchies/Hierarchy";
 import { RenderInput as Input } from "../../inputs/Input";
 
 const ChildWithTitle = ({ child, level, renderChild }) => {
@@ -33,15 +34,6 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
   <>
     {children.map((child) => {
       switch (child.node_type) {
-        case "container":
-          return (
-            <ChildWithTitle
-              key={child.name}
-              child={child}
-              level="container"
-              renderChild={() => <Container definition={child} />}
-            />
-          );
         case "benchmark":
           return (
             <ChildWithTitle
@@ -49,12 +41,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               child={child}
               level="container"
               renderChild={() => (
-                <Panel
-                  definition={child}
-                  ready={true}
-                  showExpand={showPanelExpand}
-                  type="benchmark"
-                >
+                <Panel definition={child} showExpand={showPanelExpand}>
                   <Benchmark {...child} />
                 </Panel>
               )}
@@ -71,11 +58,19 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                   definition={child}
                   ready={!!child.data}
                   showExpand={showPanelExpand}
-                  type="chart"
                 >
                   <Chart {...child} />
                 </Panel>
               )}
+            />
+          );
+        case "container":
+          return (
+            <ChildWithTitle
+              key={child.name}
+              child={child}
+              level="container"
+              renderChild={() => <Container definition={child} />}
             />
           );
         case "control":
@@ -85,12 +80,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               child={child}
               level="panel"
               renderChild={() => (
-                <Panel
-                  definition={child}
-                  ready={true}
-                  showExpand={showPanelExpand}
-                  type="control"
-                >
+                <Panel definition={child} showExpand={showPanelExpand}>
                   <Control {...child} />
                 </Panel>
               )}
@@ -103,12 +93,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               child={child}
               level="panel"
               renderChild={() => (
-                <Panel
-                  definition={child}
-                  ready={true}
-                  showExpand={showPanelExpand}
-                  type="counter"
-                >
+                <Panel definition={child} showExpand={showPanelExpand}>
                   <Counter {...child} />
                 </Panel>
               )}
@@ -121,12 +106,25 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               child={child}
               level="panel"
               renderChild={() => (
+                <Panel definition={child} showExpand={showPanelExpand}>
+                  <ErrorPanel error={`Unknown resource type: ${child.name}`} />
+                </Panel>
+              )}
+            />
+          );
+        case "hierarchy":
+          return (
+            <ChildWithTitle
+              key={child.name}
+              child={child}
+              level="panel"
+              renderChild={() => (
                 <Panel
                   definition={child}
+                  ready={!!child.data}
                   showExpand={showPanelExpand}
-                  type="error"
                 >
-                  <ErrorPanel error={`Unknown resource type: ${child.name}`} />
+                  <Hierarchy {...child} />
                 </Panel>
               )}
             />
@@ -142,7 +140,6 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                   definition={child}
                   ready={child.sql ? !!child.data : !!child.properties.src}
                   showExpand={showPanelExpand}
-                  type="image"
                 >
                   <Image {...child} />
                 </Panel>
@@ -154,9 +151,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
             <Panel
               key={child.name}
               definition={child}
-              ready={true}
               showExpand={showPanelExpand}
-              type="input"
             >
               <Input {...child} />
             </Panel>
@@ -172,7 +167,6 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                   definition={child}
                   ready={!!child.data}
                   showExpand={showPanelExpand}
-                  type="table"
                 >
                   <Table {...child} />
                 </Panel>
@@ -186,11 +180,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               child={child}
               level="panel"
               renderChild={() => (
-                <Panel
-                  definition={child}
-                  showExpand={showPanelExpand}
-                  type="text"
-                >
+                <Panel definition={child} showExpand={showPanelExpand}>
                   <Text {...child} />
                 </Panel>
               )}

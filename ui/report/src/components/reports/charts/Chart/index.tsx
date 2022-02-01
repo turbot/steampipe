@@ -9,7 +9,6 @@ import useMediaMode from "../../../../hooks/useMediaMode";
 import { Chart as ChartJS, registerables } from "chart.js";
 import { buildChartDataInputs, LeafNodeData } from "../../common";
 import { Chart as ReactChartJS } from "react-chartjs-2";
-import { ColorGenerator } from "../../../../utils/color";
 import { PanelDefinition, useReport } from "../../../../hooks/useReport";
 import { get, has, merge, set } from "lodash";
 import { useEffect, useRef, useState } from "react";
@@ -20,89 +19,6 @@ import { ZoomIcon } from "../../../../constants/icons";
 ChartJS.register(...registerables);
 
 ChartJS.defaults.font.size = 12.25;
-
-// TODO color scheme - need to find something better?
-const generateColors = () => {
-  // return [
-  //   "#6388b4",
-  //   "#ffae34",
-  //   "#ef6f6a",
-  //   "#8cc2ca",
-  //   "#55ad89",
-  //   "#c3bc3f",
-  //   "#bb7693",
-  //   "#baa094",
-  //   "#a9b5ae",
-  //   "#767676",
-  // ];
-  // return [
-  //   "#4f6980",
-  //   "#849db1",
-  //   "#a2ceaa",
-  //   "#638b66",
-  //   "#bfbb60",
-  //   "#f47942",
-  //   "#fbb04e",
-  //   "#b66353",
-  //   "#d7ce9f",
-  //   "#b9aa97",
-  //   "#7e756d",
-  // ];
-  // return [
-  //   "#1f77b4",
-  //   "#aec7e8",
-  //   "#ff7f0e",
-  //   "#ffbb78",
-  //   "#2ca02c",
-  //   "#98df8a",
-  //   "#d62728",
-  //   "#ff9896",
-  //   "#9467bd",
-  //   "#c5b0d5",
-  //   "#8c564b",
-  //   "#c49c94",
-  //   "#e377c2",
-  //   "#f7b6d2",
-  //   "#7f7f7f",
-  //   "#c7c7c7",
-  //   "#bcbd22",
-  //   "#dbdb8d",
-  //   "#17becf",
-  //   "#9edae5",
-  // ];
-  // tableau.Tableau20
-  return [
-    "#4E79A7",
-    "#A0CBE8",
-    "#F28E2B",
-    "#FFBE7D",
-    "#59A14F",
-    "#8CD17D",
-    "#B6992D",
-    "#F1CE63",
-    "#499894",
-    "#86BCB6",
-    "#E15759",
-    "#FF9D9A",
-    "#79706E",
-    "#BAB0AC",
-    "#D37295",
-    "#FABFD2",
-    "#B07AA1",
-    "#D4A6C8",
-    "#9D7660",
-    "#D7B5A6",
-  ];
-  const colorGenerator = new ColorGenerator(24, 5);
-  const colors: string[] = [];
-  for (let i = 0; i < 20; i++) {
-    const nextColor = colorGenerator.nextColor();
-    colors.push(nextColor.hex);
-  }
-  return colors;
-};
-
-const themeColors = generateColors();
 
 const getBaseOptions = (type, data, min, max, theme, themeWrapperRef) => {
   // We need to get the theme CSS variable values - these are accessible on the theme root element and below in the tree
@@ -426,7 +342,7 @@ const buildChartOptions = (
   return merge(baseOptions, overrideOptions);
 };
 
-const buildInputs = (
+const buildChartInputs = (
   rawData: LeafNodeData,
   inputs: ChartProperties,
   theme,
@@ -468,7 +384,7 @@ const Chart = ({ data, inputs, theme, themeWrapperRef }) => {
   const { dispatch } = useReport();
   const mediaMode = useMediaMode();
 
-  const built = buildInputs(data, inputs, theme, themeWrapperRef);
+  const built = buildChartInputs(data, inputs, theme, themeWrapperRef);
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
   useEffect(() => setRandomVal(Math.random()), [theme.name]);
@@ -555,7 +471,7 @@ const ChartWrapper = ({ data, inputs }) => {
   );
 };
 
-export type ChartDefinition = PanelDefinition & {
+type ChartDefinition = PanelDefinition & {
   properties: ChartProps;
 };
 
@@ -580,4 +496,4 @@ const RenderChart = (props: ChartDefinition) => {
 
 export default ChartWrapper;
 
-export { RenderChart, themeColors };
+export { RenderChart };
