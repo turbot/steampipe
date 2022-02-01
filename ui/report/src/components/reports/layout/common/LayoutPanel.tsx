@@ -19,7 +19,7 @@ const LayoutPanel = ({
 }: LayoutPanelProps) => (
   <div
     className={classNames(
-      "grid grid-cols-12 gap-4 col-span-12",
+      "grid grid-cols-12 gap-x-4 gap-y-6 col-span-12",
       has(definition, "width")
         ? // @ts-ignore
           getResponsivePanelWidthClass(definition.width)

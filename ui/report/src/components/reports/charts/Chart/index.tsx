@@ -137,6 +137,7 @@ const getBaseOptions = (type, data, min, max, theme, themeWrapperRef) => {
                 color: foreground,
               },
               grid: {
+                borderColor: foregroundLightest,
                 display: false,
                 color: foregroundLightest,
               },
@@ -150,6 +151,7 @@ const getBaseOptions = (type, data, min, max, theme, themeWrapperRef) => {
                 color: foreground,
               },
               grid: {
+                borderColor: foregroundLightest,
                 display: false,
                 color: foregroundLightest,
               },

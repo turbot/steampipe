@@ -128,7 +128,7 @@ const Panel = ({
   // }
 
   const baseStyles = classNames(
-    "grid grid-cols-12 gap-4 col-span-12",
+    "grid grid-cols-12 col-span-12",
     definition.width ? getResponsivePanelWidthClass(definition.width) : null,
     "overflow-auto"
   );
