@@ -1,3 +1,7 @@
+## v0.12.3 [2022-02-01]
+_Bug fixes_
+* Ensure SetConnectionConfig is only called once. ([#1368](https://github.com/turbot/steampipe/issues/1368))
+
 ## v0.12.2 [2022-01-27]
 _Bug fixes_
 * Fix occasional `Unrecognized remote plugin message` errors on startup when running update checks. ([#1354](https://github.com/turbot/steampipe/issues/1354))
