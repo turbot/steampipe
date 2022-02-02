@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -498,6 +499,154 @@ func (m *Mod) GetPaths() []NodePath {
 
 // SetPaths implements ModTreeItem
 func (m *Mod) SetPaths() {}
+
+func (m *Mod) Diff(other *Mod) *ReportTreeItemDiffs {
+	res := &ReportTreeItemDiffs{
+		Item: m,
+		Name: m.Name(),
+	}
+
+	if !utils.SafeStringsEqual(m.Name(), other.Name()) {
+		res.AddPropertyDiff("Name")
+	}
+
+	if !utils.SafeStringsEqual(m.Title, other.Title) {
+		res.AddPropertyDiff("Title")
+	}
+
+	if len(m.Queries) != len(other.Queries) {
+		res.AddPropertyDiff("Queries")
+	} else {
+		for i, s := range m.Queries {
+			if !s.Equals(other.Queries[i]) {
+				res.AddPropertyDiff("Queries")
+			}
+		}
+	}
+
+	if len(m.Controls) != len(other.Controls) {
+		res.AddPropertyDiff("Controls")
+	} else {
+		for i, s := range m.Controls {
+			if !s.Equals(other.Controls[i]) {
+				res.AddPropertyDiff("Controls")
+			}
+		}
+	}
+
+	if len(m.Benchmarks) != len(other.Benchmarks) {
+		res.AddPropertyDiff("Benchmarks")
+	} else {
+		for i, s := range m.Benchmarks {
+			if !s.Equals(other.Benchmarks[i]) {
+				res.AddPropertyDiff("Benchmarks")
+			}
+		}
+	}
+
+	if len(m.Reports) != len(other.Reports) {
+		res.AddPropertyDiff("Reports")
+	} else {
+		for i, s := range m.Reports {
+			if !s.Equals(other.Reports[i]) {
+				res.AddPropertyDiff("Reports")
+			}
+		}
+	}
+
+	if len(m.ReportContainers) != len(other.ReportContainers) {
+		res.AddPropertyDiff("ReportContainers")
+	} else {
+		for i, s := range m.ReportContainers {
+			if !s.Equals(other.ReportContainers[i]) {
+				res.AddPropertyDiff("ReportContainers")
+			}
+		}
+	}
+
+	if len(m.ReportCharts) != len(other.ReportCharts) {
+		res.AddPropertyDiff("ReportCharts")
+	} else {
+		for i, s := range m.ReportCharts {
+			if !s.Equals(other.ReportCharts[i]) {
+				res.AddPropertyDiff("ReportCharts")
+			}
+		}
+	}
+
+	if len(m.ReportCounters) != len(other.ReportCounters) {
+		res.AddPropertyDiff("ReportCounters")
+	} else {
+		for i, s := range m.ReportCounters {
+			if !s.Equals(other.ReportCounters[i]) {
+				res.AddPropertyDiff("ReportCounters")
+			}
+		}
+	}
+
+	if len(m.ReportHierarchies) != len(other.ReportHierarchies) {
+		res.AddPropertyDiff("ReportHierarchies")
+	} else {
+		for i, s := range m.ReportHierarchies {
+			if !s.Equals(other.ReportHierarchies[i]) {
+				res.AddPropertyDiff("ReportHierarchies")
+			}
+		}
+	}
+
+	if len(m.ReportImages) != len(other.ReportImages) {
+		res.AddPropertyDiff("ReportImages")
+	} else {
+		for i, s := range m.ReportImages {
+			if !s.Equals(other.ReportImages[i]) {
+				res.AddPropertyDiff("ReportImages")
+			}
+		}
+	}
+
+	if len(m.ReportInputs) != len(other.ReportInputs) {
+		res.AddPropertyDiff("ReportInputs")
+	} else {
+		for i, s := range m.ReportInputs {
+			if !s.Equals(other.ReportInputs[i]) {
+				res.AddPropertyDiff("ReportInputs")
+			}
+		}
+	}
+
+	if len(m.ReportTables) != len(other.ReportTables) {
+		res.AddPropertyDiff("ReportTables")
+	} else {
+		for i, s := range m.ReportTables {
+			if !s.Equals(other.ReportTables[i]) {
+				res.AddPropertyDiff("ReportTables")
+			}
+		}
+	}
+
+	if len(m.ReportTexts) != len(other.ReportTexts) {
+		res.AddPropertyDiff("ReportTexts")
+	} else {
+		for i, s := range m.ReportTexts {
+			if !s.Equals(other.ReportTexts[i]) {
+				res.AddPropertyDiff("ReportTexts")
+			}
+		}
+	}
+
+	if len(m.Variables) != len(other.Variables) {
+		res.AddPropertyDiff("Variables")
+	} else {
+		for i, s := range m.Variables {
+			if !s.Equals(other.Variables[i]) {
+				res.AddPropertyDiff("Variables")
+			}
+		}
+	}
+
+	res.populateChildDiffs(m, other)
+	return res
+}
 
 // AddPseudoResource adds the pseudo resource to the mod,
 // as long as there is no existing resource of same name

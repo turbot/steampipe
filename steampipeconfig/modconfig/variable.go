@@ -5,7 +5,9 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/tfdiags"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -31,6 +33,9 @@ type Variable struct {
 	ParsingMode                var_config.VariableParsingMode
 	Mod                        *Mod
 
+	metadata        *ResourceMetadata
+	parents         []ModTreeItem
+	Paths           []NodePath `column:"path,jsonb"`
 	UnqualifiedName string
 }
 
@@ -60,6 +65,11 @@ func (v *Variable) Equals(other *Variable) bool {
 // Name implements HclResource, ResourceWithMetadata
 func (v *Variable) Name() string {
 	return v.FullName
+}
+
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
+func (v *Variable) GetUnqualifiedName() string {
+	return v.UnqualifiedName
 }
 
 // OnDecoded implements HclResource
@@ -95,4 +105,72 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 	v.ValueSourceFileName = sourceRange.Filename
 	v.ValueSourceStartLineNumber = sourceRange.Start.Line
 	v.ValueSourceEndLineNumber = sourceRange.End.Line
+}
+
+// AddParent implements ModTreeItem
+func (v *Variable) AddParent(parent ModTreeItem) error {
+	v.parents = append(v.parents, parent)
+
+	return nil
+}
+
+// GetParents implements ModTreeItem
+func (v *Variable) GetParents() []ModTreeItem {
+	return v.parents
+}
+
+// GetChildren implements ModTreeItem
+func (v *Variable) GetChildren() []ModTreeItem {
+	return v.Mod.children
+}
+
+// GetDescription implements ModTreeItem
+func (v *Variable) GetDescription() string {
+	return ""
+}
+
+// GetTitle implements ModTreeItem
+func (v *Variable) GetTitle() string {
+	return typehelpers.SafeString(v.ShortName)
+}
+
+// GetTags implements ModTreeItem
+func (v *Variable) GetTags() map[string]string {
+	return nil
+}
+
+// GetPaths implements ModTreeItem
+func (v *Variable) GetPaths() []NodePath {
+	// lazy load
+	if len(v.Paths) == 0 {
+		v.SetPaths()
+	}
+	return v.Paths
+}
+
+// SetPaths implements ModTreeItem
+func (v *Variable) SetPaths() {
+	for _, parent := range v.parents {
+		for _, parentPath := range parent.GetPaths() {
+			v.Paths = append(v.Paths, append(parentPath, v.Name()))
+		}
+	}
+}
+
+func (v *Variable) Diff(other *Variable) *ReportTreeItemDiffs {
+	res := &ReportTreeItemDiffs{
+		Item: v,
+		Name: v.Name(),
+	}
+
+	if !utils.SafeStringsEqual(v.FullName, other.FullName) {
+		res.AddPropertyDiff("Name")
+	}
+
+	if !utils.SafeStringsEqual(v.Value, other.Value) {
+		res.AddPropertyDiff("Value")
+	}
+
+	res.populateChildDiffs(v, other)
+	return res
 }
