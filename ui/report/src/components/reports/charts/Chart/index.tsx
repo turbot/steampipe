@@ -44,24 +44,53 @@ const getCommonBaseOptions = () => ({
   },
 });
 
-const getCommonBaseOptionsForChartType = (type: ChartType = "column") => {
+const getCommonBaseOptionsForChartType = (
+  type: ChartType = "column",
+  themeColors
+) => {
   switch (type) {
     case "bar":
       return {
         // Declare an x-axis (category axis).
         // The category map the first row in the dataset by default.
-        xAxis: {},
+        xAxis: {
+          axisLabel: { color: themeColors.foreground },
+          axisLine: {
+            show: true,
+            lineStyle: { color: themeColors.foregroundLightest },
+          },
+          axisTick: { show: true },
+          splitLine: { show: false },
+        },
         // Declare a y-axis (value axis).
-        yAxis: { type: "category" },
+        yAxis: {
+          type: "category",
+          axisLabel: { color: themeColors.foreground },
+          axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
+          axisTick: { show: false },
+        },
       };
     case "column":
     case "line":
       return {
         // Declare an x-axis (category axis).
         // The category map the first row in the dataset by default.
-        xAxis: { type: "category" },
+        xAxis: {
+          type: "category",
+          axisLabel: { color: themeColors.foreground },
+          axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
+          axisTick: { show: false },
+        },
         // Declare a y-axis (value axis).
-        yAxis: {},
+        yAxis: {
+          axisLabel: { color: themeColors.foreground },
+          axisLine: {
+            show: true,
+            lineStyle: { color: themeColors.foregroundLightest },
+          },
+          axisTick: { show: true },
+          splitLine: { show: false },
+        },
       };
     case "pie":
       return {
@@ -139,16 +168,26 @@ const getSeriesForChartType = (
   return { series };
 };
 
-const buildChartOptions = (props: ChartProps) => {
+const buildChartOptions = (
+  props: ChartProps,
+  theme: Theme,
+  themeWrapperRef: ((instance: null) => void) | React.RefObject<null>
+) => {
+  // We need to get the theme CSS variable values - these are accessible on the theme root element and below in the tree
+  // @ts-ignore
+  const style = window.getComputedStyle(themeWrapperRef);
+  const foreground = style.getPropertyValue("--color-foreground");
+  const foregroundLightest = style.getPropertyValue(
+    "--color-foreground-lightest"
+  );
   return merge(
     getCommonBaseOptions(),
-    getCommonBaseOptionsForChartType(props.properties?.type),
+    getCommonBaseOptionsForChartType(props.properties?.type, {
+      foreground,
+      foregroundLightest,
+    }),
     getSeriesForChartType(props.properties?.type, props.data, props.properties),
     {
-      // legend: {
-      //   orient: "vertical",
-      //   left: "left",
-      // },
       dataset: {
         source: buildChartDataset(props.data),
       },
@@ -670,7 +709,7 @@ const ChartWrapper = (props: ChartProps) => {
 
   return (
     <Chart
-      options={buildChartOptions(props)}
+      options={buildChartOptions(props, theme, wrapperRef)}
       theme={theme}
       themeWrapperRef={wrapperRef}
     />
