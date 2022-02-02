@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
+	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -16,6 +18,8 @@ type Local struct {
 	DeclRange hcl.Range
 	Mod       *Mod `cty:"mod"`
 	metadata  *ResourceMetadata
+	Paths     []NodePath `column:"path,jsonb"`
+	parents   []ModTreeItem
 }
 
 func NewLocal(name string, val cty.Value, declRange hcl.Range) *Local {
@@ -68,4 +72,72 @@ func (l *Local) CtyValue() (cty.Value, error) {
 // GetDeclRange implements HclResource
 func (l *Local) GetDeclRange() *hcl.Range {
 	return &l.DeclRange
+}
+
+// AddParent implements ModTreeItem
+func (l *Local) AddParent(parent ModTreeItem) error {
+	l.parents = append(l.parents, parent)
+
+	return nil
+}
+
+// GetParents implements ModTreeItem
+func (l *Local) GetParents() []ModTreeItem {
+	return l.parents
+}
+
+// GetChildren implements ModTreeItem
+func (l *Local) GetChildren() []ModTreeItem {
+	return l.Mod.children
+}
+
+// GetDescription implements ModTreeItem
+func (l *Local) GetDescription() string {
+	return ""
+}
+
+// GetTitle implements ModTreeItem
+func (l *Local) GetTitle() string {
+	return typehelpers.SafeString(l.FullName)
+}
+
+// GetTags implements ModTreeItem
+func (l *Local) GetTags() map[string]string {
+	return nil
+}
+
+// GetPaths implements ModTreeItem
+func (l *Local) GetPaths() []NodePath {
+	// lazy load
+	if len(l.Paths) == 0 {
+		l.SetPaths()
+	}
+	return l.Paths
+}
+
+// SetPaths implements ModTreeItem
+func (l *Local) SetPaths() {
+	for _, parent := range l.parents {
+		for _, parentPath := range parent.GetPaths() {
+			l.Paths = append(l.Paths, append(parentPath, l.Name()))
+		}
+	}
+}
+
+func (l *Local) Diff(other *Local) *ReportTreeItemDiffs {
+	res := &ReportTreeItemDiffs{
+		Item: l,
+		Name: l.Name(),
+	}
+
+	if !utils.SafeStringsEqual(l.FullName, other.FullName) {
+		res.AddPropertyDiff("Name")
+	}
+
+	if !utils.SafeStringsEqual(l.Value, other.Value) {
+		res.AddPropertyDiff("Value")
+	}
+
+	res.populateChildDiffs(l, other)
+	return res
 }

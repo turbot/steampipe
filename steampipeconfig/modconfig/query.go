@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -36,6 +37,8 @@ type Query struct {
 	PreparedStatementName string `column:"prepared_statement_name,text"`
 	metadata              *ResourceMetadata
 	UnqualifiedName       string
+	Paths                 []NodePath `column:"path,jsonb"`
+	parents               []ModTreeItem
 }
 
 func NewQuery(block *hcl.Block) *Query {
@@ -205,4 +208,76 @@ func (q *Query) GetPreparedStatementName() string {
 // ModName implements QueryProvider
 func (q *Query) ModName() string {
 	return q.Mod.NameWithVersion()
+}
+
+// AddParent implements ModTreeItem
+func (q *Query) AddParent(parent ModTreeItem) error {
+	q.parents = append(q.parents, parent)
+
+	return nil
+}
+
+// GetParents implements ModTreeItem
+func (q *Query) GetParents() []ModTreeItem {
+	return q.parents
+}
+
+// GetChildren implements ModTreeItem
+func (q *Query) GetChildren() []ModTreeItem {
+	return q.Mod.children
+}
+
+// GetDescription implements ModTreeItem
+func (q *Query) GetDescription() string {
+	return ""
+}
+
+// GetTitle implements ModTreeItem
+func (q *Query) GetTitle() string {
+	return typehelpers.SafeString(q.Title)
+}
+
+// GetTags implements ModTreeItem
+func (q *Query) GetTags() map[string]string {
+	return nil
+}
+
+// GetPaths implements ModTreeItem
+func (q *Query) GetPaths() []NodePath {
+	// lazy load
+	if len(q.Paths) == 0 {
+		q.SetPaths()
+	}
+	return q.Paths
+}
+
+// SetPaths implements ModTreeItem
+func (q *Query) SetPaths() {
+	for _, parent := range q.parents {
+		for _, parentPath := range parent.GetPaths() {
+			q.Paths = append(q.Paths, append(parentPath, q.Name()))
+		}
+	}
+}
+
+func (q *Query) Diff(other *Query) *ReportTreeItemDiffs {
+	res := &ReportTreeItemDiffs{
+		Item: q,
+		Name: q.Name(),
+	}
+
+	if !utils.SafeStringsEqual(q.FullName, other.FullName) {
+		res.AddPropertyDiff("Name")
+	}
+
+	if !utils.SafeStringsEqual(q.SQL, other.SQL) {
+		res.AddPropertyDiff("SQL")
+	}
+
+	if !utils.SafeStringsEqual(q.SearchPath, other.SearchPath) {
+		res.AddPropertyDiff("SearchPath")
+	}
+
+	res.populateChildDiffs(q, other)
+	return res
 }
