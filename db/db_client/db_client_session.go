@@ -44,8 +44,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) (res *db_common.AcquireSe
 	sessionResult.Session = session
 	c.sessionsMutex.Unlock()
 
-	log.Printf("[TRACE] Got Session with PID: %d", backendPid)
-
 	defer func() {
 		// make sure that we close the acquired session, in case of error
 		if sessionResult.Error != nil && databaseConnection != nil {
@@ -58,7 +56,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) (res *db_common.AcquireSe
 	}
 
 	if !session.Initialized {
-		log.Printf("[TRACE] Session with PID: %d - waiting for init lock", backendPid)
 		session.LifeCycle.Add("queued_for_init")
 
 		err := c.parallelSessionInitLock.Acquire(ctx, 1)
@@ -68,7 +65,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) (res *db_common.AcquireSe
 		}
 		c.sessionInitWaitGroup.Add(1)
 
-		log.Printf("[TRACE] Session with PID: %d - waiting for init start", backendPid)
 		session.LifeCycle.Add("init_start")
 		err, warnings := c.ensureSessionFunc(ctx, session)
 		session.LifeCycle.Add("init_finish")
@@ -82,8 +78,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) (res *db_common.AcquireSe
 
 		// if there is no error, mark session as initialized
 		session.Initialized = true
-
-		log.Printf("[TRACE] Session with PID: %d - init DONE", backendPid)
 	}
 
 	// update required session search path if needed
@@ -100,8 +94,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) (res *db_common.AcquireSe
 	c.sessionsMutex.Lock()
 	c.sessions[backendPid] = session
 	c.sessionsMutex.Unlock()
-
-	log.Printf("[TRACE] Session with PID: %d - returning", backendPid)
 
 	return sessionResult
 }

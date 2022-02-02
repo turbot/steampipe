@@ -14,8 +14,13 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
+type Base struct {
+	Foo string `column:"foo,text"`
+}
+
 // Query is a struct representing the Query resource
 type Query struct {
+	Base
 	ShortName string `cty:"short_name"`
 	FullName  string `cty:"name"`
 
@@ -39,12 +44,14 @@ type Query struct {
 }
 
 func NewQuery(block *hcl.Block) *Query {
-	return &Query{
+	q := &Query{
 		ShortName:       block.Labels[0],
 		UnqualifiedName: fmt.Sprintf("query.%s", block.Labels[0]),
 		FullName:        fmt.Sprintf("query.%s", block.Labels[0]),
 		DeclRange:       block.DefRange,
 	}
+	q.Base.Foo = "BAR2BASE"
+	return q
 }
 
 func (q *Query) Equals(other *Query) bool {
