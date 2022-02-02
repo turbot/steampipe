@@ -23,7 +23,7 @@ type ReportTable struct {
 
 	Base *ReportTable `hcl:"base" json:"-"`
 
-	ColumnList ReportTableColumnList         `cty:"column_list" hcl:"column,block" column:"column,jsonb" json:"-"`
+	ColumnList ReportTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
 	Columns    map[string]*ReportTableColumn `cty:"columns" json:"columns"`
 
 	DeclRange hcl.Range  `json:"-"`
