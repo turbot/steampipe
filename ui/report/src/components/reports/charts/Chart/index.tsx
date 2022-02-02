@@ -380,6 +380,7 @@ const Chart = ({ data, inputs, theme, themeWrapperRef }) => {
   const [_, setRandomVal] = useState(0);
   const chartRef = useRef<ChartJS>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [showZoom, setShowZoom] = useState(false);
   const { definition: panelDefinition, showExpand } = usePanel();
   const { dispatch } = useReport();
   const mediaMode = useMediaMode();
@@ -396,8 +397,6 @@ const Chart = ({ data, inputs, theme, themeWrapperRef }) => {
 
     setImageUrl(chartRef.current.toBase64Image());
   }, [chartRef, inputs, built]);
-
-  const [showZoom, setShowZoom] = useState(false);
 
   if (!built) {
     return null;

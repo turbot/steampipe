@@ -1,6 +1,7 @@
 import ErrorPanel from "../../Error";
 import Hierarchies, { HierarchyProperties } from "../../hierarchies";
 import ReactEChartsCore from "echarts-for-react/lib/core";
+import useMediaMode from "../../../../hooks/useMediaMode";
 import * as echarts from "echarts/core";
 import { buildHierarchyDataInputs, LeafNodeData } from "../../common";
 import { CanvasRenderer } from "echarts/renderers";
@@ -11,9 +12,12 @@ import {
   TooltipComponent,
 } from "echarts/components";
 import { EChartsType, HierarchyProps, HierarchyType } from "../index";
-import { PanelDefinition } from "../../../../hooks/useReport";
+import { PanelDefinition, useReport } from "../../../../hooks/useReport";
 import { SankeyChart } from "echarts/charts";
+import { usePanel } from "../../../../hooks/usePanel";
+import { useEffect, useRef, useState } from "react";
 import { useTheme } from "../../../../hooks/useTheme";
+import { ZoomIcon } from "../../../../constants/icons";
 
 echarts.use([
   CanvasRenderer,
@@ -98,81 +102,71 @@ const toEChartsType = (type: HierarchyType): EChartsType => {
 };
 
 const Hierarchy = ({ data, inputs, theme, themeWrapperRef }) => {
+  const [_, setRandomVal] = useState(0);
+  const chartRef = useRef<ReactEChartsCore>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [showZoom, setShowZoom] = useState(false);
+  const { definition: panelDefinition, showExpand } = usePanel();
+  const { dispatch } = useReport();
+  const mediaMode = useMediaMode();
+
   const options = buildHierarchyInputs(data, inputs, theme, themeWrapperRef);
-  // console.log(built);
-  // const options = {
-  //   series: {
-  //     type: "sankey",
-  //     layout: "none",
-  //     emphasis: {
-  //       focus: "adjacency",
-  //     },
-  //     data: [
-  //       {
-  //         name: "a",
-  //       },
-  //       {
-  //         name: "b",
-  //       },
-  //       {
-  //         name: "a1",
-  //       },
-  //       {
-  //         name: "a2",
-  //       },
-  //       {
-  //         name: "b1",
-  //       },
-  //       {
-  //         name: "c",
-  //       },
-  //     ],
-  //     links: [
-  //       {
-  //         source: "a",
-  //         target: "a1",
-  //         value: 5,
-  //       },
-  //       {
-  //         source: "a",
-  //         target: "a2",
-  //         value: 3,
-  //       },
-  //       {
-  //         source: "b",
-  //         target: "b1",
-  //         value: 8,
-  //       },
-  //       {
-  //         source: "a",
-  //         target: "b1",
-  //         value: 3,
-  //       },
-  //       {
-  //         source: "b1",
-  //         target: "a1",
-  //         value: 1,
-  //       },
-  //       {
-  //         source: "b1",
-  //         target: "c",
-  //         value: 2,
-  //       },
-  //     ],
-  //   },
-  // };
+
+  // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
+  useEffect(() => setRandomVal(Math.random()), [theme.name]);
+
+  useEffect(() => {
+    if (!chartRef.current || !options) {
+      return;
+    }
+
+    const echartInstance = chartRef.current.getEchartsInstance();
+    setImageUrl(echartInstance.getDataURL());
+  }, [chartRef, inputs, options]);
+
   return (
-    <ReactEChartsCore
-      echarts={echarts}
-      option={options}
-      notMerge={true}
-      lazyUpdate={true}
-      theme={"theme_name"}
-      // onChartReady={this.onChartReadyCallback}
-      // onEvents={EventsDict}
-      // opts={{}}
-      showLoading={false}
-    />
+    <>
+      {mediaMode !== "print" && (
+        <div
+          className="relative"
+          onMouseEnter={() => {
+            if (!showExpand) {
+              return;
+            }
+            setShowZoom(true);
+          }}
+          onMouseLeave={() => {
+            if (!showExpand) {
+              return;
+            }
+            setShowZoom(false);
+          }}
+        >
+          {showZoom && (
+            <div
+              className="absolute right-0 top-0 cursor-pointer z-50"
+              onClick={() =>
+                dispatch({ type: "select_panel", panel: panelDefinition })
+              }
+            >
+              <ZoomIcon className="h-5 w-5 text-black-scale-4" />
+            </div>
+          )}
+          <ReactEChartsCore
+            ref={chartRef}
+            echarts={echarts}
+            option={options}
+            notMerge={true}
+            lazyUpdate={true}
+          />
+        </div>
+      )}
+      {mediaMode === "print" && imageUrl && (
+        <div>
+          <img className="max-w-full max-h-full" src={imageUrl} />
+        </div>
+      )}
+    </>
   );
 };
 
