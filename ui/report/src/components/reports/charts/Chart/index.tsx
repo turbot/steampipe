@@ -39,18 +39,28 @@ echarts.use([
 const getCommonBaseOptions = () => ({
   animation: false,
   color: themeColors,
+  legend: {
+    orient: "horizontal",
+    textStyle: {
+      fontSize: 11,
+    },
+  },
   tooltip: {
     trigger: "item",
   },
 });
 
 const getCommonBaseOptionsForChartType = (
-  type: ChartType = "column",
+  type: ChartType | undefined,
+  series: any[] | undefined,
   themeColors
 ) => {
   switch (type) {
     case "bar":
       return {
+        legend: {
+          show: series ? series.length > 1 : false,
+        },
         // Declare an x-axis (category axis).
         // The category map the first row in the dataset by default.
         xAxis: {
@@ -73,6 +83,9 @@ const getCommonBaseOptionsForChartType = (
     case "column":
     case "line":
       return {
+        legend: {
+          show: series ? series.length > 1 : false,
+        },
         // Declare an x-axis (category axis).
         // The category map the first row in the dataset by default.
         xAxis: {
@@ -94,6 +107,9 @@ const getCommonBaseOptionsForChartType = (
       };
     case "pie":
       return {
+        legend: {
+          show: true,
+        },
         series: [
           {
             type: "pie",
@@ -109,9 +125,21 @@ const getCommonBaseOptionsForChartType = (
         ],
       };
     case "donut":
-      return {};
+      return {
+        legend: {
+          show: true,
+        },
+      };
     default:
       return {};
+  }
+};
+
+const getOptionOverridesForChartType = (
+  properties: ChartProperties | undefined
+) => {
+  if (!properties) {
+    return {};
   }
 };
 
@@ -180,13 +208,23 @@ const buildChartOptions = (
   const foregroundLightest = style.getPropertyValue(
     "--color-foreground-lightest"
   );
+  const seriesData = getSeriesForChartType(
+    props.properties?.type,
+    props.data,
+    props.properties
+  );
   return merge(
     getCommonBaseOptions(),
-    getCommonBaseOptionsForChartType(props.properties?.type, {
-      foreground,
-      foregroundLightest,
-    }),
-    getSeriesForChartType(props.properties?.type, props.data, props.properties),
+    getCommonBaseOptionsForChartType(
+      props.properties?.type,
+      seriesData.series,
+      {
+        foreground,
+        foregroundLightest,
+      }
+    ),
+    getOptionOverridesForChartType(props.properties),
+    seriesData,
     {
       dataset: {
         source: buildChartDataset(props.data),
@@ -691,10 +729,6 @@ const Chart = ({ options, theme, themeWrapperRef }: ChartComponentProps) => {
     </>
   );
 };
-
-interface ChartWrapperProps {
-  options: EChartsOption;
-}
 
 const ChartWrapper = (props: ChartProps) => {
   const { theme, wrapperRef } = useTheme();
