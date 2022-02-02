@@ -14,13 +14,13 @@ import {
 } from "echarts/components";
 import { EChartsOption } from "echarts-for-react/src/types";
 import { LabelLayout } from "echarts/features";
+import { merge } from "lodash";
 import { PanelDefinition, useReport } from "../../../../hooks/useReport";
+import { Theme, useTheme } from "../../../../hooks/useTheme";
 import { useEffect, useRef, useState } from "react";
 import { usePanel } from "../../../../hooks/usePanel";
-import { Theme, useTheme } from "../../../../hooks/useTheme";
 import { ZoomIcon } from "../../../../constants/icons";
 import * as echarts from "echarts/core";
-import { merge } from "lodash";
 
 echarts.use([
   BarChart,
@@ -101,8 +101,12 @@ const getSeriesForChartType = (
       case "column":
         series.push({ type: "bar" });
         break;
+      case "donut":
+        series.push({ type: "pie", radius: ["40%", "70%"] });
+        break;
       case "line":
         series.push({ type: "line" });
+        break;
     }
   }
   return { series };
