@@ -14,13 +14,8 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-type Base struct {
-	Foo string `column:"foo,text"`
-}
-
 // Query is a struct representing the Query resource
 type Query struct {
-	Base
 	ShortName string `cty:"short_name"`
 	FullName  string `cty:"name"`
 
@@ -50,7 +45,6 @@ func NewQuery(block *hcl.Block) *Query {
 		FullName:        fmt.Sprintf("query.%s", block.Labels[0]),
 		DeclRange:       block.DefRange,
 	}
-	q.Base.Foo = "BAR2BASE"
 	return q
 }
 
@@ -200,6 +194,16 @@ func (q *Query) GetParams() []*ParamDef {
 	return q.Params
 }
 
+// GetSQL implements QueryProvider, ReportingLeafNode
+func (q *Query) GetSQL() string {
+	return typehelpers.SafeString(q.SQL)
+}
+
+// GetQuery implements QueryProvider
+func (q *Query) GetQuery() *Query {
+	return nil
+}
+
 // GetPreparedStatementName implements QueryProvider
 func (q *Query) GetPreparedStatementName() string {
 	// lazy load
@@ -209,7 +213,17 @@ func (q *Query) GetPreparedStatementName() string {
 	return q.PreparedStatementName
 }
 
-// ModName implements QueryProvider
-func (q *Query) ModName() string {
+// GetModName implements QueryProvider
+func (q *Query) GetModName() string {
 	return q.Mod.NameWithVersion()
+}
+
+// SetArgs implements QueryProvider
+func (q *Query) SetArgs(args *QueryArgs) {
+	// nothing
+}
+
+// SetParams implements QueryProvider
+func (q *Query) SetParams(params []*ParamDef) {
+	q.Params = params
 }

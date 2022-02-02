@@ -160,39 +160,10 @@ var BenchmarkBlockSchema = &hcl.BodySchema{
 	},
 }
 
-var ControlBlockSchema = &hcl.BodySchema{
+// schema for all blocks satisfying QueryProvider interface
+var QueryProviderBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
-		{Name: "description"},
-		{Name: "documentation"},
-		{Name: "search_path"},
-		{Name: "search_path_prefix"},
-		{Name: "severity"},
-		{Name: "sql"},
-		{Name: "query"},
-		{Name: "tags"},
-		{Name: "title"},
 		{Name: "args"},
-		// for report control blocks
-		{Name: "width"},
-		{Name: "base"},
-	},
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type:       "param",
-			LabelNames: []string{"name"},
-		},
-	},
-}
-
-var QueryBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{Name: "description"},
-		{Name: "documentation"},
-		{Name: "search_path"},
-		{Name: "search_path_prefix"},
-		{Name: "sql"},
-		{Name: "tags"},
-		{Name: "title"},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{

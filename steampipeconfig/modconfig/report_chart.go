@@ -19,22 +19,26 @@ type ReportChart struct {
 	// these properties are JSON serialised by the parent LeafRun
 	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 
-	Type *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Base *ReportChart `hcl:"base" json:"-"`
-
-	Legend     *ReportChartLegend    `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
-	SeriesList ReportChartSeriesList `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
-	Axes       *ReportChartAxes      `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
-	Grouping   *string               `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
+	Type       *string                       `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Legend     *ReportChartLegend            `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
+	SeriesList ReportChartSeriesList         `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
+	Axes       *ReportChartAxes              `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
+	Grouping   *string                       `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
 	Transform  *string               `cty:"transform" hcl:"transform" json:"transform,omitempty"`
+	Series     map[string]*ReportChartSeries `cty:"series" json:"series"`
 
-	Series map[string]*ReportChartSeries `cty:"series" json:"series"`
+	// QueryProvider
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
 
-	DeclRange hcl.Range  `json:"-"`
-	Mod       *Mod       `cty:"mod" json:"-"`
-	Paths     []NodePath `column:"path,jsonb" json:"-"`
+	Base      *ReportChart `hcl:"base" json:"-"`
+	DeclRange hcl.Range    `json:"-"`
+	Mod       *Mod         `cty:"mod" json:"-"`
+	Paths     []NodePath   `column:"path,jsonb" json:"-"`
 
 	parents  []ModTreeItem
 	metadata *ResourceMetadata
@@ -263,11 +267,6 @@ func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetSQL implements ReportLeafNode
-func (c *ReportChart) GetSQL() string {
-	return typehelpers.SafeString(c.SQL)
-}
-
 // GetWidth implements ReportLeafNode
 func (c *ReportChart) GetWidth() int {
 	if c.Width == nil {
@@ -279,4 +278,43 @@ func (c *ReportChart) GetWidth() int {
 // GetUnqualifiedName implements ReportLeafNode
 func (c *ReportChart) GetUnqualifiedName() string {
 	return c.UnqualifiedName
+}
+
+// GetParams implements QueryProvider
+func (c *ReportChart) GetParams() []*ParamDef {
+	return c.Params
+}
+
+// GetSQL implements QueryProvider, ReportingLeafNode
+func (c *ReportChart) GetSQL() string {
+	return typehelpers.SafeString(c.SQL)
+}
+
+// GetQuery implements QueryProvider
+func (c *ReportChart) GetQuery() *Query {
+	return c.Query
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (c *ReportChart) GetPreparedStatementName() string {
+	// lazy load
+	if c.PreparedStatementName == "" {
+		c.PreparedStatementName = preparedStatementName(c)
+	}
+	return c.PreparedStatementName
+}
+
+// GetModName implements QueryProvider
+func (c *ReportChart) GetModName() string {
+	return c.Mod.NameWithVersion()
+}
+
+// SetArgs implements QueryProvider
+func (c *ReportChart) SetArgs(args *QueryArgs) {
+	// nothing
+}
+
+// SetParams implements QueryProvider
+func (c *ReportChart) SetParams(params []*ParamDef) {
+	c.Params = params
 }

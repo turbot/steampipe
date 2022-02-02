@@ -19,10 +19,19 @@ type ReportInput struct {
 	// these properties are JSON serialised by the parent LeafRun
 	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
+	Type  *string `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Style *string `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
+
+	// QueryProvider
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
 
 	Type *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Base *ReportInput `hcl:"base" json:"-"`
+
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
@@ -192,11 +201,6 @@ func (c *ReportInput) Diff(other *ReportInput) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetSQL implements ReportLeafNode
-func (c *ReportInput) GetSQL() string {
-	return typehelpers.SafeString(c.SQL)
-}
-
 // GetWidth implements ReportLeafNode
 func (c *ReportInput) GetWidth() int {
 	if c.Width == nil {
@@ -208,4 +212,43 @@ func (c *ReportInput) GetWidth() int {
 // GetUnqualifiedName implements ReportLeafNode
 func (c *ReportInput) GetUnqualifiedName() string {
 	return c.UnqualifiedName
+}
+
+// GetParams implements QueryProvider
+func (c *ReportCounter) GetParams() []*ParamDef {
+	return c.Params
+}
+
+// GetSQL implements QueryProvider, ReportingLeafNode
+func (c *ReportCounter) GetSQL() string {
+	return typehelpers.SafeString(c.SQL)
+}
+
+// GetQuery implements QueryProvider
+func (c *ReportCounter) GetQuery() *Query {
+	return c.Query
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (c *ReportCounter) GetPreparedStatementName() string {
+	// lazy load
+	if c.PreparedStatementName == "" {
+		c.PreparedStatementName = preparedStatementName(c)
+	}
+	return c.PreparedStatementName
+}
+
+// GetModName implements QueryProvider
+func (c *ReportCounter) GetModName() string {
+	return c.Mod.NameWithVersion()
+}
+
+// SetArgs implements QueryProvider
+func (c *ReportCounter) SetArgs(args *QueryArgs) {
+	// nothing
+}
+
+// SetParams implements QueryProvider
+func (c *ReportCounter) SetParams(params []*ParamDef) {
+	c.Params = params
 }

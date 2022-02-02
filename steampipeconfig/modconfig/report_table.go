@@ -16,19 +16,22 @@ type ReportTable struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	// these properties are JSON serialised by the parent LeafRun
-	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-
-	Base *ReportTable `hcl:"base" json:"-"`
-
+	Title      *string                       `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width      *int                          `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	ColumnList ReportTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
 	Columns    map[string]*ReportTableColumn `cty:"columns" json:"columns"`
 
-	DeclRange hcl.Range  `json:"-"`
-	Mod       *Mod       `cty:"mod" json:"-"`
-	Paths     []NodePath `column:"path,jsonb" json:"-"`
+	// QueryProvider
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+
+	Base      *ReportTable `hcl:"base" json:"-"`
+	DeclRange hcl.Range    `json:"-"`
+	Mod       *Mod         `cty:"mod" json:"-"`
+	Paths     []NodePath   `column:"path,jsonb" json:"-"`
 
 	parents  []ModTreeItem
 	metadata *ResourceMetadata
@@ -206,11 +209,6 @@ func (t *ReportTable) Diff(other *ReportTable) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetSQL implements ReportLeafNode
-func (t *ReportTable) GetSQL() string {
-	return typehelpers.SafeString(t.SQL)
-}
-
 // GetWidth implements ReportLeafNode
 func (t *ReportTable) GetWidth() int {
 	if t.Width == nil {
@@ -222,4 +220,43 @@ func (t *ReportTable) GetWidth() int {
 // GetUnqualifiedName implements ReportLeafNode
 func (t *ReportTable) GetUnqualifiedName() string {
 	return t.UnqualifiedName
+}
+
+// GetParams implements QueryProvider
+func (t *ReportTable) GetParams() []*ParamDef {
+	return t.Params
+}
+
+// GetSQL implements QueryProvider, ReportingLeafNode
+func (t *ReportTable) GetSQL() string {
+	return typehelpers.SafeString(t.SQL)
+}
+
+// GetQuery implements QueryProvider
+func (t *ReportTable) GetQuery() *Query {
+	return t.Query
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (t *ReportTable) GetPreparedStatementName() string {
+	// lazy load
+	if t.PreparedStatementName == "" {
+		t.PreparedStatementName = preparedStatementName(t)
+	}
+	return t.PreparedStatementName
+}
+
+// GetModName implements QueryProvider
+func (t *ReportTable) GetModName() string {
+	return t.Mod.NameWithVersion()
+}
+
+// SetArgs implements QueryProvider
+func (t *ReportTable) SetArgs(args *QueryArgs) {
+	// nothing
+}
+
+// SetParams implements QueryProvider
+func (t *ReportTable) SetParams(params []*ParamDef) {
+	t.Params = params
 }

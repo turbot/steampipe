@@ -17,15 +17,20 @@ type ReportHierarchy struct {
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Type  *string `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-
-	Base *ReportHierarchy `hcl:"base" json:"-"`
-
+	Title        *string                             `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width        *int                                `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Type         *string                             `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	CategoryList ReportHierarchyCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
 	Categories   map[string]*ReportHierarchyCategory `cty:"categories" json:"categories"`
+
+	// QueryProvider
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+
+	Base *ReportHierarchy `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
@@ -218,11 +223,6 @@ func (h *ReportHierarchy) Diff(other *ReportHierarchy) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetSQL implements ReportLeafNode
-func (h *ReportHierarchy) GetSQL() string {
-	return typehelpers.SafeString(h.SQL)
-}
-
 // GetWidth implements ReportLeafNode
 func (h *ReportHierarchy) GetWidth() int {
 	if h.Width == nil {
@@ -234,4 +234,43 @@ func (h *ReportHierarchy) GetWidth() int {
 // GetUnqualifiedName implements ReportLeafNode
 func (h *ReportHierarchy) GetUnqualifiedName() string {
 	return h.UnqualifiedName
+}
+
+// GetParams implements QueryProvider
+func (h *ReportHierarchy) GetParams() []*ParamDef {
+	return h.Params
+}
+
+// GetSQL implements QueryProvider, ReportingLeafNode
+func (h *ReportHierarchy) GetSQL() string {
+	return typehelpers.SafeString(h.SQL)
+}
+
+// GetQuery implements QueryProvider
+func (h *ReportHierarchy) GetQuery() *Query {
+	return h.Query
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (h *ReportHierarchy) GetPreparedStatementName() string {
+	// lazy load
+	if h.PreparedStatementName == "" {
+		h.PreparedStatementName = preparedStatementName(h)
+	}
+	return h.PreparedStatementName
+}
+
+// GetModName implements QueryProvider
+func (h *ReportHierarchy) GetModName() string {
+	return h.Mod.NameWithVersion()
+}
+
+// SetArgs implements QueryProvider
+func (h *ReportHierarchy) SetArgs(args *QueryArgs) {
+	// nothing
+}
+
+// SetParams implements QueryProvider
+func (h *ReportHierarchy) SetParams(params []*ParamDef) {
+	h.Params = params
 }

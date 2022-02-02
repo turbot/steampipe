@@ -25,7 +25,7 @@ func GetPreparedStatementExecuteSQL(source QueryProvider, args *QueryArgs) (stri
 
 func preparedStatementName(source QueryProvider) string {
 	var name, suffix string
-	prefix := fmt.Sprintf("%s_", source.ModName())
+	prefix := fmt.Sprintf("%s_", source.GetModName())
 	prefix = strings.Replace(prefix, ".", "_", -1)
 	prefix = strings.Replace(prefix, "@", "_", -1)
 

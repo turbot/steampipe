@@ -15,15 +15,16 @@ type ReportContainer struct {
 	ShortName       string
 	FullName        string `cty:"name"`
 	UnqualifiedName string
+	Title           *string     `cty:"title" column:"title,text"`
+	Width           *int        `cty:"width"  column:"width,text"`
+	Args            *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params          []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
 
-	Title *string `cty:"title" column:"title,text"`
-	Width *int    `cty:"width"  column:"width,text"`
-	Base  *ReportContainer
+	Base *ReportContainer
 
 	Mod       *Mod `cty:"mod"`
 	DeclRange hcl.Range
-
-	Paths []NodePath `column:"path,jsonb"`
+	Paths     []NodePath `column:"path,jsonb"`
 	// store children in a way which can be serialised via cty
 	ChildNames []string `cty:"children" column:"children,jsonb"`
 

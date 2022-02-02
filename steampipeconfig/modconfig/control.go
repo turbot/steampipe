@@ -16,27 +16,26 @@ import (
 type Control struct {
 	ShortName        string
 	FullName         string            `cty:"name"`
-	Description      *string           `cty:"description" column:"description,text"`
-	Documentation    *string           `cty:"documentation"  column:"documentation,text"`
-	SearchPath       *string           `cty:"search_path"  column:"search_path,text"`
-	SearchPathPrefix *string           `cty:"search_path_prefix"  column:"search_path_prefix,text"`
-	Severity         *string           `cty:"severity"  column:"severity,text"`
-	SQL              *string           `cty:"sql"  column:"sql,text"`
-	Tags             map[string]string `cty:"tags"  column:"tags,jsonb"`
-	Title            *string           `cty:"title"  column:"title,text"`
-	Query            *Query
-	// args
-	// arguments may be specified by either a map of named args or as a list of positional args
-	// we apply special decode logic to convert the params block into a QueryArgs object
-	// with either an args map or list assigned
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb"`
-	References            []*ResourceReference
-	Mod                   *Mod `cty:"mod"`
-	DeclRange             hcl.Range
-	PreparedStatementName string `column:"prepared_statement_name,text"`
-	UnqualifiedName       string
-	Paths                 []NodePath
+	Description      *string           `cty:"description" hcl:"description" column:"description,text"`
+	Documentation    *string           `cty:"documentation" hcl:"documentation"  column:"documentation,text"`
+	SearchPath       *string           `cty:"search_path" hcl:"search_path"  column:"search_path,text"`
+	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text"`
+	Severity         *string           `cty:"severity" hcl:"severity"  column:"severity,text"`
+	Tags             map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb"`
+	Title            *string           `cty:"title" hcl:"title"  column:"title,text"`
+
+	// QueryProvider
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+
+	References      []*ResourceReference
+	Mod             *Mod `cty:"mod"`
+	DeclRange       hcl.Range
+	UnqualifiedName string
+	Paths           []NodePath
 
 	// report specific properties
 	Base  *Control `hcl:"base"`
@@ -279,9 +278,19 @@ func (c *Control) SetMetadata(metadata *ResourceMetadata) {
 	c.metadata = metadata
 }
 
+// GetModName implements QueryProvider
+func (c *Control) GetModName() string {
+	return c.Mod.NameWithVersion()
+}
+
 // GetParams implements QueryProvider
 func (c *Control) GetParams() []*ParamDef {
 	return c.Params
+}
+
+// GetQuery implements QueryProvider
+func (c *Control) GetQuery() *Query {
+	return c.Query
 }
 
 // GetPreparedStatementName implements QueryProvider
@@ -293,14 +302,19 @@ func (c *Control) GetPreparedStatementName() string {
 	return c.PreparedStatementName
 }
 
-// ModName implements QueryProvider
-func (c *Control) ModName() string {
-	return c.Mod.NameWithVersion()
-}
-
-// GetSQL implements ReportLeafNode
+// GetSQL implements QueryProvider, ReportingLeafNode
 func (c *Control) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)
+}
+
+// SetArgs implements QueryProvider
+func (c *Control) SetArgs(args *QueryArgs) {
+	c.Args = args
+}
+
+// SetParams implements QueryProvider
+func (c *Control) SetParams(params []*ParamDef) {
+	c.Params = params
 }
 
 // GetWidth implements ReportLeafNode

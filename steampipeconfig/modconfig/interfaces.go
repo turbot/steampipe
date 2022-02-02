@@ -53,9 +53,26 @@ type ResourceWithMetadata interface {
 // QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
 type QueryProvider interface {
 	Name() string
-	ModName() string
+	GetModName() string
 	GetParams() []*ParamDef
+	GetSQL() string
+	GetQuery() *Query
 	GetPreparedStatementName() string
+	SetArgs(args *QueryArgs)
+	SetParams(params []*ParamDef)
+}
+
+// block types which implement QueryProvider
+var QueryProviderBlocks = []string{
+	BlockTypeControl,
+	BlockTypeQuery,
+	BlockTypeChart,
+	BlockTypeCounter,
+	BlockTypeTable,
+	BlockTypeControl,
+	BlockTypeControl,
+	BlockTypeControl,
+	BlockTypeControl,
 }
 
 // ReportingLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
@@ -64,8 +81,8 @@ type ReportingLeafNode interface {
 	GetUnqualifiedName() string
 	GetTitle() string
 	GetWidth() int
-	GetSQL() string
 	GetPaths() []NodePath
+	GetSQL() string
 }
 
 type ResourceMapsProvider interface {
