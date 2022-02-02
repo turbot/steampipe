@@ -14,7 +14,7 @@ import {
 } from "echarts/components";
 import { EChartsOption } from "echarts-for-react/src/types";
 import { LabelLayout } from "echarts/features";
-import { merge } from "lodash";
+import { merge, set } from "lodash";
 import { PanelDefinition, useReport } from "../../../../hooks/useReport";
 import { Theme, useTheme } from "../../../../hooks/useTheme";
 import { useEffect, useRef, useState } from "react";
@@ -41,6 +41,8 @@ const getCommonBaseOptions = () => ({
   color: themeColors,
   legend: {
     orient: "horizontal",
+    left: "center",
+    top: "top",
     textStyle: {
       fontSize: 11,
     },
@@ -108,7 +110,7 @@ const getCommonBaseOptionsForChartType = (
     case "pie":
       return {
         legend: {
-          show: true,
+          show: false,
         },
         series: [
           {
@@ -127,7 +129,7 @@ const getCommonBaseOptionsForChartType = (
     case "donut":
       return {
         legend: {
-          show: true,
+          show: false,
         },
       };
     default:
@@ -136,11 +138,50 @@ const getCommonBaseOptionsForChartType = (
 };
 
 const getOptionOverridesForChartType = (
+  type: ChartType = "column",
   properties: ChartProperties | undefined
 ) => {
   if (!properties) {
     return {};
   }
+
+  let overrides = {};
+
+  // orient: "horizontal",
+  //     left: "center",
+  //     top: "top",
+
+  if (properties.legend) {
+    // Legend display
+    const legendDisplay = properties.legend.display;
+    if (legendDisplay === "always") {
+      overrides = set(overrides, "legend.show", true);
+    } else if (legendDisplay === "none") {
+      overrides = set(overrides, "legend.show", false);
+    }
+
+    // Legend display position
+    const legendPosition = properties.legend.position;
+    if (legendPosition === "top") {
+      overrides = set(overrides, "legend.orient", "horizontal");
+      overrides = set(overrides, "legend.left", "center");
+      overrides = set(overrides, "legend.top", "top");
+    } else if (legendPosition === "right") {
+      overrides = set(overrides, "legend.orient", "vertical");
+      overrides = set(overrides, "legend.left", "right");
+      overrides = set(overrides, "legend.top", "middle");
+    } else if (legendPosition === "bottom") {
+      overrides = set(overrides, "legend.orient", "horizontal");
+      overrides = set(overrides, "legend.left", "center");
+      overrides = set(overrides, "legend.top", "bottom");
+    } else if (legendPosition === "left") {
+      overrides = set(overrides, "legend.orient", "vertical");
+      overrides = set(overrides, "legend.left", "left");
+      overrides = set(overrides, "legend.top", "middle");
+    }
+  }
+
+  return overrides;
 };
 
 const getSeriesForChartType = (
@@ -223,7 +264,7 @@ const buildChartOptions = (
         foregroundLightest,
       }
     ),
-    getOptionOverridesForChartType(props.properties),
+    getOptionOverridesForChartType(props.properties?.type, props.properties),
     seriesData,
     {
       dataset: {
