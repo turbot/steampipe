@@ -422,6 +422,46 @@ func init() {
 				},
 			},
 		},
+		"simple_report": {
+			source: "testdata/mods/simple_report",
+			expected: &modconfig.Mod{
+				ShortName:   "simple_report",
+				FullName:    "mod.simple_report",
+				Require:     modconfig.NewRequire(),
+				Title:       toStringPointer("simple report"),
+				Description: toStringPointer("this mod contains a simple report"),
+			},
+		},
+		"simple_container_report": {
+			source: "testdata/mods/simple_container_report",
+			expected: &modconfig.Mod{
+				ShortName:   "simple_container_report",
+				FullName:    "mod.simple_container_report",
+				Require:     modconfig.NewRequire(),
+				Title:       toStringPointer("simple report with container"),
+				Description: toStringPointer("this mod contains a simple report with containers"),
+			},
+		},
+		"sibling_containers_report": {
+			source: "testdata/mods/sibling_containers_report",
+			expected: &modconfig.Mod{
+				ShortName:   "sibling_containers_report",
+				FullName:    "mod.sibling_containers_report",
+				Require:     modconfig.NewRequire(),
+				Title:       toStringPointer("report with multiple sibling containers"),
+				Description: toStringPointer("this mod contains a report with multiple sibling containers"),
+			},
+		},
+		"nested_containers_report": {
+			source: "testdata/mods/nested_containers_report",
+			expected: &modconfig.Mod{
+				ShortName:   "nested_containers_report",
+				FullName:    "mod.nested_containers_report",
+				Require:     modconfig.NewRequire(),
+				Title:       toStringPointer("report with nested containers"),
+				Description: toStringPointer("this mod contains a report with nested containers"),
+			},
+		},
 		//"two_mods": {
 		//	source:   "testdata/mods/two_mods",
 		//	expected: "ERROR",
