@@ -100,21 +100,27 @@ const getSeriesForChartType = (
     let seriesName = data.columns[seriesIndex].name;
     let seriesColor = "auto";
     let seriesOverrides;
-    if (properties && properties.series && properties.series[seriesName]) {
-      seriesOverrides = properties.series[seriesName];
+    if (properties) {
+      if (properties.series && properties.series[seriesName]) {
+        seriesOverrides = properties.series[seriesName];
+      }
+      if (seriesOverrides && seriesOverrides.title) {
+        seriesName = seriesOverrides.title;
+      }
+      if (seriesOverrides && seriesOverrides.color) {
+        seriesColor = seriesOverrides.color;
+      }
     }
-    if (seriesOverrides && seriesOverrides.title) {
-      seriesName = seriesOverrides.title;
-    }
-    if (seriesOverrides && seriesOverrides.color) {
-      seriesColor = seriesOverrides.color;
-    }
+
     switch (type) {
       case "bar":
       case "column":
         series.push({
           name: seriesName,
           type: "bar",
+          ...(properties && properties.grouping === "compare"
+            ? {}
+            : { stack: "total" }),
           itemStyle: { color: seriesColor },
         });
         break;
