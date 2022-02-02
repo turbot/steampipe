@@ -1,0 +1,311 @@
+Index: aws/table_aws_vpc_security_group_rule.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/aws/table_aws_vpc_security_group_rule.go b/aws/table_aws_vpc_security_group_rule.go
+--- a/aws/table_aws_vpc_security_group_rule.go	(revision 17d6d7dcc6906a176231e778a612ba816982370f)
++++ b/aws/table_aws_vpc_security_group_rule.go	(date 1644316437681)
+@@ -3,6 +3,8 @@
+ import (
+ 	"context"
+ 
++	"github.com/aws/aws-sdk-go/aws"
++
+ 	"github.com/aws/aws-sdk-go/service/ec2"
+ 	"github.com/turbot/go-kit/types"
+ 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
+@@ -14,113 +16,172 @@
+ 	return &plugin.Table{
+ 		Name:        "aws_vpc_security_group_rule",
+ 		Description: "AWS VPC Security Group Rule",
+-		// TODO -- get call returning a list of items
++		Get: &plugin.GetConfig{
++			KeyColumns:        plugin.SingleColumn("security_group_rule_id"),
++			ShouldIgnoreError: isNotFoundError([]string{"InvalidSecurityGroupRuleId.Malformed", "InvalidSecurityGroupRuleId.NotFound"}),
++			Hydrate:           getSecurityGroupRule,
++		},
+ 		List: &plugin.ListConfig{
+-			ParentHydrate: listVpcSecurityGroups,
+-			Hydrate:       listSecurityGroupRules,
++			Hydrate: listSecurityGroupRules,
++			KeyColumns: []*plugin.KeyColumn{
++				{
++					Name:    "group_id",
++					Require: plugin.Optional,
++				},
++			},
+ 		},
+ 		GetMatrixItem: BuildRegionList,
+ 		Columns: awsRegionalColumns([]*plugin.Column{
+ 			{
++				Name:        "security_group_rule_id",
++				Description: "The ID of the security group rule.",
++				Type:        proto.ColumnType_STRING,
++			},
++			{
+ 				Name:        "group_name",
+-				Description: "The name of the security group to which rule belongs.",
++				Description: "[DEPRECATED] This column has been deprecated and will be removed in a future release. The name of the security group to which rule belongs.",
+ 				Type:        proto.ColumnType_STRING,
+-				Transform:   transform.FromField("Group.GroupName"),
++				Hydrate:     getSecurityGroupDetails,
+ 			},
+ 			{
+ 				Name:        "group_id",
+ 				Description: "The ID of the security group to which rule belongs.",
+ 				Type:        proto.ColumnType_STRING,
+-				Transform:   transform.FromField("Group.GroupId"),
++			},
++			{
++				Name:        "is_egress",
++				Description: "Indicates whether the security group rule is an outbound rule.",
++				Type:        proto.ColumnType_BOOL,
+ 			},
+ 			{
+ 				Name:        "type",
+ 				Description: "Type of the rule ( ingress | egress).",
+ 				Type:        proto.ColumnType_STRING,
++				//Transform:   transform.FromField("IsEgress").Transform(setRuleType),
+ 			},
+ 			{
+ 				Name:        "vpc_id",
+-				Description: "The ID of the VPC for the security group.",
++				Description: "[DEPRECATED] This column has been deprecated and will be removed in a future release. The ID of the VPC for the security group.",
+ 				Type:        proto.ColumnType_STRING,
+-				Transform:   transform.FromField("Group.VpcId"),
++				Hydrate:     getSecurityGroupDetails,
+ 			},
+ 			{
+ 				Name:        "owner_id",
++				Description: "[DEPRECATED] This column has been deprecated and will be removed in a future release. Please use the group_owner_id column instead. The AWS account ID of the owner of the security group to which rule belongs.",
++				Type:        proto.ColumnType_STRING,
++				Transform:   transform.FromField("GroupOwnerId"),
++			},
++			{
++				Name:        "group_owner_id",
+ 				Description: "The AWS account ID of the owner of the security group to which rule belongs.",
+ 				Type:        proto.ColumnType_STRING,
+-				Transform:   transform.FromField("Group.OwnerId"),
++			},
++			{
++				Name:        "description",
++				Description: "The security group rule description.",
++				Type:        proto.ColumnType_STRING,
+ 			},
+ 			{
+ 				Name:        "ip_protocol",
+ 				Description: "The IP protocol name (tcp, udp, icmp, icmpv6) or number [see Protocol Numbers ](http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml). Use -1 to specify all protocols. When authorizing security group rules, specifying -1 or a protocol number other than tcp, udp, icmp, or icmpv6 allows traffic on all ports, regardless of any port range specified. For tcp, udp, and icmp, a port range is specified. For icmpv6, the port range is optional. If port range is omitted, traffic for all types and codes is allowed.",
+ 				Type:        proto.ColumnType_STRING,
+-				Transform:   transform.FromField("Permission.IpProtocol"),
+ 			},
+ 			{
+ 				Name:        "from_port",
+ 				Description: "The start of port range for the TCP and UDP protocols, or an ICMP/ICMPv6 type number. A value of -1 indicates all ICMP/ICMPv6 types.",
+ 				Type:        proto.ColumnType_INT,
+-				Transform:   transform.FromField("Permission.FromPort"),
+ 			},
+ 			{
+ 				Name:        "to_port",
+ 				Description: "The end of port range for the TCP and UDP protocols, or an ICMP/ICMPv6 code. A value of -1 indicates all ICMP/ICMPv6 codes.",
+ 				Type:        proto.ColumnType_INT,
+-				Transform:   transform.FromField("Permission.ToPort"),
+ 			},
+ 			{
+ 				Name:        "cidr_ip",
++				Description: "[DEPRECATED] This column has been deprecated and will be removed in a future release. Please use the cidr_ipv4 column instead. The IPv4 CIDR range. It can be either a CIDR range or a source security group, not both. A single IPv4 address is denoted by /32 prefix length.",
++				Type:        proto.ColumnType_CIDR,
++				Transform:   transform.FromField("CidrIpv4"),
++			},
++			{
++				Name:        "cidr_ipv4",
+ 				Description: "The IPv4 CIDR range. It can be either a CIDR range or a source security group, not both. A single IPv4 address is denoted by /32 prefix length.",
+ 				Type:        proto.ColumnType_CIDR,
+-				Transform:   transform.FromField("IPRange.CidrIp"),
+ 			},
+ 			{
+ 				Name:        "cidr_ipv6",
+ 				Description: "The IPv6 CIDR range. It can be either a CIDR range or a source security group, not both. A single IPv6 address is denoted by /128 prefix length.",
+ 				Type:        proto.ColumnType_CIDR,
+-				Transform:   transform.FromField("Ipv6Range.CidrIpv6"),
+ 			},
+ 			{
+ 				Name:        "pair_group_id",
+-				Description: "The ID of the security group that references this user ID group pair.",
++				Description: "[DEPRECATED] This column has been deprecated and will be removed in a future release. Please use the referenced_group_id column instead. The ID of the referenced security group.",
+ 				Type:        proto.ColumnType_STRING,
+-				Transform:   transform.FromField("UserIDGroupPair.GroupId"),
++				Transform:   transform.FromField("ReferencedGroupInfo.GroupId"),
++			},
++			{
++				Name:        "referenced_group_id",
++				Description: "The ID of the referenced security group.",
++				Type:        proto.ColumnType_STRING,
++				Transform:   transform.FromField("ReferencedGroupInfo.GroupId"),
+ 			},
+ 			{
+ 				Name:        "pair_group_name",
+-				Description: "The name of the security group that references this user ID group pair.",
++				Description: "[DEPRECATED] This column has been deprecated and will be removed in a future release. The name of the referenced security group.",
+ 				Type:        proto.ColumnType_STRING,
+-				Transform:   transform.FromField("UserIDGroupPair.GroupName"),
++				Hydrate:     getSecurityGroupDetails,
+ 			},
+ 			{
+ 				Name:        "pair_peering_status",
++				Description: "[DEPRECATED] This column has been deprecated and will be removed in a future release. Please use the referenced_peering_status column instead. The status of a VPC peering connection, if applicable.",
++				Type:        proto.ColumnType_STRING,
++				Transform:   transform.FromField("ReferencedGroupInfo.PeeringStatus"),
++			},
++			{
++				Name:        "referenced_peering_status",
+ 				Description: "The status of a VPC peering connection, if applicable.",
+ 				Type:        proto.ColumnType_STRING,
+-				Transform:   transform.FromField("UserIDGroupPair.PeeringStatus"),
++				Transform:   transform.FromField("ReferencedGroupInfo.PeeringStatus"),
+ 			},
+ 			{
+ 				Name:        "pair_user_id",
++				Description: "[DEPRECATED] This column has been deprecated and will be removed in a future release. Please use the referenced_user_id column instead. The ID of an AWS account. For a referenced security group in another VPC, the account ID of the referenced security group is returned in the response. If the referenced security group is deleted, this value is not returned.",
++				Type:        proto.ColumnType_STRING,
++				Transform:   transform.FromField("ReferencedGroupInfo.UserId"),
++			},
++			{
++				Name:        "referenced_user_id",
+ 				Description: "The ID of an AWS account. For a referenced security group in another VPC, the account ID of the referenced security group is returned in the response. If the referenced security group is deleted, this value is not returned.",
+ 				Type:        proto.ColumnType_STRING,
+-				Transform:   transform.FromField("UserIDGroupPair.UserId"),
++				Transform:   transform.FromField("ReferencedGroupInfo.UserId"),
+ 			},
+ 			{
+ 				Name:        "pair_vpc_id",
++				Description: "[DEPRECATED] This column has been deprecated and will be removed in a future release. Please use the referenced_vpc_id column instead. The ID of the VPC for the referenced security group, if applicable.",
++				Type:        proto.ColumnType_STRING,
++				Transform:   transform.FromField("ReferencedGroupInfo.VpcId"),
++			},
++			{
++				Name:        "referenced_vpc_id",
+ 				Description: "The ID of the VPC for the referenced security group, if applicable.",
+ 				Type:        proto.ColumnType_STRING,
+-				Transform:   transform.FromField("UserIDGroupPair.VpcId"),
++				Transform:   transform.FromField("ReferencedGroupInfo.VpcId"),
+ 			},
+ 			{
+ 				Name:        "pair_vpc_peering_connection_id",
++				Description: "[DEPRECATED] This column has been deprecated and will be removed in a future release. Please use the referenced_vpc_peering_connection_id column instead. The ID of the VPC peering connection, if applicable.",
++				Type:        proto.ColumnType_STRING,
++				Transform:   transform.FromField("ReferencedGroupInfo.VpcPeeringConnectionId"),
++			},
++			{
++				Name:        "referenced_vpc_peering_connection_id",
+ 				Description: "The ID of the VPC peering connection, if applicable.",
+ 				Type:        proto.ColumnType_STRING,
+-				Transform:   transform.FromField("UserIDGroupPair.VpcPeeringConnectionId"),
++				Transform:   transform.FromField("ReferencedGroupInfo.VpcPeeringConnectionId"),
+ 			},
+ 			{
+ 				Name:        "prefix_list_id",
+ 				Description: "The ID of the referenced prefix list.",
+ 				Type:        proto.ColumnType_STRING,
+-				Transform:   transform.FromField("PrefixListId.PrefixListId"),
+ 			},
+ 			{
+ 				Name:        "title",
+@@ -140,6 +201,12 @@
+ 	}
+ }
+ 
++type groupDetail struct {
++	GroupName     string
++	PairGroupName string
++	VpcId         string
++}
++
+ //// LIST FUNCTION
+ 
+ func listSecurityGroupRules(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+@@ -260,3 +327,84 @@
+ 
+ // 	return []interface{}{}, nil
+ // }
++
++func getSecurityGroupRule(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
++	plugin.Logger(ctx).Trace("getSecurityGroupRule")
++
++	region := d.KeyColumnQualString(matrixKeyRegion)
++	ruleID := d.KeyColumnQuals["security_group_rule_id"].GetStringValue()
++
++	// check if rule id is empty
++	if ruleID == "" {
++		return nil, nil
++	}
++
++	// get service
++	svc, err := Ec2Service(ctx, d, region)
++	if err != nil {
++		return nil, err
++	}
++
++	// Build the params
++	params := &ec2.DescribeSecurityGroupRulesInput{
++		SecurityGroupRuleIds: []*string{aws.String(ruleID)},
++	}
++
++	// Get call
++	op, err := svc.DescribeSecurityGroupRules(params)
++	if err != nil {
++		plugin.Logger(ctx).Error("getSecurityGroupRule", "get", err)
++		return nil, err
++	}
++
++	if len(op.SecurityGroupRules) > 0 {
++		return op.SecurityGroupRules[0], nil
++	}
++
++	return nil, nil
++}
++
++func getSecurityGroupDetails(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
++	plugin.Logger(ctx).Trace("getSecurityGroupDetails")
++
++	region := d.KeyColumnQualString(matrixKeyRegion)
++	sgRule := h.Item.(*ec2.SecurityGroupRule)
++
++	// Build the params
++	params := &ec2.DescribeSecurityGroupsInput{
++		GroupIds: []*string{aws.String(*sgRule.GroupId)},
++	}
++	if sgRule.ReferencedGroupInfo != nil {
++		params.GroupIds = append(params.GroupIds, aws.String(*sgRule.ReferencedGroupInfo.GroupId))
++	}
++
++	// get service
++	svc, err := Ec2Service(ctx, d, region)
++	if err != nil {
++		return nil, err
++	}
++
++	op, err := svc.DescribeSecurityGroups(params)
++	if err != nil {
++		plugin.Logger(ctx).Error("getSecurityGroupDetails", "ERROR", err)
++		return nil, err
++	}
++
++	var group groupDetail
++	if len(op.SecurityGroups) == 1 {
++		group.GroupName = *op.SecurityGroups[0].GroupName
++		group.VpcId = *op.SecurityGroups[0].VpcId
++	} else if len(op.SecurityGroups) > 1 {
++		if *sgRule.GroupId == *op.SecurityGroups[0].GroupId {
++			group.GroupName = *op.SecurityGroups[0].GroupName
++			group.VpcId = *op.SecurityGroups[0].VpcId
++			group.PairGroupName = *op.SecurityGroups[1].GroupName
++		} else {
++			group.PairGroupName = *op.SecurityGroups[0].GroupName
++			group.GroupName = *op.SecurityGroups[1].GroupName
++			group.VpcId = *op.SecurityGroups[1].VpcId
++		}
++	}
++
++	return group, nil
++}
