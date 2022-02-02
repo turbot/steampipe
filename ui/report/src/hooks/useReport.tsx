@@ -12,7 +12,7 @@ import {
   useState,
 } from "react";
 import { FullHeightThemeWrapper } from "./useTheme";
-import { get, set } from "lodash";
+import { get, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/reports/common";
 import { noop } from "../utils/func";
@@ -100,10 +100,13 @@ const ReportContext = createContext<IReportContext | null>(null);
 const buildReportsList = (
   reports: AvailableReportsDictionary
 ): AvailableReport[] => {
-  return Object.entries(reports).map(([name, title]) => ({
-    name,
-    title,
-  }));
+  return sortBy(
+    Object.entries(reports).map(([name, title]) => ({
+      name,
+      title,
+    })),
+    [(report) => (report.title ? report.title : report.name)]
+  );
 };
 
 const updateSelectedReport = (
