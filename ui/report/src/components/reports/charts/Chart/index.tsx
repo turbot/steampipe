@@ -3,7 +3,7 @@ import ErrorPanel from "../../Error";
 import ReactEChartsCore from "echarts-for-react/lib/core";
 import useMediaMode from "../../../../hooks/useMediaMode";
 import { BarChart, LineChart, PieChart, SankeyChart } from "echarts/charts";
-import { buildChartDataset, LeafNodeData } from "../../common";
+import { buildChartDataset, LeafNodeData, themeColors } from "../../common";
 import { CanvasRenderer } from "echarts/renderers";
 import {
   DatasetComponent,
@@ -38,6 +38,7 @@ echarts.use([
 
 const getCommonBaseOptions = () => ({
   animation: false,
+  color: themeColors,
   tooltip: {
     trigger: "item",
   },
@@ -96,16 +97,36 @@ const getSeriesForChartType = (
   const series: any[] = [];
   const seriesLength = data.columns.length - 1;
   for (let seriesIndex = 1; seriesIndex <= seriesLength; seriesIndex++) {
+    let seriesName = data.columns[seriesIndex].name;
+    let seriesColor = "auto";
+    let seriesOverrides;
+    if (properties && properties.series && properties.series[seriesName]) {
+      seriesOverrides = properties.series[seriesName];
+    }
+    if (seriesOverrides && seriesOverrides.title) {
+      seriesName = seriesOverrides.title;
+    }
+    if (seriesOverrides && seriesOverrides.color) {
+      seriesColor = seriesOverrides.color;
+    }
     switch (type) {
       case "bar":
       case "column":
-        series.push({ type: "bar" });
+        series.push({
+          name: seriesName,
+          type: "bar",
+          itemStyle: { color: seriesColor },
+        });
         break;
       case "donut":
-        series.push({ type: "pie", radius: ["40%", "70%"] });
+        series.push({ name: seriesName, type: "pie", radius: ["40%", "70%"] });
         break;
       case "line":
-        series.push({ type: "line" });
+        series.push({
+          name: seriesName,
+          type: "line",
+          itemStyle: { color: seriesColor },
+        });
         break;
     }
   }
@@ -578,8 +599,6 @@ const Chart = ({ options, theme, themeWrapperRef }: ChartComponentProps) => {
   if (!options) {
     return null;
   }
-
-  console.log(options);
 
   return (
     <>

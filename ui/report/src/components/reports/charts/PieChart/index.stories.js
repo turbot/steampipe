@@ -81,7 +81,7 @@ MultiSeries.args = {
       { name: "Women", data_type_name: "INT8" },
       { name: "Children", data_type_name: "INT8" },
     ],
-    items: [
+    rows: [
       ["England", 16000000, 13000000, 8000000],
       ["Scotland", 8000000, 7000000, 3000000],
       ["Wales", 5000000, 3000000, 2500000],

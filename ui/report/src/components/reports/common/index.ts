@@ -84,6 +84,7 @@ const toEChartsType = (type: ChartType | HierarchyType): EChartsType => {
 };
 
 const buildChartDataset = (data?: LeafNodeData) => {
+  console.log(data);
   return data ? [data.columns.map((col) => col.name), ...data.rows] : [];
 };
 
