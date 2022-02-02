@@ -40,7 +40,7 @@ var ConnectionBlockSchema = &hcl.BodySchema{
 	},
 }
 
-// ModBlockSchema :: top level schema for all mod resources
+// ModBlockSchema is the top level schema for all mod resources
 var ModBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
 	Blocks: []hcl.BlockHeaderSchema{
@@ -106,16 +106,18 @@ var ModBlockSchema = &hcl.BodySchema{
 	},
 }
 
-var ReportBlockSchema = &hcl.BodySchema{
+// ReportContainerBlockSchema contains the attributes which cannot be automatically decoded
+var ReportContainerBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
-		{Name: "title"},
-		{Name: "width"},
-		{Name: "children"},
-		{Name: "base"},
+		{Name: "args"},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
 			Type:       modconfig.BlockTypeInput,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeParam,
 			LabelNames: []string{"name"},
 		},
 		{
@@ -161,7 +163,7 @@ var BenchmarkBlockSchema = &hcl.BodySchema{
 	},
 }
 
-// schema for all blocks satisfying QueryProvider interface
+// QueryProviderBlockSchema schema for all blocks satisfying QueryProvider interface
 var QueryProviderBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "args"},

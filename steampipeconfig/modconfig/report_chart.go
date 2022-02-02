@@ -12,6 +12,8 @@ import (
 // ReportChart is a struct representing a leaf reporting node
 type ReportChart struct {
 	HclResourceBase
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain"`
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`

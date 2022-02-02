@@ -66,19 +66,6 @@ type QueryProvider interface {
 	SetParams(params []*ParamDef)
 }
 
-// block types which implement QueryProvider
-var QueryProviderBlocks = []string{
-	BlockTypeControl,
-	BlockTypeQuery,
-	BlockTypeChart,
-	BlockTypeCounter,
-	BlockTypeTable,
-	BlockTypeControl,
-	BlockTypeControl,
-	BlockTypeControl,
-	BlockTypeControl,
-}
-
 // ReportingLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
 type ReportingLeafNode interface {
 	Name() string

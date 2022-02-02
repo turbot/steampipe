@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
 	"github.com/turbot/steampipe/utils"
@@ -234,7 +235,7 @@ func decodeVariable(block *hcl.Block, runCtx *RunContext) (*modconfig.Variable, 
 }
 
 func decodeParam(block *hcl.Block, runCtx *RunContext, parentName string) (*modconfig.ParamDef, hcl.Diagnostics) {
-	def := modconfig.NewParamDef(block, parentName)
+	def := modconfig.NewParamDef(block)
 
 	content, diags := block.Body.Content(ParamDefBlockSchema)
 
@@ -268,24 +269,30 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 
 	// get shell resource
 	resource, diags := resourceForBlock(block, runCtx)
-
-	// handle any resulting diags, which may specify dependencies
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(nil, nil, diags)
 	if diags.HasErrors() {
 		return nil, res
 	}
 
+	// do a partial decode using QueryProviderBlockSchema
+	// this will be used to pull out attributes which need manual decoding
+	content, _, diags := block.Body.PartialContent(QueryProviderBlockSchema)
+	res.handleDecodeDiags(nil, nil, diags)
+	if !res.Success() {
+		return nil, res
+	}
+
+	// decodee the body into 'resource' to populate all properties that can be automatically decoded
 	diags = gohcl.DecodeBody(block.Body, runCtx.EvalCtx, resource)
 	// handle any resulting diags, which may specify dependencies
-	res.handleDecodeDiags(diags)
+	res.handleDecodeDiags(content, resource, diags)
 
-	// cast rersource to a QueryProvider
+	// cast resource to a QueryProvider
 	queryProvider, ok := resource.(modconfig.QueryProvider)
 	if !ok {
 		// coding error
 		panic(fmt.Sprintf("block type %s not convertible to a query provider", block.Type))
 	}
-	content, diags := block.Body.Content(QueryProviderBlockSchema)
 
 	if queryProvider.GetQuery() != nil && queryProvider.GetSQL() != "" {
 		if attr, exists := content.Attributes["query"]; exists {
@@ -296,7 +303,7 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 				Subject:  &attr.Range,
 			})
 		}
-		res.handleDecodeDiags(content, c, diags)
+		res.handleDecodeDiags(content, resource, diags)
 	}
 
 	if attr, exists := content.Attributes["args"]; exists {
@@ -307,30 +314,38 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 
 	var params []*modconfig.ParamDef
 	for _, block := range content.Blocks {
-		if block.Type == modconfig.BlockTypeParam {
-			// param block cannot be set if a query property is set - it is only valid if inline SQL ids defined
-			if queryProvider.GetQuery() != nil {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("%s has 'query' property set so cannot define param blocks", resource.Name()),
-					Subject:  &block.DefRange,
-				})
-			}
-			paramDef, moreDiags := decodeParam(block, runCtx, resource.Name())
-			if !moreDiags.HasErrors() {
-				params = append(params, paramDef)
-				// add and references contained in the param block to the control refs
-				moreDiags = AddReferences(resource, block, runCtx)
-			}
-			diags = append(diags, moreDiags...)
+		// only paramdefs ar defined in the schema
+		if block.Type != modconfig.BlockTypeParam {
+			panic(fmt.Sprintf("invalid child block type %s", block.Type))
 		}
+
+		// param block cannot be set if a query property is set - it is only valid if inline SQL ids defined
+		if queryProvider.GetQuery() != nil {
+			diags = append(diags, invalidParamDiags(resource, block))
+		}
+		paramDef, moreDiags := decodeParam(block, runCtx, resource.Name())
+		if !moreDiags.HasErrors() {
+			params = append(params, paramDef)
+			// add and references contained in the param block to the control refs
+			moreDiags = AddReferences(resource, block, runCtx)
+		}
+		diags = append(diags, moreDiags...)
 	}
+
 	queryProvider.SetParams(params)
 
 	// handle any resulting diags, which may specify dependencies
-	res.handleDecodeDiags(content, c, diags)
+	res.handleDecodeDiags(content, resource, diags)
 
 	return resource, res
+}
+
+func invalidParamDiags(resource modconfig.HclResource, block *hcl.Block) *hcl.Diagnostic {
+	return &hcl.Diagnostic{
+		Severity: hcl.DiagError,
+		Summary:  fmt.Sprintf("%s has 'query' property set so cannot define param blocks", resource.Name()),
+		Subject:  &block.DefRange,
+	}
 }
 
 func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName string) (*modconfig.QueryArgs, hcl.Diagnostics) {
@@ -367,14 +382,19 @@ func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 	res := &decodeResult{}
 	reportContainer := modconfig.NewReportContainer(block)
 
-	content, diags := block.Body.Content(ReportBlockSchema)
+	// do a partial decode using QueryProviderBlockSchema
+	// this will be used to pull out attributes which need manual decoding
+	content, _, diags := block.Body.PartialContent(ReportContainerBlockSchema)
+	res.handleDecodeDiags(content, reportContainer, diags)
+	if !res.Success() {
+		return nil, res
+	}
+
+	// decode the body into 'reportContainer' to populate all properties that can be automatically decoded
+	diags = gohcl.DecodeBody(block.Body, runCtx.EvalCtx, reportContainer)
+	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(content, reportContainer, diags)
 
-	diags = decodeProperty(content, "title", &reportContainer.Title, runCtx)
-	res.handleDecodeDiags(content, reportContainer, diags)
-
-	diags = decodeProperty(content, "base", &reportContainer.Base, runCtx)
-	res.handleDecodeDiags(content, reportContainer, diags)
 	if reportContainer.Base != nil && len(reportContainer.Base.ChildNames) > 0 {
 		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeChart, modconfig.BlockTypeControl, modconfig.BlockTypeCounter, modconfig.BlockTypeHierarchy, modconfig.BlockTypeImage, modconfig.BlockTypeInput, modconfig.BlockTypeTable, modconfig.BlockTypeText}
 		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
@@ -382,24 +402,18 @@ func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 		children, _ := resolveChildrenFromNames(reportContainer.Base.ChildNames, block, supportedChildren, runCtx)
 		reportContainer.Base.SetChildren(children)
 	}
-	diags = decodeProperty(content, "width", &reportContainer.Width, runCtx)
-	res.handleDecodeDiags(content, reportContainer, diags)
-
-	// now add children
 	if !res.Success() {
 		return reportContainer, res
 	}
 
-	//if attr, exists := content.Attributes["args"]; exists {
-	//	if args, diags := decodeArgs(attr, runCtx.EvalCtx, resource.Name()); !diags.HasErrors() {
-	//		queryProvider.SetArgs(args)
-	//	}
-	//}
-	//
-	//var params []*modconfig.ParamDef
-	//queryProvider.SetParams(params)
-	//
-	//
+	// decode args if any
+	if attr, exists := content.Attributes["args"]; exists {
+		if args, diags := decodeArgs(attr, runCtx.EvalCtx, reportContainer.Name()); !diags.HasErrors() {
+			reportContainer.SetArgs(args)
+		}
+	}
+
+	// now decode child blocks
 	if len(content.Blocks) > 0 {
 		blocksRes := decodeReportContainerBlocks(content, reportContainer, runCtx)
 		res.Merge(blocksRes)
@@ -413,18 +427,33 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, reportContainer *modc
 	// if children are declared inline as blocks, add them
 	var children []modconfig.ModTreeItem
 	var inputs []*modconfig.ReportInput
+	var params []*modconfig.ParamDef
 	for _, b := range content.Blocks {
-		resources, blockRes := decodeBlock(b, runCtx)
-		res.Merge(blockRes)
-		if !blockRes.Success() {
-			continue
-		}
-		for _, resource := range resources {
-			if b.Type == modconfig.BlockTypeInput {
-				inputs = append(inputs, resource.(*modconfig.ReportInput))
-			} else {
-				if child, ok := resource.(modconfig.ModTreeItem); ok {
-					children = append(children, child)
+		// param, has special decoding
+		if b.Type == modconfig.BlockTypeParam {
+			paramDef, diags := decodeParam(b, runCtx, reportContainer.Name())
+			if !diags.HasErrors() {
+				params = append(params, paramDef)
+				// TODO implement refs
+				// add and references contained in the param block to the control refs
+				//diags = AddReferences(resource, block, runCtx)
+			}
+			res.handleDecodeDiags(content, reportContainer, diags)
+		} else {
+			// use generic block decoding
+			resources, blockRes := decodeBlock(b, runCtx)
+			res.Merge(blockRes)
+			if !blockRes.Success() {
+				continue
+			}
+			// we expect either inputs or child report nodes
+			for _, resource := range resources {
+				if b.Type == modconfig.BlockTypeInput {
+					inputs = append(inputs, resource.(*modconfig.ReportInput))
+				} else {
+					if child, ok := resource.(modconfig.ModTreeItem); ok {
+						children = append(children, child)
+					}
 				}
 			}
 		}
@@ -432,28 +461,10 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, reportContainer *modc
 
 	reportContainer.SetChildren(children)
 	reportContainer.SetInputs(inputs)
+	reportContainer.SetParams(params)
 
 	return res
 }
-//
-//func decodeReportContainerBlocks(content *hcl.BodyContent, runCtx *RunContext) ([]modconfig.ModTreeItem, *decodeResult) {
-//	var res = &decodeResult{}
-//	// if children are declared inline as blocks, add them
-//	var children []modconfig.ModTreeItem
-//	for _, b := range content.Blocks {
-//		resources, blockRes := decodeBlock(b, runCtx)
-//		res.Merge(blockRes)
-//		if !blockRes.Success() {
-//			continue
-//		}
-//		for _, childResource := range resources {
-//			if child, ok := childResource.(modconfig.ModTreeItem); ok {
-//				children = append(children, child)
-//			}
-//		}
-//	}
-//	return children, res
-//}
 
 func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark, *decodeResult) {
 	res := &decodeResult{}

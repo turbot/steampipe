@@ -14,6 +14,8 @@ import (
 // Control is a struct representing the Control resource
 type Control struct {
 	HclResourceBase
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain"`
 
 	ShortName        string
 	FullName         string            `cty:"name"`

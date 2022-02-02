@@ -16,23 +16,25 @@ const runtimeDependencyReportScope = "self"
 // ReportContainer is a struct representing the Report and Container resource
 type ReportContainer struct {
 	HclResourceBase
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain"`
 
 	ShortName       string
 	FullName        string `cty:"name"`
 	UnqualifiedName string
-	Title           *string     `cty:"title" column:"title,text"`
-	Width           *int        `cty:"width"  column:"width,text"`
-	Args            *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
-	Params          []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
-
-	Base *ReportContainer
+	Title           *string          `cty:"title" hcl:"title" column:"title,text"`
+	Width           *int             `cty:"width" hcl:"width"  column:"width,text"`
+	Args            *QueryArgs       `cty:"args" column:"args,jsonb" json:"args"`
+	Params          []*ParamDef      `cty:"params" column:"params,jsonb" json:"params"`
+	Base            *ReportContainer `hcl:"base"`
+	Inputs          []*ReportInput   `cty:"inputs"`
 
 	Mod       *Mod `cty:"mod"`
 	DeclRange hcl.Range
 	Paths     []NodePath `column:"path,jsonb"`
 	// store children in a way which can be serialised via cty
-	ChildNames    []string       `cty:"children" column:"children,jsonb"`
-	Inputs        []*ReportInput ` column:"inputs,json" cty:"inputs"`
+	ChildNames []string `cty:"children" column:"children,jsonb"`
+
 	selfInputsMap map[string]*ReportInput
 	// the actual children
 	children               []ModTreeItem
@@ -282,6 +284,11 @@ func (c *ReportContainer) BuildRuntimeDependencyTree(workspace ResourceMapsProvi
 	return nil
 }
 
+func (c *ReportContainer) GetInput(name string) (*ReportInput, bool) {
+	input, found := c.selfInputsMap[name]
+	return input, found
+}
+
 func (c *ReportContainer) SetInputs(inputs []*ReportInput) {
 	c.Inputs = inputs
 	c.selfInputsMap = make(map[string]*ReportInput)
@@ -290,7 +297,10 @@ func (c *ReportContainer) SetInputs(inputs []*ReportInput) {
 	}
 }
 
-func (c *ReportContainer) GetInput(name string) (*ReportInput, bool) {
-	input, found := c.selfInputsMap[name]
-	return input, found
+func (c *ReportContainer) SetParams(params []*ParamDef) {
+	c.Params = params
+}
+
+func (c *ReportContainer) SetArgs(args *QueryArgs) {
+	c.Args = args
 }
