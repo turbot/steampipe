@@ -58,9 +58,6 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	err := reportassets.Ensure(ctx)
 	utils.FailOnError(err)
 
-	ctx, cancel := context.WithCancel(cmd.Context())
-	contexthelpers.StartCancelHandler(cancel)
-
 	server, err := reportserver.NewServer(ctx)
 	if err != nil {
 		utils.FailOnError(err)
