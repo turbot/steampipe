@@ -72,6 +72,7 @@ const getCommonBaseOptionsForChartType = (
             lineStyle: { color: themeColors.foregroundLightest },
           },
           axisTick: { show: true },
+          nameTextStyle: { color: themeColors.foreground },
           splitLine: { show: false },
         },
         // Declare a y-axis (value axis).
@@ -80,6 +81,7 @@ const getCommonBaseOptionsForChartType = (
           axisLabel: { color: themeColors.foreground },
           axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
           axisTick: { show: false },
+          nameTextStyle: { color: themeColors.foreground },
         },
       };
     case "column":
@@ -95,6 +97,7 @@ const getCommonBaseOptionsForChartType = (
           axisLabel: { color: themeColors.foreground },
           axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
           axisTick: { show: false },
+          nameTextStyle: { color: themeColors.foreground },
         },
         // Declare a y-axis (value axis).
         yAxis: {
@@ -105,6 +108,7 @@ const getCommonBaseOptionsForChartType = (
           },
           axisTick: { show: true },
           splitLine: { show: false },
+          nameTextStyle: { color: themeColors.foreground },
         },
       };
     case "pie":
