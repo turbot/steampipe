@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
@@ -29,6 +30,7 @@ The current mod is the working directory, or the directory specified by the --wo
 
 	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for report").
+		AddStringFlag(constants.ArgReportServerListen, "", string(reportserver.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").
 		AddIntFlag(constants.ArgReportServerPort, "", constants.ReportServerDefaultPort, "Report server port.")
 	return cmd
 }
@@ -43,6 +45,11 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	serverPort := reportserver.ListenPort(viper.GetInt(constants.ArgReportServerPort))
+	utils.FailOnError(serverPort.IsValid())
+
+	serverListen := reportserver.ListenType(viper.GetString(constants.ArgReportServerListen))
+	utils.FailOnError(serverListen.IsValid())
 	// ensure report assets are present and extract if not
 	err := reportassets.Ensure(ctx)
 	utils.FailOnError(err)
