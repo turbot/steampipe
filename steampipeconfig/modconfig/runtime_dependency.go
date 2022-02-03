@@ -1,11 +1,9 @@
 package modconfig
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/hclhelpers"
 )
@@ -23,58 +21,80 @@ func (d *ResourceDependency) String() string {
 	return strings.Join(traversalStrings, ",")
 }
 
-// IsRunTimeDependency determines whether this is a runtime dependency
-// adependency is run time if:
+// ToRuntimeDependency determines whether this is a runtime dependency
+// and if so, create a RuntimeDependency and return it
+// a dependency is run time if:
 // - there is a single traversal
 // - the property referenced is one of the defined runtime dependency properties
-// - the dependency resource exists in the mod
-func (d *ResourceDependency) IsRunTimeDependency() bool {
+func (d *ResourceDependency) ToRuntimeDependency(bodyContent *hcl.BodyContent) *RuntimeDependency {
+	// runtime dependency wil onyl have a single traversal
 	if len(d.Traversals) > 1 {
-		return false
-	}
-	parsedPropertyPath, err := ParseResourcePropertyPath(hclhelpers.TraversalAsString(d.Traversals[0]))
-	if err != nil {
-		return false
+		return nil
 	}
 
-	// supported runtime dependencies
-	// map is keyed by resource type and contains a list of properties
-	runTimeDependencyPropertyPaths := map[string][]string{"input": {"result"}}
-
-	// is this property a supported runtime dependency property
-	if supportedProperties, ok := runTimeDependencyPropertyPaths[parsedPropertyPath.ItemType]; ok {
-		if helpers.StringSliceContains(supportedProperties, parsedPropertyPath.PropertyPathString()) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (d *ResourceDependency) ToRuntimeDependency(bodyContent *hcl.BodyContent) (*RuntimeDependency, error) {
 	if bodyContent == nil {
-		return nil, fmt.Errorf("nil body passed to ToRuntimeDependency")
+		return nil
 	}
+	// parse the traversal as a property path
+	propertyPath, err := ParseResourcePropertyPath(hclhelpers.TraversalAsString(d.Traversals[0]))
+	if err != nil {
+		return nil
+	}
+
+	if !isRunTimeDependencyProperty(propertyPath) {
+		return nil
+	}
+
+	// TACTICAL: because the hcl decoding library does not give easy acces to the property which is being populated with this
+	// dependency, we examine the body content and extract all properties which have the same dependency
+	// (this is not ideal)
+	targetProperties := d.getPropertiesFromContent(bodyContent)
+
 	res := &RuntimeDependency{
-		TargetProperties: d.getPropertiesFromContent(bodyContent),
-		Traversal:        d.Traversals[0],
+		TargetProperties: targetProperties,
+		PropertyPath:     propertyPath,
 	}
 	if len(res.TargetProperties) == 0 {
-		return nil, fmt.Errorf("failed to resolve any properties using dependency %s", d)
+		return nil
 	}
-	return res, nil
+	return res
+}
+
+func isRunTimeDependencyProperty(propertyPath *ParsedPropertyPath) bool {
+	// supported runtime dependencies
+	// map is keyed by resource type and contains a list of properties
+	runTimeDependencyPropertyPaths := map[string][]string{
+		"input": {"value"},
+		"param": {"value"},
+	}
+	// is this property a supported runtime dependency property
+	if supportedProperties, ok := runTimeDependencyPropertyPaths[propertyPath.ItemType]; ok {
+		return helpers.StringSliceContains(supportedProperties, propertyPath.PropertyPathString())
+	}
+	return false
 }
 
 // getPropertiesFromContent finds any attributes in the given content which depend on this dependency
 func (d *ResourceDependency) getPropertiesFromContent(content *hcl.BodyContent) []string {
 	var res []string
 	for _, a := range content.Attributes {
-		if scopeTraversal, ok := a.Expr.(*hclsyntax.ScopeTraversalExpr); ok {
-			if len(d.Traversals) == 1 &&
-				hclhelpers.TraversalsEqual(d.Traversals[0], scopeTraversal.Traversal) {
-				res = append(res, a.Name)
+		vars := a.Expr.Variables()
+		if len(d.Traversals) != len(vars) {
+			break
+		}
+		// build map of paths
+		var traversalMap = make(map[string]bool, len(vars))
+		for _, t := range vars {
+			traversalMap[hclhelpers.TraversalAsString(t)] = true
+		}
+		for _, t := range d.Traversals {
+			if !traversalMap[hclhelpers.TraversalAsString(t)] {
+				return res
 			}
 		}
+
+		// ok so traversals match!
+		res = append(res, a.Name)
 	}
 	return res
 }

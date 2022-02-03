@@ -245,6 +245,11 @@ func (h *ReportHierarchy) GetParams() []*ParamDef {
 	return h.Params
 }
 
+// GetArgs implements QueryProvider
+func (h *ReportHierarchy) GetArgs() *QueryArgs {
+	return h.Args
+}
+
 // GetSQL implements QueryProvider, ReportingLeafNode
 func (h *ReportHierarchy) GetSQL() string {
 	return typehelpers.SafeString(h.SQL)

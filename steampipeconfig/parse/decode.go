@@ -30,7 +30,10 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 	blocks, err := runCtx.BlocksToDecode()
 
 	// now clear dependencies from run context - they will be rebuilt
+	// TODO KAI ALSO CLEAR MOD CHILDREN WHICH MAY HAVE BEEN PARTIALLY ADDED
+	// THEN WE CAN UPDATE THE DUPE CHECKING CODE
 	runCtx.ClearDependencies()
+
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -38,13 +41,33 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			Detail:   err.Error()})
 	}
 	for _, block := range blocks {
-		_, res := decodeBlock(block, runCtx)
+		resources, res := decodeBlock(block, runCtx)
 		if !res.Success() {
 			diags = append(diags, res.Diags...)
 			continue
 		}
+		addResourcesToMod(resources, block, runCtx)
 	}
 
+	return diags
+}
+
+func addResourcesToMod(resources []modconfig.HclResource, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	anonymousResource := len(block.Labels) == 0
+	for _, resource := range resources {
+		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
+		if _, ok := resource.(*modconfig.Mod); !ok {
+			resource.SetMod(runCtx.CurrentMod)
+			// if resource is NOT anonymous, add resource to mod
+			// - this will fail if the mod already has a resource with the same name
+			if !anonymousResource {
+				// we cannot add anonymous resources at this point - they will be added after their names are set
+				diags = runCtx.CurrentMod.AddResource(resource)
+
+			}
+		}
+	}
 	return diags
 }
 
@@ -307,9 +330,13 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 	}
 
 	if attr, exists := content.Attributes["args"]; exists {
-		if args, diags := decodeArgs(attr, runCtx.EvalCtx, resource.Name()); !diags.HasErrors() {
+		if args, diags := decodeArgs(attr, runCtx.EvalCtx, resource.Name()); diags.HasErrors() {
+			// handle dependencies
+			res.handleDecodeDiags(content, queryProvider.(modconfig.HclResource), diags)
+		} else {
 			queryProvider.SetArgs(args)
 		}
+
 	}
 
 	var params []*modconfig.ParamDef
@@ -349,7 +376,7 @@ func invalidParamDiags(resource modconfig.HclResource, block *hcl.Block) *hcl.Di
 }
 
 func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName string) (*modconfig.QueryArgs, hcl.Diagnostics) {
-	var params = modconfig.NewQueryArgs()
+	var args = modconfig.NewQueryArgs()
 	v, diags := attr.Expr.Value(evalCtx)
 	if diags.HasErrors() {
 		return nil, diags
@@ -360,9 +387,9 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName strin
 
 	switch {
 	case ty.IsObjectType():
-		params.Args, err = ctyObjectToMapOfPgStrings(v)
+		args.Args, err = ctyObjectToMapOfPgStrings(v)
 	case ty.IsTupleType():
-		params.ArgsList, err = ctyTupleToArrayOfPgStrings(v)
+		args.ArgsList, err = ctyTupleToArrayOfPgStrings(v)
 	default:
 		err = fmt.Errorf("'params' property must be either a map or an array")
 	}
@@ -375,7 +402,7 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName strin
 			Subject:  &attr.Range,
 		})
 	}
-	return params, diags
+	return args, diags
 }
 
 func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContainer, *decodeResult) {
@@ -429,8 +456,9 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, reportContainer *modc
 	var inputs []*modconfig.ReportInput
 	var params []*modconfig.ParamDef
 	for _, b := range content.Blocks {
-		// param, has special decoding
-		if b.Type == modconfig.BlockTypeParam {
+		switch b.Type {
+		case modconfig.BlockTypeParam:
+			// param, has special decoding
 			paramDef, diags := decodeParam(b, runCtx, reportContainer.Name())
 			if !diags.HasErrors() {
 				params = append(params, paramDef)
@@ -439,28 +467,47 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, reportContainer *modc
 				//diags = AddReferences(resource, block, runCtx)
 			}
 			res.handleDecodeDiags(content, reportContainer, diags)
-		} else {
+		//case modconfig.BlockTypeInput:
+
+		default:
 			// use generic block decoding
 			resources, blockRes := decodeBlock(b, runCtx)
 			res.Merge(blockRes)
 			if !blockRes.Success() {
 				continue
 			}
+
 			// we expect either inputs or child report nodes
 			for _, resource := range resources {
 				if b.Type == modconfig.BlockTypeInput {
-					inputs = append(inputs, resource.(*modconfig.ReportInput))
+					input := resource.(*modconfig.ReportInput)
+					// add report name to input
+					input.SetReportContainer(reportContainer)
+					inputs = append(inputs, input)
+
 				} else {
 					if child, ok := resource.(modconfig.ModTreeItem); ok {
 						children = append(children, child)
 					}
 				}
+
+				// now set the mod on the resource
+				resource.SetMod(runCtx.CurrentMod)
+
 			}
 		}
 	}
 
 	reportContainer.SetChildren(children)
-	reportContainer.SetInputs(inputs)
+	if err := reportContainer.SetInputs(inputs); err != nil {
+		res.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Duplicate input names",
+			Detail:   err.Error(),
+			Subject:  &reportContainer.DeclRange,
+		}})
+
+	}
 	reportContainer.SetParams(params)
 
 	return res
@@ -538,18 +585,6 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 		moreDiags = AddReferences(resource, block, runCtx)
 		res.addDiags(moreDiags)
 
-		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
-		if _, ok := resource.(*modconfig.Mod); !ok {
-			resource.SetMod(runCtx.CurrentMod)
-			// if resource is NOT anonymous, add resource to mod
-			// - this will fail if the mod already has a resource with the same name
-			if !anonymousResource {
-				// we cannot add anonymous resources at this point - they will be added after their names are set
-				moreDiags = runCtx.CurrentMod.AddResource(resource)
-				res.addDiags(moreDiags)
-			}
-		}
-
 		// if resource supports metadata, save it
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
 			body := block.Body.(*hclsyntax.Body)
@@ -557,7 +592,7 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 			res.addDiags(moreDiags)
 		}
 
-		// // if resource is NOT anonymous, add into the run context
+		// if resource is NOT anonymous, add into the run context
 		if !anonymousResource {
 			moreDiags = runCtx.AddResource(resource)
 			res.addDiags(moreDiags)

@@ -33,16 +33,12 @@ func (p *decodeResult) handleDecodeDiags(bodyContent *hcl.BodyContent, resource 
 		if dependency := isDependencyError(diag); dependency != nil {
 			allDependencies = append(allDependencies, dependency)
 
-			// so it was a dependency error - determine whether this is a RUN TIMEdependency
+			// so it was a dependency error - determine whether this is a RUN TIME dependency
 			// - if so, do not raise a dependency error but instead store in the resources run time dependencies
-			if dependency.IsRunTimeDependency() {
-				runtimeDependency, err := dependency.ToRuntimeDependency(bodyContent)
-				if err == nil {
-					resource.AddRuntimeDependencies(runtimeDependency)
-				}
-
+			if runtimeDependency := dependency.ToRuntimeDependency(bodyContent); runtimeDependency != nil {
+				resource.AddRuntimeDependencies(runtimeDependency)
 			} else {
-				// was this error caused by a missing dependency?
+				// this is not a runtime dependency - register a normal dependency
 				p.Depends = append(p.Depends, dependency)
 			}
 		}

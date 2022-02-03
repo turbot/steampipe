@@ -66,6 +66,12 @@ type QueryProvider interface {
 	SetParams(params []*ParamDef)
 }
 
+// ParameterisedReportNode must be implemented by resources has params and args
+type ParameterisedReportNode interface {
+	GetParams() []*ParamDef
+	GetArgs() *QueryArgs
+}
+
 // ReportingLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
 type ReportingLeafNode interface {
 	Name() string

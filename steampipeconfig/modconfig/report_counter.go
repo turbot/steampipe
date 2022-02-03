@@ -227,6 +227,11 @@ func (c *ReportCounter) GetParams() []*ParamDef {
 	return c.Params
 }
 
+// GetArgs implements QueryProvider
+func (c *ReportCounter) GetArgs() *QueryArgs {
+	return c.Args
+}
+
 // GetSQL implements QueryProvider, ReportingLeafNode
 func (c *ReportCounter) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)

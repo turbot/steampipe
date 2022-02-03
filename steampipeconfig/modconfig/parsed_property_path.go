@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 	"strings"
+
+	"github.com/turbot/go-kit/helpers"
 )
 
 type ParsedPropertyPath struct {
@@ -10,8 +12,9 @@ type ParsedPropertyPath struct {
 	ItemType     string
 	Name         string
 	PropertyPath []string
-	// scope of this property path ("self")
-	Scope string
+	// optional scope of this property path ("root or parent")
+	Scope    string
+	original string
 }
 
 func (p *ParsedPropertyPath) PropertyPathString() string {
@@ -30,8 +33,12 @@ func (p *ParsedPropertyPath) ToResourceName() string {
 	return BuildModResourceName(p.ItemType, p.Name)
 }
 
+func (p *ParsedPropertyPath) String() string {
+	return p.original
+}
+
 func ParseResourcePropertyPath(propertyPath string) (res *ParsedPropertyPath, err error) {
-	res = &ParsedPropertyPath{}
+	res = &ParsedPropertyPath{original: propertyPath}
 
 	// valid property paths:
 	// <mod>.<resource>.<name>.<property path...>
@@ -44,8 +51,8 @@ func ParseResourcePropertyPath(propertyPath string) (res *ParsedPropertyPath, er
 	}
 
 	// special case handling for runtime dependencies which may have use the "self" qualifier
-	if parts[0] == runtimeDependencyReportScope {
-		res.Scope = runtimeDependencyReportScope
+	if helpers.StringSliceContains(runtimeDependencyScopes, parts[0]) {
+		res.Scope = parts[0]
 		parts = parts[1:]
 	}
 

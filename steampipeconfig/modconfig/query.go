@@ -198,6 +198,11 @@ func (q *Query) GetParams() []*ParamDef {
 	return q.Params
 }
 
+// GetArgs implements QueryProvider
+func (q *Query) GetArgs() *QueryArgs {
+	return nil
+}
+
 // GetSQL implements QueryProvider, ReportingLeafNode
 func (q *Query) GetSQL() string {
 	return typehelpers.SafeString(q.SQL)

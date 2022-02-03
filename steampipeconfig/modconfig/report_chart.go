@@ -288,6 +288,11 @@ func (c *ReportChart) GetParams() []*ParamDef {
 	return c.Params
 }
 
+// GetArgs implements QueryProvider
+func (c *ReportChart) GetArgs() *QueryArgs {
+	return c.Args
+}
+
 // GetSQL implements QueryProvider, ReportingLeafNode
 func (c *ReportChart) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)

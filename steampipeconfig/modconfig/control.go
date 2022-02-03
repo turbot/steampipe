@@ -305,6 +305,11 @@ func (c *Control) GetPreparedStatementName() string {
 	return c.PreparedStatementName
 }
 
+// GetArgs implements QueryProvider
+func (c *Control) GetArgs() *QueryArgs {
+	return c.Args
+}
+
 // GetSQL implements QueryProvider, ReportingLeafNode
 func (c *Control) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)

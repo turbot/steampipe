@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
@@ -11,7 +12,10 @@ import (
 )
 
 const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
-const runtimeDependencyReportScope = "self"
+const runtimeDependencyRootScope = "self" //"root"
+const runtimeDependencyParentScope = "parent"
+
+var runtimeDependencyScopes = []string{runtimeDependencyRootScope, runtimeDependencyParentScope}
 
 // ReportContainer is a struct representing the Report and Container resource
 type ReportContainer struct {
@@ -239,6 +243,9 @@ func (c *ReportContainer) WalkResources(resourceFunc func(resource HclResource) 
 }
 
 func (c *ReportContainer) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) error {
+	if !c.IsReport() {
+		return fmt.Errorf("BuildRuntimeDependencyTree shoul donly be called for reports")
+	}
 	c.runtimeDependencyGraph = topsort.NewGraph()
 	// add root node - this will depend on all other nodes
 	c.runtimeDependencyGraph.AddNode(rootRuntimeDependencyNode)
@@ -256,7 +263,7 @@ func (c *ReportContainer) BuildRuntimeDependencyTree(workspace ResourceMapsProvi
 
 		for _, dependency := range runtimeDependencies {
 			// try to resolve the target resource
-			if err := dependency.ResolveResource(c, workspace); err != nil {
+			if err := dependency.ResolveSource(resource, c, workspace); err != nil {
 				return false, err
 			}
 			if err := c.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name); err != nil {
@@ -270,6 +277,9 @@ func (c *ReportContainer) BuildRuntimeDependencyTree(workspace ResourceMapsProvi
 				return false, err
 			}
 		}
+
+		// ensure that all parameters have corresponding args populated with a value or runtime dependency
+
 		// continue walking
 		return true, nil
 	}
@@ -289,12 +299,36 @@ func (c *ReportContainer) GetInput(name string) (*ReportInput, bool) {
 	return input, found
 }
 
-func (c *ReportContainer) SetInputs(inputs []*ReportInput) {
+func (c *ReportContainer) SetInputs(inputs []*ReportInput) error {
 	c.Inputs = inputs
 	c.selfInputsMap = make(map[string]*ReportInput)
 	for _, i := range inputs {
 		c.selfInputsMap[i.UnqualifiedName] = i
 	}
+	// also add child containers inputs
+
+	var duplicates []string
+	resourceFunc := func(resource HclResource) (bool, error) {
+		if container, ok := resource.(*ReportContainer); ok {
+			for _, i := range container.Inputs {
+				// check we do not already have this input
+				if _, ok := c.selfInputsMap[i.UnqualifiedName]; ok {
+					duplicates = append(duplicates, i.Name())
+					continue
+				}
+				c.Inputs = append(c.Inputs, i)
+				c.selfInputsMap[i.UnqualifiedName] = i
+			}
+		}
+		// continue walking
+		return true, nil
+	}
+	c.WalkResources(resourceFunc)
+
+	if len(duplicates) > 0 {
+		return fmt.Errorf("duplicate input names found for %s: %s", c.Name(), strings.Join(duplicates, ","))
+	}
+	return nil
 }
 
 func (c *ReportContainer) SetParams(params []*ParamDef) {
