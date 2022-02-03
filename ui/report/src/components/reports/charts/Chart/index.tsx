@@ -1,5 +1,6 @@
 import Charts, { ChartProperties, ChartProps, ChartType } from "../index";
 import ErrorPanel from "../../Error";
+import React, { useEffect, useRef, useState } from "react";
 import ReactEChartsCore from "echarts-for-react/lib/core";
 import useMediaMode from "../../../../hooks/useMediaMode";
 import { BarChart, LineChart, PieChart, SankeyChart } from "echarts/charts";
@@ -17,7 +18,6 @@ import { LabelLayout } from "echarts/features";
 import { merge, set } from "lodash";
 import { PanelDefinition, useReport } from "../../../../hooks/useReport";
 import { Theme, useTheme } from "../../../../hooks/useTheme";
-import React, { useEffect, useRef, useState } from "react";
 import { usePanel } from "../../../../hooks/usePanel";
 import { ZoomIcon } from "../../../../constants/icons";
 import * as echarts from "echarts/core";
@@ -178,6 +178,103 @@ const getOptionOverridesForChartType = (
       overrides = set(overrides, "legend.orient", "vertical");
       overrides = set(overrides, "legend.left", "left");
       overrides = set(overrides, "legend.top", "middle");
+    }
+  }
+
+  // Axes settings
+  if (properties.axes) {
+    // X axis settings
+    if (properties.axes.x) {
+      // X axis display setting
+      const xAxisDisplay = properties.axes.x.display;
+      if (xAxisDisplay === "always") {
+        overrides = set(overrides, "xAxis.show", true);
+      } else if (xAxisDisplay === "none") {
+        overrides = set(overrides, "xAxis.show", false);
+      }
+
+      // X axis labels settings
+      if (properties.axes.x.labels) {
+        // X axis labels display setting
+        const xAxisTicksDisplay = properties.axes.x.labels.display;
+        if (xAxisTicksDisplay === "always") {
+          overrides = set(overrides, "xAxis.axisLabel.show", true);
+        } else if (xAxisTicksDisplay === "none") {
+          overrides = set(overrides, "xAxis.axisLabel.show", false);
+        }
+      }
+
+      // X axis title settings
+      if (properties.axes.x.title) {
+        // X axis title display setting
+        const xAxisTitleDisplay = properties.axes.x.title.display;
+        if (xAxisTitleDisplay === "none") {
+          overrides = set(overrides, "xAxis.name", null);
+        }
+
+        // X Axis title align setting
+        const xAxisTitleAlign = properties.axes.x.title.align;
+        if (xAxisTitleAlign === "start") {
+          overrides = set(overrides, "xAxis.nameLocation", "start");
+        } else if (xAxisTitleAlign === "center") {
+          overrides = set(overrides, "xAxis.nameLocation", "center");
+        } else if (xAxisTitleAlign === "end") {
+          overrides = set(overrides, "xAxis.nameLocation", "end");
+        }
+
+        // X Axis title value setting
+        const xAxisTitleValue = properties.axes.x.title.value;
+        if (xAxisTitleValue) {
+          overrides = set(overrides, "xAxis.name", xAxisTitleValue);
+        }
+      }
+    }
+
+    // Y axis settings
+    if (properties.axes.y) {
+      // Y axis display setting
+      const yAxisDisplay = properties.axes.y.display;
+      if (yAxisDisplay === "always") {
+        overrides = set(overrides, "yAxis.show", true);
+      } else if (yAxisDisplay === "none") {
+        overrides = set(overrides, "yAxis.show", false);
+      }
+
+      // Y axis labels settings
+      if (properties.axes.y.labels) {
+        // Y axis labels display setting
+        const yAxisTicksDisplay = properties.axes.y.labels.display;
+        if (yAxisTicksDisplay === "always") {
+          overrides = set(overrides, "yAxis.axisLabel.show", true);
+        } else if (yAxisTicksDisplay === "none") {
+          overrides = set(overrides, "yAxis.axisLabel.show", false);
+        }
+      }
+
+      // Y axis title settings
+      if (properties.axes.y.title) {
+        // Y axis title display setting
+        const yAxisTitleDisplay = properties.axes.y.title.display;
+        if (yAxisTitleDisplay === "none") {
+          overrides = set(overrides, "yAxis.name", null);
+        }
+
+        // Y Axis title align setting
+        const yAxisTitleAlign = properties.axes.y.title.align;
+        if (yAxisTitleAlign === "start") {
+          overrides = set(overrides, "yAxis.nameLocation", "start");
+        } else if (yAxisTitleAlign === "center") {
+          overrides = set(overrides, "yAxis.nameLocation", "center");
+        } else if (yAxisTitleAlign === "end") {
+          overrides = set(overrides, "yAxis.nameLocation", "end");
+        }
+
+        // Y Axis title value setting
+        const yAxisTitleValue = properties.axes.y.title.value;
+        if (yAxisTitleValue) {
+          overrides = set(overrides, "yAxis.name", yAxisTitleValue);
+        }
+      }
     }
   }
 
