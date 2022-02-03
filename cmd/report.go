@@ -50,6 +50,10 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 
 	serverListen := reportserver.ListenType(viper.GetString(constants.ArgReportServerListen))
 	utils.FailOnError(serverListen.IsValid())
+
+	ctx, cancel := context.WithCancel(cmd.Context())
+	contexthelpers.StartCancelHandler(cancel)
+
 	// ensure report assets are present and extract if not
 	err := reportassets.Ensure(ctx)
 	utils.FailOnError(err)
@@ -66,4 +70,6 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 
 	server.Start()
 
+	// wait for the given context to cancel
+	<-ctx.Done()
 }
