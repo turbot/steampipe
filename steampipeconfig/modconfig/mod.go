@@ -622,7 +622,6 @@ func (m *Mod) Diff(other *Mod) *ReportTreeItemDiffs {
 		}
 	}
 
-	res.populateChildDiffs(m, other)
 	return res
 }
 
