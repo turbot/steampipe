@@ -116,19 +116,6 @@ const getCommonBaseOptionsForChartType = (
         legend: {
           show: false,
         },
-        series: [
-          {
-            type: "pie",
-            radius: "50%",
-            emphasis: {
-              itemStyle: {
-                shadowBlur: 5,
-                shadowOffsetX: 0,
-                shadowColor: "rgba(0, 0, 0, 0.5)",
-              },
-            },
-          },
-        ],
       };
     case "donut":
       return {
@@ -288,7 +275,8 @@ const getOptionOverridesForChartType = (
 const getSeriesForChartType = (
   type: ChartType = "column",
   data: LeafNodeData | undefined,
-  properties: ChartProperties | undefined
+  properties: ChartProperties | undefined,
+  themeColors
 ) => {
   if (!data) {
     return {};
@@ -324,7 +312,12 @@ const getSeriesForChartType = (
         });
         break;
       case "donut":
-        series.push({ name: seriesName, type: "pie", radius: ["40%", "70%"] });
+        series.push({
+          name: seriesName,
+          type: "pie",
+          radius: ["40%", "70%"],
+          label: { color: themeColors.foreground },
+        });
         break;
       case "line":
         series.push({
@@ -333,6 +326,19 @@ const getSeriesForChartType = (
           itemStyle: { color: seriesColor },
         });
         break;
+      case "pie":
+        series.push({
+          type: "pie",
+          radius: "50%",
+          label: { color: themeColors.foreground },
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 5,
+              shadowOffsetX: 0,
+              shadowColor: "rgba(0, 0, 0, 0.5)",
+            },
+          },
+        });
     }
   }
   return { series };
@@ -350,20 +356,22 @@ const buildChartOptions = (
   const foregroundLightest = style.getPropertyValue(
     "--color-foreground-lightest"
   );
+  const themeColors = {
+    foreground,
+    foregroundLightest,
+  };
   const seriesData = getSeriesForChartType(
     props.properties?.type,
     props.data,
-    props.properties
+    props.properties,
+    themeColors
   );
   return merge(
     getCommonBaseOptions(),
     getCommonBaseOptionsForChartType(
       props.properties?.type,
       seriesData.series,
-      {
-        foreground,
-        foregroundLightest,
-      }
+      themeColors
     ),
     getOptionOverridesForChartType(props.properties?.type, props.properties),
     seriesData,
