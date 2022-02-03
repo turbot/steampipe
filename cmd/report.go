@@ -63,10 +63,10 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 		utils.FailOnError(err)
 	}
 
-	defer server.Shutdown(ctx)
-
 	server.Start()
 
 	// wait for the given context to cancel
 	<-ctx.Done()
+
+	server.Shutdown(ctx)
 }
