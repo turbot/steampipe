@@ -17,7 +17,7 @@ import { LabelLayout } from "echarts/features";
 import { merge, set } from "lodash";
 import { PanelDefinition, useReport } from "../../../../hooks/useReport";
 import { Theme, useTheme } from "../../../../hooks/useTheme";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { usePanel } from "../../../../hooks/usePanel";
 import { ZoomIcon } from "../../../../constants/icons";
 import * as echarts from "echarts/core";
@@ -698,7 +698,6 @@ interface ChartComponentProps {
 }
 
 const Chart = ({ options, theme, themeWrapperRef }: ChartComponentProps) => {
-  const [_, setRandomVal] = useState(0);
   const chartRef = useRef<ReactEChartsCore>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [showZoom, setShowZoom] = useState(false);
@@ -709,9 +708,6 @@ const Chart = ({ options, theme, themeWrapperRef }: ChartComponentProps) => {
   // const options = buildChartInputs(data, inputs, theme, themeWrapperRef);
 
   console.log(options);
-
-  // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
-  useEffect(() => setRandomVal(Math.random()), [theme.name]);
 
   useEffect(() => {
     if (!chartRef.current || !options) {
@@ -774,7 +770,11 @@ const Chart = ({ options, theme, themeWrapperRef }: ChartComponentProps) => {
 };
 
 const ChartWrapper = (props: ChartProps) => {
+  const [_, setRandomVal] = useState(0);
   const { theme, wrapperRef } = useTheme();
+
+  // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
+  useEffect(() => setRandomVal(Math.random()), [theme.name]);
 
   if (!wrapperRef) {
     return null;
