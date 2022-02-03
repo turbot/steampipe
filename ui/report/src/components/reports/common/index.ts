@@ -1,4 +1,4 @@
-import { ChartProperties, ChartType } from "../charts";
+import { ChartType } from "../charts";
 import { ColorGenerator } from "../../../utils/color";
 import { HierarchyProperties, HierarchyType } from "../hierarchies";
 
@@ -251,91 +251,6 @@ const adjustMaxValue = (initial) => {
   return max;
 };
 
-const buildChartDataInputs = (
-  rawData: LeafNodeData,
-  type: ChartType,
-  properties: ChartProperties
-) => {
-  const seriesLength = rawData.columns.length - 1;
-
-  const labels: string[] = [];
-  const datasets: SeriesData[] = [];
-
-  let min = 0;
-  let max = 0;
-
-  for (const row of rawData.rows) {
-    labels.push(row[0]);
-  }
-  for (let seriesIndex = 1; seriesIndex <= seriesLength; seriesIndex++) {
-    const data: any[] = [];
-    for (const row of rawData.rows) {
-      const dataValue = row[seriesIndex];
-      if (dataValue < min) {
-        min = dataValue;
-      }
-      if (dataValue > max) {
-        max = dataValue;
-      }
-      data.push(dataValue);
-    }
-    const seriesName = rawData.columns[seriesIndex].name;
-    let seriesOverrides;
-    if (properties.series && properties.series[seriesName]) {
-      seriesOverrides = properties.series[seriesName];
-    }
-    datasets.push({
-      name:
-        seriesOverrides && seriesOverrides.title
-          ? seriesOverrides.title
-          : seriesName,
-      data,
-      type: toEChartsType(type),
-      radius: type === "pie" || type === "donut" ? "50%" : null,
-      // backgroundColor:
-      //   type === "donut" || type === "pie"
-      //     ? themeColors.slice(0, labels.length)
-      //     : seriesOverrides && seriesOverrides.color
-      //     ? seriesOverrides.color
-      //     : themeColors[seriesIndex - 1],
-    });
-  }
-
-  const options = {
-    xAxis:
-      type === "bar"
-        ? {
-            type: "value",
-          }
-        : {
-            type: "category",
-            data: labels,
-          },
-    yAxis:
-      type === "bar" ? { type: "category", data: labels } : { type: "value" },
-    series: datasets,
-  };
-
-  // Adjust min and max to allow breathing space in the chart
-  min = adjustMinValue(min);
-  max = adjustMaxValue(max);
-
-  return { options, min, max };
-  //
-  // const data = {
-  //   labels,
-  //   datasets,
-  // };
-  //
-  //
-  //
-  // return {
-  //   data,
-  //   min,
-  //   max,
-  // };
-};
-
 const buildHierarchyDataInputs = (
   rawData: LeafNodeData,
   type: HierarchyType,
@@ -494,10 +409,8 @@ const themeColors = generateColors();
 export {
   adjustMinValue,
   adjustMaxValue,
-  buildChartDataInputs,
   buildChartDataset,
   buildHierarchyDataInputs,
-  // buildSeriesInputs,
   themeColors,
   toEChartsType,
 };
