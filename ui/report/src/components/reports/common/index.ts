@@ -1,4 +1,4 @@
-import { ChartType } from "../charts";
+import { ChartProperties, ChartType } from "../charts";
 import { ColorGenerator } from "../../../utils/color";
 import { HierarchyProperties, HierarchyType } from "../hierarchies";
 
@@ -83,8 +83,67 @@ const toEChartsType = (type: ChartType | HierarchyType): EChartsType => {
   return type as EChartsType;
 };
 
-const buildChartDataset = (data?: LeafNodeData) => {
-  return data ? [data.columns.map((col) => col.name), ...data.rows] : [];
+const buildChartDatasetFromRowSeries = (data: LeafNodeData) => {
+  if (data.columns.length < 3) {
+    return { dataset: [], rowSeriesLabels: [] };
+  }
+  const xAxis = {};
+  const series = {};
+  const xAxisLabels: string[] = [];
+  const seriesLabels: string[] = [];
+  for (const row of data.rows) {
+    const xAxisLabel = row[0];
+    const seriesName = row[1];
+    const seriesValue = row[2];
+
+    if (!xAxis[xAxisLabel]) {
+      xAxis[xAxisLabel] = {};
+      xAxisLabels.push(xAxisLabel);
+    }
+
+    xAxis[xAxisLabel] = xAxis[xAxisLabel] || {};
+    xAxis[xAxisLabel][seriesName] = seriesValue;
+
+    if (!series[seriesName]) {
+      series[seriesName] = true;
+      seriesLabels.push(seriesName);
+    }
+  }
+
+  const dataset: any[] = [];
+  const headerRow: string[] = [];
+  headerRow.push(data.columns[0].name);
+  for (const seriesLabel of seriesLabels) {
+    headerRow.push(seriesLabel);
+  }
+  dataset.push(headerRow);
+
+  for (const xAxisLabel of xAxisLabels) {
+    const row = [xAxisLabel];
+    for (const seriesLabel of seriesLabels) {
+      const seriesValue = xAxis[xAxisLabel][seriesLabel];
+      row.push(seriesValue === undefined ? null : seriesValue);
+    }
+    dataset.push(row);
+  }
+
+  console.log(dataset);
+
+  return { dataset, rowSeriesLabels: seriesLabels };
+};
+
+const buildChartDataset = (
+  data: LeafNodeData | undefined,
+  properties: ChartProperties | undefined
+) => {
+  return data
+    ? properties?.series_format === "row"
+      ? buildChartDatasetFromRowSeries(data)
+      : {
+          dataset: [data.columns.map((col) => col.name), ...data.rows],
+          rowSeriesLabels: [],
+        }
+    : { dataset: [], rowSeriesLabels: [] };
 };
 
 // const buildSeriesInputs = (rawData, seriesDataFormat, seriesDataType) => {

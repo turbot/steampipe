@@ -276,15 +276,20 @@ const getSeriesForChartType = (
   type: ChartType = "column",
   data: LeafNodeData | undefined,
   properties: ChartProperties | undefined,
+  rowSeriesLabels: string[],
   themeColors
 ) => {
   if (!data) {
     return {};
   }
   const series: any[] = [];
-  const seriesLength = data.columns.length - 1;
+  const seriesNames =
+    properties && properties.series_format === "row"
+      ? rowSeriesLabels
+      : data.columns.slice(1).map((col) => col.name);
+  const seriesLength = seriesNames.length;
   for (let seriesIndex = 1; seriesIndex <= seriesLength; seriesIndex++) {
-    let seriesName = data.columns[seriesIndex].name;
+    let seriesName = seriesNames[seriesIndex];
     let seriesColor = "auto";
     let seriesOverrides;
     if (properties) {
@@ -360,10 +365,15 @@ const buildChartOptions = (
     foreground,
     foregroundLightest,
   };
+  const { dataset, rowSeriesLabels } = buildChartDataset(
+    props.data,
+    props.properties
+  );
   const seriesData = getSeriesForChartType(
     props.properties?.type,
     props.data,
     props.properties,
+    rowSeriesLabels,
     themeColors
   );
   return merge(
@@ -377,7 +387,7 @@ const buildChartOptions = (
     seriesData,
     {
       dataset: {
-        source: buildChartDataset(props.data),
+        source: dataset,
       },
     }
   );

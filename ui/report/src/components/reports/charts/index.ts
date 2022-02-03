@@ -28,6 +28,8 @@ type ChartSeries = {
   [series: string]: ChartSeriesOptions;
 };
 
+type ChartSeriesFormat = "column" | "row";
+
 type ChartAxisTitleOptions = {
   display: "always" | "none";
   align: "start" | "center" | "end";
@@ -60,6 +62,7 @@ export type ChartProperties = {
   axes?: ChartAxes;
   legend?: ChartLegendOptions;
   series?: ChartSeries;
+  series_format?: ChartSeriesFormat;
   grouping?: ChartGrouping;
 };
 
