@@ -53,7 +53,7 @@ const getCommonBaseOptions = () => ({
 });
 
 const getCommonBaseOptionsForChartType = (
-  type: ChartType | undefined,
+  type: ChartType = "column",
   series: any[] | undefined,
   themeColors
 ) => {
@@ -707,6 +707,8 @@ const Chart = ({ options, theme, themeWrapperRef }: ChartComponentProps) => {
   const mediaMode = useMediaMode();
 
   // const options = buildChartInputs(data, inputs, theme, themeWrapperRef);
+
+  console.log(options);
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
   useEffect(() => setRandomVal(Math.random()), [theme.name]);
