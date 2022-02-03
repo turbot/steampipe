@@ -2,13 +2,16 @@ package ociinstaller
 
 import (
 	"context"
+	"encoding/json"
+	"regexp"
 
 	"github.com/containerd/containerd/remotes"
-	"github.com/containerd/containerd/remotes/docker"
-	"github.com/deislabs/oras/pkg/content"
-	"github.com/deislabs/oras/pkg/oras"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/sirupsen/logrus"
+	"github.com/turbot/steampipe/utils"
+
+	orascontent "oras.land/oras-go/pkg/content"
+	orasgo "oras.land/oras-go/pkg/oras"
 )
 
 type ociDownloader struct {
@@ -22,7 +25,7 @@ func NewOciDownloader() *ociDownloader {
 	// warning and above.  Set to ErrrLevel to get rid of unwanted error message
 	logrus.SetLevel(logrus.ErrorLevel)
 	return &ociDownloader{
-		resolver: docker.NewResolver(docker.ResolverOptions{}),
+		// resolver: docker.NewResolver(docker.ResolverOptions{}),
 	}
 }
 
@@ -35,18 +38,44 @@ Returns
 
 **/
 func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []string, destDir string) (*ocispec.Descriptor, *ocispec.Descriptor, []byte, []ocispec.Descriptor, error) {
-	fileStore := content.NewFileStore(destDir)
+	fileStore := orascontent.NewFile(destDir)
 	defer fileStore.Close()
 
-	hybridStore := newHybridStore(fileStore)
-	pullOpts := []oras.PullOpt{
-		oras.WithAllowedMediaTypes(append(mediaTypes, MediaTypeConfig, MediaTypePluginConfig)),
-		oras.WithPullEmptyNameAllowed(),
+	registryTarget, _ := orascontent.NewRegistry(orascontent.RegistryOptions{Insecure: false})
+
+	layerStore := []ocispec.Descriptor{}
+
+	var (
+		configDesc ocispec.Descriptor
+		configData []byte
+	)
+
+	pullOpts := []orasgo.CopyOpt{
+		orasgo.WithAllowedMediaTypes(append(mediaTypes, MediaTypeConfig, MediaTypePluginConfig)),
+		orasgo.WithPullEmptyNameAllowed(),
+		orasgo.WithLayerDescriptors(func(d []ocispec.Descriptor) {
+			layerStore = append(layerStore, d...)
+			utils.DebugDumpJSON("layers:", layerStore)
+		}),
+		orasgo.WithRootManifest(func(b []byte) {
+			config := map[string]interface{}{}
+			json.Unmarshal(b, &config)
+			utils.DebugDumpJSON("manifest:", config)
+			configData = b
+		}),
 	}
-	desc, layers, err := oras.Pull(ctx, o.resolver, ref, hybridStore, pullOpts...)
+
+	desc, err := orasgo.Copy(ctx, registryTarget, ref, fileStore, "", pullOpts...)
 	if err != nil {
-		return &desc, nil, nil, layers, err
+		return &desc, nil, nil, nil, err
 	}
-	configDesc, configData, err := hybridStore.GetConfig()
-	return &desc, &configDesc, configData, layers, err
+	return &desc, &configDesc, configData, layerStore, err
+}
+
+func isConfigMediaType(mediaType string) bool {
+	// assume that any media type that ends with `.config.v?+json` is a config,
+	// as well as the oci MediaTypeImageManifest and  MediaTypeImageIndex
+	// 		ex: "application/vnd.turbot.steampipe.plugin.config.v1+json"
+	matched, _ := regexp.MatchString(`.+\.config\.v\d\+json$`, mediaType)
+	return matched || mediaType == ocispec.MediaTypeImageManifest || mediaType == ocispec.MediaTypeImageIndex
 }

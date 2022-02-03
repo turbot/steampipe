@@ -15,7 +15,7 @@ import (
 // InstallPlugin installs a plugin from an OCI Image
 func InstallPlugin(ctx context.Context, imageRef string) (*SteampipeImage, error) {
 	tempDir := NewTempDir(imageRef)
-	defer tempDir.Delete()
+	// defer tempDir.Delete()
 
 	ref := NewSteampipeImageRef(imageRef)
 	imageDownloader := NewOciDownloader()
