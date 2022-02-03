@@ -205,7 +205,7 @@ func getReportsInterestedInResourceChanges(reportsBeingWatched []string, existin
 // Starts the API server
 func (s *Server) Start() {
 	go Init(s.context, s.webSocket, s.workspace, s.dbClient, s.reportClients, s.mutex)
-	StartAPI(s.context, s.webSocket)
+	go StartAPI(s.context, s.webSocket)
 }
 
 func (s *Server) Shutdown(ctx context.Context) {
