@@ -195,110 +195,122 @@ func init() {
 				},
 			},
 		},
-		// upto here
-		// "single_mod_one_query_one_control": {
-		// 	source: "testdata/mods/single_mod_one_query_one_control",
-		// 	expected: &modconfig.Mod{
-		// 		ShortName:   "m1",
-		// 		FullName:    "mod.m1",
-		// 		Require:     modconfig.NewRequire(),
-		// 		Title:       toStringPointer("M1"),
-		// 		Description: toStringPointer("THIS IS M1"),
-		// 		Queries: map[string]*modconfig.Query{
-		// 			"m1.query.q1": {
-		// 				ShortName:   "q1",
-		// 				FullName:    "m1.query.q1",
-		// 				Title:       toStringPointer("Q1"),
-		// 				Description: toStringPointer("THIS IS QUERY 1"),
-		// 				SQL:         toStringPointer("select 1"),
-		// 			},
-		// 		},
-		// 		Controls: map[string]*modconfig.Control{
-		// 			"m1.control.c1": {
-		// 				ShortName:   "c1",
-		// 				FullName:    "m1.control.c1",
-		// 				Title:       toStringPointer("C1"),
-		// 				Description: toStringPointer("THIS IS CONTROL 1"),
-		// 				SQL:         toStringPointer("select 'ok' as status, 'foo' as resource, 'bar' as reason"),
-		// 			},
-		// 		},
-		// 	},
-		// },
-		// "controls_and_groups": {
-		// 	source: "testdata/mods/controls_and_groups",
-		// 	expected: &modconfig.Mod{
-		// 		ShortName:   "m1",
-		// 		FullName:    "mod.m1",
-		// 		Require:     modconfig.NewRequire(),
-		// 		Title:       toStringPointer("M1"),
-		// 		Description: toStringPointer("THIS IS M1"),
-		// 		Queries: map[string]*modconfig.Query{
-		// 			"m1.query.q1": {
-		// 				ShortName: "q1",
-		// 				FullName:  "m1.query.q1",
-		// 				SQL:       toStringPointer("select 1"),
-		// 			},
-		// 		},
-		// 		Controls: map[string]*modconfig.Control{
-		// 			"m1.control.c1": {
-		// 				ShortName: "c1",
-		// 				FullName:  "m1.control.c1",
-		// 				SQL:       toStringPointer("select 'pass' as result"),
-		// 			},
-		// 			"m1.control.c2": {
-		// 				ShortName: "c2",
-		// 				FullName:  "m1.control.c2",
-		// 				SQL:       toStringPointer("select 'pass' as result"),
-		// 			},
-		// 			"m1.control.c3": {
-		// 				ShortName: "c3",
-		// 				FullName:  "m1.control.c3",
-		// 				SQL:       toStringPointer("select 'pass' as result"),
-		// 			},
-		// 			"m1.control.c4": {
-		// 				ShortName: "c4",
-		// 				FullName:  "m1.control.c4",
-		// 				SQL:       toStringPointer("select 'pass' as result"),
-		// 			},
-		// 			"m1.control.c5": {
-		// 				ShortName: "c5",
-		// 				FullName:  "m1.control.c5",
-		// 				SQL:       toStringPointer("select 'pass' as result"),
-		// 			},
-		// 			"m1.control.c6": {
-		// 				ShortName: "c6",
-		// 				FullName:  "m1.control.c6",
-		// 				SQL:       toStringPointer("select 'fail' as result"),
-		// 			},
-		// 		},
-		// 		Benchmarks: map[string]*modconfig.Benchmark{
-		// 			"m1.benchmark.cg_1": {
-		// 				ShortName:  "cg_1",
-		// 				FullName:   "m1.benchmark.cg_1",
-		// 				ChildNames: []modconfig.NamedItem{{Name: "m1.benchmark.cg_1_1"}, {Name: "m1.benchmark.cg_1_2"}},
-		// 			},
-		// 			"m1.benchmark.cg_1_1": {
-		// 				ShortName:  "cg_1_1",
-		// 				FullName:   "m1.benchmark.cg_1_1",
-		// 				ChildNames: []modconfig.NamedItem{{Name: "m1.benchmark.cg_1_1_1"}, {Name: "m1.benchmark.cg_1_1_2"}},
-		// 			},
-		// 			"m1.benchmark.cg_1_2": {
-		// 				ShortName: "cg_1_2",
-		// 				FullName:  "m1.benchmark.cg_1_2",
-		// 			},
-		// 			"m1.benchmark.cg_1_1_1": {
-		// 				ShortName:  "cg_1_1_1",
-		// 				FullName:   "m1.benchmark.cg_1_1_1",
-		// 				ChildNames: []modconfig.NamedItem{{Name: "m1.control.c1"}},
-		// 			},
-		// 			"m1.benchmark.cg_1_1_2": {
-		// 				ShortName:  "cg_1_1_2",
-		// 				FullName:   "m1.benchmark.cg_1_1_2",
-		// 				ChildNames: []modconfig.NamedItem{{Name: "m1.control.c2"}, {Name: "m1.control.c4"}, {Name: "m1.control.c5"}},
-		// 			},
-		// 		},
-		// 	},
-		// },
+		"single_mod_one_query_one_control": {
+			source: "testdata/mods/single_mod_one_query_one_control",
+			expected: &modconfig.Mod{
+				ShortName:   "m1",
+				FullName:    "mod.m1",
+				Require:     modconfig.NewRequire(),
+				Title:       toStringPointer("M1"),
+				Description: toStringPointer("THIS IS M1"),
+				Queries: map[string]*modconfig.Query{
+					"m1.query.q1": {
+						ShortName:   "q1",
+						FullName:    "m1.query.q1",
+						Title:       toStringPointer("Q1"),
+						Description: toStringPointer("THIS IS QUERY 1"),
+						SQL:         toStringPointer("select 1"),
+					},
+				},
+				Controls: map[string]*modconfig.Control{
+					"m1.control.c1": {
+						ShortName:   "c1",
+						FullName:    "m1.control.c1",
+						Title:       toStringPointer("C1"),
+						Description: toStringPointer("THIS IS CONTROL 1"),
+						SQL:         toStringPointer("select 'ok' as status, 'foo' as resource, 'bar' as reason"),
+						Args:        &modconfig.QueryArgs{},
+					},
+				},
+			},
+		},
+		"controls_and_groups": {
+			source: "testdata/mods/controls_and_groups",
+			expected: &modconfig.Mod{
+				ShortName:   "m1",
+				FullName:    "mod.m1",
+				Require:     modconfig.NewRequire(),
+				Title:       toStringPointer("M1"),
+				Description: toStringPointer("THIS IS M1"),
+				Queries: map[string]*modconfig.Query{
+					"m1.query.q1": {
+						ShortName: "q1",
+						FullName:  "m1.query.q1",
+						SQL:       toStringPointer("select 1"),
+					},
+				},
+				Controls: map[string]*modconfig.Control{
+					"m1.control.c1": {
+						ShortName: "c1",
+						FullName:  "m1.control.c1",
+						SQL:       toStringPointer("select 'pass' as result"),
+						Args:      &modconfig.QueryArgs{},
+					},
+					"m1.control.c2": {
+						ShortName: "c2",
+						FullName:  "m1.control.c2",
+						SQL:       toStringPointer("select 'pass' as result"),
+						Args:      &modconfig.QueryArgs{},
+					},
+					"m1.control.c3": {
+						ShortName: "c3",
+						FullName:  "m1.control.c3",
+						SQL:       toStringPointer("select 'pass' as result"),
+						Args:      &modconfig.QueryArgs{},
+					},
+					"m1.control.c4": {
+						ShortName: "c4",
+						FullName:  "m1.control.c4",
+						SQL:       toStringPointer("select 'pass' as result"),
+						Args:      &modconfig.QueryArgs{},
+					},
+					"m1.control.c5": {
+						ShortName: "c5",
+						FullName:  "m1.control.c5",
+						SQL:       toStringPointer("select 'pass' as result"),
+						Args:      &modconfig.QueryArgs{},
+					},
+					"m1.control.c6": {
+						ShortName: "c6",
+						FullName:  "m1.control.c6",
+						SQL:       toStringPointer("select 'fail' as result"),
+						Args:      &modconfig.QueryArgs{},
+					},
+				},
+				Benchmarks: map[string]*modconfig.Benchmark{
+					"m1.benchmark.cg_1": {
+						ShortName:        "cg_1",
+						FullName:         "m1.benchmark.cg_1",
+						ChildNames:       []modconfig.NamedItem{{Name: "m1.benchmark.cg_1_1"}, {Name: "m1.benchmark.cg_1_2"}},
+						ChildNameStrings: []string{"m1.benchmark.cg_1_1", "m1.benchmark.cg_1_2"},
+					},
+					"m1.benchmark.cg_1_1": {
+						ShortName:        "cg_1_1",
+						FullName:         "m1.benchmark.cg_1_1",
+						ChildNames:       []modconfig.NamedItem{{Name: "m1.benchmark.cg_1_1_1"}, {Name: "m1.benchmark.cg_1_1_2"}},
+						ChildNameStrings: []string{"m1.benchmark.cg_1_1_1", "m1.benchmark.cg_1_1_2"},
+					},
+					"m1.benchmark.cg_1_2": {
+						ShortName:        "cg_1_2",
+						FullName:         "m1.benchmark.cg_1_2",
+						ChildNames:       []modconfig.NamedItem{},
+						ChildNameStrings: []string{},
+					},
+					"m1.benchmark.cg_1_1_1": {
+						ShortName:        "cg_1_1_1",
+						FullName:         "m1.benchmark.cg_1_1_1",
+						ChildNames:       []modconfig.NamedItem{{Name: "m1.control.c1"}},
+						ChildNameStrings: []string{"m1.control.c1"},
+					},
+					"m1.benchmark.cg_1_1_2": {
+						ShortName:        "cg_1_1_2",
+						FullName:         "m1.benchmark.cg_1_1_2",
+						ChildNames:       []modconfig.NamedItem{{Name: "m1.control.c2"}, {Name: "m1.control.c4"}, {Name: "m1.control.c5"}},
+						ChildNameStrings: []string{"m1.control.c2", "m1.control.c4", "m1.control.c5"},
+					},
+				},
+			},
+		},
 		"controls_and_groups_circular": {
 			source:   "testdata/mods/controls_and_groups_circular",
 			expected: "ERROR",
@@ -349,6 +361,7 @@ func init() {
 		// 	source:   "testdata/mods/single_mod_sql_file_and_clashing_hcl_query",
 		// 	expected: "ERROR",
 		// },
+		// till here
 		"single_mod_two_queries_diff_files": {
 			source: "testdata/mods/single_mod_two_queries_diff_files",
 			expected: &modconfig.Mod{
@@ -432,6 +445,29 @@ func init() {
 		// 		Require:     modconfig.NewRequire(),
 		// 		Title:       toStringPointer("simple report"),
 		// 		Description: toStringPointer("this mod contains a simple report"),
+		// 		Reports: map[string]*modconfig.ReportContainer{
+		// 			"simple_report.report.simple_report": {
+		// 				FullName:   "simple_report.report.simple_report",
+		// 				ChildNames: []string{"simple_report.text.report_simple_report_text_0", "simple_report.chart.report_simple_report_chart_0"},
+		// 			},
+		// 		},
+		// 		ReportCharts: map[string]*modconfig.ReportChart{
+		// 			"simple_report.chart.report_simple_report_chart_0": {
+		// 				FullName:        "simple_report.chart.report_simple_report_chart_0",
+		// 				ShortName:       "report_simple_report_chart_0",
+		// 				UnqualifiedName: "chart.report_simple_report_chart_0",
+		// 				Title:           toStringPointer("a simple query"),
+		// 				SQL:             toStringPointer("select 1"),
+		// 			},
+		// 		},
+		// 		ReportTexts: map[string]*modconfig.ReportText{
+		// 			"simple_report.text.report_simple_report_text_0": {
+		// 				FullName:        "simple_report.text.report_simple_report_text_0",
+		// 				ShortName:       "report_simple_report_text_0",
+		// 				UnqualifiedName: "text.report_simple_report_text_0",
+		// 				Value:           toStringPointer("a simple report"),
+		// 			},
+		// 		},
 		// 	},
 		// },
 		// "simple_container_report": {
