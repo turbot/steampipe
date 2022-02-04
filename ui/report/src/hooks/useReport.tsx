@@ -104,7 +104,10 @@ const buildReportsList = (
       name,
       title,
     })),
-    [(report) => (report.title ? report.title : report.name)]
+    [
+      (report) =>
+        report.title ? report.title.toLowerCase() : report.name.toLowerCase(),
+    ]
   );
 };
 
@@ -323,7 +326,7 @@ const ReportProvider = ({ children }) => {
           webSocket.current.onmessage = onSocketMessage;
         }
         if (webSocket.current.readyState === webSocket.current.OPEN) {
-          // console.log("Sending keep alive");
+          // console.log("Sending keep alive", webSocket.current);
           webSocket.current.send(JSON.stringify({ action: "keep_alive" }));
         }
         keepAliveTimerId = setTimeout(keepAlive, timeout);
@@ -348,20 +351,17 @@ const ReportProvider = ({ children }) => {
     };
   }, []);
 
-  // useEffect(() => {
-  //   if (!webSocket.current) return;
-  //   webSocket.current.send(
-  //     JSON.stringify({
-  //       action: "select_workspace",
-  //       payload: { workspace: state.selectedWorkspace },
-  //     })
-  //   );
-  // }, [state.selectedWorkspace]);
-
   useEffect(() => {
-    if (!webSocket.current) return;
+    if (
+      !webSocket.current ||
+      webSocket.current?.readyState !== webSocket.current.OPEN
+    ) {
+      return;
+    }
 
-    if (!state.selectedReport || !state.selectedReport.name) return;
+    if (!state.selectedReport || !state.selectedReport.name) {
+      return;
+    }
 
     webSocket.current.send(
       JSON.stringify({
