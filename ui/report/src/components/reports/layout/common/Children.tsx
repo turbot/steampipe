@@ -33,6 +33,7 @@ interface ChildrenProps {
 const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
   <>
     {children.map((child) => {
+      console.log(child);
       switch (child.node_type) {
         case "benchmark":
           return (
@@ -107,7 +108,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               level="panel"
               renderChild={() => (
                 <Panel definition={child} showExpand={showPanelExpand}>
-                  <ErrorPanel error={`Unknown resource type: ${child.name}`} />
+                  <ErrorPanel error={child.error} />
                 </Panel>
               )}
             />
