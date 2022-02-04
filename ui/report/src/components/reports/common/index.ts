@@ -1,5 +1,4 @@
 import { ChartProperties, ChartType } from "../charts";
-import { ColorGenerator } from "../../../utils/color";
 import { HierarchyProperties, HierarchyType } from "../hierarchies";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
@@ -40,33 +39,6 @@ export interface ExecutablePrimitiveProps {
   sql?: string;
   data?: LeafNodeData;
   error?: Error;
-}
-
-interface SeriesData {
-  name: string;
-  data: any[];
-  type: EChartsType;
-  radius: string | null;
-  // backgroundColor: string | string[];
-}
-
-interface SeriesLookup {
-  [series: string]: {
-    value: any;
-  };
-}
-
-interface SeriesTimeLookup {
-  [time: string]: SeriesLookup;
-}
-
-interface TotalLookup {
-  [key: string]: Scale;
-}
-
-interface Scale {
-  min: number;
-  max: number;
 }
 
 export type EChartsType = "bar" | "line" | "pie" | "sankey";
@@ -385,53 +357,6 @@ const buildHierarchyDataInputs = (
 
 // TODO color scheme - need to find something better?
 const generateColors = () => {
-  // return [
-  //   "#6388b4",
-  //   "#ffae34",
-  //   "#ef6f6a",
-  //   "#8cc2ca",
-  //   "#55ad89",
-  //   "#c3bc3f",
-  //   "#bb7693",
-  //   "#baa094",
-  //   "#a9b5ae",
-  //   "#767676",
-  // ];
-  // return [
-  //   "#4f6980",
-  //   "#849db1",
-  //   "#a2ceaa",
-  //   "#638b66",
-  //   "#bfbb60",
-  //   "#f47942",
-  //   "#fbb04e",
-  //   "#b66353",
-  //   "#d7ce9f",
-  //   "#b9aa97",
-  //   "#7e756d",
-  // ];
-  // return [
-  //   "#1f77b4",
-  //   "#aec7e8",
-  //   "#ff7f0e",
-  //   "#ffbb78",
-  //   "#2ca02c",
-  //   "#98df8a",
-  //   "#d62728",
-  //   "#ff9896",
-  //   "#9467bd",
-  //   "#c5b0d5",
-  //   "#8c564b",
-  //   "#c49c94",
-  //   "#e377c2",
-  //   "#f7b6d2",
-  //   "#7f7f7f",
-  //   "#c7c7c7",
-  //   "#bcbd22",
-  //   "#dbdb8d",
-  //   "#17becf",
-  //   "#9edae5",
-  // ];
   // tableau.Tableau20
   return [
     "#4E79A7",
@@ -455,13 +380,6 @@ const generateColors = () => {
     "#9D7660",
     "#D7B5A6",
   ];
-  const colorGenerator = new ColorGenerator(24, 5);
-  const colors: string[] = [];
-  for (let i = 0; i < 20; i++) {
-    const nextColor = colorGenerator.nextColor();
-    colors.push(nextColor.hex);
-  }
-  return colors;
 };
 
 const themeColors = generateColors();

@@ -29,7 +29,7 @@ const useDimensions = (): readonly [
     handleResize();
     // Remove event listener on cleanup
     return () => window.removeEventListener("resize", handleResize);
-  }, [ref.current]); // Empty array ensures that effect is only run on mount
+  }, []); // Empty array ensures that effect is only run on mount
 
   return [ref, dimensions];
 };

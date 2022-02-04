@@ -101,7 +101,6 @@ const buildHierarchyInputs = (
 };
 
 const Hierarchy = ({ data, inputs, theme, themeWrapperRef }) => {
-  const [_, setRandomVal] = useState(0);
   const chartRef = useRef<ReactEChartsCore>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [showZoom, setShowZoom] = useState(false);
@@ -110,9 +109,6 @@ const Hierarchy = ({ data, inputs, theme, themeWrapperRef }) => {
   const mediaMode = useMediaMode();
 
   const options = buildHierarchyInputs(data, inputs, theme, themeWrapperRef);
-
-  // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
-  useEffect(() => setRandomVal(Math.random()), [theme.name]);
 
   useEffect(() => {
     if (!chartRef.current || !options) {
@@ -162,7 +158,7 @@ const Hierarchy = ({ data, inputs, theme, themeWrapperRef }) => {
       )}
       {mediaMode === "print" && imageUrl && (
         <div>
-          <img className="max-w-full max-h-full" src={imageUrl} />
+          <img alt="Chart" className="max-w-full max-h-full" src={imageUrl} />
         </div>
       )}
     </>
@@ -170,7 +166,11 @@ const Hierarchy = ({ data, inputs, theme, themeWrapperRef }) => {
 };
 
 const HierarchyWrapper = ({ data, inputs }) => {
+  const [, setRandomVal] = useState(0);
   const { theme, wrapperRef } = useTheme();
+
+  // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
+  useEffect(() => setRandomVal(Math.random()), [theme.name]);
 
   if (!wrapperRef) {
     return null;

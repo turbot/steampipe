@@ -1,6 +1,5 @@
 import findPathDeep from "deepdash/findPathDeep";
 import paths from "deepdash/paths";
-import pickDeep from "deepdash/pickDeep";
 import { CheckLeafNodeExecutionTree } from "../components/reports/check/common";
 import {
   createContext,
@@ -395,9 +394,10 @@ const ReportProvider = ({ children }) => {
     }
     // If the report we're viewing no longer exists, go back to the main page
     if (!state.reports.find((r) => r.name === reportName)) {
+      console.log("Navigating");
       navigate("/", { replace: true });
     }
-  }, [reportName, state.availableReportsLoaded, state.reports]);
+  }, [navigate, reportName, state.availableReportsLoaded, state.reports]);
 
   useEffect(() => {
     if (!state.selectedReport) {
@@ -422,7 +422,7 @@ const ReportProvider = ({ children }) => {
       type: "select_panel",
       panel: null,
     });
-  }, [state]);
+  }, []);
 
   useEffect(() => {
     setHotKeysHandlers({

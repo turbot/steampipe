@@ -458,7 +458,7 @@ const Chart = ({ options }: ChartComponentProps) => {
       )}
       {mediaMode === "print" && imageUrl && (
         <div>
-          <img className="max-w-full max-h-full" src={imageUrl} />
+          <img alt="Chart" className="max-w-full max-h-full" src={imageUrl} />
         </div>
       )}
     </>
@@ -466,7 +466,7 @@ const Chart = ({ options }: ChartComponentProps) => {
 };
 
 const ChartWrapper = (props: ChartProps) => {
-  const [_, setRandomVal] = useState(0);
+  const [, setRandomVal] = useState(0);
   const { theme, wrapperRef } = useTheme();
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch

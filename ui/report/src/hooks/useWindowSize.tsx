@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 // https://stackoverflow.com/questions/19014250/rerender-view-on-browser-resize-with-react
 const useWindowSize = (): readonly [number, number] => {
