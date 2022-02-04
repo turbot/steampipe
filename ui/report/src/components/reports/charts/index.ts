@@ -72,8 +72,6 @@ export type ChartProps = BaseChartProps & {
 
 export type ChartType = "bar" | "column" | "donut" | "line" | "pie" | "table";
 
-export type ChartJSType = "bar" | "doughnut" | "line" | "pie";
-
 export interface IChart {
   type: ChartType;
   component: React.ComponentType<any>;
