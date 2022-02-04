@@ -1,4 +1,4 @@
-const getErrorMessage = (error) => {
+const getErrorMessage = (error: any, fallbackMessage: string) => {
   if (typeof error === "string") {
     return error;
   }
@@ -8,16 +8,24 @@ const getErrorMessage = (error) => {
   if (error.Message) {
     return error.Message;
   }
-  return null;
+  return fallbackMessage;
 };
 
-const Error = ({ error }) => {
+interface ErrorProps {
+  error?: any;
+  fallbackMessage?: string;
+}
+
+const Error = ({
+  error,
+  fallbackMessage = "An unknown error occurred.",
+}: ErrorProps) => {
   if (!error) {
     return null;
   }
   return (
     <div className="flex w-full h-full p-2 break-all bg-red-50 border-red-700 border text-red-700 justify-center items-center shadow rounded-md">
-      {getErrorMessage(error)}
+      {getErrorMessage(error, fallbackMessage)}
     </div>
   );
 };
