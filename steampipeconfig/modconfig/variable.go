@@ -12,6 +12,7 @@ import (
 // Variable is a struct representing a Variable resource
 type Variable struct {
 	HclResourceBase
+	ResourceWithMetadataBase
 
 	ShortName string
 	FullName  string `column:"name,text"`
@@ -31,7 +32,6 @@ type Variable struct {
 	ParsingMode                var_config.VariableParsingMode
 	Mod                        *Mod
 
-	metadata        *ResourceMetadata
 	UnqualifiedName string
 }
 
@@ -60,16 +60,6 @@ func (v *Variable) Equals(other *Variable) bool {
 // Name implements HclResource, ResourceWithMetadata
 func (v *Variable) Name() string {
 	return v.FullName
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (v *Variable) GetMetadata() *ResourceMetadata {
-	return v.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (v *Variable) SetMetadata(metadata *ResourceMetadata) {
-	v.metadata = metadata
 }
 
 // OnDecoded implements HclResource

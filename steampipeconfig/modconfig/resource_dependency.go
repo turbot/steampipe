@@ -29,7 +29,7 @@ func (d *RuntimeDependency) ResolveSource(resource HclResource, report *ReportCo
 		d.SourceResource, found = workspace.GetResourceMaps().ReportInputs[resourceName]
 	}
 	if !found {
-		return fmt.Errorf("could not resolve runtime depdency resource %s", d.PropertyPath)
+		return fmt.Errorf("could not resolve runtime dependency resource %s", d.PropertyPath)
 	}
 
 	return nil

@@ -15,6 +15,7 @@ import (
 // Benchmark is a struct representing the Benchmark resource
 type Benchmark struct {
 	HclResourceBase
+	ResourceWithMetadataBase
 
 	ShortName       string
 	FullName        string `cty:"name"`
@@ -40,8 +41,7 @@ type Benchmark struct {
 	Base  *Benchmark `hcl:"base" json:"-"`
 	Width *int       `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents []ModTreeItem
 }
 
 func NewBenchmark(block *hcl.Block) *Benchmark {
@@ -214,16 +214,6 @@ func (b *Benchmark) SetPaths() {
 // return name in format: '<modname>.control.<shortName>'
 func (b *Benchmark) Name() string {
 	return b.FullName
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (b *Benchmark) GetMetadata() *ResourceMetadata {
-	return b.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (b *Benchmark) SetMetadata(metadata *ResourceMetadata) {
-	b.metadata = metadata
 }
 
 // GetSQL implements ReportLeafNode

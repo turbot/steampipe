@@ -3,16 +3,16 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // ReportInput is a struct representing a leaf reporting node
 type ReportInput struct {
 	HclResourceBase
+	ResourceWithMetadataBase
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
@@ -33,7 +33,6 @@ type ReportInput struct {
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
 	parents         []ModTreeItem
-	metadata        *ResourceMetadata
 	reportContainer *ReportContainer
 }
 
@@ -158,16 +157,6 @@ func (c *ReportInput) SetPaths() {
 			c.Paths = append(c.Paths, append(parentPath, c.Name()))
 		}
 	}
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (c *ReportInput) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (c *ReportInput) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
 }
 
 func (c *ReportInput) Diff(other *ReportInput) *ReportTreeItemDiffs {

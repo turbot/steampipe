@@ -24,6 +24,7 @@ const defaultModName = "local"
 // Mod is a struct representing a Mod resource
 type Mod struct {
 	HclResourceBase
+	ResourceWithMetadataBase
 
 	// ShortName is the mod name, e.g. azure_thrifty
 	ShortName string `cty:"short_name" hcl:"name,label"`
@@ -75,7 +76,6 @@ type Mod struct {
 
 	// array of direct mod children - excludes resources which are children of other resources
 	children []ModTreeItem
-	metadata *ResourceMetadata
 	// convenient aggregation of all resources
 	resourceMaps *WorkspaceResourceMaps
 }
@@ -566,16 +566,6 @@ func (m *Mod) GetMod() *Mod {
 // GetDeclRange implements HclResource
 func (m *Mod) GetDeclRange() *hcl.Range {
 	return &m.DeclRange
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (m *Mod) GetMetadata() *ResourceMetadata {
-	return m.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
-	m.metadata = metadata
 }
 
 // GetResourceMaps implements ResourceMapsProvider

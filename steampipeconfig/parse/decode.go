@@ -55,11 +55,9 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 func addResourcesToMod(runCtx *RunContext, resources ...modconfig.HclResource) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	for _, resource := range resources {
-		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
 		if _, ok := resource.(*modconfig.Mod); !ok {
-			resource.SetMod(runCtx.CurrentMod)
-			diags = runCtx.CurrentMod.AddResource(resource)
-
+			moreDiags := runCtx.CurrentMod.AddResource(resource)
+			diags = append(diags, moreDiags...)
 		}
 	}
 	return diags
@@ -75,7 +73,8 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 		return nil, res
 	}
 	// if this block is anonymous, give it a unique name
-	if isBlockAnonymous(block) {
+	anonymousBlock := isBlockAnonymous(block)
+	if anonymousBlock {
 		// replace the labels
 		block.Labels = []string{runCtx.GetAnonymousResourceName(block)}
 	}
@@ -118,17 +117,19 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 	}
 
 	for _, resource := range resources {
+
 		// handle the result
 		// - if successful, add resource to mod and variables maps
 		// - if there are dependencies, add them to run context
-		handleDecodeResult(resource, res, block, runCtx)
+		handleDecodeResult(resource, res, block, anonymousBlock, runCtx)
+
 	}
 
 	return resources, res
 }
 
 func isBlockAnonymous(block *hcl.Block) bool {
-	return len(block.Labels) == 0
+	return len(block.Labels) == 0 && isAnonymousReportBlock(block)
 }
 
 // generic decode function for any resource we do not have custom decode logic for
@@ -475,11 +476,14 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, reportContainer *modc
 				input := resource.(*modconfig.ReportInput)
 				// add report name to input
 				input.SetReportContainer(reportContainer)
-				inputs = append(inputs, input)
-				// set mod on the input but DO NOT add the input to the mod
+				// THEN set mod on the input
 				resource.SetMod(runCtx.CurrentMod)
 
+				inputs = append(inputs, input)
+
 			} else {
+				// set mod on the resource
+				resource.SetMod(runCtx.CurrentMod)
 				// add the resource to the mod
 				addResourcesToMod(runCtx, resource)
 
@@ -565,8 +569,7 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 // if decode was successful:
 // - generate and set resource metadata
 // - add resource to RunContext (which adds it to the mod)handleDecodeResult
-func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) {
-	anonymousResource := len(block.Labels) == 0
+func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, anonymousResource bool, runCtx *RunContext) {
 	if res.Success() {
 		// call post decode hook
 		// NOTE: must do this BEFORE adding resource to run context to ensure we respect the base property
@@ -580,15 +583,19 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 		// if resource supports metadata, save it
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
 			body := block.Body.(*hclsyntax.Body)
-			moreDiags = addResourceMetadata(resourceWithMetadata, body.SrcRange, runCtx)
+			moreDiags = addResourceMetadata(resourceWithMetadata, body.SrcRange, anonymousResource, runCtx)
 			res.addDiags(moreDiags)
 		}
 
-		// if resource is NOT anonymous, add into the run context
+		if _, ok := resource.(*modconfig.Mod); !ok {
+			resource.SetMod(runCtx.CurrentMod)
+		}
 		if !anonymousResource {
+			// if resource is NOT anonymous, add into the run context
 			moreDiags = runCtx.AddResource(resource)
 			res.addDiags(moreDiags)
 		}
+
 	} else {
 		if len(res.Depends) > 0 {
 			moreDiags := runCtx.AddDependencies(block, resource.Name(), res.Depends)
@@ -597,9 +604,10 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 	}
 }
 
-func addResourceMetadata(resourceWithMetadata modconfig.ResourceWithMetadata, srcRange hcl.Range, runCtx *RunContext) hcl.Diagnostics {
+func addResourceMetadata(resourceWithMetadata modconfig.ResourceWithMetadata, srcRange hcl.Range, anonymousResource bool, runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	metadata, err := GetMetadataForParsedResource(resourceWithMetadata.Name(), srcRange, runCtx.FileData, runCtx.CurrentMod)
+
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -607,6 +615,9 @@ func addResourceMetadata(resourceWithMetadata modconfig.ResourceWithMetadata, sr
 			Subject:  &srcRange,
 		})
 	} else {
+		// set the anonymous flag
+		metadata.Anonymous = anonymousResource
+		// and set on resource
 		resourceWithMetadata.SetMetadata(metadata)
 	}
 	return diags

@@ -17,6 +17,8 @@ import (
 // Query is a struct representing the Query resource
 type Query struct {
 	HclResourceBase
+	ResourceWithMetadataBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
 
@@ -38,7 +40,6 @@ type Query struct {
 	Mod                   *Mod `cty:"mod"`
 	DeclRange             hcl.Range
 	PreparedStatementName string `column:"prepared_statement_name,text"`
-	metadata              *ResourceMetadata
 	UnqualifiedName       string
 }
 
@@ -156,16 +157,6 @@ func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 // Name implements MappableResource, HclResource
 func (q *Query) Name() string {
 	return q.FullName
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (q *Query) GetMetadata() *ResourceMetadata {
-	return q.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (q *Query) SetMetadata(metadata *ResourceMetadata) {
-	q.metadata = metadata
 }
 
 // OnDecoded implements HclResource

@@ -13,6 +13,7 @@ import (
 // ReportText is a struct representing a leaf reporting node
 type ReportText struct {
 	HclResourceBase
+	ResourceWithMetadataBase
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
@@ -29,8 +30,7 @@ type ReportText struct {
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents []ModTreeItem
 }
 
 func NewReportText(block *hcl.Block) *ReportText {
@@ -149,16 +149,6 @@ func (t *ReportText) SetPaths() {
 			t.Paths = append(t.Paths, append(parentPath, t.Name()))
 		}
 	}
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (t *ReportText) GetMetadata() *ResourceMetadata {
-	return t.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (t *ReportText) SetMetadata(metadata *ResourceMetadata) {
-	t.metadata = metadata
 }
 
 func (t *ReportText) Diff(other *ReportText) *ReportTreeItemDiffs {

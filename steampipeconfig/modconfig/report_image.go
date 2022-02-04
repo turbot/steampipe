@@ -3,16 +3,16 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // ReportImage is a struct representing a leaf reporting node
 type ReportImage struct {
 	HclResourceBase
+	ResourceWithMetadataBase
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
@@ -30,8 +30,7 @@ type ReportImage struct {
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents []ModTreeItem
 }
 
 func NewReportImage(block *hcl.Block) *ReportImage {
@@ -153,16 +152,6 @@ func (c *ReportImage) SetPaths() {
 			c.Paths = append(c.Paths, append(parentPath, c.Name()))
 		}
 	}
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (c *ReportImage) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (c *ReportImage) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
 }
 
 func (c *ReportImage) Diff(other *ReportImage) *ReportTreeItemDiffs {

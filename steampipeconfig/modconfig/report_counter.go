@@ -3,16 +3,17 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // ReportCounter is a struct representing a leaf reporting node
 type ReportCounter struct {
 	HclResourceBase
+	ResourceWithMetadataBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
 
@@ -39,8 +40,7 @@ type ReportCounter struct {
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents []ModTreeItem
 }
 
 func NewReportCounter(block *hcl.Block) *ReportCounter {
@@ -163,16 +163,6 @@ func (c *ReportCounter) SetPaths() {
 			c.Paths = append(c.Paths, append(parentPath, c.Name()))
 		}
 	}
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (c *ReportCounter) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (c *ReportCounter) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
 }
 
 func (c *ReportCounter) Diff(other *ReportCounter) *ReportTreeItemDiffs {

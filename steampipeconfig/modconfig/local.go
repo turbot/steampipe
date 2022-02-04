@@ -10,6 +10,7 @@ import (
 // Local is a struct representing a Local resource
 type Local struct {
 	HclResourceBase
+	ResourceWithMetadataBase
 
 	ShortName string
 	FullName  string `cty:"name"`
@@ -17,7 +18,6 @@ type Local struct {
 	Value     cty.Value
 	DeclRange hcl.Range
 	Mod       *Mod `cty:"mod"`
-	metadata  *ResourceMetadata
 }
 
 func NewLocal(name string, val cty.Value, declRange hcl.Range) *Local {
@@ -32,16 +32,6 @@ func NewLocal(name string, val cty.Value, declRange hcl.Range) *Local {
 // Name implements HclResource, ResourceWithMetadata
 func (l *Local) Name() string {
 	return l.FullName
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (l *Local) GetMetadata() *ResourceMetadata {
-	return l.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (l *Local) SetMetadata(metadata *ResourceMetadata) {
-	l.metadata = metadata
 }
 
 // OnDecoded implements HclResource

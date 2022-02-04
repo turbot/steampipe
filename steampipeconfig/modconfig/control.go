@@ -14,6 +14,8 @@ import (
 // Control is a struct representing the Control resource
 type Control struct {
 	HclResourceBase
+	ResourceWithMetadataBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
 
@@ -44,8 +46,7 @@ type Control struct {
 	Base  *Control `hcl:"base"`
 	Width *int     `cty:"width" hcl:"width" column:"width,text" `
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents []ModTreeItem
 }
 
 func NewControl(block *hcl.Block) *Control {

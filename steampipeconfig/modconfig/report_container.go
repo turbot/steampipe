@@ -17,6 +17,8 @@ const runtimeDependencyReportScope = "self"
 // ReportContainer is a struct representing the Report and Container resource
 type ReportContainer struct {
 	HclResourceBase
+	ResourceWithMetadataBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
 
@@ -39,7 +41,6 @@ type ReportContainer struct {
 	// the actual children
 	children               []ModTreeItem
 	parents                []ModTreeItem
-	metadata               *ResourceMetadata
 	runtimeDependencyGraph *topsort.Graph
 
 	HclType string
@@ -168,16 +169,6 @@ func (c *ReportContainer) SetPaths() {
 			c.Paths = append(c.Paths, append(parentPath, c.Name()))
 		}
 	}
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (c *ReportContainer) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (c *ReportContainer) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
 }
 
 func (c *ReportContainer) Diff(other *ReportContainer) *ReportTreeItemDiffs {

@@ -13,6 +13,8 @@ import (
 // ReportTable is a struct representing a leaf reporting node
 type ReportTable struct {
 	HclResourceBase
+	ResourceWithMetadataBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
 
@@ -37,8 +39,7 @@ type ReportTable struct {
 	Mod       *Mod         `cty:"mod" json:"-"`
 	Paths     []NodePath   `column:"path,jsonb" json:"-"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents []ModTreeItem
 }
 
 func NewReportTable(block *hcl.Block) *ReportTable {
@@ -167,16 +168,6 @@ func (t *ReportTable) SetPaths() {
 			t.Paths = append(t.Paths, append(parentPath, t.Name()))
 		}
 	}
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (t *ReportTable) GetMetadata() *ResourceMetadata {
-	return t.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (t *ReportTable) SetMetadata(metadata *ResourceMetadata) {
-	t.metadata = metadata
 }
 
 func (t *ReportTable) Diff(other *ReportTable) *ReportTreeItemDiffs {

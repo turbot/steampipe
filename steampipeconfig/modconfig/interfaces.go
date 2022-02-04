@@ -52,6 +52,7 @@ type ResourceWithMetadata interface {
 	Name() string
 	GetMetadata() *ResourceMetadata
 	SetMetadata(metadata *ResourceMetadata)
+	IsAnonymous() bool
 }
 
 // QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query

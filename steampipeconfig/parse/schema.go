@@ -154,6 +154,18 @@ var ReportContainerBlockSchema = &hcl.BodySchema{
 	},
 }
 
+// isAnonymousReportBlock returns whether the given block is an anoynmous report block
+func isAnonymousReportBlock(block *hcl.Block) bool {
+	for _, b := range ReportContainerBlockSchema.Blocks {
+		if b.LabelNames == nil {
+			if b.Type == block.Type {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 var BenchmarkBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "children"},

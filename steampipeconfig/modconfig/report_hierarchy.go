@@ -3,16 +3,17 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // ReportHierarchy is a struct representing a leaf reporting node
 type ReportHierarchy struct {
 	HclResourceBase
+	ResourceWithMetadataBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
 
@@ -40,8 +41,7 @@ type ReportHierarchy struct {
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents []ModTreeItem
 }
 
 func NewReportHierarchy(block *hcl.Block) *ReportHierarchy {
@@ -174,16 +174,6 @@ func (h *ReportHierarchy) SetPaths() {
 			h.Paths = append(h.Paths, append(parentPath, h.Name()))
 		}
 	}
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (h *ReportHierarchy) GetMetadata() *ResourceMetadata {
-	return h.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (h *ReportHierarchy) SetMetadata(metadata *ResourceMetadata) {
-	h.metadata = metadata
 }
 
 func (h *ReportHierarchy) Diff(other *ReportHierarchy) *ReportTreeItemDiffs {
