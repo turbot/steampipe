@@ -12,10 +12,7 @@ import (
 )
 
 const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
-const runtimeDependencyRootScope = "self" //"root"
-const runtimeDependencyParentScope = "parent"
-
-var runtimeDependencyScopes = []string{runtimeDependencyRootScope, runtimeDependencyParentScope}
+const runtimeDependencyReportScope = "self"
 
 // ReportContainer is a struct representing the Report and Container resource
 type ReportContainer struct {
@@ -29,7 +26,6 @@ type ReportContainer struct {
 	Title           *string          `cty:"title" hcl:"title" column:"title,text"`
 	Width           *int             `cty:"width" hcl:"width"  column:"width,text"`
 	Args            *QueryArgs       `cty:"args" column:"args,jsonb" json:"args"`
-	Params          []*ParamDef      `cty:"params" column:"params,jsonb" json:"params"`
 	Base            *ReportContainer `hcl:"base"`
 	Inputs          []*ReportInput   `cty:"inputs"`
 
@@ -244,7 +240,7 @@ func (c *ReportContainer) WalkResources(resourceFunc func(resource HclResource) 
 
 func (c *ReportContainer) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) error {
 	if !c.IsReport() {
-		return fmt.Errorf("BuildRuntimeDependencyTree shoul donly be called for reports")
+		return fmt.Errorf("BuildRuntimeDependencyTree should only be called for reports")
 	}
 	c.runtimeDependencyGraph = topsort.NewGraph()
 	// add root node - this will depend on all other nodes
@@ -329,10 +325,6 @@ func (c *ReportContainer) SetInputs(inputs []*ReportInput) error {
 		return fmt.Errorf("duplicate input names found for %s: %s", c.Name(), strings.Join(duplicates, ","))
 	}
 	return nil
-}
-
-func (c *ReportContainer) SetParams(params []*ParamDef) {
-	c.Params = params
 }
 
 func (c *ReportContainer) SetArgs(args *QueryArgs) {

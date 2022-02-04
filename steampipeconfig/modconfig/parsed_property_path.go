@@ -3,8 +3,6 @@ package modconfig
 import (
 	"fmt"
 	"strings"
-
-	"github.com/turbot/go-kit/helpers"
 )
 
 type ParsedPropertyPath struct {
@@ -51,7 +49,7 @@ func ParseResourcePropertyPath(propertyPath string) (res *ParsedPropertyPath, er
 	}
 
 	// special case handling for runtime dependencies which may have use the "self" qualifier
-	if helpers.StringSliceContains(runtimeDependencyScopes, parts[0]) {
+	if parts[0] == runtimeDependencyReportScope {
 		res.Scope = parts[0]
 		parts = parts[1:]
 	}

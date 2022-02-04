@@ -46,26 +46,20 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			diags = append(diags, res.Diags...)
 			continue
 		}
-		addResourcesToMod(resources, block, runCtx)
+		addResourcesToMod(runCtx, resources...)
 	}
 
 	return diags
 }
 
-func addResourcesToMod(resources []modconfig.HclResource, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
+func addResourcesToMod(runCtx *RunContext, resources ...modconfig.HclResource) hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	anonymousResource := len(block.Labels) == 0
 	for _, resource := range resources {
 		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
 		if _, ok := resource.(*modconfig.Mod); !ok {
 			resource.SetMod(runCtx.CurrentMod)
-			// if resource is NOT anonymous, add resource to mod
-			// - this will fail if the mod already has a resource with the same name
-			if !anonymousResource {
-				// we cannot add anonymous resources at this point - they will be added after their names are set
-				diags = runCtx.CurrentMod.AddResource(resource)
+			diags = runCtx.CurrentMod.AddResource(resource)
 
-			}
 		}
 	}
 	return diags
@@ -81,8 +75,7 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 		return nil, res
 	}
 	// if this block is anonymous, give it a unique name
-	anonymousBlock := runCtx.IsBlockAnonymous(block)
-	if anonymousBlock {
+	if isBlockAnonymous(block) {
 		// replace the labels
 		block.Labels = []string{runCtx.GetAnonymousResourceName(block)}
 	}
@@ -132,6 +125,10 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 	}
 
 	return resources, res
+}
+
+func isBlockAnonymous(block *hcl.Block) bool {
+	return len(block.Labels) == 0
 }
 
 // generic decode function for any resource we do not have custom decode logic for
@@ -422,6 +419,16 @@ func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(content, reportContainer, diags)
 
+	// if this is a container, the base property must not be set
+	if !reportContainer.IsReport() && reportContainer.Base != nil {
+		res.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Container blocks do not support the 'base' property",
+			Subject:  &reportContainer.DeclRange,
+		}})
+		return nil, res
+	}
+
 	if reportContainer.Base != nil && len(reportContainer.Base.ChildNames) > 0 {
 		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeChart, modconfig.BlockTypeControl, modconfig.BlockTypeCounter, modconfig.BlockTypeHierarchy, modconfig.BlockTypeImage, modconfig.BlockTypeInput, modconfig.BlockTypeTable, modconfig.BlockTypeText}
 		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
@@ -454,47 +461,33 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, reportContainer *modc
 	// if children are declared inline as blocks, add them
 	var children []modconfig.ModTreeItem
 	var inputs []*modconfig.ReportInput
-	var params []*modconfig.ParamDef
 	for _, b := range content.Blocks {
-		switch b.Type {
-		case modconfig.BlockTypeParam:
-			// param, has special decoding
-			paramDef, diags := decodeParam(b, runCtx, reportContainer.Name())
-			if !diags.HasErrors() {
-				params = append(params, paramDef)
-				// TODO implement refs
-				// add and references contained in the param block to the control refs
-				//diags = AddReferences(resource, block, runCtx)
-			}
-			res.handleDecodeDiags(content, reportContainer, diags)
-		//case modconfig.BlockTypeInput:
+		// use generic block decoding
+		resources, blockRes := decodeBlock(b, runCtx)
+		res.Merge(blockRes)
+		if !blockRes.Success() {
+			continue
+		}
 
-		default:
-			// use generic block decoding
-			resources, blockRes := decodeBlock(b, runCtx)
-			res.Merge(blockRes)
-			if !blockRes.Success() {
-				continue
-			}
-
-			// we expect either inputs or child report nodes
-			for _, resource := range resources {
-				if b.Type == modconfig.BlockTypeInput {
-					input := resource.(*modconfig.ReportInput)
-					// add report name to input
-					input.SetReportContainer(reportContainer)
-					inputs = append(inputs, input)
-
-				} else {
-					if child, ok := resource.(modconfig.ModTreeItem); ok {
-						children = append(children, child)
-					}
-				}
-
-				// now set the mod on the resource
+		// we expect either inputs or child report nodes
+		for _, resource := range resources {
+			if b.Type == modconfig.BlockTypeInput {
+				input := resource.(*modconfig.ReportInput)
+				// add report name to input
+				input.SetReportContainer(reportContainer)
+				inputs = append(inputs, input)
+				// set mod on the input but DO NOT add the input to the mod
 				resource.SetMod(runCtx.CurrentMod)
 
+			} else {
+				// add the resource to the mod
+				addResourcesToMod(runCtx, resource)
+
+				if child, ok := resource.(modconfig.ModTreeItem); ok {
+					children = append(children, child)
+				}
 			}
+
 		}
 	}
 
@@ -508,7 +501,6 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, reportContainer *modc
 		}})
 
 	}
-	reportContainer.SetParams(params)
 
 	return res
 }

@@ -53,7 +53,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Workspac
 	prevResourceMaps := w.resourceMaps
 	// if there is an outsanding watcher error, set prevResourceMaps to empty to force refresh
 	if w.watcherError != nil {
-		prevResourceMaps = modconfig.NewWorkspaceResourceMaps(w.Mod)
+		prevResourceMaps = modconfig.WorkspaceResourceMapFromMod(w.Mod)
 	}
 
 	// now reload the workspace

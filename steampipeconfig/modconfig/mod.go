@@ -110,6 +110,10 @@ func NewMod(shortName, modPath string, defRange hcl.Range) (*Mod, error) {
 
 	// try to derive mod version from the path
 	mod.setVersion()
+
+	// create resource map with reference to our resources (it will be populated as we are)
+	mod.resourceMaps = WorkspaceResourceMapFromMod(mod)
+
 	return mod, nil
 }
 
@@ -710,25 +714,7 @@ func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
 }
 
 func (m *Mod) PopulateResourceMaps() {
-	m.resourceMaps = &WorkspaceResourceMaps{
-		Mod:               m,
-		Mods:              make(map[string]*Mod),
-		Queries:           m.Queries,
-		Controls:          m.Controls,
-		Benchmarks:        m.Benchmarks,
-		Variables:         m.Variables,
-		Reports:           m.Reports,
-		ReportContainers:  m.ReportContainers,
-		ReportCards:       m.ReportCards,
-		ReportCharts:      m.ReportCharts,
-		ReportHierarchies: m.ReportHierarchies,
-		ReportImages:      m.ReportImages,
-		ReportInputs:      m.ReportInputs,
-		ReportTables:      m.ReportTables,
-		ReportTexts:       m.ReportTexts,
-	}
 	m.resourceMaps.PopulateReferences()
-
 	if !m.IsDefaultMod() {
 		m.resourceMaps.Mods[m.Name()] = m
 	}

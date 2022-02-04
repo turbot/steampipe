@@ -27,10 +27,9 @@ type WorkspaceResourceMaps struct {
 	LocalBenchmarks map[string]*Benchmark
 }
 
-func NewWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
+func EmptyWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
 	return &WorkspaceResourceMaps{
 		Mod:               mod,
-		Mods:              make(map[string]*Mod),
 		Queries:           make(map[string]*Query),
 		Controls:          make(map[string]*Control),
 		Benchmarks:        make(map[string]*Benchmark),
@@ -48,6 +47,26 @@ func NewWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
 		LocalQueries:      make(map[string]*Query),
 		LocalControls:     make(map[string]*Control),
 		LocalBenchmarks:   make(map[string]*Benchmark),
+	}
+}
+
+func WorkspaceResourceMapFromMod(mod *Mod) *WorkspaceResourceMaps {
+	return &WorkspaceResourceMaps{
+		Mod:               mod,
+		Mods:              make(map[string]*Mod),
+		Queries:           mod.Queries,
+		Controls:          mod.Controls,
+		Benchmarks:        mod.Benchmarks,
+		Variables:         mod.Variables,
+		Reports:           mod.Reports,
+		ReportContainers:  mod.ReportContainers,
+		ReportCharts:      mod.ReportCharts,
+		ReportCounters:    mod.ReportCounters,
+		ReportHierarchies: mod.ReportHierarchies,
+		ReportImages:      mod.ReportImages,
+		ReportInputs:      mod.ReportInputs,
+		ReportTables:      mod.ReportTables,
+		ReportTexts:       mod.ReportTexts,
 	}
 }
 

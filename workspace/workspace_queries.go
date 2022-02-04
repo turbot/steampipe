@@ -21,7 +21,7 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.Work
 
 	var queries []string
 	// build map of prepared statement providers
-	var resourceMap = modconfig.NewWorkspaceResourceMaps(w.Mod)
+	var resourceMap = modconfig.WorkspaceResourceMapFromMod(w.Mod)
 	for _, arg := range args {
 		query, queryProvider, err := w.ResolveQueryAndArgs(arg)
 		if err != nil {

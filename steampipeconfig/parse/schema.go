@@ -124,6 +124,10 @@ var ReportContainerBlockSchema = &hcl.BodySchema{
 			Type: modconfig.BlockTypeContainer,
 		},
 		{
+			Type:       modconfig.BlockTypeReport,
+			LabelNames: []string{"name"},
+		},
+		{
 			Type: modconfig.BlockTypeCard,
 		},
 		{
