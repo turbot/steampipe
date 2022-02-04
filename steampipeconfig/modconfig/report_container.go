@@ -25,7 +25,7 @@ type ReportContainer struct {
 
 	Paths []NodePath `column:"path,jsonb"`
 	// store children in a way which can be serialised via cty
-	ChildNames []string `cty:"children"`
+	ChildNames []string `cty:"children" column:"children,jsonb"`
 
 	// the actual children
 	children []ModTreeItem
