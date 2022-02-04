@@ -394,7 +394,6 @@ const ReportProvider = ({ children }) => {
     }
     // If the report we're viewing no longer exists, go back to the main page
     if (!state.reports.find((r) => r.name === reportName)) {
-      console.log("Navigating");
       navigate("/", { replace: true });
     }
   }, [navigate, reportName, state.availableReportsLoaded, state.reports]);
