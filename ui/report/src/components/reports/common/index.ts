@@ -1,4 +1,4 @@
-import { ChartProperties, ChartType } from "../charts";
+import { ChartProperties, ChartTransform, ChartType } from "../charts";
 import { HierarchyProperties, HierarchyType } from "../hierarchies";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
@@ -55,9 +55,15 @@ const toEChartsType = (type: ChartType | HierarchyType): EChartsType => {
   return type as EChartsType;
 };
 
-const crosstabDataTransform = (data: LeafNodeData) => {
+interface ChartDatasetResponse {
+  dataset: any[][];
+  rowSeriesLabels: string[];
+  transform: ChartTransform;
+}
+
+const crosstabDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
   if (data.columns.length < 3) {
-    return { dataset: [], rowSeriesLabels: [] };
+    return { dataset: [], rowSeriesLabels: [], transform: "none" };
   }
   const xAxis = {};
   const series = {};
@@ -105,13 +111,14 @@ const crosstabDataTransform = (data: LeafNodeData) => {
     dataset.push(row);
   }
 
-  return { dataset, rowSeriesLabels: seriesLabels };
+  return { dataset, rowSeriesLabels: seriesLabels, transform: "crosstab" };
 };
 
-const defaultDataTransform = (data: LeafNodeData) => {
+const defaultDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
   return {
     dataset: [data.columns.map((col) => col.name), ...data.rows],
     rowSeriesLabels: [],
+    transform: "none",
   };
 };
 
@@ -123,7 +130,7 @@ const isNumericCol = (data_type_name: string) => {
   );
 };
 
-const automaticDataTransform = (data: LeafNodeData) => {
+const automaticDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
   // We want to check if the data looks like something that can be crosstab transformed.
   // If that's 3 columns, with the first 2 non-numeric and the last numeric, we'll apply
   // a crosstab transform, else we'll apply the default transform
@@ -145,9 +152,9 @@ const automaticDataTransform = (data: LeafNodeData) => {
 const buildChartDataset = (
   data: LeafNodeData | undefined,
   properties: ChartProperties | undefined
-) => {
+): ChartDatasetResponse => {
   if (!data || !data.columns) {
-    return { dataset: [], rowSeriesLabels: [] };
+    return { dataset: [], rowSeriesLabels: [], transform: "none" };
   }
 
   const transform = properties?.transform;

@@ -1,4 +1,9 @@
-import Charts, { ChartProperties, ChartProps, ChartType } from "../index";
+import Charts, {
+  ChartProperties,
+  ChartProps,
+  ChartTransform,
+  ChartType,
+} from "../index";
 import ErrorPanel from "../../Error";
 import React, { useEffect, useRef, useState } from "react";
 import ReactEChartsCore from "echarts-for-react/lib/core";
@@ -277,6 +282,7 @@ const getSeriesForChartType = (
   data: LeafNodeData | undefined,
   properties: ChartProperties | undefined,
   rowSeriesLabels: string[],
+  transform: ChartTransform,
   themeColors
 ) => {
   if (!data) {
@@ -284,7 +290,7 @@ const getSeriesForChartType = (
   }
   const series: any[] = [];
   const seriesNames =
-    properties && properties.transform === "crosstab"
+    transform === "crosstab"
       ? rowSeriesLabels
       : data.columns.slice(1).map((col) => col.name);
   const seriesLength = seriesNames.length;
@@ -365,7 +371,7 @@ const buildChartOptions = (
     foreground,
     foregroundLightest,
   };
-  const { dataset, rowSeriesLabels } = buildChartDataset(
+  const { dataset, rowSeriesLabels, transform } = buildChartDataset(
     props.data,
     props.properties
   );
@@ -374,6 +380,7 @@ const buildChartOptions = (
     props.data,
     props.properties,
     rowSeriesLabels,
+    transform,
     themeColors
   );
   return merge(
