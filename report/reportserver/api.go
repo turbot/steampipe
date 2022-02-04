@@ -3,8 +3,6 @@ package reportserver
 import (
 	"context"
 	"fmt"
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/constants"
 	"log"
 	"net/http"
 	"os"
@@ -16,8 +14,11 @@ import (
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-	"github.com/turbot/steampipe/filepaths"
+	"github.com/spf13/viper"
 	"gopkg.in/olahol/melody.v1"
+
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/filepaths"
 )
 
 // https://stackoverflow.com/questions/39320371/how-start-web-server-to-open-page-in-browser-in-golang
