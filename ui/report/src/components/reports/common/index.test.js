@@ -1,8 +1,6 @@
 import "../../../test/matchMedia";
 import { adjustMinValue, adjustMaxValue } from "./index";
 
-jest.mock("chart.js");
-
 describe("common.adjustMinValue", () => {
   test("5", () => {
     expect(adjustMinValue(5)).toEqual(0);
