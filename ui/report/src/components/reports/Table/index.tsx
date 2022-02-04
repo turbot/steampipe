@@ -28,18 +28,22 @@ const getColumns = (
 
   const hiddenColumns: string[] = [];
   const columns = cols.map((col) => {
-    if (
-      properties &&
-      properties.columns &&
-      properties.columns[col.name] &&
-      properties.columns[col.name].display === "none"
-    ) {
-      hiddenColumns.push(col.name);
+    let colWrap = "none";
+    if (properties && properties.columns && properties.columns[col.name]) {
+      const c = properties.columns[col.name];
+      if (c.display === "none") {
+        hiddenColumns.push(col.name);
+      }
+      if (c.wrap) {
+        colWrap = c.wrap;
+      }
     }
+
     return {
       Header: col.name,
       accessor: col.name,
       data_type_name: col.data_type_name,
+      wrap: colWrap,
     };
   });
   return { columns, hiddenColumns };
@@ -215,6 +219,7 @@ const CellValue = ({ column, value }) => {
 
 interface TableColumnOptions {
   display?: string;
+  wrap?: string;
 }
 
 type TableColumns = {
@@ -255,25 +260,27 @@ const Table = (props: TableProps) => {
         <thead className="bg-table-head text-table-head">
           {headerGroups.map((headerGroup) => (
             <tr {...headerGroup.getHeaderGroupProps()}>
-              {headerGroup.headers.map((column) => (
-                <th
-                  {...column.getHeaderProps(column.getSortByToggleProps())}
-                  scope="col"
-                  className="px-4 py-3 text-left text-sm font-normal tracking-wider whitespace-nowrap"
-                >
-                  {column.render("Header")}
-                  {column.isSortedDesc ? (
-                    <SortDescendingIcon className="inline-block h-4 w-4" />
-                  ) : (
-                    <SortAscendingIcon
-                      className={classNames(
-                        "inline-block h-4 w-4",
-                        !column.isSorted ? "invisible" : null
-                      )}
-                    />
-                  )}
-                </th>
-              ))}
+              {headerGroup.headers.map((column) => {
+                return (
+                  <th
+                    {...column.getHeaderProps(column.getSortByToggleProps())}
+                    scope="col"
+                    className="px-4 py-3 text-left text-sm font-normal tracking-wider whitespace-nowrap"
+                  >
+                    {column.render("Header")}
+                    {column.isSortedDesc ? (
+                      <SortDescendingIcon className="inline-block h-4 w-4" />
+                    ) : (
+                      <SortAscendingIcon
+                        className={classNames(
+                          "inline-block h-4 w-4",
+                          !column.isSorted ? "invisible" : null
+                        )}
+                      />
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           ))}
         </thead>
@@ -299,7 +306,12 @@ const Table = (props: TableProps) => {
                   return (
                     <td
                       {...cell.getCellProps()}
-                      className="px-4 py-4 align-top content-center text-sm whitespace-nowrap"
+                      className={classNames(
+                        "px-4 py-4 align-top content-center text-sm",
+                        cell.column.wrap === "always"
+                          ? "break-all"
+                          : "whitespace-nowrap"
+                      )}
                     >
                       <CellValue column={columns[index]} value={cell.value} />
                     </td>
