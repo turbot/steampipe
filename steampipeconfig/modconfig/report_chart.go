@@ -24,11 +24,11 @@ type ReportChart struct {
 	Type *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Base *ReportChart `hcl:"base" json:"-"`
 
-	Legend       *ReportChartLegend    `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
-	SeriesList   ReportChartSeriesList `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
-	Axes         *ReportChartAxes      `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
-	Grouping     *string               `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
-	SeriesFormat *string               `cty:"series_format" hcl:"series_format" json:"series_format,omitempty"`
+	Legend     *ReportChartLegend    `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
+	SeriesList ReportChartSeriesList `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
+	Axes       *ReportChartAxes      `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
+	Grouping   *string               `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
+	Transform  *string               `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 
 	Series map[string]*ReportChartSeries `cty:"series" json:"series"`
 
@@ -96,8 +96,8 @@ func (c *ReportChart) setBaseProperties() {
 	if c.Grouping == nil {
 		c.Grouping = c.Base.Grouping
 	}
-	if c.SeriesFormat == nil {
-		c.SeriesFormat = c.Base.SeriesFormat
+	if c.Transform == nil {
+		c.Transform = c.Base.Transform
 	}
 	if c.Legend == nil {
 		c.Legend = c.Base.Legend
@@ -228,8 +228,8 @@ func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
 		res.AddPropertyDiff("Grouping")
 	}
 
-	if !utils.SafeStringsEqual(c.SeriesFormat, other.SeriesFormat) {
-		res.AddPropertyDiff("SeriesFormat")
+	if !utils.SafeStringsEqual(c.Transform, other.Transform) {
+		res.AddPropertyDiff("Transform")
 	}
 
 	if len(c.SeriesList) != len(other.SeriesList) {

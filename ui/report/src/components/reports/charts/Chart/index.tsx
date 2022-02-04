@@ -284,7 +284,7 @@ const getSeriesForChartType = (
   }
   const series: any[] = [];
   const seriesNames =
-    properties && properties.series_format === "row"
+    properties && properties.transform === "crosstab"
       ? rowSeriesLabels
       : data.columns.slice(1).map((col) => col.name);
   const seriesLength = seriesNames.length;

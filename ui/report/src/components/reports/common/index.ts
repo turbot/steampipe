@@ -55,7 +55,7 @@ const toEChartsType = (type: ChartType | HierarchyType): EChartsType => {
   return type as EChartsType;
 };
 
-const buildChartDatasetFromRowSeries = (data: LeafNodeData) => {
+const crosstabDataTransform = (data: LeafNodeData) => {
   if (data.columns.length < 3) {
     return { dataset: [], rowSeriesLabels: [] };
   }
@@ -105,18 +105,60 @@ const buildChartDatasetFromRowSeries = (data: LeafNodeData) => {
   return { dataset, rowSeriesLabels: seriesLabels };
 };
 
+const defaultDataTransform = (data: LeafNodeData) => {
+  return {
+    dataset: [data.columns.map((col) => col.name), ...data.rows],
+    rowSeriesLabels: [],
+  };
+};
+
+const isNumericCol = (data_type_name: string) => {
+  return (
+    data_type_name.toLowerCase().indexOf("int") >= 0 ||
+    data_type_name.toLowerCase().indexOf("float") >= 0 ||
+    data_type_name.toLowerCase().indexOf("numeric") >= 0
+  );
+};
+
+const automaticDataTransform = (data: LeafNodeData) => {
+  // We want to check if the data looks like something that can be crosstab transformed.
+  // If that's 3 columns, with the first 2 non-numeric and the last numeric, we'll apply
+  // a crosstab transform, else we'll apply the default transform
+  if (data.columns.length === 3) {
+    const col1Type = data.columns[0].data_type_name;
+    const col2Type = data.columns[1].data_type_name;
+    const col3Type = data.columns[2].data_type_name;
+    if (
+      !isNumericCol(col1Type) &&
+      !isNumericCol(col2Type) &&
+      isNumericCol(col3Type)
+    ) {
+      return crosstabDataTransform(data);
+    }
+  }
+  return defaultDataTransform(data);
+};
+
 const buildChartDataset = (
   data: LeafNodeData | undefined,
   properties: ChartProperties | undefined
 ) => {
-  return data
-    ? properties?.series_format === "row"
-      ? buildChartDatasetFromRowSeries(data)
-      : {
-          dataset: [data.columns.map((col) => col.name), ...data.rows],
-          rowSeriesLabels: [],
-        }
-    : { dataset: [], rowSeriesLabels: [] };
+  if (!data || !data.columns) {
+    return { dataset: [], rowSeriesLabels: [] };
+  }
+
+  const transform = properties?.transform;
+
+  switch (transform) {
+    case "crosstab":
+      return crosstabDataTransform(data);
+    case "none":
+      return defaultDataTransform(data);
+    // Must be not specified or "auto", which should check to see
+    // if the data matches crosstab format and transform if it is
+    default:
+      return automaticDataTransform(data);
+  }
 };
 
 // const buildSeriesInputs = (rawData, seriesDataFormat, seriesDataType) => {

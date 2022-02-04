@@ -28,7 +28,7 @@ type ChartSeries = {
   [series: string]: ChartSeriesOptions;
 };
 
-type ChartSeriesFormat = "column" | "row";
+type ChartTransform = "auto" | "crosstab" | "none";
 
 type ChartAxisTitleOptions = {
   display: "always" | "none";
@@ -62,7 +62,7 @@ export type ChartProperties = {
   axes?: ChartAxes;
   legend?: ChartLegendOptions;
   series?: ChartSeries;
-  series_format?: ChartSeriesFormat;
+  transform?: ChartTransform;
   grouping?: ChartGrouping;
 };
 
