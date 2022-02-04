@@ -102,11 +102,14 @@ const buildChartDatasetFromRowSeries = (data: LeafNodeData) => {
     }
 
     xAxis[xAxisLabel] = xAxis[xAxisLabel] || {};
-    xAxis[xAxisLabel][seriesName] = seriesValue;
 
-    if (!series[seriesName]) {
-      series[seriesName] = true;
-      seriesLabels.push(seriesName);
+    if (seriesName) {
+      xAxis[xAxisLabel][seriesName] = seriesValue;
+
+      if (!series[seriesName]) {
+        series[seriesName] = true;
+        seriesLabels.push(seriesName);
+      }
     }
   }
 
