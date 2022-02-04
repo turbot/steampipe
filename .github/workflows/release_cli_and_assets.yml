@@ -159,7 +159,7 @@ jobs:
           steampipe service stop --force
   
   create_release_tag:
-    name: Release CLI
+    name: Tag Release
     needs: [run_acceptance_tests]
     runs-on: ubuntu-latest
     steps:
@@ -179,7 +179,7 @@ jobs:
           git push origin ${{ github.event.inputs.version }}
   
   build_and_release_assets:
-    name: Build and Push Assets
+    name: Build and Release Assets
     needs: [create_release_tag]
     runs-on: ubuntu-latest
     steps:
