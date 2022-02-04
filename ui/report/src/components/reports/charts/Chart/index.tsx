@@ -320,7 +320,7 @@ const getSeriesForChartType = (
         series.push({
           name: seriesName,
           type: "pie",
-          radius: ["40%", "70%"],
+          radius: ["30%", "50%"],
           label: { color: themeColors.foreground },
         });
         break;
