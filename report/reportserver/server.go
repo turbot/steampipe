@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/spf13/viper"
 	"gopkg.in/olahol/melody.v1"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/go-kit/types"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
@@ -111,7 +111,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 func buildAvailableReportsPayload(reports map[string]*modconfig.ReportContainer) []byte {
 	reportsPayload := make(map[string]string)
 	for _, report := range reports {
-		reportsPayload[report.FullName] = types.SafeString(report.Title)
+		reportsPayload[report.FullName] = typeHelpers.SafeString(report.Title)
 	}
 	payload := AvailableReportsPayload{
 		Action:  "available_reports",
@@ -138,10 +138,7 @@ func buildLeafNodeProgressPayload(event *reportevents.LeafNodeProgress) []byte {
 	//jsonString, _ := json.Marshal(payload)
 	//return jsonString
 	jsonString, err := json.MarshalIndent(payload, "", "  ")
-	fmt.Println(err)
-	a := string(jsonString)
-	fmt.Println(a)
-
+	log.Println("[ERROR] buildLeafNodeProgressPayload marshal error:", err)
 	return jsonString
 }
 
@@ -171,9 +168,7 @@ func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte
 	//jsonString, _ := json.Marshal(payload)
 	//return jsonString
 	jsonString, err := json.MarshalIndent(payload, "", "  ")
-	fmt.Println(err)
-	a := string(jsonString)
-	fmt.Println(a)
+	log.Println("[ERROR] buildExecutionCompletePayload marshal error:", err)
 	return jsonString
 }
 
@@ -238,16 +233,16 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		EXECUTION_COMPLETE
 	*/
 
-	fmt.Println("Got workspace update event", event)
+	log.Println("[TRACE] Got workspace update event", event)
 	switch e := event.(type) {
 
 	case *reportevents.WorkspaceError:
-		fmt.Println("Got workspace error event", *e)
+		log.Println("[TRACE] Got workspace error event", *e)
 		payload := buildWorkspaceErrorPayload(e)
 		s.webSocket.Broadcast(payload)
 
 	case *reportevents.ExecutionStarted:
-		fmt.Println("Got execution started event", *e)
+		log.Println("[TRACE] Got execution started event", *e)
 		payload := buildExecutionStartedPayload(e)
 		reportName := e.ReportNode.GetName()
 		s.mutex.Lock()
@@ -260,10 +255,10 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		s.mutex.Unlock()
 
 	case *reportevents.LeafNodeError:
-		fmt.Println("Got leaf node error event", *e)
+		log.Println("[TRACE] Got leaf node error event", *e)
 
 	case *reportevents.LeafNodeProgress:
-		fmt.Println("Got leaf node complete event", *e)
+		log.Println("[TRACE] Got leaf node complete event", *e)
 		payload := buildLeafNodeProgressPayload(e)
 		paths := e.Node.GetPath()
 		s.mutex.Lock()
@@ -276,7 +271,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		s.mutex.Unlock()
 
 	case *reportevents.LeafNodeComplete:
-		fmt.Println("Got leaf node complete event", *e)
+		log.Println("[TRACE] Got leaf node complete event", *e)
 		payload := buildLeafNodeCompletePayload(e)
 		paths := e.Node.GetPath()
 		s.mutex.Lock()
@@ -289,7 +284,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		s.mutex.Unlock()
 
 	case *reportevents.ReportChanged:
-		fmt.Println("Got report changed event", *e)
+		log.Println("[TRACE] Got report changed event", *e)
 		deletedReports := e.DeletedReports
 		newReports := e.NewReports
 
@@ -323,7 +318,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		}
 
 		for k, v := range s.reportClients {
-			fmt.Printf("Report client: %v %v\n", k, types.SafeString(v.Report))
+			log.Printf("[TRACE] Report client: %v %v\n", k, typeHelpers.SafeString(v.Report))
 		}
 
 		// If) any deleted/new/changed reports, emit an available reports message to clients
@@ -389,13 +384,13 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		}
 
 	case *reportevents.ReportError:
-		fmt.Println("Got report error event", *e)
+		log.Println("[TRACE] Got report error event", *e)
 
 	case *reportevents.ReportComplete:
-		fmt.Println("Got report complete event", *e)
+		log.Println("[TRACE] Got report complete event", *e)
 
 	case *reportevents.ExecutionComplete:
-		fmt.Println("Got execution complete event", *e)
+		log.Println("[TRACE] Got execution complete event", *e)
 		payload := buildExecutionCompletePayload(e)
 		reportName := e.Report.GetName()
 		s.mutex.Lock()

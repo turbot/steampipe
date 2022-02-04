@@ -3,7 +3,7 @@ package reportserver
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 	"sync"
 
 	"github.com/turbot/steampipe/db/db_common"
@@ -33,21 +33,21 @@ type AvailableReportsPayload struct {
 func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, dbClient db_common.Client, socketSessions map[*melody.Session]*ReportClientInfo, mutex *sync.Mutex) {
 	// Return list of reports on connect
 	webSocket.HandleConnect(func(session *melody.Session) {
-		fmt.Println("Client connected")
+		log.Println("[TRACE] Client connected")
 		mutex.Lock()
 		socketSessions[session] = &ReportClientInfo{}
 		mutex.Unlock()
 	})
 
 	webSocket.HandleDisconnect(func(session *melody.Session) {
-		fmt.Println("Client disconnected")
+		log.Println("[TRACE] Client disconnected")
 		mutex.Lock()
 		delete(socketSessions, session)
 		mutex.Unlock()
 	})
 
 	webSocket.HandleMessage(func(session *melody.Session, msg []byte) {
-		fmt.Println("Got message", string(msg))
+		log.Println("[TRACE] Got message", string(msg))
 		var request ClientRequest
 		// if we could not decode message - ignore
 		if err := json.Unmarshal(msg, &request); err == nil {
@@ -57,7 +57,7 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 				reports := workspace.Mod.Reports
 				session.Write(buildAvailableReportsPayload(reports))
 			case "select_report":
-				fmt.Printf("Got event: %v\n", request.Payload.Report)
+				log.Printf("[TRACE] Got event: %v\n", request.Payload.Report)
 				mutex.Lock()
 				reportClientInfo := socketSessions[session]
 				reportClientInfo.Report = &request.Payload.Report.FullName

@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/ociinstaller"
@@ -14,6 +15,9 @@ import (
 )
 
 func Ensure(ctx context.Context) error {
+	logging.LogTime("reportassets.Ensure start")
+	defer logging.LogTime("reportassets.Ensure end")
+
 	// load report assets versions.json
 	versionFile, err := loadReportAssetVersionFile()
 	if err != nil {
