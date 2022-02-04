@@ -58,7 +58,7 @@ jobs:
           CI=true yarn test
         working-directory: ./ui/report
 
-      - name: Run Assets Unit Tests
+      - name: Run CLI Unit Tests
         run: |
           go test -timeout 30s -run github.com/turbot/steampipe ./...
 
