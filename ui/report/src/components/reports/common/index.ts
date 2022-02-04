@@ -1,4 +1,3 @@
-import moment from "moment";
 import { ChartProperties, ChartType } from "../charts";
 import { ColorGenerator } from "../../../utils/color";
 import { HierarchyProperties, HierarchyType } from "../hierarchies";
@@ -44,9 +43,11 @@ export interface ExecutablePrimitiveProps {
 }
 
 interface SeriesData {
-  label: string;
+  name: string;
   data: any[];
-  backgroundColor: string | string[];
+  type: EChartsType;
+  radius: string | null;
+  // backgroundColor: string | string[];
 }
 
 interface SeriesLookup {
@@ -68,112 +69,190 @@ interface Scale {
   max: number;
 }
 
-const buildSeriesInputs = (rawData, seriesDataFormat, seriesDataType) => {
-  const seriesDataLookup: SeriesTimeLookup = {};
-  const seriesDataTotalLookup: TotalLookup = {};
-  const seriesLabels: string[] = [];
-  const timeSeriesLabels: string[] = [];
-  if (seriesDataFormat === "row") {
-    if (seriesDataType === "time") {
-      for (const row of rawData.slice(1)) {
-        const timeRaw = row[0];
-        const formattedTime = moment(timeRaw).format("DD MMM YYYY");
-        const series = row[1];
-        const value = row[2];
-        seriesDataLookup[formattedTime] = seriesDataLookup[formattedTime] || {};
-        const timeEntry = seriesDataLookup[formattedTime];
-        timeEntry[series] = timeEntry[series] || {};
-        const seriesEntry = timeEntry[series];
-        seriesEntry.value = value;
-        if (timeSeriesLabels.indexOf(formattedTime) === -1) {
-          timeSeriesLabels.push(formattedTime);
-        }
-        if (value !== 0 && seriesLabels.indexOf(series) === -1) {
-          seriesLabels.push(series);
-        }
+export type EChartsType = "bar" | "line" | "pie" | "sankey";
 
-        seriesDataTotalLookup[formattedTime] = seriesDataTotalLookup[
-          formattedTime
-        ] || {
-          min: 0,
-          max: 0,
-        };
-        if (value > 0) {
-          seriesDataTotalLookup[formattedTime].max += value;
-        }
-        if (value < 0) {
-          seriesDataTotalLookup[formattedTime].min += value;
-        }
+const toEChartsType = (type: ChartType | HierarchyType): EChartsType => {
+  // A column chart in chart.js is a bar chart with different options
+  if (type === "column") {
+    return "bar";
+  }
+  // Different spelling
+  if (type === "donut") {
+    return "pie";
+  }
+  return type as EChartsType;
+};
+
+const buildChartDatasetFromRowSeries = (data: LeafNodeData) => {
+  if (data.columns.length < 3) {
+    return { dataset: [], rowSeriesLabels: [] };
+  }
+  const xAxis = {};
+  const series = {};
+  const xAxisLabels: string[] = [];
+  const seriesLabels: string[] = [];
+  for (const row of data.rows) {
+    const xAxisLabel = row[0];
+    const seriesName = row[1];
+    const seriesValue = row[2];
+
+    if (!xAxis[xAxisLabel]) {
+      xAxis[xAxisLabel] = {};
+      xAxisLabels.push(xAxisLabel);
+    }
+
+    xAxis[xAxisLabel] = xAxis[xAxisLabel] || {};
+
+    if (seriesName) {
+      xAxis[xAxisLabel][seriesName] = seriesValue;
+
+      if (!series[seriesName]) {
+        series[seriesName] = true;
+        seriesLabels.push(seriesName);
       }
     }
   }
 
-  return {
-    seriesDataLookup,
-    seriesDataTotalLookup,
-    seriesLabels,
-    timeSeriesLabels,
-  };
-};
+  const dataset: any[] = [];
+  const headerRow: string[] = [];
+  headerRow.push(data.columns[0].name);
+  for (const seriesLabel of seriesLabels) {
+    headerRow.push(seriesLabel);
+  }
+  dataset.push(headerRow);
 
-const buildSeriesDataInputs = (rawData, seriesDataFormat, seriesDataType) => {
-  const {
-    seriesDataLookup,
-    seriesDataTotalLookup,
-    seriesLabels,
-    timeSeriesLabels,
-  } = buildSeriesInputs(rawData, seriesDataFormat, seriesDataType);
-  const datasets: SeriesData[] = [];
-
-  for (
-    let seriesLabelIndex = 0;
-    seriesLabelIndex < seriesLabels.length;
-    seriesLabelIndex++
-  ) {
-    const seriesLabel = seriesLabels[seriesLabelIndex];
-    const data: any[] = [];
-
-    for (const timeSeriesLabel of timeSeriesLabels) {
-      const timeSeriesEntry = seriesDataLookup[timeSeriesLabel];
-      const seriesEntry = timeSeriesEntry[seriesLabel];
-      data.push(seriesEntry ? seriesEntry.value : null);
+  for (const xAxisLabel of xAxisLabels) {
+    const row = [xAxisLabel];
+    for (const seriesLabel of seriesLabels) {
+      const seriesValue = xAxis[xAxisLabel][seriesLabel];
+      row.push(seriesValue === undefined ? null : seriesValue);
     }
-
-    datasets.push({
-      label: seriesLabel,
-      data,
-      backgroundColor: themeColors[seriesLabelIndex],
-    });
+    dataset.push(row);
   }
 
-  let min = 0;
-  let max = 0;
-  for (const {
-    min: seriesDataMinTotal,
-    max: seriesDataMaxTotal,
-  } of Object.values(seriesDataTotalLookup)) {
-    if (seriesDataMinTotal < min) {
-      min = seriesDataMinTotal;
-    }
-    if (seriesDataMaxTotal > max) {
-      max = seriesDataMaxTotal;
-    }
-  }
-
-  min = adjustMinValue(min);
-  max = adjustMaxValue(max);
-
-  const data = {
-    labels: timeSeriesLabels,
-    datasets,
-  };
-
-  return {
-    data,
-    min,
-    max,
-  };
+  return { dataset, rowSeriesLabels: seriesLabels };
 };
+
+const buildChartDataset = (
+  data: LeafNodeData | undefined,
+  properties: ChartProperties | undefined
+) => {
+  return data
+    ? properties?.series_format === "row"
+      ? buildChartDatasetFromRowSeries(data)
+      : {
+          dataset: [data.columns.map((col) => col.name), ...data.rows],
+          rowSeriesLabels: [],
+        }
+    : { dataset: [], rowSeriesLabels: [] };
+};
+
+// const buildSeriesInputs = (rawData, seriesDataFormat, seriesDataType) => {
+//   const seriesDataLookup: SeriesTimeLookup = {};
+//   const seriesDataTotalLookup: TotalLookup = {};
+//   const seriesLabels: string[] = [];
+//   const timeSeriesLabels: string[] = [];
+//   if (seriesDataFormat === "row") {
+//     if (seriesDataType === "time") {
+//       for (const row of rawData.slice(1)) {
+//         const timeRaw = row[0];
+//         const formattedTime = moment(timeRaw).format("DD MMM YYYY");
+//         const series = row[1];
+//         const value = row[2];
+//         seriesDataLookup[formattedTime] = seriesDataLookup[formattedTime] || {};
+//         const timeEntry = seriesDataLookup[formattedTime];
+//         timeEntry[series] = timeEntry[series] || {};
+//         const seriesEntry = timeEntry[series];
+//         seriesEntry.value = value;
+//         if (timeSeriesLabels.indexOf(formattedTime) === -1) {
+//           timeSeriesLabels.push(formattedTime);
+//         }
+//         if (value !== 0 && seriesLabels.indexOf(series) === -1) {
+//           seriesLabels.push(series);
+//         }
+//
+//         seriesDataTotalLookup[formattedTime] = seriesDataTotalLookup[
+//           formattedTime
+//         ] || {
+//           min: 0,
+//           max: 0,
+//         };
+//         if (value > 0) {
+//           seriesDataTotalLookup[formattedTime].max += value;
+//         }
+//         if (value < 0) {
+//           seriesDataTotalLookup[formattedTime].min += value;
+//         }
+//       }
+//     }
+//   }
+//
+//   return {
+//     seriesDataLookup,
+//     seriesDataTotalLookup,
+//     seriesLabels,
+//     timeSeriesLabels,
+//   };
+// };
+
+// const buildSeriesDataInputs = (rawData, seriesDataFormat, seriesDataType) => {
+//   const {
+//     seriesDataLookup,
+//     seriesDataTotalLookup,
+//     seriesLabels,
+//     timeSeriesLabels,
+//   } = buildSeriesInputs(rawData, seriesDataFormat, seriesDataType);
+//   const datasets: SeriesData[] = [];
+//
+//   for (
+//     let seriesLabelIndex = 0;
+//     seriesLabelIndex < seriesLabels.length;
+//     seriesLabelIndex++
+//   ) {
+//     const seriesLabel = seriesLabels[seriesLabelIndex];
+//     const data: any[] = [];
+//
+//     for (const timeSeriesLabel of timeSeriesLabels) {
+//       const timeSeriesEntry = seriesDataLookup[timeSeriesLabel];
+//       const seriesEntry = timeSeriesEntry[seriesLabel];
+//       data.push(seriesEntry ? seriesEntry.value : null);
+//     }
+//
+//     datasets.push({
+//       name: seriesLabel,
+//       data,
+//       // backgroundColor: themeColors[seriesLabelIndex],
+//     });
+//   }
+//
+//   let min = 0;
+//   let max = 0;
+//   for (const {
+//     min: seriesDataMinTotal,
+//     max: seriesDataMaxTotal,
+//   } of Object.values(seriesDataTotalLookup)) {
+//     if (seriesDataMinTotal < min) {
+//       min = seriesDataMinTotal;
+//     }
+//     if (seriesDataMaxTotal > max) {
+//       max = seriesDataMaxTotal;
+//     }
+//   }
+//
+//   min = adjustMinValue(min);
+//   max = adjustMaxValue(max);
+//
+//   const data = {
+//     labels: timeSeriesLabels,
+//     datasets,
+//   };
+//
+//   return {
+//     data,
+//     min,
+//     max,
+//   };
+// };
 
 const adjust = (value, divisor, direction = "asc") => {
   const remainder = value % divisor;
@@ -230,69 +309,6 @@ const adjustMaxValue = (initial) => {
     max = adjust(max, 1000);
   }
   return max;
-};
-
-const buildChartDataInputs = (
-  rawData: LeafNodeData,
-  type: ChartType,
-  properties: ChartProperties
-) => {
-  const seriesLength = rawData.columns.length - 1;
-
-  const labels: string[] = [];
-  const datasets: SeriesData[] = [];
-
-  let min = 0;
-  let max = 0;
-
-  for (const row of rawData.rows) {
-    labels.push(row[0]);
-  }
-  for (let seriesIndex = 1; seriesIndex <= seriesLength; seriesIndex++) {
-    const data: any[] = [];
-    for (const row of rawData.rows) {
-      const dataValue = row[seriesIndex];
-      if (dataValue < min) {
-        min = dataValue;
-      }
-      if (dataValue > max) {
-        max = dataValue;
-      }
-      data.push(dataValue);
-    }
-    const seriesName = rawData.columns[seriesIndex].name;
-    let seriesOverrides;
-    if (properties.series && properties.series[seriesName]) {
-      seriesOverrides = properties.series[seriesName];
-    }
-    datasets.push({
-      label:
-        seriesOverrides && seriesOverrides.title
-          ? seriesOverrides.title
-          : seriesName,
-      data,
-      backgroundColor:
-        type === "donut" || type === "pie"
-          ? themeColors.slice(0, labels.length)
-          : seriesOverrides && seriesOverrides.color
-          ? seriesOverrides.color
-          : themeColors[seriesIndex - 1],
-    });
-  }
-  const data = {
-    labels,
-    datasets,
-  };
-
-  // Adjust min and max to allow breathing space in the chart
-  min = adjustMinValue(min);
-  max = adjustMaxValue(max);
-
-  return {
-    data,
-    min,
-    max,
-  };
 };
 
 const buildHierarchyDataInputs = (
@@ -453,9 +469,8 @@ const themeColors = generateColors();
 export {
   adjustMinValue,
   adjustMaxValue,
-  buildChartDataInputs,
+  buildChartDataset,
   buildHierarchyDataInputs,
-  buildSeriesDataInputs,
-  buildSeriesInputs,
   themeColors,
+  toEChartsType,
 };

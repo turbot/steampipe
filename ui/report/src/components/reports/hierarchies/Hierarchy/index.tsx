@@ -3,17 +3,20 @@ import Hierarchies, { HierarchyProperties } from "../../hierarchies";
 import ReactEChartsCore from "echarts-for-react/lib/core";
 import useMediaMode from "../../../../hooks/useMediaMode";
 import * as echarts from "echarts/core";
-import { buildHierarchyDataInputs, LeafNodeData } from "../../common";
+import {
+  buildHierarchyDataInputs,
+  LeafNodeData,
+  toEChartsType,
+} from "../../common";
 import { CanvasRenderer } from "echarts/renderers";
 import {
-  DatasetComponent,
   GridComponent,
   TitleComponent,
   TooltipComponent,
 } from "echarts/components";
-import { EChartsType, HierarchyProps, HierarchyType } from "../index";
+import { HierarchyProps } from "../index";
 import { PanelDefinition, useReport } from "../../../../hooks/useReport";
-import { SankeyChart } from "echarts/charts";
+import { SankeyChart, TreeChart } from "echarts/charts";
 import { usePanel } from "../../../../hooks/usePanel";
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "../../../../hooks/useTheme";
@@ -21,11 +24,11 @@ import { ZoomIcon } from "../../../../constants/icons";
 
 echarts.use([
   CanvasRenderer,
-  DatasetComponent,
   GridComponent,
   SankeyChart,
   TitleComponent,
   TooltipComponent,
+  TreeChart,
 ]);
 
 const getBaseOptions = (type, data, links) => {
@@ -95,10 +98,6 @@ const buildHierarchyInputs = (
   );
 
   return options;
-};
-
-const toEChartsType = (type: HierarchyType): EChartsType => {
-  return type as EChartsType;
 };
 
 const Hierarchy = ({ data, inputs, theme, themeWrapperRef }) => {
