@@ -261,7 +261,6 @@ const Table = (props: TableProps) => {
           {headerGroups.map((headerGroup) => (
             <tr {...headerGroup.getHeaderGroupProps()}>
               {headerGroup.headers.map((column) => {
-                console.log(column);
                 return (
                   <th
                     {...column.getHeaderProps(column.getSortByToggleProps())}
@@ -304,7 +303,6 @@ const Table = (props: TableProps) => {
             return (
               <tr {...row.getRowProps()}>
                 {row.cells.map((cell, index) => {
-                  console.log(cell);
                   return (
                     <td
                       {...cell.getCellProps()}

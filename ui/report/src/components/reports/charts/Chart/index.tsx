@@ -288,7 +288,7 @@ const getSeriesForChartType = (
       ? rowSeriesLabels
       : data.columns.slice(1).map((col) => col.name);
   const seriesLength = seriesNames.length;
-  for (let seriesIndex = 1; seriesIndex <= seriesLength; seriesIndex++) {
+  for (let seriesIndex = 0; seriesIndex < seriesLength; seriesIndex++) {
     let seriesName = seriesNames[seriesIndex];
     let seriesColor = "auto";
     let seriesOverrides;
@@ -404,6 +404,8 @@ const Chart = ({ options }: ChartComponentProps) => {
   const { definition: panelDefinition, showExpand } = usePanel();
   const { dispatch } = useReport();
   const mediaMode = useMediaMode();
+
+  console.log(options);
 
   useEffect(() => {
     if (!chartRef.current || !options) {
