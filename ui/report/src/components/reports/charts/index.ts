@@ -28,7 +28,7 @@ type ChartSeries = {
   [series: string]: ChartSeriesOptions;
 };
 
-type ChartTransform = "auto" | "crosstab" | "none";
+export type ChartTransform = "auto" | "crosstab" | "none";
 
 type ChartAxisTitleOptions = {
   display: "always" | "none";
