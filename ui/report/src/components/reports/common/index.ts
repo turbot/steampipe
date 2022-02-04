@@ -127,8 +127,6 @@ const buildChartDatasetFromRowSeries = (data: LeafNodeData) => {
     dataset.push(row);
   }
 
-  console.log(dataset);
-
   return { dataset, rowSeriesLabels: seriesLabels };
 };
 
