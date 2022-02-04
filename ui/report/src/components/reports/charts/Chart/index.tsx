@@ -405,8 +405,6 @@ const Chart = ({ options }: ChartComponentProps) => {
   const { dispatch } = useReport();
   const mediaMode = useMediaMode();
 
-  console.log(options);
-
   useEffect(() => {
     if (!chartRef.current || !options) {
       return;
