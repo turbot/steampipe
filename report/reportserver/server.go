@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+<<<<<<< HEAD
 	"reflect"
+=======
+>>>>>>> 36c76733 (logs and prints)
 	"sync"
 
 	"github.com/spf13/viper"
