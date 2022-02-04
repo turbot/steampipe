@@ -33,7 +33,6 @@ interface ChildrenProps {
 const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
   <>
     {children.map((child) => {
-      console.log(child);
       switch (child.node_type) {
         case "benchmark":
           return (
