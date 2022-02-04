@@ -1,4 +1,4 @@
-import { CloseIcon } from "../../../constants/icons";
+import { CloseIcon } from "../../constants/icons";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useState } from "react";
 

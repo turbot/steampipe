@@ -1,6 +1,7 @@
+import App from "./App";
+import ErrorBoundary from "./components/ErrorBoundary";
 import React from "react";
 import ReactDOM from "react-dom";
-import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { BrowserRouter as Router } from "react-router-dom";
 import { ThemeProvider } from "./hooks/useTheme";
@@ -10,7 +11,9 @@ ReactDOM.render(
   <React.StrictMode>
     <ThemeProvider>
       <Router>
-        <App />
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
       </Router>
     </ThemeProvider>
   </React.StrictMode>,
