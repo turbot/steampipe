@@ -76,7 +76,10 @@ const crosstabDataTransform = (data: LeafNodeData) => {
     xAxis[xAxisLabel] = xAxis[xAxisLabel] || {};
 
     if (seriesName) {
-      xAxis[xAxisLabel][seriesName] = seriesValue;
+      const existing = xAxis[xAxisLabel][seriesName];
+      xAxis[xAxisLabel][seriesName] = existing
+        ? existing + seriesValue
+        : seriesValue;
 
       if (!series[seriesName]) {
         series[seriesName] = true;
