@@ -20,7 +20,7 @@ const SelectInput = (props: SelectInputProps) => {
   const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
     null
   );
-  const [_, setRandomVal] = useState(0);
+  const [, setRandomVal] = useState(0);
   const { theme, wrapperRef } = useTheme();
   const options: SelectOption[] = useMemo(() => {
     if (!props.data || !props.data.columns || !props.data.rows) {
@@ -89,7 +89,7 @@ const SelectInput = (props: SelectInputProps) => {
       setUrlValue(value.value);
     }
     // setUrlValue(props.multi ? value.join);
-  }, [props.multi, initialisedFromUrl, value]);
+  }, [props.multi, initialisedFromUrl, setUrlValue, value]);
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
   useEffect(() => setRandomVal(Math.random()), [theme.name]);

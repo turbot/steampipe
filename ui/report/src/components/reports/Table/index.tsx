@@ -240,7 +240,7 @@ export type TableProps = BaseTableProps & {
 const Table = (props: TableProps) => {
   const { columns, hiddenColumns } = useMemo(
     () => getColumns(props.data ? props.data.columns : [], props.properties),
-    [props.data]
+    [props.data, props.properties]
   );
   const rowData = useMemo(
     () => getData(columns, props.data ? props.data.rows : []),
