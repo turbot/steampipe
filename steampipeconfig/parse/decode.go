@@ -73,6 +73,7 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 		return nil, res
 	}
 	// if this block is anonymous, give it a unique name
+	//WE NEED TO KEEP STATE in RUN CTX AS BEFORE FROM THE FIRST PARSE TO KNOW IF IT IS ANONYMOUS
 	anonymousBlock := isBlockAnonymous(block)
 	if anonymousBlock {
 		// replace the labels
@@ -88,6 +89,7 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 		return nil, res
 	}
 
+	// now do the actual decode
 	if helpers.StringSliceContains(modconfig.QueryProviderBlocks, block.Type) {
 		resource, res = decodeQueryProvider(block, runCtx)
 		resources = append(resources, resource)
@@ -571,6 +573,11 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 // - add resource to RunContext (which adds it to the mod)handleDecodeResult
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, anonymousResource bool, runCtx *RunContext) {
 	if res.Success() {
+		// first, set the mod on the resource
+		if _, ok := resource.(*modconfig.Mod); !ok {
+			resource.SetMod(runCtx.CurrentMod)
+		}
+
 		// call post decode hook
 		// NOTE: must do this BEFORE adding resource to run context to ensure we respect the base property
 		moreDiags := resource.OnDecoded(block)
@@ -587,9 +594,6 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 			res.addDiags(moreDiags)
 		}
 
-		if _, ok := resource.(*modconfig.Mod); !ok {
-			resource.SetMod(runCtx.CurrentMod)
-		}
 		if !anonymousResource {
 			// if resource is NOT anonymous, add into the run context
 			moreDiags = runCtx.AddResource(resource)

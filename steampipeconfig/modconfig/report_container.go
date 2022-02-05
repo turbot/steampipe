@@ -23,8 +23,8 @@ type ReportContainer struct {
 	Remain hcl.Body `hcl:",remain"`
 
 	ShortName       string
-	FullName        string `cty:"name"`
-	UnqualifiedName string
+	FullName        string           `cty:"name"`
+	UnqualifiedName string           `cty:"unqualified_name"`
 	Title           *string          `cty:"title" hcl:"title" column:"title,text"`
 	Width           *int             `cty:"width" hcl:"width"  column:"width,text"`
 	Args            *QueryArgs       `cty:"args" column:"args,jsonb" json:"args"`
@@ -89,9 +89,23 @@ func (c *ReportContainer) setBaseProperties() {
 		c.Width = c.Base.Width
 	}
 	if len(c.children) == 0 {
-		c.children = c.Base.GetChildren()
-		c.ChildNames = c.Base.ChildNames
+		c.copyChildrenFromBase()
 	}
+	if len(c.Inputs) == 0 {
+		c.Inputs = c.Base.Inputs
+		c.setInputMap()
+	}
+
+}
+
+func (c *ReportContainer) copyChildrenFromBase() {
+	var names []string
+	for _, child := range c.Base.GetChildren(){
+		// generate new name if anonymous
+		// add to mod
+		add to our children
+	}
+	c.ChildNames = names
 }
 
 // AddReference implements HclResource
@@ -288,10 +302,8 @@ func (c *ReportContainer) GetInput(name string) (*ReportInput, bool) {
 
 func (c *ReportContainer) SetInputs(inputs []*ReportInput) error {
 	c.Inputs = inputs
-	c.selfInputsMap = make(map[string]*ReportInput)
-	for _, i := range inputs {
-		c.selfInputsMap[i.UnqualifiedName] = i
-	}
+	c.setInputMap()
+
 	// also add child containers inputs
 
 	var duplicates []string
@@ -316,6 +328,14 @@ func (c *ReportContainer) SetInputs(inputs []*ReportInput) error {
 		return fmt.Errorf("duplicate input names found for %s: %s", c.Name(), strings.Join(duplicates, ","))
 	}
 	return nil
+}
+
+// populate our input map
+func (c *ReportContainer) setInputMap() {
+	c.selfInputsMap = make(map[string]*ReportInput)
+	for _, i := range c.Inputs {
+		c.selfInputsMap[i.UnqualifiedName] = i
+	}
 }
 
 func (c *ReportContainer) SetArgs(args *QueryArgs) {

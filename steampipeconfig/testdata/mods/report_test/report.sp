@@ -18,7 +18,5 @@ query "q1"{
     }
 }
 report "r2"{
-    report "derived"{
         base = report.r1
-    }
-}
+ }
