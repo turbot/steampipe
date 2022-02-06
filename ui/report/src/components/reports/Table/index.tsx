@@ -12,30 +12,34 @@ import {
 } from "../../../constants/icons";
 import { useMemo } from "react";
 import { useSortBy, useTable } from "react-table";
+import { read } from "fs";
 
-interface ColumnInfo {
+type TableColumnWrap = "all" | "none";
+
+interface TableColumnInfo {
   Header: string;
   accessor: string;
+  wrap?: TableColumnWrap;
 }
 
 const getColumns = (
   cols: LeafNodeDataColumn[],
   properties?: TableProperties
-) => {
+): { columns: TableColumnInfo[]; hiddenColumns: string[] } => {
   if (!cols || cols.length === 0) {
     return { columns: [], hiddenColumns: [] };
   }
 
   const hiddenColumns: string[] = [];
-  const columns = cols.map((col) => {
-    let colWrap = "none";
+  const columns: TableColumnInfo[] = cols.map((col) => {
+    let colWrap: TableColumnWrap = "none";
     if (properties && properties.columns && properties.columns[col.name]) {
       const c = properties.columns[col.name];
       if (c.display === "none") {
         hiddenColumns.push(col.name);
       }
       if (c.wrap) {
-        colWrap = c.wrap;
+        colWrap = c.wrap as TableColumnWrap;
       }
     }
 
@@ -49,7 +53,7 @@ const getColumns = (
   return { columns, hiddenColumns };
 };
 
-const getData = (columns: ColumnInfo[], rows: LeafNodeDataRow) => {
+const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow) => {
   if (!columns || columns.length === 0) {
     return [];
   }
@@ -308,7 +312,7 @@ const Table = (props: TableProps) => {
                       {...cell.getCellProps()}
                       className={classNames(
                         "px-4 py-4 align-top content-center text-sm",
-                        cell.column.wrap === "always"
+                        cell.column.wrap === "all"
                           ? "break-all"
                           : "whitespace-nowrap"
                       )}

@@ -136,7 +136,7 @@ WrapColumn.args = {
   properties: {
     columns: {
       Long: {
-        wrap: "always",
+        wrap: "all",
       },
     },
   },
