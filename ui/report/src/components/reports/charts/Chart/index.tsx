@@ -150,7 +150,7 @@ const getOptionOverridesForChartType = (
   if (properties.legend) {
     // Legend display
     const legendDisplay = properties.legend.display;
-    if (legendDisplay === "always") {
+    if (legendDisplay === "all") {
       overrides = set(overrides, "legend.show", true);
     } else if (legendDisplay === "none") {
       overrides = set(overrides, "legend.show", false);
@@ -183,7 +183,7 @@ const getOptionOverridesForChartType = (
     if (properties.axes.x) {
       // X axis display setting
       const xAxisDisplay = properties.axes.x.display;
-      if (xAxisDisplay === "always") {
+      if (xAxisDisplay === "all") {
         overrides = set(overrides, "xAxis.show", true);
       } else if (xAxisDisplay === "none") {
         overrides = set(overrides, "xAxis.show", false);
@@ -193,7 +193,7 @@ const getOptionOverridesForChartType = (
       if (properties.axes.x.labels) {
         // X axis labels display setting
         const xAxisTicksDisplay = properties.axes.x.labels.display;
-        if (xAxisTicksDisplay === "always") {
+        if (xAxisTicksDisplay === "all") {
           overrides = set(overrides, "xAxis.axisLabel.show", true);
         } else if (xAxisTicksDisplay === "none") {
           overrides = set(overrides, "xAxis.axisLabel.show", false);
@@ -230,7 +230,7 @@ const getOptionOverridesForChartType = (
     if (properties.axes.y) {
       // Y axis display setting
       const yAxisDisplay = properties.axes.y.display;
-      if (yAxisDisplay === "always") {
+      if (yAxisDisplay === "all") {
         overrides = set(overrides, "yAxis.show", true);
       } else if (yAxisDisplay === "none") {
         overrides = set(overrides, "yAxis.show", false);
@@ -240,7 +240,7 @@ const getOptionOverridesForChartType = (
       if (properties.axes.y.labels) {
         // Y axis labels display setting
         const yAxisTicksDisplay = properties.axes.y.labels.display;
-        if (yAxisTicksDisplay === "always") {
+        if (yAxisTicksDisplay === "all") {
           overrides = set(overrides, "yAxis.axisLabel.show", true);
         } else if (yAxisTicksDisplay === "none") {
           overrides = set(overrides, "yAxis.axisLabel.show", false);

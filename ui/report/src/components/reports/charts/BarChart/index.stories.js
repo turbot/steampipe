@@ -158,7 +158,7 @@ SingleSeriesLegend.args = {
   },
   properties: {
     legend: {
-      display: "always",
+      display: "all",
     },
   },
 };
@@ -179,7 +179,7 @@ SingleSeriesLegendPosition.args = {
   },
   properties: {
     legend: {
-      display: "always",
+      display: "all",
       position: "bottom",
     },
   },
@@ -203,7 +203,7 @@ SingleSeriesXAxisTitle.args = {
     axes: {
       x: {
         title: {
-          display: "always",
+          display: "all",
           value: "I am a the X Axis title",
         },
       },
