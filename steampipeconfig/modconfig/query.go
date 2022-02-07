@@ -245,7 +245,7 @@ func (q *Query) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (q *Query) GetChildren() []ModTreeItem {
-	return q.Mod.children
+	return nil
 }
 
 // GetDescription implements ModTreeItem
