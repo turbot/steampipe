@@ -244,8 +244,6 @@ func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclRe
 			duplicates = append(duplicates, r.Name())
 			continue
 		}
-		// set mod pointer on pseudo resource
-		r.SetMod(mod)
 		// add pseudo resource to mod
 		mod.AddPseudoResource(r)
 	}

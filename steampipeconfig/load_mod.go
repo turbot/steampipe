@@ -322,7 +322,7 @@ func createPseudoResources(modPath string, runCtx *parse.RunContext) ([]modconfi
 		if !ok {
 			continue
 		}
-		resource, fileData, err := factory(modPath, path)
+		resource, fileData, err := factory(modPath, path, runCtx.CurrentMod)
 		if err != nil {
 			errors = append(errors, err)
 			continue

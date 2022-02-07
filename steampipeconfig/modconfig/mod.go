@@ -25,6 +25,7 @@ const defaultModName = "local"
 type Mod struct {
 	HclResourceBase
 	ResourceWithMetadataBase
+	UniqueNameProviderBase
 
 	// ShortName is the mod name, e.g. azure_thrifty
 	ShortName string `cty:"short_name" hcl:"name,label"`
@@ -559,9 +560,6 @@ func (m *Mod) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 func (m *Mod) AddReference(ref *ResourceReference) {
 	m.References = append(m.References, ref)
 }
-
-// SetMod implements HclResource
-func (m *Mod) SetMod(*Mod) {}
 
 // GetMod implements HclResource
 func (m *Mod) GetMod() *Mod {

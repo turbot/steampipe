@@ -44,15 +44,14 @@ type Benchmark struct {
 	parents []ModTreeItem
 }
 
-func NewBenchmark(block *hcl.Block, mod *Mod, parent ModTreeItem) *Benchmark {
-	shortName := GetAnonymousResourceShortName(block, parent)
+func NewBenchmark(block *hcl.Block, mod *Mod) *Benchmark {
+	shortName := GetAnonymousResourceShortName(block, mod)
 	benchmark := &Benchmark{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.benchmark.%s", mod.ShortName, shortName),
 		UnqualifiedName: fmt.Sprintf("benchmark.%s", shortName),
 		Mod:             mod,
-
-		DeclRange: block.DefRange,
+		DeclRange:       block.DefRange,
 	}
 	benchmark.SetAnonymous(block)
 	return benchmark
@@ -107,13 +106,6 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 // AddReference implements HclResource
 func (b *Benchmark) AddReference(ref *ResourceReference) {
 	b.References = append(b.References, ref)
-}
-
-// SetMod implements HclResource
-func (b *Benchmark) SetMod(mod *Mod) {
-	b.Mod = mod
-	// add mod name to full name
-	b.FullName = fmt.Sprintf("%s.%s", mod.ShortName, b.FullName)
 }
 
 // GetMod implements HclResource

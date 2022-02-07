@@ -39,13 +39,12 @@ type ReportInput struct {
 func NewReportInput(block *hcl.Block, mod *Mod) *ReportInput {
 	shortName := block.Labels[0]
 	i := &ReportInput{
-		DeclRange:       block.DefRange,
 		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.%s", block.Type, shortName),
+		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+		Mod:             mod,
+		DeclRange:       block.DefRange,
 	}
-	// TODO KAI GET RID OF SET MOD
-	i.SetMod(mod)
 	return i
 }
 
@@ -92,12 +91,6 @@ func (c *ReportInput) setBaseProperties() {
 
 // AddReference implements HclResource
 func (c *ReportInput) AddReference(*ResourceReference) {}
-
-// SetMod implements HclResource
-func (c *ReportInput) SetMod(mod *Mod) {
-	c.Mod = mod
-	c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
-}
 
 // GetMod implements HclResource
 func (c *ReportInput) GetMod() *Mod {

@@ -49,16 +49,16 @@ type Control struct {
 	parents []ModTreeItem
 }
 
-func NewControl(block *hcl.Block, mod *Mod, parent ModTreeItem) *Control {
-	shortName := GetAnonymousResourceShortName(block, parent)
+func NewControl(block *hcl.Block, mod *Mod) *Control {
+	shortName := GetAnonymousResourceShortName(block, mod)
 	control := &Control{
 		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("control.%s", shortName),
+		FullName:        fmt.Sprintf("%s.control.%s", mod.ShortName, shortName),
 		UnqualifiedName: fmt.Sprintf("control.%s", shortName),
+		Mod:             mod,
 		DeclRange:       block.DefRange,
 		Args:            NewQueryArgs(),
 	}
-	control.SetMod(mod)
 	control.SetAnonymous(block)
 
 	return control
@@ -257,13 +257,6 @@ func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics {
 // AddReference implements HclResource
 func (c *Control) AddReference(ref *ResourceReference) {
 	c.References = append(c.References, ref)
-}
-
-// SetMod implements HclResource
-func (c *Control) SetMod(mod *Mod) {
-	c.Mod = mod
-	// add mod name to full name
-	c.FullName = fmt.Sprintf("%s.%s", mod.ShortName, c.FullName)
 }
 
 // GetMod implements HclResource

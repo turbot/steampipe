@@ -23,11 +23,11 @@ type Local struct {
 func NewLocal(name string, val cty.Value, declRange hcl.Range, mod *Mod) *Local {
 	l := &Local{
 		ShortName: name,
-		FullName:  fmt.Sprintf("local.%s", name),
+		FullName:  fmt.Sprintf("%s.local.%s", mod.ShortName, name),
 		Value:     val,
+		Mod:       mod,
 		DeclRange: declRange,
 	}
-	l.SetMod(mod)
 	return l
 }
 
@@ -41,18 +41,6 @@ func (l *Local) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
 func (l *Local) AddReference(*ResourceReference) {}
-
-// SetMod implements HclResource
-func (l *Local) SetMod(mod *Mod) {
-	l.Mod = mod
-	// add mod name to full name
-	l.FullName = fmt.Sprintf("%s.%s", mod.ShortName, l.FullName)
-}
-
-// GetMod implements HclResource
-func (l *Local) GetMod() *Mod {
-	return l.Mod
-}
 
 // CtyValue implements HclResource
 func (l *Local) CtyValue() (cty.Value, error) {

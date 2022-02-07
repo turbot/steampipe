@@ -28,8 +28,11 @@ type CheckRun struct {
 }
 
 func NewCheckRun(resource modconfig.ReportLeafNode, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*CheckRun, error) {
+	// ensure the tree node name is unique
+	name := executionTree.GetUniqueName(resource.Name())
+
 	r := &CheckRun{
-		Name:          resource.Name(),
+		Name:          name,
 		Title:         resource.GetTitle(),
 		Width:         resource.GetWidth(),
 		Path:          resource.GetPaths()[0],

@@ -46,20 +46,33 @@ type ReportContainer struct {
 	HclType string
 }
 
-func NewReportContainer(block *hcl.Block, mod *Mod, parent ModTreeItem) *ReportContainer {
-	shortName := GetAnonymousResourceShortName(block, parent)
+func NewReportContainer(block *hcl.Block, mod *Mod) *ReportContainer {
+	// TODO kai think about nested report???
+	shortName := GetAnonymousResourceShortName(block, mod)
 	c := &ReportContainer{
-		DeclRange:       block.DefRange,
 		HclType:         block.Type,
 		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.%s", block.Type, shortName),
+		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+		Mod:             mod,
+		DeclRange:       block.DefRange,
 	}
-	c.SetMod(mod)
 	c.SetAnonymous(block)
 
 	return c
 }
+
+//// SetMod implements HclResource
+//func (c *ReportContainer) SetMod(mod *Mod) {
+//	c.Mod = mod
+//
+//	// if this is a top level resource, and not a child, the resource names will already be set
+//	// - we need to update the full name to include the mod
+//	if c.UnqualifiedName != "" {
+//		// add mod name to full name
+//		c.FullName = fmt.Sprintf("%s.%s", mod.ShortName, c.UnqualifiedName)
+//	}
+//}
 
 func (c *ReportContainer) Equals(other *ReportContainer) bool {
 	diff := c.Diff(other)
@@ -106,18 +119,6 @@ func (c *ReportContainer) setBaseProperties() {
 // AddReference implements HclResource
 func (c *ReportContainer) AddReference(*ResourceReference) {
 	// TODO
-}
-
-// SetMod implements HclResource
-func (c *ReportContainer) SetMod(mod *Mod) {
-	c.Mod = mod
-
-	// if this is a top level resource, and not a child, the resource names will already be set
-	// - we need to update the full name to include the mod
-	if c.UnqualifiedName != "" {
-		// add mod name to full name
-		c.FullName = fmt.Sprintf("%s.%s", mod.ShortName, c.UnqualifiedName)
-	}
 }
 
 // GetMod implements HclResource

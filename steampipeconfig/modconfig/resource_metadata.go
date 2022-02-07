@@ -24,5 +24,3 @@ func (m *ResourceMetadata) SetMod(mod *Mod) {
 	m.ModName = mod.ShortName
 	m.ModFullName = mod.FullName
 }
-
-// TODO ADD PATH ltree

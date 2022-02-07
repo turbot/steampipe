@@ -35,15 +35,16 @@ type Variable struct {
 	UnqualifiedName string
 }
 
-func NewVariable(v *var_config.Variable) *Variable {
+func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 	return &Variable{
 		ShortName:       v.Name,
 		Description:     v.Description,
-		FullName:        fmt.Sprintf("var.%s", v.Name),
+		FullName:        fmt.Sprintf("%s.var.%s", mod.ShortName, v.Name),
 		UnqualifiedName: fmt.Sprintf("var.%s", v.Name),
 		Default:         v.Default,
 		Type:            v.Type,
 		ParsingMode:     v.ParsingMode,
+		Mod:             mod,
 
 		DeclRange: v.DeclRange,
 	}
@@ -67,13 +68,6 @@ func (v *Variable) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 
 // AddReference implements HclResource
 func (v *Variable) AddReference(*ResourceReference) {}
-
-// SetMod implements HclResource
-func (v *Variable) SetMod(mod *Mod) {
-	v.Mod = mod
-	// add mod name to full name
-	v.FullName = fmt.Sprintf("%s.%s", mod.ShortName, v.FullName)
-}
 
 // GetMod implements HclResource
 func (v *Variable) GetMod() *Mod {

@@ -44,15 +44,15 @@ type ReportHierarchy struct {
 	parents []ModTreeItem
 }
 
-func NewReportHierarchy(block *hcl.Block, mod *Mod, parent ModTreeItem) *ReportHierarchy {
-	shortName := GetAnonymousResourceShortName(block, parent)
+func NewReportHierarchy(block *hcl.Block, mod *Mod) *ReportHierarchy {
+	shortName := GetAnonymousResourceShortName(block, mod)
 	h := &ReportHierarchy{
-		DeclRange:       block.DefRange,
 		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.%s", block.Type, shortName),
+		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+		Mod:             mod,
+		DeclRange:       block.DefRange,
 	}
-	h.SetMod(mod)
 	h.SetAnonymous(block)
 
 	return h
@@ -114,12 +114,6 @@ func (h *ReportHierarchy) setBaseProperties() {
 
 // AddReference implements HclResource
 func (h *ReportHierarchy) AddReference(*ResourceReference) {}
-
-// SetMod implements HclResource
-func (h *ReportHierarchy) SetMod(mod *Mod) {
-	h.Mod = mod
-	h.FullName = fmt.Sprintf("%s.%s", h.Mod.ShortName, h.UnqualifiedName)
-}
 
 // GetMod implements HclResource
 func (h *ReportHierarchy) GetMod() *Mod {

@@ -1,5 +1,11 @@
 input "i1"{ }
 
+query "q1"{
+    sql = "select 1"
+    param "p1"{
+    }
+}
+
 report "r1"{
     input "i1"{ }
 
@@ -12,11 +18,11 @@ report "r1"{
 
 }
 
-query "q1"{
-    sql = "select 1"
-    param "p1"{
+report "r2"{
+    report "derived1" {
+        base = report.r1
+    }
+    report "derived2" {
+        base = report.r1
     }
 }
-report "r2"{
-        base = report.r1
- }

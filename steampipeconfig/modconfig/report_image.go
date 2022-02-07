@@ -33,15 +33,15 @@ type ReportImage struct {
 	parents []ModTreeItem
 }
 
-func NewReportImage(block *hcl.Block, mod *Mod, parent ModTreeItem) *ReportImage {
-	shortName := GetAnonymousResourceShortName(block, parent)
+func NewReportImage(block *hcl.Block, mod *Mod) *ReportImage {
+	shortName := GetAnonymousResourceShortName(block, mod)
 	i := &ReportImage{
-		DeclRange:       block.DefRange,
 		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.%s", block.Type, shortName),
+		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+		Mod:             mod,
+		DeclRange:       block.DefRange,
 	}
-	i.SetMod(mod)
 	i.SetAnonymous(block)
 	return i
 }
@@ -91,12 +91,6 @@ func (c *ReportImage) setBaseProperties() {
 
 // AddReference implements HclResource
 func (c *ReportImage) AddReference(*ResourceReference) {}
-
-// SetMod implements HclResource
-func (c *ReportImage) SetMod(mod *Mod) {
-	c.Mod = mod
-	c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
-}
 
 // GetMod implements HclResource
 func (c *ReportImage) GetMod() *Mod {

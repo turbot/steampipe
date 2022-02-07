@@ -32,8 +32,12 @@ type ReportContainerRun struct {
 
 func NewReportContainerRun(container *modconfig.ReportContainer, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*ReportContainerRun, error) {
 	children := container.GetChildren()
+
+	// ensure the tree node name is unique
+	name := executionTree.GetUniqueName(container.Name())
+
 	r := &ReportContainerRun{
-		Name:          container.Name(),
+		Name:          name,
 		NodeType:      container.HclType,
 		Path:          container.Paths[0],
 		executionTree: executionTree,

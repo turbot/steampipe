@@ -13,6 +13,8 @@ import (
 
 // ReportExecutionTree is a structure representing the control result hierarchy
 type ReportExecutionTree struct {
+	modconfig.UniqueNameProviderBase
+
 	Root        reportinterfaces.ReportNodeRun
 	client      db_common.Client
 	runs        map[string]reportinterfaces.ReportNodeRun

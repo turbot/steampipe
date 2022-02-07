@@ -47,11 +47,11 @@ func NewQuery(block *hcl.Block, mod *Mod) *Query {
 	shortName := block.Labels[0]
 	q := &Query{
 		ShortName:       shortName,
-		UnqualifiedName: fmt.Sprintf("query.%s", shortName),
+		UnqualifiedName: fmt.Sprintf("%s.query.%s", mod.ShortName, shortName),
 		FullName:        fmt.Sprintf("query.%s", shortName),
+		Mod:             mod,
 		DeclRange:       block.DefRange,
 	}
-	q.SetMod(mod)
 	return q
 }
 
@@ -122,13 +122,13 @@ func (q *Query) String() string {
 	return res
 }
 
-func QueryFromFile(modPath, filePath string) (MappableResource, []byte, error) {
+func QueryFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error) {
 	q := &Query{}
-	return q.InitialiseFromFile(modPath, filePath)
+	return q.InitialiseFromFile(modPath, filePath, mod)
 }
 
 // InitialiseFromFile implements MappableResource
-func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error) {
+func (q *Query) InitialiseFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error) {
 	// only valid for sql files
 	if filepath.Ext(filePath) != constants.SqlExtension {
 		return nil, nil, fmt.Errorf("Query.InitialiseFromFile must be called with .sql files only - filepath: '%s'", filePath)
@@ -151,8 +151,9 @@ func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 	}
 	q.ShortName = name
 	q.UnqualifiedName = fmt.Sprintf("query.%s", name)
-	q.FullName = fmt.Sprintf("query.%s", name)
+	q.FullName = fmt.Sprintf("%s.query.%s", mod.ShortName, name)
 	q.SQL = &sql
+	q.Mod = mod
 	return q, sqlBytes, nil
 }
 
@@ -167,13 +168,6 @@ func (q *Query) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 // AddReference implements HclResource
 func (q *Query) AddReference(ref *ResourceReference) {
 	q.References = append(q.References, ref)
-}
-
-// SetMod implements HclResource
-func (q *Query) SetMod(mod *Mod) {
-	q.Mod = mod
-	// add mod name to full name
-	q.FullName = fmt.Sprintf("%s.%s", mod.ShortName, q.FullName)
 }
 
 // GetMod implements HclResource

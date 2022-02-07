@@ -12,22 +12,25 @@ import (
 type LeafRun struct {
 	Name string `json:"name"`
 
-	Title         string                      `json:"title,omitempty"`
-	Width         int                         `json:"width,omitempty"`
-	SQL           string                      `json:"sql,omitempty"`
-	Data          *LeafData                   `json:"data,omitempty"`
+	Title         string                   `json:"title,omitempty"`
+	Width         int                      `json:"width,omitempty"`
+	SQL           string                   `json:"sql,omitempty"`
+	Data          *LeafData                `json:"data,omitempty"`
 	Error         error                    `json:"error,omitempty"`
 	ReportNode    modconfig.ReportLeafNode `json:"properties"`
 	NodeType      string                   `json:"node_type"`
-	Path          []string                    `json:"-"`
+	Path          []string                 `json:"-"`
 	parent        reportinterfaces.ReportNodeParent
 	runStatus     reportinterfaces.ReportRunStatus
 	executionTree *ReportExecutionTree
 }
 
 func NewLeafRun(resource modconfig.ReportLeafNode, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*LeafRun, error) {
+	// ensure the tree node name is unique
+	name := executionTree.GetUniqueName(resource.Name())
+
 	r := &LeafRun{
-		Name:          resource.Name(),
+		Name:          name,
 		Title:         resource.GetTitle(),
 		Width:         resource.GetWidth(),
 		SQL:           resource.GetSQL(),

@@ -10,9 +10,8 @@ import (
 type MappableResource interface {
 	// InitialiseFromFile creates a mappable resource from a file path
 	// It returns the resource, and the raw file data
-	InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error)
+	InitialiseFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error)
 	Name() string
-	SetMod(*Mod)
 	GetMetadata() *ResourceMetadata
 	SetMetadata(*ResourceMetadata)
 }
@@ -38,13 +37,10 @@ type HclResource interface {
 	// implemented by HclResourceBase
 	AddRuntimeDependencies(*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency
-
 	Name() string
 	CtyValue() (cty.Value, error)
 	OnDecoded(*hcl.Block) hcl.Diagnostics
 	AddReference(ref *ResourceReference)
-	SetMod(*Mod)
-	GetMod() *Mod
 	GetDeclRange() *hcl.Range
 }
 
@@ -90,6 +86,6 @@ type ResourceMapsProvider interface {
 	GetResourceMaps() *WorkspaceResourceMaps
 }
 
-type ReportNode interface {
-	CloneWithNewParent(*ReportContainer) ModTreeItem
+type UniqueNameProvider interface {
+	GetUniqueName(string) string
 }
