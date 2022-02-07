@@ -381,12 +381,12 @@ jobs:
 
   clean_up:
     # let's clean up the artifacts.
-    # incase this step isn't reached,
+    # in case this step isn't reached,
     # artifacts automatically expire after 90 days anyway
     # refer:
     #   https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts#downloading-and-deleting-artifacts-after-a-workflow-run-is-complete
     name: Clean Up Artifacts
-    needs: create_release
+    needs: build_and_release_cli
     runs-on: ubuntu-latest
     steps:
       - name: Clean up Linux Build
