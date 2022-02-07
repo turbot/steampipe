@@ -41,6 +41,8 @@ jobs:
 
       - name: Verify
         run: |-
+          gcloud components install beta
+          gcloud components install alpha --quiet
           [ $(gcloud beta artifacts docker tags list $CORE_REPO/$ASSET_IMAGE_NAME  --project $PROJECT_ID  --format=json | jq 'map(select(.tag | endswith("$VERSION"))) | length') -eq 0 ]
       
       - name: NEXT
