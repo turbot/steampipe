@@ -44,13 +44,15 @@ type Benchmark struct {
 	parents []ModTreeItem
 }
 
-func NewBenchmark(block *hcl.Block) *Benchmark {
-	return &Benchmark{
+func NewBenchmark(block *hcl.Block, mod *Mod, parent HclResource) *Benchmark {
+	benchmark := &Benchmark{
 		ShortName:       block.Labels[0],
 		FullName:        fmt.Sprintf("benchmark.%s", block.Labels[0]),
 		UnqualifiedName: fmt.Sprintf("benchmark.%s", block.Labels[0]),
 		DeclRange:       block.DefRange,
 	}
+	benchmark.SetMod(mod)
+	return benchmark
 }
 
 func (b *Benchmark) Equals(other *Benchmark) bool {

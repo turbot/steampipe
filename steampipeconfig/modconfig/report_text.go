@@ -33,13 +33,15 @@ type ReportText struct {
 	parents []ModTreeItem
 }
 
-func NewReportText(block *hcl.Block) *ReportText {
-	return &ReportText{
+func NewReportText(block *hcl.Block, mod *Mod, parent HclResource) *ReportText {
+	t := &ReportText{
 		DeclRange:       block.DefRange,
 		ShortName:       block.Labels[0],
 		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	t.SetMod(mod)
+	return t
 }
 
 func (t *ReportText) Equals(other *ReportText) bool {

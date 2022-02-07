@@ -20,14 +20,14 @@ type CheckRun struct {
 	Error                error                         `json:"error,omitempty"`
 	NodeType             string                        `json:"node_type"`
 	ControlExecutionTree *controlexecute.ExecutionTree `json:"execution_tree"`
-	ReportNode           modconfig.ReportingLeafNode   `json:"-"`
+	ReportNode           modconfig.ReportLeafNode      `json:"-"`
 	Path                 []string                      `json:"-"`
 	parent               reportinterfaces.ReportNodeParent
 	runStatus            reportinterfaces.ReportRunStatus
 	executionTree        *ReportExecutionTree
 }
 
-func NewCheckRun(resource modconfig.ReportingLeafNode, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*CheckRun, error) {
+func NewCheckRun(resource modconfig.ReportLeafNode, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*CheckRun, error) {
 	r := &CheckRun{
 		Name:          resource.Name(),
 		Title:         resource.GetTitle(),

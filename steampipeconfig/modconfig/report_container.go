@@ -46,14 +46,20 @@ type ReportContainer struct {
 	HclType string
 }
 
-func NewReportContainer(block *hcl.Block) *ReportContainer {
-	return &ReportContainer{
+func (c *ReportContainer) GetAnonymousChildName(t string) string {
+	//TODO KAI
+}
+
+func NewReportContainer(block *hcl.Block, mod *Mod, parent HclResource) *ReportContainer {
+	c := &ReportContainer{
 		DeclRange:       block.DefRange,
 		HclType:         block.Type,
 		ShortName:       block.Labels[0],
 		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	c.SetMod(mod)
+	return c
 }
 
 func (c *ReportContainer) Equals(other *ReportContainer) bool {
@@ -103,7 +109,9 @@ func (c *ReportContainer) copyChildrenFromBase() {
 	for _, child := range c.Base.GetChildren(){
 		// generate new name if anonymous
 		// add to mod
-		add to our children
+		cloned := child.(ReportNode).CloneWithNewParent(c)
+		c.children = append(c.children, cloned)
+		c.ChildNames = append(c.ChildNames, cloned.Name())
 	}
 	c.ChildNames = names
 }

@@ -41,7 +41,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			Detail:   err.Error()})
 	}
 	for _, block := range blocks {
-		resources, res := decodeBlock(block, runCtx)
+		resources, res := decodeBlock(block, runCtx.CurrentMod, runCtx)
 		if !res.Success() {
 			diags = append(diags, res.Diags...)
 			continue
@@ -63,7 +63,7 @@ func addResourcesToMod(runCtx *RunContext, resources ...modconfig.HclResource) h
 	return diags
 }
 
-func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource, *decodeResult) {
+func decodeBlock(block *hcl.Block, parent modconfig.HclResource, runCtx *RunContext) ([]modconfig.HclResource, *decodeResult) {
 	var resource modconfig.HclResource
 	var resources []modconfig.HclResource
 	var res = &decodeResult{}
@@ -72,15 +72,6 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 	if !runCtx.ShouldIncludeBlock(block) {
 		return nil, res
 	}
-	// if this block is anonymous, give it a unique name
-	//WE NEED TO KEEP STATE in RUN CTX AS BEFORE FROM THE FIRST PARSE TO KNOW IF IT IS ANONYMOUS
-	anonymousBlock := isBlockAnonymous(block)
-	if anonymousBlock {
-		// replace the labels
-		block.Labels = []string{runCtx.GetAnonymousResourceName(block)}
-	}
-	runCtx.PushDecodeBlock(block)
-	defer runCtx.PopDecodeBlock()
 
 	// check name is valid
 	diags := validateName(block)
@@ -103,7 +94,7 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 				resources = append(resources, local)
 			}
 		case modconfig.BlockTypeContainer, modconfig.BlockTypeReport:
-			resource, res = decodeReportContainer(block, runCtx)
+			resource, res = decodeReportContainer(block, parent, runCtx)
 			resources = append(resources, resource)
 		case modconfig.BlockTypeVariable:
 			resource, res = decodeVariable(block, runCtx)
@@ -113,7 +104,7 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 			resources = append(resources, resource)
 		default:
 			// all other blocks are treated the same:
-			resource, res = decodeResource(block, runCtx)
+			resource, res = decodeResource(block, parent, runCtx)
 			resources = append(resources, resource)
 		}
 	}
@@ -123,7 +114,7 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 		// handle the result
 		// - if successful, add resource to mod and variables maps
 		// - if there are dependencies, add them to run context
-		handleDecodeResult(resource, res, block, anonymousBlock, runCtx)
+		handleDecodeResult(resource, res, block, runCtx)
 
 	}
 
@@ -135,10 +126,10 @@ func isBlockAnonymous(block *hcl.Block) bool {
 }
 
 // generic decode function for any resource we do not have custom decode logic for
-func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
+func decodeResource(block *hcl.Block, parent modconfig.HclResource, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
 	res := &decodeResult{}
 	// get shell resource
-	resource, diags := resourceForBlock(block, runCtx)
+	resource, diags := resourceForBlock(block, parent, runCtx)
 	res.handleDecodeDiags(nil, nil, diags)
 	if diags.HasErrors() {
 		return nil, res
@@ -167,36 +158,37 @@ func getBodyContent(block *hcl.Block, resource modconfig.HclResource) (*hcl.Body
 }
 
 // return a shell resource for the given block
-func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, hcl.Diagnostics) {
+func resourceForBlock(block *hcl.Block, parent modconfig.HclResource, runCtx *RunContext) (modconfig.HclResource, hcl.Diagnostics) {
 	var resource modconfig.HclResource
+	// runCtx already contains the current mod
+	mod := runCtx.CurrentMod
 	switch block.Type {
 	case modconfig.BlockTypeMod:
-		// runCtx already contains the current mod
-		resource = runCtx.CurrentMod
+		resource = mod
 	case modconfig.BlockTypeQuery:
-		resource = modconfig.NewQuery(block)
+		resource = modconfig.NewQuery(block, mod)
 	case modconfig.BlockTypeControl:
-		resource = modconfig.NewControl(block)
+		resource = modconfig.NewControl(block, mod, parent)
 	case modconfig.BlockTypeBenchmark:
-		resource = modconfig.NewBenchmark(block)
+		resource = modconfig.NewBenchmark(block, mod, parent)
 	case modconfig.BlockTypeReport:
-		resource = modconfig.NewReportContainer(block)
+		resource = modconfig.NewReportContainer(block, mod, parent)
 	case modconfig.BlockTypeContainer:
-		resource = modconfig.NewReportContainer(block)
-	case modconfig.BlockTypeCard:
-		resource = modconfig.NewReportCard(block)
+		resource = modconfig.NewReportContainer(block, mod, parent)
 	case modconfig.BlockTypeChart:
-		resource = modconfig.NewReportChart(block)
+		resource = modconfig.NewReportChart(block, mod, parent)
+	case modconfig.BlockTypeCard:
+		resource = modconfig.NewReportCard(block, mod, parent)
 	case modconfig.BlockTypeHierarchy:
-		resource = modconfig.NewReportHierarchy(block)
+		resource = modconfig.NewReportHierarchy(block, mod, parent)
 	case modconfig.BlockTypeImage:
-		resource = modconfig.NewReportImage(block)
+		resource = modconfig.NewReportImage(block, mod, parent)
 	case modconfig.BlockTypeInput:
-		resource = modconfig.NewReportInput(block)
+		resource = modconfig.NewReportInput(block, mod, parent)
 	case modconfig.BlockTypeTable:
-		resource = modconfig.NewReportTable(block)
+		resource = modconfig.NewReportTable(block, mod, parent)
 	case modconfig.BlockTypeText:
-		resource = modconfig.NewReportText(block)
+		resource = modconfig.NewReportText(block, mod, parent)
 	default:
 		return nil, hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -234,7 +226,7 @@ func decodeLocals(block *hcl.Block, runCtx *RunContext) ([]*modconfig.Local, *de
 		res.handleDecodeDiags(nil, nil, diags)
 
 		// add to our list
-		locals = append(locals, modconfig.NewLocal(name, val, attr.Range))
+		locals = append(locals, modconfig.NewLocal(name, val, attr.Range, runCtx.CurrentMod))
 	}
 	return locals, res
 }
@@ -405,9 +397,9 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName strin
 	return args, diags
 }
 
-func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContainer, *decodeResult) {
+func decodeReportContainer(block *hcl.Block, parent modconfig.HclResource, runCtx *RunContext) (*modconfig.ReportContainer, *decodeResult) {
 	res := &decodeResult{}
-	reportContainer := modconfig.NewReportContainer(block)
+	reportContainer := modconfig.NewReportContainer(block, runCtx.CurrentMod, nil)
 
 	// do a partial decode using QueryProviderBlockSchema
 	// this will be used to pull out attributes which need manual decoding
@@ -466,7 +458,7 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, reportContainer *modc
 	var inputs []*modconfig.ReportInput
 	for _, b := range content.Blocks {
 		// use generic block decoding
-		resources, blockRes := decodeBlock(b, runCtx)
+		resources, blockRes := decodeBlock(b, reportContainer, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue
@@ -478,8 +470,6 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, reportContainer *modc
 				input := resource.(*modconfig.ReportInput)
 				// add report name to input
 				input.SetReportContainer(reportContainer)
-				// THEN set mod on the input
-				resource.SetMod(runCtx.CurrentMod)
 
 				inputs = append(inputs, input)
 
@@ -514,7 +504,7 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, reportContainer *modc
 func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark, *decodeResult) {
 	res := &decodeResult{}
 
-	benchmark := modconfig.NewBenchmark(block)
+	benchmark := modconfig.NewBenchmark(block, runCtx.CurrentMod, nil)
 	content, diags := block.Body.Content(BenchmarkBlockSchema)
 	res.handleDecodeDiags(content, benchmark, diags)
 
@@ -571,12 +561,8 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 // if decode was successful:
 // - generate and set resource metadata
 // - add resource to RunContext (which adds it to the mod)handleDecodeResult
-func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, anonymousResource bool, runCtx *RunContext) {
+func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) {
 	if res.Success() {
-		// first, set the mod on the resource
-		if _, ok := resource.(*modconfig.Mod); !ok {
-			resource.SetMod(runCtx.CurrentMod)
-		}
 
 		// call post decode hook
 		// NOTE: must do this BEFORE adding resource to run context to ensure we respect the base property
@@ -590,11 +576,11 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 		// if resource supports metadata, save it
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
 			body := block.Body.(*hclsyntax.Body)
-			moreDiags = addResourceMetadata(resourceWithMetadata, body.SrcRange, anonymousResource, runCtx)
+			moreDiags = addResourceMetadata(resourceWithMetadata, body.SrcRange, runCtx)
 			res.addDiags(moreDiags)
 		}
 
-		if !anonymousResource {
+		if !resource.IsAnonymous() {
 			// if resource is NOT anonymous, add into the run context
 			moreDiags = runCtx.AddResource(resource)
 			res.addDiags(moreDiags)

@@ -33,13 +33,15 @@ type ReportImage struct {
 	parents []ModTreeItem
 }
 
-func NewReportImage(block *hcl.Block) *ReportImage {
-	return &ReportImage{
+func NewReportImage(block *hcl.Block, mod *Mod, parent HclResource) *ReportImage {
+	i := &ReportImage{
 		DeclRange:       block.DefRange,
 		ShortName:       block.Labels[0],
 		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	i.SetMod(mod)
+	return i
 }
 
 func (c *ReportImage) Equals(other *ReportImage) bool {

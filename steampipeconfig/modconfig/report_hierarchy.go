@@ -44,13 +44,15 @@ type ReportHierarchy struct {
 	parents []ModTreeItem
 }
 
-func NewReportHierarchy(block *hcl.Block) *ReportHierarchy {
-	return &ReportHierarchy{
+func NewReportHierarchy(block *hcl.Block, mod *Mod, parent HclResource) *ReportHierarchy {
+	h := &ReportHierarchy{
 		DeclRange:       block.DefRange,
 		ShortName:       block.Labels[0],
 		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	h.SetMod(mod)
+	return h
 }
 
 func (h *ReportHierarchy) Equals(other *ReportHierarchy) bool {
@@ -240,7 +242,7 @@ func (h *ReportHierarchy) GetArgs() *QueryArgs {
 	return h.Args
 }
 
-// GetSQL implements QueryProvider, ReportingLeafNode
+// GetSQL implements QueryProvider, ReportLeafNode
 func (h *ReportHierarchy) GetSQL() string {
 	return typehelpers.SafeString(h.SQL)
 }

@@ -52,6 +52,7 @@ type ResourceWithMetadata interface {
 	Name() string
 	GetMetadata() *ResourceMetadata
 	SetMetadata(metadata *ResourceMetadata)
+	SetAnonymous(anonymous bool)
 	IsAnonymous() bool
 }
 
@@ -73,8 +74,8 @@ type ParameterisedReportNode interface {
 	GetArgs() *QueryArgs
 }
 
-// ReportingLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
-type ReportingLeafNode interface {
+// ReportLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
+type ReportLeafNode interface {
 	Name() string
 	GetUnqualifiedName() string
 	GetTitle() string
@@ -86,4 +87,8 @@ type ReportingLeafNode interface {
 
 type ResourceMapsProvider interface {
 	GetResourceMaps() *WorkspaceResourceMaps
+}
+
+type ReportNode interface {
+	CloneWithNewParent( *ReportContainer)ModTreeItem
 }

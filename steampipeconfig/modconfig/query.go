@@ -43,13 +43,14 @@ type Query struct {
 	UnqualifiedName       string
 }
 
-func NewQuery(block *hcl.Block) *Query {
+func NewQuery(block *hcl.Block, mod *Mod) *Query {
 	q := &Query{
 		ShortName:       block.Labels[0],
 		UnqualifiedName: fmt.Sprintf("query.%s", block.Labels[0]),
 		FullName:        fmt.Sprintf("query.%s", block.Labels[0]),
 		DeclRange:       block.DefRange,
 	}
+	q.SetMod(mod)
 	return q
 }
 
@@ -194,7 +195,7 @@ func (q *Query) GetArgs() *QueryArgs {
 	return nil
 }
 
-// GetSQL implements QueryProvider, ReportingLeafNode
+// GetSQL implements QueryProvider, ReportLeafNode
 func (q *Query) GetSQL() string {
 	return typehelpers.SafeString(q.SQL)
 }

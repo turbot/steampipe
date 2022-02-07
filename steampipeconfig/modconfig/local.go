@@ -20,13 +20,15 @@ type Local struct {
 	Mod       *Mod `cty:"mod"`
 }
 
-func NewLocal(name string, val cty.Value, declRange hcl.Range) *Local {
-	return &Local{
+func NewLocal(name string, val cty.Value, declRange hcl.Range, mod *Mod) *Local {
+	l := &Local{
 		ShortName: name,
 		FullName:  fmt.Sprintf("local.%s", name),
 		Value:     val,
 		DeclRange: declRange,
 	}
+	l.SetMod(mod)
+	return l
 }
 
 // Name implements HclResource, ResourceWithMetadata

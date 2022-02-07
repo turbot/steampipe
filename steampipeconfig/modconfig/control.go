@@ -49,14 +49,18 @@ type Control struct {
 	parents []ModTreeItem
 }
 
-func NewControl(block *hcl.Block) *Control {
+func NewControl(block *hcl.Block, mod *Mod, parent HclResource) *Control {
+	shortName := GetAnonymousResourceShortName(block, parent)
 	control := &Control{
 		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("control.%s", block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("control.%s", block.Labels[0]),
+		FullName:        fmt.Sprintf("control.%s", shortName),
+		UnqualifiedName: fmt.Sprintf("control.%s", shortName),
 		DeclRange:       block.DefRange,
 		Args:            NewQueryArgs(),
 	}
+	control.SetMod(mod)
+	control.SetAnonymous(block)
+
 	return control
 }
 
@@ -311,7 +315,7 @@ func (c *Control) GetArgs() *QueryArgs {
 	return c.Args
 }
 
-// GetSQL implements QueryProvider, ReportingLeafNode
+// GetSQL implements QueryProvider, ReportLeafNode
 func (c *Control) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)
 }

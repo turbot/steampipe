@@ -36,13 +36,16 @@ type ReportInput struct {
 	reportContainer *ReportContainer
 }
 
-func NewReportInput(block *hcl.Block) *ReportInput {
-	return &ReportInput{
+func NewReportInput(block *hcl.Block, mod *Mod, parent HclResource) *ReportInput {
+	i := &ReportInput{
 		DeclRange:       block.DefRange,
 		ShortName:       block.Labels[0],
 		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	// TODO KAI GET RID OF SET MOD
+	i.SetMod(mod)
+	return i
 }
 
 func (c *ReportInput) Equals(other *ReportInput) bool {
@@ -92,11 +95,7 @@ func (c *ReportInput) AddReference(*ResourceReference) {}
 // SetMod implements HclResource
 func (c *ReportInput) SetMod(mod *Mod) {
 	c.Mod = mod
-	if c.reportContainer != nil {
-		c.FullName = fmt.Sprintf("%s.%s.%s", c.Mod.ShortName, c.reportContainer.UnqualifiedName, c.UnqualifiedName)
-	} else {
-		c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
-	}
+	c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
 }
 
 // GetMod implements HclResource
@@ -206,4 +205,6 @@ func (c *ReportInput) GetUnqualifiedName() string {
 // SetReportContainer sets the parent report container
 func (c *ReportInput) SetReportContainer(reportContainer *ReportContainer) {
 	c.reportContainer = reportContainer
+	// update the full name
+	c.FullName = fmt.Sprintf("%s.%s.%s", c.Mod.ShortName, c.reportContainer.UnqualifiedName, c.UnqualifiedName)
 }

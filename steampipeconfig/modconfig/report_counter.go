@@ -43,13 +43,15 @@ type ReportCounter struct {
 	parents []ModTreeItem
 }
 
-func NewReportCounter(block *hcl.Block) *ReportCounter {
-	return &ReportCounter{
+func NewReportCounter(block *hcl.Block, mod *Mod, parent HclResource) *ReportCounter {
+	c := &ReportCounter{
 		DeclRange:       block.DefRange,
 		ShortName:       block.Labels[0],
 		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	c.SetMod(mod)
+	return c
 }
 
 func (c *ReportCounter) Equals(other *ReportCounter) bool {
@@ -222,7 +224,7 @@ func (c *ReportCounter) GetArgs() *QueryArgs {
 	return c.Args
 }
 
-// GetSQL implements QueryProvider, ReportingLeafNode
+// GetSQL implements QueryProvider, ReportLeafNode
 func (c *ReportCounter) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)
 }

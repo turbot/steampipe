@@ -16,16 +16,16 @@ type LeafRun struct {
 	Width         int                         `json:"width,omitempty"`
 	SQL           string                      `json:"sql,omitempty"`
 	Data          *LeafData                   `json:"data,omitempty"`
-	Error         error                       `json:"error,omitempty"`
-	ReportNode    modconfig.ReportingLeafNode `json:"properties"`
-	NodeType      string                      `json:"node_type"`
+	Error         error                    `json:"error,omitempty"`
+	ReportNode    modconfig.ReportLeafNode `json:"properties"`
+	NodeType      string                   `json:"node_type"`
 	Path          []string                    `json:"-"`
 	parent        reportinterfaces.ReportNodeParent
 	runStatus     reportinterfaces.ReportRunStatus
 	executionTree *ReportExecutionTree
 }
 
-func NewLeafRun(resource modconfig.ReportingLeafNode, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*LeafRun, error) {
+func NewLeafRun(resource modconfig.ReportLeafNode, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*LeafRun, error) {
 	r := &LeafRun{
 		Name:          resource.Name(),
 		Title:         resource.GetTitle(),

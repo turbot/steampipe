@@ -63,16 +63,16 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 				return nil, err
 			}
 		case *modconfig.Benchmark, *modconfig.Control:
-			childRun, err = NewCheckRun(i.(modconfig.ReportingLeafNode), r, executionTree)
+			childRun, err = NewCheckRun(i.(modconfig.ReportLeafNode), r, executionTree)
 			if err != nil {
 				return nil, err
 			}
 
 		default:
-			// ensure this item is a ReportingLeafNode
-			leafNode, ok := i.(modconfig.ReportingLeafNode)
+			// ensure this item is a ReportLeafNode
+			leafNode, ok := i.(modconfig.ReportLeafNode)
 			if !ok {
-				return nil, fmt.Errorf("child %s does not implement ReportingLeafNode", i.Name())
+				return nil, fmt.Errorf("child %s does not implement ReportLeafNode", i.Name())
 			}
 
 			childRun, err = NewLeafRun(leafNode, r, executionTree)

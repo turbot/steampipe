@@ -42,13 +42,15 @@ type ReportTable struct {
 	parents []ModTreeItem
 }
 
-func NewReportTable(block *hcl.Block) *ReportTable {
-	return &ReportTable{
+func NewReportTable(block *hcl.Block, mod *Mod, parent HclResource) *ReportTable {
+	t := &ReportTable{
 		DeclRange:       block.DefRange,
 		ShortName:       block.Labels[0],
 		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	t.SetMod(mod)
+	return t
 }
 
 func (t *ReportTable) Equals(other *ReportTable) bool {
@@ -227,7 +229,7 @@ func (t *ReportTable) GetArgs() *QueryArgs {
 	return t.Args
 }
 
-// GetSQL implements QueryProvider, ReportingLeafNode
+// GetSQL implements QueryProvider, ReportLeafNode
 func (t *ReportTable) GetSQL() string {
 	return typehelpers.SafeString(t.SQL)
 }

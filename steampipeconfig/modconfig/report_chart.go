@@ -48,13 +48,15 @@ type ReportChart struct {
 	parents []ModTreeItem
 }
 
-func NewReportChart(block *hcl.Block) *ReportChart {
-	return &ReportChart{
+func NewReportChart(block *hcl.Block, mod *Mod, parent HclResource) *ReportChart {
+	c := &ReportChart{
 		DeclRange:       block.DefRange,
 		ShortName:       block.Labels[0],
 		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	c.SetMod(mod)
+	return c
 }
 
 func (c *ReportChart) Equals(other *ReportChart) bool {
@@ -284,7 +286,7 @@ func (c *ReportChart) GetArgs() *QueryArgs {
 	return c.Args
 }
 
-// GetSQL implements QueryProvider, ReportingLeafNode
+// GetSQL implements QueryProvider, ReportLeafNode
 func (c *ReportChart) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)
 }
