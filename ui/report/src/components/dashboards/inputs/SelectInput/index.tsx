@@ -23,7 +23,6 @@ const SelectInput = (props: SelectInputProps) => {
   const [, setRandomVal] = useState(0);
   const { theme, wrapperRef } = useTheme();
   const options: SelectOption[] = useMemo(() => {
-    console.log(props.data);
     if (!props.data || !props.data.columns || !props.data.rows) {
       return [];
     }
