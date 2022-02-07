@@ -67,6 +67,9 @@ const getCommonBaseOptionsForChartType = (
       return {
         legend: {
           show: series ? series.length > 1 : false,
+          textStyle: {
+            color: themeColors.foreground
+          }
         },
         // Declare an x-axis (category axis).
         // The category map the first row in the dataset by default.
@@ -94,6 +97,9 @@ const getCommonBaseOptionsForChartType = (
       return {
         legend: {
           show: series ? series.length > 1 : false,
+          textStyle: {
+            color: themeColors.foreground
+          }
         },
         // Declare an x-axis (category axis).
         // The category map the first row in the dataset by default.
@@ -120,12 +126,18 @@ const getCommonBaseOptionsForChartType = (
       return {
         legend: {
           show: false,
+          textStyle: {
+            color: themeColors.foreground
+          }
         },
       };
     case "donut":
       return {
         legend: {
           show: false,
+          textStyle: {
+            color: themeColors.foreground
+          }
         },
       };
     default:
@@ -320,6 +332,10 @@ const getSeriesForChartType = (
             ? {}
             : { stack: "total" }),
           itemStyle: { color: seriesColor },
+          // label: {
+          //   show: true,
+          //   position: 'outside'
+          // },
         });
         break;
       case "donut":
