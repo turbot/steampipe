@@ -30,7 +30,7 @@ type ReportChart struct {
 	SeriesList ReportChartSeriesList         `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
 	Axes       *ReportChartAxes              `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
 	Grouping   *string                       `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
-	Transform  *string               `cty:"transform" hcl:"transform" json:"transform,omitempty"`
+	Transform  *string                       `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 	Series     map[string]*ReportChartSeries `cty:"series" json:"series"`
 
 	// QueryProvider
