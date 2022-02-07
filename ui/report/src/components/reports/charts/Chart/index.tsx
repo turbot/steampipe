@@ -538,4 +538,4 @@ const RenderChart = (props: ChartDefinition) => {
 
 export default ChartWrapper;
 
-export { buildChartOptions, Chart, RenderChart };
+export { Chart, RenderChart };
