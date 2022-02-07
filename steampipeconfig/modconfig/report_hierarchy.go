@@ -44,14 +44,17 @@ type ReportHierarchy struct {
 	parents []ModTreeItem
 }
 
-func NewReportHierarchy(block *hcl.Block, mod *Mod, parent HclResource) *ReportHierarchy {
+func NewReportHierarchy(block *hcl.Block, mod *Mod, parent ModTreeItem) *ReportHierarchy {
+	shortName := GetAnonymousResourceShortName(block, parent)
 	h := &ReportHierarchy{
 		DeclRange:       block.DefRange,
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.%s", block.Type, shortName),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 	}
 	h.SetMod(mod)
+	h.SetAnonymous(block)
+
 	return h
 }
 
@@ -227,7 +230,7 @@ func (h *ReportHierarchy) GetWidth() int {
 	return *h.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (h *ReportHierarchy) GetUnqualifiedName() string {
 	return h.UnqualifiedName
 }

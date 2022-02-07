@@ -48,14 +48,17 @@ type ReportChart struct {
 	parents []ModTreeItem
 }
 
-func NewReportChart(block *hcl.Block, mod *Mod, parent HclResource) *ReportChart {
+func NewReportChart(block *hcl.Block, mod *Mod, parent ModTreeItem) *ReportChart {
+	shortName := GetAnonymousResourceShortName(block, parent)
 	c := &ReportChart{
 		DeclRange:       block.DefRange,
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.%s", block.Type, shortName),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 	}
 	c.SetMod(mod)
+	c.SetAnonymous(block)
+
 	return c
 }
 
@@ -271,7 +274,7 @@ func (c *ReportChart) GetWidth() int {
 	return *c.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (c *ReportChart) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }

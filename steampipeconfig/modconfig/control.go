@@ -49,7 +49,7 @@ type Control struct {
 	parents []ModTreeItem
 }
 
-func NewControl(block *hcl.Block, mod *Mod, parent HclResource) *Control {
+func NewControl(block *hcl.Block, mod *Mod, parent ModTreeItem) *Control {
 	shortName := GetAnonymousResourceShortName(block, parent)
 	control := &Control{
 		ShortName:       block.Labels[0],
@@ -338,7 +338,7 @@ func (c *Control) GetWidth() int {
 	return *c.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (c *Control) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }

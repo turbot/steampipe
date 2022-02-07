@@ -43,14 +43,17 @@ type ReportCounter struct {
 	parents []ModTreeItem
 }
 
-func NewReportCounter(block *hcl.Block, mod *Mod, parent HclResource) *ReportCounter {
+func NewReportCounter(block *hcl.Block, mod *Mod, parent ModTreeItem) *ReportCounter {
+	shortName := GetAnonymousResourceShortName(block, parent)
 	c := &ReportCounter{
 		DeclRange:       block.DefRange,
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.%s", block.Type, shortName),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 	}
 	c.SetMod(mod)
+	c.SetAnonymous(block)
+
 	return c
 }
 
@@ -209,7 +212,7 @@ func (c *ReportCounter) GetWidth() int {
 	return *c.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (c *ReportCounter) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }

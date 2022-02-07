@@ -46,19 +46,18 @@ type ReportContainer struct {
 	HclType string
 }
 
-func (c *ReportContainer) GetAnonymousChildName(t string) string {
-	//TODO KAI
-}
-
-func NewReportContainer(block *hcl.Block, mod *Mod, parent HclResource) *ReportContainer {
+func NewReportContainer(block *hcl.Block, mod *Mod, parent ModTreeItem) *ReportContainer {
+	shortName := GetAnonymousResourceShortName(block, parent)
 	c := &ReportContainer{
 		DeclRange:       block.DefRange,
 		HclType:         block.Type,
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.%s", block.Type, shortName),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 	}
 	c.SetMod(mod)
+	c.SetAnonymous(block)
+
 	return c
 }
 
@@ -95,25 +94,13 @@ func (c *ReportContainer) setBaseProperties() {
 		c.Width = c.Base.Width
 	}
 	if len(c.children) == 0 {
-		c.copyChildrenFromBase()
+		c.children = c.Base.children
+		c.ChildNames = c.Base.ChildNames
 	}
 	if len(c.Inputs) == 0 {
 		c.Inputs = c.Base.Inputs
 		c.setInputMap()
 	}
-
-}
-
-func (c *ReportContainer) copyChildrenFromBase() {
-	var names []string
-	for _, child := range c.Base.GetChildren(){
-		// generate new name if anonymous
-		// add to mod
-		cloned := child.(ReportNode).CloneWithNewParent(c)
-		c.children = append(c.children, cloned)
-		c.ChildNames = append(c.ChildNames, cloned.Name())
-	}
-	c.ChildNames = names
 }
 
 // AddReference implements HclResource
@@ -227,7 +214,7 @@ func (c *ReportContainer) SetChildren(children []ModTreeItem) {
 	}
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (c *ReportContainer) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }

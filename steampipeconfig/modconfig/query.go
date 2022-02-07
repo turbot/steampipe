@@ -44,10 +44,11 @@ type Query struct {
 }
 
 func NewQuery(block *hcl.Block, mod *Mod) *Query {
+	shortName := block.Labels[0]
 	q := &Query{
-		ShortName:       block.Labels[0],
-		UnqualifiedName: fmt.Sprintf("query.%s", block.Labels[0]),
-		FullName:        fmt.Sprintf("query.%s", block.Labels[0]),
+		ShortName:       shortName,
+		UnqualifiedName: fmt.Sprintf("query.%s", shortName),
+		FullName:        fmt.Sprintf("query.%s", shortName),
 		DeclRange:       block.DefRange,
 	}
 	q.SetMod(mod)

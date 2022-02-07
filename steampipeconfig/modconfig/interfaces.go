@@ -23,6 +23,7 @@ type ModTreeItem interface {
 	AddParent(ModTreeItem) error
 	GetChildren() []ModTreeItem
 	Name() string
+	GetUnqualifiedName() string
 	GetTitle() string
 	GetDescription() string
 	GetTags() map[string]string
@@ -52,7 +53,7 @@ type ResourceWithMetadata interface {
 	Name() string
 	GetMetadata() *ResourceMetadata
 	SetMetadata(metadata *ResourceMetadata)
-	SetAnonymous(anonymous bool)
+	SetAnonymous(block *hcl.Block)
 	IsAnonymous() bool
 }
 
@@ -90,5 +91,5 @@ type ResourceMapsProvider interface {
 }
 
 type ReportNode interface {
-	CloneWithNewParent( *ReportContainer)ModTreeItem
+	CloneWithNewParent(*ReportContainer) ModTreeItem
 }

@@ -36,12 +36,13 @@ type ReportInput struct {
 	reportContainer *ReportContainer
 }
 
-func NewReportInput(block *hcl.Block, mod *Mod, parent HclResource) *ReportInput {
+func NewReportInput(block *hcl.Block, mod *Mod) *ReportInput {
+	shortName := block.Labels[0]
 	i := &ReportInput{
 		DeclRange:       block.DefRange,
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.%s", block.Type, shortName),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 	}
 	// TODO KAI GET RID OF SET MOD
 	i.SetMod(mod)
@@ -197,7 +198,7 @@ func (c *ReportInput) GetWidth() int {
 	return *c.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (c *ReportInput) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }

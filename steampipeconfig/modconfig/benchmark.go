@@ -44,14 +44,17 @@ type Benchmark struct {
 	parents []ModTreeItem
 }
 
-func NewBenchmark(block *hcl.Block, mod *Mod, parent HclResource) *Benchmark {
+func NewBenchmark(block *hcl.Block, mod *Mod, parent ModTreeItem) *Benchmark {
+	shortName := GetAnonymousResourceShortName(block, parent)
 	benchmark := &Benchmark{
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("benchmark.%s", block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("benchmark.%s", block.Labels[0]),
-		DeclRange:       block.DefRange,
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.benchmark.%s", mod.ShortName, shortName),
+		UnqualifiedName: fmt.Sprintf("benchmark.%s", shortName),
+		Mod:             mod,
+
+		DeclRange: block.DefRange,
 	}
-	benchmark.SetMod(mod)
+	benchmark.SetAnonymous(block)
 	return benchmark
 }
 
@@ -231,42 +234,12 @@ func (b *Benchmark) GetWidth() int {
 	return *b.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (b *Benchmark) GetUnqualifiedName() string {
 	return b.UnqualifiedName
 }
 
 func (b *Benchmark) Diff(other *Benchmark) *ReportTreeItemDiffs {
-	/*
-		res := b.ShortName == other.ShortName &&
-			b.FullName == other.FullName &&
-			typehelpers.SafeString(b.Description) == typehelpers.SafeString(other.Description) &&
-			typehelpers.SafeString(b.Documentation) == typehelpers.SafeString(other.Documentation) &&
-			typehelpers.SafeString(b.Title) == typehelpers.SafeString(other.Title)
-		if !res {
-			return res
-		}
-		// tags
-		if len(b.Tags) != len(other.Tags) {
-			return false
-		}
-		for k, v := range b.Tags {
-			if otherVal := other.Tags[k]; v != otherVal {
-				return false
-			}
-		}
-
-		if len(b.ChildNameStrings) != len(other.ChildNameStrings) {
-			return false
-		}
-
-		myChildNames := b.ChildNameStrings
-		sort.Strings(myChildNames)
-		otherChildNames := other.ChildNameStrings
-		sort.Strings(otherChildNames)
-		return strings.Join(myChildNames, ",") == strings.Join(otherChildNames, ",")
-	*/
-
 	res := &ReportTreeItemDiffs{
 		Item: b,
 		Name: b.Name(),

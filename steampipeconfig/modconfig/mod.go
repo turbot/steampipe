@@ -451,6 +451,11 @@ func (m *Mod) Name() string {
 	return m.FullName
 }
 
+// GetUnqualifiedName implements ModTreeItem
+func (m *Mod) GetUnqualifiedName() string {
+	return m.Name()
+}
+
 // GetModDependencyPath ModDependencyPath if it is set. If not it returns NameWithVersion()
 func (m *Mod) GetModDependencyPath() string {
 	if m.ModDependencyPath != "" {
