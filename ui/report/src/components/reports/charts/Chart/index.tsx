@@ -8,7 +8,13 @@ import ErrorPanel from "../../Error";
 import React, { useEffect, useRef, useState } from "react";
 import ReactEChartsCore from "echarts-for-react/lib/core";
 import useMediaMode from "../../../../hooks/useMediaMode";
-import { BarChart, LineChart, PieChart, SankeyChart } from "echarts/charts";
+import {
+  BarChart,
+  LineChart,
+  PieChart,
+  SankeyChart,
+  TreeChart,
+} from "echarts/charts";
 import { buildChartDataset, LeafNodeData, themeColors } from "../../common";
 import { CanvasRenderer } from "echarts/renderers";
 import {
@@ -29,16 +35,17 @@ import * as echarts from "echarts/core";
 
 echarts.use([
   BarChart,
+  CanvasRenderer,
+  DatasetComponent,
+  GridComponent,
   LabelLayout,
   LegendComponent,
   LineChart,
   PieChart,
-  CanvasRenderer,
-  DatasetComponent,
-  GridComponent,
   SankeyChart,
   TitleComponent,
   TooltipComponent,
+  TreeChart,
 ]);
 
 const getCommonBaseOptions = () => ({
@@ -68,8 +75,8 @@ const getCommonBaseOptionsForChartType = (
         legend: {
           show: series ? series.length > 1 : false,
           textStyle: {
-            color: themeColors.foreground
-          }
+            color: themeColors.foreground,
+          },
         },
         // Declare an x-axis (category axis).
         // The category map the first row in the dataset by default.
@@ -98,8 +105,8 @@ const getCommonBaseOptionsForChartType = (
         legend: {
           show: series ? series.length > 1 : false,
           textStyle: {
-            color: themeColors.foreground
-          }
+            color: themeColors.foreground,
+          },
         },
         // Declare an x-axis (category axis).
         // The category map the first row in the dataset by default.
@@ -127,8 +134,8 @@ const getCommonBaseOptionsForChartType = (
         legend: {
           show: false,
           textStyle: {
-            color: themeColors.foreground
-          }
+            color: themeColors.foreground,
+          },
         },
       };
     case "donut":
@@ -136,8 +143,8 @@ const getCommonBaseOptionsForChartType = (
         legend: {
           show: false,
           textStyle: {
-            color: themeColors.foreground
-          }
+            color: themeColors.foreground,
+          },
         },
       };
     default:
@@ -531,4 +538,4 @@ const RenderChart = (props: ChartDefinition) => {
 
 export default ChartWrapper;
 
-export { buildChartOptions, RenderChart };
+export { buildChartOptions, Chart, RenderChart };
