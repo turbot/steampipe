@@ -12,7 +12,7 @@ import (
 
 // ReportText is a struct representing a leaf reporting node
 type ReportText struct {
-	HclResourceBase
+	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
 	FullName        string `cty:"name" json:"-"`

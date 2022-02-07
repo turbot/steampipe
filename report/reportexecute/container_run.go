@@ -11,7 +11,10 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
+// TODO KAI split into report and container
+// update events
 // ReportContainerRun is a struct representing a container run
+
 type ReportContainerRun struct {
 	Name          string                           `json:"name"`
 	Title         string                           `json:"title,omitempty"`
@@ -23,6 +26,7 @@ type ReportContainerRun struct {
 	Children      []reportinterfaces.ReportNodeRun `json:"children,omitempty"`
 	NodeType      string                           `json:"node_type"`
 	Status        reportinterfaces.ReportRunStatus `json:"status"`
+	ReportName    string                           `json:"report"`
 	Path          []string                         `json:"-"`
 	reportNode    *modconfig.ReportContainer
 	parent        reportinterfaces.ReportNodeParent
@@ -40,6 +44,7 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 		Name:          name,
 		NodeType:      container.HclType,
 		Path:          container.Paths[0],
+		ReportName:    executionTree.Root.GetName(),
 		executionTree: executionTree,
 		parent:        parent,
 		reportNode:    container,
@@ -195,4 +200,25 @@ func (r *ReportContainerRun) ChildrenComplete() bool {
 
 func (r *ReportContainerRun) ChildCompleteChan() chan reportinterfaces.ReportNodeRun {
 	return r.childComplete
+}
+
+func (r *ReportContainerRun) GetRuntimeDependency(dependency *modconfig.RuntimeDependency) (*string, error) {
+	// TODO KAI LOCK???
+
+	/// TODO KAI nasty - split into report and container
+	if !r.reportNode.IsReport() {
+		panic("GetRuntimeDependency called on container")
+	}
+
+	// only inputs supported at present
+	if dependency.PropertyPath.ItemType != modconfig.BlockTypeInput {
+		return nil, fmt.Errorf("invalid runtime dependency type %s", dependency.PropertyPath.ItemType)
+	}
+
+	// find the input corresponding to this dependency
+	input, ok := r.reportNode.GetInput(dependency.PropertyPath.Name)
+	if !ok {
+		return nil, fmt.Errorf("report %s does not contain input %s", r.reportNode.Name(), dependency.PropertyPath.ItemType)
+	}
+	return input.Value, nil
 }

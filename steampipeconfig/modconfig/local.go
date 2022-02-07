@@ -9,7 +9,6 @@ import (
 
 // Local is a struct representing a Local resource
 type Local struct {
-	HclResourceBase
 	ResourceWithMetadataBase
 
 	ShortName string

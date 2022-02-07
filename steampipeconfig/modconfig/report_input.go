@@ -11,7 +11,7 @@ import (
 
 // ReportInput is a struct representing a leaf reporting node
 type ReportInput struct {
-	HclResourceBase
+	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
 	FullName        string `cty:"name" json:"-"`

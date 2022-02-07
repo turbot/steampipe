@@ -13,38 +13,38 @@ import (
 
 // Control is a struct representing the Control resource
 type Control struct {
-	HclResourceBase
+	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
 	// required to allow partial decoding
-	Remain hcl.Body `hcl:",remain"`
+	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	ShortName        string
-	FullName         string            `cty:"name"`
-	Description      *string           `cty:"description" hcl:"description" column:"description,text"`
-	Documentation    *string           `cty:"documentation" hcl:"documentation"  column:"documentation,text"`
-	SearchPath       *string           `cty:"search_path" hcl:"search_path"  column:"search_path,text"`
-	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text"`
-	Severity         *string           `cty:"severity" hcl:"severity"  column:"severity,text"`
-	Tags             map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb"`
-	Title            *string           `cty:"title" hcl:"title"  column:"title,text"`
+	ShortName        string            `json:"-"`
+	FullName         string            `cty:"name"  json:"name"`
+	Description      *string           `cty:"description" hcl:"description" column:"description,text"  json:"description,omitempty"`
+	Documentation    *string           `cty:"documentation" hcl:"documentation"  column:"documentation,text"  json:"documentation,omitempty"`
+	SearchPath       *string           `cty:"search_path" hcl:"search_path"  column:"search_path,text"  json:"search_path,omitempty"`
+	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text"  json:"search_path_prefix,omitempty"`
+	Severity         *string           `cty:"severity" hcl:"severity"  column:"severity,text"  json:"search_path_prefix,omitempty"`
+	Tags             map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb"  json:"tags,omitempty"`
+	Title            *string           `cty:"title" hcl:"title"  column:"title,text"  json:"title,omitempty"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
-	References      []*ResourceReference
-	Mod             *Mod `cty:"mod"`
-	DeclRange       hcl.Range
-	UnqualifiedName string
-	Paths           []NodePath
+	References      []*ResourceReference ` json:"-"`
+	Mod             *Mod                 `cty:"mod"  json:"-"`
+	DeclRange       hcl.Range            `json:"-"`
+	UnqualifiedName string               `json:"-"`
+	Paths           []NodePath           `json:"-"`
 
 	// report specific properties
-	Base  *Control `hcl:"base"`
-	Width *int     `cty:"width" hcl:"width" column:"width,text" `
+	Base  *Control `hcl:"base" json:"-"`
+	Width *int     `cty:"width" hcl:"width" column:"width,text" json:"-"`
 
 	parents []ModTreeItem
 }

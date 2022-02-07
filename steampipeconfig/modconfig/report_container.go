@@ -16,7 +16,7 @@ const runtimeDependencyReportScope = "self"
 
 // ReportContainer is a struct representing the Report and Container resource
 type ReportContainer struct {
-	HclResourceBase
+	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
 	// required to allow partial decoding
@@ -27,7 +27,7 @@ type ReportContainer struct {
 	UnqualifiedName string           `cty:"unqualified_name"`
 	Title           *string          `cty:"title" hcl:"title" column:"title,text"`
 	Width           *int             `cty:"width" hcl:"width"  column:"width,text"`
-	Args            *QueryArgs       `cty:"args" column:"args,jsonb" json:"args"`
+	Args            *QueryArgs       `cty:"args" column:"args,jsonb"`
 	Base            *ReportContainer `hcl:"base"`
 	Inputs          []*ReportInput   `cty:"inputs"`
 
@@ -248,7 +248,12 @@ func (c *ReportContainer) BuildRuntimeDependencyTree(workspace ResourceMapsProvi
 	c.runtimeDependencyGraph.AddNode(rootRuntimeDependencyNode)
 
 	resourceFunc := func(resource HclResource) (bool, error) {
-		runtimeDependencies := resource.GetRuntimeDependencies()
+		leafNode, ok := resource.(ReportLeafNode)
+		if !ok {
+			// continue walking
+			return true, nil
+		}
+		runtimeDependencies := leafNode.GetRuntimeDependencies()
 		if len(runtimeDependencies) == 0 {
 			// continue walking
 			return true, nil

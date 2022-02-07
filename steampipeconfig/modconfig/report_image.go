@@ -11,7 +11,7 @@ import (
 
 // ReportImage is a struct representing a leaf reporting node
 type ReportImage struct {
-	HclResourceBase
+	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
 	FullName        string `cty:"name" json:"-"`

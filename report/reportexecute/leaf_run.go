@@ -19,6 +19,7 @@ type LeafRun struct {
 	Error         error                    `json:"error,omitempty"`
 	ReportNode    modconfig.ReportLeafNode `json:"properties"`
 	NodeType      string                   `json:"node_type"`
+	ReportName    string                   `json:"report"`
 	Path          []string                 `json:"-"`
 	parent        reportinterfaces.ReportNodeParent
 	runStatus     reportinterfaces.ReportRunStatus
@@ -36,6 +37,7 @@ func NewLeafRun(resource modconfig.ReportLeafNode, parent reportinterfaces.Repor
 		SQL:           resource.GetSQL(),
 		Path:          resource.GetPaths()[0],
 		ReportNode:    resource,
+		ReportName:    executionTree.Root.GetName(),
 		executionTree: executionTree,
 		parent:        parent,
 
@@ -62,7 +64,7 @@ func NewLeafRun(resource modconfig.ReportLeafNode, parent reportinterfaces.Repor
 // Execute implements ReportRunNode
 func (r *LeafRun) Execute(ctx context.Context) error {
 	// if there are any unresolved runtime dependencies, wait for them
-	if err := r.waitForRuntimeDepdendencies(); err != nil {
+	if err := r.waitForRuntimeDependencies(); err != nil {
 		return err
 	}
 
@@ -129,11 +131,24 @@ func (r *LeafRun) ChildrenComplete() bool {
 	return true
 }
 
-func (r *LeafRun) waitForRuntimeDepdendencies() error {
+func (r *LeafRun) waitForRuntimeDependencies() error {
 	runtimeDependencies := r.ReportNode.GetRuntimeDependencies()
 
-	for _, v := range runtimeDependencies {
-		if err := r.executionTree.waitForRuntimeDependency(v); err != nil {
+	// runtime dependencies are always (for now) report inputs
+
+	for key, dependency := range runtimeDependencies {
+		// check with the top level report whether the dependency is available
+		inputValue, err := r.executionTree.Root.GetRuntimeDependency(dependency)
+		if err != nil {
+			return err
+		}
+		if inputValue != nil {
+			// ok we have this one - set it on the node
+			r.ReportNode.SetRuntimeDependency(key, *inputValue)
+			continue
+		}
+
+		if err := r.executionTree.waitForRuntimeDependency(dependency); err != nil {
 			return err
 		}
 	}

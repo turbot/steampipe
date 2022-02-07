@@ -11,7 +11,6 @@ import (
 
 // Variable is a struct representing a Variable resource
 type Variable struct {
-	HclResourceBase
 	ResourceWithMetadataBase
 
 	ShortName string

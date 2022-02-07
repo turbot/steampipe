@@ -12,11 +12,11 @@ import (
 
 // ReportTable is a struct representing a leaf reporting node
 type ReportTable struct {
-	HclResourceBase
+	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
 	// required to allow partial decoding
-	Remain hcl.Body `hcl:",remain"`
+	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`

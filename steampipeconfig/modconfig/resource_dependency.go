@@ -9,6 +9,7 @@ type RuntimeDependency struct {
 	PropertyPath     *ParsedPropertyPath
 	SourceResource   HclResource
 	TargetProperties []string
+	Value            *string
 }
 
 func (d *RuntimeDependency) String() string {

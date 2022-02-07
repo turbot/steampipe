@@ -23,7 +23,6 @@ const defaultModName = "local"
 
 // Mod is a struct representing a Mod resource
 type Mod struct {
-	HclResourceBase
 	ResourceWithMetadataBase
 	UniqueNameProviderBase
 

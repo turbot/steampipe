@@ -1,10 +1,11 @@
 package parse
 
 import (
-	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 // struct to hold the result of a decoding operation
@@ -36,7 +37,17 @@ func (p *decodeResult) handleDecodeDiags(bodyContent *hcl.BodyContent, resource 
 			// so it was a dependency error - determine whether this is a RUN TIME dependency
 			// - if so, do not raise a dependency error but instead store in the resources run time dependencies
 			if runtimeDependency := dependency.ToRuntimeDependency(bodyContent); runtimeDependency != nil {
-				resource.AddRuntimeDependencies(runtimeDependency)
+				// resource must be convertible to a ReportLeafNode
+				// - these are the only resources to support runtime dependencies
+				leafNode, ok := resource.(modconfig.ReportLeafNode)
+				if !ok {
+					p.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
+						Severity: hcl.DiagError,
+						Summary:  fmt.Sprintf("invalid resource type %s declares a runtime depdnency - only ReportLeafNodes may use them", resource.Name()),
+						Subject:  resource.GetDeclRange(),
+					}})
+				}
+				leafNode.AddRuntimeDependencies(runtimeDependency)
 			} else {
 				// this is not a runtime dependency - register a normal dependency
 				p.Depends = append(p.Depends, dependency)

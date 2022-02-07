@@ -15,11 +15,11 @@ import (
 type ReportExecutionTree struct {
 	modconfig.UniqueNameProviderBase
 
-	Root        reportinterfaces.ReportNodeRun
+	Root        *ReportContainerRun
 	client      db_common.Client
 	runs        map[string]reportinterfaces.ReportNodeRun
 	workspace   *workspace.Workspace
-	runComplete chan (reportinterfaces.ReportNodeRun)
+	runComplete chan reportinterfaces.ReportNodeRun
 }
 
 // NewReportExecutionTree creates a result group from a ModTreeItem
@@ -42,7 +42,7 @@ func NewReportExecutionTree(reportName string, client db_common.Client, workspac
 	return reportExecutionTree, nil
 }
 
-func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterfaces.ReportNodeRun, error) {
+func (e *ReportExecutionTree) createRootItem(reportName string) (*ReportContainerRun, error) {
 	parsedName, err := modconfig.ParseResourceName(reportName)
 	if err != nil {
 		return nil, err

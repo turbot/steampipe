@@ -14,7 +14,7 @@ import (
 
 // Benchmark is a struct representing the Benchmark resource
 type Benchmark struct {
-	HclResourceBase
+	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
 	ShortName       string

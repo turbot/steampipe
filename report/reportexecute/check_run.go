@@ -20,6 +20,7 @@ type CheckRun struct {
 	Error                error                         `json:"error,omitempty"`
 	NodeType             string                        `json:"node_type"`
 	ControlExecutionTree *controlexecute.ExecutionTree `json:"execution_tree"`
+	ReportName           string                        `json:"report"`
 	ReportNode           modconfig.ReportLeafNode      `json:"-"`
 	Path                 []string                      `json:"-"`
 	parent               reportinterfaces.ReportNodeParent
@@ -37,6 +38,7 @@ func NewCheckRun(resource modconfig.ReportLeafNode, parent reportinterfaces.Repo
 		Width:         resource.GetWidth(),
 		Path:          resource.GetPaths()[0],
 		ReportNode:    resource,
+		ReportName:    executionTree.Root.GetName(),
 		executionTree: executionTree,
 		parent:        parent,
 

@@ -11,11 +11,11 @@ import (
 
 // ReportChart is a struct representing a leaf reporting node
 type ReportChart struct {
-	HclResourceBase
+	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
 	// required to allow partial decoding
-	Remain hcl.Body `hcl:",remain"`
+	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
@@ -31,14 +31,14 @@ type ReportChart struct {
 	Axes       *ReportChartAxes              `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
 	Grouping   *string                       `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
 	Transform  *string                       `cty:"transform" hcl:"transform" json:"transform,omitempty"`
-	Series     map[string]*ReportChartSeries `cty:"series" json:"series"`
+	Series     map[string]*ReportChartSeries `cty:"series" json:"series,omitempty"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
 	Base      *ReportChart `hcl:"base" json:"-"`
 	DeclRange hcl.Range    `json:"-"`

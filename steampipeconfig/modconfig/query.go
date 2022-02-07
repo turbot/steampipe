@@ -16,7 +16,6 @@ import (
 
 // Query is a struct representing the Query resource
 type Query struct {
-	HclResourceBase
 	ResourceWithMetadataBase
 
 	// required to allow partial decoding
