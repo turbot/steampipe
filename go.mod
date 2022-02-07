@@ -26,7 +26,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.11.1
 	github.com/hashicorp/terraform v0.15.1
 	github.com/jackc/pgx/v4 v4.14.1
-	github.com/jedib0t/go-pretty/v6 v6.0.6
+	github.com/jedib0t/go-pretty/v6 v6.2.5
 	github.com/karrick/gows v0.3.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/mattn/go-isatty v0.0.14
@@ -54,6 +54,8 @@ require (
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
 	sigs.k8s.io/yaml v1.3.0
 )
+
+require github.com/rivo/uniseg v0.2.0 // indirect
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
@@ -131,7 +133,7 @@ require (
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect; indirectmake
 	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-runewidth v0.0.9 // indirect
+	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
