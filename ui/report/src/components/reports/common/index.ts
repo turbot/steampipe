@@ -409,6 +409,19 @@ const buildHierarchyDataInputs = (
 
 // TODO color scheme - need to find something better?
 const generateColors = () => {
+  // echarts vintage
+  // return [
+  //   "#d87c7c",
+  //   "#919e8b",
+  //   "#d7ab82",
+  //   "#6e7074",
+  //   "#61a0a8",
+  //   "#efa18d",
+  //   "#787464",
+  //   "#cc7e63",
+  //   "#724e58",
+  //   "#4b565b",
+  // ];
   // tableau.Tableau20
   return [
     "#4E79A7",
