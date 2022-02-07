@@ -11,7 +11,7 @@ env:
   ORG: turbot
   ASSET_IMAGE_NAME: assets
   CONFIG_SCHEMA_VERSION: "2020-11-18"
-  VERSION: v0.1.0
+  VERSION: v0.1.0-alpha.0
   STEAMPIPE_UPDATE_CHECK: false
 
 jobs:
@@ -44,7 +44,7 @@ jobs:
           gcloud components install beta
           gcloud components install alpha --quiet
           [ $(gcloud beta artifacts docker tags list $CORE_REPO/$ASSET_IMAGE_NAME  --project $PROJECT_ID  --format=json | jq 'map(select(.tag | endswith("$VERSION"))) | length') -eq 0 ]
-      
+          echo $(gcloud beta artifacts docker tags list $CORE_REPO/$ASSET_IMAGE_NAME  --project $PROJECT_ID  --format=json | jq 'map(select(.tag | endswith("$VERSION"))) | length')
       - name: NEXT
         run: |-
           echo "DONE"
