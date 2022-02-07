@@ -135,10 +135,7 @@ func buildLeafNodeProgressPayload(event *reportevents.LeafNodeProgress) []byte {
 		Action:     "leaf_node_progress",
 		ReportNode: event.Node,
 	}
-	//jsonString, _ := json.Marshal(payload)
-	//return jsonString
-	jsonString, err := json.MarshalIndent(payload, "", "  ")
-	log.Println("[ERROR] buildLeafNodeProgressPayload marshal error:", err)
+	jsonString, _ := json.MarshalIndent(payload, "", "  ")
 	return jsonString
 }
 
