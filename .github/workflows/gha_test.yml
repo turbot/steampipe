@@ -1,4 +1,4 @@
-name: Steampipe Acceptance Tests
+name: GCloud Artifact Registry List test
 on:
   push:
     branches:
