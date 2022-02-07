@@ -43,8 +43,9 @@ jobs:
         run: |-
           gcloud components install beta
           gcloud components install alpha --quiet
-          [ $(gcloud beta artifacts docker tags list $CORE_REPO/$ASSET_IMAGE_NAME  --project $PROJECT_ID  --format=json | jq 'map(select(.tag | endswith("$VERSION"))) | length') -eq 0 ]
-          echo $(gcloud beta artifacts docker tags list $CORE_REPO/$ASSET_IMAGE_NAME  --project $PROJECT_ID  --format=json | jq 'map(select(.tag | endswith("$VERSION"))) | length')
+          [ $(gcloud beta artifacts docker tags list ${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}  --project ${{ env.PROJECT_ID }}  --format=json | jq 'map(select(.tag | endswith("${{ env.VERSION }}"))) | length') -eq 0 ]
+          echo $(gcloud beta artifacts docker tags list ${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}  --project ${{ env.PROJECT_ID }}  --format=json | jq 'map(select(.tag | endswith("${{ env.VERSION }}"))) | length')
+
       - name: NEXT
         run: |-
           echo "DONE"
