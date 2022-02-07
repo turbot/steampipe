@@ -53,7 +53,7 @@ jobs:
             **/go.mod
             -tools/go.mod
 
-      - name: Run Unit Tests
+      - name: Run CLI Unit Tests
         run: |
           go test -timeout 30s -run github.com/turbot/steampipe ./...
 
