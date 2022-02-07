@@ -162,10 +162,7 @@ func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte
 		Action:     "execution_complete",
 		ReportNode: event.Report,
 	}
-	//jsonString, _ := json.Marshal(payload)
-	//return jsonString
-	jsonString, err := json.MarshalIndent(payload, "", "  ")
-	log.Println("[ERROR] buildExecutionCompletePayload marshal error:", err)
+	jsonString, _ := json.MarshalIndent(payload, "", "  ")
 	return jsonString
 }
 
