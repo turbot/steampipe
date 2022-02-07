@@ -14,7 +14,7 @@ require (
 	github.com/deislabs/oras v0.8.1
 	github.com/fatih/color v1.13.0
 	github.com/fsnotify/fsnotify v1.5.1
-	github.com/gertd/go-pluralize v0.1.7
+	github.com/gertd/go-pluralize v0.2.0
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-git/go-git/v5 v5.4.2
@@ -129,7 +129,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
-	github.com/magiconair/properties v1.8.5 // indirectmake
+	github.com/magiconair/properties v1.8.5 // indirect; indirectmake
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
