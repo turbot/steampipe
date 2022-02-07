@@ -68,6 +68,12 @@ jobs:
         yarn install
       working-directory: ./ui/report
 
+    - name: Run Unit Tests
+      run: |
+        yarn install
+        CI=true yarn test
+      working-directory: ./ui/report
+
     - name: YARN Build
       run: |-
         unset CI
