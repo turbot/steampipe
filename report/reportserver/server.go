@@ -19,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
 
@@ -117,7 +118,8 @@ func buildAvailableReportsPayload(reports map[string]*modconfig.ReportContainer)
 		Action:  "available_reports",
 		Reports: reportsPayload,
 	}
-	jsonString, _ := json.Marshal(payload)
+	jsonString, err := json.Marshal(payload)
+	utils.FailOnErrorWithMessage(err, "known payload marshal error at buildAvailableReportsPayload")
 	return jsonString
 }
 
@@ -126,7 +128,8 @@ func buildWorkspaceErrorPayload(e *reportevents.WorkspaceError) []byte {
 		Action: "workspace_error",
 		Error:  e.Error.Error(),
 	}
-	jsonString, _ := json.Marshal(payload)
+	jsonString, err := json.Marshal(payload)
+	utils.FailOnErrorWithMessage(err, "known payload marshal error at buildWorkspaceErrorPayload")
 	return jsonString
 }
 
@@ -135,7 +138,8 @@ func buildLeafNodeProgressPayload(event *reportevents.LeafNodeProgress) []byte {
 		Action:     "leaf_node_progress",
 		ReportNode: event.Node,
 	}
-	jsonString, _ := json.MarshalIndent(payload, "", "  ")
+	jsonString, err := json.Marshal(payload)
+	utils.FailOnErrorWithMessage(err, "known payload marshal error at buildLeafNodeProgressPayload")
 	return jsonString
 }
 
@@ -144,7 +148,8 @@ func buildLeafNodeCompletePayload(event *reportevents.LeafNodeComplete) []byte {
 		Action:     "leaf_node_complete",
 		ReportNode: event.Node,
 	}
-	jsonString, _ := json.Marshal(payload)
+	jsonString, err := json.Marshal(payload)
+	utils.FailOnErrorWithMessage(err, "known payload marshal error at buildLeafNodeCompletePayload")
 	return jsonString
 }
 
@@ -153,7 +158,8 @@ func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) []byte {
 		Action:     "execution_started",
 		ReportNode: event.ReportNode,
 	}
-	jsonString, _ := json.Marshal(payload)
+	jsonString, err := json.Marshal(payload)
+	utils.FailOnErrorWithMessage(err, "known payload marshal error at buildExecutionStartedPayload")
 	return jsonString
 }
 
@@ -162,7 +168,8 @@ func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte
 		Action:     "execution_complete",
 		ReportNode: event.Report,
 	}
-	jsonString, _ := json.MarshalIndent(payload, "", "  ")
+	jsonString, err := json.Marshal(payload)
+	utils.FailOnErrorWithMessage(err, "known payload marshal error at buildExecutionCompletePayload")
 	return jsonString
 }
 
