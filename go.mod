@@ -34,7 +34,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/opencontainers/image-spec v1.0.2
 	github.com/otiai10/copy v1.7.0
-	github.com/sethvargo/go-retry v0.1.0
+	github.com/sethvargo/go-retry v0.2.2
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/sirupsen/logrus v1.8.1
@@ -129,7 +129,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
-	github.com/magiconair/properties v1.8.5 // indirectmake
+	github.com/magiconair/properties v1.8.5 // indirect; indirectmake
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
