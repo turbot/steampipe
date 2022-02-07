@@ -149,7 +149,7 @@ jobs:
     - name: Create Image Config File
       run: |-
         JSON_STRING=$( jq -n \
-          --arg name "$IMAGE_NAME" \
+          --arg name "${{ env.ASSET_IMAGE_NAME }}" \
           --arg organization "$ORG" \
           --arg version "$VERSION" \
           --arg schemaVersion "$CONFIG_SCHEMA_VERSION" \
@@ -160,7 +160,7 @@ jobs:
     - name: Create Image Annotations File
       run: |-
         JSON_STRING=$( jq -n \
-            --arg title "$IMAGE_NAME" \
+            --arg title "${{ env.ASSET_IMAGE_NAME }}" \
             --arg desc "$ORG" \
             --arg version "$VERSION" \
             --arg timestamp "$(date +%FT%T%z)" \
@@ -183,7 +183,7 @@ jobs:
         cat config.json
         cat annotations.json
         cat report_ui_build/versions.json
-        REF="$CORE_REPO/$IMAGE_NAME:$GITHUB_RUN_ID"
+        REF="${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}:$GITHUB_RUN_ID"
         echo "::set-output name=REF::$REF"
 
     - name: Push to registry
