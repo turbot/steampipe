@@ -27,29 +27,6 @@ type WorkspaceResourceMaps struct {
 	LocalBenchmarks map[string]*Benchmark
 }
 
-func EmptyWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
-	return &WorkspaceResourceMaps{
-		Mod:               mod,
-		Queries:           make(map[string]*Query),
-		Controls:          make(map[string]*Control),
-		Benchmarks:        make(map[string]*Benchmark),
-		Variables:         make(map[string]*Variable),
-		Reports:           make(map[string]*ReportContainer),
-		ReportContainers:  make(map[string]*ReportContainer),
-		ReportCards:       make(map[string]*ReportCard),
-		ReportCharts:      make(map[string]*ReportChart),
-		ReportHierarchies: make(map[string]*ReportHierarchy),
-		ReportImages:      make(map[string]*ReportImage),
-		ReportInputs:      make(map[string]*ReportInput),
-		ReportTables:      make(map[string]*ReportTable),
-		ReportTexts:       make(map[string]*ReportText),
-		References:        make(map[string]*ResourceReference),
-		LocalQueries:      make(map[string]*Query),
-		LocalControls:     make(map[string]*Control),
-		LocalBenchmarks:   make(map[string]*Benchmark),
-	}
-}
-
 func WorkspaceResourceMapFromMod(mod *Mod) *WorkspaceResourceMaps {
 	resourceMaps := &WorkspaceResourceMaps{
 		Mod:               mod,
@@ -75,6 +52,10 @@ func WorkspaceResourceMapFromMod(mod *Mod) *WorkspaceResourceMaps {
 }
 
 func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
+	if other == nil {
+		return false
+	}
+
 	for name, mod := range m.Mods {
 		if otherMod, ok := other.Mods[name]; !ok {
 			return false

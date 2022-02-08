@@ -595,9 +595,7 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	}
 	expectedMod.BuildResourceTree(nil)
 
-	diff := actualMod.Diff(expectedMod)
-
-	if diff.HasChanges() {
+	if !actualMod.Equals(expectedMod) {
 		fmt.Printf("")
 
 		t.Errorf("Test: '%s'' FAILED", name)
