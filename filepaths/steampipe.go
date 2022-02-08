@@ -67,8 +67,8 @@ func EnsureInternalDir() string {
 	return ensureSteampipeSubDir("internal")
 }
 
-// DatabaseDir returns the path to the db directory (creates if missing)
-func DatabaseDir() string {
+// EnsureDatabaseDir returns the path to the db directory (creates if missing)
+func EnsureDatabaseDir() string {
 	return ensureSteampipeSubDir("db")
 }
 
@@ -98,7 +98,7 @@ func PluginVersionFilePath() string {
 
 // DatabaseVersionFilePath returns the plugin version file path
 func DatabaseVersionFilePath() string {
-	return filepath.Join(DatabaseDir(), versionFileName)
+	return filepath.Join(EnsureDatabaseDir(), versionFileName)
 }
 
 // ReportAssetsVersionFilePath returns the report assets version file path
