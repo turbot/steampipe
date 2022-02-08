@@ -450,6 +450,7 @@ func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 
 	diags = decodeProperty(content, "base", &report.Base, runCtx)
 	res.handleDecodeDiags(diags)
+	// if this resource has a base, populate the base children from the ChildNames
 	if report.Base != nil && len(report.Base.ChildNames) > 0 {
 		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeChart, modconfig.BlockTypeControl, modconfig.BlockTypeCounter, modconfig.BlockTypeHierarchy, modconfig.BlockTypeImage, modconfig.BlockTypeInput, modconfig.BlockTypeTable, modconfig.BlockTypeText}
 		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
@@ -469,9 +470,9 @@ func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 	if len(content.Blocks) > 0 {
 		var childrenRes *decodeResult
 		children, childrenRes = decodeInlineChildren(content, runCtx)
+		res.Merge(childrenRes)
 		// now set children
 		report.SetChildren(children)
-		res.Merge(childrenRes)
 	}
 
 	return report, res
