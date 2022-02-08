@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/utils"
 	"gopkg.in/olahol/melody.v1"
 )
@@ -38,7 +39,10 @@ func openBrowser(url string) error {
 }
 
 func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
-	router := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
+	// only add the Recovery middleware
+	router.Use(gin.Recovery())
 
 	assetsDirectory := filepaths.EnsureReportAssetsDir()
 
@@ -49,7 +53,6 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 	})
 
 	router.NoRoute(func(c *gin.Context) {
-		//c.File("./static/index.html")
 		c.File(path.Join(assetsDirectory, "index.html"))
 	})
 
@@ -72,6 +75,7 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 	}()
 
 	_ = openBrowser(fmt.Sprintf("http://localhost:%d", reportServerPort))
+	statushooks.SetStatus(ctx, fmt.Sprintf("Report server started on %d and listening on %s", reportServerPort, viper.GetString(constants.ArgReportServerListen)))
 	<-ctx.Done()
 	log.Println("Shutdown Server ...")
 

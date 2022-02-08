@@ -11,8 +11,10 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/contexthelpers"
+	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/report/reportassets"
 	"github.com/turbot/steampipe/report/reportserver"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -58,7 +60,16 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	err := reportassets.Ensure(ctx)
 	utils.FailOnError(err)
 
-	server, err := reportserver.NewServer(ctx)
+	dbClient, err := db_local.GetLocalClient(ctx, constants.InvokerReport)
+	utils.FailOnError(err)
+
+	refreshResult := dbClient.RefreshConnectionAndSearchPaths(ctx)
+	refreshResult.ShowWarnings()
+
+	ctx = statushooks.AddStatusHooksToContext(ctx, statushooks.ConsoleHook)
+
+	statushooks.Message(ctx, "Starting Report Server")
+	server, err := reportserver.NewServer(ctx, dbClient)
 	if err != nil {
 		utils.FailOnError(err)
 	}
