@@ -140,7 +140,7 @@ func pluginInstallDir(imageRef string) string {
 	ref := NewSteampipeImageRef(imageRef)
 	osSafePath := filepath.FromSlash(ref.DisplayImageRef())
 
-	fullPath := filepath.Join(filepaths.PluginDir(), osSafePath)
+	fullPath := filepath.Join(filepaths.EnsurePluginDir(), osSafePath)
 
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 		err = os.MkdirAll(fullPath, 0755)

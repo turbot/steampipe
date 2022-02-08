@@ -493,11 +493,11 @@ func TestConnectionsUpdateEqual(t *testing.T) {
 
 func setup(test getConnectionsToUpdateTest) {
 
-	os.RemoveAll(filepaths.PluginDir())
+	os.RemoveAll(filepaths.EnsurePluginDir())
 	os.RemoveAll(filepaths.ConfigDir())
 	os.RemoveAll(filepaths.InternalDir())
 
-	os.MkdirAll(filepaths.PluginDir(), os.ModePerm)
+	os.MkdirAll(filepaths.EnsurePluginDir(), os.ModePerm)
 	os.MkdirAll(filepaths.ConfigDir(), os.ModePerm)
 	os.MkdirAll(filepaths.InternalDir(), os.ModePerm)
 
@@ -537,7 +537,7 @@ func copyPlugin(plugin string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	dest, err := filepath.Abs(filepath.Join(filepaths.PluginDir(), plugin))
+	dest, err := filepath.Abs(filepath.Join(filepaths.EnsurePluginDir(), plugin))
 	if err != nil {
 		log.Fatal(err)
 	}

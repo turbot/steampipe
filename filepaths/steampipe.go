@@ -52,8 +52,8 @@ func EnsureTemplateDir() string {
 	return ensureSteampipeSubDir(filepath.Join("check", "templates"))
 }
 
-// PluginDir returns the path to the plugins directory (creates if missing)
-func PluginDir() string {
+// EnsurePluginDir returns the path to the plugins directory (creates if missing)
+func EnsurePluginDir() string {
 	return ensureSteampipeSubDir("plugins")
 }
 
@@ -93,7 +93,7 @@ func LegacyVersionFilePath() string {
 
 // PluginVersionFilePath returns the plugin version file path
 func PluginVersionFilePath() string {
-	return filepath.Join(PluginDir(), versionFileName)
+	return filepath.Join(EnsurePluginDir(), versionFileName)
 }
 
 // DatabaseVersionFilePath returns the plugin version file path
