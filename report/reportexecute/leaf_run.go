@@ -64,7 +64,7 @@ func NewLeafRun(resource modconfig.ReportLeafNode, parent reportinterfaces.Repor
 // Execute implements ReportRunNode
 func (r *LeafRun) Execute(ctx context.Context) error {
 	// if there are any unresolved runtime dependencies, wait for them
-	if err := r.waitForRuntimeDependencies(); err != nil {
+	if err := r.waitForRuntimeDependencies(ctx); err != nil {
 		return err
 	}
 
@@ -131,7 +131,7 @@ func (r *LeafRun) ChildrenComplete() bool {
 	return true
 }
 
-func (r *LeafRun) waitForRuntimeDependencies() error {
+func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 	runtimeDependencies := r.ReportNode.GetRuntimeDependencies()
 
 	// runtime dependencies are always (for now) report inputs
@@ -148,9 +148,13 @@ func (r *LeafRun) waitForRuntimeDependencies() error {
 			continue
 		}
 
-		if err := r.executionTree.waitForRuntimeDependency(dependency); err != nil {
+		if err := r.executionTree.waitForRuntimeDependency(ctx, dependency); err != nil {
 			return err
 		}
+
+		// now populate the runtime dependency target property
+		//r.setRuntimeDependency()
 	}
+
 	return nil
 }
