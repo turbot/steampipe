@@ -79,7 +79,6 @@ type ReportLeafNode interface {
 	// implemented by ReportLeafNodeBase
 	AddRuntimeDependencies(*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency
-	SetRuntimeDependency(string, string) error
 }
 
 type ResourceMapsProvider interface {

@@ -136,15 +136,15 @@ func (r *LeafRun) waitForRuntimeDependencies() error {
 
 	// runtime dependencies are always (for now) report inputs
 
-	for key, dependency := range runtimeDependencies {
+	for _, dependency := range runtimeDependencies {
 		// check with the top level report whether the dependency is available
 		inputValue, err := r.executionTree.Root.GetRuntimeDependency(dependency)
 		if err != nil {
 			return err
 		}
 		if inputValue != nil {
-			// ok we have this one - set it on the node
-			r.ReportNode.SetRuntimeDependency(key, *inputValue)
+			// ok we have this one - set it on the dependency
+			dependency.Value = inputValue
 			continue
 		}
 

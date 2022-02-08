@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/report/reportinterfaces"
@@ -20,16 +21,20 @@ type ReportExecutionTree struct {
 	runs        map[string]reportinterfaces.ReportNodeRun
 	workspace   *workspace.Workspace
 	runComplete chan reportinterfaces.ReportNodeRun
+	inputLock   sync.Mutex
+
+	inputDataSubscriptions map[string][]chan bool
 }
 
 // NewReportExecutionTree creates a result group from a ModTreeItem
 func NewReportExecutionTree(reportName string, client db_common.Client, workspace *workspace.Workspace) (*ReportExecutionTree, error) {
 	// now populate the ReportExecutionTree
 	reportExecutionTree := &ReportExecutionTree{
-		client:      client,
-		runs:        make(map[string]reportinterfaces.ReportNodeRun),
-		workspace:   workspace,
-		runComplete: make(chan reportinterfaces.ReportNodeRun, 1),
+		client:                 client,
+		runs:                   make(map[string]reportinterfaces.ReportNodeRun),
+		workspace:              workspace,
+		runComplete:            make(chan reportinterfaces.ReportNodeRun, 1),
+		inputDataSubscriptions: make(map[string][]chan bool),
 	}
 
 	// create the root run node (either a report run or a counter run)
@@ -87,6 +92,23 @@ func (e *ReportExecutionTree) ChildCompleteChan() chan reportinterfaces.ReportNo
 	return e.runComplete
 }
 
-func (e *ReportExecutionTree) waitForRuntimeDependency(dependency *modconfig.RuntimeDependency) error {
-	return nil
+func (e *ReportExecutionTree) waitForRuntimeDependency(ctx context.Context, dependency *modconfig.RuntimeDependency) error {
+	depChan := make(chan (bool), 1)
+	// TODO KAI for now verify we only bind inputs to args (somewhere)
+
+	e.subscribeToInput(dependency.PropertyPath.Name, depChan)
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-depChan:
+		return nil
+	}
+}
+
+func (e *ReportExecutionTree) subscribeToInput(inputName string, depChan chan bool) {
+	e.inputLock.Lock()
+	defer e.inputLock.Unlock()
+
+	e.inputDataSubscriptions[inputName] = append(e.inputDataSubscriptions[inputName], depChan)
 }
