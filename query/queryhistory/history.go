@@ -60,7 +60,7 @@ func (q *QueryHistory) Persist() error {
 	defer func() {
 		file.Close()
 	}()
-	path := filepath.Join(filepaths.InternalDir(), constants.HistoryFile)
+	path := filepath.Join(filepaths.EnsureInternalDir(), constants.HistoryFile)
 	file, err = os.Create(path)
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (q *QueryHistory) Get() []string {
 
 // loads up the history from the file where it is persisted
 func (q *QueryHistory) load() error {
-	path := filepath.Join(filepaths.InternalDir(), constants.HistoryFile)
+	path := filepath.Join(filepaths.EnsureInternalDir(), constants.HistoryFile)
 	file, err := os.Open(path)
 	if err != nil {
 		q.history = []string{}

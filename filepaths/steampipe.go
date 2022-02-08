@@ -62,8 +62,8 @@ func EnsureConfigDir() string {
 	return ensureSteampipeSubDir("config")
 }
 
-// InternalDir returns the path to the internal directory (creates if missing)
-func InternalDir() string {
+// EnsureInternalDir returns the path to the internal directory (creates if missing)
+func EnsureInternalDir() string {
 	return ensureSteampipeSubDir("internal")
 }
 
@@ -83,12 +83,12 @@ func ReportAssetsPath() string {
 
 // ConnectionStatePath returns the path of the connections state file
 func ConnectionStatePath() string {
-	return filepath.Join(InternalDir(), connectionsStateFileName)
+	return filepath.Join(EnsureInternalDir(), connectionsStateFileName)
 }
 
 // LegacyVersionFilePath returns the legacy version file path
 func LegacyVersionFilePath() string {
-	return filepath.Join(InternalDir(), versionFileName)
+	return filepath.Join(EnsureInternalDir(), versionFileName)
 }
 
 // PluginVersionFilePath returns the plugin version file path
@@ -107,9 +107,9 @@ func ReportAssetsVersionFilePath() string {
 }
 
 func RunningInfoFilePath() string {
-	return filepath.Join(InternalDir(), databaseRunningInfoFileName)
+	return filepath.Join(EnsureInternalDir(), databaseRunningInfoFileName)
 }
 
 func PluginManagerStateFilePath() string {
-	return filepath.Join(InternalDir(), pluginManagerStateFileName)
+	return filepath.Join(EnsureInternalDir(), pluginManagerStateFileName)
 }

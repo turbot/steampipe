@@ -495,11 +495,11 @@ func setup(test getConnectionsToUpdateTest) {
 
 	os.RemoveAll(filepaths.EnsurePluginDir())
 	os.RemoveAll(filepaths.EnsureConfigDir())
-	os.RemoveAll(filepaths.InternalDir())
+	os.RemoveAll(filepaths.EnsureInternalDir())
 
 	os.MkdirAll(filepaths.EnsurePluginDir(), os.ModePerm)
 	os.MkdirAll(filepaths.EnsureConfigDir(), os.ModePerm)
-	os.MkdirAll(filepaths.InternalDir(), os.ModePerm)
+	os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
 
 	for _, plugin := range test.current {
 		copyPlugin(plugin.Plugin)
@@ -513,7 +513,7 @@ func setupTestConfig(test getConnectionsToUpdateTest) {
 			log.Fatal(err)
 		}
 	}
-	os.MkdirAll(filepaths.InternalDir(), os.ModePerm)
+	os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
 	writeJson(test.current, filepaths.ConnectionStatePath())
 }
 

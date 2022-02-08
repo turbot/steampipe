@@ -22,7 +22,7 @@ type State struct {
 func LoadState() (State, error) {
 	currentState := createState()
 
-	stateFilePath := filepath.Join(filepaths.InternalDir(), updateStateFileName)
+	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), updateStateFileName)
 	// get the state file
 	_, err := os.Stat(stateFilePath)
 	if err != nil {

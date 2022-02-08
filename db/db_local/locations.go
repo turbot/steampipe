@@ -112,5 +112,5 @@ func getLegacyPasswordFileLocation() string {
 }
 
 func getPasswordFileLocation() string {
-	return filepath.Join(filepaths.InternalDir(), ".passwd")
+	return filepath.Join(filepaths.EnsureInternalDir(), ".passwd")
 }
