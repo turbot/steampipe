@@ -28,7 +28,7 @@ func EnsureTemplates() error {
 		return err
 	}
 	for _, d := range dirs {
-		targetDirectory := filepath.Join(filepaths.TemplateDir(), d.Name())
+		targetDirectory := filepath.Join(filepaths.EnsureTemplateDir(), d.Name())
 		if _, err := os.Stat(targetDirectory); os.IsNotExist(err) {
 			log.Println("[TRACE] target directory does not exist - copying template")
 			if err := writeTemplate(d.Name(), targetDirectory); err != nil {

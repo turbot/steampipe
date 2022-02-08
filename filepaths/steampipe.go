@@ -47,8 +47,8 @@ func EnsureTmpDir() string {
 	return ensureSteampipeSubDir("tmp")
 }
 
-// TemplateDir returns the path to the templates directory (creates if missing)
-func TemplateDir() string {
+// EnsureTemplateDir returns the path to the templates directory (creates if missing)
+func EnsureTemplateDir() string {
 	return ensureSteampipeSubDir(filepath.Join("check", "templates"))
 }
 

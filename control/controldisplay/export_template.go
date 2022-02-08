@@ -117,7 +117,7 @@ func findTemplateByFilename(export string, available []*ExportTemplate) (format 
 }
 
 func loadAvailableTemplates() ([]*ExportTemplate, error) {
-	templateDir := filepaths.TemplateDir()
+	templateDir := filepaths.EnsureTemplateDir()
 	templateDirectories, err := os.ReadDir(templateDir)
 	if err != nil {
 		return nil, err
