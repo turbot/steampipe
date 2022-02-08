@@ -76,7 +76,7 @@ func shouldRunConnectionWatcher() bool {
 
 func createPluginManagerLog() hclog.Logger {
 	logName := fmt.Sprintf("plugin-%s.log", time.Now().Format("2006-01-02"))
-	logPath := filepath.Join(filepaths.LogDir(), logName)
+	logPath := filepath.Join(filepaths.EnsureLogDir(), logName)
 	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Printf("failed to open plugin manager log file: %s\n", err.Error())

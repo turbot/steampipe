@@ -72,8 +72,8 @@ func EnsureDatabaseDir() string {
 	return ensureSteampipeSubDir("db")
 }
 
-// LogDir returns the path to the db log directory (creates if missing)
-func LogDir() string {
+// EnsureLogDir returns the path to the db log directory (creates if missing)
+func EnsureLogDir() string {
 	return ensureSteampipeSubDir("logs")
 }
 
