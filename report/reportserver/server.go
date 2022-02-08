@@ -212,10 +212,11 @@ func (s *Server) Shutdown(ctx context.Context) {
 }
 
 func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
-	var handleError error
+	var payloadError error
+	var payload []byte
 	defer func() {
-		if handleError != nil {
-			panic(fmt.Errorf("error building payload for '%s': %v", reflect.TypeOf(event).String(), handleError))
+		if payloadError != nil {
+			panic(fmt.Errorf("error building payload for '%s': %v", reflect.TypeOf(event).String(), payloadError))
 		}
 	}()
 	// Possible events - TODO work out best way to handle these
@@ -236,18 +237,16 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 	case *reportevents.WorkspaceError:
 		log.Println("[TRACE] Got workspace error event", *e)
-		payload, err := buildWorkspaceErrorPayload(e)
-		if err != nil {
-			handleError = err
+		payload, payloadError = buildWorkspaceErrorPayload(e)
+		if payloadError != nil {
 			return
 		}
 		s.webSocket.Broadcast(payload)
 
 	case *reportevents.ExecutionStarted:
 		log.Println("[TRACE] Got execution started event", *e)
-		payload, err := buildExecutionStartedPayload(e)
-		if err != nil {
-			handleError = err
+		payload, payloadError = buildExecutionStartedPayload(e)
+		if payloadError != nil {
 			return
 		}
 		reportName := e.ReportNode.GetName()
@@ -265,9 +264,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 	case *reportevents.LeafNodeProgress:
 		log.Println("[TRACE] Got leaf node complete event", *e)
-		payload, err := buildLeafNodeProgressPayload(e)
-		if err != nil {
-			handleError = err
+		payload, payloadError = buildLeafNodeProgressPayload(e)
+		if payloadError != nil {
 			return
 		}
 		paths := e.Node.GetPath()
@@ -282,9 +280,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 	case *reportevents.LeafNodeComplete:
 		log.Println("[TRACE] Got leaf node complete event", *e)
-		payload, err := buildLeafNodeCompletePayload(e)
-		if err != nil {
-			handleError = err
+		payload, payloadError = buildLeafNodeCompletePayload(e)
+		if payloadError != nil {
 			return
 		}
 		paths := e.Node.GetPath()
@@ -337,9 +334,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 		// If) any deleted/new/changed reports, emit an available reports message to clients
 		if len(deletedReports) != 0 || len(newReports) != 0 || len(changedReports) != 0 {
-			payload, err := buildAvailableReportsPayload(s.workspace.Mod.Reports)
-			if err != nil {
-				handleError = err
+			payload, payloadError = buildAvailableReportsPayload(s.workspace.Mod.Reports)
+			if payloadError != nil {
 				return
 			}
 			s.webSocket.Broadcast(payload)
@@ -410,9 +406,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 	case *reportevents.ExecutionComplete:
 		log.Println("[TRACE] Got execution complete event", *e)
-		payload, err := buildExecutionCompletePayload(e)
-		if err != nil {
-			handleError = err
+		payload, payloadError = buildExecutionCompletePayload(e)
+		if payloadError != nil {
 			return
 		}
 		reportName := e.Report.GetName()
