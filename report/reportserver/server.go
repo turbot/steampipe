@@ -19,7 +19,6 @@ import (
 	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
 
@@ -109,7 +108,10 @@ func NewServer(ctx context.Context) (*Server, error) {
 	return server, err
 }
 
-func buildAvailableReportsPayload(reports map[string]*modconfig.ReportContainer) []byte {
+// we don't expect the build functions to ever error during marshalling
+// this is because the data getting marshalled are not expected to have go specific
+// properties/data in them
+func buildAvailableReportsPayload(reports map[string]*modconfig.ReportContainer) ([]byte, error) {
 	reportsPayload := make(map[string]string)
 	for _, report := range reports {
 		reportsPayload[report.FullName] = typeHelpers.SafeString(report.Title)
@@ -118,59 +120,47 @@ func buildAvailableReportsPayload(reports map[string]*modconfig.ReportContainer)
 		Action:  "available_reports",
 		Reports: reportsPayload,
 	}
-	jsonString, err := json.Marshal(payload)
-	utils.FailOnErrorWithMessage(err, "known payload marshal error at buildAvailableReportsPayload")
-	return jsonString
+	return json.Marshal(payload)
 }
 
-func buildWorkspaceErrorPayload(e *reportevents.WorkspaceError) []byte {
+func buildWorkspaceErrorPayload(e *reportevents.WorkspaceError) ([]byte, error) {
 	payload := ErrorPayload{
 		Action: "workspace_error",
 		Error:  e.Error.Error(),
 	}
-	jsonString, err := json.Marshal(payload)
-	utils.FailOnErrorWithMessage(err, "known payload marshal error at buildWorkspaceErrorPayload")
-	return jsonString
+	return json.Marshal(payload)
 }
 
-func buildLeafNodeProgressPayload(event *reportevents.LeafNodeProgress) []byte {
+func buildLeafNodeProgressPayload(event *reportevents.LeafNodeProgress) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:     "leaf_node_progress",
 		ReportNode: event.Node,
 	}
-	jsonString, err := json.Marshal(payload)
-	utils.FailOnErrorWithMessage(err, "known payload marshal error at buildLeafNodeProgressPayload")
-	return jsonString
+	return json.Marshal(payload)
 }
 
-func buildLeafNodeCompletePayload(event *reportevents.LeafNodeComplete) []byte {
+func buildLeafNodeCompletePayload(event *reportevents.LeafNodeComplete) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:     "leaf_node_complete",
 		ReportNode: event.Node,
 	}
-	jsonString, err := json.Marshal(payload)
-	utils.FailOnErrorWithMessage(err, "known payload marshal error at buildLeafNodeCompletePayload")
-	return jsonString
+	return json.Marshal(payload)
 }
 
-func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) []byte {
+func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:     "execution_started",
 		ReportNode: event.ReportNode,
 	}
-	jsonString, err := json.Marshal(payload)
-	utils.FailOnErrorWithMessage(err, "known payload marshal error at buildExecutionStartedPayload")
-	return jsonString
+	return json.Marshal(payload)
 }
 
-func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte {
+func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:     "execution_complete",
 		ReportNode: event.Report,
 	}
-	jsonString, err := json.Marshal(payload)
-	utils.FailOnErrorWithMessage(err, "known payload marshal error at buildExecutionCompletePayload")
-	return jsonString
+	return json.Marshal(payload)
 }
 
 func getReportsInterestedInResourceChanges(reportsBeingWatched []string, existingChangedReportNames []string, changedItems []*modconfig.ReportTreeItemDiffs) []string {
@@ -239,12 +229,18 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 	case *reportevents.WorkspaceError:
 		log.Println("[TRACE] Got workspace error event", *e)
-		payload := buildWorkspaceErrorPayload(e)
+		payload, err := buildWorkspaceErrorPayload(e)
+		if err != nil {
+			panic(fmt.Errorf("error building payload for %s: %v", e, err))
+		}
 		s.webSocket.Broadcast(payload)
 
 	case *reportevents.ExecutionStarted:
 		log.Println("[TRACE] Got execution started event", *e)
-		payload := buildExecutionStartedPayload(e)
+		payload, err := buildExecutionStartedPayload(e)
+		if err != nil {
+			panic(fmt.Errorf("error building payload for %s: %v", e, err))
+		}
 		reportName := e.ReportNode.GetName()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
@@ -260,7 +256,10 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 	case *reportevents.LeafNodeProgress:
 		log.Println("[TRACE] Got leaf node complete event", *e)
-		payload := buildLeafNodeProgressPayload(e)
+		payload, err := buildLeafNodeProgressPayload(e)
+		if err != nil {
+			panic(fmt.Errorf("error building payload for %s: %v", e, err))
+		}
 		paths := e.Node.GetPath()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
@@ -273,7 +272,10 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 	case *reportevents.LeafNodeComplete:
 		log.Println("[TRACE] Got leaf node complete event", *e)
-		payload := buildLeafNodeCompletePayload(e)
+		payload, err := buildLeafNodeCompletePayload(e)
+		if err != nil {
+			panic(fmt.Errorf("error building payload for %s: %v", e, err))
+		}
 		paths := e.Node.GetPath()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
@@ -324,7 +326,11 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 		// If) any deleted/new/changed reports, emit an available reports message to clients
 		if len(deletedReports) != 0 || len(newReports) != 0 || len(changedReports) != 0 {
-			s.webSocket.Broadcast(buildAvailableReportsPayload(s.workspace.Mod.Reports))
+			payload, err := buildAvailableReportsPayload(s.workspace.Mod.Reports)
+			if err != nil {
+				panic(fmt.Errorf("error building payload for %s: %v", e, err))
+			}
+			s.webSocket.Broadcast(payload)
 		}
 
 		var reportsBeingWatched []string
@@ -392,7 +398,10 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 	case *reportevents.ExecutionComplete:
 		log.Println("[TRACE] Got execution complete event", *e)
-		payload := buildExecutionCompletePayload(e)
+		payload, err := buildExecutionCompletePayload(e)
+		if err != nil {
+			panic(fmt.Errorf("error building payload for %s: %v", e, err))
+		}
 		reportName := e.Report.GetName()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
