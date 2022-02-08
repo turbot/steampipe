@@ -13,7 +13,7 @@ import (
 const ServiceExecutableRelativeLocation = "/db/12.1.0/postgres/bin/postgres"
 
 func databaseInstanceDir() string {
-	loc := filepath.Join(filepaths.DatabaseDir(), constants.DatabaseVersion)
+	loc := filepath.Join(filepaths.EnsureDatabaseDir(), constants.DatabaseVersion)
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
 		utils.FailOnErrorWithMessage(err, "could not create db version directory")
@@ -31,7 +31,7 @@ func getDatabaseLocation() string {
 }
 
 func getDatabaseLogDirectory() string {
-	loc := filepaths.LogDir()
+	loc := filepaths.EnsureLogDir()
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
 		utils.FailOnErrorWithMessage(err, "could not create postgres logging directory")
@@ -112,5 +112,5 @@ func getLegacyPasswordFileLocation() string {
 }
 
 func getPasswordFileLocation() string {
-	return filepath.Join(filepaths.InternalDir(), ".passwd")
+	return filepath.Join(filepaths.EnsureInternalDir(), ".passwd")
 }

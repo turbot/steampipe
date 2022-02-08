@@ -19,11 +19,8 @@ const (
 
 var SteampipeDir string
 
-func steampipeSubDir(dirName string) string {
-	if SteampipeDir == "" {
-		panic(fmt.Errorf("cannot call any Steampipe directory functions before SteampipeDir is set"))
-	}
-	subDir := filepath.Join(SteampipeDir, dirName)
+func ensureSteampipeSubDir(dirName string) string {
+	subDir := steampipeSubDir(dirName)
 
 	if _, err := os.Stat(subDir); os.IsNotExist(err) {
 		err = os.MkdirAll(subDir, 0755)
@@ -33,69 +30,86 @@ func steampipeSubDir(dirName string) string {
 	return subDir
 }
 
-// TemplateDir returns the path to the templates directory (creates if missing)
-func TemplateDir() string {
-	return steampipeSubDir(filepath.Join("check", "templates"))
+func steampipeSubDir(dirName string) string {
+	if SteampipeDir == "" {
+		panic(fmt.Errorf("cannot call any Steampipe directory functions before SteampipeDir is set"))
+	}
+	return filepath.Join(SteampipeDir, dirName)
 }
 
-// PluginDir returns the path to the plugins directory (creates if missing)
-func PluginDir() string {
-	return steampipeSubDir("plugins")
+// TmpDir returns the path to the tmp directory in STEAMPIPE_HOME (creates if missing)
+func TmpDir() string {
+	return steampipeSubDir("tmp")
+}
+
+// EnsureTmpDir returns the path to the tmp directory in STEAMPIPE_HOME (creates if missing)
+func EnsureTmpDir() string {
+	return ensureSteampipeSubDir("tmp")
+}
+
+// EnsureTemplateDir returns the path to the templates directory (creates if missing)
+func EnsureTemplateDir() string {
+	return ensureSteampipeSubDir(filepath.Join("check", "templates"))
+}
+
+// EnsurePluginDir returns the path to the plugins directory (creates if missing)
+func EnsurePluginDir() string {
+	return ensureSteampipeSubDir("plugins")
+}
+
+// EnsureConfigDir returns the path to the config directory (creates if missing)
+func EnsureConfigDir() string {
+	return ensureSteampipeSubDir("config")
+}
+
+// EnsureInternalDir returns the path to the internal directory (creates if missing)
+func EnsureInternalDir() string {
+	return ensureSteampipeSubDir("internal")
+}
+
+// EnsureDatabaseDir returns the path to the db directory (creates if missing)
+func EnsureDatabaseDir() string {
+	return ensureSteampipeSubDir("db")
+}
+
+// EnsureLogDir returns the path to the db log directory (creates if missing)
+func EnsureLogDir() string {
+	return ensureSteampipeSubDir("logs")
+}
+
+func EnsureReportAssetsDir() string {
+	return ensureSteampipeSubDir(filepath.Join(filepath.Join("report", "assets")))
 }
 
 // ConnectionStatePath returns the path of the connections state file
 func ConnectionStatePath() string {
-	return filepath.Join(InternalDir(), connectionsStateFileName)
-}
-
-// ConfigDir returns the path to the config directory (creates if missing)
-func ConfigDir() string {
-	return steampipeSubDir("config")
-}
-
-// InternalDir returns the path to the internal directory (creates if missing)
-func InternalDir() string {
-	return steampipeSubDir("internal")
-}
-
-// DatabaseDir returns the path to the db directory (creates if missing)
-func DatabaseDir() string {
-	return steampipeSubDir("db")
-}
-
-// LogDir returns the path to the db log directory (creates if missing)
-func LogDir() string {
-	return steampipeSubDir("logs")
+	return filepath.Join(EnsureInternalDir(), connectionsStateFileName)
 }
 
 // LegacyVersionFilePath returns the legacy version file path
 func LegacyVersionFilePath() string {
-	return filepath.Join(InternalDir(), versionFileName)
+	return filepath.Join(EnsureInternalDir(), versionFileName)
 }
 
 // PluginVersionFilePath returns the plugin version file path
 func PluginVersionFilePath() string {
-	return filepath.Join(PluginDir(), versionFileName)
+	return filepath.Join(EnsurePluginDir(), versionFileName)
 }
 
 // DatabaseVersionFilePath returns the plugin version file path
 func DatabaseVersionFilePath() string {
-	return filepath.Join(DatabaseDir(), versionFileName)
-}
-
-func ReportAssetsPath() string {
-	return steampipeSubDir(filepath.Join(filepath.Join("report", "assets")))
+	return filepath.Join(EnsureDatabaseDir(), versionFileName)
 }
 
 // ReportAssetsVersionFilePath returns the report assets version file path
 func ReportAssetsVersionFilePath() string {
-	return filepath.Join(ReportAssetsPath(), versionFileName)
+	return filepath.Join(EnsureReportAssetsDir(), versionFileName)
 }
 
 func RunningInfoFilePath() string {
-	return filepath.Join(InternalDir(), databaseRunningInfoFileName)
+	return filepath.Join(EnsureInternalDir(), databaseRunningInfoFileName)
 }
 
 func PluginManagerStateFilePath() string {
-	return filepath.Join(InternalDir(), pluginManagerStateFileName)
+	return filepath.Join(EnsureInternalDir(), pluginManagerStateFileName)
 }

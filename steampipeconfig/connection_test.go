@@ -493,13 +493,13 @@ func TestConnectionsUpdateEqual(t *testing.T) {
 
 func setup(test getConnectionsToUpdateTest) {
 
-	os.RemoveAll(filepaths.PluginDir())
-	os.RemoveAll(filepaths.ConfigDir())
-	os.RemoveAll(filepaths.InternalDir())
+	os.RemoveAll(filepaths.EnsurePluginDir())
+	os.RemoveAll(filepaths.EnsureConfigDir())
+	os.RemoveAll(filepaths.EnsureInternalDir())
 
-	os.MkdirAll(filepaths.PluginDir(), os.ModePerm)
-	os.MkdirAll(filepaths.ConfigDir(), os.ModePerm)
-	os.MkdirAll(filepaths.InternalDir(), os.ModePerm)
+	os.MkdirAll(filepaths.EnsurePluginDir(), os.ModePerm)
+	os.MkdirAll(filepaths.EnsureConfigDir(), os.ModePerm)
+	os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
 
 	for _, plugin := range test.current {
 		copyPlugin(plugin.Plugin)
@@ -513,7 +513,7 @@ func setupTestConfig(test getConnectionsToUpdateTest) {
 			log.Fatal(err)
 		}
 	}
-	os.MkdirAll(filepaths.InternalDir(), os.ModePerm)
+	os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
 	writeJson(test.current, filepaths.ConnectionStatePath())
 }
 
@@ -528,7 +528,7 @@ func resetConfig(test getConnectionsToUpdateTest) {
 
 func connectionConfigPath(i int) string {
 	fileName := fmt.Sprintf("test%d%s", i, constants.ConfigExtension)
-	path := filepath.Join(filepaths.ConfigDir(), fileName)
+	path := filepath.Join(filepaths.EnsureConfigDir(), fileName)
 	return path
 }
 
@@ -537,7 +537,7 @@ func copyPlugin(plugin string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	dest, err := filepath.Abs(filepath.Join(filepaths.PluginDir(), plugin))
+	dest, err := filepath.Abs(filepath.Join(filepaths.EnsurePluginDir(), plugin))
 	if err != nil {
 		log.Fatal(err)
 	}

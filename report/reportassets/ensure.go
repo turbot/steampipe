@@ -30,7 +30,7 @@ func Ensure(ctx context.Context) error {
 
 	statushooks.SetStatus(ctx, "Installing reporting server...")
 	defer statushooks.Done(ctx)
-	reportAssetsPath := filepaths.ReportAssetsPath()
+	reportAssetsPath := filepaths.EnsureReportAssetsDir()
 	return ociinstaller.InstallAssets(ctx, reportAssetsPath)
 }
 

@@ -364,7 +364,7 @@ func createCmd(ctx context.Context, port int, listenAddresses string) *exec.Cmd 
 		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
 
 		// log directory
-		"-c", fmt.Sprintf("log_directory=%s", filepaths.LogDir()),
+		"-c", fmt.Sprintf("log_directory=%s", filepaths.EnsureLogDir()),
 
 		// If ssl is off  it doesnot matter what we pass in the ssl_cert_file and ssl_key_file
 		// SSL will only get validated if the ssl is on

@@ -10,6 +10,9 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -40,7 +43,7 @@ func openBrowser(url string) error {
 func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 	router := gin.Default()
 
-	assetsDirectory := filepaths.ReportAssetsPath()
+	assetsDirectory := filepaths.EnsureReportAssetsDir()
 
 	router.Use(static.Serve("/", static.LocalFile(assetsDirectory, true)))
 

@@ -323,7 +323,7 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
 
 		// log directory
-		"-c", fmt.Sprintf("log_directory=%s", filepaths.LogDir()),
+		"-c", fmt.Sprintf("log_directory=%s", filepaths.EnsureLogDir()),
 
 		// Data Directory
 		"-D", getDataLocation())
