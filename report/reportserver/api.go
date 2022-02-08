@@ -79,13 +79,11 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 	defer cancel()
 
 	if err := webSocket.Close(); err != nil {
-		utils.ShowErrorWithMessage(ctx, err, "Websocket Shutdown")
-		log.Println("[ERROR] WebSocket Shutdown:", err)
+		utils.ShowErrorWithMessage(ctx, err, "Websocket shutdown failed")
 	}
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		utils.ShowErrorWithMessage(ctx, err, "Server Shutdown")
-		log.Println("[TRACE] Server Shutdown:", err)
+		utils.ShowErrorWithMessage(ctx, err, "Server shutdown failed")
 	}
 	log.Println("[TRACE] Server exiting")
 
