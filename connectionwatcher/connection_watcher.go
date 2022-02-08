@@ -29,7 +29,7 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*pb.Conn
 	}
 
 	watcherOptions := &utils.WatcherOptions{
-		Directories: []string{filepaths.ConfigDir()},
+		Directories: []string{filepaths.EnsureConfigDir()},
 		Include:     filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
 		ListFlag:    filehelpers.FilesRecursive,
 

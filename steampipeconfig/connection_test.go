@@ -494,11 +494,11 @@ func TestConnectionsUpdateEqual(t *testing.T) {
 func setup(test getConnectionsToUpdateTest) {
 
 	os.RemoveAll(filepaths.EnsurePluginDir())
-	os.RemoveAll(filepaths.ConfigDir())
+	os.RemoveAll(filepaths.EnsureConfigDir())
 	os.RemoveAll(filepaths.InternalDir())
 
 	os.MkdirAll(filepaths.EnsurePluginDir(), os.ModePerm)
-	os.MkdirAll(filepaths.ConfigDir(), os.ModePerm)
+	os.MkdirAll(filepaths.EnsureConfigDir(), os.ModePerm)
 	os.MkdirAll(filepaths.InternalDir(), os.ModePerm)
 
 	for _, plugin := range test.current {
@@ -528,7 +528,7 @@ func resetConfig(test getConnectionsToUpdateTest) {
 
 func connectionConfigPath(i int) string {
 	fileName := fmt.Sprintf("test%d%s", i, constants.ConfigExtension)
-	path := filepath.Join(filepaths.ConfigDir(), fileName)
+	path := filepath.Join(filepaths.EnsureConfigDir(), fileName)
 	return path
 }
 

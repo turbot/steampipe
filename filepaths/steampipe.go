@@ -57,8 +57,8 @@ func EnsurePluginDir() string {
 	return ensureSteampipeSubDir("plugins")
 }
 
-// ConfigDir returns the path to the config directory (creates if missing)
-func ConfigDir() string {
+// EnsureConfigDir returns the path to the config directory (creates if missing)
+func EnsureConfigDir() string {
 	return ensureSteampipeSubDir("config")
 }
 

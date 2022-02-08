@@ -104,7 +104,7 @@ func installPluginDocs(image *SteampipeImage, tempdir string) error {
 }
 
 func installPluginConfigFiles(image *SteampipeImage, tempdir string) error {
-	installTo := filepaths.ConfigDir()
+	installTo := filepaths.EnsureConfigDir()
 
 	// if ConfigFileDir is not set, then there are no config files.
 	if image.Plugin.ConfigFileDir == "" {
