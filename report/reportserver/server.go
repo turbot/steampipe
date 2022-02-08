@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -211,6 +212,12 @@ func (s *Server) Shutdown(ctx context.Context) {
 }
 
 func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
+	var handleError error
+	defer func() {
+		if handleError != nil {
+			panic(fmt.Errorf("error building payload for '%s': %v", reflect.TypeOf(event).String(), handleError))
+		}
+	}()
 	// Possible events - TODO work out best way to handle these
 	/*
 		WORKSPACE_ERROR
@@ -231,7 +238,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		log.Println("[TRACE] Got workspace error event", *e)
 		payload, err := buildWorkspaceErrorPayload(e)
 		if err != nil {
-			panic(fmt.Errorf("error building payload for 'WorkspaceError': %v", err))
+			handleError = err
+			return
 		}
 		s.webSocket.Broadcast(payload)
 
@@ -239,7 +247,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		log.Println("[TRACE] Got execution started event", *e)
 		payload, err := buildExecutionStartedPayload(e)
 		if err != nil {
-			panic(fmt.Errorf("error building payload for 'ExecutionStarted': %v", err))
+			handleError = err
+			return
 		}
 		reportName := e.ReportNode.GetName()
 		s.mutex.Lock()
@@ -258,7 +267,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		log.Println("[TRACE] Got leaf node complete event", *e)
 		payload, err := buildLeafNodeProgressPayload(e)
 		if err != nil {
-			panic(fmt.Errorf("error building payload for 'LeafNodeProgress': %v", err))
+			handleError = err
+			return
 		}
 		paths := e.Node.GetPath()
 		s.mutex.Lock()
@@ -274,7 +284,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		log.Println("[TRACE] Got leaf node complete event", *e)
 		payload, err := buildLeafNodeCompletePayload(e)
 		if err != nil {
-			panic(fmt.Errorf("error building payload for 'LeafNodeComplete': %v", err))
+			handleError = err
+			return
 		}
 		paths := e.Node.GetPath()
 		s.mutex.Lock()
@@ -328,7 +339,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		if len(deletedReports) != 0 || len(newReports) != 0 || len(changedReports) != 0 {
 			payload, err := buildAvailableReportsPayload(s.workspace.Mod.Reports)
 			if err != nil {
-				panic(fmt.Errorf("error building payload for 'ReportChanged' event: %v", err))
+				handleError = err
+				return
 			}
 			s.webSocket.Broadcast(payload)
 		}
@@ -400,7 +412,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		log.Println("[TRACE] Got execution complete event", *e)
 		payload, err := buildExecutionCompletePayload(e)
 		if err != nil {
-			panic(fmt.Errorf("error building payload for 'ExecutionComplete' event: %v", err))
+			handleError = err
+			return
 		}
 		reportName := e.Report.GetName()
 		s.mutex.Lock()
