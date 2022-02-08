@@ -539,7 +539,7 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	os.Chdir(modPath)
 	// change back to original directory
 	defer os.Chdir(wd)
-	mod, err := LoadMod(modPath, runCtx)
+	actualMod, err := LoadMod(modPath, runCtx)
 	if err != nil {
 		if test.expected != "ERROR" {
 			t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)
@@ -556,13 +556,13 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	// ensure parents and children are set correctly in expected mod (this is normally done as part of decode)
 	setChildren(expectedMod)
 	expectedMod.BuildResourceTree(nil)
-	expectedStr := expectedMod.String()
-	actualString := mod.String()
 
-	if expectedStr != actualString {
+	diff := actualMod.Diff(expectedMod)
+
+	if diff.HasChanges() {
 		fmt.Printf("")
 
-		t.Errorf("Test: '%s'' FAILED : expected:\n\n%s\n\ngot:\n\n%s", name, expectedStr, actualString)
+		t.Errorf("Test: '%s'' FAILED", name)
 	}
 }
 
