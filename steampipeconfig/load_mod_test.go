@@ -563,7 +563,10 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	expectedMod := test.expected.(*modconfig.Mod)
 	expectedMod.PopulateResourceMaps()
 	// ensure parents and children are set correctly in expected mod (this is normally done as part of decode)
-	setChildren(expectedMod)
+	err = setChildren(expectedMod)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 	expectedMod.BuildResourceTree(nil)
 
 	diff := actualMod.Diff(expectedMod)
@@ -575,11 +578,15 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	}
 }
 
-func setChildren(mod *modconfig.Mod) {
+// try to resolve mod resource children using their child names
+func setChildren(mod *modconfig.Mod) error {
 	for _, benchmark := range mod.Benchmarks {
 		for _, childName := range benchmark.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName.Name)
-			child, _ := modconfig.GetResource(mod, parsed)
+			child, found := modconfig.GetResource(mod, parsed)
+			if !found {
+				return fmt.Errorf("failed to resolve child %s", childName)
+			}
 			benchmark.Children = append(benchmark.Children, child.(modconfig.ModTreeItem))
 		}
 	}
@@ -587,7 +594,10 @@ func setChildren(mod *modconfig.Mod) {
 		var children []modconfig.ModTreeItem
 		for _, childName := range container.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName)
-			child, _ := modconfig.GetResource(mod, parsed)
+			child, found := modconfig.GetResource(mod, parsed)
+			if !found {
+				return fmt.Errorf("failed to resolve child %s", childName)
+			}
 			children = append(children, child.(modconfig.ModTreeItem))
 		}
 		container.SetChildren(children)
@@ -597,12 +607,15 @@ func setChildren(mod *modconfig.Mod) {
 		var children []modconfig.ModTreeItem
 		for _, childName := range report.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName)
-			child, _ := modconfig.GetResource(mod, parsed)
+			child, found := modconfig.GetResource(mod, parsed)
+			if !found {
+				return fmt.Errorf("failed to resolve child %s", childName)
+			}
 			children = append(children, child.(modconfig.ModTreeItem))
 		}
 		report.SetChildren(children)
 	}
-
+	return nil
 }
 
 type loadResourceNamesTest struct {
