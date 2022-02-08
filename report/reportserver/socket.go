@@ -3,6 +3,7 @@ package reportserver
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 
@@ -55,7 +56,11 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 			switch request.Action {
 			case "available_reports":
 				reports := workspace.Mod.Reports
-				session.Write(buildAvailableReportsPayload(reports))
+				payload, err := buildAvailableReportsPayload(reports)
+				if err != nil {
+					panic(fmt.Errorf("error building payload for %s: %v", "available_reports", err))
+				}
+				session.Write(payload)
 			case "select_report":
 				log.Printf("[TRACE] Got event: %v\n", request.Payload.Report)
 				mutex.Lock()
