@@ -23,7 +23,6 @@ import (
 	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
 
