@@ -10,6 +10,7 @@ import {
 } from "../common";
 import { get } from "lodash";
 import { getColumnIndex } from "../../../utils/data";
+import { Link } from "react-router-dom";
 
 const getWrapperClasses = (style) => {
   switch (style) {
@@ -53,6 +54,8 @@ type CounterDataFormat = "simple" | "formal";
 interface CounterState {
   loading: boolean;
   label: string | null;
+  link_text: string | null;
+  link_url: string | null;
   value: number | null;
   style: CounterStyle;
 }
@@ -69,6 +72,8 @@ const useCounterState = ({ data, properties }: CounterProps) => {
     useState<CounterState>({
       loading: true,
       label: null,
+      link_text: null,
+      link_url: null,
       value: null,
       style: null,
     });
@@ -87,6 +92,8 @@ const useCounterState = ({ data, properties }: CounterProps) => {
       setCalculatedProperties({
         loading: false,
         label: null,
+        link_text: null,
+        link_url: null,
         value: null,
         style: null,
       });
@@ -101,6 +108,8 @@ const useCounterState = ({ data, properties }: CounterProps) => {
       setCalculatedProperties({
         loading: false,
         label: firstCol.name,
+        link_text: null,
+        link_url: null,
         value: row[0],
         style: properties.style ? properties.style : null,
       });
@@ -114,9 +123,19 @@ const useCounterState = ({ data, properties }: CounterProps) => {
       const styleColIndex = getColumnIndex(data.columns, "style");
       const formalStyle =
         styleColIndex >= 0 ? get(data, `rows[0][${styleColIndex}]`) : null;
+      const linkTextColIndex = getColumnIndex(data.columns, "link_text");
+      const formalLinkText =
+        linkTextColIndex >= 0
+          ? get(data, `rows[0][${linkTextColIndex}]`)
+          : null;
+      const linkUrlColIndex = getColumnIndex(data.columns, "link_url");
+      const formalLinkUrl =
+        linkUrlColIndex >= 0 ? get(data, `rows[0][${linkUrlColIndex}]`) : null;
       setCalculatedProperties({
         loading: false,
         label: formalLabel,
+        link_text: formalLinkText,
+        link_url: formalLinkUrl,
         value: formalValue,
         style: formalStyle,
       });
@@ -149,11 +168,10 @@ const Counter = (props: CounterProps) => {
   return (
     <div
       className={
-        "flex-col overflow-hidden shadow rounded-lg " +
-        getWrapperClasses(state.style)
+        "flex-col overflow-hidden rounded-lg " + getWrapperClasses(state.style)
       }
     >
-      <div className="flex-grow">
+      <div className="flex-grow flex-col">
         <div className="flex">
           <div className="w-0 flex-1 px-4 py-5 sm:p-6">
             <dt
@@ -207,6 +225,15 @@ const Counter = (props: CounterProps) => {
             </div>
           )}
         </div>
+        {state.link_url && (
+          <div className="bg-black-scale-1 px-4 py-4 sm:px-6">
+            <div className="text-sm">
+              <Link to={state.link_url} className="font-medium text-link">
+                {state.link_text || state.link_url}
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
