@@ -77,7 +77,7 @@ func EnsureLogDir() string {
 	return ensureSteampipeSubDir("logs")
 }
 
-func ReportAssetsPath() string {
+func EnsureReportAssetsDir() string {
 	return ensureSteampipeSubDir(filepath.Join(filepath.Join("report", "assets")))
 }
 
@@ -103,7 +103,7 @@ func DatabaseVersionFilePath() string {
 
 // ReportAssetsVersionFilePath returns the report assets version file path
 func ReportAssetsVersionFilePath() string {
-	return filepath.Join(ReportAssetsPath(), versionFileName)
+	return filepath.Join(EnsureReportAssetsDir(), versionFileName)
 }
 
 func RunningInfoFilePath() string {

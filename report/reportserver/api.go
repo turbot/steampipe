@@ -3,8 +3,6 @@ package reportserver
 import (
 	"context"
 	"fmt"
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/constants"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +11,9 @@ import (
 	"path"
 	"runtime"
 	"time"
+
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
@@ -41,7 +42,7 @@ func openBrowser(url string) error {
 func StartAPI(ctx context.Context, webSocket *melody.Melody) {
 	router := gin.Default()
 
-	assetsDirectory := filepaths.ReportAssetsPath()
+	assetsDirectory := filepaths.EnsureReportAssetsDir()
 
 	router.Use(static.Serve("/", static.LocalFile(assetsDirectory, true)))
 
