@@ -109,9 +109,6 @@ func NewServer(ctx context.Context) (*Server, error) {
 	return server, err
 }
 
-// we don't expect the build functions to ever error during marshalling
-// this is because the data getting marshalled are not expected to have go specific
-// properties/data in them
 func buildAvailableReportsPayload(reports map[string]*modconfig.ReportContainer) ([]byte, error) {
 	reportsPayload := make(map[string]string)
 	for _, report := range reports {
@@ -216,6 +213,9 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 	var payload []byte
 	defer func() {
 		if payloadError != nil {
+			// we don't expect the build functions to ever error during marshalling
+			// this is because the data getting marshalled are not expected to have go specific
+			// properties/data in them
 			panic(fmt.Errorf("error building payload for '%s': %v", reflect.TypeOf(event).String(), payloadError))
 		}
 	}()

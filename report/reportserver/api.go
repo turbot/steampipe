@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/utils"
 	"gopkg.in/olahol/melody.v1"
 )
 
@@ -74,14 +75,16 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 	<-ctx.Done()
 	log.Println("Shutdown Server ...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := webSocket.Close(); err != nil {
+		utils.ShowErrorWithMessage(ctx, err, "Websocket Shutdown")
 		log.Println("[ERROR] WebSocket Shutdown:", err)
 	}
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		utils.ShowErrorWithMessage(ctx, err, "Server Shutdown")
 		log.Println("[TRACE] Server Shutdown:", err)
 	}
 	log.Println("[TRACE] Server exiting")
