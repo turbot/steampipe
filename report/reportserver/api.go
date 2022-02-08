@@ -10,10 +10,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/constants"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/utils"
 	"gopkg.in/olahol/melody.v1"
