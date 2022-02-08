@@ -48,6 +48,7 @@ import { useTheme } from "../../../../hooks/useTheme";
 // };
 
 const getCommonBaseOptions = () => ({
+  animation: false,
   tooltip: {
     trigger: "item",
     triggerOn: "mousemove",
