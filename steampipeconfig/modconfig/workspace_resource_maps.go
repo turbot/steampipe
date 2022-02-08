@@ -51,7 +51,7 @@ func EmptyWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
 }
 
 func WorkspaceResourceMapFromMod(mod *Mod) *WorkspaceResourceMaps {
-	return &WorkspaceResourceMaps{
+	resourceMaps := &WorkspaceResourceMaps{
 		Mod:               mod,
 		Mods:              make(map[string]*Mod),
 		Queries:           mod.Queries,
@@ -68,6 +68,10 @@ func WorkspaceResourceMapFromMod(mod *Mod) *WorkspaceResourceMaps {
 		ReportTables:      mod.ReportTables,
 		ReportTexts:       mod.ReportTexts,
 	}
+	if !mod.IsDefaultMod() {
+		resourceMaps.Mods[mod.Name()] = mod
+	}
+	return resourceMaps
 }
 
 func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {

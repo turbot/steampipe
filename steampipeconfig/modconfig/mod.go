@@ -112,9 +112,13 @@ func NewMod(shortName, modPath string, defRange hcl.Range) (*Mod, error) {
 	mod.setVersion()
 
 	// create resource map with reference to our resources (it will be populated as we are)
-	mod.resourceMaps = WorkspaceResourceMapFromMod(mod)
+	mod.PopulateResourceMaps()
 
 	return mod, nil
+}
+
+func (m *Mod) PopulateResourceMaps() {
+	m.resourceMaps = WorkspaceResourceMapFromMod(m)
 }
 
 func (m *Mod) setVersion() {
@@ -536,8 +540,8 @@ func (m *Mod) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 		m.Require = m.LegacyRequire
 	}
 
-	// populate resource maps
-	m.PopulateResourceMaps()
+	// populate resource map references
+	m.resourceMaps.PopulateReferences()
 
 	// initialise our Require
 	if m.Require == nil {
@@ -703,11 +707,4 @@ func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
 		}
 	}
 	return []byte(strings.Join(resLines, "\n")), nil
-}
-
-func (m *Mod) PopulateResourceMaps() {
-	m.resourceMaps.PopulateReferences()
-	if !m.IsDefaultMod() {
-		m.resourceMaps.Mods[m.Name()] = m
-	}
 }
