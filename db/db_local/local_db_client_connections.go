@@ -77,7 +77,6 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 
 	res.UpdatedConnections = true
 	return res
-
 }
 
 func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampipeconfig.ConnectionUpdates) ([]string, *steampipeconfig.RefreshConnectionResult) {
