@@ -27,7 +27,9 @@ const Placeholder = ({
   );
 };
 
-export default {
+const component = {
   type: "placeholder",
   component: Placeholder,
 };
+
+export default component;

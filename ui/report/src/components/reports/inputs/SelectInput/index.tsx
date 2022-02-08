@@ -20,7 +20,7 @@ const SelectInput = (props: SelectInputProps) => {
   const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
     null
   );
-  const [_, setRandomVal] = useState(0);
+  const [, setRandomVal] = useState(0);
   const { theme, wrapperRef } = useTheme();
   const options: SelectOption[] = useMemo(() => {
     if (!props.data || !props.data.columns || !props.data.rows) {
@@ -68,7 +68,7 @@ const SelectInput = (props: SelectInputProps) => {
 
     setValue(foundOption);
     setInitialisedFromUrl(true);
-  }, [props.multi, initialisedFromUrl, urlValue, options, value]);
+  }, [props.multi, initialisedFromUrl, urlValue, options]);
 
   useEffect(() => {
     if (!initialisedFromUrl) {
@@ -76,20 +76,32 @@ const SelectInput = (props: SelectInputProps) => {
     }
 
     // @ts-ignore
-    if (!value || value.length === 0) {
+    if ((!value || value.length === 0) && urlValue) {
+      console.log("Setting null");
       setUrlValue(null);
       return;
     }
 
     if (props.multi) {
-      // @ts-ignore
-      setUrlValue(value.map((v) => v.value).join(","));
+      if (value) {
+        // @ts-ignore
+        const desiredValue = value.map((v) => v.value).join(",");
+        if (urlValue !== desiredValue) {
+          console.log("Setting", desiredValue);
+          setUrlValue(desiredValue);
+        }
+      }
     } else {
       // @ts-ignore
-      setUrlValue(value.value);
+      if (value && urlValue !== value.value) {
+        // @ts-ignore
+        console.log("Setting", value.value);
+        // @ts-ignore
+        setUrlValue(value.value);
+      }
     }
     // setUrlValue(props.multi ? value.join);
-  }, [props.multi, initialisedFromUrl, value]);
+  }, [props.multi, initialisedFromUrl, urlValue, setUrlValue, value]);
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
   useEffect(() => setRandomVal(Math.random()), [theme.name]);

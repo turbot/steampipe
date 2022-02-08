@@ -33,7 +33,7 @@ const ControlsTable = ({ loading, control }: ControlsTableProps) => {
   );
   const rowData = useMemo(
     () => (control && control.results ? control.results : []),
-    [columns, control]
+    [control]
   );
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
     useTable({ columns, data: rowData }, useSortBy);

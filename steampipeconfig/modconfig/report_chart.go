@@ -28,6 +28,7 @@ type ReportChart struct {
 	SeriesList ReportChartSeriesList `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
 	Axes       *ReportChartAxes      `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
 	Grouping   *string               `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
+	Transform  *string               `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 
 	Series map[string]*ReportChartSeries `cty:"series" json:"series"`
 
@@ -94,6 +95,9 @@ func (c *ReportChart) setBaseProperties() {
 	}
 	if c.Grouping == nil {
 		c.Grouping = c.Base.Grouping
+	}
+	if c.Transform == nil {
+		c.Transform = c.Base.Transform
 	}
 	if c.Legend == nil {
 		c.Legend = c.Base.Legend
@@ -224,6 +228,10 @@ func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
 		res.AddPropertyDiff("Grouping")
 	}
 
+	if !utils.SafeStringsEqual(c.Transform, other.Transform) {
+		res.AddPropertyDiff("Transform")
+	}
+
 	if len(c.SeriesList) != len(other.SeriesList) {
 		res.AddPropertyDiff("Series")
 	} else {
@@ -236,10 +244,10 @@ func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
 
 	if c.Legend != nil {
 		if !c.Legend.Equals(other.Legend) {
-			res.AddPropertyDiff("Series")
+			res.AddPropertyDiff("Legend")
 		}
 	} else if other.Legend != nil {
-		res.AddPropertyDiff("Series")
+		res.AddPropertyDiff("Legend")
 	}
 
 	if c.Axes != nil {

@@ -19,7 +19,7 @@ DefaultsToColumn.args = {
       { name: "Type", data_type_name: "TEXT" },
       { name: "Count", data_type_name: "INT8" },
     ],
-    items: [
+    rows: [
       ["User", 12],
       ["Policy", 93],
       ["Role", 48],

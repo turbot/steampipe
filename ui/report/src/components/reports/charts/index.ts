@@ -10,12 +10,12 @@ import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
 type ChartLabelOptions = {
-  display: "auto" | "always" | "none";
+  display: "auto" | "all" | "none";
   format: string;
 };
 
 type ChartLegendOptions = {
-  display: "auto" | "always" | "none";
+  display: "auto" | "all" | "none";
   position: "top" | "right" | "bottom" | "left";
 };
 
@@ -28,20 +28,22 @@ type ChartSeries = {
   [series: string]: ChartSeriesOptions;
 };
 
+export type ChartTransform = "auto" | "crosstab" | "none";
+
 type ChartAxisTitleOptions = {
-  display: "always" | "none";
+  display: "all" | "none";
   align: "start" | "center" | "end";
   value: string;
 };
 
 type ChartXAxisOptions = {
-  display: "auto" | "always" | "none";
+  display: "auto" | "all" | "none";
   title: ChartAxisTitleOptions;
   labels: ChartLabelOptions;
 };
 
 type ChartYAxisOptions = {
-  display: "auto" | "always" | "none";
+  display: "auto" | "all" | "none";
   title: ChartAxisTitleOptions;
   labels: ChartLabelOptions;
   min: number;
@@ -60,6 +62,7 @@ export type ChartProperties = {
   axes?: ChartAxes;
   legend?: ChartLegendOptions;
   series?: ChartSeries;
+  transform?: ChartTransform;
   grouping?: ChartGrouping;
 };
 
@@ -68,8 +71,6 @@ export type ChartProps = BaseChartProps & {
 };
 
 export type ChartType = "bar" | "column" | "donut" | "line" | "pie" | "table";
-
-export type ChartJSType = "bar" | "doughnut" | "line" | "pie";
 
 export interface IChart {
   type: ChartType;

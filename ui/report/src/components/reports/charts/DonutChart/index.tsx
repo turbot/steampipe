@@ -1,9 +1,9 @@
 import Chart from "../Chart";
 import { ChartProps, IChart } from "../index";
 
-const DonutChart = (props: ChartProps) => (
-  <Chart data={props.data} inputs={{ type: "donut", ...props.properties }} />
-);
+const DonutChart = (props: ChartProps) => {
+  return <Chart {...props} />;
+};
 
 const definition: IChart = {
   type: "donut",

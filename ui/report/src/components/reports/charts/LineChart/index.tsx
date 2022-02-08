@@ -1,9 +1,9 @@
 import Chart from "../Chart";
 import { ChartProps, IChart } from "../index";
 
-const LineChart = (props: ChartProps) => (
-  <Chart data={props.data} inputs={{ type: "line", ...props.properties }} />
-);
+const LineChart = (props: ChartProps) => {
+  return <Chart {...props} />;
+};
 
 const definition: IChart = {
   type: "line",

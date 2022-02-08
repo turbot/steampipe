@@ -1,4 +1,4 @@
-import ErrorModal from "../Modal/ErrorModal";
+import ErrorModal from "../../Modal/ErrorModal";
 import { useReport } from "../../../hooks/useReport";
 
 interface ReportErrorModalProps {

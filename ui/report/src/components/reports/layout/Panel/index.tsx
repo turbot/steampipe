@@ -1,12 +1,12 @@
 import Error from "../../Error";
 import Placeholder from "../../Placeholder";
-import React, { memo, useEffect, useState } from "react";
+import React, { memo } from "react";
 import useDimensions from "../../../../hooks/useDimensions";
 import { BaseChartProps } from "../../charts";
 import { classNames } from "../../../../utils/styles";
 import { CounterProps } from "../../Counter";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
-import { PanelDefinition, PanelType } from "../../../../hooks/useReport";
+import { PanelDefinition } from "../../../../hooks/useReport";
 import { PanelProvider } from "../../../../hooks/usePanel";
 import { TableProps } from "../../Table";
 
@@ -20,7 +20,6 @@ interface PanelProps {
     | TableProps;
   ready?: boolean;
   showExpand?: boolean;
-  type: PanelType;
 }
 
 // const getReadyStatusForPanelType = (
@@ -58,7 +57,6 @@ const Panel = ({
   definition,
   showExpand = true,
   ready = true,
-  type,
 }: PanelProps) => {
   const [panelRef, dimensions] = useDimensions();
   // const { sqlDataMap } = useReport();

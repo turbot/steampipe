@@ -12,24 +12,48 @@ import {
 } from "../../../constants/icons";
 import { useMemo } from "react";
 import { useSortBy, useTable } from "react-table";
+import { read } from "fs";
 
-interface ColumnInfo {
+type TableColumnWrap = "all" | "none";
+
+interface TableColumnInfo {
   Header: string;
   accessor: string;
+  wrap?: TableColumnWrap;
 }
 
-const getColumns = (columns: LeafNodeDataColumn[]) => {
-  if (!columns || columns.length === 0) {
-    return [];
+const getColumns = (
+  cols: LeafNodeDataColumn[],
+  properties?: TableProperties
+): { columns: TableColumnInfo[]; hiddenColumns: string[] } => {
+  if (!cols || cols.length === 0) {
+    return { columns: [], hiddenColumns: [] };
   }
-  return columns.map((col) => ({
-    Header: col.name,
-    accessor: col.name,
-    data_type_name: col.data_type_name,
-  }));
+
+  const hiddenColumns: string[] = [];
+  const columns: TableColumnInfo[] = cols.map((col) => {
+    let colWrap: TableColumnWrap = "none";
+    if (properties && properties.columns && properties.columns[col.name]) {
+      const c = properties.columns[col.name];
+      if (c.display === "none") {
+        hiddenColumns.push(col.name);
+      }
+      if (c.wrap) {
+        colWrap = c.wrap as TableColumnWrap;
+      }
+    }
+
+    return {
+      Header: col.name,
+      accessor: col.name,
+      data_type_name: col.data_type_name,
+      wrap: colWrap,
+    };
+  });
+  return { columns, hiddenColumns };
 };
 
-const getData = (columns: ColumnInfo[], rows: LeafNodeDataRow) => {
+const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow) => {
   if (!columns || columns.length === 0) {
     return [];
   }
@@ -197,20 +221,40 @@ const CellValue = ({ column, value }) => {
 //   return value;
 // };
 
-export type TableProps = BasePrimitiveProps & ExecutablePrimitiveProps;
+interface TableColumnOptions {
+  display?: string;
+  wrap?: string;
+}
+
+type TableColumns = {
+  [column: string]: TableColumnOptions;
+};
+
+export type TableProperties = {
+  columns?: TableColumns;
+};
+
+export type BaseTableProps = BasePrimitiveProps & ExecutablePrimitiveProps;
+
+export type TableProps = BaseTableProps & {
+  properties?: TableProperties;
+};
 
 // TODO retain full width on mobile, no padding
 const Table = (props: TableProps) => {
-  const columns = useMemo(
-    () => getColumns(props.data ? props.data.columns : []),
-    [props.data]
+  const { columns, hiddenColumns } = useMemo(
+    () => getColumns(props.data ? props.data.columns : [], props.properties),
+    [props.data, props.properties]
   );
   const rowData = useMemo(
     () => getData(columns, props.data ? props.data.rows : []),
     [columns, props.data]
   );
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
-    useTable({ columns, data: rowData }, useSortBy);
+    useTable(
+      { columns, data: rowData, initialState: { hiddenColumns } },
+      useSortBy
+    );
   return props.data ? (
     <>
       <table
@@ -220,25 +264,27 @@ const Table = (props: TableProps) => {
         <thead className="bg-table-head text-table-head">
           {headerGroups.map((headerGroup) => (
             <tr {...headerGroup.getHeaderGroupProps()}>
-              {headerGroup.headers.map((column) => (
-                <th
-                  {...column.getHeaderProps(column.getSortByToggleProps())}
-                  scope="col"
-                  className="px-4 py-3 text-left text-sm font-normal tracking-wider whitespace-nowrap"
-                >
-                  {column.render("Header")}
-                  {column.isSortedDesc ? (
-                    <SortDescendingIcon className="inline-block h-4 w-4" />
-                  ) : (
-                    <SortAscendingIcon
-                      className={classNames(
-                        "inline-block h-4 w-4",
-                        !column.isSorted ? "invisible" : null
-                      )}
-                    />
-                  )}
-                </th>
-              ))}
+              {headerGroup.headers.map((column) => {
+                return (
+                  <th
+                    {...column.getHeaderProps(column.getSortByToggleProps())}
+                    scope="col"
+                    className="px-4 py-3 text-left text-sm font-normal tracking-wider whitespace-nowrap"
+                  >
+                    {column.render("Header")}
+                    {column.isSortedDesc ? (
+                      <SortDescendingIcon className="inline-block h-4 w-4" />
+                    ) : (
+                      <SortAscendingIcon
+                        className={classNames(
+                          "inline-block h-4 w-4",
+                          !column.isSorted ? "invisible" : null
+                        )}
+                      />
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           ))}
         </thead>
@@ -264,7 +310,12 @@ const Table = (props: TableProps) => {
                   return (
                     <td
                       {...cell.getCellProps()}
-                      className="px-4 py-4 align-top content-center text-sm whitespace-nowrap"
+                      className={classNames(
+                        "px-4 py-4 align-top content-center text-sm",
+                        cell.column.wrap === "all"
+                          ? "break-all"
+                          : "whitespace-nowrap"
+                      )}
                     >
                       <CellValue column={columns[index]} value={cell.value} />
                     </td>

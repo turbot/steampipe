@@ -1,6 +1,5 @@
 import findPathDeep from "deepdash/findPathDeep";
 import paths from "deepdash/paths";
-import pickDeep from "deepdash/pickDeep";
 import { CheckLeafNodeExecutionTree } from "../components/reports/check/common";
 import {
   createContext,
@@ -12,7 +11,7 @@ import {
   useState,
 } from "react";
 import { FullHeightThemeWrapper } from "./useTheme";
-import { get, set } from "lodash";
+import { get, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/reports/common";
 import { noop } from "../utils/func";
@@ -54,6 +53,7 @@ export type PanelType =
   | "control"
   | "counter"
   | "error"
+  | "hierarchy"
   | "image"
   | "input"
   | "text"
@@ -99,10 +99,16 @@ const ReportContext = createContext<IReportContext | null>(null);
 const buildReportsList = (
   reports: AvailableReportsDictionary
 ): AvailableReport[] => {
-  return Object.entries(reports).map(([name, title]) => ({
-    name,
-    title,
-  }));
+  return sortBy(
+    Object.entries(reports).map(([name, title]) => ({
+      name,
+      title,
+    })),
+    [
+      (report) =>
+        report.title ? report.title.toLowerCase() : report.name.toLowerCase(),
+    ]
+  );
 };
 
 const updateSelectedReport = (
@@ -320,7 +326,7 @@ const ReportProvider = ({ children }) => {
           webSocket.current.onmessage = onSocketMessage;
         }
         if (webSocket.current.readyState === webSocket.current.OPEN) {
-          // console.log("Sending keep alive");
+          // console.log("Sending keep alive", webSocket.current);
           webSocket.current.send(JSON.stringify({ action: "keep_alive" }));
         }
         keepAliveTimerId = setTimeout(keepAlive, timeout);
@@ -345,20 +351,17 @@ const ReportProvider = ({ children }) => {
     };
   }, []);
 
-  // useEffect(() => {
-  //   if (!webSocket.current) return;
-  //   webSocket.current.send(
-  //     JSON.stringify({
-  //       action: "select_workspace",
-  //       payload: { workspace: state.selectedWorkspace },
-  //     })
-  //   );
-  // }, [state.selectedWorkspace]);
-
   useEffect(() => {
-    if (!webSocket.current) return;
+    if (
+      !webSocket.current ||
+      webSocket.current?.readyState !== webSocket.current.OPEN
+    ) {
+      return;
+    }
 
-    if (!state.selectedReport || !state.selectedReport.name) return;
+    if (!state.selectedReport || !state.selectedReport.name) {
+      return;
+    }
 
     webSocket.current.send(
       JSON.stringify({
@@ -393,7 +396,7 @@ const ReportProvider = ({ children }) => {
     if (!state.reports.find((r) => r.name === reportName)) {
       navigate("/", { replace: true });
     }
-  }, [reportName, state.availableReportsLoaded, state.reports]);
+  }, [navigate, reportName, state.availableReportsLoaded, state.reports]);
 
   useEffect(() => {
     if (!state.selectedReport) {
@@ -418,7 +421,7 @@ const ReportProvider = ({ children }) => {
       type: "select_panel",
       panel: null,
     });
-  }, [state]);
+  }, []);
 
   useEffect(() => {
     setHotKeysHandlers({

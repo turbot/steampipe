@@ -81,7 +81,7 @@ MultiSeries.args = {
       { name: "Women", data_type_name: "INT8" },
       { name: "Children", data_type_name: "INT8" },
     ],
-    items: [
+    rows: [
       ["England", 16000000, 13000000, 8000000],
       ["Scotland", 8000000, 7000000, 3000000],
       ["Wales", 5000000, 3000000, 2500000],
@@ -133,7 +133,7 @@ SingleSeriesLegend.args = {
   },
   properties: {
     legend: {
-      display: "always",
+      display: "all",
     },
   },
 };
@@ -154,7 +154,7 @@ SingleSeriesLegendPosition.args = {
   },
   properties: {
     legend: {
-      display: "always",
+      display: "all",
       position: "bottom",
     },
   },
@@ -178,7 +178,7 @@ SingleSeriesXAxisTitle.args = {
     axes: {
       x: {
         title: {
-          display: "always",
+          display: "all",
           value: "I am a the X Axis title",
         },
       },
