@@ -23,7 +23,7 @@ func NewTempDir(path string) *tempDir {
 }
 
 func getOrCreateTempDir(ref string) string {
-	cacheDir := filepath.Join(filepaths.TmpDir(true), safeDirName(fmt.Sprintf("tmp-%s", generateTempDirName())))
+	cacheDir := filepath.Join(filepaths.EnsureTmpDir(), safeDirName(fmt.Sprintf("tmp-%s", generateTempDirName())))
 
 	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
 		err = os.MkdirAll(cacheDir, 0755)

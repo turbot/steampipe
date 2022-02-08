@@ -25,7 +25,7 @@ func main() {
 			utils.ShowError(ctx, helpers.ToError(r))
 		}
 		if len(filepaths.SteampipeDir) > 0 {
-			os.RemoveAll(filepaths.TmpDir(false))
+			os.RemoveAll(filepaths.TmpDir())
 		}
 		utils.LogTime("main end")
 		utils.DisplayProfileData()

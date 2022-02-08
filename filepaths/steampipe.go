@@ -19,13 +19,10 @@ const (
 
 var SteampipeDir string
 
-func steampipeSubDir(dirName string, createOnNotExist bool) string {
-	if SteampipeDir == "" {
-		panic(fmt.Errorf("cannot call any Steampipe directory functions before SteampipeDir is set"))
-	}
-	subDir := filepath.Join(SteampipeDir, dirName)
+func ensureSteampipeSubDir(dirName string) string {
+	subDir := steampipeSubDir(dirName)
 
-	if _, err := os.Stat(subDir); os.IsNotExist(err) && createOnNotExist {
+	if _, err := os.Stat(subDir); os.IsNotExist(err) {
 		err = os.MkdirAll(subDir, 0755)
 		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create %s directory", dirName))
 	}
@@ -33,39 +30,55 @@ func steampipeSubDir(dirName string, createOnNotExist bool) string {
 	return subDir
 }
 
+func steampipeSubDir(dirName string) string {
+	if SteampipeDir == "" {
+		panic(fmt.Errorf("cannot call any Steampipe directory functions before SteampipeDir is set"))
+	}
+	return filepath.Join(SteampipeDir, dirName)
+}
+
 // TmpDir returns the path to the tmp directory in STEAMPIPE_HOME (creates if missing)
-func TmpDir(create bool) string {
-	return steampipeSubDir("tmp", create)
+func TmpDir() string {
+	return steampipeSubDir("tmp")
+}
+
+// EnsureTmpDir returns the path to the tmp directory in STEAMPIPE_HOME (creates if missing)
+func EnsureTmpDir() string {
+	return ensureSteampipeSubDir("tmp")
 }
 
 // TemplateDir returns the path to the templates directory (creates if missing)
 func TemplateDir() string {
-	return steampipeSubDir(filepath.Join("check", "templates"), true)
+	return ensureSteampipeSubDir(filepath.Join("check", "templates"))
 }
 
 // PluginDir returns the path to the plugins directory (creates if missing)
 func PluginDir() string {
-	return steampipeSubDir("plugins", true)
+	return ensureSteampipeSubDir("plugins")
 }
 
 // ConfigDir returns the path to the config directory (creates if missing)
 func ConfigDir() string {
-	return steampipeSubDir("config", true)
+	return ensureSteampipeSubDir("config")
 }
 
 // InternalDir returns the path to the internal directory (creates if missing)
 func InternalDir() string {
-	return steampipeSubDir("internal", true)
+	return ensureSteampipeSubDir("internal")
 }
 
 // DatabaseDir returns the path to the db directory (creates if missing)
 func DatabaseDir() string {
-	return steampipeSubDir("db", true)
+	return ensureSteampipeSubDir("db")
 }
 
 // LogDir returns the path to the db log directory (creates if missing)
 func LogDir() string {
-	return steampipeSubDir("logs", true)
+	return ensureSteampipeSubDir("logs")
+}
+
+func ReportAssetsPath() string {
+	return ensureSteampipeSubDir(filepath.Join(filepath.Join("report", "assets")))
 }
 
 // ConnectionStatePath returns the path of the connections state file
@@ -86,10 +99,6 @@ func PluginVersionFilePath() string {
 // DatabaseVersionFilePath returns the plugin version file path
 func DatabaseVersionFilePath() string {
 	return filepath.Join(DatabaseDir(), versionFileName)
-}
-
-func ReportAssetsPath() string {
-	return steampipeSubDir(filepath.Join(filepath.Join("report", "assets")), true)
 }
 
 // ReportAssetsVersionFilePath returns the report assets version file path
