@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"reflect"
 	"sync"
 
 	"github.com/spf13/viper"
 	"gopkg.in/olahol/melody.v1"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/go-kit/types"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
@@ -21,6 +22,31 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 )
+
+type ListenType string
+type ListenPort int
+
+const (
+	ListenTypeLocal   ListenType = "local"
+	ListenTypeNetwork ListenType = "network"
+)
+
+// IsValid is a validator for ListenType known values
+func (lt ListenType) IsValid() error {
+	switch lt {
+	case ListenTypeNetwork, ListenTypeLocal:
+		return nil
+	}
+	return fmt.Errorf("invalid listen type. Must be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
+}
+
+// IsValid is a validator for ListenType known values
+func (lp ListenPort) IsValid() error {
+	if lp < 1 || lp > 65535 {
+		return fmt.Errorf("invalid port - must be within range (1:65535)")
+	}
+	return nil
+}
 
 type Server struct {
 	context       context.Context
@@ -83,73 +109,56 @@ func NewServer(ctx context.Context) (*Server, error) {
 	return server, err
 }
 
-func buildAvailableReportsPayload(reports map[string]*modconfig.ReportContainer) []byte {
+func buildAvailableReportsPayload(reports map[string]*modconfig.ReportContainer) ([]byte, error) {
 	reportsPayload := make(map[string]string)
 	for _, report := range reports {
-		reportsPayload[report.FullName] = types.SafeString(report.Title)
+		reportsPayload[report.FullName] = typeHelpers.SafeString(report.Title)
 	}
 	payload := AvailableReportsPayload{
 		Action:  "available_reports",
 		Reports: reportsPayload,
 	}
-	jsonString, _ := json.Marshal(payload)
-	return jsonString
+	return json.Marshal(payload)
 }
 
-func buildWorkspaceErrorPayload(e *reportevents.WorkspaceError) []byte {
+func buildWorkspaceErrorPayload(e *reportevents.WorkspaceError) ([]byte, error) {
 	payload := ErrorPayload{
 		Action: "workspace_error",
 		Error:  e.Error.Error(),
 	}
-	jsonString, _ := json.Marshal(payload)
-	return jsonString
+	return json.Marshal(payload)
 }
 
-func buildLeafNodeProgressPayload(event *reportevents.LeafNodeProgress) []byte {
+func buildLeafNodeProgressPayload(event *reportevents.LeafNodeProgress) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:     "leaf_node_progress",
 		ReportNode: event.Node,
 	}
-	//jsonString, _ := json.Marshal(payload)
-	//return jsonString
-	jsonString, err := json.MarshalIndent(payload, "", "  ")
-	fmt.Println(err)
-	a := string(jsonString)
-	fmt.Println(a)
-
-	return jsonString
+	return json.Marshal(payload)
 }
 
-func buildLeafNodeCompletePayload(event *reportevents.LeafNodeComplete) []byte {
+func buildLeafNodeCompletePayload(event *reportevents.LeafNodeComplete) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:     "leaf_node_complete",
 		ReportNode: event.Node,
 	}
-	jsonString, _ := json.Marshal(payload)
-	return jsonString
+	return json.Marshal(payload)
 }
 
-func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) []byte {
+func buildExecutionStartedPayload(event *reportevents.ExecutionStarted) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:     "execution_started",
 		ReportNode: event.ReportNode,
 	}
-	jsonString, _ := json.Marshal(payload)
-	return jsonString
+	return json.Marshal(payload)
 }
 
-func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) []byte {
+func buildExecutionCompletePayload(event *reportevents.ExecutionComplete) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:     "execution_complete",
 		ReportNode: event.Report,
 	}
-	//jsonString, _ := json.Marshal(payload)
-	//return jsonString
-	jsonString, err := json.MarshalIndent(payload, "", "  ")
-	fmt.Println(err)
-	a := string(jsonString)
-	fmt.Println(a)
-	return jsonString
+	return json.Marshal(payload)
 }
 
 func getReportsInterestedInResourceChanges(reportsBeingWatched []string, existingChangedReportNames []string, changedItems []*modconfig.ReportTreeItemDiffs) []string {
@@ -180,7 +189,7 @@ func getReportsInterestedInResourceChanges(reportsBeingWatched []string, existin
 // Starts the API server
 func (s *Server) Start() {
 	go Init(s.context, s.webSocket, s.workspace, s.dbClient, s.reportClients, s.mutex)
-	StartAPI(s.context, s.webSocket)
+	go StartAPI(s.context, s.webSocket)
 }
 
 func (s *Server) Shutdown(ctx context.Context) {
@@ -200,6 +209,16 @@ func (s *Server) Shutdown(ctx context.Context) {
 }
 
 func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
+	var payloadError error
+	var payload []byte
+	defer func() {
+		if payloadError != nil {
+			// we don't expect the build functions to ever error during marshalling
+			// this is because the data getting marshalled are not expected to have go specific
+			// properties/data in them
+			panic(fmt.Errorf("error building payload for '%s': %v", reflect.TypeOf(event).String(), payloadError))
+		}
+	}()
 	// Possible events - TODO work out best way to handle these
 	/*
 		WORKSPACE_ERROR
@@ -213,17 +232,23 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		EXECUTION_COMPLETE
 	*/
 
-	fmt.Println("Got workspace update event", event)
+	log.Println("[TRACE] Got workspace update event", event)
 	switch e := event.(type) {
 
 	case *reportevents.WorkspaceError:
-		fmt.Println("Got workspace error event", *e)
-		payload := buildWorkspaceErrorPayload(e)
+		log.Println("[TRACE] Got workspace error event", *e)
+		payload, payloadError = buildWorkspaceErrorPayload(e)
+		if payloadError != nil {
+			return
+		}
 		s.webSocket.Broadcast(payload)
 
 	case *reportevents.ExecutionStarted:
-		fmt.Println("Got execution started event", *e)
-		payload := buildExecutionStartedPayload(e)
+		log.Println("[TRACE] Got execution started event", *e)
+		payload, payloadError = buildExecutionStartedPayload(e)
+		if payloadError != nil {
+			return
+		}
 		reportName := e.ReportNode.GetName()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
@@ -235,11 +260,14 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		s.mutex.Unlock()
 
 	case *reportevents.LeafNodeError:
-		fmt.Println("Got leaf node error event", *e)
+		log.Println("[TRACE] Got leaf node error event", *e)
 
 	case *reportevents.LeafNodeProgress:
-		fmt.Println("Got leaf node complete event", *e)
-		payload := buildLeafNodeProgressPayload(e)
+		log.Println("[TRACE] Got leaf node complete event", *e)
+		payload, payloadError = buildLeafNodeProgressPayload(e)
+		if payloadError != nil {
+			return
+		}
 		paths := e.Node.GetPath()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
@@ -251,8 +279,11 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		s.mutex.Unlock()
 
 	case *reportevents.LeafNodeComplete:
-		fmt.Println("Got leaf node complete event", *e)
-		payload := buildLeafNodeCompletePayload(e)
+		log.Println("[TRACE] Got leaf node complete event", *e)
+		payload, payloadError = buildLeafNodeCompletePayload(e)
+		if payloadError != nil {
+			return
+		}
 		paths := e.Node.GetPath()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {
@@ -264,7 +295,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		s.mutex.Unlock()
 
 	case *reportevents.ReportChanged:
-		fmt.Println("Got report changed event", *e)
+		log.Println("[TRACE] Got report changed event", *e)
 		deletedReports := e.DeletedReports
 		newReports := e.NewReports
 
@@ -298,12 +329,16 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		}
 
 		for k, v := range s.reportClients {
-			fmt.Printf("Report client: %v %v\n", k, types.SafeString(v.Report))
+			log.Printf("[TRACE] Report client: %v %v\n", k, typeHelpers.SafeString(v.Report))
 		}
 
 		// If) any deleted/new/changed reports, emit an available reports message to clients
 		if len(deletedReports) != 0 || len(newReports) != 0 || len(changedReports) != 0 {
-			s.webSocket.Broadcast(buildAvailableReportsPayload(s.workspace.Mod.Reports))
+			payload, payloadError = buildAvailableReportsPayload(s.workspace.Mod.Reports)
+			if payloadError != nil {
+				return
+			}
+			s.webSocket.Broadcast(payload)
 		}
 
 		var reportsBeingWatched []string
@@ -364,14 +399,17 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		}
 
 	case *reportevents.ReportError:
-		fmt.Println("Got report error event", *e)
+		log.Println("[TRACE] Got report error event", *e)
 
 	case *reportevents.ReportComplete:
-		fmt.Println("Got report complete event", *e)
+		log.Println("[TRACE] Got report complete event", *e)
 
 	case *reportevents.ExecutionComplete:
-		fmt.Println("Got execution complete event", *e)
-		payload := buildExecutionCompletePayload(e)
+		log.Println("[TRACE] Got execution complete event", *e)
+		payload, payloadError = buildExecutionCompletePayload(e)
+		if payloadError != nil {
+			return
+		}
 		reportName := e.Report.GetName()
 		s.mutex.Lock()
 		for session, repoInfo := range s.reportClients {

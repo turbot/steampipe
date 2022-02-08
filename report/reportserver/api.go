@@ -3,20 +3,19 @@ package reportserver
 import (
 	"context"
 	"fmt"
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/constants"
 	"log"
 	"net/http"
-	"os"
 	"os/exec"
-	"os/signal"
 	"path"
 	"runtime"
 	"time"
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/utils"
 	"gopkg.in/olahol/melody.v1"
 )
 
@@ -38,7 +37,7 @@ func openBrowser(url string) error {
 	return exec.Command(cmd, args...).Start()
 }
 
-func StartAPI(ctx context.Context, webSocket *melody.Melody) {
+func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 	router := gin.Default()
 
 	assetsDirectory := filepaths.ReportAssetsPath()
@@ -55,9 +54,13 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) {
 	})
 
 	reportServerPort := viper.GetInt(constants.ArgReportServerPort)
+	reportServerListen := "localhost"
+	if viper.GetString(constants.ArgReportServerListen) == string(ListenTypeNetwork) {
+		reportServerListen = ""
+	}
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", reportServerPort),
+		Addr:    fmt.Sprintf("%s:%d", reportServerListen, reportServerPort),
 		Handler: router,
 	}
 
@@ -69,18 +72,20 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) {
 	}()
 
 	_ = openBrowser(fmt.Sprintf("http://localhost:%d", reportServerPort))
-
-	// Wait for interrupt signal to gracefully shutdown the server with
-	// a timeout of 5 seconds.
-	quit := make(chan os.Signal)
-	signal.Notify(quit, os.Interrupt)
-	<-quit
+	<-ctx.Done()
 	log.Println("Shutdown Server ...")
 
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("Server Shutdown:", err)
+
+	if err := webSocket.Close(); err != nil {
+		utils.ShowErrorWithMessage(ctx, err, "Websocket shutdown failed")
 	}
-	log.Println("Server exiting")
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		utils.ShowErrorWithMessage(ctx, err, "Server shutdown failed")
+	}
+	log.Println("[TRACE] Server exiting")
+
+	return srv
 }
