@@ -437,40 +437,42 @@ func init() {
 				},
 			},
 		},
+		"simple_report": {
+			source: "testdata/mods/simple_report",
+			expected: &modconfig.Mod{
+				ShortName:   "simple_report",
+				FullName:    "mod.simple_report",
+				Require:     require,
+				Title:       toStringPointer("simple report"),
+				Description: toStringPointer("this mod contains a simple report"),
+				Reports: map[string]*modconfig.ReportContainer{
+					"simple_report.report.simple_report": {
+						ShortName:       "simple_report",
+						FullName:        "simple_report.report.simple_report",
+						UnqualifiedName: "report.simple_report",
+						ChildNames:      []string{"simple_report.text.report_simple_report_text_0", "simple_report.chart.report_simple_report_chart_0"},
+					},
+				},
+				ReportCharts: map[string]*modconfig.ReportChart{
+					"simple_report.chart.report_simple_report_chart_0": {
+						FullName:        "simple_report.chart.report_simple_report_chart_0",
+						ShortName:       "report_simple_report_chart_0",
+						UnqualifiedName: "chart.report_simple_report_chart_0",
+						Title:           toStringPointer("a simple query"),
+						SQL:             toStringPointer("select 1"),
+					},
+				},
+				ReportTexts: map[string]*modconfig.ReportText{
+					"simple_report.text.report_simple_report_text_0": {
+						FullName:        "simple_report.text.report_simple_report_text_0",
+						ShortName:       "report_simple_report_text_0",
+						UnqualifiedName: "text.report_simple_report_text_0",
+						Value:           toStringPointer("a simple report"),
+					},
+				},
+			},
+		},
 		// upto here
-		// "simple_report": {
-		// 	source: "testdata/mods/simple_report",
-		// 	expected: &modconfig.Mod{
-		// 		ShortName:   "simple_report",
-		// 		FullName:    "mod.simple_report",
-		// 		Require:     modconfig.NewRequire(),
-		// 		Title:       toStringPointer("simple report"),
-		// 		Description: toStringPointer("this mod contains a simple report"),
-		// 		Reports: map[string]*modconfig.ReportContainer{
-		// 			"simple_report.report.simple_report": {
-		// 				FullName:   "simple_report.report.simple_report",
-		// 				ChildNames: []string{"simple_report.text.report_simple_report_text_0", "simple_report.chart.report_simple_report_chart_0"},
-		// 			},
-		// 		},
-		// 		ReportCharts: map[string]*modconfig.ReportChart{
-		// 			"simple_report.chart.report_simple_report_chart_0": {
-		// 				FullName:        "simple_report.chart.report_simple_report_chart_0",
-		// 				ShortName:       "report_simple_report_chart_0",
-		// 				UnqualifiedName: "chart.report_simple_report_chart_0",
-		// 				Title:           toStringPointer("a simple query"),
-		// 				SQL:             toStringPointer("select 1"),
-		// 			},
-		// 		},
-		// 		ReportTexts: map[string]*modconfig.ReportText{
-		// 			"simple_report.text.report_simple_report_text_0": {
-		// 				FullName:        "simple_report.text.report_simple_report_text_0",
-		// 				ShortName:       "report_simple_report_text_0",
-		// 				UnqualifiedName: "text.report_simple_report_text_0",
-		// 				Value:           toStringPointer("a simple report"),
-		// 			},
-		// 		},
-		// 	},
-		// },
 		// "simple_container_report": {
 		// 	source: "testdata/mods/simple_container_report",
 		// 	expected: &modconfig.Mod{
@@ -479,6 +481,14 @@ func init() {
 		// 		Require:     modconfig.NewRequire(),
 		// 		Title:       toStringPointer("simple report with container"),
 		// 		Description: toStringPointer("this mod contains a simple report with containers"),
+		// 		Reports: map[string]*modconfig.ReportContainer{
+		// 			"simple_report.report.simple_report": {
+		// 				ShortName:       "simple_report",
+		// 				FullName:        "simple_report.report.simple_report",
+		// 				UnqualifiedName: "report.simple_report",
+		// 				ChildNames:      []string{"simple_report.text.report_simple_report_text_0", "simple_report.chart.report_simple_report_chart_0"},
+		// 			},
+		// 		},
 		// 	},
 		// },
 		// "sibling_containers_report": {
