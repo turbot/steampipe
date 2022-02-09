@@ -448,6 +448,10 @@ const Chart = ({ options }: ChartComponentProps) => {
     return null;
   }
 
+  const eventsDict = {
+    click: (params) => console.log(params),
+  };
+
   return (
     <>
       {mediaMode !== "print" && (
@@ -483,6 +487,7 @@ const Chart = ({ options }: ChartComponentProps) => {
             option={options}
             notMerge={true}
             lazyUpdate={true}
+            onEvents={eventsDict}
           />
         </div>
       )}
