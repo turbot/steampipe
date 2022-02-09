@@ -177,6 +177,7 @@ func (m *Mod) Equals(other *Mod) bool {
 		}
 	}
 
+	// now check the child resources
 	if !m.resourceMaps.Equals(other.resourceMaps) {
 		return false
 	}

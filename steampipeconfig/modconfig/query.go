@@ -49,8 +49,8 @@ func NewQuery(block *hcl.Block, mod *Mod) *Query {
 	shortName := block.Labels[0]
 	q := &Query{
 		ShortName:       shortName,
-		UnqualifiedName: fmt.Sprintf("%s.query.%s", mod.ShortName, shortName),
-		FullName:        fmt.Sprintf("query.%s", shortName),
+		FullName:        fmt.Sprintf("%s.query.%s", mod.ShortName, shortName),
+		UnqualifiedName: fmt.Sprintf("query.%s", shortName),
 		Mod:             mod,
 		DeclRange:       block.DefRange,
 	}
