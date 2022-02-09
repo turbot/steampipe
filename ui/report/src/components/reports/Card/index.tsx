@@ -33,7 +33,7 @@ const getTextClasses = (style) => {
     case "ok":
       return "text-ok-inverse";
     default:
-      return "text-counter-inverse";
+      return null;
   }
 };
 
