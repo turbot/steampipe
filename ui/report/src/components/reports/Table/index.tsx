@@ -1,3 +1,4 @@
+import Link from "../Link";
 import moment from "moment";
 import {
   BasePrimitiveProps,
@@ -12,8 +13,6 @@ import {
 } from "../../../constants/icons";
 import { useMemo } from "react";
 import { useSortBy, useTable } from "react-table";
-import { read } from "fs";
-import { Link } from "react-router-dom";
 
 type TableColumnWrap = "all" | "none";
 
@@ -229,11 +228,7 @@ const CellValue = ({ column, row, value }) => {
   }
 
   if (linkUrl) {
-    return (
-      <Link className="link-highlight" to={linkUrl}>
-        {cellValue}
-      </Link>
-    );
+    return <Link link_url={linkUrl}>{cellValue}</Link>;
   } else {
     return cellValue;
   }
