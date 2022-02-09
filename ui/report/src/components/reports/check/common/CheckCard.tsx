@@ -2,16 +2,16 @@ import IntegerDisplay from "../../../IntegerDisplay";
 import LoadingIndicator from "../../LoadingIndicator";
 import React from "react";
 import { classNames } from "../../../../utils/styles";
-import { getTextClasses, getWrapperClasses } from "../../Counter";
+import { getTextClasses, getWrapperClasses } from "../../Card";
 import { startCase } from "lodash";
 
-interface ControlCounterProps {
+interface ControlCardProps {
   loading: boolean;
   status: "alarm" | "error" | "info" | "ok" | "skip";
   value: number;
 }
 
-const getCounterStyle = (status) => {
+const getCardStyle = (status) => {
   switch (status) {
     case "alarm":
     case "error":
@@ -25,7 +25,7 @@ const getCounterStyle = (status) => {
   }
 };
 
-const getCounterLabel = (status) => {
+const getCardLabel = (status) => {
   switch (status) {
     case "alarm":
       return "Alarm";
@@ -42,15 +42,11 @@ const getCounterLabel = (status) => {
   }
 };
 
-const CheckCounter = ({
-  loading = true,
-  status,
-  value,
-}: ControlCounterProps) => {
-  const counterStyle = getCounterStyle(status);
-  const counterLabel = getCounterLabel(status);
-  const wrapperClass = getWrapperClasses(counterStyle);
-  const textClass = getTextClasses(counterStyle);
+const CheckCard = ({ loading = true, status, value }: ControlCardProps) => {
+  const cardStyle = getCardStyle(status);
+  const cardLabel = getCardLabel(status);
+  const wrapperClass = getWrapperClasses(cardStyle);
+  const textClass = getTextClasses(cardStyle);
   return (
     <div
       className={classNames(
@@ -61,7 +57,7 @@ const CheckCounter = ({
         textClass
       )}
     >
-      <dt className="text-sm font-medium truncate">{counterLabel}</dt>
+      <dt className="text-sm font-medium truncate">{cardLabel}</dt>
       <dd className="mt-1 text-3xl font-semibold truncate">
         {loading && <LoadingIndicator />}
         {!loading && <IntegerDisplay num={value} />}
@@ -70,4 +66,4 @@ const CheckCounter = ({
   );
 };
 
-export default CheckCounter;
+export default CheckCard;

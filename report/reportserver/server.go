@@ -219,18 +219,6 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			panic(fmt.Errorf("error building payload for '%s': %v", reflect.TypeOf(event).String(), payloadError))
 		}
 	}()
-	// Possible events - TODO work out best way to handle these
-	/*
-		WORKSPACE_ERROR
-		EXECUTION_STARTED
-		COUNTER_CHANGED
-		COUNTER_ERROR
-		COUNTER_COMPLETE
-		REPORT_CHANGED
-		REPORT_ERROR
-		REPORT_COMPLETE
-		EXECUTION_COMPLETE
-	*/
 
 	log.Println("[TRACE] Got workspace update event", event)
 	switch e := event.(type) {
@@ -302,8 +290,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		changedContainers := e.ChangedContainers
 		changedBenchmarks := e.ChangedBenchmarks
 		changedControls := e.ChangedControls
+		changedCards := e.ChangedCards
 		changedCharts := e.ChangedCharts
-		changedCounters := e.ChangedCounters
 		changedHierarchies := e.ChangedHierarchies
 		changedImages := e.ChangedImages
 		changedInputs := e.ChangedInputs
@@ -317,8 +305,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			len(changedContainers) == 0 &&
 			len(changedBenchmarks) == 0 &&
 			len(changedControls) == 0 &&
+			len(changedCards) == 0 &&
 			len(changedCharts) == 0 &&
-			len(changedCounters) == 0 &&
 			len(changedHierarchies) == 0 &&
 			len(changedImages) == 0 &&
 			len(changedInputs) == 0 &&
@@ -361,8 +349,8 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedContainers)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedBenchmarks)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedControls)...)
+		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedCards)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedCharts)...)
-		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedCounters)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedHierarchies)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedImages)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedInputs)...)

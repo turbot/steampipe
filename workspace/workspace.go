@@ -36,8 +36,8 @@ type Workspace struct {
 	Mods              map[string]*modconfig.Mod
 	Reports           map[string]*modconfig.ReportContainer
 	ReportContainers  map[string]*modconfig.ReportContainer
+	ReportCards       map[string]*modconfig.ReportCard
 	ReportCharts      map[string]*modconfig.ReportChart
-	ReportCounters    map[string]*modconfig.ReportCounter
 	ReportHierarchies map[string]*modconfig.ReportHierarchy
 	ReportImages      map[string]*modconfig.ReportImage
 	ReportInputs      map[string]*modconfig.ReportInput
@@ -172,8 +172,8 @@ func (w *Workspace) reset() {
 	w.Mods = make(map[string]*modconfig.Mod)
 	w.Reports = make(map[string]*modconfig.ReportContainer)
 	w.ReportContainers = make(map[string]*modconfig.ReportContainer)
+	w.ReportCards = make(map[string]*modconfig.ReportCard)
 	w.ReportCharts = make(map[string]*modconfig.ReportChart)
-	w.ReportCounters = make(map[string]*modconfig.ReportCounter)
 	w.ReportHierarchies = make(map[string]*modconfig.ReportHierarchy)
 	w.ReportImages = make(map[string]*modconfig.ReportImage)
 	w.ReportInputs = make(map[string]*modconfig.ReportInput)
@@ -233,8 +233,8 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	w.Benchmarks, w.LocalBenchmarks = w.buildBenchmarkMap(runCtx.LoadedDependencyMods)
 	w.Reports = w.buildReportMap(runCtx.LoadedDependencyMods)
 	w.ReportContainers = w.buildReportContainerMap(runCtx.LoadedDependencyMods)
+	w.ReportCards = w.buildReportCardMap(runCtx.LoadedDependencyMods)
 	w.ReportCharts = w.buildReportChartMap(runCtx.LoadedDependencyMods)
-	w.ReportCounters = w.buildReportCounterMap(runCtx.LoadedDependencyMods)
 	w.ReportHierarchies = w.buildReportHierarchyMap(runCtx.LoadedDependencyMods)
 	w.ReportImages = w.buildReportImageMap(runCtx.LoadedDependencyMods)
 	w.ReportInputs = w.buildReportInputMap(runCtx.LoadedDependencyMods)

@@ -125,6 +125,15 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 				m.ReportContainers[name] = r
 			}
 		}
+	case *ReportCard:
+		name := r.Name()
+		// check for dupes
+		if _, ok := m.ReportCards[name]; ok {
+			diags = append(diags, duplicateResourceDiagnostics(item))
+			break
+		} else {
+			m.ReportCards[name] = r
+		}
 	case *ReportChart:
 		name := r.Name()
 		// check for dupes
@@ -133,15 +142,6 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		} else {
 			m.ReportCharts[name] = r
-		}
-	case *ReportCounter:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.ReportCounters[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.ReportCounters[name] = r
 		}
 	case *ReportHierarchy:
 		name := r.Name()

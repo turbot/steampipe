@@ -4,7 +4,7 @@ import { noop } from "./func";
 
 type PanelStoryDecoratorProps = {
   definition: any;
-  nodeType: "container" | "chart" | "counter" | "table" | "text";
+  nodeType: "card" | "chart" | "container" | "table" | "text";
   additionalProperties?: {
     [key: string]: any;
   };

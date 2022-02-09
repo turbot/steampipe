@@ -49,9 +49,9 @@ export interface PanelProperties {
 
 export type PanelType =
   | "benchmark"
+  | "card"
   | "chart"
   | "control"
-  | "counter"
   | "error"
   | "hierarchy"
   | "image"

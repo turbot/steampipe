@@ -23,7 +23,7 @@ export const ErrorIcon = ExclamationCircleIconOutline;
 export const LightIcon = SunIconSolid;
 export const ZoomIcon = ArrowsExpandIconOutline;
 
-// Counter
+// Card
 export const AlertIcon = XCircleIconSolid;
 export const NilIcon = MinusIconSolid;
 

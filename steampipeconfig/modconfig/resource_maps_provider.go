@@ -19,10 +19,10 @@ func GetResource(provider ResourceMapsProvider, parsedName *ParsedResourceName) 
 		resource, found = resourceMaps.Reports[longName]
 	case BlockTypeContainer:
 		resource, found = resourceMaps.ReportContainers[longName]
+	case BlockTypeCard:
+		resource, found = resourceMaps.ReportCards[longName]
 	case BlockTypeChart:
 		resource, found = resourceMaps.ReportCharts[longName]
-	case BlockTypeCounter:
-		resource, found = resourceMaps.ReportCounters[longName]
 	case BlockTypeHierarchy:
 		resource, found = resourceMaps.ReportHierarchies[longName]
 	case BlockTypeImage:

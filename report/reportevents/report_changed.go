@@ -9,8 +9,8 @@ type ReportChanged struct {
 	ChangedContainers  []*modconfig.ReportTreeItemDiffs
 	ChangedControls    []*modconfig.ReportTreeItemDiffs
 	ChangedBenchmarks  []*modconfig.ReportTreeItemDiffs
+	ChangedCards       []*modconfig.ReportTreeItemDiffs
 	ChangedCharts      []*modconfig.ReportTreeItemDiffs
-	ChangedCounters    []*modconfig.ReportTreeItemDiffs
 	ChangedHierarchies []*modconfig.ReportTreeItemDiffs
 	ChangedImages      []*modconfig.ReportTreeItemDiffs
 	ChangedInputs      []*modconfig.ReportTreeItemDiffs
@@ -21,8 +21,8 @@ type ReportChanged struct {
 	NewContainers  []*modconfig.ReportContainer
 	NewControls    []*modconfig.Control
 	NewBenchmarks  []*modconfig.Benchmark
+	NewCards       []*modconfig.ReportCard
 	NewCharts      []*modconfig.ReportChart
-	NewCounters    []*modconfig.ReportCounter
 	NewHierarchies []*modconfig.ReportHierarchy
 	NewImages      []*modconfig.ReportImage
 	NewInputs      []*modconfig.ReportInput
@@ -33,8 +33,8 @@ type ReportChanged struct {
 	DeletedContainers  []*modconfig.ReportContainer
 	DeletedControls    []*modconfig.Control
 	DeletedBenchmarks  []*modconfig.Benchmark
+	DeletedCards       []*modconfig.ReportCard
 	DeletedCharts      []*modconfig.ReportChart
-	DeletedCounters    []*modconfig.ReportCounter
 	DeletedHierarchies []*modconfig.ReportHierarchy
 	DeletedImages      []*modconfig.ReportImage
 	DeletedInputs      []*modconfig.ReportInput
@@ -50,8 +50,8 @@ func (c *ReportChanged) HasChanges() bool {
 		len(c.ChangedContainers)+
 		len(c.ChangedBenchmarks)+
 		len(c.ChangedControls)+
+		len(c.ChangedCards)+
 		len(c.ChangedCharts)+
-		len(c.ChangedCounters)+
 		len(c.ChangedHierarchies)+
 		len(c.ChangedImages)+
 		len(c.ChangedInputs)+
@@ -61,8 +61,8 @@ func (c *ReportChanged) HasChanges() bool {
 		len(c.NewContainers)+
 		len(c.NewBenchmarks)+
 		len(c.NewControls)+
+		len(c.NewCards)+
 		len(c.NewCharts)+
-		len(c.NewCounters)+
 		len(c.NewHierarchies)+
 		len(c.NewImages)+
 		len(c.NewInputs)+
@@ -72,8 +72,8 @@ func (c *ReportChanged) HasChanges() bool {
 		len(c.DeletedContainers)+
 		len(c.DeletedBenchmarks)+
 		len(c.DeletedControls)+
+		len(c.DeletedCards)+
 		len(c.DeletedCharts)+
-		len(c.DeletedCounters)+
 		len(c.DeletedHierarchies)+
 		len(c.DeletedImages)+
 		len(c.DeletedInputs)+

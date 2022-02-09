@@ -13,8 +13,8 @@ type WorkspaceResourceMaps struct {
 	Variables         map[string]*Variable
 	Reports           map[string]*ReportContainer
 	ReportContainers  map[string]*ReportContainer
+	ReportCards       map[string]*ReportCard
 	ReportCharts      map[string]*ReportChart
-	ReportCounters    map[string]*ReportCounter
 	ReportHierarchies map[string]*ReportHierarchy
 	ReportImages      map[string]*ReportImage
 	ReportInputs      map[string]*ReportInput
@@ -37,8 +37,8 @@ func NewWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
 		Variables:         make(map[string]*Variable),
 		Reports:           make(map[string]*ReportContainer),
 		ReportContainers:  make(map[string]*ReportContainer),
+		ReportCards:       make(map[string]*ReportCard),
 		ReportCharts:      make(map[string]*ReportChart),
-		ReportCounters:    make(map[string]*ReportCounter),
 		ReportHierarchies: make(map[string]*ReportHierarchy),
 		ReportImages:      make(map[string]*ReportImage),
 		ReportInputs:      make(map[string]*ReportInput),
@@ -143,6 +143,19 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 		}
 	}
 
+	for name, cards := range m.ReportCards {
+		if otherReport, ok := other.ReportCards[name]; !ok {
+			return false
+		} else if !cards.Equals(otherReport) {
+			return false
+		}
+	}
+	for name := range other.ReportCards {
+		if _, ok := m.ReportCards[name]; !ok {
+			return false
+		}
+	}
+
 	for name, charts := range m.ReportCharts {
 		if otherReport, ok := other.ReportCharts[name]; !ok {
 			return false
@@ -152,19 +165,6 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 	}
 	for name := range other.ReportCharts {
 		if _, ok := m.ReportCharts[name]; !ok {
-			return false
-		}
-	}
-
-	for name, counters := range m.ReportCounters {
-		if otherReport, ok := other.ReportCounters[name]; !ok {
-			return false
-		} else if !counters.Equals(otherReport) {
-			return false
-		}
-	}
-	for name := range other.ReportCounters {
-		if _, ok := m.ReportCounters[name]; !ok {
 			return false
 		}
 	}
@@ -301,8 +301,8 @@ func (m *WorkspaceResourceMaps) Empty() bool {
 		len(m.Variables)+
 		len(m.Reports)+
 		len(m.ReportContainers)+
+		len(m.ReportCards)+
 		len(m.ReportCharts)+
-		len(m.ReportCounters)+
 		len(m.ReportHierarchies)+
 		len(m.ReportImages)+
 		len(m.ReportInputs)+
