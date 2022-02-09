@@ -10,6 +10,7 @@ const renderInput = (definition: InputDefinition) => {
   const {
     properties: { type = "select" },
   } = definition;
+
   const input = Inputs[type];
 
   if (!input) {

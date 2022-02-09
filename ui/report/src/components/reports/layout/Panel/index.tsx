@@ -5,6 +5,7 @@ import useDimensions from "../../../../hooks/useDimensions";
 import { BaseChartProps } from "../../charts";
 import { classNames } from "../../../../utils/styles";
 import { CounterProps } from "../../Counter";
+import { get } from "lodash";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
 import { PanelDefinition } from "../../../../hooks/useReport";
 import { PanelProvider } from "../../../../hooks/usePanel";
@@ -59,6 +60,15 @@ const Panel = ({
   ready = true,
 }: PanelProps) => {
   const [panelRef, dimensions] = useDimensions();
+
+  // Hide hidden panels
+  if (
+    get(definition, "display") === "none" ||
+    get(definition, "properties.type") === "hidden"
+  ) {
+    return null;
+  }
+
   // const { sqlDataMap } = useReport();
   // console.log(sqlDataMap);
   // const [data, setData] = useState(

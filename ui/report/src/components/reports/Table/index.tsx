@@ -13,12 +13,16 @@ import {
 import { useMemo } from "react";
 import { useSortBy, useTable } from "react-table";
 import { read } from "fs";
+import { Link } from "react-router-dom";
 
 type TableColumnWrap = "all" | "none";
 
+type AccessorFunction = (row: any[], colName: string) => string;
+
 interface TableColumnInfo {
   Header: string;
-  accessor: string;
+  accessor: string | AccessorFunction;
+  id: string;
   wrap?: TableColumnWrap;
 }
 
@@ -33,9 +37,14 @@ const getColumns = (
   const hiddenColumns: string[] = [];
   const columns: TableColumnInfo[] = cols.map((col) => {
     let colWrap: TableColumnWrap = "none";
+    // All _ctx columns are hidden
+    if (col.name.startsWith("_ctx")) {
+      hiddenColumns.push(col.name);
+    }
+
     if (properties && properties.columns && properties.columns[col.name]) {
       const c = properties.columns[col.name];
-      if (c.display === "none") {
+      if (c.display === "none" && !hiddenColumns.includes(col.name)) {
         hiddenColumns.push(col.name);
       }
       if (c.wrap) {
@@ -45,7 +54,8 @@ const getColumns = (
 
     return {
       Header: col.name,
-      accessor: col.name,
+      accessor: col.name.startsWith("_ctx") ? (d) => d[col.name] : col.name,
+      id: col.name,
       data_type_name: col.data_type_name,
       wrap: colWrap,
     };
@@ -64,7 +74,7 @@ const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow) => {
   return rows.map((r) => {
     const rowData = {};
     for (let colIndex = 0; colIndex < r.length; colIndex++) {
-      rowData[columns[colIndex].accessor] = r[colIndex];
+      rowData[columns[colIndex].id] = r[colIndex];
     }
     return rowData;
   });
@@ -168,23 +178,26 @@ const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow) => {
 //   );
 // };
 
-const CellValue = ({ column, value }) => {
+const CellValue = ({ column, row, value }) => {
+  const columnContext = row.values[`_ctx[${column.id}]`];
+  const linkUrl = columnContext ? columnContext.link_url : null;
+  let cellValue;
   const dataType = column.data_type_name.toLowerCase();
   if (value === null || value === undefined) {
-    return <span className="text-black-scale-3">null</span>;
+    cellValue = <span className="text-black-scale-3">null</span>;
   }
   if (dataType === "bool") {
-    return (
+    cellValue = (
       <span className={classNames(value ? "" : "text-foreground-light")}>
         {value.toString()}
       </span>
     );
   }
   if (dataType === "jsonb") {
-    return <>{JSON.stringify(value, null, 2)}</>;
+    cellValue = JSON.stringify(value, null, 2);
   }
   if (dataType === "timestamptz") {
-    return <>{moment(value).format()}</>;
+    cellValue = moment(value).format();
   }
   if (dataType === "text") {
     if (value.match("^https?://")) {
@@ -209,9 +222,21 @@ const CellValue = ({ column, value }) => {
     }
     // return <span style={{ color: "#ffbb1b" }}>{value}</span>;
     // return <span style={{ color: "#779fc8" }}>{value}</span>;
-    return <span>{value}</span>;
+    cellValue = <span>{value}</span>;
   }
-  return <>{JSON.stringify(value)}</>;
+  if (!cellValue) {
+    cellValue = <>{JSON.stringify(value)}</>;
+  }
+
+  if (linkUrl) {
+    return (
+      <Link className="link-highlight" to={linkUrl}>
+        {cellValue}
+      </Link>
+    );
+  } else {
+    return cellValue;
+  }
 };
 
 // const CellValue = ({ value }) => {
@@ -317,7 +342,11 @@ const Table = (props: TableProps) => {
                           : "whitespace-nowrap"
                       )}
                     >
-                      <CellValue column={columns[index]} value={cell.value} />
+                      <CellValue
+                        column={columns[index]}
+                        value={cell.value}
+                        row={row}
+                      />
                     </td>
                   );
                 })}
