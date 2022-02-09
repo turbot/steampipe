@@ -15,7 +15,7 @@ const Template = (args) => (
 export const Loading = Template.bind({});
 Loading.args = {
   data: null,
-  properties: { style: "info" },
+  properties: { type: "info" },
 };
 
 export const Error = Template.bind({});
@@ -27,7 +27,7 @@ Error.args = {
 export const Empty = Template.bind({});
 Empty.args = {
   data: [],
-  properties: { style: "info" },
+  properties: { type: "info" },
 };
 
 export const SimpleDataFormat = Template.bind({});
@@ -45,7 +45,7 @@ SimpleDataFormatInfo.args = {
     columns: [{ name: "EC2 Instances", data_type_name: "INT8" }],
     rows: [[106]],
   },
-  properties: { style: "info" },
+  properties: { type: "info" },
 };
 
 export const SimpleDataFormatAlert = Template.bind({});
@@ -55,7 +55,7 @@ SimpleDataFormatAlert.args = {
     columns: [{ name: "Public Buckets", data_type_name: "INT8" }],
     rows: [[5]],
   },
-  properties: { style: "alert" },
+  properties: { type: "alert" },
 };
 
 export const SimpleDataFormatOK = Template.bind({});
@@ -65,7 +65,7 @@ SimpleDataFormatOK.args = {
     columns: [{ name: "Encrypted EC2 Instances", data_type_name: "INT8" }],
     rows: [[5]],
   },
-  properties: { style: "ok" },
+  properties: { type: "ok" },
 };
 
 export const SimpleDataFormatThousands = Template.bind({});
@@ -75,7 +75,7 @@ SimpleDataFormatThousands.args = {
     columns: [{ name: "EC2 Instances", data_type_name: "INT8" }],
     rows: [[1236]],
   },
-  properties: { style: "info" },
+  properties: { type: "info" },
 };
 
 export const SimpleDataFormatMillions = Template.bind({});
@@ -85,7 +85,7 @@ SimpleDataFormatMillions.args = {
     columns: [{ name: "Log Lines", data_type_name: "INT8" }],
     rows: [[5236174]],
   },
-  properties: { style: "info" },
+  properties: { type: "info" },
 };
 
 export const FormalDataFormat = Template.bind({});

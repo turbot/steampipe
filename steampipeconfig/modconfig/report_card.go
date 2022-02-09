@@ -20,8 +20,7 @@ type ReportCard struct {
 	Title *string     `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width *int        `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	SQL   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Type  *string     `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Style *string     `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
+	Type  *string     `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
 	Base  *ReportCard `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
@@ -73,10 +72,6 @@ func (c *ReportCard) setBaseProperties() {
 	if c.Type == nil {
 		c.Type = c.Base.Type
 	}
-	if c.Style == nil {
-		c.Style = c.Base.Style
-	}
-
 	if c.Width == nil {
 		c.Width = c.Base.Width
 	}
@@ -187,10 +182,6 @@ func (c *ReportCard) Diff(other *ReportCard) *ReportTreeItemDiffs {
 
 	if !utils.SafeStringsEqual(c.Type, other.Type) {
 		res.AddPropertyDiff("Type")
-	}
-
-	if !utils.SafeStringsEqual(c.Style, other.Style) {
-		res.AddPropertyDiff("Style")
 	}
 
 	res.populateChildDiffs(c, other)

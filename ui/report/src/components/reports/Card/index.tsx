@@ -11,8 +11,8 @@ import {
 import { get } from "lodash";
 import { getColumnIndex } from "../../../utils/data";
 
-const getWrapperClasses = (style) => {
-  switch (style) {
+const getWrapperClasses = (type) => {
+  switch (type) {
     case "alert":
       return "bg-alert";
     case "info":
@@ -24,8 +24,8 @@ const getWrapperClasses = (style) => {
   }
 };
 
-const getTextClasses = (style) => {
-  switch (style) {
+const getTextClasses = (type) => {
+  switch (type) {
     case "alert":
       return "text-alert-inverse";
     case "info":
@@ -37,14 +37,13 @@ const getTextClasses = (style) => {
   }
 };
 
-export type CardStyle = "alert" | "info" | "ok" | null;
+export type CardType = "alert" | "info" | "ok" | "table" | null;
 
 export type CardProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
     properties: {
-      type?: "table";
+      type?: CardType;
       value?: string;
-      style?: CardStyle;
     };
   };
 
@@ -54,7 +53,7 @@ interface CardState {
   loading: boolean;
   label: string | null;
   value: number | null;
-  style: CardStyle;
+  type: CardType;
 }
 
 const getDataFormat = (data: LeafNodeData): CardDataFormat => {
@@ -69,7 +68,7 @@ const useCardState = ({ data, properties }: CardProps) => {
     loading: true,
     label: null,
     value: null,
-    style: null,
+    type: null,
   });
 
   useEffect(() => {
@@ -87,7 +86,7 @@ const useCardState = ({ data, properties }: CardProps) => {
         loading: false,
         label: null,
         value: null,
-        style: null,
+        type: null,
       });
       return;
     }
@@ -101,7 +100,7 @@ const useCardState = ({ data, properties }: CardProps) => {
         loading: false,
         label: firstCol.name,
         value: row[0],
-        style: properties.style ? properties.style : null,
+        type: properties.type ? properties.type : null,
       });
     } else {
       const labelColIndex = getColumnIndex(data.columns, "label");
@@ -110,14 +109,14 @@ const useCardState = ({ data, properties }: CardProps) => {
       const valueColIndex = getColumnIndex(data.columns, "value");
       const formalValue =
         valueColIndex >= 0 ? get(data, `rows[0][${valueColIndex}]`) : null;
-      const styleColIndex = getColumnIndex(data.columns, "style");
-      const formalStyle =
-        styleColIndex >= 0 ? get(data, `rows[0][${styleColIndex}]`) : null;
+      const typeColIndex = getColumnIndex(data.columns, "type");
+      const formalType =
+        typeColIndex >= 0 ? get(data, `rows[0][${typeColIndex}]`) : null;
       setCalculatedProperties({
         loading: false,
         label: formalLabel,
         value: formalValue,
-        style: formalStyle,
+        type: formalType,
       });
     }
   }, [data, properties]);
@@ -149,7 +148,7 @@ const Card = (props: CardProps) => {
     <div
       className={
         "flex-col overflow-hidden shadow rounded-lg " +
-        getWrapperClasses(state.style)
+        getWrapperClasses(state.type)
       }
     >
       <div className="flex-grow">
@@ -157,7 +156,7 @@ const Card = (props: CardProps) => {
           <div className="w-0 flex-1 px-4 py-5 sm:p-6">
             <dt
               className={
-                "text-sm font-medium truncate " + getTextClasses(state.style)
+                "text-sm font-medium truncate " + getTextClasses(state.type)
               }
             >
               {state.loading && "Loading..."}
@@ -168,7 +167,7 @@ const Card = (props: CardProps) => {
             </dt>
             <dd className="flex items-baseline mt-2">
               <div
-                className={"text-3xl font-light " + getTextClasses(state.style)}
+                className={"text-3xl font-light " + getTextClasses(state.type)}
               >
                 {state.loading && (
                   <LoadingIndicator className="h-8 w-8 text-black-scale-4" />
@@ -190,17 +189,17 @@ const Card = (props: CardProps) => {
               </div>
             </dd>
           </div>
-          {state.style === "alert" && (
+          {state.type === "alert" && (
             <div className="py-2 px-3">
               <AlertIcon className="text-white opacity-30 text-3xl h-8 w-8" />
             </div>
           )}
-          {state.style === "ok" && (
+          {state.type === "ok" && (
             <div className="py-2 px-3">
               <OKIcon className="block text-white opacity-30 h-8 w-8" />
             </div>
           )}
-          {state.style === "info" && (
+          {state.type === "info" && (
             <div className="py-2 px-3">
               <InfoIcon className="text-white opacity-30 text-3xl h-8 w-8" />
             </div>
