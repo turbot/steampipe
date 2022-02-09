@@ -56,19 +56,6 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 		return false
 	}
 
-	for name, mod := range m.Mods {
-		if otherMod, ok := other.Mods[name]; !ok {
-			return false
-		} else if !mod.Equals(otherMod) {
-			return false
-		}
-	}
-	for name := range other.Mods {
-		if _, ok := m.Mods[name]; !ok {
-			return false
-		}
-	}
-
 	for name, query := range m.Queries {
 		if otherQuery, ok := other.Queries[name]; !ok {
 			return false

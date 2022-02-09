@@ -25,10 +25,10 @@ type Query struct {
 	ShortName string `cty:"short_name"`
 	FullName  string `cty:"name"`
 
-	Description      *string           `cty:"description" column:"description,text"`
-	Documentation    *string           `cty:"documentation"  column:"documentation,text"`
-	SearchPath       *string           `cty:"search_path" column:"search_path,text"`
-	SearchPathPrefix *string           `cty:"search_path_prefix" column:"search_path_prefix,text"`
+	Description      *string           `cty:"description" hcl:"description" column:"description,text"`
+	Documentation    *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	SearchPath       *string           `cty:"search_path" hcl:"search_path" column:"search_path,text"`
+	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
 	SQL              *string           `cty:"sql" hcl:"sql" column:"sql,text"`
 	Tags             map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
 	Title            *string           `cty:"title" hcl:"title" column:"title,text"`
