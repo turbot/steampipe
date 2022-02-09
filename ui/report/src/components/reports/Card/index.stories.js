@@ -1,15 +1,15 @@
-import Counter from "./index";
+import Card from "./index";
 import { PanelStoryDecorator } from "../../../utils/storybook";
 
 const story = {
-  title: "Primitives/Counter",
-  component: Counter,
+  title: "Primitives/Card",
+  component: Card,
 };
 
 export default story;
 
 const Template = (args) => (
-  <PanelStoryDecorator definition={args} nodeType="counter" />
+  <PanelStoryDecorator definition={args} nodeType="card" />
 );
 
 export const Loading = Template.bind({});

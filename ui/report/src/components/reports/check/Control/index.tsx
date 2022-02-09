@@ -1,4 +1,4 @@
-import CheckCounter from "../common/CheckCounter";
+import CheckCard from "../common/CheckCard";
 import LayoutPanel from "../../layout/common/LayoutPanel";
 import LoadingIndicator from "../../LoadingIndicator";
 import React, { useMemo } from "react";
@@ -169,81 +169,17 @@ const Control = (props: CheckProps) => {
       }}
     >
       <div className="col-span-12 grid grid-cols-5 gap-4">
-        <CheckCounter loading={loading} status="ok" value={summary.ok} />
-        <CheckCounter loading={loading} status="skip" value={summary.skip} />
-        <CheckCounter loading={loading} status="info" value={summary.info} />
-        <CheckCounter loading={loading} status="alarm" value={summary.alarm} />
-        <CheckCounter loading={loading} status="error" value={summary.error} />
+        <CheckCard loading={loading} status="ok" value={summary.ok} />
+        <CheckCard loading={loading} status="skip" value={summary.skip} />
+        <CheckCard loading={loading} status="info" value={summary.info} />
+        <CheckCard loading={loading} status="alarm" value={summary.alarm} />
+        <CheckCard loading={loading} status="error" value={summary.error} />
       </div>
       <div className="col-span-12">
         <ControlsTable loading={loading} control={control} />
       </div>
     </LayoutPanel>
   );
-
-  // return (
-  //   <Children
-  //     children={[
-  //       {
-  //         name: `${props.name}.container.wrapper`,
-  //         node_type: "container",
-  //         children: [
-  //           {
-  //             name: `${props.name}.container.summary_wrapper`,
-  //             node_type: "container",
-  //             children: [
-  //               {
-  //                 name: `${props.name}.counter.ok`,
-  //                 node_type: "counter",
-  //                 properties: { style: "ok" },
-  //                 data: {
-  //                   columns: [{ name: "OK", data_type_name: "INT8" }],
-  //                   items: [{ OK: summary.ok }],
-  //                 },
-  //               },
-  //               {
-  //                 name: `${props.name}.counter.skip`,
-  //                 node_type: "counter",
-  //                 properties: { style: "plain" },
-  //                 data: {
-  //                   columns: [{ name: "Skip", data_type_name: "INT8" }],
-  //                   items: [{ Skip: summary.skip }],
-  //                 },
-  //               },
-  //               {
-  //                 name: `${props.name}.counter.info`,
-  //                 node_type: "counter",
-  //                 properties: { style: "info" },
-  //                 data: {
-  //                   columns: [{ name: "Info", data_type_name: "INT8" }],
-  //                   items: [{ Info: summary.info }],
-  //                 },
-  //               },
-  //               {
-  //                 name: `${props.name}.counter.alarm`,
-  //                 node_type: "counter",
-  //                 properties: { style: "alert" },
-  //                 data: {
-  //                   columns: [{ name: "Alarm", data_type_name: "INT8" }],
-  //                   items: [{ Alarm: summary.alarm }],
-  //                 },
-  //               },
-  //               {
-  //                 name: `${props.name}.counter.error`,
-  //                 node_type: "counter",
-  //                 properties: { style: "alert" },
-  //                 data: {
-  //                   columns: [{ name: "Error", data_type_name: "INT8" }],
-  //                   items: [{ Error: summary.error }],
-  //                 },
-  //               },
-  //             ],
-  //           },
-  //         ],
-  //       },
-  //     ]}
-  //   />
-  // );
 };
 
 export default Control;

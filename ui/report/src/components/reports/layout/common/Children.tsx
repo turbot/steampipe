@@ -1,7 +1,7 @@
 import Benchmark from "../../check/Benchmark";
+import Card from "../../Card";
 import Container from "../Container";
 import Control from "../../check/Control";
-import Counter from "../../Counter";
 import ErrorPanel from "../../Error";
 import Image from "../../Image";
 import Panel from "../Panel";
@@ -47,6 +47,19 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               )}
             />
           );
+        case "card":
+          return (
+            <ChildWithTitle
+              key={child.name}
+              child={child}
+              level="panel"
+              renderChild={() => (
+                <Panel definition={child} showExpand={showPanelExpand}>
+                  <Card {...child} />
+                </Panel>
+              )}
+            />
+          );
         case "chart":
           return (
             <ChildWithTitle
@@ -82,19 +95,6 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               renderChild={() => (
                 <Panel definition={child} showExpand={showPanelExpand}>
                   <Control {...child} />
-                </Panel>
-              )}
-            />
-          );
-        case "counter":
-          return (
-            <ChildWithTitle
-              key={child.name}
-              child={child}
-              level="panel"
-              renderChild={() => (
-                <Panel definition={child} showExpand={showPanelExpand}>
-                  <Counter {...child} />
                 </Panel>
               )}
             />

@@ -37,41 +37,40 @@ const getTextClasses = (style) => {
   }
 };
 
-export type CounterStyle = "alert" | "info" | "ok" | null;
+export type CardStyle = "alert" | "info" | "ok" | null;
 
-export type CounterProps = BasePrimitiveProps &
+export type CardProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
     properties: {
       type?: "table";
       value?: string;
-      style?: CounterStyle;
+      style?: CardStyle;
     };
   };
 
-type CounterDataFormat = "simple" | "formal";
+type CardDataFormat = "simple" | "formal";
 
-interface CounterState {
+interface CardState {
   loading: boolean;
   label: string | null;
   value: number | null;
-  style: CounterStyle;
+  style: CardStyle;
 }
 
-const getDataFormat = (data: LeafNodeData): CounterDataFormat => {
+const getDataFormat = (data: LeafNodeData): CardDataFormat => {
   if (data.columns.length > 1) {
     return "formal";
   }
   return "simple";
 };
 
-const useCounterState = ({ data, properties }: CounterProps) => {
-  const [calculatedProperties, setCalculatedProperties] =
-    useState<CounterState>({
-      loading: true,
-      label: null,
-      value: null,
-      style: null,
-    });
+const useCardState = ({ data, properties }: CardProps) => {
+  const [calculatedProperties, setCalculatedProperties] = useState<CardState>({
+    loading: true,
+    label: null,
+    value: null,
+    style: null,
+  });
 
   useEffect(() => {
     if (!data) {
@@ -126,8 +125,8 @@ const useCounterState = ({ data, properties }: CounterProps) => {
   return calculatedProperties;
 };
 
-const Counter = (props: CounterProps) => {
-  const state = useCounterState(props);
+const Card = (props: CardProps) => {
+  const state = useCardState(props);
 
   // return (
   //   <div className="w-full h-24 bg-ok border border-black-scale-2 text-foreground">
@@ -212,13 +211,13 @@ const Counter = (props: CounterProps) => {
   );
 };
 
-const CounterWrapper = (props: CounterProps) => {
+const CardWrapper = (props: CardProps) => {
   if (get(props, "properties.type") === "table") {
     return <Table {...props} />;
   }
-  return <Counter {...props} />;
+  return <Card {...props} />;
 };
 
-export default CounterWrapper;
+export default CardWrapper;
 
 export { getTextClasses, getWrapperClasses };
