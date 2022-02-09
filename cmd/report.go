@@ -68,7 +68,6 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 
 	ctx = statushooks.AddStatusHooksToContext(ctx, statushooks.ConsoleHook)
 
-	statushooks.Message(ctx, "Starting Report Server")
 	server, err := reportserver.NewServer(ctx, dbClient)
 	if err != nil {
 		utils.FailOnError(err)

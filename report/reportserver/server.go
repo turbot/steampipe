@@ -18,7 +18,6 @@ import (
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/report/reportinterfaces"
-	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -72,6 +71,7 @@ type ReportClientInfo struct {
 }
 
 func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) {
+	outputEvent(ctx, "Starting Report Server")
 	loadedWorkspace, err := workspace.Load(ctx, viper.GetString(constants.ArgWorkspaceChDir))
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) 
 
 	loadedWorkspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
 	err = loadedWorkspace.SetupWatcher(ctx, dbClient, nil)
-	statushooks.Message(ctx, "Workspace loaded")
+	outputEvent(ctx, "Workspace loaded")
 
 	return server, err
 }
@@ -258,7 +258,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			return
 		}
 		s.webSocket.Broadcast(payload)
-		statushooks.Message(s.context, fmt.Sprintf("Workspace ERROR: %v", e.Error))
+		outputError(s.context, e.Error)
 
 	case *reportevents.ExecutionStarted:
 		log.Println("[TRACE] Got execution started event", *e)
@@ -275,7 +275,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			}
 		}
 		s.mutex.Unlock()
-		statushooks.Message(s.context, fmt.Sprintf("Report execution started: %s", reportName))
+		outputEvent(s.context, fmt.Sprintf("Report execution started: %s", reportName))
 
 	case *reportevents.LeafNodeError:
 		log.Println("[TRACE] Got leaf node error event", *e)
@@ -345,7 +345,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			len(changedReports) == 0 {
 			return
 		}
-		statushooks.Message(s.context, "Report changed")
+		outputEvent(s.context, "Report changed")
 
 		for k, v := range s.reportClients {
 			log.Printf("[TRACE] Report client: %v %v\n", k, typeHelpers.SafeString(v.Report))
@@ -438,6 +438,6 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			}
 		}
 		s.mutex.Unlock()
-		statushooks.Message(s.context, fmt.Sprintf("Execution complete: %s", reportName))
+		outputEvent(s.context, fmt.Sprintf("Execution complete: %s", reportName))
 	}
 }

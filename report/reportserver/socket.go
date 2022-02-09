@@ -9,7 +9,6 @@ import (
 
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/report/reportexecute"
-	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/workspace"
 	"gopkg.in/olahol/melody.v1"
 )
@@ -99,5 +98,5 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 			}
 		}
 	})
-	statushooks.Message(ctx, "Initialization complete")
+	outputEvent(ctx, "Initialization complete")
 }

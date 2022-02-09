@@ -15,7 +15,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
-	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/utils"
 	"gopkg.in/olahol/melody.v1"
 )
@@ -75,7 +74,7 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 	}()
 
 	_ = openBrowser(fmt.Sprintf("http://localhost:%d", reportServerPort))
-	statushooks.SetStatus(ctx, fmt.Sprintf("Report server started on %d and listening on %s", reportServerPort, viper.GetString(constants.ArgReportServerListen)))
+	outputEvent(ctx, fmt.Sprintf("Report server started on %d and listening on %s", reportServerPort, viper.GetString(constants.ArgReportServerListen)))
 	<-ctx.Done()
 	log.Println("Shutdown Server ...")
 
