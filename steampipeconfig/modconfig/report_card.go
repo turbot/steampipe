@@ -10,19 +10,19 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// ReportCounter is a struct representing a leaf reporting node
-type ReportCounter struct {
+// ReportCard is a struct representing a leaf reporting node
+type ReportCard struct {
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL   *string        `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Type  *string        `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Style *string        `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
-	Base  *ReportCounter `hcl:"base" json:"-"`
+	Title *string     `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width *int        `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	SQL   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
+	Type  *string     `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Style *string     `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
+	Base  *ReportCard `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
@@ -32,8 +32,8 @@ type ReportCounter struct {
 	metadata *ResourceMetadata
 }
 
-func NewReportCounter(block *hcl.Block) *ReportCounter {
-	return &ReportCounter{
+func NewReportCard(block *hcl.Block) *ReportCard {
+	return &ReportCard{
 		DeclRange:       block.DefRange,
 		ShortName:       block.Labels[0],
 		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
@@ -41,29 +41,29 @@ func NewReportCounter(block *hcl.Block) *ReportCounter {
 	}
 }
 
-func (c *ReportCounter) Equals(other *ReportCounter) bool {
+func (c *ReportCard) Equals(other *ReportCard) bool {
 	diff := c.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (c *ReportCounter) CtyValue() (cty.Value, error) {
+func (c *ReportCard) CtyValue() (cty.Value, error) {
 	return getCtyValue(c)
 }
 
 // Name implements HclResource, ModTreeItem
-// return name in format: 'counter.<shortName>'
-func (c *ReportCounter) Name() string {
+// return name in format: 'card.<shortName>'
+func (c *ReportCard) Name() string {
 	return c.FullName
 }
 
 // OnDecoded implements HclResource
-func (c *ReportCounter) OnDecoded(*hcl.Block) hcl.Diagnostics {
+func (c *ReportCard) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	c.setBaseProperties()
 	return nil
 }
 
-func (c *ReportCounter) setBaseProperties() {
+func (c *ReportCard) setBaseProperties() {
 	if c.Base == nil {
 		return
 	}
@@ -86,57 +86,57 @@ func (c *ReportCounter) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (c *ReportCounter) AddReference(*ResourceReference) {}
+func (c *ReportCard) AddReference(*ResourceReference) {}
 
 // SetMod implements HclResource
-func (c *ReportCounter) SetMod(mod *Mod) {
+func (c *ReportCard) SetMod(mod *Mod) {
 	c.Mod = mod
 	c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
 }
 
 // GetMod implements HclResource
-func (c *ReportCounter) GetMod() *Mod {
+func (c *ReportCard) GetMod() *Mod {
 	return c.Mod
 }
 
 // GetDeclRange implements HclResource
-func (c *ReportCounter) GetDeclRange() *hcl.Range {
+func (c *ReportCard) GetDeclRange() *hcl.Range {
 	return &c.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (c *ReportCounter) AddParent(parent ModTreeItem) error {
+func (c *ReportCard) AddParent(parent ModTreeItem) error {
 	c.parents = append(c.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (c *ReportCounter) GetParents() []ModTreeItem {
+func (c *ReportCard) GetParents() []ModTreeItem {
 	return c.parents
 }
 
 // GetChildren implements ModTreeItem
-func (c *ReportCounter) GetChildren() []ModTreeItem {
+func (c *ReportCard) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (c *ReportCounter) GetTitle() string {
+func (c *ReportCard) GetTitle() string {
 	return typehelpers.SafeString(c.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (c *ReportCounter) GetDescription() string {
+func (c *ReportCard) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (c *ReportCounter) GetTags() map[string]string {
+func (c *ReportCard) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (c *ReportCounter) GetPaths() []NodePath {
+func (c *ReportCard) GetPaths() []NodePath {
 	// lazy load
 	if len(c.Paths) == 0 {
 		c.SetPaths()
@@ -146,7 +146,7 @@ func (c *ReportCounter) GetPaths() []NodePath {
 }
 
 // SetPaths implements ModTreeItem
-func (c *ReportCounter) SetPaths() {
+func (c *ReportCard) SetPaths() {
 	for _, parent := range c.parents {
 		for _, parentPath := range parent.GetPaths() {
 			c.Paths = append(c.Paths, append(parentPath, c.Name()))
@@ -155,16 +155,16 @@ func (c *ReportCounter) SetPaths() {
 }
 
 // GetMetadata implements ResourceWithMetadata
-func (c *ReportCounter) GetMetadata() *ResourceMetadata {
+func (c *ReportCard) GetMetadata() *ResourceMetadata {
 	return c.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata
-func (c *ReportCounter) SetMetadata(metadata *ResourceMetadata) {
+func (c *ReportCard) SetMetadata(metadata *ResourceMetadata) {
 	c.metadata = metadata
 }
 
-func (c *ReportCounter) Diff(other *ReportCounter) *ReportTreeItemDiffs {
+func (c *ReportCard) Diff(other *ReportCard) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
 		Item: c,
 		Name: c.Name(),
@@ -199,12 +199,12 @@ func (c *ReportCounter) Diff(other *ReportCounter) *ReportTreeItemDiffs {
 }
 
 // GetSQL implements ReportLeafNode
-func (c *ReportCounter) GetSQL() string {
+func (c *ReportCard) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)
 }
 
 // GetWidth implements ReportLeafNode
-func (c *ReportCounter) GetWidth() int {
+func (c *ReportCard) GetWidth() int {
 	if c.Width == nil {
 		return 0
 	}
@@ -212,6 +212,6 @@ func (c *ReportCounter) GetWidth() int {
 }
 
 // GetUnqualifiedName implements ReportLeafNode
-func (c *ReportCounter) GetUnqualifiedName() string {
+func (c *ReportCard) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }

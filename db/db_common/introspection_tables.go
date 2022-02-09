@@ -52,8 +52,8 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportContainer{}, constants.IntrospectionTableReport, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportContainer{}, constants.IntrospectionTableContainer, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportCard{}, constants.IntrospectionTableReportCard, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportChart{}, constants.IntrospectionTableReportChart, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportCounter{}, constants.IntrospectionTableReportCounter, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportHierarchy{}, constants.IntrospectionTableReportHierarchy, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportImage{}, constants.IntrospectionTableReportImage, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ReportInput{}, constants.IntrospectionTableReportInput, commonColumnSql))
@@ -87,11 +87,11 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	for _, container := range workspaceResources.ReportContainers {
 		insertSql = append(insertSql, getTableInsertSqlForResource(container, constants.IntrospectionTableContainer))
 	}
+	for _, card := range workspaceResources.ReportCards {
+		insertSql = append(insertSql, getTableInsertSqlForResource(card, constants.IntrospectionTableReportCard))
+	}
 	for _, chart := range workspaceResources.ReportCharts {
 		insertSql = append(insertSql, getTableInsertSqlForResource(chart, constants.IntrospectionTableReportChart))
-	}
-	for _, counter := range workspaceResources.ReportCounters {
-		insertSql = append(insertSql, getTableInsertSqlForResource(counter, constants.IntrospectionTableReportCounter))
 	}
 	for _, hierarchy := range workspaceResources.ReportHierarchies {
 		insertSql = append(insertSql, getTableInsertSqlForResource(hierarchy, constants.IntrospectionTableReportHierarchy))

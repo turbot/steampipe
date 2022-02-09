@@ -73,11 +73,11 @@ var ModBlockSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       modconfig.BlockTypeChart,
+			Type:       modconfig.BlockTypeCard,
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       modconfig.BlockTypeCounter,
+			Type:       modconfig.BlockTypeChart,
 			LabelNames: []string{"name"},
 		},
 		{
@@ -118,6 +118,9 @@ var ReportBlockSchema = &hcl.BodySchema{
 			Type: modconfig.BlockTypeContainer,
 		},
 		{
+			Type: modconfig.BlockTypeCard,
+		},
+		{
 			Type: modconfig.BlockTypeChart,
 		},
 		{
@@ -125,9 +128,6 @@ var ReportBlockSchema = &hcl.BodySchema{
 		},
 		{
 			Type: modconfig.BlockTypeControl,
-		},
-		{
-			Type: modconfig.BlockTypeCounter,
 		},
 		{
 			Type: modconfig.BlockTypeHierarchy,

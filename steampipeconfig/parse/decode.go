@@ -149,10 +149,10 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResour
 		resource = modconfig.NewReportContainer(block)
 	case modconfig.BlockTypeContainer:
 		resource = modconfig.NewReportContainer(block)
+	case modconfig.BlockTypeCard:
+		resource = modconfig.NewReportCard(block)
 	case modconfig.BlockTypeChart:
 		resource = modconfig.NewReportChart(block)
-	case modconfig.BlockTypeCounter:
-		resource = modconfig.NewReportCounter(block)
 	case modconfig.BlockTypeHierarchy:
 		resource = modconfig.NewReportHierarchy(block)
 	case modconfig.BlockTypeImage:
@@ -451,7 +451,7 @@ func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 	diags = decodeProperty(content, "base", &report.Base, runCtx)
 	res.handleDecodeDiags(diags)
 	if report.Base != nil && len(report.Base.ChildNames) > 0 {
-		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeChart, modconfig.BlockTypeControl, modconfig.BlockTypeCounter, modconfig.BlockTypeHierarchy, modconfig.BlockTypeImage, modconfig.BlockTypeInput, modconfig.BlockTypeTable, modconfig.BlockTypeText}
+		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeCard, modconfig.BlockTypeChart, modconfig.BlockTypeControl, modconfig.BlockTypeHierarchy, modconfig.BlockTypeImage, modconfig.BlockTypeInput, modconfig.BlockTypeTable, modconfig.BlockTypeText}
 		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
 		// and we do not expect to get any (as this function has already succeeded when the base was originally parsed)
 		children, _ := resolveChildrenFromNames(report.Base.ChildNames, block, supportedChildren, runCtx)

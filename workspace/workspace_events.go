@@ -93,6 +93,16 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 			event.DeletedContainers = append(event.DeletedContainers, prev)
 		}
 	}
+	for name, prev := range prevResourceMaps.ReportCards {
+		if current, ok := resourceMaps.ReportCards[name]; ok {
+			diff := prev.Diff(current)
+			if diff.HasChanges() {
+				event.ChangedCards = append(event.ChangedCards, diff)
+			}
+		} else {
+			event.DeletedCards = append(event.DeletedCards, prev)
+		}
+	}
 	for name, prev := range prevResourceMaps.ReportCharts {
 		if current, ok := resourceMaps.ReportCharts[name]; ok {
 			diff := prev.Diff(current)
@@ -121,16 +131,6 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 			}
 		} else {
 			event.DeletedControls = append(event.DeletedControls, prev)
-		}
-	}
-	for name, prev := range prevResourceMaps.ReportCounters {
-		if current, ok := resourceMaps.ReportCounters[name]; ok {
-			diff := prev.Diff(current)
-			if diff.HasChanges() {
-				event.ChangedCounters = append(event.ChangedCounters, diff)
-			}
-		} else {
-			event.DeletedCounters = append(event.DeletedCounters, prev)
 		}
 	}
 	for name, prev := range prevResourceMaps.ReportHierarchies {
@@ -195,6 +195,11 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 			event.NewContainers = append(event.NewContainers, p)
 		}
 	}
+	for name, p := range resourceMaps.ReportCards {
+		if _, ok := prevResourceMaps.ReportCards[name]; !ok {
+			event.NewCards = append(event.NewCards, p)
+		}
+	}
 	for name, p := range resourceMaps.ReportCharts {
 		if _, ok := prevResourceMaps.ReportCharts[name]; !ok {
 			event.NewCharts = append(event.NewCharts, p)
@@ -208,11 +213,6 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 	for name, p := range resourceMaps.Controls {
 		if _, ok := prevResourceMaps.Controls[name]; !ok {
 			event.NewControls = append(event.NewControls, p)
-		}
-	}
-	for name, p := range resourceMaps.ReportCounters {
-		if _, ok := prevResourceMaps.ReportCounters[name]; !ok {
-			event.NewCounters = append(event.NewCounters, p)
 		}
 	}
 	for name, p := range resourceMaps.ReportHierarchies {

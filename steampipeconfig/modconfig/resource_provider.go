@@ -16,10 +16,10 @@ package modconfig
 //		resource, found = provider.GetReports[longName]
 //	case BlockTypeContainer:
 //		resource, found = provider.GetReportContainers[longName]
+//	case BlockTypeCard:
+//		resource, found = provider.GetReportCards[longName]
 //	case BlockTypeChart:
 //		resource, found = provider.GetReportCharts[longName]
-//	case BlockTypeCounter:
-//		resource, found = provider.GetReportCounters[longName]
 //	case BlockTypeHierarchy:
 //		resource, found = provider.GetReportHierarchies[longName]
 //	case BlockTypeImage:

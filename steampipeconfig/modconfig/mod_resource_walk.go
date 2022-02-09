@@ -28,12 +28,12 @@ func (m *Mod) WalkResources(resourceFunc func(item HclResource) bool) {
 			return
 		}
 	}
-	for _, r := range m.ReportCharts {
+	for _, r := range m.ReportCards {
 		if !resourceFunc(r) {
 			return
 		}
 	}
-	for _, r := range m.ReportCounters {
+	for _, r := range m.ReportCharts {
 		if !resourceFunc(r) {
 			return
 		}

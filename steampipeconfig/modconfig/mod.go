@@ -57,8 +57,8 @@ type Mod struct {
 	Benchmarks        map[string]*Benchmark
 	Reports           map[string]*ReportContainer
 	ReportContainers  map[string]*ReportContainer
+	ReportCards       map[string]*ReportCard
 	ReportCharts      map[string]*ReportChart
-	ReportCounters    map[string]*ReportCounter
 	ReportHierarchies map[string]*ReportHierarchy
 	ReportImages      map[string]*ReportImage
 	ReportInputs      map[string]*ReportInput
@@ -87,8 +87,8 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		Benchmarks:        make(map[string]*Benchmark),
 		Reports:           make(map[string]*ReportContainer),
 		ReportContainers:  make(map[string]*ReportContainer),
+		ReportCards:       make(map[string]*ReportCard),
 		ReportCharts:      make(map[string]*ReportChart),
-		ReportCounters:    make(map[string]*ReportCounter),
 		ReportHierarchies: make(map[string]*ReportHierarchy),
 		ReportImages:      make(map[string]*ReportImage),
 		ReportInputs:      make(map[string]*ReportInput),
@@ -217,6 +217,17 @@ func (m *Mod) Equals(other *Mod) bool {
 			return false
 		}
 	}
+	// report cards
+	for k := range m.ReportCards {
+		if _, ok := other.ReportCards[k]; !ok {
+			return false
+		}
+	}
+	for k := range other.ReportCards {
+		if _, ok := m.ReportCards[k]; !ok {
+			return false
+		}
+	}
 	// report charts
 	for k := range m.ReportCharts {
 		if _, ok := other.ReportCharts[k]; !ok {
@@ -225,17 +236,6 @@ func (m *Mod) Equals(other *Mod) bool {
 	}
 	for k := range other.ReportCharts {
 		if _, ok := m.ReportCharts[k]; !ok {
-			return false
-		}
-	}
-	// report counters
-	for k := range m.ReportCounters {
-		if _, ok := other.ReportCounters[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.ReportCounters {
-		if _, ok := m.ReportCounters[k]; !ok {
 			return false
 		}
 	}
@@ -702,8 +702,8 @@ func (m *Mod) PopulateResourceMaps() {
 		Variables:         m.Variables,
 		Reports:           m.Reports,
 		ReportContainers:  m.ReportContainers,
+		ReportCards:       m.ReportCards,
 		ReportCharts:      m.ReportCharts,
-		ReportCounters:    m.ReportCounters,
 		ReportHierarchies: m.ReportHierarchies,
 		ReportImages:      m.ReportImages,
 		ReportInputs:      m.ReportInputs,
