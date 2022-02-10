@@ -78,7 +78,7 @@
   /*--color-bg-report: #181717;*/
 
   /*!* Control colors *!*/
-  --color-alert: #fa4d56;
+  --color-alert: #f83741;
   --color-alert-light: rgba(250, 77, 86, 0.3);
   --color-alert-inverse: theme("colors.white");
   --color-orange: #ff832b;
