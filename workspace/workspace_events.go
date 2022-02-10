@@ -24,7 +24,6 @@ func (w *Workspace) RegisterReportEventHandler(handler reportevents.ReportEventH
 
 func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, events []fsnotify.Event) {
 	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
 
 	// get the pre-load resource maps
 	// NOTE: do not call GetResourceMaps - we DO NOT want to lock loadLock
@@ -53,6 +52,9 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 
 	// reload the resource maps
 	resourceMaps := w.resourceMaps
+
+	// unlock the lock BEFORE refreshing the sessions
+	w.loadLock.Unlock()
 
 	// if resources have changed, update introspection tables and prepared statements
 	if !prevResourceMaps.Equals(resourceMaps) {
