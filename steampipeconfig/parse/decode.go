@@ -581,7 +581,7 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 		}
 	} else {
 		if len(res.Depends) > 0 {
-			moreDiags := runCtx.AddDependencies(block, resource.Name(), res.Depends)
+			moreDiags := runCtx.AddDependencies(block, resource.GetUnqualifiedName(), res.Depends)
 			res.addDiags(moreDiags)
 		}
 	}
