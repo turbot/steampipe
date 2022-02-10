@@ -11,6 +11,7 @@ import {
 import { classNames } from "../../../utils/styles";
 import { get, isNumber, isObject } from "lodash";
 import { getColumnIndex } from "../../../utils/data";
+import { ThemeNames, useTheme } from "../../../hooks/useTheme";
 
 const getWrapperClasses = (type) => {
   switch (type) {
@@ -139,6 +140,7 @@ const Label = ({ value }) => {
 
 const Card = (props: CardProps) => {
   const state = useCardState(props);
+  const { theme } = useTheme();
 
   return (
     <div
@@ -187,14 +189,23 @@ const Card = (props: CardProps) => {
       >
         <p
           className={classNames(
-            "text-4xl mt-1 font-semibold",
+            "text-4xl mt-1 font-semibold text-left",
             getTextClasses(state.type)
           )}
         >
-          {state.loading && <LoadingIndicator className="h-8 w-8 mt-2" />}
+          {state.loading && (
+            <LoadingIndicator
+              className={classNames(
+                "h-8 w-8 mt-2",
+                theme.name === ThemeNames.STEAMPIPE_DEFAULT
+                  ? "text-black-scale-4"
+                  : null
+              )}
+            />
+          )}
           {!state.loading &&
             (state.value === null || state.value === undefined) && (
-              <NilIcon className="h-10 w-10" />
+              <NilIcon className="h-10 w-10 -ml-1" />
             )}
           {state.value !== null &&
             state.value !== undefined &&
