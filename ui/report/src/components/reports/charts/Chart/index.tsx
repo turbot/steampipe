@@ -30,7 +30,6 @@ import { merge, set } from "lodash";
 import { PanelDefinition, useReport } from "../../../../hooks/useReport";
 import { Theme, useTheme } from "../../../../hooks/useTheme";
 import { usePanel } from "../../../../hooks/usePanel";
-import { ZoomIcon } from "../../../../constants/icons";
 import * as echarts from "echarts/core";
 
 echarts.use([
@@ -453,29 +452,29 @@ const Chart = ({ options }: ChartComponentProps) => {
       {mediaMode !== "print" && (
         <div
           className="relative"
-          onMouseEnter={() => {
-            if (!showExpand) {
-              return;
-            }
-            setShowZoom(true);
-          }}
-          onMouseLeave={() => {
-            if (!showExpand) {
-              return;
-            }
-            setShowZoom(false);
-          }}
+          // onMouseEnter={() => {
+          //   if (!showExpand) {
+          //     return;
+          //   }
+          //   setShowZoom(true);
+          // }}
+          // onMouseLeave={() => {
+          //   if (!showExpand) {
+          //     return;
+          //   }
+          //   setShowZoom(false);
+          // }}
         >
-          {showZoom && (
-            <div
-              className="absolute right-0 top-0 cursor-pointer z-50"
-              onClick={() =>
-                dispatch({ type: "select_panel", panel: panelDefinition })
-              }
-            >
-              <ZoomIcon className="h-5 w-5 text-black-scale-4" />
-            </div>
-          )}
+          {/*{showZoom && (*/}
+          {/*  <div*/}
+          {/*    className="absolute right-0 top-0 cursor-pointer z-50"*/}
+          {/*    onClick={() =>*/}
+          {/*      dispatch({ type: "select_panel", panel: panelDefinition })*/}
+          {/*    }*/}
+          {/*  >*/}
+          {/*    <ZoomIcon className="h-5 w-5 text-black-scale-4" />*/}
+          {/*  </div>*/}
+          {/*)}*/}
           <ReactEChartsCore
             ref={chartRef}
             echarts={echarts}
