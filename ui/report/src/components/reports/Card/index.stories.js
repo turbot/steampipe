@@ -15,6 +15,23 @@ const Template = (args) => (
 export const Loading = Template.bind({});
 Loading.args = {
   data: null,
+};
+
+export const LoadingOK = Template.bind({});
+LoadingOK.args = {
+  data: null,
+  properties: { type: "ok" },
+};
+
+export const LoadingAlert = Template.bind({});
+LoadingAlert.args = {
+  data: null,
+  properties: { type: "alert" },
+};
+
+export const LoadingInfo = Template.bind({});
+LoadingInfo.args = {
+  data: null,
   properties: { type: "info" },
 };
 
@@ -26,6 +43,23 @@ Error.args = {
 
 export const Empty = Template.bind({});
 Empty.args = {
+  data: [],
+};
+
+export const EmptyOK = Template.bind({});
+EmptyOK.args = {
+  data: [],
+  properties: { type: "ok" },
+};
+
+export const EmptyAlert = Template.bind({});
+EmptyAlert.args = {
+  data: [],
+  properties: { type: "alert" },
+};
+
+export const EmptyInfo = Template.bind({});
+EmptyInfo.args = {
   data: [],
   properties: { type: "info" },
 };
