@@ -53,7 +53,7 @@ type CardDataFormat = "simple" | "formal";
 interface CardState {
   loading: boolean;
   label: string | null;
-  value: number | null;
+  value: any | null;
   type: CardType;
 }
 
@@ -169,6 +169,7 @@ const Card = (props: CardProps) => {
               : "ml-2",
             getTextClasses(state.type)
           )}
+          title={state.label || undefined}
         >
           {state.loading && "Loading..."}
           {!state.loading && !state.label && <NilIcon className="h-5 w-5" />}
@@ -182,6 +183,7 @@ const Card = (props: CardProps) => {
             ? "ml-11"
             : "ml-2"
         )}
+        title={state.value || undefined}
       >
         <p
           className={classNames(
