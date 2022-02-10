@@ -524,27 +524,184 @@ func init() {
 				},
 			},
 		},
-		// upto here
-		// "sibling_containers_report": {
-		// 	source: "testdata/mods/sibling_containers_report",
-		// 	expected: &modconfig.Mod{
-		// 		ShortName:   "sibling_containers_report",
-		// 		FullName:    "mod.sibling_containers_report",
-		// 		Require:     modconfig.NewRequire(),
-		// 		Title:       toStringPointer("report with multiple sibling containers"),
-		// 		Description: toStringPointer("this mod contains a report with multiple sibling containers"),
-		// 	},
-		// },
-		// "nested_containers_report": {
-		// 	source: "testdata/mods/nested_containers_report",
-		// 	expected: &modconfig.Mod{
-		// 		ShortName:   "nested_containers_report",
-		// 		FullName:    "mod.nested_containers_report",
-		// 		Require:     modconfig.NewRequire(),
-		// 		Title:       toStringPointer("report with nested containers"),
-		// 		Description: toStringPointer("this mod contains a report with nested containers"),
-		// 	},
-		// },
+		"sibling_containers_report": {
+			source: "testdata/mods/sibling_containers_report",
+			expected: &modconfig.Mod{
+				ShortName:   "sibling_containers_report",
+				FullName:    "mod.sibling_containers_report",
+				Require:     require,
+				Title:       toStringPointer("report with multiple sibling containers"),
+				Description: toStringPointer("this mod contains a report with multiple sibling containers"),
+				Reports: map[string]*modconfig.ReportContainer{
+					"sibling_containers_report.report.sibling_containers_report": {
+						ShortName:       "sibling_containers_report",
+						FullName:        "sibling_containers_report.report.sibling_containers_report",
+						UnqualifiedName: "report.sibling_containers_report",
+						ChildNames:      []string{"sibling_containers_report.container.anonymous_container", "sibling_containers_report.container.anonymous_container_1", "sibling_containers_report.container.anonymous_container_2"},
+						HclType:         "report",
+					},
+				},
+				ReportContainers: map[string]*modconfig.ReportContainer{
+					"sibling_containers_report.container.anonymous_container": {
+						ShortName:       "anonymous_container",
+						FullName:        "sibling_containers_report.container.anonymous_container",
+						UnqualifiedName: "container.anonymous_container",
+						ChildNames:      []string{"sibling_containers_report.text.anonymous_text", "sibling_containers_report.chart.anonymous_chart"},
+						HclType:         "container",
+					},
+					"sibling_containers_report.container.anonymous_container_1": {
+						ShortName:       "anonymous_container_1",
+						FullName:        "sibling_containers_report.container.anonymous_container_1",
+						UnqualifiedName: "container.anonymous_container_1",
+						ChildNames:      []string{"sibling_containers_report.text.anonymous_text_1", "sibling_containers_report.chart.anonymous_chart_1"},
+						HclType:         "container",
+					},
+					"sibling_containers_report.container.anonymous_container_2": {
+						ShortName:       "anonymous_container_2",
+						FullName:        "sibling_containers_report.container.anonymous_container_2",
+						UnqualifiedName: "container.anonymous_container_2",
+						ChildNames:      []string{"sibling_containers_report.text.anonymous_text_2", "sibling_containers_report.chart.anonymous_chart_2"},
+					},
+				},
+				ReportCharts: map[string]*modconfig.ReportChart{
+					"sibling_containers_report.chart.anonymous_chart": {
+						FullName:        "sibling_containers_report.chart.anonymous_chart",
+						ShortName:       "anonymous_chart",
+						UnqualifiedName: "chart.anonymous_chart",
+						Title:           toStringPointer("container 1 chart 1"),
+						SQL:             toStringPointer("select 1 as container"),
+					},
+					"sibling_containers_report.chart.anonymous_chart_1": {
+						FullName:        "sibling_containers_report.chart.anonymous_chart_1",
+						ShortName:       "anonymous_chart_1",
+						UnqualifiedName: "chart.anonymous_chart_1",
+						Title:           toStringPointer("container 2 chart 1"),
+						SQL:             toStringPointer("select 2 as container"),
+					},
+					"sibling_containers_report.chart.anonymous_chart_2": {
+						FullName:        "sibling_containers_report.chart.anonymous_chart_2",
+						ShortName:       "anonymous_chart_2",
+						UnqualifiedName: "chart.anonymous_chart_2",
+						Title:           toStringPointer("container 3 chart 1"),
+						SQL:             toStringPointer("select 3 as container"),
+					},
+				},
+				ReportTexts: map[string]*modconfig.ReportText{
+					"sibling_containers_report.text.anonymous_text": {
+						FullName:        "sibling_containers_report.text.anonymous_text",
+						ShortName:       "anonymous_text",
+						UnqualifiedName: "text.anonymous_text",
+						Value:           toStringPointer("container 1"),
+					},
+					"sibling_containers_report.text.anonymous_text_1": {
+						FullName:        "sibling_containers_report.text.anonymous_text_1",
+						ShortName:       "anonymous_text_1",
+						UnqualifiedName: "text.anonymous_text_1",
+						Value:           toStringPointer("container 2"),
+					},
+					"sibling_containers_report.text.anonymous_text_2": {
+						FullName:        "sibling_containers_report.text.anonymous_text_2",
+						ShortName:       "anonymous_text_2",
+						UnqualifiedName: "text.anonymous_text_2",
+						Value:           toStringPointer("container 3"),
+					},
+				},
+			},
+		},
+		"nested_containers_report": {
+			source: "testdata/mods/nested_containers_report",
+			expected: &modconfig.Mod{
+				ShortName:   "nested_containers_report",
+				FullName:    "mod.nested_containers_report",
+				Require:     require,
+				Title:       toStringPointer("report with nested containers"),
+				Description: toStringPointer("this mod contains a report with nested containers"),
+				Reports: map[string]*modconfig.ReportContainer{
+					"nested_containers_report.report.nested_containers_report": {
+						ShortName:       "nested_containers_report",
+						FullName:        "nested_containers_report.report.nested_containers_report",
+						UnqualifiedName: "mod.nested_containers_report",
+						ChildNames:      []string{"nested_containers_report.container.anonymous_container"},
+						HclType:         "report",
+					},
+				},
+				ReportContainers: map[string]*modconfig.ReportContainer{
+					"nested_containers_report.container.anonymous_container_1": {
+						ShortName:       "anonymous_container_1",
+						FullName:        "nested_containers_report.container.anonymous_container_1",
+						UnqualifiedName: "container.anonymous_container_1",
+						ChildNames:      []string{"nested_containers_report.text.anonymous_text_1", "nested_containers_report.chart.anonymous_chart"},
+					},
+					"nested_containers_report.container.anonymous_container_3": {
+						ShortName:       "anonymous_container_3",
+						FullName:        "nested_containers_report.container.anonymous_container_3",
+						UnqualifiedName: "container.anonymous_container_3",
+						ChildNames:      []string{"nested_containers_report.text.anonymous_text_3", "nested_containers_report.chart.anonymous_chart_2"},
+					},
+					"nested_containers_report.container.anonymous_container_2": {
+						ShortName:       "anonymous_container_2",
+						FullName:        "nested_containers_report.container.anonymous_container_2",
+						UnqualifiedName: "container.anonymous_container_2",
+						ChildNames:      []string{"nested_containers_report.text.anonymous_text_2", "nested_containers_report.chart.anonymous_chart_1", "nested_containers_report.container.anonymous_container_3"},
+					},
+					"nested_containers_report.container.anonymous_container": {
+						ShortName:       "anonymous_container",
+						FullName:        "nested_containers_report.container.anonymous_container",
+						UnqualifiedName: "container.anonymous_container",
+						ChildNames:      []string{"nested_containers_report.text.anonymous_text", "nested_containers_report.container.anonymous_container_1", "nested_containers_report.container.anonymous_container_2"},
+					},
+				},
+				ReportCharts: map[string]*modconfig.ReportChart{
+					"nested_containers_report.chart.anonymous_chart": {
+						FullName:        "nested_containers_report.chart.anonymous_chart",
+						ShortName:       "anonymous_chart",
+						UnqualifiedName: "chart.anonymous_chart",
+						Title:           toStringPointer("CHART 1"),
+						SQL:             toStringPointer("select 1 as child_container, 1 as container"),
+					},
+					"nested_containers_report.chart.anonymous_chart_1": {
+						FullName:        "nested_containers_report.chart.anonymous_chart_1",
+						ShortName:       "anonymous_chart_1",
+						UnqualifiedName: "chart.anonymous_chart_1",
+						Title:           toStringPointer("CHART 2"),
+						SQL:             toStringPointer("select 2 as child_container, 1 as container"),
+					},
+					"nested_containers_report.chart.anonymous_chart_2": {
+						FullName:        "nested_containers_report.chart.anonymous_chart_2",
+						ShortName:       "anonymous_chart_2",
+						UnqualifiedName: "chart.anonymous_chart_2",
+						Title:           toStringPointer("CHART 3"),
+						SQL:             toStringPointer("select 1 as child_container, 2 as container"),
+					},
+				},
+				ReportTexts: map[string]*modconfig.ReportText{
+					"nested_containers_report.text.anonymous_text": {
+						FullName:        "nested_containers_report.text.anonymous_text",
+						ShortName:       "anonymous_text",
+						UnqualifiedName: "text.anonymous_text",
+						Value:           toStringPointer("CONTAINER 1"),
+					},
+					"nested_containers_report.text.anonymous_text_1": {
+						FullName:        "nested_containers_report.text.anonymous_text_1",
+						ShortName:       "anonymous_text_1",
+						UnqualifiedName: "text.anonymous_text_1",
+						Value:           toStringPointer("CHILD CONTAINER 1(1)"),
+					},
+					"nested_containers_report.text.anonymous_text_2": {
+						FullName:        "nested_containers_report.text.anonymous_text_2",
+						ShortName:       "anonymous_text_2",
+						UnqualifiedName: "text.anonymous_text_2",
+						Value:           toStringPointer("CHILD CONTAINER 2(1)"),
+					},
+					"nested_containers_report.text.anonymous_text_3": {
+						FullName:        "nested_containers_report.text.anonymous_text_3",
+						ShortName:       "anonymous_text_3",
+						UnqualifiedName: "text.anonymous_text_3",
+						Value:           toStringPointer("NESTED CHILD CONTAINER 1(21)"),
+					},
+				},
+			},
+		},
 		//"two_mods": {
 		//	source:   "testdata/mods/two_mods",
 		//	expected: "ERROR",
