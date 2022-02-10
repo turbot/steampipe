@@ -64,6 +64,22 @@ EmptyInfo.args = {
   properties: { type: "info" },
 };
 
+export const StringValue = Template.bind({});
+StringValue.args = {
+  data: {
+    columns: [{ name: "Label", data_type_name: "INT8" }],
+    rows: [["I am not a number"]],
+  },
+};
+
+export const JSONValue = Template.bind({});
+JSONValue.args = {
+  data: {
+    columns: [{ name: "Label", data_type_name: "INT8" }],
+    rows: [[{ complex: "object" }]],
+  },
+};
+
 export const SimpleDataFormat = Template.bind({});
 SimpleDataFormat.args = {
   data: {

@@ -9,7 +9,7 @@ import {
   LeafNodeData,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { get } from "lodash";
+import { get, isNumber, isObject } from "lodash";
 import { getColumnIndex } from "../../../utils/data";
 
 const getWrapperClasses = (type) => {
@@ -117,12 +117,24 @@ const useCardState = ({ data, properties }: CardProps) => {
         loading: false,
         label: formalLabel,
         value: formalValue,
-        type: formalType,
+        type: formalType || properties.type || null,
       });
     }
   }, [data, properties]);
 
   return calculatedProperties;
+};
+
+const Label = ({ value }) => {
+  if (!value) {
+    return null;
+  }
+
+  if (isObject(value)) {
+    return JSON.stringify(value);
+  }
+
+  return value;
 };
 
 const Card = (props: CardProps) => {
@@ -131,7 +143,7 @@ const Card = (props: CardProps) => {
   return (
     <div
       className={classNames(
-        "relative pt-5 px-4 pb-6 sm:pt-6 sm:px-6 shadow rounded-lg overflow-hidden",
+        "relative pt-4 px-3 pb-4 sm:px-4 rounded-lg overflow-hidden",
         getWrapperClasses(state.type)
       )}
     >
@@ -153,8 +165,8 @@ const Card = (props: CardProps) => {
             state.type === "alert" ||
               state.type === "ok" ||
               state.type === "info"
-              ? "ml-12"
-              : null,
+              ? "ml-11"
+              : "ml-2",
             getTextClasses(state.type)
           )}
         >
@@ -167,13 +179,13 @@ const Card = (props: CardProps) => {
         className={classNames(
           "flex items-baseline",
           state.type === "alert" || state.type === "ok" || state.type === "info"
-            ? "ml-12"
-            : null
+            ? "ml-11"
+            : "ml-2"
         )}
       >
         <p
           className={classNames(
-            "text-4xl font-semibold",
+            "text-4xl mt-1 font-semibold",
             getTextClasses(state.type)
           )}
         >
@@ -182,128 +194,25 @@ const Card = (props: CardProps) => {
             (state.value === null || state.value === undefined) && (
               <NilIcon className="h-10 w-10" />
             )}
-          <IntegerDisplay className="md:hidden" num={state.value} startAt="k" />
-          <IntegerDisplay
-            className="hidden md:inline"
-            num={state.value}
-            startAt="m"
-          />
+          {state.value !== null &&
+            state.value !== undefined &&
+            !isNumber(state.value) && <Label value={state.value} />}
+          {isNumber(state.value) && (
+            <>
+              <IntegerDisplay
+                className="md:hidden"
+                num={state.value}
+                startAt="k"
+              />
+              <IntegerDisplay
+                className="hidden md:inline"
+                num={state.value}
+                startAt="m"
+              />
+            </>
+          )}
         </p>
-        {/*<p*/}
-        {/*  className={classNames(*/}
-        {/*    item.changeType === "increase" ? "text-green-600" : "text-red-600",*/}
-        {/*    "ml-2 flex items-baseline text-sm font-semibold"*/}
-        {/*  )}*/}
-        {/*>*/}
-        {/*  {item.changeType === "increase" ? (*/}
-        {/*    <ArrowSmUpIcon*/}
-        {/*      className="self-center flex-shrink-0 h-5 w-5 text-green-500"*/}
-        {/*      aria-hidden="true"*/}
-        {/*    />*/}
-        {/*  ) : (*/}
-        {/*    <ArrowSmDownIcon*/}
-        {/*      className="self-center flex-shrink-0 h-5 w-5 text-red-500"*/}
-        {/*      aria-hidden="true"*/}
-        {/*    />*/}
-        {/*  )}*/}
-
-        {/*  <span className="sr-only">*/}
-        {/*    {item.changeType === "increase" ? "Increased" : "Decreased"} by*/}
-        {/*  </span>*/}
-        {/*  {item.change}*/}
-        {/*</p>*/}
-        {/*{<div className="absolute bottom-0 inset-x-0 bg-gray-50 px-4 py-4 sm:px-6">*/}
-        {/*  <div className="text-sm">*/}
-        {/*    <a*/}
-        {/*      href="#"*/}
-        {/*      className="font-medium text-indigo-600 hover:text-indigo-500"*/}
-        {/*    >*/}
-        {/*      {" "}*/}
-        {/*      View all<span className="sr-only"> {item.name} stats</span>*/}
-        {/*    </a>*/}
-        {/*  </div>*/}
-        {/*</div>}*/}
       </dd>
-    </div>
-  );
-
-  return (
-    <div
-      className={
-        "flex-col overflow-hidden shadow rounded-lg " +
-        getWrapperClasses(state.type)
-      }
-    >
-      <div className="flex-grow">
-        <div className="flex">
-          {state.type === "alert" && (
-            <div className="py-2 px-3">
-              <AlertIcon className="text-white opacity-30 text-3xl h-8 w-8" />
-            </div>
-          )}
-          {state.type === "ok" && (
-            <div className="py-2 px-3">
-              <OKIcon className="block text-white opacity-30 h-8 w-8" />
-            </div>
-          )}
-          {state.type === "info" && (
-            <div className="py-2 px-3">
-              <InfoIcon className="text-white opacity-30 text-3xl h-8 w-8" />
-            </div>
-          )}
-          <div className="w-0 flex-1 px-4 py-5 sm:p-6">
-            <dt
-              className={
-                "text-sm font-medium truncate " + getTextClasses(state.type)
-              }
-            >
-              {state.loading && "Loading..."}
-              {!state.loading && !state.label && (
-                <NilIcon className="h-5 w-5 text-black-scale-4" />
-              )}
-              {!state.loading && state.label}
-            </dt>
-            <dd className="flex items-baseline mt-2">
-              <div
-                className={"text-3xl font-light " + getTextClasses(state.type)}
-              >
-                {state.loading && (
-                  <LoadingIndicator className="h-8 w-8 text-black-scale-4" />
-                )}
-                {!state.loading &&
-                  (state.value === null || state.value === undefined) && (
-                    <NilIcon className="h-8 w-8 text-black-scale-4" />
-                  )}
-                <IntegerDisplay
-                  className="md:hidden"
-                  num={state.value}
-                  startAt="k"
-                />
-                <IntegerDisplay
-                  className="hidden md:inline"
-                  num={state.value}
-                  startAt="m"
-                />
-              </div>
-            </dd>
-          </div>
-          {state.type === "alert" && (
-            <div className="py-2 px-3">
-              <AlertIcon className="text-white opacity-30 text-3xl h-8 w-8" />
-            </div>
-          )}
-          {state.type === "ok" && (
-            <div className="py-2 px-3">
-              <OKIcon className="block text-white opacity-30 h-8 w-8" />
-            </div>
-          )}
-          {state.type === "info" && (
-            <div className="py-2 px-3">
-              <InfoIcon className="text-white opacity-30 text-3xl h-8 w-8" />
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 };

@@ -30,7 +30,11 @@ const IntegerDisplay = ({
     // display number as is but separated with commas
     return num.toLocaleString();
   };
-  return <span className={className}>{numberFormatter(num)}</span>;
+  return (
+    <span className={className} title={num ? num.toLocaleString() : undefined}>
+      {numberFormatter(num)}
+    </span>
+  );
 };
 
 export default IntegerDisplay;
