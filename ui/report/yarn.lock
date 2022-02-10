@@ -3908,10 +3908,10 @@
   dependencies:
     core-js "^3.8.2"
 
-"@storybook/preset-create-react-app@4.0.0":
-  version "4.0.0"
-  resolved "https://registry.npmjs.org/@storybook/preset-create-react-app/-/preset-create-react-app-4.0.0.tgz"
-  integrity sha512-yGitcvckL/elb1B6P9k7p1MXDnOg+AiDGWGjsJjBfkx8y4rVatnDo+9s2IOjpd1tipc8TeUYA1xaGf/I66mg6w==
+"@storybook/preset-create-react-app@4.0.1":
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/@storybook/preset-create-react-app/-/preset-create-react-app-4.0.1.tgz#b0d9ce94430299f2dbae9578d6a925e980d2257c"
+  integrity sha512-+4wipy3MS6ygDJdCVxJZ5bjWg2Z2mOD3BnPsfZRHzi/MAbi4CexJllymk+B54E1PziXoSg2Yw0S69O/e1v50Fg==
   dependencies:
     "@pmmmwh/react-refresh-webpack-plugin" "^0.5.1"
     "@storybook/react-docgen-typescript-plugin" canary
@@ -4554,10 +4554,10 @@
   resolved "https://registry.npmjs.org/@types/node/-/node-17.0.13.tgz"
   integrity sha512-Y86MAxASe25hNzlDbsviXl8jQHb0RDvKt4c40ZJQ1Don0AAL0STLZSs4N+6gLEO55pedy7r2cLwS+ZDxPm/2Bw==
 
-"@types/node@17.0.15":
-  version "17.0.15"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.15.tgz#97779282c09c09577120a2162e71d8380003590a"
-  integrity sha512-zWt4SDDv1S9WRBNxLFxFRHxdD9tvH8f5/kg5/IaLFdnSNXsDY4eL3Q3XXN+VxUnWIhyVFDwcsmAprvwXoM/ClA==
+"@types/node@17.0.17":
+  version "17.0.17"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.17.tgz#a8ddf6e0c2341718d74ee3dc413a13a042c45a0c"
+  integrity sha512-e8PUNQy1HgJGV3iU/Bp2+D/DXh3PYeyli8LgIwsQcs1Ar1LoaWHSIT6Rw+H2rNJmiq6SNWiDytfx8+gYj7wDHw==
 
 "@types/node@^14.0.10 || ^16.0.0", "@types/node@^14.14.20 || ^16.0.0":
   version "16.11.15"
@@ -10231,6 +10231,13 @@ is-core-module@^2.8.0:
   dependencies:
     has "^1.0.3"
 
+is-core-module@^2.8.1:
+  version "2.8.1"
+  resolved "https://registry.yarnpkg.com/is-core-module/-/is-core-module-2.8.1.tgz#f59fdfca701d5879d0a6b100a40aa1560ce27211"
+  integrity sha512-SdNCUs284hr40hFTFP6l0IfZ/RSrMXF3qgoRHd3/79unUTvrFO/JoXwkGm+5J/Oe3E/b5GsnG330uUNgRpu1PA==
+  dependencies:
+    has "^1.0.3"
+
 is-data-descriptor@^0.1.4:
   version "0.1.4"
   resolved "https://registry.npmjs.org/is-data-descriptor/-/is-data-descriptor-0.1.4.tgz"
@@ -15168,12 +15175,12 @@ resolve@^1.19.0, resolve@^1.20.0:
     is-core-module "^2.2.0"
     path-parse "^1.0.6"
 
-resolve@^1.21.0:
-  version "1.21.0"
-  resolved "https://registry.npmjs.org/resolve/-/resolve-1.21.0.tgz"
-  integrity sha512-3wCbTpk5WJlyE4mSOtDLhqQmGFi0/TD9VPwmiolnk8U0wRgMEktqCXd3vy5buTO3tljvalNvKrjHEfrd2WpEKA==
+resolve@^1.22.0:
+  version "1.22.0"
+  resolved "https://registry.yarnpkg.com/resolve/-/resolve-1.22.0.tgz#5e0b8c67c15df57a89bdbabe603a002f21731198"
+  integrity sha512-Hhtrw0nLeSrFQ7phPp4OOcVjLPIeMnRlr5mcnVuMe7M/7eBn98A3hmFRLoFo3DLZkivSYwhRUJTyPyWAk56WLw==
   dependencies:
-    is-core-module "^2.8.0"
+    is-core-module "^2.8.1"
     path-parse "^1.0.7"
     supports-preserve-symlinks-flag "^1.0.0"
 
@@ -16376,10 +16383,10 @@ synchronous-promise@^2.0.15:
   resolved "https://registry.npmjs.org/synchronous-promise/-/synchronous-promise-2.0.15.tgz"
   integrity sha512-k8uzYIkIVwmT+TcglpdN50pS2y1BDcUnBPK9iJeGu0Pl1lOI8pD6wtzgw91Pjpe+RxtTncw32tLxs/R0yNL2Mg==
 
-tailwindcss@3.0.18:
-  version "3.0.18"
-  resolved "https://registry.npmjs.org/tailwindcss/-/tailwindcss-3.0.18.tgz"
-  integrity sha512-ihPTpEyA5ANgZbwKlgrbfnzOp9R5vDHFWmqxB1PT8NwOGCOFVVMl+Ps1cQQ369acaqqf1BEF77roCwK0lvNmTw==
+tailwindcss@3.0.19:
+  version "3.0.19"
+  resolved "https://registry.yarnpkg.com/tailwindcss/-/tailwindcss-3.0.19.tgz#cd789953e6762af2e80c5a3e5d6da3a975ee8215"
+  integrity sha512-rjsdfz/qZya5xQ0OVynEMETgWq1CacmftgMYeXXh6bRM5vxsNwRSbMJsCCIjq/w67om9VP/AFMolOwiE+5VKig==
   dependencies:
     arg "^5.0.1"
     chalk "^4.1.2"
@@ -16400,7 +16407,7 @@ tailwindcss@3.0.18:
     postcss-selector-parser "^6.0.9"
     postcss-value-parser "^4.2.0"
     quick-lru "^5.1.1"
-    resolve "^1.21.0"
+    resolve "^1.22.0"
 
 tailwindcss@^3.0.2:
   version "3.0.7"
