@@ -1,4 +1,4 @@
-## v0.12.3 [tbd]
+## v0.12.3 [2022-02-10]
 _Bug fixes_
 * Ensure SetConnectionConfig is only called once. ([#1368](https://github.com/turbot/steampipe/issues/1368))
 * Fix plugin validation error sometimes causing Steampipe to crash. ([#1387](https://github.com/turbot/steampipe/issues/1387), [#146](https://github.com/turbot/steampipe-postgres-fdw/issues/146))
