@@ -2,7 +2,7 @@
 
 With Steampipe you can query your favorite cloud APIs using PostgreSQL, check your AWS/Azure/GCP/Kubernetes infrastructure for compliance with security frameworks, and visualize data in a whole new way.
 
-![](./steampipe-original-screencast.png)
+![](./original-screencast.png)
 
 > Note: To make it come alive, open this README in the GitHub editor, and drag-drop `original-screencast.mp4` from this folder.
 
