@@ -69,7 +69,7 @@ const useCardState = ({ data, properties }: CardProps) => {
     loading: true,
     label: null,
     value: null,
-    type: null,
+    type: properties.type || null,
   });
 
   useEffect(() => {
@@ -87,7 +87,7 @@ const useCardState = ({ data, properties }: CardProps) => {
         loading: false,
         label: null,
         value: null,
-        type: null,
+        type: properties.type || null,
       });
       return;
     }
@@ -146,7 +146,6 @@ const Card = (props: CardProps) => {
           {state.type === "info" && (
             <InfoIcon className="text-white opacity-40 text-3xl h-8 w-8" />
           )}
-          {/*<item.icon className="h-6 w-6 text-white" aria-hidden="true" />*/}
         </div>
         <p
           className={classNames(
@@ -160,9 +159,7 @@ const Card = (props: CardProps) => {
           )}
         >
           {state.loading && "Loading..."}
-          {!state.loading && !state.label && (
-            <NilIcon className="h-5 w-5 text-black-scale-4" />
-          )}
+          {!state.loading && !state.label && <NilIcon className="h-5 w-5" />}
           {!state.loading && state.label}
         </p>
       </dt>
@@ -180,12 +177,10 @@ const Card = (props: CardProps) => {
             getTextClasses(state.type)
           )}
         >
-          {state.loading && (
-            <LoadingIndicator className="h-10 w-10 text-black-scale-4" />
-          )}
+          {state.loading && <LoadingIndicator className="h-8 w-8 mt-2" />}
           {!state.loading &&
             (state.value === null || state.value === undefined) && (
-              <NilIcon className="h-10 w-10 text-black-scale-4" />
+              <NilIcon className="h-10 w-10" />
             )}
           <IntegerDisplay className="md:hidden" num={state.value} startAt="k" />
           <IntegerDisplay
