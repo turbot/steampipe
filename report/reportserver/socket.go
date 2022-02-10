@@ -98,5 +98,5 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 			}
 		}
 	})
-	outputEvent(ctx, "Initialization complete")
+	outputMessage(ctx, "Initialization complete")
 }

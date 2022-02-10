@@ -14,7 +14,6 @@ import (
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/report/reportassets"
 	"github.com/turbot/steampipe/report/reportserver"
-	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -65,8 +64,6 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 
 	refreshResult := dbClient.RefreshConnectionAndSearchPaths(ctx)
 	refreshResult.ShowWarnings()
-
-	ctx = statushooks.AddStatusHooksToContext(ctx, statushooks.ConsoleHook)
 
 	server, err := reportserver.NewServer(ctx, dbClient)
 	if err != nil {

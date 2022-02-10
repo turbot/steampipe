@@ -74,7 +74,7 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 	}()
 
 	_ = openBrowser(fmt.Sprintf("http://localhost:%d", reportServerPort))
-	outputEvent(ctx, fmt.Sprintf("Report server started on %d and listening on %s", reportServerPort, viper.GetString(constants.ArgReportServerListen)))
+	outputReady(ctx, fmt.Sprintf("Report server started on %d and listening on %s", reportServerPort, viper.GetString(constants.ArgReportServerListen)))
 	<-ctx.Done()
 	log.Println("Shutdown Server ...")
 

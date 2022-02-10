@@ -71,7 +71,7 @@ type ReportClientInfo struct {
 }
 
 func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) {
-	outputEvent(ctx, "Starting Report Server")
+	outputWait(ctx, "Starting Report Server")
 	loadedWorkspace, err := workspace.Load(ctx, viper.GetString(constants.ArgWorkspaceChDir))
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) 
 
 	loadedWorkspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
 	err = loadedWorkspace.SetupWatcher(ctx, dbClient, nil)
-	outputEvent(ctx, "Workspace loaded")
+	outputMessage(ctx, "Workspace loaded")
 
 	return server, err
 }
@@ -275,7 +275,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			}
 		}
 		s.mutex.Unlock()
-		outputEvent(s.context, fmt.Sprintf("Report execution started: %s", reportName))
+		outputWait(s.context, fmt.Sprintf("Report execution started: %s", reportName))
 
 	case *reportevents.LeafNodeError:
 		log.Println("[TRACE] Got leaf node error event", *e)
@@ -345,7 +345,6 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			len(changedReports) == 0 {
 			return
 		}
-		outputEvent(s.context, "Report changed")
 
 		for k, v := range s.reportClients {
 			log.Printf("[TRACE] Report client: %v %v\n", k, typeHelpers.SafeString(v.Report))
@@ -353,6 +352,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 		// If) any deleted/new/changed reports, emit an available reports message to clients
 		if len(deletedReports) != 0 || len(newReports) != 0 || len(changedReports) != 0 {
+			outputMessage(s.context, "Available Reports updated")
 			payload, payloadError = buildAvailableDashboardsPayload(s.workspace)
 			if payloadError != nil {
 				return
@@ -438,6 +438,6 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			}
 		}
 		s.mutex.Unlock()
-		outputEvent(s.context, fmt.Sprintf("Execution complete: %s", reportName))
+		outputReady(s.context, fmt.Sprintf("Execution complete: %s", reportName))
 	}
 }
