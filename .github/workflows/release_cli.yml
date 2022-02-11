@@ -133,11 +133,25 @@ jobs:
           $GITHUB_WORKSPACE/tests/acceptance/run.sh
           steampipe service stop --force
 
-  create_release:
-    name: Release
+  create_release_tag:
+    name: Tag Release
     needs: [goreleaser, acceptance_test]
     runs-on: ubuntu-latest
     steps:
+
+      - name: Trim asset version prefix and Validate
+        run: |-
+          echo $VERSION
+          trim=${VERSION#"v"}
+          echo $trim
+          if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+            echo "Version OK: $trim"
+          else
+            echo "Invalid version: $trim"
+            exit 1
+          fi
+          echo "VERSION=${trim}" >> $GITHUB_ENV
+          
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -146,13 +160,27 @@ jobs:
       - name: Unshallow
         run: git fetch --prune --unshallow
 
+      - name: Tag Release
+        run: |
+          git config user.name "Steampipe GitHub Actions Bot"
+          git config user.email noreply@github.com
+          git tag ${{ github.event.inputs.version }}
+          git push origin ${{ github.event.inputs.version }}
+
+  create_release:
+    name: Release
+    needs: [create_release_tag]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
           go-version: 1.17
-
-      - name: Hook private repo
-        run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
 
       - name: Tag Release
         run: |
