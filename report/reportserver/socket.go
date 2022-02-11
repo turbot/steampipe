@@ -13,12 +13,12 @@ import (
 	"gopkg.in/olahol/melody.v1"
 )
 
-type ClientRequestReportPayload struct {
+type ClientRequestDashboardPayload struct {
 	FullName string `json:"full_name"`
 }
 
 type ClientRequestPayload struct {
-	Report ClientRequestReportPayload `json:"report"`
+	Dashboard ClientRequestDashboardPayload `json:"dashboard"`
 }
 
 type ClientRequest struct {
@@ -89,12 +89,12 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 				}
 				session.Write(payload)
 			case "select_dashboard":
-				log.Printf("[TRACE] Got event: %v\n", request.Payload.Report)
+				log.Printf("[TRACE] Got event: %v\n", request.Payload.Dashboard)
 				mutex.Lock()
 				reportClientInfo := socketSessions[session]
-				reportClientInfo.Report = &request.Payload.Report.FullName
+				reportClientInfo.Report = &request.Payload.Dashboard.FullName
 				mutex.Unlock()
-				reportexecute.ExecuteReportNode(ctx, request.Payload.Report.FullName, workspace, dbClient)
+				reportexecute.ExecuteReportNode(ctx, request.Payload.Dashboard.FullName, workspace, dbClient)
 			}
 		}
 	})

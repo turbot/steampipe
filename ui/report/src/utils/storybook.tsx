@@ -22,9 +22,11 @@ export const PanelStoryDecorator = ({
       value={{
         metadata: {
           mod: {
+            title: "Storybook",
             full_name: "mod.storybook",
             short_name: "storybook",
           },
+          installed_mods: {},
         },
         metadataLoaded: true,
         availableDashboardsLoaded: true,

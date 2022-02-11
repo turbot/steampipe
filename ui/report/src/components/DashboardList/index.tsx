@@ -1,6 +1,39 @@
+import LoadingIndicator from "../dashboards/LoadingIndicator";
 import { AvailableDashboard, useDashboard } from "../../hooks/useDashboard";
+import { get } from "lodash";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+
+interface OtherModDashboardsDictionary {
+  [key: string]: AvailableDashboard[];
+}
+
+const ModSection = ({ mod, dashboards }) => {
+  return (
+    <>
+      <h3 className="text-xl font-medium">{mod.title || mod.short_name}</h3>
+      <ul className="list-none list-inside">
+        {dashboards.map((dashboard) => (
+          <li key={dashboard.full_name} className="pl-4">
+            <Link className="link-highlight" to={`/${dashboard.full_name}`}>
+              {dashboard.title || dashboard.short_name}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+};
+
+const CurrentModSection = ({ dashboards, metadata }) => {
+  const mod = get(metadata, "mod", {});
+  return <ModSection mod={mod} dashboards={dashboards} />;
+};
+
+const OtherModSection = ({ mod_full_name, dashboards, metadata }) => {
+  const mod = get(metadata, `installed_mods["${mod_full_name}"]`, {});
+  return <ModSection mod={mod} dashboards={dashboards} />;
+};
 
 const DashboardList = () => {
   const {
@@ -13,51 +46,62 @@ const DashboardList = () => {
   const [dashboardsForCurrentMod, setDashboardsForCurrentMod] = useState<
     AvailableDashboard[]
   >([]);
-  const [dashboardsForOtherMod, setDashboardsForOtherMod] = useState<
-    AvailableDashboard[]
-  >([]);
+  const [dashboardsForOtherMods, setDashboardsForOtherMods] =
+    useState<OtherModDashboardsDictionary>({});
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    if (!metadataLoaded || !availableDashboardsLoaded) {
+      setDashboardsForCurrentMod([]);
+      setDashboardsForOtherMods({});
+      return;
+    }
+
+    setDashboardsForCurrentMod(
+      dashboards.filter(
+        (dashboard) => dashboard.mod_full_name === metadata.mod.full_name
+      )
+    );
+
+    const newOtherMods = {};
+    for (const [mod_full_name, mod] of Object.entries(
+      metadata.installed_mods || {}
+    )) {
+      newOtherMods[mod_full_name] = dashboards
+        .filter((dashboard) => dashboard.mod_full_name === mod_full_name)
+        .map((dashboard) => ({ ...dashboard, mod }));
+    }
+    setDashboardsForOtherMods(newOtherMods);
+  }, [metadataLoaded, availableDashboardsLoaded, metadata, dashboards]);
 
   if (selectedDashboard) {
     return null;
   }
 
-  // console.log(metadata);
-  // console.log(dashboards);
-
   return (
     <div className="w-full p-4">
-      {!availableDashboardsLoaded && !metadataLoaded && <></>}
+      <h2 className="text-2xl font-medium">Available Dashboards</h2>
+      {!availableDashboardsLoaded && !metadataLoaded && (
+        <div className="mt-2 text-black-scale-3">
+          <LoadingIndicator /> <span className="italic">Loading...</span>
+        </div>
+      )}
       {availableDashboardsLoaded && metadataLoaded && (
-        <>
-          <h2 className="text-2xl font-medium">
-            Welcome to the Steampipe Dashboard UI
-          </h2>
-          {dashboards.length === 0 ? (
-            <p className="py-2 italic">
-              No dashboards defined. Please define at least one dashboard in the
-              mod.
-            </p>
-          ) : null}
-          {dashboards.length > 0 ? (
-            <p className="py-2">
-              Please select a dashboard from the list below:
-            </p>
-          ) : null}
-          <ul className="list-none list-inside">
-            {dashboards.map((availableDashboard) => (
-              <li key={availableDashboard.full_name} className="pl-4">
-                <Link
-                  className="link-highlight"
-                  to={`/${availableDashboard.full_name}`}
-                >
-                  {availableDashboard.title || availableDashboard.full_name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </>
+        <div className="mt-4 space-y-2">
+          <CurrentModSection
+            dashboards={dashboardsForCurrentMod}
+            metadata={metadata}
+          />
+          {Object.entries(dashboardsForOtherMods).map(
+            ([mod_full_name, dashboards]) => (
+              <OtherModSection
+                key={mod_full_name}
+                mod_full_name={mod_full_name}
+                dashboards={dashboards}
+                metadata={metadata}
+              />
+            )
+          )}
+        </div>
       )}
     </div>
   );

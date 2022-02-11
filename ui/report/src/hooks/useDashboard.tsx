@@ -33,12 +33,18 @@ interface IDashboardContext {
 }
 
 interface ModDashboardMetadata {
+  title: string;
   full_name: string;
   short_name: string;
 }
 
+interface InstalledModsDashboardMetadata {
+  [key: string]: ModDashboardMetadata;
+}
+
 interface DashboardMetadata {
   mod: ModDashboardMetadata;
+  installed_mods: InstalledModsDashboardMetadata;
 }
 
 export interface AvailableDashboard {
