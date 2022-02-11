@@ -183,13 +183,6 @@ jobs:
         with:
           go-version: 1.17
 
-      - name: Tag Release
-        run: |
-          git config user.name "Steampipe GitHub Actions Bot"
-          git config user.email noreply@github.com
-          git tag ${{ github.event.inputs.tag }}
-          git push origin ${{ github.event.inputs.tag }}
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
