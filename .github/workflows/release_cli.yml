@@ -5,13 +5,14 @@ on:
       branch:
         description: "The branch that will be built"
         required: true
-      tag:
-        description: "The release tag that will be set"
+      version:
+        description: "The version to release (must be prefixed with 'v')"
         required: true
 
 env:
   PROJECT_ID: steampipe
   STEAMPIPE_UPDATE_CHECK: false
+  VERSION: ${{ github.event.inputs.version }}
 
 jobs:
   goreleaser:
