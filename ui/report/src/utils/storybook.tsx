@@ -20,6 +20,13 @@ export const PanelStoryDecorator = ({
   return (
     <ReportContext.Provider
       value={{
+        metadata: {
+          mod: {
+            full_name: "mod.storybook",
+            short_name: "storybook",
+          },
+        },
+        metadataLoaded: true,
         availableReportsLoaded: true,
         closePanelDetail: noop,
         dispatch: () => {},
@@ -27,8 +34,10 @@ export const PanelStoryDecorator = ({
         reports: [],
         selectedPanel: null,
         selectedReport: {
-          name: "storybook.report.storybook_report_wrapper",
           title: "Storybook Report Wrapper",
+          full_name: "storybook.report.storybook_report_wrapper",
+          short_name: "storybook_report_wrapper",
+          mod_full_name: "mod.storybook",
         },
         report: {
           name: "storybook.report.storybook_report_wrapper",

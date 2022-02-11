@@ -26,9 +26,31 @@ type ClientRequest struct {
 	Payload ClientRequestPayload `json:"payload"`
 }
 
+type ModAvailableReport struct {
+	Title     string `json:"title,omitempty"`
+	FullName  string `json:"full_name"`
+	ShortName string `json:"short_name"`
+}
+
 type AvailableReportsPayload struct {
-	Action  string            `json:"action"`
-	Reports map[string]string `json:"reports"`
+	Action       string                                   `json:"action"`
+	ReportsByMod map[string]map[string]ModAvailableReport `json:"reports_by_mod"`
+}
+
+type ModDashboardMetadata struct {
+	Title     string `json:"title,omitempty"`
+	FullName  string `json:"full_name"`
+	ShortName string `json:"short_name"`
+}
+
+type DashboardMetadata struct {
+	Mod           ModDashboardMetadata            `json:"mod"`
+	InstalledMods map[string]ModDashboardMetadata `json:"installed_mods,omitempty"`
+}
+
+type DashboardMetadataPayload struct {
+	Action   string            `json:"action"`
+	Metadata DashboardMetadata `json:"metadata"`
 }
 
 func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, dbClient db_common.Client, socketSessions map[*melody.Session]*ReportClientInfo, mutex *sync.Mutex) {
@@ -54,11 +76,16 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 		if err := json.Unmarshal(msg, &request); err == nil {
 
 			switch request.Action {
-			case "available_reports":
-				reports := workspace.Mod.Reports
-				payload, err := buildAvailableReportsPayload(reports)
+			case "get_dashboard_metadata":
+				payload, err := buildDashboardMetadataPayload(workspace)
 				if err != nil {
-					panic(fmt.Errorf("error building payload for %s: %v", "available_reports", err))
+					panic(fmt.Errorf("error building payload for get_metadata: %v", err))
+				}
+				session.Write(payload)
+			case "get_available_reports":
+				payload, err := buildAvailableDashboardsPayload(workspace)
+				if err != nil {
+					panic(fmt.Errorf("error building payload for get_available_reports: %v", err))
 				}
 				session.Write(payload)
 			case "select_report":

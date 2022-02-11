@@ -6,6 +6,7 @@ const ReportSelector = () => {
   const navigate = useNavigate();
   const { reports } = useReport();
   const { reportName } = useParams();
+  console.log(reports);
   return (
     <div className="flex justify-between items-center">
       <div className="flex items-center space-x-2">
@@ -21,8 +22,8 @@ const ReportSelector = () => {
         >
           <option value="">Choose a report...</option>
           {reports.map((report) => (
-            <option key={report.name} value={report.name}>
-              {report.title || report.name}
+            <option key={report.full_name} value={report.full_name}>
+              {report.title || report.full_name}
             </option>
           ))}
         </select>

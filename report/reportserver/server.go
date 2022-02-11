@@ -109,14 +109,52 @@ func NewServer(ctx context.Context) (*Server, error) {
 	return server, err
 }
 
-func buildAvailableReportsPayload(reports map[string]*modconfig.ReportContainer) ([]byte, error) {
-	reportsPayload := make(map[string]string)
-	for _, report := range reports {
-		reportsPayload[report.FullName] = typeHelpers.SafeString(report.Title)
+func buildDashboardMetadataPayload(workspace *workspace.Workspace) ([]byte, error) {
+	installedMods := make(map[string]ModDashboardMetadata)
+	for _, mod := range workspace.Mods {
+		// Ignore current mod
+		if mod.FullName == workspace.Mod.FullName {
+			continue
+		}
+		installedMods[mod.FullName] = ModDashboardMetadata{
+			Title:     typeHelpers.SafeString(mod.Title),
+			FullName:  mod.FullName,
+			ShortName: mod.ShortName,
+		}
+	}
+
+	payload := DashboardMetadataPayload{
+		Action: "dashboard_metadata",
+		Metadata: DashboardMetadata{
+			Mod: ModDashboardMetadata{
+				Title:     typeHelpers.SafeString(workspace.Mod.Title),
+				FullName:  workspace.Mod.FullName,
+				ShortName: workspace.Mod.ShortName,
+			},
+			InstalledMods: installedMods,
+		},
+	}
+	return json.Marshal(payload)
+}
+
+func buildAvailableDashboardsPayload(workspace *workspace.Workspace) ([]byte, error) {
+	reportsByMod := make(map[string]map[string]ModAvailableReport)
+	for _, mod := range workspace.Mods {
+		_, ok := reportsByMod[mod.FullName]
+		if !ok {
+			reportsByMod[mod.FullName] = make(map[string]ModAvailableReport)
+		}
+		for _, report := range mod.Reports {
+			reportsByMod[mod.FullName][report.FullName] = ModAvailableReport{
+				Title:     typeHelpers.SafeString(report.Title),
+				FullName:  report.FullName,
+				ShortName: report.ShortName,
+			}
+		}
 	}
 	payload := AvailableReportsPayload{
-		Action:  "available_reports",
-		Reports: reportsPayload,
+		Action:       "available_reports",
+		ReportsByMod: reportsByMod,
 	}
 	return json.Marshal(payload)
 }
@@ -322,7 +360,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 		// If) any deleted/new/changed reports, emit an available reports message to clients
 		if len(deletedReports) != 0 || len(newReports) != 0 || len(changedReports) != 0 {
-			payload, payloadError = buildAvailableReportsPayload(s.workspace.Mod.Reports)
+			payload, payloadError = buildAvailableDashboardsPayload(s.workspace)
 			if payloadError != nil {
 				return
 			}

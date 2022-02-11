@@ -25,12 +25,12 @@ const ReportList = () => {
           ) : null}
           <ul className="list-none list-inside">
             {reports.map((availableReport) => (
-              <li key={availableReport.name} className="pl-4">
+              <li key={availableReport.full_name} className="pl-4">
                 <Link
                   className="link-highlight"
-                  to={`/${availableReport.name}`}
+                  to={`/${availableReport.full_name}`}
                 >
-                  {availableReport.title || availableReport.name}
+                  {availableReport.title || availableReport.full_name}
                 </Link>
               </li>
             ))}

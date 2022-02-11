@@ -45,7 +45,7 @@ type Workspace struct {
 	ReportTexts       map[string]*modconfig.ReportText
 	Variables         map[string]*modconfig.Variable
 
-	//local  resources keyed by unqualifed name
+	//local  resources keyed by unqualified name
 	LocalQueries    map[string]*modconfig.Query
 	LocalControls   map[string]*modconfig.Control
 	LocalBenchmarks map[string]*modconfig.Benchmark

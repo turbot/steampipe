@@ -19,6 +19,8 @@ import { SOCKET_SERVER_URL } from "../config";
 import { useNavigate, useParams } from "react-router-dom";
 
 interface IReportContext {
+  metadata: DashboardMetadata;
+  metadataLoaded: boolean;
   availableReportsLoaded: boolean;
   closePanelDetail(): void;
   dispatch(DispatchAction): void;
@@ -30,9 +32,28 @@ interface IReportContext {
   sqlDataMap: SQLDataMap;
 }
 
+interface ModDashboardMetadata {
+  full_name: string;
+  short_name: string;
+}
+
+interface DashboardMetadata {
+  mod: ModDashboardMetadata;
+}
+
 interface AvailableReport {
-  name: string;
+  full_name: string;
+  short_name: string;
+  mod_full_name: string;
   title: string;
+}
+
+interface AvailableReportsForModDictionary {
+  [key: string]: AvailableReport;
+}
+
+interface ReportsByModDictionary {
+  [key: string]: AvailableReportsForModDictionary;
 }
 
 export interface ContainerDefinition {
@@ -82,10 +103,6 @@ export interface ReportDefinition {
   children?: (ContainerDefinition | PanelDefinition)[];
 }
 
-interface AvailableReportsDictionary {
-  [key: string]: string;
-}
-
 interface SocketMessagePayload {
   action: string;
 }
@@ -97,18 +114,27 @@ interface SocketMessage {
 const ReportContext = createContext<IReportContext | null>(null);
 
 const buildReportsList = (
-  reports: AvailableReportsDictionary
+  reports_by_mod: ReportsByModDictionary
 ): AvailableReport[] => {
-  return sortBy(
-    Object.entries(reports).map(([name, title]) => ({
-      name,
-      title,
-    })),
-    [
-      (report) =>
-        report.title ? report.title.toLowerCase() : report.name.toLowerCase(),
-    ]
-  );
+  const reports: AvailableReport[] = [];
+  for (const [mod_full_name, reports_for_mod] of Object.entries(
+    reports_by_mod
+  )) {
+    for (const [, report] of Object.entries(reports_for_mod)) {
+      reports.push({
+        title: report.title,
+        full_name: report.full_name,
+        short_name: report.short_name,
+        mod_full_name: mod_full_name,
+      });
+    }
+  }
+  return sortBy(reports, [
+    (report) =>
+      report.title
+        ? report.title.toLowerCase()
+        : report.full_name.toLowerCase(),
+  ]);
 };
 
 const updateSelectedReport = (
@@ -119,7 +145,7 @@ const updateSelectedReport = (
     return null;
   }
   const matchingReport = newReports.find(
-    (report) => report.name === selectedReport.name
+    (report) => report.full_name === selectedReport.full_name
   );
   if (matchingReport) {
     return matchingReport;
@@ -170,8 +196,14 @@ function addDataToReport(
 
 function reducer(state, action) {
   switch (action.type) {
+    case "dashboard_metadata":
+      return {
+        ...state,
+        metadataLoaded: true,
+        metadata: action.metadata,
+      };
     case "available_reports":
-      const reports = buildReportsList(action.reports);
+      const reports = buildReportsList(action.reports_by_mod);
       const selectedReport = updateSelectedReport(
         state.selectedReport,
         reports
@@ -182,7 +214,7 @@ function reducer(state, action) {
         reports,
         selectedReport: updateSelectedReport(state.selectedReport, reports),
         report:
-          selectedReport && state.report.name === selectedReport.name
+          selectedReport && state.report.name === selectedReport.full_name
             ? state.report
             : null,
       };
@@ -339,7 +371,14 @@ const ReportProvider = ({ children }) => {
       // Send message to ask for available reports
       webSocket.current.send(
         JSON.stringify({
-          action: "available_reports",
+          action: "get_dashboard_metadata",
+        })
+      );
+
+      // Send message to ask for available reports
+      webSocket.current.send(
+        JSON.stringify({
+          action: "get_available_reports",
         })
       );
       keepAlive();
@@ -359,7 +398,7 @@ const ReportProvider = ({ children }) => {
       return;
     }
 
-    if (!state.selectedReport || !state.selectedReport.name) {
+    if (!state.selectedReport || !state.selectedReport.full_name) {
       return;
     }
 
@@ -369,7 +408,7 @@ const ReportProvider = ({ children }) => {
         payload: {
           // workspace: state.selectedWorkspace,
           report: {
-            full_name: state.selectedReport.name,
+            full_name: state.selectedReport.full_name,
           },
         },
       })
@@ -377,14 +416,16 @@ const ReportProvider = ({ children }) => {
   }, [state.selectedReport]);
 
   useEffect(() => {
-    if (state.selectedReport && reportName === state.selectedReport.name) {
+    if (state.selectedReport && reportName === state.selectedReport.full_name) {
       return;
     }
 
     if (state.reports.length === 0) {
       return;
     }
-    const report = state.reports.find((report) => report.name === reportName);
+    const report = state.reports.find(
+      (report) => report.full_name === reportName
+    );
     dispatch({ type: "select_report", report });
   }, [reportName, state.selectedReport, state.reports]);
 
@@ -393,7 +434,7 @@ const ReportProvider = ({ children }) => {
       return;
     }
     // If the report we're viewing no longer exists, go back to the main page
-    if (!state.reports.find((r) => r.name === reportName)) {
+    if (!state.reports.find((r) => r.full_name === reportName)) {
       navigate("/", { replace: true });
     }
   }, [navigate, reportName, state.availableReportsLoaded, state.reports]);
@@ -403,7 +444,7 @@ const ReportProvider = ({ children }) => {
       document.title = "Reports | Steampipe";
     } else {
       document.title = `${
-        state.selectedReport.title || state.selectedReport.name
+        state.selectedReport.title || state.selectedReport.full_name
       } | Reports | Steampipe`;
     }
   }, [state.selectedReport]);
