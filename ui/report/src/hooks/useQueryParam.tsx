@@ -5,11 +5,13 @@ export const urlQueryParamHistoryMode = {
   REPLACE: "replace",
 };
 
+type FallbackValue = string | null;
+
 // eslint-disable-next-line import/no-anonymous-default-export
 const useQueryParams = (
-  key,
-  fallbackValue = null,
-  historyMode = urlQueryParamHistoryMode.PUSH
+  key: string,
+  fallbackValue: FallbackValue = null,
+  historyMode: string = urlQueryParamHistoryMode.PUSH
 ): readonly [string | null, (string) => void] => {
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(window.location.search);

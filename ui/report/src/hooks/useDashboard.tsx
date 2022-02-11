@@ -32,7 +32,7 @@ interface IDashboardContext {
   sqlDataMap: SQLDataMap;
 }
 
-interface ModDashboardMetadata {
+export interface ModDashboardMetadata {
   title: string;
   full_name: string;
   short_name: string;
