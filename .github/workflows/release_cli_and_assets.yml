@@ -53,17 +53,17 @@ jobs:
 
     steps:
     - name: Trim asset version prefix and Validate
-        run: |-
-          echo $VERSION
-          trim=${VERSION#"v"}
-          echo $trim
-          if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-            echo "Version OK: $trim"
-          else
-            echo "Invalid version: $trim"
-            exit 1
-          fi
-          echo "VERSION=${trim}" >> $GITHUB_ENV
+      run: |-
+        echo $VERSION
+        trim=${VERSION#"v"}
+        echo $trim
+        if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+          echo "Version OK: $trim"
+        else
+          echo "Invalid version: $trim"
+          exit 1
+        fi
+        echo "VERSION=${trim}" >> $GITHUB_ENV
 
     - name: Get GCloud CLI
       uses: google-github-actions/setup-gcloud@v0.4.0
@@ -80,9 +80,9 @@ jobs:
         gcloud components install alpha --quiet
 
     - name: Verify
-        id: verify
-        continue-on-error: true
-        run: |-
+      id: verify
+      continue-on-error: true
+      run: |-
         [ $(gcloud beta artifacts docker tags list ${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}  --project ${{ env.PROJECT_ID }}  --format=json | jq 'map(select(.tag | endswith("${{ env.VERSION }}"))) | length') -eq 0 ]
 
   build_and_release_assets:
@@ -134,27 +134,27 @@ jobs:
         node-version: '16'
 
     - name: Setup Yarn
+      working-directory: ./ui/report
       run: |-
         rm -rf ./build
-      working-directory: ./ui/report
 
     - name: YARN Install
+      working-directory: ./ui/report
       run: |-
         unset CI
         yarn install
-      working-directory: ./ui/report
 
     - name: Run Unit Tests
+      working-directory: ./ui/report
       run: |
         yarn install
         CI=true yarn test
-      working-directory: ./ui/report
 
     - name: YARN Build
+      working-directory: ./ui/report
       run: |-
         unset CI
         yarn build
-      working-directory: ./ui/report
 
     - name: Move Build Assets
       run: |-
