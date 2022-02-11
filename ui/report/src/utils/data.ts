@@ -1,4 +1,4 @@
-import { LeafNodeDataColumn } from "../components/reports/common";
+import { LeafNodeDataColumn } from "../components/dashboards/common";
 
 const getColumnIndex = (
   columns: LeafNodeDataColumn[],

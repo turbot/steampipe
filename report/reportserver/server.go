@@ -138,23 +138,23 @@ func buildDashboardMetadataPayload(workspace *workspace.Workspace) ([]byte, erro
 }
 
 func buildAvailableDashboardsPayload(workspace *workspace.Workspace) ([]byte, error) {
-	reportsByMod := make(map[string]map[string]ModAvailableReport)
+	dashboardsByMod := make(map[string]map[string]ModAvailableDashboard)
 	for _, mod := range workspace.Mods {
-		_, ok := reportsByMod[mod.FullName]
+		_, ok := dashboardsByMod[mod.FullName]
 		if !ok {
-			reportsByMod[mod.FullName] = make(map[string]ModAvailableReport)
+			dashboardsByMod[mod.FullName] = make(map[string]ModAvailableDashboard)
 		}
 		for _, report := range mod.Reports {
-			reportsByMod[mod.FullName][report.FullName] = ModAvailableReport{
+			dashboardsByMod[mod.FullName][report.FullName] = ModAvailableDashboard{
 				Title:     typeHelpers.SafeString(report.Title),
 				FullName:  report.FullName,
 				ShortName: report.ShortName,
 			}
 		}
 	}
-	payload := AvailableReportsPayload{
-		Action:       "available_reports",
-		ReportsByMod: reportsByMod,
+	payload := AvailableDashboardsPayload{
+		Action:          "available_dashboards",
+		DashboardsByMod: dashboardsByMod,
 	}
 	return json.Marshal(payload)
 }

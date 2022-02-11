@@ -1,28 +1,28 @@
-import Report from "./components/reports/layout/Report";
-import ReportErrorModal from "./components/reports/ReportErrorModal";
-import ReportHeader from "./components/ReportHeader";
-import ReportList from "./components/ReportList";
-import ReportSelector from "./components/ReportSelector";
+import Dashboard from "./components/dashboards/layout/Dashboard";
+import DashboardErrorModal from "./components/dashboards/DashboardErrorModal";
+import DashboardHeader from "./components/DashboardHeader";
+import DashboardList from "./components/DashboardList";
+import DashboardSelector from "./components/DashboardSelector";
 import { BreakpointProvider } from "./hooks/useBreakpoint";
-import { ReportProvider } from "./hooks/useReport";
+import { DashboardProvider } from "./hooks/useDashboard";
 import { Route, Routes } from "react-router-dom";
 
-const ReportApp = () => (
-  <ReportProvider>
-    <ReportHeader>
-      <ReportSelector />
-    </ReportHeader>
-    <ReportErrorModal />
-    <ReportList />
-    <Report />
-  </ReportProvider>
+const DashboardApp = () => (
+  <DashboardProvider>
+    <DashboardHeader>
+      <DashboardSelector />
+    </DashboardHeader>
+    <DashboardErrorModal />
+    <DashboardList />
+    <Dashboard />
+  </DashboardProvider>
 );
 
 const App = () => (
   <BreakpointProvider>
     <Routes>
-      <Route path="/" element={<ReportApp />} />
-      <Route path="/:reportName" element={<ReportApp />} />
+      <Route path="/" element={<DashboardApp />} />
+      <Route path="/:dashboardName" element={<DashboardApp />} />
     </Routes>
   </BreakpointProvider>
 );
@@ -30,7 +30,7 @@ const App = () => (
 export default App;
 
 /**
- * steampipe report <command>
+ * steampipe dashboard <command>
  *
  * 1) Socket and Static file server started - socket server is aware of context/workspace it's launched in
  *    e.g. what workspace and/or specific report path are we interested in?

@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import { PanelDefinition } from "./useReport";
+import { PanelDefinition } from "./useDashboard";
 
 interface IPanelContext {
   definition: PanelDefinition;

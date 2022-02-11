@@ -26,15 +26,15 @@ type ClientRequest struct {
 	Payload ClientRequestPayload `json:"payload"`
 }
 
-type ModAvailableReport struct {
+type ModAvailableDashboard struct {
 	Title     string `json:"title,omitempty"`
 	FullName  string `json:"full_name"`
 	ShortName string `json:"short_name"`
 }
 
-type AvailableReportsPayload struct {
-	Action       string                                   `json:"action"`
-	ReportsByMod map[string]map[string]ModAvailableReport `json:"reports_by_mod"`
+type AvailableDashboardsPayload struct {
+	Action          string                                      `json:"action"`
+	DashboardsByMod map[string]map[string]ModAvailableDashboard `json:"dashboards_by_mod"`
 }
 
 type ModDashboardMetadata struct {
@@ -82,13 +82,13 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 					panic(fmt.Errorf("error building payload for get_metadata: %v", err))
 				}
 				session.Write(payload)
-			case "get_available_reports":
+			case "get_available_dashboards":
 				payload, err := buildAvailableDashboardsPayload(workspace)
 				if err != nil {
-					panic(fmt.Errorf("error building payload for get_available_reports: %v", err))
+					panic(fmt.Errorf("error building payload for get_available_dashboards: %v", err))
 				}
 				session.Write(payload)
-			case "select_report":
+			case "select_dashboard":
 				log.Printf("[TRACE] Got event: %v\n", request.Payload.Report)
 				mutex.Lock()
 				reportClientInfo := socketSessions[session]
