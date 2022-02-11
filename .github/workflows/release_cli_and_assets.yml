@@ -1,4 +1,5 @@
 name: Steampipe Release (CLI and Assets)
+
 on:
   workflow_dispatch:
     inputs:
@@ -24,7 +25,34 @@ jobs:
     name: Verify Inputs
     runs-on: ubuntu-latest
     steps:
-      - name: Trim asset version prefix and Validate
+    - name: Trim asset version prefix and Validate
+      run: |-
+        echo $VERSION
+        trim=${VERSION#"v"}
+        echo $trim
+        if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+          echo "Version OK: $trim"
+        else
+          echo "Invalid version: $trim"
+          exit 1
+        fi
+        echo "VERSION=${trim}" >> $GITHUB_ENV
+        
+    - name: Validate Branch
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.inputs.branch }}
+
+  verify_asset_unreleased:
+    name: Verify Assets Unreleased
+    needs: [verify_input]
+    runs-on: ubuntu-latest
+
+    outputs:
+      status: ${{ steps.verify.conclusion }}
+
+    steps:
+    - name: Trim asset version prefix and Validate
         run: |-
           echo $VERSION
           trim=${VERSION#"v"}
@@ -36,49 +64,22 @@ jobs:
             exit 1
           fi
           echo "VERSION=${trim}" >> $GITHUB_ENV
-          
-      - name: Validate Branch
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.inputs.branch }}
 
-  verify_asset_unreleased:
-    name: Verify Assets Unreleased
-    needs: [verify_input]
-    runs-on: ubuntu-latest
+    - name: Get GCloud CLI
+      uses: google-github-actions/setup-gcloud@v0.4.0
+      with:
+        service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
+        project_id: ${{ env.PROJECT_ID }}
+        export_default_credentials: true
 
-    outputs:
-      status: ${{ steps.verify.conclusion }}
+    - name: Setup GCloud CLI
+      run: |- 
+        echo ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
+        gcloud config list
+        gcloud components install beta
+        gcloud components install alpha --quiet
 
-    steps:
-      - name: Trim asset version prefix and Validate
-          run: |-
-            echo $VERSION
-            trim=${VERSION#"v"}
-            echo $trim
-            if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-              echo "Version OK: $trim"
-            else
-              echo "Invalid version: $trim"
-              exit 1
-            fi
-            echo "VERSION=${trim}" >> $GITHUB_ENV
-
-      - name: Get GCloud CLI
-        uses: google-github-actions/setup-gcloud@v0.4.0
-        with:
-          service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
-          project_id: ${{ env.PROJECT_ID }}
-          export_default_credentials: true
-
-      - name: Setup GCloud CLI
-        run: |- 
-          echo ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
-          gcloud config list
-          gcloud components install beta
-          gcloud components install alpha --quiet
-
-      - name: Verify
+    - name: Verify
         id: verify
         continue-on-error: true
         run: |-
@@ -90,202 +91,202 @@ jobs:
     if: needs.verify_asset_unreleased.outputs.status == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Trim asset version prefix and Validate
-        run: |-
-          echo $VERSION
-          trim=${VERSION#"v"}
-          echo $trim
-          if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-            echo "Version OK: $trim"
-          else
-            echo "Invalid version: $trim"
-            exit 1
-          fi
-          echo "VERSION=${trim}" >> $GITHUB_ENV
+    - name: Trim asset version prefix and Validate
+      run: |-
+        echo $VERSION
+        trim=${VERSION#"v"}
+        echo $trim
+        if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+          echo "Version OK: $trim"
+        else
+          echo "Invalid version: $trim"
+          exit 1
+        fi
+        echo "VERSION=${trim}" >> $GITHUB_ENV
 
-      - name: Get GCloud CLI
-        uses: google-github-actions/setup-gcloud@v0.4.0
-        with:
-          service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
-          project_id: ${{ env.PROJECT_ID }}
-          export_default_credentials: true
+    - name: Get GCloud CLI
+      uses: google-github-actions/setup-gcloud@v0.4.0
+      with:
+        service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
+        project_id: ${{ env.PROJECT_ID }}
+        export_default_credentials: true
 
-      - name: Setup GCloud CLI
-        run: |- 
-          echo ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
-          gcloud config list
-          gcloud components install beta
-          gcloud components install alpha --quiet
+    - name: Setup GCloud CLI
+      run: |- 
+        echo ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
+        gcloud config list
+        gcloud components install beta
+        gcloud components install alpha --quiet
 
-      - name: Verify ORAS
-        run: |- 
-          gcloud beta auth configure-docker us-docker.pkg.dev
-          oras version
-        
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.inputs.branch }}
+    - name: Verify ORAS
+      run: |- 
+        gcloud beta auth configure-docker us-docker.pkg.dev
+        oras version
+      
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.inputs.branch }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v2
-        with:
-          node-version: '16'
+    - name: Setup Node
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'
 
-      - name: Setup Yarn
-        run: |-
-          rm -rf ./build
-        working-directory: ./ui/report
+    - name: Setup Yarn
+      run: |-
+        rm -rf ./build
+      working-directory: ./ui/report
 
-      - name: YARN Install
-        run: |-
-          unset CI
-          yarn install
-        working-directory: ./ui/report
+    - name: YARN Install
+      run: |-
+        unset CI
+        yarn install
+      working-directory: ./ui/report
 
-      - name: Run Unit Tests
-        run: |
-          yarn install
-          CI=true yarn test
-        working-directory: ./ui/report
+    - name: Run Unit Tests
+      run: |
+        yarn install
+        CI=true yarn test
+      working-directory: ./ui/report
 
-      - name: YARN Build
-        run: |-
-          unset CI
-          yarn build
-        working-directory: ./ui/report
+    - name: YARN Build
+      run: |-
+        unset CI
+        yarn build
+      working-directory: ./ui/report
 
-      - name: Move Build Assets
-        run: |-
-          mkdir -p report_ui_build
-          mv ./ui/report/build/* report_ui_build/
-          ls -la report_ui_build
+    - name: Move Build Assets
+      run: |-
+        mkdir -p report_ui_build
+        mv ./ui/report/build/* report_ui_build/
+        ls -la report_ui_build
 
-      - name: Create a version file
-        run: |-
-          JSON_STRING=$( jq -n \
-              --arg version "$VERSION" \
-            '{
-                "version":$version,
-            }' )
-
-            echo $JSON_STRING > ./report_ui_build/versions.json
-
-      - name: Create Image Config File
-        run: |-
-          JSON_STRING=$( jq -n \
-            --arg name "${{ env.ASSET_IMAGE_NAME }}" \
-            --arg organization "$ORG" \
+    - name: Create a version file
+      run: |-
+        JSON_STRING=$( jq -n \
             --arg version "$VERSION" \
-            --arg schemaVersion "$CONFIG_SCHEMA_VERSION" \
-            '{schemaVersion: $schemaVersion, assets: { name: $name, organization: $organization, version: $version} }' )
+          '{
+              "version":$version,
+          }' )
 
-          echo $JSON_STRING > config.json
+          echo $JSON_STRING > ./report_ui_build/versions.json
 
-      - name: Create Image Annotations File
-        run: |-
-          JSON_STRING=$( jq -n \
-              --arg title "${{ env.ASSET_IMAGE_NAME }}" \
-              --arg desc "$ORG" \
-              --arg version "$VERSION" \
-              --arg timestamp "$(date +%FT%T%z)" \
-              --arg vendor "Turbot HQ, Inc." \
-            '{
-                "$manifest": {
-                    "org.opencontainers.image.title": $title,
-                    "org.opencontainers.image.description": $desc,
-                    "org.opencontainers.image.version": $version,
-                    "org.opencontainers.image.created": $timestamp,
-                    "org.opencontainers.image.vendor":  $vendor
-                }
-            }' )
+    - name: Create Image Config File
+      run: |-
+        JSON_STRING=$( jq -n \
+          --arg name "${{ env.ASSET_IMAGE_NAME }}" \
+          --arg organization "$ORG" \
+          --arg version "$VERSION" \
+          --arg schemaVersion "$CONFIG_SCHEMA_VERSION" \
+          '{schemaVersion: $schemaVersion, assets: { name: $name, organization: $organization, version: $version} }' )
 
-            echo $JSON_STRING > annotations.json        
+        echo $JSON_STRING > config.json
 
-      - name: Generate Image REF
-        id: image_ref
-        run: |
-          cat config.json
-          cat annotations.json
-          cat report_ui_build/versions.json
-          REF="${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}:$GITHUB_RUN_ID"
-          echo "::set-output name=REF::$REF"
+    - name: Create Image Annotations File
+      run: |-
+        JSON_STRING=$( jq -n \
+            --arg title "${{ env.ASSET_IMAGE_NAME }}" \
+            --arg desc "$ORG" \
+            --arg version "$VERSION" \
+            --arg timestamp "$(date +%FT%T%z)" \
+            --arg vendor "Turbot HQ, Inc." \
+          '{
+              "$manifest": {
+                  "org.opencontainers.image.title": $title,
+                  "org.opencontainers.image.description": $desc,
+                  "org.opencontainers.image.version": $version,
+                  "org.opencontainers.image.created": $timestamp,
+                  "org.opencontainers.image.vendor":  $vendor
+              }
+          }' )
 
-      - name: Push to registry
-        run: |-
-          oras push ${{ steps.image_ref.outputs.REF }} \
-            --manifest-config config.json:application/vnd.turbot.steampipe.config.v1+json \
-            --manifest-annotations annotations.json \
-            report_ui_build:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
+          echo $JSON_STRING > annotations.json        
 
-      - name: Set version tags on Pushed Image
-        uses: ./.github/actions/semver-tags
-        id: semver
-        with:
-          image-to-tag: "${{ steps.image_ref.outputs.REF }}"
-          image-version: ${{ env.VERSION }}
+    - name: Generate Image REF
+      id: image_ref
+      run: |
+        cat config.json
+        cat annotations.json
+        cat report_ui_build/versions.json
+        REF="${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}:$GITHUB_RUN_ID"
+        echo "::set-output name=REF::$REF"
+
+    - name: Push to registry
+      run: |-
+        oras push ${{ steps.image_ref.outputs.REF }} \
+          --manifest-config config.json:application/vnd.turbot.steampipe.config.v1+json \
+          --manifest-annotations annotations.json \
+          report_ui_build:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
+
+    - name: Set version tags on Pushed Image
+      uses: ./.github/actions/semver-tags
+      id: semver
+      with:
+        image-to-tag: "${{ steps.image_ref.outputs.REF }}"
+        image-version: ${{ env.VERSION }}
 
   create_test_build:
     name: Create Test Build
     runs-on: ubuntu-latest
     needs: [verify_input]
     steps:
-      - name: Trim asset version prefix and Validate
-        run: |-
-          echo $VERSION
-          trim=${VERSION#"v"}
-          echo $trim
-          if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-            echo "Version OK: $trim"
-          else
-            echo "Invalid version: $trim"
-            exit 1
-          fi
-          echo "VERSION=${trim}" >> $GITHUB_ENV
-          
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.inputs.branch }}
+    - name: Trim asset version prefix and Validate
+      run: |-
+        echo $VERSION
+        trim=${VERSION#"v"}
+        echo $trim
+        if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+          echo "Version OK: $trim"
+        else
+          echo "Invalid version: $trim"
+          exit 1
+        fi
+        echo "VERSION=${trim}" >> $GITHUB_ENV
+        
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.inputs.branch }}
 
-      - name: Unshallow
-        run: git fetch
+    - name: Unshallow
+      run: git fetch
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.17
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          version: latest
-          args: release --snapshot --rm-dist --skip-publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Run GoReleaser
+      uses: goreleaser/goreleaser-action@v2
+      with:
+        version: latest
+        args: release --snapshot --rm-dist --skip-publish
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Move build artifacts
-        run: |
-          mkdir ~/artifacts
-          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
-          mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
+    - name: Move build artifacts
+      run: |
+        mkdir ~/artifacts
+        mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
+        mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
 
-      - name: List Build Artifacts
-        run: ls -l ~/artifacts
+    - name: List Build Artifacts
+      run: ls -l ~/artifacts
 
-      - name: Save Linux Build Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: build-artifact-linux
-          path: ~/artifacts/linux.tar.gz
-          if-no-files-found: error
+    - name: Save Linux Build Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-artifact-linux
+        path: ~/artifacts/linux.tar.gz
+        if-no-files-found: error
 
-      - name: Save MacOS Build Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: build-artifact-darwin
-          path: ~/artifacts/darwin.zip
-          if-no-files-found: error
+    - name: Save MacOS Build Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-artifact-darwin
+        path: ~/artifacts/darwin.zip
+        if-no-files-found: error
 
   run_acceptance_tests:
     name: Run CLI Acceptance tests
@@ -295,166 +296,166 @@ jobs:
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Trim asset version prefix and Validate
-        run: |-
-          echo $VERSION
-          trim=${VERSION#"v"}
-          echo $trim
-          if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-            echo "Version OK: $trim"
-          else
-            echo "Invalid version: $trim"
-            exit 1
-          fi
-          echo "VERSION=${trim}" >> $GITHUB_ENV
-          
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          submodules: true
-          ref: ${{ github.event.inputs.branch }}
+    - name: Trim asset version prefix and Validate
+      run: |-
+        echo $VERSION
+        trim=${VERSION#"v"}
+        echo $trim
+        if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+          echo "Version OK: $trim"
+        else
+          echo "Invalid version: $trim"
+          exit 1
+        fi
+        echo "VERSION=${trim}" >> $GITHUB_ENV
+        
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: true
+        ref: ${{ github.event.inputs.branch }}
 
-      - name: Setup BATS
-        uses: mig4/setup-bats@v1
-        with:
-          bats-version: 1.2.1
+    - name: Setup BATS
+      uses: mig4/setup-bats@v1
+      with:
+        bats-version: 1.2.1
 
-      - name: Prepare for downloads
-        id: prepare-for-downloads
-        run: |
-          mkdir ~/artifacts
+    - name: Prepare for downloads
+      id: prepare-for-downloads
+      run: |
+        mkdir ~/artifacts
 
-      - name: Download Linux Build Artifacts
-        uses: actions/download-artifact@v2
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        with:
-          name: build-artifact-linux
-          path: ~/artifacts
+    - name: Download Linux Build Artifacts
+      uses: actions/download-artifact@v2
+      if: ${{ matrix.platform == 'ubuntu-latest' }}
+      with:
+        name: build-artifact-linux
+        path: ~/artifacts
 
-      - name: Download Darwin Build Artifacts
-        uses: actions/download-artifact@v2
-        if: ${{ matrix.platform == 'macos-latest' }}
-        with:
-          name: build-artifact-darwin
-          path: ~/artifacts
+    - name: Download Darwin Build Artifacts
+      uses: actions/download-artifact@v2
+      if: ${{ matrix.platform == 'macos-latest' }}
+      with:
+        name: build-artifact-darwin
+        path: ~/artifacts
 
-      - name: Extract Darwin Artifacts and Install Binary
-        if: ${{ matrix.platform == 'macos-latest' }}
-        run: |
-          mkdir ~/build
-          unzip ~/artifacts/darwin.zip -d ~/build
+    - name: Extract Darwin Artifacts and Install Binary
+      if: ${{ matrix.platform == 'macos-latest' }}
+      run: |
+        mkdir ~/build
+        unzip ~/artifacts/darwin.zip -d ~/build
 
-      - name: Extract Ubuntu Artifacts and Install Binary
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: |
-          mkdir ~/build
-          tar -xf ~/artifacts/linux.tar.gz -C ~/build
+    - name: Extract Ubuntu Artifacts and Install Binary
+      if: ${{ matrix.platform == 'ubuntu-latest' }}
+      run: |
+        mkdir ~/build
+        tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
-      - name: Set PATH
-        run: |
-          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+    - name: Set PATH
+      run: |
+        echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
-      - name: Install DB
-        run: |
-          steampipe service start
-          steampipe plugin install chaos
-          steampipe service stop --force
+    - name: Install DB
+      run: |
+        steampipe service start
+        steampipe plugin install chaos
+        steampipe service stop --force
 
-      - name: Run Test Suite
-        timeout-minutes: 5
-        run: |
-          chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          steampipe service stop --force
+    - name: Run Test Suite
+      timeout-minutes: 5
+      run: |
+        chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
+        $GITHUB_WORKSPACE/tests/acceptance/run.sh
+        steampipe service stop --force
   
   create_release_tag:
     name: Tag Release
     needs: [run_acceptance_tests]
     runs-on: ubuntu-latest
     steps:
-      - name: Trim asset version prefix and Validate
-        run: |-
-          echo $VERSION
-          trim=${VERSION#"v"}
-          echo $trim
-          if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-            echo "Version OK: $trim"
-          else
-            echo "Invalid version: $trim"
-            exit 1
-          fi
-          echo "VERSION=${trim}" >> $GITHUB_ENV
-          
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.inputs.branch }}
+    - name: Trim asset version prefix and Validate
+      run: |-
+        echo $VERSION
+        trim=${VERSION#"v"}
+        echo $trim
+        if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+          echo "Version OK: $trim"
+        else
+          echo "Invalid version: $trim"
+          exit 1
+        fi
+        echo "VERSION=${trim}" >> $GITHUB_ENV
+        
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.inputs.branch }}
 
-      - name: Unshallow
-        run: git fetch --prune --unshallow
+    - name: Unshallow
+      run: git fetch --prune --unshallow
 
-      - name: Tag Release
-        run: |
-          git config user.name "Steampipe GitHub Actions Bot"
-          git config user.email noreply@github.com
-          git tag ${{ github.event.inputs.version }}
-          git push origin ${{ github.event.inputs.version }}
+    - name: Tag Release
+      run: |
+        git config user.name "Steampipe GitHub Actions Bot"
+        git config user.email noreply@github.com
+        git tag ${{ github.event.inputs.version }}
+        git push origin ${{ github.event.inputs.version }}
 
   build_and_release_cli:
     name: Release CLI
     needs: [create_release_tag]
     runs-on: ubuntu-latest
     steps:
-      - name: Trim asset version prefix and Validate
-        run: |-
-          echo $VERSION
-          trim=${VERSION#"v"}
-          echo $trim
-          if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-            echo "Version OK: $trim"
-          else
-            echo "Invalid version: $trim"
-            exit 1
-          fi
-          echo "VERSION=${trim}" >> $GITHUB_ENV
-          
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.inputs.branch }}
+    - name: Trim asset version prefix and Validate
+      run: |-
+        echo $VERSION
+        trim=${VERSION#"v"}
+        echo $trim
+        if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+          echo "Version OK: $trim"
+        else
+          echo "Invalid version: $trim"
+          exit 1
+        fi
+        echo "VERSION=${trim}" >> $GITHUB_ENV
+        
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.inputs.branch }}
 
-      - name: Unshallow
-        run: git fetch --prune --unshallow
+    - name: Unshallow
+      run: git fetch --prune --unshallow
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.17
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          version: latest
-          args: release --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Run GoReleaser
+      uses: goreleaser/goreleaser-action@v2
+      with:
+        version: latest
+        args: release --rm-dist
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup GCloud
-        uses: google-github-actions/setup-gcloud@v0.4.0
-        with:
-          service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
-          project_id: ${{ env.PROJECT_ID }}
-          export_default_credentials: true
+    - name: Setup GCloud
+      uses: google-github-actions/setup-gcloud@v0.4.0
+      with:
+        service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
+        project_id: ${{ env.PROJECT_ID }}
+        export_default_credentials: true
 
-      - name: Install GCloud Beta Components
-        run: |-
-          gcloud config list
-          gcloud components install beta
+    - name: Install GCloud Beta Components
+      run: |-
+        gcloud config list
+        gcloud components install beta
 
-      - name: Upload rpm and deb packages to artifact registry
-        run: |
-          gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm --project steampipe
-          gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb --project steampipe
+    - name: Upload rpm and deb packages to artifact registry
+      run: |
+        gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm --project steampipe
+        gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb --project steampipe
 
   clean_up:
     # let's clean up the artifacts.
@@ -466,12 +467,12 @@ jobs:
     needs: build_and_release_cli
     runs-on: ubuntu-latest
     steps:
-      - name: Clean up Linux Build
-        uses: geekyeggo/delete-artifact@v1
-        with:
-          name: build-artifact-linux
+    - name: Clean up Linux Build
+      uses: geekyeggo/delete-artifact@v1
+      with:
+        name: build-artifact-linux
 
-      - name: Clean up Darwin Build
-        uses: geekyeggo/delete-artifact@v1
-        with:
-          name: build-artifact-darwin
+    - name: Clean up Darwin Build
+      uses: geekyeggo/delete-artifact@v1
+      with:
+        name: build-artifact-darwin
