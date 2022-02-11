@@ -176,7 +176,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          ref: ${{ github.event.inputs.branch }}
+          ref: ${{ github.event.inputs.version }}
 
       - name: Set up Go
         uses: actions/setup-go@v2
@@ -191,15 +191,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: google-github-actions/setup-gcloud@v0.5.0
+      - name: Setup GCloud CLI
+        uses: google-github-actions/setup-gcloud@v0.5.0
         with:
           service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
           project_id: ${{ env.PROJECT_ID }}
           export_default_credentials: true
 
-      - run: gcloud config list
-
-      - run: gcloud components install beta
+      - name: Install GCloud Beta Components
+        run: |- 
+          gcloud config list
+          gcloud components install beta
 
       - name: Upload rpm and deb packages to artifact registry
         run: |
