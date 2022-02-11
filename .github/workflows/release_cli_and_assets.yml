@@ -7,7 +7,7 @@ on:
         description: "The branch that will be built"
         required: true
       version:
-        description: "The desired semver compatible version string (MUST to be prefixed with a 'v')"
+        description: "The version to release (must be prefixed with 'v')"
         required: true
 
 env:
