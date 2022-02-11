@@ -422,7 +422,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
       with:
-        ref: ${{ github.event.inputs.branch }}
+        ref: ${{ github.event.inputs.version }}
 
     - name: Unshallow
       run: git fetch --prune --unshallow
