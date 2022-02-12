@@ -21,10 +21,10 @@ interface OtherModDashboardsDictionary {
 const ModSection = ({ mod, dashboards }) => {
   return (
     <div className="space-y-2">
-      <h3 className="text-xl font-medium">{mod.title || mod.short_name}</h3>
+      <h3 className="truncate">{mod.title || mod.short_name}</h3>
       <ul className="list-none list-inside">
         {dashboards.map((dashboard) => (
-          <li key={dashboard.full_name} className="pl-4">
+          <li key={dashboard.full_name} className="truncate">
             <Link className="link-highlight" to={`/${dashboard.full_name}`}>
               {dashboard.title || dashboard.short_name}
             </Link>
