@@ -1,5 +1,6 @@
 import LoadingIndicator from "../dashboards/LoadingIndicator";
 import SearchInput from "../SearchInput";
+import SlackCommunityCallToAction from "../CallToAction/SlackCommunityCallToAction";
 import useDebouncedEffect from "../../hooks/useDebouncedEffect";
 import useQueryParam, {
   urlQueryParamHistoryMode,
@@ -179,7 +180,7 @@ const DashboardList = () => {
   return (
     <div className="w-full grid grid-cols-6 p-4 gap-x-4">
       <div className="col-span-6 lg:col-span-2 space-y-4">
-        <div className="mt-4">
+        <div className="mt-2">
           <SearchInput
             //@ts-ignore
             disabled={!metadataLoaded || !availableDashboardsLoaded}
@@ -229,8 +230,12 @@ const DashboardList = () => {
           )}
         </div>
       </div>
-      <div className="hidden lg:block col-span-1" />
-      <div className="col-span-6 lg:col-span-3 p-4">Did you know?</div>
+      <div className="hidden lg:block col-span-2" />
+      <div className="col-span-6 lg:col-span-2 mt-4 lg:mt-2">
+        <div className="space-y-4">
+          <SlackCommunityCallToAction />
+        </div>
+      </div>
     </div>
   );
 };

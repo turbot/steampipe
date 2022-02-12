@@ -180,6 +180,18 @@
   .link-highlight {
     @apply link text-link;
   }
+
+  h1 {
+    @apply text-4xl font-bold;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold;
+  }
+
+  h3 {
+    @apply text-lg font-semibold;
+  }
 }
 
 .sb-show-main.sb-main-padded {

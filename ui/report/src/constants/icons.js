@@ -3,12 +3,14 @@ import {
   ExclamationCircleIcon as ExclamationCircleIconOutline,
   SearchIcon as SearchIconOutline,
   TagIcon as TagIconOutline,
+  UserGroupIcon as UserGroupIconOutline,
   XIcon as XIconOutline,
 } from "@heroicons/react/outline";
 import {
   CheckIcon as CheckIconSolid,
   ChevronDownIcon as ChevronDownIconSolid,
   ChevronUpIcon as ChevronUpIconSolid,
+  HeartIcon as HeartIconSolid,
   InformationCircleIcon as InformationCircleIconSolid,
   MinusIcon as MinusIconSolid,
   MoonIcon as MoonIconSolid,
@@ -26,6 +28,10 @@ export const ErrorIcon = ExclamationCircleIconOutline;
 export const LightIcon = SunIconSolid;
 export const SearchIcon = SearchIconOutline;
 export const ZoomIcon = ArrowsExpandIconOutline;
+
+// Call to Action
+export const FeedbackIcon = UserGroupIconOutline;
+export const HeartIcon = HeartIconSolid;
 
 // Card
 export const AlertIcon = XCircleIconSolid;
