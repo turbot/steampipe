@@ -35,6 +35,12 @@ LoadingInfo.args = {
   properties: { type: "info" },
 };
 
+export const LoadingIcon = Template.bind({});
+LoadingIcon.args = {
+  data: null,
+  properties: { icon: "heroicons-solid:question-mark-circle" },
+};
+
 export const Error = Template.bind({});
 Error.args = {
   data: null,
