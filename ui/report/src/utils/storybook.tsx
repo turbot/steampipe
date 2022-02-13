@@ -1,5 +1,5 @@
-import Report from "../components/reports/layout/Report";
-import { ReportContext } from "../hooks/useReport";
+import Dashboard from "../components/dashboards/layout/Dashboard";
+import { DashboardContext } from "../hooks/useDashboard";
 import { noop } from "./func";
 
 type PanelStoryDecoratorProps = {
@@ -18,20 +18,31 @@ export const PanelStoryDecorator = ({
   const { properties, ...rest } = definition;
 
   return (
-    <ReportContext.Provider
+    <DashboardContext.Provider
       value={{
-        availableReportsLoaded: true,
+        metadata: {
+          mod: {
+            title: "Storybook",
+            full_name: "mod.storybook",
+            short_name: "storybook",
+          },
+          installed_mods: {},
+        },
+        metadataLoaded: true,
+        availableDashboardsLoaded: true,
         closePanelDetail: noop,
         dispatch: () => {},
         error: null,
-        reports: [],
+        dashboards: [],
         selectedPanel: null,
-        selectedReport: {
-          name: "storybook.report.storybook_report_wrapper",
-          title: "Storybook Report Wrapper",
+        selectedDashboard: {
+          title: "Storybook Dashboard Wrapper",
+          full_name: "storybook.dashboard.storybook_dashboard_wrapper",
+          short_name: "storybook_dashboard_wrapper",
+          mod_full_name: "mod.storybook",
         },
-        report: {
-          name: "storybook.report.storybook_report_wrapper",
+        dashboard: {
+          name: "storybook.dashboard.storybook_dashboard_wrapper",
           children: [
             {
               name: `${nodeType}.story`,
@@ -50,7 +61,7 @@ export const PanelStoryDecorator = ({
         },
       }}
     >
-      <Report />
-    </ReportContext.Provider>
+      <Dashboard />
+    </DashboardContext.Provider>
   );
 };

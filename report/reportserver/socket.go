@@ -13,12 +13,12 @@ import (
 	"gopkg.in/olahol/melody.v1"
 )
 
-type ClientRequestReportPayload struct {
+type ClientRequestDashboardPayload struct {
 	FullName string `json:"full_name"`
 }
 
 type ClientRequestPayload struct {
-	Report ClientRequestReportPayload `json:"report"`
+	Dashboard ClientRequestDashboardPayload `json:"dashboard"`
 }
 
 type ClientRequest struct {
@@ -26,9 +26,31 @@ type ClientRequest struct {
 	Payload ClientRequestPayload `json:"payload"`
 }
 
-type AvailableReportsPayload struct {
-	Action  string            `json:"action"`
-	Reports map[string]string `json:"reports"`
+type ModAvailableDashboard struct {
+	Title     string `json:"title,omitempty"`
+	FullName  string `json:"full_name"`
+	ShortName string `json:"short_name"`
+}
+
+type AvailableDashboardsPayload struct {
+	Action          string                                      `json:"action"`
+	DashboardsByMod map[string]map[string]ModAvailableDashboard `json:"dashboards_by_mod"`
+}
+
+type ModDashboardMetadata struct {
+	Title     string `json:"title,omitempty"`
+	FullName  string `json:"full_name"`
+	ShortName string `json:"short_name"`
+}
+
+type DashboardMetadata struct {
+	Mod           ModDashboardMetadata            `json:"mod"`
+	InstalledMods map[string]ModDashboardMetadata `json:"installed_mods,omitempty"`
+}
+
+type DashboardMetadataPayload struct {
+	Action   string            `json:"action"`
+	Metadata DashboardMetadata `json:"metadata"`
 }
 
 func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, dbClient db_common.Client, socketSessions map[*melody.Session]*ReportClientInfo, mutex *sync.Mutex) {
@@ -54,20 +76,25 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 		if err := json.Unmarshal(msg, &request); err == nil {
 
 			switch request.Action {
-			case "available_reports":
-				reports := workspace.Mod.Reports
-				payload, err := buildAvailableReportsPayload(reports)
+			case "get_dashboard_metadata":
+				payload, err := buildDashboardMetadataPayload(workspace)
 				if err != nil {
-					panic(fmt.Errorf("error building payload for %s: %v", "available_reports", err))
+					panic(fmt.Errorf("error building payload for get_metadata: %v", err))
 				}
 				session.Write(payload)
-			case "select_report":
-				log.Printf("[TRACE] Got event: %v\n", request.Payload.Report)
+			case "get_available_dashboards":
+				payload, err := buildAvailableDashboardsPayload(workspace)
+				if err != nil {
+					panic(fmt.Errorf("error building payload for get_available_dashboards: %v", err))
+				}
+				session.Write(payload)
+			case "select_dashboard":
+				log.Printf("[TRACE] Got event: %v\n", request.Payload.Dashboard)
 				mutex.Lock()
 				reportClientInfo := socketSessions[session]
-				reportClientInfo.Report = &request.Payload.Report.FullName
+				reportClientInfo.Report = &request.Payload.Dashboard.FullName
 				mutex.Unlock()
-				reportexecute.ExecuteReportNode(ctx, request.Payload.Report.FullName, workspace, dbClient)
+				reportexecute.ExecuteReportNode(ctx, request.Payload.Dashboard.FullName, workspace, dbClient)
 			}
 		}
 	})
