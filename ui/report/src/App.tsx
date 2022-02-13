@@ -2,16 +2,13 @@ import Dashboard from "./components/dashboards/layout/Dashboard";
 import DashboardErrorModal from "./components/dashboards/DashboardErrorModal";
 import DashboardHeader from "./components/DashboardHeader";
 import DashboardList from "./components/DashboardList";
-import DashboardSelector from "./components/DashboardSelector";
 import { BreakpointProvider } from "./hooks/useBreakpoint";
 import { DashboardProvider } from "./hooks/useDashboard";
 import { Route, Routes } from "react-router-dom";
 
 const DashboardApp = () => (
   <DashboardProvider>
-    <DashboardHeader>
-      <DashboardSelector />
-    </DashboardHeader>
+    <DashboardHeader />
     <DashboardErrorModal />
     <DashboardList />
     <Dashboard />

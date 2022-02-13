@@ -5,7 +5,7 @@ import { InputProps } from "../index";
 import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
 import { useEffect, useMemo, useState } from "react";
 
-interface SelectOption {
+export interface SelectOption {
   label: string;
   value: string;
 }
@@ -119,6 +119,10 @@ const SelectInput = (props: SelectInputProps) => {
   const blackScale3 = style.getPropertyValue("--color-black-scale-3");
 
   const customStyles = {
+    clearIndicator: (provided) => ({
+      ...provided,
+      cursor: "pointer",
+    }),
     control: (provided, state) => {
       return {
         ...provided,
@@ -128,6 +132,10 @@ const SelectInput = (props: SelectInputProps) => {
         boxShadow: "none",
       };
     },
+    dropdownIndicator: (provided) => ({
+      ...provided,
+      cursor: "pointer",
+    }),
     singleValue: (provided) => {
       return {
         ...provided,

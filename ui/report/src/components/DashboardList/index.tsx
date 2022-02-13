@@ -11,7 +11,7 @@ import {
   useDashboard,
 } from "../../hooks/useDashboard";
 import { get } from "lodash";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 interface OtherModDashboardsDictionary {
@@ -24,7 +24,7 @@ const ModSection = ({ mod, dashboards }) => {
       <h3 className="truncate">{mod.title || mod.short_name}</h3>
       <ul className="list-none list-inside">
         {dashboards.map((dashboard) => (
-          <li key={dashboard.full_name} className="truncate">
+          <li key={dashboard.full_name} className="mt-1 truncate">
             <Link className="link-highlight" to={`/${dashboard.full_name}`}>
               {dashboard.title || dashboard.short_name}
             </Link>
@@ -50,16 +50,6 @@ const OtherModSection = ({ mod_full_name, dashboards, metadata }) => {
 
   const mod = get(metadata, `installed_mods["${mod_full_name}"]`, {});
   return <ModSection mod={mod} dashboards={dashboards} />;
-};
-
-const searchAgainstAttribute = (
-  attribute: string | null | undefined,
-  search: string
-): boolean => {
-  if (!attribute) {
-    return false;
-  }
-  return attribute.indexOf(search) >= 0;
 };
 
 const searchAgainstDashboard = (
@@ -96,6 +86,7 @@ const DashboardList = () => {
     urlQueryParamHistoryMode.REPLACE
   );
   const [search, setSearch] = useState(searchQuery);
+  const { dashboardName } = useParams();
 
   useDebouncedEffect(
     () => {
@@ -172,6 +163,13 @@ const DashboardList = () => {
     setFilteredDashboardsForCurrentMod(filteredCurrent);
     setFilteredDashboardsForOtherMods(filteredOther);
   }, [dashboardsForCurrentMod, dashboardsForOtherMods, search]);
+
+  // Clear search after we choose a report
+  useEffect(() => {
+    if (dashboardName) {
+      setSearch("");
+    }
+  }, [dashboardName]);
 
   if (selectedDashboard) {
     return null;
