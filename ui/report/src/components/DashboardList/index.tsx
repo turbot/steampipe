@@ -64,13 +64,8 @@ const searchAgainstDashboard = (
 };
 
 const DashboardList = () => {
-  const {
-    availableDashboardsLoaded,
-    metadataLoaded,
-    metadata,
-    dashboards,
-    selectedDashboard,
-  } = useDashboard();
+  const { availableDashboardsLoaded, metadataLoaded, metadata, dashboards } =
+    useDashboard();
   const [dashboardsForCurrentMod, setDashboardsForCurrentMod] = useState<
     AvailableDashboard[]
   >([]);
@@ -171,7 +166,7 @@ const DashboardList = () => {
     }
   }, [dashboardName]);
 
-  if (selectedDashboard) {
+  if (dashboardName) {
     return null;
   }
 

@@ -1,8 +1,7 @@
+import Icon from "../../Icon";
 import IntegerDisplay from "../../IntegerDisplay";
 import LoadingIndicator from "../LoadingIndicator";
-import React, { useEffect, useState } from "react";
 import Table from "../Table";
-import { AlertIcon, InfoIcon, NilIcon, OKIcon } from "../../../constants/icons";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
@@ -12,6 +11,7 @@ import { classNames } from "../../../utils/styles";
 import { get, isNumber, isObject } from "lodash";
 import { getColumnIndex } from "../../../utils/data";
 import { ThemeNames, useTheme } from "../../../hooks/useTheme";
+import { useEffect, useState } from "react";
 
 const getWrapperClasses = (type) => {
   switch (type) {
@@ -23,6 +23,17 @@ const getWrapperClasses = (type) => {
       return "bg-ok";
     default:
       return "bg-black-scale-2";
+  }
+};
+
+const getIconClasses = (type) => {
+  switch (type) {
+    case "info":
+    case "ok":
+    case "alert":
+      return "text-white opacity-40 text-3xl";
+    default:
+      return "";
   }
 };
 
@@ -46,6 +57,7 @@ export type CardProps = BasePrimitiveProps &
     properties: {
       type?: CardType;
       value?: string;
+      icon?: string;
     };
   };
 
@@ -56,6 +68,7 @@ interface CardState {
   label: string | null;
   value: any | null;
   type: CardType;
+  icon: string | null;
 }
 
 const getDataFormat = (data: LeafNodeData): CardDataFormat => {
@@ -65,12 +78,30 @@ const getDataFormat = (data: LeafNodeData): CardDataFormat => {
   return "simple";
 };
 
+const getIconForType = (type) => {
+  if (!type) {
+    return null;
+  }
+
+  switch (type) {
+    case "alert":
+      return "heroicons-solid:x-circle";
+    case "ok":
+      return "heroicons-solid:check";
+    case "info":
+      return "heroicons-solid:information-circle";
+    default:
+      return null;
+  }
+};
+
 const useCardState = ({ data, properties }: CardProps) => {
   const [calculatedProperties, setCalculatedProperties] = useState<CardState>({
     loading: true,
     label: null,
     value: null,
     type: properties.type || null,
+    icon: getIconForType(properties.type) || properties.icon || null,
   });
 
   useEffect(() => {
@@ -89,6 +120,7 @@ const useCardState = ({ data, properties }: CardProps) => {
         label: null,
         value: null,
         type: properties.type || null,
+        icon: getIconForType(properties.type) || properties.icon || null,
       });
       return;
     }
@@ -102,7 +134,8 @@ const useCardState = ({ data, properties }: CardProps) => {
         loading: false,
         label: firstCol.name,
         value: row[0],
-        type: properties.type ? properties.type : null,
+        type: properties.type || null,
+        icon: getIconForType(properties.type) || properties.icon || null,
       });
     } else {
       const labelColIndex = getColumnIndex(data.columns, "label");
@@ -114,11 +147,15 @@ const useCardState = ({ data, properties }: CardProps) => {
       const typeColIndex = getColumnIndex(data.columns, "type");
       const formalType =
         typeColIndex >= 0 ? get(data, `rows[0][${typeColIndex}]`) : null;
+      const iconColIndex = getColumnIndex(data.columns, "icon");
+      const formalIcon =
+        iconColIndex >= 0 ? get(data, `rows[0][${iconColIndex}]`) : null;
       setCalculatedProperties({
         loading: false,
         label: formalLabel,
         value: formalValue,
         type: formalType || properties.type || null,
+        icon: formalIcon || properties.icon || null,
       });
     }
   }, [data, properties]);
@@ -151,14 +188,11 @@ const Card = (props: CardProps) => {
     >
       <dt>
         <div className="absolute">
-          {state.type === "alert" && (
-            <AlertIcon className="text-white opacity-40 text-3xl h-8 w-8" />
-          )}
-          {state.type === "ok" && (
-            <OKIcon className="block text-white opacity-40 text-3xl h-8 w-8" />
-          )}
-          {state.type === "info" && (
-            <InfoIcon className="text-white opacity-40 text-3xl h-8 w-8" />
+          {state.icon && (
+            <Icon
+              className={classNames(getIconClasses(state.type), "h-8 w-8")}
+              icon={state.icon}
+            />
           )}
         </div>
         <p
@@ -174,7 +208,9 @@ const Card = (props: CardProps) => {
           title={state.label || undefined}
         >
           {state.loading && "Loading..."}
-          {!state.loading && !state.label && <NilIcon className="h-5 w-5" />}
+          {!state.loading && !state.label && (
+            <Icon className="h-5 w-5" icon="heroicons-solid:minus" />
+          )}
           {!state.loading && state.label}
         </p>
       </dt>
@@ -205,7 +241,7 @@ const Card = (props: CardProps) => {
           )}
           {!state.loading &&
             (state.value === null || state.value === undefined) && (
-              <NilIcon className="h-10 w-10 -ml-1" />
+              <Icon className="h-10 w-10 -ml-1" icon="heroicons-solid:minus" />
             )}
           {state.value !== null &&
             state.value !== undefined &&

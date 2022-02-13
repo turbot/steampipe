@@ -1,24 +1,19 @@
 import {
-  ArrowsExpandIcon as ArrowsExpandIconOutline,
-  ExclamationCircleIcon as ExclamationCircleIconOutline,
-  SearchIcon as SearchIconOutline,
-  TagIcon as TagIconOutline,
-  UserGroupIcon as UserGroupIconOutline,
-  XIcon as XIconOutline,
-} from "@heroicons/react/outline";
-import {
   CheckIcon as CheckIconSolid,
   ChevronDownIcon as ChevronDownIconSolid,
   ChevronUpIcon as ChevronUpIconSolid,
   HeartIcon as HeartIconSolid,
   InformationCircleIcon as InformationCircleIconSolid,
-  MinusIcon as MinusIconSolid,
   MoonIcon as MoonIconSolid,
-  QuestionMarkCircleIcon as QuestionMarkCircleIconSolid,
   SunIcon as SunIconSolid,
-  XCircleIcon as XCircleIconSolid,
   XIcon as XIconSolid,
 } from "@heroicons/react/solid";
+import {
+  ExclamationCircleIcon as ExclamationCircleIconOutline,
+  SearchIcon as SearchIconOutline,
+  UserGroupIcon as UserGroupIconOutline,
+  XIcon as XIconOutline,
+} from "@heroicons/react/outline";
 
 // General
 export const ClearIcon = XIconOutline;
@@ -27,24 +22,15 @@ export const DarkIcon = MoonIconSolid;
 export const ErrorIcon = ExclamationCircleIconOutline;
 export const LightIcon = SunIconSolid;
 export const SearchIcon = SearchIconOutline;
-export const ZoomIcon = ArrowsExpandIconOutline;
 
 // Call to Action
 export const FeedbackIcon = UserGroupIconOutline;
 export const HeartIcon = HeartIconSolid;
 
-// Card
-export const AlertIcon = XCircleIconSolid;
-export const NilIcon = MinusIconSolid;
-
 // Control
 export const AlarmIcon = XIconSolid;
 export const InfoIcon = InformationCircleIconSolid;
 export const OKIcon = CheckIconSolid;
-export const TBDIcon = QuestionMarkCircleIconSolid;
-
-// Resource
-export const TagIcon = TagIconOutline;
 
 // Table
 export const SortAscendingIcon = ChevronUpIconSolid;
