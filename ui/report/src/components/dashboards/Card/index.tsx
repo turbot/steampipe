@@ -33,7 +33,7 @@ const getIconClasses = (type) => {
     case "alert":
       return "text-white opacity-40 text-3xl";
     default:
-      return "";
+      return "text-black-scale-4 text-3xl";
   }
 };
 
@@ -155,7 +155,11 @@ const useCardState = ({ data, properties }: CardProps) => {
         label: formalLabel,
         value: formalValue,
         type: formalType || properties.type || null,
-        icon: formalIcon || properties.icon || null,
+        icon:
+          getIconForType(formalType || properties.type) ||
+          formalIcon ||
+          properties.icon ||
+          null,
       });
     }
   }, [data, properties]);
@@ -198,11 +202,7 @@ const Card = (props: CardProps) => {
         <p
           className={classNames(
             "text-sm font-medium truncate",
-            state.type === "alert" ||
-              state.type === "ok" ||
-              state.type === "info"
-              ? "ml-11"
-              : "ml-2",
+            state.icon ? "ml-11" : "ml-2",
             getTextClasses(state.type)
           )}
           title={state.label || undefined}
@@ -217,9 +217,7 @@ const Card = (props: CardProps) => {
       <dd
         className={classNames(
           "flex items-baseline",
-          state.type === "alert" || state.type === "ok" || state.type === "info"
-            ? "ml-11"
-            : "ml-2"
+          state.icon ? "ml-11" : "ml-2"
         )}
         title={state.value || undefined}
       >
