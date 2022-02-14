@@ -52,7 +52,6 @@ const getCommonBaseOptions = () => ({
   color: themeColors,
   grid: {
     top: "10%",
-    // top: "top",
   },
   legend: {
     orient: "horizontal",
@@ -360,7 +359,7 @@ const getSeriesForChartType = (
         series.push({
           name: seriesName,
           type: "pie",
-          center: ["50%", "35%"],
+          center: ["50%", "40%"],
           radius: ["30%", "50%"],
           label: { color: themeColors.foreground },
         });
@@ -375,7 +374,7 @@ const getSeriesForChartType = (
       case "pie":
         series.push({
           type: "pie",
-          center: ["50%", "35%"],
+          center: ["50%", "40%"],
           radius: "50%",
           label: { color: themeColors.foreground },
           emphasis: {
