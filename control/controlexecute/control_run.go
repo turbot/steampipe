@@ -9,7 +9,7 @@ import (
 	"time"
 
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe-plugin-sdk/grpc"
+	"github.com/turbot/steampipe-plugin-sdk/v3/grpc"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
