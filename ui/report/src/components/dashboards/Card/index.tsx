@@ -78,9 +78,13 @@ const getDataFormat = (data: LeafNodeData): CardDataFormat => {
   return "simple";
 };
 
-const getIconForType = (type) => {
-  if (!type) {
+const getIconForType = (type, icon) => {
+  if (!type && !icon) {
     return null;
+  }
+
+  if (icon) {
+    return icon;
   }
 
   switch (type) {
@@ -101,7 +105,7 @@ const useCardState = ({ data, properties }: CardProps) => {
     label: null,
     value: null,
     type: properties.type || null,
-    icon: getIconForType(properties.type) || properties.icon || null,
+    icon: getIconForType(properties.type, properties.icon),
   });
 
   useEffect(() => {
@@ -120,7 +124,7 @@ const useCardState = ({ data, properties }: CardProps) => {
         label: null,
         value: null,
         type: properties.type || null,
-        icon: getIconForType(properties.type) || properties.icon || null,
+        icon: getIconForType(properties.type, properties.icon),
       });
       return;
     }
@@ -135,7 +139,7 @@ const useCardState = ({ data, properties }: CardProps) => {
         label: firstCol.name,
         value: row[0],
         type: properties.type || null,
-        icon: getIconForType(properties.type) || properties.icon || null,
+        icon: getIconForType(properties.type, properties.icon),
       });
     } else {
       const labelColIndex = getColumnIndex(data.columns, "label");
@@ -155,11 +159,10 @@ const useCardState = ({ data, properties }: CardProps) => {
         label: formalLabel,
         value: formalValue,
         type: formalType || properties.type || null,
-        icon:
-          getIconForType(formalType || properties.type) ||
-          formalIcon ||
-          properties.icon ||
-          null,
+        icon: getIconForType(
+          formalType || properties.type,
+          formalIcon || properties.icon
+        ),
       });
     }
   }, [data, properties]);
