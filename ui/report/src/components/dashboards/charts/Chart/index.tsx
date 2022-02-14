@@ -25,6 +25,7 @@ import {
   TooltipComponent,
 } from "echarts/components";
 import { EChartsOption } from "echarts-for-react/src/types";
+import { HierarchyType } from "../../hierarchies";
 import { LabelLayout } from "echarts/features";
 import { merge, set } from "lodash";
 import { PanelDefinition } from "../../../../hooks/useDashboard";
@@ -49,6 +50,10 @@ echarts.use([
 const getCommonBaseOptions = () => ({
   animation: false,
   color: themeColors,
+  grid: {
+    top: "10%",
+    // top: "top",
+  },
   legend: {
     orient: "horizontal",
     left: "center",
@@ -355,6 +360,7 @@ const getSeriesForChartType = (
         series.push({
           name: seriesName,
           type: "pie",
+          center: ["50%", "35%"],
           radius: ["30%", "50%"],
           label: { color: themeColors.foreground },
         });
@@ -369,6 +375,7 @@ const getSeriesForChartType = (
       case "pie":
         series.push({
           type: "pie",
+          center: ["50%", "35%"],
           radius: "50%",
           label: { color: themeColors.foreground },
           emphasis: {
@@ -431,9 +438,10 @@ const buildChartOptions = (
 
 interface ChartComponentProps {
   options: EChartsOption;
+  type: ChartType | HierarchyType;
 }
 
-const Chart = ({ options }: ChartComponentProps) => {
+const Chart = ({ options, type }: ChartComponentProps) => {
   const chartRef = useRef<ReactEChartsCore>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const mediaMode = useMediaMode();
@@ -466,6 +474,9 @@ const Chart = ({ options }: ChartComponentProps) => {
             option={options}
             notMerge={true}
             lazyUpdate={true}
+            style={
+              type === "pie" || type === "donut" ? { height: "250px" } : {}
+            }
           />
         </div>
       )}
@@ -493,7 +504,12 @@ const ChartWrapper = (props: ChartProps) => {
     return null;
   }
 
-  return <Chart options={buildChartOptions(props, theme, wrapperRef)} />;
+  return (
+    <Chart
+      options={buildChartOptions(props, theme, wrapperRef)}
+      type={props.properties ? props.properties.type : "column"}
+    />
+  );
 };
 
 type ChartDefinition = PanelDefinition & {
