@@ -26,7 +26,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.11.1
 	github.com/hashicorp/terraform v0.15.1
 	github.com/jackc/pgx/v4 v4.14.1
-	github.com/jedib0t/go-pretty/v6 v6.2.5
+	github.com/jedib0t/go-pretty/v6 v6.2.7
 	github.com/karrick/gows v0.3.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/mattn/go-isatty v0.0.14
