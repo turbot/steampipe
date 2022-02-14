@@ -22,7 +22,7 @@ updates:
     pull-request-branch-name:
       separator: "-"
     assignees:
-      - "binaek89"
+      - "binaek"
       - "kaidaguerre"
     labels:
       - "dependencies"
