@@ -1,7 +1,7 @@
 import Error from "../Error";
 import gfm from "remark-gfm"; // Support for strikethrough, tables, tasklists and URLs
 import ReactMarkdown from "react-markdown";
-import { BasePrimitiveProps } from "../common";
+import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 import { classNames } from "../../../utils/styles";
 
 const getLongPanelClasses = () => {
@@ -22,12 +22,13 @@ const getShortPanelClasses = () => {
   // }
 };
 
-export type TextProps = BasePrimitiveProps & {
-  properties: {
-    type?: "raw" | "markdown" | "html";
-    value: string;
+export type TextProps = BasePrimitiveProps &
+  ExecutablePrimitiveProps & {
+    properties: {
+      type?: "raw" | "markdown" | "html";
+      value: string;
+    };
   };
-};
 
 const Markdown = ({ value }) => {
   if (!value) {
