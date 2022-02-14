@@ -75,10 +75,10 @@ func init() {
 				},
 			},
 		},
-		// "single_mod_duplicate_query": {
-		// 	source:   "testdata/mods/single_mod_duplicate_query",
-		// 	expected: "ERROR",
-		// },
+		"single_mod_duplicate_query": {
+			source:   "testdata/mods/single_mod_duplicate_query",
+			expected: "ERROR",
+		},
 		"single_mod_no_query": {
 			source: "testdata/mods/single_mod_no_query",
 			expected: &modconfig.Mod{

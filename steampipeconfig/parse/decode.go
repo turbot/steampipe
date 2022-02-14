@@ -556,6 +556,7 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 // - generate and set resource metadata
 // - add resource to RunContext (which adds it to the mod)handleDecodeResult
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) {
+	anonymousResource := len(block.Labels) == 0
 	if res.Success() {
 
 		// call post decode hook
@@ -566,6 +567,17 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 		// add references
 		moreDiags = AddReferences(resource, block, runCtx)
 		res.addDiags(moreDiags)
+
+		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
+		if _, ok := resource.(*modconfig.Mod); !ok {
+			// if resource is NOT anonymous, add resource to mod
+			// - this will fail if the mod already has a resource with the same name
+			if !anonymousResource {
+				// we cannot add anonymous resources at this point - they will be added after their names are set
+				moreDiags = runCtx.CurrentMod.AddResource(resource)
+				res.addDiags(moreDiags)
+			}
+		}
 
 		// if resource supports metadata, save it
 		if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
