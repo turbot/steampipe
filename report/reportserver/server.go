@@ -15,7 +15,6 @@ import (
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/report/reportevents"
 	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/report/reportinterfaces"
@@ -71,18 +70,8 @@ type ReportClientInfo struct {
 	Report *string
 }
 
-func NewServer(ctx context.Context) (*Server, error) {
-	var dbClient, err = db_local.GetLocalClient(ctx, constants.InvokerReport)
-	if err != nil {
-		return nil, err
-	}
-
-	refreshResult := dbClient.RefreshConnectionAndSearchPaths(ctx)
-	if err != nil {
-		return nil, err
-	}
-	refreshResult.ShowWarnings()
-
+func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) {
+	outputWait(ctx, "Starting Report Server")
 	loadedWorkspace, err := workspace.Load(ctx, viper.GetString(constants.ArgWorkspaceChDir))
 	if err != nil {
 		return nil, err
@@ -104,7 +93,8 @@ func NewServer(ctx context.Context) (*Server, error) {
 	}
 
 	loadedWorkspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
-	err = loadedWorkspace.SetupWatcher(ctx, dbClient, nil)
+	err = loadedWorkspace.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {})
+	outputMessage(ctx, "Workspace loaded")
 
 	return server, err
 }
@@ -258,7 +248,6 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		}
 	}()
 
-	log.Println("[TRACE] Got workspace update event", event)
 	switch e := event.(type) {
 
 	case *reportevents.WorkspaceError:
@@ -268,6 +257,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			return
 		}
 		s.webSocket.Broadcast(payload)
+		outputError(s.context, e.Error)
 
 	case *reportevents.ExecutionStarted:
 		log.Println("[TRACE] Got execution started event", *e)
@@ -284,6 +274,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			}
 		}
 		s.mutex.Unlock()
+		outputWait(s.context, fmt.Sprintf("Report execution started: %s", reportName))
 
 	case *reportevents.LeafNodeError:
 		log.Println("[TRACE] Got leaf node error event", *e)
@@ -360,6 +351,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 
 		// If) any deleted/new/changed reports, emit an available reports message to clients
 		if len(deletedReports) != 0 || len(newReports) != 0 || len(changedReports) != 0 {
+			outputMessage(s.context, "Available Reports updated")
 			payload, payloadError = buildAvailableDashboardsPayload(s.workspace)
 			if payloadError != nil {
 				return
@@ -445,5 +437,6 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 			}
 		}
 		s.mutex.Unlock()
+		outputReady(s.context, fmt.Sprintf("Execution complete: %s", reportName))
 	}
 }

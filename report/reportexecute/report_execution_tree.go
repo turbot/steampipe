@@ -58,12 +58,12 @@ func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterface
 }
 
 func (e *ReportExecutionTree) Execute(ctx context.Context) error {
-	log.Println("[WARN]", "begin ReportExecutionTree.Execute")
-	defer log.Println("[WARN]", "end ReportExecutionTree.Execute")
+	log.Println("[TRACE]", "begin ReportExecutionTree.Execute")
+	defer log.Println("[TRACE]", "end ReportExecutionTree.Execute")
 
 	if e.runStatus() == reportinterfaces.ReportRunComplete {
 		// there must be no nodes to execute
-		log.Println("[WARN]", "execution tree already complete")
+		log.Println("[TRACE]", "execution tree already complete")
 		return nil
 	}
 

@@ -38,7 +38,10 @@ func openBrowser(url string) error {
 }
 
 func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
-	router := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
+	// only add the Recovery middleware
+	router.Use(gin.Recovery())
 
 	assetsDirectory := filepaths.EnsureReportAssetsDir()
 
@@ -49,7 +52,6 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 	})
 
 	router.NoRoute(func(c *gin.Context) {
-		//c.File("./static/index.html")
 		c.File(path.Join(assetsDirectory, "index.html"))
 	})
 
@@ -72,6 +74,7 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 	}()
 
 	_ = openBrowser(fmt.Sprintf("http://localhost:%d", reportServerPort))
+	outputReady(ctx, fmt.Sprintf("Report server started on %d and listening on %s", reportServerPort, viper.GetString(constants.ArgReportServerListen)))
 	<-ctx.Done()
 	log.Println("Shutdown Server ...")
 
