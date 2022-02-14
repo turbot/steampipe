@@ -93,7 +93,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) 
 	}
 
 	loadedWorkspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
-	err = loadedWorkspace.SetupWatcher(ctx, dbClient, nil)
+	err = loadedWorkspace.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {})
 	outputMessage(ctx, "Workspace loaded")
 
 	return server, err
@@ -248,7 +248,7 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		}
 	}()
 
-	log.Println("[TRACE] Got workspace update event", event)
+	log.Println("[TRACE] Got workspace update event", reflect.TypeOf(event).String())
 	switch e := event.(type) {
 
 	case *reportevents.WorkspaceError:
