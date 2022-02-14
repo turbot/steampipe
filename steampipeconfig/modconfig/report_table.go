@@ -46,7 +46,7 @@ func NewReportTable(block *hcl.Block, mod *Mod) *ReportTable {
 	shortName := GetAnonymousResourceShortName(block, mod)
 	t := &ReportTable{
 		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%%s.%s.%s", mod.ShortName, block.Type, shortName),
+		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 		Mod:             mod,
 		DeclRange:       block.DefRange,
