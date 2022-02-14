@@ -4,8 +4,6 @@ import {
   ChevronUpIcon as ChevronUpIconSolid,
   HeartIcon as HeartIconSolid,
   InformationCircleIcon as InformationCircleIconSolid,
-  MoonIcon as MoonIconSolid,
-  SunIcon as SunIconSolid,
   XIcon as XIconSolid,
 } from "@heroicons/react/solid";
 import {
@@ -18,9 +16,7 @@ import {
 // General
 export const ClearIcon = XIconOutline;
 export const CloseIcon = XIconOutline;
-export const DarkIcon = MoonIconSolid;
 export const ErrorIcon = ExclamationCircleIconOutline;
-export const LightIcon = SunIconSolid;
 export const SearchIcon = SearchIconOutline;
 
 // Call to Action
