@@ -248,7 +248,6 @@ func (s *Server) HandleWorkspaceUpdate(event reportevents.ReportEvent) {
 		}
 	}()
 
-	log.Println("[TRACE] Got workspace update event", reflect.TypeOf(event).String())
 	switch e := event.(type) {
 
 	case *reportevents.WorkspaceError:

@@ -8,19 +8,11 @@ import (
 )
 
 const (
-	eRROR   = "[ Error   ]"
-	wARNING = "[ Warning ]"
-	mESSAGE = "[ Message ]"
-	rEADY   = "[ Ready   ]"
-	wAIT    = "[ Wait    ]"
-)
-
-var (
-	outputErrorPrefix   = color.RedString(eRROR)
-	outputWarningPrefix = color.YellowString(wARNING)
-	outputMessagePrefix = color.HiGreenString(mESSAGE)
-	outputReadyPrefix   = color.GreenString(rEADY)
-	outputWaitPrefix    = color.CyanString(wAIT)
+	errorPrefix = "[ Error   ]"
+	//warningPrefix = "[ Warning ]"
+	messagePrefix = "[ Message ]"
+	readyPrefix   = "[ Ready   ]"
+	waitPrefix    = "[ Wait    ]"
 )
 
 func output(_ context.Context, prefix string, msg interface{}) {
@@ -28,17 +20,17 @@ func output(_ context.Context, prefix string, msg interface{}) {
 }
 
 func outputMessage(ctx context.Context, msg string) {
-	output(ctx, outputMessagePrefix, msg)
+	output(ctx, color.HiGreenString(messagePrefix), msg)
 }
 
 func outputError(ctx context.Context, err error) {
-	output(ctx, outputErrorPrefix, err)
+	output(ctx, color.RedString(errorPrefix), err)
 }
 
 func outputReady(ctx context.Context, msg string) {
-	output(ctx, outputReadyPrefix, msg)
+	output(ctx, color.GreenString(readyPrefix), msg)
 }
 
 func outputWait(ctx context.Context, msg string) {
-	output(ctx, outputWaitPrefix, msg)
+	output(ctx, color.CyanString(waitPrefix), msg)
 }
