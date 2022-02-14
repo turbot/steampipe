@@ -149,11 +149,11 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		}
 	case *ReportChart:
 		name := r.Name()
-		if existing, ok := m.ReportChart[name]; ok {
+		if existing, ok := m.ReportCharts[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
 		}
-		m.ReportCards[name] = r
+		m.ReportCharts[name] = r
 
 	case *ReportHierarchy:
 		name := r.Name()

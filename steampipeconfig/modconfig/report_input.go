@@ -23,10 +23,9 @@ type ReportInput struct {
 	Width *int         `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	SQL   *string      `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
 	Type  *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Style *string `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
+	Style *string      `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
 	Value *string      `json:"value"`
 	Base  *ReportInput `hcl:"base" json:"-"`
-
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`

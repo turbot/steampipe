@@ -12,6 +12,9 @@ import (
 
 // ReportCard is a struct representing a leaf reporting node
 type ReportCard struct {
+	ReportLeafNodeBase
+	ResourceWithMetadataBase
+
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
@@ -32,13 +35,19 @@ type ReportCard struct {
 	metadata *ResourceMetadata
 }
 
-func NewReportCard(block *hcl.Block) *ReportCard {
-	return &ReportCard{
+func NewReportCard(block *hcl.Block, mod *Mod) *ReportCard {
+	shortName := GetAnonymousResourceShortName(block, mod)
+	c := &ReportCard{
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+		Mod:             mod,
 		DeclRange:       block.DefRange,
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	c.SetAnonymous(block)
+
+	return c
+
 }
 
 func (c *ReportCard) Equals(other *ReportCard) bool {

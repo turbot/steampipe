@@ -7,7 +7,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v3/plugin"
 	"github.com/turbot/steampipe/version"
 )
 

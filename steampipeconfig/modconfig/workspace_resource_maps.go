@@ -38,7 +38,7 @@ func WorkspaceResourceMapFromMod(mod *Mod) *WorkspaceResourceMaps {
 		Reports:           mod.Reports,
 		ReportContainers:  mod.ReportContainers,
 		ReportCharts:      mod.ReportCharts,
-		ReportCounters:    mod.ReportCounters,
+		ReportCards:       mod.ReportCards,
 		ReportHierarchies: mod.ReportHierarchies,
 		ReportImages:      mod.ReportImages,
 		ReportInputs:      mod.ReportInputs,

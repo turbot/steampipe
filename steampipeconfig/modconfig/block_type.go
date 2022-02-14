@@ -8,7 +8,7 @@ const (
 	BlockTypeReport    = "report"
 	BlockTypeContainer = "container"
 	BlockTypeChart     = "chart"
-	BlockTypeCounter   = "counter"
+	BlockTypeCard      = "card"
 	BlockTypeHierarchy = "hierarchy"
 	BlockTypeImage     = "image"
 	BlockTypeInput     = "input"
@@ -24,7 +24,7 @@ var QueryProviderBlocks = []string{
 	BlockTypeControl,
 	BlockTypeQuery,
 	BlockTypeChart,
-	BlockTypeCounter,
+	BlockTypeCard,
 	BlockTypeTable,
 	BlockTypeHierarchy,
 }
