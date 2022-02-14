@@ -11,8 +11,6 @@ import (
 
 // Local is a struct representing a Local resource
 type Local struct {
-	ResourceWithMetadataBase
-
 	ShortName string
 	FullName  string `cty:"name"`
 

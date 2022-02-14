@@ -556,7 +556,11 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 // - generate and set resource metadata
 // - add resource to RunContext (which adds it to the mod)handleDecodeResult
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) {
-	anonymousResource := len(block.Labels) == 0
+	// determine if this is an anonymous resource
+	// (if it is anonymous it must support ResourceWithMetadata)
+	resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata)
+	anonymousResource := ok && resourceWithMetadata.IsAnonymous()
+
 	if res.Success() {
 
 		// call post decode hook
@@ -568,11 +572,14 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 		moreDiags = AddReferences(resource, block, runCtx)
 		res.addDiags(moreDiags)
 
-		// if resource is NOT a mod, set mod pointer on hcl resource and add resource to current mod
-		if _, ok := resource.(*modconfig.Mod); !ok {
-			// if resource is NOT anonymous, add resource to mod
-			// - this will fail if the mod already has a resource with the same name
-			if !anonymousResource {
+		// if resource is NOT anonymous, add into the run context and the mod
+		if !anonymousResource {
+			moreDiags = runCtx.AddResource(resource)
+			res.addDiags(moreDiags)
+
+			// if resource is NOT a mod, add resource to current mod
+			if _, ok := resource.(*modconfig.Mod); !ok {
+				// - this will fail if the mod already has a resource with the same name
 				// we cannot add anonymous resources at this point - they will be added after their names are set
 				moreDiags = runCtx.CurrentMod.AddResource(resource)
 				res.addDiags(moreDiags)
@@ -585,12 +592,8 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 			moreDiags = addResourceMetadata(resourceWithMetadata, body.SrcRange, runCtx)
 			res.addDiags(moreDiags)
 
-			if !resourceWithMetadata.IsAnonymous() {
-				// if resource is NOT anonymous, add into the run context
-				moreDiags = runCtx.AddResource(resource)
-				res.addDiags(moreDiags)
-			}
 		}
+
 	} else {
 		if len(res.Depends) > 0 {
 			moreDiags := runCtx.AddDependencies(block, resource.GetUnqualifiedName(), res.Depends)
