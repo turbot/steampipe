@@ -22,8 +22,31 @@ func (w *Workspace) RegisterReportEventHandler(handler reportevents.ReportEventH
 	w.reportEventHandlers = append(w.reportEventHandlers, handler)
 }
 
-func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, events []fsnotify.Event) {
+func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, _ []fsnotify.Event) {
+	prevResourceMaps, resourceMaps, err := w.reloadResourceMaps(ctx)
+	if err != nil {
+		// publish error event
+		w.PublishReportEvent(&reportevents.WorkspaceError{Error: err})
+		return
+	}
+	// if resources have changed, update introspection tables and prepared statements
+	if !prevResourceMaps.Equals(resourceMaps) {
+		res := client.RefreshSessions(context.Background())
+		if res.Error != nil || len(res.Warnings) > 0 {
+			fmt.Println()
+			utils.ShowErrorWithMessage(ctx, res.Error, "error when refreshing session data")
+			utils.ShowWarning(strings.Join(res.Warnings, "\n"))
+			if w.onFileWatcherEventMessages != nil {
+				w.onFileWatcherEventMessages()
+			}
+		}
+	}
+	w.raiseReportChangedEvents(resourceMaps, prevResourceMaps)
+}
+
+func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.WorkspaceResourceMaps, *modconfig.WorkspaceResourceMaps, error) {
 	w.loadLock.Lock()
+	defer w.loadLock.Unlock()
 
 	// get the pre-load resource maps
 	// NOTE: do not call GetResourceMaps - we DO NOT want to lock loadLock
@@ -42,9 +65,8 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 		}
 		// now set watcher error to new error
 		w.watcherError = err
-		// publish error event
-		w.PublishReportEvent(&reportevents.WorkspaceError{Error: err})
-		return
+
+		return nil, nil, err
 	}
 
 	// clear watcher error
@@ -53,22 +75,8 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 	// reload the resource maps
 	resourceMaps := w.resourceMaps
 
-	// unlock the lock BEFORE refreshing the sessions
-	w.loadLock.Unlock()
+	return prevResourceMaps, resourceMaps, nil
 
-	// if resources have changed, update introspection tables and prepared statements
-	if !prevResourceMaps.Equals(resourceMaps) {
-		res := client.RefreshSessions(context.Background())
-		if res.Error != nil || len(res.Warnings) > 0 {
-			fmt.Println()
-			utils.ShowErrorWithMessage(ctx, res.Error, "error when refreshing session data")
-			utils.ShowWarning(strings.Join(res.Warnings, "\n"))
-			if w.onFileWatcherEventMessages != nil {
-				w.onFileWatcherEventMessages()
-			}
-		}
-	}
-	w.raiseReportChangedEvents(resourceMaps, prevResourceMaps)
 }
 
 func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *modconfig.WorkspaceResourceMaps) {
