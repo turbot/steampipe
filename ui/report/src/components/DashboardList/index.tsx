@@ -10,7 +10,7 @@ import {
   ModDashboardMetadata,
   useDashboard,
 } from "../../hooks/useDashboard";
-import { get } from "lodash";
+import { get, sortBy } from "lodash";
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 
@@ -63,6 +63,10 @@ const searchAgainstDashboard = (
   return searchParts.every((searchPart) => joined.indexOf(searchPart) >= 0);
 };
 
+const sortDashboards = (dashboards: AvailableDashboard[] = []) => {
+  return sortBy(dashboards, [(d) => (d.title || d.short_name).toLowerCase()]);
+};
+
 const DashboardList = () => {
   const { availableDashboardsLoaded, metadataLoaded, metadata, dashboards } =
     useDashboard();
@@ -99,8 +103,10 @@ const DashboardList = () => {
     }
 
     setDashboardsForCurrentMod(
-      dashboards.filter(
-        (dashboard) => dashboard.mod_full_name === metadata.mod.full_name
+      sortDashboards(
+        dashboards.filter(
+          (dashboard) => dashboard.mod_full_name === metadata.mod.full_name
+        )
       )
     );
 
@@ -108,9 +114,11 @@ const DashboardList = () => {
     for (const [mod_full_name, mod] of Object.entries(
       metadata.installed_mods || {}
     )) {
-      newOtherMods[mod_full_name] = dashboards
-        .filter((dashboard) => dashboard.mod_full_name === mod_full_name)
-        .map((dashboard) => ({ ...dashboard, mod }));
+      newOtherMods[mod_full_name] = sortDashboards(
+        dashboards
+          .filter((dashboard) => dashboard.mod_full_name === mod_full_name)
+          .map((dashboard) => ({ ...dashboard, mod }))
+      );
     }
     setDashboardsForOtherMods(newOtherMods);
   }, [metadataLoaded, availableDashboardsLoaded, metadata, dashboards]);
@@ -211,16 +219,23 @@ const DashboardList = () => {
             dashboards={filteredDashboardsForCurrentMod}
             metadata={metadata}
           />
-          {Object.entries(filteredDashboardsForOtherMods).map(
-            ([mod_full_name, dashboards]) => (
-              <OtherModSection
-                key={mod_full_name}
-                mod_full_name={mod_full_name}
-                dashboards={dashboards}
-                metadata={metadata}
-              />
-            )
-          )}
+          {sortBy(Object.entries(filteredDashboardsForOtherMods), [
+            ([mod_full_name, dashboards]) => {
+              const mod = get(
+                metadata,
+                `installed_mods["${mod_full_name}"]`,
+                {}
+              );
+              return mod.title || mod.short_name;
+            },
+          ]).map(([mod_full_name, dashboards]) => (
+            <OtherModSection
+              key={mod_full_name}
+              mod_full_name={mod_full_name}
+              dashboards={dashboards}
+              metadata={metadata}
+            />
+          ))}
         </div>
       </div>
       <div className="hidden lg:block col-span-2" />
