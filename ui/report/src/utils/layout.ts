@@ -11,7 +11,7 @@ const getResponsivePanelWidthClass = (width: number | undefined): string => {
     case 2:
       return "md:col-span-3 lg:col-span-2";
     case 3:
-      return "md:col-span-3 lg:col-span-3";
+      return "md:col-span-3";
     case 4:
       return "md:col-span-6 lg:col-span-4";
     case 5:
