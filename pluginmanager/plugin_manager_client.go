@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
+	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
 	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
 )

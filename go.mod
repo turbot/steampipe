@@ -43,7 +43,6 @@ require (
 	github.com/spf13/viper v1.10.1
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
 	github.com/turbot/go-kit v0.3.0
-	github.com/turbot/steampipe-plugin-sdk v1.9.0-rc.0
 	github.com/xlab/treeprint v1.1.0
 	github.com/zclconf/go-cty v1.10.0
 	github.com/zclconf/go-cty-yaml v1.0.2
@@ -71,6 +70,7 @@ require (
 	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
+	github.com/turbot/steampipe-plugin-sdk/v3 v3.0.0-rc.2
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/mod v0.5.1 // indirect

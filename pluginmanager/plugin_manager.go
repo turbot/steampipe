@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
-	sdkshared "github.com/turbot/steampipe-plugin-sdk/grpc/shared"
+	sdkshared "github.com/turbot/steampipe-plugin-sdk/v3/grpc/shared"
 	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
 	"github.com/turbot/steampipe/utils"

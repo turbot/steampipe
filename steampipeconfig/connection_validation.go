@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
-	sdkversion "github.com/turbot/steampipe-plugin-sdk/version"
+	sdkversion "github.com/turbot/steampipe-plugin-sdk/v3/version"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
