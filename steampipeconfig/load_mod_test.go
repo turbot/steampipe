@@ -17,6 +17,7 @@ import (
 // TODO add tests for reflection data
 
 var toStringPointer = utils.ToStringPointer
+var toIntegerPointer = utils.ToIntegerPointer
 
 type loadModTest struct {
 	source   string
@@ -364,12 +365,10 @@ func init() {
 				},
 			},
 		},
-		// upto here
 		// "single_mod_sql_file_and_clashing_hcl_query": {
 		// 	source:   "testdata/mods/single_mod_sql_file_and_clashing_hcl_query",
 		// 	expected: "ERROR",
 		// },
-		// till here
 		"single_mod_two_queries_diff_files": {
 			source: "testdata/mods/single_mod_two_queries_diff_files",
 			expected: &modconfig.Mod{
@@ -698,6 +697,157 @@ func init() {
 						ShortName:       "anonymous_text_3",
 						UnqualifiedName: "text.anonymous_text_3",
 						Value:           toStringPointer("NESTED CHILD CONTAINER 1(21)"),
+					},
+				},
+			},
+		},
+		"report_axes": { // this test checks the base values overriding while parsing
+			source: "testdata/mods/report_axes",
+			expected: &modconfig.Mod{
+				ShortName:   "report_axes",
+				FullName:    "mod.report_axes",
+				Require:     require,
+				Title:       toStringPointer("report with axes"),
+				Description: toStringPointer("This mod tests base values overriding functionality"),
+				Reports: map[string]*modconfig.ReportContainer{
+					"report_axes.report.override_base_values": {
+						ShortName:       "override_base_values",
+						FullName:        "report_axes.report.override_base_values",
+						UnqualifiedName: "report.override_base_values",
+						Title:           toStringPointer("override_base_values"),
+						ChildNames:      []string{"report_axes.chart.anonymous_chart"},
+						HclType:         "report",
+					},
+				},
+				ReportCharts: map[string]*modconfig.ReportChart{
+					"report_axes.chart.aws_bucket_info": {
+						FullName:        "report_axes.chart.aws_bucket_info",
+						ShortName:       "aws_bucket_info",
+						UnqualifiedName: "chart.aws_bucket_info",
+						Axes: &modconfig.ReportChartAxes{
+							X: &modconfig.ReportChartAxesX{
+								Title: &modconfig.ReportChartAxisTitle{
+									Display: toStringPointer("always"),
+									Value:   toStringPointer("Foo"),
+								},
+							},
+							Y: &modconfig.ReportChartAxesY{
+								Title: &modconfig.ReportChartAxisTitle{
+									Display: toStringPointer("always"),
+									Value:   toStringPointer("Foo"),
+								},
+							},
+						},
+						Grouping: toStringPointer("compare"),
+						Type:     toStringPointer("column"),
+						Legend: &modconfig.ReportChartLegend{
+							Position: toStringPointer("bottom"),
+						},
+					},
+					"report_axes.chart.anonymous_chart": {
+						FullName:        "report_axes.chart.anonymous_chart",
+						ShortName:       "anonymous_chart",
+						UnqualifiedName: "chart.anonymous_chart",
+						Axes: &modconfig.ReportChartAxes{
+							X: &modconfig.ReportChartAxesX{
+								Title: &modconfig.ReportChartAxisTitle{
+									Display: toStringPointer("always"),
+									Value:   toStringPointer("OVERRIDE"),
+								},
+							},
+							Y: &modconfig.ReportChartAxesY{
+								Title: &modconfig.ReportChartAxisTitle{
+									Display: toStringPointer("OVERRIDE"),
+									Value:   toStringPointer("Foo"),
+								},
+							},
+						},
+						Grouping: toStringPointer("compare"),
+						Type:     toStringPointer("column"),
+						Legend: &modconfig.ReportChartLegend{
+							Position: toStringPointer("bottom"),
+						},
+					},
+				},
+			},
+		},
+		"report_base1": { // this test checks inheriting and overriding base values while parsing
+			source: "testdata/mods/report_base1",
+			expected: &modconfig.Mod{
+				ShortName:   "report_base1",
+				FullName:    "mod.report_base1",
+				Require:     require,
+				Description: toStringPointer("This mod tests inheriting from base functionality"),
+				Title:       toStringPointer("report base 1"),
+				Queries: map[string]*modconfig.Query{
+					"report_base1.query.aws_a3_unencrypted_and_nonversioned_buckets_by_region": {
+						ShortName:       "aws_a3_unencrypted_and_nonversioned_buckets_by_region",
+						FullName:        "report_base1.query.aws_a3_unencrypted_and_nonversioned_buckets_by_region",
+						UnqualifiedName: "query.aws_a3_unencrypted_and_nonversioned_buckets_by_region",
+						SQL:             toStringPointer("with unencrypted_buckets_by_region as (\n  select\n    region,\n    count(*) as unencrypted\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is null\n  group by\n    region\n),\nnonversioned_buckets_by_region as (\n  select\n    region,\n    count(*) as nonversioned\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    not versioning_enabled\n  group by\n    region\n),\ncompliant_buckets_by_region as (\n  select\n    region,\n    count(*) as \"other\"\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is not null\n    and versioning_enabled\n  group by\n    region\n)\nselect\n  c.region as \"Region\",\n  coalesce(c.other, 0) as \"Compliant\",\n  coalesce(u.unencrypted, 0) as \"Unencrypted\",\n  coalesce(v.nonversioned, 0) as \"Non-Versioned\"\nfrom\n  compliant_buckets_by_region c\n  full join unencrypted_buckets_by_region u on c.region = u.region\n  full join nonversioned_buckets_by_region v on c.region = v.region;\n"),
+					},
+				},
+				Reports: map[string]*modconfig.ReportContainer{
+					"report_base1.report.inheriting_from_base": {
+						ShortName:       "inheriting_from_base",
+						FullName:        "report_base1.report.inheriting_from_base",
+						UnqualifiedName: "report.inheriting_from_base",
+						Title:           toStringPointer("inheriting_from_base"),
+						ChildNames:      []string{"report_base1.chart.anonymous_chart"},
+						HclType:         "report",
+					},
+				},
+				ReportCharts: map[string]*modconfig.ReportChart{
+					"report_base1.chart.aws_bucket_info": {
+						FullName:        "report_base1.chart.aws_bucket_info",
+						ShortName:       "aws_bucket_info",
+						UnqualifiedName: "chart.aws_bucket_info",
+						Type:            toStringPointer("column"),
+						Legend: &modconfig.ReportChartLegend{
+							Position: toStringPointer("bottom"),
+						},
+						Axes: &modconfig.ReportChartAxes{
+							X: &modconfig.ReportChartAxesX{
+								Title: &modconfig.ReportChartAxisTitle{
+									Display: toStringPointer("always"),
+									Value:   toStringPointer("Foo"),
+								},
+							},
+							Y: &modconfig.ReportChartAxesY{
+								Title: &modconfig.ReportChartAxisTitle{
+									Display: toStringPointer("always"),
+									Value:   toStringPointer("Foo"),
+								},
+							},
+						},
+						Grouping: toStringPointer("compare"),
+						SQL:      toStringPointer("with unencrypted_buckets_by_region as (\n  select\n    region,\n    count(*) as unencrypted\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is null\n  group by\n    region\n),\nnonversioned_buckets_by_region as (\n  select\n    region,\n    count(*) as nonversioned\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    not versioning_enabled\n  group by\n    region\n),\ncompliant_buckets_by_region as (\n  select\n    region,\n    count(*) as \"other\"\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is not null\n    and versioning_enabled\n  group by\n    region\n)\nselect\n  c.region as \"Region\",\n  coalesce(c.other, 0) as \"Compliant\",\n  coalesce(u.unencrypted, 0) as \"Unencrypted\",\n  coalesce(v.nonversioned, 0) as \"Non-Versioned\"\nfrom\n  compliant_buckets_by_region c\n  full join unencrypted_buckets_by_region u on c.region = u.region\n  full join nonversioned_buckets_by_region v on c.region = v.region;\n"),
+					},
+					"report_base1.chart.anonymous_chart": {
+						FullName:        "report_base1.chart.anonymous_chart",
+						ShortName:       "anonymous_chart",
+						UnqualifiedName: "chart.anonymous_chart",
+						Width:           toIntegerPointer(8),
+						Type:            toStringPointer("column"),
+						Legend: &modconfig.ReportChartLegend{
+							Position: toStringPointer("bottom"),
+						},
+						Axes: &modconfig.ReportChartAxes{
+							X: &modconfig.ReportChartAxesX{
+								Title: &modconfig.ReportChartAxisTitle{
+									Display: toStringPointer("always"),
+									Value:   toStringPointer("Barz"),
+								},
+							},
+							Y: &modconfig.ReportChartAxesY{
+								Title: &modconfig.ReportChartAxisTitle{
+									Display: toStringPointer("always"),
+									Value:   toStringPointer("Foo"),
+								},
+							},
+						},
+						Grouping: toStringPointer("compare"),
+						SQL:      toStringPointer("with unencrypted_buckets_by_region as (\n  select\n    region,\n    count(*) as unencrypted\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is null\n  group by\n    region\n),\nnonversioned_buckets_by_region as (\n  select\n    region,\n    count(*) as nonversioned\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    not versioning_enabled\n  group by\n    region\n),\ncompliant_buckets_by_region as (\n  select\n    region,\n    count(*) as \"other\"\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is not null\n    and versioning_enabled\n  group by\n    region\n)\nselect\n  c.region as \"Region\",\n  coalesce(c.other, 0) as \"Compliant\",\n  coalesce(u.unencrypted, 0) as \"Unencrypted\",\n  coalesce(v.nonversioned, 0) as \"Non-Versioned\"\nfrom\n  compliant_buckets_by_region c\n  full join unencrypted_buckets_by_region u on c.region = u.region\n  full join nonversioned_buckets_by_region v on c.region = v.region;\n"),
 					},
 				},
 			},

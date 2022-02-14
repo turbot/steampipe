@@ -1,4 +1,4 @@
-mod "m1"{
-  title = "M1"
-  description = "THIS IS M1"
+mod "report_axes" {
+  title = "report with axes"
+  description = "This mod tests base values overriding functionality"
 }

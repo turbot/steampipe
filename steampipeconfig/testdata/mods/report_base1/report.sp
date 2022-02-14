@@ -69,8 +69,8 @@ chart aws_bucket_info {
   }
 }
 
-report debug {
-  title = "Debug"
+report inheriting_from_base {
+  title = "inheriting_from_base"
 
   chart {
     base = chart.aws_bucket_info

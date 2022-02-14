@@ -22,8 +22,8 @@ chart aws_bucket_info {
   }
 }
 
-report debug {
-  title = "Debug"
+report override_base_values {
+  title = "override_base_values"
 
   chart {
     base = chart.aws_bucket_info
@@ -39,6 +39,5 @@ report debug {
           }
         }
     }
-
   }
 }
