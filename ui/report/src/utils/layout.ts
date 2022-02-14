@@ -1,17 +1,17 @@
 // Needs to be a single unbroken string so that the tailwind content purging
 // includes the class
 // TODO try intermediate state - anything less than 6 is 6
-const getResponsivePanelWidthClass = (width: number): string => {
+const getResponsivePanelWidthClass = (width: number | undefined): string => {
   switch (width) {
     case 0:
       // Hide anything with no width
       return "hidden";
     case 1:
-      return "md:col-span-6 lg:col-span-1";
+      return "md:col-span-3 lg:col-span-1";
     case 2:
-      return "md:col-span-6 lg:col-span-2";
+      return "md:col-span-3 lg:col-span-2";
     case 3:
-      return "md:col-span-6 lg:col-span-3";
+      return "md:col-span-3 lg:col-span-3";
     case 4:
       return "md:col-span-6 lg:col-span-4";
     case 5:
@@ -29,8 +29,9 @@ const getResponsivePanelWidthClass = (width: number): string => {
     case 11:
       return "md:col-span-11";
     default:
-      // 12 or anything else returns 12
-      return "md:col-span-12";
+      // 12 or anything else returns empty string
+      // and accepts our default grid behaviour
+      return "";
   }
 };
 
