@@ -403,8 +403,9 @@ const DashboardProvider = ({ children }) => {
 
   useEffect(() => {
     if (
-      state.selectedDashboard &&
-      dashboardName === state.selectedDashboard.full_name
+      !dashboardName ||
+      (state.selectedDashboard &&
+        dashboardName === state.selectedDashboard.full_name)
     ) {
       return;
     }
