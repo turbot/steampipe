@@ -5,13 +5,14 @@ on:
       branch:
         description: "The branch that will be built"
         required: true
-      tag:
-        description: "The release tag that will be set"
+      version:
+        description: "The version to release (must be prefixed with 'v')"
         required: true
 
 env:
   PROJECT_ID: steampipe
   STEAMPIPE_UPDATE_CHECK: false
+  VERSION: ${{ github.event.inputs.version }}
 
 jobs:
   goreleaser:
@@ -133,11 +134,25 @@ jobs:
           $GITHUB_WORKSPACE/tests/acceptance/run.sh
           steampipe service stop --force
 
-  create_release:
-    name: Release
+  create_release_tag:
+    name: Tag Release
     needs: [goreleaser, acceptance_test]
     runs-on: ubuntu-latest
     steps:
+
+      - name: Trim asset version prefix and Validate
+        run: |-
+          echo $VERSION
+          trim=${VERSION#"v"}
+          echo $trim
+          if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+            echo "Version OK: $trim"
+          else
+            echo "Invalid version: $trim"
+            exit 1
+          fi
+          echo "VERSION=${trim}" >> $GITHUB_ENV
+          
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -146,20 +161,27 @@ jobs:
       - name: Unshallow
         run: git fetch --prune --unshallow
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.17
-
-      - name: Hook private repo
-        run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
-
       - name: Tag Release
         run: |
           git config user.name "Steampipe GitHub Actions Bot"
           git config user.email noreply@github.com
-          git tag ${{ github.event.inputs.tag }}
-          git push origin ${{ github.event.inputs.tag }}
+          git tag ${{ github.event.inputs.version }}
+          git push origin ${{ github.event.inputs.version }}
+
+  create_release:
+    name: Release
+    needs: [create_release_tag]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
@@ -169,15 +191,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: google-github-actions/setup-gcloud@v0.5.0
+      - name: Setup GCloud CLI
+        uses: google-github-actions/setup-gcloud@v0.5.0
         with:
           service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
           project_id: ${{ env.PROJECT_ID }}
           export_default_credentials: true
 
-      - run: gcloud config list
-
-      - run: gcloud components install beta
+      - name: Install GCloud Beta Components
+        run: |- 
+          gcloud config list
+          gcloud components install beta
 
       - name: Upload rpm and deb packages to artifact registry
         run: |
