@@ -83,15 +83,5 @@ module.exports = {
       }),
     },
   },
-  variants: {
-    extend: {
-      backgroundColor: ["disabled"],
-      borderColor: ["disabled"],
-      cursor: ["disabled"],
-      opacity: ["disabled"],
-      textColor: ["disabled"],
-      typography: ["dark"],
-    },
-  },
   plugins: [require("@tailwindcss/forms"), require("@tailwindcss/typography")],
 };

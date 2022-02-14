@@ -198,15 +198,14 @@
   padding: 0;
 }
 
-/*@page {*/
-/*    margin: 10px;*/
-/*}*/
-
 @media print {
+  #root {
+    -webkit-print-color-adjust: exact;
+  }
+
   div {
     break-inside: avoid;
     page-break-inside: avoid;
-    /*display: table;*/
   }
 
   canvas.chart-canvas {
@@ -215,10 +214,5 @@
     max-height: 100%;
     height: auto !important;
     width: auto !important;
-    /*display: none;*/
   }
-
-  /*.report-chart {*/
-  /*    max-width: 100%;*/
-  /*}*/
 }
