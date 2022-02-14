@@ -27,9 +27,8 @@ import {
 import { EChartsOption } from "echarts-for-react/src/types";
 import { LabelLayout } from "echarts/features";
 import { merge, set } from "lodash";
-import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
+import { PanelDefinition } from "../../../../hooks/useDashboard";
 import { Theme, useTheme } from "../../../../hooks/useTheme";
-import { usePanel } from "../../../../hooks/usePanel";
 import * as echarts from "echarts/core";
 
 echarts.use([
@@ -437,9 +436,6 @@ interface ChartComponentProps {
 const Chart = ({ options }: ChartComponentProps) => {
   const chartRef = useRef<ReactEChartsCore>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [showZoom, setShowZoom] = useState(false);
-  const { definition: panelDefinition, showExpand } = usePanel();
-  const { dispatch } = useDashboard();
   const mediaMode = useMediaMode();
 
   useEffect(() => {
@@ -448,8 +444,12 @@ const Chart = ({ options }: ChartComponentProps) => {
     }
 
     const echartInstance = chartRef.current.getEchartsInstance();
-    setImageUrl(echartInstance.getDataURL());
-  }, [chartRef, options]);
+    const dataURL = echartInstance.getDataURL();
+    if (dataURL === imageUrl) {
+      return;
+    }
+    setImageUrl(dataURL);
+  }, [chartRef, imageUrl, options]);
 
   if (!options) {
     return null;
@@ -458,31 +458,7 @@ const Chart = ({ options }: ChartComponentProps) => {
   return (
     <>
       {mediaMode !== "print" && (
-        <div
-          className="relative"
-          // onMouseEnter={() => {
-          //   if (!showExpand) {
-          //     return;
-          //   }
-          //   setShowZoom(true);
-          // }}
-          // onMouseLeave={() => {
-          //   if (!showExpand) {
-          //     return;
-          //   }
-          //   setShowZoom(false);
-          // }}
-        >
-          {/*{showZoom && (*/}
-          {/*  <div*/}
-          {/*    className="absolute right-0 top-0 cursor-pointer z-50"*/}
-          {/*    onClick={() =>*/}
-          {/*      dispatch({ type: "select_panel", panel: panelDefinition })*/}
-          {/*    }*/}
-          {/*  >*/}
-          {/*    <ZoomIcon className="h-5 w-5 text-black-scale-4" />*/}
-          {/*  </div>*/}
-          {/*)}*/}
+        <div className="relative">
           <ReactEChartsCore
             ref={chartRef}
             echarts={echarts}
