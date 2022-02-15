@@ -1,8 +1,8 @@
 package modconfig
 
-type ReportTableColumnList []*ReportTableColumn
+type DashboardTableColumnList []*DashboardTableColumn
 
-func (c ReportTableColumnList) Merge(other ReportTableColumnList) {
+func (c DashboardTableColumnList) Merge(other DashboardTableColumnList) {
 	if other == nil {
 		return
 	}

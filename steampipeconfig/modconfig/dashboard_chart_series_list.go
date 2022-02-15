@@ -1,8 +1,8 @@
 package modconfig
 
-type ReportChartSeriesList []*ReportChartSeries
+type DashboardChartSeriesList []*DashboardChartSeries
 
-func (s *ReportChartSeriesList) Merge(other ReportChartSeriesList) {
+func (s *DashboardChartSeriesList) Merge(other DashboardChartSeriesList) {
 	if other == nil {
 		return
 	}

@@ -55,7 +55,7 @@ func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardCo
 		return nil, err
 	}
 
-	if parsedName.ItemType != modconfig.BlockTypeReport {
+	if parsedName.ItemType != modconfig.BlockTypeDashboard {
 		return nil, fmt.Errorf("reporting type %s cannot be executed directly - only reports may be executed", parsedName.ItemType)
 	}
 	report, ok := e.workspace.Reports[reportName]

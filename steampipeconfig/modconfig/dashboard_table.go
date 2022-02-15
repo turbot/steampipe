@@ -10,9 +10,9 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// DashboardTable is a struct representing a leaf reporting node
+// DashboardTable is a struct representing a leaf dashboard node
 type DashboardTable struct {
-	ReportLeafNodeBase
+	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 
 	// required to allow partial decoding
@@ -22,11 +22,11 @@ type DashboardTable struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Title      *string                       `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width      *int                          `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Type       *string                       `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	ColumnList ReportTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
-	Columns    map[string]*ReportTableColumn `cty:"columns" json:"columns"`
+	Title      *string                          `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width      *int                             `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Type       *string                          `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	ColumnList DashboardTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
+	Columns    map[string]*DashboardTableColumn `cty:"columns" json:"columns"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
@@ -37,13 +37,13 @@ type DashboardTable struct {
 
 	Base      *DashboardTable `hcl:"base" json:"-"`
 	DeclRange hcl.Range       `json:"-"`
-	Mod       *Mod         `cty:"mod" json:"-"`
-	Paths     []NodePath   `column:"path,jsonb" json:"-"`
+	Mod       *Mod            `cty:"mod" json:"-"`
+	Paths     []NodePath      `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
 }
 
-func NewReportTable(block *hcl.Block, mod *Mod) *DashboardTable {
+func NewDashboardTable(block *hcl.Block, mod *Mod) *DashboardTable {
 	shortName := GetAnonymousResourceShortName(block, mod)
 	t := &DashboardTable{
 		ShortName:       shortName,
@@ -77,7 +77,7 @@ func (t *DashboardTable) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	t.setBaseProperties()
 	// populate columns map
 	if len(t.ColumnList) > 0 {
-		t.Columns = make(map[string]*ReportTableColumn, len(t.ColumnList))
+		t.Columns = make(map[string]*DashboardTableColumn, len(t.ColumnList))
 		for _, c := range t.ColumnList {
 			t.Columns[c.Name] = c
 		}

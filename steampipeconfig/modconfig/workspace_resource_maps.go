@@ -10,17 +10,17 @@ type WorkspaceResourceMaps struct {
 	Queries           map[string]*Query
 	Controls          map[string]*Control
 	Benchmarks        map[string]*Benchmark
-	Variables         map[string]*Variable
-	Reports           map[string]*DashboardContainer
-	ReportContainers  map[string]*DashboardContainer
-	ReportCards       map[string]*DashboardCard
-	ReportCharts      map[string]*DashboardChart
-	ReportHierarchies map[string]*DashboardHierarchy
-	ReportImages      map[string]*DashboardImage
-	ReportInputs      map[string]*DashboardInput
-	ReportTables      map[string]*DashboardTable
-	ReportTexts       map[string]*DashboardText
-	References        map[string]*ResourceReference
+	Variables        map[string]*Variable
+	Dashboards          map[string]*DashboardContainer
+	DashboardContainers map[string]*DashboardContainer
+	DashboardCards    map[string]*DashboardCard
+	DashboardCharts      map[string]*DashboardChart
+	DashboardHierarchies map[string]*DashboardHierarchy
+	DashboardImages      map[string]*DashboardImage
+	DashboardInputs      map[string]*DashboardInput
+	DashboardTables map[string]*DashboardTable
+	DashboardTexts  map[string]*DashboardText
+	References      map[string]*ResourceReference
 
 	LocalQueries    map[string]*Query
 	LocalControls   map[string]*Control
@@ -29,21 +29,21 @@ type WorkspaceResourceMaps struct {
 
 func WorkspaceResourceMapFromMod(mod *Mod) *WorkspaceResourceMaps {
 	resourceMaps := &WorkspaceResourceMaps{
-		Mod:               mod,
-		Mods:              make(map[string]*Mod),
-		Queries:           mod.Queries,
-		Controls:          mod.Controls,
-		Benchmarks:        mod.Benchmarks,
-		Variables:         mod.Variables,
-		Reports:           mod.Reports,
-		ReportContainers:  mod.ReportContainers,
-		ReportCharts:      mod.ReportCharts,
-		ReportCards:       mod.ReportCards,
-		ReportHierarchies: mod.ReportHierarchies,
-		ReportImages:      mod.ReportImages,
-		ReportInputs:      mod.ReportInputs,
-		ReportTables:      mod.ReportTables,
-		ReportTexts:       mod.ReportTexts,
+		Mod:                  mod,
+		Mods:                 make(map[string]*Mod),
+		Queries:              mod.Queries,
+		Controls:             mod.Controls,
+		Benchmarks:           mod.Benchmarks,
+		Variables:            mod.Variables,
+		Dashboards:           mod.Dashboards,
+		DashboardContainers:  mod.DashboardContainers,
+		DashboardCharts:      mod.DashboardCharts,
+		DashboardCards:       mod.DashboardCards,
+		DashboardHierarchies: mod.DashboardHierarchies,
+		DashboardImages:      mod.DashboardImages,
+		DashboardInputs:      mod.DashboardInputs,
+		DashboardTables:      mod.DashboardTables,
+		DashboardTexts:       mod.DashboardTexts,
 	}
 	if !mod.IsDefaultMod() {
 		resourceMaps.Mods[mod.Name()] = mod
@@ -108,119 +108,119 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 		}
 	}
 
-	for name, report := range m.Reports {
-		if otherReport, ok := other.Reports[name]; !ok {
+	for name, dashboard := range m.Dashboards {
+		if otherDashboard, ok := other.Dashboards[name]; !ok {
 			return false
-		} else if !report.Equals(otherReport) {
-			return false
-		}
-	}
-	for name := range other.Reports {
-		if _, ok := m.Reports[name]; !ok {
+		} else if !dashboard.Equals(otherDashboard) {
 			return false
 		}
 	}
-
-	for name, container := range m.ReportContainers {
-		if otherReport, ok := other.ReportContainers[name]; !ok {
-			return false
-		} else if !container.Equals(otherReport) {
-			return false
-		}
-	}
-	for name := range other.ReportContainers {
-		if _, ok := m.ReportContainers[name]; !ok {
+	for name := range other.Dashboards {
+		if _, ok := m.Dashboards[name]; !ok {
 			return false
 		}
 	}
 
-	for name, cards := range m.ReportCards {
-		if otherReport, ok := other.ReportCards[name]; !ok {
+	for name, container := range m.DashboardContainers {
+		if otherContainer, ok := other.DashboardContainers[name]; !ok {
 			return false
-		} else if !cards.Equals(otherReport) {
-			return false
-		}
-	}
-	for name := range other.ReportCards {
-		if _, ok := m.ReportCards[name]; !ok {
+		} else if !container.Equals(otherContainer) {
 			return false
 		}
 	}
-
-	for name, charts := range m.ReportCharts {
-		if otherReport, ok := other.ReportCharts[name]; !ok {
-			return false
-		} else if !charts.Equals(otherReport) {
-			return false
-		}
-	}
-	for name := range other.ReportCharts {
-		if _, ok := m.ReportCharts[name]; !ok {
+	for name := range other.DashboardContainers {
+		if _, ok := m.DashboardContainers[name]; !ok {
 			return false
 		}
 	}
 
-	for name, hierarchies := range m.ReportHierarchies {
-		if otherHierarchy, ok := other.ReportHierarchies[name]; !ok {
+	for name, cards := range m.DashboardCards {
+		if otherCard, ok := other.DashboardCards[name]; !ok {
+			return false
+		} else if !cards.Equals(otherCard) {
+			return false
+		}
+	}
+	for name := range other.DashboardCards {
+		if _, ok := m.DashboardCards[name]; !ok {
+			return false
+		}
+	}
+
+	for name, charts := range m.DashboardCharts {
+		if otherChart, ok := other.DashboardCharts[name]; !ok {
+			return false
+		} else if !charts.Equals(otherChart) {
+			return false
+		}
+	}
+	for name := range other.DashboardCharts {
+		if _, ok := m.DashboardCharts[name]; !ok {
+			return false
+		}
+	}
+
+	for name, hierarchies := range m.DashboardHierarchies {
+		if otherHierarchy, ok := other.DashboardHierarchies[name]; !ok {
 			return false
 		} else if !hierarchies.Equals(otherHierarchy) {
 			return false
 		}
 	}
-	for name := range other.ReportHierarchies {
-		if _, ok := m.ReportHierarchies[name]; !ok {
+	for name := range other.DashboardHierarchies {
+		if _, ok := m.DashboardHierarchies[name]; !ok {
 			return false
 		}
 	}
 
-	for name, images := range m.ReportImages {
-		if otherImage, ok := other.ReportImages[name]; !ok {
+	for name, images := range m.DashboardImages {
+		if otherImage, ok := other.DashboardImages[name]; !ok {
 			return false
 		} else if !images.Equals(otherImage) {
 			return false
 		}
 	}
-	for name := range other.ReportImages {
-		if _, ok := m.ReportImages[name]; !ok {
+	for name := range other.DashboardImages {
+		if _, ok := m.DashboardImages[name]; !ok {
 			return false
 		}
 	}
 
-	for name, images := range m.ReportInputs {
-		if otherImage, ok := other.ReportInputs[name]; !ok {
+	for name, images := range m.DashboardInputs {
+		if otherImage, ok := other.DashboardInputs[name]; !ok {
 			return false
 		} else if !images.Equals(otherImage) {
 			return false
 		}
 	}
-	for name := range other.ReportInputs {
-		if _, ok := m.ReportInputs[name]; !ok {
+	for name := range other.DashboardInputs {
+		if _, ok := m.DashboardInputs[name]; !ok {
 			return false
 		}
 	}
 
-	for name, tables := range m.ReportTables {
-		if otherReport, ok := other.ReportTables[name]; !ok {
+	for name, tables := range m.DashboardTables {
+		if otherTable, ok := other.DashboardTables[name]; !ok {
 			return false
-		} else if !tables.Equals(otherReport) {
+		} else if !tables.Equals(otherTable) {
 			return false
 		}
 	}
-	for name := range other.ReportTables {
-		if _, ok := m.ReportTables[name]; !ok {
+	for name := range other.DashboardTables {
+		if _, ok := m.DashboardTables[name]; !ok {
 			return false
 		}
 	}
 
-	for name, texts := range m.ReportTexts {
-		if otherReport, ok := other.ReportTexts[name]; !ok {
+	for name, texts := range m.DashboardTexts {
+		if otherText, ok := other.DashboardTexts[name]; !ok {
 			return false
-		} else if !texts.Equals(otherReport) {
+		} else if !texts.Equals(otherText) {
 			return false
 		}
 	}
-	for name := range other.ReportTexts {
-		if _, ok := m.ReportTexts[name]; !ok {
+	for name := range other.DashboardTexts {
+		if _, ok := m.DashboardTexts[name]; !ok {
 			return false
 		}
 	}
@@ -290,14 +290,14 @@ func (m *WorkspaceResourceMaps) Empty() bool {
 		len(m.Controls)+
 		len(m.Benchmarks)+
 		len(m.Variables)+
-		len(m.Reports)+
-		len(m.ReportContainers)+
-		len(m.ReportCards)+
-		len(m.ReportCharts)+
-		len(m.ReportHierarchies)+
-		len(m.ReportImages)+
-		len(m.ReportInputs)+
-		len(m.ReportTables)+
-		len(m.ReportTexts)+
+		len(m.Dashboards)+
+		len(m.DashboardContainers)+
+		len(m.DashboardCards)+
+		len(m.DashboardCharts)+
+		len(m.DashboardHierarchies)+
+		len(m.DashboardImages)+
+		len(m.DashboardInputs)+
+		len(m.DashboardTables)+
+		len(m.DashboardTexts)+
 		len(m.References) == 0
 }

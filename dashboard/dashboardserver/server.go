@@ -91,7 +91,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) 
 		workspace:        loadedWorkspace,
 	}
 
-	loadedWorkspace.RegisterReportEventHandler(server.HandleWorkspaceUpdate)
+	loadedWorkspace.RegisterDashboardEventHandler(server.HandleWorkspaceUpdate)
 	err = loadedWorkspace.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {})
 	outputMessage(ctx, "Workspace loaded")
 
@@ -133,7 +133,7 @@ func buildAvailableDashboardsPayload(workspace *workspace.Workspace) ([]byte, er
 		if !ok {
 			dashboardsByMod[mod.FullName] = make(map[string]ModAvailableDashboard)
 		}
-		for _, report := range mod.Reports {
+		for _, report := range mod.Dashboards {
 			dashboardsByMod[mod.FullName][report.FullName] = ModAvailableDashboard{
 				Title:     typeHelpers.SafeString(report.Title),
 				FullName:  report.FullName,
@@ -204,7 +204,7 @@ func getReportsInterestedInResourceChanges(reportsBeingWatched []string, existin
 			for _, nodeName := range nodePath {
 				resourceParts, _ := modconfig.ParseResourceName(nodeName)
 				// We only care about changes from these resource types
-				if resourceParts.ItemType != modconfig.BlockTypeReport {
+				if resourceParts.ItemType != modconfig.BlockTypeDashboard {
 					continue
 				}
 
@@ -320,7 +320,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 
 	case *dashboardevents.DashboardChanged:
 		log.Println("[TRACE] Got report changed event", *e)
-		deletedReports := e.DeletedDashboards
+		deletedDashboards := e.DeletedDashboards
 		newDashboards := e.NewDashboards
 
 		changedContainers := e.ChangedContainers
@@ -333,10 +333,10 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		changedInputs := e.ChangedInputs
 		changedTables := e.ChangedTables
 		changedTexts := e.ChangedTexts
-		changedReports := e.ChangedDashboards
+		changedDashboards := e.ChangedDashboards
 
 		// If nothing has changed, ignore
-		if len(deletedReports) == 0 &&
+		if len(deletedDashboards) == 0 &&
 			len(newDashboards) == 0 &&
 			len(changedContainers) == 0 &&
 			len(changedBenchmarks) == 0 &&
@@ -348,7 +348,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			len(changedInputs) == 0 &&
 			len(changedTables) == 0 &&
 			len(changedTexts) == 0 &&
-			len(changedReports) == 0 {
+			len(changedDashboards) == 0 {
 			return
 		}
 
@@ -357,7 +357,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		}
 
 		// If) any deleted/new/changed reports, emit an available reports message to clients
-		if len(deletedReports) != 0 || len(newDashboards) != 0 || len(changedReports) != 0 {
+		if len(deletedDashboards) != 0 || len(newDashboards) != 0 || len(changedDashboards) != 0 {
 			outputMessage(s.context, "Available Reports updated")
 			payload, payloadError = buildAvailableDashboardsPayload(s.workspace)
 			if payloadError != nil {
@@ -394,7 +394,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedTables)...)
 		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedTexts)...)
 
-		for _, changedReport := range changedReports {
+		for _, changedReport := range changedDashboards {
 			if helpers.StringSliceContains(changedReportNames, changedReport.Name) {
 				continue
 			}

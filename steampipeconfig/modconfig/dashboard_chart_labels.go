@@ -2,12 +2,12 @@ package modconfig
 
 import "github.com/turbot/steampipe/utils"
 
-type ReportChartLabels struct {
+type DashboardChartLabels struct {
 	Display *string `cty:"display" hcl:"display" json:"display,omitempty"`
 	Format  *string `cty:"format" hcl:"format" json:"format,omitempty"`
 }
 
-func (l *ReportChartLabels) Equals(other *ReportChartLabels) bool {
+func (l *DashboardChartLabels) Equals(other *DashboardChartLabels) bool {
 	if other == nil {
 		return false
 	}
@@ -16,7 +16,7 @@ func (l *ReportChartLabels) Equals(other *ReportChartLabels) bool {
 		utils.SafeStringsEqual(l.Format, other.Format)
 }
 
-func (l *ReportChartLabels) Merge(other *ReportChartLabels) {
+func (l *DashboardChartLabels) Merge(other *DashboardChartLabels) {
 	if l.Display == nil {
 		l.Display = other.Display
 	}

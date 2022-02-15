@@ -57,17 +57,17 @@ type Mod struct {
 
 	Queries           map[string]*Query
 	Controls          map[string]*Control
-	Benchmarks        map[string]*Benchmark
-	Reports           map[string]*DashboardContainer
-	ReportContainers  map[string]*DashboardContainer
-	ReportCards       map[string]*DashboardCard
-	ReportCharts      map[string]*DashboardChart
-	ReportHierarchies map[string]*DashboardHierarchy
-	ReportImages      map[string]*DashboardImage
-	ReportInputs      map[string]*DashboardInput
-	ReportTables      map[string]*DashboardTable
-	ReportTexts       map[string]*DashboardText
-	Variables         map[string]*Variable
+	Benchmarks       map[string]*Benchmark
+	Dashboards          map[string]*DashboardContainer
+	DashboardContainers map[string]*DashboardContainer
+	DashboardCards    map[string]*DashboardCard
+	DashboardCharts      map[string]*DashboardChart
+	DashboardHierarchies map[string]*DashboardHierarchy
+	DashboardImages map[string]*DashboardImage
+	DashboardInputs map[string]*DashboardInput
+	DashboardTables map[string]*DashboardTable
+	DashboardTexts  map[string]*DashboardText
+	Variables       map[string]*Variable
 	Locals            map[string]*Local
 
 	// ModPath is the installation location of the mod
@@ -86,22 +86,22 @@ func NewMod(shortName, modPath string, defRange hcl.Range) (*Mod, error) {
 		return nil, err
 	}
 	mod := &Mod{
-		ShortName:         shortName,
-		FullName:          fmt.Sprintf("mod.%s", shortName),
-		Queries:           make(map[string]*Query),
-		Controls:          make(map[string]*Control),
-		Benchmarks:        make(map[string]*Benchmark),
-		Reports:           make(map[string]*DashboardContainer),
-		ReportContainers:  make(map[string]*DashboardContainer),
-		ReportCards:       make(map[string]*DashboardCard),
-		ReportCharts:      make(map[string]*DashboardChart),
-		ReportHierarchies: make(map[string]*DashboardHierarchy),
-		ReportImages:      make(map[string]*DashboardImage),
-		ReportInputs:      make(map[string]*DashboardInput),
-		ReportTables:      make(map[string]*DashboardTable),
-		ReportTexts:       make(map[string]*DashboardText),
-		Variables:         make(map[string]*Variable),
-		Locals:            make(map[string]*Local),
+		ShortName:            shortName,
+		FullName:             fmt.Sprintf("mod.%s", shortName),
+		Queries:              make(map[string]*Query),
+		Controls:             make(map[string]*Control),
+		Benchmarks:           make(map[string]*Benchmark),
+		Dashboards:           make(map[string]*DashboardContainer),
+		DashboardContainers:  make(map[string]*DashboardContainer),
+		DashboardCards:       make(map[string]*DashboardCard),
+		DashboardCharts:      make(map[string]*DashboardChart),
+		DashboardHierarchies: make(map[string]*DashboardHierarchy),
+		DashboardImages:      make(map[string]*DashboardImage),
+		DashboardInputs:      make(map[string]*DashboardInput),
+		DashboardTables:      make(map[string]*DashboardTable),
+		DashboardTexts:       make(map[string]*DashboardText),
+		Variables:            make(map[string]*Variable),
+		Locals:               make(map[string]*Local),
 
 		ModPath:   modPath,
 		DeclRange: defRange,

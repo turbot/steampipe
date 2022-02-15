@@ -38,24 +38,24 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 
 func (w *Workspace) populateResourceMaps() {
 	w.resourceMaps = &modconfig.WorkspaceResourceMaps{
-		Mod:               w.Mod,
-		Mods:              make(map[string]*modconfig.Mod),
-		LocalQueries:      w.LocalQueries,
-		Queries:           w.Queries,
-		Controls:          w.Controls,
-		LocalControls:     w.LocalControls,
-		Benchmarks:        w.Benchmarks,
-		LocalBenchmarks:   w.LocalBenchmarks,
-		Variables:         w.Variables,
-		Reports:           w.Reports,
-		ReportContainers:  w.ReportContainers,
-		ReportCards:       w.ReportCards,
-		ReportCharts:      w.ReportCharts,
-		ReportHierarchies: w.ReportHierarchies,
-		ReportImages:      w.ReportImages,
-		ReportInputs:      w.ReportInputs,
-		ReportTables:      w.ReportTables,
-		ReportTexts:       w.ReportTexts,
+		Mod:                 w.Mod,
+		Mods:                make(map[string]*modconfig.Mod),
+		LocalQueries:        w.LocalQueries,
+		Queries:              w.Queries,
+		Controls:             w.Controls,
+		LocalControls:        w.LocalControls,
+		Benchmarks:           w.Benchmarks,
+		LocalBenchmarks:      w.LocalBenchmarks,
+		Variables:            w.Variables,
+		Dashboards:           w.Reports,
+		DashboardContainers:  w.ReportContainers,
+		DashboardCards:       w.ReportCards,
+		DashboardCharts:      w.ReportCharts,
+		DashboardHierarchies: w.ReportHierarchies,
+		DashboardImages:      w.ReportImages,
+		DashboardInputs:      w.ReportInputs,
+		DashboardTables:      w.ReportTables,
+		DashboardTexts:       w.ReportTexts,
 	}
 	w.resourceMaps.PopulateReferences()
 
@@ -132,12 +132,12 @@ func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) (map[string]*modc
 func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardContainer {
 	var res = make(map[string]*modconfig.DashboardContainer)
 
-	for _, r := range w.Mod.Reports {
+	for _, r := range w.Mod.Dashboards {
 		res[r.Name()] = r
 	}
 
 	for _, mod := range modMap {
-		for _, r := range mod.Reports {
+		for _, r := range mod.Dashboards {
 			res[r.Name()] = r
 		}
 	}
@@ -147,12 +147,12 @@ func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfi
 func (w *Workspace) buildReportContainerMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardContainer {
 	var res = make(map[string]*modconfig.DashboardContainer)
 
-	for _, c := range w.Mod.ReportContainers {
+	for _, c := range w.Mod.DashboardContainers {
 		res[c.Name()] = c
 	}
 
 	for _, mod := range modMap {
-		for _, c := range mod.ReportContainers {
+		for _, c := range mod.DashboardContainers {
 			res[c.Name()] = c
 		}
 	}
@@ -162,12 +162,12 @@ func (w *Workspace) buildReportContainerMap(modMap modconfig.ModMap) map[string]
 func (w *Workspace) buildReportCardMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardCard {
 	var res = make(map[string]*modconfig.DashboardCard)
 
-	for _, p := range w.Mod.ReportCards {
+	for _, p := range w.Mod.DashboardCards {
 		res[p.Name()] = p
 	}
 
 	for _, mod := range modMap {
-		for _, p := range mod.ReportCards {
+		for _, p := range mod.DashboardCards {
 			res[p.Name()] = p
 		}
 	}
@@ -177,12 +177,12 @@ func (w *Workspace) buildReportCardMap(modMap modconfig.ModMap) map[string]*modc
 func (w *Workspace) buildReportChartMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardChart {
 	var res = make(map[string]*modconfig.DashboardChart)
 
-	for _, c := range w.Mod.ReportCharts {
+	for _, c := range w.Mod.DashboardCharts {
 		res[c.Name()] = c
 	}
 
 	for _, mod := range modMap {
-		for _, c := range mod.ReportCharts {
+		for _, c := range mod.DashboardCharts {
 			res[c.Name()] = c
 		}
 	}
@@ -192,12 +192,12 @@ func (w *Workspace) buildReportChartMap(modMap modconfig.ModMap) map[string]*mod
 func (w *Workspace) buildReportHierarchyMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardHierarchy {
 	var res = make(map[string]*modconfig.DashboardHierarchy)
 
-	for _, p := range w.Mod.ReportHierarchies {
+	for _, p := range w.Mod.DashboardHierarchies {
 		res[p.Name()] = p
 	}
 
 	for _, mod := range modMap {
-		for _, p := range mod.ReportHierarchies {
+		for _, p := range mod.DashboardHierarchies {
 			res[p.Name()] = p
 		}
 	}
@@ -207,12 +207,12 @@ func (w *Workspace) buildReportHierarchyMap(modMap modconfig.ModMap) map[string]
 func (w *Workspace) buildReportImageMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardImage {
 	var res = make(map[string]*modconfig.DashboardImage)
 
-	for _, p := range w.Mod.ReportImages {
+	for _, p := range w.Mod.DashboardImages {
 		res[p.Name()] = p
 	}
 
 	for _, mod := range modMap {
-		for _, p := range mod.ReportImages {
+		for _, p := range mod.DashboardImages {
 			res[p.Name()] = p
 		}
 	}
@@ -222,12 +222,12 @@ func (w *Workspace) buildReportImageMap(modMap modconfig.ModMap) map[string]*mod
 func (w *Workspace) buildReportInputMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardInput {
 	var res = make(map[string]*modconfig.DashboardInput)
 
-	for _, p := range w.Mod.ReportInputs {
+	for _, p := range w.Mod.DashboardInputs {
 		res[p.Name()] = p
 	}
 
 	for _, mod := range modMap {
-		for _, p := range mod.ReportInputs {
+		for _, p := range mod.DashboardInputs {
 			res[p.Name()] = p
 		}
 	}
@@ -237,12 +237,12 @@ func (w *Workspace) buildReportInputMap(modMap modconfig.ModMap) map[string]*mod
 func (w *Workspace) buildReportTableMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardTable {
 	var res = make(map[string]*modconfig.DashboardTable)
 
-	for _, c := range w.Mod.ReportTables {
+	for _, c := range w.Mod.DashboardTables {
 		res[c.Name()] = c
 	}
 
 	for _, mod := range modMap {
-		for _, c := range mod.ReportTables {
+		for _, c := range mod.DashboardTables {
 			res[c.Name()] = c
 		}
 	}
@@ -252,12 +252,12 @@ func (w *Workspace) buildReportTableMap(modMap modconfig.ModMap) map[string]*mod
 func (w *Workspace) buildReportTextMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardText {
 	var res = make(map[string]*modconfig.DashboardText)
 
-	for _, c := range w.Mod.ReportTexts {
+	for _, c := range w.Mod.DashboardTexts {
 		res[c.Name()] = c
 	}
 
 	for _, mod := range modMap {
-		for _, c := range mod.ReportTexts {
+		for _, c := range mod.DashboardTexts {
 			res[c.Name()] = c
 		}
 	}

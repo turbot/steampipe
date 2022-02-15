@@ -2,13 +2,13 @@ package modconfig
 
 import "github.com/turbot/steampipe/utils"
 
-type ReportChartSeries struct {
+type DashboardChartSeries struct {
 	Name  string  `hcl:"name,label" json:"name"`
 	Title *string `cty:"title" hcl:"title" json:"title,omitempty"`
 	Color *string `cty:"color" hcl:"color" json:"color,omitempty"`
 }
 
-func (s ReportChartSeries) Equals(other *ReportChartSeries) bool {
+func (s DashboardChartSeries) Equals(other *DashboardChartSeries) bool {
 	if other == nil {
 		return false
 	}

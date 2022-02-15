@@ -10,9 +10,9 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// DashboardCard is a struct representing a leaf reporting node
+// DashboardCard is a struct representing a leaf dashboard node
 type DashboardCard struct {
-	ReportLeafNodeBase
+	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 
 	FullName        string `cty:"name" json:"-"`
@@ -42,7 +42,7 @@ type DashboardCard struct {
 	metadata *ResourceMetadata
 }
 
-func NewReportCard(block *hcl.Block, mod *Mod) *DashboardCard {
+func NewDashboardCard(block *hcl.Block, mod *Mod) *DashboardCard {
 	shortName := GetAnonymousResourceShortName(block, mod)
 	c := &DashboardCard{
 		ShortName:       shortName,

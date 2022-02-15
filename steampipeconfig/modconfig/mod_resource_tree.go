@@ -123,77 +123,77 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 
 	case *DashboardContainer:
 		name := r.Name()
-		// report struct may either be a `report` or a `container`
-		if r.IsReport() {
-			if existing, ok := m.Reports[name]; ok {
+		// DashboardContainer struct may either be a `dashboard` or a `container`
+		if r.IsDashboard() {
+			if existing, ok := m.Dashboards[name]; ok {
 				diags = append(diags, checkForDuplicate(existing, item)...)
 				break
 			}
-			m.Reports[name] = r
+			m.Dashboards[name] = r
 
 		} else {
-			if existing, ok := m.ReportContainers[name]; ok {
+			if existing, ok := m.DashboardContainers[name]; ok {
 				diags = append(diags, checkForDuplicate(existing, item)...)
 				break
 			}
-			m.ReportContainers[name] = r
+			m.DashboardContainers[name] = r
 
 		}
 	case *DashboardCard:
 		name := r.Name()
-		if existing, ok := m.ReportCards[name]; ok {
+		if existing, ok := m.DashboardCards[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
 		} else {
-			m.ReportCards[name] = r
+			m.DashboardCards[name] = r
 		}
 	case *DashboardChart:
 		name := r.Name()
-		if existing, ok := m.ReportCharts[name]; ok {
+		if existing, ok := m.DashboardCharts[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
 		}
-		m.ReportCharts[name] = r
+		m.DashboardCharts[name] = r
 
 	case *DashboardHierarchy:
 		name := r.Name()
-		if existing, ok := m.ReportHierarchies[name]; ok {
+		if existing, ok := m.DashboardHierarchies[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
 		}
-		m.ReportHierarchies[name] = r
+		m.DashboardHierarchies[name] = r
 
 	case *DashboardImage:
 		name := r.Name()
-		if existing, ok := m.ReportImages[name]; ok {
+		if existing, ok := m.DashboardImages[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
 		}
-		m.ReportImages[name] = r
+		m.DashboardImages[name] = r
 
 	case *DashboardInput:
 		name := r.Name()
-		if existing, ok := m.ReportInputs[name]; ok {
+		if existing, ok := m.DashboardInputs[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
 		}
-		m.ReportInputs[name] = r
+		m.DashboardInputs[name] = r
 
 	case *DashboardTable:
 		name := r.Name()
-		if existing, ok := m.ReportTables[name]; ok {
+		if existing, ok := m.DashboardTables[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
 		}
-		m.ReportTables[name] = r
+		m.DashboardTables[name] = r
 
 	case *DashboardText:
 		name := r.Name()
-		if existing, ok := m.ReportTexts[name]; ok {
+		if existing, ok := m.DashboardTexts[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
 		}
-		m.ReportTexts[name] = r
+		m.DashboardTexts[name] = r
 
 	case *Variable:
 		// NOTE: add variable by unqualified name

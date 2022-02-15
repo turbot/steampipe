@@ -9,9 +9,9 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// DashboardImage is a struct representing a leaf reporting node
+// DashboardImage is a struct representing a leaf dashboard node
 type DashboardImage struct {
-	ReportLeafNodeBase
+	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 
 	FullName        string `cty:"name" json:"-"`
@@ -33,7 +33,7 @@ type DashboardImage struct {
 	parents []ModTreeItem
 }
 
-func NewReportImage(block *hcl.Block, mod *Mod) *DashboardImage {
+func NewDashboardImage(block *hcl.Block, mod *Mod) *DashboardImage {
 	shortName := GetAnonymousResourceShortName(block, mod)
 	i := &DashboardImage{
 		ShortName:       shortName,

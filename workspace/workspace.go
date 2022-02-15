@@ -58,7 +58,7 @@ type Workspace struct {
 	fileWatcherErrorHandler func(context.Context, error)
 	watcherError            error
 	// event handlers
-	reportEventHandlers []dashboardevents.ReportEventHandler
+	dashboardEventHandlers []dashboardevents.DashboardEventHandler
 	// callback function to reset display after the file watche displays messages
 	onFileWatcherEventMessages func()
 	modFileExists              bool

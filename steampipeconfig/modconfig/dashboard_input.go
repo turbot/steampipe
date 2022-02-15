@@ -9,9 +9,9 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// DashboardInput is a struct representing a leaf reporting node
+// DashboardInput is a struct representing a leaf dashboard node
 type DashboardInput struct {
-	ReportLeafNodeBase
+	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 
 	FullName        string `cty:"name" json:"-"`
@@ -31,11 +31,11 @@ type DashboardInput struct {
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
-	parents         []ModTreeItem
-	reportContainer *DashboardContainer
+	parents            []ModTreeItem
+	dashboardContainer *DashboardContainer
 }
 
-func NewReportInput(block *hcl.Block, mod *Mod) *DashboardInput {
+func NewDashboardInput(block *hcl.Block, mod *Mod) *DashboardInput {
 	shortName := block.Labels[0]
 	i := &DashboardInput{
 		ShortName:       shortName,
@@ -195,9 +195,9 @@ func (c *DashboardInput) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }
 
-// SetReportContainer sets the parent report container
-func (c *DashboardInput) SetReportContainer(reportContainer *DashboardContainer) {
-	c.reportContainer = reportContainer
+// SetDashboardContainer sets the parent dashboard container
+func (c *DashboardInput) SetDashboardContainer(dashboardContainer *DashboardContainer) {
+	c.dashboardContainer = dashboardContainer
 	// update the full name
-	c.FullName = fmt.Sprintf("%s.%s.%s", c.Mod.ShortName, c.reportContainer.UnqualifiedName, c.UnqualifiedName)
+	c.FullName = fmt.Sprintf("%s.%s.%s", c.Mod.ShortName, c.dashboardContainer.UnqualifiedName, c.UnqualifiedName)
 }

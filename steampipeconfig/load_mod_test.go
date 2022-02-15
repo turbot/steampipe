@@ -451,7 +451,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("simple report"),
 				Description: toStringPointer("this mod contains a simple report"),
-				Reports: map[string]*modconfig.DashboardContainer{
+				Dashboards: map[string]*modconfig.DashboardContainer{
 					"simple_report.report.simple_report": {
 						ShortName:       "simple_report",
 						FullName:        "simple_report.report.simple_report",
@@ -459,7 +459,7 @@ func init() {
 						ChildNames:      []string{"simple_report.text.anonymous_text", "simple_report.chart.anonymous_chart"},
 					},
 				},
-				ReportCharts: map[string]*modconfig.DashboardChart{
+				DashboardCharts: map[string]*modconfig.DashboardChart{
 					"simple_report.chart.anonymous_chart": {
 						FullName:        "simple_report.chart.anonymous_chart",
 						ShortName:       "anonymous_chart",
@@ -468,7 +468,7 @@ func init() {
 						SQL:             toStringPointer("select 1"),
 					},
 				},
-				ReportTexts: map[string]*modconfig.DashboardText{
+				DashboardTexts: map[string]*modconfig.DashboardText{
 					"simple_report.text.anonymous_text": {
 						FullName:        "simple_report.text.anonymous_text",
 						ShortName:       "anonymous_text",
@@ -486,7 +486,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("simple report with container"),
 				Description: toStringPointer("this mod contains a simple report with containers"),
-				Reports: map[string]*modconfig.DashboardContainer{
+				Dashboards: map[string]*modconfig.DashboardContainer{
 					"simple_container_report.report.simple_container_report": {
 						ShortName:       "simple_container_report",
 						FullName:        "simple_container_report.report.simple_container_report",
@@ -495,7 +495,7 @@ func init() {
 						HclType:         "report",
 					},
 				},
-				ReportContainers: map[string]*modconfig.DashboardContainer{
+				DashboardContainers: map[string]*modconfig.DashboardContainer{
 					"simple_container_report.container.anonymous_container": {
 						ShortName:       "anonymous_container",
 						FullName:        "simple_container_report.container.anonymous_container",
@@ -504,7 +504,7 @@ func init() {
 						HclType:         "container",
 					},
 				},
-				ReportCharts: map[string]*modconfig.DashboardChart{
+				DashboardCharts: map[string]*modconfig.DashboardChart{
 					"simple_container_report.chart.anonymous_chart": {
 						ShortName:       "anonymous_chart",
 						FullName:        "simple_container_report.chart.anonymous_chart",
@@ -513,7 +513,7 @@ func init() {
 						SQL:             toStringPointer("select 1 as container"),
 					},
 				},
-				ReportTexts: map[string]*modconfig.DashboardText{
+				DashboardTexts: map[string]*modconfig.DashboardText{
 					"simple_container_report.text.anonymous_text": {
 						ShortName:       "anonymous_text",
 						FullName:        "simple_container_report.text.anonymous_text",
@@ -531,7 +531,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("report with multiple sibling containers"),
 				Description: toStringPointer("this mod contains a report with multiple sibling containers"),
-				Reports: map[string]*modconfig.DashboardContainer{
+				Dashboards: map[string]*modconfig.DashboardContainer{
 					"sibling_containers_report.report.sibling_containers_report": {
 						ShortName:       "sibling_containers_report",
 						FullName:        "sibling_containers_report.report.sibling_containers_report",
@@ -540,7 +540,7 @@ func init() {
 						HclType:         "report",
 					},
 				},
-				ReportContainers: map[string]*modconfig.DashboardContainer{
+				DashboardContainers: map[string]*modconfig.DashboardContainer{
 					"sibling_containers_report.container.anonymous_container": {
 						ShortName:       "anonymous_container",
 						FullName:        "sibling_containers_report.container.anonymous_container",
@@ -562,7 +562,7 @@ func init() {
 						ChildNames:      []string{"sibling_containers_report.text.anonymous_text_2", "sibling_containers_report.chart.anonymous_chart_2"},
 					},
 				},
-				ReportCharts: map[string]*modconfig.DashboardChart{
+				DashboardCharts: map[string]*modconfig.DashboardChart{
 					"sibling_containers_report.chart.anonymous_chart": {
 						FullName:        "sibling_containers_report.chart.anonymous_chart",
 						ShortName:       "anonymous_chart",
@@ -585,7 +585,7 @@ func init() {
 						SQL:             toStringPointer("select 3 as container"),
 					},
 				},
-				ReportTexts: map[string]*modconfig.DashboardText{
+				DashboardTexts: map[string]*modconfig.DashboardText{
 					"sibling_containers_report.text.anonymous_text": {
 						FullName:        "sibling_containers_report.text.anonymous_text",
 						ShortName:       "anonymous_text",
@@ -615,7 +615,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("report with nested containers"),
 				Description: toStringPointer("this mod contains a report with nested containers"),
-				Reports: map[string]*modconfig.DashboardContainer{
+				Dashboards: map[string]*modconfig.DashboardContainer{
 					"nested_containers_report.report.nested_containers_report": {
 						ShortName:       "nested_containers_report",
 						FullName:        "nested_containers_report.report.nested_containers_report",
@@ -624,7 +624,7 @@ func init() {
 						HclType:         "report",
 					},
 				},
-				ReportContainers: map[string]*modconfig.DashboardContainer{
+				DashboardContainers: map[string]*modconfig.DashboardContainer{
 					"nested_containers_report.container.anonymous_container_1": {
 						ShortName:       "anonymous_container_1",
 						FullName:        "nested_containers_report.container.anonymous_container_1",
@@ -650,7 +650,7 @@ func init() {
 						ChildNames:      []string{"nested_containers_report.text.anonymous_text", "nested_containers_report.container.anonymous_container_1", "nested_containers_report.container.anonymous_container_2"},
 					},
 				},
-				ReportCharts: map[string]*modconfig.DashboardChart{
+				DashboardCharts: map[string]*modconfig.DashboardChart{
 					"nested_containers_report.chart.anonymous_chart": {
 						FullName:        "nested_containers_report.chart.anonymous_chart",
 						ShortName:       "anonymous_chart",
@@ -673,7 +673,7 @@ func init() {
 						SQL:             toStringPointer("select 1 as child_container, 2 as container"),
 					},
 				},
-				ReportTexts: map[string]*modconfig.DashboardText{
+				DashboardTexts: map[string]*modconfig.DashboardText{
 					"nested_containers_report.text.anonymous_text": {
 						FullName:        "nested_containers_report.text.anonymous_text",
 						ShortName:       "anonymous_text",
@@ -709,7 +709,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("report with axes"),
 				Description: toStringPointer("This mod tests base values overriding functionality"),
-				Reports: map[string]*modconfig.DashboardContainer{
+				Dashboards: map[string]*modconfig.DashboardContainer{
 					"report_axes.report.override_base_values": {
 						ShortName:       "override_base_values",
 						FullName:        "report_axes.report.override_base_values",
@@ -719,20 +719,20 @@ func init() {
 						HclType:         "report",
 					},
 				},
-				ReportCharts: map[string]*modconfig.DashboardChart{
+				DashboardCharts: map[string]*modconfig.DashboardChart{
 					"report_axes.chart.aws_bucket_info": {
 						FullName:        "report_axes.chart.aws_bucket_info",
 						ShortName:       "aws_bucket_info",
 						UnqualifiedName: "chart.aws_bucket_info",
-						Axes: &modconfig.ReportChartAxes{
-							X: &modconfig.ReportChartAxesX{
-								Title: &modconfig.ReportChartAxisTitle{
+						Axes: &modconfig.DashboardChartAxes{
+							X: &modconfig.DashboardChartAxesX{
+								Title: &modconfig.DashboardChartAxisTitle{
 									Display: toStringPointer("always"),
 									Value:   toStringPointer("Foo"),
 								},
 							},
-							Y: &modconfig.ReportChartAxesY{
-								Title: &modconfig.ReportChartAxisTitle{
+							Y: &modconfig.DashboardChartAxesY{
+								Title: &modconfig.DashboardChartAxisTitle{
 									Display: toStringPointer("always"),
 									Value:   toStringPointer("Foo"),
 								},
@@ -740,7 +740,7 @@ func init() {
 						},
 						Grouping: toStringPointer("compare"),
 						Type:     toStringPointer("column"),
-						Legend: &modconfig.ReportChartLegend{
+						Legend: &modconfig.DashboardChartLegend{
 							Position: toStringPointer("bottom"),
 						},
 					},
@@ -748,15 +748,15 @@ func init() {
 						FullName:        "report_axes.chart.anonymous_chart",
 						ShortName:       "anonymous_chart",
 						UnqualifiedName: "chart.anonymous_chart",
-						Axes: &modconfig.ReportChartAxes{
-							X: &modconfig.ReportChartAxesX{
-								Title: &modconfig.ReportChartAxisTitle{
+						Axes: &modconfig.DashboardChartAxes{
+							X: &modconfig.DashboardChartAxesX{
+								Title: &modconfig.DashboardChartAxisTitle{
 									Display: toStringPointer("always"),
 									Value:   toStringPointer("OVERRIDE"),
 								},
 							},
-							Y: &modconfig.ReportChartAxesY{
-								Title: &modconfig.ReportChartAxisTitle{
+							Y: &modconfig.DashboardChartAxesY{
+								Title: &modconfig.DashboardChartAxisTitle{
 									Display: toStringPointer("OVERRIDE"),
 									Value:   toStringPointer("Foo"),
 								},
@@ -764,7 +764,7 @@ func init() {
 						},
 						Grouping: toStringPointer("compare"),
 						Type:     toStringPointer("column"),
-						Legend: &modconfig.ReportChartLegend{
+						Legend: &modconfig.DashboardChartLegend{
 							Position: toStringPointer("bottom"),
 						},
 					},
@@ -787,7 +787,7 @@ func init() {
 						SQL:             toStringPointer("with unencrypted_buckets_by_region as (\n  select\n    region,\n    count(*) as unencrypted\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is null\n  group by\n    region\n),\nnonversioned_buckets_by_region as (\n  select\n    region,\n    count(*) as nonversioned\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    not versioning_enabled\n  group by\n    region\n),\ncompliant_buckets_by_region as (\n  select\n    region,\n    count(*) as \"other\"\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is not null\n    and versioning_enabled\n  group by\n    region\n)\nselect\n  c.region as \"Region\",\n  coalesce(c.other, 0) as \"Compliant\",\n  coalesce(u.unencrypted, 0) as \"Unencrypted\",\n  coalesce(v.nonversioned, 0) as \"Non-Versioned\"\nfrom\n  compliant_buckets_by_region c\n  full join unencrypted_buckets_by_region u on c.region = u.region\n  full join nonversioned_buckets_by_region v on c.region = v.region;\n"),
 					},
 				},
-				Reports: map[string]*modconfig.DashboardContainer{
+				Dashboards: map[string]*modconfig.DashboardContainer{
 					"report_base1.report.inheriting_from_base": {
 						ShortName:       "inheriting_from_base",
 						FullName:        "report_base1.report.inheriting_from_base",
@@ -797,24 +797,24 @@ func init() {
 						HclType:         "report",
 					},
 				},
-				ReportCharts: map[string]*modconfig.DashboardChart{
+				DashboardCharts: map[string]*modconfig.DashboardChart{
 					"report_base1.chart.aws_bucket_info": {
 						FullName:        "report_base1.chart.aws_bucket_info",
 						ShortName:       "aws_bucket_info",
 						UnqualifiedName: "chart.aws_bucket_info",
 						Type:            toStringPointer("column"),
-						Legend: &modconfig.ReportChartLegend{
+						Legend: &modconfig.DashboardChartLegend{
 							Position: toStringPointer("bottom"),
 						},
-						Axes: &modconfig.ReportChartAxes{
-							X: &modconfig.ReportChartAxesX{
-								Title: &modconfig.ReportChartAxisTitle{
+						Axes: &modconfig.DashboardChartAxes{
+							X: &modconfig.DashboardChartAxesX{
+								Title: &modconfig.DashboardChartAxisTitle{
 									Display: toStringPointer("always"),
 									Value:   toStringPointer("Foo"),
 								},
 							},
-							Y: &modconfig.ReportChartAxesY{
-								Title: &modconfig.ReportChartAxisTitle{
+							Y: &modconfig.DashboardChartAxesY{
+								Title: &modconfig.DashboardChartAxisTitle{
 									Display: toStringPointer("always"),
 									Value:   toStringPointer("Foo"),
 								},
@@ -829,18 +829,18 @@ func init() {
 						UnqualifiedName: "chart.anonymous_chart",
 						Width:           toIntegerPointer(8),
 						Type:            toStringPointer("column"),
-						Legend: &modconfig.ReportChartLegend{
+						Legend: &modconfig.DashboardChartLegend{
 							Position: toStringPointer("bottom"),
 						},
-						Axes: &modconfig.ReportChartAxes{
-							X: &modconfig.ReportChartAxesX{
-								Title: &modconfig.ReportChartAxisTitle{
+						Axes: &modconfig.DashboardChartAxes{
+							X: &modconfig.DashboardChartAxesX{
+								Title: &modconfig.DashboardChartAxisTitle{
 									Display: toStringPointer("always"),
 									Value:   toStringPointer("Barz"),
 								},
 							},
-							Y: &modconfig.ReportChartAxesY{
-								Title: &modconfig.ReportChartAxisTitle{
+							Y: &modconfig.DashboardChartAxesY{
+								Title: &modconfig.DashboardChartAxisTitle{
 									Display: toStringPointer("always"),
 									Value:   toStringPointer("Foo"),
 								},
@@ -930,7 +930,7 @@ func setChildren(mod *modconfig.Mod) error {
 			benchmark.Children = append(benchmark.Children, child.(modconfig.ModTreeItem))
 		}
 	}
-	for _, container := range mod.ReportContainers {
+	for _, container := range mod.DashboardContainers {
 		var children []modconfig.ModTreeItem
 		for _, childName := range container.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName)
@@ -943,7 +943,7 @@ func setChildren(mod *modconfig.Mod) error {
 		container.SetChildren(children)
 
 	}
-	for _, report := range mod.Reports {
+	for _, report := range mod.Dashboards {
 		var children []modconfig.ModTreeItem
 		for _, childName := range report.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName)

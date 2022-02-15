@@ -13,7 +13,7 @@ import (
 
 // Control is a struct representing the Control resource
 type Control struct {
-	ReportLeafNodeBase
+	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 
 	// required to allow partial decoding
@@ -42,7 +42,7 @@ type Control struct {
 	UnqualifiedName string               `json:"-"`
 	Paths           []NodePath           `json:"-"`
 
-	// report specific properties
+	// dashboard specific properties
 	Base  *Control `hcl:"base" json:"-"`
 	Width *int     `cty:"width" hcl:"width" column:"width,text" json:"-"`
 

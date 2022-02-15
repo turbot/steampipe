@@ -15,24 +15,24 @@ func GetResource(provider ResourceMapsProvider, parsedName *ParsedResourceName) 
 		resource, found = resourceMaps.Benchmarks[longName]
 	case BlockTypeControl:
 		resource, found = resourceMaps.Controls[longName]
-	case BlockTypeReport:
-		resource, found = resourceMaps.Reports[longName]
+	case BlockTypeDashboard:
+		resource, found = resourceMaps.Dashboards[longName]
 	case BlockTypeContainer:
-		resource, found = resourceMaps.ReportContainers[longName]
+		resource, found = resourceMaps.DashboardContainers[longName]
 	case BlockTypeCard:
-		resource, found = resourceMaps.ReportCards[longName]
+		resource, found = resourceMaps.DashboardCards[longName]
 	case BlockTypeChart:
-		resource, found = resourceMaps.ReportCharts[longName]
+		resource, found = resourceMaps.DashboardCharts[longName]
 	case BlockTypeHierarchy:
-		resource, found = resourceMaps.ReportHierarchies[longName]
+		resource, found = resourceMaps.DashboardHierarchies[longName]
 	case BlockTypeImage:
-		resource, found = resourceMaps.ReportImages[longName]
+		resource, found = resourceMaps.DashboardImages[longName]
 	case BlockTypeInput:
-		resource, found = resourceMaps.ReportInputs[longName]
+		resource, found = resourceMaps.DashboardInputs[longName]
 	case BlockTypeTable:
-		resource, found = resourceMaps.ReportTables[longName]
+		resource, found = resourceMaps.DashboardTables[longName]
 	case BlockTypeText:
-		resource, found = resourceMaps.ReportTexts[longName]
+		resource, found = resourceMaps.DashboardTexts[longName]
 	}
 	return resource, found
 }

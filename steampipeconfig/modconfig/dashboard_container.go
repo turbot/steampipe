@@ -12,11 +12,11 @@ import (
 )
 
 const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
-const runtimeDependencyReportScope = "self"
+const runtimeDependencyDashboardScope = "self"
 
-// DashboardContainer is a struct representing the Report and Container resource
+// DashboardContainer is a struct representing the Dashboard and Container resource
 type DashboardContainer struct {
-	ReportLeafNodeBase
+	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 
 	// required to allow partial decoding
@@ -46,8 +46,8 @@ type DashboardContainer struct {
 	HclType string
 }
 
-func NewReportContainer(block *hcl.Block, mod *Mod) *DashboardContainer {
-	// TOTO [reports] think about nested report???
+func NewDashboardContainer(block *hcl.Block, mod *Mod) *DashboardContainer {
+	// TODO [reports] think about nested report???
 	shortName := GetAnonymousResourceShortName(block, mod)
 	c := &DashboardContainer{
 		HclType:         block.Type,
@@ -85,7 +85,6 @@ func (c *DashboardContainer) CtyValue() (cty.Value, error) {
 }
 
 // Name implements HclResource, ModTreeItem
-// return name in format: 'report.<shortName>'
 func (c *DashboardContainer) Name() string {
 	return c.FullName
 }
@@ -203,8 +202,8 @@ func (c *DashboardContainer) Diff(other *DashboardContainer) *DashboardTreeItemD
 	return res
 }
 
-func (c *DashboardContainer) IsReport() bool {
-	return c.HclType == "report"
+func (c *DashboardContainer) IsDashboard() bool {
+	return c.HclType == BlockTypeDashboard
 }
 
 func (c *DashboardContainer) SetChildren(children []ModTreeItem) {
@@ -240,8 +239,8 @@ func (c *DashboardContainer) WalkResources(resourceFunc func(resource HclResourc
 }
 
 func (c *DashboardContainer) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) error {
-	if !c.IsReport() {
-		return fmt.Errorf("BuildRuntimeDependencyTree should only be called for reports")
+	if !c.IsDashboard() {
+		return fmt.Errorf("BuildRuntimeDependencyTree should only be called for dashboards")
 	}
 	c.runtimeDependencyGraph = topsort.NewGraph()
 	// add root node - this will depend on all other nodes

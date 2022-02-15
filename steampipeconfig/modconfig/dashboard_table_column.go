@@ -2,13 +2,13 @@ package modconfig
 
 import "github.com/turbot/steampipe/utils"
 
-type ReportTableColumn struct {
+type DashboardTableColumn struct {
 	Name    string  `hcl:"name,label" json:"-"`
 	Display *string `cty:"display" hcl:"display" json:"display,omitempty"`
 	Wrap    *string `cty:"wrap" hcl:"wrap" json:"wrap,omitempty"`
 }
 
-func (c ReportTableColumn) Equals(other *ReportTableColumn) bool {
+func (c DashboardTableColumn) Equals(other *DashboardTableColumn) bool {
 	if other == nil {
 		return false
 	}

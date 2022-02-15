@@ -9,9 +9,9 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// DashboardHierarchy is a struct representing a leaf reporting node
+// DashboardHierarchy is a struct representing a leaf dashboard node
 type DashboardHierarchy struct {
-	ReportLeafNodeBase
+	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 
 	// required to allow partial decoding
@@ -25,8 +25,8 @@ type DashboardHierarchy struct {
 	Title        *string                             `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width        *int                                `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	Type         *string                             `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	CategoryList ReportHierarchyCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
-	Categories   map[string]*ReportHierarchyCategory `cty:"categories" json:"categories"`
+	CategoryList DashboardHierarchyCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
+	Categories   map[string]*DashboardHierarchyCategory `cty:"categories" json:"categories"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
@@ -44,7 +44,7 @@ type DashboardHierarchy struct {
 	parents []ModTreeItem
 }
 
-func NewReportHierarchy(block *hcl.Block, mod *Mod) *DashboardHierarchy {
+func NewDashboardHierarchy(block *hcl.Block, mod *Mod) *DashboardHierarchy {
 	shortName := GetAnonymousResourceShortName(block, mod)
 	h := &DashboardHierarchy{
 		ShortName:       shortName,
@@ -79,7 +79,7 @@ func (h *DashboardHierarchy) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	h.setBaseProperties()
 	// populate categories map
 	if len(h.CategoryList) > 0 {
-		h.Categories = make(map[string]*ReportHierarchyCategory, len(h.CategoryList))
+		h.Categories = make(map[string]*DashboardHierarchyCategory, len(h.CategoryList))
 		for _, c := range h.CategoryList {
 			h.Categories[c.Name] = c
 		}

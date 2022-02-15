@@ -81,31 +81,31 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	for _, variable := range workspaceResources.Variables {
 		insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
 	}
-	for _, report := range workspaceResources.Reports {
+	for _, report := range workspaceResources.Dashboards {
 		insertSql = append(insertSql, getTableInsertSqlForResource(report, constants.IntrospectionTableReport))
 	}
-	for _, container := range workspaceResources.ReportContainers {
+	for _, container := range workspaceResources.DashboardContainers {
 		insertSql = append(insertSql, getTableInsertSqlForResource(container, constants.IntrospectionTableContainer))
 	}
-	for _, card := range workspaceResources.ReportCards {
+	for _, card := range workspaceResources.DashboardCards {
 		insertSql = append(insertSql, getTableInsertSqlForResource(card, constants.IntrospectionTableReportCard))
 	}
-	for _, chart := range workspaceResources.ReportCharts {
+	for _, chart := range workspaceResources.DashboardCharts {
 		insertSql = append(insertSql, getTableInsertSqlForResource(chart, constants.IntrospectionTableReportChart))
 	}
-	for _, hierarchy := range workspaceResources.ReportHierarchies {
+	for _, hierarchy := range workspaceResources.DashboardHierarchies {
 		insertSql = append(insertSql, getTableInsertSqlForResource(hierarchy, constants.IntrospectionTableReportHierarchy))
 	}
-	for _, image := range workspaceResources.ReportImages {
+	for _, image := range workspaceResources.DashboardImages {
 		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableReportImage))
 	}
-	for _, image := range workspaceResources.ReportInputs {
+	for _, image := range workspaceResources.DashboardInputs {
 		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableReportInput))
 	}
-	for _, table := range workspaceResources.ReportTables {
+	for _, table := range workspaceResources.DashboardTables {
 		insertSql = append(insertSql, getTableInsertSqlForResource(table, constants.IntrospectionTableReportTable))
 	}
-	for _, text := range workspaceResources.ReportTexts {
+	for _, text := range workspaceResources.DashboardTexts {
 		insertSql = append(insertSql, getTableInsertSqlForResource(text, constants.IntrospectionTableReportText))
 	}
 	for _, reference := range workspaceResources.References {

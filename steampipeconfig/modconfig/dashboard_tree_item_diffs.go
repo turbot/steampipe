@@ -1,6 +1,6 @@
 package modconfig
 
-// DashboardTreeItemDiffs is a struct representing the differences between 2 ReportTreeItems (of same type)
+// DashboardTreeItemDiffs is a struct representing the differences between 2 DashboardTreeItems (of same type)
 type DashboardTreeItemDiffs struct {
 	Name              string
 	Item              ModTreeItem

@@ -16,18 +16,18 @@ func (d *RuntimeDependency) String() string {
 	return fmt.Sprintf("%s->%s", strings.Join(d.TargetProperties, ","), d.PropertyPath.String())
 }
 
-func (d *RuntimeDependency) ResolveSource(resource HclResource, report *DashboardContainer, workspace ResourceMapsProvider) error {
+func (d *RuntimeDependency) ResolveSource(resource HclResource, dashboard *DashboardContainer, workspace ResourceMapsProvider) error {
 	// TODO THINK ABOUT REPORT PREFIX
 
 	resourceName := d.PropertyPath.ToResourceName()
 	var found bool
-	// if this dependency has a 'root' prefix, resolve from the current report container
-	if d.PropertyPath.Scope == runtimeDependencyReportScope {
-		d.SourceResource, found = report.GetInput(resourceName)
+	// if this dependency has a 'root' prefix, resolve from the current dashboard container
+	if d.PropertyPath.Scope == runtimeDependencyDashboardScope {
+		d.SourceResource, found = dashboard.GetInput(resourceName)
 
 	} else {
 		// otherwise, resolve from the workspace
-		d.SourceResource, found = workspace.GetResourceMaps().ReportInputs[resourceName]
+		d.SourceResource, found = workspace.GetResourceMaps().DashboardInputs[resourceName]
 	}
 	if !found {
 		return fmt.Errorf("could not resolve runtime dependency resource %s", d.PropertyPath)

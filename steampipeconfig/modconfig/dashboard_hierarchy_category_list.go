@@ -1,8 +1,8 @@
 package modconfig
 
-type ReportHierarchyCategoryList []*ReportHierarchyCategory
+type DashboardHierarchyCategoryList []*DashboardHierarchyCategory
 
-func (c ReportHierarchyCategoryList) Merge(other ReportHierarchyCategoryList) {
+func (c DashboardHierarchyCategoryList) Merge(other DashboardHierarchyCategoryList) {
 	if other == nil {
 		return
 	}

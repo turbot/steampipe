@@ -4,12 +4,12 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-type ReportChartAxes struct {
-	X *ReportChartAxesX `cty:"x" hcl:"x,block" json:"x,omitempty"`
-	Y *ReportChartAxesY `cty:"y" hcl:"y,block" json:"y,omitempty"`
+type DashboardChartAxes struct {
+	X *DashboardChartAxesX `cty:"x" hcl:"x,block" json:"x,omitempty"`
+	Y *DashboardChartAxesY `cty:"y" hcl:"y,block" json:"y,omitempty"`
 }
 
-func (a *ReportChartAxes) Equals(other *ReportChartAxes) bool {
+func (a *DashboardChartAxes) Equals(other *DashboardChartAxes) bool {
 	if other == nil {
 		return false
 	}
@@ -42,7 +42,7 @@ func (a *ReportChartAxes) Equals(other *ReportChartAxes) bool {
 
 }
 
-func (a *ReportChartAxes) Merge(other *ReportChartAxes) {
+func (a *DashboardChartAxes) Merge(other *DashboardChartAxes) {
 	if other == nil {
 		return
 	}
@@ -58,12 +58,12 @@ func (a *ReportChartAxes) Merge(other *ReportChartAxes) {
 	}
 }
 
-type ReportChartAxesX struct {
-	Title  *ReportChartAxisTitle `cty:"title" hcl:"title,block" json:"title,omitempty"`
-	Labels *ReportChartLabels    `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
+type DashboardChartAxesX struct {
+	Title  *DashboardChartAxisTitle `cty:"title" hcl:"title,block" json:"title,omitempty"`
+	Labels *DashboardChartLabels    `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
 }
 
-func (x *ReportChartAxesX) Equals(other *ReportChartAxesX) bool {
+func (x *DashboardChartAxesX) Equals(other *DashboardChartAxesX) bool {
 	if other == nil {
 		return false
 	}
@@ -85,7 +85,7 @@ func (x *ReportChartAxesX) Equals(other *ReportChartAxesX) bool {
 	return true
 }
 
-func (x *ReportChartAxesX) Merge(other *ReportChartAxesX) {
+func (x *DashboardChartAxesX) Merge(other *DashboardChartAxesX) {
 	if x.Title == nil {
 		x.Title = other.Title
 	} else {
@@ -98,14 +98,14 @@ func (x *ReportChartAxesX) Merge(other *ReportChartAxesX) {
 	}
 }
 
-type ReportChartAxesY struct {
-	Title  *ReportChartAxisTitle `cty:"title" hcl:"title,block" json:"title,omitempty"`
-	Labels *ReportChartLabels    `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
-	Min    *int                  `cty:"min" hcl:"min" json:"min,omitempty"`
+type DashboardChartAxesY struct {
+	Title  *DashboardChartAxisTitle `cty:"title" hcl:"title,block" json:"title,omitempty"`
+	Labels *DashboardChartLabels    `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
+	Min    *int                     `cty:"min" hcl:"min" json:"min,omitempty"`
 	Max    *int                  `cty:"max" hcl:"max" json:"max,omitempty"`
 }
 
-func (y *ReportChartAxesY) Equals(other *ReportChartAxesY) bool {
+func (y *DashboardChartAxesY) Equals(other *DashboardChartAxesY) bool {
 	if other == nil {
 		return false
 	}
@@ -131,7 +131,7 @@ func (y *ReportChartAxesY) Equals(other *ReportChartAxesY) bool {
 	return true
 }
 
-func (y *ReportChartAxesY) Merge(other *ReportChartAxesY) {
+func (y *DashboardChartAxesY) Merge(other *DashboardChartAxesY) {
 	if y.Title == nil {
 		y.Title = other.Title
 	} else {
@@ -150,13 +150,13 @@ func (y *ReportChartAxesY) Merge(other *ReportChartAxesY) {
 	}
 }
 
-type ReportChartAxisTitle struct {
+type DashboardChartAxisTitle struct {
 	Display *string `cty:"display" hcl:"display" json:"display,omitempty"`
 	Align   *string `cty:"align" hcl:"align" json:"align,omitempty"`
 	Value   *string `cty:"value" hcl:"value" json:"value,omitempty"`
 }
 
-func (t *ReportChartAxisTitle) Equals(other *ReportChartAxisTitle) bool {
+func (t *DashboardChartAxisTitle) Equals(other *DashboardChartAxisTitle) bool {
 	if other == nil {
 		return false
 	}
@@ -170,7 +170,7 @@ func (t *ReportChartAxisTitle) Equals(other *ReportChartAxisTitle) bool {
 	return true
 }
 
-func (t *ReportChartAxisTitle) Merge(other *ReportChartAxisTitle) {
+func (t *DashboardChartAxisTitle) Merge(other *DashboardChartAxisTitle) {
 	if t.Display == nil {
 		t.Display = other.Display
 	}

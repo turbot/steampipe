@@ -14,7 +14,7 @@ import (
 
 // Benchmark is a struct representing the Benchmark resource
 type Benchmark struct {
-	ReportLeafNodeBase
+	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 
 	ShortName       string
@@ -37,7 +37,7 @@ type Benchmark struct {
 	DeclRange     hcl.Range
 	Paths         []NodePath `column:"path,jsonb"`
 
-	// report specific properties
+	// dashboard specific properties
 	Base  *Benchmark `hcl:"base" json:"-"`
 	Width *int       `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 

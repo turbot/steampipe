@@ -10,9 +10,9 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// DashboardText is a struct representing a leaf reporting node
+// DashboardText is a struct representing a leaf dashboard node
 type DashboardText struct {
-	ReportLeafNodeBase
+	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 
 	FullName        string `cty:"name" json:"-"`
@@ -33,7 +33,7 @@ type DashboardText struct {
 	parents []ModTreeItem
 }
 
-func NewReportText(block *hcl.Block, mod *Mod) *DashboardText {
+func NewDashboardText(block *hcl.Block, mod *Mod) *DashboardText {
 	shortName := GetAnonymousResourceShortName(block, mod)
 	t := &DashboardText{
 		ShortName:       shortName,

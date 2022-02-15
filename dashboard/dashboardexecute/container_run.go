@@ -206,7 +206,7 @@ func (r *DashboardContainerRun) GetRuntimeDependency(dependency *modconfig.Runti
 	// TOTO [reports] LOCK???
 
 	/// TOTO [reports] nasty - split into report and container
-	if !r.dashboardNode.IsReport() {
+	if !r.dashboardNode.IsDashboard() {
 		panic("GetRuntimeDependency called on container")
 	}
 

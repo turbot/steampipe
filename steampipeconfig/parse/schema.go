@@ -65,7 +65,7 @@ var ModBlockSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       modconfig.BlockTypeReport,
+			Type:       modconfig.BlockTypeDashboard,
 			LabelNames: []string{"name"},
 		},
 		{
@@ -124,7 +124,7 @@ var ReportContainerBlockSchema = &hcl.BodySchema{
 			Type: modconfig.BlockTypeContainer,
 		},
 		{
-			Type:       modconfig.BlockTypeReport,
+			Type:       modconfig.BlockTypeDashboard,
 			LabelNames: []string{"name"},
 		},
 		{
