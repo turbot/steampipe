@@ -7,7 +7,7 @@ import (
 // DashboardOn is a struct representing dashboard hook
 type DashboardOn struct {
 	Name    string  `hcl:"name,label" json:"name"`
-	Display *string `cty:"string" hcl:"display" json:"string,omitempty"`
+	Display *string `cty:"display" hcl:"display" json:"display,omitempty"`
 }
 
 func (s DashboardOn) Equals(other *DashboardOn) bool {

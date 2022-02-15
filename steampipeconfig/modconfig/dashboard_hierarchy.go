@@ -27,7 +27,7 @@ type DashboardHierarchy struct {
 	Type         *string                                `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	CategoryList DashboardHierarchyCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
 	Categories   map[string]*DashboardHierarchyCategory `cty:"categories" json:"categories"`
-	Display      *string                                `cty:"string" hcl:"string" json:"string,omitempty"`
+	Display      *string                                `cty:"display" hcl:"display" json:"display,omitempty"`
 	On           *DashboardOn                           `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider

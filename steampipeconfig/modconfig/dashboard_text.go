@@ -25,7 +25,7 @@ type DashboardText struct {
 	Type    *string        `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Value   *string        `cty:"value" hcl:"value" column:"value,text"  json:"value,omitempty"`
 	Base    *DashboardText `hcl:"base" json:"-"`
-	Display *string        `cty:"string" hcl:"string" json:"string,omitempty"`
+	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
 	On      *DashboardOn   `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	DeclRange hcl.Range  `json:"-"`

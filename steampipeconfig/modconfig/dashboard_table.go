@@ -27,7 +27,7 @@ type DashboardTable struct {
 	Type       *string                          `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	ColumnList DashboardTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
 	Columns    map[string]*DashboardTableColumn `cty:"columns" json:"columns"`
-	Display    *string                          `cty:"string" hcl:"string" json:"string,omitempty"`
+	Display    *string                          `cty:"display" hcl:"display" json:"display,omitempty"`
 	On         *DashboardOn                     `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider

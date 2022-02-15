@@ -24,7 +24,7 @@ type DashboardCard struct {
 	Width   *int         `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	Type    *string      `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
 	Icon    *string      `cty:"icon" hcl:"icon" column:"icon,text" json:"icon,omitempty"`
-	Display *string      `cty:"string" hcl:"string" json:"string,omitempty"`
+	Display *string      `cty:"display" hcl:"display" json:"display,omitempty"`
 	On      *DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider

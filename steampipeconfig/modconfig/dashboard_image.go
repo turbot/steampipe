@@ -24,7 +24,7 @@ type DashboardImage struct {
 	SQL     *string         `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Src     *string         `cty:"src" hcl:"src" column:"src,text"  json:"src,omitempty"`
 	Alt     *string         `cty:"alt" hcl:"alt" column:"alt,text"  json:"alt,omitempty"`
-	Display *string         `cty:"string" hcl:"string" json:"string,omitempty"`
+	Display *string         `cty:"display" hcl:"display" json:"display,omitempty"`
 	On      *DashboardOn    `cty:"on" hcl:"on,block" json:"on,omitempty"`
 	Base    *DashboardImage `hcl:"base" json:"-"`
 

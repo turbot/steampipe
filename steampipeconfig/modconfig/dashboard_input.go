@@ -26,7 +26,7 @@ type DashboardInput struct {
 	Type    *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Style   *string      `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
 	Value   *string      `json:"value"`
-	Display *string      `cty:"string" hcl:"string" json:"string,omitempty"`
+	Display *string      `cty:"display" hcl:"display" json:"display,omitempty"`
 	On      *DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	Base *DashboardInput `hcl:"base" json:"-"`
