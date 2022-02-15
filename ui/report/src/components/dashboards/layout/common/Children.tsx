@@ -13,6 +13,7 @@ import {
   ContainerDefinition,
   PanelDefinition,
 } from "../../../../hooks/useDashboard";
+import { Dashboard } from "../Dashboard";
 import { RenderChart as Chart } from "../../charts/Chart";
 import { RenderHierarchy as Hierarchy } from "../../hierarchies/Hierarchy";
 import { RenderInput as Input } from "../../inputs/Input";
@@ -97,6 +98,15 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                   <Control {...child} />
                 </Panel>
               )}
+            />
+          );
+        case "dashboard":
+          return (
+            <ChildWithTitle
+              key={child.name}
+              child={child}
+              level="container"
+              renderChild={() => <Dashboard definition={child} />}
             />
           );
         case "error":
