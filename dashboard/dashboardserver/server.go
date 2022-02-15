@@ -47,12 +47,13 @@ func (lp ListenPort) IsValid() error {
 }
 
 type Server struct {
-	context          context.Context
-	dbClient         db_common.Client
-	mutex            *sync.Mutex
-	dashboardClients map[*melody.Session]*DashboardClientInfo
-	webSocket        *melody.Melody
-	workspace        *workspace.Workspace
+	context            context.Context
+	dbClient           db_common.Client
+	mutex              *sync.Mutex
+	dashboardClients   map[*melody.Session]*DashboardClientInfo
+	webSocket          *melody.Melody
+	workspace          *workspace.Workspace
+	workspaceResources *modconfig.WorkspaceResourceMaps
 }
 
 type ErrorPayload struct {
@@ -83,12 +84,13 @@ func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) 
 	var mutex = &sync.Mutex{}
 
 	server := &Server{
-		context:          ctx,
-		dbClient:         dbClient,
-		mutex:            mutex,
-		dashboardClients: reportClients,
-		webSocket:        webSocket,
-		workspace:        loadedWorkspace,
+		context:            ctx,
+		dbClient:           dbClient,
+		mutex:              mutex,
+		dashboardClients:   reportClients,
+		webSocket:          webSocket,
+		workspace:          loadedWorkspace,
+		workspaceResources: loadedWorkspace.GetResourceMaps(),
 	}
 
 	loadedWorkspace.RegisterDashboardEventHandler(server.HandleWorkspaceUpdate)
@@ -98,11 +100,11 @@ func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) 
 	return server, err
 }
 
-func buildDashboardMetadataPayload(workspace *workspace.Workspace) ([]byte, error) {
+func buildDashboardMetadataPayload(workspaceResources *modconfig.WorkspaceResourceMaps) ([]byte, error) {
 	installedMods := make(map[string]ModDashboardMetadata)
-	for _, mod := range workspace.Mods {
+	for _, mod := range workspaceResources.Mods {
 		// Ignore current mod
-		if mod.FullName == workspace.Mod.FullName {
+		if mod.FullName == workspaceResources.Mod.FullName {
 			continue
 		}
 		installedMods[mod.FullName] = ModDashboardMetadata{
@@ -116,9 +118,9 @@ func buildDashboardMetadataPayload(workspace *workspace.Workspace) ([]byte, erro
 		Action: "dashboard_metadata",
 		Metadata: DashboardMetadata{
 			Mod: ModDashboardMetadata{
-				Title:     typeHelpers.SafeString(workspace.Mod.Title),
-				FullName:  workspace.Mod.FullName,
-				ShortName: workspace.Mod.ShortName,
+				Title:     typeHelpers.SafeString(workspaceResources.Mod.Title),
+				FullName:  workspaceResources.Mod.FullName,
+				ShortName: workspaceResources.Mod.ShortName,
 			},
 			InstalledMods: installedMods,
 		},
@@ -126,7 +128,7 @@ func buildDashboardMetadataPayload(workspace *workspace.Workspace) ([]byte, erro
 	return json.Marshal(payload)
 }
 
-func buildAvailableDashboardsPayload(workspace *workspace.Workspace) ([]byte, error) {
+func buildAvailableDashboardsPayload(workspace *modconfig.WorkspaceResourceMaps) ([]byte, error) {
 	dashboardsByMod := make(map[string]map[string]ModAvailableDashboard)
 	for _, mod := range workspace.Mods {
 		_, ok := dashboardsByMod[mod.FullName]
@@ -222,7 +224,7 @@ func getReportsInterestedInResourceChanges(reportsBeingWatched []string, existin
 
 // Start starts the API server
 func (s *Server) Start() {
-	go Init(s.context, s.webSocket, s.workspace, s.dbClient, s.dashboardClients, s.mutex)
+	go s.Init(s.context)
 	go StartAPI(s.context, s.webSocket)
 }
 
@@ -359,7 +361,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		// If) any deleted/new/changed reports, emit an available reports message to clients
 		if len(deletedDashboards) != 0 || len(newDashboards) != 0 || len(changedDashboards) != 0 {
 			outputMessage(s.context, "Available Reports updated")
-			payload, payloadError = buildAvailableDashboardsPayload(s.workspace)
+			payload, payloadError = buildAvailableDashboardsPayload(s.workspaceResources)
 			if payloadError != nil {
 				return
 			}

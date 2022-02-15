@@ -251,7 +251,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	// populate the workspace resource map
 	w.populateResourceMaps()
 
-	//
+	// verify all runtime dependencies can be resolved
 	return w.verifyResourceRuntimeDependencies()
 }
 

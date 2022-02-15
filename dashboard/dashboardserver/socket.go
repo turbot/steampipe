@@ -5,11 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"sync"
 
 	"github.com/turbot/steampipe/dashboard/dashboardexecute"
-	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/workspace"
 	"gopkg.in/olahol/melody.v1"
 )
 
@@ -53,23 +50,19 @@ type DashboardMetadataPayload struct {
 	Metadata DashboardMetadata `json:"metadata"`
 }
 
-func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, dbClient db_common.Client, socketSessions map[*melody.Session]*DashboardClientInfo, mutex *sync.Mutex) {
+func (s *Server) Init(ctx context.Context) {
 	// Return list of dashboards on connect
-	webSocket.HandleConnect(func(session *melody.Session) {
+	s.webSocket.HandleConnect(func(session *melody.Session) {
 		log.Println("[TRACE] Client connected")
-		mutex.Lock()
-		socketSessions[session] = &DashboardClientInfo{}
-		mutex.Unlock()
+		s.addSession(session)
 	})
 
-	webSocket.HandleDisconnect(func(session *melody.Session) {
+	s.webSocket.HandleDisconnect(func(session *melody.Session) {
 		log.Println("[TRACE] Client disconnected")
-		mutex.Lock()
-		delete(socketSessions, session)
-		mutex.Unlock()
+		s.clearSession(session)
 	})
 
-	webSocket.HandleMessage(func(session *melody.Session, msg []byte) {
+	s.webSocket.HandleMessage(func(session *melody.Session, msg []byte) {
 		log.Println("[TRACE] Got message", string(msg))
 		var request ClientRequest
 		// if we could not decode message - ignore
@@ -77,26 +70,43 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 
 			switch request.Action {
 			case "get_dashboard_metadata":
-				payload, err := buildDashboardMetadataPayload(workspace)
+				payload, err := buildDashboardMetadataPayload(s.workspaceResources)
 				if err != nil {
 					panic(fmt.Errorf("error building payload for get_metadata: %v", err))
 				}
 				session.Write(payload)
 			case "get_available_dashboards":
-				payload, err := buildAvailableDashboardsPayload(workspace)
+				payload, err := buildAvailableDashboardsPayload(s.workspaceResources)
 				if err != nil {
 					panic(fmt.Errorf("error building payload for get_available_dashboards: %v", err))
 				}
 				session.Write(payload)
 			case "select_dashboard":
 				log.Printf("[TRACE] Got event: %v\n", request.Payload.Dashboard)
-				mutex.Lock()
-				dashboardClientInfo := socketSessions[session]
+				dashboardClientInfo := s.getSession(session)
 				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
-				mutex.Unlock()
-				dashboardexecute.ExecuteDashboardNode(ctx, request.Payload.Dashboard.FullName, workspace, dbClient)
+				dashboardexecute.ExecuteDashboardNode(ctx, request.Payload.Dashboard.FullName, s.workspace, s.dbClient)
 			}
 		}
 	})
 	outputMessage(ctx, "Initialization complete")
+}
+
+func (s *Server) getSession(session *melody.Session) *DashboardClientInfo {
+	s.mutex.Lock()
+	dashboardClientInfo := s.dashboardClients[session]
+	s.mutex.Unlock()
+	return dashboardClientInfo
+}
+
+func (s *Server) clearSession(session *melody.Session) {
+	s.mutex.Lock()
+	delete(s.dashboardClients, session)
+	s.mutex.Unlock()
+}
+
+func (s *Server) addSession(session *melody.Session) {
+	s.mutex.Lock()
+	s.dashboardClients[session] = &DashboardClientInfo{}
+	s.mutex.Unlock()
 }
