@@ -190,12 +190,15 @@ const DashboardList = () => {
             setValue={setSearch}
           />
         </div>
-        {!availableDashboardsLoaded && !metadataLoaded && (
-          <div className="mt-2 text-black-scale-3">
-            <LoadingIndicator /> <span className="italic">Loading...</span>
+        {(!availableDashboardsLoaded || !metadataLoaded) && (
+          <div className="mt-2 ml-1 text-black-scale-4 flex">
+            <LoadingIndicator className="w-4 h-4" />{" "}
+            <span className="italic -ml-1">Loading...</span>
           </div>
         )}
-        {filteredDashboardsForCurrentMod.length === 0 &&
+        {availableDashboardsLoaded &&
+          metadataLoaded &&
+          filteredDashboardsForCurrentMod.length === 0 &&
           Object.keys(filteredDashboardsForOtherMods).length === 0 && (
             <div className="mt-2">
               {search ? (
