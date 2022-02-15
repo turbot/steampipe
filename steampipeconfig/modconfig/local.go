@@ -11,8 +11,9 @@ import (
 
 // Local is a struct representing a Local resource
 type Local struct {
-	ShortName string
-	FullName  string `cty:"name"`
+	ShortName       string
+	FullName        string `cty:"name"`
+	UnqualifiedName string
 
 	Value     cty.Value
 	DeclRange hcl.Range
@@ -24,11 +25,12 @@ type Local struct {
 
 func NewLocal(name string, val cty.Value, declRange hcl.Range, mod *Mod) *Local {
 	l := &Local{
-		ShortName: name,
-		FullName:  fmt.Sprintf("%s.local.%s", mod.ShortName, name),
-		Value:     val,
-		Mod:       mod,
-		DeclRange: declRange,
+		ShortName:       name,
+		UnqualifiedName: fmt.Sprintf("local.%s", name),
+		FullName:        fmt.Sprintf("%s.local.%s", mod.ShortName, name),
+		Value:           val,
+		Mod:             mod,
+		DeclRange:       declRange,
 	}
 	return l
 }
@@ -46,7 +48,7 @@ func (l *Local) AddReference(*ResourceReference) {}
 
 // GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (l *Local) GetUnqualifiedName() string {
-	return l.Name()
+	return l.UnqualifiedName
 }
 
 // SetMod implements HclResource
