@@ -43,7 +43,7 @@ func AddReferences(resource modconfig.HclResource, block *hcl.Block, runCtx *Run
 					}
 					reference := &modconfig.ResourceReference{
 						To:        referenceString,
-						From:      resource.Name(),
+						From:      resource.GetUnqualifiedName(),
 						BlockType: block.Type,
 						BlockName: blockName,
 						Attribute: attr.Name,
