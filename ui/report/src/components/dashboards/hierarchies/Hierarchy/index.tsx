@@ -197,7 +197,12 @@ const HierarchyWrapper = (props: HierarchyProps) => {
     return null;
   }
 
-  return <Chart options={buildHierarchyOptions(props, theme, wrapperRef)} />;
+  return (
+    <Chart
+      options={buildHierarchyOptions(props, theme, wrapperRef)}
+      type={props.properties ? props.properties.type : "sankey"}
+    />
+  );
 };
 
 type HierarchyDefinition = PanelDefinition & {

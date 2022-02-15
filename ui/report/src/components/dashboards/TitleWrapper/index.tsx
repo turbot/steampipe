@@ -56,7 +56,7 @@ const TitleWrapper = ({
       },
     ],
   };
-  return <Container definition={wrappedDefinition} />;
+  return <Container definition={wrappedDefinition} withNarrowVertical={true} />;
 };
 
 export default TitleWrapper;
