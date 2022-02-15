@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/contexthelpers"
+	"github.com/turbot/steampipe/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/utils"
@@ -35,7 +36,9 @@ The current mod is the working directory, or the directory specified by the --wo
 }
 
 func runReportCmd(cmd *cobra.Command, args []string) {
-	ctx := cmd.Context()
+	ctx, cancel := context.WithCancel(cmd.Context())
+	contexthelpers.StartCancelHandler(cancel)
+
 	logging.LogTime("runReportCmd start")
 	defer func() {
 		logging.LogTime("runReportCmd end")
@@ -50,8 +53,10 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardServerListen))
 	utils.FailOnError(serverListen.IsValid())
 
-	ctx, cancel := context.WithCancel(cmd.Context())
-	contexthelpers.StartCancelHandler(cancel)
+	// ensure report assets are present and extract if not
+	err := dashboardassets.Ensure(ctx)
+	utils.FailOnError(err)
+
 
 	dbClient, err := db_local.GetLocalClient(ctx, constants.InvokerReport)
 	utils.FailOnError(err)
