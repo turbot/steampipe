@@ -34,7 +34,7 @@ type Workspace struct {
 	Controls             map[string]*modconfig.Control
 	Benchmarks           map[string]*modconfig.Benchmark
 	Mods                 map[string]*modconfig.Mod
-	Dashboards           map[string]*modconfig.DashboardContainer
+	Dashboards           map[string]*modconfig.Dashboard
 	DashboardContainers  map[string]*modconfig.DashboardContainer
 	DashboardCards       map[string]*modconfig.DashboardCard
 	DashboardCharts      map[string]*modconfig.DashboardChart
@@ -170,7 +170,7 @@ func (w *Workspace) reset() {
 	w.Controls = make(map[string]*modconfig.Control)
 	w.Benchmarks = make(map[string]*modconfig.Benchmark)
 	w.Mods = make(map[string]*modconfig.Mod)
-	w.Dashboards = make(map[string]*modconfig.DashboardContainer)
+	w.Dashboards = make(map[string]*modconfig.Dashboard)
 	w.DashboardContainers = make(map[string]*modconfig.DashboardContainer)
 	w.DashboardCards = make(map[string]*modconfig.DashboardCard)
 	w.DashboardCharts = make(map[string]*modconfig.DashboardChart)

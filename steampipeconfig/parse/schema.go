@@ -106,8 +106,8 @@ var ModBlockSchema = &hcl.BodySchema{
 	},
 }
 
-// ReportContainerBlockSchema contains the attributes which cannot be automatically decoded
-var ReportContainerBlockSchema = &hcl.BodySchema{
+// DashboardBlockSchema contains the Dashboard attributes which cannot be automatically decoded
+var DashboardBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "args"},
 	},
@@ -154,16 +154,48 @@ var ReportContainerBlockSchema = &hcl.BodySchema{
 	},
 }
 
-// isAnonymousReportBlock returns whether the given block is an anoynmous report block
-func isAnonymousReportBlock(block *hcl.Block) bool {
-	for _, b := range ReportContainerBlockSchema.Blocks {
-		if b.LabelNames == nil {
-			if b.Type == block.Type {
-				return true
-			}
-		}
-	}
-	return false
+// DashboardContainerBlockSchema contains the DashboardContainer attributes which cannot be automatically decoded
+var DashboardContainerBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "args"},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       modconfig.BlockTypeParam,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type: modconfig.BlockTypeContainer,
+		},
+		{
+			Type:       modconfig.BlockTypeDashboard,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type: modconfig.BlockTypeCard,
+		},
+		{
+			Type: modconfig.BlockTypeChart,
+		},
+		{
+			Type: modconfig.BlockTypeBenchmark,
+		},
+		{
+			Type: modconfig.BlockTypeControl,
+		},
+		{
+			Type: modconfig.BlockTypeHierarchy,
+		},
+		{
+			Type: modconfig.BlockTypeImage,
+		},
+		{
+			Type: modconfig.BlockTypeTable,
+		},
+		{
+			Type: modconfig.BlockTypeText,
+		},
+	},
 }
 
 var BenchmarkBlockSchema = &hcl.BodySchema{

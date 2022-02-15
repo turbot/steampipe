@@ -6,21 +6,21 @@ type WorkspaceResourceMaps struct {
 	// the parent mod
 	Mod *Mod
 	// all mods (including deps)
-	Mods              map[string]*Mod
-	Queries           map[string]*Query
-	Controls          map[string]*Control
-	Benchmarks        map[string]*Benchmark
-	Variables        map[string]*Variable
-	Dashboards          map[string]*DashboardContainer
-	DashboardContainers map[string]*DashboardContainer
-	DashboardCards    map[string]*DashboardCard
+	Mods                 map[string]*Mod
+	Queries              map[string]*Query
+	Controls             map[string]*Control
+	Benchmarks           map[string]*Benchmark
+	Variables            map[string]*Variable
+	Dashboards           map[string]*Dashboard
+	DashboardContainers  map[string]*DashboardContainer
+	DashboardCards       map[string]*DashboardCard
 	DashboardCharts      map[string]*DashboardChart
 	DashboardHierarchies map[string]*DashboardHierarchy
 	DashboardImages      map[string]*DashboardImage
 	DashboardInputs      map[string]*DashboardInput
-	DashboardTables map[string]*DashboardTable
-	DashboardTexts  map[string]*DashboardText
-	References      map[string]*ResourceReference
+	DashboardTables      map[string]*DashboardTable
+	DashboardTexts       map[string]*DashboardText
+	References           map[string]*ResourceReference
 
 	LocalQueries    map[string]*Query
 	LocalControls   map[string]*Control

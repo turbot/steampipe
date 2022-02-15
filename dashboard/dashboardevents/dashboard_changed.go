@@ -5,8 +5,8 @@ import (
 )
 
 type DashboardChanged struct {
-	ChangedDashboards []*modconfig.DashboardTreeItemDiffs
-	ChangedContainers []*modconfig.DashboardTreeItemDiffs
+	ChangedDashboards  []*modconfig.DashboardTreeItemDiffs
+	ChangedContainers  []*modconfig.DashboardTreeItemDiffs
 	ChangedControls    []*modconfig.DashboardTreeItemDiffs
 	ChangedBenchmarks  []*modconfig.DashboardTreeItemDiffs
 	ChangedCards       []*modconfig.DashboardTreeItemDiffs
@@ -17,8 +17,8 @@ type DashboardChanged struct {
 	ChangedTables      []*modconfig.DashboardTreeItemDiffs
 	ChangedTexts       []*modconfig.DashboardTreeItemDiffs
 
-	NewDashboards []*modconfig.DashboardContainer
-	NewContainers []*modconfig.DashboardContainer
+	NewDashboards  []*modconfig.Dashboard
+	NewContainers  []*modconfig.DashboardContainer
 	NewControls    []*modconfig.Control
 	NewBenchmarks  []*modconfig.Benchmark
 	NewCards       []*modconfig.DashboardCard
@@ -29,8 +29,8 @@ type DashboardChanged struct {
 	NewTables      []*modconfig.DashboardTable
 	NewTexts       []*modconfig.DashboardText
 
-	DeletedDashboards []*modconfig.DashboardContainer
-	DeletedContainers []*modconfig.DashboardContainer
+	DeletedDashboards  []*modconfig.Dashboard
+	DeletedContainers  []*modconfig.DashboardContainer
 	DeletedControls    []*modconfig.Control
 	DeletedBenchmarks  []*modconfig.Benchmark
 	DeletedCards       []*modconfig.DashboardCard

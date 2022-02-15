@@ -13,9 +13,9 @@ import (
 
 // TODO [reports] split into report and container
 // update events
-// DashboardContainerRun is a struct representing a container run
+// DashboardRun is a struct representing a container run
 
-type DashboardContainerRun struct {
+type DashboardRun struct {
 	Name          string                                 `json:"name"`
 	Title         string                                 `json:"title,omitempty"`
 	Width         int                                    `json:"width,omitempty"`
@@ -28,51 +28,51 @@ type DashboardContainerRun struct {
 	Status        dashboardinterfaces.DashboardRunStatus `json:"status"`
 	DashboardName string                                 `json:"report"`
 	Path          []string                               `json:"-"`
-	dashboardNode *modconfig.DashboardContainer
+	dashboardNode *modconfig.Dashboard
 	parent        dashboardinterfaces.DashboardNodeParent
 	executionTree *DashboardExecutionTree
 	childComplete chan dashboardinterfaces.DashboardNodeRun
 }
 
-func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*DashboardContainerRun, error) {
-	children := container.GetChildren()
+func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
+	children := dashboard.GetChildren()
 
 	// ensure the tree node name is unique
-	name := executionTree.GetUniqueName(container.Name())
+	name := executionTree.GetUniqueName(dashboard.Name())
 
-	r := &DashboardContainerRun{
+	r := &DashboardRun{
 		Name:          name,
-		NodeType:      modconfig.BlockTypeContainer,
-		Path:          container.Paths[0],
+		NodeType:      modconfig.BlockTypeDashboard,
+		Path:          dashboard.Paths[0],
 		DashboardName: executionTree.dashboardName,
 		executionTree: executionTree,
 		parent:        parent,
-		dashboardNode: container,
+		dashboardNode: dashboard,
 
 		// set to complete, optimistically
 		// if any children have SQL we will set this to DashboardRunReady instead
 		Status:        dashboardinterfaces.DashboardRunComplete,
 		childComplete: make(chan dashboardinterfaces.DashboardNodeRun, len(children)),
 	}
-	if container.Title != nil {
-		r.Title = *container.Title
+	if dashboard.Title != nil {
+		r.Title = *dashboard.Title
 	}
 
-	if container.Width != nil {
-		r.Width = *container.Width
+	if dashboard.Width != nil {
+		r.Width = *dashboard.Width
 	}
 
 	for _, child := range children {
 		var childRun dashboardinterfaces.DashboardNodeRun
 		var err error
 		switch i := child.(type) {
-		case *modconfig.DashboardContainer:
-			childRun, err = NewDashboardContainerRun(i, r, executionTree)
+		case *modconfig.Dashboard:
+			childRun, err = NewDashboardRun(i, r, executionTree)
 			if err != nil {
 				return nil, err
 			}
-		case *modconfig.Dashboard:
-			childRun, err = NewDashboardRun(i, r, executionTree)
+		case *modconfig.DashboardContainer:
+			childRun, err = NewDashboardContainerRun(i, r, executionTree)
 			if err != nil {
 				return nil, err
 			}
@@ -81,7 +81,6 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 			if err != nil {
 				return nil, err
 			}
-
 		default:
 			// ensure this item is a DashboardLeafNode
 			leafNode, ok := i.(modconfig.DashboardLeafNode)
@@ -113,7 +112,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 
 // Execute implements DashboardRunNode
 // execute all children and wait for them to complete
-func (r *DashboardContainerRun) Execute(ctx context.Context) error {
+func (r *DashboardRun) Execute(ctx context.Context) error {
 
 	errChan := make(chan error, len(r.Children))
 	// execute all children asynchronously
@@ -145,7 +144,7 @@ func (r *DashboardContainerRun) Execute(ctx context.Context) error {
 	return err
 }
 
-func (r *DashboardContainerRun) executeChild(ctx context.Context, child dashboardinterfaces.DashboardNodeRun, errChan chan error) {
+func (r *DashboardRun) executeChild(ctx context.Context, child dashboardinterfaces.DashboardNodeRun, errChan chan error) {
 	err := child.Execute(ctx)
 	if err != nil {
 		errChan <- err
@@ -153,23 +152,23 @@ func (r *DashboardContainerRun) executeChild(ctx context.Context, child dashboar
 }
 
 // GetName implements DashboardNodeRun
-func (r *DashboardContainerRun) GetName() string {
+func (r *DashboardRun) GetName() string {
 	return r.Name
 }
 
 // GetPath implements DashboardNodeRun
-func (r *DashboardContainerRun) GetPath() modconfig.NodePath {
+func (r *DashboardRun) GetPath() modconfig.NodePath {
 	return r.Path
 }
 
 // GetRunStatus implements DashboardNodeRun
-func (r *DashboardContainerRun) GetRunStatus() dashboardinterfaces.DashboardRunStatus {
+func (r *DashboardRun) GetRunStatus() dashboardinterfaces.DashboardRunStatus {
 	return r.Status
 }
 
 // SetError implements DashboardNodeRun
 // tell parent we are done
-func (r *DashboardContainerRun) SetError(err error) {
+func (r *DashboardRun) SetError(err error) {
 	r.Error = err
 	r.Status = dashboardinterfaces.DashboardRunError
 	// raise container error event
@@ -179,7 +178,7 @@ func (r *DashboardContainerRun) SetError(err error) {
 }
 
 // SetComplete implements DashboardNodeRun
-func (r *DashboardContainerRun) SetComplete() {
+func (r *DashboardRun) SetComplete() {
 	r.Status = dashboardinterfaces.DashboardRunComplete
 	// raise container complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerComplete{Container: r})
@@ -188,12 +187,12 @@ func (r *DashboardContainerRun) SetComplete() {
 }
 
 // RunComplete implements DashboardNodeRun
-func (r *DashboardContainerRun) RunComplete() bool {
+func (r *DashboardRun) RunComplete() bool {
 	return r.Status == dashboardinterfaces.DashboardRunComplete || r.Status == dashboardinterfaces.DashboardRunError
 }
 
 // ChildrenComplete implements DashboardNodeRun
-func (r *DashboardContainerRun) ChildrenComplete() bool {
+func (r *DashboardRun) ChildrenComplete() bool {
 	for _, child := range r.Children {
 		if !child.RunComplete() {
 			return false
@@ -203,6 +202,22 @@ func (r *DashboardContainerRun) ChildrenComplete() bool {
 	return true
 }
 
-func (r *DashboardContainerRun) ChildCompleteChan() chan dashboardinterfaces.DashboardNodeRun {
+func (r *DashboardRun) ChildCompleteChan() chan dashboardinterfaces.DashboardNodeRun {
 	return r.childComplete
+}
+
+func (r *DashboardRun) GetRuntimeDependency(dependency *modconfig.RuntimeDependency) (*string, error) {
+	// TOTO [reports] LOCK???
+
+	// only inputs supported at present
+	if dependency.PropertyPath.ItemType != modconfig.BlockTypeInput {
+		return nil, fmt.Errorf("invalid runtime dependency type %s", dependency.PropertyPath.ItemType)
+	}
+
+	// find the input corresponding to this dependency
+	input, ok := r.dashboardNode.GetInput(dependency.PropertyPath.Name)
+	if !ok {
+		return nil, fmt.Errorf("dashboard %s does not contain input %s", r.dashboardNode.Name(), dependency.PropertyPath.ItemType)
+	}
+	return input.Value, nil
 }

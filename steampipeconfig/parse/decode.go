@@ -93,8 +93,11 @@ func decodeBlock(block *hcl.Block, parent modconfig.ModTreeItem, runCtx *RunCont
 			for _, local := range locals {
 				resources = append(resources, local)
 			}
-		case modconfig.BlockTypeContainer, modconfig.BlockTypeDashboard:
-			resource, res = decodeReportContainer(block, runCtx)
+		case modconfig.BlockTypeDashboard:
+			resource, res = decodeDashboard(block, runCtx)
+			resources = append(resources, resource)
+		case modconfig.BlockTypeContainer:
+			resource, res = decodeDashboardContainer(block, runCtx)
 			resources = append(resources, resource)
 		case modconfig.BlockTypeVariable:
 			resource, res = decodeVariable(block, runCtx)
@@ -167,7 +170,7 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResour
 	case modconfig.BlockTypeBenchmark:
 		resource = modconfig.NewBenchmark(block, mod)
 	case modconfig.BlockTypeDashboard:
-		resource = modconfig.NewDashboardContainer(block, mod)
+		resource = modconfig.NewDashboard(block, mod)
 	case modconfig.BlockTypeContainer:
 		resource = modconfig.NewDashboardContainer(block, mod)
 	case modconfig.BlockTypeChart:
@@ -392,68 +395,58 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName strin
 	return args, diags
 }
 
-func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.DashboardContainer, *decodeResult) {
+func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard, *decodeResult) {
 	res := &decodeResult{}
-	dashboardContainer := modconfig.NewDashboardContainer(block, runCtx.CurrentMod)
+	dashboard := modconfig.NewDashboard(block, runCtx.CurrentMod)
 
 	// do a partial decode using QueryProviderBlockSchema
 	// this will be used to pull out attributes which need manual decoding
-	content, _, diags := block.Body.PartialContent(ReportContainerBlockSchema)
-	res.handleDecodeDiags(content, dashboardContainer, diags)
+	content, _, diags := block.Body.PartialContent(DashboardBlockSchema)
+	res.handleDecodeDiags(content, dashboard, diags)
 	if !res.Success() {
 		return nil, res
 	}
 
 	// decode the body into 'dashboardContainer' to populate all properties that can be automatically decoded
-	diags = gohcl.DecodeBody(block.Body, runCtx.EvalCtx, dashboardContainer)
+	diags = gohcl.DecodeBody(block.Body, runCtx.EvalCtx, dashboard)
 	// handle any resulting diags, which may specify dependencies
-	res.handleDecodeDiags(content, dashboardContainer, diags)
+	res.handleDecodeDiags(content, dashboard, diags)
 
-	// if this is a container, the base property must not be set
-	if !dashboardContainer.IsDashboard() && dashboardContainer.Base != nil {
-		res.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Container blocks do not support the 'base' property",
-			Subject:  &dashboardContainer.DeclRange,
-		}})
-		return nil, res
-	}
-
-	if dashboardContainer.Base != nil && len(dashboardContainer.Base.ChildNames) > 0 {
+	if dashboard.Base != nil && len(dashboard.Base.ChildNames) > 0 {
 		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeChart, modconfig.BlockTypeControl, modconfig.BlockTypeCard, modconfig.BlockTypeHierarchy, modconfig.BlockTypeImage, modconfig.BlockTypeInput, modconfig.BlockTypeTable, modconfig.BlockTypeText}
 		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
 		// and we do not expect to get any (as this function has already succeeded when the base was originally parsed)
-		children, _ := resolveChildrenFromNames(dashboardContainer.Base.ChildNames, block, supportedChildren, runCtx)
-		dashboardContainer.Base.SetChildren(children)
+		children, _ := resolveChildrenFromNames(dashboard.Base.ChildNames, block, supportedChildren, runCtx)
+		dashboard.Base.SetChildren(children)
 	}
 	if !res.Success() {
-		return dashboardContainer, res
+		return dashboard, res
 	}
 
 	// decode args if any
 	if attr, exists := content.Attributes["args"]; exists {
-		if args, diags := decodeArgs(attr, runCtx.EvalCtx, dashboardContainer.Name()); !diags.HasErrors() {
-			dashboardContainer.SetArgs(args)
+		if args, diags := decodeArgs(attr, runCtx.EvalCtx, dashboard.Name()); !diags.HasErrors() {
+			dashboard.SetArgs(args)
 		}
 	}
 
 	// now decode child blocks
 	if len(content.Blocks) > 0 {
-		blocksRes := decodeReportContainerBlocks(content, dashboardContainer, runCtx)
+		blocksRes := decodeDashboardBlocks(content, dashboard, runCtx)
 		res.Merge(blocksRes)
 	}
 
-	return dashboardContainer, res
+	return dashboard, res
 }
 
-func decodeReportContainerBlocks(content *hcl.BodyContent, dashboardContainer *modconfig.DashboardContainer, runCtx *RunContext) *decodeResult {
+func decodeDashboardBlocks(content *hcl.BodyContent, dashboard *modconfig.Dashboard, runCtx *RunContext) *decodeResult {
 	var res = &decodeResult{}
 	// if children are declared inline as blocks, add them
 	var children []modconfig.ModTreeItem
 	var inputs []*modconfig.DashboardInput
 	for _, b := range content.Blocks {
 		// use generic block decoding
-		resources, blockRes := decodeBlock(b, dashboardContainer, runCtx)
+		resources, blockRes := decodeBlock(b, dashboard, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue
@@ -464,16 +457,15 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, dashboardContainer *m
 			if b.Type == modconfig.BlockTypeInput {
 				input := resource.(*modconfig.DashboardInput)
 				// add dashboard name to input
-				input.SetDashboardContainer(dashboardContainer)
-
+				input.SetDashboard(dashboard)
 				inputs = append(inputs, input)
 				// now we have namespaced the input, add to mod
 				res.addDiags(runCtx.CurrentMod.AddResource(resource))
-
 			} else {
+				// child resource
+
 				// add the resource to the mod
 				addResourcesToMod(runCtx, resource)
-
 				if child, ok := resource.(modconfig.ModTreeItem); ok {
 					children = append(children, child)
 				}
@@ -482,15 +474,71 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, dashboardContainer *m
 		}
 	}
 
-	dashboardContainer.SetChildren(children)
-	if err := dashboardContainer.SetInputs(inputs); err != nil {
+	dashboard.SetChildren(children)
+	err := dashboard.SetInputs(inputs)
+	if err != nil {
 		res.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Duplicate input names",
 			Detail:   err.Error(),
-			Subject:  &dashboardContainer.DeclRange,
+			Subject:  &dashboard.DeclRange,
 		}})
 	}
+
+	return res
+}
+
+func decodeDashboardContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.DashboardContainer, *decodeResult) {
+	res := &decodeResult{}
+	container := modconfig.NewDashboardContainer(block, runCtx.CurrentMod)
+
+	// do a partial decode using QueryProviderBlockSchema
+	// this will be used to pull out attributes which need manual decoding
+	content, _, diags := block.Body.PartialContent(DashboardContainerBlockSchema)
+	res.handleDecodeDiags(content, container, diags)
+	if !res.Success() {
+		return nil, res
+	}
+
+	// decode the body into 'dashboardContainer' to populate all properties that can be automatically decoded
+	diags = gohcl.DecodeBody(block.Body, runCtx.EvalCtx, container)
+	// handle any resulting diags, which may specify dependencies
+	res.handleDecodeDiags(content, container, diags)
+
+	// now decode child blocks
+	if len(content.Blocks) > 0 {
+		blocksRes := decodeDashboardContainerBlocks(content, container, runCtx)
+		res.Merge(blocksRes)
+	}
+
+	return container, res
+}
+
+func decodeDashboardContainerBlocks(content *hcl.BodyContent, dashboardContainer *modconfig.DashboardContainer, runCtx *RunContext) *decodeResult {
+	var res = &decodeResult{}
+	// if children are declared inline as blocks, add them
+	var children []modconfig.ModTreeItem
+	for _, b := range content.Blocks {
+		// use generic block decoding
+		resources, blockRes := decodeBlock(b, dashboardContainer, runCtx)
+		res.Merge(blockRes)
+		if !blockRes.Success() {
+			continue
+		}
+
+		// all blocks are child report nodes
+		for _, resource := range resources {
+			// add the resource to the mod
+			addResourcesToMod(runCtx, resource)
+
+			if child, ok := resource.(modconfig.ModTreeItem); ok {
+				children = append(children, child)
+			}
+
+		}
+	}
+
+	dashboardContainer.SetChildren(children)
 
 	return res
 }

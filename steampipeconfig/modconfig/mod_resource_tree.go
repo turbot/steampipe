@@ -121,24 +121,20 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		}
 		m.Benchmarks[name] = r
 
+	case *Dashboard:
+		name := r.Name()
+		if existing, ok := m.Dashboards[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.Dashboards[name] = r
 	case *DashboardContainer:
 		name := r.Name()
-		// DashboardContainer struct may either be a `dashboard` or a `container`
-		if r.IsDashboard() {
-			if existing, ok := m.Dashboards[name]; ok {
-				diags = append(diags, checkForDuplicate(existing, item)...)
-				break
-			}
-			m.Dashboards[name] = r
-
-		} else {
-			if existing, ok := m.DashboardContainers[name]; ok {
-				diags = append(diags, checkForDuplicate(existing, item)...)
-				break
-			}
-			m.DashboardContainers[name] = r
-
+		if existing, ok := m.DashboardContainers[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
 		}
+		m.DashboardContainers[name] = r
 	case *DashboardCard:
 		name := r.Name()
 		if existing, ok := m.DashboardCards[name]; ok {
