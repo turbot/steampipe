@@ -62,8 +62,8 @@ type ErrorPayload struct {
 }
 
 type ExecutionPayload struct {
-	Action     string                               `json:"action"`
-	ReportNode dashboardinterfaces.DashboardNodeRun `json:"report_node"`
+	Action        string                               `json:"action"`
+	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
 }
 
 type DashboardClientInfo struct {
@@ -71,7 +71,7 @@ type DashboardClientInfo struct {
 }
 
 func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) {
-	outputWait(ctx, "Starting Report Server")
+	outputWait(ctx, "Starting Dashboard Server")
 	loadedWorkspace, err := workspace.Load(ctx, viper.GetString(constants.ArgWorkspaceChDir))
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) 
 
 	webSocket := melody.New()
 
-	var reportClients = make(map[*melody.Session]*DashboardClientInfo)
+	var dashboardClients = make(map[*melody.Session]*DashboardClientInfo)
 
 	var mutex = &sync.Mutex{}
 
@@ -87,7 +87,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) 
 		context:            ctx,
 		dbClient:           dbClient,
 		mutex:              mutex,
-		dashboardClients:   reportClients,
+		dashboardClients:   dashboardClients,
 		webSocket:          webSocket,
 		workspace:          loadedWorkspace,
 		workspaceResources: loadedWorkspace.GetResourceMaps(),
@@ -135,11 +135,11 @@ func buildAvailableDashboardsPayload(workspace *modconfig.WorkspaceResourceMaps)
 		if !ok {
 			dashboardsByMod[mod.FullName] = make(map[string]ModAvailableDashboard)
 		}
-		for _, report := range mod.Dashboards {
-			dashboardsByMod[mod.FullName][report.FullName] = ModAvailableDashboard{
-				Title:     typeHelpers.SafeString(report.Title),
-				FullName:  report.FullName,
-				ShortName: report.ShortName,
+		for _, dashboard := range mod.Dashboards {
+			dashboardsByMod[mod.FullName][dashboard.FullName] = ModAvailableDashboard{
+				Title:     typeHelpers.SafeString(dashboard.Title),
+				FullName:  dashboard.FullName,
+				ShortName: dashboard.ShortName,
 			}
 		}
 	}
@@ -160,16 +160,16 @@ func buildWorkspaceErrorPayload(e *dashboardevents.WorkspaceError) ([]byte, erro
 
 func buildLeafNodeProgressPayload(event *dashboardevents.LeafNodeProgress) ([]byte, error) {
 	payload := ExecutionPayload{
-		Action:     "leaf_node_progress",
-		ReportNode: event.Node,
+		Action:        "leaf_node_progress",
+		DashboardNode: event.Node,
 	}
 	return json.Marshal(payload)
 }
 
 func buildLeafNodeCompletePayload(event *dashboardevents.LeafNodeComplete) ([]byte, error) {
 	payload := ExecutionPayload{
-		Action:     "leaf_node_complete",
-		ReportNode: event.Node,
+		Action:        "leaf_node_complete",
+		DashboardNode: event.Node,
 	}
 	//jsonString, _ := json.Marshal(payload)
 	//return jsonString
@@ -183,22 +183,22 @@ func buildLeafNodeCompletePayload(event *dashboardevents.LeafNodeComplete) ([]by
 
 func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]byte, error) {
 	payload := ExecutionPayload{
-		Action:     "execution_started",
-		ReportNode: event.DashboardNode,
+		Action:        "execution_started",
+		DashboardNode: event.DashboardNode,
 	}
 	return json.Marshal(payload)
 }
 
 func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]byte, error) {
 	payload := ExecutionPayload{
-		Action:     "execution_complete",
-		ReportNode: event.Dashboard,
+		Action:        "execution_complete",
+		DashboardNode: event.Dashboard,
 	}
 	return json.Marshal(payload)
 }
 
-func getReportsInterestedInResourceChanges(reportsBeingWatched []string, existingChangedReportNames []string, changedItems []*modconfig.DashboardTreeItemDiffs) []string {
-	var changedReportNames []string
+func getDashboardsInterestedInResourceChanges(dashboardsBeingWatched []string, existingChangedDashboardNames []string, changedItems []*modconfig.DashboardTreeItemDiffs) []string {
+	var changedDashboardNames []string
 
 	for _, changedItem := range changedItems {
 		paths := changedItem.Item.GetPaths()
@@ -210,16 +210,16 @@ func getReportsInterestedInResourceChanges(reportsBeingWatched []string, existin
 					continue
 				}
 
-				if helpers.StringSliceContains(existingChangedReportNames, nodeName) || helpers.StringSliceContains(changedReportNames, nodeName) || !helpers.StringSliceContains(reportsBeingWatched, nodeName) {
+				if helpers.StringSliceContains(existingChangedDashboardNames, nodeName) || helpers.StringSliceContains(changedDashboardNames, nodeName) || !helpers.StringSliceContains(dashboardsBeingWatched, nodeName) {
 					continue
 				}
 
-				changedReportNames = append(changedReportNames, nodeName)
+				changedDashboardNames = append(changedDashboardNames, nodeName)
 			}
 		}
 	}
 
-	return changedReportNames
+	return changedDashboardNames
 }
 
 // Start starts the API server
@@ -257,6 +257,9 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		}
 	}()
 
+	// reload workspace
+	s.workspaceResources = s.workspace.GetResourceMaps()
+
 	switch e := event.(type) {
 
 	case *dashboardevents.WorkspaceError:
@@ -283,7 +286,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			}
 		}
 		s.mutex.Unlock()
-		outputWait(s.context, fmt.Sprintf("Report execution started: %s", dashboardName))
+		outputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", dashboardName))
 
 	case *dashboardevents.LeafNodeError:
 		log.Println("[TRACE] Got leaf node error event", *e)
@@ -297,7 +300,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		paths := e.Node.GetPath()
 		s.mutex.Lock()
 		for session, repoInfo := range s.dashboardClients {
-			// If this session is interested in this report, broadcast to it
+			// If this session is interested in this dashboard, broadcast to it
 			if (repoInfo.Dashboard != nil) && helpers.StringSliceContains(paths, *repoInfo.Dashboard) {
 				session.Write(payload)
 			}
@@ -313,7 +316,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		paths := e.Node.GetPath()
 		s.mutex.Lock()
 		for session, repoInfo := range s.dashboardClients {
-			// If this session is interested in this report, broadcast to it
+			// If this session is interested in this dashboard, broadcast to it
 			if (repoInfo.Dashboard != nil) && helpers.StringSliceContains(paths, *repoInfo.Dashboard) {
 				session.Write(payload)
 			}
@@ -321,7 +324,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		s.mutex.Unlock()
 
 	case *dashboardevents.DashboardChanged:
-		log.Println("[TRACE] Got report changed event", *e)
+		log.Println("[TRACE] Got dashboard changed event", *e)
 		deletedDashboards := e.DeletedDashboards
 		newDashboards := e.NewDashboards
 
@@ -355,12 +358,12 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		}
 
 		for k, v := range s.dashboardClients {
-			log.Printf("[TRACE] Report client: %v %v\n", k, typeHelpers.SafeString(v.Dashboard))
+			log.Printf("[TRACE] Dashboard client: %v %v\n", k, typeHelpers.SafeString(v.Dashboard))
 		}
 
-		// If) any deleted/new/changed reports, emit an available reports message to clients
+		// If) any deleted/new/changed dashboards, emit an available dashboards message to clients
 		if len(deletedDashboards) != 0 || len(newDashboards) != 0 || len(changedDashboards) != 0 {
-			outputMessage(s.context, "Available Reports updated")
+			outputMessage(s.context, "Available Dashboards updated")
 			payload, payloadError = buildAvailableDashboardsPayload(s.workspaceResources)
 			if payloadError != nil {
 				return
@@ -368,49 +371,49 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			s.webSocket.Broadcast(payload)
 		}
 
-		var reportsBeingWatched []string
+		var dashboardssBeingWatched []string
 		s.mutex.Lock()
-		for _, reportClientInfo := range s.dashboardClients {
-			reportName := typeHelpers.SafeString(reportClientInfo.Dashboard)
-			if reportClientInfo.Dashboard != nil {
-				if helpers.StringSliceContains(reportsBeingWatched, reportName) {
+		for _, dashboardClientInfo := range s.dashboardClients {
+			dashboardName := typeHelpers.SafeString(dashboardClientInfo.Dashboard)
+			if dashboardClientInfo.Dashboard != nil {
+				if helpers.StringSliceContains(dashboardssBeingWatched, dashboardName) {
 					continue
 				}
-				reportsBeingWatched = append(reportsBeingWatched, reportName)
+				dashboardssBeingWatched = append(dashboardssBeingWatched, dashboardName)
 			}
 		}
 		s.mutex.Unlock()
 
-		var changedReportNames []string
+		var changedDashboardNames []string
 		var newDashboardNames []string
 
-		// Process the changed items and make a note of the report(s) they're in
-		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedContainers)...)
-		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedBenchmarks)...)
-		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedControls)...)
-		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedCards)...)
-		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedCharts)...)
-		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedHierarchies)...)
-		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedImages)...)
-		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedInputs)...)
-		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedTables)...)
-		changedReportNames = append(changedReportNames, getReportsInterestedInResourceChanges(reportsBeingWatched, changedReportNames, changedTexts)...)
+		// Process the changed items and make a note of the dashboard(s) they're in
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedContainers)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedBenchmarks)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedControls)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedCards)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedCharts)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedHierarchies)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedImages)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedInputs)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedTables)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedTexts)...)
 
-		for _, changedReport := range changedDashboards {
-			if helpers.StringSliceContains(changedReportNames, changedReport.Name) {
+		for _, changedDashboard := range changedDashboards {
+			if helpers.StringSliceContains(changedDashboardNames, changedDashboard.Name) {
 				continue
 			}
-			changedReportNames = append(changedReportNames, changedReport.Name)
+			changedDashboardNames = append(changedDashboardNames, changedDashboard.Name)
 		}
 
-		for _, changedReportName := range changedReportNames {
-			if helpers.StringSliceContains(reportsBeingWatched, changedReportName) {
-				dashboardexecute.ExecuteDashboardNode(s.context, changedReportName, s.workspace, s.dbClient)
+		for _, changedDashboardName := range changedDashboardNames {
+			if helpers.StringSliceContains(dashboardssBeingWatched, changedDashboardName) {
+				dashboardexecute.ExecuteDashboardNode(s.context, changedDashboardName, s.workspace, s.dbClient)
 			}
 		}
 
-		// Special case - if we previously had a workspace error, any previously existing reports
-		// will come in here as new, so we need to check if any of those new reports are being watched.
+		// Special case - if we previously had a workspace error, any previously existing dashboards
+		// will come in here as new, so we need to check if any of those new dashboards are being watched.
 		// If so, execute them
 		for _, newDashboard := range newDashboards {
 			if helpers.StringSliceContains(newDashboardNames, newDashboard.Name()) {
@@ -420,16 +423,16 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		}
 
 		for _, newDashboardName := range newDashboardNames {
-			if helpers.StringSliceContains(reportsBeingWatched, newDashboardName) {
+			if helpers.StringSliceContains(dashboardssBeingWatched, newDashboardName) {
 				dashboardexecute.ExecuteDashboardNode(s.context, newDashboardName, s.workspace, s.dbClient)
 			}
 		}
 
 	case *dashboardevents.DashboardError:
-		log.Println("[TRACE] Got report error event", *e)
+		log.Println("[TRACE] Got dashboard error event", *e)
 
 	case *dashboardevents.DashboardComplete:
-		log.Println("[TRACE] Got report complete event", *e)
+		log.Println("[TRACE] Got dashboard complete event", *e)
 
 	case *dashboardevents.ExecutionComplete:
 		log.Println("[TRACE] Got execution complete event", *e)
@@ -437,15 +440,76 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		if payloadError != nil {
 			return
 		}
-		reportName := e.Dashboard.GetName()
+		dashboardName := e.Dashboard.GetName()
 		s.mutex.Lock()
 		for session, repoInfo := range s.dashboardClients {
-			// If this session is interested in this report, broadcast to it
-			if (repoInfo.Dashboard != nil) && *repoInfo.Dashboard == reportName {
+			// If this session is interested in this dashboard, broadcast to it
+			if (repoInfo.Dashboard != nil) && *repoInfo.Dashboard == dashboardName {
 				session.Write(payload)
 			}
 		}
 		s.mutex.Unlock()
-		outputReady(s.context, fmt.Sprintf("Execution complete: %s", reportName))
+		outputReady(s.context, fmt.Sprintf("Execution complete: %s", dashboardName))
 	}
+}
+
+func (s *Server) Init(ctx context.Context) {
+	// Return list of dashboards on connect
+	s.webSocket.HandleConnect(func(session *melody.Session) {
+		log.Println("[TRACE] Client connected")
+		s.addSession(session)
+	})
+
+	s.webSocket.HandleDisconnect(func(session *melody.Session) {
+		log.Println("[TRACE] Client disconnected")
+		s.clearSession(session)
+	})
+
+	s.webSocket.HandleMessage(func(session *melody.Session, msg []byte) {
+		log.Println("[TRACE] Got message", string(msg))
+		var request ClientRequest
+		// if we could not decode message - ignore
+		if err := json.Unmarshal(msg, &request); err == nil {
+
+			switch request.Action {
+			case "get_dashboard_metadata":
+				payload, err := buildDashboardMetadataPayload(s.workspaceResources)
+				if err != nil {
+					panic(fmt.Errorf("error building payload for get_metadata: %v", err))
+				}
+				session.Write(payload)
+			case "get_available_dashboards":
+				payload, err := buildAvailableDashboardsPayload(s.workspaceResources)
+				if err != nil {
+					panic(fmt.Errorf("error building payload for get_available_dashboards: %v", err))
+				}
+				session.Write(payload)
+			case "select_dashboard":
+				log.Printf("[TRACE] Got event: %v\n", request.Payload.Dashboard)
+				dashboardClientInfo := s.getSession(session)
+				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
+				dashboardexecute.ExecuteDashboardNode(ctx, request.Payload.Dashboard.FullName, s.workspace, s.dbClient)
+			}
+		}
+	})
+	outputMessage(ctx, "Initialization complete")
+}
+
+func (s *Server) getSession(session *melody.Session) *DashboardClientInfo {
+	s.mutex.Lock()
+	dashboardClientInfo := s.dashboardClients[session]
+	s.mutex.Unlock()
+	return dashboardClientInfo
+}
+
+func (s *Server) clearSession(session *melody.Session) {
+	s.mutex.Lock()
+	delete(s.dashboardClients, session)
+	s.mutex.Unlock()
+}
+
+func (s *Server) addSession(session *melody.Session) {
+	s.mutex.Lock()
+	s.dashboardClients[session] = &DashboardClientInfo{}
+	s.mutex.Unlock()
 }

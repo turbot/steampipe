@@ -32,8 +32,8 @@ type DashboardInput struct {
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
-	parents            []ModTreeItem
-	dashboardContainer *DashboardContainer
+	parents   []ModTreeItem
+	dashboard *Dashboard
 }
 
 func NewDashboardInput(block *hcl.Block, mod *Mod) *DashboardInput {
@@ -196,12 +196,12 @@ func (c *DashboardInput) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }
 
-// SetDashboardContainer sets the parent dashboard container
-func (c *DashboardInput) SetDashboardContainer(dashboardContainer *DashboardContainer) {
+// SetDashboard sets the parent dashboard container
+func (c *DashboardInput) SetDashboard(dashboard *Dashboard) {
 	// TODO [reports] also update unqualified name?
-	c.dashboardContainer = dashboardContainer
+	c.dashboard = dashboard
 	// update the full name with a sanitsed version of the parent dashboard name
-	dashboardName := strings.Replace(c.dashboardContainer.UnqualifiedName, ".", "_", -1)
+	dashboardName := strings.Replace(c.dashboard.UnqualifiedName, ".", "_", -1)
 	c.FullName = fmt.Sprintf("%s.%s.%s", c.Mod.ShortName, dashboardName, c.UnqualifiedName)
 	c.UnqualifiedName = fmt.Sprintf("%s.%s", dashboardName, c.UnqualifiedName)
 }

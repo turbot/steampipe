@@ -55,20 +55,20 @@ type Mod struct {
 	VersionString string `cty:"version"`
 	Version       *semver.Version
 
-	Queries           map[string]*Query
-	Controls          map[string]*Control
-	Benchmarks       map[string]*Benchmark
-	Dashboards          map[string]*DashboardContainer
-	DashboardContainers map[string]*DashboardContainer
-	DashboardCards    map[string]*DashboardCard
+	Queries              map[string]*Query
+	Controls             map[string]*Control
+	Benchmarks           map[string]*Benchmark
+	Dashboards           map[string]*Dashboard
+	DashboardContainers  map[string]*DashboardContainer
+	DashboardCards       map[string]*DashboardCard
 	DashboardCharts      map[string]*DashboardChart
 	DashboardHierarchies map[string]*DashboardHierarchy
-	DashboardImages map[string]*DashboardImage
-	DashboardInputs map[string]*DashboardInput
-	DashboardTables map[string]*DashboardTable
-	DashboardTexts  map[string]*DashboardText
-	Variables       map[string]*Variable
-	Locals            map[string]*Local
+	DashboardImages      map[string]*DashboardImage
+	DashboardInputs      map[string]*DashboardInput
+	DashboardTables      map[string]*DashboardTable
+	DashboardTexts       map[string]*DashboardText
+	Variables            map[string]*Variable
+	Locals               map[string]*Local
 
 	// ModPath is the installation location of the mod
 	ModPath   string
@@ -91,7 +91,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) (*Mod, error) {
 		Queries:              make(map[string]*Query),
 		Controls:             make(map[string]*Control),
 		Benchmarks:           make(map[string]*Benchmark),
-		Dashboards:           make(map[string]*DashboardContainer),
+		Dashboards:           make(map[string]*Dashboard),
 		DashboardContainers:  make(map[string]*DashboardContainer),
 		DashboardCards:       make(map[string]*DashboardCard),
 		DashboardCharts:      make(map[string]*DashboardChart),

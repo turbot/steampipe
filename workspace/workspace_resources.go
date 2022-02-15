@@ -129,16 +129,16 @@ func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) (map[string]*modc
 	return benchmarkMap, localBenchmarkMap
 }
 
-func (w *Workspace) buildDashboardMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardContainer {
-	var res = make(map[string]*modconfig.DashboardContainer)
+func (w *Workspace) buildDashboardMap(modMap modconfig.ModMap) map[string]*modconfig.Dashboard {
+	var res = make(map[string]*modconfig.Dashboard)
 
-	for _, r := range w.Mod.Dashboards {
-		res[r.Name()] = r
+	for _, d := range w.Mod.Dashboards {
+		res[d.Name()] = d
 	}
 
 	for _, mod := range modMap {
-		for _, r := range mod.Dashboards {
-			res[r.Name()] = r
+		for _, d := range mod.Dashboards {
+			res[d.Name()] = d
 		}
 	}
 	return res

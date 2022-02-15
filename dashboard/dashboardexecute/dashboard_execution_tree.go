@@ -16,7 +16,7 @@ import (
 type DashboardExecutionTree struct {
 	modconfig.UniqueNameProviderBase
 
-	Root          *DashboardContainerRun
+	Root          *DashboardRun
 	dashboardName string
 	client        db_common.Client
 	runs          map[string]dashboardinterfaces.DashboardNodeRun
@@ -49,7 +49,7 @@ func NewReportExecutionTree(reportName string, client db_common.Client, workspac
 	return reportExecutionTree, nil
 }
 
-func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardContainerRun, error) {
+func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardRun, error) {
 	parsedName, err := modconfig.ParseResourceName(reportName)
 	if err != nil {
 		return nil, err
@@ -58,11 +58,11 @@ func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardCo
 	if parsedName.ItemType != modconfig.BlockTypeDashboard {
 		return nil, fmt.Errorf("reporting type %s cannot be executed directly - only reports may be executed", parsedName.ItemType)
 	}
-	report, ok := e.workspace.Dashboards[reportName]
+	dashboard, ok := e.workspace.Dashboards[reportName]
 	if !ok {
 		return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
 	}
-	return NewDashboardContainerRun(report, e, e)
+	return NewDashboardRun(dashboard, e, e)
 
 }
 

@@ -451,7 +451,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("simple report"),
 				Description: toStringPointer("this mod contains a simple report"),
-				Dashboards: map[string]*modconfig.DashboardContainer{
+				Dashboards: map[string]*modconfig.Dashboard{
 					"simple_report.report.simple_report": {
 						ShortName:       "simple_report",
 						FullName:        "simple_report.report.simple_report",
@@ -486,7 +486,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("simple report with container"),
 				Description: toStringPointer("this mod contains a simple report with containers"),
-				Dashboards: map[string]*modconfig.DashboardContainer{
+				Dashboards: map[string]*modconfig.Dashboard{
 					"simple_container_report.report.simple_container_report": {
 						ShortName:       "simple_container_report",
 						FullName:        "simple_container_report.report.simple_container_report",
@@ -501,7 +501,6 @@ func init() {
 						FullName:        "simple_container_report.container.anonymous_container",
 						UnqualifiedName: "container.anonymous_container",
 						ChildNames:      []string{"simple_container_report.text.anonymous_text", "simple_container_report.chart.anonymous_chart"},
-						HclType:         "container",
 					},
 				},
 				DashboardCharts: map[string]*modconfig.DashboardChart{
@@ -531,7 +530,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("report with multiple sibling containers"),
 				Description: toStringPointer("this mod contains a report with multiple sibling containers"),
-				Dashboards: map[string]*modconfig.DashboardContainer{
+				Dashboards: map[string]*modconfig.Dashboard{
 					"sibling_containers_report.report.sibling_containers_report": {
 						ShortName:       "sibling_containers_report",
 						FullName:        "sibling_containers_report.report.sibling_containers_report",
@@ -546,14 +545,12 @@ func init() {
 						FullName:        "sibling_containers_report.container.anonymous_container",
 						UnqualifiedName: "container.anonymous_container",
 						ChildNames:      []string{"sibling_containers_report.text.anonymous_text", "sibling_containers_report.chart.anonymous_chart"},
-						HclType:         "container",
 					},
 					"sibling_containers_report.container.anonymous_container_1": {
 						ShortName:       "anonymous_container_1",
 						FullName:        "sibling_containers_report.container.anonymous_container_1",
 						UnqualifiedName: "container.anonymous_container_1",
 						ChildNames:      []string{"sibling_containers_report.text.anonymous_text_1", "sibling_containers_report.chart.anonymous_chart_1"},
-						HclType:         "container",
 					},
 					"sibling_containers_report.container.anonymous_container_2": {
 						ShortName:       "anonymous_container_2",
@@ -615,7 +612,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("report with nested containers"),
 				Description: toStringPointer("this mod contains a report with nested containers"),
-				Dashboards: map[string]*modconfig.DashboardContainer{
+				Dashboards: map[string]*modconfig.Dashboard{
 					"nested_containers_report.report.nested_containers_report": {
 						ShortName:       "nested_containers_report",
 						FullName:        "nested_containers_report.report.nested_containers_report",
@@ -709,7 +706,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("report with axes"),
 				Description: toStringPointer("This mod tests base values overriding functionality"),
-				Dashboards: map[string]*modconfig.DashboardContainer{
+				Dashboards: map[string]*modconfig.Dashboard{
 					"report_axes.report.override_base_values": {
 						ShortName:       "override_base_values",
 						FullName:        "report_axes.report.override_base_values",
@@ -787,7 +784,7 @@ func init() {
 						SQL:             toStringPointer("with unencrypted_buckets_by_region as (\n  select\n    region,\n    count(*) as unencrypted\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is null\n  group by\n    region\n),\nnonversioned_buckets_by_region as (\n  select\n    region,\n    count(*) as nonversioned\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    not versioning_enabled\n  group by\n    region\n),\ncompliant_buckets_by_region as (\n  select\n    region,\n    count(*) as \"other\"\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is not null\n    and versioning_enabled\n  group by\n    region\n)\nselect\n  c.region as \"Region\",\n  coalesce(c.other, 0) as \"Compliant\",\n  coalesce(u.unencrypted, 0) as \"Unencrypted\",\n  coalesce(v.nonversioned, 0) as \"Non-Versioned\"\nfrom\n  compliant_buckets_by_region c\n  full join unencrypted_buckets_by_region u on c.region = u.region\n  full join nonversioned_buckets_by_region v on c.region = v.region;\n"),
 					},
 				},
-				Dashboards: map[string]*modconfig.DashboardContainer{
+				Dashboards: map[string]*modconfig.Dashboard{
 					"report_base1.report.inheriting_from_base": {
 						ShortName:       "inheriting_from_base",
 						FullName:        "report_base1.report.inheriting_from_base",
