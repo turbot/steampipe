@@ -20,12 +20,19 @@ type ReportCard struct {
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title *string     `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int        `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Type  *string     `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
-	Icon  *string     `cty:"icon" hcl:"icon" column:"icon,text" json:"icon,omitempty"`
-	Base  *ReportCard `hcl:"base" json:"-"`
+	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Type  *string `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
+	Icon  *string `cty:"icon" hcl:"icon" column:"icon,text" json:"icon,omitempty"`
+
+	// QueryProvider
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
+
+	Base *ReportCard `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
@@ -200,11 +207,6 @@ func (c *ReportCard) Diff(other *ReportCard) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetSQL implements ReportLeafNode
-func (c *ReportCard) GetSQL() string {
-	return typehelpers.SafeString(c.SQL)
-}
-
 // GetWidth implements ReportLeafNode
 func (c *ReportCard) GetWidth() int {
 	if c.Width == nil {
@@ -216,4 +218,48 @@ func (c *ReportCard) GetWidth() int {
 // GetUnqualifiedName implements ReportLeafNode
 func (c *ReportCard) GetUnqualifiedName() string {
 	return c.UnqualifiedName
+}
+
+// GetParams implements QueryProvider
+func (c *ReportCard) GetParams() []*ParamDef {
+	return c.Params
+}
+
+// GetArgs implements QueryProvider
+func (c *ReportCard) GetArgs() *QueryArgs {
+	return c.Args
+}
+
+// GetSQL implements QueryProvider, ReportLeafNode
+func (c *ReportCard) GetSQL() string {
+	return typehelpers.SafeString(c.SQL)
+}
+
+// GetQuery implements QueryProvider
+func (c *ReportCard) GetQuery() *Query {
+	return c.Query
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (c *ReportCard) GetPreparedStatementName() string {
+	// lazy load
+	if c.PreparedStatementName == "" {
+		c.PreparedStatementName = preparedStatementName(c)
+	}
+	return c.PreparedStatementName
+}
+
+// GetModName implements QueryProvider
+func (c *ReportCard) GetModName() string {
+	return c.Mod.NameWithVersion()
+}
+
+// SetArgs implements QueryProvider
+func (c *ReportCard) SetArgs(args *QueryArgs) {
+	// nothing
+}
+
+// SetParams implements QueryProvider
+func (c *ReportCard) SetParams(params []*ParamDef) {
+	c.Params = params
 }

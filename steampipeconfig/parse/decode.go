@@ -110,7 +110,6 @@ func decodeBlock(block *hcl.Block, parent modconfig.ModTreeItem, runCtx *RunCont
 	}
 
 	for _, resource := range resources {
-
 		// handle the result
 		// - if successful, add resource to mod and variables maps
 		// - if there are dependencies, add them to run context
@@ -556,12 +555,9 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 // - generate and set resource metadata
 // - add resource to RunContext (which adds it to the mod)handleDecodeResult
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) {
-	// determine if this is an anonymous resource
-	// (if it is anonymous it must support ResourceWithMetadata)
-	resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata)
-	anonymousResource := ok && resourceWithMetadata.IsAnonymous()
 
 	if res.Success() {
+		anonymousResource := resourceIsAnonymous(resource)
 
 		// call post decode hook
 		// NOTE: must do this BEFORE adding resource to run context to ensure we respect the base property
@@ -600,6 +596,14 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 			res.addDiags(moreDiags)
 		}
 	}
+}
+
+func resourceIsAnonymous(resource modconfig.HclResource) bool {
+
+	// (if it is anonymous it must support ResourceWithMetadata)
+	resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata)
+	anonymousResource := ok && resourceWithMetadata.IsAnonymous()
+	return anonymousResource
 }
 
 func addResourceMetadata(resourceWithMetadata modconfig.ResourceWithMetadata, srcRange hcl.Range, runCtx *RunContext) hcl.Diagnostics {

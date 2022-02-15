@@ -37,7 +37,7 @@ func NewLeafRun(resource modconfig.ReportLeafNode, parent reportinterfaces.Repor
 		SQL:           resource.GetSQL(),
 		Path:          resource.GetPaths()[0],
 		ReportNode:    resource,
-		ReportName:    executionTree.Root.GetName(),
+		ReportName:    executionTree.reportName,
 		executionTree: executionTree,
 		parent:        parent,
 

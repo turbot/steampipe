@@ -38,7 +38,7 @@ func NewCheckRun(resource modconfig.ReportLeafNode, parent reportinterfaces.Repo
 		Width:         resource.GetWidth(),
 		Path:          resource.GetPaths()[0],
 		ReportNode:    resource,
-		ReportName:    executionTree.Root.GetName(),
+		ReportName:    executionTree.reportName,
 		executionTree: executionTree,
 		parent:        parent,
 

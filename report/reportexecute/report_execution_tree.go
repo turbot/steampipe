@@ -17,12 +17,13 @@ type ReportExecutionTree struct {
 	modconfig.UniqueNameProviderBase
 
 	Root        *ReportContainerRun
+	reportName  string
 	client      db_common.Client
 	runs        map[string]reportinterfaces.ReportNodeRun
 	workspace   *workspace.Workspace
 	runComplete chan reportinterfaces.ReportNodeRun
-	inputLock   sync.Mutex
 
+	inputLock              sync.Mutex
 	inputDataSubscriptions map[string][]chan bool
 }
 
@@ -35,6 +36,7 @@ func NewReportExecutionTree(reportName string, client db_common.Client, workspac
 		workspace:              workspace,
 		runComplete:            make(chan reportinterfaces.ReportNodeRun, 1),
 		inputDataSubscriptions: make(map[string][]chan bool),
+		reportName:             reportName,
 	}
 
 	// create the root run node (either a report run or a counter run)

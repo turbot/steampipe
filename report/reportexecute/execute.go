@@ -15,7 +15,7 @@ import (
 var executions = make(map[string]*ReportExecutionTree)
 
 func ExecuteReportNode(ctx context.Context, reportName string, workspace *workspace.Workspace, client db_common.Client) error {
-	// TOTO [reports] if this report is already running - cancel ??? fail???
+	// TODO [reports] if this report is already running - cancel ??? fail???
 	if _, running := executions[reportName]; running {
 		return fmt.Errorf("report %s is already running", reportName)
 	}

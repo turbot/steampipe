@@ -44,7 +44,7 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 		Name:          name,
 		NodeType:      container.HclType,
 		Path:          container.Paths[0],
-		ReportName:    executionTree.Root.GetName(),
+		ReportName:    executionTree.reportName,
 		executionTree: executionTree,
 		parent:        parent,
 		reportNode:    container,
