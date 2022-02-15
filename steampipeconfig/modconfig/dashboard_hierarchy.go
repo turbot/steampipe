@@ -22,11 +22,13 @@ type DashboardHierarchy struct {
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title        *string                             `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width        *int                                `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Type         *string                             `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Title        *string                                `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width        *int                                   `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Type         *string                                `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	CategoryList DashboardHierarchyCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
 	Categories   map[string]*DashboardHierarchyCategory `cty:"categories" json:"categories"`
+	Display      *string                                `cty:"string" hcl:"string" json:"string,omitempty"`
+	On           *DashboardOn                           `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`

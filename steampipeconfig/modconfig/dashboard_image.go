@@ -19,12 +19,14 @@ type DashboardImage struct {
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title *string         `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int            `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL   *string      `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Src   *string      `cty:"src" hcl:"src" column:"src,text"  json:"src,omitempty"`
-	Alt   *string         `cty:"alt" hcl:"alt" column:"alt,text"  json:"alt,omitempty"`
-	Base  *DashboardImage `hcl:"base" json:"-"`
+	Title   *string         `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width   *int            `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	SQL     *string         `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
+	Src     *string         `cty:"src" hcl:"src" column:"src,text"  json:"src,omitempty"`
+	Alt     *string         `cty:"alt" hcl:"alt" column:"alt,text"  json:"alt,omitempty"`
+	Display *string         `cty:"string" hcl:"string" json:"string,omitempty"`
+	On      *DashboardOn    `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	Base    *DashboardImage `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`

@@ -30,6 +30,8 @@ type Dashboard struct {
 	Args            *QueryArgs        `cty:"args" column:"args,jsonb"`
 	Base            *Dashboard        `hcl:"base"`
 	Inputs          []*DashboardInput `cty:"inputs"`
+	Display         *string           `cty:"string" hcl:"display" json:"string,omitempty"`
+	On              *DashboardOn      `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	Mod       *Mod `cty:"mod"`
 	DeclRange hcl.Range

@@ -19,10 +19,12 @@ type DashboardContainer struct {
 	Remain hcl.Body `hcl:",remain"`
 
 	ShortName       string
-	FullName        string  `cty:"name"`
-	UnqualifiedName string  `cty:"unqualified_name"`
-	Title           *string `cty:"title" hcl:"title" column:"title,text"`
-	Width           *int    `cty:"width" hcl:"width"  column:"width,text"`
+	FullName        string       `cty:"name"`
+	UnqualifiedName string       `cty:"unqualified_name"`
+	Title           *string      `cty:"title" hcl:"title" column:"title,text"`
+	Width           *int         `cty:"width" hcl:"width"  column:"width,text"`
+	Display         *string      `cty:"string" hcl:"string" json:"string,omitempty"`
+	On              *DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	Mod       *Mod `cty:"mod"`
 	DeclRange hcl.Range
