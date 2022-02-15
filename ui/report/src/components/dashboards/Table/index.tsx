@@ -230,7 +230,10 @@ type TableColumns = {
   [column: string]: TableColumnOptions;
 };
 
+type TableType = "table" | "line" | null;
+
 export type TableProperties = {
+  type?: TableType;
   columns?: TableColumns;
 };
 
@@ -241,7 +244,7 @@ export type TableProps = BaseTableProps & {
 };
 
 // TODO retain full width on mobile, no padding
-const Table = (props: TableProps) => {
+const TableView = (props: TableProps) => {
   const { columns, hiddenColumns } = useMemo(
     () => getColumns(props.data ? props.data.columns : [], props.properties),
     [props.data, props.properties]
@@ -340,6 +343,47 @@ const Table = (props: TableProps) => {
       {/*/>*/}
     </>
   ) : null;
+};
+
+const LineView = (props: TableProps) => {
+  if (
+    !props.data ||
+    !props.data.columns ||
+    props.data.columns.length === 0 ||
+    !props.data.rows ||
+    props.data.rows.length === 0
+  ) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-4">
+      {props.data.rows.map((row, rowIndex) => {
+        return (
+          <div className="space-y-2">
+            {row.map((cellValue, columnIndex) => {
+              const col = props.data?.columns[columnIndex];
+              return (
+                <div key={`${col?.name}-${rowIndex}`}>
+                  <span className="block text-foreground-lighter">
+                    {col?.name}
+                  </span>
+                  <CellValue column={col} value={cellValue} />
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const Table = (props: TableProps) => {
+  if (props.properties && props.properties.type === "line") {
+    return <LineView {...props} />;
+  }
+  return <TableView {...props} />;
 };
 
 export default Table;

@@ -520,6 +520,7 @@ const renderChart = (definition: ChartDefinition) => {
   const {
     properties: { type = "column" },
   } = definition;
+
   const chart = Charts[type];
 
   if (!chart) {

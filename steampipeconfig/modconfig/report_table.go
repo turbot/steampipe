@@ -24,6 +24,7 @@ type ReportTable struct {
 
 	Title      *string                       `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width      *int                          `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Type       *string                       `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	ColumnList ReportTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
 	Columns    map[string]*ReportTableColumn `cty:"columns" json:"columns"`
 
@@ -98,6 +99,11 @@ func (t *ReportTable) setBaseProperties() {
 	if t.SQL == nil {
 		t.SQL = t.Base.SQL
 	}
+
+	if t.Type == nil {
+		t.Type = t.Base.Type
+	}
+
 	if t.ColumnList == nil {
 		t.ColumnList = t.Base.ColumnList
 	} else {
@@ -185,6 +191,10 @@ func (t *ReportTable) Diff(other *ReportTable) *ReportTreeItemDiffs {
 
 	if !utils.SafeIntEqual(t.Width, other.Width) {
 		res.AddPropertyDiff("Width")
+	}
+
+	if !utils.SafeStringsEqual(t.Type, other.Type) {
+		res.AddPropertyDiff("Type")
 	}
 
 	if len(t.ColumnList) != len(other.ColumnList) {
