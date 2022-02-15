@@ -136,6 +136,10 @@ func buildAvailableDashboardsPayload(workspace *modconfig.WorkspaceResourceMaps)
 			dashboardsByMod[mod.FullName] = make(map[string]ModAvailableDashboard)
 		}
 		for _, dashboard := range mod.Dashboards {
+			// Only include top-level reports
+			if len(dashboard.Paths) == 0 || len(dashboard.Paths[0]) > 2 {
+				continue
+			}
 			dashboardsByMod[mod.FullName][dashboard.FullName] = ModAvailableDashboard{
 				Title:     typeHelpers.SafeString(dashboard.Title),
 				FullName:  dashboard.FullName,
