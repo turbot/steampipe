@@ -51,13 +51,6 @@ func (l *Local) GetUnqualifiedName() string {
 	return l.UnqualifiedName
 }
 
-// SetMod implements HclResource
-func (l *Local) SetMod(mod *Mod) {
-	l.Mod = mod
-	// add mod name to full name
-	l.FullName = fmt.Sprintf("%s.%s", mod.ShortName, l.FullName)
-}
-
 // GetMod implements HclResource
 func (l *Local) GetMod() *Mod {
 	return l.Mod

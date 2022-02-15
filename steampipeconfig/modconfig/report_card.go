@@ -96,12 +96,6 @@ func (c *ReportCard) setBaseProperties() {
 // AddReference implements HclResource
 func (c *ReportCard) AddReference(*ResourceReference) {}
 
-// SetMod implements HclResource
-func (c *ReportCard) SetMod(mod *Mod) {
-	c.Mod = mod
-	c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
-}
-
 // GetMod implements HclResource
 func (c *ReportCard) GetMod() *Mod {
 	return c.Mod
