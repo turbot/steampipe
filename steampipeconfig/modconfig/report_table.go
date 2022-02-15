@@ -25,9 +25,9 @@ type ReportTable struct {
 	Title      *string                       `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width      *int                          `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	Type       *string                       `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Transform  *string                       `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 	ColumnList ReportTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
 	Columns    map[string]*ReportTableColumn `cty:"columns" json:"columns"`
-	Transform  *string                       `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
