@@ -47,12 +47,12 @@ func (lp ListenPort) IsValid() error {
 }
 
 type Server struct {
-	context       context.Context
-	dbClient      db_common.Client
+	context          context.Context
+	dbClient         db_common.Client
 	mutex            *sync.Mutex
 	dashboardClients map[*melody.Session]*DashboardClientInfo
 	webSocket        *melody.Melody
-	workspace     *workspace.Workspace
+	workspace        *workspace.Workspace
 }
 
 type ErrorPayload struct {

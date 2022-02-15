@@ -19,9 +19,9 @@ type DashboardExecutionTree struct {
 	Root          *DashboardContainerRun
 	dashboardName string
 	client        db_common.Client
-	runs        map[string]dashboardinterfaces.DashboardNodeRun
-	workspace   *workspace.Workspace
-	runComplete chan dashboardinterfaces.DashboardNodeRun
+	runs          map[string]dashboardinterfaces.DashboardNodeRun
+	workspace     *workspace.Workspace
+	runComplete   chan dashboardinterfaces.DashboardNodeRun
 
 	inputLock              sync.Mutex
 	inputDataSubscriptions map[string][]chan bool
@@ -58,7 +58,7 @@ func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardCo
 	if parsedName.ItemType != modconfig.BlockTypeDashboard {
 		return nil, fmt.Errorf("reporting type %s cannot be executed directly - only reports may be executed", parsedName.ItemType)
 	}
-	report, ok := e.workspace.Reports[reportName]
+	report, ok := e.workspace.Dashboards[reportName]
 	if !ok {
 		return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
 	}

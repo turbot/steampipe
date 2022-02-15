@@ -13,9 +13,9 @@ import (
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/filepaths"
-	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
@@ -30,20 +30,20 @@ type Workspace struct {
 
 	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
 
-	Queries           map[string]*modconfig.Query
-	Controls          map[string]*modconfig.Control
-	Benchmarks        map[string]*modconfig.Benchmark
-	Mods              map[string]*modconfig.Mod
-	Reports           map[string]*modconfig.DashboardContainer
-	ReportContainers  map[string]*modconfig.DashboardContainer
-	ReportCards       map[string]*modconfig.DashboardCard
-	ReportCharts      map[string]*modconfig.DashboardChart
-	ReportHierarchies map[string]*modconfig.DashboardHierarchy
-	ReportImages      map[string]*modconfig.DashboardImage
-	ReportInputs      map[string]*modconfig.DashboardInput
-	ReportTables      map[string]*modconfig.DashboardTable
-	ReportTexts       map[string]*modconfig.DashboardText
-	Variables         map[string]*modconfig.Variable
+	Queries              map[string]*modconfig.Query
+	Controls             map[string]*modconfig.Control
+	Benchmarks           map[string]*modconfig.Benchmark
+	Mods                 map[string]*modconfig.Mod
+	Dashboards           map[string]*modconfig.DashboardContainer
+	DashboardContainers  map[string]*modconfig.DashboardContainer
+	DashboardCards       map[string]*modconfig.DashboardCard
+	DashboardCharts      map[string]*modconfig.DashboardChart
+	DashboardHierarchies map[string]*modconfig.DashboardHierarchy
+	DashboardImages      map[string]*modconfig.DashboardImage
+	DashboardInputs      map[string]*modconfig.DashboardInput
+	DashboardTables      map[string]*modconfig.DashboardTable
+	DashboardTexts       map[string]*modconfig.DashboardText
+	Variables            map[string]*modconfig.Variable
 
 	//local  resources keyed by unqualified name
 	LocalQueries    map[string]*modconfig.Query
@@ -170,15 +170,15 @@ func (w *Workspace) reset() {
 	w.Controls = make(map[string]*modconfig.Control)
 	w.Benchmarks = make(map[string]*modconfig.Benchmark)
 	w.Mods = make(map[string]*modconfig.Mod)
-	w.Reports = make(map[string]*modconfig.DashboardContainer)
-	w.ReportContainers = make(map[string]*modconfig.DashboardContainer)
-	w.ReportCards = make(map[string]*modconfig.DashboardCard)
-	w.ReportCharts = make(map[string]*modconfig.DashboardChart)
-	w.ReportHierarchies = make(map[string]*modconfig.DashboardHierarchy)
-	w.ReportImages = make(map[string]*modconfig.DashboardImage)
-	w.ReportInputs = make(map[string]*modconfig.DashboardInput)
-	w.ReportTables = make(map[string]*modconfig.DashboardTable)
-	w.ReportTexts = make(map[string]*modconfig.DashboardText)
+	w.Dashboards = make(map[string]*modconfig.DashboardContainer)
+	w.DashboardContainers = make(map[string]*modconfig.DashboardContainer)
+	w.DashboardCards = make(map[string]*modconfig.DashboardCard)
+	w.DashboardCharts = make(map[string]*modconfig.DashboardChart)
+	w.DashboardHierarchies = make(map[string]*modconfig.DashboardHierarchy)
+	w.DashboardImages = make(map[string]*modconfig.DashboardImage)
+	w.DashboardInputs = make(map[string]*modconfig.DashboardInput)
+	w.DashboardTables = make(map[string]*modconfig.DashboardTable)
+	w.DashboardTexts = make(map[string]*modconfig.DashboardText)
 	w.LocalQueries = make(map[string]*modconfig.Query)
 	w.LocalControls = make(map[string]*modconfig.Control)
 	w.LocalBenchmarks = make(map[string]*modconfig.Benchmark)
@@ -232,15 +232,15 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	w.Queries, w.LocalQueries = w.buildQueryMap(runCtx.LoadedDependencyMods)
 	w.Controls, w.LocalControls = w.buildControlMap(runCtx.LoadedDependencyMods)
 	w.Benchmarks, w.LocalBenchmarks = w.buildBenchmarkMap(runCtx.LoadedDependencyMods)
-	w.Reports = w.buildReportMap(runCtx.LoadedDependencyMods)
-	w.ReportContainers = w.buildReportContainerMap(runCtx.LoadedDependencyMods)
-	w.ReportCards = w.buildReportCardMap(runCtx.LoadedDependencyMods)
-	w.ReportCharts = w.buildReportChartMap(runCtx.LoadedDependencyMods)
-	w.ReportHierarchies = w.buildReportHierarchyMap(runCtx.LoadedDependencyMods)
-	w.ReportImages = w.buildReportImageMap(runCtx.LoadedDependencyMods)
-	w.ReportInputs = w.buildReportInputMap(runCtx.LoadedDependencyMods)
-	w.ReportTables = w.buildReportTableMap(runCtx.LoadedDependencyMods)
-	w.ReportTexts = w.buildReportTextMap(runCtx.LoadedDependencyMods)
+	w.Dashboards = w.buildDashboardMap(runCtx.LoadedDependencyMods)
+	w.DashboardContainers = w.buildDashboardContainerMap(runCtx.LoadedDependencyMods)
+	w.DashboardCards = w.buildDashboardCardMap(runCtx.LoadedDependencyMods)
+	w.DashboardCharts = w.buildDashboardChartMap(runCtx.LoadedDependencyMods)
+	w.DashboardHierarchies = w.buildDashboardHierarchyMap(runCtx.LoadedDependencyMods)
+	w.DashboardImages = w.buildDashboardImageMap(runCtx.LoadedDependencyMods)
+	w.DashboardInputs = w.buildDashboardInputMap(runCtx.LoadedDependencyMods)
+	w.DashboardTables = w.buildDashboardTableMap(runCtx.LoadedDependencyMods)
+	w.DashboardTexts = w.buildDashboardTextMap(runCtx.LoadedDependencyMods)
 
 	// set variables on workspace
 	w.Variables = m.Variables
@@ -341,7 +341,7 @@ func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, 
 }
 
 func (w *Workspace) verifyResourceRuntimeDependencies() error {
-	for _, r := range w.Reports {
+	for _, r := range w.Dashboards {
 		if err := r.BuildRuntimeDependencyTree(w); err != nil {
 			return err
 		}

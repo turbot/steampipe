@@ -38,24 +38,24 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 
 func (w *Workspace) populateResourceMaps() {
 	w.resourceMaps = &modconfig.WorkspaceResourceMaps{
-		Mod:                 w.Mod,
-		Mods:                make(map[string]*modconfig.Mod),
-		LocalQueries:        w.LocalQueries,
+		Mod:                  w.Mod,
+		Mods:                 make(map[string]*modconfig.Mod),
+		LocalQueries:         w.LocalQueries,
 		Queries:              w.Queries,
 		Controls:             w.Controls,
 		LocalControls:        w.LocalControls,
 		Benchmarks:           w.Benchmarks,
 		LocalBenchmarks:      w.LocalBenchmarks,
 		Variables:            w.Variables,
-		Dashboards:           w.Reports,
-		DashboardContainers:  w.ReportContainers,
-		DashboardCards:       w.ReportCards,
-		DashboardCharts:      w.ReportCharts,
-		DashboardHierarchies: w.ReportHierarchies,
-		DashboardImages:      w.ReportImages,
-		DashboardInputs:      w.ReportInputs,
-		DashboardTables:      w.ReportTables,
-		DashboardTexts:       w.ReportTexts,
+		Dashboards:           w.Dashboards,
+		DashboardContainers:  w.DashboardContainers,
+		DashboardCards:       w.DashboardCards,
+		DashboardCharts:      w.DashboardCharts,
+		DashboardHierarchies: w.DashboardHierarchies,
+		DashboardImages:      w.DashboardImages,
+		DashboardInputs:      w.DashboardInputs,
+		DashboardTables:      w.DashboardTables,
+		DashboardTexts:       w.DashboardTexts,
 	}
 	w.resourceMaps.PopulateReferences()
 
@@ -129,7 +129,7 @@ func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) (map[string]*modc
 	return benchmarkMap, localBenchmarkMap
 }
 
-func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardContainer {
+func (w *Workspace) buildDashboardMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardContainer {
 	var res = make(map[string]*modconfig.DashboardContainer)
 
 	for _, r := range w.Mod.Dashboards {
@@ -144,7 +144,7 @@ func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfi
 	return res
 }
 
-func (w *Workspace) buildReportContainerMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardContainer {
+func (w *Workspace) buildDashboardContainerMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardContainer {
 	var res = make(map[string]*modconfig.DashboardContainer)
 
 	for _, c := range w.Mod.DashboardContainers {
@@ -159,7 +159,7 @@ func (w *Workspace) buildReportContainerMap(modMap modconfig.ModMap) map[string]
 	return res
 }
 
-func (w *Workspace) buildReportCardMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardCard {
+func (w *Workspace) buildDashboardCardMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardCard {
 	var res = make(map[string]*modconfig.DashboardCard)
 
 	for _, p := range w.Mod.DashboardCards {
@@ -174,7 +174,7 @@ func (w *Workspace) buildReportCardMap(modMap modconfig.ModMap) map[string]*modc
 	return res
 }
 
-func (w *Workspace) buildReportChartMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardChart {
+func (w *Workspace) buildDashboardChartMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardChart {
 	var res = make(map[string]*modconfig.DashboardChart)
 
 	for _, c := range w.Mod.DashboardCharts {
@@ -189,7 +189,7 @@ func (w *Workspace) buildReportChartMap(modMap modconfig.ModMap) map[string]*mod
 	return res
 }
 
-func (w *Workspace) buildReportHierarchyMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardHierarchy {
+func (w *Workspace) buildDashboardHierarchyMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardHierarchy {
 	var res = make(map[string]*modconfig.DashboardHierarchy)
 
 	for _, p := range w.Mod.DashboardHierarchies {
@@ -204,7 +204,7 @@ func (w *Workspace) buildReportHierarchyMap(modMap modconfig.ModMap) map[string]
 	return res
 }
 
-func (w *Workspace) buildReportImageMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardImage {
+func (w *Workspace) buildDashboardImageMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardImage {
 	var res = make(map[string]*modconfig.DashboardImage)
 
 	for _, p := range w.Mod.DashboardImages {
@@ -219,7 +219,7 @@ func (w *Workspace) buildReportImageMap(modMap modconfig.ModMap) map[string]*mod
 	return res
 }
 
-func (w *Workspace) buildReportInputMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardInput {
+func (w *Workspace) buildDashboardInputMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardInput {
 	var res = make(map[string]*modconfig.DashboardInput)
 
 	for _, p := range w.Mod.DashboardInputs {
@@ -234,7 +234,7 @@ func (w *Workspace) buildReportInputMap(modMap modconfig.ModMap) map[string]*mod
 	return res
 }
 
-func (w *Workspace) buildReportTableMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardTable {
+func (w *Workspace) buildDashboardTableMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardTable {
 	var res = make(map[string]*modconfig.DashboardTable)
 
 	for _, c := range w.Mod.DashboardTables {
@@ -249,7 +249,7 @@ func (w *Workspace) buildReportTableMap(modMap modconfig.ModMap) map[string]*mod
 	return res
 }
 
-func (w *Workspace) buildReportTextMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardText {
+func (w *Workspace) buildDashboardTextMap(modMap modconfig.ModMap) map[string]*modconfig.DashboardText {
 	var res = make(map[string]*modconfig.DashboardText)
 
 	for _, c := range w.Mod.DashboardTexts {
