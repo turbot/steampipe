@@ -279,9 +279,9 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		}
 		dashboardName := e.DashboardNode.GetName()
 		s.mutex.Lock()
-		for session, repoInfo := range s.dashboardClients {
+		for session, dashboardClientInfo := range s.dashboardClients {
 			// If this session is interested in this dashboard, broadcast to it
-			if (repoInfo.Dashboard != nil) && *repoInfo.Dashboard == dashboardName {
+			if (dashboardClientInfo.Dashboard != nil) && *dashboardClientInfo.Dashboard == dashboardName {
 				session.Write(payload)
 			}
 		}
@@ -299,9 +299,9 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		}
 		paths := e.Node.GetPath()
 		s.mutex.Lock()
-		for session, repoInfo := range s.dashboardClients {
+		for session, dashboardClientInfo := range s.dashboardClients {
 			// If this session is interested in this dashboard, broadcast to it
-			if (repoInfo.Dashboard != nil) && helpers.StringSliceContains(paths, *repoInfo.Dashboard) {
+			if (dashboardClientInfo.Dashboard != nil) && helpers.StringSliceContains(paths, *dashboardClientInfo.Dashboard) {
 				session.Write(payload)
 			}
 		}
@@ -315,9 +315,9 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		}
 		paths := e.Node.GetPath()
 		s.mutex.Lock()
-		for session, repoInfo := range s.dashboardClients {
+		for session, dashboardClientInfo := range s.dashboardClients {
 			// If this session is interested in this dashboard, broadcast to it
-			if (repoInfo.Dashboard != nil) && helpers.StringSliceContains(paths, *repoInfo.Dashboard) {
+			if (dashboardClientInfo.Dashboard != nil) && helpers.StringSliceContains(paths, *dashboardClientInfo.Dashboard) {
 				session.Write(payload)
 			}
 		}
@@ -442,9 +442,9 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		}
 		dashboardName := e.Dashboard.GetName()
 		s.mutex.Lock()
-		for session, repoInfo := range s.dashboardClients {
+		for session, dashboardClientInfo := range s.dashboardClients {
 			// If this session is interested in this dashboard, broadcast to it
-			if (repoInfo.Dashboard != nil) && *repoInfo.Dashboard == dashboardName {
+			if (dashboardClientInfo.Dashboard != nil) && *dashboardClientInfo.Dashboard == dashboardName {
 				session.Write(payload)
 			}
 		}

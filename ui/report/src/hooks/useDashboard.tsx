@@ -220,7 +220,7 @@ function reducer(state, action) {
       // console.log("execution_started", { action, state });
       // if (
       //   state.state === "complete" &&
-      //   get(state, "dashboard.name") === action.report_node.name
+      //   get(state, "dashboard.name") === action.dashboard_node.name
       // ) {
       //   // console.log("Ignoring dashboard execution started event", {
       //   //   action,
@@ -228,9 +228,9 @@ function reducer(state, action) {
       //   // });
       //   return state;
       // }
-      // console.log("Started", action.report_node);
+      // console.log("Started", action.dashboard_node);
       const dashboardWithData = addDataToDashboard(
-        action.report_node,
+        action.dashboard_node,
         state.sqlDataMap
       );
       return {
@@ -240,29 +240,32 @@ function reducer(state, action) {
         state: "running",
       };
     case "execution_complete":
-      // console.log("Complete", action.report_node);
+      // console.log("Complete", action.dashboard_node);
       // Build map of SQL to data
-      const sqlDataMap = buildSqlDataMap(action.report_node);
+      const sqlDataMap = buildSqlDataMap(action.dashboard_node);
       // console.log(sqlDataMap);
       // Replace the whole dashboard as this event contains everything
       return {
         ...state,
         error: null,
-        dashboard: action.report_node,
+        dashboard: action.dashboard_node,
         sqlDataMap,
         state: "complete",
       };
     case "leaf_node_progress":
     case "leaf_node_complete": {
       // Find the path to the name key that matches this panel and replace it
-      const { report_node } = action;
+      const { dashboard_node } = action;
       let panelPath: string = findPathDeep(
         state.dashboard,
-        (v, k) => k === "name" && v === report_node.name
+        (v, k) => k === "name" && v === dashboard_node.name
       );
 
       if (!panelPath) {
-        console.warn("Cannot find dashboard panel to update", report_node.name);
+        console.warn(
+          "Cannot find dashboard panel to update",
+          dashboard_node.name
+        );
         return state;
       }
 
@@ -270,7 +273,7 @@ function reducer(state, action) {
       let newDashboard = {
         ...state.dashboard,
       };
-      newDashboard = set(newDashboard, panelPath, report_node);
+      newDashboard = set(newDashboard, panelPath, dashboard_node);
 
       return {
         ...state,
