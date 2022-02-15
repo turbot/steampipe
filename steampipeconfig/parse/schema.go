@@ -40,7 +40,7 @@ var ConnectionBlockSchema = &hcl.BodySchema{
 	},
 }
 
-// ModBlockSchema :: top level schema for all mod resources
+// ModBlockSchema is the top level schema for all mod resources
 var ModBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
 	Blocks: []hcl.BlockHeaderSchema{
@@ -106,16 +106,26 @@ var ModBlockSchema = &hcl.BodySchema{
 	},
 }
 
-var ReportBlockSchema = &hcl.BodySchema{
+// ReportContainerBlockSchema contains the attributes which cannot be automatically decoded
+var ReportContainerBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
-		{Name: "title"},
-		{Name: "width"},
-		{Name: "children"},
-		{Name: "base"},
+		{Name: "args"},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
+			Type:       modconfig.BlockTypeInput,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeParam,
+			LabelNames: []string{"name"},
+		},
+		{
 			Type: modconfig.BlockTypeContainer,
+		},
+		{
+			Type:       modconfig.BlockTypeReport,
+			LabelNames: []string{"name"},
 		},
 		{
 			Type: modconfig.BlockTypeCard,
@@ -136,15 +146,24 @@ var ReportBlockSchema = &hcl.BodySchema{
 			Type: modconfig.BlockTypeImage,
 		},
 		{
-			Type: modconfig.BlockTypeInput,
-		},
-		{
 			Type: modconfig.BlockTypeTable,
 		},
 		{
 			Type: modconfig.BlockTypeText,
 		},
 	},
+}
+
+// isAnonymousReportBlock returns whether the given block is an anoynmous report block
+func isAnonymousReportBlock(block *hcl.Block) bool {
+	for _, b := range ReportContainerBlockSchema.Blocks {
+		if b.LabelNames == nil {
+			if b.Type == block.Type {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 var BenchmarkBlockSchema = &hcl.BodySchema{
@@ -160,39 +179,10 @@ var BenchmarkBlockSchema = &hcl.BodySchema{
 	},
 }
 
-var ControlBlockSchema = &hcl.BodySchema{
+// QueryProviderBlockSchema schema for all blocks satisfying QueryProvider interface
+var QueryProviderBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
-		{Name: "description"},
-		{Name: "documentation"},
-		{Name: "search_path"},
-		{Name: "search_path_prefix"},
-		{Name: "severity"},
-		{Name: "sql"},
-		{Name: "query"},
-		{Name: "tags"},
-		{Name: "title"},
 		{Name: "args"},
-		// for report control blocks
-		{Name: "width"},
-		{Name: "base"},
-	},
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type:       "param",
-			LabelNames: []string{"name"},
-		},
-	},
-}
-
-var QueryBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{Name: "description"},
-		{Name: "documentation"},
-		{Name: "search_path"},
-		{Name: "search_path_prefix"},
-		{Name: "sql"},
-		{Name: "tags"},
-		{Name: "title"},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
@@ -206,5 +196,27 @@ var ParamDefBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "description"},
 		{Name: "default"},
+	},
+}
+
+var VariableBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: "description",
+		},
+		{
+			Name: "default",
+		},
+		{
+			Name: "type",
+		},
+		{
+			Name: "sensitive",
+		},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type: "validation",
+		},
 	},
 }

@@ -12,14 +12,16 @@ import (
 
 // ReportText is a struct representing a leaf reporting node
 type ReportText struct {
+	ReportLeafNodeBase
+	ResourceWithMetadataBase
+
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-
+	Title *string     `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width *int        `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	Type  *string     `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Value *string     `cty:"value" hcl:"value" column:"value,text"  json:"value,omitempty"`
 	Base  *ReportText `hcl:"base" json:"-"`
@@ -28,17 +30,20 @@ type ReportText struct {
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents []ModTreeItem
 }
 
-func NewReportText(block *hcl.Block) *ReportText {
-	return &ReportText{
+func NewReportText(block *hcl.Block, mod *Mod) *ReportText {
+	shortName := GetAnonymousResourceShortName(block, mod)
+	t := &ReportText{
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+		Mod:             mod,
 		DeclRange:       block.DefRange,
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	t.SetAnonymous(block)
+	return t
 }
 
 func (t *ReportText) Equals(other *ReportText) bool {
@@ -83,12 +88,6 @@ func (t *ReportText) setBaseProperties() {
 
 // AddReference implements HclResource
 func (t *ReportText) AddReference(*ResourceReference) {}
-
-// SetMod implements HclResource
-func (t *ReportText) SetMod(mod *Mod) {
-	t.Mod = mod
-	t.FullName = fmt.Sprintf("%s.%s", t.Mod.ShortName, t.UnqualifiedName)
-}
 
 // GetMod implements HclResource
 func (t *ReportText) GetMod() *Mod {
@@ -150,16 +149,6 @@ func (t *ReportText) SetPaths() {
 	}
 }
 
-// GetMetadata implements ResourceWithMetadata
-func (t *ReportText) GetMetadata() *ResourceMetadata {
-	return t.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (t *ReportText) SetMetadata(metadata *ResourceMetadata) {
-	t.metadata = metadata
-}
-
 func (t *ReportText) Diff(other *ReportText) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
 		Item: t,
@@ -204,7 +193,7 @@ func (t *ReportText) GetWidth() int {
 	return *t.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (t *ReportText) GetUnqualifiedName() string {
 	return t.UnqualifiedName
 }

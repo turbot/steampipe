@@ -1,6 +1,6 @@
 package modconfig
 
-// NamedItem is a struct used by nebchmark, container and report to specify children of different types
+// NamedItem is a struct used by benchmark, container and report to specify children of different types
 type NamedItem struct {
 	Name string `cty:"name"`
 }

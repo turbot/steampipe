@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/report/reportinterfaces"
@@ -13,21 +14,29 @@ import (
 
 // ReportExecutionTree is a structure representing the control result hierarchy
 type ReportExecutionTree struct {
-	Root        reportinterfaces.ReportNodeRun
+	modconfig.UniqueNameProviderBase
+
+	Root        *ReportContainerRun
+	reportName  string
 	client      db_common.Client
 	runs        map[string]reportinterfaces.ReportNodeRun
 	workspace   *workspace.Workspace
-	runComplete chan (reportinterfaces.ReportNodeRun)
+	runComplete chan reportinterfaces.ReportNodeRun
+
+	inputLock              sync.Mutex
+	inputDataSubscriptions map[string][]chan bool
 }
 
 // NewReportExecutionTree creates a result group from a ModTreeItem
 func NewReportExecutionTree(reportName string, client db_common.Client, workspace *workspace.Workspace) (*ReportExecutionTree, error) {
 	// now populate the ReportExecutionTree
 	reportExecutionTree := &ReportExecutionTree{
-		client:      client,
-		runs:        make(map[string]reportinterfaces.ReportNodeRun),
-		workspace:   workspace,
-		runComplete: make(chan reportinterfaces.ReportNodeRun, 1),
+		client:                 client,
+		runs:                   make(map[string]reportinterfaces.ReportNodeRun),
+		workspace:              workspace,
+		runComplete:            make(chan reportinterfaces.ReportNodeRun, 1),
+		inputDataSubscriptions: make(map[string][]chan bool),
+		reportName:             reportName,
 	}
 
 	// create the root run node (either a report run or a counter run)
@@ -40,7 +49,7 @@ func NewReportExecutionTree(reportName string, client db_common.Client, workspac
 	return reportExecutionTree, nil
 }
 
-func (e *ReportExecutionTree) createRootItem(reportName string) (reportinterfaces.ReportNodeRun, error) {
+func (e *ReportExecutionTree) createRootItem(reportName string) (*ReportContainerRun, error) {
 	parsedName, err := modconfig.ParseResourceName(reportName)
 	if err != nil {
 		return nil, err
@@ -83,4 +92,25 @@ func (e *ReportExecutionTree) GetName() string {
 // ChildCompleteChan implements ReportNodeParent
 func (e *ReportExecutionTree) ChildCompleteChan() chan reportinterfaces.ReportNodeRun {
 	return e.runComplete
+}
+
+func (e *ReportExecutionTree) waitForRuntimeDependency(ctx context.Context, dependency *modconfig.RuntimeDependency) error {
+	depChan := make(chan (bool), 1)
+	// TOTO [reports] for now verify we only bind inputs to args (somewhere)
+
+	e.subscribeToInput(dependency.PropertyPath.Name, depChan)
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-depChan:
+		return nil
+	}
+}
+
+func (e *ReportExecutionTree) subscribeToInput(inputName string, depChan chan bool) {
+	e.inputLock.Lock()
+	defer e.inputLock.Unlock()
+
+	e.inputDataSubscriptions[inputName] = append(e.inputDataSubscriptions[inputName], depChan)
 }

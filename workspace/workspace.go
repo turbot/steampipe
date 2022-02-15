@@ -228,6 +228,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 
 	// now set workspace properties
 	w.Mod = m
+
 	w.Queries, w.LocalQueries = w.buildQueryMap(runCtx.LoadedDependencyMods)
 	w.Controls, w.LocalControls = w.buildControlMap(runCtx.LoadedDependencyMods)
 	w.Benchmarks, w.LocalBenchmarks = w.buildBenchmarkMap(runCtx.LoadedDependencyMods)
@@ -249,7 +250,9 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 
 	// populate the workspace resource map
 	w.populateResourceMaps()
-	return nil
+
+	//
+	return w.verifyResourceRuntimeDependencies()
 }
 
 // build options used to load workspace
@@ -335,4 +338,13 @@ func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, 
 	//}
 
 	return workspaceResourceNames, nil
+}
+
+func (w *Workspace) verifyResourceRuntimeDependencies() error {
+	for _, r := range w.Reports {
+		if err := r.BuildRuntimeDependencyTree(w); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -53,11 +53,6 @@ type RunContext struct {
 	BlockTypeExclusions []string
 	Variables           map[string]*modconfig.Variable
 
-	// map with the index of each anonymous resource type
-	anonymousResources map[string]int
-	decodeStack        hcl.Blocks
-	anonymousBlocks    map[*hcl.Block]bool
-
 	dependencyGraph *topsort.Graph
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
@@ -73,8 +68,6 @@ func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string,
 		ListOptions:          listOptions,
 		LoadedDependencyMods: make(modconfig.ModMap),
 		UnresolvedBlocks:     make(map[string]*unresolvedBlock),
-		anonymousResources:   make(map[string]int),
-		anonymousBlocks:      make(map[*hcl.Block]bool),
 		referenceValues: map[string]ReferenceTypeValueMap{
 			"local": make(ReferenceTypeValueMap),
 		},
@@ -167,7 +160,7 @@ func (r *RunContext) ClearDependencies() {
 // AddDependencies :: the block could not be resolved as it has dependencies
 // 1) store block as unresolved
 // 2) add dependencies to our tree of dependencies
-func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies []*dependency) hcl.Diagnostics {
+func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies []*modconfig.ResourceDependency) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	// store unresolved block
 	r.UnresolvedBlocks[name] = &unresolvedBlock{Name: name, Block: block, Dependencies: dependencies}
@@ -177,30 +170,41 @@ func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies
 		r.dependencyGraph.AddNode(name)
 	}
 	// add root dependency
-	r.dependencyGraph.AddEdge(rootDependencyNode, name)
+	if err := r.dependencyGraph.AddEdge(rootDependencyNode, name); err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "failed to add root dependency to graph",
+			Detail:   err.Error()})
+	}
 
 	for _, dep := range dependencies {
 		// each dependency object may have multiple traversals
 		for _, t := range dep.Traversals {
-			d := hclhelpers.TraversalAsString(t)
+			parsedPropertyPath, err := modconfig.ParseResourcePropertyPath(hclhelpers.TraversalAsString(t))
 
-			// 'd' may be a property path - when storing dependencies we only care about the resource names
-			dependencyResource, err := modconfig.PropertyPathToResourceName(d)
 			if err != nil {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
-					Summary:  "failed to convert cty value - asJson failed",
+					Summary:  "failed to parse dependency",
 					Detail:   err.Error()})
 				continue
 
 			}
-			if !r.dependencyGraph.ContainsNode(dependencyResource) {
-				r.dependencyGraph.AddNode(dependencyResource)
+
+			// 'd' may be a property path - when storing dependencies we only care about the resource names
+			dependencyResourceName := parsedPropertyPath.ToResourceName()
+			if !r.dependencyGraph.ContainsNode(dependencyResourceName) {
+				r.dependencyGraph.AddNode(dependencyResourceName)
 			}
-			r.dependencyGraph.AddEdge(name, dependencyResource)
+			if err := r.dependencyGraph.AddEdge(name, dependencyResourceName); err != nil {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "failed to add dependency to graph",
+					Detail:   err.Error()})
+			}
 		}
 	}
-	return nil
+	return diags
 }
 
 // BlocksToDecode builds a list of blocks to decode, the order of which is determined by the depdnency order
@@ -370,9 +374,8 @@ func (r *RunContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.D
 	}
 
 	// remove this resource from unparsed blocks
-	if _, ok := r.UnresolvedBlocks[resource.Name()]; ok {
-		delete(r.UnresolvedBlocks, resource.Name())
-	}
+	delete(r.UnresolvedBlocks, resource.Name())
+
 	return nil
 }
 
@@ -424,34 +427,6 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	}
 
 	return nil
-}
-
-func (r *RunContext) PushDecodeBlock(block *hcl.Block) {
-	r.decodeStack = append(r.decodeStack, block)
-}
-func (r *RunContext) PopDecodeBlock() *hcl.Block {
-	n := len(r.decodeStack) - 1
-	res := r.decodeStack[n]
-	r.decodeStack = r.decodeStack[:n]
-	return res
-}
-
-func (r *RunContext) GetAnonymousResourceName(block *hcl.Block) string {
-	count := r.anonymousResources[block.Type]
-	r.anonymousResources[block.Type] = count + 1
-	parts := make([]string, len(r.decodeStack))
-
-	for i, b := range r.decodeStack {
-		parts[i] = fmt.Sprintf("%s_%s", b.Type, b.Labels[0])
-	}
-	return fmt.Sprintf("%s_%s_%d", strings.Join(parts, "_"), block.Type, count)
-}
-
-func (r *RunContext) IsBlockAnonymous(block *hcl.Block) bool {
-	if len(block.Labels) == 0 {
-		r.anonymousBlocks[block] = true
-	}
-	return r.anonymousBlocks[block]
 }
 
 func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {

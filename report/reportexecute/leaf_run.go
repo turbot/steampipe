@@ -12,27 +12,32 @@ import (
 type LeafRun struct {
 	Name string `json:"name"`
 
-	Title         string                      `json:"title,omitempty"`
-	Width         int                         `json:"width,omitempty"`
-	SQL           string                      `json:"sql,omitempty"`
-	Data          *LeafData                   `json:"data,omitempty"`
-	Error         error                       `json:"error,omitempty"`
-	ReportNode    modconfig.ReportingLeafNode `json:"properties"`
-	NodeType      string                      `json:"node_type"`
-	Path          []string                    `json:"-"`
+	Title         string                   `json:"title,omitempty"`
+	Width         int                      `json:"width,omitempty"`
+	SQL           string                   `json:"sql,omitempty"`
+	Data          *LeafData                `json:"data,omitempty"`
+	Error         error                    `json:"error,omitempty"`
+	ReportNode    modconfig.ReportLeafNode `json:"properties"`
+	NodeType      string                   `json:"node_type"`
+	ReportName    string                   `json:"report"`
+	Path          []string                 `json:"-"`
 	parent        reportinterfaces.ReportNodeParent
 	runStatus     reportinterfaces.ReportRunStatus
 	executionTree *ReportExecutionTree
 }
 
-func NewLeafRun(resource modconfig.ReportingLeafNode, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*LeafRun, error) {
+func NewLeafRun(resource modconfig.ReportLeafNode, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*LeafRun, error) {
+	// ensure the tree node name is unique
+	name := executionTree.GetUniqueName(resource.Name())
+
 	r := &LeafRun{
-		Name:          resource.Name(),
+		Name:          name,
 		Title:         resource.GetTitle(),
 		Width:         resource.GetWidth(),
 		SQL:           resource.GetSQL(),
 		Path:          resource.GetPaths()[0],
 		ReportNode:    resource,
+		ReportName:    executionTree.reportName,
 		executionTree: executionTree,
 		parent:        parent,
 
@@ -58,6 +63,11 @@ func NewLeafRun(resource modconfig.ReportingLeafNode, parent reportinterfaces.Re
 
 // Execute implements ReportRunNode
 func (r *LeafRun) Execute(ctx context.Context) error {
+	// if there are any unresolved runtime dependencies, wait for them
+	if err := r.waitForRuntimeDependencies(ctx); err != nil {
+		return err
+	}
+
 	if r.SQL == "" {
 		return nil
 	}
@@ -119,4 +129,32 @@ func (r *LeafRun) RunComplete() bool {
 // ChildrenComplete implements ReportNodeRun
 func (r *LeafRun) ChildrenComplete() bool {
 	return true
+}
+
+func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
+	runtimeDependencies := r.ReportNode.GetRuntimeDependencies()
+
+	// runtime dependencies are always (for now) report inputs
+
+	for _, dependency := range runtimeDependencies {
+		// check with the top level report whether the dependency is available
+		inputValue, err := r.executionTree.Root.GetRuntimeDependency(dependency)
+		if err != nil {
+			return err
+		}
+		if inputValue != nil {
+			// ok we have this one - set it on the dependency
+			dependency.Value = inputValue
+			continue
+		}
+
+		if err := r.executionTree.waitForRuntimeDependency(ctx, dependency); err != nil {
+			return err
+		}
+
+		// now populate the runtime dependency target property
+		//r.setRuntimeDependency()
+	}
+
+	return nil
 }

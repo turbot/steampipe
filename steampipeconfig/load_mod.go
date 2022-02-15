@@ -64,7 +64,10 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 			return nil, fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
 		}
 		// just create a default mod
-		mod = modconfig.CreateDefaultMod(modPath)
+		mod, err = modconfig.CreateDefaultMod(modPath)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// load the mod dependencies
@@ -319,7 +322,7 @@ func createPseudoResources(modPath string, runCtx *parse.RunContext) ([]modconfi
 		if !ok {
 			continue
 		}
-		resource, fileData, err := factory(modPath, path)
+		resource, fileData, err := factory(modPath, path, runCtx.CurrentMod)
 		if err != nil {
 			errors = append(errors, err)
 			continue

@@ -3,7 +3,7 @@ package modconfig
 import "github.com/turbot/steampipe/utils"
 
 type ReportChartSeries struct {
-	Name  string  `hcl:"name,label" json:"-"`
+	Name  string  `hcl:"name,label" json:"name"`
 	Title *string `cty:"title" hcl:"title" json:"title,omitempty"`
 	Color *string `cty:"color" hcl:"color" json:"color,omitempty"`
 }

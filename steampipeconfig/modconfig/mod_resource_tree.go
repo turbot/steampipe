@@ -8,11 +8,16 @@ import (
 
 // BuildResourceTree builds the control tree structure by setting the parent property for each control and benchmark
 // NOTE: this also builds the sorted benchmark list
-func (m *Mod) BuildResourceTree(loadedDependencyMods ModMap) error {
+func (m *Mod) BuildResourceTree(loadedDependencyMods ModMap) (err error) {
+	defer func() {
+		if err == nil {
+			err = m.validateResourceTree()
+		}
+	}()
+
 	if err := m.addResourcesIntoTree(m); err != nil {
 		return err
 	}
-	defer m.validateResourceTree()
 
 	if !m.HasDependentMods() {
 		return nil
@@ -66,7 +71,9 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
 	for _, p := range m.getParents(item) {
 		// if we are the parent, add as a child
-		item.AddParent(p)
+		if err := item.AddParent(p); err != nil {
+			return err
+		}
 		if p == m {
 			m.children = append(m.children, item)
 		}
@@ -75,148 +82,144 @@ func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
 	return nil
 }
 
+// check whether a resource with the same name has already been added
+// (it is possible to add the same resource to a mod more than once as the parent resource
+// may have dependency errors and so be decoded again)
+func checkForDuplicate(existing, new HclResource) hcl.Diagnostics {
+	if existing.GetDeclRange().String() == new.GetDeclRange().String() {
+		// decl range is the same - this is the same resource - allowable
+		return nil
+	}
+	return duplicateResourceDiagnostics(new)
+}
+
 func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
+	// TODO generics would make this must more compact
 	var diags hcl.Diagnostics
 	switch r := item.(type) {
 	case *Query:
 		name := r.Name()
-		// check for dupes
-		if _, ok := m.Queries[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
+		if existing, ok := m.Queries[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
 		}
 		m.Queries[name] = r
 
 	case *Control:
 		name := r.Name()
-		// check for dupes
-		if _, ok := m.Controls[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
+		if existing, ok := m.Controls[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
 		}
 		m.Controls[name] = r
 
 	case *Benchmark:
 		name := r.Name()
-		// check for dupes
-		if _, ok := m.Benchmarks[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
+		if existing, ok := m.Benchmarks[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
-		} else {
-			m.Benchmarks[name] = r
 		}
+		m.Benchmarks[name] = r
+
 	case *ReportContainer:
 		name := r.Name()
 		// report struct may either be a `report` or a `container`
 		if r.IsReport() {
-			// check for dupes
-			if _, ok := m.Reports[name]; ok {
-				diags = append(diags, duplicateResourceDiagnostics(item))
+			if existing, ok := m.Reports[name]; ok {
+				diags = append(diags, checkForDuplicate(existing, item)...)
 				break
-			} else {
-				m.Reports[name] = r
 			}
+			m.Reports[name] = r
+
 		} else {
-			// check for dupes
-			if _, ok := m.ReportContainers[name]; ok {
-				diags = append(diags, duplicateResourceDiagnostics(item))
+			if existing, ok := m.ReportContainers[name]; ok {
+				diags = append(diags, checkForDuplicate(existing, item)...)
 				break
-			} else {
-				m.ReportContainers[name] = r
 			}
+			m.ReportContainers[name] = r
+
 		}
 	case *ReportCard:
 		name := r.Name()
-		// check for dupes
-		if _, ok := m.ReportCards[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
+		if existing, ok := m.ReportCards[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
 		} else {
 			m.ReportCards[name] = r
 		}
 	case *ReportChart:
 		name := r.Name()
-		// check for dupes
-		if _, ok := m.ReportCharts[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
+		if existing, ok := m.ReportCharts[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
-		} else {
-			m.ReportCharts[name] = r
 		}
+		m.ReportCharts[name] = r
+
 	case *ReportHierarchy:
 		name := r.Name()
-		// check for dupes
-		if _, ok := m.ReportHierarchies[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
+		if existing, ok := m.ReportHierarchies[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
-		} else {
-			m.ReportHierarchies[name] = r
 		}
+		m.ReportHierarchies[name] = r
+
 	case *ReportImage:
 		name := r.Name()
-		// check for dupes
-		if _, ok := m.ReportImages[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
+		if existing, ok := m.ReportImages[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
-		} else {
-			m.ReportImages[name] = r
 		}
+		m.ReportImages[name] = r
+
 	case *ReportInput:
 		name := r.Name()
-		// check for dupes
-		if _, ok := m.ReportInputs[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
+		if existing, ok := m.ReportInputs[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
-		} else {
-			m.ReportInputs[name] = r
 		}
+		m.ReportInputs[name] = r
+
 	case *ReportTable:
 		name := r.Name()
-		// check for dupes
-		if _, ok := m.ReportTables[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
+		if existing, ok := m.ReportTables[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
-		} else {
-			m.ReportTables[name] = r
 		}
+		m.ReportTables[name] = r
+
 	case *ReportText:
 		name := r.Name()
-		// check for dupes
-		if _, ok := m.ReportTexts[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
+		if existing, ok := m.ReportTexts[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
-		} else {
-			m.ReportTexts[name] = r
 		}
+		m.ReportTexts[name] = r
 
 	case *Variable:
 		// NOTE: add variable by unqualified name
 		name := r.UnqualifiedName
-		// check for dupes
-		if _, ok := m.Variables[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
+		if existing, ok := m.Variables[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
-		} else {
-			m.Variables[name] = r
 		}
+		m.Variables[name] = r
 
 	case *Local:
 		name := r.Name()
-		// check for dupes
-		if _, ok := m.Locals[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
+		if existing, ok := m.Locals[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
-		} else {
-			m.Locals[name] = r
 		}
+		m.Locals[name] = r
+
 	}
 	return diags
 }
 
-func duplicateResourceDiagnostics(item HclResource) *hcl.Diagnostic {
-	return &hcl.Diagnostic{
+func duplicateResourceDiagnostics(item HclResource) hcl.Diagnostics {
+	return hcl.Diagnostics{&hcl.Diagnostic{
 		Severity: hcl.DiagError,
 		Summary:  fmt.Sprintf("mod defines more than one resource named %s", item.Name()),
 		Subject:  item.GetDeclRange(),
-	}
+	}}
 }

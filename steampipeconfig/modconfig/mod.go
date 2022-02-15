@@ -23,6 +23,9 @@ const defaultModName = "local"
 
 // Mod is a struct representing a Mod resource
 type Mod struct {
+	ResourceWithMetadataBase
+	UniqueNameProviderBase
+
 	// ShortName is the mod name, e.g. azure_thrifty
 	ShortName string `cty:"short_name" hcl:"name,label"`
 	// FullName is the mod name prefixed with 'mod', e.g. mod.azure_thrifty
@@ -73,12 +76,15 @@ type Mod struct {
 
 	// array of direct mod children - excludes resources which are children of other resources
 	children []ModTreeItem
-	metadata *ResourceMetadata
 	// convenient aggregation of all resources
 	resourceMaps *WorkspaceResourceMaps
 }
 
-func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
+func NewMod(shortName, modPath string, defRange hcl.Range) (*Mod, error) {
+	require, err := NewRequire()
+	if err != nil {
+		return nil, err
+	}
 	mod := &Mod{
 		ShortName:         shortName,
 		FullName:          fmt.Sprintf("mod.%s", shortName),
@@ -99,12 +105,20 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 
 		ModPath:   modPath,
 		DeclRange: defRange,
-		Require:   NewRequire(),
+		Require:   require,
 	}
 
 	// try to derive mod version from the path
 	mod.setVersion()
-	return mod
+
+	// create resource map with reference to our resources (it will be populated as we are)
+	mod.PopulateResourceMaps()
+
+	return mod, nil
+}
+
+func (m *Mod) PopulateResourceMaps() {
+	m.resourceMaps = WorkspaceResourceMapFromMod(m)
 }
 
 func (m *Mod) setVersion() {
@@ -152,6 +166,7 @@ func (m *Mod) Equals(other *Mod) bool {
 			}
 		}
 	}
+
 	// tags
 	if len(m.Tags) != len(other.Tags) {
 		return false
@@ -162,138 +177,11 @@ func (m *Mod) Equals(other *Mod) bool {
 		}
 	}
 
-	// controls
-	for k := range m.Controls {
-		if _, ok := other.Controls[k]; !ok {
-			return false
-		}
+	// now check the child resources
+	if !m.resourceMaps.Equals(other.resourceMaps) {
+		return false
 	}
-	for k := range m.Queries {
-		if _, ok := other.Queries[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.Queries {
-		if _, ok := m.Queries[k]; !ok {
-			return false
-		}
-	}
-	// queries
-	for k := range other.Controls {
-		if _, ok := m.Controls[k]; !ok {
-			return false
-		}
-	}
-	// benchmarks
-	for k := range m.Benchmarks {
-		if _, ok := other.Benchmarks[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.Benchmarks {
-		if _, ok := m.Benchmarks[k]; !ok {
-			return false
-		}
-	}
-	// reports
-	for k := range m.Reports {
-		if _, ok := other.Reports[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.Reports {
-		if _, ok := m.Reports[k]; !ok {
-			return false
-		}
-	}
-	// report containers
-	for k := range m.ReportContainers {
-		if _, ok := other.ReportContainers[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.ReportContainers {
-		if _, ok := m.ReportContainers[k]; !ok {
-			return false
-		}
-	}
-	// report cards
-	for k := range m.ReportCards {
-		if _, ok := other.ReportCards[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.ReportCards {
-		if _, ok := m.ReportCards[k]; !ok {
-			return false
-		}
-	}
-	// report charts
-	for k := range m.ReportCharts {
-		if _, ok := other.ReportCharts[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.ReportCharts {
-		if _, ok := m.ReportCharts[k]; !ok {
-			return false
-		}
-	}
-	// report hierarchies
-	for k := range m.ReportHierarchies {
-		if _, ok := other.ReportHierarchies[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.ReportHierarchies {
-		if _, ok := m.ReportHierarchies[k]; !ok {
-			return false
-		}
-	}
-	// report images
-	for k := range m.ReportImages {
-		if _, ok := other.ReportImages[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.ReportImages {
-		if _, ok := m.ReportImages[k]; !ok {
-			return false
-		}
-	}
-	// report inputs
-	for k := range m.ReportInputs {
-		if _, ok := other.ReportInputs[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.ReportInputs {
-		if _, ok := m.ReportInputs[k]; !ok {
-			return false
-		}
-	}
-	// report tables
-	for k := range m.ReportTables {
-		if _, ok := other.ReportTables[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.ReportTables {
-		if _, ok := m.ReportTables[k]; !ok {
-			return false
-		}
-	}
-	// report texts
-	for k := range m.ReportTexts {
-		if _, ok := other.ReportTexts[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.ReportTexts {
-		if _, ok := m.ReportTexts[k]; !ok {
-			return false
-		}
-	}
+
 	// variables
 	for k := range m.Variables {
 		if _, ok := other.Variables[k]; !ok {
@@ -321,11 +209,14 @@ func (m *Mod) Equals(other *Mod) bool {
 }
 
 // CreateDefaultMod creates a default mod created for a workspace with no mod definition
-func CreateDefaultMod(modPath string) *Mod {
-	m := NewMod(defaultModName, modPath, hcl.Range{})
+func CreateDefaultMod(modPath string) (*Mod, error) {
+	m, err := NewMod(defaultModName, modPath, hcl.Range{})
+	if err != nil {
+		return nil, err
+	}
 	folderName := filepath.Base(modPath)
 	m.Title = &folderName
-	return m
+	return m, nil
 }
 
 // IsDefaultMod returns whether this mod is a default mod created for a workspace with no mod definition
@@ -438,6 +329,11 @@ func (m *Mod) Name() string {
 	return m.FullName
 }
 
+// GetUnqualifiedName implements ModTreeItem
+func (m *Mod) GetUnqualifiedName() string {
+	return m.Name()
+}
+
 // GetModDependencyPath ModDependencyPath if it is set. If not it returns NameWithVersion()
 func (m *Mod) GetModDependencyPath() string {
 	if m.ModDependencyPath != "" {
@@ -518,14 +414,22 @@ func (m *Mod) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 		m.Require = m.LegacyRequire
 	}
 
-	// populate resource maps
-	m.PopulateResourceMaps()
+	// populate resource map references
+	m.resourceMaps.PopulateReferences()
 
 	// initialise our Require
 	if m.Require == nil {
 		return nil
 	}
-	return m.Require.initialise()
+	err := m.Require.initialise()
+	if err != nil {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  err.Error(),
+			Subject:  &block.DefRange,
+		}}
+	}
+	return nil
 
 }
 
@@ -533,9 +437,6 @@ func (m *Mod) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 func (m *Mod) AddReference(ref *ResourceReference) {
 	m.References = append(m.References, ref)
 }
-
-// SetMod implements HclResource
-func (m *Mod) SetMod(*Mod) {}
 
 // GetMod implements HclResource
 func (m *Mod) GetMod() *Mod {
@@ -545,16 +446,6 @@ func (m *Mod) GetMod() *Mod {
 // GetDeclRange implements HclResource
 func (m *Mod) GetDeclRange() *hcl.Range {
 	return &m.DeclRange
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (m *Mod) GetMetadata() *ResourceMetadata {
-	return m.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
-	m.metadata = metadata
 }
 
 // GetResourceMaps implements ResourceMapsProvider
@@ -690,29 +581,4 @@ func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
 		}
 	}
 	return []byte(strings.Join(resLines, "\n")), nil
-}
-
-func (m *Mod) PopulateResourceMaps() {
-	m.resourceMaps = &WorkspaceResourceMaps{
-		Mod:               m,
-		Mods:              make(map[string]*Mod),
-		Queries:           m.Queries,
-		Controls:          m.Controls,
-		Benchmarks:        m.Benchmarks,
-		Variables:         m.Variables,
-		Reports:           m.Reports,
-		ReportContainers:  m.ReportContainers,
-		ReportCards:       m.ReportCards,
-		ReportCharts:      m.ReportCharts,
-		ReportHierarchies: m.ReportHierarchies,
-		ReportImages:      m.ReportImages,
-		ReportInputs:      m.ReportInputs,
-		ReportTables:      m.ReportTables,
-		ReportTexts:       m.ReportTexts,
-	}
-	m.resourceMaps.PopulateReferences()
-
-	if !m.IsDefaultMod() {
-		m.resourceMaps.Mods[m.Name()] = m
-	}
 }

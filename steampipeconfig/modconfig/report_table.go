@@ -12,35 +12,47 @@ import (
 
 // ReportTable is a struct representing a leaf reporting node
 type ReportTable struct {
+	ReportLeafNodeBase
+	ResourceWithMetadataBase
+
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain" json:"-"`
+
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	// these properties are JSON serialised by the parent LeafRun
-	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-
-	Base *ReportTable `hcl:"base" json:"-"`
-
+	Title      *string                       `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width      *int                          `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	ColumnList ReportTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
 	Columns    map[string]*ReportTableColumn `cty:"columns" json:"columns"`
 
-	DeclRange hcl.Range  `json:"-"`
-	Mod       *Mod       `cty:"mod" json:"-"`
-	Paths     []NodePath `column:"path,jsonb" json:"-"`
+	// QueryProvider
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	Base      *ReportTable `hcl:"base" json:"-"`
+	DeclRange hcl.Range    `json:"-"`
+	Mod       *Mod         `cty:"mod" json:"-"`
+	Paths     []NodePath   `column:"path,jsonb" json:"-"`
+
+	parents []ModTreeItem
 }
 
-func NewReportTable(block *hcl.Block) *ReportTable {
-	return &ReportTable{
+func NewReportTable(block *hcl.Block, mod *Mod) *ReportTable {
+	shortName := GetAnonymousResourceShortName(block, mod)
+	t := &ReportTable{
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+		Mod:             mod,
 		DeclRange:       block.DefRange,
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	t.SetAnonymous(block)
+	return t
 }
 
 func (t *ReportTable) Equals(other *ReportTable) bool {
@@ -95,12 +107,6 @@ func (t *ReportTable) setBaseProperties() {
 
 // AddReference implements HclResource
 func (t *ReportTable) AddReference(*ResourceReference) {}
-
-// SetMod implements HclResource
-func (t *ReportTable) SetMod(mod *Mod) {
-	t.Mod = mod
-	t.FullName = fmt.Sprintf("%s.%s", t.Mod.ShortName, t.UnqualifiedName)
-}
 
 // GetMod implements HclResource
 func (t *ReportTable) GetMod() *Mod {
@@ -162,16 +168,6 @@ func (t *ReportTable) SetPaths() {
 	}
 }
 
-// GetMetadata implements ResourceWithMetadata
-func (t *ReportTable) GetMetadata() *ResourceMetadata {
-	return t.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (t *ReportTable) SetMetadata(metadata *ResourceMetadata) {
-	t.metadata = metadata
-}
-
 func (t *ReportTable) Diff(other *ReportTable) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
 		Item: t,
@@ -206,11 +202,6 @@ func (t *ReportTable) Diff(other *ReportTable) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetSQL implements ReportLeafNode
-func (t *ReportTable) GetSQL() string {
-	return typehelpers.SafeString(t.SQL)
-}
-
 // GetWidth implements ReportLeafNode
 func (t *ReportTable) GetWidth() int {
 	if t.Width == nil {
@@ -219,7 +210,51 @@ func (t *ReportTable) GetWidth() int {
 	return *t.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (t *ReportTable) GetUnqualifiedName() string {
 	return t.UnqualifiedName
+}
+
+// GetParams implements QueryProvider
+func (t *ReportTable) GetParams() []*ParamDef {
+	return t.Params
+}
+
+// GetArgs implements QueryProvider
+func (t *ReportTable) GetArgs() *QueryArgs {
+	return t.Args
+}
+
+// GetSQL implements QueryProvider, ReportLeafNode
+func (t *ReportTable) GetSQL() string {
+	return typehelpers.SafeString(t.SQL)
+}
+
+// GetQuery implements QueryProvider
+func (t *ReportTable) GetQuery() *Query {
+	return t.Query
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (t *ReportTable) GetPreparedStatementName() string {
+	// lazy load
+	if t.PreparedStatementName == "" {
+		t.PreparedStatementName = preparedStatementName(t)
+	}
+	return t.PreparedStatementName
+}
+
+// GetModName implements QueryProvider
+func (t *ReportTable) GetModName() string {
+	return t.Mod.NameWithVersion()
+}
+
+// SetArgs implements QueryProvider
+func (t *ReportTable) SetArgs(args *QueryArgs) {
+	// nothing
+}
+
+// SetParams implements QueryProvider
+func (t *ReportTable) SetParams(params []*ParamDef) {
+	t.Params = params
 }

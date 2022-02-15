@@ -27,42 +27,33 @@ type WorkspaceResourceMaps struct {
 	LocalBenchmarks map[string]*Benchmark
 }
 
-func NewWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
-	return &WorkspaceResourceMaps{
+func WorkspaceResourceMapFromMod(mod *Mod) *WorkspaceResourceMaps {
+	resourceMaps := &WorkspaceResourceMaps{
 		Mod:               mod,
 		Mods:              make(map[string]*Mod),
-		Queries:           make(map[string]*Query),
-		Controls:          make(map[string]*Control),
-		Benchmarks:        make(map[string]*Benchmark),
-		Variables:         make(map[string]*Variable),
-		Reports:           make(map[string]*ReportContainer),
-		ReportContainers:  make(map[string]*ReportContainer),
-		ReportCards:       make(map[string]*ReportCard),
-		ReportCharts:      make(map[string]*ReportChart),
-		ReportHierarchies: make(map[string]*ReportHierarchy),
-		ReportImages:      make(map[string]*ReportImage),
-		ReportInputs:      make(map[string]*ReportInput),
-		ReportTables:      make(map[string]*ReportTable),
-		ReportTexts:       make(map[string]*ReportText),
-		References:        make(map[string]*ResourceReference),
-		LocalQueries:      make(map[string]*Query),
-		LocalControls:     make(map[string]*Control),
-		LocalBenchmarks:   make(map[string]*Benchmark),
+		Queries:           mod.Queries,
+		Controls:          mod.Controls,
+		Benchmarks:        mod.Benchmarks,
+		Variables:         mod.Variables,
+		Reports:           mod.Reports,
+		ReportContainers:  mod.ReportContainers,
+		ReportCharts:      mod.ReportCharts,
+		ReportCards:       mod.ReportCards,
+		ReportHierarchies: mod.ReportHierarchies,
+		ReportImages:      mod.ReportImages,
+		ReportInputs:      mod.ReportInputs,
+		ReportTables:      mod.ReportTables,
+		ReportTexts:       mod.ReportTexts,
 	}
+	if !mod.IsDefaultMod() {
+		resourceMaps.Mods[mod.Name()] = mod
+	}
+	return resourceMaps
 }
 
 func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
-	for name, mod := range m.Mods {
-		if otherMod, ok := other.Mods[name]; !ok {
-			return false
-		} else if !mod.Equals(otherMod) {
-			return false
-		}
-	}
-	for name := range other.Mods {
-		if _, ok := m.Mods[name]; !ok {
-			return false
-		}
+	if other == nil {
+		return false
 	}
 
 	for name, query := range m.Queries {

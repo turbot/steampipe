@@ -3,15 +3,17 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // ReportImage is a struct representing a leaf reporting node
 type ReportImage struct {
+	ReportLeafNodeBase
+	ResourceWithMetadataBase
+
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
@@ -28,17 +30,20 @@ type ReportImage struct {
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents []ModTreeItem
 }
 
-func NewReportImage(block *hcl.Block) *ReportImage {
-	return &ReportImage{
+func NewReportImage(block *hcl.Block, mod *Mod) *ReportImage {
+	shortName := GetAnonymousResourceShortName(block, mod)
+	i := &ReportImage{
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+		Mod:             mod,
 		DeclRange:       block.DefRange,
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	i.SetAnonymous(block)
+	return i
 }
 
 func (c *ReportImage) Equals(other *ReportImage) bool {
@@ -86,12 +91,6 @@ func (c *ReportImage) setBaseProperties() {
 
 // AddReference implements HclResource
 func (c *ReportImage) AddReference(*ResourceReference) {}
-
-// SetMod implements HclResource
-func (c *ReportImage) SetMod(mod *Mod) {
-	c.Mod = mod
-	c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
-}
 
 // GetMod implements HclResource
 func (c *ReportImage) GetMod() *Mod {
@@ -153,16 +152,6 @@ func (c *ReportImage) SetPaths() {
 	}
 }
 
-// GetMetadata implements ResourceWithMetadata
-func (c *ReportImage) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (c *ReportImage) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
-}
-
 func (c *ReportImage) Diff(other *ReportImage) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
 		Item: c,
@@ -210,7 +199,7 @@ func (c *ReportImage) GetWidth() int {
 	return *c.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (c *ReportImage) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }

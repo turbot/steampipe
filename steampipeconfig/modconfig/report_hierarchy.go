@@ -3,45 +3,59 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // ReportHierarchy is a struct representing a leaf reporting node
 type ReportHierarchy struct {
+	ReportLeafNodeBase
+	ResourceWithMetadataBase
+
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain" json:"-"`
+
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Type  *string `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-
-	Base *ReportHierarchy `hcl:"base" json:"-"`
-
+	Title        *string                             `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width        *int                                `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Type         *string                             `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	CategoryList ReportHierarchyCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
 	Categories   map[string]*ReportHierarchyCategory `cty:"categories" json:"categories"`
+
+	// QueryProvider
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+
+	Base *ReportHierarchy `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents []ModTreeItem
 }
 
-func NewReportHierarchy(block *hcl.Block) *ReportHierarchy {
-	return &ReportHierarchy{
+func NewReportHierarchy(block *hcl.Block, mod *Mod) *ReportHierarchy {
+	shortName := GetAnonymousResourceShortName(block, mod)
+	h := &ReportHierarchy{
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+		Mod:             mod,
 		DeclRange:       block.DefRange,
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	h.SetAnonymous(block)
+
+	return h
 }
 
 func (h *ReportHierarchy) Equals(other *ReportHierarchy) bool {
@@ -100,12 +114,6 @@ func (h *ReportHierarchy) setBaseProperties() {
 
 // AddReference implements HclResource
 func (h *ReportHierarchy) AddReference(*ResourceReference) {}
-
-// SetMod implements HclResource
-func (h *ReportHierarchy) SetMod(mod *Mod) {
-	h.Mod = mod
-	h.FullName = fmt.Sprintf("%s.%s", h.Mod.ShortName, h.UnqualifiedName)
-}
 
 // GetMod implements HclResource
 func (h *ReportHierarchy) GetMod() *Mod {
@@ -167,16 +175,6 @@ func (h *ReportHierarchy) SetPaths() {
 	}
 }
 
-// GetMetadata implements ResourceWithMetadata
-func (h *ReportHierarchy) GetMetadata() *ResourceMetadata {
-	return h.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (h *ReportHierarchy) SetMetadata(metadata *ResourceMetadata) {
-	h.metadata = metadata
-}
-
 func (h *ReportHierarchy) Diff(other *ReportHierarchy) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
 		Item: h,
@@ -218,11 +216,6 @@ func (h *ReportHierarchy) Diff(other *ReportHierarchy) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetSQL implements ReportLeafNode
-func (h *ReportHierarchy) GetSQL() string {
-	return typehelpers.SafeString(h.SQL)
-}
-
 // GetWidth implements ReportLeafNode
 func (h *ReportHierarchy) GetWidth() int {
 	if h.Width == nil {
@@ -231,7 +224,51 @@ func (h *ReportHierarchy) GetWidth() int {
 	return *h.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (h *ReportHierarchy) GetUnqualifiedName() string {
 	return h.UnqualifiedName
+}
+
+// GetParams implements QueryProvider
+func (h *ReportHierarchy) GetParams() []*ParamDef {
+	return h.Params
+}
+
+// GetArgs implements QueryProvider
+func (h *ReportHierarchy) GetArgs() *QueryArgs {
+	return h.Args
+}
+
+// GetSQL implements QueryProvider, ReportLeafNode
+func (h *ReportHierarchy) GetSQL() string {
+	return typehelpers.SafeString(h.SQL)
+}
+
+// GetQuery implements QueryProvider
+func (h *ReportHierarchy) GetQuery() *Query {
+	return h.Query
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (h *ReportHierarchy) GetPreparedStatementName() string {
+	// lazy load
+	if h.PreparedStatementName == "" {
+		h.PreparedStatementName = preparedStatementName(h)
+	}
+	return h.PreparedStatementName
+}
+
+// GetModName implements QueryProvider
+func (h *ReportHierarchy) GetModName() string {
+	return h.Mod.NameWithVersion()
+}
+
+// SetArgs implements QueryProvider
+func (h *ReportHierarchy) SetArgs(args *QueryArgs) {
+	// nothing
+}
+
+// SetParams implements QueryProvider
+func (h *ReportHierarchy) SetParams(params []*ParamDef) {
+	h.Params = params
 }

@@ -103,7 +103,9 @@ func ctyObjectToMapOfPgStrings(val cty.Value) (map[string]string, error) {
 
 		// decode key
 		var key string
-		gocty.FromCtyValue(k, &key)
+		if err := gocty.FromCtyValue(k, &key); err != nil {
+			return nil, err
+		}
 
 		// decode the value into a postgres compatible
 		valStr, err := ctyToPostgresString(v)

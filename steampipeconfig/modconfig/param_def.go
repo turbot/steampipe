@@ -17,15 +17,12 @@ type ParamDef struct {
 	// list of all blocks referenced by the resource
 	References []*ResourceReference
 	DeclRange  hcl.Range
-
-	parent string
 }
 
-func NewParamDef(block *hcl.Block, parent string) *ParamDef {
+func NewParamDef(block *hcl.Block) *ParamDef {
 	return &ParamDef{
 		Name:      block.Labels[0],
 		FullName:  fmt.Sprintf("param.%s", block.Labels[0]),
-		parent:    parent,
 		DeclRange: block.DefRange,
 	}
 }

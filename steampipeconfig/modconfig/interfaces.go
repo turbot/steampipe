@@ -10,9 +10,8 @@ import (
 type MappableResource interface {
 	// InitialiseFromFile creates a mappable resource from a file path
 	// It returns the resource, and the raw file data
-	InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error)
+	InitialiseFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error)
 	Name() string
-	SetMod(*Mod)
 	GetMetadata() *ResourceMetadata
 	SetMetadata(*ResourceMetadata)
 }
@@ -23,6 +22,7 @@ type ModTreeItem interface {
 	AddParent(ModTreeItem) error
 	GetChildren() []ModTreeItem
 	Name() string
+	GetUnqualifiedName() string
 	GetTitle() string
 	GetDescription() string
 	GetTags() map[string]string
@@ -35,11 +35,10 @@ type ModTreeItem interface {
 // HclResource must be implemented by resources defined in HCL
 type HclResource interface {
 	Name() string
+	GetUnqualifiedName() string
 	CtyValue() (cty.Value, error)
 	OnDecoded(*hcl.Block) hcl.Diagnostics
 	AddReference(ref *ResourceReference)
-	SetMod(*Mod)
-	GetMod() *Mod
 	GetDeclRange() *hcl.Range
 }
 
@@ -48,26 +47,45 @@ type ResourceWithMetadata interface {
 	Name() string
 	GetMetadata() *ResourceMetadata
 	SetMetadata(metadata *ResourceMetadata)
+	SetAnonymous(block *hcl.Block)
+	IsAnonymous() bool
 }
 
 // QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
 type QueryProvider interface {
 	Name() string
-	ModName() string
+	GetModName() string
 	GetParams() []*ParamDef
+	GetSQL() string
+	GetQuery() *Query
 	GetPreparedStatementName() string
+	SetArgs(args *QueryArgs)
+	SetParams(params []*ParamDef)
 }
 
-// ReportingLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
-type ReportingLeafNode interface {
+// ParameterisedReportNode must be implemented by resources has params and args
+type ParameterisedReportNode interface {
+	GetParams() []*ParamDef
+	GetArgs() *QueryArgs
+}
+
+// ReportLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
+type ReportLeafNode interface {
 	Name() string
 	GetUnqualifiedName() string
 	GetTitle() string
 	GetWidth() int
-	GetSQL() string
 	GetPaths() []NodePath
+	GetSQL() string
+	// implemented by ReportLeafNodeBase
+	AddRuntimeDependencies(*RuntimeDependency)
+	GetRuntimeDependencies() map[string]*RuntimeDependency
 }
 
 type ResourceMapsProvider interface {
 	GetResourceMaps() *WorkspaceResourceMaps
+}
+
+type UniqueNameProvider interface {
+	GetUniqueName(string) string
 }

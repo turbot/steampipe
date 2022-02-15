@@ -11,7 +11,10 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
+// TOTO [reports] split into report and container
+// update events
 // ReportContainerRun is a struct representing a container run
+
 type ReportContainerRun struct {
 	Name          string                           `json:"name"`
 	Title         string                           `json:"title,omitempty"`
@@ -23,20 +26,28 @@ type ReportContainerRun struct {
 	Children      []reportinterfaces.ReportNodeRun `json:"children,omitempty"`
 	NodeType      string                           `json:"node_type"`
 	Status        reportinterfaces.ReportRunStatus `json:"status"`
+	ReportName    string                           `json:"report"`
 	Path          []string                         `json:"-"`
+	reportNode    *modconfig.ReportContainer
 	parent        reportinterfaces.ReportNodeParent
 	executionTree *ReportExecutionTree
-	childComplete chan (reportinterfaces.ReportNodeRun)
+	childComplete chan reportinterfaces.ReportNodeRun
 }
 
 func NewReportContainerRun(container *modconfig.ReportContainer, parent reportinterfaces.ReportNodeParent, executionTree *ReportExecutionTree) (*ReportContainerRun, error) {
 	children := container.GetChildren()
+
+	// ensure the tree node name is unique
+	name := executionTree.GetUniqueName(container.Name())
+
 	r := &ReportContainerRun{
-		Name:          container.Name(),
+		Name:          name,
 		NodeType:      container.HclType,
 		Path:          container.Paths[0],
+		ReportName:    executionTree.reportName,
 		executionTree: executionTree,
 		parent:        parent,
+		reportNode:    container,
 
 		// set to complete, optimistically
 		// if any children have SQL we will set this to ReportRunReady instead
@@ -61,16 +72,16 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 				return nil, err
 			}
 		case *modconfig.Benchmark, *modconfig.Control:
-			childRun, err = NewCheckRun(i.(modconfig.ReportingLeafNode), r, executionTree)
+			childRun, err = NewCheckRun(i.(modconfig.ReportLeafNode), r, executionTree)
 			if err != nil {
 				return nil, err
 			}
 
 		default:
-			// ensure this item is a ReportingLeafNode
-			leafNode, ok := i.(modconfig.ReportingLeafNode)
+			// ensure this item is a ReportLeafNode
+			leafNode, ok := i.(modconfig.ReportLeafNode)
 			if !ok {
-				return nil, fmt.Errorf("child %s does not implement ReportingLeafNode", i.Name())
+				return nil, fmt.Errorf("child %s does not implement ReportLeafNode", i.Name())
 			}
 
 			childRun, err = NewLeafRun(leafNode, r, executionTree)
@@ -98,6 +109,7 @@ func NewReportContainerRun(container *modconfig.ReportContainer, parent reportin
 // Execute implements ReportRunNode
 // execute all children and wait for them to complete
 func (r *ReportContainerRun) Execute(ctx context.Context) error {
+
 	errChan := make(chan error, len(r.Children))
 	// execute all children asynchronously
 	for _, child := range r.Children {
@@ -188,4 +200,25 @@ func (r *ReportContainerRun) ChildrenComplete() bool {
 
 func (r *ReportContainerRun) ChildCompleteChan() chan reportinterfaces.ReportNodeRun {
 	return r.childComplete
+}
+
+func (r *ReportContainerRun) GetRuntimeDependency(dependency *modconfig.RuntimeDependency) (*string, error) {
+	// TOTO [reports] LOCK???
+
+	/// TOTO [reports] nasty - split into report and container
+	if !r.reportNode.IsReport() {
+		panic("GetRuntimeDependency called on container")
+	}
+
+	// only inputs supported at present
+	if dependency.PropertyPath.ItemType != modconfig.BlockTypeInput {
+		return nil, fmt.Errorf("invalid runtime dependency type %s", dependency.PropertyPath.ItemType)
+	}
+
+	// find the input corresponding to this dependency
+	input, ok := r.reportNode.GetInput(dependency.PropertyPath.Name)
+	if !ok {
+		return nil, fmt.Errorf("report %s does not contain input %s", r.reportNode.Name(), dependency.PropertyPath.ItemType)
+	}
+	return input.Value, nil
 }

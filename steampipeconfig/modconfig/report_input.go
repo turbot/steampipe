@@ -3,42 +3,48 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // ReportInput is a struct representing a leaf reporting node
 type ReportInput struct {
+	ReportLeafNodeBase
+	ResourceWithMetadataBase
+
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
-	UnqualifiedName string `json:"-"`
+	UnqualifiedName string `cty:"unqualified_name" json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-
-	Type *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Base *ReportInput `hcl:"base" json:"-"`
+	Title *string      `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width *int         `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	SQL   *string      `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Type  *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Style *string      `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
+	Value *string      `json:"value"`
+	Base  *ReportInput `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents         []ModTreeItem
+	reportContainer *ReportContainer
 }
 
-func NewReportInput(block *hcl.Block) *ReportInput {
-	return &ReportInput{
+func NewReportInput(block *hcl.Block, mod *Mod) *ReportInput {
+	shortName := block.Labels[0]
+	i := &ReportInput{
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+		Mod:             mod,
 		DeclRange:       block.DefRange,
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	return i
 }
 
 func (c *ReportInput) Equals(other *ReportInput) bool {
@@ -84,12 +90,6 @@ func (c *ReportInput) setBaseProperties() {
 
 // AddReference implements HclResource
 func (c *ReportInput) AddReference(*ResourceReference) {}
-
-// SetMod implements HclResource
-func (c *ReportInput) SetMod(mod *Mod) {
-	c.Mod = mod
-	c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
-}
 
 // GetMod implements HclResource
 func (c *ReportInput) GetMod() *Mod {
@@ -151,16 +151,6 @@ func (c *ReportInput) SetPaths() {
 	}
 }
 
-// GetMetadata implements ResourceWithMetadata
-func (c *ReportInput) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (c *ReportInput) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
-}
-
 func (c *ReportInput) Diff(other *ReportInput) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
 		Item: c,
@@ -192,11 +182,6 @@ func (c *ReportInput) Diff(other *ReportInput) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetSQL implements ReportLeafNode
-func (c *ReportInput) GetSQL() string {
-	return typehelpers.SafeString(c.SQL)
-}
-
 // GetWidth implements ReportLeafNode
 func (c *ReportInput) GetWidth() int {
 	if c.Width == nil {
@@ -205,7 +190,14 @@ func (c *ReportInput) GetWidth() int {
 	return *c.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (c *ReportInput) GetUnqualifiedName() string {
 	return c.UnqualifiedName
+}
+
+// SetReportContainer sets the parent report container
+func (c *ReportInput) SetReportContainer(reportContainer *ReportContainer) {
+	c.reportContainer = reportContainer
+	// update the full name
+	c.FullName = fmt.Sprintf("%s.%s.%s", c.Mod.ShortName, c.reportContainer.UnqualifiedName, c.UnqualifiedName)
 }

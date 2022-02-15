@@ -5,16 +5,18 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // Benchmark is a struct representing the Benchmark resource
 type Benchmark struct {
+	ReportLeafNodeBase
+	ResourceWithMetadataBase
+
 	ShortName       string
 	FullName        string `cty:"name"`
 	UnqualifiedName string
@@ -39,17 +41,20 @@ type Benchmark struct {
 	Base  *Benchmark `hcl:"base" json:"-"`
 	Width *int       `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents []ModTreeItem
 }
 
-func NewBenchmark(block *hcl.Block) *Benchmark {
-	return &Benchmark{
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("benchmark.%s", block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("benchmark.%s", block.Labels[0]),
+func NewBenchmark(block *hcl.Block, mod *Mod) *Benchmark {
+	shortName := GetAnonymousResourceShortName(block, mod)
+	benchmark := &Benchmark{
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.benchmark.%s", mod.ShortName, shortName),
+		UnqualifiedName: fmt.Sprintf("benchmark.%s", shortName),
+		Mod:             mod,
 		DeclRange:       block.DefRange,
 	}
+	benchmark.SetAnonymous(block)
+	return benchmark
 }
 
 func (b *Benchmark) Equals(other *Benchmark) bool {
@@ -101,13 +106,6 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 // AddReference implements HclResource
 func (b *Benchmark) AddReference(ref *ResourceReference) {
 	b.References = append(b.References, ref)
-}
-
-// SetMod implements HclResource
-func (b *Benchmark) SetMod(mod *Mod) {
-	b.Mod = mod
-	// add mod name to full name
-	b.FullName = fmt.Sprintf("%s.%s", mod.ShortName, b.FullName)
 }
 
 // GetMod implements HclResource
@@ -215,16 +213,6 @@ func (b *Benchmark) Name() string {
 	return b.FullName
 }
 
-// GetMetadata implements ResourceWithMetadata
-func (b *Benchmark) GetMetadata() *ResourceMetadata {
-	return b.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (b *Benchmark) SetMetadata(metadata *ResourceMetadata) {
-	b.metadata = metadata
-}
-
 // GetSQL implements ReportLeafNode
 func (b *Benchmark) GetSQL() string {
 	return ""
@@ -238,42 +226,12 @@ func (b *Benchmark) GetWidth() int {
 	return *b.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (b *Benchmark) GetUnqualifiedName() string {
 	return b.UnqualifiedName
 }
 
 func (b *Benchmark) Diff(other *Benchmark) *ReportTreeItemDiffs {
-	/*
-		res := b.ShortName == other.ShortName &&
-			b.FullName == other.FullName &&
-			typehelpers.SafeString(b.Description) == typehelpers.SafeString(other.Description) &&
-			typehelpers.SafeString(b.Documentation) == typehelpers.SafeString(other.Documentation) &&
-			typehelpers.SafeString(b.Title) == typehelpers.SafeString(other.Title)
-		if !res {
-			return res
-		}
-		// tags
-		if len(b.Tags) != len(other.Tags) {
-			return false
-		}
-		for k, v := range b.Tags {
-			if otherVal := other.Tags[k]; v != otherVal {
-				return false
-			}
-		}
-
-		if len(b.ChildNameStrings) != len(other.ChildNameStrings) {
-			return false
-		}
-
-		myChildNames := b.ChildNameStrings
-		sort.Strings(myChildNames)
-		otherChildNames := other.ChildNameStrings
-		sort.Strings(otherChildNames)
-		return strings.Join(myChildNames, ",") == strings.Join(otherChildNames, ",")
-	*/
-
 	res := &ReportTreeItemDiffs{
 		Item: b,
 		Name: b.Name(),
@@ -335,6 +293,6 @@ func (b *Benchmark) setBaseProperties() {
 	if len(b.Children) == 0 {
 		b.Children = b.Base.Children
 		b.ChildNameStrings = b.Base.ChildNameStrings
-		b.Children = b.Children
+		b.ChildNames = b.Base.ChildNames
 	}
 }

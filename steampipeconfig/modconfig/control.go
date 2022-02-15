@@ -4,56 +4,63 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // Control is a struct representing the Control resource
 type Control struct {
-	ShortName        string
-	FullName         string            `cty:"name"`
-	Description      *string           `cty:"description" column:"description,text"`
-	Documentation    *string           `cty:"documentation"  column:"documentation,text"`
-	SearchPath       *string           `cty:"search_path"  column:"search_path,text"`
-	SearchPathPrefix *string           `cty:"search_path_prefix"  column:"search_path_prefix,text"`
-	Severity         *string           `cty:"severity"  column:"severity,text"`
-	SQL              *string           `cty:"sql"  column:"sql,text"`
-	Tags             map[string]string `cty:"tags"  column:"tags,jsonb"`
-	Title            *string           `cty:"title"  column:"title,text"`
-	Query            *Query
-	// args
-	// arguments may be specified by either a map of named args or as a list of positional args
-	// we apply special decode logic to convert the params block into a QueryArgs object
-	// with either an args map or list assigned
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb"`
-	References            []*ResourceReference
-	Mod                   *Mod `cty:"mod"`
-	DeclRange             hcl.Range
-	PreparedStatementName string `column:"prepared_statement_name,text"`
-	UnqualifiedName       string
-	Paths                 []NodePath
+	ReportLeafNodeBase
+	ResourceWithMetadataBase
+
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain" json:"-"`
+
+	ShortName        string            `json:"-"`
+	FullName         string            `cty:"name"  json:"name"`
+	Description      *string           `cty:"description" hcl:"description" column:"description,text"  json:"description,omitempty"`
+	Documentation    *string           `cty:"documentation" hcl:"documentation"  column:"documentation,text"  json:"documentation,omitempty"`
+	SearchPath       *string           `cty:"search_path" hcl:"search_path"  column:"search_path,text"  json:"search_path,omitempty"`
+	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text"  json:"search_path_prefix,omitempty"`
+	Severity         *string           `cty:"severity" hcl:"severity"  column:"severity,text"  json:"search_path_prefix,omitempty"`
+	Tags             map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb"  json:"tags,omitempty"`
+	Title            *string           `cty:"title" hcl:"title"  column:"title,text"  json:"title,omitempty"`
+
+	// QueryProvider
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
+
+	References      []*ResourceReference ` json:"-"`
+	Mod             *Mod                 `cty:"mod"  json:"-"`
+	DeclRange       hcl.Range            `json:"-"`
+	UnqualifiedName string               `json:"-"`
+	Paths           []NodePath           `json:"-"`
 
 	// report specific properties
-	Base  *Control `hcl:"base"`
-	Width *int     `cty:"width" hcl:"width" column:"width,text" `
+	Base  *Control `hcl:"base" json:"-"`
+	Width *int     `cty:"width" hcl:"width" column:"width,text" json:"-"`
 
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents []ModTreeItem
 }
 
-func NewControl(block *hcl.Block) *Control {
+func NewControl(block *hcl.Block, mod *Mod) *Control {
+	shortName := GetAnonymousResourceShortName(block, mod)
 	control := &Control{
 		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("control.%s", block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("control.%s", block.Labels[0]),
+		FullName:        fmt.Sprintf("%s.control.%s", mod.ShortName, shortName),
+		UnqualifiedName: fmt.Sprintf("control.%s", shortName),
+		Mod:             mod,
 		DeclRange:       block.DefRange,
 		Args:            NewQueryArgs(),
 	}
+	control.SetAnonymous(block)
+
 	return control
 }
 
@@ -252,13 +259,6 @@ func (c *Control) AddReference(ref *ResourceReference) {
 	c.References = append(c.References, ref)
 }
 
-// SetMod implements HclResource
-func (c *Control) SetMod(mod *Mod) {
-	c.Mod = mod
-	// add mod name to full name
-	c.FullName = fmt.Sprintf("%s.%s", mod.ShortName, c.FullName)
-}
-
 // GetMod implements HclResource
 func (c *Control) GetMod() *Mod {
 	return c.Mod
@@ -279,9 +279,19 @@ func (c *Control) SetMetadata(metadata *ResourceMetadata) {
 	c.metadata = metadata
 }
 
+// GetModName implements QueryProvider
+func (c *Control) GetModName() string {
+	return c.Mod.NameWithVersion()
+}
+
 // GetParams implements QueryProvider
 func (c *Control) GetParams() []*ParamDef {
 	return c.Params
+}
+
+// GetQuery implements QueryProvider
+func (c *Control) GetQuery() *Query {
+	return c.Query
 }
 
 // GetPreparedStatementName implements QueryProvider
@@ -293,14 +303,24 @@ func (c *Control) GetPreparedStatementName() string {
 	return c.PreparedStatementName
 }
 
-// ModName implements QueryProvider
-func (c *Control) ModName() string {
-	return c.Mod.NameWithVersion()
+// GetArgs implements QueryProvider
+func (c *Control) GetArgs() *QueryArgs {
+	return c.Args
 }
 
-// GetSQL implements ReportLeafNode
+// GetSQL implements QueryProvider, ReportLeafNode
 func (c *Control) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)
+}
+
+// SetArgs implements QueryProvider
+func (c *Control) SetArgs(args *QueryArgs) {
+	c.Args = args
+}
+
+// SetParams implements QueryProvider
+func (c *Control) SetParams(params []*ParamDef) {
+	c.Params = params
 }
 
 // GetWidth implements ReportLeafNode
@@ -311,7 +331,7 @@ func (c *Control) GetWidth() int {
 	return *c.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (c *Control) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }

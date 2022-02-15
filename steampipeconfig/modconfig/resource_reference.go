@@ -7,12 +7,13 @@ import (
 )
 
 type ResourceReference struct {
+	ResourceWithMetadataBase
+
 	To        string `cty:"reference_to" column:"reference_to,text"`
 	From      string `cty:"reference_from" column:"reference_from,text"`
 	BlockType string `cty:"from_block_type" column:"from_block_type,text"`
 	BlockName string `cty:"from_block_name" column:"from_block_name,text"`
 	Attribute string `cty:"from_attribute" column:"from_attribute,text"`
-	metadata  *ResourceMetadata
 }
 
 // ResourceReferenceMap is a map of references keyed by 'ref'
@@ -49,14 +50,4 @@ func (r *ResourceReference) Name() string {
 	hash := utils.GetMD5Hash(r.String())[:8]
 	str := fmt.Sprintf("ref.%s", hash)
 	return str
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (r *ResourceReference) GetMetadata() *ResourceMetadata {
-	return r.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (r *ResourceReference) SetMetadata(metadata *ResourceMetadata) {
-	r.metadata = metadata
 }

@@ -2,48 +2,77 @@ package modconfig
 
 import (
 	"fmt"
-
-	"github.com/turbot/steampipe/utils"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/stevenle/topsort"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
+const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
+const runtimeDependencyReportScope = "self"
+
 // ReportContainer is a struct representing the Report and Container resource
 type ReportContainer struct {
-	ShortName       string
-	FullName        string `cty:"name"`
-	UnqualifiedName string
+	ReportLeafNodeBase
+	ResourceWithMetadataBase
 
-	Title *string `cty:"title" column:"title,text"`
-	Width *int    `cty:"width"  column:"width,text"`
-	Base  *ReportContainer
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain"`
+
+	ShortName       string
+	FullName        string           `cty:"name"`
+	UnqualifiedName string           `cty:"unqualified_name"`
+	Title           *string          `cty:"title" hcl:"title" column:"title,text"`
+	Width           *int             `cty:"width" hcl:"width"  column:"width,text"`
+	Args            *QueryArgs       `cty:"args" column:"args,jsonb"`
+	Base            *ReportContainer `hcl:"base"`
+	Inputs          []*ReportInput   `cty:"inputs"`
 
 	Mod       *Mod `cty:"mod"`
 	DeclRange hcl.Range
-
-	Paths []NodePath `column:"path,jsonb"`
+	Paths     []NodePath `column:"path,jsonb"`
 	// store children in a way which can be serialised via cty
 	ChildNames []string `cty:"children" column:"children,jsonb"`
 
+	selfInputsMap map[string]*ReportInput
 	// the actual children
-	children []ModTreeItem
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	children               []ModTreeItem
+	parents                []ModTreeItem
+	runtimeDependencyGraph *topsort.Graph
 
 	HclType string
 }
 
-func NewReportContainer(block *hcl.Block) *ReportContainer {
-	return &ReportContainer{
-		DeclRange:       block.DefRange,
+func NewReportContainer(block *hcl.Block, mod *Mod) *ReportContainer {
+	// TOTO [reports] think about nested report???
+	shortName := GetAnonymousResourceShortName(block, mod)
+	c := &ReportContainer{
 		HclType:         block.Type,
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+		Mod:             mod,
+		DeclRange:       block.DefRange,
 	}
+	c.SetAnonymous(block)
+
+	return c
 }
+
+//// SetMod implements HclResource
+//func (c *ReportContainer) SetMod(mod *Mod) {
+//	c.Mod = mod
+//
+//	// if this is a top level resource, and not a child, the resource names will already be set
+//	// - we need to update the full name to include the mod
+//	if c.UnqualifiedName != "" {
+//		// add mod name to full name
+//		c.FullName = fmt.Sprintf("%s.%s", mod.ShortName, c.UnqualifiedName)
+//	}
+//}
 
 func (c *ReportContainer) Equals(other *ReportContainer) bool {
 	diff := c.Diff(other)
@@ -78,26 +107,18 @@ func (c *ReportContainer) setBaseProperties() {
 		c.Width = c.Base.Width
 	}
 	if len(c.children) == 0 {
-		c.children = c.Base.GetChildren()
+		c.children = c.Base.children
 		c.ChildNames = c.Base.ChildNames
+	}
+	if len(c.Inputs) == 0 {
+		c.Inputs = c.Base.Inputs
+		c.setInputMap()
 	}
 }
 
 // AddReference implements HclResource
 func (c *ReportContainer) AddReference(*ResourceReference) {
 	// TODO
-}
-
-// SetMod implements HclResource
-func (c *ReportContainer) SetMod(mod *Mod) {
-	c.Mod = mod
-
-	// if this is a top level resource, and not a child, the resource names will already be set
-	// - we need to update the full name to include the mod
-	if c.UnqualifiedName != "" {
-		// add mod name to full name
-		c.FullName = fmt.Sprintf("%s.%s", mod.ShortName, c.UnqualifiedName)
-	}
 }
 
 // GetMod implements HclResource
@@ -160,16 +181,6 @@ func (c *ReportContainer) SetPaths() {
 	}
 }
 
-// GetMetadata implements ResourceWithMetadata
-func (c *ReportContainer) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (c *ReportContainer) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
-}
-
 func (c *ReportContainer) Diff(other *ReportContainer) *ReportTreeItemDiffs {
 	res := &ReportTreeItemDiffs{
 		Item: c,
@@ -204,7 +215,130 @@ func (c *ReportContainer) SetChildren(children []ModTreeItem) {
 	}
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (c *ReportContainer) GetUnqualifiedName() string {
 	return c.UnqualifiedName
+}
+
+func (c *ReportContainer) WalkResources(resourceFunc func(resource HclResource) (bool, error)) error {
+	for _, child := range c.children {
+		continueWalking, err := resourceFunc(child.(HclResource))
+		if err != nil {
+			return err
+		}
+		if !continueWalking {
+			break
+		}
+
+		if childContainer, ok := child.(*ReportContainer); ok {
+			if err := childContainer.WalkResources(resourceFunc); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *ReportContainer) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) error {
+	if !c.IsReport() {
+		return fmt.Errorf("BuildRuntimeDependencyTree should only be called for reports")
+	}
+	c.runtimeDependencyGraph = topsort.NewGraph()
+	// add root node - this will depend on all other nodes
+	c.runtimeDependencyGraph.AddNode(rootRuntimeDependencyNode)
+
+	resourceFunc := func(resource HclResource) (bool, error) {
+		leafNode, ok := resource.(ReportLeafNode)
+		if !ok {
+			// continue walking
+			return true, nil
+		}
+		runtimeDependencies := leafNode.GetRuntimeDependencies()
+		if len(runtimeDependencies) == 0 {
+			// continue walking
+			return true, nil
+		}
+		name := resource.Name()
+		if !c.runtimeDependencyGraph.ContainsNode(name) {
+			c.runtimeDependencyGraph.AddNode(name)
+		}
+
+		for _, dependency := range runtimeDependencies {
+			// try to resolve the target resource
+			if err := dependency.ResolveSource(resource, c, workspace); err != nil {
+				return false, err
+			}
+			if err := c.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name); err != nil {
+				return false, err
+			}
+			depString := dependency.String()
+			if !c.runtimeDependencyGraph.ContainsNode(depString) {
+				c.runtimeDependencyGraph.AddNode(depString)
+			}
+			if err := c.runtimeDependencyGraph.AddEdge(name, dependency.String()); err != nil {
+				return false, err
+			}
+		}
+
+		// ensure that all parameters have corresponding args populated with a value or runtime dependency
+
+		// continue walking
+		return true, nil
+	}
+	if err := c.WalkResources(resourceFunc); err != nil {
+		return err
+	}
+
+	// ensure that dependencies can be resolved
+	if _, err := c.runtimeDependencyGraph.TopSort(rootRuntimeDependencyNode); err != nil {
+		return fmt.Errorf("runtime depedencies cannot be resolved: %s", err.Error())
+	}
+	return nil
+}
+
+func (c *ReportContainer) GetInput(name string) (*ReportInput, bool) {
+	input, found := c.selfInputsMap[name]
+	return input, found
+}
+
+func (c *ReportContainer) SetInputs(inputs []*ReportInput) error {
+	c.Inputs = inputs
+	c.setInputMap()
+
+	// also add child containers inputs
+
+	var duplicates []string
+	resourceFunc := func(resource HclResource) (bool, error) {
+		if container, ok := resource.(*ReportContainer); ok {
+			for _, i := range container.Inputs {
+				// check we do not already have this input
+				if _, ok := c.selfInputsMap[i.UnqualifiedName]; ok {
+					duplicates = append(duplicates, i.Name())
+					continue
+				}
+				c.Inputs = append(c.Inputs, i)
+				c.selfInputsMap[i.UnqualifiedName] = i
+			}
+		}
+		// continue walking
+		return true, nil
+	}
+	c.WalkResources(resourceFunc)
+
+	if len(duplicates) > 0 {
+		return fmt.Errorf("duplicate input names found for %s: %s", c.Name(), strings.Join(duplicates, ","))
+	}
+	return nil
+}
+
+// populate our input map
+func (c *ReportContainer) setInputMap() {
+	c.selfInputsMap = make(map[string]*ReportInput)
+	for _, i := range c.Inputs {
+		c.selfInputsMap[i.UnqualifiedName] = i
+	}
+}
+
+func (c *ReportContainer) SetArgs(args *QueryArgs) {
+	c.Args = args
 }

@@ -4,14 +4,19 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/zclconf/go-cty/cty"
-
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // ReportChart is a struct representing a leaf reporting node
 type ReportChart struct {
+	ReportLeafNodeBase
+	ResourceWithMetadataBase
+
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain" json:"-"`
+
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
@@ -19,34 +24,42 @@ type ReportChart struct {
 	// these properties are JSON serialised by the parent LeafRun
 	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 
-	Type *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Base *ReportChart `hcl:"base" json:"-"`
+	Type       *string                       `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Legend     *ReportChartLegend            `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
+	SeriesList ReportChartSeriesList         `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
+	Axes       *ReportChartAxes              `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
+	Grouping   *string                       `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
+	Transform  *string                       `cty:"transform" hcl:"transform" json:"transform,omitempty"`
+	Series     map[string]*ReportChartSeries `cty:"series" json:"series,omitempty"`
 
-	Legend     *ReportChartLegend    `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
-	SeriesList ReportChartSeriesList `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
-	Axes       *ReportChartAxes      `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
-	Grouping   *string               `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
-	Transform  *string               `cty:"transform" hcl:"transform" json:"transform,omitempty"`
+	// QueryProvider
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
-	Series map[string]*ReportChartSeries `cty:"series" json:"series"`
+	Base      *ReportChart `hcl:"base" json:"-"`
+	DeclRange hcl.Range    `json:"-"`
+	Mod       *Mod         `cty:"mod" json:"-"`
+	Paths     []NodePath   `column:"path,jsonb" json:"-"`
 
-	DeclRange hcl.Range  `json:"-"`
-	Mod       *Mod       `cty:"mod" json:"-"`
-	Paths     []NodePath `column:"path,jsonb" json:"-"`
-
-	parents  []ModTreeItem
-	metadata *ResourceMetadata
+	parents []ModTreeItem
 }
 
-func NewReportChart(block *hcl.Block) *ReportChart {
-	return &ReportChart{
+func NewReportChart(block *hcl.Block, mod *Mod) *ReportChart {
+	shortName := GetAnonymousResourceShortName(block, mod)
+	c := &ReportChart{
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+		Mod:             mod,
 		DeclRange:       block.DefRange,
-		ShortName:       block.Labels[0],
-		FullName:        fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, block.Labels[0]),
 	}
+	c.SetAnonymous(block)
+
+	return c
 }
 
 func (c *ReportChart) Equals(other *ReportChart) bool {
@@ -122,12 +135,6 @@ func (c *ReportChart) setBaseProperties() {
 // AddReference implements HclResource
 func (c *ReportChart) AddReference(*ResourceReference) {}
 
-// SetMod implements HclResource
-func (c *ReportChart) SetMod(mod *Mod) {
-	c.Mod = mod
-	c.FullName = fmt.Sprintf("%s.%s", c.Mod.ShortName, c.UnqualifiedName)
-}
-
 // GetMod implements HclResource
 func (c *ReportChart) GetMod() *Mod {
 	return c.Mod
@@ -186,16 +193,6 @@ func (c *ReportChart) SetPaths() {
 			c.Paths = append(c.Paths, append(parentPath, c.Name()))
 		}
 	}
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (c *ReportChart) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (c *ReportChart) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
 }
 
 func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
@@ -263,11 +260,6 @@ func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetSQL implements ReportLeafNode
-func (c *ReportChart) GetSQL() string {
-	return typehelpers.SafeString(c.SQL)
-}
-
 // GetWidth implements ReportLeafNode
 func (c *ReportChart) GetWidth() int {
 	if c.Width == nil {
@@ -276,7 +268,51 @@ func (c *ReportChart) GetWidth() int {
 	return *c.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
+// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
 func (c *ReportChart) GetUnqualifiedName() string {
 	return c.UnqualifiedName
+}
+
+// GetParams implements QueryProvider
+func (c *ReportChart) GetParams() []*ParamDef {
+	return c.Params
+}
+
+// GetArgs implements QueryProvider
+func (c *ReportChart) GetArgs() *QueryArgs {
+	return c.Args
+}
+
+// GetSQL implements QueryProvider, ReportLeafNode
+func (c *ReportChart) GetSQL() string {
+	return typehelpers.SafeString(c.SQL)
+}
+
+// GetQuery implements QueryProvider
+func (c *ReportChart) GetQuery() *Query {
+	return c.Query
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (c *ReportChart) GetPreparedStatementName() string {
+	// lazy load
+	if c.PreparedStatementName == "" {
+		c.PreparedStatementName = preparedStatementName(c)
+	}
+	return c.PreparedStatementName
+}
+
+// GetModName implements QueryProvider
+func (c *ReportChart) GetModName() string {
+	return c.Mod.NameWithVersion()
+}
+
+// SetArgs implements QueryProvider
+func (c *ReportChart) SetArgs(args *QueryArgs) {
+	// nothing
+}
+
+// SetParams implements QueryProvider
+func (c *ReportChart) SetParams(params []*ParamDef) {
+	c.Params = params
 }
