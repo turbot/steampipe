@@ -402,10 +402,12 @@ const DashboardProvider = ({ children }) => {
   }, [state.selectedDashboard]);
 
   useEffect(() => {
+    if (!dashboardName && state.selectedDashboard) {
+      dispatch({ type: "select_dashboard", dashboard: null });
+    }
     if (
-      !dashboardName ||
-      (state.selectedDashboard &&
-        dashboardName === state.selectedDashboard.full_name)
+      state.selectedDashboard &&
+      dashboardName === state.selectedDashboard.full_name
     ) {
       return;
     }
