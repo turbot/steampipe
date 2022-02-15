@@ -463,10 +463,12 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, dashboardContainer *m
 		for _, resource := range resources {
 			if b.Type == modconfig.BlockTypeInput {
 				input := resource.(*modconfig.DashboardInput)
-				// add report name to input
+				// add dashboard name to input
 				input.SetDashboardContainer(dashboardContainer)
 
 				inputs = append(inputs, input)
+				// now we have namespaced the input, add to mod
+				res.addDiags(runCtx.CurrentMod.AddResource(resource))
 
 			} else {
 				// add the resource to the mod
@@ -488,7 +490,6 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, dashboardContainer *m
 			Detail:   err.Error(),
 			Subject:  &dashboardContainer.DeclRange,
 		}})
-
 	}
 
 	return res
@@ -572,14 +573,6 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 		if !anonymousResource {
 			moreDiags = runCtx.AddResource(resource)
 			res.addDiags(moreDiags)
-
-			// if resource is NOT a mod, add resource to current mod
-			if _, ok := resource.(*modconfig.Mod); !ok {
-				// - this will fail if the mod already has a resource with the same name
-				// we cannot add anonymous resources at this point - they will be added after their names are set
-				moreDiags = runCtx.CurrentMod.AddResource(resource)
-				res.addDiags(moreDiags)
-			}
 		}
 
 		// if resource supports metadata, save it

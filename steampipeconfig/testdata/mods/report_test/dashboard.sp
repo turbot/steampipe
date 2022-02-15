@@ -6,7 +6,7 @@ query "q1"{
     }
 }
 
-report "r1"{
+dashboard "r1"{
     input "i1"{ }
 
     chart {
@@ -18,11 +18,11 @@ report "r1"{
 
 }
 
-report "r2"{
-    report "derived1" {
-        base = report.r1
-    }
-    report "derived2" {
-        base = report.r1
-    }
-}
+//dashboard "r2"{
+//    dashboard "derived1" {
+//        base = dashboard.r1
+//    }
+//    dashboard "derived2" {
+//        base = dashboard.r1
+//    }
+//}

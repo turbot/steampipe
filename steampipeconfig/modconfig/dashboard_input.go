@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -21,9 +22,9 @@ type DashboardInput struct {
 	// these properties are JSON serialised by the parent LeafRun
 	Title *string         `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width *int            `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL   *string      `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Type  *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Style *string      `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
+	SQL   *string         `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Type  *string         `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Style *string         `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
 	Value *string         `json:"value"`
 	Base  *DashboardInput `hcl:"base" json:"-"`
 
@@ -197,7 +198,10 @@ func (c *DashboardInput) GetUnqualifiedName() string {
 
 // SetDashboardContainer sets the parent dashboard container
 func (c *DashboardInput) SetDashboardContainer(dashboardContainer *DashboardContainer) {
+	// TODO [reports] also update unqualified name?
 	c.dashboardContainer = dashboardContainer
-	// update the full name
-	c.FullName = fmt.Sprintf("%s.%s.%s", c.Mod.ShortName, c.dashboardContainer.UnqualifiedName, c.UnqualifiedName)
+	// update the full name with a sanitsed version of the parent dashboard name
+	dashboardName := strings.Replace(c.dashboardContainer.UnqualifiedName, ".", "_", -1)
+	c.FullName = fmt.Sprintf("%s.%s.%s", c.Mod.ShortName, dashboardName, c.UnqualifiedName)
+	c.UnqualifiedName = fmt.Sprintf("%s.%s", dashboardName, c.UnqualifiedName)
 }
