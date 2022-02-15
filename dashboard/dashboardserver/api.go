@@ -1,4 +1,4 @@
-package reportserver
+package dashboardserver
 
 import (
 	"context"
@@ -43,7 +43,7 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 	// only add the Recovery middleware
 	router.Use(gin.Recovery())
 
-	assetsDirectory := filepaths.EnsureReportAssetsDir()
+	assetsDirectory := filepaths.EnsureDashboardAssetsDir()
 
 	router.Use(static.Serve("/", static.LocalFile(assetsDirectory, true)))
 
@@ -55,14 +55,14 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 		c.File(path.Join(assetsDirectory, "index.html"))
 	})
 
-	reportServerPort := viper.GetInt(constants.ArgReportServerPort)
-	reportServerListen := "localhost"
-	if viper.GetString(constants.ArgReportServerListen) == string(ListenTypeNetwork) {
-		reportServerListen = ""
+	dashboardServerPort := viper.GetInt(constants.ArgDashboardServerPort)
+	dashboardServerListen := "localhost"
+	if viper.GetString(constants.ArgDashboardServerListen) == string(ListenTypeNetwork) {
+		dashboardServerListen = ""
 	}
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", reportServerListen, reportServerPort),
+		Addr:    fmt.Sprintf("%s:%d", dashboardServerListen, dashboardServerPort),
 		Handler: router,
 	}
 
@@ -73,8 +73,8 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 		}
 	}()
 
-	_ = openBrowser(fmt.Sprintf("http://localhost:%d", reportServerPort))
-	outputReady(ctx, fmt.Sprintf("Report server started on %d and listening on %s", reportServerPort, viper.GetString(constants.ArgReportServerListen)))
+	_ = openBrowser(fmt.Sprintf("http://localhost:%d", dashboardServerPort))
+	outputReady(ctx, fmt.Sprintf("Dashboard server started on %d and listening on %s", dashboardServerPort, viper.GetString(constants.ArgDashboardServerListen)))
 	<-ctx.Done()
 	log.Println("Shutdown Server ...")
 

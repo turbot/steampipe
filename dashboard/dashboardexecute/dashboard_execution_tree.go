@@ -1,4 +1,4 @@
-package reportexecute
+package dashboardexecute
 
 import (
 	"context"
@@ -6,37 +6,37 @@ import (
 	"log"
 	"sync"
 
+	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/report/reportinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 )
 
-// ReportExecutionTree is a structure representing the control result hierarchy
-type ReportExecutionTree struct {
+// DashboardExecutionTree is a structure representing the control result hierarchy
+type DashboardExecutionTree struct {
 	modconfig.UniqueNameProviderBase
 
-	Root        *ReportContainerRun
-	reportName  string
-	client      db_common.Client
-	runs        map[string]reportinterfaces.ReportNodeRun
+	Root          *DashboardContainerRun
+	dashboardName string
+	client        db_common.Client
+	runs        map[string]dashboardinterfaces.DashboardNodeRun
 	workspace   *workspace.Workspace
-	runComplete chan reportinterfaces.ReportNodeRun
+	runComplete chan dashboardinterfaces.DashboardNodeRun
 
 	inputLock              sync.Mutex
 	inputDataSubscriptions map[string][]chan bool
 }
 
 // NewReportExecutionTree creates a result group from a ModTreeItem
-func NewReportExecutionTree(reportName string, client db_common.Client, workspace *workspace.Workspace) (*ReportExecutionTree, error) {
-	// now populate the ReportExecutionTree
-	reportExecutionTree := &ReportExecutionTree{
+func NewReportExecutionTree(reportName string, client db_common.Client, workspace *workspace.Workspace) (*DashboardExecutionTree, error) {
+	// now populate the DashboardExecutionTree
+	reportExecutionTree := &DashboardExecutionTree{
 		client:                 client,
-		runs:                   make(map[string]reportinterfaces.ReportNodeRun),
+		runs:                   make(map[string]dashboardinterfaces.DashboardNodeRun),
 		workspace:              workspace,
-		runComplete:            make(chan reportinterfaces.ReportNodeRun, 1),
+		runComplete:            make(chan dashboardinterfaces.DashboardNodeRun, 1),
 		inputDataSubscriptions: make(map[string][]chan bool),
-		reportName:             reportName,
+		dashboardName:          reportName,
 	}
 
 	// create the root run node (either a report run or a counter run)
@@ -49,7 +49,7 @@ func NewReportExecutionTree(reportName string, client db_common.Client, workspac
 	return reportExecutionTree, nil
 }
 
-func (e *ReportExecutionTree) createRootItem(reportName string) (*ReportContainerRun, error) {
+func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardContainerRun, error) {
 	parsedName, err := modconfig.ParseResourceName(reportName)
 	if err != nil {
 		return nil, err
@@ -62,15 +62,15 @@ func (e *ReportExecutionTree) createRootItem(reportName string) (*ReportContaine
 	if !ok {
 		return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
 	}
-	return NewReportContainerRun(report, e, e)
+	return NewDashboardContainerRun(report, e, e)
 
 }
 
-func (e *ReportExecutionTree) Execute(ctx context.Context) error {
-	log.Println("[TRACE]", "begin ReportExecutionTree.Execute")
-	defer log.Println("[TRACE]", "end ReportExecutionTree.Execute")
+func (e *DashboardExecutionTree) Execute(ctx context.Context) error {
+	log.Println("[TRACE]", "begin DashboardExecutionTree.Execute")
+	defer log.Println("[TRACE]", "end DashboardExecutionTree.Execute")
 
-	if e.runStatus() == reportinterfaces.ReportRunComplete {
+	if e.runStatus() == dashboardinterfaces.DashboardRunComplete {
 		// there must be no nodes to execute
 		log.Println("[TRACE]", "execution tree already complete")
 		return nil
@@ -79,22 +79,22 @@ func (e *ReportExecutionTree) Execute(ctx context.Context) error {
 	return e.Root.Execute(ctx)
 }
 
-func (e *ReportExecutionTree) runStatus() reportinterfaces.ReportRunStatus {
+func (e *DashboardExecutionTree) runStatus() dashboardinterfaces.DashboardRunStatus {
 	return e.Root.GetRunStatus()
 }
 
-// GetName implements ReportNodeParent
+// GetName implements DashboardNodeParent
 // use mod chort name - this will be the root name for all child runs
-func (e *ReportExecutionTree) GetName() string {
+func (e *DashboardExecutionTree) GetName() string {
 	return e.workspace.Mod.ShortName
 }
 
-// ChildCompleteChan implements ReportNodeParent
-func (e *ReportExecutionTree) ChildCompleteChan() chan reportinterfaces.ReportNodeRun {
+// ChildCompleteChan implements DashboardNodeParent
+func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardinterfaces.DashboardNodeRun {
 	return e.runComplete
 }
 
-func (e *ReportExecutionTree) waitForRuntimeDependency(ctx context.Context, dependency *modconfig.RuntimeDependency) error {
+func (e *DashboardExecutionTree) waitForRuntimeDependency(ctx context.Context, dependency *modconfig.RuntimeDependency) error {
 	depChan := make(chan (bool), 1)
 	// TOTO [reports] for now verify we only bind inputs to args (somewhere)
 
@@ -108,7 +108,7 @@ func (e *ReportExecutionTree) waitForRuntimeDependency(ctx context.Context, depe
 	}
 }
 
-func (e *ReportExecutionTree) subscribeToInput(inputName string, depChan chan bool) {
+func (e *DashboardExecutionTree) subscribeToInput(inputName string, depChan chan bool) {
 	e.inputLock.Lock()
 	defer e.inputLock.Unlock()
 

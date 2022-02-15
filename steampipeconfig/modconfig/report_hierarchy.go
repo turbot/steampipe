@@ -9,8 +9,8 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// ReportHierarchy is a struct representing a leaf reporting node
-type ReportHierarchy struct {
+// DashboardHierarchy is a struct representing a leaf reporting node
+type DashboardHierarchy struct {
 	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
@@ -35,7 +35,7 @@ type ReportHierarchy struct {
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
 
-	Base *ReportHierarchy `hcl:"base" json:"-"`
+	Base *DashboardHierarchy `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
@@ -44,9 +44,9 @@ type ReportHierarchy struct {
 	parents []ModTreeItem
 }
 
-func NewReportHierarchy(block *hcl.Block, mod *Mod) *ReportHierarchy {
+func NewReportHierarchy(block *hcl.Block, mod *Mod) *DashboardHierarchy {
 	shortName := GetAnonymousResourceShortName(block, mod)
-	h := &ReportHierarchy{
+	h := &DashboardHierarchy{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -58,24 +58,24 @@ func NewReportHierarchy(block *hcl.Block, mod *Mod) *ReportHierarchy {
 	return h
 }
 
-func (h *ReportHierarchy) Equals(other *ReportHierarchy) bool {
+func (h *DashboardHierarchy) Equals(other *DashboardHierarchy) bool {
 	diff := h.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (h *ReportHierarchy) CtyValue() (cty.Value, error) {
+func (h *DashboardHierarchy) CtyValue() (cty.Value, error) {
 	return getCtyValue(h)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'chart.<shortName>'
-func (h *ReportHierarchy) Name() string {
+func (h *DashboardHierarchy) Name() string {
 	return h.FullName
 }
 
 // OnDecoded implements HclResource
-func (h *ReportHierarchy) OnDecoded(*hcl.Block) hcl.Diagnostics {
+func (h *DashboardHierarchy) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	h.setBaseProperties()
 	// populate categories map
 	if len(h.CategoryList) > 0 {
@@ -87,7 +87,7 @@ func (h *ReportHierarchy) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	return nil
 }
 
-func (h *ReportHierarchy) setBaseProperties() {
+func (h *DashboardHierarchy) setBaseProperties() {
 	if h.Base == nil {
 		return
 	}
@@ -113,51 +113,51 @@ func (h *ReportHierarchy) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (h *ReportHierarchy) AddReference(*ResourceReference) {}
+func (h *DashboardHierarchy) AddReference(*ResourceReference) {}
 
 // GetMod implements HclResource
-func (h *ReportHierarchy) GetMod() *Mod {
+func (h *DashboardHierarchy) GetMod() *Mod {
 	return h.Mod
 }
 
 // GetDeclRange implements HclResource
-func (h *ReportHierarchy) GetDeclRange() *hcl.Range {
+func (h *DashboardHierarchy) GetDeclRange() *hcl.Range {
 	return &h.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (h *ReportHierarchy) AddParent(parent ModTreeItem) error {
+func (h *DashboardHierarchy) AddParent(parent ModTreeItem) error {
 	h.parents = append(h.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (h *ReportHierarchy) GetParents() []ModTreeItem {
+func (h *DashboardHierarchy) GetParents() []ModTreeItem {
 	return h.parents
 }
 
 // GetChildren implements ModTreeItem
-func (h *ReportHierarchy) GetChildren() []ModTreeItem {
+func (h *DashboardHierarchy) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (h *ReportHierarchy) GetTitle() string {
+func (h *DashboardHierarchy) GetTitle() string {
 	return typehelpers.SafeString(h.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (h *ReportHierarchy) GetDescription() string {
+func (h *DashboardHierarchy) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (h *ReportHierarchy) GetTags() map[string]string {
+func (h *DashboardHierarchy) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (h *ReportHierarchy) GetPaths() []NodePath {
+func (h *DashboardHierarchy) GetPaths() []NodePath {
 	// lazy load
 	if len(h.Paths) == 0 {
 		h.SetPaths()
@@ -167,7 +167,7 @@ func (h *ReportHierarchy) GetPaths() []NodePath {
 }
 
 // SetPaths implements ModTreeItem
-func (h *ReportHierarchy) SetPaths() {
+func (h *DashboardHierarchy) SetPaths() {
 	for _, parent := range h.parents {
 		for _, parentPath := range parent.GetPaths() {
 			h.Paths = append(h.Paths, append(parentPath, h.Name()))
@@ -175,8 +175,8 @@ func (h *ReportHierarchy) SetPaths() {
 	}
 }
 
-func (h *ReportHierarchy) Diff(other *ReportHierarchy) *ReportTreeItemDiffs {
-	res := &ReportTreeItemDiffs{
+func (h *DashboardHierarchy) Diff(other *DashboardHierarchy) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
 		Item: h,
 		Name: h.Name(),
 	}
@@ -216,41 +216,41 @@ func (h *ReportHierarchy) Diff(other *ReportHierarchy) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetWidth implements ReportLeafNode
-func (h *ReportHierarchy) GetWidth() int {
+// GetWidth implements DashboardLeafNode
+func (h *DashboardHierarchy) GetWidth() int {
 	if h.Width == nil {
 		return 0
 	}
 	return *h.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
-func (h *ReportHierarchy) GetUnqualifiedName() string {
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
+func (h *DashboardHierarchy) GetUnqualifiedName() string {
 	return h.UnqualifiedName
 }
 
 // GetParams implements QueryProvider
-func (h *ReportHierarchy) GetParams() []*ParamDef {
+func (h *DashboardHierarchy) GetParams() []*ParamDef {
 	return h.Params
 }
 
 // GetArgs implements QueryProvider
-func (h *ReportHierarchy) GetArgs() *QueryArgs {
+func (h *DashboardHierarchy) GetArgs() *QueryArgs {
 	return h.Args
 }
 
-// GetSQL implements QueryProvider, ReportLeafNode
-func (h *ReportHierarchy) GetSQL() string {
+// GetSQL implements QueryProvider, DashboardLeafNode
+func (h *DashboardHierarchy) GetSQL() string {
 	return typehelpers.SafeString(h.SQL)
 }
 
 // GetQuery implements QueryProvider
-func (h *ReportHierarchy) GetQuery() *Query {
+func (h *DashboardHierarchy) GetQuery() *Query {
 	return h.Query
 }
 
 // GetPreparedStatementName implements QueryProvider
-func (h *ReportHierarchy) GetPreparedStatementName() string {
+func (h *DashboardHierarchy) GetPreparedStatementName() string {
 	// lazy load
 	if h.PreparedStatementName == "" {
 		h.PreparedStatementName = preparedStatementName(h)
@@ -259,16 +259,16 @@ func (h *ReportHierarchy) GetPreparedStatementName() string {
 }
 
 // GetModName implements QueryProvider
-func (h *ReportHierarchy) GetModName() string {
+func (h *DashboardHierarchy) GetModName() string {
 	return h.Mod.NameWithVersion()
 }
 
 // SetArgs implements QueryProvider
-func (h *ReportHierarchy) SetArgs(args *QueryArgs) {
+func (h *DashboardHierarchy) SetArgs(args *QueryArgs) {
 	// nothing
 }
 
 // SetParams implements QueryProvider
-func (h *ReportHierarchy) SetParams(params []*ParamDef) {
+func (h *DashboardHierarchy) SetParams(params []*ParamDef) {
 	h.Params = params
 }

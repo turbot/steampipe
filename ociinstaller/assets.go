@@ -33,8 +33,8 @@ func InstallAssets(ctx context.Context, dest string) error {
 func installAssetsFiles(image *SteampipeImage, tempdir string, dest string) error {
 	fileName := image.Assets.ReportUI
 	sourcePath := filepath.Join(tempdir, fileName)
-	if err := moveFolderWithinPartition(sourcePath, filepaths.EnsureReportAssetsDir()); err != nil {
-		return fmt.Errorf("could not install %s to %s", sourcePath, filepaths.EnsureReportAssetsDir())
+	if err := moveFolderWithinPartition(sourcePath, filepaths.EnsureDashboardAssetsDir()); err != nil {
+		return fmt.Errorf("could not install %s to %s", sourcePath, filepaths.EnsureDashboardAssetsDir())
 	}
 	return nil
 }

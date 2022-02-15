@@ -11,15 +11,15 @@ type WorkspaceResourceMaps struct {
 	Controls          map[string]*Control
 	Benchmarks        map[string]*Benchmark
 	Variables         map[string]*Variable
-	Reports           map[string]*ReportContainer
-	ReportContainers  map[string]*ReportContainer
-	ReportCards       map[string]*ReportCard
-	ReportCharts      map[string]*ReportChart
-	ReportHierarchies map[string]*ReportHierarchy
-	ReportImages      map[string]*ReportImage
-	ReportInputs      map[string]*ReportInput
-	ReportTables      map[string]*ReportTable
-	ReportTexts       map[string]*ReportText
+	Reports           map[string]*DashboardContainer
+	ReportContainers  map[string]*DashboardContainer
+	ReportCards       map[string]*DashboardCard
+	ReportCharts      map[string]*DashboardChart
+	ReportHierarchies map[string]*DashboardHierarchy
+	ReportImages      map[string]*DashboardImage
+	ReportInputs      map[string]*DashboardInput
+	ReportTables      map[string]*DashboardTable
+	ReportTexts       map[string]*DashboardText
 	References        map[string]*ResourceReference
 
 	LocalQueries    map[string]*Query

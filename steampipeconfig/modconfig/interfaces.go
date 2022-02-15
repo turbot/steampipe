@@ -69,8 +69,8 @@ type ParameterisedReportNode interface {
 	GetArgs() *QueryArgs
 }
 
-// ReportLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
-type ReportLeafNode interface {
+// DashboardLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
+type DashboardLeafNode interface {
 	Name() string
 	GetUnqualifiedName() string
 	GetTitle() string

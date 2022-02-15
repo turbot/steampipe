@@ -58,15 +58,15 @@ type Mod struct {
 	Queries           map[string]*Query
 	Controls          map[string]*Control
 	Benchmarks        map[string]*Benchmark
-	Reports           map[string]*ReportContainer
-	ReportContainers  map[string]*ReportContainer
-	ReportCards       map[string]*ReportCard
-	ReportCharts      map[string]*ReportChart
-	ReportHierarchies map[string]*ReportHierarchy
-	ReportImages      map[string]*ReportImage
-	ReportInputs      map[string]*ReportInput
-	ReportTables      map[string]*ReportTable
-	ReportTexts       map[string]*ReportText
+	Reports           map[string]*DashboardContainer
+	ReportContainers  map[string]*DashboardContainer
+	ReportCards       map[string]*DashboardCard
+	ReportCharts      map[string]*DashboardChart
+	ReportHierarchies map[string]*DashboardHierarchy
+	ReportImages      map[string]*DashboardImage
+	ReportInputs      map[string]*DashboardInput
+	ReportTables      map[string]*DashboardTable
+	ReportTexts       map[string]*DashboardText
 	Variables         map[string]*Variable
 	Locals            map[string]*Local
 
@@ -91,15 +91,15 @@ func NewMod(shortName, modPath string, defRange hcl.Range) (*Mod, error) {
 		Queries:           make(map[string]*Query),
 		Controls:          make(map[string]*Control),
 		Benchmarks:        make(map[string]*Benchmark),
-		Reports:           make(map[string]*ReportContainer),
-		ReportContainers:  make(map[string]*ReportContainer),
-		ReportCards:       make(map[string]*ReportCard),
-		ReportCharts:      make(map[string]*ReportChart),
-		ReportHierarchies: make(map[string]*ReportHierarchy),
-		ReportImages:      make(map[string]*ReportImage),
-		ReportInputs:      make(map[string]*ReportInput),
-		ReportTables:      make(map[string]*ReportTable),
-		ReportTexts:       make(map[string]*ReportText),
+		Reports:           make(map[string]*DashboardContainer),
+		ReportContainers:  make(map[string]*DashboardContainer),
+		ReportCards:       make(map[string]*DashboardCard),
+		ReportCharts:      make(map[string]*DashboardChart),
+		ReportHierarchies: make(map[string]*DashboardHierarchy),
+		ReportImages:      make(map[string]*DashboardImage),
+		ReportInputs:      make(map[string]*DashboardInput),
+		ReportTables:      make(map[string]*DashboardTable),
+		ReportTexts:       make(map[string]*DashboardText),
 		Variables:         make(map[string]*Variable),
 		Locals:            make(map[string]*Local),
 

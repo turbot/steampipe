@@ -1,4 +1,4 @@
-package reportserver
+package dashboardserver
 
 import (
 	"context"

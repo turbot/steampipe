@@ -7,18 +7,18 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/report/reportevents"
+	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
-func (w *Workspace) PublishReportEvent(e reportevents.ReportEvent) {
+func (w *Workspace) PublishDashboardEvent(e dashboardevents.ReportEvent) {
 	for _, handler := range w.reportEventHandlers {
 		handler(e)
 	}
 }
 
-func (w *Workspace) RegisterReportEventHandler(handler reportevents.ReportEventHandler) {
+func (w *Workspace) RegisterReportEventHandler(handler dashboardevents.ReportEventHandler) {
 	w.reportEventHandlers = append(w.reportEventHandlers, handler)
 }
 
@@ -26,7 +26,7 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 	prevResourceMaps, resourceMaps, err := w.reloadResourceMaps(ctx)
 	if err != nil {
 		// publish error event
-		w.PublishReportEvent(&reportevents.WorkspaceError{Error: err})
+		w.PublishDashboardEvent(&dashboardevents.WorkspaceError{Error: err})
 		return
 	}
 	// if resources have changed, update introspection tables and prepared statements
@@ -80,7 +80,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Workspac
 }
 
 func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *modconfig.WorkspaceResourceMaps) {
-	event := &reportevents.ReportChanged{}
+	event := &dashboardevents.ReportChanged{}
 
 	// first detect changes to existing resources and deletions
 	for name, prev := range prevResourceMaps.Reports {
@@ -252,6 +252,6 @@ func (w *Workspace) raiseReportChangedEvents(resourceMaps, prevResourceMaps *mod
 	}
 
 	if event.HasChanges() {
-		w.PublishReportEvent(event)
+		w.PublishDashboardEvent(event)
 	}
 }

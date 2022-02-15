@@ -164,8 +164,8 @@ func (c *ReportCounter) SetPaths() {
 	}
 }
 
-func (c *ReportCounter) Diff(other *ReportCounter) *ReportTreeItemDiffs {
-	res := &ReportTreeItemDiffs{
+func (c *ReportCounter) Diff(other *ReportCounter) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
 		Item: c,
 		Name: c.Name(),
 	}
@@ -198,7 +198,7 @@ func (c *ReportCounter) Diff(other *ReportCounter) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetWidth implements ReportLeafNode
+// GetWidth implements DashboardLeafNode
 func (c *ReportCounter) GetWidth() int {
 	if c.Width == nil {
 		return 0
@@ -206,7 +206,7 @@ func (c *ReportCounter) GetWidth() int {
 	return *c.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (c *ReportCounter) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }
@@ -221,7 +221,7 @@ func (c *ReportCounter) GetArgs() *QueryArgs {
 	return c.Args
 }
 
-// GetSQL implements QueryProvider, ReportLeafNode
+// GetSQL implements QueryProvider, DashboardLeafNode
 func (c *ReportCounter) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)
 }

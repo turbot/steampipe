@@ -12,8 +12,8 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/contexthelpers"
 	"github.com/turbot/steampipe/db/db_local"
-	"github.com/turbot/steampipe/report/reportassets"
-	"github.com/turbot/steampipe/report/reportserver"
+	"github.com/turbot/steampipe/dashboard/dashboardassets"
+	"github.com/turbot/steampipe/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -31,8 +31,8 @@ The current mod is the working directory, or the directory specified by the --wo
 
 	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for report").
-		AddStringFlag(constants.ArgReportServerListen, "", string(reportserver.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").
-		AddIntFlag(constants.ArgReportServerPort, "", constants.ReportServerDefaultPort, "Report server port.")
+		AddStringFlag(constants.ArgDashboardServerListen, "", string(reportserver.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").
+		AddIntFlag(constants.ArgDashboardServerPort, "", constants.ReportServerDefaultPort, "Report server port.")
 	return cmd
 }
 
@@ -46,10 +46,10 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	serverPort := reportserver.ListenPort(viper.GetInt(constants.ArgReportServerPort))
+	serverPort := reportserver.ListenPort(viper.GetInt(constants.ArgDashboardServerPort))
 	utils.FailOnError(serverPort.IsValid())
 
-	serverListen := reportserver.ListenType(viper.GetString(constants.ArgReportServerListen))
+	serverListen := reportserver.ListenType(viper.GetString(constants.ArgDashboardServerListen))
 	utils.FailOnError(serverListen.IsValid())
 
 	ctx, cancel := context.WithCancel(cmd.Context())

@@ -15,7 +15,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/filepaths"
-	"github.com/turbot/steampipe/report/reportevents"
+	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
@@ -34,15 +34,15 @@ type Workspace struct {
 	Controls          map[string]*modconfig.Control
 	Benchmarks        map[string]*modconfig.Benchmark
 	Mods              map[string]*modconfig.Mod
-	Reports           map[string]*modconfig.ReportContainer
-	ReportContainers  map[string]*modconfig.ReportContainer
-	ReportCards       map[string]*modconfig.ReportCard
-	ReportCharts      map[string]*modconfig.ReportChart
-	ReportHierarchies map[string]*modconfig.ReportHierarchy
-	ReportImages      map[string]*modconfig.ReportImage
-	ReportInputs      map[string]*modconfig.ReportInput
-	ReportTables      map[string]*modconfig.ReportTable
-	ReportTexts       map[string]*modconfig.ReportText
+	Reports           map[string]*modconfig.DashboardContainer
+	ReportContainers  map[string]*modconfig.DashboardContainer
+	ReportCards       map[string]*modconfig.DashboardCard
+	ReportCharts      map[string]*modconfig.DashboardChart
+	ReportHierarchies map[string]*modconfig.DashboardHierarchy
+	ReportImages      map[string]*modconfig.DashboardImage
+	ReportInputs      map[string]*modconfig.DashboardInput
+	ReportTables      map[string]*modconfig.DashboardTable
+	ReportTexts       map[string]*modconfig.DashboardText
 	Variables         map[string]*modconfig.Variable
 
 	//local  resources keyed by unqualified name
@@ -58,7 +58,7 @@ type Workspace struct {
 	fileWatcherErrorHandler func(context.Context, error)
 	watcherError            error
 	// event handlers
-	reportEventHandlers []reportevents.ReportEventHandler
+	reportEventHandlers []dashboardevents.ReportEventHandler
 	// callback function to reset display after the file watche displays messages
 	onFileWatcherEventMessages func()
 	modFileExists              bool
@@ -170,15 +170,15 @@ func (w *Workspace) reset() {
 	w.Controls = make(map[string]*modconfig.Control)
 	w.Benchmarks = make(map[string]*modconfig.Benchmark)
 	w.Mods = make(map[string]*modconfig.Mod)
-	w.Reports = make(map[string]*modconfig.ReportContainer)
-	w.ReportContainers = make(map[string]*modconfig.ReportContainer)
-	w.ReportCards = make(map[string]*modconfig.ReportCard)
-	w.ReportCharts = make(map[string]*modconfig.ReportChart)
-	w.ReportHierarchies = make(map[string]*modconfig.ReportHierarchy)
-	w.ReportImages = make(map[string]*modconfig.ReportImage)
-	w.ReportInputs = make(map[string]*modconfig.ReportInput)
-	w.ReportTables = make(map[string]*modconfig.ReportTable)
-	w.ReportTexts = make(map[string]*modconfig.ReportText)
+	w.Reports = make(map[string]*modconfig.DashboardContainer)
+	w.ReportContainers = make(map[string]*modconfig.DashboardContainer)
+	w.ReportCards = make(map[string]*modconfig.DashboardCard)
+	w.ReportCharts = make(map[string]*modconfig.DashboardChart)
+	w.ReportHierarchies = make(map[string]*modconfig.DashboardHierarchy)
+	w.ReportImages = make(map[string]*modconfig.DashboardImage)
+	w.ReportInputs = make(map[string]*modconfig.DashboardInput)
+	w.ReportTables = make(map[string]*modconfig.DashboardTable)
+	w.ReportTexts = make(map[string]*modconfig.DashboardText)
 	w.LocalQueries = make(map[string]*modconfig.Query)
 	w.LocalControls = make(map[string]*modconfig.Control)
 	w.LocalBenchmarks = make(map[string]*modconfig.Benchmark)

@@ -1,4 +1,4 @@
-package reportserver
+package dashboardserver
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"log"
 	"sync"
 
+	"github.com/turbot/steampipe/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/report/reportexecute"
 	"github.com/turbot/steampipe/workspace"
 	"gopkg.in/olahol/melody.v1"
 )
@@ -53,12 +53,12 @@ type DashboardMetadataPayload struct {
 	Metadata DashboardMetadata `json:"metadata"`
 }
 
-func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, dbClient db_common.Client, socketSessions map[*melody.Session]*ReportClientInfo, mutex *sync.Mutex) {
-	// Return list of reports on connect
+func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Workspace, dbClient db_common.Client, socketSessions map[*melody.Session]*DashboardClientInfo, mutex *sync.Mutex) {
+	// Return list of dashboards on connect
 	webSocket.HandleConnect(func(session *melody.Session) {
 		log.Println("[TRACE] Client connected")
 		mutex.Lock()
-		socketSessions[session] = &ReportClientInfo{}
+		socketSessions[session] = &DashboardClientInfo{}
 		mutex.Unlock()
 	})
 
@@ -91,10 +91,10 @@ func Init(ctx context.Context, webSocket *melody.Melody, workspace *workspace.Wo
 			case "select_dashboard":
 				log.Printf("[TRACE] Got event: %v\n", request.Payload.Dashboard)
 				mutex.Lock()
-				reportClientInfo := socketSessions[session]
-				reportClientInfo.Report = &request.Payload.Dashboard.FullName
+				dashboardClientInfo := socketSessions[session]
+				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
 				mutex.Unlock()
-				reportexecute.ExecuteReportNode(ctx, request.Payload.Dashboard.FullName, workspace, dbClient)
+				dashboardexecute.ExecuteDashboardNode(ctx, request.Payload.Dashboard.FullName, workspace, dbClient)
 			}
 		}
 	})

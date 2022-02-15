@@ -16,7 +16,7 @@ func (d *RuntimeDependency) String() string {
 	return fmt.Sprintf("%s->%s", strings.Join(d.TargetProperties, ","), d.PropertyPath.String())
 }
 
-func (d *RuntimeDependency) ResolveSource(resource HclResource, report *ReportContainer, workspace ResourceMapsProvider) error {
+func (d *RuntimeDependency) ResolveSource(resource HclResource, report *DashboardContainer, workspace ResourceMapsProvider) error {
 	// TODO THINK ABOUT REPORT PREFIX
 
 	resourceName := d.PropertyPath.ToResourceName()

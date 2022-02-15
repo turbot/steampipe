@@ -392,7 +392,7 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName strin
 	return args, diags
 }
 
-func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.ReportContainer, *decodeResult) {
+func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.DashboardContainer, *decodeResult) {
 	res := &decodeResult{}
 	reportContainer := modconfig.NewReportContainer(block, runCtx.CurrentMod)
 
@@ -446,11 +446,11 @@ func decodeReportContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.Rep
 	return reportContainer, res
 }
 
-func decodeReportContainerBlocks(content *hcl.BodyContent, reportContainer *modconfig.ReportContainer, runCtx *RunContext) *decodeResult {
+func decodeReportContainerBlocks(content *hcl.BodyContent, reportContainer *modconfig.DashboardContainer, runCtx *RunContext) *decodeResult {
 	var res = &decodeResult{}
 	// if children are declared inline as blocks, add them
 	var children []modconfig.ModTreeItem
-	var inputs []*modconfig.ReportInput
+	var inputs []*modconfig.DashboardInput
 	for _, b := range content.Blocks {
 		// use generic block decoding
 		resources, blockRes := decodeBlock(b, reportContainer, runCtx)
@@ -462,7 +462,7 @@ func decodeReportContainerBlocks(content *hcl.BodyContent, reportContainer *modc
 		// we expect either inputs or child report nodes
 		for _, resource := range resources {
 			if b.Type == modconfig.BlockTypeInput {
-				input := resource.(*modconfig.ReportInput)
+				input := resource.(*modconfig.DashboardInput)
 				// add report name to input
 				input.SetReportContainer(reportContainer)
 

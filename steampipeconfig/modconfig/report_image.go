@@ -9,8 +9,8 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// ReportImage is a struct representing a leaf reporting node
-type ReportImage struct {
+// DashboardImage is a struct representing a leaf reporting node
+type DashboardImage struct {
 	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
@@ -19,12 +19,12 @@ type ReportImage struct {
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title *string      `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int         `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Title *string         `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width *int            `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	SQL   *string      `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Src   *string      `cty:"src" hcl:"src" column:"src,text"  json:"src,omitempty"`
-	Alt   *string      `cty:"alt" hcl:"alt" column:"alt,text"  json:"alt,omitempty"`
-	Base  *ReportImage `hcl:"base" json:"-"`
+	Alt   *string         `cty:"alt" hcl:"alt" column:"alt,text"  json:"alt,omitempty"`
+	Base  *DashboardImage `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
@@ -33,9 +33,9 @@ type ReportImage struct {
 	parents []ModTreeItem
 }
 
-func NewReportImage(block *hcl.Block, mod *Mod) *ReportImage {
+func NewReportImage(block *hcl.Block, mod *Mod) *DashboardImage {
 	shortName := GetAnonymousResourceShortName(block, mod)
-	i := &ReportImage{
+	i := &DashboardImage{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -46,29 +46,29 @@ func NewReportImage(block *hcl.Block, mod *Mod) *ReportImage {
 	return i
 }
 
-func (c *ReportImage) Equals(other *ReportImage) bool {
+func (c *DashboardImage) Equals(other *DashboardImage) bool {
 	diff := c.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (c *ReportImage) CtyValue() (cty.Value, error) {
+func (c *DashboardImage) CtyValue() (cty.Value, error) {
 	return getCtyValue(c)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'image.<shortName>'
-func (c *ReportImage) Name() string {
+func (c *DashboardImage) Name() string {
 	return c.FullName
 }
 
 // OnDecoded implements HclResource
-func (c *ReportImage) OnDecoded(*hcl.Block) hcl.Diagnostics {
+func (c *DashboardImage) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	c.setBaseProperties()
 	return nil
 }
 
-func (c *ReportImage) setBaseProperties() {
+func (c *DashboardImage) setBaseProperties() {
 	if c.Base == nil {
 		return
 	}
@@ -90,51 +90,51 @@ func (c *ReportImage) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (c *ReportImage) AddReference(*ResourceReference) {}
+func (c *DashboardImage) AddReference(*ResourceReference) {}
 
 // GetMod implements HclResource
-func (c *ReportImage) GetMod() *Mod {
+func (c *DashboardImage) GetMod() *Mod {
 	return c.Mod
 }
 
 // GetDeclRange implements HclResource
-func (c *ReportImage) GetDeclRange() *hcl.Range {
+func (c *DashboardImage) GetDeclRange() *hcl.Range {
 	return &c.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (c *ReportImage) AddParent(parent ModTreeItem) error {
+func (c *DashboardImage) AddParent(parent ModTreeItem) error {
 	c.parents = append(c.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (c *ReportImage) GetParents() []ModTreeItem {
+func (c *DashboardImage) GetParents() []ModTreeItem {
 	return c.parents
 }
 
 // GetChildren implements ModTreeItem
-func (c *ReportImage) GetChildren() []ModTreeItem {
+func (c *DashboardImage) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (c *ReportImage) GetTitle() string {
+func (c *DashboardImage) GetTitle() string {
 	return typehelpers.SafeString(c.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (c *ReportImage) GetDescription() string {
+func (c *DashboardImage) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (c *ReportImage) GetTags() map[string]string {
+func (c *DashboardImage) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (c *ReportImage) GetPaths() []NodePath {
+func (c *DashboardImage) GetPaths() []NodePath {
 	// lazy load
 	if len(c.Paths) == 0 {
 		c.SetPaths()
@@ -144,7 +144,7 @@ func (c *ReportImage) GetPaths() []NodePath {
 }
 
 // SetPaths implements ModTreeItem
-func (c *ReportImage) SetPaths() {
+func (c *DashboardImage) SetPaths() {
 	for _, parent := range c.parents {
 		for _, parentPath := range parent.GetPaths() {
 			c.Paths = append(c.Paths, append(parentPath, c.Name()))
@@ -152,8 +152,8 @@ func (c *ReportImage) SetPaths() {
 	}
 }
 
-func (c *ReportImage) Diff(other *ReportImage) *ReportTreeItemDiffs {
-	res := &ReportTreeItemDiffs{
+func (c *DashboardImage) Diff(other *DashboardImage) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
 		Item: c,
 		Name: c.Name(),
 	}
@@ -186,20 +186,20 @@ func (c *ReportImage) Diff(other *ReportImage) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetSQL implements ReportLeafNode
-func (c *ReportImage) GetSQL() string {
+// GetSQL implements DashboardLeafNode
+func (c *DashboardImage) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)
 }
 
-// GetWidth implements ReportLeafNode
-func (c *ReportImage) GetWidth() int {
+// GetWidth implements DashboardLeafNode
+func (c *DashboardImage) GetWidth() int {
 	if c.Width == nil {
 		return 0
 	}
 	return *c.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
-func (c *ReportImage) GetUnqualifiedName() string {
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
+func (c *DashboardImage) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }

@@ -10,8 +10,8 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// ReportTable is a struct representing a leaf reporting node
-type ReportTable struct {
+// DashboardTable is a struct representing a leaf reporting node
+type DashboardTable struct {
 	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
@@ -35,17 +35,17 @@ type ReportTable struct {
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
 
-	Base      *ReportTable `hcl:"base" json:"-"`
-	DeclRange hcl.Range    `json:"-"`
+	Base      *DashboardTable `hcl:"base" json:"-"`
+	DeclRange hcl.Range       `json:"-"`
 	Mod       *Mod         `cty:"mod" json:"-"`
 	Paths     []NodePath   `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
 }
 
-func NewReportTable(block *hcl.Block, mod *Mod) *ReportTable {
+func NewReportTable(block *hcl.Block, mod *Mod) *DashboardTable {
 	shortName := GetAnonymousResourceShortName(block, mod)
-	t := &ReportTable{
+	t := &DashboardTable{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -56,24 +56,24 @@ func NewReportTable(block *hcl.Block, mod *Mod) *ReportTable {
 	return t
 }
 
-func (t *ReportTable) Equals(other *ReportTable) bool {
+func (t *DashboardTable) Equals(other *DashboardTable) bool {
 	diff := t.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (t *ReportTable) CtyValue() (cty.Value, error) {
+func (t *DashboardTable) CtyValue() (cty.Value, error) {
 	return getCtyValue(t)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'table.<shortName>'
-func (t *ReportTable) Name() string {
+func (t *DashboardTable) Name() string {
 	return t.FullName
 }
 
 // OnDecoded implements HclResource
-func (t *ReportTable) OnDecoded(*hcl.Block) hcl.Diagnostics {
+func (t *DashboardTable) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	t.setBaseProperties()
 	// populate columns map
 	if len(t.ColumnList) > 0 {
@@ -85,7 +85,7 @@ func (t *ReportTable) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	return nil
 }
 
-func (t *ReportTable) setBaseProperties() {
+func (t *DashboardTable) setBaseProperties() {
 	if t.Base == nil {
 		return
 	}
@@ -112,51 +112,51 @@ func (t *ReportTable) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (t *ReportTable) AddReference(*ResourceReference) {}
+func (t *DashboardTable) AddReference(*ResourceReference) {}
 
 // GetMod implements HclResource
-func (t *ReportTable) GetMod() *Mod {
+func (t *DashboardTable) GetMod() *Mod {
 	return t.Mod
 }
 
 // GetDeclRange implements HclResource
-func (t *ReportTable) GetDeclRange() *hcl.Range {
+func (t *DashboardTable) GetDeclRange() *hcl.Range {
 	return &t.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (t *ReportTable) AddParent(parent ModTreeItem) error {
+func (t *DashboardTable) AddParent(parent ModTreeItem) error {
 	t.parents = append(t.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (t *ReportTable) GetParents() []ModTreeItem {
+func (t *DashboardTable) GetParents() []ModTreeItem {
 	return t.parents
 }
 
 // GetChildren implements ModTreeItem
-func (t *ReportTable) GetChildren() []ModTreeItem {
+func (t *DashboardTable) GetChildren() []ModTreeItem {
 	return nil
 }
 
-// GetTitle implements ModTreeItem, ReportLeafNode
-func (t *ReportTable) GetTitle() string {
+// GetTitle implements ModTreeItem, DashboardLeafNode
+func (t *DashboardTable) GetTitle() string {
 	return typehelpers.SafeString(t.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (t *ReportTable) GetDescription() string {
+func (t *DashboardTable) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (t *ReportTable) GetTags() map[string]string {
+func (t *DashboardTable) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (t *ReportTable) GetPaths() []NodePath {
+func (t *DashboardTable) GetPaths() []NodePath {
 	// lazy load
 	if len(t.Paths) == 0 {
 		t.SetPaths()
@@ -166,7 +166,7 @@ func (t *ReportTable) GetPaths() []NodePath {
 }
 
 // SetPaths implements ModTreeItem
-func (t *ReportTable) SetPaths() {
+func (t *DashboardTable) SetPaths() {
 	for _, parent := range t.parents {
 		for _, parentPath := range parent.GetPaths() {
 			t.Paths = append(t.Paths, append(parentPath, t.Name()))
@@ -174,8 +174,8 @@ func (t *ReportTable) SetPaths() {
 	}
 }
 
-func (t *ReportTable) Diff(other *ReportTable) *ReportTreeItemDiffs {
-	res := &ReportTreeItemDiffs{
+func (t *DashboardTable) Diff(other *DashboardTable) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
 		Item: t,
 		Name: t.Name(),
 	}
@@ -212,41 +212,41 @@ func (t *ReportTable) Diff(other *ReportTable) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetWidth implements ReportLeafNode
-func (t *ReportTable) GetWidth() int {
+// GetWidth implements DashboardLeafNode
+func (t *DashboardTable) GetWidth() int {
 	if t.Width == nil {
 		return 0
 	}
 	return *t.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
-func (t *ReportTable) GetUnqualifiedName() string {
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
+func (t *DashboardTable) GetUnqualifiedName() string {
 	return t.UnqualifiedName
 }
 
 // GetParams implements QueryProvider
-func (t *ReportTable) GetParams() []*ParamDef {
+func (t *DashboardTable) GetParams() []*ParamDef {
 	return t.Params
 }
 
 // GetArgs implements QueryProvider
-func (t *ReportTable) GetArgs() *QueryArgs {
+func (t *DashboardTable) GetArgs() *QueryArgs {
 	return t.Args
 }
 
-// GetSQL implements QueryProvider, ReportLeafNode
-func (t *ReportTable) GetSQL() string {
+// GetSQL implements QueryProvider, DashboardLeafNode
+func (t *DashboardTable) GetSQL() string {
 	return typehelpers.SafeString(t.SQL)
 }
 
 // GetQuery implements QueryProvider
-func (t *ReportTable) GetQuery() *Query {
+func (t *DashboardTable) GetQuery() *Query {
 	return t.Query
 }
 
 // GetPreparedStatementName implements QueryProvider
-func (t *ReportTable) GetPreparedStatementName() string {
+func (t *DashboardTable) GetPreparedStatementName() string {
 	// lazy load
 	if t.PreparedStatementName == "" {
 		t.PreparedStatementName = preparedStatementName(t)
@@ -255,16 +255,16 @@ func (t *ReportTable) GetPreparedStatementName() string {
 }
 
 // GetModName implements QueryProvider
-func (t *ReportTable) GetModName() string {
+func (t *DashboardTable) GetModName() string {
 	return t.Mod.NameWithVersion()
 }
 
 // SetArgs implements QueryProvider
-func (t *ReportTable) SetArgs(args *QueryArgs) {
+func (t *DashboardTable) SetArgs(args *QueryArgs) {
 	// nothing
 }
 
 // SetParams implements QueryProvider
-func (t *ReportTable) SetParams(params []*ParamDef) {
+func (t *DashboardTable) SetParams(params []*ParamDef) {
 	t.Params = params
 }

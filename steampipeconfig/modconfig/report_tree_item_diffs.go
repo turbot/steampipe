@@ -1,7 +1,7 @@
 package modconfig
 
-// ReportTreeItemDiffs is a struct representing the differences between 2 ReportTreeItems (of same type)
-type ReportTreeItemDiffs struct {
+// DashboardTreeItemDiffs is a struct representing the differences between 2 ReportTreeItems (of same type)
+type DashboardTreeItemDiffs struct {
 	Name              string
 	Item              ModTreeItem
 	ChangedProperties []string
@@ -9,19 +9,19 @@ type ReportTreeItemDiffs struct {
 	RemovedItems      []string
 }
 
-func (d *ReportTreeItemDiffs) AddPropertyDiff(propertyName string) {
+func (d *DashboardTreeItemDiffs) AddPropertyDiff(propertyName string) {
 	d.ChangedProperties = append(d.ChangedProperties, propertyName)
 }
 
-func (d *ReportTreeItemDiffs) AddAddedItem(name string) {
+func (d *DashboardTreeItemDiffs) AddAddedItem(name string) {
 	d.AddedItems = append(d.AddedItems, name)
 }
 
-func (d *ReportTreeItemDiffs) AddRemovedItem(name string) {
+func (d *DashboardTreeItemDiffs) AddRemovedItem(name string) {
 	d.RemovedItems = append(d.RemovedItems, name)
 }
 
-func (d *ReportTreeItemDiffs) populateChildDiffs(old ModTreeItem, new ModTreeItem) {
+func (d *DashboardTreeItemDiffs) populateChildDiffs(old ModTreeItem, new ModTreeItem) {
 	// build map of child names
 	oldChildMap := make(map[string]bool)
 	newChildMap := make(map[string]bool)
@@ -46,7 +46,7 @@ func (d *ReportTreeItemDiffs) populateChildDiffs(old ModTreeItem, new ModTreeIte
 
 }
 
-func (d *ReportTreeItemDiffs) HasChanges() bool {
+func (d *DashboardTreeItemDiffs) HasChanges() bool {
 	return len(d.ChangedProperties)+
 		len(d.AddedItems)+
 		len(d.RemovedItems) > 0

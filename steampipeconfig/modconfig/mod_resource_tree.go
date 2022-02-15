@@ -121,7 +121,7 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		}
 		m.Benchmarks[name] = r
 
-	case *ReportContainer:
+	case *DashboardContainer:
 		name := r.Name()
 		// report struct may either be a `report` or a `container`
 		if r.IsReport() {
@@ -139,7 +139,7 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 			m.ReportContainers[name] = r
 
 		}
-	case *ReportCard:
+	case *DashboardCard:
 		name := r.Name()
 		if existing, ok := m.ReportCards[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
@@ -147,7 +147,7 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		} else {
 			m.ReportCards[name] = r
 		}
-	case *ReportChart:
+	case *DashboardChart:
 		name := r.Name()
 		if existing, ok := m.ReportCharts[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
@@ -155,7 +155,7 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		}
 		m.ReportCharts[name] = r
 
-	case *ReportHierarchy:
+	case *DashboardHierarchy:
 		name := r.Name()
 		if existing, ok := m.ReportHierarchies[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
@@ -163,7 +163,7 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		}
 		m.ReportHierarchies[name] = r
 
-	case *ReportImage:
+	case *DashboardImage:
 		name := r.Name()
 		if existing, ok := m.ReportImages[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
@@ -171,7 +171,7 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		}
 		m.ReportImages[name] = r
 
-	case *ReportInput:
+	case *DashboardInput:
 		name := r.Name()
 		if existing, ok := m.ReportInputs[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
@@ -179,7 +179,7 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		}
 		m.ReportInputs[name] = r
 
-	case *ReportTable:
+	case *DashboardTable:
 		name := r.Name()
 		if existing, ok := m.ReportTables[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
@@ -187,7 +187,7 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		}
 		m.ReportTables[name] = r
 
-	case *ReportText:
+	case *DashboardText:
 		name := r.Name()
 		if existing, ok := m.ReportTexts[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)

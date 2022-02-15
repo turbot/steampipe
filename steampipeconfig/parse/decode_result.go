@@ -37,9 +37,9 @@ func (p *decodeResult) handleDecodeDiags(bodyContent *hcl.BodyContent, resource 
 			// so it was a dependency error - determine whether this is a RUN TIME dependency
 			// - if so, do not raise a dependency error but instead store in the resources run time dependencies
 			if runtimeDependency := dependency.ToRuntimeDependency(bodyContent); runtimeDependency != nil {
-				// resource must be convertible to a ReportLeafNode
+				// resource must be convertible to a DashboardLeafNode
 				// - these are the only resources to support runtime dependencies
-				leafNode, ok := resource.(modconfig.ReportLeafNode)
+				leafNode, ok := resource.(modconfig.DashboardLeafNode)
 				if !ok {
 					p.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
 						Severity: hcl.DiagError,

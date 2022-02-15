@@ -14,8 +14,8 @@ import (
 const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
 const runtimeDependencyReportScope = "self"
 
-// ReportContainer is a struct representing the Report and Container resource
-type ReportContainer struct {
+// DashboardContainer is a struct representing the Report and Container resource
+type DashboardContainer struct {
 	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
@@ -23,13 +23,13 @@ type ReportContainer struct {
 	Remain hcl.Body `hcl:",remain"`
 
 	ShortName       string
-	FullName        string           `cty:"name"`
-	UnqualifiedName string           `cty:"unqualified_name"`
-	Title           *string          `cty:"title" hcl:"title" column:"title,text"`
+	FullName        string              `cty:"name"`
+	UnqualifiedName string              `cty:"unqualified_name"`
+	Title           *string             `cty:"title" hcl:"title" column:"title,text"`
 	Width           *int             `cty:"width" hcl:"width"  column:"width,text"`
-	Args            *QueryArgs       `cty:"args" column:"args,jsonb"`
-	Base            *ReportContainer `hcl:"base"`
-	Inputs          []*ReportInput   `cty:"inputs"`
+	Args            *QueryArgs          `cty:"args" column:"args,jsonb"`
+	Base            *DashboardContainer `hcl:"base"`
+	Inputs          []*DashboardInput   `cty:"inputs"`
 
 	Mod       *Mod `cty:"mod"`
 	DeclRange hcl.Range
@@ -37,7 +37,7 @@ type ReportContainer struct {
 	// store children in a way which can be serialised via cty
 	ChildNames []string `cty:"children" column:"children,jsonb"`
 
-	selfInputsMap map[string]*ReportInput
+	selfInputsMap map[string]*DashboardInput
 	// the actual children
 	children               []ModTreeItem
 	parents                []ModTreeItem
@@ -46,10 +46,10 @@ type ReportContainer struct {
 	HclType string
 }
 
-func NewReportContainer(block *hcl.Block, mod *Mod) *ReportContainer {
+func NewReportContainer(block *hcl.Block, mod *Mod) *DashboardContainer {
 	// TOTO [reports] think about nested report???
 	shortName := GetAnonymousResourceShortName(block, mod)
-	c := &ReportContainer{
+	c := &DashboardContainer{
 		HclType:         block.Type,
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
@@ -63,7 +63,7 @@ func NewReportContainer(block *hcl.Block, mod *Mod) *ReportContainer {
 }
 
 //// SetMod implements HclResource
-//func (c *ReportContainer) SetMod(mod *Mod) {
+//func (c *DashboardContainer) SetMod(mod *Mod) {
 //	c.Mod = mod
 //
 //	// if this is a top level resource, and not a child, the resource names will already be set
@@ -74,29 +74,29 @@ func NewReportContainer(block *hcl.Block, mod *Mod) *ReportContainer {
 //	}
 //}
 
-func (c *ReportContainer) Equals(other *ReportContainer) bool {
+func (c *DashboardContainer) Equals(other *DashboardContainer) bool {
 	diff := c.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (c *ReportContainer) CtyValue() (cty.Value, error) {
+func (c *DashboardContainer) CtyValue() (cty.Value, error) {
 	return getCtyValue(c)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'report.<shortName>'
-func (c *ReportContainer) Name() string {
+func (c *DashboardContainer) Name() string {
 	return c.FullName
 }
 
 // OnDecoded implements HclResource
-func (c *ReportContainer) OnDecoded(block *hcl.Block) hcl.Diagnostics {
+func (c *DashboardContainer) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 	c.setBaseProperties()
 	return nil
 }
 
-func (c *ReportContainer) setBaseProperties() {
+func (c *DashboardContainer) setBaseProperties() {
 	if c.Base == nil {
 		return
 	}
@@ -117,54 +117,54 @@ func (c *ReportContainer) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (c *ReportContainer) AddReference(*ResourceReference) {
+func (c *DashboardContainer) AddReference(*ResourceReference) {
 	// TODO
 }
 
 // GetMod implements HclResource
-func (c *ReportContainer) GetMod() *Mod {
+func (c *DashboardContainer) GetMod() *Mod {
 	return c.Mod
 }
 
 // GetDeclRange implements HclResource
-func (c *ReportContainer) GetDeclRange() *hcl.Range {
+func (c *DashboardContainer) GetDeclRange() *hcl.Range {
 	return &c.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (c *ReportContainer) AddParent(parent ModTreeItem) error {
+func (c *DashboardContainer) AddParent(parent ModTreeItem) error {
 	c.parents = append(c.parents, parent)
 
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (c *ReportContainer) GetParents() []ModTreeItem {
+func (c *DashboardContainer) GetParents() []ModTreeItem {
 	return c.parents
 }
 
 // GetChildren implements ModTreeItem
-func (c *ReportContainer) GetChildren() []ModTreeItem {
+func (c *DashboardContainer) GetChildren() []ModTreeItem {
 	return c.children
 }
 
 // GetTitle implements ModTreeItem
-func (c *ReportContainer) GetTitle() string {
+func (c *DashboardContainer) GetTitle() string {
 	return typehelpers.SafeString(c.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (c *ReportContainer) GetDescription() string {
+func (c *DashboardContainer) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (c *ReportContainer) GetTags() map[string]string {
+func (c *DashboardContainer) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (c *ReportContainer) GetPaths() []NodePath {
+func (c *DashboardContainer) GetPaths() []NodePath {
 	// lazy load
 	if len(c.Paths) == 0 {
 		c.SetPaths()
@@ -173,7 +173,7 @@ func (c *ReportContainer) GetPaths() []NodePath {
 }
 
 // SetPaths implements ModTreeItem
-func (c *ReportContainer) SetPaths() {
+func (c *DashboardContainer) SetPaths() {
 	for _, parent := range c.parents {
 		for _, parentPath := range parent.GetPaths() {
 			c.Paths = append(c.Paths, append(parentPath, c.Name()))
@@ -181,8 +181,8 @@ func (c *ReportContainer) SetPaths() {
 	}
 }
 
-func (c *ReportContainer) Diff(other *ReportContainer) *ReportTreeItemDiffs {
-	res := &ReportTreeItemDiffs{
+func (c *DashboardContainer) Diff(other *DashboardContainer) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
 		Item: c,
 		Name: c.Name(),
 	}
@@ -203,11 +203,11 @@ func (c *ReportContainer) Diff(other *ReportContainer) *ReportTreeItemDiffs {
 	return res
 }
 
-func (c *ReportContainer) IsReport() bool {
+func (c *DashboardContainer) IsReport() bool {
 	return c.HclType == "report"
 }
 
-func (c *ReportContainer) SetChildren(children []ModTreeItem) {
+func (c *DashboardContainer) SetChildren(children []ModTreeItem) {
 	c.children = children
 	c.ChildNames = make([]string, len(children))
 	for i, child := range children {
@@ -215,12 +215,12 @@ func (c *ReportContainer) SetChildren(children []ModTreeItem) {
 	}
 }
 
-// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
-func (c *ReportContainer) GetUnqualifiedName() string {
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
+func (c *DashboardContainer) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }
 
-func (c *ReportContainer) WalkResources(resourceFunc func(resource HclResource) (bool, error)) error {
+func (c *DashboardContainer) WalkResources(resourceFunc func(resource HclResource) (bool, error)) error {
 	for _, child := range c.children {
 		continueWalking, err := resourceFunc(child.(HclResource))
 		if err != nil {
@@ -230,7 +230,7 @@ func (c *ReportContainer) WalkResources(resourceFunc func(resource HclResource) 
 			break
 		}
 
-		if childContainer, ok := child.(*ReportContainer); ok {
+		if childContainer, ok := child.(*DashboardContainer); ok {
 			if err := childContainer.WalkResources(resourceFunc); err != nil {
 				return err
 			}
@@ -239,7 +239,7 @@ func (c *ReportContainer) WalkResources(resourceFunc func(resource HclResource) 
 	return nil
 }
 
-func (c *ReportContainer) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) error {
+func (c *DashboardContainer) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) error {
 	if !c.IsReport() {
 		return fmt.Errorf("BuildRuntimeDependencyTree should only be called for reports")
 	}
@@ -248,7 +248,7 @@ func (c *ReportContainer) BuildRuntimeDependencyTree(workspace ResourceMapsProvi
 	c.runtimeDependencyGraph.AddNode(rootRuntimeDependencyNode)
 
 	resourceFunc := func(resource HclResource) (bool, error) {
-		leafNode, ok := resource.(ReportLeafNode)
+		leafNode, ok := resource.(DashboardLeafNode)
 		if !ok {
 			// continue walking
 			return true, nil
@@ -296,12 +296,12 @@ func (c *ReportContainer) BuildRuntimeDependencyTree(workspace ResourceMapsProvi
 	return nil
 }
 
-func (c *ReportContainer) GetInput(name string) (*ReportInput, bool) {
+func (c *DashboardContainer) GetInput(name string) (*DashboardInput, bool) {
 	input, found := c.selfInputsMap[name]
 	return input, found
 }
 
-func (c *ReportContainer) SetInputs(inputs []*ReportInput) error {
+func (c *DashboardContainer) SetInputs(inputs []*DashboardInput) error {
 	c.Inputs = inputs
 	c.setInputMap()
 
@@ -309,7 +309,7 @@ func (c *ReportContainer) SetInputs(inputs []*ReportInput) error {
 
 	var duplicates []string
 	resourceFunc := func(resource HclResource) (bool, error) {
-		if container, ok := resource.(*ReportContainer); ok {
+		if container, ok := resource.(*DashboardContainer); ok {
 			for _, i := range container.Inputs {
 				// check we do not already have this input
 				if _, ok := c.selfInputsMap[i.UnqualifiedName]; ok {
@@ -332,13 +332,13 @@ func (c *ReportContainer) SetInputs(inputs []*ReportInput) error {
 }
 
 // populate our input map
-func (c *ReportContainer) setInputMap() {
-	c.selfInputsMap = make(map[string]*ReportInput)
+func (c *DashboardContainer) setInputMap() {
+	c.selfInputsMap = make(map[string]*DashboardInput)
 	for _, i := range c.Inputs {
 		c.selfInputsMap[i.UnqualifiedName] = i
 	}
 }
 
-func (c *ReportContainer) SetArgs(args *QueryArgs) {
+func (c *DashboardContainer) SetArgs(args *QueryArgs) {
 	c.Args = args
 }

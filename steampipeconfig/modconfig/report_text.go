@@ -10,8 +10,8 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// ReportText is a struct representing a leaf reporting node
-type ReportText struct {
+// DashboardText is a struct representing a leaf reporting node
+type DashboardText struct {
 	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
@@ -20,11 +20,11 @@ type ReportText struct {
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title *string     `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int        `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Title *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	Type  *string     `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Value *string     `cty:"value" hcl:"value" column:"value,text"  json:"value,omitempty"`
-	Base  *ReportText `hcl:"base" json:"-"`
+	Value *string        `cty:"value" hcl:"value" column:"value,text"  json:"value,omitempty"`
+	Base  *DashboardText `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
@@ -33,9 +33,9 @@ type ReportText struct {
 	parents []ModTreeItem
 }
 
-func NewReportText(block *hcl.Block, mod *Mod) *ReportText {
+func NewReportText(block *hcl.Block, mod *Mod) *DashboardText {
 	shortName := GetAnonymousResourceShortName(block, mod)
-	t := &ReportText{
+	t := &DashboardText{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -46,29 +46,29 @@ func NewReportText(block *hcl.Block, mod *Mod) *ReportText {
 	return t
 }
 
-func (t *ReportText) Equals(other *ReportText) bool {
+func (t *DashboardText) Equals(other *DashboardText) bool {
 	diff := t.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (t *ReportText) CtyValue() (cty.Value, error) {
+func (t *DashboardText) CtyValue() (cty.Value, error) {
 	return getCtyValue(t)
 }
 
-// Name implements HclResource, ModTreeItem, ReportLeafNode
+// Name implements HclResource, ModTreeItem, DashboardLeafNode
 // return name in format: 'text.<shortName>'
-func (t *ReportText) Name() string {
+func (t *DashboardText) Name() string {
 	return t.FullName
 }
 
 // OnDecoded implements HclResource
-func (t *ReportText) OnDecoded(*hcl.Block) hcl.Diagnostics {
+func (t *DashboardText) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	t.setBaseProperties()
 	return nil
 }
 
-func (t *ReportText) setBaseProperties() {
+func (t *DashboardText) setBaseProperties() {
 	if t.Base == nil {
 		return
 	}
@@ -87,51 +87,51 @@ func (t *ReportText) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (t *ReportText) AddReference(*ResourceReference) {}
+func (t *DashboardText) AddReference(*ResourceReference) {}
 
 // GetMod implements HclResource
-func (t *ReportText) GetMod() *Mod {
+func (t *DashboardText) GetMod() *Mod {
 	return t.Mod
 }
 
 // GetDeclRange implements HclResource
-func (t *ReportText) GetDeclRange() *hcl.Range {
+func (t *DashboardText) GetDeclRange() *hcl.Range {
 	return &t.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (t *ReportText) AddParent(parent ModTreeItem) error {
+func (t *DashboardText) AddParent(parent ModTreeItem) error {
 	t.parents = append(t.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (t *ReportText) GetParents() []ModTreeItem {
+func (t *DashboardText) GetParents() []ModTreeItem {
 	return t.parents
 }
 
 // GetChildren implements ModTreeItem
-func (t *ReportText) GetChildren() []ModTreeItem {
+func (t *DashboardText) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (t *ReportText) GetTitle() string {
+func (t *DashboardText) GetTitle() string {
 	return typehelpers.SafeString(t.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (t *ReportText) GetDescription() string {
+func (t *DashboardText) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (t *ReportText) GetTags() map[string]string {
+func (t *DashboardText) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (t *ReportText) GetPaths() []NodePath {
+func (t *DashboardText) GetPaths() []NodePath {
 	// lazy load
 	if len(t.Paths) == 0 {
 		t.SetPaths()
@@ -141,7 +141,7 @@ func (t *ReportText) GetPaths() []NodePath {
 }
 
 // SetPaths implements ModTreeItem
-func (t *ReportText) SetPaths() {
+func (t *DashboardText) SetPaths() {
 	for _, parent := range t.parents {
 		for _, parentPath := range parent.GetPaths() {
 			t.Paths = append(t.Paths, append(parentPath, t.Name()))
@@ -149,8 +149,8 @@ func (t *ReportText) SetPaths() {
 	}
 }
 
-func (t *ReportText) Diff(other *ReportText) *ReportTreeItemDiffs {
-	res := &ReportTreeItemDiffs{
+func (t *DashboardText) Diff(other *DashboardText) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
 		Item: t,
 		Name: t.Name(),
 	}
@@ -180,20 +180,20 @@ func (t *ReportText) Diff(other *ReportText) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetSQL implements ReportLeafNode
-func (t *ReportText) GetSQL() string {
+// GetSQL implements DashboardLeafNode
+func (t *DashboardText) GetSQL() string {
 	return ""
 }
 
-// GetWidth implements ReportLeafNode
-func (t *ReportText) GetWidth() int {
+// GetWidth implements DashboardLeafNode
+func (t *DashboardText) GetWidth() int {
 	if t.Width == nil {
 		return 0
 	}
 	return *t.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
-func (t *ReportText) GetUnqualifiedName() string {
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
+func (t *DashboardText) GetUnqualifiedName() string {
 	return t.UnqualifiedName
 }

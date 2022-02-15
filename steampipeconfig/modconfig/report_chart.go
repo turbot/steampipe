@@ -9,8 +9,8 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// ReportChart is a struct representing a leaf reporting node
-type ReportChart struct {
+// DashboardChart is a struct representing a leaf reporting node
+type DashboardChart struct {
 	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
@@ -40,17 +40,17 @@ type ReportChart struct {
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
-	Base      *ReportChart `hcl:"base" json:"-"`
-	DeclRange hcl.Range    `json:"-"`
+	Base      *DashboardChart `hcl:"base" json:"-"`
+	DeclRange hcl.Range       `json:"-"`
 	Mod       *Mod         `cty:"mod" json:"-"`
 	Paths     []NodePath   `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
 }
 
-func NewReportChart(block *hcl.Block, mod *Mod) *ReportChart {
+func NewReportChart(block *hcl.Block, mod *Mod) *DashboardChart {
 	shortName := GetAnonymousResourceShortName(block, mod)
-	c := &ReportChart{
+	c := &DashboardChart{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -62,24 +62,24 @@ func NewReportChart(block *hcl.Block, mod *Mod) *ReportChart {
 	return c
 }
 
-func (c *ReportChart) Equals(other *ReportChart) bool {
+func (c *DashboardChart) Equals(other *DashboardChart) bool {
 	diff := c.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (c *ReportChart) CtyValue() (cty.Value, error) {
+func (c *DashboardChart) CtyValue() (cty.Value, error) {
 	return getCtyValue(c)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'chart.<shortName>'
-func (c *ReportChart) Name() string {
+func (c *DashboardChart) Name() string {
 	return c.FullName
 }
 
 // OnDecoded implements HclResource
-func (c *ReportChart) OnDecoded(*hcl.Block) hcl.Diagnostics {
+func (c *DashboardChart) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	c.setBaseProperties()
 	// populate series map
 	if len(c.SeriesList) > 0 {
@@ -91,7 +91,7 @@ func (c *ReportChart) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	return nil
 }
 
-func (c *ReportChart) setBaseProperties() {
+func (c *DashboardChart) setBaseProperties() {
 	if c.Base == nil {
 		return
 	}
@@ -133,51 +133,51 @@ func (c *ReportChart) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (c *ReportChart) AddReference(*ResourceReference) {}
+func (c *DashboardChart) AddReference(*ResourceReference) {}
 
 // GetMod implements HclResource
-func (c *ReportChart) GetMod() *Mod {
+func (c *DashboardChart) GetMod() *Mod {
 	return c.Mod
 }
 
 // GetDeclRange implements HclResource
-func (c *ReportChart) GetDeclRange() *hcl.Range {
+func (c *DashboardChart) GetDeclRange() *hcl.Range {
 	return &c.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (c *ReportChart) AddParent(parent ModTreeItem) error {
+func (c *DashboardChart) AddParent(parent ModTreeItem) error {
 	c.parents = append(c.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (c *ReportChart) GetParents() []ModTreeItem {
+func (c *DashboardChart) GetParents() []ModTreeItem {
 	return c.parents
 }
 
 // GetChildren implements ModTreeItem
-func (c *ReportChart) GetChildren() []ModTreeItem {
+func (c *DashboardChart) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (c *ReportChart) GetTitle() string {
+func (c *DashboardChart) GetTitle() string {
 	return typehelpers.SafeString(c.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (c *ReportChart) GetDescription() string {
+func (c *DashboardChart) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (c *ReportChart) GetTags() map[string]string {
+func (c *DashboardChart) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (c *ReportChart) GetPaths() []NodePath {
+func (c *DashboardChart) GetPaths() []NodePath {
 	// lazy load
 	if len(c.Paths) == 0 {
 		c.SetPaths()
@@ -187,7 +187,7 @@ func (c *ReportChart) GetPaths() []NodePath {
 }
 
 // SetPaths implements ModTreeItem
-func (c *ReportChart) SetPaths() {
+func (c *DashboardChart) SetPaths() {
 	for _, parent := range c.parents {
 		for _, parentPath := range parent.GetPaths() {
 			c.Paths = append(c.Paths, append(parentPath, c.Name()))
@@ -195,8 +195,8 @@ func (c *ReportChart) SetPaths() {
 	}
 }
 
-func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
-	res := &ReportTreeItemDiffs{
+func (c *DashboardChart) Diff(other *DashboardChart) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
 		Item: c,
 		Name: c.Name(),
 	}
@@ -260,41 +260,41 @@ func (c *ReportChart) Diff(other *ReportChart) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetWidth implements ReportLeafNode
-func (c *ReportChart) GetWidth() int {
+// GetWidth implements DashboardLeafNode
+func (c *DashboardChart) GetWidth() int {
 	if c.Width == nil {
 		return 0
 	}
 	return *c.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
-func (c *ReportChart) GetUnqualifiedName() string {
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
+func (c *DashboardChart) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }
 
 // GetParams implements QueryProvider
-func (c *ReportChart) GetParams() []*ParamDef {
+func (c *DashboardChart) GetParams() []*ParamDef {
 	return c.Params
 }
 
 // GetArgs implements QueryProvider
-func (c *ReportChart) GetArgs() *QueryArgs {
+func (c *DashboardChart) GetArgs() *QueryArgs {
 	return c.Args
 }
 
-// GetSQL implements QueryProvider, ReportLeafNode
-func (c *ReportChart) GetSQL() string {
+// GetSQL implements QueryProvider, DashboardLeafNode
+func (c *DashboardChart) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)
 }
 
 // GetQuery implements QueryProvider
-func (c *ReportChart) GetQuery() *Query {
+func (c *DashboardChart) GetQuery() *Query {
 	return c.Query
 }
 
 // GetPreparedStatementName implements QueryProvider
-func (c *ReportChart) GetPreparedStatementName() string {
+func (c *DashboardChart) GetPreparedStatementName() string {
 	// lazy load
 	if c.PreparedStatementName == "" {
 		c.PreparedStatementName = preparedStatementName(c)
@@ -303,16 +303,16 @@ func (c *ReportChart) GetPreparedStatementName() string {
 }
 
 // GetModName implements QueryProvider
-func (c *ReportChart) GetModName() string {
+func (c *DashboardChart) GetModName() string {
 	return c.Mod.NameWithVersion()
 }
 
 // SetArgs implements QueryProvider
-func (c *ReportChart) SetArgs(args *QueryArgs) {
+func (c *DashboardChart) SetArgs(args *QueryArgs) {
 	// nothing
 }
 
 // SetParams implements QueryProvider
-func (c *ReportChart) SetParams(params []*ParamDef) {
+func (c *DashboardChart) SetParams(params []*ParamDef) {
 	c.Params = params
 }

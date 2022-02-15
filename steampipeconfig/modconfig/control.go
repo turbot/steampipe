@@ -308,7 +308,7 @@ func (c *Control) GetArgs() *QueryArgs {
 	return c.Args
 }
 
-// GetSQL implements QueryProvider, ReportLeafNode
+// GetSQL implements QueryProvider, DashboardLeafNode
 func (c *Control) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)
 }
@@ -323,7 +323,7 @@ func (c *Control) SetParams(params []*ParamDef) {
 	c.Params = params
 }
 
-// GetWidth implements ReportLeafNode
+// GetWidth implements DashboardLeafNode
 func (c *Control) GetWidth() int {
 	if c.Width == nil {
 		return 0
@@ -331,13 +331,13 @@ func (c *Control) GetWidth() int {
 	return *c.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (c *Control) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }
 
-func (c *Control) Diff(other *Control) *ReportTreeItemDiffs {
-	res := &ReportTreeItemDiffs{
+func (c *Control) Diff(other *Control) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
 		Item: c,
 		Name: c.Name(),
 	}

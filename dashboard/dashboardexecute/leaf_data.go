@@ -1,4 +1,4 @@
-package reportexecute
+package dashboardexecute
 
 import (
 	"database/sql"

@@ -10,8 +10,8 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// ReportCard is a struct representing a leaf reporting node
-type ReportCard struct {
+// DashboardCard is a struct representing a leaf reporting node
+type DashboardCard struct {
 	ReportLeafNodeBase
 	ResourceWithMetadataBase
 
@@ -32,7 +32,7 @@ type ReportCard struct {
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
-	Base *ReportCard `hcl:"base" json:"-"`
+	Base *DashboardCard `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
@@ -42,9 +42,9 @@ type ReportCard struct {
 	metadata *ResourceMetadata
 }
 
-func NewReportCard(block *hcl.Block, mod *Mod) *ReportCard {
+func NewReportCard(block *hcl.Block, mod *Mod) *DashboardCard {
 	shortName := GetAnonymousResourceShortName(block, mod)
-	c := &ReportCard{
+	c := &DashboardCard{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -57,29 +57,29 @@ func NewReportCard(block *hcl.Block, mod *Mod) *ReportCard {
 
 }
 
-func (c *ReportCard) Equals(other *ReportCard) bool {
+func (c *DashboardCard) Equals(other *DashboardCard) bool {
 	diff := c.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (c *ReportCard) CtyValue() (cty.Value, error) {
+func (c *DashboardCard) CtyValue() (cty.Value, error) {
 	return getCtyValue(c)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'card.<shortName>'
-func (c *ReportCard) Name() string {
+func (c *DashboardCard) Name() string {
 	return c.FullName
 }
 
 // OnDecoded implements HclResource
-func (c *ReportCard) OnDecoded(*hcl.Block) hcl.Diagnostics {
+func (c *DashboardCard) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	c.setBaseProperties()
 	return nil
 }
 
-func (c *ReportCard) setBaseProperties() {
+func (c *DashboardCard) setBaseProperties() {
 	if c.Base == nil {
 		return
 	}
@@ -101,51 +101,51 @@ func (c *ReportCard) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (c *ReportCard) AddReference(*ResourceReference) {}
+func (c *DashboardCard) AddReference(*ResourceReference) {}
 
 // GetMod implements HclResource
-func (c *ReportCard) GetMod() *Mod {
+func (c *DashboardCard) GetMod() *Mod {
 	return c.Mod
 }
 
 // GetDeclRange implements HclResource
-func (c *ReportCard) GetDeclRange() *hcl.Range {
+func (c *DashboardCard) GetDeclRange() *hcl.Range {
 	return &c.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (c *ReportCard) AddParent(parent ModTreeItem) error {
+func (c *DashboardCard) AddParent(parent ModTreeItem) error {
 	c.parents = append(c.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (c *ReportCard) GetParents() []ModTreeItem {
+func (c *DashboardCard) GetParents() []ModTreeItem {
 	return c.parents
 }
 
 // GetChildren implements ModTreeItem
-func (c *ReportCard) GetChildren() []ModTreeItem {
+func (c *DashboardCard) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (c *ReportCard) GetTitle() string {
+func (c *DashboardCard) GetTitle() string {
 	return typehelpers.SafeString(c.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (c *ReportCard) GetDescription() string {
+func (c *DashboardCard) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (c *ReportCard) GetTags() map[string]string {
+func (c *DashboardCard) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (c *ReportCard) GetPaths() []NodePath {
+func (c *DashboardCard) GetPaths() []NodePath {
 	// lazy load
 	if len(c.Paths) == 0 {
 		c.SetPaths()
@@ -155,7 +155,7 @@ func (c *ReportCard) GetPaths() []NodePath {
 }
 
 // SetPaths implements ModTreeItem
-func (c *ReportCard) SetPaths() {
+func (c *DashboardCard) SetPaths() {
 	for _, parent := range c.parents {
 		for _, parentPath := range parent.GetPaths() {
 			c.Paths = append(c.Paths, append(parentPath, c.Name()))
@@ -164,17 +164,17 @@ func (c *ReportCard) SetPaths() {
 }
 
 // GetMetadata implements ResourceWithMetadata
-func (c *ReportCard) GetMetadata() *ResourceMetadata {
+func (c *DashboardCard) GetMetadata() *ResourceMetadata {
 	return c.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata
-func (c *ReportCard) SetMetadata(metadata *ResourceMetadata) {
+func (c *DashboardCard) SetMetadata(metadata *ResourceMetadata) {
 	c.metadata = metadata
 }
 
-func (c *ReportCard) Diff(other *ReportCard) *ReportTreeItemDiffs {
-	res := &ReportTreeItemDiffs{
+func (c *DashboardCard) Diff(other *DashboardCard) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
 		Item: c,
 		Name: c.Name(),
 	}
@@ -207,41 +207,41 @@ func (c *ReportCard) Diff(other *ReportCard) *ReportTreeItemDiffs {
 	return res
 }
 
-// GetWidth implements ReportLeafNode
-func (c *ReportCard) GetWidth() int {
+// GetWidth implements DashboardLeafNode
+func (c *DashboardCard) GetWidth() int {
 	if c.Width == nil {
 		return 0
 	}
 	return *c.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode
-func (c *ReportCard) GetUnqualifiedName() string {
+// GetUnqualifiedName implements DashboardLeafNode
+func (c *DashboardCard) GetUnqualifiedName() string {
 	return c.UnqualifiedName
 }
 
 // GetParams implements QueryProvider
-func (c *ReportCard) GetParams() []*ParamDef {
+func (c *DashboardCard) GetParams() []*ParamDef {
 	return c.Params
 }
 
 // GetArgs implements QueryProvider
-func (c *ReportCard) GetArgs() *QueryArgs {
+func (c *DashboardCard) GetArgs() *QueryArgs {
 	return c.Args
 }
 
-// GetSQL implements QueryProvider, ReportLeafNode
-func (c *ReportCard) GetSQL() string {
+// GetSQL implements QueryProvider, DashboardLeafNode
+func (c *DashboardCard) GetSQL() string {
 	return typehelpers.SafeString(c.SQL)
 }
 
 // GetQuery implements QueryProvider
-func (c *ReportCard) GetQuery() *Query {
+func (c *DashboardCard) GetQuery() *Query {
 	return c.Query
 }
 
 // GetPreparedStatementName implements QueryProvider
-func (c *ReportCard) GetPreparedStatementName() string {
+func (c *DashboardCard) GetPreparedStatementName() string {
 	// lazy load
 	if c.PreparedStatementName == "" {
 		c.PreparedStatementName = preparedStatementName(c)
@@ -250,16 +250,16 @@ func (c *ReportCard) GetPreparedStatementName() string {
 }
 
 // GetModName implements QueryProvider
-func (c *ReportCard) GetModName() string {
+func (c *DashboardCard) GetModName() string {
 	return c.Mod.NameWithVersion()
 }
 
 // SetArgs implements QueryProvider
-func (c *ReportCard) SetArgs(args *QueryArgs) {
+func (c *DashboardCard) SetArgs(args *QueryArgs) {
 	// nothing
 }
 
 // SetParams implements QueryProvider
-func (c *ReportCard) SetParams(params []*ParamDef) {
+func (c *DashboardCard) SetParams(params []*ParamDef) {
 	c.Params = params
 }
