@@ -67,7 +67,7 @@ func (v *Variable) Name() string {
 	return v.FullName
 }
 
-// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (v *Variable) GetUnqualifiedName() string {
 	return v.UnqualifiedName
 }
@@ -157,8 +157,8 @@ func (v *Variable) SetPaths() {
 	}
 }
 
-func (v *Variable) Diff(other *Variable) *ReportTreeItemDiffs {
-	res := &ReportTreeItemDiffs{
+func (v *Variable) Diff(other *Variable) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
 		Item: v,
 		Name: v.Name(),
 	}

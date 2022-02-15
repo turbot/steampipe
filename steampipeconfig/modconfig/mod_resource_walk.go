@@ -1,6 +1,6 @@
 package modconfig
 
-// TOTO [reports] also support error return
+// TODO [reports] also support error return
 // WalkResources calls resourceFunc for every resource in the mod
 // if any resourceFunc returns false, return immediately
 func (m *Mod) WalkResources(resourceFunc func(item HclResource) bool) {
@@ -19,47 +19,47 @@ func (m *Mod) WalkResources(resourceFunc func(item HclResource) bool) {
 			return
 		}
 	}
-	for _, r := range m.Reports {
+	for _, r := range m.Dashboards {
 		if !resourceFunc(r) {
 			return
 		}
 	}
-	for _, r := range m.ReportContainers {
+	for _, r := range m.DashboardContainers {
 		if !resourceFunc(r) {
 			return
 		}
 	}
-	for _, r := range m.ReportCards {
+	for _, r := range m.DashboardCards {
 		if !resourceFunc(r) {
 			return
 		}
 	}
-	for _, r := range m.ReportCharts {
+	for _, r := range m.DashboardCharts {
 		if !resourceFunc(r) {
 			return
 		}
 	}
-	for _, r := range m.ReportHierarchies {
+	for _, r := range m.DashboardHierarchies {
 		if !resourceFunc(r) {
 			return
 		}
 	}
-	for _, r := range m.ReportImages {
+	for _, r := range m.DashboardImages {
 		if !resourceFunc(r) {
 			return
 		}
 	}
-	for _, r := range m.ReportInputs {
+	for _, r := range m.DashboardInputs {
 		if !resourceFunc(r) {
 			return
 		}
 	}
-	for _, r := range m.ReportTables {
+	for _, r := range m.DashboardTables {
 		if !resourceFunc(r) {
 			return
 		}
 	}
-	for _, r := range m.ReportTexts {
+	for _, r := range m.DashboardTexts {
 		if !resourceFunc(r) {
 			return
 		}

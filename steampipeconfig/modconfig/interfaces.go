@@ -17,7 +17,7 @@ type MappableResource interface {
 }
 
 // ModTreeItem must be implemented by elements of the mod resource hierarchy
-// i.e. Control, Benchmark, Report
+// i.e. Control, Benchmark, Dashboard
 type ModTreeItem interface {
 	AddParent(ModTreeItem) error
 	GetChildren() []ModTreeItem
@@ -63,21 +63,21 @@ type QueryProvider interface {
 	SetParams(params []*ParamDef)
 }
 
-// ParameterisedReportNode must be implemented by resources has params and args
-type ParameterisedReportNode interface {
+// ParameterisedDashboardNode must be implemented by resources has params and args
+type ParameterisedDashboardNode interface {
 	GetParams() []*ParamDef
 	GetArgs() *QueryArgs
 }
 
-// ReportLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
-type ReportLeafNode interface {
+// DashboardLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
+type DashboardLeafNode interface {
 	Name() string
 	GetUnqualifiedName() string
 	GetTitle() string
 	GetWidth() int
 	GetPaths() []NodePath
 	GetSQL() string
-	// implemented by ReportLeafNodeBase
+	// implemented by DashboardLeafNodeBase
 	AddRuntimeDependencies(*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency
 }

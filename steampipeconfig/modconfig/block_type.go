@@ -5,7 +5,7 @@ const (
 	BlockTypeQuery     = "query"
 	BlockTypeControl   = "control"
 	BlockTypeBenchmark = "benchmark"
-	BlockTypeReport    = "report"
+	BlockTypeDashboard    = "dashboard"
 	BlockTypeContainer = "container"
 	BlockTypeChart     = "chart"
 	BlockTypeCard      = "card"

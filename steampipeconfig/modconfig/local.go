@@ -46,7 +46,7 @@ func (l *Local) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 // AddReference implements HclResource
 func (l *Local) AddReference(*ResourceReference) {}
 
-// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (l *Local) GetUnqualifiedName() string {
 	return l.UnqualifiedName
 }
@@ -116,8 +116,8 @@ func (l *Local) SetPaths() {
 	}
 }
 
-func (l *Local) Diff(other *Local) *ReportTreeItemDiffs {
-	res := &ReportTreeItemDiffs{
+func (l *Local) Diff(other *Local) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
 		Item: l,
 		Name: l.Name(),
 	}

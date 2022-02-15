@@ -49,7 +49,7 @@ func ParseResourcePropertyPath(propertyPath string) (res *ParsedPropertyPath, er
 	}
 
 	// special case handling for runtime dependencies which may have use the "self" qualifier
-	if parts[0] == runtimeDependencyReportScope {
+	if parts[0] == runtimeDependencyDashboardScope {
 		res.Scope = parts[0]
 		parts = parts[1:]
 	}

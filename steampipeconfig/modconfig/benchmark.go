@@ -14,7 +14,7 @@ import (
 
 // Benchmark is a struct representing the Benchmark resource
 type Benchmark struct {
-	ReportLeafNodeBase
+	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 
 	ShortName       string
@@ -37,7 +37,7 @@ type Benchmark struct {
 	DeclRange     hcl.Range
 	Paths         []NodePath `column:"path,jsonb"`
 
-	// report specific properties
+	// dashboard specific properties
 	Base  *Benchmark `hcl:"base" json:"-"`
 	Width *int       `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 
@@ -213,12 +213,12 @@ func (b *Benchmark) Name() string {
 	return b.FullName
 }
 
-// GetSQL implements ReportLeafNode
+// GetSQL implements DashboardLeafNode
 func (b *Benchmark) GetSQL() string {
 	return ""
 }
 
-// GetWidth implements ReportLeafNode
+// GetWidth implements DashboardLeafNode
 func (b *Benchmark) GetWidth() int {
 	if b.Width == nil {
 		return 0
@@ -226,13 +226,13 @@ func (b *Benchmark) GetWidth() int {
 	return *b.Width
 }
 
-// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (b *Benchmark) GetUnqualifiedName() string {
 	return b.UnqualifiedName
 }
 
-func (b *Benchmark) Diff(other *Benchmark) *ReportTreeItemDiffs {
-	res := &ReportTreeItemDiffs{
+func (b *Benchmark) Diff(other *Benchmark) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
 		Item: b,
 		Name: b.Name(),
 	}

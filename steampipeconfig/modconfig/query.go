@@ -164,7 +164,7 @@ func (q *Query) Name() string {
 	return q.FullName
 }
 
-// GetUnqualifiedName implements ReportLeafNode, ModTreeItem
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (q *Query) GetUnqualifiedName() string {
 	return q.UnqualifiedName
 }
@@ -197,7 +197,7 @@ func (q *Query) GetArgs() *QueryArgs {
 	return nil
 }
 
-// GetSQL implements QueryProvider, ReportLeafNode
+// GetSQL implements QueryProvider, DashboardLeafNode
 func (q *Query) GetSQL() string {
 	return typehelpers.SafeString(q.SQL)
 }
@@ -281,8 +281,8 @@ func (q *Query) SetPaths() {
 	}
 }
 
-func (q *Query) Diff(other *Query) *ReportTreeItemDiffs {
-	res := &ReportTreeItemDiffs{
+func (q *Query) Diff(other *Query) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
 		Item: q,
 		Name: q.Name(),
 	}
