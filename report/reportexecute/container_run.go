@@ -11,7 +11,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// TODO KAI split into report and container
+// TOTO [reports] split into report and container
 // update events
 // ReportContainerRun is a struct representing a container run
 
@@ -203,9 +203,9 @@ func (r *ReportContainerRun) ChildCompleteChan() chan reportinterfaces.ReportNod
 }
 
 func (r *ReportContainerRun) GetRuntimeDependency(dependency *modconfig.RuntimeDependency) (*string, error) {
-	// TODO KAI LOCK???
+	// TOTO [reports] LOCK???
 
-	/// TODO KAI nasty - split into report and container
+	/// TOTO [reports] nasty - split into report and container
 	if !r.reportNode.IsReport() {
 		panic("GetRuntimeDependency called on container")
 	}

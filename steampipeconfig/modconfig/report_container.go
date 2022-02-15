@@ -47,7 +47,7 @@ type ReportContainer struct {
 }
 
 func NewReportContainer(block *hcl.Block, mod *Mod) *ReportContainer {
-	// TODO kai think about nested report???
+	// TOTO [reports] think about nested report???
 	shortName := GetAnonymousResourceShortName(block, mod)
 	c := &ReportContainer{
 		HclType:         block.Type,

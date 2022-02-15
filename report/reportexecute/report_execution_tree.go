@@ -94,7 +94,7 @@ func (e *ReportExecutionTree) ChildCompleteChan() chan reportinterfaces.ReportNo
 
 func (e *ReportExecutionTree) waitForRuntimeDependency(ctx context.Context, dependency *modconfig.RuntimeDependency) error {
 	depChan := make(chan (bool), 1)
-	// TODO KAI for now verify we only bind inputs to args (somewhere)
+	// TOTO [reports] for now verify we only bind inputs to args (somewhere)
 
 	e.subscribeToInput(dependency.PropertyPath.Name, depChan)
 
