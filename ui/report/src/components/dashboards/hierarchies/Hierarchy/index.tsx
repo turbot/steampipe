@@ -16,37 +16,6 @@ import { PanelDefinition } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 import { useTheme } from "../../../../hooks/useTheme";
 
-// const getBaseOptions = (type, data, links) => {
-//   return {
-//     //tooltip: {
-//     //    trigger: 'item'
-//     //},
-//     series: {
-//       type: toEChartsType(type),
-//       layout: "none",
-//       draggable: true,
-//       label: { formatter: "{b}" },
-//       emphasis: {
-//         focus: "adjacency",
-//         blurScope: "coordinateSystem",
-//       },
-//       lineStyle: {
-//         color: "source",
-//         curveness: 0.5,
-//       },
-//       data,
-//       links,
-//       //data: objectData.map(o => ),
-//       // categories: Object.entries(categories).map(([category, info]) => ({
-//       //   name: category,
-//       //   symbol: "rect",
-//       //   symbolSize: [160, 40],
-//       //   itemStyle: { color: info.color },
-//       // })),
-//     },
-//   };
-// };
-
 const getCommonBaseOptions = () => ({
   animation: false,
   tooltip: {
@@ -214,6 +183,7 @@ const renderHierarchy = (definition: HierarchyDefinition) => {
   const {
     properties: { type = "sankey" },
   } = definition;
+
   const hierarchy = Hierarchies[type];
 
   if (!hierarchy) {

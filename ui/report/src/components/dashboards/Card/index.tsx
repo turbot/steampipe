@@ -269,8 +269,10 @@ const Card = (props: CardProps) => {
 
 const CardWrapper = (props: CardProps) => {
   if (get(props, "properties.type") === "table") {
+    // @ts-ignore
     return <Table {...props} />;
   }
+
   return <Card {...props} />;
 };
 

@@ -21,7 +21,6 @@
     "echarts-for-react": "3.0.2",
     "echarts-gl": "2.0.8",
     "lodash": "4.17.21",
-    "moment": "2.29.1",
     "react": "17.0.2",
     "react-cool-img": "1.2.12",
     "react-dom": "17.0.2",
