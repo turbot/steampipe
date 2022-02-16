@@ -20,8 +20,8 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.Work
 	defer utils.LogTime("execute.GetQueriesFromArgs end")
 
 	var queries []string
-	// build map of prepared statement providers
-	var resourceMap = modconfig.GetWorkspaceResourceMapForMod(w.Mod)
+	var queryProviders []modconfig.QueryProvider
+	// build map of just the required prepared statement providers
 	for _, arg := range args {
 		query, queryProvider, err := w.ResolveQueryAndArgs(arg)
 		if err != nil {
@@ -29,10 +29,12 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.Work
 		}
 		if len(query) > 0 {
 			queries = append(queries, query)
-			resourceMap.AddQueryProvider(queryProvider)
+			queryProviders = append(queryProviders, queryProvider)
+
 		}
 	}
-	return queries, resourceMap, nil
+	preparedStatementSource := modconfig.CreateWorkspaceResourceMapForQueryProviders(queryProviders)
+	return queries, preparedStatementSource, nil
 }
 
 // ResolveQueryAndArgs attempts to resolve 'arg' to a query and query args
@@ -165,7 +167,7 @@ func (w *Workspace) resolveNamedQuery(namedQuery *modconfig.Query, args *modconf
 	}
 
 	// so there are params - this will be a prepared statement
-	sql, err := modconfig.GetPreparedStatementExecuteSQL(namedQuery, args)
+	sql, err := namedQuery.GetPreparedStatementExecuteSQL(args)
 	if err != nil {
 		return "", err
 	}
