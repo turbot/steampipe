@@ -11,7 +11,7 @@ import (
 
 // InstallAssets installs the Steampipe report server assets
 func InstallAssets(ctx context.Context, dest string) error {
-	imageRef := constants.AssetsImageRef
+	imageRef := constants.DashboardAssetsImageRef
 	tempDir := NewTempDir(imageRef)
 	defer tempDir.Delete()
 

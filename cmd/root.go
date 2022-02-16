@@ -184,7 +184,7 @@ func AddCommands() {
 		modCmd(),
 		generateCompletionScriptsCmd(),
 		pluginManagerCmd(),
-		reportCmd(),
+		dashboardCmd(),
 	)
 }
 

@@ -24,7 +24,7 @@ func Ensure(ctx context.Context) error {
 		return err
 	}
 
-	if versionFile.Version == constants.AssetsVersion {
+	if versionFile.Version == constants.DashboardAssetsVersion {
 		return nil
 	}
 

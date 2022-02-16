@@ -50,15 +50,15 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardContainer{}, constants.IntrospectionTableReport, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardContainer{}, constants.IntrospectionTableContainer, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardCard{}, constants.IntrospectionTableReportCard, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardChart{}, constants.IntrospectionTableReportChart, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardHierarchy{}, constants.IntrospectionTableReportHierarchy, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardImage{}, constants.IntrospectionTableReportImage, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardInput{}, constants.IntrospectionTableReportInput, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardTable{}, constants.IntrospectionTableReportTable, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardText{}, constants.IntrospectionTableReportText, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardContainer{}, constants.IntrospectionTableDashboard, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardContainer{}, constants.IntrospectionTableDashboardContainer, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardCard{}, constants.IntrospectionTableDashboardCard, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardChart{}, constants.IntrospectionTableDashboardChart, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardHierarchy{}, constants.IntrospectionTableDashboardHierarchy, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardImage{}, constants.IntrospectionTableDashboardImage, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardInput{}, constants.IntrospectionTableDashboardInput, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardTable{}, constants.IntrospectionTableDashboardTable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardText{}, constants.IntrospectionTableDashboardText, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
@@ -82,31 +82,31 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 		insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
 	}
 	for _, report := range workspaceResources.Dashboards {
-		insertSql = append(insertSql, getTableInsertSqlForResource(report, constants.IntrospectionTableReport))
+		insertSql = append(insertSql, getTableInsertSqlForResource(report, constants.IntrospectionTableDashboard))
 	}
 	for _, container := range workspaceResources.DashboardContainers {
-		insertSql = append(insertSql, getTableInsertSqlForResource(container, constants.IntrospectionTableContainer))
+		insertSql = append(insertSql, getTableInsertSqlForResource(container, constants.IntrospectionTableDashboardContainer))
 	}
 	for _, card := range workspaceResources.DashboardCards {
-		insertSql = append(insertSql, getTableInsertSqlForResource(card, constants.IntrospectionTableReportCard))
+		insertSql = append(insertSql, getTableInsertSqlForResource(card, constants.IntrospectionTableDashboardCard))
 	}
 	for _, chart := range workspaceResources.DashboardCharts {
-		insertSql = append(insertSql, getTableInsertSqlForResource(chart, constants.IntrospectionTableReportChart))
+		insertSql = append(insertSql, getTableInsertSqlForResource(chart, constants.IntrospectionTableDashboardChart))
 	}
 	for _, hierarchy := range workspaceResources.DashboardHierarchies {
-		insertSql = append(insertSql, getTableInsertSqlForResource(hierarchy, constants.IntrospectionTableReportHierarchy))
+		insertSql = append(insertSql, getTableInsertSqlForResource(hierarchy, constants.IntrospectionTableDashboardHierarchy))
 	}
 	for _, image := range workspaceResources.DashboardImages {
-		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableReportImage))
+		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableDashboardImage))
 	}
 	for _, image := range workspaceResources.DashboardInputs {
-		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableReportInput))
+		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableDashboardInput))
 	}
 	for _, table := range workspaceResources.DashboardTables {
-		insertSql = append(insertSql, getTableInsertSqlForResource(table, constants.IntrospectionTableReportTable))
+		insertSql = append(insertSql, getTableInsertSqlForResource(table, constants.IntrospectionTableDashboardTable))
 	}
 	for _, text := range workspaceResources.DashboardTexts {
-		insertSql = append(insertSql, getTableInsertSqlForResource(text, constants.IntrospectionTableReportText))
+		insertSql = append(insertSql, getTableInsertSqlForResource(text, constants.IntrospectionTableDashboardText))
 	}
 	for _, reference := range workspaceResources.References {
 		insertSql = append(insertSql, getTableInsertSqlForResource(reference, constants.IntrospectionTableReference))

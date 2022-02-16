@@ -79,21 +79,21 @@ var ReservedConnectionNames = []string{
 
 // introspection table names
 const (
-	IntrospectionTableQuery           = "steampipe_query"
-	IntrospectionTableControl         = "steampipe_control"
-	IntrospectionTableBenchmark       = "steampipe_benchmark"
-	IntrospectionTableMod             = "steampipe_mod"
-	IntrospectionTableReport          = "steampipe_report"
-	IntrospectionTableContainer       = "steampipe_report_container"
-	IntrospectionTableReportCard      = "steampipe_report_card"
-	IntrospectionTableReportChart     = "steampipe_report_chart"
-	IntrospectionTableReportHierarchy = "steampipe_report_hierarchy"
-	IntrospectionTableReportImage     = "steampipe_report_image"
-	IntrospectionTableReportInput     = "steampipe_report_input"
-	IntrospectionTableReportTable     = "steampipe_report_table"
-	IntrospectionTableReportText      = "steampipe_report_text"
-	IntrospectionTableVariable        = "steampipe_variable"
-	IntrospectionTableReference       = "steampipe_reference"
+	IntrospectionTableQuery              = "steampipe_query"
+	IntrospectionTableControl            = "steampipe_control"
+	IntrospectionTableBenchmark          = "steampipe_benchmark"
+	IntrospectionTableMod                = "steampipe_mod"
+	IntrospectionTableDashboard          = "steampipe_dashboard"
+	IntrospectionTableDashboardContainer = "steampipe_dashboard_container"
+	IntrospectionTableDashboardCard      = "steampipe_dashboard_card"
+	IntrospectionTableDashboardChart     = "steampipe_dashboard_chart"
+	IntrospectionTableDashboardHierarchy = "steampipe_dashboard_hierarchy"
+	IntrospectionTableDashboardImage     = "steampipe_dashboard_image"
+	IntrospectionTableDashboardInput     = "steampipe_dashboard_input"
+	IntrospectionTableDashboardTable     = "steampipe_dashboard_table"
+	IntrospectionTableDashboardText      = "steampipe_dashboard_text"
+	IntrospectionTableVariable           = "steampipe_variable"
+	IntrospectionTableReference          = "steampipe_reference"
 )
 
 // Invoker is a pseudoEnum for the command/operation which starts the service
@@ -108,8 +108,8 @@ const (
 	InvokerCheck = "check"
 	// InvokerPlugin is set when invoked by a plugin command
 	InvokerPlugin = "plugin"
-	// InvokerReport is set when invoked by report command
-	InvokerReport = "report"
+	// InvokerDashboard is set when invoked by dashboard command
+	InvokerDashboard = "dashboard"
 	// InvokerConnectionWatcher is set when invoked by the connection watcher process
 	InvokerConnectionWatcher = "connection-watcher"
 )
@@ -117,8 +117,8 @@ const (
 // IsValid is a validator for Invoker known values
 func (i Invoker) IsValid() error {
 	switch i {
-	case InvokerService, InvokerQuery, InvokerCheck, InvokerPlugin, InvokerReport:
+	case InvokerService, InvokerQuery, InvokerCheck, InvokerPlugin, InvokerDashboard:
 		return nil
 	}
-	return fmt.Errorf("invalid invoker. Can be one of '%v', '%v', '%v', '%v' or '%v' ", InvokerService, InvokerQuery, InvokerPlugin, InvokerCheck, InvokerReport)
+	return fmt.Errorf("invalid invoker. Can be one of '%v', '%v', '%v', '%v' or '%v' ", InvokerService, InvokerQuery, InvokerPlugin, InvokerCheck, InvokerDashboard)
 }
