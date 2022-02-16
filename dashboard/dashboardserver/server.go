@@ -165,14 +165,7 @@ func buildLeafNodeCompletePayload(event *dashboardevents.LeafNodeComplete) ([]by
 		Action:        "leaf_node_complete",
 		DashboardNode: event.Node,
 	}
-	//jsonString, _ := json.Marshal(payload)
-	//return jsonString
-	jsonString, err := json.MarshalIndent(payload, "", "  ")
-	fmt.Println(err)
-	a := string(jsonString)
-	fmt.Println(a)
-
-	return jsonString, err
+	return json.Marshal(payload)
 }
 
 func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]byte, error) {

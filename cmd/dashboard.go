@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 
+	"github.com/turbot/steampipe/statushooks"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -37,14 +39,18 @@ The current mod is the working directory, or the directory specified by the --wo
 }
 
 func runDashboardCmd(cmd *cobra.Command, args []string) {
+	// create context for the dashboard execution
 	ctx, cancel := context.WithCancel(cmd.Context())
+	// disable all status messages
+	dashboardCtx := statushooks.DisableStatusHooks(ctx)
+
 	contexthelpers.StartCancelHandler(cancel)
 
 	logging.LogTime("runDashboardCmd start")
 	defer func() {
 		logging.LogTime("runDashboardCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			utils.ShowError(dashboardCtx, helpers.ToError(r))
 		}
 	}()
 
@@ -55,18 +61,18 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnError(serverListen.IsValid())
 
 	// ensure dashboard assets are present and extract if not
-	err := dashboardassets.Ensure(ctx)
+	err := dashboardassets.Ensure(dashboardCtx)
 	utils.FailOnError(err)
 
 	// load the workspace
-	w, err := loadWorkspacePromptingForVariables(ctx)
+	w, err := loadWorkspacePromptingForVariables(dashboardCtx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
-	initData := dashboard.NewInitData(ctx, w)
-	if shouldExit := handleDashboardInitResult(ctx, initData); shouldExit {
+	initData := dashboard.NewInitData(dashboardCtx, w)
+	if shouldExit := handleDashboardInitResult(dashboardCtx, initData); shouldExit {
 		return
 	}
-	server, err := dashboardserver.NewServer(ctx, initData.Client, initData.Workspace)
+	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.Workspace)
 	if err != nil {
 		utils.FailOnError(err)
 	}
@@ -74,9 +80,9 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	server.Start()
 
 	// wait for the given context to cancel
-	<-ctx.Done()
+	<-dashboardCtx.Done()
 
-	server.Shutdown(ctx)
+	server.Shutdown(dashboardCtx)
 }
 
 func handleDashboardInitResult(ctx context.Context, initData *dashboard.InitData) bool {
