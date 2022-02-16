@@ -849,6 +849,90 @@ func init() {
 				},
 			},
 		},
+		"dashboard_container_with_all_children": {
+			source: "testdata/mods/dashboard_container_with_all_children",
+			expected: &modconfig.Mod{
+				ShortName:   "container_with_children",
+				FullName:    "mod.container_with_children",
+				Require:     require,
+				Description: toStringPointer("This mod contains a dashboard with a container with all possible child resources"),
+				Title:       toStringPointer("container with all possible child resources"),
+				Dashboards: map[string]*modconfig.Dashboard{
+					"container_with_children.dashboard.container_with_child_res": {
+						ShortName:       "container_with_child_res",
+						FullName:        "container_with_children.dashboard.container_with_child_res",
+						UnqualifiedName: "dashboard.container_with_child_res",
+						Title:           toStringPointer("container with child resources"),
+						ChildNames:      []string{"container_with_children.container.anonymous_container"},
+						HclType:         "dashboard",
+					},
+				},
+				DashboardContainers: map[string]*modconfig.DashboardContainer{
+					"container_with_children.container.anonymous_container": {
+						ShortName:       "anonymous_container",
+						FullName:        "container_with_children.container.anonymous_container",
+						UnqualifiedName: "container.anonymous_container",
+						Title:           toStringPointer("example container with all possible child resources"),
+						ChildNames:      []string{"container_with_children.chart.anonymous_chart", "container_with_children.card.anonymous_card", "container_with_children.hierarchy.anonymous_hierarchy", "container_with_children.image.anonymous_image", "container_with_children.table.anonymous_table", "container_with_children.text.anonymous_text"},
+					},
+				},
+				DashboardCards: map[string]*modconfig.DashboardCard{
+					"container_with_children.card.anonymous_card": {
+						FullName:        "container_with_children.card.anonymous_card",
+						ShortName:       "anonymous_card",
+						UnqualifiedName: "card.anonymous_card",
+						Title:           toStringPointer("example card"),
+						Type:            toStringPointer("ok"),
+						SQL:             toStringPointer("select 1"),
+					},
+				},
+				DashboardCharts: map[string]*modconfig.DashboardChart{
+					"container_with_children.chart.anonymous_chart": {
+						FullName:        "container_with_children.chart.anonymous_chart",
+						ShortName:       "anonymous_chart",
+						UnqualifiedName: "chart.anonymous_chart",
+						Title:           toStringPointer("example chart"),
+						SQL:             toStringPointer("select 1"),
+					},
+				},
+				DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
+					"container_with_children.hierarchy.anonymous_hierarchy": {
+						FullName:        "container_with_children.hierarchy.anonymous_hierarchy",
+						ShortName:       "anonymous_hierarchy",
+						UnqualifiedName: "hierarchy.anonymous_hierarchy",
+						Title:           toStringPointer("example hierarchy"),
+						Type:            toStringPointer("graph"),
+					},
+				},
+				DashboardImages: map[string]*modconfig.DashboardImage{
+					"container_with_children.image.anonymous_image": {
+						FullName:        "container_with_children.image.anonymous_image",
+						ShortName:       "anonymous_image",
+						UnqualifiedName: "image.anonymous_image",
+						Title:           toStringPointer("example image"),
+						Src:             toStringPointer("https://steampipe.io/images/logo.png"),
+						Alt:             toStringPointer("steampipe"),
+					},
+				},
+				DashboardTables: map[string]*modconfig.DashboardTable{
+					"container_with_children.table.anonymous_table": {
+						FullName:        "container_with_children.table.anonymous_table",
+						ShortName:       "anonymous_table",
+						UnqualifiedName: "table.anonymous_table",
+						Title:           toStringPointer("example table"),
+						SQL:             toStringPointer("select 1"),
+					},
+				},
+				DashboardTexts: map[string]*modconfig.DashboardText{
+					"container_with_children.text.anonymous_text": {
+						FullName:        "container_with_children.text.anonymous_text",
+						ShortName:       "anonymous_text",
+						UnqualifiedName: "text.anonymous_text",
+						Value:           toStringPointer("example text"),
+					},
+				},
+			},
+		},
 		//"two_mods": {
 		//	source:   "testdata/mods/two_mods",
 		//	expected: "ERROR",
